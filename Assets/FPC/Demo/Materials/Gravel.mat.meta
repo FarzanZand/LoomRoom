@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 7a662b60800f0f24ebcd1a36f5b77cc3
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 360976
+  packageName: MFPC - Modular First Person Controller
+  packageVersion: 1.3.1
+  assetPath: Assets/FPC/Demo/Materials/Gravel.mat
+  uploadId: 899286

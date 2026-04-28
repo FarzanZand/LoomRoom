@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e19b006091f10764a93efbc1a77bb7ea
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 360976
+  packageName: MFPC - Modular First Person Controller
+  packageVersion: 1.3.1
+  assetPath: Assets/FPC/Demo/Materials/Prototype/Red.mat
+  uploadId: 899286

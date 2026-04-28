@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 7da32f4032a107440a6f893c5e5a6389
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 8574412962073106934
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 360976
+  packageName: MFPC - Modular First Person Controller
+  packageVersion: 1.3.1
+  assetPath: Assets/FPC/Demo/TerrainLayers/Grass.terrainlayer
+  uploadId: 899286

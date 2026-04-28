@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3223f513f602fb44ca6da9b56855a749, type: 3}
+  m_Name: DirtyGround
+  m_EditorClassIdentifier: 
+  walkSounds:
+  - {fileID: 8300000, guid: 1e7ecc15ca27b9b4598d68677c95fb56, type: 3}
+  - {fileID: 8300000, guid: 3986f8ad8f81f744f9e50fe617eb4978, type: 3}
+  - {fileID: 8300000, guid: d19784ceef99b3443ad1ac5cc160f75f, type: 3}
+  - {fileID: 8300000, guid: 06b1c94200451584f8ae454d6c2c5181, type: 3}
+  - {fileID: 8300000, guid: 751adfcd998da694aa8da1a4250f877e, type: 3}
+  jumpLandSounds:
+  - {fileID: 8300000, guid: 8e6415028384c3649bc0ff958a57c987, type: 3}
+  - {fileID: 8300000, guid: 1ce402cc99680784297dee5ee5939733, type: 3}
+  - {fileID: 8300000, guid: e33f1f797820fb745a76c3e4753046f0, type: 3}
+  layers:
+  - {fileID: 8574412962073106934, guid: eb34256db4a106d47a19eba37f9570d3, type: 2}

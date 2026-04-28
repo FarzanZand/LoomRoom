@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__coplay-mcp__list_files",
+      "mcp__coplay-mcp__get_input_action_asset"
+    ]
+  }
+}

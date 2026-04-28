@@ -1,0 +1,32 @@
+fileFormatVersion: 2
+guid: 6c2260f4a49c3c34aabdbbe8cbe93e2a
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - viewPoint: {instanceID: 0}
+  - verticalNeck: {instanceID: 0}
+  - lateralTorso: {instanceID: 0}
+  - landShakingImpulseSource: {instanceID: 0}
+  - landBumpingImpulseSource: {instanceID: 0}
+  - jumpShakingImpulseSource: {instanceID: 0}
+  - characterController: {instanceID: 0}
+  - feetTransform: {instanceID: 0}
+  - audioPool: {instanceID: 0}
+  - genericEffect: {fileID: 11400000, guid: 63745dffb1aa68f488da13f9a35cdf28, type: 2}
+  - waterEffect: {fileID: 11400000, guid: 6e69107bacefd8e4a96ccb4ff6200128, type: 2}
+  - normalVCs: {instanceID: 0}
+  - aimVCs: {instanceID: 0}
+  - gameData: {fileID: 11400000, guid: d0e4b499ad15b6e46b3a3f09e1a6b38a, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 360976
+  packageName: MFPC - Modular First Person Controller
+  packageVersion: 1.3.1
+  assetPath: Assets/FPC/Scripts/Player/Legacy/PlayerController_Legacy.cs
+  uploadId: 899286

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3223f513f602fb44ca6da9b56855a749, type: 3}
+  m_Name: Wood
+  m_EditorClassIdentifier: 
+  walkSounds:
+  - {fileID: 8300000, guid: f8e8221acebfe9d4b829e5b4449b66ba, type: 3}
+  - {fileID: 8300000, guid: 75945b5b125d4be499f82859f17be97e, type: 3}
+  - {fileID: 8300000, guid: d97145f90c8ab9444b0b25c4586eb374, type: 3}
+  - {fileID: 8300000, guid: 680080e33e06b384bb93784d6652809f, type: 3}
+  - {fileID: 8300000, guid: 19aaf7ece258fb64e86f0d7152ae8c15, type: 3}
+  - {fileID: 8300000, guid: 55a8a26f3c2b33b46a766b0efd8405fe, type: 3}
+  - {fileID: 8300000, guid: e87777537f1d8a24bbdb071092eb749f, type: 3}
+  - {fileID: 8300000, guid: 8f58e7bf745a2bd409d590ddafe31a5e, type: 3}
+  - {fileID: 8300000, guid: 0af652883bf465f478b22dfeb635c54b, type: 3}
+  jumpLandSounds:
+  - {fileID: 8300000, guid: 96d030194d069d64e8c4d519bacebd14, type: 3}
+  - {fileID: 8300000, guid: 474105c80b8ec4f4b9c8a5ead57d9bb1, type: 3}
+  - {fileID: 8300000, guid: f6687f139e4b89b48a8ff2173f43202a, type: 3}
+  - {fileID: 8300000, guid: 091c0bc7127eeb94eb08c8c40e9da133, type: 3}
+  - {fileID: 8300000, guid: edea3e90222953d49880d264e2a1ebaa, type: 3}
+  layers: []
