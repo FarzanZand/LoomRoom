@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
@@ -6,6 +7,8 @@ public class InteractableTrigger : MonoBehaviour
     [SerializeField] private MonoBehaviour interactableTarget;
 
     public IInteractable Interactable { get; private set; }
+
+    private readonly List<InteractController> registeredControllers = new();
 
     private void Awake()
     {
@@ -17,13 +20,26 @@ public class InteractableTrigger : MonoBehaviour
         GetComponent<Collider>().isTrigger = true;
     }
 
+    private void OnDisable()
+    {
+        foreach (var controller in registeredControllers)
+            controller?.Unregister(this);
+        registeredControllers.Clear();
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        other.GetComponent<InteractController>()?.Register(this);
+        var controller = other.GetComponent<InteractController>();
+        if (controller == null) return;
+        registeredControllers.Add(controller);
+        controller.Register(this);
     }
 
     private void OnTriggerExit(Collider other)
     {
-        other.GetComponent<InteractController>()?.Unregister(this);
+        var controller = other.GetComponent<InteractController>();
+        if (controller == null) return;
+        registeredControllers.Remove(controller);
+        controller.Unregister(this);
     }
 }
