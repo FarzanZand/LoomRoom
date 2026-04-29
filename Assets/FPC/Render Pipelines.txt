@@ -1,7 +1,0 @@
-If you are using URP:
-In the RP folder, click on "URP" package. 
-This will update all materials, prefabs and scenes.
-
-If you are using HDRP:
-In the RP folder, click on "HDRP" package. 
-This will update all materials, prefabs and scenes.

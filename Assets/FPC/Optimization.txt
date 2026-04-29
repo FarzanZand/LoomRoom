@@ -1,4 +1,0 @@
-To optimize the package size, you can savely remove the demo folder.
-This will not affect the core and functionality of MFPC.
-
-P.s. Take a look at the demo scenes before doing that, to get a better insight of how MFPC works.

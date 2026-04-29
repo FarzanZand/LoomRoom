@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/FPC/Demo/Scenes/DemoScene_Optionals.unity
+    path: Assets/Characters/FPC/Demo/Scenes/DemoScene_Optionals.unity
     guid: 3118d2c416a7d9847a8a25fc7e529bf8
   m_configObjects: {}
