@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 51b45feeaaa04f0448bff612c650867a
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 112000000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 360976
+  packageName: MFPC - Modular First Person Controller
+  packageVersion: 1.3.1
+  assetPath: Assets/FPC/Demo/Scenes/DemoScene_Legacy/LightingData.asset
+  uploadId: 899286

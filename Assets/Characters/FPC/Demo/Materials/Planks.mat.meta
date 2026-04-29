@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ab098384e3b47eb4da4c4240a2aa8a83
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 360976
+  packageName: MFPC - Modular First Person Controller
+  packageVersion: 1.3.1
+  assetPath: Assets/FPC/Demo/Materials/Planks.mat
+  uploadId: 899286

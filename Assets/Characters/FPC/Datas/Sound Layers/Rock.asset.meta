@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: da8b0d7d295c4684d94db2f8fa5b3afe
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 360976
+  packageName: MFPC - Modular First Person Controller
+  packageVersion: 1.3.1
+  assetPath: Assets/FPC/Datas/Sound Layers/Rock.asset
+  uploadId: 899286

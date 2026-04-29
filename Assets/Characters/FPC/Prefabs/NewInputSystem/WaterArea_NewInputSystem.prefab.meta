@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: bdde704515a50964d93336fd8c255ae3
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 360976
+  packageName: MFPC - Modular First Person Controller
+  packageVersion: 1.3.1
+  assetPath: Assets/FPC/Prefabs/NewInputSystem/WaterArea_NewInputSystem.prefab
+  uploadId: 899286

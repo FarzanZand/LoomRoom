@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 74e84a563be7b2646a1dc13ab4c682d6
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 360976
+  packageName: MFPC - Modular First Person Controller
+  packageVersion: 1.3.1
+  assetPath: Assets/FPC/Prefabs/Legacy/WaterArea_Legacy.prefab
+  uploadId: 899286

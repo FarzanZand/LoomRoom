@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e52fc476a96a64347b1994b9edd30de2
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 360976
+  packageName: MFPC - Modular First Person Controller
+  packageVersion: 1.3.1
+  assetPath: Assets/FPC/Datas/Sound Layers/Grass.asset
+  uploadId: 899286
