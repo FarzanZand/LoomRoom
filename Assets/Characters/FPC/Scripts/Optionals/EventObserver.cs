@@ -10,7 +10,7 @@ namespace MFPC
         [Tooltip("Auto-detect MFPC controller on this GameObject.")]
         [SerializeField] bool autoDetectController = true;
         [Tooltip("Reference to the New Input System controller. Used only if auto-detect is disabled or multiple controllers exist.")]
-        [SerializeField] private PlayerController_NewInputSystem controller_NewInputSystem;
+        [SerializeField] private PlayerController controller_NewInputSystem;
         [Tooltip("Reference to the Legacy controller. Used only if auto-detect is disabled or multiple controllers exist.")]
         [SerializeField] private PlayerController_Legacy controller_Legacy;
 
@@ -67,7 +67,7 @@ namespace MFPC
         {
             if (autoDetectController)
             {
-                controller_NewInputSystem = GetComponent<PlayerController_NewInputSystem>();
+                controller_NewInputSystem = GetComponent<PlayerController>();
                 controller_Legacy = GetComponent<PlayerController_Legacy>();
             }
 

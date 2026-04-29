@@ -6,7 +6,7 @@ namespace MFPC
     {
         private void OnTriggerEnter(Collider other)
         {
-            if (other.TryGetComponent(out PlayerController_NewInputSystem controller))
+            if (other.TryGetComponent(out PlayerController controller))
             {
                 controller.SetInWater(true);
             }
@@ -14,7 +14,7 @@ namespace MFPC
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.TryGetComponent(out PlayerController_NewInputSystem controller))
+            if (other.TryGetComponent(out PlayerController controller))
             {
                 controller.SetInWater(false);
             }

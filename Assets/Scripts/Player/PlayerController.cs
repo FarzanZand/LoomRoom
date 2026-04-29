@@ -6,10 +6,10 @@ namespace MFPC
     using UnityEngine.InputSystem;
 
     [RequireComponent(typeof(CharacterController))]
-    public class PlayerController_NewInputSystem : MonoBehaviour
+    public class PlayerController : MonoBehaviour
     {
         #region Variables
-        public static PlayerController_NewInputSystem instance;
+        public static PlayerController instance;
 
         [Tooltip("Necessery scriptable component used for controller settings, like mouse sensitivity, movement options.")]
         [SerializeField] GameData gameData;

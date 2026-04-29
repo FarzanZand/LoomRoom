@@ -14,7 +14,7 @@ namespace MFPC
         [SerializeField] private CinemachineVirtualCameraBase[] virtualCameras;
 
         private PlayerController_Legacy legacyController;
-        private PlayerController_NewInputSystem newInputSystemController;
+        private PlayerController newInputSystemController;
 
 
         private void Reset()
@@ -50,7 +50,7 @@ namespace MFPC
 
             if (!newInputSystemController)
             {
-                newInputSystemController = GetComponent<PlayerController_NewInputSystem>();
+                newInputSystemController = GetComponent<PlayerController>();
             }
         }
 
