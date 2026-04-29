@@ -8,12 +8,16 @@ public class PlayerManager : Singleton<PlayerManager>
 
     [Header("Players")]
     public GameObject roomPlayer;
+    public GameObject roomPlayerBody;
+    public GameObject roomPlayerTorso;
     public GameObject tablePlayer;
+    public GameObject tablePlayerBody;
+    public GameObject tablePlayerTorso;
 
     [Header("Settings")]
     [SerializeField] private ActivePlayer startingPlayer = ActivePlayer.RoomPlayer;
 
-    public ActivePlayer CurrentPlayer { get; private set; }
+    public ActivePlayer? CurrentPlayer { get; private set; }
 
     private PlayerInputActions inputActions;
 
@@ -49,7 +53,13 @@ public class PlayerManager : Singleton<PlayerManager>
 
     public void SwapToPlayer(ActivePlayer player)
     {
+        if (CurrentPlayer == player) return;
         CurrentPlayer = player;
+
+        if (roomPlayerBody != null)
+            roomPlayerBody.transform.SetPositionAndRotation(roomPlayer.transform.position, roomPlayerTorso.transform.rotation);
+        if (tablePlayerBody != null)
+            tablePlayerBody.transform.SetPositionAndRotation(tablePlayer.transform.position, tablePlayerTorso.transform.rotation);
 
         SetPlayerControlled(roomPlayer, player == ActivePlayer.RoomPlayer);
         SetPlayerControlled(tablePlayer, player == ActivePlayer.TablePlayer);
