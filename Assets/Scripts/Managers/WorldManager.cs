@@ -6,16 +6,18 @@ public class WorldManager : Singleton<WorldManager>
 {
     public PlayableDirector WakeUpDirector;
     public Transform startPositionRoom;
+    public bool skipWakeUp = false;
 
     public void Start()
     {
-        WakeUpReset();
+        if(!skipWakeUp)
+            WakeUpReset();
     }
 
     public void WakeUpReset()
     {
         Debug.Log("Wake up reset");
-        ScreenManager.Instance.FadeOut(1.5f, 1.5f);
+        ScreenManager.Instance.FadeOut(2f, 2f);
         PlayerManager.Instance.roomPlayer.transform.SetPositionAndRotation(startPositionRoom.position, startPositionRoom.rotation);
 
         MFPC.PlayerController.instance.enabled = false;
@@ -33,8 +35,8 @@ public class WorldManager : Singleton<WorldManager>
     IEnumerator PlayGroundhogAudio()
     {
         yield return new WaitForSeconds(1f);
-        var src = AudioManager.Instance.PlaySFX2D("groundhog");
-        yield return new WaitForSeconds(10f);
-        if (src != null) src.Stop();
+        AudioManager.Instance.PlayMusic("groundhog");
+        yield return new WaitForSeconds(12f);
+        AudioManager.Instance.StopMusic(1f);
     }
 }
