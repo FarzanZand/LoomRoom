@@ -158,7 +158,7 @@ namespace MFPC
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Aim"",
+                    ""name"": ""SecondaryAction"",
                     ""type"": ""Button"",
                     ""id"": ""f4de6b26-225a-4960-84ba-ed2dd55c46b8"",
                     ""expectedControlType"": """",
@@ -576,6 +576,17 @@ namespace MFPC
                     ""action"": ""Hotbar6"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""821d05ca-e936-483f-b382-98b4d6b7041b"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SecondaryAction"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -591,7 +602,7 @@ namespace MFPC
             m_Player_Crouch = m_Player.FindAction("Crouch", throwIfNotFound: true);
             m_Player_LeanLeft = m_Player.FindAction("LeanLeft", throwIfNotFound: true);
             m_Player_LeanRight = m_Player.FindAction("LeanRight", throwIfNotFound: true);
-            m_Player_Aim = m_Player.FindAction("Aim", throwIfNotFound: true);
+            m_Player_SecondaryAction = m_Player.FindAction("SecondaryAction", throwIfNotFound: true);
             m_Player_Interact = m_Player.FindAction("Interact", throwIfNotFound: true);
             m_Player_Debug1 = m_Player.FindAction("Debug1", throwIfNotFound: true);
             m_Player_Debug2 = m_Player.FindAction("Debug2", throwIfNotFound: true);
@@ -689,7 +700,7 @@ namespace MFPC
         private readonly InputAction m_Player_Crouch;
         private readonly InputAction m_Player_LeanLeft;
         private readonly InputAction m_Player_LeanRight;
-        private readonly InputAction m_Player_Aim;
+        private readonly InputAction m_Player_SecondaryAction;
         private readonly InputAction m_Player_Interact;
         private readonly InputAction m_Player_Debug1;
         private readonly InputAction m_Player_Debug2;
@@ -740,9 +751,9 @@ namespace MFPC
             /// </summary>
             public InputAction @LeanRight => m_Wrapper.m_Player_LeanRight;
             /// <summary>
-            /// Provides access to the underlying input action "Player/Aim".
+            /// Provides access to the underlying input action "Player/SecondaryAction".
             /// </summary>
-            public InputAction @Aim => m_Wrapper.m_Player_Aim;
+            public InputAction @SecondaryAction => m_Wrapper.m_Player_SecondaryAction;
             /// <summary>
             /// Provides access to the underlying input action "Player/Interact".
             /// </summary>
@@ -830,9 +841,9 @@ namespace MFPC
                 @LeanRight.started += instance.OnLeanRight;
                 @LeanRight.performed += instance.OnLeanRight;
                 @LeanRight.canceled += instance.OnLeanRight;
-                @Aim.started += instance.OnAim;
-                @Aim.performed += instance.OnAim;
-                @Aim.canceled += instance.OnAim;
+                @SecondaryAction.started += instance.OnSecondaryAction;
+                @SecondaryAction.performed += instance.OnSecondaryAction;
+                @SecondaryAction.canceled += instance.OnSecondaryAction;
                 @Interact.started += instance.OnInteract;
                 @Interact.performed += instance.OnInteract;
                 @Interact.canceled += instance.OnInteract;
@@ -895,9 +906,9 @@ namespace MFPC
                 @LeanRight.started -= instance.OnLeanRight;
                 @LeanRight.performed -= instance.OnLeanRight;
                 @LeanRight.canceled -= instance.OnLeanRight;
-                @Aim.started -= instance.OnAim;
-                @Aim.performed -= instance.OnAim;
-                @Aim.canceled -= instance.OnAim;
+                @SecondaryAction.started -= instance.OnSecondaryAction;
+                @SecondaryAction.performed -= instance.OnSecondaryAction;
+                @SecondaryAction.canceled -= instance.OnSecondaryAction;
                 @Interact.started -= instance.OnInteract;
                 @Interact.performed -= instance.OnInteract;
                 @Interact.canceled -= instance.OnInteract;
@@ -1018,12 +1029,12 @@ namespace MFPC
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnLeanRight(InputAction.CallbackContext context);
             /// <summary>
-            /// Method invoked when associated input action "Aim" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// Method invoked when associated input action "SecondaryAction" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
             /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnAim(InputAction.CallbackContext context);
+            void OnSecondaryAction(InputAction.CallbackContext context);
             /// <summary>
             /// Method invoked when associated input action "Interact" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>

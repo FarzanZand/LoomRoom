@@ -17,7 +17,7 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: deeae33315027e045bf104c3f198179d, type: 3}
   worldPrefab: {fileID: 1681972012984452, guid: 8e6fb74f22edd2d48b88c4386ae61758, type: 3}
   itemType: 3
-  canBeEquipped: 0
+  canBeEquipped: 1
   equipOnPickup: 0
   equipSlot: 0
   itemEffect: 0

@@ -299,8 +299,6 @@ namespace MFPC
             };
 
 
-            inputActions.Player.Aim.performed += _ => aimPressed = true;
-            inputActions.Player.Aim.canceled += _ => aimPressed = false;
 
             inputActions.Player.Interact.performed += _ => interactPressed = true;
 
@@ -716,18 +714,9 @@ namespace MFPC
 
         void AimCheck()
         {
-            if (aimPressed)
-            {
-                normalVCs.SetActive(false);
-                aimVCs.SetActive(true);
-                IsAiming = true;
-            }
-            else
-            {
-                normalVCs.SetActive(true);
-                aimVCs.SetActive(false);
-                IsAiming = false;
-            }
+            normalVCs.SetActive(true);
+            aimVCs.SetActive(false);
+            IsAiming = false;
         }
         #endregion
 

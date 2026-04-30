@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: Knife
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: 
+  itemName: 'asdafga '
   description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
   icon: {fileID: 21300000, guid: 2974a63dca34fad46b5178afe0bae5c1, type: 3}
   worldPrefab: {fileID: 1808823706470762, guid: 7c2b4de056174ed499e0881bf2d69242, type: 3}

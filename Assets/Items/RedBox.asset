@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: RedBox
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Red Box
+  itemName: adsss
   description: 'asdsa a '
   icon: {fileID: 21300000, guid: deeae33315027e045bf104c3f198179d, type: 3}
   worldPrefab: {fileID: 2485599896651425087, guid: 5adebc64a3173974d8a14c356e821fa7, type: 3}

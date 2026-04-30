@@ -20,7 +20,7 @@ public class HotbarUI : MonoBehaviour
         inputActions.Player.Hotbar4.performed += _ => SelectSlot(3);
         inputActions.Player.Hotbar5.performed += _ => SelectSlot(4);
         inputActions.Player.Hotbar6.performed += _ => SelectSlot(5);
-        inputActions.Player.Aim.performed += _ => TryEatHeldConsumable();
+        inputActions.Player.SecondaryAction.performed += _ => TryEatHeldConsumable();
         HotbarSystem.Instance.OnHotbarChanged += Refresh;
     }
 

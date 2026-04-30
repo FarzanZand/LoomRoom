@@ -70,7 +70,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Aim",
+                    "name": "SecondaryAction",
                     "type": "Button",
                     "id": "f4de6b26-225a-4960-84ba-ed2dd55c46b8",
                     "expectedControlType": "",
@@ -486,6 +486,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Hotbar6",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "821d05ca-e936-483f-b382-98b4d6b7041b",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SecondaryAction",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
