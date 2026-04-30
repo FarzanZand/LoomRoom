@@ -1941,7 +1941,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HotbarSlot
   iconImage: {fileID: 205157485}
   background: {fileID: 185591761}
-  selectionBorder: {fileID: 602524887}
   keyLabel: {fileID: 2048193048}
 --- !u!114 &185591761
 MonoBehaviour:
@@ -3144,7 +3143,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HotbarSlot
   iconImage: {fileID: 1693606819}
   background: {fileID: 280480105}
-  selectionBorder: {fileID: 993317250}
   keyLabel: {fileID: 1448485117}
 --- !u!114 &280480105
 MonoBehaviour:
@@ -3804,7 +3802,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HotbarSlot
   iconImage: {fileID: 1773717653}
   background: {fileID: 313696277}
-  selectionBorder: {fileID: 478721430}
   keyLabel: {fileID: 792264398}
 --- !u!114 &313696277
 MonoBehaviour:
@@ -10045,7 +10042,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HotbarSlot
   iconImage: {fileID: 498900046}
   background: {fileID: 871275111}
-  selectionBorder: {fileID: 1789134292}
   keyLabel: {fileID: 2004968053}
 --- !u!114 &871275111
 MonoBehaviour:
@@ -11257,7 +11253,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HotbarSlot
   iconImage: {fileID: 2095530033}
   background: {fileID: 991811696}
-  selectionBorder: {fileID: 88138297}
   keyLabel: {fileID: 1325458578}
 --- !u!114 &991811696
 MonoBehaviour:
@@ -21250,7 +21245,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HotbarSlot
   iconImage: {fileID: 861455295}
   background: {fileID: 2068845621}
-  selectionBorder: {fileID: 1978191204}
   keyLabel: {fileID: 1160917455}
 --- !u!114 &2068845621
 MonoBehaviour:
