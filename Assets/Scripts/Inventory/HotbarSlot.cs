@@ -7,6 +7,7 @@ public class HotbarSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 {
     [SerializeField] public Image iconImage;
     [SerializeField] public Image background;
+    [SerializeField] public Image equippedHighlight;
     [SerializeField] public TextMeshProUGUI keyLabel;
 
     private static readonly Color EmptyColor  = new Color(0.12f, 0.12f, 0.12f, 0.85f);
@@ -19,7 +20,13 @@ public class HotbarSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         SlotIndex = index;
         if (keyLabel != null) keyLabel.text = (index + 1).ToString();
+        if (equippedHighlight != null) equippedHighlight.gameObject.SetActive(false);
         Clear();
+    }
+
+    public void SetEquipped(bool equipped)
+    {
+        if (equippedHighlight != null) equippedHighlight.gameObject.SetActive(equipped);
     }
 
     public void SetItem(ItemData data)

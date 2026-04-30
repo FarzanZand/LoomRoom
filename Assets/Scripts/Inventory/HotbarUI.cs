@@ -21,6 +21,7 @@ public class HotbarUI : MonoBehaviour
         inputActions.Player.Hotbar6.performed += _ => SelectSlot(5);
         inputActions.Player.SecondaryAction.performed += _ => TryEatHeldConsumable();
         HotbarSystem.Instance.OnHotbarChanged += Refresh;
+        ItemHolder.Instance.OnHeldItemChanged  += RefreshHighlights;
     }
 
     void OnDestroy()
@@ -28,6 +29,8 @@ public class HotbarUI : MonoBehaviour
         inputActions.Disable();
         if (HotbarSystem.Instance != null)
             HotbarSystem.Instance.OnHotbarChanged -= Refresh;
+        if (ItemHolder.Instance != null)
+            ItemHolder.Instance.OnHeldItemChanged  -= RefreshHighlights;
     }
 
     void Start()
@@ -42,13 +45,12 @@ public class HotbarUI : MonoBehaviour
         var item = HotbarSystem.Instance.Get(index);
         if (item == null) return;
 
-        bool isWeaponOrTool = item.itemType == ItemType.Weapon || item.itemType == ItemType.Tool;
         bool alreadyInHand  = item.canBeEquipped
                            && ItemHolder.Instance.GetHeldItem(item.equipSlot) == item;
 
         slots[index].Pulse();
 
-        if (isWeaponOrTool && alreadyInHand)
+        if (alreadyInHand)
         {
             ItemHolder.Instance.ClearSlot(item.equipSlot);
             return;
@@ -88,6 +90,18 @@ public class HotbarUI : MonoBehaviour
             var item = HotbarSystem.Instance.Get(i);
             if (item != null) slots[i].SetItem(item);
             else              slots[i].Clear();
+        }
+        RefreshHighlights();
+    }
+
+    void RefreshHighlights()
+    {
+        for (int i = 0; i < slots.Count; i++)
+        {
+            var item      = HotbarSystem.Instance.Get(i);
+            bool equipped = item != null && item.canBeEquipped
+                         && ItemHolder.Instance.GetHeldItem(item.equipSlot) == item;
+            slots[i].SetEquipped(equipped);
         }
     }
 }

@@ -8,6 +8,8 @@ public class ItemHolder : Singleton<ItemHolder>
     [SerializeField] private Transform tablePlayerRightHand;
     [SerializeField] private Transform tablePlayerLeftHand;
 
+    public event System.Action OnHeldItemChanged;
+
     private readonly Dictionary<EquipmentSlot, GameObject> heldObjects = new();
     private readonly Dictionary<EquipmentSlot, ItemData>   heldItems   = new();
 
@@ -41,6 +43,7 @@ public class ItemHolder : Singleton<ItemHolder>
 
         heldObjects[item.equipSlot] = obj;
         heldItems[item.equipSlot]   = item;
+        OnHeldItemChanged?.Invoke();
     }
 
     public void ClearSlot(EquipmentSlot slot)
@@ -49,6 +52,7 @@ public class ItemHolder : Singleton<ItemHolder>
             Destroy(obj);
         heldObjects.Remove(slot);
         heldItems.Remove(slot);
+        OnHeldItemChanged?.Invoke();
     }
 
     public void ClearAll()
