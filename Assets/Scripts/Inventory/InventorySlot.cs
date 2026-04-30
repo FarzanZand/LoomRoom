@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class InventorySlot : MonoBehaviour, IPointerClickHandler
+public class InventorySlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] public Image iconImage;
     [SerializeField] public Image background;
@@ -52,6 +52,16 @@ public class InventorySlot : MonoBehaviour, IPointerClickHandler
         Debug.Log($"[Inventory] Clicked: {item.itemName} | canBeEquipped: {item.canBeEquipped}");
         if (item.canBeEquipped)
             ItemHolder.Instance.HoldItem(item);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (item != null) TooltipUI.Instance.Show(item);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        TooltipUI.Instance.Hide();
     }
 
     void OnRightClick()

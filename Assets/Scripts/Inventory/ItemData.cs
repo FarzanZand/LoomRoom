@@ -1,3 +1,4 @@
+using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -7,6 +8,7 @@ public enum ItemType { Generic, Weapon, Tool, Consumable, Key }
 public class ItemData : ScriptableObject
 {
     public string itemName;
+    [TextArea] public string description;
     public Sprite icon;
     public GameObject worldPrefab;
     public ItemType itemType;

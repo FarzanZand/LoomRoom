@@ -13,9 +13,13 @@ MonoBehaviour:
   m_Name: KnifeLeft
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: 
+  description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
   icon: {fileID: 21300002, guid: c15ba1dcb835b28498cc6239dc893a2e, type: 3}
   worldPrefab: {fileID: 1808823706470762, guid: 7c2b4de056174ed499e0881bf2d69242, type: 3}
   itemType: 0
   canBeEquipped: 1
   equipOnPickup: 0
   equipSlot: 1
+  itemEffect: 0
+  effectValue: 0
+  customEffect: {fileID: 0}
