@@ -604,7 +604,8 @@ namespace MFPC
                 sensitivity *= gameData.gamepadLookMultiplier;
             }
 
-            Vector2 rawLook = LookInput;
+            Vector2 rawLook = Cursor.lockState == CursorLockMode.Locked ? LookInput : Vector2.zero;
+            if (Cursor.lockState != CursorLockMode.Locked) smoothedLook = Vector2.zero;
 
             // invert Y if needed (BEFORE smoothing)
             if (gameData.invertLook)
