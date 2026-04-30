@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "mcp__coplay-mcp__list_files",
-      "mcp__coplay-mcp__get_input_action_asset"
+      "mcp__coplay-mcp__get_input_action_asset",
+      "Bash(claude mcp *)",
+      "mcp__coplay-mcp__get_unity_logs"
     ]
   }
 }
