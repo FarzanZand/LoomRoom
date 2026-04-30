@@ -21,4 +21,4 @@ MonoBehaviour:
   equipSlot: 0
   itemEffect: 2
   effectValue: 0
-  customEffect: {fileID: 0}
+  customEffect: {fileID: 5767041595857179592, guid: 0fa99e7f90cacdd4494ed4cf325cf71e, type: 3}
