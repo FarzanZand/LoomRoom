@@ -7,7 +7,6 @@ public class HotbarSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 {
     [SerializeField] public Image iconImage;
     [SerializeField] public Image background;
-    [SerializeField] public Image selectionBorder;
     [SerializeField] public TextMeshProUGUI keyLabel;
 
     private static readonly Color EmptyColor  = new Color(0.12f, 0.12f, 0.12f, 0.85f);
@@ -20,7 +19,6 @@ public class HotbarSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         SlotIndex = index;
         if (keyLabel != null) keyLabel.text = (index + 1).ToString();
-        if (selectionBorder != null) selectionBorder.gameObject.SetActive(false);
         Clear();
     }
 
@@ -39,9 +37,32 @@ public class HotbarSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         background.color  = EmptyColor;
     }
 
-    public void SetSelected(bool selected)
+    public void Pulse()
     {
-        if (selectionBorder != null) selectionBorder.gameObject.SetActive(selected);
+        StopAllCoroutines();
+        StartCoroutine(PulseRoutine());
+    }
+
+    private System.Collections.IEnumerator PulseRoutine()
+    {
+        float duration = 0.07f;
+        Vector3 big    = Vector3.one * 1.18f;
+
+        float t = 0f;
+        while (t < duration)
+        {
+            transform.localScale = Vector3.Lerp(Vector3.one, big, t / duration);
+            t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        t = 0f;
+        while (t < duration)
+        {
+            transform.localScale = Vector3.Lerp(big, Vector3.one, t / duration);
+            t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+        transform.localScale = Vector3.one;
     }
 
     public void OnPointerEnter(PointerEventData eventData)

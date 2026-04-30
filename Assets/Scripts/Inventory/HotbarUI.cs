@@ -8,7 +8,6 @@ public class HotbarUI : MonoBehaviour
     [SerializeField] private List<HotbarSlot> slots;
 
     private PlayerInputActions inputActions;
-    private int selectedIndex = -1;
 
     void Awake()
     {
@@ -40,23 +39,22 @@ public class HotbarUI : MonoBehaviour
 
     void SelectSlot(int index)
     {
-        if (selectedIndex == index)
-        {
-            // Re-pressing an active slot unequips weapons and tools
-            var held = HotbarSystem.Instance.Get(index);
-            if (held != null && (held.itemType == ItemType.Weapon || held.itemType == ItemType.Tool))
-                ItemHolder.Instance.ClearSlot(held.equipSlot);
+        var item = HotbarSystem.Instance.Get(index);
+        if (item == null) return;
 
-            slots[selectedIndex].SetSelected(false);
-            selectedIndex = -1;
+        bool isWeaponOrTool = item.itemType == ItemType.Weapon || item.itemType == ItemType.Tool;
+        bool alreadyInHand  = item.canBeEquipped
+                           && ItemHolder.Instance.GetHeldItem(item.equipSlot) == item;
+
+        slots[index].Pulse();
+
+        if (isWeaponOrTool && alreadyInHand)
+        {
+            ItemHolder.Instance.ClearSlot(item.equipSlot);
             return;
         }
-        if (selectedIndex >= 0) slots[selectedIndex].SetSelected(false);
-        selectedIndex = index;
-        slots[selectedIndex].SetSelected(true);
 
-        var item = HotbarSystem.Instance.Get(index);
-        if (item != null && item.canBeEquipped)
+        if (item.canBeEquipped)
             ItemHolder.Instance.HoldItem(item);
     }
 
@@ -73,7 +71,6 @@ public class HotbarUI : MonoBehaviour
         {
             if (HotbarSystem.Instance.Get(i) != item) continue;
             HotbarSystem.Instance.Remove(i);
-            if (selectedIndex == i) selectedIndex = -1;
             return;
         }
         // Fallback: was equipped from inventory
