@@ -327,28 +327,6 @@
                 },
                 {
                     "name": "",
-                    "id": "449bb9bd-a51c-4c44-9930-07c89e5aed36",
-                    "path": "<Mouse>/rightButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Aim",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "0e784950-b09a-4df3-9985-2039e34e6778",
-                    "path": "<Gamepad>/leftTrigger",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Aim",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "94cfeaa9-4fc1-469b-b76b-a9452c29182b",
                     "path": "<Keyboard>/e",
                     "interactions": "",

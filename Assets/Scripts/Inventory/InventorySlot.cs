@@ -1,7 +1,8 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class InventorySlot : MonoBehaviour
+public class InventorySlot : MonoBehaviour, IPointerClickHandler
 {
     [SerializeField] public Image iconImage;
     [SerializeField] public Image background;
@@ -38,11 +39,26 @@ public class InventorySlot : MonoBehaviour
         background.color = EmptyColor;
     }
 
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (item == null) return;
+        if (eventData.button == PointerEventData.InputButton.Right)
+            OnRightClick();
+    }
+
     public void OnClick()
     {
         if (item == null) return;
         Debug.Log($"[Inventory] Clicked: {item.itemName} | canBeEquipped: {item.canBeEquipped}");
         if (item.canBeEquipped)
             ItemHolder.Instance.HoldItem(item);
+    }
+
+    void OnRightClick()
+    {
+        Debug.Log($"[Inventory] Right-clicked: {item.itemName}");
+        if (item.itemType != ItemType.Consumable) return;
+        item.UseEffect();
+        InventorySystem.Instance.Remove(SlotIndex);
     }
 }
