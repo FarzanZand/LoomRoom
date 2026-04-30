@@ -201,6 +201,60 @@ namespace MFPC
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar1"",
+                    ""type"": ""Button"",
+                    ""id"": ""d45cb48c-1e2c-4fd7-8dfc-35ff84be9782"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar2"",
+                    ""type"": ""Button"",
+                    ""id"": ""70c86135-a7a1-474d-a74f-e9aa080fb4a7"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar3"",
+                    ""type"": ""Button"",
+                    ""id"": ""12b838c3-e5a8-46b5-99ed-863ae530b9a0"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar4"",
+                    ""type"": ""Button"",
+                    ""id"": ""4ae5fa9d-2079-4a61-9da7-fbd485efc785"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar5"",
+                    ""type"": ""Button"",
+                    ""id"": ""532f5854-c4ec-4763-aac3-e99b8e95b1b2"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar6"",
+                    ""type"": ""Button"",
+                    ""id"": ""752c944f-8b35-4993-b957-f39dcffce3c7"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -456,6 +510,72 @@ namespace MFPC
                     ""action"": ""Inventory"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""0fde5eb5-02a1-44d7-886f-c7411064f04b"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f5f5020a-4898-4313-9369-543e22f977c9"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2d987c0a-4774-48aa-9593-3f76b90cce83"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e34ad3cd-221e-4a2d-9709-138d9c087e71"",
+                    ""path"": ""<Keyboard>/4"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar4"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d303b96f-8195-4131-a965-a61fb359c14e"",
+                    ""path"": ""<Keyboard>/5"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar5"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""80840e9a-1f4b-437d-ba9e-e5a7e8068e3a"",
+                    ""path"": ""<Keyboard>/6"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar6"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -476,6 +596,12 @@ namespace MFPC
             m_Player_Debug1 = m_Player.FindAction("Debug1", throwIfNotFound: true);
             m_Player_Debug2 = m_Player.FindAction("Debug2", throwIfNotFound: true);
             m_Player_Inventory = m_Player.FindAction("Inventory", throwIfNotFound: true);
+            m_Player_Hotbar1 = m_Player.FindAction("Hotbar1", throwIfNotFound: true);
+            m_Player_Hotbar2 = m_Player.FindAction("Hotbar2", throwIfNotFound: true);
+            m_Player_Hotbar3 = m_Player.FindAction("Hotbar3", throwIfNotFound: true);
+            m_Player_Hotbar4 = m_Player.FindAction("Hotbar4", throwIfNotFound: true);
+            m_Player_Hotbar5 = m_Player.FindAction("Hotbar5", throwIfNotFound: true);
+            m_Player_Hotbar6 = m_Player.FindAction("Hotbar6", throwIfNotFound: true);
         }
 
         ~@PlayerInputActions()
@@ -568,6 +694,12 @@ namespace MFPC
         private readonly InputAction m_Player_Debug1;
         private readonly InputAction m_Player_Debug2;
         private readonly InputAction m_Player_Inventory;
+        private readonly InputAction m_Player_Hotbar1;
+        private readonly InputAction m_Player_Hotbar2;
+        private readonly InputAction m_Player_Hotbar3;
+        private readonly InputAction m_Player_Hotbar4;
+        private readonly InputAction m_Player_Hotbar5;
+        private readonly InputAction m_Player_Hotbar6;
         /// <summary>
         /// Provides access to input actions defined in input action map "Player".
         /// </summary>
@@ -627,6 +759,30 @@ namespace MFPC
             /// Provides access to the underlying input action "Player/Inventory".
             /// </summary>
             public InputAction @Inventory => m_Wrapper.m_Player_Inventory;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/Hotbar1".
+            /// </summary>
+            public InputAction @Hotbar1 => m_Wrapper.m_Player_Hotbar1;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/Hotbar2".
+            /// </summary>
+            public InputAction @Hotbar2 => m_Wrapper.m_Player_Hotbar2;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/Hotbar3".
+            /// </summary>
+            public InputAction @Hotbar3 => m_Wrapper.m_Player_Hotbar3;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/Hotbar4".
+            /// </summary>
+            public InputAction @Hotbar4 => m_Wrapper.m_Player_Hotbar4;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/Hotbar5".
+            /// </summary>
+            public InputAction @Hotbar5 => m_Wrapper.m_Player_Hotbar5;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/Hotbar6".
+            /// </summary>
+            public InputAction @Hotbar6 => m_Wrapper.m_Player_Hotbar6;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -689,6 +845,24 @@ namespace MFPC
                 @Inventory.started += instance.OnInventory;
                 @Inventory.performed += instance.OnInventory;
                 @Inventory.canceled += instance.OnInventory;
+                @Hotbar1.started += instance.OnHotbar1;
+                @Hotbar1.performed += instance.OnHotbar1;
+                @Hotbar1.canceled += instance.OnHotbar1;
+                @Hotbar2.started += instance.OnHotbar2;
+                @Hotbar2.performed += instance.OnHotbar2;
+                @Hotbar2.canceled += instance.OnHotbar2;
+                @Hotbar3.started += instance.OnHotbar3;
+                @Hotbar3.performed += instance.OnHotbar3;
+                @Hotbar3.canceled += instance.OnHotbar3;
+                @Hotbar4.started += instance.OnHotbar4;
+                @Hotbar4.performed += instance.OnHotbar4;
+                @Hotbar4.canceled += instance.OnHotbar4;
+                @Hotbar5.started += instance.OnHotbar5;
+                @Hotbar5.performed += instance.OnHotbar5;
+                @Hotbar5.canceled += instance.OnHotbar5;
+                @Hotbar6.started += instance.OnHotbar6;
+                @Hotbar6.performed += instance.OnHotbar6;
+                @Hotbar6.canceled += instance.OnHotbar6;
             }
 
             /// <summary>
@@ -736,6 +910,24 @@ namespace MFPC
                 @Inventory.started -= instance.OnInventory;
                 @Inventory.performed -= instance.OnInventory;
                 @Inventory.canceled -= instance.OnInventory;
+                @Hotbar1.started -= instance.OnHotbar1;
+                @Hotbar1.performed -= instance.OnHotbar1;
+                @Hotbar1.canceled -= instance.OnHotbar1;
+                @Hotbar2.started -= instance.OnHotbar2;
+                @Hotbar2.performed -= instance.OnHotbar2;
+                @Hotbar2.canceled -= instance.OnHotbar2;
+                @Hotbar3.started -= instance.OnHotbar3;
+                @Hotbar3.performed -= instance.OnHotbar3;
+                @Hotbar3.canceled -= instance.OnHotbar3;
+                @Hotbar4.started -= instance.OnHotbar4;
+                @Hotbar4.performed -= instance.OnHotbar4;
+                @Hotbar4.canceled -= instance.OnHotbar4;
+                @Hotbar5.started -= instance.OnHotbar5;
+                @Hotbar5.performed -= instance.OnHotbar5;
+                @Hotbar5.canceled -= instance.OnHotbar5;
+                @Hotbar6.started -= instance.OnHotbar6;
+                @Hotbar6.performed -= instance.OnHotbar6;
+                @Hotbar6.canceled -= instance.OnHotbar6;
             }
 
             /// <summary>
@@ -860,6 +1052,48 @@ namespace MFPC
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnInventory(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Hotbar1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnHotbar1(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Hotbar2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnHotbar2(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Hotbar3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnHotbar3(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Hotbar4" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnHotbar4(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Hotbar5" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnHotbar5(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Hotbar6" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnHotbar6(InputAction.CallbackContext context);
         }
     }
 }

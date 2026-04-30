@@ -16,8 +16,8 @@ MonoBehaviour:
   description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
   icon: {fileID: 21300000, guid: 7e6dd32f861d2d843bc4acabdb2f6df4, type: 3}
   worldPrefab: {fileID: 9105465624791796968, guid: bb5a692c175398541a0145aa72c15bf9, type: 3}
-  itemType: 0
-  canBeEquipped: 0
+  itemType: 1
+  canBeEquipped: 1
   equipOnPickup: 0
   equipSlot: 0
   itemEffect: 1
