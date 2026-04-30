@@ -1,3 +1,4 @@
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 public enum ItemType { Generic, Weapon, Tool, Consumable, Key }
@@ -11,13 +12,25 @@ public class ItemData : ScriptableObject
     public ItemType itemType;
 
     public bool canBeEquipped = false;
+
+    [BoxGroup("Equipment"), ShowIf("canBeEquipped")]
     public bool equipOnPickup = false;
+
+    [BoxGroup("Equipment"), ShowIf("canBeEquipped")]
     public EquipmentSlot equipSlot = EquipmentSlot.RightHand;
 
-    [Header("Consumable")]
+    [BoxGroup("Consumable"), ShowIf("IsConsumable")]
     public ItemEffect itemEffect;
+
+    [BoxGroup("Consumable"), ShowIf("ShowEffectValue")]
     public float effectValue;
+
+    [BoxGroup("Consumable"), ShowIf("ShowCustomEffect")]
     public ItemEffectBase customEffect;
+
+    private bool IsConsumable => itemType == ItemType.Consumable;
+    private bool ShowEffectValue => IsConsumable && itemEffect != ItemEffect.Custom;
+    private bool ShowCustomEffect => IsConsumable && itemEffect == ItemEffect.Custom;
 
     public void UseEffect()
     {
