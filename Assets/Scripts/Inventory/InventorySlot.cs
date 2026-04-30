@@ -12,6 +12,11 @@ public class InventorySlot : MonoBehaviour
     public int SlotIndex { get; private set; }
     private ItemData item;
 
+    void Awake()
+    {
+        GetComponent<Button>().onClick.AddListener(OnClick);
+    }
+
     public void Init(int index)
     {
         SlotIndex = index;
@@ -36,7 +41,8 @@ public class InventorySlot : MonoBehaviour
     public void OnClick()
     {
         if (item == null) return;
-        InventorySystem.Instance.UseItem(SlotIndex);
-        ItemHolder.Instance.HoldItem(item);
+        Debug.Log($"[Inventory] Clicked: {item.itemName} | canBeEquipped: {item.canBeEquipped}");
+        if (item.canBeEquipped)
+            ItemHolder.Instance.HoldItem(item);
     }
 }

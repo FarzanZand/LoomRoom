@@ -14,7 +14,8 @@ public class WorldItem : MonoBehaviour, IInteractable
             Debug.Log("[WorldItem] Inventory full.");
             return;
         }
-        ItemHolder.Instance.HoldItem(itemData);
-        gameObject.SetActive(false);
+        if (itemData.equipOnPickup)
+            ItemHolder.Instance.HoldItem(itemData);
+        Destroy(transform.parent.gameObject);
     }
 }
