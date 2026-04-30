@@ -3,7 +3,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
-public class HotbarSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+public class HotbarSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler,
+    IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
     [SerializeField] public Image iconImage;
     [SerializeField] public Image background;
@@ -89,4 +90,49 @@ public class HotbarSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         item.UseEffect();
         HotbarSystem.Instance.Remove(SlotIndex);
     }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (item == null) return;
+        var size = GetComponent<RectTransform>().rect.size;
+        ItemDragHandler.Instance.BeginDrag(item, true, SlotIndex, item.icon, size);
+    }
+
+    public void OnDrag(PointerEventData eventData) { }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (!ItemDragHandler.Instance.WasDropped)
+            ItemDragHandler.Instance.EndDrag();
+    }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        if (!ItemDragHandler.Instance.IsDragging) return;
+
+        var handler = ItemDragHandler.Instance;
+        var dragged = handler.DraggedItem;
+        int srcIdx = handler.SourceIndex;
+        bool fromHotbar = handler.SourceIsHotbar;
+
+        if (!IsHotbarCompatible(dragged)) return;
+
+        if (fromHotbar)
+        {
+            HotbarSystem.Instance.Swap(srcIdx, SlotIndex);
+        }
+        else
+        {
+            var existingInHotbar = HotbarSystem.Instance.Get(SlotIndex);
+            InventorySystem.Instance.Remove(srcIdx);
+            if (existingInHotbar != null)
+                InventorySystem.Instance.Insert(srcIdx, existingInHotbar);
+            HotbarSystem.Instance.Set(SlotIndex, dragged);
+        }
+
+        handler.NotifyDropped();
+        handler.EndDrag();
+    }
+
+    private static bool IsHotbarCompatible(ItemData data) => data.canBeEquipped;
 }

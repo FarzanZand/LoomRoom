@@ -2,7 +2,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class InventorySlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+public class InventorySlot : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler,
+    IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
     [SerializeField] public Image iconImage;
     [SerializeField] public Image background;
@@ -71,4 +72,50 @@ public class InventorySlot : MonoBehaviour, IPointerClickHandler, IPointerEnterH
         item.UseEffect();
         InventorySystem.Instance.Remove(SlotIndex);
     }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (item == null) return;
+        var size = GetComponent<RectTransform>().rect.size;
+        ItemDragHandler.Instance.BeginDrag(item, false, SlotIndex, item.icon, size);
+    }
+
+    public void OnDrag(PointerEventData eventData) { }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (!ItemDragHandler.Instance.WasDropped)
+            ItemDragHandler.Instance.EndDrag();
+    }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        if (!ItemDragHandler.Instance.IsDragging || !ItemDragHandler.Instance.SourceIsHotbar) return;
+
+        var handler = ItemDragHandler.Instance;
+        var hotbarItem = handler.DraggedItem;
+        int srcHotbarIdx = handler.SourceIndex;
+
+        var items = InventorySystem.Instance.Items;
+        bool hasCompatibleSwap = SlotIndex < items.Count && IsHotbarCompatible(items[SlotIndex]);
+
+        if (hasCompatibleSwap)
+        {
+            var invItem = items[SlotIndex];
+            InventorySystem.Instance.Remove(SlotIndex);
+            InventorySystem.Instance.Insert(SlotIndex, hotbarItem);
+            HotbarSystem.Instance.Set(srcHotbarIdx, invItem);
+        }
+        else
+        {
+            if (InventorySystem.Instance.IsFull) return;
+            InventorySystem.Instance.TryAdd(hotbarItem);
+            HotbarSystem.Instance.Remove(srcHotbarIdx);
+        }
+
+        handler.NotifyDropped();
+        handler.EndDrag();
+    }
+
+    private static bool IsHotbarCompatible(ItemData data) => data.canBeEquipped;
 }

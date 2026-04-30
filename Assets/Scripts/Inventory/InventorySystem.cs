@@ -27,6 +27,13 @@ public class InventorySystem : Singleton<InventorySystem>
         OnInventoryChanged?.Invoke();
     }
 
+    public void Insert(int index, ItemData item)
+    {
+        index = Mathf.Clamp(index, 0, items.Count);
+        items.Insert(index, item);
+        OnInventoryChanged?.Invoke();
+    }
+
     public void UseItem(int index)
     {
         if (index < 0 || index >= items.Count) return;
