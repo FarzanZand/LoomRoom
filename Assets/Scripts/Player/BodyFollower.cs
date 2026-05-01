@@ -14,6 +14,6 @@ public class BodyFollower : MonoBehaviour
             transform.rotation = Quaternion.Euler(0f, rotationSource.eulerAngles.y, 0f);
     }
 
-    // Footstep audio is handled by PlayerController — silences the animation event warning.
     private void OnFootstep(AnimationEvent animationEvent) { }
+    private void OnLand(AnimationEvent animationEvent) { }
 }
