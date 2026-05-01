@@ -238,6 +238,8 @@ namespace MFPC
         public bool IsRightLeaning => leanRightPressed;
         public Animator animator;
 
+        private bool wasGrounded;
+
 
         // Validation safety
         void OnValidate()
@@ -354,6 +356,28 @@ namespace MFPC
 
             sprintDown = false;
             crouchDown = false;
+
+            UpdateAnimator();
+        }
+
+        void UpdateAnimator()
+        {
+            if (animator == null) return;
+
+            bool grounded = Controller.isGrounded;
+
+            float horizontalSpeed = new Vector3(Controller.velocity.x, 0f, Controller.velocity.z).magnitude;
+            animator.SetFloat("Speed", horizontalSpeed, 0.1f, Time.deltaTime);
+            animator.SetFloat("MotionSpeed", MoveInput.magnitude, 0.1f, Time.deltaTime);
+            animator.SetBool("Grounded", grounded);
+            animator.SetBool("FreeFall", !grounded && Controller.velocity.y < -1f);
+
+            if (!grounded && wasGrounded && Controller.velocity.y > 0f)
+                animator.SetBool("Jump", true);
+            else if (grounded)
+                animator.SetBool("Jump", false);
+
+            wasGrounded = grounded;
         }
 
         #region Camera and Movement
