@@ -133,7 +133,9 @@ namespace MFPC
         [SerializeField] private Transform feetTransform;
         [Tooltip("Transform used as the origin point for footstep sounds.")]
         [SerializeField] private float footstepVolume = 0.5f;
+#pragma warning disable CS0414
         [SerializeField] private float crouchFootstepVolume = 0.25f;
+#pragma warning restore CS0414
         [Tooltip("Sounds played when the jump starts.")]
         [SerializeField] private AudioClip[] jumpStartSounds;
         [Tooltip("Minimum airborne time required to trigger landing effects (seconds).")]

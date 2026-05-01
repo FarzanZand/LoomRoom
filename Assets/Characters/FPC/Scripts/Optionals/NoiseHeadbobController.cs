@@ -6,19 +6,13 @@ namespace MFPC
     public class NoiseHeadbobController : MonoBehaviour
     {
         public GameData gameData;
-        private CinemachineVirtualCamera[] virtualCameras;
-
         void Start()
         {
             if (gameData.EnableNoiseAndHeadbob) return;
 
-            virtualCameras = GetComponentsInChildren<CinemachineVirtualCamera>(true);
-
-            foreach (CinemachineVirtualCamera vc in virtualCameras)
+            foreach (var vc in GetComponentsInChildren<CinemachineCamera>(true))
             {
-                CinemachineBasicMultiChannelPerlin noise =
-                    vc.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
-
+                var noise = vc.GetComponentInChildren<CinemachineBasicMultiChannelPerlin>(true);
                 if (noise != null)
                 {
                     noise.AmplitudeGain = 0f;

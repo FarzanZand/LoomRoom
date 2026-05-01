@@ -13,16 +13,12 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
             if (_instance != null)
                 return _instance;
 
-            // In builds, respect the quit flag to avoid creating objects during shutdown.
-            // In the editor, skip it — the flag is a static and persists as stale `true`
-            // between play sessions, causing false nulls on the next play.
-#if !UNITY_EDITOR
-            if (_applicationIsQuitting)
+            // Don't create new objects during teardown (editor or build).
+            // In the editor, also guard against creation after play mode ends.
+            if (_applicationIsQuitting || !Application.isPlaying)
                 return null;
-#endif
-            _applicationIsQuitting = false;
 
-            _instance = FindFirstObjectByType<T>(FindObjectsInactive.Include);
+            _instance = FindAnyObjectByType<T>(FindObjectsInactive.Include);
             if (_instance == null)
             {
                 var go = new GameObject(typeof(T).Name);
@@ -35,7 +31,7 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 
     protected virtual void Awake()
     {
-        _applicationIsQuitting = false;
+        _applicationIsQuitting = false; // clear stale flag from previous session
         if (_instance == null)
         {
             _instance = this as T;

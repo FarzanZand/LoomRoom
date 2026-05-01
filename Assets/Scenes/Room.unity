@@ -8146,7 +8146,7 @@ GameObject:
   m_Component:
   - component: {fileID: 796747834}
   m_Layer: 6
-  m_Name: TablePlayer
+  m_Name: TablePlayerParent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -23150,7 +23150,7 @@ GameObject:
   - component: {fileID: 6088256995925591194}
   - component: {fileID: 2018244007}
   m_Layer: 7
-  m_Name: RoomPlayer
+  m_Name: RoomPlayerParent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
