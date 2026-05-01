@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[DefaultExecutionOrder(-100)]
 public class ItemHolder : Singleton<ItemHolder>
 {
     [SerializeField] private Transform roomPlayerRightHand;
@@ -30,12 +31,12 @@ public class ItemHolder : Singleton<ItemHolder>
 
     public void HoldItem(ItemData item)
     {
-        if (item?.worldPrefab == null) return;
+        if (item?.worldPrefab == null) { Debug.LogWarning($"[ItemHolder] {item?.itemName} has no worldPrefab assigned."); return; }
 
         ClearSlot(item.equipSlot);
 
         var anchor = GetAnchor(item.equipSlot);
-        if (anchor == null) { Debug.LogWarning("[ItemHolder] No hand anchor for active player."); return; }
+        if (anchor == null) { Debug.LogWarning($"[ItemHolder] No hand anchor for active player ({PlayerManager.Instance.CurrentPlayer})."); return; }
 
         var obj = Instantiate(item.worldPrefab, anchor);
         foreach (var col in obj.GetComponentsInChildren<Collider>())

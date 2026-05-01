@@ -43,7 +43,7 @@ public class HotbarUI : MonoBehaviour
     void SelectSlot(int index)
     {
         var item = HotbarSystem.Instance.Get(index);
-        if (item == null) return;
+        if (item == null) { Debug.Log($"[Hotbar] Slot {index} is empty."); return; }
 
         bool alreadyInHand  = item.canBeEquipped
                            && ItemHolder.Instance.GetHeldItem(item.equipSlot) == item;
@@ -58,6 +58,8 @@ public class HotbarUI : MonoBehaviour
 
         if (item.canBeEquipped)
             ItemHolder.Instance.HoldItem(item);
+        else
+            Debug.Log($"[Hotbar] {item.itemName} is not equippable (canBeEquipped=false).");
     }
 
     void TryEatHeldConsumable()

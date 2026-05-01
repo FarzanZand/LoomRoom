@@ -236,6 +236,7 @@ namespace MFPC
         public float CurrentLeanAngle => currentLeanAngle;
         public bool IsLeftLeaning => leanLeftPressed;
         public bool IsRightLeaning => leanRightPressed;
+        public Animator animator;
 
 
         // Validation safety

@@ -22,7 +22,7 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 #endif
             _applicationIsQuitting = false;
 
-            _instance = FindFirstObjectByType<T>();
+            _instance = FindFirstObjectByType<T>(FindObjectsInactive.Include);
             if (_instance == null)
             {
                 var go = new GameObject(typeof(T).Name);
