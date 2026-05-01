@@ -19438,7 +19438,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorldManager
   WakeUpDirector: {fileID: 178767175}
   startPositionRoom: {fileID: 777283952}
-  skipWakeUp: 1
+  skipWakeUp: 0
 --- !u!1 &2004968051
 GameObject:
   m_ObjectHideFlags: 0
