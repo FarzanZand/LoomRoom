@@ -26,17 +26,6 @@ public class CutsceneCanvasHider : MonoBehaviour
         }
     }
 
-    private void OnCutsceneStarted(PlayableDirector _)
-    {
-        canvas.enabled = false;
-        if (MFPC.PlayerController.instance != null)
-            MFPC.PlayerController.instance.enabled = false;
-    }
-
-    private void OnCutsceneStopped(PlayableDirector _)
-    {
-        canvas.enabled = true;
-        if (MFPC.PlayerController.instance != null)
-            MFPC.PlayerController.instance.enabled = true;
-    }
+    private void OnCutsceneStarted(PlayableDirector _) => canvas.enabled = false;
+    private void OnCutsceneStopped(PlayableDirector _) => canvas.enabled = true;
 }

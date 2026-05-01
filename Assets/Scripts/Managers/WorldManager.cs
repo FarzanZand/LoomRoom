@@ -16,11 +16,12 @@ public class WorldManager : Singleton<WorldManager>
 
     public void WakeUpReset()
     {
-        Debug.Log("Wake up reset");
         ScreenManager.Instance.FadeOut(2f, 2f);
         PlayerManager.Instance.roomPlayer.transform.SetPositionAndRotation(startPositionRoom.position, startPositionRoom.rotation);
 
-        MFPC.PlayerController.instance.enabled = false;
+        var pc = PlayerManager.Instance.roomPlayer.GetComponentInChildren<MFPC.PlayerController>(true);
+        if (pc != null) pc.enabled = false;
+
         WakeUpDirector.stopped += OnWakeUpComplete;
         WakeUpDirector.Play();
         StartCoroutine(PlayGroundhogAudio());
@@ -29,7 +30,8 @@ public class WorldManager : Singleton<WorldManager>
     void OnWakeUpComplete(PlayableDirector _)
     {
         WakeUpDirector.stopped -= OnWakeUpComplete;
-        MFPC.PlayerController.instance.enabled = true;
+        var pc = PlayerManager.Instance.roomPlayer.GetComponentInChildren<MFPC.PlayerController>(true);
+        if (pc != null) pc.enabled = true;
     }
 
     IEnumerator PlayGroundhogAudio()
