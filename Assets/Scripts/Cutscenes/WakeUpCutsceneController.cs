@@ -7,6 +7,7 @@ public class WakeUpCutsceneController : MonoBehaviour
     [SerializeField] private Transform wakeUpPosition;
     [SerializeField] private Transform bedSidePosition;
     [SerializeField] private float wakeDuration = 4f;
+    [SerializeField] private Canvas mainCanvas;
 
     private MFPC.PlayerController playerController;
     private CharacterController characterController;
@@ -18,6 +19,8 @@ public class WakeUpCutsceneController : MonoBehaviour
 
         playerController.enabled = false;
         characterController.enabled = false;
+
+        if (mainCanvas != null) mainCanvas.enabled = false;
 
         var startRot = Quaternion.Euler(80f, wakeUpPosition.eulerAngles.y, 0f);
         roomPlayerRoot.SetPositionAndRotation(wakeUpPosition.position, startRot);
@@ -45,5 +48,7 @@ public class WakeUpCutsceneController : MonoBehaviour
         roomPlayerRoot.SetPositionAndRotation(bedSidePosition.position, bedSidePosition.rotation);
         characterController.enabled = true;
         playerController.enabled = true;
+
+        if (mainCanvas != null) mainCanvas.enabled = true;
     }
 }

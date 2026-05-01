@@ -19,6 +19,8 @@ public class PlayerManager : Singleton<PlayerManager>
 
     public ActivePlayer? CurrentPlayer { get; private set; }
 
+    public event System.Action<ActivePlayer> OnPlayerSwapped;
+
     private PlayerInputActions inputActions;
 
     protected override void Awake()
@@ -63,6 +65,10 @@ public class PlayerManager : Singleton<PlayerManager>
 
         SetPlayerControlled(roomPlayer, player == ActivePlayer.RoomPlayer);
         SetPlayerControlled(tablePlayer, player == ActivePlayer.TablePlayer);
+
+        OnPlayerSwapped?.Invoke(player);
+        InventorySystem.Instance.NotifyChanged();
+        HotbarSystem.Instance.NotifyChanged();
     }
 
     private void SetPlayerControlled(GameObject playerObject, bool controlled)
