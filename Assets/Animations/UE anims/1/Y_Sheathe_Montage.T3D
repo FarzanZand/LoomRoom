@@ -1,0 +1,15 @@
+Begin Object Class=/Script/Engine.AnimMontage Name="Y_Sheathe_Montage" ExportPath="/Script/Engine.AnimMontage'/Game/_Animations/FirstPerson/SwordAndShield/Y_Sheathe_Montage.Y_Sheathe_Montage'"
+   Begin Object Class=/Script/Engine.AnimDataModel Name="AnimDataModel" ExportPath="/Script/Engine.AnimDataModel'/Game/_Animations/FirstPerson/SwordAndShield/Y_Sheathe_Montage.Y_Sheathe_Montage:AnimDataModel'"
+   End Object
+   Begin Object Name="AnimDataModel" ExportPath="/Script/Engine.AnimDataModel'/Game/_Animations/FirstPerson/SwordAndShield/Y_Sheathe_Montage.Y_Sheathe_Montage:AnimDataModel'"
+      NumberOfFrames=66000
+      NumberOfKeys=66001
+   End Object
+   CompositeSections(0)=(SectionName="Default",LinkedMontage="/Script/Engine.AnimMontage'Y_Sheathe_Montage'",SegmentIndex=0,SegmentLength=1.100000,LinkedSequence="/Script/Engine.AnimSequence'/Game/_Animations/FirstPerson/SwordAndShield/Y_Sheathe.Y_Sheathe'")
+   SlotAnimTracks(0)=(SlotName="RightHand",AnimTrack=(AnimSegments=((AnimReference="/Script/Engine.AnimSequence'/Game/_Animations/FirstPerson/SwordAndShield/Y_Sheathe.Y_Sheathe'",CachedPlayLength=1.100000,AnimEndTime=1.100000))))
+   CommonTargetFrameRate=(Numerator=30)
+   SequenceLength=1.100000
+   AnimNotifyTracks(0)=(TrackName="1",TrackColor=(R=0.500000,G=0.500000,B=0.500000,A=1.000000))
+   DataModelInterface=AnimDataModel'Y_Sheathe_Montage:AnimDataModel'
+   Skeleton="/Script/Engine.Skeleton'/Game/_Blueprints/Player/FirstPersonUE4/UE4_Mannequin_Skeleton.UE4_Mannequin_Skeleton'"
+End Object
