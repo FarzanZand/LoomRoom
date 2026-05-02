@@ -130,7 +130,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1198239212}
+    m_TransformParent: {fileID: 805199584}
     m_Modifications:
     - target: {fileID: 436151760887498437, guid: c40f7c9d822c08b43a34200e6ec68ec3, type: 3}
       propertyPath: m_Layer
@@ -318,15 +318,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5036693816418520575, guid: c40f7c9d822c08b43a34200e6ec68ec3, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.1270447
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5036693816418520575, guid: c40f7c9d822c08b43a34200e6ec68ec3, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.07299985
+      value: -1.5
       objectReference: {fileID: 0}
     - target: {fileID: 5036693816418520575, guid: c40f7c9d822c08b43a34200e6ec68ec3, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.2456665
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5036693816418520575, guid: c40f7c9d822c08b43a34200e6ec68ec3, type: 3}
       propertyPath: m_LocalRotation.w
@@ -334,15 +334,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5036693816418520575, guid: c40f7c9d822c08b43a34200e6ec68ec3, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5036693816418520575, guid: c40f7c9d822c08b43a34200e6ec68ec3, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5036693816418520575, guid: c40f7c9d822c08b43a34200e6ec68ec3, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5036693816418520575, guid: c40f7c9d822c08b43a34200e6ec68ec3, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -4245,15 +4245,15 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 7175489447401920691, guid: 4ff3fbd4f91e3f24c80987c09ef16aef, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 9186222}
     - targetCorrespondingSourceObject: {fileID: 7718894933587480636, guid: 4ff3fbd4f91e3f24c80987c09ef16aef, type: 3}
       insertIndex: -1
       addedObject: {fileID: 235557659}
     - targetCorrespondingSourceObject: {fileID: 7718894933587480636, guid: 4ff3fbd4f91e3f24c80987c09ef16aef, type: 3}
       insertIndex: -1
       addedObject: {fileID: 328681686}
+    - targetCorrespondingSourceObject: {fileID: 7718894933587480636, guid: 4ff3fbd4f91e3f24c80987c09ef16aef, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9186222}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2312768863707649036, guid: 4ff3fbd4f91e3f24c80987c09ef16aef, type: 3}
       insertIndex: -1
@@ -20222,7 +20222,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorldManager
   WakeUpDirector: {fileID: 178767175}
   startPositionRoom: {fileID: 777283952}
-  skipWakeUp: 0
+  skipWakeUp: 1
 --- !u!1 &2004968051
 GameObject:
   m_ObjectHideFlags: 0
