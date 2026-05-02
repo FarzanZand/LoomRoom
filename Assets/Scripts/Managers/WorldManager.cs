@@ -30,6 +30,7 @@ public class WorldManager : Singleton<WorldManager>
     void OnWakeUpComplete(PlayableDirector _)
     {
         WakeUpDirector.stopped -= OnWakeUpComplete;
+        if (PlayerManager.Instance.roomPlayer == null) return;
         var pc = PlayerManager.Instance.roomPlayer.GetComponentInChildren<MFPC.PlayerController>(true);
         if (pc != null) pc.enabled = true;
     }
