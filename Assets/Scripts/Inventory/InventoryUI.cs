@@ -18,15 +18,24 @@ public class InventoryUI : MonoBehaviour
         onInventory  = _ => Toggle();
         inputActions.Enable();
         inputActions.Player.Inventory.performed += onInventory;
-        InventorySystem.Instance.OnInventoryChanged += Refresh;
+    }
+
+    void OnEnable()
+    {
+        if (InventorySystem.Instance != null)
+            InventorySystem.Instance.OnInventoryChanged += Refresh;
+    }
+
+    void OnDisable()
+    {
+        if (InventorySystem.Instance != null)
+            InventorySystem.Instance.OnInventoryChanged -= Refresh;
     }
 
     void OnDestroy()
     {
         inputActions.Player.Inventory.performed -= onInventory;
         inputActions.Disable();
-        if (InventorySystem.Instance != null)
-            InventorySystem.Instance.OnInventoryChanged -= Refresh;
     }
 
     void Start()
