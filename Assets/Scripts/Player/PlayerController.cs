@@ -238,7 +238,8 @@ namespace MFPC
         public float CurrentLeanAngle => currentLeanAngle;
         public bool IsLeftLeaning => leanLeftPressed;
         public bool IsRightLeaning => leanRightPressed;
-        public Animator animator;
+        public Animator bodyAnimator;
+        public Animator armsAnimator;
 
         private bool wasGrounded;
 
@@ -364,22 +365,28 @@ namespace MFPC
 
         void UpdateAnimator()
         {
-            if (animator == null) return;
-
             bool grounded = Controller.isGrounded;
-
             float horizontalSpeed = new Vector3(Controller.velocity.x, 0f, Controller.velocity.z).magnitude;
-            animator.SetFloat("Speed", horizontalSpeed, 0.1f, Time.deltaTime);
-            animator.SetFloat("MotionSpeed", MoveInput.magnitude, 0.1f, Time.deltaTime);
-            animator.SetBool("Grounded", grounded);
-            animator.SetBool("FreeFall", !grounded && Controller.velocity.y < -1f);
+            bool jump  = !grounded && wasGrounded && Controller.velocity.y > 0f;
+            bool freeFall = !grounded && Controller.velocity.y < -1f;
 
-            if (!grounded && wasGrounded && Controller.velocity.y > 0f)
-                animator.SetBool("Jump", true);
-            else if (grounded)
-                animator.SetBool("Jump", false);
+            ApplyAnimatorParams(bodyAnimator,  horizontalSpeed, grounded, jump, freeFall);
+            ApplyAnimatorParams(armsAnimator,  horizontalSpeed, grounded, jump, freeFall);
 
             wasGrounded = grounded;
+        }
+
+        void ApplyAnimatorParams(Animator anim, float speed, bool grounded, bool jump, bool freeFall)
+        {
+            if (anim == null) return;
+
+            anim.SetFloat("Speed",       speed,              0.1f, Time.deltaTime);
+            anim.SetFloat("MotionSpeed", MoveInput.magnitude, 0.1f, Time.deltaTime);
+            anim.SetBool("Grounded",  grounded);
+            anim.SetBool("FreeFall",  freeFall);
+
+            if (jump)           anim.SetBool("Jump", true);
+            else if (grounded)  anim.SetBool("Jump", false);
         }
 
         #region Camera and Movement

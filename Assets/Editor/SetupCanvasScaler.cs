@@ -7,7 +7,7 @@ public static class SetupCanvasScaler
     [MenuItem("Tools/Setup Canvas Scaler (Scale With Screen Size)")]
     static void Run()
     {
-        var canvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var canvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include);
         int count = 0;
 
         foreach (var canvas in canvases)
