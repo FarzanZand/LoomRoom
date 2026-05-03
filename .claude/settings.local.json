@@ -15,7 +15,18 @@
       "mcp__UnityMCP__refresh_unity",
       "mcp__UnityMCP__manage_animation",
       "Bash(grep -E \"\\\\.\\(cs|prefab|unity\\)$\")",
-      "Bash(grep -E \"\\\\.\\(cs|prefab\\)$\")"
+      "Bash(grep -E \"\\\\.\\(cs|prefab\\)$\")",
+      "mcp__coplay-mcp__list_game_objects_in_hierarchy",
+      "Bash(xargs grep *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Animations\" -Recurse -Filter \"*.meta\")",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Animations\" -Recurse | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Characters\\\\FPC\" -Recurse | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Characters\\\\FPC\\\\Demo\\\\Animations\" | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Characters\\\\FPC\\\\Prefabs\" | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Characters\\\\FPC\\\\Prefabs\\\\NewInputSystem\" | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Characters\\\\TablePlayer\" | ForEach-Object { $_.Name })",
+      "Bash(python3 *)"
     ]
   }
 }
