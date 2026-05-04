@@ -255,6 +255,15 @@ namespace MFPC
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""PrimaryAction"",
+                    ""type"": ""Button"",
+                    ""id"": ""2dcef8c6-bff7-41cb-a4c1-388cb95d0044"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -587,6 +596,17 @@ namespace MFPC
                     ""action"": ""SecondaryAction"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8b1c8fcb-acbd-4449-a2ce-01a8799b22ee"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PrimaryAction"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -613,6 +633,7 @@ namespace MFPC
             m_Player_Hotbar4 = m_Player.FindAction("Hotbar4", throwIfNotFound: true);
             m_Player_Hotbar5 = m_Player.FindAction("Hotbar5", throwIfNotFound: true);
             m_Player_Hotbar6 = m_Player.FindAction("Hotbar6", throwIfNotFound: true);
+            m_Player_PrimaryAction = m_Player.FindAction("PrimaryAction", throwIfNotFound: true);
         }
 
         ~@PlayerInputActions()
@@ -711,6 +732,7 @@ namespace MFPC
         private readonly InputAction m_Player_Hotbar4;
         private readonly InputAction m_Player_Hotbar5;
         private readonly InputAction m_Player_Hotbar6;
+        private readonly InputAction m_Player_PrimaryAction;
         /// <summary>
         /// Provides access to input actions defined in input action map "Player".
         /// </summary>
@@ -795,6 +817,10 @@ namespace MFPC
             /// </summary>
             public InputAction @Hotbar6 => m_Wrapper.m_Player_Hotbar6;
             /// <summary>
+            /// Provides access to the underlying input action "Player/PrimaryAction".
+            /// </summary>
+            public InputAction @PrimaryAction => m_Wrapper.m_Player_PrimaryAction;
+            /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
             public InputActionMap Get() { return m_Wrapper.m_Player; }
@@ -874,6 +900,9 @@ namespace MFPC
                 @Hotbar6.started += instance.OnHotbar6;
                 @Hotbar6.performed += instance.OnHotbar6;
                 @Hotbar6.canceled += instance.OnHotbar6;
+                @PrimaryAction.started += instance.OnPrimaryAction;
+                @PrimaryAction.performed += instance.OnPrimaryAction;
+                @PrimaryAction.canceled += instance.OnPrimaryAction;
             }
 
             /// <summary>
@@ -939,6 +968,9 @@ namespace MFPC
                 @Hotbar6.started -= instance.OnHotbar6;
                 @Hotbar6.performed -= instance.OnHotbar6;
                 @Hotbar6.canceled -= instance.OnHotbar6;
+                @PrimaryAction.started -= instance.OnPrimaryAction;
+                @PrimaryAction.performed -= instance.OnPrimaryAction;
+                @PrimaryAction.canceled -= instance.OnPrimaryAction;
             }
 
             /// <summary>
@@ -1105,6 +1137,13 @@ namespace MFPC
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnHotbar6(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "PrimaryAction" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnPrimaryAction(InputAction.CallbackContext context);
         }
     }
 }
