@@ -347,7 +347,6 @@ namespace MFPC
             if (interactPressed)
             {
                 interactPressed = false;
-                Debug.Log("Interact Pressed");
             }
         }
         

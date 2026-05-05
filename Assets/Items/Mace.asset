@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: Mace
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Sword
+  itemName: Mace
   description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
   icon: {fileID: 21300000, guid: 2974a63dca34fad46b5178afe0bae5c1, type: 3}
-  worldPrefab: {fileID: 1564280927108058, guid: f31ae95d248e8854bb5499cf38303350, type: 3}
+  worldPrefab: {fileID: 1520613138636738, guid: 6f3863215fb2a2742b86223d07dfc298, type: 3}
   itemType: 1
   canBeEquipped: 1
   equipOnPickup: 0
