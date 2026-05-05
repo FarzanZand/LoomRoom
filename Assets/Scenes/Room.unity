@@ -11549,13 +11549,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1225844923}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 14ecb5e95213f324884b41f257e9b19b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EquippableItem
-  itemName: Bottle
-  equippedPrefab: {fileID: 294619393721293448, guid: c89e883dd5067694e85eee551e513140, type: 3}
-  slot: 0
-  promptMessage: Bottle
+  m_Script: {fileID: 11500000, guid: 514568c0e48cd754299d25a5dbefe751, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::WorldItem
+  itemData: {fileID: 0}
 --- !u!65 &1225844930
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -13033,13 +13030,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1414436518}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 14ecb5e95213f324884b41f257e9b19b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EquippableItem
-  itemName: Item
-  equippedPrefab: {fileID: 1089047775212350, guid: c68ad821688cdce4e9efde69a55abd9f, type: 3}
-  slot: 0
-  promptMessage: Key
+  m_Script: {fileID: 11500000, guid: 514568c0e48cd754299d25a5dbefe751, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::WorldItem
+  itemData: {fileID: 11400000, guid: 437de76edf8cd3247a2b523be40c6a26, type: 2}
 --- !u!4 &1414436524 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4776632280475126, guid: c68ad821688cdce4e9efde69a55abd9f, type: 3}
@@ -14119,13 +14113,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1511945567}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 14ecb5e95213f324884b41f257e9b19b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EquippableItem
-  itemName: TestKnife
-  equippedPrefab: {fileID: 1016043622901942, guid: 8f6aacdabe74a4f41bfc21e28bf8e3e8, type: 3}
-  slot: 0
-  promptMessage: Knife
+  m_Script: {fileID: 11500000, guid: 514568c0e48cd754299d25a5dbefe751, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::WorldItem
+  itemData: {fileID: 11400000, guid: 4c4a17a16a14b5a49bd9466ac8e9b724, type: 2}
 --- !u!65 &1511945574
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -27864,19 +27855,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d7209ba53351d54195a9038b2787664, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InteractController
---- !u!114 &8489541660660686882
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9157879387982323601}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fc65c07a0fe3194aba43a7d846c0f78, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EquipmentController
-  rightHandAttachment: {fileID: 1599890070}
 --- !u!137 &8501479738113929706
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0
