@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using MFPC;
 using UnityEngine;
 
 [DefaultExecutionOrder(-100)]
@@ -45,6 +46,7 @@ public class ItemHolder : Singleton<ItemHolder>
         heldObjects[item.equipSlot] = obj;
         heldItems[item.equipSlot]   = item;
         OnHeldItemChanged?.Invoke();
+        NotifyAnimator(item.equipSlot, true);
     }
 
     public void ClearSlot(EquipmentSlot slot)
@@ -54,6 +56,19 @@ public class ItemHolder : Singleton<ItemHolder>
         heldObjects.Remove(slot);
         heldItems.Remove(slot);
         OnHeldItemChanged?.Invoke();
+        NotifyAnimator(slot, false);
+    }
+
+    private void NotifyAnimator(EquipmentSlot slot, bool equipped)
+    {
+        var pc = PlayerController.instance;
+        if (pc == null) return;
+
+        switch (slot)
+        {
+            case EquipmentSlot.RightHand: pc.SetRightHandEquipped(equipped); break;
+            case EquipmentSlot.LeftHand:  pc.SetLeftHandEquipped(equipped);  break;
+        }
     }
 
     public void ClearAll()

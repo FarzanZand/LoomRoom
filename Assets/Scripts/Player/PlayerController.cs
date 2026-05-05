@@ -243,6 +243,11 @@ namespace MFPC
 
         private bool wasGrounded;
 
+        // Combat
+        private bool primaryActionHeld;
+        public bool RightHandEquipped { get; private set; }
+        public bool LeftHandEquipped { get; private set; }
+
 
         // Validation safety
         void OnValidate()
@@ -313,6 +318,9 @@ namespace MFPC
 
             inputActions.Player.LeanRight.performed += _ => leanRightPressed = true;
             inputActions.Player.LeanRight.canceled += _ => leanRightPressed = false;
+
+            inputActions.Player.PrimaryAction.performed += _ => primaryActionHeld = true;
+            inputActions.Player.PrimaryAction.canceled  += _ => primaryActionHeld = false;
         }
 
         private void OnDisable()
@@ -367,13 +375,30 @@ namespace MFPC
         {
             bool grounded = Controller.isGrounded;
             float horizontalSpeed = new Vector3(Controller.velocity.x, 0f, Controller.velocity.z).magnitude;
-            bool jump  = !grounded && wasGrounded && Controller.velocity.y > 0f;
+            bool jump     = !grounded && wasGrounded && Controller.velocity.y > 0f;
             bool freeFall = !grounded && Controller.velocity.y < -1f;
 
-            ApplyAnimatorParams(bodyAnimator,  horizontalSpeed, grounded, jump, freeFall);
-            ApplyAnimatorParams(armsAnimator,  horizontalSpeed, grounded, jump, freeFall);
+            ApplyAnimatorParams(bodyAnimator, horizontalSpeed, grounded, jump, freeFall);
+            ApplyAnimatorParams(armsAnimator, horizontalSpeed, grounded, jump, freeFall);
+
+            if (armsAnimator != null)
+                armsAnimator.SetBool("AttackHeld", primaryActionHeld);
 
             wasGrounded = grounded;
+        }
+
+        public void SetRightHandEquipped(bool equipped)
+        {
+            RightHandEquipped = equipped;
+            if (armsAnimator != null)
+                armsAnimator.SetBool("RightHandEquipped", equipped);
+        }
+
+        public void SetLeftHandEquipped(bool equipped)
+        {
+            LeftHandEquipped = equipped;
+            if (armsAnimator != null)
+                armsAnimator.SetBool("LeftHandEquipped", equipped);
         }
 
         void ApplyAnimatorParams(Animator anim, float speed, bool grounded, bool jump, bool freeFall)

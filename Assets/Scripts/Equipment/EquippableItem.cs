@@ -14,7 +14,11 @@ public class EquippableItem : MonoBehaviour, IInteractable, IEquippable
     public void Interact(GameObject interactor)
     {
         var equipment = interactor.GetComponent<EquipmentController>();
-        if (equipment == null) return;
+        if (equipment == null)
+        {
+            Debug.LogWarning($"[EquippableItem] No EquipmentController found on interactor '{interactor.name}'");
+            return;
+        }
 
         equipment.Equip(this, slot);
         gameObject.SetActive(false);

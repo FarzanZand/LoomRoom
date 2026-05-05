@@ -6,7 +6,7 @@ public class NPCManager : Singleton<NPCManager>
     public Animator DMAnimator;
     public GameObject DMGameObject;
 
-    [Button]
+    [Button] 
     public void TestAnimation()
     {
         DMAnimator.SetTrigger("ReachOut");

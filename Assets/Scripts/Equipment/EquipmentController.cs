@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using MFPC;
 
 public class EquipmentController : MonoBehaviour
 {
@@ -23,6 +24,8 @@ public class EquipmentController : MonoBehaviour
 
         GameObject instance = Instantiate(item.EquippedPrefab, attachment);
         equipped[slot] = instance;
+
+        NotifyAnimator(slot, true);
     }
 
     public void Unequip(EquipmentSlot slot)
@@ -31,6 +34,22 @@ public class EquipmentController : MonoBehaviour
         {
             Destroy(go);
             equipped.Remove(slot);
+        }
+
+        NotifyAnimator(slot, false);
+    }
+
+    private void NotifyAnimator(EquipmentSlot slot, bool equipped)
+    {
+        var pc = PlayerController.instance;
+        if (pc == null) { Debug.LogWarning("[EquipmentController] PlayerController.instance is null"); return; }
+        if (pc.armsAnimator == null) { Debug.LogWarning("[EquipmentController] armsAnimator is null on PlayerController"); return; }
+
+        Debug.Log($"[EquipmentController] NotifyAnimator slot={slot} equipped={equipped}");
+        switch (slot)
+        {
+            case EquipmentSlot.RightHand: pc.SetRightHandEquipped(equipped); break;
+            case EquipmentSlot.LeftHand:  pc.SetLeftHandEquipped(equipped);  break;
         }
     }
 
