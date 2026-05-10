@@ -377,8 +377,18 @@ namespace MFPC
         bool IsAttacking()
         {
             if (armsAnimator == null) return false;
-            var info = armsAnimator.GetCurrentAnimatorStateInfo(1); // RightArm layer
-            return info.IsName("Attack_Windup") || info.IsName("Attack_Hold") || info.IsName("Attack_Release");
+            var cur  = armsAnimator.GetCurrentAnimatorStateInfo(1);
+            var next = armsAnimator.GetNextAnimatorStateInfo(1);
+            return cur.IsName("Attack_Windup")  || cur.IsName("Attack_Hold")  || cur.IsName("Attack_Release")
+                || next.IsName("Attack_Windup") || next.IsName("Attack_Hold") || next.IsName("Attack_Release");
+        }
+
+        bool IsBlocking()
+        {
+            if (armsAnimator == null) return false;
+            var cur  = armsAnimator.GetCurrentAnimatorStateInfo(2);
+            var next = armsAnimator.GetNextAnimatorStateInfo(2);
+            return cur.IsName("Block") || next.IsName("Block");
         }
 
         void UpdateAnimator()
@@ -393,8 +403,9 @@ namespace MFPC
 
             if (armsAnimator != null)
             {
-                armsAnimator.SetBool("AttackHeld", primaryActionHeld);
-                armsAnimator.SetBool("BlockHeld", secondaryActionHeld && !IsAttacking());
+                // Blocking prevents attacks from starting; attacking blocks out blocking until the full routine ends.
+                armsAnimator.SetBool("AttackHeld", primaryActionHeld && !IsBlocking());
+                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !IsAttacking());
             }
 
             wasGrounded = grounded;
@@ -416,7 +427,7 @@ namespace MFPC
 
         void ApplyAnimatorParams(Animator anim, float speed, bool grounded, bool jump, bool freeFall)
         {
-            if (anim == null) return;
+            if (anim == null || anim.runtimeAnimatorController == null) return;
 
             anim.SetFloat("Speed",       speed,              0.1f, Time.deltaTime);
             anim.SetFloat("MotionSpeed", MoveInput.magnitude, 0.1f, Time.deltaTime);
