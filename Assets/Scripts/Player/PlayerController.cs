@@ -245,6 +245,7 @@ namespace MFPC
 
         // Combat
         private bool primaryActionHeld;
+        private bool secondaryActionHeld;
         public bool RightHandEquipped { get; private set; }
         public bool LeftHandEquipped { get; private set; }
 
@@ -321,6 +322,9 @@ namespace MFPC
 
             inputActions.Player.PrimaryAction.performed += _ => primaryActionHeld = true;
             inputActions.Player.PrimaryAction.canceled  += _ => primaryActionHeld = false;
+
+            inputActions.Player.SecondaryAction.performed += _ => secondaryActionHeld = true;
+            inputActions.Player.SecondaryAction.canceled  += _ => secondaryActionHeld = false;
         }
 
         private void OnDisable()
@@ -370,6 +374,13 @@ namespace MFPC
             UpdateAnimator();
         }
 
+        bool IsAttacking()
+        {
+            if (armsAnimator == null) return false;
+            var info = armsAnimator.GetCurrentAnimatorStateInfo(1); // RightArm layer
+            return info.IsName("Attack_Windup") || info.IsName("Attack_Hold") || info.IsName("Attack_Release");
+        }
+
         void UpdateAnimator()
         {
             bool grounded = Controller.isGrounded;
@@ -381,7 +392,10 @@ namespace MFPC
             ApplyAnimatorParams(armsAnimator, horizontalSpeed, grounded, jump, freeFall);
 
             if (armsAnimator != null)
+            {
                 armsAnimator.SetBool("AttackHeld", primaryActionHeld);
+                armsAnimator.SetBool("BlockHeld", secondaryActionHeld && !IsAttacking());
+            }
 
             wasGrounded = grounded;
         }
