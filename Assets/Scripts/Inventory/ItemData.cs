@@ -12,6 +12,7 @@ public class ItemData : ScriptableObject
     public Sprite icon;
     public GameObject worldPrefab;
     public ItemType itemType;
+    
 
     public bool canBeEquipped = false;
 
@@ -32,6 +33,8 @@ public class ItemData : ScriptableObject
 
     [BoxGroup("Consumable"), ShowIf("ShowCustomEffect")]
     public ItemEffectBase customEffect;
+    [ShowIf("IsConsumable")] public AudioClip consumeAudio;
+    [ShowIf("IsConsumable")] public float consumeAudioVolume;
 
     private bool IsConsumable => itemType == ItemType.Consumable;
     private bool ShowEffectValue => IsConsumable && itemEffect != ItemEffect.Custom;
@@ -41,6 +44,8 @@ public class ItemData : ScriptableObject
     {
         if (itemType != ItemType.Consumable) return;
 
+        if(consumeAudio != null)
+            AudioManager.Instance.PlaySFX2D(consumeAudio, consumeAudioVolume);
         switch (itemEffect)
         {
             case ItemEffect.Heal:

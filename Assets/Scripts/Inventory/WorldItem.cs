@@ -3,7 +3,10 @@ using UnityEngine;
 public class WorldItem : MonoBehaviour, IInteractable
 {
     [SerializeField] private ItemData itemData;
+    [SerializeField] private AudioClip pickupAudio;
+    [SerializeField] [Range(0f, 1f)] private float pickupAudioVolume = 1f;
     [SerializeField] private bool worldPrefabFromData = false;
+    public bool WorldPrefabFromData { get => worldPrefabFromData; set => worldPrefabFromData = value; }
 
     private bool _visualSpawned;
 
@@ -50,6 +53,8 @@ public class WorldItem : MonoBehaviour, IInteractable
             return;
         }
 
+        if (pickupAudio != null)
+            AudioManager.Instance.PlaySFX2D(pickupAudio, pickupAudioVolume);
         if (itemData.equipOnPickup && ItemHolder.Instance.GetHeldItem(itemData.equipSlot) == null)
             ItemHolder.Instance.HoldItem(itemData);
         Destroy(transform.parent != null ? transform.parent.gameObject : gameObject);

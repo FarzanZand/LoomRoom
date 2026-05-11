@@ -1,25 +1,23 @@
 using UnityEngine;
 
-public static class WorldItemSpawner
+public class WorldItemSpawner : Singleton<WorldItemSpawner>
 {
-    private static GameObject _prefab;
+    [SerializeField] private GameObject pickupPrefab;
 
-    // Spawns an item pickup at the given position.
     public static WorldItem Spawn(ItemData item, Vector3 position, Quaternion rotation)
     {
         if (item == null) return null;
 
-        if (_prefab == null)
-            _prefab = Resources.Load<GameObject>("ItemPickup");
-
-        if (_prefab == null)
+        var prefab = Instance?.pickupPrefab;
+        if (prefab == null)
         {
-            Debug.LogWarning("[WorldItemSpawner] 'ItemPickup' prefab not found in Assets/Resources/.");
+            Debug.LogWarning("[WorldItemSpawner] No pickup prefab assigned.");
             return null;
         }
 
-        var go        = Object.Instantiate(_prefab, position, rotation);
+        var go        = Instantiate(prefab, position, rotation);
         var worldItem = go.GetComponent<WorldItem>();
+        worldItem.WorldPrefabFromData = true;
         worldItem.Init(item);
         return worldItem;
     }

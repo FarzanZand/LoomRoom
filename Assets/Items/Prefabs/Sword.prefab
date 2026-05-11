@@ -50,7 +50,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1330799697983367974, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
       propertyPath: m_Name
-      value: Sword 1
+      value: Sword
       objectReference: {fileID: 0}
     - target: {fileID: 4992370184658981487, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
       propertyPath: itemData
