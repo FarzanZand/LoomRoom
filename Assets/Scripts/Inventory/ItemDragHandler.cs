@@ -9,11 +9,12 @@ public class ItemDragHandler : MonoBehaviour
     private RectTransform ghostRect;
     private Canvas rootCanvas;
 
-    public bool IsDragging { get; private set; }
-    public bool WasDropped { get; private set; }
-    public ItemData DraggedItem { get; private set; }
-    public bool SourceIsHotbar { get; private set; }
-    public int SourceIndex { get; private set; }
+    public bool     IsDragging    { get; private set; }
+    public bool     WasDropped    { get; private set; }
+    public ItemData DraggedItem   { get; private set; }
+    public bool     SourceIsHotbar { get; private set; }
+    public int      SourceIndex   { get; private set; }
+    public int      SourceCount   { get; private set; }
 
     void Awake()
     {
@@ -33,15 +34,16 @@ public class ItemDragHandler : MonoBehaviour
         go.SetActive(false);
     }
 
-    public void BeginDrag(ItemData item, bool fromHotbar, int sourceIndex, Sprite icon, Vector2 size)
+    public void BeginDrag(ItemData item, bool fromHotbar, int sourceIndex, int sourceCount, Sprite icon, Vector2 size)
     {
-        DraggedItem = item;
+        DraggedItem    = item;
         SourceIsHotbar = fromHotbar;
-        SourceIndex = sourceIndex;
-        IsDragging = true;
-        WasDropped = false;
+        SourceIndex    = sourceIndex;
+        SourceCount    = sourceCount;
+        IsDragging     = true;
+        WasDropped     = false;
         ghostImage.sprite = icon;
-        ghostImage.color = new Color(1f, 1f, 1f, 0.8f);
+        ghostImage.color  = new Color(1f, 1f, 1f, 0.8f);
         ghostRect.sizeDelta = size;
         ghostImage.gameObject.SetActive(true);
         ghostImage.transform.SetAsLastSibling();

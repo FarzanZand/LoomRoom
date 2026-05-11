@@ -403,9 +403,9 @@ namespace MFPC
 
             if (armsAnimator != null)
             {
-                // Blocking prevents attacks from starting; attacking blocks out blocking until the full routine ends.
-                armsAnimator.SetBool("AttackHeld", primaryActionHeld && !IsBlocking());
-                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !IsAttacking());
+                bool menuOpen = MenuManager.Instance != null && MenuManager.Instance.AnyMenuOpen;
+                armsAnimator.SetBool("AttackHeld", primaryActionHeld && !IsBlocking() && !menuOpen);
+                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !IsAttacking() && !menuOpen);
             }
 
             wasGrounded = grounded;

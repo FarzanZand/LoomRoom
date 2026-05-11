@@ -74,7 +74,7 @@ public class HotbarUI : MonoBehaviour
         for (int i = 0; i < HotbarSystem.SlotCount; i++)
         {
             if (HotbarSystem.Instance.Get(i) != item) continue;
-            HotbarSystem.Instance.Remove(i);
+            HotbarSystem.Instance.Consume(i);
             return;
         }
         // Fallback: was equipped from inventory
@@ -90,7 +90,7 @@ public class HotbarUI : MonoBehaviour
         for (int i = 0; i < slots.Count; i++)
         {
             var item = HotbarSystem.Instance.Get(i);
-            if (item != null) slots[i].SetItem(item);
+            if (item != null) slots[i].SetItem(item, HotbarSystem.Instance.GetCount(i));
             else              slots[i].Clear();
         }
         RefreshHighlights();

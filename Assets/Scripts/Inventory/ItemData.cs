@@ -15,6 +15,9 @@ public class ItemData : ScriptableObject
 
     public bool canBeEquipped = false;
 
+    [BoxGroup("Stacking")]
+    public int maxStackSize = 1;
+
     [BoxGroup("Equipment"), ShowIf("canBeEquipped")]
     public bool equipOnPickup = false;
 

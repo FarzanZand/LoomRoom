@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -14,9 +16,33 @@ public class InventorySlot : MonoBehaviour, IPointerClickHandler, IPointerEnterH
     public int SlotIndex { get; private set; }
     private ItemData item;
 
+    private TextMeshProUGUI stackCountLabel;
+
     void Awake()
     {
         GetComponent<Button>().onClick.AddListener(OnClick);
+        CreateOverlayElements();
+    }
+
+    private void CreateOverlayElements()
+    {
+        // Stack count label (bottom-right corner).
+        var countGo = new GameObject("StackCount");
+        countGo.transform.SetParent(transform, false);
+        var crt = countGo.AddComponent<RectTransform>();
+        crt.anchorMin       = Vector2.zero;
+        crt.anchorMax       = Vector2.one;
+        crt.offsetMin       = Vector2.zero;
+        crt.offsetMax       = new Vector2(-2f, -2f);
+        countGo.AddComponent<CanvasRenderer>();
+        stackCountLabel               = countGo.AddComponent<TextMeshProUGUI>();
+        stackCountLabel.raycastTarget = false;
+        stackCountLabel.fontSize      = 11f;
+        stackCountLabel.alignment   = TextAlignmentOptions.BottomRight;
+        stackCountLabel.color       = Color.white;
+        stackCountLabel.fontStyle   = FontStyles.Bold;
+        countGo.SetActive(false);
+
     }
 
     public void Init(int index)
@@ -25,35 +51,53 @@ public class InventorySlot : MonoBehaviour, IPointerClickHandler, IPointerEnterH
         Clear();
     }
 
-    public void SetItem(ItemData data)
+    public void SetItem(ItemData data, int count = 1)
     {
         item = data;
-        iconImage.sprite = data.icon;
+        iconImage.sprite  = data.icon;
         iconImage.enabled = data.icon != null;
-        background.color = FilledColor;
+        background.color  = FilledColor;
+        RefreshStackLabel(count);
     }
 
     public void Clear()
     {
         item = null;
         iconImage.enabled = false;
-        background.color = EmptyColor;
+        background.color  = EmptyColor;
+        if (stackCountLabel != null) stackCountLabel.gameObject.SetActive(false);
     }
 
-    public void OnPointerClick(PointerEventData eventData)
+    private void RefreshStackLabel(int count)
     {
-        if (item == null) return;
-        if (eventData.button == PointerEventData.InputButton.Right)
-            OnRightClick();
+        if (stackCountLabel == null) return;
+        if (count > 1)
+        {
+            stackCountLabel.text = $"x{count}";
+            stackCountLabel.gameObject.SetActive(true);
+        }
+        else
+        {
+            stackCountLabel.gameObject.SetActive(false);
+        }
     }
 
-    public void OnClick()
+public void OnPointerClick(PointerEventData eventData)
     {
         if (item == null) return;
-        Debug.Log($"[Inventory] Clicked: {item.itemName} | canBeEquipped: {item.canBeEquipped}");
+        if (eventData.button == PointerEventData.InputButton.Left && !eventData.dragging)
+            OnLeftClick();
+        else if (eventData.button == PointerEventData.InputButton.Right)
+            ShowContextMenu();
+    }
+
+    private void OnLeftClick()
+    {
         if (item.canBeEquipped)
             ItemHolder.Instance.HoldItem(item);
     }
+
+    public void OnClick() { } // kept for Button component; logic is in OnPointerClick
 
     public void OnPointerEnter(PointerEventData eventData)
     {
@@ -65,19 +109,63 @@ public class InventorySlot : MonoBehaviour, IPointerClickHandler, IPointerEnterH
         TooltipUI.Instance.Hide();
     }
 
-    void OnRightClick()
+    private void ShowContextMenu()
     {
-        Debug.Log($"[Inventory] Right-clicked: {item.itemName}");
-        if (item.itemType != ItemType.Consumable) return;
-        item.UseEffect();
-        InventorySystem.Instance.Remove(SlotIndex);
+        var options = new List<(string, System.Action)>();
+
+        if (item.canBeEquipped)
+        {
+            bool heldInHand = ItemHolder.Instance.GetHeldItem(item.equipSlot) == item;
+            if (heldInHand)
+            {
+                options.Add(("Unequip", () => ItemHolder.Instance.ClearSlot(item.equipSlot)));
+            }
+            else
+            {
+                int  idx       = SlotIndex;
+                var  equipItem = item;
+                options.Add(("Add to Hotbar", () =>
+                {
+                    if (!HotbarSystem.Instance.TryAdd(equipItem))
+                    {
+                        ContextMenuUI.Instance.ShowNotification("Hotbar Full!");
+                        return;
+                    }
+                    InventorySystem.Instance.Remove(idx);
+                }));
+            }
+        }
+
+        if (item.itemType == ItemType.Consumable)
+        {
+            int idx = SlotIndex;
+            options.Add(("Use", () =>
+            {
+                item.UseEffect();
+                InventorySystem.Instance.Consume(idx);
+            }));
+        }
+
+        if (item.itemType != ItemType.Key)
+        {
+            int idx       = SlotIndex;
+            var droppedItem = item;
+            options.Add(("Drop", () =>
+            {
+                ContextMenuUI.DropItemToWorld(droppedItem);
+                InventorySystem.Instance.Remove(idx);
+            }));
+        }
+
+        ContextMenuUI.Instance.Show(options, Input.mousePosition);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
         if (item == null) return;
-        var size = GetComponent<RectTransform>().rect.size;
-        ItemDragHandler.Instance.BeginDrag(item, false, SlotIndex, item.icon, size);
+        int count = InventorySystem.Instance.GetCount(SlotIndex);
+        var size  = GetComponent<RectTransform>().rect.size;
+        ItemDragHandler.Instance.BeginDrag(item, false, SlotIndex, count, item.icon, size);
     }
 
     public void OnDrag(PointerEventData eventData) { }
@@ -90,36 +178,55 @@ public class InventorySlot : MonoBehaviour, IPointerClickHandler, IPointerEnterH
 
     public void OnDrop(PointerEventData eventData)
     {
-        if (!ItemDragHandler.Instance.IsDragging || !ItemDragHandler.Instance.SourceIsHotbar) return;
+        if (!ItemDragHandler.Instance.IsDragging) return;
 
-        var handler = ItemDragHandler.Instance;
-        var hotbarItem = handler.DraggedItem;
-        int srcHotbarIdx = handler.SourceIndex;
+        var  handler      = ItemDragHandler.Instance;
+        var  draggedItem  = handler.DraggedItem;
+        int  draggedCount = handler.SourceCount;
+        bool fromHotbar   = handler.SourceIsHotbar;
+        int  srcIdx       = handler.SourceIndex;
 
-        var items = InventorySystem.Instance.Items;
-        var existingItem = SlotIndex < items.Count ? items[SlotIndex] : null;
+        var existingItem  = InventorySystem.Instance.Items[SlotIndex];
+        int existingCount = InventorySystem.Instance.GetCount(SlotIndex);
 
-        if (existingItem != null && IsHotbarCompatible(existingItem))
+        if (fromHotbar)
         {
-            // Swap: equippable inventory item goes to hotbar, hotbar item takes its slot
-            InventorySystem.Instance.Insert(SlotIndex, hotbarItem);
-            HotbarSystem.Instance.Set(srcHotbarIdx, existingItem);
-        }
-        else if (existingItem == null)
-        {
-            // Empty slot: place hotbar item directly here
-            InventorySystem.Instance.Insert(SlotIndex, hotbarItem);
-            HotbarSystem.Instance.Remove(srcHotbarIdx);
+            // ── Hotbar → Inventory ──────────────────────────────────────────
+            if (existingItem != null && existingItem.canBeEquipped)
+            {
+                // Swap: equippable inv item goes back to hotbar slot.
+                InventorySystem.Instance.Insert(SlotIndex, draggedItem, draggedCount);
+                HotbarSystem.Instance.Set(srcIdx, existingItem, existingCount);
+            }
+            else if (existingItem == null)
+            {
+                InventorySystem.Instance.Insert(SlotIndex, draggedItem, draggedCount);
+                HotbarSystem.Instance.Remove(srcIdx);
+            }
+            else
+            {
+                return; // non-equippable item in slot — refuse
+            }
         }
         else
         {
-            // Slot occupied by non-equippable item — refuse the drop
-            return;
+            // ── Inventory → Inventory ────────────────────────────────────────
+            if (srcIdx == SlotIndex) { handler.NotifyDropped(); handler.EndDrag(); return; }
+
+            if (existingItem == null)
+            {
+                InventorySystem.Instance.Insert(SlotIndex, draggedItem, draggedCount);
+                InventorySystem.Instance.Remove(srcIdx);
+            }
+            else
+            {
+                // Swap the two slots.
+                InventorySystem.Instance.Insert(SlotIndex, draggedItem, draggedCount);
+                InventorySystem.Instance.Insert(srcIdx,    existingItem, existingCount);
+            }
         }
 
         handler.NotifyDropped();
         handler.EndDrag();
     }
-
-    private static bool IsHotbarCompatible(ItemData data) => data.canBeEquipped;
 }
