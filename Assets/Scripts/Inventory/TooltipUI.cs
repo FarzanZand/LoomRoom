@@ -5,6 +5,7 @@ public class TooltipUI : Singleton<TooltipUI>
 {
     [SerializeField] private GameObject panel;
     [SerializeField] private TextMeshProUGUI nameText;
+    [SerializeField] private TextMeshProUGUI typeText;
     [SerializeField] private TextMeshProUGUI descriptionText;
 
     private RectTransform rect;
@@ -25,6 +26,7 @@ public class TooltipUI : Singleton<TooltipUI>
     public void Show(ItemData item)
     {
         nameText.text        = item.itemName;
+        if (typeText != null) typeText.text = item.itemType.ToString();
         descriptionText.text = item.description;
         panel.SetActive(true);
         FollowMouse();
