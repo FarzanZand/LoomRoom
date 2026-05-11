@@ -2,7 +2,7 @@ using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-public enum ItemType { Generic, Weapon, Tool, Consumable, Key }
+public enum ItemType { Generic, Weapon, Shield, Tool, Consumable, Key }
 
 [CreateAssetMenu(fileName = "NewItem", menuName = "Inventory/Item")]
 public class ItemData : ScriptableObject

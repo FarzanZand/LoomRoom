@@ -270,6 +270,17 @@ namespace MFPC
                 steepSlopeSlideModule = GetComponent<SteepSlopeSlideModule>();
 
             inputActions = new PlayerInputActions();
+            if (ItemHolder.Instance != null)
+                ItemHolder.Instance.OnHeldItemChanged += OnHeldItemChanged;
+        }
+
+        private void OnHeldItemChanged()
+        {
+            if (armsAnimator == null) return;
+            bool shieldEquipped = ItemHolder.Instance != null &&
+                                  ItemHolder.Instance.GetHeldItem(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
+            if (!shieldEquipped)
+                armsAnimator.SetBool("BlockHeld", false);
         }
 
         #region Input Hook
@@ -330,6 +341,8 @@ namespace MFPC
         private void OnDisable()
         {
             inputActions.Disable();
+            if (ItemHolder.Instance != null)
+                ItemHolder.Instance.OnHeldItemChanged -= OnHeldItemChanged;
         }
         #endregion
 
@@ -403,9 +416,11 @@ namespace MFPC
 
             if (armsAnimator != null)
             {
-                bool menuOpen = MenuManager.Instance != null && MenuManager.Instance.AnyMenuOpen;
-                armsAnimator.SetBool("AttackHeld", primaryActionHeld && !IsBlocking() && !menuOpen);
-                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !IsAttacking() && !menuOpen);
+                bool menuOpen      = MenuManager.Instance != null && MenuManager.Instance.AnyMenuOpen;
+                bool shieldEquipped = ItemHolder.Instance != null &&
+                                      ItemHolder.Instance.GetHeldItem(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
+                armsAnimator.SetBool("AttackHeld", primaryActionHeld  && !IsBlocking()  && !menuOpen);
+                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !IsAttacking() && !menuOpen && shieldEquipped);
             }
 
             wasGrounded = grounded;

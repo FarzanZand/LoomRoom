@@ -13,6 +13,7 @@ public class WorldItem : MonoBehaviour, IInteractable
         if (itemData == null) return;
 
         bool hotbarCandidate = itemData.itemType == ItemType.Weapon
+                            || itemData.itemType == ItemType.Shield
                             || itemData.itemType == ItemType.Tool
                             || itemData.itemType == ItemType.Consumable;
 
