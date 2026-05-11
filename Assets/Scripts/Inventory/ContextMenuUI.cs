@@ -121,7 +121,11 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
             btn.onClick.AddListener(() => { captured(); Hide(); });
         }
 
-        // Position panel at cursor, nudging it inside canvas bounds.
+        // Flip pivot so the menu always opens toward the center of the screen.
+        float pivotX = screenPos.x < Screen.width  * 0.5f ? 0f : 1f;
+        float pivotY = screenPos.y < Screen.height * 0.5f ? 0f : 1f;
+        panelRect.pivot = new Vector2(pivotX, pivotY);
+
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             rootCanvas.GetComponent<RectTransform>(),
             screenPos,
@@ -179,6 +183,25 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
         var pos = playerGo.transform.position
                 + playerGo.transform.forward * 1.5f
                 + Vector3.up * 0.5f;
-        Instantiate(item.worldPrefab, pos, playerGo.transform.rotation);
+        var go = Instantiate(item.worldPrefab, pos, Quaternion.identity);
+
+        // Ensure the dropped object has WorldItem so it can be picked up.
+        var worldItem = go.GetComponent<WorldItem>();
+        if (worldItem == null) worldItem = go.AddComponent<WorldItem>();
+        worldItem.Init(item);
+
+        // Add physics.
+        if (go.GetComponent<Rigidbody>() == null)
+            go.AddComponent<Rigidbody>();
+
+        // Add a sphere trigger for the InteractableTrigger before adding the trigger itself,
+        // so [RequireComponent(typeof(Collider))] is already satisfied.
+        if (go.GetComponent<InteractableTrigger>() == null)
+        {
+            var col = go.AddComponent<SphereCollider>();
+            col.radius    = 0.6f;
+            col.isTrigger = true;
+            go.AddComponent<InteractableTrigger>();
+        }
     }
 }

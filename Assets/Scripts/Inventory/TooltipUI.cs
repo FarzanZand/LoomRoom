@@ -37,6 +37,11 @@ public class TooltipUI : Singleton<TooltipUI>
 
     void FollowMouse()
     {
-        rect.position = Input.mousePosition + new Vector3(16f, -16f, 0f);
+        float pivotX = Input.mousePosition.x < Screen.width  * 0.5f ? 0f : 1f;
+        float pivotY = Input.mousePosition.y < Screen.height * 0.5f ? 0f : 1f;
+        rect.pivot = new Vector2(pivotX, pivotY);
+        float ox = pivotX == 0f ?  16f : -16f;
+        float oy = pivotY == 0f ?  16f : -16f;
+        rect.position = Input.mousePosition + new Vector3(ox, oy, 0f);
     }
 }

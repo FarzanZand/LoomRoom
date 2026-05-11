@@ -4,6 +4,8 @@ public class WorldItem : MonoBehaviour, IInteractable
 {
     [SerializeField] private ItemData itemData;
 
+    public void Init(ItemData data) => itemData = data;
+
     public string PromptMessage => itemData != null ? $"Pick up {itemData.itemName}" : "Pick up";
 
     public void Interact(GameObject interactor)
@@ -25,6 +27,6 @@ public class WorldItem : MonoBehaviour, IInteractable
 
         if (itemData.equipOnPickup && ItemHolder.Instance.GetHeldItem(itemData.equipSlot) == null)
             ItemHolder.Instance.HoldItem(itemData);
-        Destroy(transform.parent.gameObject);
+        Destroy(transform.parent != null ? transform.parent.gameObject : gameObject);
     }
 }
