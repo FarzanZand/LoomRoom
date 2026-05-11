@@ -190,10 +190,6 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
         if (worldItem == null) worldItem = go.AddComponent<WorldItem>();
         worldItem.Init(item);
 
-        // Add physics.
-        if (go.GetComponent<Rigidbody>() == null)
-            go.AddComponent<Rigidbody>();
-
         // Add a sphere trigger for the InteractableTrigger before adding the trigger itself,
         // so [RequireComponent(typeof(Collider))] is already satisfied.
         if (go.GetComponent<InteractableTrigger>() == null)
