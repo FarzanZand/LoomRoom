@@ -97,20 +97,24 @@ public class InventorySlot : MonoBehaviour, IPointerClickHandler, IPointerEnterH
         int srcHotbarIdx = handler.SourceIndex;
 
         var items = InventorySystem.Instance.Items;
-        bool hasCompatibleSwap = SlotIndex < items.Count && IsHotbarCompatible(items[SlotIndex]);
+        var existingItem = SlotIndex < items.Count ? items[SlotIndex] : null;
 
-        if (hasCompatibleSwap)
+        if (existingItem != null && IsHotbarCompatible(existingItem))
         {
-            var invItem = items[SlotIndex];
-            InventorySystem.Instance.Remove(SlotIndex);
+            // Swap: equippable inventory item goes to hotbar, hotbar item takes its slot
             InventorySystem.Instance.Insert(SlotIndex, hotbarItem);
-            HotbarSystem.Instance.Set(srcHotbarIdx, invItem);
+            HotbarSystem.Instance.Set(srcHotbarIdx, existingItem);
+        }
+        else if (existingItem == null)
+        {
+            // Empty slot: place hotbar item directly here
+            InventorySystem.Instance.Insert(SlotIndex, hotbarItem);
+            HotbarSystem.Instance.Remove(srcHotbarIdx);
         }
         else
         {
-            if (InventorySystem.Instance.IsFull) return;
-            InventorySystem.Instance.TryAdd(hotbarItem);
-            HotbarSystem.Instance.Remove(srcHotbarIdx);
+            // Slot occupied by non-equippable item — refuse the drop
+            return;
         }
 
         handler.NotifyDropped();

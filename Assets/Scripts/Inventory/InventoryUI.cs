@@ -59,8 +59,8 @@ public class InventoryUI : MonoBehaviour
         var items = InventorySystem.Instance.Items;
         for (int i = 0; i < slots.Count; i++)
         {
-            if (i < items.Count) slots[i].SetItem(items[i]);
-            else                 slots[i].Clear();
+            if (i < items.Count && items[i] != null) slots[i].SetItem(items[i]);
+            else                                     slots[i].Clear();
         }
     }
 }

@@ -81,7 +81,7 @@ public class HotbarUI : MonoBehaviour
         var invItems = InventorySystem.Instance.Items;
         for (int i = 0; i < invItems.Count; i++)
         {
-            if (invItems[i] == item) { InventorySystem.Instance.Remove(i); return; }
+            if (invItems[i] != null && invItems[i] == item) { InventorySystem.Instance.Remove(i); return; }
         }
     }
 

@@ -482,7 +482,7 @@ MonoBehaviour:
   tablePlayer: {fileID: 1198239206}
   tablePlayerBody: {fileID: 0}
   tablePlayerTorso: {fileID: 42793436}
-  startingPlayer: 1
+  startingPlayer: 0
 --- !u!1001 &80710044
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -19093,7 +19093,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorldManager
   WakeUpDirector: {fileID: 178767175}
   startPositionRoom: {fileID: 777283952}
-  skipWakeUp: 1
+  skipWakeUp: 0
 --- !u!1 &2004968051
 GameObject:
   m_ObjectHideFlags: 0

@@ -94,6 +94,8 @@ public class HotbarSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void OnBeginDrag(PointerEventData eventData)
     {
         if (item == null) return;
+        if (item.canBeEquipped && ItemHolder.Instance.GetHeldItem(item.equipSlot) == item)
+            ItemHolder.Instance.ClearSlot(item.equipSlot);
         var size = GetComponent<RectTransform>().rect.size;
         ItemDragHandler.Instance.BeginDrag(item, true, SlotIndex, item.icon, size);
     }
