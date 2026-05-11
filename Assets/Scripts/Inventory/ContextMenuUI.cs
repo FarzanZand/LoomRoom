@@ -174,7 +174,7 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
     // Spawns the item's world prefab in front of the active player.
     public static void DropItemToWorld(ItemData item)
     {
-        if (item?.worldPrefab == null) return;
+        if (item == null) return;
         var pm = PlayerManager.Instance;
         if (pm == null) return;
         var playerGo = pm.CurrentPlayer == PlayerManager.ActivePlayer.TablePlayer
@@ -183,21 +183,6 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
         var pos = playerGo.transform.position
                 + playerGo.transform.forward * 1.5f
                 + Vector3.up * 0.5f;
-        var go = Instantiate(item.worldPrefab, pos, Quaternion.identity);
-
-        // Ensure the dropped object has WorldItem so it can be picked up.
-        var worldItem = go.GetComponent<WorldItem>();
-        if (worldItem == null) worldItem = go.AddComponent<WorldItem>();
-        worldItem.Init(item);
-
-        // Add a sphere trigger for the InteractableTrigger before adding the trigger itself,
-        // so [RequireComponent(typeof(Collider))] is already satisfied.
-        if (go.GetComponent<InteractableTrigger>() == null)
-        {
-            var col = go.AddComponent<SphereCollider>();
-            col.radius    = 0.6f;
-            col.isTrigger = true;
-            go.AddComponent<InteractableTrigger>();
-        }
+        WorldItemSpawner.Spawn(item, pos);
     }
 }

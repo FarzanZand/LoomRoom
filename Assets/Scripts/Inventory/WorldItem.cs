@@ -3,10 +3,34 @@ using UnityEngine;
 public class WorldItem : MonoBehaviour, IInteractable
 {
     [SerializeField] private ItemData itemData;
+    [SerializeField] private bool worldPrefabFromData = false;
 
-    public void Init(ItemData data) => itemData = data;
+    private bool _visualSpawned;
 
     public string PromptMessage => itemData != null ? $"Pick up {itemData.itemName}" : "Pick up";
+
+    private void Start()
+    {
+        if (worldPrefabFromData && !_visualSpawned)
+            SpawnVisual();
+    }
+
+    // Called by WorldItemSpawner at runtime — sets itemData and immediately spawns the visual.
+    public void Init(ItemData data)
+    {
+        itemData = data;
+        SpawnVisual();
+    }
+
+    private void SpawnVisual()
+    {
+        if (_visualSpawned || itemData?.worldPrefab == null) return;
+        _visualSpawned = true;
+        var visual = Instantiate(itemData.worldPrefab, transform);
+        visual.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+        foreach (var mc in visual.GetComponentsInChildren<MeshCollider>())
+            mc.convex = true;
+    }
 
     public void Interact(GameObject interactor)
     {

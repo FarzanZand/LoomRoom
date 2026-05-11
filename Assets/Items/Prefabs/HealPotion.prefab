@@ -50,12 +50,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1330799697983367974, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
       propertyPath: m_Name
-      value: Mace
+      value: Sword 1
       objectReference: {fileID: 0}
     - target: {fileID: 4992370184658981487, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
       propertyPath: itemData
       value: 
-      objectReference: {fileID: 11400000, guid: adf18e3964f4bec4e8358337d7806458, type: 2}
+      objectReference: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
     - target: {fileID: 4992370184658981487, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
       propertyPath: worldPrefabFromData
       value: 1
