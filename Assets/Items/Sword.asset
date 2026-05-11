@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Sword
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Sword
-  description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
+  description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j Test Description
+    asdasdj adj asjd ajd asjdjasd jasd aj aj j Test Description asdasdj adj asjd
+    ajd asjdjasd jasd aj aj j Test Description asdasdj adj asjd ajd asjdjasd jasd
+    aj aj jTest Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
   icon: {fileID: 21300000, guid: 7d3cecaf9cb7e9e45b2f7dea63ddf503, type: 3}
   worldPrefab: {fileID: 1564280927108058, guid: f31ae95d248e8854bb5499cf38303350, type: 3}
   itemType: 1

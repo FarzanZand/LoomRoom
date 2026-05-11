@@ -26,7 +26,8 @@
       "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Characters\\\\FPC\\\\Prefabs\" | ForEach-Object { $_.Name })",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Characters\\\\FPC\\\\Prefabs\\\\NewInputSystem\" | ForEach-Object { $_.Name })",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Characters\\\\TablePlayer\" | ForEach-Object { $_.Name })",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(python *)"
     ]
   }
 }
