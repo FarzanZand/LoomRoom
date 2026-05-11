@@ -9,6 +9,7 @@ public class ItemHolder : Singleton<ItemHolder>
     [SerializeField] private Transform roomPlayerLeftHand;
     [SerializeField] private Transform tablePlayerRightHand;
     [SerializeField] private Transform tablePlayerLeftHand;
+    [SerializeField] private Animator tablePlayerArmsAnimator;
 
     public event System.Action OnHeldItemChanged;
 
@@ -25,6 +26,24 @@ public class ItemHolder : Singleton<ItemHolder>
             EquipmentSlot.LeftHand => table ? tablePlayerLeftHand : roomPlayerLeftHand,
             _                      => table ? tablePlayerRightHand : roomPlayerRightHand,
         };
+    }
+
+    private void Start()
+    {
+        PlayerManager.Instance.OnPlayerSwapped += OnPlayerSwapped;
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        if (PlayerManager.Instance != null)
+            PlayerManager.Instance.OnPlayerSwapped -= OnPlayerSwapped;
+    }
+
+    private void OnPlayerSwapped(PlayerManager.ActivePlayer _)
+    {
+        foreach (var slot in new List<EquipmentSlot>(heldItems.Keys))
+            NotifyAnimator(slot, true);
     }
 
     public ItemData GetHeldItem(EquipmentSlot slot) =>
@@ -61,13 +80,24 @@ public class ItemHolder : Singleton<ItemHolder>
 
     private void NotifyAnimator(EquipmentSlot slot, bool equipped)
     {
-        var pc = PlayerController.instance;
-        if (pc == null) return;
-
-        switch (slot)
+        if (IsTablePlayer)
         {
-            case EquipmentSlot.RightHand: pc.SetRightHandEquipped(equipped); break;
-            case EquipmentSlot.LeftHand:  pc.SetLeftHandEquipped(equipped);  break;
+            if (tablePlayerArmsAnimator == null) return;
+            switch (slot)
+            {
+                case EquipmentSlot.RightHand: tablePlayerArmsAnimator.SetBool("RightHandEquipped", equipped); break;
+                case EquipmentSlot.LeftHand:  tablePlayerArmsAnimator.SetBool("LeftHandEquipped",  equipped); break;
+            }
+        }
+        else
+        {
+            var pc = PlayerController.instance;
+            if (pc == null) return;
+            switch (slot)
+            {
+                case EquipmentSlot.RightHand: pc.SetRightHandEquipped(equipped); break;
+                case EquipmentSlot.LeftHand:  pc.SetLeftHandEquipped(equipped);  break;
+            }
         }
     }
 
