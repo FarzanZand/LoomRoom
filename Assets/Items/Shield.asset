@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Shield
   description: 'Shield test for left hand. '
-  icon: {fileID: 21300000, guid: 738a30cc0b59b154b81d0dd9a11423ba, type: 3}
+  icon: {fileID: 21300000, guid: 792f20870d8be5143bbfeae5a6826986, type: 3}
   worldPrefab: {fileID: 1213316036247922, guid: 691193207fb498347995d8573572685a, type: 3}
   itemType: 2
   canBeEquipped: 1
@@ -24,3 +24,5 @@ MonoBehaviour:
   itemEffect: 0
   effectValue: 0
   customEffect: {fileID: 0}
+  consumeAudio: {fileID: 0}
+  consumeAudioVolume: 0

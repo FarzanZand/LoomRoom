@@ -14,12 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: 'asdafga '
   description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
-  icon: {fileID: 21300000, guid: 2974a63dca34fad46b5178afe0bae5c1, type: 3}
+  icon: {fileID: 21300000, guid: d4ef04d116a6d79449188d927fb8cc6d, type: 3}
   worldPrefab: {fileID: 1808823706470762, guid: 7c2b4de056174ed499e0881bf2d69242, type: 3}
   itemType: 1
   canBeEquipped: 1
+  maxStackSize: 1
   equipOnPickup: 0
   equipSlot: 0
   itemEffect: 0
   effectValue: 0
   customEffect: {fileID: 0}
+  consumeAudio: {fileID: 0}
+  consumeAudioVolume: 0

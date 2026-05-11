@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: healPotion
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: HealPotion
-  description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
-  icon: {fileID: 21300000, guid: deeae33315027e045bf104c3f198179d, type: 3}
+  description: 'Heal for 5 health on use. '
+  icon: {fileID: 21300000, guid: 48d9b4085f8410e49927b68655616e34, type: 3}
   worldPrefab: {fileID: 1681972012984452, guid: 8e6fb74f22edd2d48b88c4386ae61758, type: 3}
   itemType: 4
   canBeEquipped: 1
