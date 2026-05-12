@@ -220,9 +220,14 @@ namespace MFPC
         public bool IsLeftLeaning => leanLeftPressed;
         public bool IsRightLeaning => leanRightPressed;
         public Animator bodyAnimator;
+        public Animator armsAnimator;
         public bool IsAiming { get; protected set; }
 
         protected bool wasGrounded;
+        private bool primaryActionHeld;
+        private bool secondaryActionHeld;
+        public bool RightHandEquipped { get; private set; }
+        public bool LeftHandEquipped { get; private set; }
 
         // Validation safety
         void OnValidate()
@@ -244,6 +249,8 @@ namespace MFPC
                 steepSlopeSlideModule = GetComponent<SteepSlopeSlideModule>();
 
             inputActions = new PlayerInputActions();
+            if (ItemHolder.Instance != null)
+                ItemHolder.Instance.OnHeldItemChanged += OnHeldItemChanged;
         }
 
         #region Input Hook
@@ -291,11 +298,18 @@ namespace MFPC
 
             inputActions.Player.LeanRight.performed += _ => leanRightPressed = true;
             inputActions.Player.LeanRight.canceled += _ => leanRightPressed = false;
+
+            inputActions.Player.PrimaryAction.performed += _ => primaryActionHeld = true;
+            inputActions.Player.PrimaryAction.canceled  += _ => primaryActionHeld = false;
+            inputActions.Player.SecondaryAction.performed += _ => secondaryActionHeld = true;
+            inputActions.Player.SecondaryAction.canceled  += _ => secondaryActionHeld = false;
         }
 
         protected virtual void OnDisable()
         {
             inputActions.Disable();
+            if (ItemHolder.Instance != null)
+                ItemHolder.Instance.OnHeldItemChanged -= OnHeldItemChanged;
         }
         #endregion
 
@@ -347,8 +361,57 @@ namespace MFPC
             bool freeFall = !grounded && Controller.velocity.y < -1f;
 
             ApplyAnimatorParams(bodyAnimator, horizontalSpeed, grounded, jump, freeFall);
+            ApplyAnimatorParams(armsAnimator, horizontalSpeed, grounded, jump, freeFall);
+
+            if (armsAnimator != null)
+            {
+                bool shieldEquipped = ItemHolder.Instance != null &&
+                                      ItemHolder.Instance.GetHeldItem(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
+                armsAnimator.SetBool("AttackHeld", primaryActionHeld  && !IsBlocking());
+                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !IsAttacking() && shieldEquipped);
+            }
 
             wasGrounded = grounded;
+        }
+
+        private void OnHeldItemChanged()
+        {
+            if (armsAnimator == null) return;
+            bool shieldEquipped = ItemHolder.Instance != null &&
+                                  ItemHolder.Instance.GetHeldItem(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
+            if (!shieldEquipped)
+                armsAnimator.SetBool("BlockHeld", false);
+        }
+
+        public void SetRightHandEquipped(bool equipped)
+        {
+            RightHandEquipped = equipped;
+            if (armsAnimator != null)
+                armsAnimator.SetBool("RightHandEquipped", equipped);
+        }
+
+        public void SetLeftHandEquipped(bool equipped)
+        {
+            LeftHandEquipped = equipped;
+            if (armsAnimator != null)
+                armsAnimator.SetBool("LeftHandEquipped", equipped);
+        }
+
+        protected bool IsAttacking()
+        {
+            if (armsAnimator == null) return false;
+            var cur  = armsAnimator.GetCurrentAnimatorStateInfo(1);
+            var next = armsAnimator.GetNextAnimatorStateInfo(1);
+            return cur.IsName("Attack_Windup")  || cur.IsName("Attack_Hold")  || cur.IsName("Attack_Release")
+                || next.IsName("Attack_Windup") || next.IsName("Attack_Hold") || next.IsName("Attack_Release");
+        }
+
+        protected bool IsBlocking()
+        {
+            if (armsAnimator == null) return false;
+            var cur  = armsAnimator.GetCurrentAnimatorStateInfo(2);
+            var next = armsAnimator.GetNextAnimatorStateInfo(2);
+            return cur.IsName("Block") || next.IsName("Block");
         }
 
         protected void ApplyAnimatorParams(Animator anim, float speed, bool grounded, bool jump, bool freeFall)

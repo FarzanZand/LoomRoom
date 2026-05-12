@@ -27,7 +27,8 @@
       "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Characters\\\\FPC\\\\Prefabs\\\\NewInputSystem\" | ForEach-Object { $_.Name })",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Characters\\\\TablePlayer\" | ForEach-Object { $_.Name })",
       "Bash(python3 *)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "mcp__UnityMCP__execute_menu_item"
     ]
   }
 }

@@ -25,6 +25,12 @@ public class ItemData : ScriptableObject
     [BoxGroup("Equipment"), ShowIf("canBeEquipped")]
     public EquipmentSlot equipSlot = EquipmentSlot.RightHand;
 
+    [BoxGroup("Equipment"), ShowIf("IsWeapon")]
+    public float attackRange = 0.8f;
+
+    [BoxGroup("Equipment"), ShowIf("IsWeapon")]
+    public float attackDamage = 10f;
+
     [BoxGroup("Consumable"), ShowIf("IsConsumable")]
     public ItemEffect itemEffect;
 
@@ -37,6 +43,7 @@ public class ItemData : ScriptableObject
     [ShowIf("IsConsumable")] public float consumeAudioVolume;
 
     private bool IsConsumable => itemType == ItemType.Consumable;
+    private bool IsWeapon => itemType == ItemType.Weapon;
     private bool ShowEffectValue => IsConsumable && itemEffect != ItemEffect.Custom;
     private bool ShowCustomEffect => IsConsumable && itemEffect == ItemEffect.Custom;
 

@@ -11504,6 +11504,19 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4351043326561860, guid: d5a148a3575c47145a45da3ec571473c, type: 3}
   m_PrefabInstance: {fileID: 1666855612}
   m_PrefabAsset: {fileID: 0}
+--- !u!134 &1241584530
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 2
+  m_DynamicFriction: 0.6
+  m_StaticFriction: 0.6
+  m_Bounciness: 0
+  m_FrictionCombine: 0
+  m_BounceCombine: 0
 --- !u!1 &1244191029
 GameObject:
   m_ObjectHideFlags: 0
@@ -14246,6 +14259,46 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3174923170551661957, guid: defb4cdc6208f004795f0160e8fb04ed, type: 3}
   m_PrefabInstance: {fileID: 1517794467}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1518788944 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3150046150320169983, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
+  m_PrefabInstance: {fileID: 1805652957136550333}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1518788945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1518788944}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63a48c00600a16a4eabbf662431feedd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponHitbox
+--- !u!136 &1518788946
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1518788944}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.16
+  m_Height: 1
+  m_Direction: 1
+  m_Center: {x: 0, y: 0.66, z: 0}
 --- !u!1 &1526185955
 GameObject:
   m_ObjectHideFlags: 0
@@ -17282,6 +17335,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1766135516}
   m_CullTransparentMesh: 1
+--- !u!134 &1771190379
+PhysicsMaterial:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 2
+  m_DynamicFriction: 0.6
+  m_StaticFriction: 0.6
+  m_Bounciness: 0
+  m_FrictionCombine: 0
+  m_BounceCombine: 0
 --- !u!1 &1773717651
 GameObject:
   m_ObjectHideFlags: 0
@@ -18063,6 +18129,24 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: eccddf70dbb7cd243a2f37f4aa5c95d6, type: 3}
+--- !u!1 &1907813595 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3749213704968765698, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
+  m_PrefabInstance: {fileID: 1805652957136550333}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1907813597
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1907813595}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6b6c2e095386ad408ce1ab8a00ae127, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AttackAnimationEvents
+  hitbox: {fileID: 1518788945}
 --- !u!1001 &1912783529
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21203,7 +21287,7 @@ CharacterController:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9157879387982323601}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 1241584530}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -22686,7 +22770,16 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6006852368936047061, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
       insertIndex: -1
       addedObject: {fileID: 500935701}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3749213704968765698, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1907813597}
+    - targetCorrespondingSourceObject: {fileID: 3150046150320169983, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1518788946}
+    - targetCorrespondingSourceObject: {fileID: 3150046150320169983, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1518788945}
   m_SourcePrefab: {fileID: 100100000, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
 --- !u!4 &1805697664556994970
 Transform:
@@ -24602,85 +24695,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3055793786021889115}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3971290365413274560
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9157879387982323601}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 424b0097becb6da42a6560958dff555b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: 0628517a7764eed4e8c2853f2f26fb20, type: 2}
-  lockCursorOnStart: 1
-  walkSpeed: 24
-  sprintSpeed: 36
-  crouchSpeed: 1
-  jumpForce: 12
-  gravityMultiplier: 2.5
-  landShakingImpulseSource: {fileID: 3571200862280924365}
-  landBumpingImpulseSource: {fileID: 1080880494855891321}
-  jumpShakingImpulseSource: {fileID: 566065026888756861}
-  viewPoint: {fileID: 6790249840332211056}
-  verticalNeck: {fileID: 2972315796255051005}
-  lateralTorso: {fileID: 3939317878672929250}
-  lateralSmoothTime: 5
-  lateralReturnTime: 7
-  leanAmount: 30
-  mouseSmoothing: 20
-  normalCameraHeight: 1
-  crouchCameraHeight: 0.1
-  crouchingCameraSmoothTime: 5
-  normalCharConHeight: 1.8
-  crouchCharConHeight: 1.2
-  crouchingCharConSmoothTime: 2.75
-  uncrouchBlockLayers:
-    serializedVersion: 2
-    m_Bits: 1
-  feetTransform: {fileID: 4060989535961147947}
-  footstepVolume: 0.5
-  crouchFootstepVolume: 0.25
-  jumpStartSounds:
-  - {fileID: 8300000, guid: 20aba752ed74ae74d9b2996e8b98648a, type: 3}
-  - {fileID: 8300000, guid: f5941d5fe22e31047a421265f0d583c1, type: 3}
-  - {fileID: 8300000, guid: b6ad8533484d58442b6965c71d3da2cc, type: 3}
-  - {fileID: 8300000, guid: df1d04c020543db44bab5ce83a87908e, type: 3}
-  - {fileID: 8300000, guid: 0b391562553b6f0468bd06c57e9e7d20, type: 3}
-  jumpingTimeThreshold: 0.3
-  walkInterval: 0.6
-  sprintInterval: 0.4
-  crouchInterval: 0.7
-  velocityThreshold: 0.1
-  crouchVolumeReduction: 0.5
-  swimmingIntervalFactor: 2
-  audioPool: {fileID: 2004082071027158771}
-  effects:
-  - {fileID: 11400000, guid: e52fc476a96a64347b1994b9edd30de2, type: 2}
-  - {fileID: 11400000, guid: 99b10437d3809c04488069d0d24fff74, type: 2}
-  - {fileID: 11400000, guid: 6c21a8dfcd560204ba5cbba9051c99e7, type: 2}
-  - {fileID: 11400000, guid: e29aec3e866d3834ea7957471f6646ae, type: 2}
-  - {fileID: 11400000, guid: c9f998307b4ae7f45a392f2bd4a735b3, type: 2}
-  - {fileID: 11400000, guid: da8b0d7d295c4684d94db2f8fa5b3afe, type: 2}
-  - {fileID: 11400000, guid: 11b2d4e808a9e204eb5cef8e80f568df, type: 2}
-  - {fileID: 11400000, guid: 65cc06fb6c4ac5d41befc214e044bf08, type: 2}
-  - {fileID: 11400000, guid: 0334afb7368aee74bb3901a2f4126c4c, type: 2}
-  genericEffect: {fileID: 11400000, guid: 63745dffb1aa68f488da13f9a35cdf28, type: 2}
-  waterEffect: {fileID: 11400000, guid: 6e69107bacefd8e4a96ccb4ff6200128, type: 2}
-  minClamp: -70
-  maxClamp: 70
-  jumpMaxThresholdTime: 1
-  jumpImpulseIntensity: 1
-  minImpulse: 0.3
-  OnJumpStart:
-    m_PersistentCalls:
-      m_Calls: []
-  slopeHandler: {fileID: 0}
-  staminaModule: {fileID: 0}
-  steepSlopeSlideModule: {fileID: 0}
-  bodyAnimator: {fileID: 1008701898}
 --- !u!114 &3981597203385538729
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26997,7 +27011,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9157879387982323601}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 1771190379}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -28511,12 +28525,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8573523020906303164}
-  - component: {fileID: 3971290365413274560}
   - component: {fileID: 7062605360677943131}
   - component: {fileID: 752777997746664394}
   - component: {fileID: 7194826167468589222}
   - component: {fileID: 3560161686980372379}
   - component: {fileID: 8489541660660686881}
+  - component: {fileID: 9157879387982323602}
   m_Layer: 7
   m_Name: RoomPlayer
   m_TagString: Player
@@ -28524,6 +28538,100 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &9157879387982323602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9157879387982323601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78530165605b0484a8e56bd99d864b43, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MFPC.PlayerControllerRoom
+  gameData: {fileID: 11400000, guid: 0628517a7764eed4e8c2853f2f26fb20, type: 2}
+  lockCursorOnStart: 1
+  walkSpeed: 24
+  sprintSpeed: 36
+  crouchSpeed: 1
+  jumpForce: 12
+  gravityMultiplier: 2.5
+  landShakingImpulseSource: {fileID: 3571200862280924365}
+  landBumpingImpulseSource: {fileID: 1080880494855891321}
+  jumpShakingImpulseSource: {fileID: 566065026888756861}
+  viewPoint: {fileID: 6790249840332211056}
+  verticalNeck: {fileID: 2972315796255051005}
+  lateralTorso: {fileID: 3939317878672929250}
+  lateralSmoothTime: 5
+  lateralReturnTime: 7
+  leanAmount: 30
+  mouseSmoothing: 20
+  normalCameraHeight: 1
+  crouchCameraHeight: 0.1
+  crouchingCameraSmoothTime: 5
+  normalCharConHeight: 1.8
+  crouchCharConHeight: 1.2
+  crouchingCharConSmoothTime: 2.75
+  uncrouchBlockLayers:
+    serializedVersion: 2
+    m_Bits: 1
+  feetTransform: {fileID: 4060989535961147947}
+  footstepVolume: 0.5
+  crouchFootstepVolume: 0.25
+  jumpStartSounds:
+  - {fileID: 8300000, guid: 20aba752ed74ae74d9b2996e8b98648a, type: 3}
+  - {fileID: 8300000, guid: f5941d5fe22e31047a421265f0d583c1, type: 3}
+  - {fileID: 8300000, guid: b6ad8533484d58442b6965c71d3da2cc, type: 3}
+  - {fileID: 8300000, guid: df1d04c020543db44bab5ce83a87908e, type: 3}
+  - {fileID: 8300000, guid: 0b391562553b6f0468bd06c57e9e7d20, type: 3}
+  jumpingTimeThreshold: 0.3
+  walkInterval: 0.6
+  sprintInterval: 0.4
+  crouchInterval: 0.7
+  velocityThreshold: 0.1
+  crouchVolumeReduction: 0.5
+  swimmingIntervalFactor: 2
+  audioPool: {fileID: 2004082071027158771}
+  effects:
+  - {fileID: 11400000, guid: e52fc476a96a64347b1994b9edd30de2, type: 2}
+  - {fileID: 11400000, guid: 99b10437d3809c04488069d0d24fff74, type: 2}
+  - {fileID: 11400000, guid: 6c21a8dfcd560204ba5cbba9051c99e7, type: 2}
+  - {fileID: 11400000, guid: e29aec3e866d3834ea7957471f6646ae, type: 2}
+  - {fileID: 11400000, guid: c9f998307b4ae7f45a392f2bd4a735b3, type: 2}
+  - {fileID: 11400000, guid: da8b0d7d295c4684d94db2f8fa5b3afe, type: 2}
+  - {fileID: 11400000, guid: 11b2d4e808a9e204eb5cef8e80f568df, type: 2}
+  - {fileID: 11400000, guid: 65cc06fb6c4ac5d41befc214e044bf08, type: 2}
+  - {fileID: 11400000, guid: 0334afb7368aee74bb3901a2f4126c4c, type: 2}
+  genericEffect: {fileID: 11400000, guid: 63745dffb1aa68f488da13f9a35cdf28, type: 2}
+  waterEffect: {fileID: 11400000, guid: 6e69107bacefd8e4a96ccb4ff6200128, type: 2}
+  minClamp: -70
+  maxClamp: 70
+  jumpMaxThresholdTime: 1
+  jumpImpulseIntensity: 1
+  minImpulse: 0.3
+  OnJumpStart:
+    m_PersistentCalls:
+      m_Calls: []
+  slopeHandler: {fileID: 0}
+  staminaModule: {fileID: 0}
+  steepSlopeSlideModule: {fileID: 0}
+  bodyAnimator: {fileID: 1008701898}
+  armsAnimator: {fileID: 0}
+  normalVCs: {fileID: 452181353347015282}
+  aimVCs: {fileID: 4295646276389343268}
+  idleVC:
+  - {fileID: 0}
+  - {fileID: 0}
+  walkVC:
+  - {fileID: 0}
+  - {fileID: 0}
+  crouchWalkVC:
+  - {fileID: 0}
+  - {fileID: 0}
+  runVC:
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!4 &9209333969411633507
 Transform:
   m_ObjectHideFlags: 0

@@ -66,6 +66,7 @@ public class ItemHolder : Singleton<ItemHolder>
         heldItems[item.equipSlot]   = item;
         OnHeldItemChanged?.Invoke();
         NotifyAnimator(item.equipSlot, true);
+        UpdateHitbox(item.equipSlot, item);
     }
 
     public void ClearSlot(EquipmentSlot slot)
@@ -76,6 +77,7 @@ public class ItemHolder : Singleton<ItemHolder>
         heldItems.Remove(slot);
         OnHeldItemChanged?.Invoke();
         NotifyAnimator(slot, false);
+        UpdateHitbox(slot, null);
     }
 
     private void NotifyAnimator(EquipmentSlot slot, bool equipped)
@@ -91,7 +93,7 @@ public class ItemHolder : Singleton<ItemHolder>
         }
         else
         {
-            var pc = PlayerControllerRoom.roomInstance;
+            var pc = PlayerController.instance;
             if (pc == null) return;
             switch (slot)
             {
@@ -99,6 +101,20 @@ public class ItemHolder : Singleton<ItemHolder>
                 case EquipmentSlot.LeftHand:  pc.SetLeftHandEquipped(equipped);  break;
             }
         }
+    }
+
+    private void UpdateHitbox(EquipmentSlot slot, ItemData item)
+    {
+        if (slot != EquipmentSlot.RightHand) return;
+
+        Transform hand = IsTablePlayer ? tablePlayerRightHand : roomPlayerRightHand;
+        var hitbox = hand.GetComponent<WeaponHitbox>();
+        if (hitbox == null) return;
+
+        if (item != null && item.itemType == ItemType.Weapon)
+            hitbox.SetWeapon(item.attackRange, item.attackDamage);
+        else
+            hitbox.ClearWeapon();
     }
 
     public void ClearAll()
