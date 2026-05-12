@@ -365,10 +365,11 @@ namespace MFPC
 
             if (armsAnimator != null)
             {
+                bool menuOpen       = MenuManager.Instance != null && MenuManager.Instance.AnyMenuOpen;
                 bool shieldEquipped = ItemHolder.Instance != null &&
                                       ItemHolder.Instance.GetHeldItem(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
-                armsAnimator.SetBool("AttackHeld", primaryActionHeld  && !IsBlocking());
-                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !IsAttacking() && shieldEquipped);
+                armsAnimator.SetBool("AttackHeld", primaryActionHeld  && !IsBlocking()  && !menuOpen);
+                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !IsAttacking() && !menuOpen && shieldEquipped);
             }
 
             wasGrounded = grounded;

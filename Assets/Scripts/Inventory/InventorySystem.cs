@@ -19,7 +19,7 @@ public class InventorySystem : Singleton<InventorySystem>
     };
 
     private int PlayerIndex =>
-        PlayerManager.Instance?.CurrentPlayer == PlayerManager.ActivePlayer.TablePlayer ? 1 : 0;
+        PlayerManager.Instance != null && PlayerManager.Instance.CurrentPlayer == PlayerManager.ActivePlayer.TablePlayer ? 1 : 0;
 
     private ItemData[] CurrentItems  => playerItems[PlayerIndex];
     private int[]      CurrentCounts => playerCounts[PlayerIndex];

@@ -18,7 +18,7 @@ public class HotbarSystem : Singleton<HotbarSystem>
     };
 
     private int PlayerIndex =>
-        PlayerManager.Instance?.CurrentPlayer == PlayerManager.ActivePlayer.TablePlayer ? 1 : 0;
+        PlayerManager.Instance != null && PlayerManager.Instance.CurrentPlayer == PlayerManager.ActivePlayer.TablePlayer ? 1 : 0;
 
     private ItemData[] CurrentSlots  => playerSlots[PlayerIndex];
     private int[]      CurrentCounts => playerCounts[PlayerIndex];

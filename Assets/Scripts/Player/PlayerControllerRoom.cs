@@ -20,17 +20,6 @@ namespace MFPC
             roomInstance = this;
         }
 
-        protected override void UpdateAnimator()
-        {
-            base.UpdateAnimator();
-
-            if (armsAnimator != null && MenuManager.Instance != null && MenuManager.Instance.AnyMenuOpen)
-            {
-                armsAnimator.SetBool("AttackHeld", false);
-                armsAnimator.SetBool("BlockHeld", false);
-            }
-        }
-
         protected override void AimCheck()
         {
             normalVCs.SetActive(true);

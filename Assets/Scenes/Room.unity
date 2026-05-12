@@ -20374,6 +20374,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ed137a3de13b0d418daeaeb95dad797, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ContextMenuUI
+  fallbackPlayerTransform: {fileID: 0}
 --- !u!1 &2108544296
 GameObject:
   m_ObjectHideFlags: 0
@@ -28621,17 +28622,17 @@ MonoBehaviour:
   normalVCs: {fileID: 452181353347015282}
   aimVCs: {fileID: 4295646276389343268}
   idleVC:
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 2259590913350556019}
+  - {fileID: 2868451496638434675}
   walkVC:
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 550380278702865019}
+  - {fileID: 5083142994555822537}
   crouchWalkVC:
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 2665839768685112115}
+  - {fileID: 3997266497016404608}
   runVC:
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 6269600568988868762}
+  - {fileID: 2278637172275298312}
 --- !u!4 &9209333969411633507
 Transform:
   m_ObjectHideFlags: 0

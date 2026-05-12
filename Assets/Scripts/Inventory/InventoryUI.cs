@@ -77,8 +77,8 @@ public class InventoryUI : MonoBehaviour
         panel.SetActive(isOpen);
         Cursor.lockState = isOpen ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible   = isOpen;
-        if (isOpen) { MenuManager.Instance.OpenMenu("inventory"); Refresh(); }
-        else          MenuManager.Instance.CloseMenu("inventory");
+        if (isOpen) { MenuManager.Instance?.OpenMenu("inventory"); Refresh(); }
+        else          MenuManager.Instance?.CloseMenu("inventory");
     }
 
     void Refresh()

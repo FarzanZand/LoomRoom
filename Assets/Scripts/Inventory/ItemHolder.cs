@@ -16,7 +16,7 @@ public class ItemHolder : Singleton<ItemHolder>
     private readonly Dictionary<EquipmentSlot, GameObject> heldObjects = new();
     private readonly Dictionary<EquipmentSlot, ItemData>   heldItems   = new();
 
-    bool IsTablePlayer => PlayerManager.Instance.CurrentPlayer == PlayerManager.ActivePlayer.TablePlayer;
+    bool IsTablePlayer => PlayerManager.Instance == null || PlayerManager.Instance.CurrentPlayer == PlayerManager.ActivePlayer.TablePlayer;
 
     Transform GetAnchor(EquipmentSlot slot)
     {
@@ -30,7 +30,8 @@ public class ItemHolder : Singleton<ItemHolder>
 
     private void Start()
     {
-        PlayerManager.Instance.OnPlayerSwapped += OnPlayerSwapped;
+        if (PlayerManager.Instance != null)
+            PlayerManager.Instance.OnPlayerSwapped += OnPlayerSwapped;
     }
 
     protected override void OnDestroy()

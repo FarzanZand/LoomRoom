@@ -135,13 +135,13 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
 
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
-        MenuManager.Instance.OpenMenu("contextmenu");
+        MenuManager.Instance?.OpenMenu("contextmenu");
     }
 
     public void Hide()
     {
         if (overlay != null) overlay.SetActive(false);
-        MenuManager.Instance.CloseMenu("contextmenu");
+        MenuManager.Instance?.CloseMenu("contextmenu");
     }
 
     public void ShowNotification(string message)
@@ -171,18 +171,28 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
         var c = notifText.color; c.a = a; notifText.color = c;
     }
 
+    [SerializeField] private Transform fallbackPlayerTransform;
+
     // Spawns the item's world prefab in front of the active player.
     public static void DropItemToWorld(ItemData item)
     {
         if (item == null) return;
+
+        Transform dropFrom = null;
         var pm = PlayerManager.Instance;
-        if (pm == null) return;
-        var playerGo = pm.CurrentPlayer == PlayerManager.ActivePlayer.TablePlayer
-            ? pm.tablePlayer : pm.roomPlayer;
-        if (playerGo == null) return;
-        var pos = playerGo.transform.position
-                + playerGo.transform.forward * 1.5f
-                + Vector3.up * 0.5f;
+        if (pm != null)
+        {
+            var playerGo = pm.CurrentPlayer == PlayerManager.ActivePlayer.TablePlayer
+                ? pm.tablePlayer : pm.roomPlayer;
+            dropFrom = playerGo?.transform;
+        }
+        else if (Instance != null)
+        {
+            dropFrom = Instance.fallbackPlayerTransform;
+        }
+
+        if (dropFrom == null) return;
+        var pos = dropFrom.position + dropFrom.forward * 1.5f + Vector3.up * 0.5f;
         WorldItemSpawner.Spawn(item, pos);
     }
 }
