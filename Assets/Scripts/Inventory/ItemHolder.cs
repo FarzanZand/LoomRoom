@@ -113,7 +113,7 @@ public class ItemHolder : Singleton<ItemHolder>
         if (hitbox == null) return;
 
         if (item != null && item.itemType == ItemType.Weapon)
-            hitbox.SetWeapon(item.attackRange, item.attackDamage);
+            hitbox.SetWeapon(item.attackRange, item.attackDamage, item.hitSound, item.hitParticlePrefab);
         else
             hitbox.ClearWeapon();
     }

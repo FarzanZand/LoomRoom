@@ -31,6 +31,12 @@ public class ItemData : ScriptableObject
     [BoxGroup("Equipment"), ShowIf("IsWeapon")]
     public float attackDamage = 10f;
 
+    [BoxGroup("Equipment"), ShowIf("IsWeapon")]
+    public AudioClip hitSound;
+
+    [BoxGroup("Equipment"), ShowIf("IsWeapon")]
+    public GameObject hitParticlePrefab;
+
     [BoxGroup("Consumable"), ShowIf("IsConsumable")]
     public ItemEffect itemEffect;
 
