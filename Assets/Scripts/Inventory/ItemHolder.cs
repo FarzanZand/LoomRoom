@@ -91,7 +91,7 @@ public class ItemHolder : Singleton<ItemHolder>
         }
         else
         {
-            var pc = PlayerController.instance;
+            var pc = PlayerControllerRoom.roomInstance;
             if (pc == null) return;
             switch (slot)
             {

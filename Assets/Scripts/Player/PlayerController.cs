@@ -17,7 +17,7 @@ namespace MFPC
         [SerializeField] bool lockCursorOnStart = true;
 
         // Inputs variables
-        private PlayerInputActions inputActions;
+        protected PlayerInputActions inputActions;
         public Vector2 MoveInput { get; private set; }
         public Vector2 LookInput { get; private set; }
 
@@ -30,8 +30,7 @@ namespace MFPC
 
         private bool usingGamepadLook;
         private bool jumpPressed;
-        private bool aimPressed;
-        private bool interactPressed;
+        protected bool interactPressed;
         private bool leanLeftPressed;
         private bool leanRightPressed;
 
@@ -176,24 +175,6 @@ namespace MFPC
         public float AirborneTime { get; private set; }
 
 
-        [Header("Virtual Cameras and Aim")]
-
-        [Tooltip("Root GameObject containing all normal (non-aiming) virtual cameras.")]
-        [SerializeField] GameObject normalVCs;
-        [Tooltip("Root GameObject containing all aiming virtual cameras.")]
-        [SerializeField] GameObject aimVCs;
-        [Tooltip("Virtual cameras used when the player is idle.")]
-        [SerializeField] GameObject[] idleVC;
-        [Tooltip("Virtual cameras used when the player is walking.")]
-        [SerializeField] GameObject[] walkVC;
-        [Tooltip("Virtual cameras used when the player is crouch-walking.")]
-        [SerializeField] GameObject[] crouchWalkVC;
-        [Tooltip("Virtual cameras used when the player is sprinting.")]
-        [SerializeField] GameObject[] runVC;
-
-        // variables
-        public bool IsAiming { get; private set; }
-
         [Header("Camera Rotation")]
         [Tooltip("Minimum vertical look angle in degrees.")]
         [SerializeField] float minClamp = -70f;
@@ -239,16 +220,9 @@ namespace MFPC
         public bool IsLeftLeaning => leanLeftPressed;
         public bool IsRightLeaning => leanRightPressed;
         public Animator bodyAnimator;
-        public Animator armsAnimator;
+        public bool IsAiming { get; protected set; }
 
-        private bool wasGrounded;
-
-        // Combat
-        private bool primaryActionHeld;
-        private bool secondaryActionHeld;
-        public bool RightHandEquipped { get; private set; }
-        public bool LeftHandEquipped { get; private set; }
-
+        protected bool wasGrounded;
 
         // Validation safety
         void OnValidate()
@@ -258,7 +232,7 @@ namespace MFPC
             crouchSpeed = Mathf.Clamp(crouchSpeed, 0.1f, walkSpeed);
         }
 
-        private void Awake()
+        protected virtual void Awake()
         {
             instance = this;
             Controller = GetComponent<CharacterController>();
@@ -270,21 +244,10 @@ namespace MFPC
                 steepSlopeSlideModule = GetComponent<SteepSlopeSlideModule>();
 
             inputActions = new PlayerInputActions();
-            if (ItemHolder.Instance != null)
-                ItemHolder.Instance.OnHeldItemChanged += OnHeldItemChanged;
-        }
-
-        private void OnHeldItemChanged()
-        {
-            if (armsAnimator == null) return;
-            bool shieldEquipped = ItemHolder.Instance != null &&
-                                  ItemHolder.Instance.GetHeldItem(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
-            if (!shieldEquipped)
-                armsAnimator.SetBool("BlockHeld", false);
         }
 
         #region Input Hook
-        private void OnEnable()
+        protected virtual void OnEnable()
         {
             inputActions.Enable();
 
@@ -321,8 +284,6 @@ namespace MFPC
                 crouchPressed = false;
             };
 
-
-
             inputActions.Player.Interact.performed += _ => interactPressed = true;
 
             inputActions.Player.LeanLeft.performed += _ => leanLeftPressed = true;
@@ -330,19 +291,11 @@ namespace MFPC
 
             inputActions.Player.LeanRight.performed += _ => leanRightPressed = true;
             inputActions.Player.LeanRight.canceled += _ => leanRightPressed = false;
-
-            inputActions.Player.PrimaryAction.performed += _ => primaryActionHeld = true;
-            inputActions.Player.PrimaryAction.canceled  += _ => primaryActionHeld = false;
-
-            inputActions.Player.SecondaryAction.performed += _ => secondaryActionHeld = true;
-            inputActions.Player.SecondaryAction.canceled  += _ => secondaryActionHeld = false;
         }
 
-        private void OnDisable()
+        protected virtual void OnDisable()
         {
             inputActions.Disable();
-            if (ItemHolder.Instance != null)
-                ItemHolder.Instance.OnHeldItemChanged -= OnHeldItemChanged;
         }
         #endregion
 
@@ -366,7 +319,7 @@ namespace MFPC
                 interactPressed = false;
             }
         }
-        
+
         void Update()
         {
             moveForward = MoveInput.y;
@@ -379,7 +332,6 @@ namespace MFPC
             VirtualCameras();
             Footsteps();
             HandleInteract();
-            
 
             sprintDown = false;
             crouchDown = false;
@@ -387,24 +339,7 @@ namespace MFPC
             UpdateAnimator();
         }
 
-        bool IsAttacking()
-        {
-            if (armsAnimator == null) return false;
-            var cur  = armsAnimator.GetCurrentAnimatorStateInfo(1);
-            var next = armsAnimator.GetNextAnimatorStateInfo(1);
-            return cur.IsName("Attack_Windup")  || cur.IsName("Attack_Hold")  || cur.IsName("Attack_Release")
-                || next.IsName("Attack_Windup") || next.IsName("Attack_Hold") || next.IsName("Attack_Release");
-        }
-
-        bool IsBlocking()
-        {
-            if (armsAnimator == null) return false;
-            var cur  = armsAnimator.GetCurrentAnimatorStateInfo(2);
-            var next = armsAnimator.GetNextAnimatorStateInfo(2);
-            return cur.IsName("Block") || next.IsName("Block");
-        }
-
-        void UpdateAnimator()
+        protected virtual void UpdateAnimator()
         {
             bool grounded = Controller.isGrounded;
             float horizontalSpeed = new Vector3(Controller.velocity.x, 0f, Controller.velocity.z).magnitude;
@@ -412,35 +347,11 @@ namespace MFPC
             bool freeFall = !grounded && Controller.velocity.y < -1f;
 
             ApplyAnimatorParams(bodyAnimator, horizontalSpeed, grounded, jump, freeFall);
-            ApplyAnimatorParams(armsAnimator, horizontalSpeed, grounded, jump, freeFall);
-
-            if (armsAnimator != null)
-            {
-                bool menuOpen      = MenuManager.Instance != null && MenuManager.Instance.AnyMenuOpen;
-                bool shieldEquipped = ItemHolder.Instance != null &&
-                                      ItemHolder.Instance.GetHeldItem(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
-                armsAnimator.SetBool("AttackHeld", primaryActionHeld  && !IsBlocking()  && !menuOpen);
-                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !IsAttacking() && !menuOpen && shieldEquipped);
-            }
 
             wasGrounded = grounded;
         }
 
-        public void SetRightHandEquipped(bool equipped)
-        {
-            RightHandEquipped = equipped;
-            if (armsAnimator != null)
-                armsAnimator.SetBool("RightHandEquipped", equipped);
-        }
-
-        public void SetLeftHandEquipped(bool equipped)
-        {
-            LeftHandEquipped = equipped;
-            if (armsAnimator != null)
-                armsAnimator.SetBool("LeftHandEquipped", equipped);
-        }
-
-        void ApplyAnimatorParams(Animator anim, float speed, bool grounded, bool jump, bool freeFall)
+        protected void ApplyAnimatorParams(Animator anim, float speed, bool grounded, bool jump, bool freeFall)
         {
             if (anim == null || anim.runtimeAnimatorController == null) return;
 
@@ -452,6 +363,13 @@ namespace MFPC
             if (jump)           anim.SetBool("Jump", true);
             else if (grounded)  anim.SetBool("Jump", false);
         }
+
+        protected virtual void AimCheck()
+        {
+            IsAiming = false;
+        }
+
+        protected virtual void VirtualCameras() { }
 
         #region Camera and Movement
         void HandleMovementStates()
@@ -764,57 +682,6 @@ namespace MFPC
         public void SetInWater(bool value)
         {
             InWater = value;
-        }
-        #endregion
-
-        #region Virtual Cameras
-        void VirtualCameras()
-        {
-            if (IsMoving == false)
-            {
-                idleVC[0].SetActive(true);
-                idleVC[1].SetActive(true);
-            }
-            else if (IsMoving == true)
-            {
-                if (Speed == walkSpeed)
-                {
-                    idleVC[0].SetActive(false);
-                    walkVC[0].SetActive(true);
-
-                    idleVC[1].SetActive(false);
-                    walkVC[1].SetActive(true);
-                }
-                else if (Speed == crouchSpeed)
-                {
-                    idleVC[0].SetActive(false);
-                    walkVC[0].SetActive(false);
-                    crouchWalkVC[0].SetActive(true);
-
-                    idleVC[1].SetActive(false);
-                    walkVC[1].SetActive(false);
-                    crouchWalkVC[1].SetActive(true);
-                }
-                else if (Speed == sprintSpeed)
-                {
-                    idleVC[0].SetActive(false);
-                    walkVC[0].SetActive(false);
-                    crouchWalkVC[0].SetActive(false);
-                    runVC[0].SetActive(true);
-
-                    idleVC[1].SetActive(false);
-                    walkVC[1].SetActive(false);
-                    crouchWalkVC[1].SetActive(false);
-                    runVC[1].SetActive(true);
-                }
-            }
-        }
-
-        void AimCheck()
-        {
-            normalVCs.SetActive(true);
-            aimVCs.SetActive(false);
-            IsAiming = false;
         }
         #endregion
 
