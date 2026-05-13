@@ -25177,45 +25177,13 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 78984053522660403, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_Center.y
-      value: 0.93
-      objectReference: {fileID: 0}
-    - target: {fileID: 581068772889322020, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 581139461366519956, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 581363368267766896, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 581404968325378490, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 581505726361026398, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 581565407749747020, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 582987409504105112, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 659157486100547264, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
       propertyPath: m_LocalPosition.x
       value: -322.08685
       objectReference: {fileID: 0}
     - target: {fileID: 659157486100547264, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 17.47
+      value: 16.96
       objectReference: {fileID: 0}
     - target: {fileID: 659157486100547264, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
       propertyPath: m_LocalPosition.z
@@ -25254,24 +25222,12 @@ PrefabInstance:
       value: HumanoidNPC
       objectReference: {fileID: 0}
     - target: {fileID: 2587794438410830846, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: moveSpeed
-      value: 2
+      propertyPath: coreSettings
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2587794438410830846, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
       propertyPath: defaultState
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4443461806256046630, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_Speed
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4443461806256046630, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_BaseOffset
-      value: -0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4443461806256046630, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
-      propertyPath: m_AngularSpeed
-      value: 500
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

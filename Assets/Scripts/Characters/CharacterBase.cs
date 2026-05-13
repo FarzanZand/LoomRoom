@@ -1,3 +1,4 @@
+using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -8,12 +9,17 @@ public abstract class CharacterBase : MonoBehaviour
 
     public float Health { get; private set; }
     public bool IsAlive => Health > 0f;
-
+    public bool coreSettings;
+    
     protected NavMeshAgent agent;
     protected Animator animator;
 
-    [Header("Ground Check")]
+    [ShowIf("coreSettings")]
+    [BoxGroup("Ground Check")]
     [SerializeField] float groundCheckDistance = 0.2f;
+
+    [ShowIf("coreSettings")]
+    [BoxGroup("Ground Check")]
     [SerializeField] LayerMask groundMask = ~0;
 
     protected bool IsGrounded { get; private set; }

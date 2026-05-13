@@ -1,3 +1,4 @@
+using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -10,22 +11,54 @@ public class NPCController : CharacterBase
     [Header("Behaviour")]
     [SerializeField] NPCState defaultState = NPCState.Idle;
 
-    [Header("Wander")]
+    [ShowIf("defaultState", NPCState.Wander)]
+    [BoxGroup("Wander")]
+    [Tooltip("Maximum distance per wander step.")]
     [SerializeField] float wanderRadius = 8f;
-    [SerializeField] float wanderInterval = 4f;
 
-    [Header("Patrol")]
+    [ShowIf("defaultState", NPCState.Wander)]
+    [BoxGroup("Wander")]
+    [Tooltip("Minimum distance per wander step.")]
+    [SerializeField] float minWanderDistance = 2f;
+
+    [ShowIf("defaultState", NPCState.Wander)]
+    [BoxGroup("Wander")]
+    [Tooltip("Minimum time standing still between wanders.")]
+    [SerializeField] float minIdleTime = 2f;
+
+    [ShowIf("defaultState", NPCState.Wander)]
+    [BoxGroup("Wander")]
+    [Tooltip("Maximum time standing still between wanders.")]
+    [SerializeField] float maxIdleTime = 6f;
+
+    [ShowIf("defaultState", NPCState.Wander)]
+    [BoxGroup("Wander/Zone")]
+    [Tooltip("Centre of the allowed wander area. Defaults to spawn position if left empty.")]
+    [SerializeField] Transform wanderZoneCenter;
+
+    [ShowIf("defaultState", NPCState.Wander)]
+    [BoxGroup("Wander/Zone")]
+    [Tooltip("NPC will never pick a destination outside this radius from the zone centre. 0 = unlimited.")]
+    [SerializeField] float wanderZoneRadius = 0f;
+
+    [ShowIf("defaultState", NPCState.Patrol)]
+    [BoxGroup("Patrol")]
     [SerializeField] Transform[] waypoints;
+
+    [ShowIf("defaultState", NPCState.Patrol)]
+    [BoxGroup("Patrol")]
     [SerializeField] bool loopPatrol = true;
 
     NPCState currentState;
     NPCState stateBeforePause;
     float wanderTimer;
     int waypointIndex;
+    Vector3 spawnPosition;
 
     protected override void Awake()
     {
         base.Awake();
+        spawnPosition = transform.position;
     }
 
     void Start()
@@ -81,13 +114,27 @@ public class NPCController : CharacterBase
         wanderTimer -= Time.deltaTime;
         if (wanderTimer > 0f) return;
 
-        Vector3 randomPoint = transform.position + Random.insideUnitSphere * wanderRadius;
-        randomPoint.y = transform.position.y;
+        Vector3 zoneCenter = wanderZoneCenter != null ? wanderZoneCenter.position : spawnPosition;
 
-        if (NavMesh.SamplePosition(randomPoint, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
+        Vector3 randomDir = Random.insideUnitSphere;
+        randomDir.y = 0f;
+        randomDir.Normalize();
+
+        float distance = Random.Range(minWanderDistance, wanderRadius);
+        Vector3 targetPoint = transform.position + randomDir * distance;
+
+        if (wanderZoneRadius > 0f)
+        {
+            Vector3 toTarget = targetPoint - zoneCenter;
+            toTarget.y = 0f;
+            if (toTarget.magnitude > wanderZoneRadius)
+                targetPoint = zoneCenter + toTarget.normalized * wanderZoneRadius;
+        }
+
+        if (NavMesh.SamplePosition(targetPoint, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
             MoveTo(hit.position);
 
-        wanderTimer = wanderInterval;
+        wanderTimer = Random.Range(minIdleTime, maxIdleTime);
     }
 
     void HandlePatrol()
@@ -109,5 +156,18 @@ public class NPCController : CharacterBase
         StopMoving();
         agent.isStopped = true;
         enabled = false;
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        if (defaultState != NPCState.Wander || wanderZoneRadius <= 0f) return;
+
+        Vector3 center = wanderZoneCenter != null ? wanderZoneCenter.position :
+                         (Application.isPlaying ? spawnPosition : transform.position);
+
+        Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.2f);
+        Gizmos.DrawSphere(center, wanderZoneRadius);
+        Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.8f);
+        Gizmos.DrawWireSphere(center, wanderZoneRadius);
     }
 }
