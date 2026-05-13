@@ -32,7 +32,9 @@
       "mcp__coplay-mcp__get_game_object_info",
       "mcp__coplay-mcp__get_unity_editor_state",
       "mcp__coplay-mcp__list_unity_project_roots",
-      "mcp__coplay-mcp__set_unity_project_root"
+      "mcp__coplay-mcp__set_unity_project_root",
+      "Bash(Select-String -Path \"Assets/Animations/HumanoidController.controller\" -Pattern \"m_Motion\")",
+      "Bash(Select-Object -First 20)"
     ]
   }
 }

@@ -401,7 +401,7 @@ MonoBehaviour:
   wanderRadius: 8
   minWanderDistance: 2
   minIdleTime: 2
-  maxIdleTime: 6
+  maxIdleTime: 8
   wanderZoneCenter: {fileID: 0}
   wanderZoneRadius: 0
   waypoints: []
