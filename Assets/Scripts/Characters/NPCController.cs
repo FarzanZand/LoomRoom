@@ -1,36 +1,79 @@
 using UnityEngine;
 using UnityEngine.AI;
 
+public enum NPCState { Idle, Wander, Patrol }
+
 [RequireComponent(typeof(NavMeshAgent))]
-[RequireComponent(typeof(CapsuleCollider))]
 [RequireComponent(typeof(Animator))]
 public class NPCController : CharacterBase
 {
+    [Header("Behaviour")]
+    [SerializeField] NPCState defaultState = NPCState.Idle;
+
     [Header("Wander")]
     [SerializeField] float wanderRadius = 8f;
     [SerializeField] float wanderInterval = 4f;
 
-    [Header("Ground Check")]
-    [SerializeField] float groundCheckDistance = 0.2f;
-    [SerializeField] LayerMask groundMask = ~0;
+    [Header("Patrol")]
+    [SerializeField] Transform[] waypoints;
+    [SerializeField] bool loopPatrol = true;
 
-    NavMeshAgent agent;
-    Animator animator;
+    NPCState currentState;
+    NPCState stateBeforePause;
     float wanderTimer;
-    bool isGrounded;
+    int waypointIndex;
 
     protected override void Awake()
     {
         base.Awake();
-        agent = GetComponent<NavMeshAgent>();
-        animator = GetComponent<Animator>();
+    }
+
+    void Start()
+    {
+        SetState(defaultState);
     }
 
     void Update()
     {
-        HandleWander();
-        UpdateGrounded();
-        UpdateAnimator();
+        UpdateGroundCheck();
+        UpdateState();
+        UpdateAnimatorParams();
+    }
+
+    public void SetState(NPCState state)
+    {
+        currentState = state;
+        wanderTimer = 0f;
+
+        if (state == NPCState.Idle)
+            StopMoving();
+    }
+
+    public override void Pause()
+    {
+        stateBeforePause = currentState;
+        base.Pause();
+        currentState = NPCState.Idle;
+    }
+
+    public override void Resume()
+    {
+        base.Resume();
+        SetState(stateBeforePause);
+    }
+
+    void UpdateState()
+    {
+        switch (currentState)
+        {
+            case NPCState.Wander:
+                HandleWander();
+                break;
+
+            case NPCState.Patrol:
+                HandlePatrol();
+                break;
+        }
     }
 
     void HandleWander()
@@ -42,38 +85,28 @@ public class NPCController : CharacterBase
         randomPoint.y = transform.position.y;
 
         if (NavMesh.SamplePosition(randomPoint, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
-            agent.SetDestination(hit.position);
+            MoveTo(hit.position);
 
         wanderTimer = wanderInterval;
     }
 
-    void UpdateGrounded()
+    void HandlePatrol()
     {
-        isGrounded = Physics.Raycast(
-            transform.position + Vector3.up * 0.1f,
-            Vector3.down,
-            groundCheckDistance + 0.1f,
-            groundMask,
-            QueryTriggerInteraction.Ignore
-        );
-    }
+        if (waypoints == null || waypoints.Length == 0) return;
 
-    void UpdateAnimator()
-    {
-        if (animator == null || animator.runtimeAnimatorController == null) return;
+        if (!agent.pathPending && agent.remainingDistance < agent.stoppingDistance)
+        {
+            waypointIndex++;
+            if (waypointIndex >= waypoints.Length)
+                waypointIndex = loopPatrol ? 0 : waypoints.Length - 1;
 
-        float speed = agent.velocity.magnitude;
-        float motionSpeed = agent.hasPath ? 1f : 0f;
-        bool freeFall = !isGrounded && agent.velocity.y < -1f;
-
-        animator.SetFloat("Speed", speed, 0.1f, Time.deltaTime);
-        animator.SetFloat("MotionSpeed", motionSpeed, 0.1f, Time.deltaTime);
-        animator.SetBool("Grounded", isGrounded);
-        animator.SetBool("FreeFall", freeFall);
+            MoveTo(waypoints[waypointIndex].position);
+        }
     }
 
     protected override void Die()
     {
+        StopMoving();
         agent.isStopped = true;
         enabled = false;
     }
