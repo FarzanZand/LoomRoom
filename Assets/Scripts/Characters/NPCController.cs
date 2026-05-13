@@ -144,6 +144,8 @@ public class NPCController : CharacterBase, IInteractable
         if (dir.sqrMagnitude < 0.001f) return;
         Quaternion target = Quaternion.LookRotation(dir);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, target, faceSpeed * Time.deltaTime);
+        if (Quaternion.Angle(transform.rotation, target) < 0.5f)
+            faceTarget = null;
     }
 
     void UpdateState()
