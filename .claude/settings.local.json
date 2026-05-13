@@ -29,7 +29,10 @@
       "Bash(python3 *)",
       "Bash(python *)",
       "mcp__UnityMCP__execute_menu_item",
-      "mcp__coplay-mcp__get_game_object_info"
+      "mcp__coplay-mcp__get_game_object_info",
+      "mcp__coplay-mcp__get_unity_editor_state",
+      "mcp__coplay-mcp__list_unity_project_roots",
+      "mcp__coplay-mcp__set_unity_project_root"
     ]
   }
 }
