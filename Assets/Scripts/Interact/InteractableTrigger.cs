@@ -13,15 +13,17 @@ public class InteractableTrigger : MonoBehaviour
     [SerializeField] bool destroyOnConsume = false;
     public UnityEvent<GameObject> onInteract;
 
-    public string PromptMessage => promptMessage;
+    public string PromptMessage => worldItem != null ? worldItem.PromptMessage : promptMessage;
     public IInteractable Interactable { get; private set; }
+
+    WorldItem worldItem;
 
     private readonly List<InteractController> registeredControllers = new();
 
     private void Awake()
     {
         Interactable = GetComponentInParent<IInteractable>();
-
+        worldItem = GetComponentInParent<WorldItem>();
         GetComponent<Collider>().isTrigger = true;
     }
 
