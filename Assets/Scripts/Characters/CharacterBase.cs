@@ -97,4 +97,11 @@ public abstract class CharacterBase : MonoBehaviour
         animator.SetBool("Grounded", IsGrounded);
         animator.SetBool("FreeFall", freeFall);
     }
+
+    [Button]
+    public void TriggerAnimation(string triggerName)
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+        animator.SetTrigger(triggerName);
+    }
 }
