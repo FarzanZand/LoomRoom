@@ -52,6 +52,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Mace
       objectReference: {fileID: 0}
+    - target: {fileID: 1416218589179070908, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
+      propertyPath: promptMessage
+      value: a
+      objectReference: {fileID: 0}
     - target: {fileID: 4992370184658981487, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
       propertyPath: itemData
       value: 

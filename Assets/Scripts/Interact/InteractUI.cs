@@ -19,10 +19,10 @@ public class InteractUI : MonoBehaviour
             if (c != null) c.OnActiveChanged -= OnActiveChanged;
     }
 
-    private void OnActiveChanged(IInteractable interactable)
+    private void OnActiveChanged(InteractableTrigger trigger)
     {
-        promptRoot.SetActive(interactable != null);
-        if (interactable != null)
-            promptText.text = interactable.PromptMessage;
+        promptRoot.SetActive(trigger != null);
+        if (trigger != null)
+            promptText.text = trigger.PromptMessage;
     }
 }

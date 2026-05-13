@@ -1,4 +1,5 @@
 using Sirenix.OdinInspector;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -6,7 +7,7 @@ public enum NPCState { Idle, Wander, Patrol }
 
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(Animator))]
-public class NPCController : CharacterBase
+public class NPCController : CharacterBase, IInteractable
 {
     [Header("Behaviour")]
     [SerializeField] NPCState defaultState = NPCState.Idle;
@@ -49,16 +50,42 @@ public class NPCController : CharacterBase
     [BoxGroup("Patrol")]
     [SerializeField] bool loopPatrol = true;
 
+    [Header("Interaction")]
+    [SerializeField] bool isInteractable = false;
+
+    [ShowIf("isInteractable")]
+    [Tooltip("Speed in degrees per second the NPC turns to face the player.")]
+    [SerializeField] float faceSpeed = 180f;
+
+
+    [Header("Death")]
+    [Tooltip("Name of the Death trigger parameter in the Animator.")]
+    [SerializeField] string deathTrigger = "Death";
+    [Tooltip("How long to wait after the death animation before disabling. Match to clip length.")]
+    [SerializeField] float deathDuration = 2f;
+
     NPCState currentState;
     NPCState stateBeforePause;
     float wanderTimer;
     int waypointIndex;
     Vector3 spawnPosition;
+    InteractableTrigger interactTrigger;
+
+    Transform faceTarget;
 
     protected override void Awake()
     {
         base.Awake();
         spawnPosition = transform.position;
+        interactTrigger = GetComponentInChildren<InteractableTrigger>();
+        SetInteractable(isInteractable);
+    }
+
+    public void SetInteractable(bool value)
+    {
+        isInteractable = value;
+        if (interactTrigger != null)
+            interactTrigger.gameObject.SetActive(value);
     }
 
     void Start()
@@ -70,6 +97,7 @@ public class NPCController : CharacterBase
     {
         UpdateGroundCheck();
         UpdateState();
+        UpdateFacing();
         UpdateAnimatorParams();
     }
 
@@ -91,8 +119,31 @@ public class NPCController : CharacterBase
 
     public override void Resume()
     {
+        faceTarget = null;
         base.Resume();
         SetState(stateBeforePause);
+    }
+
+    public void Interact(GameObject interactor)
+    {
+        if (!isInteractable) return;
+        Pause();
+        faceTarget = interactor.transform;
+    }
+
+    public void EndInteraction()
+    {
+        Resume();
+    }
+
+    void UpdateFacing()
+    {
+        if (faceTarget == null) return;
+        Vector3 dir = faceTarget.position - transform.position;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.001f) return;
+        Quaternion target = Quaternion.LookRotation(dir);
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, target, faceSpeed * Time.deltaTime);
     }
 
     void UpdateState()
@@ -155,6 +206,13 @@ public class NPCController : CharacterBase
     {
         StopMoving();
         agent.isStopped = true;
+        TriggerAnimation(deathTrigger);
+        StartCoroutine(DisableAfterDeath());
+    }
+
+    IEnumerator DisableAfterDeath()
+    {
+        yield return new WaitForSeconds(deathDuration);
         enabled = false;
     }
 

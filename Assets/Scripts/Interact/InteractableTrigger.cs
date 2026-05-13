@@ -1,23 +1,39 @@
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
 using UnityEngine;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(Collider))]
 public class InteractableTrigger : MonoBehaviour
 {
-    [SerializeField] private MonoBehaviour interactableTarget;
+    [Delayed]
+    [SerializeField] string promptMessage = "Interact";
+    [SerializeField] bool consumable = false;
+    [ShowIf("consumable")]
+    [SerializeField] bool destroyOnConsume = false;
+    public UnityEvent<GameObject> onInteract;
 
+    public string PromptMessage => promptMessage;
     public IInteractable Interactable { get; private set; }
 
     private readonly List<InteractController> registeredControllers = new();
 
     private void Awake()
     {
-        if (interactableTarget != null)
-            Interactable = interactableTarget as IInteractable;
-        else
-            Interactable = GetComponentInParent<IInteractable>();
+        Interactable = GetComponentInParent<IInteractable>();
 
         GetComponent<Collider>().isTrigger = true;
+    }
+
+    public void Interact(GameObject interactor)
+    {
+        onInteract.Invoke(interactor);
+        Interactable?.Interact(interactor);
+        if (consumable)
+        {
+            if (destroyOnConsume) Destroy(gameObject);
+            else enabled = false;
+        }
     }
 
     private void OnDisable()
@@ -29,7 +45,7 @@ public class InteractableTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        var controller = other.GetComponent<InteractController>();
+        var controller = other.GetComponentInParent<InteractController>();
         if (controller == null) return;
         registeredControllers.Add(controller);
         controller.Register(this);
@@ -37,7 +53,7 @@ public class InteractableTrigger : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        var controller = other.GetComponent<InteractController>();
+        var controller = other.GetComponentInParent<InteractController>();
         if (controller == null) return;
         registeredControllers.Remove(controller);
         controller.Unregister(this);

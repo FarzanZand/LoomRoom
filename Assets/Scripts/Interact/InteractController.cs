@@ -6,11 +6,12 @@ using UnityEngine.InputSystem;
 
 public class InteractController : MonoBehaviour
 {
-    public event Action<IInteractable> OnActiveChanged;
+    public event Action<InteractableTrigger> OnActiveChanged;
 
     private readonly List<InteractableTrigger> inRange = new();
-    private IInteractable active;
+    private InteractableTrigger activeTrigger;
     private PlayerInputActions inputActions;
+    private bool blocked;
 
     private void Awake()
     {
@@ -27,7 +28,7 @@ public class InteractController : MonoBehaviour
     {
         inputActions.Player.Interact.performed -= OnInteractInput;
         inputActions.Disable();
-        SetActiveInteractable(null);
+        SetActiveTrigger(null);
     }
 
     private void Update()
@@ -46,8 +47,16 @@ public class InteractController : MonoBehaviour
         inRange.Remove(trigger);
     }
 
+    public void SetBlocked(bool value)
+    {
+        blocked = value;
+        if (blocked) SetActiveTrigger(null);
+    }
+
     private void RefreshClosest()
     {
+        if (blocked) return;
+
         InteractableTrigger closest = null;
         float minSqrDist = float.MaxValue;
 
@@ -62,18 +71,19 @@ public class InteractController : MonoBehaviour
             }
         }
 
-        SetActiveInteractable(closest?.Interactable);
+        SetActiveTrigger(closest);
     }
 
-    private void SetActiveInteractable(IInteractable interactable)
+    private void SetActiveTrigger(InteractableTrigger trigger)
     {
-        if (interactable == active) return;
-        active = interactable;
-        OnActiveChanged?.Invoke(active);
+        if (trigger == activeTrigger) return;
+        activeTrigger = trigger;
+        OnActiveChanged?.Invoke(activeTrigger);
     }
 
     private void OnInteractInput(InputAction.CallbackContext _)
     {
-        active?.Interact(gameObject);
+        if (blocked) return;
+        activeTrigger?.Interact(gameObject);
     }
 }
