@@ -14361,7 +14361,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63a48c00600a16a4eabbf662431feedd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponHitbox
-  enableHitStop: 1
+  enableHitStop: 0
   hitStopDuration: 0.07
   enableKnockback: 1
   knockbackForce: 5
