@@ -22,6 +22,21 @@ public class ScreenManager : Singleton<ScreenManager>
     public void FadeOut(float fadeDuration, float holdDuration = 0f)
         => RunFade(from: 1f, to: 0f, fadeDuration, holdDuration);
 
+    /// Fades to black over fadeInDuration, holds for fadedDuration, then fades back over fadeOutDuration.
+    public void FadeInOut(float fadeInDuration, float fadedDuration, float fadeOutDuration)
+    {
+        if (fadeRoutine != null) StopCoroutine(fadeRoutine);
+        fadeRoutine = StartCoroutine(FadeInOutRoutine(fadeInDuration, fadedDuration, fadeOutDuration));
+    }
+
+    IEnumerator FadeInOutRoutine(float fadeInDuration, float fadedDuration, float fadeOutDuration)
+    {
+        yield return LerpAlpha(0f, 1f, fadeInDuration);
+        if (fadedDuration > 0f) yield return new WaitForSecondsRealtime(fadedDuration);
+        yield return LerpAlpha(1f, 0f, fadeOutDuration);
+        fadeRoutine = null;
+    }
+
     void RunFade(float from, float to, float fadeDuration, float holdDuration)
     {
         if (fadeRoutine != null) StopCoroutine(fadeRoutine);
@@ -35,16 +50,21 @@ public class ScreenManager : Singleton<ScreenManager>
         if (holdDuration > 0f)
             yield return new WaitForSecondsRealtime(holdDuration);
 
+        yield return LerpAlpha(from, to, fadeDuration);
+        fadeRoutine = null;
+    }
+
+    IEnumerator LerpAlpha(float from, float to, float duration)
+    {
+        SetAlpha(from);
         float elapsed = 0f;
-        while (elapsed < fadeDuration)
+        while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
-            SetAlpha(Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / fadeDuration)));
+            SetAlpha(Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / duration)));
             yield return null;
         }
-
         SetAlpha(to);
-        fadeRoutine = null;
     }
 
     void SetAlpha(float alpha)

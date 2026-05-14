@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -11,6 +12,7 @@ public class InteractableTrigger : MonoBehaviour
     [SerializeField] bool consumable = false;
     [ShowIf("consumable")]
     [SerializeField] bool destroyOnConsume = false;
+    [SerializeField] float cooldown = 0f;
     public UnityEvent<GameObject> onInteract;
 
     public string PromptMessage => worldItem != null ? worldItem.PromptMessage : promptMessage;
@@ -31,11 +33,23 @@ public class InteractableTrigger : MonoBehaviour
     {
         onInteract.Invoke(interactor);
         Interactable?.Interact(interactor);
+
         if (consumable)
         {
             if (destroyOnConsume) Destroy(gameObject);
             else enabled = false;
         }
+        else if (cooldown > 0f)
+        {
+            StartCoroutine(CooldownRoutine());
+        }
+    }
+
+    IEnumerator CooldownRoutine()
+    {
+        enabled = false;
+        yield return new WaitForSeconds(cooldown);
+        enabled = true;
     }
 
     private void OnDisable()

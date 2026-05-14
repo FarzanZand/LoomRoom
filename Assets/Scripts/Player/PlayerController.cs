@@ -305,6 +305,26 @@ namespace MFPC
             inputActions.Player.SecondaryAction.canceled  += _ => secondaryActionHeld = false;
         }
 
+        public void SetInputEnabled(bool enabled)
+        {
+            if (enabled)
+                inputActions.Enable();
+            else
+            {
+                inputActions.Disable();
+                MoveInput = Vector2.zero;
+                LookInput = Vector2.zero;
+                sprintPressed = false;
+                crouchPressed = false;
+                jumpPressed = false;
+                leanLeftPressed = false;
+                leanRightPressed = false;
+                primaryActionHeld = false;
+                secondaryActionHeld = false;
+                interactPressed = false;
+            }
+        }
+
         protected virtual void OnDisable()
         {
             inputActions.Disable();

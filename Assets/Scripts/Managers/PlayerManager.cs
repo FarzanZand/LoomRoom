@@ -71,6 +71,18 @@ public class PlayerManager : Singleton<PlayerManager>
         HotbarSystem.Instance.NotifyChanged();
     }
 
+    public void SetControlsFrozen(bool frozen)
+    {
+        var activePlayer = CurrentPlayer == ActivePlayer.RoomPlayer ? roomPlayer : tablePlayer;
+        if (activePlayer == null) return;
+
+        var pc = activePlayer.GetComponentInChildren<MFPC.PlayerController>();
+        if (pc != null) pc.SetInputEnabled(!frozen);
+
+        var interact = activePlayer.GetComponentInChildren<InteractController>();
+        if (interact != null) interact.SetBlocked(frozen);
+    }
+
     private void SetPlayerControlled(GameObject playerObject, bool controlled)
     {
         if (playerObject == null) return;
