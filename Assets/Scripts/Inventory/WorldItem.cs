@@ -57,6 +57,6 @@ public class WorldItem : MonoBehaviour, IInteractable
             AudioManager.Instance.PlaySFX2D(pickupAudio, pickupAudioVolume);
         if (itemData.equipOnPickup && ItemHolder.Instance.GetHeldItem(itemData.equipSlot) == null)
             ItemHolder.Instance.HoldItem(itemData);
-        Destroy(transform.parent != null ? transform.parent.gameObject : gameObject);
+        Destroy(gameObject);
     }
 }
