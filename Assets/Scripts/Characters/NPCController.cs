@@ -1,5 +1,4 @@
 using Sirenix.OdinInspector;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -56,13 +55,6 @@ public class NPCController : CharacterBase, IInteractable
     [ShowIf("isInteractable")]
     [Tooltip("Speed in degrees per second the NPC turns to face the player.")]
     [SerializeField] float faceSpeed = 180f;
-
-
-    [Header("Death")]
-    [Tooltip("Name of the Death trigger parameter in the Animator.")]
-    [SerializeField] string deathTrigger = "Death";
-    [Tooltip("How long to wait after the death animation before disabling. Match to clip length.")]
-    [SerializeField] float deathDuration = 2f;
 
     NPCState currentState;
     NPCState stateBeforePause;
@@ -139,13 +131,15 @@ public class NPCController : CharacterBase, IInteractable
     void UpdateFacing()
     {
         if (faceTarget == null) return;
+        FaceTo(faceTarget, faceSpeed);
         Vector3 dir = faceTarget.position - transform.position;
         dir.y = 0f;
-        if (dir.sqrMagnitude < 0.001f) return;
-        Quaternion target = Quaternion.LookRotation(dir);
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, target, faceSpeed * Time.deltaTime);
-        if (Quaternion.Angle(transform.rotation, target) < 0.5f)
-            faceTarget = null;
+        if (dir.sqrMagnitude > 0.001f)
+        {
+            Quaternion targetRot = Quaternion.LookRotation(dir);
+            if (Quaternion.Angle(transform.rotation, targetRot) < 0.5f)
+                faceTarget = null;
+        }
     }
 
     void UpdateState()
@@ -202,20 +196,6 @@ public class NPCController : CharacterBase, IInteractable
 
             MoveTo(waypoints[waypointIndex].position);
         }
-    }
-
-    protected override void Die()
-    {
-        StopMoving();
-        agent.isStopped = true;
-        TriggerAnimation(deathTrigger);
-        StartCoroutine(DisableAfterDeath());
-    }
-
-    IEnumerator DisableAfterDeath()
-    {
-        yield return new WaitForSeconds(deathDuration);
-        enabled = false;
     }
 
     void OnDrawGizmosSelected()

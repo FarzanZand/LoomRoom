@@ -35,13 +35,13 @@ public class WeaponHitbox : MonoBehaviour
 
     public void SetWeapon(float attackRange, float attackDamage, AudioClip sound = null, GameObject particlePrefab = null)
     {
-        damage           = attackDamage;
-        hitSound         = sound;
+        damage            = attackDamage;
+        hitSound          = sound;
         hitParticlePrefab = particlePrefab;
-        col.direction    = 2;
-        col.radius       = 0.12f;
-        col.height       = attackRange;
-        col.center       = new Vector3(0f, 0f, attackRange * 0.5f);
+        col.direction     = 2;
+        col.radius        = 0.12f;
+        col.height        = attackRange;
+        col.center        = new Vector3(0f, 0f, attackRange * 0.5f);
     }
 
     public void ClearWeapon()
@@ -65,7 +65,12 @@ public class WeaponHitbox : MonoBehaviour
         hitThisSwing.Clear();
     }
 
-    private void OnTriggerEnter(Collider other)
+    // OnTriggerEnter misses colliders already overlapping when the hitbox is enabled.
+    // OnTriggerStay catches those. The HashSet prevents double-hitting the same collider.
+    private void OnTriggerEnter(Collider other) => ProcessHit(other);
+    private void OnTriggerStay(Collider other)  => ProcessHit(other);
+
+    private void ProcessHit(Collider other)
     {
         if (other.transform.IsChildOf(transform.root)) return;
         if (!hitThisSwing.Add(other)) return;
@@ -73,7 +78,10 @@ public class WeaponHitbox : MonoBehaviour
         Vector3 direction = (other.transform.position - transform.root.position).normalized;
 
         if (other.TryGetComponent<IDamageable>(out var target))
+        {
+            Debug.Log($"[WeaponHitbox] hit {other.name} for {damage} damage");
             target.TakeDamage(damage, direction);
+        }
 
         if (enableKnockback && other.attachedRigidbody != null)
             other.attachedRigidbody.AddForce(direction * knockbackForce, ForceMode.Impulse);
