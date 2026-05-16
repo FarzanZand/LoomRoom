@@ -11706,6 +11706,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressionManager
   tableEntered: 0
+  skipWakeUp: 0
 --- !u!1 &1216555967
 GameObject:
   m_ObjectHideFlags: 0
@@ -16797,7 +16798,10 @@ PrefabInstance:
     - {fileID: 95506480096669240, guid: d5a148a3575c47145a45da3ec571473c, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1009873835541132, guid: d5a148a3575c47145a45da3ec571473c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1787664915}
   m_SourcePrefab: {fileID: 100100000, guid: d5a148a3575c47145a45da3ec571473c, type: 3}
 --- !u!1 &1672976551
 GameObject:
@@ -18017,6 +18021,31 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3174923170551661957, guid: defb4cdc6208f004795f0160e8fb04ed, type: 3}
   m_PrefabInstance: {fileID: 319387363}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1787664913 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1009873835541132, guid: d5a148a3575c47145a45da3ec571473c, type: 3}
+  m_PrefabInstance: {fileID: 1666855612}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1787664914 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4171629890553622, guid: d5a148a3575c47145a45da3ec571473c, type: 3}
+  m_PrefabInstance: {fileID: 1666855612}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1787664915
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1787664913}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11a52dc289391d14284d10a21cde9dea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GazeLookAt
+  neckOrHead: {fileID: 1787664914}
+  target: {fileID: 1198239219}
+  weight: 0.7
 --- !u!1 &1789134290
 GameObject:
   m_ObjectHideFlags: 0
@@ -19793,7 +19822,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorldManager
   WakeUpDirector: {fileID: 178767175}
   startPositionRoom: {fileID: 777283952}
-  skipWakeUp: 0
 --- !u!1 &2004968051
 GameObject:
   m_ObjectHideFlags: 0
@@ -23032,7 +23060,7 @@ PrefabInstance:
       objectReference: {fileID: 9000000, guid: 1e33f233ea9441640a5819fe4706668d, type: 3}
     - target: {fileID: 2557799149992858309, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2713957649157716742, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
       propertyPath: m_LocalRotation.w

@@ -6,11 +6,10 @@ public class WorldManager : Singleton<WorldManager>
 {
     public PlayableDirector WakeUpDirector;
     public Transform startPositionRoom;
-    public bool skipWakeUp = false;
 
     public void Start()
     {
-        if(!skipWakeUp)
+        if(!ProgressionManager.Instance.skipWakeUp)
             WakeUpReset();
     }
 
