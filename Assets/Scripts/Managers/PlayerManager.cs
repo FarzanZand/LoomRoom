@@ -83,6 +83,13 @@ public class PlayerManager : Singleton<PlayerManager>
         if (interact != null) interact.SetBlocked(frozen);
     }
 
+    public void SetRoomPlayerControllerEnabled(bool enabled)
+    {
+        if (roomPlayer == null) return;
+        var pc = roomPlayer.GetComponentInChildren<MFPC.PlayerController>(true);
+        if (pc != null) pc.enabled = enabled;
+    }
+
     private void SetPlayerControlled(GameObject playerObject, bool controlled)
     {
         if (playerObject == null) return;

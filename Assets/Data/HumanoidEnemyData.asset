@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae3ed972aa5e64d458cce19ec42dcb7d, type: 3}
+  m_Name: HumanoidEnemyData
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyName: Humanoid Enemy
+  prefab: {fileID: 0}
+  faction: 2
+  statProfile: {fileID: 11400000, guid: 9f5ac0ab39303a740af56d696b0affb5, type: 2}
+  defaultState: 1
+  aggressionMode: 1
+  wanderRadius: 4
+  minWanderDistance: 2
+  minIdleTime: 2
+  maxIdleTime: 6
+  wanderZoneRadius: 0
+  useWanderSpeed: 1
+  wanderSpeed: 2
+  useChaseSpeed: 1
+  chaseSpeed: 4
+  detectionRadius: 12
+  fieldOfView: 120
+  eyeHeight: 1.6
+  closeDetectionRadius: 2
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967103
+  loseSightGracePeriod: 3
+  maxSearchTime: 5
+  passiveAngularSpeed: 120
+  chaseAngularSpeed: 540
+  attackFaceSpeed: 720
+  attackRange: 1.8
+  attackCooldown: 1.5
+  attackAngleThreshold: 45
+  attackHitDelay: 0.4
+  attackTrigger:
+  deathTrigger: 
+  hurtTrigger: 

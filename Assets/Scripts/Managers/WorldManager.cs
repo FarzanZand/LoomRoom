@@ -18,8 +18,7 @@ public class WorldManager : Singleton<WorldManager>
         ScreenManager.Instance.FadeOut(2f, 2f);
         PlayerManager.Instance.roomPlayer.transform.SetPositionAndRotation(startPositionRoom.position, startPositionRoom.rotation);
 
-        var pc = PlayerManager.Instance.roomPlayer.GetComponentInChildren<MFPC.PlayerController>(true);
-        if (pc != null) pc.enabled = false;
+        PlayerManager.Instance.SetRoomPlayerControllerEnabled(false);
 
         WakeUpDirector.stopped += OnWakeUpComplete;
         WakeUpDirector.Play();
@@ -29,9 +28,8 @@ public class WorldManager : Singleton<WorldManager>
     void OnWakeUpComplete(PlayableDirector _)
     {
         WakeUpDirector.stopped -= OnWakeUpComplete;
-        if (PlayerManager.Instance == null || PlayerManager.Instance.roomPlayer == null) return;
-        var pc = PlayerManager.Instance.roomPlayer.GetComponentInChildren<MFPC.PlayerController>(true);
-        if (pc != null) pc.enabled = true;
+        if (PlayerManager.Instance == null) return;
+        PlayerManager.Instance.SetRoomPlayerControllerEnabled(true);
     }
 
     IEnumerator PlayGroundhogAudio()

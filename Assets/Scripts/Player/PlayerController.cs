@@ -9,12 +9,15 @@ namespace MFPC
     public class PlayerController : MonoBehaviour
     {
         #region Variables
-        public static PlayerController instance;
-
         [Tooltip("Necessery scriptable component used for controller settings, like mouse sensitivity, movement options.")]
         [SerializeField] GameData gameData;
+        [Tooltip("Player data asset driving stats, faction, and base movement speeds.")]
+        [SerializeField] PlayerData playerData;
         [Tooltip("Lock the cursor at start frame.")]
         [SerializeField] bool lockCursorOnStart = true;
+
+        StatsComponent stats;
+        CharacterFX    characterFX;
 
         // Inputs variables
         protected PlayerInputActions inputActions;
@@ -30,7 +33,6 @@ namespace MFPC
 
         private bool usingGamepadLook;
         private bool jumpPressed;
-        protected bool interactPressed;
         private bool leanLeftPressed;
         private bool leanRightPressed;
 
@@ -202,6 +204,9 @@ namespace MFPC
         public UnityEvent OnJumpStart;
 
 
+
+
+
         [Header("Optional Modules")]
 
         [Tooltip("Optional Slope handler: it corrects movement direction on slopes")]
@@ -239,14 +244,31 @@ namespace MFPC
 
         protected virtual void Awake()
         {
-            instance = this;
             Controller = GetComponent<CharacterController>();
             playerCollider = GetComponent<CapsuleCollider>();
             checker = GetComponent<TerrainChecker>();
+            stats       = GetComponent<StatsComponent>();
+            characterFX = GetComponent<CharacterFX>();
+
             if (!staminaModule)
                 staminaModule = GetComponent<StaminaModule>();
             if (!steepSlopeSlideModule)
                 steepSlopeSlideModule = GetComponent<SteepSlopeSlideModule>();
+
+            if (playerData != null)
+            {
+                stats?.ApplyProfile(playerData.stats);
+                stats?.SetFaction(playerData.faction);
+
+                walkSpeed        = playerData.walkSpeed;
+                sprintSpeed      = playerData.sprintSpeed;
+                crouchSpeed      = playerData.crouchSpeed;
+                jumpForce        = playerData.jumpForce;
+                gravityMultiplier = playerData.gravityMultiplier;
+            }
+
+            if (stats != null)
+                stats.OnDamageTaken += OnDamageTaken;
 
             inputActions = new PlayerInputActions();
             if (ItemHolder.Instance != null)
@@ -291,8 +313,6 @@ namespace MFPC
                 crouchPressed = false;
             };
 
-            inputActions.Player.Interact.performed += _ => interactPressed = true;
-
             inputActions.Player.LeanLeft.performed += _ => leanLeftPressed = true;
             inputActions.Player.LeanLeft.canceled += _ => leanLeftPressed = false;
 
@@ -321,7 +341,6 @@ namespace MFPC
                 leanRightPressed = false;
                 primaryActionHeld = false;
                 secondaryActionHeld = false;
-                interactPressed = false;
             }
         }
 
@@ -330,6 +349,25 @@ namespace MFPC
             inputActions.Disable();
             if (ItemHolder.Instance != null)
                 ItemHolder.Instance.OnHeldItemChanged -= OnHeldItemChanged;
+            if (stats != null)
+                stats.OnDamageTaken -= OnDamageTaken;
+        }
+
+        void OnDamageTaken(float amount, Vector3 knockbackDir)
+        {
+            TryTriggerPlayerAnim(bodyAnimator, "Hurt");
+            TryTriggerPlayerAnim(armsAnimator, "Hurt");
+            characterFX?.NotifyHurtReceived(amount, knockbackDir);
+            if (knockbackDir != Vector3.zero)
+                movement += knockbackDir.normalized * (characterFX?.KnockbackForce ?? 3f);
+        }
+
+        void TryTriggerPlayerAnim(Animator anim, string triggerName)
+        {
+            if (anim == null || anim.runtimeAnimatorController == null) return;
+            foreach (var p in anim.parameters)
+                if (p.name == triggerName && p.type == AnimatorControllerParameterType.Trigger)
+                { anim.SetTrigger(triggerName); return; }
         }
         #endregion
 
@@ -346,14 +384,6 @@ namespace MFPC
             InWater = false;
         }
 
-        public void HandleInteract()
-        {
-            if (interactPressed)
-            {
-                interactPressed = false;
-            }
-        }
-
         void Update()
         {
             moveForward = MoveInput.y;
@@ -365,7 +395,6 @@ namespace MFPC
             AimCheck();
             VirtualCameras();
             Footsteps();
-            HandleInteract();
 
             sprintDown = false;
             crouchDown = false;

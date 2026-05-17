@@ -10,6 +10,7 @@ public class ItemHolder : Singleton<ItemHolder>
     [SerializeField] private Transform tablePlayerRightHand;
     [SerializeField] private Transform tablePlayerLeftHand;
     [SerializeField] private Animator tablePlayerArmsAnimator;
+    [SerializeField] PlayerData playerData;
 
     public event System.Action OnHeldItemChanged;
 
@@ -32,6 +33,16 @@ public class ItemHolder : Singleton<ItemHolder>
     {
         if (PlayerManager.Instance != null)
             PlayerManager.Instance.OnPlayerSwapped += OnPlayerSwapped;
+
+        if (playerData?.startingItems != null && playerData.startingItems.Count > 0)
+            StartCoroutine(ApplyStartingInventory());
+    }
+
+    System.Collections.IEnumerator ApplyStartingInventory()
+    {
+        yield return null; // wait one frame so all managers are initialized
+        foreach (var item in playerData.startingItems)
+            if (item != null) HoldItem(item);
     }
 
     protected override void OnDestroy()
@@ -94,7 +105,7 @@ public class ItemHolder : Singleton<ItemHolder>
         }
         else
         {
-            var pc = PlayerController.instance;
+            var pc = PlayerManager.Instance?.roomPlayer?.GetComponentInChildren<MFPC.PlayerController>();
             if (pc == null) return;
             switch (slot)
             {
@@ -109,13 +120,29 @@ public class ItemHolder : Singleton<ItemHolder>
         if (slot != EquipmentSlot.RightHand) return;
 
         Transform hand = IsTablePlayer ? tablePlayerRightHand : roomPlayerRightHand;
-        var hitbox = hand.GetComponent<WeaponHitbox>();
-        if (hitbox == null) return;
+        if (hand == null) return;
 
-        if (item != null && item.itemType == ItemType.Weapon)
-            hitbox.SetWeapon(item.attackRange, item.attackDamage, item.hitSound, item.hitParticlePrefab);
-        else
-            hitbox.ClearWeapon();
+        var hitbox = hand.GetComponentInChildren<WeaponHitbox>(true);
+        if (hitbox != null)
+        {
+            if (item != null && item.itemType == ItemType.Weapon)
+                hitbox.SetWeapon(item.hitSound, item.hitParticlePrefab);
+            else
+                hitbox.ClearWeapon();
+        }
+
+        // Weapon damage lives in StatsComponent as a modifier, not on the hitbox
+        var playerGo = IsTablePlayer
+            ? PlayerManager.Instance?.tablePlayer
+            : PlayerManager.Instance?.roomPlayer;
+
+        var playerStats = playerGo?.GetComponentInChildren<StatsComponent>(true);
+        if (playerStats != null)
+        {
+            playerStats.RemoveAllFromSource(this);
+            if (item != null && item.itemType == ItemType.Weapon && item.attackDamage > 0f)
+                playerStats.AddModifier(new StatModifier(StatType.AttackDamage, item.attackDamage, ModifierType.Flat, this));
+        }
     }
 
     public void ClearAll()

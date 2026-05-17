@@ -14,7 +14,7 @@ public class WakeUpCutsceneController : MonoBehaviour
 
     void Start()
     {
-        playerController = MFPC.PlayerController.instance;
+        playerController = PlayerManager.Instance?.roomPlayer?.GetComponentInChildren<MFPC.PlayerController>();
         characterController = playerController.GetComponent<CharacterController>();
 
         playerController.enabled = false;

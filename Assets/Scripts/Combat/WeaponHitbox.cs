@@ -1,104 +1,109 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public interface IDamageable
-{
-    void TakeDamage(float amount, Vector3 knockbackDirection);
-}
-
-[RequireComponent(typeof(CapsuleCollider))]
 public class WeaponHitbox : MonoBehaviour
 {
-    [Header("Hit Stop")]
-    [SerializeField] bool enableHitStop = true;
-    [SerializeField] float hitStopDuration = 0.07f;
+    [Tooltip("The capsule that defines the weapon's hit shape. Can be on any child object.")]
+    [SerializeField] CapsuleCollider weaponCollider;
+    [SerializeField] LayerMask hitMask;
 
-    [Header("Knockback")]
-    [SerializeField] bool enableKnockback = true;
-    [SerializeField] float knockbackForce = 5f;
+    [Header("Weapon Contact FX")]
+    [SerializeField] AudioClip hitSound;
+    [SerializeField] GameObject hitParticlePrefab;
 
-    private CapsuleCollider col;
-    private float damage;
-    private AudioClip hitSound;
-    private GameObject hitParticlePrefab;
+    bool active;
+    StatsComponent cachedAttackerStats;
+    CharacterFX    cachedFX;
+    readonly HashSet<Collider> hitThisSwing = new HashSet<Collider>();
+    readonly Collider[] overlapBuffer = new Collider[16];
 
-    private readonly HashSet<Collider> hitThisSwing = new HashSet<Collider>();
-    private Coroutine hitStopRoutine;
-
-    private void Awake()
+    // Called by ItemHolder when a weapon is equipped/unequipped
+    public void SetWeapon(AudioClip sound = null, GameObject particlePrefab = null)
     {
-        col = GetComponent<CapsuleCollider>();
-        col.isTrigger = true;
-        col.enabled = false;
-    }
-
-    public void SetWeapon(float attackRange, float attackDamage, AudioClip sound = null, GameObject particlePrefab = null)
-    {
-        damage           = attackDamage;
-        hitSound         = sound;
+        hitSound          = sound;
         hitParticlePrefab = particlePrefab;
-        col.direction    = 2;
-        col.radius       = 0.12f;
-        col.height       = attackRange;
-        col.center       = new Vector3(0f, 0f, attackRange * 0.5f);
     }
 
     public void ClearWeapon()
     {
-        damage            = 0f;
         hitSound          = null;
         hitParticlePrefab = null;
-        col.height        = 0f;
-        col.enabled       = false;
     }
 
     public void EnableHitbox()
     {
         hitThisSwing.Clear();
-        col.enabled = true;
+        cachedAttackerStats = GetComponentInParent<StatsComponent>();
+        cachedFX            = GetComponentInParent<CharacterFX>();
+        active = true;
     }
 
     public void DisableHitbox()
     {
-        col.enabled = false;
+        active = false;
         hitThisSwing.Clear();
     }
 
-    private void OnTriggerEnter(Collider other)
+    void Update()
+    {
+        if (!active || weaponCollider == null) return;
+
+        GetCapsulePoints(out Vector3 p1, out Vector3 p2, out float radius);
+        int count = Physics.OverlapCapsuleNonAlloc(p1, p2, radius, overlapBuffer, hitMask, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < count; i++)
+            ProcessHit(overlapBuffer[i]);
+    }
+
+    void GetCapsulePoints(out Vector3 p1, out Vector3 p2, out float radius)
+    {
+        Transform t = weaponCollider.transform;
+        Vector3 center = t.TransformPoint(weaponCollider.center);
+
+        Vector3 axis;
+        float axisScale;
+        switch (weaponCollider.direction)
+        {
+            case 0:  axis = t.right;   axisScale = t.lossyScale.x; break;
+            case 1:  axis = t.up;      axisScale = t.lossyScale.y; break;
+            default: axis = t.forward; axisScale = t.lossyScale.z; break;
+        }
+
+        float uniformScale = Mathf.Max(t.lossyScale.x, t.lossyScale.y, t.lossyScale.z);
+        radius = weaponCollider.radius * uniformScale;
+        float halfHeight = Mathf.Max(0f, weaponCollider.height * axisScale * 0.5f - radius);
+
+        p1 = center + axis * halfHeight;
+        p2 = center - axis * halfHeight;
+    }
+
+    void ProcessHit(Collider other)
     {
         if (other.transform.IsChildOf(transform.root)) return;
         if (!hitThisSwing.Add(other)) return;
 
+        float damage = cachedAttackerStats != null ? cachedAttackerStats.GetFinal(StatType.AttackDamage) : 0f;
+
+        // Skip friendly fire
+        var targetStats = other.GetComponentInParent<StatsComponent>();
+        if (cachedAttackerStats != null && targetStats != null && cachedAttackerStats.Faction == targetStats.Faction)
+            return;
+
         Vector3 direction = (other.transform.position - transform.root.position).normalized;
+        Vector3 contact   = other.ClosestPoint(transform.position);
+        bool knockback    = cachedFX?.KnockbackEnabled ?? true;
 
-        if (other.TryGetComponent<IDamageable>(out var target))
-            target.TakeDamage(damage, direction);
+        var target = other.GetComponentInParent<IDamageable>();
+        if (target != null)
+            target.TakeDamage(damage, knockback ? direction : Vector3.zero);
 
-        if (enableKnockback && other.attachedRigidbody != null)
-            other.attachedRigidbody.AddForce(direction * knockbackForce, ForceMode.Impulse);
-
-        if (hitSound != null)
-            AudioSource.PlayClipAtPoint(hitSound, other.transform.position);
+        // Weapon-specific contact effects
+        AudioManager.Instance?.PlaySFX(hitSound, contact);
 
         if (hitParticlePrefab != null)
-        {
-            var contact = other.ClosestPoint(transform.position);
             Instantiate(hitParticlePrefab, contact, Quaternion.LookRotation(-direction));
-        }
 
-        if (enableHitStop)
-        {
-            if (hitStopRoutine != null) StopCoroutine(hitStopRoutine);
-            hitStopRoutine = StartCoroutine(HitStopRoutine());
-        }
-    }
-
-    private IEnumerator HitStopRoutine()
-    {
-        Time.timeScale = 0f;
-        yield return new WaitForSecondsRealtime(hitStopDuration);
-        Time.timeScale = 1f;
-        hitStopRoutine = null;
+        // Player/character experience effects delegated to CharacterFX
+        cachedFX?.NotifyHitLanded(contact);
     }
 }

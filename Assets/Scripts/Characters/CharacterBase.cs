@@ -1,47 +1,65 @@
 using Sirenix.OdinInspector;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
 public abstract class CharacterBase : MonoBehaviour
 {
-    [Header("Stats")]
-    public float maxHealth = 100f;
-
-    public float Health { get; private set; }
-    public bool IsAlive => Health > 0f;
     public bool coreSettings;
-    
-    protected NavMeshAgent agent;
-    protected Animator animator;
 
-    [ShowIf("coreSettings")]
-    [BoxGroup("Ground Check")]
+    protected NavMeshAgent   agent;
+    protected Animator       animator;
+    protected StatsComponent stats;
+    protected CharacterFX    fx;
+
+    [ShowIf("coreSettings")] [BoxGroup("Ground Check")]
     [SerializeField] float groundCheckDistance = 0.2f;
 
-    [ShowIf("coreSettings")]
-    [BoxGroup("Ground Check")]
+    [ShowIf("coreSettings")] [BoxGroup("Ground Check")]
     [SerializeField] LayerMask groundMask = ~0;
+
+    [Header("Death")]
+    [SerializeField] float deathDuration = 2f;
+
+    // Subclasses (or their data assets) override these to change which
+    // animator triggers fire on hurt and death.
+    protected virtual string HurtTrigger  => "Hurt";
+    protected virtual string DeathTrigger => "Death";
 
     protected bool IsGrounded { get; private set; }
 
+    public float Health  => stats != null ? stats.CurrentHealth : 0f;
+    public bool  IsAlive => stats != null ? stats.IsAlive : true;
+    public void  Heal(float amount) => stats?.Heal(amount);
+
     protected virtual void Awake()
     {
-        Health = maxHealth;
-        agent = GetComponent<NavMeshAgent>();
-        animator = GetComponent<Animator>();
+        agent    = GetComponent<NavMeshAgent>();
+        animator = GetComponentInChildren<Animator>();
+        stats    = GetComponent<StatsComponent>();
+        fx       = GetComponent<CharacterFX>();
+
+        if (stats != null)
+        {
+            stats.OnDamageTaken += HandleDamageTaken;
+            stats.OnDied        += Die;
+        }
     }
 
-    public virtual void TakeDamage(float damage)
+    protected virtual void OnDestroy()
     {
-        if (!IsAlive) return;
-        Health = Mathf.Max(0f, Health - damage);
-        if (!IsAlive) Die();
+        if (stats != null)
+        {
+            stats.OnDamageTaken -= HandleDamageTaken;
+            stats.OnDied        -= Die;
+        }
     }
 
-    public virtual void Heal(float amount)
+    protected virtual void ApplyKnockback(Vector3 direction)
     {
-        if (!IsAlive) return;
-        Health = Mathf.Min(maxHealth, Health + amount);
+        if (agent == null || !agent.isOnNavMesh) return;
+        float force = fx != null ? fx.KnockbackForce : 3f;
+        agent.Warp(transform.position + direction.normalized * force);
     }
 
     public virtual void Pause()
@@ -57,9 +75,21 @@ public abstract class CharacterBase : MonoBehaviour
         agent.isStopped = false;
     }
 
-    protected virtual void Die() { }
+    protected virtual void Die()
+    {
+        StopMoving();
+        if (agent != null) agent.isStopped = true;
+        TriggerAnimation(DeathTrigger);
+        StartCoroutine(DisableAfterDeath());
+    }
 
-    // Shared helpers
+    IEnumerator DisableAfterDeath()
+    {
+        yield return new WaitForSeconds(deathDuration);
+        gameObject.SetActive(false);
+    }
+
+    // ── Shared helpers ────────────────────────────────────────────────
 
     protected void MoveTo(Vector3 destination)
     {
@@ -73,26 +103,38 @@ public abstract class CharacterBase : MonoBehaviour
         agent.ResetPath();
     }
 
+    protected void FaceTo(Transform target, float speed)
+    {
+        if (target == null) return;
+        Vector3 dir = target.position - transform.position;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.001f) return;
+        transform.rotation = Quaternion.RotateTowards(
+            transform.rotation, Quaternion.LookRotation(dir), speed * Time.deltaTime);
+    }
+
     protected void UpdateGroundCheck()
     {
-        IsGrounded = Physics.Raycast(
+        bool rayHit = Physics.Raycast(
             transform.position + Vector3.up * 0.1f,
             Vector3.down,
             groundCheckDistance + 0.1f,
             groundMask,
             QueryTriggerInteraction.Ignore
         );
+        // NavMeshAgent-driven characters are grounded whenever they're on the mesh
+        IsGrounded = rayHit || (agent != null && agent.isOnNavMesh);
     }
 
     protected void UpdateAnimatorParams()
     {
         if (animator == null || animator.runtimeAnimatorController == null) return;
 
-        float speed = agent != null ? agent.velocity.magnitude : 0f;
+        float speed       = agent != null ? agent.velocity.magnitude : 0f;
         float motionSpeed = agent != null && agent.hasPath ? 1f : 0f;
-        bool freeFall = !IsGrounded && (agent != null && agent.velocity.y < -1f);
+        bool  freeFall    = !IsGrounded && (agent != null && agent.velocity.y < -1f);
 
-        animator.SetFloat("Speed", speed, 0.1f, Time.deltaTime);
+        animator.SetFloat("Speed",       speed,       0.1f, Time.deltaTime);
         animator.SetFloat("MotionSpeed", motionSpeed, 0.1f, Time.deltaTime);
         animator.SetBool("Grounded", IsGrounded);
         animator.SetBool("FreeFall", freeFall);
@@ -101,7 +143,21 @@ public abstract class CharacterBase : MonoBehaviour
     [Button]
     public void TriggerAnimation(string triggerName)
     {
+        if (string.IsNullOrEmpty(triggerName)) return;
         if (animator == null || animator.runtimeAnimatorController == null) return;
-        animator.SetTrigger(triggerName);
+        foreach (var p in animator.parameters)
+            if (p.name == triggerName && p.type == AnimatorControllerParameterType.Trigger)
+            {
+                animator.SetTrigger(triggerName);
+                return;
+            }
+    }
+
+    void HandleDamageTaken(float amount, Vector3 knockbackDir)
+    {
+        TriggerAnimation(HurtTrigger);
+        fx?.NotifyHurtReceived(amount, knockbackDir);
+        if (knockbackDir != Vector3.zero)
+            ApplyKnockback(knockbackDir);
     }
 }
