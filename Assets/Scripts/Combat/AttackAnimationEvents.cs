@@ -4,6 +4,12 @@ public class AttackAnimationEvents : MonoBehaviour
 {
     [SerializeField] private WeaponHitbox hitbox;
 
-    public void EnableHitbox()  => hitbox.EnableHitbox();
-    public void DisableHitbox() => hitbox.DisableHitbox();
+    void Awake()
+    {
+        if (hitbox == null)
+            hitbox = GetComponentInChildren<WeaponHitbox>(true);
+    }
+
+    public void EnableHitbox()  => hitbox?.EnableHitbox();
+    public void DisableHitbox() => hitbox?.DisableHitbox();
 }

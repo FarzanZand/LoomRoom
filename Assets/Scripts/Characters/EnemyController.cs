@@ -6,50 +6,19 @@ public enum EnemyState { Idle, Wander, Patrol, Chase, Attack, ReturnToPost }
 
 public enum AggressionMode
 {
-    Aggressive,        // detects and chases the player on sight
-    AggressiveWhenHit, // ignores the player until it takes damage, then fights back
-    Passive            // never enters combat regardless of what happens
+    Aggressive,
+    AggressiveWhenHit,
+    Passive
 }
 
-[RequireComponent(typeof(NavMeshAgent))]
-[RequireComponent(typeof(Animator))]
-public abstract class EnemyController : CharacterBase
+public abstract class EnemyController : MovementBase
 {
     [Header("Default Behaviour")]
     [SerializeField] EnemyState defaultState = EnemyState.Idle;
     [SerializeField] AggressionMode aggressionMode = AggressionMode.Aggressive;
 
-    [ShowIf("defaultState", EnemyState.Wander)]
-    [BoxGroup("Wander")]
-    [SerializeField] float wanderRadius = 8f;
-
-    [ShowIf("defaultState", EnemyState.Wander)]
-    [BoxGroup("Wander")]
-    [SerializeField] float minWanderDistance = 2f;
-
-    [ShowIf("defaultState", EnemyState.Wander)]
-    [BoxGroup("Wander")]
-    [SerializeField] float minIdleTime = 2f;
-
-    [ShowIf("defaultState", EnemyState.Wander)]
-    [BoxGroup("Wander")]
-    [SerializeField] float maxIdleTime = 6f;
-
-    [ShowIf("defaultState", EnemyState.Wander)]
-    [BoxGroup("Wander/Zone")]
-    [SerializeField] Transform wanderZoneCenter;
-
-    [ShowIf("defaultState", EnemyState.Wander)]
-    [BoxGroup("Wander/Zone")]
-    [SerializeField] float wanderZoneRadius = 0f;
-
-    [ShowIf("defaultState", EnemyState.Patrol)]
-    [BoxGroup("Patrol")]
-    [SerializeField] Transform[] waypoints;
-
-    [ShowIf("defaultState", EnemyState.Patrol)]
-    [BoxGroup("Patrol")]
-    [SerializeField] bool loopPatrol = true;
+    protected override bool ShowWanderFields() => defaultState == EnemyState.Wander;
+    protected override bool ShowPatrolFields() => defaultState == EnemyState.Patrol;
 
     [Header("Movement")]
     [SerializeField] bool useWanderSpeed;
@@ -73,11 +42,8 @@ public abstract class EnemyController : CharacterBase
     [SerializeField] float maxSearchTime = 5f;
 
     [Header("Rotation")]
-    [Tooltip("NavMeshAgent angular speed while wandering/patrolling.")]
     [SerializeField] float passiveAngularSpeed = 120f;
-    [Tooltip("NavMeshAgent angular speed while chasing.")]
     [SerializeField] float chaseAngularSpeed = 540f;
-    [Tooltip("Manual rotation speed in attack stance between swings.")]
     [SerializeField] float attackFaceSpeed = 720f;
 
     [Header("Attack")]
@@ -85,7 +51,6 @@ public abstract class EnemyController : CharacterBase
     [SerializeField] protected float attackCooldown = 1.5f;
     [SerializeField] protected float attackDamage = 10f;
     [SerializeField] string attackTrigger = "Attack";
-    [Tooltip("Max angle from forward within which the enemy will swing. Outside this it rotates first.")]
     [SerializeField, Range(0f, 180f)] float attackAngleThreshold = 45f;
 
     protected EnemyState state;
@@ -93,18 +58,14 @@ public abstract class EnemyController : CharacterBase
 
     float defaultSpeed;
     float attackTimer;
-    float wanderTimer;
     float loseSightTimer;
     float giveUpTimer = -1f;
-    bool wasProvoked; // true once the enemy has entered combat at least once
-    int waypointIndex;
-    Vector3 spawnPosition;
+    bool wasProvoked;
     Vector3 lastKnownPlayerPos;
 
     protected override void Awake()
     {
         base.Awake();
-        spawnPosition = transform.position;
         if (agent != null) defaultSpeed = agent.speed;
     }
 
@@ -146,49 +107,13 @@ public abstract class EnemyController : CharacterBase
     protected virtual void HandleWander()
     {
         if (CanEnterCombat() && CanSeePlayer()) { EnterCombat(); return; }
-
-        wanderTimer -= Time.deltaTime;
-        if (wanderTimer > 0f) return;
-
-        Vector3 zoneCenter = wanderZoneCenter != null ? wanderZoneCenter.position : spawnPosition;
-
-        Vector3 randomDir = Random.insideUnitSphere;
-        randomDir.y = 0f;
-        randomDir.Normalize();
-
-        float distance = Random.Range(minWanderDistance, wanderRadius);
-        Vector3 targetPoint = zoneCenter + randomDir * distance;
-
-        if (wanderZoneRadius > 0f)
-        {
-            Vector3 toTarget = targetPoint - zoneCenter;
-            toTarget.y = 0f;
-            if (toTarget.magnitude > wanderZoneRadius)
-                targetPoint = zoneCenter + toTarget.normalized * wanderZoneRadius;
-        }
-
-        if (NavMesh.SamplePosition(targetPoint, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
-            MoveTo(hit.position);
-
-        wanderTimer = Random.Range(minIdleTime, maxIdleTime);
+        HandleWanderMovement();
     }
 
     protected virtual void HandlePatrol()
     {
         if (CanEnterCombat() && CanSeePlayer()) { EnterCombat(); return; }
-
-        if (waypoints == null || waypoints.Length == 0) return;
-
-        // Use a minimum arrival threshold so patrol advances even when stoppingDistance is 0
-        float arriveThreshold = Mathf.Max(agent.stoppingDistance, 0.5f);
-        if (!agent.pathPending && agent.remainingDistance < arriveThreshold)
-        {
-            waypointIndex++;
-            if (waypointIndex >= waypoints.Length)
-                waypointIndex = loopPatrol ? 0 : waypoints.Length - 1;
-
-            MoveTo(waypoints[waypointIndex].position);
-        }
+        HandlePatrolMovement();
     }
 
     // ── Combat states ─────────────────────────────────────────────────
@@ -207,12 +132,10 @@ public abstract class EnemyController : CharacterBase
         }
     }
 
-    // Returns true if this enemy should react to seeing the player
     bool CanEnterCombat()
     {
         if (aggressionMode == AggressionMode.Passive) return false;
         if (aggressionMode == AggressionMode.Aggressive) return true;
-        // AggressiveWhenHit: only engage on sight after already being provoked
         return wasProvoked;
     }
 
@@ -230,7 +153,6 @@ public abstract class EnemyController : CharacterBase
     {
         if (player == null) return;
 
-        // Attack range is checked before LOS — being within sword reach doesn't require sight
         if (HorizontalDist(transform.position, player.position) <= attackRange)
         {
             SetState(EnemyState.Attack);
@@ -290,7 +212,6 @@ public abstract class EnemyController : CharacterBase
 
     protected virtual void HandleReturnToPost()
     {
-        // Re-engage if provoked enemy spots the player again, or always if Aggressive
         if (CanEnterCombat() && CanSeePlayer()) { EnterCombat(); return; }
 
         Vector3 returnTarget = GetPostPosition();
@@ -316,7 +237,6 @@ public abstract class EnemyController : CharacterBase
         state = newState;
         wanderTimer = 0f;
 
-        // Reset sight timer whenever re-entering chase so a fresh grace period always applies
         if (newState == EnemyState.Chase)
             loseSightTimer = loseSightGracePeriod;
 
@@ -334,8 +254,8 @@ public abstract class EnemyController : CharacterBase
             if (agent != null) agent.isStopped = false;
         }
 
-        if (newState == EnemyState.Patrol && waypoints != null && waypoints.Length > 0)
-            MoveTo(waypoints[waypointIndex].position);
+        if (newState == EnemyState.Patrol)
+            StartPatrol();
 
         if (agent != null)
         {
@@ -344,8 +264,8 @@ public abstract class EnemyController : CharacterBase
                           || newState == EnemyState.Patrol
                           || newState == EnemyState.ReturnToPost;
 
-            bool isCombat  = newState == EnemyState.Chase
-                          || newState == EnemyState.Attack;
+            bool isCombat = newState == EnemyState.Chase
+                         || newState == EnemyState.Attack;
 
             if (isPassive && useWanderSpeed)
                 agent.speed = wanderSpeed;
@@ -367,9 +287,7 @@ public abstract class EnemyController : CharacterBase
         float dist = toPlayer.magnitude;
 
         if (dist > detectionRadius) return false;
-
         if (HorizontalDist(transform.position, player.position) <= closeDetectionRadius) return true;
-
         if (Vector3.Angle(transform.forward, toPlayer) > fieldOfView * 0.5f) return false;
 
         return !Physics.Raycast(origin, toPlayer.normalized, dist, obstacleMask, QueryTriggerInteraction.Ignore);
@@ -388,8 +306,7 @@ public abstract class EnemyController : CharacterBase
         if (animator == null || animator.runtimeAnimatorController == null) return false;
         var cur  = animator.GetCurrentAnimatorStateInfo(0);
         var next = animator.GetNextAnimatorStateInfo(0);
-        return cur.IsTag("Attack")
-            || (animator.IsInTransition(0) && next.IsTag("Attack"));
+        return cur.IsTag("Attack") || (animator.IsInTransition(0) && next.IsTag("Attack"));
     }
 
     static float HorizontalDist(Vector3 a, Vector3 b) =>

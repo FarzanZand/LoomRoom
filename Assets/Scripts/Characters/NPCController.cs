@@ -4,50 +4,10 @@ using UnityEngine.AI;
 
 public enum NPCState { Idle, Wander, Patrol }
 
-[RequireComponent(typeof(NavMeshAgent))]
-[RequireComponent(typeof(Animator))]
-public class NPCController : CharacterBase, IInteractable
+public class NPCController : MovementBase, IInteractable
 {
     [Header("Behaviour")]
     [SerializeField] NPCState defaultState = NPCState.Idle;
-
-    [ShowIf("defaultState", NPCState.Wander)]
-    [BoxGroup("Wander")]
-    [Tooltip("Maximum distance per wander step.")]
-    [SerializeField] float wanderRadius = 8f;
-
-    [ShowIf("defaultState", NPCState.Wander)]
-    [BoxGroup("Wander")]
-    [Tooltip("Minimum distance per wander step.")]
-    [SerializeField] float minWanderDistance = 2f;
-
-    [ShowIf("defaultState", NPCState.Wander)]
-    [BoxGroup("Wander")]
-    [Tooltip("Minimum time standing still between wanders.")]
-    [SerializeField] float minIdleTime = 2f;
-
-    [ShowIf("defaultState", NPCState.Wander)]
-    [BoxGroup("Wander")]
-    [Tooltip("Maximum time standing still between wanders.")]
-    [SerializeField] float maxIdleTime = 6f;
-
-    [ShowIf("defaultState", NPCState.Wander)]
-    [BoxGroup("Wander/Zone")]
-    [Tooltip("Centre of the allowed wander area. Defaults to spawn position if left empty.")]
-    [SerializeField] Transform wanderZoneCenter;
-
-    [ShowIf("defaultState", NPCState.Wander)]
-    [BoxGroup("Wander/Zone")]
-    [Tooltip("NPC will never pick a destination outside this radius from the zone centre. 0 = unlimited.")]
-    [SerializeField] float wanderZoneRadius = 0f;
-
-    [ShowIf("defaultState", NPCState.Patrol)]
-    [BoxGroup("Patrol")]
-    [SerializeField] Transform[] waypoints;
-
-    [ShowIf("defaultState", NPCState.Patrol)]
-    [BoxGroup("Patrol")]
-    [SerializeField] bool loopPatrol = true;
 
     [Header("Interaction")]
     [SerializeField] bool isInteractable = false;
@@ -58,17 +18,15 @@ public class NPCController : CharacterBase, IInteractable
 
     NPCState currentState;
     NPCState stateBeforePause;
-    float wanderTimer;
-    int waypointIndex;
-    Vector3 spawnPosition;
     InteractableTrigger interactTrigger;
-
     Transform faceTarget;
+
+    protected override bool ShowWanderFields() => defaultState == NPCState.Wander;
+    protected override bool ShowPatrolFields() => defaultState == NPCState.Patrol;
 
     protected override void Awake()
     {
         base.Awake();
-        spawnPosition = transform.position;
         interactTrigger = GetComponentInChildren<InteractableTrigger>();
         SetInteractable(isInteractable);
     }
@@ -100,6 +58,8 @@ public class NPCController : CharacterBase, IInteractable
 
         if (state == NPCState.Idle)
             StopMoving();
+        else if (state == NPCState.Patrol)
+            StartPatrol();
     }
 
     public override void Pause()
@@ -136,8 +96,7 @@ public class NPCController : CharacterBase, IInteractable
         dir.y = 0f;
         if (dir.sqrMagnitude > 0.001f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(dir);
-            if (Quaternion.Angle(transform.rotation, targetRot) < 0.5f)
+            if (Quaternion.Angle(transform.rotation, Quaternion.LookRotation(dir)) < 0.5f)
                 faceTarget = null;
         }
     }
@@ -146,55 +105,8 @@ public class NPCController : CharacterBase, IInteractable
     {
         switch (currentState)
         {
-            case NPCState.Wander:
-                HandleWander();
-                break;
-
-            case NPCState.Patrol:
-                HandlePatrol();
-                break;
-        }
-    }
-
-    void HandleWander()
-    {
-        wanderTimer -= Time.deltaTime;
-        if (wanderTimer > 0f) return;
-
-        Vector3 zoneCenter = wanderZoneCenter != null ? wanderZoneCenter.position : spawnPosition;
-
-        Vector3 randomDir = Random.insideUnitSphere;
-        randomDir.y = 0f;
-        randomDir.Normalize();
-
-        float distance = Random.Range(minWanderDistance, wanderRadius);
-        Vector3 targetPoint = transform.position + randomDir * distance;
-
-        if (wanderZoneRadius > 0f)
-        {
-            Vector3 toTarget = targetPoint - zoneCenter;
-            toTarget.y = 0f;
-            if (toTarget.magnitude > wanderZoneRadius)
-                targetPoint = zoneCenter + toTarget.normalized * wanderZoneRadius;
-        }
-
-        if (NavMesh.SamplePosition(targetPoint, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
-            MoveTo(hit.position);
-
-        wanderTimer = Random.Range(minIdleTime, maxIdleTime);
-    }
-
-    void HandlePatrol()
-    {
-        if (waypoints == null || waypoints.Length == 0) return;
-
-        if (!agent.pathPending && agent.remainingDistance < agent.stoppingDistance)
-        {
-            waypointIndex++;
-            if (waypointIndex >= waypoints.Length)
-                waypointIndex = loopPatrol ? 0 : waypoints.Length - 1;
-
-            MoveTo(waypoints[waypointIndex].position);
+            case NPCState.Wander: HandleWanderMovement(); break;
+            case NPCState.Patrol: HandlePatrolMovement(); break;
         }
     }
 
