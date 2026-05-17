@@ -7,8 +7,8 @@ public abstract class CharacterBase : MonoBehaviour
 {
     public bool coreSettings;
 
-    protected NavMeshAgent agent;
-    protected Animator     animator;
+    protected NavMeshAgent   agent;
+    protected Animator       animator;
     protected StatsComponent stats;
 
     [ShowIf("coreSettings")] [BoxGroup("Ground Check")]
@@ -18,19 +18,21 @@ public abstract class CharacterBase : MonoBehaviour
     [SerializeField] LayerMask groundMask = ~0;
 
     [Header("Combat")]
-    [SerializeField] string hurtTrigger = "Hurt";
     [SerializeField] protected float knockbackForce = 2f;
 
     [Header("Death")]
-    [SerializeField] string deathTrigger = "Death";
     [SerializeField] float deathDuration = 2f;
+
+    // Subclasses (or their data assets) override these to change which
+    // animator triggers fire on hurt and death.
+    protected virtual string HurtTrigger  => "Hurt";
+    protected virtual string DeathTrigger => "Death";
 
     protected bool IsGrounded { get; private set; }
 
-    // Delegate health queries to StatsComponent
     public float Health  => stats != null ? stats.CurrentHealth : 0f;
-    public bool IsAlive  => stats != null ? stats.IsAlive : false;
-    public void Heal(float amount) => stats?.Heal(amount);
+    public bool  IsAlive => stats != null ? stats.IsAlive : true;
+    public void  Heal(float amount) => stats?.Heal(amount);
 
     protected virtual void Awake()
     {
@@ -52,13 +54,6 @@ public abstract class CharacterBase : MonoBehaviour
             stats.OnDamageTaken -= HandleDamageTaken;
             stats.OnDied        -= Die;
         }
-    }
-
-    void HandleDamageTaken(float amount, Vector3 knockbackDir)
-    {
-        TriggerAnimation(hurtTrigger);
-        if (knockbackDir != Vector3.zero)
-            ApplyKnockback(knockbackDir);
     }
 
     protected virtual void ApplyKnockback(Vector3 direction)
@@ -84,7 +79,7 @@ public abstract class CharacterBase : MonoBehaviour
     {
         StopMoving();
         if (agent != null) agent.isStopped = true;
-        TriggerAnimation(deathTrigger);
+        TriggerAnimation(DeathTrigger);
         StartCoroutine(DisableAfterDeath());
     }
 
@@ -120,27 +115,29 @@ public abstract class CharacterBase : MonoBehaviour
 
     protected void UpdateGroundCheck()
     {
-        IsGrounded = Physics.Raycast(
+        bool rayHit = Physics.Raycast(
             transform.position + Vector3.up * 0.1f,
             Vector3.down,
             groundCheckDistance + 0.1f,
             groundMask,
             QueryTriggerInteraction.Ignore
         );
+        // NavMeshAgent-driven characters are grounded whenever they're on the mesh
+        IsGrounded = rayHit || (agent != null && agent.isOnNavMesh);
     }
 
     protected void UpdateAnimatorParams()
     {
         if (animator == null || animator.runtimeAnimatorController == null) return;
 
-        float speed      = agent != null ? agent.velocity.magnitude : 0f;
+        float speed       = agent != null ? agent.velocity.magnitude : 0f;
         float motionSpeed = agent != null && agent.hasPath ? 1f : 0f;
-        bool  freeFall   = !IsGrounded && (agent != null && agent.velocity.y < -1f);
+        bool  freeFall    = !IsGrounded && (agent != null && agent.velocity.y < -1f);
 
         animator.SetFloat("Speed",       speed,       0.1f, Time.deltaTime);
         animator.SetFloat("MotionSpeed", motionSpeed, 0.1f, Time.deltaTime);
-        animator.SetBool("Grounded",  IsGrounded);
-        animator.SetBool("FreeFall",  freeFall);
+        animator.SetBool("Grounded", IsGrounded);
+        animator.SetBool("FreeFall", freeFall);
     }
 
     [Button]
@@ -148,6 +145,19 @@ public abstract class CharacterBase : MonoBehaviour
     {
         if (string.IsNullOrEmpty(triggerName)) return;
         if (animator == null || animator.runtimeAnimatorController == null) return;
-        animator.SetTrigger(triggerName);
+        foreach (var p in animator.parameters)
+            if (p.name == triggerName && p.type == AnimatorControllerParameterType.Trigger)
+            {
+                animator.SetTrigger(triggerName);
+                return;
+            }
+    }
+
+    void HandleDamageTaken(float amount, Vector3 knockbackDir)
+    {
+        Debug.Log($"[{gameObject.name}] took {amount:F1} damage");
+        TriggerAnimation(HurtTrigger);
+        if (knockbackDir != Vector3.zero)
+            ApplyKnockback(knockbackDir);
     }
 }

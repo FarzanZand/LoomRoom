@@ -13,8 +13,12 @@ namespace MFPC
 
         [Tooltip("Necessery scriptable component used for controller settings, like mouse sensitivity, movement options.")]
         [SerializeField] GameData gameData;
+        [Tooltip("Player data asset driving stats, faction, and base movement speeds.")]
+        [SerializeField] PlayerData playerData;
         [Tooltip("Lock the cursor at start frame.")]
         [SerializeField] bool lockCursorOnStart = true;
+
+        StatsComponent stats;
 
         // Inputs variables
         protected PlayerInputActions inputActions;
@@ -243,10 +247,24 @@ namespace MFPC
             Controller = GetComponent<CharacterController>();
             playerCollider = GetComponent<CapsuleCollider>();
             checker = GetComponent<TerrainChecker>();
+            stats = GetComponent<StatsComponent>();
+
             if (!staminaModule)
                 staminaModule = GetComponent<StaminaModule>();
             if (!steepSlopeSlideModule)
                 steepSlopeSlideModule = GetComponent<SteepSlopeSlideModule>();
+
+            if (playerData != null)
+            {
+                stats?.ApplyProfile(playerData.statProfile);
+                stats?.SetFaction(playerData.faction);
+
+                walkSpeed        = playerData.walkSpeed;
+                sprintSpeed      = playerData.sprintSpeed;
+                crouchSpeed      = playerData.crouchSpeed;
+                jumpForce        = playerData.jumpForce;
+                gravityMultiplier = playerData.gravityMultiplier;
+            }
 
             inputActions = new PlayerInputActions();
             if (ItemHolder.Instance != null)

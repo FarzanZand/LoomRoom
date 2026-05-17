@@ -90,6 +90,11 @@ public class WeaponHitbox : MonoBehaviour
         var attackerStats = GetComponentInParent<StatsComponent>();
         float damage = attackerStats != null ? attackerStats.GetFinal(StatType.AttackDamage) : 0f;
 
+        // Skip friendly fire
+        var targetStats = other.GetComponentInParent<StatsComponent>();
+        if (attackerStats != null && targetStats != null && attackerStats.Faction == targetStats.Faction)
+            return;
+
         Vector3 direction = (other.transform.position - transform.root.position).normalized;
 
         var target = other.GetComponentInParent<IDamageable>();

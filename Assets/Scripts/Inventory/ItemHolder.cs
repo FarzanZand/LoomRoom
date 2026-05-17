@@ -10,6 +10,7 @@ public class ItemHolder : Singleton<ItemHolder>
     [SerializeField] private Transform tablePlayerRightHand;
     [SerializeField] private Transform tablePlayerLeftHand;
     [SerializeField] private Animator tablePlayerArmsAnimator;
+    [SerializeField] PlayerData playerData;
 
     public event System.Action OnHeldItemChanged;
 
@@ -32,6 +33,16 @@ public class ItemHolder : Singleton<ItemHolder>
     {
         if (PlayerManager.Instance != null)
             PlayerManager.Instance.OnPlayerSwapped += OnPlayerSwapped;
+
+        if (playerData?.startingItems != null && playerData.startingItems.Count > 0)
+            StartCoroutine(ApplyStartingInventory());
+    }
+
+    System.Collections.IEnumerator ApplyStartingInventory()
+    {
+        yield return null; // wait one frame so all managers are initialized
+        foreach (var item in playerData.startingItems)
+            if (item != null) HoldItem(item);
     }
 
     protected override void OnDestroy()

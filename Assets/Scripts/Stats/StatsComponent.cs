@@ -2,101 +2,166 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Universal stat container. Any GameObject — enemy, player, NPC, destructible prop —
-// can carry one of these to participate in the damage and buff systems.
+// Universal stat container — attach to any GameObject that participates
+// in the damage, buff, or progression systems.
 public class StatsComponent : MonoBehaviour, IDamageable
 {
-    [Tooltip("Shared stat defaults. Per-instance overrides below take priority.")]
-    [SerializeField] StatsDataSO statsData;
+    [Tooltip("Assign a StatProfile directly, or leave empty and let the character " +
+             "data asset (EnemyData / PlayerData) push the profile at runtime.")]
+    [SerializeField] StatProfile statsData;
 
-    [Tooltip("Override or add stats on top of the SO values.")]
+    [Tooltip("Per-instance overrides on top of the profile values.")]
     [SerializeField] List<StatEntry> overrides;
 
+    [SerializeField] Faction faction = Faction.Neutral;
+
     // ── Events ────────────────────────────────────────────────────────
-    public event Action<float, Vector3> OnDamageTaken;  // (actualDamage, knockbackDir)
-    public event Action<float>          OnHealed;       // (amount)
-    public event Action                 OnDied;
-    public event Action<StatType, float> OnStatChanged; // (stat, newFinalValue)
+    public event Action<float, Vector3>   OnDamageTaken;   // (actualDamage, knockbackDir)
+    public event Action<float>            OnHealed;        // (healAmount)
+    public event Action                   OnDied;
+    public event Action<StatType, float, float> OnStatChanged; // (stat, oldValue, newValue)
 
     // ── State ─────────────────────────────────────────────────────────
-    public float CurrentHealth { get; private set; }
-    public bool  IsAlive       => CurrentHealth > 0f;
+    public float   CurrentHealth { get; private set; }
+    public bool    IsAlive       => CurrentHealth > 0f;
+    public Faction Faction       => faction;
 
-    readonly Dictionary<StatType, float> baseStats = new();
-    readonly List<StatModifier>          modifiers = new();
+    readonly Dictionary<StatType, float>          baseStats  = new();
+    readonly Dictionary<StatType, (float min, float max)> statRanges = new();
+    readonly List<StatModifier>                   modifiers  = new();
 
     // ── Lifecycle ─────────────────────────────────────────────────────
 
     void Awake()
     {
-        // SO values first
-        if (statsData != null)
-            foreach (var e in statsData.stats)
-                baseStats[e.stat] = e.baseValue;
+        LoadProfile(statsData);
 
-        // Per-instance overrides on top
         if (overrides != null)
             foreach (var e in overrides)
-                baseStats[e.stat] = e.baseValue;
+            {
+                baseStats[e.stat]  = e.baseValue;
+                statRanges[e.stat] = (e.min, e.max);
+            }
+    }
 
+    void Start()
+    {
+        // Initialised here so any ApplyProfile call from a character controller's
+        // Awake has already run and MaxHealth reflects the correct value.
         CurrentHealth = GetFinal(StatType.MaxHealth);
+    }
+
+    void Update()
+    {
+        // Tick timed modifiers, remove expired ones, fire change events
+        var oldValues = new Dictionary<StatType, float>();
+
+        for (int i = modifiers.Count - 1; i >= 0; i--)
+        {
+            if (modifiers[i].IsPermanent) continue;
+
+            modifiers[i].Tick(Time.deltaTime);
+
+            if (modifiers[i].IsExpired)
+            {
+                var stat = modifiers[i].Stat;
+                if (!oldValues.ContainsKey(stat))
+                    oldValues[stat] = GetFinal(stat);
+                modifiers.RemoveAt(i);
+            }
+        }
+
+        foreach (var kvp in oldValues)
+            OnStatChanged?.Invoke(kvp.Key, kvp.Value, GetFinal(kvp.Key));
+    }
+
+    // ── Profile loading ───────────────────────────────────────────────
+
+    void LoadProfile(StatProfile profile)
+    {
+        if (profile?.stats == null) return;
+        foreach (var e in profile.stats)
+        {
+            baseStats[e.stat]  = e.baseValue;
+            statRanges[e.stat] = (e.min, e.max);
+        }
+    }
+
+    // Called by EnemyController (and similar) in Awake to push the data
+    // asset's profile before Start() initialises CurrentHealth.
+    public void ApplyProfile(StatProfile profile)
+    {
+        LoadProfile(profile);
     }
 
     // ── Queries ───────────────────────────────────────────────────────
 
-    public bool HasStat(StatType stat) => baseStats.ContainsKey(stat);
-
-    public float GetBase(StatType stat) =>
-        baseStats.TryGetValue(stat, out var v) ? v : 0f;
+    public bool  HasStat(StatType stat) => baseStats.ContainsKey(stat);
+    public float GetBase(StatType stat) => baseStats.TryGetValue(stat, out var v) ? v : 0f;
 
     public float GetFinal(StatType stat)
     {
-        float flat       = 0f;
-        float percentAdd = 0f;
-        float percentMul = 1f;
+        float flat = 0f, percentAdd = 0f, percentMul = 1f;
 
         foreach (var mod in modifiers)
         {
             if (mod.Stat != stat) continue;
             switch (mod.Type)
             {
-                case ModifierType.Flat:            flat       += mod.Value;           break;
-                case ModifierType.PercentAdd:      percentAdd += mod.Value;           break;
-                case ModifierType.PercentMultiply: percentMul *= (1f + mod.Value);    break;
+                case ModifierType.Flat:            flat       += mod.Value;         break;
+                case ModifierType.PercentAdd:      percentAdd += mod.Value;         break;
+                case ModifierType.PercentMultiply: percentMul *= (1f + mod.Value);  break;
             }
         }
 
-        return (GetBase(stat) + flat) * (1f + percentAdd) * percentMul;
+        float result = (GetBase(stat) + flat) * (1f + percentAdd) * percentMul;
+
+        if (statRanges.TryGetValue(stat, out var range))
+        {
+            result = Mathf.Max(result, range.min);
+            if (range.max > 0f)
+                result = Mathf.Min(result, range.max);
+        }
+
+        return result;
     }
 
     // ── Modifiers ─────────────────────────────────────────────────────
 
     public void AddModifier(StatModifier mod)
     {
+        float old = GetFinal(mod.Stat);
         modifiers.Add(mod);
-        OnStatChanged?.Invoke(mod.Stat, GetFinal(mod.Stat));
+        OnStatChanged?.Invoke(mod.Stat, old, GetFinal(mod.Stat));
     }
 
     public void RemoveModifier(StatModifier mod)
     {
+        float old = GetFinal(mod.Stat);
         if (modifiers.Remove(mod))
-            OnStatChanged?.Invoke(mod.Stat, GetFinal(mod.Stat));
+            OnStatChanged?.Invoke(mod.Stat, old, GetFinal(mod.Stat));
     }
 
     public void RemoveAllFromSource(object source)
     {
-        var affected = new HashSet<StatType>();
+        var oldValues = new Dictionary<StatType, float>();
+
         for (int i = modifiers.Count - 1; i >= 0; i--)
         {
-            if (modifiers[i].Source == source)
-            {
-                affected.Add(modifiers[i].Stat);
-                modifiers.RemoveAt(i);
-            }
+            if (!ReferenceEquals(modifiers[i].Source, source)) continue;
+            var stat = modifiers[i].Stat;
+            if (!oldValues.ContainsKey(stat))
+                oldValues[stat] = GetFinal(stat);
+            modifiers.RemoveAt(i);
         }
-        foreach (var stat in affected)
-            OnStatChanged?.Invoke(stat, GetFinal(stat));
+
+        foreach (var kvp in oldValues)
+            OnStatChanged?.Invoke(kvp.Key, kvp.Value, GetFinal(kvp.Key));
     }
+
+    // ── Faction ───────────────────────────────────────────────────────
+
+    public void SetFaction(Faction f) => faction = f;
 
     // ── IDamageable ───────────────────────────────────────────────────
 

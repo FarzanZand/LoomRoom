@@ -350,10 +350,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 659157486100547264}
+  - component: {fileID: 7987823238427769299}
   - component: {fileID: 4443461806256046630}
   - component: {fileID: 846770712117852252}
   - component: {fileID: 78984053522660403}
-  - component: {fileID: 7987823238427769299}
   m_Layer: 0
   m_Name: HumanoidEnemy
   m_TagString: Untagged
@@ -380,6 +380,39 @@ Transform:
   - {fileID: 5123531701898103114}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7987823238427769299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957184423342700410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5735d254f4bc4a4095496deb4f22df0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HumanoidEnemy
+  coreSettings: 0
+  groundCheckDistance: 0.2
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  knockbackForce: 2
+  deathDuration: 2
+  wanderRadius: 8
+  minWanderDistance: 2
+  minIdleTime: 2
+  maxIdleTime: 6
+  wanderZoneCenter: {fileID: 0}
+  wanderZoneRadius: 0
+  waypoints: []
+  loopPatrol: 1
+  enemyData: {fileID: 0}
+  localDefaultState: 0
+  localAggressionMode: 0
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!195 &4443461806256046630
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -447,37 +480,6 @@ CapsuleCollider:
   m_Height: 1.8
   m_Direction: 1
   m_Center: {x: 0, y: 0.93, z: 0}
---- !u!114 &7987823238427769299
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 957184423342700410}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c5735d254f4bc4a4095496deb4f22df0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HumanoidEnemy
-  maxHealth: 100
-  coreSettings: 0
-  groundCheckDistance: 0.2
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  detectionRadius: 12
-  fieldOfView: 120
-  eyeHeight: 1.6
-  obstacleMask:
-    serializedVersion: 2
-    m_Bits: 0
-  attackRange: 1.8
-  attackCooldown: 1.5
-  attackDamage: 10
-  attackTrigger: Attack
-  faceSpeed: 360
-  deathTrigger: Death
-  deathDuration: 2
 --- !u!1 &1082656234791438016
 GameObject:
   m_ObjectHideFlags: 0
