@@ -45,6 +45,7 @@ public class NPCController : MovementBase, IInteractable
 
     void Update()
     {
+        if (!IsAlive) return;
         UpdateGroundCheck();
         UpdateState();
         UpdateFacing();

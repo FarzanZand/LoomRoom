@@ -37,7 +37,7 @@ public abstract class CharacterBase : MonoBehaviour
     protected virtual void Awake()
     {
         agent    = GetComponent<NavMeshAgent>();
-        animator = GetComponent<Animator>();
+        animator = GetComponentInChildren<Animator>();
         stats    = GetComponent<StatsComponent>();
 
         if (stats != null)
@@ -155,7 +155,6 @@ public abstract class CharacterBase : MonoBehaviour
 
     void HandleDamageTaken(float amount, Vector3 knockbackDir)
     {
-        Debug.Log($"[{gameObject.name}] took {amount:F1} damage");
         TriggerAnimation(HurtTrigger);
         if (knockbackDir != Vector3.zero)
             ApplyKnockback(knockbackDir);

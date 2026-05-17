@@ -34,6 +34,7 @@ public class EnemyData : ScriptableObject
     public float fieldOfView        = 120f;
     public float eyeHeight          = 1.6f;
     public float closeDetectionRadius = 2f;
+    public LayerMask obstacleMask   = ~0;
 
     [Header("Chase")]
     public float loseSightGracePeriod = 3f;
@@ -49,6 +50,8 @@ public class EnemyData : ScriptableObject
     public float attackCooldown       = 1.5f;
     [Range(0f, 180f)]
     public float attackAngleThreshold = 45f;
+    [Tooltip("Seconds after the attack trigger fires before OnAttackHit is called. Set to -1 to rely solely on animation events.")]
+    public float attackHitDelay       = 0.4f;
 
     [Header("Animation Triggers")]
     [Tooltip("Leave empty to use the default 'Attack' trigger.")]

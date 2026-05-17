@@ -36,9 +36,10 @@ public abstract class EnemyController : MovementBase
     float detectionRadius, fieldOfView, eyeHeight, closeDetectionRadius;
     float loseSightGracePeriod, maxSearchTime;
     float passiveAngularSpeed, chaseAngularSpeed, attackFaceSpeed;
-    float attackCooldown, attackAngleThreshold;
+    float attackCooldown, attackAngleThreshold, attackHitDelay;
     bool  useWanderSpeed; float wanderSpeed;
     bool  useChaseSpeed;  float chaseSpeed;
+    bool  attackHitDealt;
 
     // ── Trigger overrides ─────────────────────────────────────────────
 
@@ -85,6 +86,7 @@ public abstract class EnemyController : MovementBase
         base.OnDestroy();
         if (stats != null)
             stats.OnDamageTaken -= OnStatsDamageTaken;
+        CancelInvoke(nameof(OnAttackHit));
     }
 
     void ApplyEnemyData()
@@ -115,6 +117,8 @@ public abstract class EnemyController : MovementBase
             attackRange          = enemyData.attackRange;
             attackCooldown       = enemyData.attackCooldown;
             attackAngleThreshold = enemyData.attackAngleThreshold;
+            attackHitDelay       = enemyData.attackHitDelay;
+            obstacleMask         = enemyData.obstacleMask;
             useWanderSpeed       = enemyData.useWanderSpeed;
             wanderSpeed          = enemyData.wanderSpeed;
             useChaseSpeed        = enemyData.useChaseSpeed;
@@ -135,6 +139,7 @@ public abstract class EnemyController : MovementBase
             attackRange          = 1.8f;
             attackCooldown       = 1.5f;
             attackAngleThreshold = 45f;
+            attackHitDelay       = 0.4f;
         }
     }
 
@@ -290,8 +295,12 @@ public abstract class EnemyController : MovementBase
             if (snapDir.sqrMagnitude > 0.001f)
                 transform.rotation = Quaternion.LookRotation(snapDir);
 
-            attackTimer = attackCooldown;
+            attackTimer    = attackCooldown;
+            attackHitDealt = false;
             TriggerAnimation(AttackTrigger);
+
+            if (attackHitDelay >= 0f)
+                Invoke(nameof(OnAttackHit), attackHitDelay);
         }
     }
 
@@ -403,13 +412,14 @@ public abstract class EnemyController : MovementBase
 
     public virtual void OnAttackHit()
     {
-        if (player == null) { Debug.Log($"[{name}] OnAttackHit: player is null"); return; }
+        if (attackHitDealt) return;
+        if (!IsAlive || player == null) return;
+        if (HorizontalDist(transform.position, player.position) > attackRange * 1.2f) return;
 
         var target = player.GetComponentInParent<IDamageable>();
-        Debug.Log($"[{name}] OnAttackHit called — dist={HorizontalDist(transform.position, player.position):F2} range={attackRange * 1.2f:F2} target={target}");
-
-        if (HorizontalDist(transform.position, player.position) > attackRange * 1.2f) return;
         if (target == null) return;
+
+        attackHitDealt = true;
 
         float damage = stats != null && stats.HasStat(StatType.AttackDamage)
             ? stats.GetFinal(StatType.AttackDamage)

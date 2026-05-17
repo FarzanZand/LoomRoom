@@ -206,6 +206,11 @@ namespace MFPC
         public UnityEvent OnJumpStart;
 
 
+        [Header("Combat")]
+        [Tooltip("Velocity impulse applied to the player when they take damage.")]
+        [SerializeField] float receivedKnockbackForce = 4f;
+
+
         [Header("Optional Modules")]
 
         [Tooltip("Optional Slope handler: it corrects movement direction on slopes")]
@@ -265,6 +270,9 @@ namespace MFPC
                 jumpForce        = playerData.jumpForce;
                 gravityMultiplier = playerData.gravityMultiplier;
             }
+
+            if (stats != null)
+                stats.OnDamageTaken += OnDamageTaken;
 
             inputActions = new PlayerInputActions();
             if (ItemHolder.Instance != null)
@@ -348,6 +356,24 @@ namespace MFPC
             inputActions.Disable();
             if (ItemHolder.Instance != null)
                 ItemHolder.Instance.OnHeldItemChanged -= OnHeldItemChanged;
+            if (stats != null)
+                stats.OnDamageTaken -= OnDamageTaken;
+        }
+
+        void OnDamageTaken(float amount, Vector3 knockbackDir)
+        {
+            TryTriggerPlayerAnim(bodyAnimator, "Hurt");
+            TryTriggerPlayerAnim(armsAnimator, "Hurt");
+            if (knockbackDir != Vector3.zero)
+                movement += knockbackDir.normalized * receivedKnockbackForce;
+        }
+
+        void TryTriggerPlayerAnim(Animator anim, string triggerName)
+        {
+            if (anim == null || anim.runtimeAnimatorController == null) return;
+            foreach (var p in anim.parameters)
+                if (p.name == triggerName && p.type == AnimatorControllerParameterType.Trigger)
+                { anim.SetTrigger(triggerName); return; }
         }
         #endregion
 

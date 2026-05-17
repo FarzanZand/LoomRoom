@@ -17,9 +17,9 @@ public class WeaponHitbox : MonoBehaviour
 
     [Header("Knockback")]
     [SerializeField] bool enableKnockback = true;
-    [SerializeField] float knockbackForce = 5f;
 
     bool active;
+    StatsComponent cachedAttackerStats;
     readonly HashSet<Collider> hitThisSwing = new HashSet<Collider>();
     readonly Collider[] overlapBuffer = new Collider[16];
 
@@ -39,6 +39,7 @@ public class WeaponHitbox : MonoBehaviour
     public void EnableHitbox()
     {
         hitThisSwing.Clear();
+        cachedAttackerStats = GetComponentInParent<StatsComponent>();
         active = true;
     }
 
@@ -86,13 +87,11 @@ public class WeaponHitbox : MonoBehaviour
         if (other.transform.IsChildOf(transform.root)) return;
         if (!hitThisSwing.Add(other)) return;
 
-        // Damage comes from the attacker's StatsComponent — not stored on the hitbox
-        var attackerStats = GetComponentInParent<StatsComponent>();
-        float damage = attackerStats != null ? attackerStats.GetFinal(StatType.AttackDamage) : 0f;
+        float damage = cachedAttackerStats != null ? cachedAttackerStats.GetFinal(StatType.AttackDamage) : 0f;
 
         // Skip friendly fire
         var targetStats = other.GetComponentInParent<StatsComponent>();
-        if (attackerStats != null && targetStats != null && attackerStats.Faction == targetStats.Faction)
+        if (cachedAttackerStats != null && targetStats != null && cachedAttackerStats.Faction == targetStats.Faction)
             return;
 
         Vector3 direction = (other.transform.position - transform.root.position).normalized;
@@ -100,9 +99,6 @@ public class WeaponHitbox : MonoBehaviour
         var target = other.GetComponentInParent<IDamageable>();
         if (target != null)
             target.TakeDamage(damage, enableKnockback ? direction : Vector3.zero);
-
-        if (enableKnockback && other.attachedRigidbody != null)
-            other.attachedRigidbody.AddForce(direction * knockbackForce, ForceMode.Impulse);
 
         if (hitSound != null)
             AudioSource.PlayClipAtPoint(hitSound, other.transform.position);

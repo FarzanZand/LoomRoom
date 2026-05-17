@@ -13,9 +13,10 @@ public class HitStopManager : Singleton<HitStopManager>
 
     IEnumerator Routine(float duration)
     {
+        float prev = Time.timeScale;
         Time.timeScale = 0f;
         yield return new WaitForSecondsRealtime(duration);
-        Time.timeScale = 1f;
+        Time.timeScale = prev;
         current = null;
     }
 }

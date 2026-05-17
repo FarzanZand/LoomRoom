@@ -31,6 +31,9 @@ MonoBehaviour:
   fieldOfView: 120
   eyeHeight: 1.6
   closeDetectionRadius: 2
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967103
   loseSightGracePeriod: 3
   maxSearchTime: 5
   passiveAngularSpeed: 120
@@ -39,6 +42,7 @@ MonoBehaviour:
   attackRange: 1.8
   attackCooldown: 1.5
   attackAngleThreshold: 45
-  attackTrigger: 
+  attackHitDelay: 0.4
+  attackTrigger:
   deathTrigger: 
   hurtTrigger: 
