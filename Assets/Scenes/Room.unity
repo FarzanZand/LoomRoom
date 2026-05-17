@@ -5664,20 +5664,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 526730332}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 84fae1f73a030c54daa776bbb22b5191, type: 3}
+  m_Script: {fileID: 11500000, guid: 8f6971b164a35ca4b8c31b85f5334697, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterFX
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyFX
   onHitSounds: []
   onHitVolume: 1
   onHitPitchVariance: 0.05
-  onHitImpulse: {fileID: 0}
-  enableHitStop: 0
+  enableHitStop: 1
   hitStopDuration: 0.07
   enableKnockback: 1
+  knockbackForce: 3
   onHurtSounds: []
   onHurtVolume: 1
   onHurtPitchVariance: 0.05
-  onHurtImpulse: {fileID: 0}
 --- !u!4 &530149164 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 499407154429333925, guid: eccddf70dbb7cd243a2f37f4aa5c95d6, type: 3}
@@ -11224,33 +11223,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatsComponent
   statsData: {fileID: 0}
   overrides: []
-  faction: 0
---- !u!114 &1198239226
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1198239206}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 84fae1f73a030c54daa776bbb22b5191, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterFX
-  onHitSounds:
-  - {fileID: 8300000, guid: d2598371f771d884d97ab52160db6d06, type: 3}
-  - {fileID: 8300000, guid: 65aff41472de27640867aac7bf14a692, type: 3}
-  - {fileID: 8300000, guid: 4495309d6c26a7046b8ac67d7044f50f, type: 3}
-  onHitVolume: 1
-  onHitPitchVariance: 0.05
-  onHitImpulse: {fileID: 0}
-  enableHitStop: 1
-  hitStopDuration: 0.07
-  enableKnockback: 1
-  onHurtSounds: []
-  onHurtVolume: 1
-  onHurtPitchVariance: 0.05
-  onHurtImpulse: {fileID: 1198239227}
+  faction: 1
 --- !u!114 &1198239227
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11304,6 +11277,33 @@ MonoBehaviour:
     DissipationDistance: 100
     PropagationSpeed: 343
   DefaultVelocity: {x: 0, y: -1, z: 0}
+--- !u!114 &1198239228
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1198239206}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2673fdd7ffa41b943bd82ea093c601a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerFX
+  onHitSounds:
+  - {fileID: 8300000, guid: d2598371f771d884d97ab52160db6d06, type: 3}
+  - {fileID: 8300000, guid: 65aff41472de27640867aac7bf14a692, type: 3}
+  - {fileID: 8300000, guid: 4495309d6c26a7046b8ac67d7044f50f, type: 3}
+  onHitVolume: 1
+  onHitPitchVariance: 0.05
+  enableHitStop: 1
+  hitStopDuration: 0.07
+  enableKnockback: 1
+  knockbackForce: 3
+  onHurtSounds: []
+  onHurtVolume: 1
+  onHurtPitchVariance: 0.05
+  onHitImpulse: {fileID: 0}
+  onHurtImpulse: {fileID: 1198239227}
 --- !u!95 &1199499766 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 582143988107343671, guid: 872fcf4cb4a3803479c39e91601fb820, type: 3}
@@ -22231,10 +22231,10 @@ PrefabInstance:
       addedObject: {fileID: 1198239225}
     - targetCorrespondingSourceObject: {fileID: 8683826045795729033, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1198239226}
+      addedObject: {fileID: 1198239227}
     - targetCorrespondingSourceObject: {fileID: 8683826045795729033, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1198239227}
+      addedObject: {fileID: 1198239228}
     - targetCorrespondingSourceObject: {fileID: 3749213704968765698, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1907813597}
@@ -28234,7 +28234,6 @@ MonoBehaviour:
   OnJumpStart:
     m_PersistentCalls:
       m_Calls: []
-  receivedKnockbackForce: 4
   slopeHandler: {fileID: 0}
   staminaModule: {fileID: 0}
   steepSlopeSlideModule: {fileID: 0}

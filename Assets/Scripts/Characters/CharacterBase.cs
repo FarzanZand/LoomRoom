@@ -18,9 +18,6 @@ public abstract class CharacterBase : MonoBehaviour
     [ShowIf("coreSettings")] [BoxGroup("Ground Check")]
     [SerializeField] LayerMask groundMask = ~0;
 
-    [Header("Combat")]
-    [SerializeField] protected float knockbackForce = 2f;
-
     [Header("Death")]
     [SerializeField] float deathDuration = 2f;
 
@@ -60,8 +57,9 @@ public abstract class CharacterBase : MonoBehaviour
 
     protected virtual void ApplyKnockback(Vector3 direction)
     {
-        if (agent != null && agent.isOnNavMesh)
-            agent.Warp(transform.position + direction.normalized * knockbackForce);
+        if (agent == null || !agent.isOnNavMesh) return;
+        float force = fx != null ? fx.KnockbackForce : 3f;
+        agent.Warp(transform.position + direction.normalized * force);
     }
 
     public virtual void Pause()

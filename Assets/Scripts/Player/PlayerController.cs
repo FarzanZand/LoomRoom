@@ -204,9 +204,7 @@ namespace MFPC
         public UnityEvent OnJumpStart;
 
 
-        [Header("Combat")]
-        [Tooltip("Velocity impulse applied to the player when they take damage.")]
-        [SerializeField] float receivedKnockbackForce = 4f;
+
 
 
         [Header("Optional Modules")]
@@ -361,7 +359,7 @@ namespace MFPC
             TryTriggerPlayerAnim(armsAnimator, "Hurt");
             characterFX?.NotifyHurtReceived(amount, knockbackDir);
             if (knockbackDir != Vector3.zero)
-                movement += knockbackDir.normalized * receivedKnockbackForce;
+                movement += knockbackDir.normalized * (characterFX?.KnockbackForce ?? 3f);
         }
 
         void TryTriggerPlayerAnim(Animator anim, string triggerName)
