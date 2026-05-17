@@ -1,4 +1,6 @@
 using Sirenix.OdinInspector;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -32,7 +34,7 @@ public abstract class EnemyController : MovementBase
     [SerializeField] float detectionRadius = 12f;
     [SerializeField, Range(0f, 360f)] float fieldOfView = 120f;
     [SerializeField] float eyeHeight = 1.6f;
-    [Tooltip("Always detected within this horizontal distance, ignoring FOV and line of sight. Should be >= Attack Range.")]
+    [Tooltip("Always detected within this horizontal distance, ignoring FOV and LOS. Should be >= Attack Range.")]
     [SerializeField] float closeDetectionRadius = 2f;
     [SerializeField] LayerMask obstacleMask;
 
@@ -55,6 +57,9 @@ public abstract class EnemyController : MovementBase
 
     protected EnemyState state;
     protected Transform player;
+    protected bool playerVisible;
+
+    protected Dictionary<EnemyState, Action> stateHandlers;
 
     float defaultSpeed;
     float attackTimer;
@@ -67,61 +72,20 @@ public abstract class EnemyController : MovementBase
     {
         base.Awake();
         if (agent != null) defaultSpeed = agent.speed;
+
+        if (stats != null)
+            stats.OnDamageTaken += OnStatsDamageTaken;
     }
 
-    void Start()
+    protected override void OnDestroy()
     {
-        SetState(defaultState);
+        base.OnDestroy();
+        if (stats != null)
+            stats.OnDamageTaken -= OnStatsDamageTaken;
     }
 
-    protected virtual void Update()
+    void OnStatsDamageTaken(float amount, Vector3 knockbackDir)
     {
-        if (!IsAlive) return;
-
-        if (player == null && PlayerManager.Instance != null)
-            player = PlayerManager.Instance.tablePlayer.transform;
-
-        UpdateGroundCheck();
-        attackTimer -= Time.deltaTime;
-
-        switch (state)
-        {
-            case EnemyState.Idle:         HandleIdle();         break;
-            case EnemyState.Wander:       HandleWander();       break;
-            case EnemyState.Patrol:       HandlePatrol();       break;
-            case EnemyState.Chase:        HandleChase();        break;
-            case EnemyState.Attack:       HandleAttack();       break;
-            case EnemyState.ReturnToPost: HandleReturnToPost(); break;
-        }
-
-        UpdateAnimatorParams();
-    }
-
-    // ── Passive states ────────────────────────────────────────────────
-
-    protected virtual void HandleIdle()
-    {
-        if (CanEnterCombat() && CanSeePlayer()) EnterCombat();
-    }
-
-    protected virtual void HandleWander()
-    {
-        if (CanEnterCombat() && CanSeePlayer()) { EnterCombat(); return; }
-        HandleWanderMovement();
-    }
-
-    protected virtual void HandlePatrol()
-    {
-        if (CanEnterCombat() && CanSeePlayer()) { EnterCombat(); return; }
-        HandlePatrolMovement();
-    }
-
-    // ── Combat states ─────────────────────────────────────────────────
-
-    public override void TakeDamage(float amount, Vector3 knockbackDirection)
-    {
-        base.TakeDamage(amount, knockbackDirection);
-
         if (aggressionMode == AggressionMode.AggressiveWhenHit
             && IsAlive
             && player != null
@@ -131,6 +95,70 @@ public abstract class EnemyController : MovementBase
             EnterCombat();
         }
     }
+
+    void Start()
+    {
+        InitStateHandlers();
+        SetState(defaultState);
+    }
+
+    // Register state handlers here. Subclasses override to add or replace entries.
+    protected virtual void InitStateHandlers()
+    {
+        stateHandlers = new Dictionary<EnemyState, Action>
+        {
+            { EnemyState.Idle,         HandleIdle },
+            { EnemyState.Wander,       HandleWander },
+            { EnemyState.Patrol,       HandlePatrol },
+            { EnemyState.Chase,        HandleChase },
+            { EnemyState.Attack,       HandleAttack },
+            { EnemyState.ReturnToPost, HandleReturnToPost }
+        };
+    }
+
+    void Update()
+    {
+        if (!IsAlive) return;
+
+        if (player == null && PlayerManager.Instance != null)
+            player = PlayerManager.Instance.tablePlayer.transform;
+
+        UpdateGroundCheck();
+        attackTimer -= Time.deltaTime;
+
+        // Cache once per frame — avoids redundant raycasts across multiple state handlers
+        playerVisible = CanSeePlayer();
+
+        if (stateHandlers.TryGetValue(state, out var handler))
+            handler();
+
+        UpdateAnimatorParams();
+        OnTick();
+    }
+
+    // Extension point for subclasses — called every frame after the state machine
+    protected virtual void OnTick() { }
+
+    // ── Passive states ────────────────────────────────────────────────
+
+    protected virtual void HandleIdle()
+    {
+        if (CanEnterCombat() && playerVisible) EnterCombat();
+    }
+
+    protected virtual void HandleWander()
+    {
+        if (CanEnterCombat() && playerVisible) { EnterCombat(); return; }
+        HandleWanderMovement();
+    }
+
+    protected virtual void HandlePatrol()
+    {
+        if (CanEnterCombat() && playerVisible) { EnterCombat(); return; }
+        HandlePatrolMovement();
+    }
+
+    // ── Combat states ─────────────────────────────────────────────────
 
     bool CanEnterCombat()
     {
@@ -159,7 +187,7 @@ public abstract class EnemyController : MovementBase
             return;
         }
 
-        if (CanSeePlayer())
+        if (playerVisible)
         {
             loseSightTimer = loseSightGracePeriod;
             giveUpTimer = -1f;
@@ -212,13 +240,19 @@ public abstract class EnemyController : MovementBase
 
     protected virtual void HandleReturnToPost()
     {
-        if (CanEnterCombat() && CanSeePlayer()) { EnterCombat(); return; }
+        if (CanEnterCombat() && playerVisible) { EnterCombat(); return; }
 
         Vector3 returnTarget = GetPostPosition();
         MoveTo(returnTarget);
 
         if (!agent.pathPending && HorizontalDist(transform.position, returnTarget) < agent.stoppingDistance + 0.1f)
+        {
+            // AggressiveWhenHit enemies forget the player once they've safely returned
+            if (aggressionMode == AggressionMode.AggressiveWhenHit)
+                wasProvoked = false;
+
             SetState(defaultState);
+        }
     }
 
     Vector3 GetPostPosition()
@@ -278,7 +312,7 @@ public abstract class EnemyController : MovementBase
         }
     }
 
-    protected bool CanSeePlayer()
+    bool CanSeePlayer()
     {
         if (player == null) return false;
 
@@ -309,7 +343,7 @@ public abstract class EnemyController : MovementBase
         return cur.IsTag("Attack") || (animator.IsInTransition(0) && next.IsTag("Attack"));
     }
 
-    static float HorizontalDist(Vector3 a, Vector3 b) =>
+    protected static float HorizontalDist(Vector3 a, Vector3 b) =>
         Vector2.Distance(new Vector2(a.x, a.z), new Vector2(b.x, b.z));
 
     public virtual void OnAttackHit()
@@ -317,12 +351,15 @@ public abstract class EnemyController : MovementBase
         if (player == null) return;
         if (HorizontalDist(transform.position, player.position) > attackRange * 1.2f) return;
 
-        var target = player.GetComponentInChildren<IDamageable>();
+        var target = player.GetComponentInParent<IDamageable>();
         if (target == null) return;
 
+        float damage = stats != null && stats.HasStat(StatType.AttackDamage)
+            ? stats.GetFinal(StatType.AttackDamage)
+            : attackDamage;
+
         Vector3 knockDir = (player.position - transform.position).normalized;
-        Debug.Log($"[{name}] hit player for {attackDamage} damage");
-        target.TakeDamage(attackDamage, knockDir);
+        target.TakeDamage(damage, knockDir);
     }
 
     void OnDrawGizmosSelected()

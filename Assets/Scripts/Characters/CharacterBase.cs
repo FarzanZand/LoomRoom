@@ -3,24 +3,18 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 
-public abstract class CharacterBase : MonoBehaviour, IDamageable
+public abstract class CharacterBase : MonoBehaviour
 {
-    [Header("Stats")]
-    public float maxHealth = 100f;
-
-    public float Health { get; private set; }
-    public bool IsAlive => Health > 0f;
     public bool coreSettings;
 
     protected NavMeshAgent agent;
-    protected Animator animator;
+    protected Animator     animator;
+    protected StatsComponent stats;
 
-    [ShowIf("coreSettings")]
-    [BoxGroup("Ground Check")]
+    [ShowIf("coreSettings")] [BoxGroup("Ground Check")]
     [SerializeField] float groundCheckDistance = 0.2f;
 
-    [ShowIf("coreSettings")]
-    [BoxGroup("Ground Check")]
+    [ShowIf("coreSettings")] [BoxGroup("Ground Check")]
     [SerializeField] LayerMask groundMask = ~0;
 
     [Header("Combat")]
@@ -33,37 +27,44 @@ public abstract class CharacterBase : MonoBehaviour, IDamageable
 
     protected bool IsGrounded { get; private set; }
 
+    // Delegate health queries to StatsComponent
+    public float Health  => stats != null ? stats.CurrentHealth : 0f;
+    public bool IsAlive  => stats != null ? stats.IsAlive : false;
+    public void Heal(float amount) => stats?.Heal(amount);
+
     protected virtual void Awake()
     {
-        Health = maxHealth;
-        agent = GetComponent<NavMeshAgent>();
+        agent    = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+        stats    = GetComponent<StatsComponent>();
+
+        if (stats != null)
+        {
+            stats.OnDamageTaken += HandleDamageTaken;
+            stats.OnDied        += Die;
+        }
     }
 
-    // IDamageable — called by WeaponHitbox
-    public virtual void TakeDamage(float amount, Vector3 knockbackDirection)
+    protected virtual void OnDestroy()
     {
-        if (!IsAlive) return;
-        Health = Mathf.Max(0f, Health - amount);
-        TriggerAnimation(hurtTrigger);
-        if (knockbackDirection != Vector3.zero)
-            ApplyKnockback(knockbackDirection);
-        if (!IsAlive) Die();
+        if (stats != null)
+        {
+            stats.OnDamageTaken -= HandleDamageTaken;
+            stats.OnDied        -= Die;
+        }
     }
 
-    // Convenience overload for internal calls without a direction
-    public void TakeDamage(float amount) => TakeDamage(amount, Vector3.zero);
+    void HandleDamageTaken(float amount, Vector3 knockbackDir)
+    {
+        TriggerAnimation(hurtTrigger);
+        if (knockbackDir != Vector3.zero)
+            ApplyKnockback(knockbackDir);
+    }
 
     protected virtual void ApplyKnockback(Vector3 direction)
     {
         if (agent != null && agent.isOnNavMesh)
             agent.Warp(transform.position + direction.normalized * knockbackForce);
-    }
-
-    public virtual void Heal(float amount)
-    {
-        if (!IsAlive) return;
-        Health = Mathf.Min(maxHealth, Health + amount);
     }
 
     public virtual void Pause()
@@ -93,7 +94,7 @@ public abstract class CharacterBase : MonoBehaviour, IDamageable
         gameObject.SetActive(false);
     }
 
-    // Shared helpers
+    // ── Shared helpers ────────────────────────────────────────────────
 
     protected void MoveTo(Vector3 destination)
     {
@@ -132,14 +133,14 @@ public abstract class CharacterBase : MonoBehaviour, IDamageable
     {
         if (animator == null || animator.runtimeAnimatorController == null) return;
 
-        float speed = agent != null ? agent.velocity.magnitude : 0f;
+        float speed      = agent != null ? agent.velocity.magnitude : 0f;
         float motionSpeed = agent != null && agent.hasPath ? 1f : 0f;
-        bool freeFall = !IsGrounded && (agent != null && agent.velocity.y < -1f);
+        bool  freeFall   = !IsGrounded && (agent != null && agent.velocity.y < -1f);
 
-        animator.SetFloat("Speed", speed, 0.1f, Time.deltaTime);
+        animator.SetFloat("Speed",       speed,       0.1f, Time.deltaTime);
         animator.SetFloat("MotionSpeed", motionSpeed, 0.1f, Time.deltaTime);
-        animator.SetBool("Grounded", IsGrounded);
-        animator.SetBool("FreeFall", freeFall);
+        animator.SetBool("Grounded",  IsGrounded);
+        animator.SetBool("FreeFall",  freeFall);
     }
 
     [Button]
