@@ -228,6 +228,9 @@ namespace MFPC
         public Animator armsAnimator;
         public bool IsAiming { get; protected set; }
 
+        Vector3 knockbackVelocity;
+        [SerializeField] float knockbackDecay = 12f;
+
         protected bool wasGrounded;
         private bool primaryActionHeld;
         private bool secondaryActionHeld;
@@ -247,8 +250,8 @@ namespace MFPC
             Controller = GetComponent<CharacterController>();
             playerCollider = GetComponent<CapsuleCollider>();
             checker = GetComponent<TerrainChecker>();
-            stats       = GetComponent<StatsComponent>();
-            characterFX = GetComponent<CharacterFX>();
+            stats       = GetComponentInParent<StatsComponent>();
+            characterFX = GetComponentInParent<CharacterFX>();
 
             if (!staminaModule)
                 staminaModule = GetComponent<StaminaModule>();
@@ -267,9 +270,6 @@ namespace MFPC
                 gravityMultiplier = playerData.gravityMultiplier;
             }
 
-            if (stats != null)
-                stats.OnDamageTaken += OnDamageTaken;
-
             inputActions = new PlayerInputActions();
             if (ItemHolder.Instance != null)
                 ItemHolder.Instance.OnHeldItemChanged += OnHeldItemChanged;
@@ -278,6 +278,8 @@ namespace MFPC
         #region Input Hook
         protected virtual void OnEnable()
         {
+            if (stats != null) stats.OnDamageTaken += OnDamageTaken;
+
             inputActions.Enable();
 
             inputActions.Player.Move.performed += ctx => MoveInput = ctx.ReadValue<Vector2>();
@@ -346,20 +348,21 @@ namespace MFPC
 
         protected virtual void OnDisable()
         {
+            if (stats != null) stats.OnDamageTaken -= OnDamageTaken;
+
             inputActions.Disable();
             if (ItemHolder.Instance != null)
                 ItemHolder.Instance.OnHeldItemChanged -= OnHeldItemChanged;
-            if (stats != null)
-                stats.OnDamageTaken -= OnDamageTaken;
         }
 
         void OnDamageTaken(float amount, Vector3 knockbackDir)
         {
+            if (characterFX == null) characterFX = GetComponentInParent<CharacterFX>();
             TryTriggerPlayerAnim(bodyAnimator, "Hurt");
             TryTriggerPlayerAnim(armsAnimator, "Hurt");
             characterFX?.NotifyHurtReceived(amount, knockbackDir);
             if (knockbackDir != Vector3.zero)
-                movement += knockbackDir.normalized * (characterFX?.KnockbackForce ?? 3f);
+                knockbackVelocity = knockbackDir.normalized * (characterFX?.KnockbackForce ?? 3f);
         }
 
         void TryTriggerPlayerAnim(Animator anim, string triggerName)
@@ -717,6 +720,9 @@ namespace MFPC
                     Speed = IsCrouching ? crouchSpeed : walkSpeed;
                 }
             }
+
+            movement += knockbackVelocity;
+            knockbackVelocity = Vector3.MoveTowards(knockbackVelocity, Vector3.zero, knockbackDecay * Time.deltaTime);
 
             Controller.Move(movement * Time.deltaTime);
             UpdateStaminaModule(canApplySprint && !slidingOnSteepSlope, !Controller.isGrounded);

@@ -23,7 +23,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 2
-    baseValue: 15
+    baseValue: 2
     min: 0
     max: 0
   - stat: 3

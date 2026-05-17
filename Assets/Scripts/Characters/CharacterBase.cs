@@ -37,7 +37,7 @@ public abstract class CharacterBase : MonoBehaviour
         agent    = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
         stats    = GetComponent<StatsComponent>();
-        fx       = GetComponent<CharacterFX>();
+        fx       = GetComponentInParent<CharacterFX>();
 
         if (stats != null)
         {
@@ -58,8 +58,7 @@ public abstract class CharacterBase : MonoBehaviour
     protected virtual void ApplyKnockback(Vector3 direction)
     {
         if (agent == null || !agent.isOnNavMesh) return;
-        float force = fx != null ? fx.KnockbackForce : 3f;
-        agent.Warp(transform.position + direction.normalized * force);
+        agent.Warp(transform.position + direction);
     }
 
     public virtual void Pause()

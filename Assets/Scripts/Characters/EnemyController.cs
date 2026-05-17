@@ -16,8 +16,8 @@ public abstract class EnemyController : MovementBase
     [SerializeField] EnemyData enemyData;
 
     [Header("Fallback — used when no Enemy Data is assigned")]
-    [SerializeField] EnemyState    localDefaultState    = EnemyState.Idle;
-    [SerializeField] AggressionMode localAggressionMode = AggressionMode.Aggressive;
+    [SerializeField] EnemyState     localDefaultState    = EnemyState.Idle;
+    [SerializeField] AggressionMode localAggressionMode  = AggressionMode.Aggressive;
 
     [Header("Detection")]
     [SerializeField] LayerMask obstacleMask = ~0;
@@ -66,6 +66,9 @@ public abstract class EnemyController : MovementBase
     float giveUpTimer = -1f;
     bool  wasProvoked;
     Vector3 lastKnownPlayerPos;
+
+    Vector3 knockbackVelocity;
+    float   knockbackTimer;
 
     // ── Lifecycle ─────────────────────────────────────────────────────
 
@@ -170,7 +173,16 @@ public abstract class EnemyController : MovementBase
             player = PlayerManager.Instance.tablePlayer.transform;
 
         UpdateGroundCheck();
-        attackTimer  -= Time.deltaTime;
+        attackTimer -= Time.deltaTime;
+
+        if (knockbackTimer > 0f)
+        {
+            TickKnockback();
+            UpdateAnimatorParams();
+            OnTick();
+            return;
+        }
+
         playerVisible = CanSeePlayer();
 
         if (stateHandlers.TryGetValue(state, out var handler))
@@ -178,6 +190,21 @@ public abstract class EnemyController : MovementBase
 
         UpdateAnimatorParams();
         OnTick();
+    }
+
+    void TickKnockback()
+    {
+        knockbackTimer -= Time.deltaTime;
+
+        Vector3 next = transform.position + knockbackVelocity * Time.deltaTime;
+        knockbackVelocity = Vector3.MoveTowards(knockbackVelocity, Vector3.zero, knockbackVelocity.magnitude / Mathf.Max(knockbackTimer + Time.deltaTime, 0.001f) * Time.deltaTime);
+
+        if (agent != null && agent.isOnNavMesh &&
+            NavMesh.SamplePosition(next, out NavMeshHit hit, 1f, NavMesh.AllAreas))
+            agent.Warp(hit.position);
+
+        if (knockbackTimer <= 0f && agent != null)
+            agent.isStopped = false;
     }
 
     // Extension point for subclasses — runs every frame after the state machine
@@ -329,6 +356,18 @@ public abstract class EnemyController : MovementBase
         if (def == EnemyState.Wander && wanderZoneCenter != null)
             return wanderZoneCenter.position;
         return spawnPosition;
+    }
+
+    protected override void ApplyKnockback(Vector3 direction)
+    {
+        if (agent == null || !agent.isOnNavMesh) return;
+        float force    = direction.magnitude;
+        var   attackerFX = PlayerManager.Instance?.tablePlayer?.GetComponentInChildren<CharacterFX>();
+        float duration = attackerFX != null ? attackerFX.KnockbackDuration : 0.25f;
+        knockbackVelocity = direction.normalized * (force / Mathf.Max(duration, 0.01f));
+        knockbackTimer    = duration;
+        agent.ResetPath();
+        agent.isStopped = true;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────

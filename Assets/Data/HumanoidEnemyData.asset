@@ -33,7 +33,7 @@ MonoBehaviour:
   closeDetectionRadius: 2
   obstacleMask:
     serializedVersion: 2
-    m_Bits: 4294967103
+    m_Bits: 63
   loseSightGracePeriod: 3
   maxSearchTime: 5
   passiveAngularSpeed: 120
@@ -43,6 +43,6 @@ MonoBehaviour:
   attackCooldown: 1.5
   attackAngleThreshold: 45
   attackHitDelay: 0.4
-  attackTrigger:
+  attackTrigger: 
   deathTrigger: 
   hurtTrigger: 

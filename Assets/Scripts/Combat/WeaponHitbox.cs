@@ -91,11 +91,13 @@ public class WeaponHitbox : MonoBehaviour
 
         Vector3 direction = (other.transform.position - transform.root.position).normalized;
         Vector3 contact   = other.ClosestPoint(transform.position);
-        bool knockback    = cachedFX?.KnockbackEnabled ?? true;
 
         var target = other.GetComponentInParent<IDamageable>();
         if (target != null)
-            target.TakeDamage(damage, knockback ? direction : Vector3.zero);
+        {
+            float force = cachedFX != null && cachedFX.KnockbackEnabled ? cachedFX.KnockbackForce : 0f;
+            target.TakeDamage(damage, direction * force);
+        }
 
         // Weapon-specific contact effects
         AudioManager.Instance?.PlaySFX(hitSound, contact);

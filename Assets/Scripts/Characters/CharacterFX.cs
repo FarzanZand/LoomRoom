@@ -8,16 +8,18 @@ public class CharacterFX : MonoBehaviour
     [SerializeField, Range(0f, 0.5f)] float onHitPitchVariance = 0.05f;
     [SerializeField] bool enableHitStop = true;
     [SerializeField] float hitStopDuration = 0.07f;
-    [SerializeField] bool enableKnockback = true;
-    [SerializeField] float knockbackForce = 3f;
+    [SerializeField] bool  enableKnockback   = true;
+    [SerializeField] float knockbackForce    = 3f;
+    [SerializeField] float knockbackDuration = 0.25f;
 
     [Header("On Hurt Received")]
     [SerializeField] AudioClip[] onHurtSounds;
     [SerializeField, Range(0f, 1f)] float onHurtVolume = 1f;
     [SerializeField, Range(0f, 0.5f)] float onHurtPitchVariance = 0.05f;
 
-    public bool  KnockbackEnabled => enableKnockback;
-    public float KnockbackForce   => knockbackForce;
+    public bool  KnockbackEnabled   => enableKnockback;
+    public float KnockbackForce    => knockbackForce;
+    public float KnockbackDuration => knockbackDuration;
 
     public virtual void NotifyHitLanded(Vector3 contactPoint)
     {
