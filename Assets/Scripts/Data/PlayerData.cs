@@ -8,7 +8,7 @@ public class PlayerData : ScriptableObject
     public Faction faction = Faction.Player;
 
     [Header("Stats")]
-    public StatProfile statProfile;
+    public List<StatEntry> stats;
 
     [Header("Movement — Gameplay Critical")]
     public float walkSpeed        = 3f;

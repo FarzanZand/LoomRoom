@@ -256,7 +256,7 @@ namespace MFPC
 
             if (playerData != null)
             {
-                stats?.ApplyProfile(playerData.statProfile);
+                stats?.ApplyProfile(playerData.stats);
                 stats?.SetFaction(playerData.faction);
 
                 walkSpeed        = playerData.walkSpeed;

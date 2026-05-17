@@ -13,7 +13,27 @@ MonoBehaviour:
   m_Name: PlayerData
   m_EditorClassIdentifier: Assembly-CSharp::PlayerData
   faction: 1
-  statProfile: {fileID: 11400000, guid: 8096c005c2ac2cc449a9cf65a1083f03, type: 2}
+  stats:
+  - stat: 0
+    baseValue: 100
+    min: 0
+    max: 0
+  - stat: 1
+    baseValue: 0
+    min: 0
+    max: 0
+  - stat: 2
+    baseValue: 15
+    min: 0
+    max: 0
+  - stat: 3
+    baseValue: 0.05
+    min: 0
+    max: 1
+  - stat: 4
+    baseValue: 2
+    min: 1
+    max: 0
   walkSpeed: 3
   sprintSpeed: 6
   crouchSpeed: 1.75

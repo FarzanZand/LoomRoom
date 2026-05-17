@@ -87,11 +87,21 @@ public class StatsComponent : MonoBehaviour, IDamageable
         }
     }
 
-    // Called by EnemyController (and similar) in Awake to push the data
-    // asset's profile before Start() initialises CurrentHealth.
+    // Called by EnemyController in Awake to push the data asset's profile.
     public void ApplyProfile(StatProfile profile)
     {
         LoadProfile(profile);
+    }
+
+    // Called by PlayerController — stats embedded directly in PlayerData.
+    public void ApplyProfile(List<StatEntry> entries)
+    {
+        if (entries == null) return;
+        foreach (var e in entries)
+        {
+            baseStats[e.stat]  = e.baseValue;
+            statRanges[e.stat] = (e.min, e.max);
+        }
     }
 
     // ── Queries ───────────────────────────────────────────────────────
