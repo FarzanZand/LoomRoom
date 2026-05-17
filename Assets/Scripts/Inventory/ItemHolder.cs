@@ -109,11 +109,11 @@ public class ItemHolder : Singleton<ItemHolder>
         if (slot != EquipmentSlot.RightHand) return;
 
         Transform hand = IsTablePlayer ? tablePlayerRightHand : roomPlayerRightHand;
-        var hitbox = hand.GetComponent<WeaponHitbox>();
+        var hitbox = hand.GetComponentInChildren<WeaponHitbox>(true);
         if (hitbox == null) return;
 
         if (item != null && item.itemType == ItemType.Weapon)
-            hitbox.SetWeapon(item.attackRange, item.attackDamage, item.hitSound, item.hitParticlePrefab);
+            hitbox.SetWeapon(item.attackDamage, item.hitSound, item.hitParticlePrefab);
         else
             hitbox.ClearWeapon();
     }
