@@ -105,7 +105,7 @@ public class ItemHolder : Singleton<ItemHolder>
         }
         else
         {
-            var pc = PlayerController.instance;
+            var pc = PlayerManager.Instance?.roomPlayer?.GetComponentInChildren<MFPC.PlayerController>();
             if (pc == null) return;
             switch (slot)
             {

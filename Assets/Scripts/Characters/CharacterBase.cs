@@ -10,6 +10,7 @@ public abstract class CharacterBase : MonoBehaviour
     protected NavMeshAgent   agent;
     protected Animator       animator;
     protected StatsComponent stats;
+    protected CharacterFX    fx;
 
     [ShowIf("coreSettings")] [BoxGroup("Ground Check")]
     [SerializeField] float groundCheckDistance = 0.2f;
@@ -39,6 +40,7 @@ public abstract class CharacterBase : MonoBehaviour
         agent    = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
         stats    = GetComponent<StatsComponent>();
+        fx       = GetComponent<CharacterFX>();
 
         if (stats != null)
         {
@@ -156,6 +158,7 @@ public abstract class CharacterBase : MonoBehaviour
     void HandleDamageTaken(float amount, Vector3 knockbackDir)
     {
         TriggerAnimation(HurtTrigger);
+        fx?.NotifyHurtReceived(amount, knockbackDir);
         if (knockbackDir != Vector3.zero)
             ApplyKnockback(knockbackDir);
     }

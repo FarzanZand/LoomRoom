@@ -4,8 +4,6 @@ namespace MFPC
 
     public class PlayerControllerRoom : PlayerController
     {
-        public static PlayerControllerRoom roomInstance;
-
         [Header("Virtual Cameras and Aim")]
         [SerializeField] GameObject normalVCs;
         [SerializeField] GameObject aimVCs;
@@ -17,7 +15,6 @@ namespace MFPC
         protected override void Awake()
         {
             base.Awake();
-            roomInstance = this;
         }
 
         protected override void AimCheck()

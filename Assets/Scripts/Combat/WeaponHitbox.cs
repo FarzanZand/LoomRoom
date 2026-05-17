@@ -7,19 +7,13 @@ public class WeaponHitbox : MonoBehaviour
     [SerializeField] CapsuleCollider weaponCollider;
     [SerializeField] LayerMask hitMask;
 
-    [Header("Hit FX")]
+    [Header("Weapon Contact FX")]
     [SerializeField] AudioClip hitSound;
     [SerializeField] GameObject hitParticlePrefab;
 
-    [Header("Hit Stop")]
-    [SerializeField] bool enableHitStop = true;
-    [SerializeField] float hitStopDuration = 0.07f;
-
-    [Header("Knockback")]
-    [SerializeField] bool enableKnockback = true;
-
     bool active;
     StatsComponent cachedAttackerStats;
+    CharacterFX    cachedFX;
     readonly HashSet<Collider> hitThisSwing = new HashSet<Collider>();
     readonly Collider[] overlapBuffer = new Collider[16];
 
@@ -40,6 +34,7 @@ public class WeaponHitbox : MonoBehaviour
     {
         hitThisSwing.Clear();
         cachedAttackerStats = GetComponentInParent<StatsComponent>();
+        cachedFX            = GetComponentInParent<CharacterFX>();
         active = true;
     }
 
@@ -95,21 +90,20 @@ public class WeaponHitbox : MonoBehaviour
             return;
 
         Vector3 direction = (other.transform.position - transform.root.position).normalized;
+        Vector3 contact   = other.ClosestPoint(transform.position);
+        bool knockback    = cachedFX?.KnockbackEnabled ?? true;
 
         var target = other.GetComponentInParent<IDamageable>();
         if (target != null)
-            target.TakeDamage(damage, enableKnockback ? direction : Vector3.zero);
+            target.TakeDamage(damage, knockback ? direction : Vector3.zero);
 
-        if (hitSound != null)
-            AudioSource.PlayClipAtPoint(hitSound, other.transform.position);
+        // Weapon-specific contact effects
+        AudioManager.Instance?.PlaySFX(hitSound, contact);
 
         if (hitParticlePrefab != null)
-        {
-            var contact = other.ClosestPoint(transform.position);
             Instantiate(hitParticlePrefab, contact, Quaternion.LookRotation(-direction));
-        }
 
-        if (enableHitStop)
-            HitStopManager.Instance?.Trigger(hitStopDuration);
+        // Player/character experience effects delegated to CharacterFX
+        cachedFX?.NotifyHitLanded(contact);
     }
 }
