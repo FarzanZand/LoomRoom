@@ -464,7 +464,9 @@ public abstract class EnemyController : MovementBase
             ? stats.GetFinal(StatType.AttackDamage)
             : 0f;
 
-        target.TakeDamage(damage, (player.position - transform.position).normalized);
+        var efx = fx as EnemyFX;
+        float force = efx != null && efx.KnockbackEnabled ? efx.KnockbackForce : 1f;
+        target.TakeDamage(damage, (player.position - transform.position).normalized * force);
     }
 
     // ── Gizmos ────────────────────────────────────────────────────────

@@ -6,8 +6,6 @@ public class CharacterFX : MonoBehaviour
     [SerializeField] AudioClip[] onHitSounds;
     [SerializeField, Range(0f, 1f)] float onHitVolume = 1f;
     [SerializeField, Range(0f, 0.5f)] float onHitPitchVariance = 0.05f;
-    [SerializeField] bool enableHitStop = true;
-    [SerializeField] float hitStopDuration = 0.07f;
     [SerializeField] bool  enableKnockback   = true;
     [SerializeField] float knockbackForce    = 3f;
     [SerializeField] float knockbackDuration = 0.25f;
@@ -23,9 +21,6 @@ public class CharacterFX : MonoBehaviour
 
     public virtual void NotifyHitLanded(Vector3 contactPoint)
     {
-        if (enableHitStop)
-            HitStopManager.Instance?.Trigger(hitStopDuration);
-
         AudioManager.Instance?.PlaySFXRandom(onHitSounds, contactPoint, onHitVolume, onHitPitchVariance);
     }
 

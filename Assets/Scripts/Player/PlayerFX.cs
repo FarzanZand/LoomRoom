@@ -7,6 +7,10 @@ public class PlayerFX : CharacterFX
     [SerializeField] float receivedKnockbackForce = 3f;
     public float ReceivedKnockbackForce => receivedKnockbackForce;
 
+    [Header("Hit Stop")]
+    [SerializeField] bool  enableHitStop   = true;
+    [SerializeField] float hitStopDuration = 0.07f;
+
     [Header("Camera")]
     [SerializeField] CinemachineImpulseSource onHitImpulse;
     [SerializeField] CinemachineImpulseSource onHurtImpulse;
@@ -14,6 +18,8 @@ public class PlayerFX : CharacterFX
     public override void NotifyHitLanded(Vector3 contactPoint)
     {
         base.NotifyHitLanded(contactPoint);
+        if (enableHitStop)
+            HitStopManager.Instance?.Trigger(hitStopDuration);
         onHitImpulse?.GenerateImpulse();
     }
 

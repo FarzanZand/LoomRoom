@@ -5454,34 +5454,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 526583560}
   m_CullTransparentMesh: 1
---- !u!1 &526730332 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 957184423342700410, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
-  m_PrefabInstance: {fileID: 8974577822091946021}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &526730350
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 526730332}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8f6971b164a35ca4b8c31b85f5334697, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyFX
-  onHitSounds: []
-  onHitVolume: 1
-  onHitPitchVariance: 0.05
-  enableHitStop: 1
-  hitStopDuration: 0.07
-  enableKnockback: 1
-  knockbackForce: 3
-  knockbackDuration: 0.25
-  onHurtSounds: []
-  onHurtVolume: 1
-  onHurtPitchVariance: 0.05
 --- !u!4 &530149164 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 499407154429333925, guid: eccddf70dbb7cd243a2f37f4aa5c95d6, type: 3}
@@ -10826,31 +10798,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4255843795324908086, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
   m_PrefabInstance: {fileID: 1805652957136550333}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1198239234
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1198239206}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2673fdd7ffa41b943bd82ea093c601a5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerFX
-  onHitSounds: []
-  onHitVolume: 1
-  onHitPitchVariance: 0.05
-  enableHitStop: 1
-  hitStopDuration: 0.07
-  enableKnockback: 1
-  knockbackForce: 3
-  knockbackDuration: 0.25
-  onHurtSounds: []
-  onHurtVolume: 1
-  onHurtPitchVariance: 0.05
-  onHitImpulse: {fileID: 0}
-  onHurtImpulse: {fileID: 0}
 --- !u!95 &1199499766 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 582143988107343671, guid: 872fcf4cb4a3803479c39e91601fb820, type: 3}
@@ -20996,54 +20943,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 833018601930963045, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: knockbackForce
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 833018601930963045, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: enableKnockback
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 833018601930963045, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: knockbackDuration
-      value: 0.08
-      objectReference: {fileID: 0}
-    - target: {fileID: 833018601930963045, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: onHurtSounds.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 833018601930963045, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: 'onHurtSounds.Array.data[0]'
-      value: 
-      objectReference: {fileID: 8300000, guid: 3b6c52a0f7c36634982d06d9b4152d11, type: 3}
-    - target: {fileID: 833018601930963045, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: 'onHurtSounds.Array.data[1]'
-      value: 
-      objectReference: {fileID: 8300000, guid: 295af0084bce0774d886fe5dc7931d7a, type: 3}
-    - target: {fileID: 1589901218817915956, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: DefaultVelocity.y
-      value: -0.3
-      objectReference: {fileID: 0}
-    - target: {fileID: 3712295175299267257, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 1.5200003
-      objectReference: {fileID: 0}
-    - target: {fileID: 3712295175299267257, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -0.010009766
-      objectReference: {fileID: 0}
-    - target: {fileID: 3712295175299267257, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3712295175299267257, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3712295175299267257, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 3933146816773115111, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
       propertyPath: m_Name
       value: TablePlayerParent
@@ -21051,10 +20950,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8683826045795729033, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1198239234}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
 --- !u!4 &1805697664556994970
 Transform:
@@ -26719,16 +26615,13 @@ PrefabInstance:
       value: HumanoidEnemy
       objectReference: {fileID: 0}
     - target: {fileID: 984213079681443887, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
-      propertyPath: enableHitStop
+      propertyPath: enableKnockback
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 957184423342700410, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 526730350}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
 --- !u!1 &9009810937277517374
 GameObject:
