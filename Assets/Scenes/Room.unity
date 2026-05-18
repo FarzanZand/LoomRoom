@@ -5478,6 +5478,7 @@ MonoBehaviour:
   hitStopDuration: 0.07
   enableKnockback: 1
   knockbackForce: 3
+  knockbackDuration: 0.25
   onHurtSounds: []
   onHurtVolume: 1
   onHurtPitchVariance: 0.05
@@ -10844,6 +10845,7 @@ MonoBehaviour:
   hitStopDuration: 0.07
   enableKnockback: 1
   knockbackForce: 3
+  knockbackDuration: 0.25
   onHurtSounds: []
   onHurtVolume: 1
   onHurtPitchVariance: 0.05
@@ -21003,6 +21005,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 833018601930963045, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
+      propertyPath: knockbackDuration
+      value: 0.08
+      objectReference: {fileID: 0}
+    - target: {fileID: 833018601930963045, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
       propertyPath: onHurtSounds.Array.size
       value: 2
       objectReference: {fileID: 0}
@@ -26711,6 +26717,10 @@ PrefabInstance:
     - target: {fileID: 957184423342700410, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: m_Name
       value: HumanoidEnemy
+      objectReference: {fileID: 0}
+    - target: {fileID: 984213079681443887, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
+      propertyPath: enableHitStop
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

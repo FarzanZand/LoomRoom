@@ -3,6 +3,10 @@ using UnityEngine;
 
 public class PlayerFX : CharacterFX
 {
+    [Header("Received Knockback")]
+    [SerializeField] float receivedKnockbackForce = 3f;
+    public float ReceivedKnockbackForce => receivedKnockbackForce;
+
     [Header("Camera")]
     [SerializeField] CinemachineImpulseSource onHitImpulse;
     [SerializeField] CinemachineImpulseSource onHurtImpulse;

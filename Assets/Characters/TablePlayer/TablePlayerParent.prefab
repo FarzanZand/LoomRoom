@@ -1022,7 +1022,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7718894933587480636, guid: 4ff3fbd4f91e3f24c80987c09ef16aef, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.5199994
+      value: 1.5200003
       objectReference: {fileID: 0}
     - target: {fileID: 7718894933587480636, guid: 4ff3fbd4f91e3f24c80987c09ef16aef, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1251,7 +1251,7 @@ MonoBehaviour:
     DissipationMode: 2
     DissipationDistance: 100
     PropagationSpeed: 343
-  DefaultVelocity: {x: 0, y: -1, z: 0}
+  DefaultVelocity: {x: 0, y: -0.3, z: 0}
 --- !u!114 &833018601930963045
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1273,10 +1273,14 @@ MonoBehaviour:
   enableHitStop: 1
   hitStopDuration: 0.07
   enableKnockback: 1
-  knockbackForce: 3
-  onHurtSounds: []
+  knockbackForce: 1
+  knockbackDuration: 0.08
+  onHurtSounds:
+  - {fileID: 8300000, guid: 3b6c52a0f7c36634982d06d9b4152d11, type: 3}
+  - {fileID: 8300000, guid: 295af0084bce0774d886fe5dc7931d7a, type: 3}
   onHurtVolume: 1
   onHurtPitchVariance: 0.05
+  receivedKnockbackForce: 0
   onHitImpulse: {fileID: 0}
   onHurtImpulse: {fileID: 1589901218817915956}
 --- !u!1001 &6419324359335854148

@@ -17,7 +17,7 @@ namespace MFPC
         [SerializeField] bool lockCursorOnStart = true;
 
         StatsComponent stats;
-        CharacterFX    characterFX;
+        PlayerFX       playerFX;
 
         // Inputs variables
         protected PlayerInputActions inputActions;
@@ -250,8 +250,8 @@ namespace MFPC
             Controller = GetComponent<CharacterController>();
             playerCollider = GetComponent<CapsuleCollider>();
             checker = GetComponent<TerrainChecker>();
-            stats       = GetComponentInParent<StatsComponent>();
-            characterFX = GetComponentInParent<CharacterFX>();
+            stats    = GetComponentInParent<StatsComponent>();
+            playerFX = GetComponentInParent<PlayerFX>();
 
             if (!staminaModule)
                 staminaModule = GetComponent<StaminaModule>();
@@ -357,12 +357,12 @@ namespace MFPC
 
         void OnDamageTaken(float amount, Vector3 knockbackDir)
         {
-            if (characterFX == null) characterFX = GetComponentInParent<CharacterFX>();
+            if (playerFX == null) playerFX = GetComponentInParent<PlayerFX>();
             TryTriggerPlayerAnim(bodyAnimator, "Hurt");
             TryTriggerPlayerAnim(armsAnimator, "Hurt");
-            characterFX?.NotifyHurtReceived(amount, knockbackDir);
+            playerFX?.NotifyHurtReceived(amount, knockbackDir);
             if (knockbackDir != Vector3.zero)
-                knockbackVelocity = knockbackDir.normalized * (characterFX?.KnockbackForce ?? 3f);
+                knockbackVelocity = knockbackDir.normalized * (playerFX?.ReceivedKnockbackForce ?? 3f);
         }
 
         void TryTriggerPlayerAnim(Animator anim, string triggerName)

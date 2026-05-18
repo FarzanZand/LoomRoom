@@ -511,10 +511,11 @@ MonoBehaviour:
   onHitSounds: []
   onHitVolume: 1
   onHitPitchVariance: 0.05
-  enableHitStop: 1
+  enableHitStop: 0
   hitStopDuration: 0.07
   enableKnockback: 1
   knockbackForce: 3
+  knockbackDuration: 0.25
   onHurtSounds: []
   onHurtVolume: 1
   onHurtPitchVariance: 0.05
