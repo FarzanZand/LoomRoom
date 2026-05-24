@@ -89,21 +89,28 @@ public class WeaponHitbox : MonoBehaviour
         if (cachedAttackerStats != null && targetStats != null && cachedAttackerStats.Faction == targetStats.Faction)
             return;
 
-        Vector3 direction = (other.transform.position - transform.root.position).normalized;
-        Vector3 contact   = other.ClosestPoint(transform.position);
+        Vector3 hitDirection = (other.transform.position - transform.root.position).normalized;
+        Vector3 contact      = other.ClosestPoint(transform.position);
 
         var target = other.GetComponentInParent<IDamageable>();
         if (target != null)
         {
+            Vector3 targetPos   = (target as MonoBehaviour)?.transform.position ?? other.transform.position;
+            Vector3 attackerPos = transform.root.position;
+            Vector3 diff        = targetPos - attackerPos;
+            diff.y = 0f;
+            if (diff.sqrMagnitude < 0.0001f) diff = transform.root.forward;
+            Vector3 knockDir = diff.normalized;
+
             float force = cachedFX != null && cachedFX.KnockbackEnabled ? cachedFX.KnockbackForce : 0f;
-            target.TakeDamage(damage, direction * force);
+            target.TakeDamage(damage, knockDir * force);
         }
 
         // Weapon-specific contact effects
         AudioManager.Instance?.PlaySFX(hitSound, contact);
 
         if (hitParticlePrefab != null)
-            Instantiate(hitParticlePrefab, contact, Quaternion.LookRotation(-direction));
+            Instantiate(hitParticlePrefab, contact, Quaternion.LookRotation(-hitDirection));
 
         // Player/character experience effects delegated to CharacterFX
         cachedFX?.NotifyHitLanded(contact);
