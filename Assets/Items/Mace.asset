@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 'Mace for smashing. '
   icon: {fileID: 21300000, guid: 0323defcc7204924787491d8a559435e, type: 3}
   worldPrefab: {fileID: 1520613138636738, guid: 6f3863215fb2a2742b86223d07dfc298, type: 3}
-  itemType: 4
+  itemType: 1
   canBeEquipped: 1
   maxStackSize: 1
   equipOnPickup: 0
