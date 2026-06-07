@@ -47,15 +47,21 @@ public class ObjectController : MonoBehaviour
     public AnimationCurve rotateCurve = AnimationCurve.Linear(0f, 1f, 1f, 1f);
 
     [ToggleGroup("rotateEnabled")]
+    public bool rotateContinuous = true;
+
+    [ToggleGroup("rotateEnabled")]
+    [ShowIf("@!rotateContinuous")]
+    public float rotateOnceDegrees = 90f;
+
+    [ToggleGroup("rotateEnabled")]
+    [ShowIf("@!rotateContinuous")]
     public bool rotatePingPong = false;
 
     [ToggleGroup("rotateEnabled")]
-    [ShowIf("rotatePingPong")]
-    public float rotatePingPongDegrees = 90f;
-
-    [ToggleGroup("rotateEnabled")]
-    [ShowIf("rotatePingPong")]
+    [ShowIf("@!rotateContinuous && rotatePingPong")]
     public float rotatePauseAtEachEnd = 0f;
+
+    private bool _rotateOnceDone = false;
 
     private Quaternion _rotateOrigin;
     private float _rotateTravelled = 0f;
@@ -63,31 +69,33 @@ public class ObjectController : MonoBehaviour
     private bool _rotatePausing = false;
     private float _rotatePauseTimer = 0f;
 
-    // ─── SWAY ────────────────────────────────────────────────────────────────
+    // ─── OSCILLATE ───────────────────────────────────────────────────────────
 
-    [ToggleGroup("swayEnabled", "Sway")]
-    public bool swayEnabled = false;
+    [ToggleGroup("oscillateEnabled", "Oscillate")]
+    public bool oscillateEnabled = false;
 
-    [ToggleGroup("swayEnabled")]
-    public Vector3 swayAxis = Vector3.forward;
+    [ToggleGroup("oscillateEnabled")]
+    [Tooltip("Direction to move along, e.g. Vector3.up for bobbing, Vector3.right for horizontal.")]
+    public Vector3 oscillateAxis = Vector3.up;
 
-    [ToggleGroup("swayEnabled")]
-    public float swayAmplitude = 15f;
+    [ToggleGroup("oscillateEnabled")]
+    [Tooltip("Max distance to travel from the starting position, each direction.")]
+    public float oscillateAmplitude = 0.25f;
 
-    [ToggleGroup("swayEnabled")]
-    public float swayFrequency = 1f;
+    [ToggleGroup("oscillateEnabled")]
+    public float oscillateFrequency = 1f;
 
-    [ToggleGroup("swayEnabled")]
-    public AnimationCurve swayCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+    [ToggleGroup("oscillateEnabled")]
+    public AnimationCurve oscillateCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-    [ToggleGroup("swayEnabled")]
-    public float swayPauseAtEachEnd = 0f;
+    [ToggleGroup("oscillateEnabled")]
+    public float oscillatePauseAtEachEnd = 0f;
 
-    private Quaternion _swayOrigin;
-    private float _swayTime = 0f;
-    private bool _swayPausing = false;
-    private float _swayPauseTimer = 0f;
-    private float _swayLastSign = 0f;
+    private Vector3 _oscillateOrigin;
+    private float _oscillateTime = 0f;
+    private bool _oscillatePausing = false;
+    private float _oscillatePauseTimer = 0f;
+    private float _oscillateLastSign = 0f;
 
     // ─── SCALE PULSE ─────────────────────────────────────────────────────────
 
@@ -125,9 +133,9 @@ public class ObjectController : MonoBehaviour
     {
         _originPos    = transform.position;
         _originRot    = transform.rotation;
-        _rotateOrigin = transform.rotation;
-        _swayOrigin   = transform.rotation;
-        _originScale  = transform.localScale;
+        _rotateOrigin    = transform.rotation;
+        _oscillateOrigin = transform.position;
+        _originScale     = transform.localScale;
 
         if (!autoStart) return;
 
@@ -138,7 +146,7 @@ public class ObjectController : MonoBehaviour
     {
         HandleMove();
         HandleRotate();
-        HandleSway();
+        HandleOscillate();
         HandleScale();
     }
 
@@ -179,6 +187,15 @@ public class ObjectController : MonoBehaviour
     {
         if (!rotateEnabled) return;
 
+        // Continuous mode: just spin forever at rotateSpeed (curve sampled at its midpoint)
+        if (rotateContinuous)
+        {
+            float contSpeed = rotateSpeed * rotateCurve.Evaluate(0.5f) * Time.deltaTime;
+            transform.Rotate(rotateAxis, contSpeed, Space.Self);
+            return;
+        }
+
+        // Non-continuous: either ping-pong between +/- rotateOnceDegrees, or rotate once and stop
         if (_rotatePausing)
         {
             _rotatePauseTimer += Time.deltaTime;
@@ -186,18 +203,16 @@ public class ObjectController : MonoBehaviour
             return;
         }
 
-        float speedThisFrame = rotateSpeed * rotateCurve.Evaluate(
-            rotatePingPong ? _rotateTravelled / rotatePingPongDegrees : 0.5f
-        ) * Time.deltaTime;
-
         if (rotatePingPong)
         {
+            float speedThisFrame = rotateSpeed * rotateCurve.Evaluate(_rotateTravelled / rotateOnceDegrees) * Time.deltaTime;
+
             _rotateTravelled += speedThisFrame;
             transform.Rotate(rotateAxis, speedThisFrame * _rotateDir, Space.Self);
 
-            if (_rotateTravelled >= rotatePingPongDegrees)
+            if (_rotateTravelled >= rotateOnceDegrees)
             {
-                float overshoot = _rotateTravelled - rotatePingPongDegrees;
+                float overshoot = _rotateTravelled - rotateOnceDegrees;
                 transform.Rotate(rotateAxis, -overshoot * _rotateDir, Space.Self);
                 _rotateTravelled = 0f;
                 _rotateDir = -_rotateDir;
@@ -206,42 +221,55 @@ public class ObjectController : MonoBehaviour
         }
         else
         {
+            if (_rotateOnceDone) return;
+
+            float speedThisFrame = rotateSpeed * rotateCurve.Evaluate(_rotateTravelled / rotateOnceDegrees) * Time.deltaTime;
+            _rotateTravelled += speedThisFrame;
             transform.Rotate(rotateAxis, speedThisFrame, Space.Self);
+
+            if (_rotateTravelled >= rotateOnceDegrees)
+            {
+                float overshoot = _rotateTravelled - rotateOnceDegrees;
+                transform.Rotate(rotateAxis, -overshoot, Space.Self);
+                _rotateOnceDone = true;
+                rotateEnabled   = false;
+            }
         }
     }
 
-    // ─── SWAY ────────────────────────────────────────────────────────────────
+    // ─── OSCILLATE ───────────────────────────────────────────────────────────
 
-    void HandleSway()
+    void HandleOscillate()
     {
-        if (!swayEnabled) return;
+        if (!oscillateEnabled) return;
 
-        if (_swayPausing)
+        if (_oscillatePausing)
         {
-            _swayPauseTimer += Time.deltaTime;
-            if (_swayPauseTimer >= swayPauseAtEachEnd) { _swayPausing = false; _swayPauseTimer = 0f; }
+            _oscillatePauseTimer += Time.deltaTime;
+            if (_oscillatePauseTimer >= oscillatePauseAtEachEnd) { _oscillatePausing = false; _oscillatePauseTimer = 0f; }
             return;
         }
 
-        _swayTime += Time.deltaTime * swayFrequency;
+        _oscillateTime += Time.deltaTime * oscillateFrequency;
 
         // sin goes -1..1; remap to 0..1 for the curve, then back to -1..1
-        float sin        = Mathf.Sin(_swayTime * Mathf.PI * 2f);
+        float sin        = Mathf.Sin(_oscillateTime * Mathf.PI * 2f);
         float t          = (sin + 1f) * 0.5f;
-        float curveValue = swayCurve.Evaluate(t);
-        float angle      = (curveValue * 2f - 1f) * swayAmplitude;
+        float curveValue = oscillateCurve.Evaluate(t);
+        float signedVal  = curveValue * 2f - 1f;
 
-        transform.rotation = _swayOrigin * Quaternion.AngleAxis(angle, swayAxis.normalized);
+        Vector3 offset = oscillateAxis.normalized * (signedVal * oscillateAmplitude);
+        transform.position = _oscillateOrigin + offset;
 
         // detect when sin crosses a peak (+1 or -1) to trigger the pause
-        if (swayPauseAtEachEnd > 0f)
+        if (oscillatePauseAtEachEnd > 0f)
         {
-            float sign = Mathf.Sign(sin);
+            float sign   = Mathf.Sign(sin);
             float absSin = Mathf.Abs(sin);
-            if (absSin > 0.99f && sign != _swayLastSign)
+            if (absSin > 0.99f && sign != _oscillateLastSign)
             {
-                _swayLastSign = sign;
-                _swayPausing  = true;
+                _oscillateLastSign = sign;
+                _oscillatePausing  = true;
             }
         }
     }
@@ -318,6 +346,7 @@ public class ObjectController : MonoBehaviour
         _rotateTravelled = 0f;
         _rotateDir       = 1f;
         _rotatePausing   = false;
+        _rotateOnceDone  = false;
         rotateEnabled    = true;
     }
 
@@ -332,22 +361,24 @@ public class ObjectController : MonoBehaviour
         transform.rotation = _rotateOrigin;
     }
 
-    public void StartSway()
+    public void StartOscillate()
     {
-        _swayOrigin  = transform.rotation;
-        _swayTime    = 0f;
-        swayEnabled  = true;
+        _oscillateOrigin   = transform.position;
+        _oscillateTime     = 0f;
+        _oscillatePausing  = false;
+        _oscillateLastSign = 0f;
+        oscillateEnabled   = true;
     }
 
-    public void StopSway()
+    public void StopOscillate()
     {
-        swayEnabled = false;
+        oscillateEnabled = false;
     }
 
-    public void ResetSway()
+    public void ResetOscillate()
     {
-        StopSway();
-        transform.rotation = _swayOrigin;
+        StopOscillate();
+        transform.position = _oscillateOrigin;
     }
 
     public void StartScalePulse()
