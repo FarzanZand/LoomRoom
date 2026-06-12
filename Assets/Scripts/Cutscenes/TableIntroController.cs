@@ -20,7 +20,6 @@ public class TableIntroController : MonoBehaviour
     public void PlayTableIntro()
     {
         StartCoroutine(PlayTableIntroRoutine());
-        Debug.Log(!ProgressionManager.Instance.tableEntered);
     }
 
     private IEnumerator PlayTableIntroRoutine()

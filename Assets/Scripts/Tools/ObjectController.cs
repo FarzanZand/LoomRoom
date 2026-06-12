@@ -129,12 +129,36 @@ public class ObjectController : MonoBehaviour
     [Header("General")]
     public bool autoStart = true;
 
+    [Tooltip("Work in parent-local space so all motion follows the parent if it moves at runtime.")]
+    public bool followParent = false;
+
+    // Anchor accessors: parent-local space when followParent, world space otherwise.
+    Vector3 AnchorPos
+    {
+        get => followParent ? transform.localPosition : transform.position;
+        set { if (followParent) transform.localPosition = value; else transform.position = value; }
+    }
+
+    Quaternion AnchorRot
+    {
+        get => followParent ? transform.localRotation : transform.rotation;
+        set { if (followParent) transform.localRotation = value; else transform.rotation = value; }
+    }
+
+    Vector3 TargetAnchorPos => followParent && transform.parent != null
+        ? transform.parent.InverseTransformPoint(targetTransform.position)
+        : targetTransform.position;
+
+    Quaternion TargetAnchorRot => followParent && transform.parent != null
+        ? Quaternion.Inverse(transform.parent.rotation) * targetTransform.rotation
+        : targetTransform.rotation;
+
     void Start()
     {
-        _originPos    = transform.position;
-        _originRot    = transform.rotation;
-        _rotateOrigin    = transform.rotation;
-        _oscillateOrigin = transform.position;
+        _originPos    = AnchorPos;
+        _originRot    = AnchorRot;
+        _rotateOrigin    = AnchorRot;
+        _oscillateOrigin = AnchorPos;
         _originScale     = transform.localScale;
 
         if (!autoStart) return;
@@ -165,14 +189,14 @@ public class ObjectController : MonoBehaviour
 
         _moveT = Mathf.Clamp01(_moveT + Time.deltaTime / moveDuration);
 
-        Vector3    fromPos = _movingToTarget ? _originPos               : targetTransform.position;
-        Vector3    toPos   = _movingToTarget ? targetTransform.position  : _originPos;
-        Quaternion fromRot = _movingToTarget ? _originRot               : targetTransform.rotation;
-        Quaternion toRot   = _movingToTarget ? targetTransform.rotation  : _originRot;
+        Vector3    fromPos = _movingToTarget ? _originPos      : TargetAnchorPos;
+        Vector3    toPos   = _movingToTarget ? TargetAnchorPos : _originPos;
+        Quaternion fromRot = _movingToTarget ? _originRot      : TargetAnchorRot;
+        Quaternion toRot   = _movingToTarget ? TargetAnchorRot : _originRot;
 
         float v = moveCurve.Evaluate(_moveT);
-        transform.position = Vector3.LerpUnclamped(fromPos, toPos, v);
-        transform.rotation = Quaternion.SlerpUnclamped(fromRot, toRot, v);
+        AnchorPos = Vector3.LerpUnclamped(fromPos, toPos, v);
+        AnchorRot = Quaternion.SlerpUnclamped(fromRot, toRot, v);
 
         if (_moveT >= 1f)
         {
@@ -259,7 +283,7 @@ public class ObjectController : MonoBehaviour
         float signedVal  = curveValue * 2f - 1f;
 
         Vector3 offset = oscillateAxis.normalized * (signedVal * oscillateAmplitude);
-        transform.position = _oscillateOrigin + offset;
+        AnchorPos = _oscillateOrigin + offset;
 
         // detect when sin crosses a peak (+1 or -1) to trigger the pause
         if (oscillatePauseAtEachEnd > 0f)
@@ -320,8 +344,8 @@ public class ObjectController : MonoBehaviour
 
     public void StartMove()
     {
-        _originPos = transform.position;
-        _originRot = transform.rotation;
+        _originPos = AnchorPos;
+        _originRot = AnchorRot;
         _moveT = 0f; _movingToTarget = true; _movePausing = false;
         moveEnabled = true;
         _moveRunning = true;
@@ -336,13 +360,13 @@ public class ObjectController : MonoBehaviour
     public void ResetMove()
     {
         StopMove();
-        transform.position = _originPos;
-        transform.rotation = _originRot;
+        AnchorPos = _originPos;
+        AnchorRot = _originRot;
     }
 
     public void StartRotate()
     {
-        _rotateOrigin    = transform.rotation;
+        _rotateOrigin    = AnchorRot;
         _rotateTravelled = 0f;
         _rotateDir       = 1f;
         _rotatePausing   = false;
@@ -358,12 +382,12 @@ public class ObjectController : MonoBehaviour
     public void ResetRotate()
     {
         StopRotate();
-        transform.rotation = _rotateOrigin;
+        AnchorRot = _rotateOrigin;
     }
 
     public void StartOscillate()
     {
-        _oscillateOrigin   = transform.position;
+        _oscillateOrigin   = AnchorPos;
         _oscillateTime     = 0f;
         _oscillatePausing  = false;
         _oscillateLastSign = 0f;
@@ -378,7 +402,7 @@ public class ObjectController : MonoBehaviour
     public void ResetOscillate()
     {
         StopOscillate();
-        transform.position = _oscillateOrigin;
+        AnchorPos = _oscillateOrigin;
     }
 
     public void StartScalePulse()
