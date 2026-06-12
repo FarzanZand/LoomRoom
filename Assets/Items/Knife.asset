@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: Knife
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: 'asdafga '
+  itemName: Small knife
   description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
   icon: {fileID: 21300000, guid: d4ef04d116a6d79449188d927fb8cc6d, type: 3}
   worldPrefab: {fileID: 1808823706470762, guid: 7c2b4de056174ed499e0881bf2d69242, type: 3}
@@ -21,6 +21,10 @@ MonoBehaviour:
   maxStackSize: 1
   equipOnPickup: 0
   equipSlot: 0
+  attackRange: 0.8
+  attackDamage: 10
+  hitSound: {fileID: 0}
+  hitParticlePrefab: {fileID: 0}
   itemEffect: 0
   effectValue: 0
   customEffect: {fileID: 0}

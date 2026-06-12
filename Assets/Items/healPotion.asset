@@ -12,15 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: healPotion
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: HealPotion
+  itemName: Heal Potion
   description: 'Heal for 5 health on use. '
   icon: {fileID: 21300000, guid: 48d9b4085f8410e49927b68655616e34, type: 3}
-  worldPrefab: {fileID: 1681972012984452, guid: 8e6fb74f22edd2d48b88c4386ae61758, type: 3}
+  worldPrefab: {fileID: 6798015009763888447, guid: 68da6e11f0050cb48a708855e9c3aee3, type: 3}
   itemType: 4
   canBeEquipped: 1
   maxStackSize: 1
   equipOnPickup: 0
   equipSlot: 0
+  attackRange: 0.8
+  attackDamage: 10
+  hitSound: {fileID: 0}
+  hitParticlePrefab: {fileID: 0}
   itemEffect: 0
   effectValue: 5
   customEffect: {fileID: 0}
