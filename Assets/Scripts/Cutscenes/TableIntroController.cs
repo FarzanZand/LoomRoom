@@ -19,6 +19,7 @@ public class TableIntroController : MonoBehaviour
     public void PlayTableIntro()
     {
         StartCoroutine(PlayTableIntroRoutine());
+        Debug.Log(!ProgressionManager.Instance.tableEntered);
     }
 
     private IEnumerator PlayTableIntroRoutine()
@@ -41,6 +42,7 @@ public class TableIntroController : MonoBehaviour
             yield return new WaitForSeconds(delayBetweenBeats*4f);
             object2.SetActive(true);
             AudioManager.Instance.PlaySFX2D("poof");
+            NPCanimator.SetTrigger("Point");
             yield return new WaitForSeconds(delayBetweenBeats*4f);
             object3.SetActive(true);
             AudioManager.Instance.PlaySFX2D("poof");
