@@ -49,7 +49,9 @@ public class TableIntroController : MonoBehaviour
             yield return new WaitForSeconds(delayBetweenBeats*4f);
             object4.SetActive(true);
             AudioManager.Instance.PlaySFX2D("poof");
-            NPCanimator.SetTrigger("Point");
+            NPCanimator.SetTrigger("ReachOut");
+            WorldManager.Instance.FadeDirectionalLight(WorldManager.Instance.directionalLight.intensity, 1.4f, 3f);
+            WorldManager.Instance.FadeDirectionalLightColor(Color.white, 3f);
         yield break;
     }
 }
