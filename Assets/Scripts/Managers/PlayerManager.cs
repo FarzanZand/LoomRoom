@@ -15,7 +15,7 @@ public class PlayerManager : Singleton<PlayerManager>
     public GameObject tablePlayerTorso;
 
     [Header("Settings")]
-    [SerializeField] private ActivePlayer startingPlayer = ActivePlayer.RoomPlayer;
+    [SerializeField] public ActivePlayer startingPlayer = ActivePlayer.RoomPlayer;
 
     public ActivePlayer? CurrentPlayer { get; private set; }
 

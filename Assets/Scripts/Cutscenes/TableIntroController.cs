@@ -15,6 +15,7 @@ public class TableIntroController : MonoBehaviour
     public GameObject object6;
     public GameObject object7;
     public GameObject object8;
+    public GameObject weaponObject;
     
     public void PlayTableIntro()
     {
@@ -36,13 +37,15 @@ public class TableIntroController : MonoBehaviour
             
             yield return new WaitForSeconds(delayBetweenBeats*12);
             PlayerManager.Instance.SetControlsFrozen(false);
-            yield return new WaitForSeconds(delayBetweenBeats*6f);
+            yield return new WaitForSeconds(delayBetweenBeats*4f);            
+            NPCanimator.SetTrigger("Point");
+            yield return new WaitForSeconds(delayBetweenBeats*2f);
             object1.SetActive(true);
             AudioManager.Instance.PlaySFX2D("poof");
             yield return new WaitForSeconds(delayBetweenBeats*4f);
             object2.SetActive(true);
             AudioManager.Instance.PlaySFX2D("poof");
-            NPCanimator.SetTrigger("Point");
+
             yield return new WaitForSeconds(delayBetweenBeats*4f);
             object3.SetActive(true);
             AudioManager.Instance.PlaySFX2D("poof");
@@ -50,8 +53,14 @@ public class TableIntroController : MonoBehaviour
             object4.SetActive(true);
             AudioManager.Instance.PlaySFX2D("poof");
             NPCanimator.SetTrigger("ReachOut");
+            yield return new WaitForSeconds(delayBetweenBeats*2f);
             WorldManager.Instance.FadeDirectionalLight(WorldManager.Instance.directionalLight.intensity, 1.4f, 3f);
             WorldManager.Instance.FadeDirectionalLightColor(Color.white, 3f);
+            
+            
+            yield return new WaitForSeconds(delayBetweenBeats*4f);
+            weaponObject.SetActive(true);
+            weaponObject.GetComponent<ObjectController>().StartMove();
         yield break;
     }
 }

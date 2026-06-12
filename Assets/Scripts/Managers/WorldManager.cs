@@ -8,6 +8,15 @@ public class WorldManager : Singleton<WorldManager>
     public Transform startPositionRoom;
     public Light directionalLight;
 
+    public void Awake()
+    {
+        if (PlayerManager.Instance.startingPlayer == PlayerManager.ActivePlayer.RoomPlayer)
+        {
+            directionalLight.color = Color.black;
+            directionalLight.intensity = 0.7f;
+        }
+    }
+    
     public void Start()
     {
         if(!ProgressionManager.Instance.skipWakeUp)
