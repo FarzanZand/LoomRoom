@@ -205,12 +205,13 @@ public abstract class EnemyController : MovementBase
     {
         knockbackTimer -= Time.deltaTime;
 
-        Vector3 next = transform.position + knockbackVelocity * Time.deltaTime;
+        Vector3 delta = knockbackVelocity * Time.deltaTime;
+        delta.y = 0f;
         knockbackVelocity = Vector3.MoveTowards(knockbackVelocity, Vector3.zero, knockbackVelocity.magnitude / Mathf.Max(knockbackTimer + Time.deltaTime, 0.001f) * Time.deltaTime);
 
-        if (agent != null && agent.isOnNavMesh &&
-            NavMesh.SamplePosition(next, out NavMeshHit hit, 1f, NavMesh.AllAreas))
-            agent.Warp(hit.position);
+        // Move() slides the agent along the navmesh — unlike Warp, it can't pop them upward
+        if (agent != null && agent.isOnNavMesh)
+            agent.Move(delta);
 
         if (knockbackTimer <= 0f && agent != null)
             agent.isStopped = false;
@@ -372,7 +373,9 @@ public abstract class EnemyController : MovementBase
     protected override void ApplyKnockback(Vector3 direction)
     {
         if (agent == null || !agent.isOnNavMesh) return;
+        direction.y    = 0f;
         float force    = direction.magnitude;
+        if (force < 0.001f) return;
         var   attackerFX = PlayerManager.Instance?.tablePlayer?.GetComponentInChildren<CharacterFX>();
         float duration = attackerFX != null ? attackerFX.KnockbackDuration : 0.25f;
         knockbackVelocity = direction.normalized * (force / Mathf.Max(duration, 0.01f));
@@ -477,7 +480,12 @@ public abstract class EnemyController : MovementBase
 
         var efx = fx as EnemyFX;
         float force = efx != null && efx.KnockbackEnabled ? efx.KnockbackForce : 1f;
-        target.TakeDamage(damage, (player.position - transform.position).normalized * force);
+        if (CombatManager.Instance != null) force = CombatManager.Instance.ScaleKnockback(force);
+
+        Vector3 knockDir = player.position - transform.position;
+        knockDir.y = 0f;
+        knockDir = knockDir.sqrMagnitude > 0.0001f ? knockDir.normalized : transform.forward;
+        target.TakeDamage(damage, knockDir * force);
     }
 
     // ── Gizmos ────────────────────────────────────────────────────────

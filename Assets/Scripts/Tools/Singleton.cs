@@ -1,10 +1,21 @@
 using UnityEngine;
 
+// Bumps a session id on every play-mode start so Singleton<T> statics can detect
+// stale state when domain reload is disabled (Enter Play Mode Options).
+internal static class SingletonSession
+{
+    internal static int Id;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void OnSessionStart() => Id++;
+}
+
 public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 {
     private static T _instance;
-    private static bool _applicationIsQuitting;
+    private static int _quitSessionId = -1;
 
+    static bool ApplicationIsQuitting => _quitSessionId == SingletonSession.Id;
 
     public static T Instance
     {
@@ -15,7 +26,7 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 
             // Don't create new objects during teardown (editor or build).
             // In the editor, also guard against creation after play mode ends.
-            if (_applicationIsQuitting || !Application.isPlaying)
+            if (ApplicationIsQuitting || !Application.isPlaying)
                 return null;
 
             _instance = FindAnyObjectByType<T>(FindObjectsInactive.Include);
@@ -31,7 +42,6 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 
     protected virtual void Awake()
     {
-        _applicationIsQuitting = false; // clear stale flag from previous session
         if (_instance == null)
         {
             _instance = this as T;
@@ -52,6 +62,6 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 
     protected virtual void OnApplicationQuit()
     {
-        _applicationIsQuitting = true;
+        _quitSessionId = SingletonSession.Id;
     }
 }

@@ -58,7 +58,8 @@ public abstract class CharacterBase : MonoBehaviour
     protected virtual void ApplyKnockback(Vector3 direction)
     {
         if (agent == null || !agent.isOnNavMesh) return;
-        agent.Warp(transform.position + direction);
+        direction.y = 0f;
+        agent.Move(direction);
     }
 
     public virtual void Pause()

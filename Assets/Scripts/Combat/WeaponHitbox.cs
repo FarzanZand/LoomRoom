@@ -96,14 +96,21 @@ public class WeaponHitbox : MonoBehaviour
         if (target != null)
         {
             Vector3 targetPos   = (target as MonoBehaviour)?.transform.position ?? other.transform.position;
-            Vector3 attackerPos = transform.root.position;
+            // Push away from the wielder's body, not transform.root — the player sits
+            // nested under a parent rig whose pivot is nowhere near the character.
+            Vector3 attackerPos = cachedAttackerStats != null
+                ? cachedAttackerStats.transform.position
+                : transform.position;
             Vector3 diff        = targetPos - attackerPos;
             diff.y = 0f;
             if (diff.sqrMagnitude < 0.0001f) diff = transform.root.forward;
             Vector3 knockDir = diff.normalized;
 
             float force = cachedFX != null && cachedFX.KnockbackEnabled ? cachedFX.KnockbackForce : 0f;
+            if (CombatManager.Instance != null) force = CombatManager.Instance.ScaleKnockback(force);
             target.TakeDamage(damage, knockDir * force);
+
+            CombatManager.Instance?.RequestHitStop();
         }
 
         // Weapon-specific contact effects

@@ -13,10 +13,12 @@ public class HitStopManager : Singleton<HitStopManager>
 
     IEnumerator Routine(float duration)
     {
-        float prev = Time.timeScale;
         Time.timeScale = 0f;
         yield return new WaitForSecondsRealtime(duration);
-        Time.timeScale = prev;
+        // Restore to 1 explicitly: capturing the previous value freezes the game
+        // permanently if Trigger fires again while a stop is already active
+        // (it would capture 0 and "restore" to 0).
+        Time.timeScale = 1f;
         current = null;
     }
 }
