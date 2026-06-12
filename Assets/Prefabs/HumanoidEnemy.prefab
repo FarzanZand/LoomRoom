@@ -410,7 +410,7 @@ MonoBehaviour:
   loopPatrol: 1
   enemyData: {fileID: 11400000, guid: e94c989b244851f478bb8a67993bfea2, type: 2}
   localDefaultState: 0
-  localAggressionMode: 0
+  localAggressionMode: 1
   obstacleMask:
     serializedVersion: 2
     m_Bits: 0
@@ -445,7 +445,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 957184423342700410}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 9d545e43681431348908eab98e78aa45, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 0dcad412e4df7364880958fbda1ede6b, type: 3}
   m_Controller: {fileID: 9100000, guid: f0e56ac3d91670048a307651e1f0d9ca, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
@@ -511,8 +511,6 @@ MonoBehaviour:
   onHitSounds: []
   onHitVolume: 1
   onHitPitchVariance: 0.05
-  enableHitStop: 0
-  hitStopDuration: 0.07
   enableKnockback: 1
   knockbackForce: 3
   knockbackDuration: 0.25
@@ -1872,7 +1870,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7801460215452584037
 Transform:
   m_ObjectHideFlags: 0
@@ -4196,7 +4194,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &6504679532056460646
 Transform:
   m_ObjectHideFlags: 0
@@ -4333,6 +4331,10 @@ PrefabInstance:
     - target: {fileID: 1193453721025546, guid: 8d458e1bc503f3b4d89e72e841681909, type: 3}
       propertyPath: m_Name
       value: MeshCastleCharacterAvatar
+      objectReference: {fileID: 0}
+    - target: {fileID: 1193453721025546, guid: 8d458e1bc503f3b4d89e72e841681909, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1366836287025268, guid: 8d458e1bc503f3b4d89e72e841681909, type: 3}
       propertyPath: m_IsActive

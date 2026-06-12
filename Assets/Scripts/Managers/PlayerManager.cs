@@ -19,6 +19,9 @@ public class PlayerManager : Singleton<PlayerManager>
 
     public ActivePlayer? CurrentPlayer { get; private set; }
 
+    public GameObject ActivePlayerObject =>
+        (CurrentPlayer ?? startingPlayer) == ActivePlayer.RoomPlayer ? roomPlayer : tablePlayer;
+
     public event System.Action<ActivePlayer> OnPlayerSwapped;
 
     private PlayerInputActions inputActions;

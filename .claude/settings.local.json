@@ -40,7 +40,9 @@
       "mcp__UnityMCP__manage_prefabs",
       "PowerShell(claude config set -g theme dark)",
       "PowerShell($cfg = Get-Content \"$env:USERPROFILE\\\\.claude.json\" -Raw | ConvertFrom-Json; $cfg.theme)",
-      "PowerShell($path = \"$env:USERPROFILE\\\\.claude.json\"; $cfg = Get-Content $path -Raw | ConvertFrom-Json; if \\($cfg.PSObject.Properties['theme']\\) { $cfg.theme = 'dark' } else { $cfg | Add-Member -NotePropertyName theme -NotePropertyValue 'dark' }; $cfg | ConvertTo-Json -Depth 50 | Set-Content $path -Encoding utf8; \\(Get-Content $path -Raw | ConvertFrom-Json\\).theme)"
+      "PowerShell($path = \"$env:USERPROFILE\\\\.claude.json\"; $cfg = Get-Content $path -Raw | ConvertFrom-Json; if \\($cfg.PSObject.Properties['theme']\\) { $cfg.theme = 'dark' } else { $cfg | Add-Member -NotePropertyName theme -NotePropertyValue 'dark' }; $cfg | ConvertTo-Json -Depth 50 | Set-Content $path -Encoding utf8; \\(Get-Content $path -Raw | ConvertFrom-Json\\).theme)",
+      "Bash(cd \"/c/Game projects/LoomRoom/Assets/Scripts\" && grep -nE \"\\(public|private|protected\\)?\\\\s*void \\(Awake|OnDestroy|OnApplicationQuit\\)\\\\s*\\\\\\(\" Inventory/HotbarSystem.cs Inventory/ContextMenuUI.cs Combat/HitStopManager.cs Inventory/InventorySystem.cs Inventory/ItemHolder.cs Inventory/TooltipUI.cs Managers/NPCManager.cs Managers/MenuManager.cs Inventory/WorldItemSpawner.cs Managers/PlayerManager.cs Managers/ProgressionManager.cs Managers/ScreenManager.cs Managers/AudioManager.cs | grep -v override)",
+      "Bash(awk '/^--- !u!.* &906842172\\( |$\\)/,/^--- !u!.* &[0-9]+\\($| \\)/{print NR\": \"$0}' Assets/Scenes/Room.unity)"
     ]
   }
 }

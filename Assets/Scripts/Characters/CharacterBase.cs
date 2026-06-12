@@ -19,7 +19,7 @@ public abstract class CharacterBase : MonoBehaviour
     [SerializeField] LayerMask groundMask = ~0;
 
     [Header("Death")]
-    [SerializeField] float deathDuration = 2f;
+    [SerializeField] float deathDuration = 20f;
 
     // Subclasses (or their data assets) override these to change which
     // animator triggers fire on hurt and death.

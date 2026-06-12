@@ -8,8 +8,9 @@ public class WorldManager : Singleton<WorldManager>
     public Transform startPositionRoom;
     public Light directionalLight;
 
-    public void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         if (PlayerManager.Instance.startingPlayer == PlayerManager.ActivePlayer.RoomPlayer)
         {
             directionalLight.color = Color.black;
@@ -44,8 +45,36 @@ public class WorldManager : Singleton<WorldManager>
 
     Coroutine lightFadeRoutine;
 
+    bool EnsureDirectionalLight()
+    {
+        if (directionalLight != null) return true;
+
+        directionalLight = RenderSettings.sun;
+        if (directionalLight == null)
+        {
+            foreach (var light in FindObjectsByType<Light>())
+            {
+                if (light.type == LightType.Directional) { directionalLight = light; break; }
+            }
+        }
+
+        if (directionalLight == null)
+        {
+            Debug.LogWarning("WorldManager: no directional light assigned or found in scene.", this);
+            return false;
+        }
+        return true;
+    }
+
+    public void FadeDirectionalLight(float to, float duration)
+    {
+        if (!EnsureDirectionalLight()) return;
+        FadeDirectionalLight(directionalLight.intensity, to, duration);
+    }
+
     public void FadeDirectionalLight(float from, float to, float duration)
     {
+        if (!EnsureDirectionalLight()) return;
         if (lightFadeRoutine != null)
             StopCoroutine(lightFadeRoutine);
         lightFadeRoutine = StartCoroutine(FadeDirectionalLightRoutine(from, to, duration));
@@ -68,6 +97,7 @@ public class WorldManager : Singleton<WorldManager>
 
     public void FadeDirectionalLightColor(Color to, float duration)
     {
+        if (!EnsureDirectionalLight()) return;
         if (lightColorRoutine != null)
             StopCoroutine(lightColorRoutine);
         lightColorRoutine = StartCoroutine(FadeDirectionalLightColorRoutine(to, duration));

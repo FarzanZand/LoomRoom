@@ -15,8 +15,14 @@ public abstract class EnemyController : MovementBase
              "If left empty the fallback fields below are used.")]
     [SerializeField] EnemyData enemyData;
 
-    [Header("Fallback — used when no Enemy Data is assigned")]
+    [Header("Behaviour Override")]
+    [Tooltip("When enabled, the state and aggression below override the Enemy Data asset for this instance.")]
+    [SerializeField] bool overrideBehaviour = false;
+
+    [ShowIf("overrideBehaviour")]
     [SerializeField] EnemyState     localDefaultState    = EnemyState.Idle;
+
+    [ShowIf("overrideBehaviour")]
     [SerializeField] AggressionMode localAggressionMode  = AggressionMode.Aggressive;
 
     [Header("Detection")]
@@ -24,8 +30,11 @@ public abstract class EnemyController : MovementBase
 
     // ShowIf helpers read EffectiveDefaultState so the wander/patrol scene-ref
     // fields in MovementBase show or hide correctly in the Inspector.
-    EnemyState EffectiveDefaultState    => enemyData != null ? enemyData.defaultState    : localDefaultState;
-    AggressionMode EffectiveAggression  => enemyData != null ? enemyData.aggressionMode  : localAggressionMode;
+    EnemyState EffectiveDefaultState =>
+        overrideBehaviour || enemyData == null ? localDefaultState : enemyData.defaultState;
+
+    AggressionMode EffectiveAggression =>
+        overrideBehaviour || enemyData == null ? localAggressionMode : enemyData.aggressionMode;
 
     protected override bool ShowWanderFields() => EffectiveDefaultState == EnemyState.Wander;
     protected override bool ShowPatrolFields() => EffectiveDefaultState == EnemyState.Patrol;
@@ -306,14 +315,16 @@ public abstract class EnemyController : MovementBase
     {
         if (player == null) { SetState(EffectiveDefaultState); return; }
 
+        // Stay planted mid-swing — no chasing or turning until the attack animation ends
+        if (IsPlayingAttack()) return;
+
         if (HorizontalDist(transform.position, player.position) > attackRange)
         {
             SetState(EnemyState.Chase);
             return;
         }
 
-        if (!IsPlayingAttack())
-            FaceTo(player, attackFaceSpeed);
+        FaceTo(player, attackFaceSpeed);
 
         if (attackTimer <= 0f && IsFacingPlayer())
         {

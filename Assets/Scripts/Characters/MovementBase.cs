@@ -1,3 +1,4 @@
+using System.Collections;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.AI;
@@ -45,6 +46,57 @@ public abstract class MovementBase : CharacterBase
     {
         base.Awake();
         spawnPosition = transform.position;
+    }
+
+    Coroutine rotateToPlayerRoutine;
+
+    // Smoothly turns the character (on the Y axis) until it faces the active player.
+    [Button]
+    public void RotateTowardsPlayer(float rotateSpeed = 360f)
+    {
+        var playerObject = PlayerManager.Instance != null ? PlayerManager.Instance.ActivePlayerObject : null;
+        if (playerObject == null) return;
+
+        if (rotateToPlayerRoutine != null)
+            StopCoroutine(rotateToPlayerRoutine);
+        rotateToPlayerRoutine = StartCoroutine(RotateTowardsPlayerRoutine(playerObject.transform, rotateSpeed));
+    }
+
+    // Instantly faces the active player (on the Y axis) — e.g. on spawn.
+    [Button]
+    public void SnapRotationTowardsPlayer()
+    {
+        var playerObject = PlayerManager.Instance != null ? PlayerManager.Instance.ActivePlayerObject : null;
+        if (playerObject == null) return;
+
+        if (rotateToPlayerRoutine != null)
+        {
+            StopCoroutine(rotateToPlayerRoutine);
+            rotateToPlayerRoutine = null;
+        }
+
+        Vector3 dir = playerObject.transform.position - transform.position;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.001f) return;
+        transform.rotation = Quaternion.LookRotation(dir);
+    }
+
+    IEnumerator RotateTowardsPlayerRoutine(Transform player, float rotateSpeed)
+    {
+        while (true)
+        {
+            Vector3 dir = player.position - transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.001f) break;
+
+            Quaternion targetRot = Quaternion.LookRotation(dir);
+            transform.rotation = Quaternion.RotateTowards(
+                transform.rotation, targetRot, rotateSpeed * Time.deltaTime);
+
+            if (Quaternion.Angle(transform.rotation, targetRot) < 0.5f) break;
+            yield return null;
+        }
+        rotateToPlayerRoutine = null;
     }
 
     // Call from the subclass's wander state handler

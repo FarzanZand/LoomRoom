@@ -16,7 +16,7 @@ MonoBehaviour:
   prefab: {fileID: 0}
   faction: 2
   statProfile: {fileID: 11400000, guid: 9f5ac0ab39303a740af56d696b0affb5, type: 2}
-  defaultState: 1
+  defaultState: 0
   aggressionMode: 1
   wanderRadius: 4
   minWanderDistance: 2
