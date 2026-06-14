@@ -14,13 +14,13 @@ public class PlayerManager : Singleton<PlayerManager>
     public GameObject tablePlayerBody;
     public GameObject tablePlayerTorso;
 
-    [Header("Settings")]
-    [SerializeField] public ActivePlayer startingPlayer = ActivePlayer.RoomPlayer;
-
     public ActivePlayer? CurrentPlayer { get; private set; }
 
+    ActivePlayer StartingPlayer =>
+        ProgressionManager.Instance != null ? ProgressionManager.Instance.startingPlayer : ActivePlayer.RoomPlayer;
+
     public GameObject ActivePlayerObject =>
-        (CurrentPlayer ?? startingPlayer) == ActivePlayer.RoomPlayer ? roomPlayer : tablePlayer;
+        (CurrentPlayer ?? StartingPlayer) == ActivePlayer.RoomPlayer ? roomPlayer : tablePlayer;
 
     public event System.Action<ActivePlayer> OnPlayerSwapped;
 
@@ -53,7 +53,7 @@ public class PlayerManager : Singleton<PlayerManager>
 
     private void Start()
     {
-        SwapToPlayer(startingPlayer);
+        SwapToPlayer(StartingPlayer);
     }
 
     public void SwapToPlayer(ActivePlayer player)

@@ -11,7 +11,7 @@ public class WorldManager : Singleton<WorldManager>
     protected override void Awake()
     {
         base.Awake();
-        if (PlayerManager.Instance.startingPlayer == PlayerManager.ActivePlayer.RoomPlayer)
+        if (ProgressionManager.Instance.startingPlayer == PlayerManager.ActivePlayer.RoomPlayer)
         {
             directionalLight.color = Color.black;
             directionalLight.intensity = 0.7f;
