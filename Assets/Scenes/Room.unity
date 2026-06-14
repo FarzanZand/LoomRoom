@@ -5393,6 +5393,29 @@ MonoBehaviour:
   hitStopDuration: 0.1
   knockbackEnabled: 1
   knockbackForceMultiplier: 0.5
+  hitParticlePrefabs:
+  - {fileID: 4306488877223958017, guid: ecb38e0319a6ad44cbca52d7b5add7a6, type: 3}
+  - {fileID: 3042519775331041172, guid: 841004c4c6a39e244abe2257394de913, type: 3}
+  hitAudioClips:
+  - clip: {fileID: 8300000, guid: 7ab61839671c6014da38583e58a79d20, type: 3}
+    volume: 0.363
+    pitchVariance: 0
+  - clip: {fileID: 8300000, guid: bde3a7f501f4b7b4d9dd19c0debe0ff3, type: 3}
+    volume: 0.363
+    pitchVariance: 0
+  - clip: {fileID: 8300000, guid: e5675851317892e448f612e9016634fb, type: 3}
+    volume: 0.363
+    pitchVariance: 0
+  swingAudioClips:
+  - clip: {fileID: 0}
+    volume: 0
+    pitchVariance: 0
+  - clip: {fileID: 0}
+    volume: 0
+    pitchVariance: 0
+  - clip: {fileID: 0}
+    volume: 0
+    pitchVariance: 0
   hitFlashEnabled: 1
   hitFlashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   hitFlashDuration: 0.1
@@ -7102,7 +7125,7 @@ MonoBehaviour:
   object6: {fileID: 0}
   object7: {fileID: 0}
   object8: {fileID: 0}
-  weaponObject: {fileID: 54669310}
+  weaponObject: {fileID: 0}
 --- !u!1 &730987069
 GameObject:
   m_ObjectHideFlags: 0
@@ -18795,7 +18818,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorldManager
   WakeUpDirector: {fileID: 178767175}
   startPositionRoom: {fileID: 777283952}
-  directionalLight: {fileID: 410087040}
+  directionalLight: {fileID: 0}
 --- !u!1 &2004968051
 GameObject:
   m_ObjectHideFlags: 0

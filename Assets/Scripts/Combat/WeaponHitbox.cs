@@ -9,25 +9,44 @@ public class WeaponHitbox : MonoBehaviour
 
     [Header("Weapon Contact FX")]
     [SerializeField] AudioClip hitSound;
+    [SerializeField] AudioClip swingSound;
     [SerializeField] GameObject hitParticlePrefab;
 
     bool active;
+    bool useDefaultEffects = true;
     StatsComponent cachedAttackerStats;
     CharacterFX    cachedFX;
     readonly HashSet<Collider> hitThisSwing = new HashSet<Collider>();
     readonly Collider[] overlapBuffer = new Collider[16];
 
     // Called by ItemHolder when a weapon is equipped/unequipped
-    public void SetWeapon(AudioClip sound = null, GameObject particlePrefab = null)
+    public void SetWeapon(AudioClip sound = null, AudioClip swing = null, GameObject particlePrefab = null, bool playDefaultEffects = true)
     {
         hitSound          = sound;
+        swingSound        = swing;
         hitParticlePrefab = particlePrefab;
+        useDefaultEffects = playDefaultEffects;
     }
 
     public void ClearWeapon()
     {
         hitSound          = null;
+        swingSound        = null;
         hitParticlePrefab = null;
+        useDefaultEffects = true;
+    }
+
+    public void PlaySwingAudio()
+    {
+        if (useDefaultEffects)
+        {
+            if (CombatManager.Instance != null && CombatManager.Instance.TryGetRandomSwingAudio(out var entry))
+                AudioManager.Instance?.PlaySFX(entry.clip, transform.position, entry.volume, entry.pitchVariance);
+        }
+        else
+        {
+            AudioManager.Instance?.PlaySFX(swingSound, transform.position);
+        }
     }
 
     public void EnableHitbox()
@@ -86,6 +105,7 @@ public class WeaponHitbox : MonoBehaviour
 
         // Skip friendly fire
         var targetStats = other.GetComponentInParent<StatsComponent>();
+        if (targetStats != null && !targetStats.IsAlive) return;
         if (cachedAttackerStats != null && targetStats != null && cachedAttackerStats.Faction == targetStats.Faction)
             return;
 
@@ -114,10 +134,21 @@ public class WeaponHitbox : MonoBehaviour
         }
 
         // Weapon-specific contact effects
-        AudioManager.Instance?.PlaySFX(hitSound, contact);
+        if (useDefaultEffects)
+        {
+            if (CombatManager.Instance != null && CombatManager.Instance.TryGetRandomHitAudio(out var entry))
+                AudioManager.Instance?.PlaySFX(entry.clip, contact, entry.volume, entry.pitchVariance);
+        }
+        else
+        {
+            AudioManager.Instance?.PlaySFX(hitSound, contact);
+        }
 
-        if (hitParticlePrefab != null)
-            Instantiate(hitParticlePrefab, contact, Quaternion.LookRotation(-hitDirection));
+        GameObject particleToSpawn = useDefaultEffects
+            ? CombatManager.Instance?.GetRandomHitParticle()
+            : hitParticlePrefab;
+        if (particleToSpawn != null)
+            Instantiate(particleToSpawn, contact, Quaternion.LookRotation(-hitDirection));
 
         // Player/character experience effects delegated to CharacterFX
         cachedFX?.NotifyHitLanded(contact);

@@ -5,9 +5,6 @@ using UnityEngine;
 public class CharacterFX : MonoBehaviour
 {
     [Header("On Hit Landed")]
-    [SerializeField] AudioClip[] onHitSounds;
-    [SerializeField, Range(0f, 1f)] float onHitVolume = 1f;
-    [SerializeField, Range(0f, 0.5f)] float onHitPitchVariance = 0.05f;
     [SerializeField] bool  enableKnockback   = true;
     [SerializeField] float knockbackForce    = 3f;
     [SerializeField] float knockbackDuration = 0.25f;
@@ -51,7 +48,6 @@ public class CharacterFX : MonoBehaviour
 
     public virtual void NotifyHitLanded(Vector3 contactPoint)
     {
-        AudioManager.Instance?.PlaySFXRandom(onHitSounds, contactPoint, onHitVolume, onHitPitchVariance);
     }
 
     public virtual void NotifyHurtReceived(float amount, Vector3 direction)

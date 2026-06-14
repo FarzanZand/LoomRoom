@@ -1,4 +1,13 @@
+using System.Collections.Generic;
 using UnityEngine;
+
+[System.Serializable]
+public struct WeaponAudioEntry
+{
+    public AudioClip clip;
+    [Range(0f, 1f)] public float volume;
+    [Range(0f, 1f)] public float pitchVariance;
+}
 
 // Central toggles and tuning for combat feel effects.
 public class CombatManager : Singleton<CombatManager>
@@ -12,6 +21,42 @@ public class CombatManager : Singleton<CombatManager>
     public bool knockbackEnabled = true;
     [Tooltip("Scales every knockback force in the game.")]
     public float knockbackForceMultiplier = 1f;
+
+    [Header("Default Hit Effects")]
+    [Tooltip("Pool of hit particle prefabs. One is chosen at random when playDefaultEffects is true on the weapon.")]
+    public List<GameObject> hitParticlePrefabs = new List<GameObject>();
+    [Tooltip("Pool of hit audio clips. One is chosen at random when playDefaultEffects is true on the weapon.")]
+    public List<WeaponAudioEntry> hitAudioClips = new List<WeaponAudioEntry>();
+    [Tooltip("Pool of swing audio clips. One is chosen at random when playDefaultEffects is true on the weapon.")]
+    public List<WeaponAudioEntry> swingAudioClips = new List<WeaponAudioEntry>();
+
+    public GameObject GetRandomHitParticle()
+    {
+        if (hitParticlePrefabs == null || hitParticlePrefabs.Count == 0) return null;
+        return hitParticlePrefabs[Random.Range(0, hitParticlePrefabs.Count)];
+    }
+
+    public bool TryGetRandomHitAudio(out WeaponAudioEntry entry)
+    {
+        if (hitAudioClips != null && hitAudioClips.Count > 0)
+        {
+            entry = hitAudioClips[Random.Range(0, hitAudioClips.Count)];
+            return true;
+        }
+        entry = default;
+        return false;
+    }
+
+    public bool TryGetRandomSwingAudio(out WeaponAudioEntry entry)
+    {
+        if (swingAudioClips != null && swingAudioClips.Count > 0)
+        {
+            entry = swingAudioClips[Random.Range(0, swingAudioClips.Count)];
+            return true;
+        }
+        entry = default;
+        return false;
+    }
 
     [Header("Hit Flash")]
     public bool hitFlashEnabled = true;

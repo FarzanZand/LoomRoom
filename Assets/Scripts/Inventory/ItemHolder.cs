@@ -126,7 +126,7 @@ public class ItemHolder : Singleton<ItemHolder>
         if (hitbox != null)
         {
             if (item != null && item.itemType == ItemType.Weapon)
-                hitbox.SetWeapon(item.hitSound, item.hitParticlePrefab);
+                hitbox.SetWeapon(item.hitSound, item.swingSound, item.hitParticlePrefab, item.playDefaultEffects);
             else
                 hitbox.ClearWeapon();
         }

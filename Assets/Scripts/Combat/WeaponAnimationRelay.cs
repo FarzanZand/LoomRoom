@@ -12,6 +12,7 @@ public class WeaponAnimationRelay : MonoBehaviour
     }
 
     // Called by animation events
-    public void EnableHitbox()  => hitbox?.EnableHitbox();
-    public void DisableHitbox() => hitbox?.DisableHitbox();
+    public void EnableHitbox()   => hitbox?.EnableHitbox();
+    public void DisableHitbox()  => hitbox?.DisableHitbox();
+    public void PlaySwingAudio() => hitbox?.PlaySwingAudio();
 }

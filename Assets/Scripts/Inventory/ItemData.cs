@@ -106,7 +106,14 @@ public class ItemData : ScriptableObject
     public AudioClip hitSound;
 
     [BoxGroup("Equipment"), ShowIf("IsWeapon")]
+    public AudioClip swingSound;
+
+    [BoxGroup("Equipment"), ShowIf("IsWeapon")]
     public GameObject hitParticlePrefab;
+
+    [BoxGroup("Equipment"), ShowIf("IsWeapon")]
+    [Tooltip("If true, the hit particle is chosen randomly from CombatManager's list. If false, the hitParticlePrefab above is used.")]
+    public bool playDefaultEffects = true;
 
     [BoxGroup("Consumable"), ShowIf("IsConsumable")]
     public ItemEffect itemEffect;
