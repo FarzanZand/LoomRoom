@@ -58,6 +58,19 @@ public class CombatManager : Singleton<CombatManager>
         return false;
     }
 
+    [Header("Hit Reaction")]
+    public bool hitReactionEnabled = true;
+    [Tooltip("Peak rotation angle (degrees) applied to the bone closest to the hit.")]
+    public float hitReactionAngle = 20f;
+    [Tooltip("How quickly the bones move into the reaction pose. Lower = smoother snap-in.")]
+    public float hitReactionAttackSpeed = 20f;
+    [Tooltip("How quickly the offset decays back to the animated pose.")]
+    public float hitReactionDamping = 8f;
+    [Tooltip("How many parent bones above the hit bone also receive an offset.")]
+    public int hitReactionInfluenceDepth = 3;
+    [Tooltip("Fraction of strength passed to each successive parent bone.")]
+    [Range(0f, 1f)] public float hitReactionParentFalloff = 0.45f;
+
     [Header("Hit Flash")]
     public bool hitFlashEnabled = true;
     public Color hitFlashColor = new Color(1f, 0.25f, 0.25f);

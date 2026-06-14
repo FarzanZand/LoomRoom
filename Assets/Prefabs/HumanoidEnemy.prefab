@@ -356,6 +356,7 @@ GameObject:
   - component: {fileID: 78984053522660403}
   - component: {fileID: 3454829785970193963}
   - component: {fileID: 984213079681443887}
+  - component: {fileID: 2685329303846743532}
   m_Layer: 0
   m_Name: HumanoidEnemy
   m_TagString: Untagged
@@ -409,6 +410,7 @@ MonoBehaviour:
   waypoints: []
   loopPatrol: 1
   enemyData: {fileID: 11400000, guid: e94c989b244851f478bb8a67993bfea2, type: 2}
+  overrideBehaviour: 0
   localDefaultState: 0
   localAggressionMode: 1
   obstacleMask:
@@ -508,15 +510,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f6971b164a35ca4b8c31b85f5334697, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyFX
-  onHitSounds: []
-  onHitVolume: 1
-  onHitPitchVariance: 0.05
   enableKnockback: 1
   knockbackForce: 3
   knockbackDuration: 0.25
   onHurtSounds: []
   onHurtVolume: 1
   onHurtPitchVariance: 0.05
+  flashRenderers: []
+--- !u!114 &2685329303846743532
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957184423342700410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60c3ce1d335e09d48abfa80177755aa2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitReactionController
+  animator: {fileID: 0}
+  reactionAngle: 20
+  damping: 8
+  influenceDepth: 3
+  parentFalloff: 0.45
 --- !u!1 &1082656234791438016
 GameObject:
   m_ObjectHideFlags: 0

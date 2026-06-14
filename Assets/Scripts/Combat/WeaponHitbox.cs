@@ -129,6 +129,7 @@ public class WeaponHitbox : MonoBehaviour
             float force = cachedFX != null && cachedFX.KnockbackEnabled ? cachedFX.KnockbackForce : 0f;
             if (CombatManager.Instance != null) force = CombatManager.Instance.ScaleKnockback(force);
             target.TakeDamage(damage, knockDir * force);
+            other.GetComponentInParent<HitReactionController>()?.ReactToHit(contact, knockDir);
 
             CombatManager.Instance?.RequestHitStop();
         }
