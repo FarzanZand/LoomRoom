@@ -393,7 +393,7 @@ Transform:
   m_GameObject: {fileID: 54669310}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -334.08, y: 16.18, z: 353.63}
+  m_LocalPosition: {x: -334.08, y: 16.18, z: 363.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -528,7 +528,6 @@ MonoBehaviour:
   tablePlayer: {fileID: 1198239206}
   tablePlayerBody: {fileID: 0}
   tablePlayerTorso: {fileID: 42793436}
-  startingPlayer: 1
 --- !u!1001 &85672034
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7125,7 +7124,7 @@ MonoBehaviour:
   object6: {fileID: 0}
   object7: {fileID: 0}
   object8: {fileID: 0}
-  weaponObject: {fileID: 0}
+  weaponObject: {fileID: 54669310}
 --- !u!1 &730987069
 GameObject:
   m_ObjectHideFlags: 0
@@ -11706,6 +11705,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProgressionManager
   tableEntered: 0
   skipWakeUp: 1
+  startingPlayer: 0
 --- !u!4 &1213208528 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7964734430670010137, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
@@ -15320,7 +15320,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 957184423342700410, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: deathDuration
@@ -18818,7 +18818,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorldManager
   WakeUpDirector: {fileID: 178767175}
   startPositionRoom: {fileID: 777283952}
-  directionalLight: {fileID: 0}
+  directionalLight: {fileID: 410087040}
 --- !u!1 &2004968051
 GameObject:
   m_ObjectHideFlags: 0
@@ -28058,6 +28058,8 @@ SceneRoots:
   m_Roots:
   - {fileID: 298895045}
   - {fileID: 333104000}
+  - {fileID: 1805652957136550333}
+  - {fileID: 6088256995925591194}
   - {fileID: 1998643432}
   - {fileID: 1210057108}
   - {fileID: 73115245}
@@ -28065,8 +28067,6 @@ SceneRoots:
   - {fileID: 540669809}
   - {fileID: 1459324648}
   - {fileID: 4023663}
-  - {fileID: 1805652957136550333}
-  - {fileID: 6088256995925591194}
   - {fileID: 1697633321}
   - {fileID: 1216555968}
   - {fileID: 12511163}
