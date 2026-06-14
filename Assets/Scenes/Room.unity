@@ -5411,11 +5411,11 @@ MonoBehaviour:
     volume: 0.238
     pitchVariance: 0
   hitReactionEnabled: 1
-  hitReactionAngle: 100
-  hitReactionAttackSpeed: 12
+  hitReactionAngle: 70
+  hitReactionAttackSpeed: 20
   hitReactionDamping: 20
   hitReactionInfluenceDepth: 5
-  hitReactionParentFalloff: 0.151
+  hitReactionParentFalloff: 0.255
   hitFlashEnabled: 1
   hitFlashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   hitFlashDuration: 0.1
@@ -15332,7 +15332,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localAggressionMode
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

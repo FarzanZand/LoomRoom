@@ -15,7 +15,6 @@ public class HitReactionController : MonoBehaviour
     [SerializeField, Range(0f, 1f)] float parentFalloff = 0.45f;
 
     [SerializeField] float attackSpeed = 20f;
-
     float ReactionAngle  => CombatManager.Instance != null ? CombatManager.Instance.hitReactionAngle         : reactionAngle;
     float Damping        => CombatManager.Instance != null ? CombatManager.Instance.hitReactionDamping        : damping;
     float AttackSpeed    => CombatManager.Instance != null ? CombatManager.Instance.hitReactionAttackSpeed    : attackSpeed;
