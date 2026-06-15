@@ -41,8 +41,11 @@ public class WorldManager : Singleton<WorldManager>
     [Button]
     public void PlayDinnerCutscene()
     {
-        DinnerDirector.stopped += OnWakeUpComplete;
-        DinnerDirector.Play();
+        var controller = DinnerDirector.GetComponent<DinnerCutsceneController>();
+        if (controller != null)
+            controller.Play();
+        else
+            DinnerDirector.Play();
     }
     
     void OnWakeUpComplete(PlayableDirector _)

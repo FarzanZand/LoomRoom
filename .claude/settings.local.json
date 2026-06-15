@@ -44,7 +44,8 @@
       "Bash(cd \"/c/Game projects/LoomRoom/Assets/Scripts\" && grep -nE \"\\(public|private|protected\\)?\\\\s*void \\(Awake|OnDestroy|OnApplicationQuit\\)\\\\s*\\\\\\(\" Inventory/HotbarSystem.cs Inventory/ContextMenuUI.cs Combat/HitStopManager.cs Inventory/InventorySystem.cs Inventory/ItemHolder.cs Inventory/TooltipUI.cs Managers/NPCManager.cs Managers/MenuManager.cs Inventory/WorldItemSpawner.cs Managers/PlayerManager.cs Managers/ProgressionManager.cs Managers/ScreenManager.cs Managers/AudioManager.cs | grep -v override)",
       "Bash(awk '/^--- !u!.* &906842172\\( |$\\)/,/^--- !u!.* &[0-9]+\\($| \\)/{print NR\": \"$0}' Assets/Scenes/Room.unity)",
       "Bash(Remove-Item \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Scripts\\\\Cutscenes\\\\WakeUpCutsceneController.cs\" -Force)",
-      "Bash(Remove-Item \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Scripts\\\\Cutscenes\\\\WakeUpCutsceneController.cs.meta\" -ErrorAction SilentlyContinue -Force)"
+      "Bash(Remove-Item \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Scripts\\\\Cutscenes\\\\WakeUpCutsceneController.cs.meta\" -ErrorAction SilentlyContinue -Force)",
+      "mcp__UnityMCP__manage_editor"
     ]
   }
 }

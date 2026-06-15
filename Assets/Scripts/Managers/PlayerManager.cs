@@ -56,6 +56,12 @@ public class PlayerManager : Singleton<PlayerManager>
         SwapToPlayer(StartingPlayer);
     }
 
+    public void ForceSwapToPlayer(ActivePlayer player)
+    {
+        CurrentPlayer = null;
+        SwapToPlayer(player);
+    }
+
     public void SwapToPlayer(ActivePlayer player)
     {
         if (CurrentPlayer == player) return;
