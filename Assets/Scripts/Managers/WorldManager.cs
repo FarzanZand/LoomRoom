@@ -1,10 +1,12 @@
 using System.Collections;
+using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.Playables;
 
 public class WorldManager : Singleton<WorldManager>
 {
     public PlayableDirector WakeUpDirector;
+    public PlayableDirector DinnerDirector;
     public Transform startPositionRoom;
     public Light directionalLight;
 
@@ -36,6 +38,13 @@ public class WorldManager : Singleton<WorldManager>
         StartCoroutine(PlayGroundhogAudio());
     }
 
+    [Button]
+    public void PlayDinnerCutscene()
+    {
+        DinnerDirector.stopped += OnWakeUpComplete;
+        DinnerDirector.Play();
+    }
+    
     void OnWakeUpComplete(PlayableDirector _)
     {
         WakeUpDirector.stopped -= OnWakeUpComplete;

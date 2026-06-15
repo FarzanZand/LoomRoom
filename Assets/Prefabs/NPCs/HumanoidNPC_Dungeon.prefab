@@ -48,6 +48,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 684217400560617052, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 814955654900829522, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 846770712117852252, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
       propertyPath: m_Avatar
       value: 
@@ -56,13 +64,49 @@ PrefabInstance:
       propertyPath: m_Name
       value: HumanoidNPC_Dungeon
       objectReference: {fileID: 0}
+    - target: {fileID: 1515851509437579348, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1534011841065057987, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1615541769931481474, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2496900557952951372, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2621678833141551167, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2938491533727914242, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3544856544292157609, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4871300933999131579, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5783126792643451346, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6420594145492710407, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9188738554860714640, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
