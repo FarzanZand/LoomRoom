@@ -234,6 +234,7 @@ namespace MFPC
         protected bool wasGrounded;
         private bool primaryActionHeld;
         private bool secondaryActionHeld;
+        private float blockLockUntil = -1f;
         public bool RightHandEquipped { get; private set; }
         public bool LeftHandEquipped { get; private set; }
 
@@ -321,7 +322,7 @@ namespace MFPC
             inputActions.Player.LeanRight.performed += _ => leanRightPressed = true;
             inputActions.Player.LeanRight.canceled += _ => leanRightPressed = false;
 
-            inputActions.Player.PrimaryAction.performed += _ => primaryActionHeld = true;
+            inputActions.Player.PrimaryAction.performed += _ => { primaryActionHeld = true; if (!secondaryActionHeld) blockLockUntil = Time.time + (CombatManager.Instance != null ? CombatManager.Instance.blockCancelWindow : 0.5f); };
             inputActions.Player.PrimaryAction.canceled  += _ => primaryActionHeld = false;
             inputActions.Player.SecondaryAction.performed += _ => secondaryActionHeld = true;
             inputActions.Player.SecondaryAction.canceled  += _ => secondaryActionHeld = false;
@@ -358,6 +359,27 @@ namespace MFPC
         void OnDamageTaken(float amount, Vector3 knockbackDir)
         {
             if (playerFX == null) playerFX = GetComponentInParent<PlayerFX>();
+
+            if (IsBlocking())
+            {
+                bool frontal = true;
+                if (knockbackDir.sqrMagnitude > 0.001f)
+                {
+                    // knockbackDir points attacker → player; frontal hit opposes our forward
+                    Vector3 facing = lateralTorso != null ? lateralTorso.forward : transform.forward;
+                    frontal = Vector3.Dot(facing, knockbackDir.normalized) < -0.3f;
+                }
+
+                if (frontal)
+                {
+                    TryTriggerPlayerAnim(bodyAnimator, "BlockHit");
+                    TryTriggerPlayerAnim(armsAnimator, "BlockHit");
+                    if (knockbackDir != Vector3.zero)
+                        knockbackVelocity = knockbackDir.normalized * (playerFX?.ReceivedKnockbackForce ?? 3f);
+                    return;
+                }
+            }
+
             TryTriggerPlayerAnim(bodyAnimator, "Hurt");
             TryTriggerPlayerAnim(armsAnimator, "Hurt");
             playerFX?.NotifyHurtReceived(amount, knockbackDir);
@@ -422,8 +444,10 @@ namespace MFPC
                                       ItemHolder.Instance.GetHeldItem(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
                 bool weaponHeld = ItemHolder.Instance != null &&
                                   ItemHolder.Instance.GetHeldItem(EquipmentSlot.RightHand)?.itemType == ItemType.Weapon;
-                armsAnimator.SetBool("AttackHeld", primaryActionHeld && weaponHeld && !IsBlocking() && !menuOpen);
-                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !IsAttacking() && !menuOpen && shieldEquipped);
+
+                bool blockLocked = Time.time < blockLockUntil;
+                armsAnimator.SetBool("AttackHeld", primaryActionHeld && weaponHeld && !secondaryActionHeld && !menuOpen);
+                armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !blockLocked && !menuOpen && shieldEquipped);
             }
 
             wasGrounded = grounded;
@@ -461,12 +485,36 @@ namespace MFPC
                 || next.IsName("Attack_Windup") || next.IsName("Attack_Hold") || next.IsName("Attack_Release");
         }
 
+        // Returns true while block should be suppressed during an attack.
+        // Block becomes available only during the grace window at the end of the attack.
+        protected bool IsAttackingEarly()
+        {
+            if (!IsAttacking()) return false;
+            var cur = armsAnimator.GetCurrentAnimatorStateInfo(1);
+
+            // Release is always in the grace window
+            if (cur.IsName("Attack_Release")) return false;
+
+            // Hold is never cancellable
+            if (cur.IsName("Attack_Hold")) return true;
+
+            // Windup: locked until the grace window at the end
+            if (cur.IsName("Attack_Windup"))
+            {
+                float grace = CombatManager.Instance != null ? CombatManager.Instance.blockCancelWindow : 0.2f;
+                return cur.normalizedTime < (1f - grace);
+            }
+
+            return true;
+        }
+
         protected bool IsBlocking()
         {
             if (armsAnimator == null) return false;
             var cur  = armsAnimator.GetCurrentAnimatorStateInfo(2);
             var next = armsAnimator.GetNextAnimatorStateInfo(2);
-            return cur.IsName("Block") || next.IsName("Block");
+            return cur.IsName("Block") || cur.IsName("BlockIdle") || cur.IsName("BlockHit")
+                || next.IsName("Block") || next.IsName("BlockIdle") || next.IsName("BlockHit");
         }
 
         protected void ApplyAnimatorParams(Animator anim, float speed, bool grounded, bool jump, bool freeFall)

@@ -8,6 +8,8 @@ public class InteractController : MonoBehaviour
 {
     public event Action<InteractableTrigger> OnActiveChanged;
 
+    [SerializeField] float facingDotThreshold = 0.5f; // ~60 degrees
+
     private readonly List<InteractableTrigger> inRange = new();
     private InteractableTrigger activeTrigger;
     private PlayerInputActions inputActions;
@@ -64,7 +66,7 @@ public class InteractController : MonoBehaviour
         {
             if (inRange[i] == null) { inRange.RemoveAt(i); continue; }
             float sqrDist = (inRange[i].transform.position - transform.position).sqrMagnitude;
-            if (sqrDist < minSqrDist)
+            if (sqrDist < minSqrDist && IsFacing(inRange[i].transform.position))
             {
                 minSqrDist = sqrDist;
                 closest = inRange[i];
@@ -72,6 +74,16 @@ public class InteractController : MonoBehaviour
         }
 
         SetActiveTrigger(closest);
+    }
+
+    private bool IsFacing(Vector3 targetPosition)
+    {
+        Vector3 toTarget = targetPosition - transform.position;
+        toTarget.y = 0f;
+        if (toTarget.sqrMagnitude < 0.001f) return true;
+        Vector3 forward = transform.forward;
+        forward.y = 0f;
+        return Vector3.Dot(forward.normalized, toTarget.normalized) >= facingDotThreshold;
     }
 
     private void SetActiveTrigger(InteractableTrigger trigger)

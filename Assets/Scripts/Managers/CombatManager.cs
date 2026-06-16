@@ -77,6 +77,10 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Seconds the flash tint stays on the character's renderers.")]
     public float hitFlashDuration = 0.1f;
 
+    [Header("Block Cancel")]
+    [Tooltip("Seconds after attacking that block is locked out. Set this to just under your attack windup clip length.")]
+    public float blockCancelWindow = 0.5f;
+
     public void RequestHitStop()
     {
         if (hitStopEnabled && HitStopManager.Instance != null)

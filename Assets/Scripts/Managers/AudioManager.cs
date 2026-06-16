@@ -415,6 +415,67 @@ public class AudioManager : Singleton<AudioManager>
         return src;
     }
 
+    // ── AudioData overloads ────────────────────────────────────────────────────
+
+    public AudioSource PlaySFXData(AudioData data, Vector3 position)
+    {
+        if (data == null) return null;
+        var clip = data.GetClip();
+        if (clip == null) return null;
+        float pitch = data.pitch + (data.pitchVariance > 0f ? Random.Range(-data.pitchVariance, data.pitchVariance) : 0f);
+        var src = ClaimSource(sfxPool);
+        src.transform.position = position;
+        src.clip         = clip;
+        src.loop         = false;
+        src.volume       = data.volume;
+        src.pitch        = pitch;
+        src.spatialBlend = 1f;
+        src.Play();
+        return src;
+    }
+
+    public AudioSource PlaySFXData2D(AudioData data)
+    {
+        if (data == null) return null;
+        var clip = data.GetClip();
+        if (clip == null) return null;
+        float pitch = data.pitch + (data.pitchVariance > 0f ? Random.Range(-data.pitchVariance, data.pitchVariance) : 0f);
+        var src = ClaimSource(sfxPool);
+        src.clip         = clip;
+        src.loop         = false;
+        src.volume       = data.volume;
+        src.pitch        = pitch;
+        src.spatialBlend = 0f;
+        src.Play();
+        return src;
+    }
+
+    public void PlayMusicData(AudioData data, bool loop = true, float fadeDuration = -1f)
+    {
+        if (data == null) return;
+        var clip = data.GetClip();
+        if (clip == null) return;
+        if (fadeDuration < 0f) fadeDuration = defaultFadeDuration;
+        StopMusicRoutine();
+        var src    = ActiveMusic;
+        src.clip   = clip;
+        src.loop   = loop;
+        src.volume = 0f;
+        src.pitch  = data.pitch;
+        src.Play();
+        float targetVol = data.volume;
+        musicRoutine = StartCoroutine(FadeSource(src, 0f, targetVol, fadeDuration, () => musicRoutine = null));
+    }
+
+    public AudioSource PlayUIData(AudioData data)
+    {
+        if (data == null) return null;
+        var clip = data.GetClip();
+        if (clip == null) return null;
+        float pitch = data.pitch + (data.pitchVariance > 0f ? Random.Range(-data.pitchVariance, data.pitchVariance) : 0f);
+        return PlayUI(clip, data.volume, pitch);
+    }
+
     // ── UI — key overloads ─────────────────────────────────────────────────────
 
     public AudioSource PlayUI(string key)
