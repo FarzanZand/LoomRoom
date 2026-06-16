@@ -224,7 +224,7 @@ MonoBehaviour:
         type: 0
         typeString: 
       - title: Dialogue Text
-        value: Hello.
+        value: 'Hello. Is it me you are looking for? '
         type: 0
         typeString: 
       - title: Sequence
@@ -301,8 +301,8 @@ MonoBehaviour:
           m_Calls: []
       canvasRect:
         serializedVersion: 2
-        x: 160
-        y: 130
+        x: 161.06381
+        y: 131.06383
         width: 160
         height: 30
     entryGroups: []
