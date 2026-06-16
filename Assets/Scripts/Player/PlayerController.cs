@@ -322,8 +322,13 @@ namespace MFPC
             inputActions.Player.LeanRight.performed += _ => leanRightPressed = true;
             inputActions.Player.LeanRight.canceled += _ => leanRightPressed = false;
 
-            inputActions.Player.PrimaryAction.performed += _ => { primaryActionHeld = true; if (!secondaryActionHeld) blockLockUntil = Time.time + (CombatManager.Instance != null ? CombatManager.Instance.blockCancelWindow : 0.5f); };
-            inputActions.Player.PrimaryAction.canceled  += _ => primaryActionHeld = false;
+            inputActions.Player.PrimaryAction.performed += _ =>
+            {
+                primaryActionHeld = true;
+                if (!secondaryActionHeld)
+                    blockLockUntil = Time.time + (CombatManager.Instance != null ? CombatManager.Instance.blockCancelWindow : 0.5f);
+            };
+            inputActions.Player.PrimaryAction.canceled += _ => primaryActionHeld = false;
             inputActions.Player.SecondaryAction.performed += _ => secondaryActionHeld = true;
             inputActions.Player.SecondaryAction.canceled  += _ => secondaryActionHeld = false;
         }
@@ -365,7 +370,6 @@ namespace MFPC
                 bool frontal = true;
                 if (knockbackDir.sqrMagnitude > 0.001f)
                 {
-                    // knockbackDir points attacker → player; frontal hit opposes our forward
                     Vector3 facing = lateralTorso != null ? lateralTorso.forward : transform.forward;
                     frontal = Vector3.Dot(facing, knockbackDir.normalized) < -0.3f;
                 }
@@ -483,29 +487,6 @@ namespace MFPC
             var next = armsAnimator.GetNextAnimatorStateInfo(1);
             return cur.IsName("Attack_Windup")  || cur.IsName("Attack_Hold")  || cur.IsName("Attack_Release")
                 || next.IsName("Attack_Windup") || next.IsName("Attack_Hold") || next.IsName("Attack_Release");
-        }
-
-        // Returns true while block should be suppressed during an attack.
-        // Block becomes available only during the grace window at the end of the attack.
-        protected bool IsAttackingEarly()
-        {
-            if (!IsAttacking()) return false;
-            var cur = armsAnimator.GetCurrentAnimatorStateInfo(1);
-
-            // Release is always in the grace window
-            if (cur.IsName("Attack_Release")) return false;
-
-            // Hold is never cancellable
-            if (cur.IsName("Attack_Hold")) return true;
-
-            // Windup: locked until the grace window at the end
-            if (cur.IsName("Attack_Windup"))
-            {
-                float grace = CombatManager.Instance != null ? CombatManager.Instance.blockCancelWindow : 0.2f;
-                return cur.normalizedTime < (1f - grace);
-            }
-
-            return true;
         }
 
         protected bool IsBlocking()
