@@ -29,6 +29,7 @@ public class TableIntroController : MonoBehaviour
             ScreenManager.Instance.FadeInOut(2f, 3f, 5f);
         
             yield return new WaitForSeconds(delayBetweenBeats*8);
+            TableManager.Instance.DM.transform.rotation = TableManager.Instance.dmPlacement.rotation;
             PlayerManager.Instance.SwapToPlayer(PlayerManager.ActivePlayer.TablePlayer);
             PlayerManager.Instance.SetControlsFrozen(true);
             AudioManager.Instance.PlayMusic(tableIntroAudio);
