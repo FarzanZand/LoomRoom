@@ -9,6 +9,8 @@ public class InteractController : MonoBehaviour
     public event Action<InteractableTrigger> OnActiveChanged;
 
     [SerializeField] float facingDotThreshold = 0.5f; // ~60 degrees
+    [Tooltip("Transform used for facing direction. Assign lateralTorso for MFPC players. Falls back to this transform if unassigned.")]
+    [SerializeField] Transform facingTransform;
 
     private readonly List<InteractableTrigger> inRange = new();
     private InteractableTrigger activeTrigger;
@@ -81,7 +83,7 @@ public class InteractController : MonoBehaviour
         Vector3 toTarget = targetPosition - transform.position;
         toTarget.y = 0f;
         if (toTarget.sqrMagnitude < 0.001f) return true;
-        Vector3 forward = transform.forward;
+        Vector3 forward = (facingTransform != null ? facingTransform : transform).forward;
         forward.y = 0f;
         return Vector3.Dot(forward.normalized, toTarget.normalized) >= facingDotThreshold;
     }

@@ -1464,6 +1464,11 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 7620212210415754580, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
   m_PrefabInstance: {fileID: 1805652957136550333}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &42793437 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2238247572518270218, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
+  m_PrefabInstance: {fileID: 1805652957136550333}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &44522503
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -36598,6 +36603,10 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0.012383695
       objectReference: {fileID: 0}
+    - target: {fileID: 7089844201871587681, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
+      propertyPath: facingTransform
+      value: 
+      objectReference: {fileID: 42793437}
     - target: {fileID: 7261006113898297606, guid: c920f6605a8100842bd3ef9d42936b68, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.05801529
@@ -42107,6 +42116,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InteractController
   facingDotThreshold: 0.5
+  facingTransform: {fileID: 3939317878672929250}
 --- !u!137 &8501479738113929706
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0
