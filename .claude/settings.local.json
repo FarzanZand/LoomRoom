@@ -49,7 +49,9 @@
       "PowerShell(@\\(1122942440, 677241888, 1332402558, 1510710741, 1206410822, 1526185956, 497994709, 1445827022\\) | ForEach-Object { $id = $_; $result = Select-String \"fileID: $id\" \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Scenes\\\\Room.unity\" | Select-Object -First 1; Write-Host \"$id -> line $\\($result.LineNumber\\): $\\($result.Line.Trim\\(\\)\\)\" })",
       "PowerShell($meta = Get-Content \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Plugins\\\\Pixel Crushers\\\\Dialogue System\\\\Scripts\\\\Manager\\\\DialogueSystemController.cs.meta\" -Raw; $guid = [regex]::Match\\($meta, 'guid: \\(\\\\w+\\)'\\).Groups[1].Value; Write-Host \"GUID: $guid\"; Select-String $guid \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Scenes\\\\Room.unity\" | Select-Object -First 3 | Format-Table LineNumber, Line -AutoSize)",
       "Bash(Get-Content \"C:\\\\Game projects\\\\LoomRoom\\\\Assets\\\\Animations\\\\Farzan anims\\\\BlockHit.anim.meta\")",
-      "Bash(Select-String \"guid\")"
+      "Bash(Select-String \"guid\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Game projects\\\\LoomRoom\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }
