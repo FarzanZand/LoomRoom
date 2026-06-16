@@ -449,6 +449,14 @@ namespace MFPC
                 armsAnimator.SetBool("BlockHeld",  secondaryActionHeld && !blockLocked && !menuOpen && shieldEquipped);
             }
 
+            if (stats != null)
+            {
+                float reduction = IsBlocking() && CombatManager.Instance != null
+                    ? 1f - CombatManager.Instance.blockDamageReduction
+                    : 1f;
+                stats.IncomingDamageScale = reduction;
+            }
+
             wasGrounded = grounded;
         }
 

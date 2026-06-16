@@ -23,6 +23,7 @@ public class StatsComponent : MonoBehaviour, IDamageable
 
     // ── State ─────────────────────────────────────────────────────────
     public float   CurrentHealth { get; private set; }
+    public float   IncomingDamageScale { get; set; } = 1f;
     public bool    IsAlive       => CurrentHealth > 0f;
     public Faction Faction       => faction;
 
@@ -175,12 +176,20 @@ public class StatsComponent : MonoBehaviour, IDamageable
 
     // ── IDamageable ───────────────────────────────────────────────────
 
+    public void TakeFlatDamage(float amount)
+    {
+        if (!IsAlive) return;
+        CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
+        OnDamageTaken?.Invoke(amount, Vector3.zero);
+        if (!IsAlive) OnDied?.Invoke();
+    }
+
     public void TakeDamage(float rawAmount, Vector3 knockbackDirection)
     {
         if (!IsAlive) return;
 
         float defense = GetFinal(StatType.Defense);
-        float actual  = Mathf.Max(0f, rawAmount - defense);
+        float actual  = Mathf.Max(0f, rawAmount - defense) * IncomingDamageScale;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
         OnDamageTaken?.Invoke(actual, knockbackDirection);

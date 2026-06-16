@@ -5,6 +5,9 @@ public class BodyFollower : MonoBehaviour
     [SerializeField] private Transform positionSource;
     [SerializeField] private Transform rotationSource;
 
+    private void OnFootstep(AnimationEvent animationEvent) { }
+    private void OnLand(AnimationEvent animationEvent) { }
+
     void LateUpdate()
     {
         if (positionSource != null)

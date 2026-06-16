@@ -8286,6 +8286,7 @@ MonoBehaviour:
   hitFlashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   hitFlashDuration: 0.1
   blockCancelWindow: 0.3
+  blockDamageReduction: 1
 --- !u!1 &498900044
 GameObject:
   m_ObjectHideFlags: 0
@@ -42898,7 +42899,6 @@ MonoBehaviour:
     m_Bits: 1
   feetTransform: {fileID: 4060989535961147947}
   footstepVolume: 0.5
-  crouchFootstepVolume: 0.25
   jumpStartSounds:
   - {fileID: 8300000, guid: 20aba752ed74ae74d9b2996e8b98648a, type: 3}
   - {fileID: 8300000, guid: f5941d5fe22e31047a421265f0d583c1, type: 3}

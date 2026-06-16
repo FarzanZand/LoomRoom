@@ -81,6 +81,11 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Seconds after attacking that block is locked out. Set this to just under your attack windup clip length.")]
     public float blockCancelWindow = 0.5f;
 
+    [Header("Block Damage Reduction")]
+    [Tooltip("Fraction of incoming damage blocked when guarding frontally. 1 = full block, 0 = no mitigation.")]
+    [Range(0f, 1f)]
+    public float blockDamageReduction = 1f;
+
     public void RequestHitStop()
     {
         if (hitStopEnabled && HitStopManager.Instance != null)
