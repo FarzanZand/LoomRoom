@@ -33,6 +33,7 @@ public class WorldManager : Singleton<WorldManager>
 
         PlayerManager.Instance.SetRoomPlayerControllerEnabled(false);
 
+        WakeUpDirector.stopped -= OnWakeUpComplete;
         WakeUpDirector.stopped += OnWakeUpComplete;
         WakeUpDirector.Play();
         StartCoroutine(PlayGroundhogAudio());

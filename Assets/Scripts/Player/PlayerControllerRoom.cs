@@ -12,11 +12,6 @@ namespace MFPC
         [SerializeField] GameObject[] crouchWalkVC;
         [SerializeField] GameObject[] runVC;
 
-        protected override void Awake()
-        {
-            base.Awake();
-        }
-
         protected override void AimCheck()
         {
             normalVCs.SetActive(true);

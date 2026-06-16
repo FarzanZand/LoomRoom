@@ -207,7 +207,7 @@ public abstract class EnemyController : MovementBase
 
         Vector3 delta = knockbackVelocity * Time.deltaTime;
         delta.y = 0f;
-        knockbackVelocity = Vector3.MoveTowards(knockbackVelocity, Vector3.zero, knockbackVelocity.magnitude / Mathf.Max(knockbackTimer + Time.deltaTime, 0.001f) * Time.deltaTime);
+        knockbackVelocity = Vector3.MoveTowards(knockbackVelocity, Vector3.zero, knockbackVelocity.magnitude / Mathf.Max(knockbackTimer, 0.01f) * Time.deltaTime);
 
         // Move() slides the agent along the navmesh — unlike Warp, it can't pop them upward
         if (agent != null && agent.isOnNavMesh)
