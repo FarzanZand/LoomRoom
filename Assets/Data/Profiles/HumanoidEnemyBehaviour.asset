@@ -26,6 +26,7 @@ MonoBehaviour:
   obstacleMask:
     serializedVersion: 2
     m_Bits: 63
+  investigateNoise: 0
   hearingRadius: 6
   investigateTime: 4
   loseSightGracePeriod: 3

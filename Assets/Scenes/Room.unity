@@ -7746,6 +7746,10 @@ PrefabInstance:
       propertyPath: overrideBehaviour
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 8254855258336908543, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
+      propertyPath: groundMask.m_Bits
+      value: 2047
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

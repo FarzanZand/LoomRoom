@@ -55,7 +55,8 @@ public class Perception : MonoBehaviour
 
     void OnNoise(Vector3 position, float radius, Character source)
     {
-        if (Profile == null) return;
+        // Damage uses NotifyAttackedFrom separately; this toggle only controls sounds.
+        if (Profile == null || !Profile.investigateNoise) return;
         if (source != null && self != null && !FactionRules.IsHostile(self.Faction, source.Faction)) return;
         float reach = radius + Profile.hearingRadius;
         if ((position - transform.position).sqrMagnitude > reach * reach) return;

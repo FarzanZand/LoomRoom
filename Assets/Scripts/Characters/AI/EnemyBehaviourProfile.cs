@@ -45,7 +45,10 @@ public class EnemyBehaviourProfile : ScriptableObject
     [TabGroup(Tabs, "Perception")]
     public LayerMask obstacleMask = ~0;
     [TabGroup(Tabs, "Perception")]
-    [Tooltip("Added to a noise's own radius when deciding whether this enemy heard it.")]
+    [Tooltip("Investigate nearby sounds regardless of the default state, including Idle. Being attacked still provokes a reaction when this is off.")]
+    public bool investigateNoise = true;
+    [TabGroup(Tabs, "Perception")]
+    [Tooltip("Added to a noise's own radius when noise investigation is enabled.")]
     public float hearingRadius = 6f;
     [TabGroup(Tabs, "Perception")]
     [Tooltip("Seconds spent looking around at a noise or last-seen spot before giving up.")]
