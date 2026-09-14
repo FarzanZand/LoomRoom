@@ -12879,6 +12879,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TableManager
   tableIntroController: {fileID: 729092101}
+  DM: {fileID: 2040675284}
+  dmPlacement: {fileID: 1994036524}
 --- !u!1001 &801325492
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -32045,6 +32047,11 @@ MonoBehaviour:
   nameText: {fileID: 2090291009}
   typeText: {fileID: 1322906657}
   descriptionText: {fileID: 1231610300}
+--- !u!1 &2040675284 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8548514477391547922, guid: e5c4aa3abed34f8429a5eff626d667d0, type: 3}
+  m_PrefabInstance: {fileID: 4023663}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2041585573
 GameObject:
   m_ObjectHideFlags: 0
@@ -32529,6 +32536,7 @@ Terrain:
   m_AllowAutoConnect: 1
   m_EnableHeightmapRayTracing: 1
   m_EnableTreesAndDetailsRayTracing: 0
+  m_EnableHeightmapLODFrustumCulling: 1
   m_TreeMotionVectorModeOverride: 3
 --- !u!4 &2047610591
 Transform:

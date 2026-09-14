@@ -402,7 +402,18 @@ namespace VInspector
 
                     foreach (var child in element.Children())
                     {
+#if UNITY_6000_5_OR_NEWER
+                        if (child is IMGUIContainer childContainer && childContainer.name.EndsWith("Header"))
+                            curHeaderImguiContainer ??= childContainer;
+                        else
+                            foreach (var grandChild in child.Children())
+                                if (grandChild is IMGUIContainer grandChildContainer && grandChildContainer.name.EndsWith("Header"))
+                                    curHeaderImguiContainer ??= grandChildContainer;
+#else
                         curHeaderImguiContainer ??= new[] { child as IMGUIContainer }.FirstOrDefault(r => r != null && r.name.EndsWith("Header"));
+#endif
+
+
 
                         if (curHeaderImguiContainer is null) continue;
                         if (child is not InspectorElement) continue;

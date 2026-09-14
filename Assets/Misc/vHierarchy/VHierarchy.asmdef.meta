@@ -9,6 +9,6 @@ AssetOrigin:
   serializedVersion: 1
   productId: 253397
   packageName: vHierarchy 2
-  packageVersion: 2.1.8
-  assetPath: Assets/vHierarchy/VHierarchy.asmdef
-  uploadId: 874218
+  packageVersion: 2.1.11
+  assetPath: Assets/Misc/vHierarchy/VHierarchy.asmdef
+  uploadId: 987780

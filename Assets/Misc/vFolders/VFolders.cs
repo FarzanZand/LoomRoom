@@ -354,6 +354,9 @@ namespace VFolders
 
         static void ItemGUI(Rect itemRect, string guid, ObjectID id)
         {
+            if (lastItemRect == itemRect && lastEventHashCode == curEvent.e.GetHashCode()) return; // in 6.5.3+ the item callback is mistakenly called twice in unity's source code
+
+
             EditorWindow window;
 
             void findWindow()
@@ -410,6 +413,10 @@ namespace VFolders
             catchScrollInputForController();
             callGUI();
 
+
+            lastItemRect = itemRect;
+            lastEventHashCode = curEvent.e.GetHashCode();
+
         }
 
         static void ItemGUI_2021_3_and_older(string guid, Rect itemRect)
@@ -429,6 +436,10 @@ namespace VFolders
 #if UNITY_6000_3
         static void ItemGUI_6000_3(int id, Rect itemRect) => ItemGUI_2022_1_and_newer(id, itemRect);
 #endif
+
+        static Rect lastItemRect;
+        static int lastEventHashCode;
+
 
 
         static bool lastEventWasLayout;
@@ -1693,7 +1704,7 @@ namespace VFolders
 
 
 
-        const string version = "2.1.15";
+        const string version = "2.1.18";
 
     }
 

@@ -13,6 +13,6 @@ AssetOrigin:
   serializedVersion: 1
   productId: 255470
   packageName: vFolders 2
-  packageVersion: 2.1.14
-  assetPath: Assets/vFolders/VFoldersPaletteEditor.cs
-  uploadId: 902122
+  packageVersion: 2.1.18
+  assetPath: Assets/Misc/vFolders/VFoldersPaletteEditor.cs
+  uploadId: 987770

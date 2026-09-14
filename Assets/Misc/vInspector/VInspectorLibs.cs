@@ -15,6 +15,16 @@ using Type = System.Type;
 using static VInspector.Libs.VUtils;
 
 
+#if UNITY_6000_3_OR_NEWER
+using ObjectID = UnityEngine.EntityId;
+#else
+using ObjectID = System.Int32;
+#endif
+
+
+
+
+
 namespace VInspector.Libs
 {
     public static class VUtils
@@ -1244,13 +1254,14 @@ namespace VInspector.Libs
         public struct GlobalID : System.IEquatable<GlobalID>
         {
             public Object GetObject() => GlobalObjectId.GlobalObjectIdentifierToObjectSlow(globalObjectId);
-            public int GetObjectInstanceId() => _GlobalObjectId_GlobalObjectIdentifierToInstanceIDSlow(globalObjectId);
+            public ObjectID GetObjectId() => _GlobalObjectId_GlobalObjectIdentifierToInstanceIDSlow(globalObjectId);
 
 
             public int idType => globalObjectId.identifierType;
             public string guid => globalObjectId.assetGUID.ToString();
             public ulong fileId => globalObjectId.targetObjectId;
             public ulong prefabId => globalObjectId.targetPrefabId;
+
 
             public bool isNull => globalObjectId.identifierType == 0;
             public bool isAsset => globalObjectId.identifierType == 1;
@@ -1279,7 +1290,6 @@ namespace VInspector.Libs
 
 
 
-
             public GlobalID UnpackForPrefab()
             {
                 var unpackedFileId = (this.fileId ^ this.prefabId) & 0x7fffffffffffffff;
@@ -1293,7 +1303,7 @@ namespace VInspector.Libs
         }
 
         public static GlobalID GetGlobalID(this Object o) => new(o);
-        public static GlobalID[] GetGlobalIDs(this IEnumerable<int> instanceIds)
+        public static GlobalID[] GetGlobalIDs(this IEnumerable<ObjectID> instanceIds)
         {
             var unityGlobalIds = new GlobalObjectId[instanceIds.Count()];
 
@@ -1316,11 +1326,11 @@ namespace VInspector.Libs
             return objects;
 
         }
-        public static int[] GetObjectInstanceIds(this IEnumerable<GlobalID> globalIDs)
+        public static ObjectID[] GetObjectInstanceIds(this IEnumerable<GlobalID> globalIDs)
         {
             var goids = globalIDs.Select(r => r.globalObjectId).ToArray();
 
-            var iids = new int[goids.Length];
+            var iids = new ObjectID[goids.Length];
 
             _GlobalObjectId_GlobalObjectIdentifiersToInstanceIDsSlow(goids, iids);
 
@@ -1353,7 +1363,7 @@ namespace VInspector.Libs
 
                 var m_ListAreaState = t.GetField("m_ListAreaState", maxBindingFlags).GetValue(w);
 
-                m_ListAreaState.GetType().GetField("m_SelectedInstanceIDs").SetValue(m_ListAreaState, new List<int> { folder.GetInstanceID() });
+                m_ListAreaState.GetType().GetField("m_SelectedInstanceIDs").SetValue(m_ListAreaState, new List<ObjectID> { folder.GetObjectID() }); // todo m_SelectedObjectIDs since 6.4?
 
                 t.GetMethod("OpenSelectedFolders", maxBindingFlags).Invoke(null, null);
 
@@ -1727,7 +1737,7 @@ namespace VInspector.Libs
         #region Instance/Entity ID mess
 
 
-        static int _GlobalObjectId_GlobalObjectIdentifierToInstanceIDSlow(GlobalObjectId id)
+        static ObjectID _GlobalObjectId_GlobalObjectIdentifierToInstanceIDSlow(GlobalObjectId id)
         {
 #if UNITY_6000_3_OR_NEWER
             return GlobalObjectId.GlobalObjectIdentifierToEntityIdSlow(id);
@@ -1737,64 +1747,75 @@ namespace VInspector.Libs
 
         }
 
-        static void _GlobalObjectId_GlobalObjectIdentifiersToInstanceIDsSlow(GlobalObjectId[] identifiers, int[] outputInstanceIDs)
+        static void _GlobalObjectId_GlobalObjectIdentifiersToInstanceIDsSlow(GlobalObjectId[] identifiers, ObjectID[] outputIDs)
         {
 #if UNITY_6000_3_OR_NEWER
-
-            var outputEntityIds = outputInstanceIDs.Select(r => (EntityId)r).ToArray();
-
-            GlobalObjectId.GlobalObjectIdentifiersToEntityIdsSlow(identifiers, outputEntityIds);
-
-            outputInstanceIDs = outputEntityIds.Select(r => (int)r).ToArray();
-
+            GlobalObjectId.GlobalObjectIdentifiersToEntityIdsSlow(identifiers, outputIDs);
 #else
 
-            GlobalObjectId.GlobalObjectIdentifiersToInstanceIDsSlow(identifiers, outputInstanceIDs);
+            GlobalObjectId.GlobalObjectIdentifiersToInstanceIDsSlow(identifiers, outputIDs);
 
 #endif
 
         }
-        static void _GlobalObjectId_GetGlobalObjectIdsSlow(int[] ids, GlobalObjectId[] outputIdentifiers)
+
+        static void _GlobalObjectId_GetGlobalObjectIdsSlow(ObjectID[] ids, GlobalObjectId[] outputIdentifiers)
         {
-#if UNITY_6000_3_OR_NEWER
-            GlobalObjectId.GetGlobalObjectIdsSlow(ids.Select(r => (EntityId)r).ToArray(), outputIdentifiers);
-#else
             GlobalObjectId.GetGlobalObjectIdsSlow(ids, outputIdentifiers);
-#endif
-
         }
 
 
 
-        public static Object _EditorUtility_InstanceIDToObject(int iid)
+
+        public static Object _EditorUtility_ObjectIDToObject(ObjectID id)
         {
 #if UNITY_6000_3_OR_NEWER
-            return EditorUtility.EntityIdToObject(iid);
+            return EditorUtility.EntityIdToObject(id);
 #else
-            return EditorUtility.InstanceIDToObject(iid);
+            return EditorUtility.InstanceIDToObject(id);
 #endif
         }
 
-        public static string _AssetDatabase_GetAssetPath(int instanceID)
+        public static string _AssetDatabase_GetAssetPath(ObjectID id)
         {
-#if UNITY_6000_3_OR_NEWER
-            return AssetDatabase.GetAssetPath((EntityId)instanceID);
-#else
-            return AssetDatabase.GetAssetPath(instanceID);
-#endif
+            return AssetDatabase.GetAssetPath(id);
         }
 
-        public static int[] _Selection_instanceIDs
+        public static ObjectID[] _Selection_IDs
         {
             get
             {
 #if UNITY_6000_3_OR_NEWER
-                return Selection.entityIds.Select(r => (int)r).ToArray();
+                return Selection.entityIds;//.Select(r => (int)r).ToArray();
 #else
                 return Selection.instanceIDs;
 #endif
             }
         }
+
+
+
+        public static ObjectID GetObjectID(this Object o)
+        {
+#if UNITY_6000_3_OR_NEWER
+            return o.GetEntityId();
+#else
+            return o.GetInstanceID();
+#endif
+        }
+
+
+
+        public static ObjectID GetObjectID(this UnityEngine.SceneManagement.Scene scene)
+        {
+#if UNITY_6000_3_OR_NEWER
+            return scene.handle.GetMemberValue<ObjectID>("m_Value");
+#else
+            return scene.handle;
+#endif
+        }
+
+
 
 
         #endregion

@@ -17,6 +17,17 @@ using static VInspector.Libs.VGUI;
 // using static VTools.VDebug;
 
 
+#if UNITY_6000_3_OR_NEWER
+using ObjectID = UnityEngine.EntityId;
+#else
+using ObjectID = System.Int32;
+#endif
+
+
+
+
+
+
 namespace VInspector
 {
     public class VInspectorComponentWindow : EditorWindow
@@ -24,7 +35,7 @@ namespace VInspector
 
         void OnGUI()
         {
-            if (!component) component = _EditorUtility_InstanceIDToObject(componentIid) as Component;
+            if (!component) component = _EditorUtility_ObjectIDToObject(componentIid) as Component;
             if (!component) { Close(); return; }
             if (!editor) { Init(component); skipHeightUpdate = true; }
 
@@ -425,7 +436,7 @@ namespace VInspector
             this.component = component;
             this.editor = Editor.CreateEditor(component);
 
-            this.componentIid = component.GetInstanceID();
+            this.componentIid = component.GetObjectID();
 
             hasCustomUITKEditor = editor.GetType().GetMethod("CreateInspectorGUI", maxBindingFlags) != null;
 
@@ -455,9 +466,10 @@ namespace VInspector
 
         public Component component;
         public Editor editor;
+        [System.NonSerialized]
         public InspectorElement inspectorElement;
 
-        public int componentIid;
+        public ObjectID componentIid;
 
         bool useUITK => editor.target is MonoBehaviour && (HasUITKOnlyDrawers(editor.serializedObject) || hasCustomUITKEditor);
         bool hasCustomUITKEditor;

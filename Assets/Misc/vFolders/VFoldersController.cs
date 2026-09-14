@@ -496,7 +496,7 @@ namespace VFolders
 
 
             // update folder tree
-            window.GetMemberValue("m_FolderTree").InvokeMethod("SetSelection", new[] { AssetDatabase.LoadAssetAtPath<DefaultAsset>(path).GetObjectID() }, false);
+            window.GetMemberValue("m_FolderTree").InvokeMethod("SetSelection", new[] { AssetDatabase.LoadAssetAtPath<DefaultAsset>(path)?.GetObjectID() ?? default }, false);
 
 
             // update list area
