@@ -1,137 +1,95 @@
-using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using MFPC;
 
+// The bag panel. Binds its authored slot objects to the active player's Bag and
+// toggles through the Menu game state.
 public class InventoryUI : MonoBehaviour
 {
-    [SerializeField] private GameObject      panel;
-    [SerializeField] private List<InventorySlot> slots;
+    [SerializeField] GameObject panel;
+    [SerializeField] List<ItemSlotUI> slots = new();
 
-    private bool isOpen;
-    private PlayerInputActions inputActions;
-    private System.Action<InputAction.CallbackContext> onInventory;
+    Inventory bound;
+    Equipment boundEquipment;
+    bool isOpen;
 
-    private TextMeshProUGUI fullNotice;
-    private Coroutine       fullNoticeRoutine;
-
-    void Awake()
+    void OnEnable()
     {
-        inputActions = new PlayerInputActions();
-        onInventory  = _ => Toggle();
-        inputActions.Enable();
-        inputActions.Player.Inventory.performed += onInventory;
+        if (InputManager.HasInstance) InputManager.Instance.InventoryToggled += Toggle;
+        if (InputManager.HasInstance) InputManager.Instance.CancelPressed    += Close;
+        if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped  += OnPlayerSwapped;
+        if (PlayerManager.HasInstance && PlayerManager.Instance.Active != null) OnPlayerSwapped(PlayerManager.Instance.Active);
     }
 
-    void OnDestroy()
+    void OnDisable()
     {
-        inputActions.Player.Inventory.performed -= onInventory;
-        inputActions.Disable();
-        if (InventorySystem.Instance != null)
-        {
-            InventorySystem.Instance.OnInventoryChanged -= Refresh;
-            InventorySystem.Instance.OnInventoryFull    -= FlashFull;
-        }
+        if (InputManager.HasInstance) InputManager.Instance.InventoryToggled -= Toggle;
+        if (InputManager.HasInstance) InputManager.Instance.CancelPressed    -= Close;
+        if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped  -= OnPlayerSwapped;
+        Bind(null, null);
     }
 
     void Start()
     {
-        for (int i = 0; i < slots.Count; i++)
-            slots[i].Init(i);
-        panel.SetActive(false);
-        CreateFullNotice();
-        InventorySystem.Instance.OnInventoryChanged += Refresh;
-        InventorySystem.Instance.OnInventoryFull    += FlashFull;
+        // Managers may awaken after this UI's OnEnable. Subscribe once they all exist.
+        if (PlayerManager.HasInstance)
+        {
+            PlayerManager.Instance.PlayerSwapped -= OnPlayerSwapped;
+            PlayerManager.Instance.PlayerSwapped += OnPlayerSwapped;
+        }
+        if (InputManager.HasInstance)
+        {
+            InputManager.Instance.InventoryToggled -= Toggle;
+            InputManager.Instance.InventoryToggled += Toggle;
+            InputManager.Instance.CancelPressed -= Close;
+            InputManager.Instance.CancelPressed += Close;
+        }
+        if (panel != null) panel.SetActive(false);
+        if (PlayerManager.HasInstance && PlayerManager.Instance.Active != null) OnPlayerSwapped(PlayerManager.Instance.Active);
     }
 
-    private void CreateFullNotice()
-    {
-        var canvas = GetComponentInParent<Canvas>();
-        if (canvas == null) canvas = FindAnyObjectByType<Canvas>();
-        if (canvas == null) return;
+    void OnPlayerSwapped(Player player) => Bind(player != null ? player.Bag : null, player != null ? player.Equipment : null);
 
-        var go = new GameObject("InvFullNotice");
-        go.transform.SetParent(canvas.transform, false);
-        var rt = go.AddComponent<RectTransform>();
-        rt.anchorMin        = new Vector2(0.5f, 0.08f);
-        rt.anchorMax        = new Vector2(0.5f, 0.08f);
-        rt.pivot            = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta        = new Vector2(280f, 44f);
-        rt.anchoredPosition = Vector2.zero;
-        go.AddComponent<CanvasRenderer>();
-        fullNotice                = go.AddComponent<TextMeshProUGUI>();
-        fullNotice.raycastTarget  = false;
-        fullNotice.text           = "Inventory Full!";
-        fullNotice.fontSize   = 20f;
-        fullNotice.fontStyle  = FontStyles.Bold;
-        fullNotice.alignment  = TextAlignmentOptions.Center;
-        fullNotice.color      = new Color(1f, 0.3f, 0.2f, 0f);
-        go.SetActive(true);
+    void Bind(Inventory inv, Equipment eq)
+    {
+        if (bound != null)          bound.Changed          -= Refresh;
+        if (boundEquipment != null) boundEquipment.Changed -= Refresh;
+        bound = inv;
+        boundEquipment = eq;
+        if (bound != null)          bound.Changed          += Refresh;
+        if (boundEquipment != null) boundEquipment.Changed += Refresh;
+
+        for (int i = 0; i < slots.Count; i++)
+            if (slots[i] != null) slots[i].Bind(bound, i);
+        Refresh();
     }
 
     void Toggle()
     {
-        isOpen = !isOpen;
-        panel.SetActive(isOpen);
-        Cursor.lockState = isOpen ? CursorLockMode.None : CursorLockMode.Locked;
-        Cursor.visible   = isOpen;
-        if (isOpen) { MenuManager.Instance?.OpenMenu("inventory"); Refresh(); }
-        else          MenuManager.Instance?.CloseMenu("inventory");
+        if (isOpen) Close(); else Open();
+    }
+
+    void Open()
+    {
+        if (isOpen) return;
+        if (GameManager.HasInstance && !GameManager.Instance.GameplayActive) return;
+        isOpen = true;
+        if (panel != null) panel.SetActive(true);
+        GameManager.Instance?.Push(GameState.Menu);
+        Refresh();
+    }
+
+    void Close()
+    {
+        if (!isOpen) return;
+        isOpen = false;
+        if (panel != null) panel.SetActive(false);
+        if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
+        if (ContextMenuUI.HasInstance) ContextMenuUI.Instance.Hide();
+        GameManager.Instance?.Pop(GameState.Menu);
     }
 
     void Refresh()
     {
-        var items = InventorySystem.Instance.Items;
-        for (int i = 0; i < slots.Count; i++)
-        {
-            if (slots[i] == null) continue;
-            if (i < items.Count && items[i] != null)
-                slots[i].SetItem(items[i], InventorySystem.Instance.GetCount(i));
-            else
-                slots[i].Clear();
-        }
-    }
-
-    private void FlashFull()
-    {
-        if (fullNotice == null) return;
-        if (fullNoticeRoutine != null) StopCoroutine(fullNoticeRoutine);
-        fullNoticeRoutine = StartCoroutine(FlashRoutine());
-    }
-
-    private IEnumerator FlashRoutine()
-    {
-        float fadeIn  = 0.15f;
-        float hold    = 0.8f;
-        float fadeOut = 0.4f;
-
-        float t = 0f;
-        while (t < fadeIn)
-        {
-            SetNoticeAlpha(t / fadeIn);
-            t += Time.unscaledDeltaTime;
-            yield return null;
-        }
-        SetNoticeAlpha(1f);
-        yield return new WaitForSecondsRealtime(hold);
-        t = 0f;
-        while (t < fadeOut)
-        {
-            SetNoticeAlpha(1f - t / fadeOut);
-            t += Time.unscaledDeltaTime;
-            yield return null;
-        }
-        SetNoticeAlpha(0f);
-        fullNoticeRoutine = null;
-    }
-
-    private void SetNoticeAlpha(float a)
-    {
-        if (fullNotice == null) return;
-        var c = fullNotice.color;
-        c.a = a;
-        fullNotice.color = c;
+        foreach (var s in slots) if (s != null) s.Refresh();
     }
 }

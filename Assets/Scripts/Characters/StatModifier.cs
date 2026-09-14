@@ -1,6 +1,6 @@
-// Represents a temporary or permanent modification to a stat.
-// Pass duration = -1 for permanent. Source is used for batch removal
-// (e.g. remove all modifiers from an item when it's unequipped).
+// A runtime modification to one stat. Pass duration = -1 for permanent. Source is
+// used for batch removal (everything an item added is removed with one call when
+// it is unequipped).
 public class StatModifier
 {
     public StatType     Stat     { get; }
@@ -21,6 +21,9 @@ public class StatModifier
         Source   = source;
         Duration = duration;
     }
+
+    public StatModifier(StatModifierEntry entry, object source, float duration = -1f)
+        : this(entry.stat, entry.value, entry.type, source, duration) { }
 
     internal void Tick(float deltaTime) => Duration -= deltaTime;
 }

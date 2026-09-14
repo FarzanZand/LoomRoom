@@ -1,31 +1,36 @@
 using UnityEngine;
-using UnityEngine.Playables;
 
-public class CutsceneCanvasHider : MonoBehaviour
+// Hides the HUD canvas when GameManager says so (cutscenes).
+public class HudCanvas : MonoBehaviour
 {
-    [SerializeField] private Canvas canvas;
-    [SerializeField] private PlayableDirector[] directors;
+    [SerializeField] Canvas canvas;
+
+    void Awake()
+    {
+        if (canvas == null) canvas = GetComponent<Canvas>();
+    }
 
     void OnEnable()
     {
-        foreach (var d in directors)
+        if (GameManager.HasInstance) GameManager.Instance.HudVisibilityChanged += SetVisible;
+    }
+
+    void Start()
+    {
+        if (GameManager.HasInstance)
         {
-            if (d == null) continue;
-            d.played  += OnCutsceneStarted;
-            d.stopped += OnCutsceneStopped;
+            GameManager.Instance.HudVisibilityChanged -= SetVisible;
+            GameManager.Instance.HudVisibilityChanged += SetVisible;
         }
     }
 
     void OnDisable()
     {
-        foreach (var d in directors)
-        {
-            if (d == null) continue;
-            d.played  -= OnCutsceneStarted;
-            d.stopped -= OnCutsceneStopped;
-        }
+        if (GameManager.HasInstance) GameManager.Instance.HudVisibilityChanged -= SetVisible;
     }
 
-    private void OnCutsceneStarted(PlayableDirector _) => canvas.enabled = false;
-    private void OnCutsceneStopped(PlayableDirector _) => canvas.enabled = true;
+    void SetVisible(bool visible)
+    {
+        if (canvas != null) canvas.enabled = visible;
+    }
 }

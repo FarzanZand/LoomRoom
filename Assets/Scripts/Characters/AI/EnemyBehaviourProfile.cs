@@ -1,63 +1,78 @@
+using Sirenix.OdinInspector;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewEnemyData", menuName = "Game/Enemy Data")]
-public class EnemyData : ScriptableObject
+// Serialized by integer — never renumber. Investigate and Dead were appended.
+public enum EnemyState { Idle = 0, Wander = 1, Patrol = 2, Chase = 3, Attack = 4, ReturnToPost = 5, Investigate = 6, Dead = 7 }
+
+public enum AggressionMode { Aggressive = 0, AggressiveWhenHit = 1, Passive = 2 }
+
+// Shareable tuning for how an enemy perceives, moves and chases. Assign on
+// CharacterData.behaviour; EnemyBrain reads it live, so adding a knob is one field
+// here and one read in the brain. Attacks are authored on CharacterData.
+[CreateAssetMenu(fileName = "NewEnemyBehaviour", menuName = "Characters/Enemy Behaviour Profile")]
+public class EnemyBehaviourProfile : ScriptableObject
 {
-    [Header("Identity")]
-    public string   enemyName;
-    public GameObject prefab;
-    public Faction  faction = Faction.Enemy;
+    const string Tabs = "Tabs";
 
-    [Header("Stats")]
-    public StatProfile statProfile;
-
-    [Header("Default Behaviour")]
-    public EnemyState    defaultState    = EnemyState.Idle;
+    // ── Behaviour ─────────────────────────────────────────────────────
+    [TabGroup(Tabs, "Behaviour")]
+    public EnemyState     defaultState   = EnemyState.Idle;
+    [TabGroup(Tabs, "Behaviour")]
     public AggressionMode aggressionMode = AggressionMode.Aggressive;
 
-    [Header("Wander")]
+    [TabGroup(Tabs, "Behaviour"), Title("Wander")]
     public float wanderRadius      = 8f;
+    [TabGroup(Tabs, "Behaviour")]
     public float minWanderDistance = 2f;
+    [TabGroup(Tabs, "Behaviour")]
     public float minIdleTime       = 2f;
+    [TabGroup(Tabs, "Behaviour")]
     public float maxIdleTime       = 6f;
+    [TabGroup(Tabs, "Behaviour")]
+    [Tooltip("Hard cap on distance from the wander zone centre. 0 = only wanderRadius applies.")]
     public float wanderZoneRadius  = 0f;
 
-    [Header("Movement Speeds")]
-    public bool  useWanderSpeed;
-    public float wanderSpeed = 2f;
-    public bool  useChaseSpeed;
-    public float chaseSpeed  = 5f;
-
-    [Header("Detection")]
-    public float detectionRadius    = 12f;
-    [Range(0f, 360f)]
-    public float fieldOfView        = 120f;
-    public float eyeHeight          = 1.6f;
+    // ── Perception ────────────────────────────────────────────────────
+    [TabGroup(Tabs, "Perception")]
+    public float detectionRadius = 12f;
+    [TabGroup(Tabs, "Perception"), Range(0f, 360f)]
+    public float fieldOfView = 120f;
+    [TabGroup(Tabs, "Perception")]
+    public float eyeHeight = 1.6f;
+    [TabGroup(Tabs, "Perception")]
+    [Tooltip("Inside this radius the target is noticed regardless of facing.")]
     public float closeDetectionRadius = 2f;
-    public LayerMask obstacleMask   = ~0;
+    [TabGroup(Tabs, "Perception")]
+    public LayerMask obstacleMask = ~0;
+    [TabGroup(Tabs, "Perception")]
+    [Tooltip("Added to a noise's own radius when deciding whether this enemy heard it.")]
+    public float hearingRadius = 6f;
+    [TabGroup(Tabs, "Perception")]
+    [Tooltip("Seconds spent looking around at a noise or last-seen spot before giving up.")]
+    public float investigateTime = 4f;
 
-    [Header("Chase")]
+    // ── Chase ─────────────────────────────────────────────────────────
+    [TabGroup(Tabs, "Chase")]
+    [Tooltip("Seconds the target can be out of sight before the enemy starts searching.")]
     public float loseSightGracePeriod = 3f;
-    public float maxSearchTime        = 5f;
+    [TabGroup(Tabs, "Chase")]
+    [Tooltip("Seconds of searching the last known position before returning to post.")]
+    public float maxSearchTime = 5f;
+    [TabGroup(Tabs, "Chase")]
+    public bool  useChaseSpeed;
+    [TabGroup(Tabs, "Chase"), ShowIf("useChaseSpeed")]
+    public float chaseSpeed = 5f;
+    [TabGroup(Tabs, "Chase")]
+    public bool  useWanderSpeed;
+    [TabGroup(Tabs, "Chase"), ShowIf("useWanderSpeed")]
+    public float wanderSpeed = 2f;
 
-    [Header("Rotation")]
+    // ── Rotation ──────────────────────────────────────────────────────
+    [TabGroup(Tabs, "Rotation")]
     public float passiveAngularSpeed = 120f;
+    [TabGroup(Tabs, "Rotation")]
     public float chaseAngularSpeed   = 540f;
+    [TabGroup(Tabs, "Rotation")]
+    [Tooltip("Degrees per second the enemy turns toward the target while in attack range.")]
     public float attackFaceSpeed     = 720f;
-
-    [Header("Attack")]
-    public float attackRange          = 1.8f;
-    public float attackCooldown       = 1.5f;
-    [Range(0f, 180f)]
-    public float attackAngleThreshold = 45f;
-    [Tooltip("Seconds after the attack trigger fires before OnAttackHit is called. Set to -1 to rely solely on animation events.")]
-    public float attackHitDelay       = 0.4f;
-
-    [Header("Animation Triggers")]
-    [Tooltip("Leave empty to use the default 'Attack' trigger.")]
-    public string attackTrigger;
-    [Tooltip("Leave empty to use CharacterBase's default 'Death' trigger.")]
-    public string deathTrigger;
-    [Tooltip("Leave empty to use CharacterBase's default 'Hurt' trigger.")]
-    public string hurtTrigger;
 }

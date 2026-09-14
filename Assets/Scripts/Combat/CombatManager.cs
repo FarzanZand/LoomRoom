@@ -1,62 +1,34 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
-public struct WeaponAudioEntry
-{
-    public AudioClip clip;
-    [Range(0f, 1f)] public float volume;
-    [Range(0f, 1f)] public float pitchVariance;
-}
-
-// Central toggles and tuning for combat feel effects.
+// Central toggles and tuning for combat feel. Hit stop lives here too, so there is
+// exactly one entry point and a hit can never freeze the game twice.
 public class CombatManager : Singleton<CombatManager>
 {
     [Header("Hit Stop")]
     public bool hitStopEnabled = true;
-    [Tooltip("Seconds the game freezes when a hit lands.")]
+    [Tooltip("Seconds the game slows when a hit lands.")]
     public float hitStopDuration = 0.05f;
+    [Tooltip("Time scale during hit stop. A hair above zero keeps animations creeping, which reads better than a hard freeze.")]
+    [Range(0f, 0.5f)] public float hitStopTimeScale = 0.05f;
+    [Tooltip("Also hit-stop when an enemy lands a hit on the player.")]
+    public bool hitStopOnPlayerHurt = false;
 
     [Header("Knockback")]
     public bool knockbackEnabled = true;
     [Tooltip("Scales every knockback force in the game.")]
     public float knockbackForceMultiplier = 1f;
+    [Tooltip("Seconds a knocked-back NavMesh character slides before regaining control.")]
+    public float knockbackDuration = 0.25f;
 
     [Header("Default Hit Effects")]
-    [Tooltip("Pool of hit particle prefabs. One is chosen at random when playDefaultEffects is true on the weapon.")]
-    public List<GameObject> hitParticlePrefabs = new List<GameObject>();
-    [Tooltip("Pool of hit audio clips. One is chosen at random when playDefaultEffects is true on the weapon.")]
-    public List<WeaponAudioEntry> hitAudioClips = new List<WeaponAudioEntry>();
-    [Tooltip("Pool of swing audio clips. One is chosen at random when playDefaultEffects is true on the weapon.")]
-    public List<WeaponAudioEntry> swingAudioClips = new List<WeaponAudioEntry>();
-
-    public GameObject GetRandomHitParticle()
-    {
-        if (hitParticlePrefabs == null || hitParticlePrefabs.Count == 0) return null;
-        return hitParticlePrefabs[Random.Range(0, hitParticlePrefabs.Count)];
-    }
-
-    public bool TryGetRandomHitAudio(out WeaponAudioEntry entry)
-    {
-        if (hitAudioClips != null && hitAudioClips.Count > 0)
-        {
-            entry = hitAudioClips[Random.Range(0, hitAudioClips.Count)];
-            return true;
-        }
-        entry = default;
-        return false;
-    }
-
-    public bool TryGetRandomSwingAudio(out WeaponAudioEntry entry)
-    {
-        if (swingAudioClips != null && swingAudioClips.Count > 0)
-        {
-            entry = swingAudioClips[Random.Range(0, swingAudioClips.Count)];
-            return true;
-        }
-        entry = default;
-        return false;
-    }
+    [Tooltip("Pool of hit particle prefabs. One is chosen at random when the weapon uses default effects.")]
+    public List<GameObject> hitParticlePrefabs = new();
+    [Tooltip("Hit audio used when the weapon uses default effects.")]
+    public AudioData defaultHitAudio;
+    [Tooltip("Swing audio used when the weapon uses default effects.")]
+    public AudioData defaultSwingAudio;
 
     [Header("Hit Reaction")]
     public bool hitReactionEnabled = true;
@@ -77,21 +49,64 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Seconds the flash tint stays on the character's renderers.")]
     public float hitFlashDuration = 0.1f;
 
-    [Header("Block Cancel")]
-    [Tooltip("Seconds after attacking that block is locked out. Set this to just under your attack windup clip length.")]
+    [Header("Block")]
+    [Tooltip("Seconds after attacking that block is locked out. Set to just under your attack windup length.")]
     public float blockCancelWindow = 0.5f;
+    [Tooltip("Fraction of incoming damage removed when guarding frontally. 1 = full block.")]
+    [Range(0f, 1f)] public float blockDamageReduction = 1f;
+    [Tooltip("Dot product threshold: a hit is frontal (blockable) when dot(facing, hitDir) is below this.")]
+    [Range(-1f, 1f)] public float blockFrontalDot = -0.3f;
+    [Tooltip("Stamina spent per blocked hit. 0 = free.")]
+    public float blockStaminaCost = 0f;
 
-    [Header("Block Damage Reduction")]
-    [Tooltip("Fraction of incoming damage blocked when guarding frontally. 1 = full block, 0 = no mitigation.")]
-    [Range(0f, 1f)]
-    public float blockDamageReduction = 1f;
-
-    public void RequestHitStop()
+    public GameObject GetRandomHitParticle()
     {
-        if (hitStopEnabled && HitStopManager.Instance != null)
-            HitStopManager.Instance.Trigger(hitStopDuration);
+        if (hitParticlePrefabs == null || hitParticlePrefabs.Count == 0) return null;
+        return hitParticlePrefabs[Random.Range(0, hitParticlePrefabs.Count)];
     }
 
     public float ScaleKnockback(float baseForce) =>
         knockbackEnabled ? baseForce * knockbackForceMultiplier : 0f;
+
+    // ── Hit stop ──────────────────────────────────────────────────────
+
+    Coroutine hitStopRoutine;
+    float hitStopEndsAt;
+
+    public bool HitStopActive => hitStopRoutine != null;
+
+    // Scale lets a heavy weapon ask for a longer stop. While a stop is active, a new
+    // request only extends it — it never re-freezes or shortens it.
+    public void RequestHitStop(float scale = 1f)
+    {
+        if (!hitStopEnabled) return;
+        float duration = hitStopDuration * Mathf.Max(0f, scale);
+        if (duration <= 0f) return;
+
+        float end = Time.unscaledTime + duration;
+        if (hitStopRoutine != null)
+        {
+            hitStopEndsAt = Mathf.Max(hitStopEndsAt, end);
+            return;
+        }
+        hitStopEndsAt = end;
+        hitStopRoutine = StartCoroutine(HitStopRoutine());
+    }
+
+    IEnumerator HitStopRoutine()
+    {
+        Time.timeScale = hitStopTimeScale;
+        while (Time.unscaledTime < hitStopEndsAt)
+            yield return null;
+        // Restore to 1 explicitly: capturing the previous value would freeze the game
+        // permanently if a request fired mid-stop and captured the slowed value.
+        Time.timeScale = 1f;
+        hitStopRoutine = null;
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        if (hitStopRoutine != null) Time.timeScale = 1f;
+    }
 }

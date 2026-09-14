@@ -18,4 +18,4 @@ ScriptedImporter:
   generateWrapperCode: 1
   wrapperCodePath: Assets/Scripts/Player/PlayerInput.cs
   wrapperClassName: PlayerInputActions
-  wrapperCodeNamespace: MFPC
+  wrapperCodeNamespace: 

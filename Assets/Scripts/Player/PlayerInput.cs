@@ -15,89 +15,87 @@ using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Utilities;
 
-namespace MFPC
+/// <summary>
+/// Provides programmatic access to <see cref="InputActionAsset" />, <see cref="InputActionMap" />, <see cref="InputAction" /> and <see cref="InputControlScheme" /> instances defined in asset "Assets/PlayerInput.inputactions".
+/// </summary>
+/// <remarks>
+/// This class is source generated and any manual edits will be discarded if the associated asset is reimported or modified.
+/// </remarks>
+/// <example>
+/// <code>
+/// using namespace UnityEngine;
+/// using UnityEngine.InputSystem;
+///
+/// // Example of using an InputActionMap named "Player" from a UnityEngine.MonoBehaviour implementing callback interface.
+/// public class Example : MonoBehaviour, MyActions.IPlayerActions
+/// {
+///     private MyActions_Actions m_Actions;                  // Source code representation of asset.
+///     private MyActions_Actions.PlayerActions m_Player;     // Source code representation of action map.
+///
+///     void Awake()
+///     {
+///         m_Actions = new MyActions_Actions();              // Create asset object.
+///         m_Player = m_Actions.Player;                      // Extract action map object.
+///         m_Player.AddCallbacks(this);                      // Register callback interface IPlayerActions.
+///     }
+///
+///     void OnDestroy()
+///     {
+///         m_Actions.Dispose();                              // Destroy asset object.
+///     }
+///
+///     void OnEnable()
+///     {
+///         m_Player.Enable();                                // Enable all actions within map.
+///     }
+///
+///     void OnDisable()
+///     {
+///         m_Player.Disable();                               // Disable all actions within map.
+///     }
+///
+///     #region Interface implementation of MyActions.IPlayerActions
+///
+///     // Invoked when "Move" action is either started, performed or canceled.
+///     public void OnMove(InputAction.CallbackContext context)
+///     {
+///         Debug.Log($"OnMove: {context.ReadValue&lt;Vector2&gt;()}");
+///     }
+///
+///     // Invoked when "Attack" action is either started, performed or canceled.
+///     public void OnAttack(InputAction.CallbackContext context)
+///     {
+///         Debug.Log($"OnAttack: {context.ReadValue&lt;float&gt;()}");
+///     }
+///
+///     #endregion
+/// }
+/// </code>
+/// </example>
+public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
 {
     /// <summary>
-    /// Provides programmatic access to <see cref="InputActionAsset" />, <see cref="InputActionMap" />, <see cref="InputAction" /> and <see cref="InputControlScheme" /> instances defined in asset "Assets/PlayerInput.inputactions".
+    /// Provides access to the underlying asset instance.
     /// </summary>
-    /// <remarks>
-    /// This class is source generated and any manual edits will be discarded if the associated asset is reimported or modified.
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// using namespace UnityEngine;
-    /// using UnityEngine.InputSystem;
-    ///
-    /// // Example of using an InputActionMap named "Player" from a UnityEngine.MonoBehaviour implementing callback interface.
-    /// public class Example : MonoBehaviour, MyActions.IPlayerActions
-    /// {
-    ///     private MyActions_Actions m_Actions;                  // Source code representation of asset.
-    ///     private MyActions_Actions.PlayerActions m_Player;     // Source code representation of action map.
-    ///
-    ///     void Awake()
-    ///     {
-    ///         m_Actions = new MyActions_Actions();              // Create asset object.
-    ///         m_Player = m_Actions.Player;                      // Extract action map object.
-    ///         m_Player.AddCallbacks(this);                      // Register callback interface IPlayerActions.
-    ///     }
-    ///
-    ///     void OnDestroy()
-    ///     {
-    ///         m_Actions.Dispose();                              // Destroy asset object.
-    ///     }
-    ///
-    ///     void OnEnable()
-    ///     {
-    ///         m_Player.Enable();                                // Enable all actions within map.
-    ///     }
-    ///
-    ///     void OnDisable()
-    ///     {
-    ///         m_Player.Disable();                               // Disable all actions within map.
-    ///     }
-    ///
-    ///     #region Interface implementation of MyActions.IPlayerActions
-    ///
-    ///     // Invoked when "Move" action is either started, performed or canceled.
-    ///     public void OnMove(InputAction.CallbackContext context)
-    ///     {
-    ///         Debug.Log($"OnMove: {context.ReadValue&lt;Vector2&gt;()}");
-    ///     }
-    ///
-    ///     // Invoked when "Attack" action is either started, performed or canceled.
-    ///     public void OnAttack(InputAction.CallbackContext context)
-    ///     {
-    ///         Debug.Log($"OnAttack: {context.ReadValue&lt;float&gt;()}");
-    ///     }
-    ///
-    ///     #endregion
-    /// }
-    /// </code>
-    /// </example>
-    public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
-    {
-        /// <summary>
-        /// Provides access to the underlying asset instance.
-        /// </summary>
-        public InputActionAsset asset { get; }
+    public InputActionAsset asset { get; }
 
-        /// <summary>
-        /// Constructs a new instance.
-        /// </summary>
-        public @PlayerInputActions()
-        {
-            asset = InputActionAsset.FromJson(@"{
+    /// <summary>
+    /// Constructs a new instance.
+    /// </summary>
+    public @PlayerInputActions()
+    {
+        asset = InputActionAsset.FromJson(@"{
     ""version"": 1,
     ""name"": ""PlayerInput"",
     ""maps"": [
         {
-            ""name"": ""Player"",
-            ""id"": ""4c7f1b03-12ba-4109-8091-a6c93631daeb"",
+            ""name"": ""Room"",
+            ""id"": ""6d2bae43-ab9c-4428-a58f-ed3940fc35c6"",
             ""actions"": [
                 {
                     ""name"": ""Move"",
                     ""type"": ""Value"",
-                    ""id"": ""4608248d-e489-4010-b7f8-f814324fa25d"",
+                    ""id"": ""8c35fa21-2c96-4ae6-a240-b86d7f06a46e"",
                     ""expectedControlType"": ""Vector2"",
                     ""processors"": """",
                     ""interactions"": """",
@@ -106,7 +104,7 @@ namespace MFPC
                 {
                     ""name"": ""Look"",
                     ""type"": ""Value"",
-                    ""id"": ""116298f4-f942-4b09-9d42-e8c2aa71a711"",
+                    ""id"": ""eca2fc06-f784-4985-81d5-58008144feef"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -115,7 +113,7 @@ namespace MFPC
                 {
                     ""name"": ""Jump"",
                     ""type"": ""Button"",
-                    ""id"": ""920d3e6e-0628-4805-8971-ec3d33a59947"",
+                    ""id"": ""f960aa30-a6c3-4618-992b-cdeb673ddb31"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -124,7 +122,7 @@ namespace MFPC
                 {
                     ""name"": ""Sprint"",
                     ""type"": ""Button"",
-                    ""id"": ""b5fc72b9-c9cd-46c3-adfd-aae1616a10e2"",
+                    ""id"": ""6c3dbae1-b865-4a69-b499-6b1fe473c479"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -133,34 +131,7 @@ namespace MFPC
                 {
                     ""name"": ""Crouch"",
                     ""type"": ""Button"",
-                    ""id"": ""cefb8223-e33e-416e-89d1-5e126057f4cf"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""LeanLeft"",
-                    ""type"": ""Button"",
-                    ""id"": ""41284226-c5f3-48d8-a8fb-fd9e5377c0b7"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""LeanRight"",
-                    ""type"": ""Button"",
-                    ""id"": ""dd93e34b-0daa-4b00-b793-74b67ae57c50"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""SecondaryAction"",
-                    ""type"": ""Button"",
-                    ""id"": ""f4de6b26-225a-4960-84ba-ed2dd55c46b8"",
+                    ""id"": ""c841585a-cabf-4a15-a6db-eda0f41af626"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -169,25 +140,7 @@ namespace MFPC
                 {
                     ""name"": ""Interact"",
                     ""type"": ""Button"",
-                    ""id"": ""ba574ce5-3dd5-4b66-b08e-1a09f414861f"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""Debug1"",
-                    ""type"": ""Button"",
-                    ""id"": ""7e116b79-b3a2-49df-ad05-d4cdcea39730"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""Debug2"",
-                    ""type"": ""Button"",
-                    ""id"": ""7d6dc37a-2f5b-4133-b718-2cdbe1f7ceef"",
+                    ""id"": ""9ca9681a-b5c9-4c16-bdd1-37a11ec2527d"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -196,7 +149,7 @@ namespace MFPC
                 {
                     ""name"": ""Inventory"",
                     ""type"": ""Button"",
-                    ""id"": ""1fcb567c-7cab-4f6d-a779-82e22eb30b01"",
+                    ""id"": ""f7328ebd-704c-4583-be53-5b113f31c5de"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -205,7 +158,7 @@ namespace MFPC
                 {
                     ""name"": ""Hotbar1"",
                     ""type"": ""Button"",
-                    ""id"": ""d45cb48c-1e2c-4fd7-8dfc-35ff84be9782"",
+                    ""id"": ""145617f7-5aef-46ce-932b-51cb3f472f17"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -214,7 +167,7 @@ namespace MFPC
                 {
                     ""name"": ""Hotbar2"",
                     ""type"": ""Button"",
-                    ""id"": ""70c86135-a7a1-474d-a74f-e9aa080fb4a7"",
+                    ""id"": ""07916d3e-e2fa-44f2-998a-d0f521c5506f"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -223,7 +176,7 @@ namespace MFPC
                 {
                     ""name"": ""Hotbar3"",
                     ""type"": ""Button"",
-                    ""id"": ""12b838c3-e5a8-46b5-99ed-863ae530b9a0"",
+                    ""id"": ""43721479-da57-4f3e-8339-55dde31a7da9"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -232,7 +185,7 @@ namespace MFPC
                 {
                     ""name"": ""Hotbar4"",
                     ""type"": ""Button"",
-                    ""id"": ""4ae5fa9d-2079-4a61-9da7-fbd485efc785"",
+                    ""id"": ""36529442-70d7-46ce-a1b2-84fefe57e1f1"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -241,7 +194,7 @@ namespace MFPC
                 {
                     ""name"": ""Hotbar5"",
                     ""type"": ""Button"",
-                    ""id"": ""532f5854-c4ec-4763-aac3-e99b8e95b1b2"",
+                    ""id"": ""fae191ab-8bb7-4815-8785-9007886a58a2"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -250,16 +203,7 @@ namespace MFPC
                 {
                     ""name"": ""Hotbar6"",
                     ""type"": ""Button"",
-                    ""id"": ""752c944f-8b35-4993-b957-f39dcffce3c7"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""PrimaryAction"",
-                    ""type"": ""Button"",
-                    ""id"": ""2dcef8c6-bff7-41cb-a4c1-388cb95d0044"",
+                    ""id"": ""73aba09c-bc04-481f-bf79-6dde01023d47"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -269,7 +213,7 @@ namespace MFPC
             ""bindings"": [
                 {
                     ""name"": ""2D Vector"",
-                    ""id"": ""359b026f-bffb-498d-9c1e-b6aec644ef80"",
+                    ""id"": ""b058d97f-2139-4c4e-abd3-f16493becf3d"",
                     ""path"": ""2DVector"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -280,7 +224,7 @@ namespace MFPC
                 },
                 {
                     ""name"": ""up"",
-                    ""id"": ""8547f6d6-8489-470f-95c2-2e329c62c093"",
+                    ""id"": ""6e585bf3-c61d-4c18-a846-94197a73bfef"",
                     ""path"": ""<Keyboard>/w"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -291,7 +235,7 @@ namespace MFPC
                 },
                 {
                     ""name"": ""down"",
-                    ""id"": ""a1eb83cd-2b49-49f3-a1ef-300778413da6"",
+                    ""id"": ""d026d3da-da10-432c-b3f3-05b062628611"",
                     ""path"": ""<Keyboard>/s"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -302,7 +246,7 @@ namespace MFPC
                 },
                 {
                     ""name"": ""left"",
-                    ""id"": ""e65fbe05-d28d-467f-9105-a470c81ee503"",
+                    ""id"": ""77b4e221-4f70-436b-8003-d17c7b4f418d"",
                     ""path"": ""<Keyboard>/a"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -313,7 +257,7 @@ namespace MFPC
                 },
                 {
                     ""name"": ""right"",
-                    ""id"": ""b1d06317-1f1f-498a-a201-b154d9d77d85"",
+                    ""id"": ""2baa290f-b340-41a9-b172-0e8489a82ac0"",
                     ""path"": ""<Keyboard>/d"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -324,7 +268,7 @@ namespace MFPC
                 },
                 {
                     ""name"": ""2D Vector"",
-                    ""id"": ""6017692f-9e32-438c-a278-9744915942e6"",
+                    ""id"": ""1254c5c7-7e3e-472d-8af5-ca51ed6d96b1"",
                     ""path"": ""2DVector"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -335,7 +279,7 @@ namespace MFPC
                 },
                 {
                     ""name"": ""up"",
-                    ""id"": ""3e732e6a-f9fc-4f47-91f0-127b94e7ec3d"",
+                    ""id"": ""8778725d-9062-48c1-a888-8d3b28160c90"",
                     ""path"": ""<Keyboard>/upArrow"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -346,7 +290,7 @@ namespace MFPC
                 },
                 {
                     ""name"": ""down"",
-                    ""id"": ""89e2557c-19e0-4103-93c4-7da282a0d255"",
+                    ""id"": ""4c40aef6-d11f-41ca-b5ac-ba355da399b5"",
                     ""path"": ""<Keyboard>/downArrow"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -357,7 +301,7 @@ namespace MFPC
                 },
                 {
                     ""name"": ""left"",
-                    ""id"": ""343c1aeb-ebb7-456a-aa29-1c6a0860cfb1"",
+                    ""id"": ""208468ee-625c-45f7-840a-e9c5a8eb663a"",
                     ""path"": ""<Keyboard>/leftArrow"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -368,7 +312,7 @@ namespace MFPC
                 },
                 {
                     ""name"": ""right"",
-                    ""id"": ""34916b92-837a-4810-81b8-4dda9356eb02"",
+                    ""id"": ""7e64cbe6-5f35-41e5-b22a-dfab45a19600"",
                     ""path"": ""<Keyboard>/rightArrow"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -379,7 +323,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""536c3756-7583-43fc-b442-f7c181afdd2a"",
+                    ""id"": ""c3e3cfe8-4f41-494d-a860-6ef4c122df22"",
                     ""path"": ""<Gamepad>/leftStick"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -390,7 +334,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""3c1428af-509d-46f9-9b41-1c826537ae29"",
+                    ""id"": ""470e8fa5-b70a-4f1c-a6d5-8db54afabe55"",
                     ""path"": ""<Mouse>/delta"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -401,7 +345,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""65e2b61f-61e3-41a4-a67c-ac78ee5fa7a0"",
+                    ""id"": ""d4d5b936-e0cc-4c51-b2b1-982372ab364f"",
                     ""path"": ""<Gamepad>/rightStick"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -412,7 +356,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""1fa470e4-7f77-4dc5-a61c-92df3d0759e8"",
+                    ""id"": ""61f4efa5-9b08-44bf-a190-5876e0eba39e"",
                     ""path"": ""<Keyboard>/space"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -423,7 +367,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""a405b241-b105-4f78-85a0-4f71dbbadcdd"",
+                    ""id"": ""99017871-6222-4d58-b5c1-86519ea8dcf6"",
                     ""path"": ""<Gamepad>/buttonSouth"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -434,7 +378,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""e2893f4b-6f9f-42fa-97ea-f4c2897af873"",
+                    ""id"": ""db1fcd34-faed-40e3-879a-f201c7ec08d4"",
                     ""path"": ""<Keyboard>/shift"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -445,7 +389,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""c18f5732-5236-4789-9604-a4a14dee6951"",
+                    ""id"": ""93bf10bb-acf3-4dda-8e8b-f26fed2a4571"",
                     ""path"": ""<Gamepad>/leftStickPress"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -456,7 +400,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""d36aec26-e3f2-42d8-aaf5-bf5148392bfd"",
+                    ""id"": ""95ef4929-408c-4cd8-988c-d1e8b36418bf"",
                     ""path"": ""<Keyboard>/ctrl"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -467,7 +411,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""f06af88a-7452-4ec7-af95-f6c819ea15ea"",
+                    ""id"": ""915f07f6-6102-4501-8cf4-a184b3c58ca2"",
                     ""path"": ""<Gamepad>/buttonEast"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -478,7 +422,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""94cfeaa9-4fc1-469b-b76b-a9452c29182b"",
+                    ""id"": ""e1b581f6-116f-44aa-987a-34798a2e897d"",
                     ""path"": ""<Keyboard>/e"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -489,29 +433,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""0a616791-3a79-4fba-bb97-88054bb254ad"",
-                    ""path"": ""<Keyboard>/f1"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Debug1"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""3a0018bc-0118-4e30-a85e-2b25afca32f4"",
-                    ""path"": ""<Keyboard>/f2"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Debug2"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""20dabace-86ab-4c39-99d9-1a4c632da0e1"",
+                    ""id"": ""617885a7-3eec-44a8-90a3-fc82aa27773c"",
                     ""path"": ""<Keyboard>/tab"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -522,7 +444,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""0fde5eb5-02a1-44d7-886f-c7411064f04b"",
+                    ""id"": ""fc4c346a-86e0-4efa-9dc0-7627b2d3a5ce"",
                     ""path"": ""<Keyboard>/1"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -533,7 +455,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""f5f5020a-4898-4313-9369-543e22f977c9"",
+                    ""id"": ""f88d70e2-cc3a-4bd9-9259-bd26beb23bdf"",
                     ""path"": ""<Keyboard>/2"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -544,7 +466,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""2d987c0a-4774-48aa-9593-3f76b90cce83"",
+                    ""id"": ""13bdf682-71c1-49b6-802e-ba5f77c054a3"",
                     ""path"": ""<Keyboard>/3"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -555,7 +477,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""e34ad3cd-221e-4a2d-9709-138d9c087e71"",
+                    ""id"": ""39548bb1-fb7b-4c25-b98f-48f4759e13ae"",
                     ""path"": ""<Keyboard>/4"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -566,7 +488,7 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""d303b96f-8195-4131-a965-a61fb359c14e"",
+                    ""id"": ""e191c9c2-e368-4975-9e07-f84494ac6f22"",
                     ""path"": ""<Keyboard>/5"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -577,7 +499,465 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""80840e9a-1f4b-437d-ba9e-e5a7e8068e3a"",
+                    ""id"": ""e13c731b-6d47-4852-9b94-4174393b5f02"",
+                    ""path"": ""<Keyboard>/6"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar6"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
+        },
+        {
+            ""name"": ""Table"",
+            ""id"": ""75e722ef-89fb-48c9-83fc-2bf47728bafc"",
+            ""actions"": [
+                {
+                    ""name"": ""Move"",
+                    ""type"": ""Value"",
+                    ""id"": ""db374670-67eb-4176-8ce9-bdede16df8a7"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Look"",
+                    ""type"": ""Value"",
+                    ""id"": ""bf0957f0-9711-4fd8-9cc6-bb7040214741"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Jump"",
+                    ""type"": ""Button"",
+                    ""id"": ""42e15b4e-a8ef-415e-bc29-481d08789380"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Sprint"",
+                    ""type"": ""Button"",
+                    ""id"": ""348caa26-a7ec-41ed-9843-7aa434902534"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Crouch"",
+                    ""type"": ""Button"",
+                    ""id"": ""d3f69008-397e-4dc8-84a0-da03d6dd5e4b"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Interact"",
+                    ""type"": ""Button"",
+                    ""id"": ""b17b8c63-122c-4fd0-8b23-b74a49d420e8"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Inventory"",
+                    ""type"": ""Button"",
+                    ""id"": ""62384c91-9ff8-4fcf-8d44-af7c38ec8793"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar1"",
+                    ""type"": ""Button"",
+                    ""id"": ""8c078269-6605-4731-bc2f-61a6bac5e114"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar2"",
+                    ""type"": ""Button"",
+                    ""id"": ""17e624de-2d05-4575-84f4-814cb14cba37"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar3"",
+                    ""type"": ""Button"",
+                    ""id"": ""13d37429-b4f7-4422-8519-632683404fa9"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar4"",
+                    ""type"": ""Button"",
+                    ""id"": ""66abfd38-68ca-4acc-a906-8da94c8e1cb2"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar5"",
+                    ""type"": ""Button"",
+                    ""id"": ""8dbc60fe-88e6-4845-aad7-269c23f17495"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hotbar6"",
+                    ""type"": ""Button"",
+                    ""id"": ""cb20d8df-5e74-4578-b1f2-122b48567190"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""LeanLeft"",
+                    ""type"": ""Button"",
+                    ""id"": ""0ae4ea2f-fb18-4f61-938a-fdb7795a666c"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""LeanRight"",
+                    ""type"": ""Button"",
+                    ""id"": ""7bc73db0-25ed-40a9-93c5-4a87e933b5e0"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""PrimaryAction"",
+                    ""type"": ""Button"",
+                    ""id"": ""0aef43cb-1f23-4e20-8907-9c81a69a9009"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SecondaryAction"",
+                    ""type"": ""Button"",
+                    ""id"": ""0999d78a-ef81-434c-988b-cf9e60d5dcc7"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": ""2D Vector"",
+                    ""id"": ""260ce831-9980-4653-868f-d25a5fc77de3"",
+                    ""path"": ""2DVector"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""96b54737-5e5c-489e-967b-22c2e5f1e4dd"",
+                    ""path"": ""<Keyboard>/w"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""4697a3a8-959b-42ae-b4b0-0677d3cf1601"",
+                    ""path"": ""<Keyboard>/s"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""d7d90448-ab1c-4704-876b-2d01329f52ff"",
+                    ""path"": ""<Keyboard>/a"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""1514260a-4478-43cb-abf3-3697e20b50e4"",
+                    ""path"": ""<Keyboard>/d"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""2D Vector"",
+                    ""id"": ""5aad1f4a-4657-4940-acc8-e1d5c4e942a1"",
+                    ""path"": ""2DVector"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""9a1ed577-993f-4e44-89a9-397d13c3995e"",
+                    ""path"": ""<Keyboard>/upArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""66893c8c-b597-4314-bcb7-90c05d4b6465"",
+                    ""path"": ""<Keyboard>/downArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""b8864e76-08e6-46a1-98a0-8b5a8597f85b"",
+                    ""path"": ""<Keyboard>/leftArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""91dbd84c-9c1b-4841-bdcd-0fe3fd565fea"",
+                    ""path"": ""<Keyboard>/rightArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b9bf2310-9672-4bc1-9fd1-c9bd7aa4d4f0"",
+                    ""path"": ""<Gamepad>/leftStick"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""12ddd318-e7f5-4cb7-8256-e36cfff7368c"",
+                    ""path"": ""<Mouse>/delta"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Look"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""147a8c63-eb20-426c-a911-aec0f6c1748e"",
+                    ""path"": ""<Gamepad>/rightStick"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Look"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""9337dbd8-c1d1-4375-8515-aeef2915c9d7"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Jump"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""988f9fa9-aa7a-475d-be54-11dbdd460034"",
+                    ""path"": ""<Gamepad>/buttonSouth"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Jump"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8215a08e-cde8-40dc-9d82-07020f665520"",
+                    ""path"": ""<Keyboard>/shift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Sprint"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""3f0510ad-83ae-46e4-a237-d40d82a1d7e2"",
+                    ""path"": ""<Gamepad>/leftStickPress"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Sprint"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""00827a50-dced-483b-9c7f-931bfaa04e65"",
+                    ""path"": ""<Keyboard>/ctrl"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Crouch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""658ac144-31ee-4d93-98bf-26df76060a7d"",
+                    ""path"": ""<Gamepad>/buttonEast"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Crouch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6dbc3288-c256-45d3-b1f7-2f9d329a5f29"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""fad7815c-baae-44d8-b01a-76e1418ba1e9"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Inventory"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d8619bfe-b91e-41dc-95b5-49da6a6a98fd"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a263a8f9-849a-4177-8cf0-1d320c32acd8"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""495f26ef-795c-4c1a-a680-9f88bffb608f"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""48ef3228-ace5-44c8-9b92-37fa7c76aa61"",
+                    ""path"": ""<Keyboard>/4"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar4"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""5158656d-b7b7-4858-8487-0d864b3f384a"",
+                    ""path"": ""<Keyboard>/5"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Hotbar5"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""63b0f756-dba5-4df6-ae16-de3d039042cc"",
                     ""path"": ""<Keyboard>/6"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -588,7 +968,18 @@ namespace MFPC
                 },
                 {
                     ""name"": """",
-                    ""id"": ""821d05ca-e936-483f-b382-98b4d6b7041b"",
+                    ""id"": ""ee7202b2-9cd0-47d6-a911-fdfeb1cbbbdf"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PrimaryAction"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""32031090-e1ea-4ccc-80a9-4e2bc7440f4b"",
                     ""path"": ""<Mouse>/rightButton"",
                     ""interactions"": """",
                     ""processors"": """",
@@ -596,15 +987,100 @@ namespace MFPC
                     ""action"": ""SecondaryAction"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                }
+            ]
+        },
+        {
+            ""name"": ""UI"",
+            ""id"": ""0264623b-c971-43cc-8af3-cc5ac2364aff"",
+            ""actions"": [
+                {
+                    ""name"": ""Inventory"",
+                    ""type"": ""Button"",
+                    ""id"": ""6d13c273-7f27-4f06-97e1-f0defc7abd5a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 },
                 {
+                    ""name"": ""Cancel"",
+                    ""type"": ""Button"",
+                    ""id"": ""64e57762-2d7f-4c93-bdac-368f104552fc"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
                     ""name"": """",
-                    ""id"": ""8b1c8fcb-acbd-4449-a2ce-01a8799b22ee"",
-                    ""path"": ""<Mouse>/leftButton"",
+                    ""id"": ""8d656d05-7f25-4922-b33d-29398d3681f5"",
+                    ""path"": ""<Keyboard>/tab"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""PrimaryAction"",
+                    ""action"": ""Inventory"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""3736c53b-6ff8-4694-9d02-06a1345ca585"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Cancel"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
+        },
+        {
+            ""name"": ""Dev"",
+            ""id"": ""44393e6e-4e01-4477-8eb6-36521a720502"",
+            ""actions"": [
+                {
+                    ""name"": ""Debug1"",
+                    ""type"": ""Button"",
+                    ""id"": ""85fd4ce5-d7c1-4cea-b584-b472aeea5e9e"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Debug2"",
+                    ""type"": ""Button"",
+                    ""id"": ""463472e2-4c8f-4d47-bf70-6a09da43f0d6"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""31be35fe-f99f-4d80-90ca-bc37ad2ed9b4"",
+                    ""path"": ""<Keyboard>/f1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Debug1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""43d30126-221c-4c0e-9078-347cdcf042e2"",
+                    ""path"": ""<Keyboard>/f2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Debug2"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -613,537 +1089,1109 @@ namespace MFPC
     ],
     ""controlSchemes"": []
 }");
-            // Player
-            m_Player = asset.FindActionMap("Player", throwIfNotFound: true);
-            m_Player_Move = m_Player.FindAction("Move", throwIfNotFound: true);
-            m_Player_Look = m_Player.FindAction("Look", throwIfNotFound: true);
-            m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
-            m_Player_Sprint = m_Player.FindAction("Sprint", throwIfNotFound: true);
-            m_Player_Crouch = m_Player.FindAction("Crouch", throwIfNotFound: true);
-            m_Player_LeanLeft = m_Player.FindAction("LeanLeft", throwIfNotFound: true);
-            m_Player_LeanRight = m_Player.FindAction("LeanRight", throwIfNotFound: true);
-            m_Player_SecondaryAction = m_Player.FindAction("SecondaryAction", throwIfNotFound: true);
-            m_Player_Interact = m_Player.FindAction("Interact", throwIfNotFound: true);
-            m_Player_Debug1 = m_Player.FindAction("Debug1", throwIfNotFound: true);
-            m_Player_Debug2 = m_Player.FindAction("Debug2", throwIfNotFound: true);
-            m_Player_Inventory = m_Player.FindAction("Inventory", throwIfNotFound: true);
-            m_Player_Hotbar1 = m_Player.FindAction("Hotbar1", throwIfNotFound: true);
-            m_Player_Hotbar2 = m_Player.FindAction("Hotbar2", throwIfNotFound: true);
-            m_Player_Hotbar3 = m_Player.FindAction("Hotbar3", throwIfNotFound: true);
-            m_Player_Hotbar4 = m_Player.FindAction("Hotbar4", throwIfNotFound: true);
-            m_Player_Hotbar5 = m_Player.FindAction("Hotbar5", throwIfNotFound: true);
-            m_Player_Hotbar6 = m_Player.FindAction("Hotbar6", throwIfNotFound: true);
-            m_Player_PrimaryAction = m_Player.FindAction("PrimaryAction", throwIfNotFound: true);
-        }
+        // Room
+        m_Room = asset.FindActionMap("Room", throwIfNotFound: true);
+        m_Room_Move = m_Room.FindAction("Move", throwIfNotFound: true);
+        m_Room_Look = m_Room.FindAction("Look", throwIfNotFound: true);
+        m_Room_Jump = m_Room.FindAction("Jump", throwIfNotFound: true);
+        m_Room_Sprint = m_Room.FindAction("Sprint", throwIfNotFound: true);
+        m_Room_Crouch = m_Room.FindAction("Crouch", throwIfNotFound: true);
+        m_Room_Interact = m_Room.FindAction("Interact", throwIfNotFound: true);
+        m_Room_Inventory = m_Room.FindAction("Inventory", throwIfNotFound: true);
+        m_Room_Hotbar1 = m_Room.FindAction("Hotbar1", throwIfNotFound: true);
+        m_Room_Hotbar2 = m_Room.FindAction("Hotbar2", throwIfNotFound: true);
+        m_Room_Hotbar3 = m_Room.FindAction("Hotbar3", throwIfNotFound: true);
+        m_Room_Hotbar4 = m_Room.FindAction("Hotbar4", throwIfNotFound: true);
+        m_Room_Hotbar5 = m_Room.FindAction("Hotbar5", throwIfNotFound: true);
+        m_Room_Hotbar6 = m_Room.FindAction("Hotbar6", throwIfNotFound: true);
+        // Table
+        m_Table = asset.FindActionMap("Table", throwIfNotFound: true);
+        m_Table_Move = m_Table.FindAction("Move", throwIfNotFound: true);
+        m_Table_Look = m_Table.FindAction("Look", throwIfNotFound: true);
+        m_Table_Jump = m_Table.FindAction("Jump", throwIfNotFound: true);
+        m_Table_Sprint = m_Table.FindAction("Sprint", throwIfNotFound: true);
+        m_Table_Crouch = m_Table.FindAction("Crouch", throwIfNotFound: true);
+        m_Table_Interact = m_Table.FindAction("Interact", throwIfNotFound: true);
+        m_Table_Inventory = m_Table.FindAction("Inventory", throwIfNotFound: true);
+        m_Table_Hotbar1 = m_Table.FindAction("Hotbar1", throwIfNotFound: true);
+        m_Table_Hotbar2 = m_Table.FindAction("Hotbar2", throwIfNotFound: true);
+        m_Table_Hotbar3 = m_Table.FindAction("Hotbar3", throwIfNotFound: true);
+        m_Table_Hotbar4 = m_Table.FindAction("Hotbar4", throwIfNotFound: true);
+        m_Table_Hotbar5 = m_Table.FindAction("Hotbar5", throwIfNotFound: true);
+        m_Table_Hotbar6 = m_Table.FindAction("Hotbar6", throwIfNotFound: true);
+        m_Table_LeanLeft = m_Table.FindAction("LeanLeft", throwIfNotFound: true);
+        m_Table_LeanRight = m_Table.FindAction("LeanRight", throwIfNotFound: true);
+        m_Table_PrimaryAction = m_Table.FindAction("PrimaryAction", throwIfNotFound: true);
+        m_Table_SecondaryAction = m_Table.FindAction("SecondaryAction", throwIfNotFound: true);
+        // UI
+        m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
+        m_UI_Inventory = m_UI.FindAction("Inventory", throwIfNotFound: true);
+        m_UI_Cancel = m_UI.FindAction("Cancel", throwIfNotFound: true);
+        // Dev
+        m_Dev = asset.FindActionMap("Dev", throwIfNotFound: true);
+        m_Dev_Debug1 = m_Dev.FindAction("Debug1", throwIfNotFound: true);
+        m_Dev_Debug2 = m_Dev.FindAction("Debug2", throwIfNotFound: true);
+    }
 
-        ~@PlayerInputActions()
+    ~@PlayerInputActions()
+    {
+        UnityEngine.Debug.Assert(!m_Room.enabled, "This will cause a leak and performance issues, PlayerInputActions.Room.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_Table.enabled, "This will cause a leak and performance issues, PlayerInputActions.Table.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_UI.enabled, "This will cause a leak and performance issues, PlayerInputActions.UI.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_Dev.enabled, "This will cause a leak and performance issues, PlayerInputActions.Dev.Disable() has not been called.");
+    }
+
+    /// <summary>
+    /// Destroys this asset and all associated <see cref="InputAction"/> instances.
+    /// </summary>
+    public void Dispose()
+    {
+        UnityEngine.Object.Destroy(asset);
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.bindingMask" />
+    public InputBinding? bindingMask
+    {
+        get => asset.bindingMask;
+        set => asset.bindingMask = value;
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.devices" />
+    public ReadOnlyArray<InputDevice>? devices
+    {
+        get => asset.devices;
+        set => asset.devices = value;
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.controlSchemes" />
+    public ReadOnlyArray<InputControlScheme> controlSchemes => asset.controlSchemes;
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Contains(InputAction)" />
+    public bool Contains(InputAction action)
+    {
+        return asset.Contains(action);
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.GetEnumerator()" />
+    public IEnumerator<InputAction> GetEnumerator()
+    {
+        return asset.GetEnumerator();
+    }
+
+    /// <inheritdoc cref="IEnumerable.GetEnumerator()" />
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Enable()" />
+    public void Enable()
+    {
+        asset.Enable();
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Disable()" />
+    public void Disable()
+    {
+        asset.Disable();
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.bindings" />
+    public IEnumerable<InputBinding> bindings => asset.bindings;
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.FindAction(string, bool)" />
+    public InputAction FindAction(string actionNameOrId, bool throwIfNotFound = false)
+    {
+        return asset.FindAction(actionNameOrId, throwIfNotFound);
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.FindBinding(InputBinding, out InputAction)" />
+    public int FindBinding(InputBinding bindingMask, out InputAction action)
+    {
+        return asset.FindBinding(bindingMask, out action);
+    }
+
+    // Room
+    private readonly InputActionMap m_Room;
+    private List<IRoomActions> m_RoomActionsCallbackInterfaces = new List<IRoomActions>();
+    private readonly InputAction m_Room_Move;
+    private readonly InputAction m_Room_Look;
+    private readonly InputAction m_Room_Jump;
+    private readonly InputAction m_Room_Sprint;
+    private readonly InputAction m_Room_Crouch;
+    private readonly InputAction m_Room_Interact;
+    private readonly InputAction m_Room_Inventory;
+    private readonly InputAction m_Room_Hotbar1;
+    private readonly InputAction m_Room_Hotbar2;
+    private readonly InputAction m_Room_Hotbar3;
+    private readonly InputAction m_Room_Hotbar4;
+    private readonly InputAction m_Room_Hotbar5;
+    private readonly InputAction m_Room_Hotbar6;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Room".
+    /// </summary>
+    public struct RoomActions
+    {
+        private @PlayerInputActions m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public RoomActions(@PlayerInputActions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Move".
+        /// </summary>
+        public InputAction @Move => m_Wrapper.m_Room_Move;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Look".
+        /// </summary>
+        public InputAction @Look => m_Wrapper.m_Room_Look;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Jump".
+        /// </summary>
+        public InputAction @Jump => m_Wrapper.m_Room_Jump;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Sprint".
+        /// </summary>
+        public InputAction @Sprint => m_Wrapper.m_Room_Sprint;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Crouch".
+        /// </summary>
+        public InputAction @Crouch => m_Wrapper.m_Room_Crouch;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Interact".
+        /// </summary>
+        public InputAction @Interact => m_Wrapper.m_Room_Interact;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Inventory".
+        /// </summary>
+        public InputAction @Inventory => m_Wrapper.m_Room_Inventory;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Hotbar1".
+        /// </summary>
+        public InputAction @Hotbar1 => m_Wrapper.m_Room_Hotbar1;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Hotbar2".
+        /// </summary>
+        public InputAction @Hotbar2 => m_Wrapper.m_Room_Hotbar2;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Hotbar3".
+        /// </summary>
+        public InputAction @Hotbar3 => m_Wrapper.m_Room_Hotbar3;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Hotbar4".
+        /// </summary>
+        public InputAction @Hotbar4 => m_Wrapper.m_Room_Hotbar4;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Hotbar5".
+        /// </summary>
+        public InputAction @Hotbar5 => m_Wrapper.m_Room_Hotbar5;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Hotbar6".
+        /// </summary>
+        public InputAction @Hotbar6 => m_Wrapper.m_Room_Hotbar6;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Room; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="RoomActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(RoomActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="RoomActions" />
+        public void AddCallbacks(IRoomActions instance)
         {
-            UnityEngine.Debug.Assert(!m_Player.enabled, "This will cause a leak and performance issues, PlayerInputActions.Player.Disable() has not been called.");
+            if (instance == null || m_Wrapper.m_RoomActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_RoomActionsCallbackInterfaces.Add(instance);
+            @Move.started += instance.OnMove;
+            @Move.performed += instance.OnMove;
+            @Move.canceled += instance.OnMove;
+            @Look.started += instance.OnLook;
+            @Look.performed += instance.OnLook;
+            @Look.canceled += instance.OnLook;
+            @Jump.started += instance.OnJump;
+            @Jump.performed += instance.OnJump;
+            @Jump.canceled += instance.OnJump;
+            @Sprint.started += instance.OnSprint;
+            @Sprint.performed += instance.OnSprint;
+            @Sprint.canceled += instance.OnSprint;
+            @Crouch.started += instance.OnCrouch;
+            @Crouch.performed += instance.OnCrouch;
+            @Crouch.canceled += instance.OnCrouch;
+            @Interact.started += instance.OnInteract;
+            @Interact.performed += instance.OnInteract;
+            @Interact.canceled += instance.OnInteract;
+            @Inventory.started += instance.OnInventory;
+            @Inventory.performed += instance.OnInventory;
+            @Inventory.canceled += instance.OnInventory;
+            @Hotbar1.started += instance.OnHotbar1;
+            @Hotbar1.performed += instance.OnHotbar1;
+            @Hotbar1.canceled += instance.OnHotbar1;
+            @Hotbar2.started += instance.OnHotbar2;
+            @Hotbar2.performed += instance.OnHotbar2;
+            @Hotbar2.canceled += instance.OnHotbar2;
+            @Hotbar3.started += instance.OnHotbar3;
+            @Hotbar3.performed += instance.OnHotbar3;
+            @Hotbar3.canceled += instance.OnHotbar3;
+            @Hotbar4.started += instance.OnHotbar4;
+            @Hotbar4.performed += instance.OnHotbar4;
+            @Hotbar4.canceled += instance.OnHotbar4;
+            @Hotbar5.started += instance.OnHotbar5;
+            @Hotbar5.performed += instance.OnHotbar5;
+            @Hotbar5.canceled += instance.OnHotbar5;
+            @Hotbar6.started += instance.OnHotbar6;
+            @Hotbar6.performed += instance.OnHotbar6;
+            @Hotbar6.canceled += instance.OnHotbar6;
         }
 
         /// <summary>
-        /// Destroys this asset and all associated <see cref="InputAction"/> instances.
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
         /// </summary>
-        public void Dispose()
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="RoomActions" />
+        private void UnregisterCallbacks(IRoomActions instance)
         {
-            UnityEngine.Object.Destroy(asset);
+            @Move.started -= instance.OnMove;
+            @Move.performed -= instance.OnMove;
+            @Move.canceled -= instance.OnMove;
+            @Look.started -= instance.OnLook;
+            @Look.performed -= instance.OnLook;
+            @Look.canceled -= instance.OnLook;
+            @Jump.started -= instance.OnJump;
+            @Jump.performed -= instance.OnJump;
+            @Jump.canceled -= instance.OnJump;
+            @Sprint.started -= instance.OnSprint;
+            @Sprint.performed -= instance.OnSprint;
+            @Sprint.canceled -= instance.OnSprint;
+            @Crouch.started -= instance.OnCrouch;
+            @Crouch.performed -= instance.OnCrouch;
+            @Crouch.canceled -= instance.OnCrouch;
+            @Interact.started -= instance.OnInteract;
+            @Interact.performed -= instance.OnInteract;
+            @Interact.canceled -= instance.OnInteract;
+            @Inventory.started -= instance.OnInventory;
+            @Inventory.performed -= instance.OnInventory;
+            @Inventory.canceled -= instance.OnInventory;
+            @Hotbar1.started -= instance.OnHotbar1;
+            @Hotbar1.performed -= instance.OnHotbar1;
+            @Hotbar1.canceled -= instance.OnHotbar1;
+            @Hotbar2.started -= instance.OnHotbar2;
+            @Hotbar2.performed -= instance.OnHotbar2;
+            @Hotbar2.canceled -= instance.OnHotbar2;
+            @Hotbar3.started -= instance.OnHotbar3;
+            @Hotbar3.performed -= instance.OnHotbar3;
+            @Hotbar3.canceled -= instance.OnHotbar3;
+            @Hotbar4.started -= instance.OnHotbar4;
+            @Hotbar4.performed -= instance.OnHotbar4;
+            @Hotbar4.canceled -= instance.OnHotbar4;
+            @Hotbar5.started -= instance.OnHotbar5;
+            @Hotbar5.performed -= instance.OnHotbar5;
+            @Hotbar5.canceled -= instance.OnHotbar5;
+            @Hotbar6.started -= instance.OnHotbar6;
+            @Hotbar6.performed -= instance.OnHotbar6;
+            @Hotbar6.canceled -= instance.OnHotbar6;
         }
 
-        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.bindingMask" />
-        public InputBinding? bindingMask
-        {
-            get => asset.bindingMask;
-            set => asset.bindingMask = value;
-        }
-
-        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.devices" />
-        public ReadOnlyArray<InputDevice>? devices
-        {
-            get => asset.devices;
-            set => asset.devices = value;
-        }
-
-        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.controlSchemes" />
-        public ReadOnlyArray<InputControlScheme> controlSchemes => asset.controlSchemes;
-
-        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Contains(InputAction)" />
-        public bool Contains(InputAction action)
-        {
-            return asset.Contains(action);
-        }
-
-        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.GetEnumerator()" />
-        public IEnumerator<InputAction> GetEnumerator()
-        {
-            return asset.GetEnumerator();
-        }
-
-        /// <inheritdoc cref="IEnumerable.GetEnumerator()" />
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Enable()" />
-        public void Enable()
-        {
-            asset.Enable();
-        }
-
-        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Disable()" />
-        public void Disable()
-        {
-            asset.Disable();
-        }
-
-        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.bindings" />
-        public IEnumerable<InputBinding> bindings => asset.bindings;
-
-        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.FindAction(string, bool)" />
-        public InputAction FindAction(string actionNameOrId, bool throwIfNotFound = false)
-        {
-            return asset.FindAction(actionNameOrId, throwIfNotFound);
-        }
-
-        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.FindBinding(InputBinding, out InputAction)" />
-        public int FindBinding(InputBinding bindingMask, out InputAction action)
-        {
-            return asset.FindBinding(bindingMask, out action);
-        }
-
-        // Player
-        private readonly InputActionMap m_Player;
-        private List<IPlayerActions> m_PlayerActionsCallbackInterfaces = new List<IPlayerActions>();
-        private readonly InputAction m_Player_Move;
-        private readonly InputAction m_Player_Look;
-        private readonly InputAction m_Player_Jump;
-        private readonly InputAction m_Player_Sprint;
-        private readonly InputAction m_Player_Crouch;
-        private readonly InputAction m_Player_LeanLeft;
-        private readonly InputAction m_Player_LeanRight;
-        private readonly InputAction m_Player_SecondaryAction;
-        private readonly InputAction m_Player_Interact;
-        private readonly InputAction m_Player_Debug1;
-        private readonly InputAction m_Player_Debug2;
-        private readonly InputAction m_Player_Inventory;
-        private readonly InputAction m_Player_Hotbar1;
-        private readonly InputAction m_Player_Hotbar2;
-        private readonly InputAction m_Player_Hotbar3;
-        private readonly InputAction m_Player_Hotbar4;
-        private readonly InputAction m_Player_Hotbar5;
-        private readonly InputAction m_Player_Hotbar6;
-        private readonly InputAction m_Player_PrimaryAction;
         /// <summary>
-        /// Provides access to input actions defined in input action map "Player".
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="RoomActions.UnregisterCallbacks(IRoomActions)" />.
         /// </summary>
-        public struct PlayerActions
+        /// <seealso cref="RoomActions.UnregisterCallbacks(IRoomActions)" />
+        public void RemoveCallbacks(IRoomActions instance)
         {
-            private @PlayerInputActions m_Wrapper;
-
-            /// <summary>
-            /// Construct a new instance of the input action map wrapper class.
-            /// </summary>
-            public PlayerActions(@PlayerInputActions wrapper) { m_Wrapper = wrapper; }
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Move".
-            /// </summary>
-            public InputAction @Move => m_Wrapper.m_Player_Move;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Look".
-            /// </summary>
-            public InputAction @Look => m_Wrapper.m_Player_Look;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Jump".
-            /// </summary>
-            public InputAction @Jump => m_Wrapper.m_Player_Jump;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Sprint".
-            /// </summary>
-            public InputAction @Sprint => m_Wrapper.m_Player_Sprint;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Crouch".
-            /// </summary>
-            public InputAction @Crouch => m_Wrapper.m_Player_Crouch;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/LeanLeft".
-            /// </summary>
-            public InputAction @LeanLeft => m_Wrapper.m_Player_LeanLeft;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/LeanRight".
-            /// </summary>
-            public InputAction @LeanRight => m_Wrapper.m_Player_LeanRight;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/SecondaryAction".
-            /// </summary>
-            public InputAction @SecondaryAction => m_Wrapper.m_Player_SecondaryAction;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Interact".
-            /// </summary>
-            public InputAction @Interact => m_Wrapper.m_Player_Interact;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Debug1".
-            /// </summary>
-            public InputAction @Debug1 => m_Wrapper.m_Player_Debug1;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Debug2".
-            /// </summary>
-            public InputAction @Debug2 => m_Wrapper.m_Player_Debug2;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Inventory".
-            /// </summary>
-            public InputAction @Inventory => m_Wrapper.m_Player_Inventory;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Hotbar1".
-            /// </summary>
-            public InputAction @Hotbar1 => m_Wrapper.m_Player_Hotbar1;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Hotbar2".
-            /// </summary>
-            public InputAction @Hotbar2 => m_Wrapper.m_Player_Hotbar2;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Hotbar3".
-            /// </summary>
-            public InputAction @Hotbar3 => m_Wrapper.m_Player_Hotbar3;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Hotbar4".
-            /// </summary>
-            public InputAction @Hotbar4 => m_Wrapper.m_Player_Hotbar4;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Hotbar5".
-            /// </summary>
-            public InputAction @Hotbar5 => m_Wrapper.m_Player_Hotbar5;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/Hotbar6".
-            /// </summary>
-            public InputAction @Hotbar6 => m_Wrapper.m_Player_Hotbar6;
-            /// <summary>
-            /// Provides access to the underlying input action "Player/PrimaryAction".
-            /// </summary>
-            public InputAction @PrimaryAction => m_Wrapper.m_Player_PrimaryAction;
-            /// <summary>
-            /// Provides access to the underlying input action map instance.
-            /// </summary>
-            public InputActionMap Get() { return m_Wrapper.m_Player; }
-            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
-            public void Enable() { Get().Enable(); }
-            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
-            public void Disable() { Get().Disable(); }
-            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
-            public bool enabled => Get().enabled;
-            /// <summary>
-            /// Implicitly converts an <see ref="PlayerActions" /> to an <see ref="InputActionMap" /> instance.
-            /// </summary>
-            public static implicit operator InputActionMap(PlayerActions set) { return set.Get(); }
-            /// <summary>
-            /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
-            /// </summary>
-            /// <param name="instance">Callback instance.</param>
-            /// <remarks>
-            /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
-            /// </remarks>
-            /// <seealso cref="PlayerActions" />
-            public void AddCallbacks(IPlayerActions instance)
-            {
-                if (instance == null || m_Wrapper.m_PlayerActionsCallbackInterfaces.Contains(instance)) return;
-                m_Wrapper.m_PlayerActionsCallbackInterfaces.Add(instance);
-                @Move.started += instance.OnMove;
-                @Move.performed += instance.OnMove;
-                @Move.canceled += instance.OnMove;
-                @Look.started += instance.OnLook;
-                @Look.performed += instance.OnLook;
-                @Look.canceled += instance.OnLook;
-                @Jump.started += instance.OnJump;
-                @Jump.performed += instance.OnJump;
-                @Jump.canceled += instance.OnJump;
-                @Sprint.started += instance.OnSprint;
-                @Sprint.performed += instance.OnSprint;
-                @Sprint.canceled += instance.OnSprint;
-                @Crouch.started += instance.OnCrouch;
-                @Crouch.performed += instance.OnCrouch;
-                @Crouch.canceled += instance.OnCrouch;
-                @LeanLeft.started += instance.OnLeanLeft;
-                @LeanLeft.performed += instance.OnLeanLeft;
-                @LeanLeft.canceled += instance.OnLeanLeft;
-                @LeanRight.started += instance.OnLeanRight;
-                @LeanRight.performed += instance.OnLeanRight;
-                @LeanRight.canceled += instance.OnLeanRight;
-                @SecondaryAction.started += instance.OnSecondaryAction;
-                @SecondaryAction.performed += instance.OnSecondaryAction;
-                @SecondaryAction.canceled += instance.OnSecondaryAction;
-                @Interact.started += instance.OnInteract;
-                @Interact.performed += instance.OnInteract;
-                @Interact.canceled += instance.OnInteract;
-                @Debug1.started += instance.OnDebug1;
-                @Debug1.performed += instance.OnDebug1;
-                @Debug1.canceled += instance.OnDebug1;
-                @Debug2.started += instance.OnDebug2;
-                @Debug2.performed += instance.OnDebug2;
-                @Debug2.canceled += instance.OnDebug2;
-                @Inventory.started += instance.OnInventory;
-                @Inventory.performed += instance.OnInventory;
-                @Inventory.canceled += instance.OnInventory;
-                @Hotbar1.started += instance.OnHotbar1;
-                @Hotbar1.performed += instance.OnHotbar1;
-                @Hotbar1.canceled += instance.OnHotbar1;
-                @Hotbar2.started += instance.OnHotbar2;
-                @Hotbar2.performed += instance.OnHotbar2;
-                @Hotbar2.canceled += instance.OnHotbar2;
-                @Hotbar3.started += instance.OnHotbar3;
-                @Hotbar3.performed += instance.OnHotbar3;
-                @Hotbar3.canceled += instance.OnHotbar3;
-                @Hotbar4.started += instance.OnHotbar4;
-                @Hotbar4.performed += instance.OnHotbar4;
-                @Hotbar4.canceled += instance.OnHotbar4;
-                @Hotbar5.started += instance.OnHotbar5;
-                @Hotbar5.performed += instance.OnHotbar5;
-                @Hotbar5.canceled += instance.OnHotbar5;
-                @Hotbar6.started += instance.OnHotbar6;
-                @Hotbar6.performed += instance.OnHotbar6;
-                @Hotbar6.canceled += instance.OnHotbar6;
-                @PrimaryAction.started += instance.OnPrimaryAction;
-                @PrimaryAction.performed += instance.OnPrimaryAction;
-                @PrimaryAction.canceled += instance.OnPrimaryAction;
-            }
-
-            /// <summary>
-            /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
-            /// </summary>
-            /// <remarks>
-            /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
-            /// </remarks>
-            /// <seealso cref="PlayerActions" />
-            private void UnregisterCallbacks(IPlayerActions instance)
-            {
-                @Move.started -= instance.OnMove;
-                @Move.performed -= instance.OnMove;
-                @Move.canceled -= instance.OnMove;
-                @Look.started -= instance.OnLook;
-                @Look.performed -= instance.OnLook;
-                @Look.canceled -= instance.OnLook;
-                @Jump.started -= instance.OnJump;
-                @Jump.performed -= instance.OnJump;
-                @Jump.canceled -= instance.OnJump;
-                @Sprint.started -= instance.OnSprint;
-                @Sprint.performed -= instance.OnSprint;
-                @Sprint.canceled -= instance.OnSprint;
-                @Crouch.started -= instance.OnCrouch;
-                @Crouch.performed -= instance.OnCrouch;
-                @Crouch.canceled -= instance.OnCrouch;
-                @LeanLeft.started -= instance.OnLeanLeft;
-                @LeanLeft.performed -= instance.OnLeanLeft;
-                @LeanLeft.canceled -= instance.OnLeanLeft;
-                @LeanRight.started -= instance.OnLeanRight;
-                @LeanRight.performed -= instance.OnLeanRight;
-                @LeanRight.canceled -= instance.OnLeanRight;
-                @SecondaryAction.started -= instance.OnSecondaryAction;
-                @SecondaryAction.performed -= instance.OnSecondaryAction;
-                @SecondaryAction.canceled -= instance.OnSecondaryAction;
-                @Interact.started -= instance.OnInteract;
-                @Interact.performed -= instance.OnInteract;
-                @Interact.canceled -= instance.OnInteract;
-                @Debug1.started -= instance.OnDebug1;
-                @Debug1.performed -= instance.OnDebug1;
-                @Debug1.canceled -= instance.OnDebug1;
-                @Debug2.started -= instance.OnDebug2;
-                @Debug2.performed -= instance.OnDebug2;
-                @Debug2.canceled -= instance.OnDebug2;
-                @Inventory.started -= instance.OnInventory;
-                @Inventory.performed -= instance.OnInventory;
-                @Inventory.canceled -= instance.OnInventory;
-                @Hotbar1.started -= instance.OnHotbar1;
-                @Hotbar1.performed -= instance.OnHotbar1;
-                @Hotbar1.canceled -= instance.OnHotbar1;
-                @Hotbar2.started -= instance.OnHotbar2;
-                @Hotbar2.performed -= instance.OnHotbar2;
-                @Hotbar2.canceled -= instance.OnHotbar2;
-                @Hotbar3.started -= instance.OnHotbar3;
-                @Hotbar3.performed -= instance.OnHotbar3;
-                @Hotbar3.canceled -= instance.OnHotbar3;
-                @Hotbar4.started -= instance.OnHotbar4;
-                @Hotbar4.performed -= instance.OnHotbar4;
-                @Hotbar4.canceled -= instance.OnHotbar4;
-                @Hotbar5.started -= instance.OnHotbar5;
-                @Hotbar5.performed -= instance.OnHotbar5;
-                @Hotbar5.canceled -= instance.OnHotbar5;
-                @Hotbar6.started -= instance.OnHotbar6;
-                @Hotbar6.performed -= instance.OnHotbar6;
-                @Hotbar6.canceled -= instance.OnHotbar6;
-                @PrimaryAction.started -= instance.OnPrimaryAction;
-                @PrimaryAction.performed -= instance.OnPrimaryAction;
-                @PrimaryAction.canceled -= instance.OnPrimaryAction;
-            }
-
-            /// <summary>
-            /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="PlayerActions.UnregisterCallbacks(IPlayerActions)" />.
-            /// </summary>
-            /// <seealso cref="PlayerActions.UnregisterCallbacks(IPlayerActions)" />
-            public void RemoveCallbacks(IPlayerActions instance)
-            {
-                if (m_Wrapper.m_PlayerActionsCallbackInterfaces.Remove(instance))
-                    UnregisterCallbacks(instance);
-            }
-
-            /// <summary>
-            /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
-            /// </summary>
-            /// <remarks>
-            /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
-            /// </remarks>
-            /// <seealso cref="PlayerActions.AddCallbacks(IPlayerActions)" />
-            /// <seealso cref="PlayerActions.RemoveCallbacks(IPlayerActions)" />
-            /// <seealso cref="PlayerActions.UnregisterCallbacks(IPlayerActions)" />
-            public void SetCallbacks(IPlayerActions instance)
-            {
-                foreach (var item in m_Wrapper.m_PlayerActionsCallbackInterfaces)
-                    UnregisterCallbacks(item);
-                m_Wrapper.m_PlayerActionsCallbackInterfaces.Clear();
-                AddCallbacks(instance);
-            }
+            if (m_Wrapper.m_RoomActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
         }
+
         /// <summary>
-        /// Provides a new <see cref="PlayerActions" /> instance referencing this action map.
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
         /// </summary>
-        public PlayerActions @Player => new PlayerActions(this);
-        /// <summary>
-        /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Player" which allows adding and removing callbacks.
-        /// </summary>
-        /// <seealso cref="PlayerActions.AddCallbacks(IPlayerActions)" />
-        /// <seealso cref="PlayerActions.RemoveCallbacks(IPlayerActions)" />
-        public interface IPlayerActions
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="RoomActions.AddCallbacks(IRoomActions)" />
+        /// <seealso cref="RoomActions.RemoveCallbacks(IRoomActions)" />
+        /// <seealso cref="RoomActions.UnregisterCallbacks(IRoomActions)" />
+        public void SetCallbacks(IRoomActions instance)
         {
-            /// <summary>
-            /// Method invoked when associated input action "Move" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnMove(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Look" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnLook(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Jump" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnJump(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Sprint" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnSprint(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Crouch" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnCrouch(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "LeanLeft" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnLeanLeft(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "LeanRight" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnLeanRight(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "SecondaryAction" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnSecondaryAction(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Interact" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnInteract(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Debug1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnDebug1(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Debug2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnDebug2(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Inventory" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnInventory(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Hotbar1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnHotbar1(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Hotbar2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnHotbar2(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Hotbar3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnHotbar3(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Hotbar4" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnHotbar4(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Hotbar5" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnHotbar5(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "Hotbar6" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnHotbar6(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "PrimaryAction" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnPrimaryAction(InputAction.CallbackContext context);
+            foreach (var item in m_Wrapper.m_RoomActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_RoomActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
         }
+    }
+    /// <summary>
+    /// Provides a new <see cref="RoomActions" /> instance referencing this action map.
+    /// </summary>
+    public RoomActions @Room => new RoomActions(this);
+
+    // Table
+    private readonly InputActionMap m_Table;
+    private List<ITableActions> m_TableActionsCallbackInterfaces = new List<ITableActions>();
+    private readonly InputAction m_Table_Move;
+    private readonly InputAction m_Table_Look;
+    private readonly InputAction m_Table_Jump;
+    private readonly InputAction m_Table_Sprint;
+    private readonly InputAction m_Table_Crouch;
+    private readonly InputAction m_Table_Interact;
+    private readonly InputAction m_Table_Inventory;
+    private readonly InputAction m_Table_Hotbar1;
+    private readonly InputAction m_Table_Hotbar2;
+    private readonly InputAction m_Table_Hotbar3;
+    private readonly InputAction m_Table_Hotbar4;
+    private readonly InputAction m_Table_Hotbar5;
+    private readonly InputAction m_Table_Hotbar6;
+    private readonly InputAction m_Table_LeanLeft;
+    private readonly InputAction m_Table_LeanRight;
+    private readonly InputAction m_Table_PrimaryAction;
+    private readonly InputAction m_Table_SecondaryAction;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Table".
+    /// </summary>
+    public struct TableActions
+    {
+        private @PlayerInputActions m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public TableActions(@PlayerInputActions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Move".
+        /// </summary>
+        public InputAction @Move => m_Wrapper.m_Table_Move;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Look".
+        /// </summary>
+        public InputAction @Look => m_Wrapper.m_Table_Look;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Jump".
+        /// </summary>
+        public InputAction @Jump => m_Wrapper.m_Table_Jump;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Sprint".
+        /// </summary>
+        public InputAction @Sprint => m_Wrapper.m_Table_Sprint;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Crouch".
+        /// </summary>
+        public InputAction @Crouch => m_Wrapper.m_Table_Crouch;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Interact".
+        /// </summary>
+        public InputAction @Interact => m_Wrapper.m_Table_Interact;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Inventory".
+        /// </summary>
+        public InputAction @Inventory => m_Wrapper.m_Table_Inventory;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Hotbar1".
+        /// </summary>
+        public InputAction @Hotbar1 => m_Wrapper.m_Table_Hotbar1;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Hotbar2".
+        /// </summary>
+        public InputAction @Hotbar2 => m_Wrapper.m_Table_Hotbar2;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Hotbar3".
+        /// </summary>
+        public InputAction @Hotbar3 => m_Wrapper.m_Table_Hotbar3;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Hotbar4".
+        /// </summary>
+        public InputAction @Hotbar4 => m_Wrapper.m_Table_Hotbar4;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Hotbar5".
+        /// </summary>
+        public InputAction @Hotbar5 => m_Wrapper.m_Table_Hotbar5;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/Hotbar6".
+        /// </summary>
+        public InputAction @Hotbar6 => m_Wrapper.m_Table_Hotbar6;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/LeanLeft".
+        /// </summary>
+        public InputAction @LeanLeft => m_Wrapper.m_Table_LeanLeft;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/LeanRight".
+        /// </summary>
+        public InputAction @LeanRight => m_Wrapper.m_Table_LeanRight;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/PrimaryAction".
+        /// </summary>
+        public InputAction @PrimaryAction => m_Wrapper.m_Table_PrimaryAction;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/SecondaryAction".
+        /// </summary>
+        public InputAction @SecondaryAction => m_Wrapper.m_Table_SecondaryAction;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Table; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="TableActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(TableActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="TableActions" />
+        public void AddCallbacks(ITableActions instance)
+        {
+            if (instance == null || m_Wrapper.m_TableActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_TableActionsCallbackInterfaces.Add(instance);
+            @Move.started += instance.OnMove;
+            @Move.performed += instance.OnMove;
+            @Move.canceled += instance.OnMove;
+            @Look.started += instance.OnLook;
+            @Look.performed += instance.OnLook;
+            @Look.canceled += instance.OnLook;
+            @Jump.started += instance.OnJump;
+            @Jump.performed += instance.OnJump;
+            @Jump.canceled += instance.OnJump;
+            @Sprint.started += instance.OnSprint;
+            @Sprint.performed += instance.OnSprint;
+            @Sprint.canceled += instance.OnSprint;
+            @Crouch.started += instance.OnCrouch;
+            @Crouch.performed += instance.OnCrouch;
+            @Crouch.canceled += instance.OnCrouch;
+            @Interact.started += instance.OnInteract;
+            @Interact.performed += instance.OnInteract;
+            @Interact.canceled += instance.OnInteract;
+            @Inventory.started += instance.OnInventory;
+            @Inventory.performed += instance.OnInventory;
+            @Inventory.canceled += instance.OnInventory;
+            @Hotbar1.started += instance.OnHotbar1;
+            @Hotbar1.performed += instance.OnHotbar1;
+            @Hotbar1.canceled += instance.OnHotbar1;
+            @Hotbar2.started += instance.OnHotbar2;
+            @Hotbar2.performed += instance.OnHotbar2;
+            @Hotbar2.canceled += instance.OnHotbar2;
+            @Hotbar3.started += instance.OnHotbar3;
+            @Hotbar3.performed += instance.OnHotbar3;
+            @Hotbar3.canceled += instance.OnHotbar3;
+            @Hotbar4.started += instance.OnHotbar4;
+            @Hotbar4.performed += instance.OnHotbar4;
+            @Hotbar4.canceled += instance.OnHotbar4;
+            @Hotbar5.started += instance.OnHotbar5;
+            @Hotbar5.performed += instance.OnHotbar5;
+            @Hotbar5.canceled += instance.OnHotbar5;
+            @Hotbar6.started += instance.OnHotbar6;
+            @Hotbar6.performed += instance.OnHotbar6;
+            @Hotbar6.canceled += instance.OnHotbar6;
+            @LeanLeft.started += instance.OnLeanLeft;
+            @LeanLeft.performed += instance.OnLeanLeft;
+            @LeanLeft.canceled += instance.OnLeanLeft;
+            @LeanRight.started += instance.OnLeanRight;
+            @LeanRight.performed += instance.OnLeanRight;
+            @LeanRight.canceled += instance.OnLeanRight;
+            @PrimaryAction.started += instance.OnPrimaryAction;
+            @PrimaryAction.performed += instance.OnPrimaryAction;
+            @PrimaryAction.canceled += instance.OnPrimaryAction;
+            @SecondaryAction.started += instance.OnSecondaryAction;
+            @SecondaryAction.performed += instance.OnSecondaryAction;
+            @SecondaryAction.canceled += instance.OnSecondaryAction;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="TableActions" />
+        private void UnregisterCallbacks(ITableActions instance)
+        {
+            @Move.started -= instance.OnMove;
+            @Move.performed -= instance.OnMove;
+            @Move.canceled -= instance.OnMove;
+            @Look.started -= instance.OnLook;
+            @Look.performed -= instance.OnLook;
+            @Look.canceled -= instance.OnLook;
+            @Jump.started -= instance.OnJump;
+            @Jump.performed -= instance.OnJump;
+            @Jump.canceled -= instance.OnJump;
+            @Sprint.started -= instance.OnSprint;
+            @Sprint.performed -= instance.OnSprint;
+            @Sprint.canceled -= instance.OnSprint;
+            @Crouch.started -= instance.OnCrouch;
+            @Crouch.performed -= instance.OnCrouch;
+            @Crouch.canceled -= instance.OnCrouch;
+            @Interact.started -= instance.OnInteract;
+            @Interact.performed -= instance.OnInteract;
+            @Interact.canceled -= instance.OnInteract;
+            @Inventory.started -= instance.OnInventory;
+            @Inventory.performed -= instance.OnInventory;
+            @Inventory.canceled -= instance.OnInventory;
+            @Hotbar1.started -= instance.OnHotbar1;
+            @Hotbar1.performed -= instance.OnHotbar1;
+            @Hotbar1.canceled -= instance.OnHotbar1;
+            @Hotbar2.started -= instance.OnHotbar2;
+            @Hotbar2.performed -= instance.OnHotbar2;
+            @Hotbar2.canceled -= instance.OnHotbar2;
+            @Hotbar3.started -= instance.OnHotbar3;
+            @Hotbar3.performed -= instance.OnHotbar3;
+            @Hotbar3.canceled -= instance.OnHotbar3;
+            @Hotbar4.started -= instance.OnHotbar4;
+            @Hotbar4.performed -= instance.OnHotbar4;
+            @Hotbar4.canceled -= instance.OnHotbar4;
+            @Hotbar5.started -= instance.OnHotbar5;
+            @Hotbar5.performed -= instance.OnHotbar5;
+            @Hotbar5.canceled -= instance.OnHotbar5;
+            @Hotbar6.started -= instance.OnHotbar6;
+            @Hotbar6.performed -= instance.OnHotbar6;
+            @Hotbar6.canceled -= instance.OnHotbar6;
+            @LeanLeft.started -= instance.OnLeanLeft;
+            @LeanLeft.performed -= instance.OnLeanLeft;
+            @LeanLeft.canceled -= instance.OnLeanLeft;
+            @LeanRight.started -= instance.OnLeanRight;
+            @LeanRight.performed -= instance.OnLeanRight;
+            @LeanRight.canceled -= instance.OnLeanRight;
+            @PrimaryAction.started -= instance.OnPrimaryAction;
+            @PrimaryAction.performed -= instance.OnPrimaryAction;
+            @PrimaryAction.canceled -= instance.OnPrimaryAction;
+            @SecondaryAction.started -= instance.OnSecondaryAction;
+            @SecondaryAction.performed -= instance.OnSecondaryAction;
+            @SecondaryAction.canceled -= instance.OnSecondaryAction;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="TableActions.UnregisterCallbacks(ITableActions)" />.
+        /// </summary>
+        /// <seealso cref="TableActions.UnregisterCallbacks(ITableActions)" />
+        public void RemoveCallbacks(ITableActions instance)
+        {
+            if (m_Wrapper.m_TableActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="TableActions.AddCallbacks(ITableActions)" />
+        /// <seealso cref="TableActions.RemoveCallbacks(ITableActions)" />
+        /// <seealso cref="TableActions.UnregisterCallbacks(ITableActions)" />
+        public void SetCallbacks(ITableActions instance)
+        {
+            foreach (var item in m_Wrapper.m_TableActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_TableActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="TableActions" /> instance referencing this action map.
+    /// </summary>
+    public TableActions @Table => new TableActions(this);
+
+    // UI
+    private readonly InputActionMap m_UI;
+    private List<IUIActions> m_UIActionsCallbackInterfaces = new List<IUIActions>();
+    private readonly InputAction m_UI_Inventory;
+    private readonly InputAction m_UI_Cancel;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "UI".
+    /// </summary>
+    public struct UIActions
+    {
+        private @PlayerInputActions m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public UIActions(@PlayerInputActions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "UI/Inventory".
+        /// </summary>
+        public InputAction @Inventory => m_Wrapper.m_UI_Inventory;
+        /// <summary>
+        /// Provides access to the underlying input action "UI/Cancel".
+        /// </summary>
+        public InputAction @Cancel => m_Wrapper.m_UI_Cancel;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_UI; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="UIActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(UIActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="UIActions" />
+        public void AddCallbacks(IUIActions instance)
+        {
+            if (instance == null || m_Wrapper.m_UIActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_UIActionsCallbackInterfaces.Add(instance);
+            @Inventory.started += instance.OnInventory;
+            @Inventory.performed += instance.OnInventory;
+            @Inventory.canceled += instance.OnInventory;
+            @Cancel.started += instance.OnCancel;
+            @Cancel.performed += instance.OnCancel;
+            @Cancel.canceled += instance.OnCancel;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="UIActions" />
+        private void UnregisterCallbacks(IUIActions instance)
+        {
+            @Inventory.started -= instance.OnInventory;
+            @Inventory.performed -= instance.OnInventory;
+            @Inventory.canceled -= instance.OnInventory;
+            @Cancel.started -= instance.OnCancel;
+            @Cancel.performed -= instance.OnCancel;
+            @Cancel.canceled -= instance.OnCancel;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="UIActions.UnregisterCallbacks(IUIActions)" />.
+        /// </summary>
+        /// <seealso cref="UIActions.UnregisterCallbacks(IUIActions)" />
+        public void RemoveCallbacks(IUIActions instance)
+        {
+            if (m_Wrapper.m_UIActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="UIActions.AddCallbacks(IUIActions)" />
+        /// <seealso cref="UIActions.RemoveCallbacks(IUIActions)" />
+        /// <seealso cref="UIActions.UnregisterCallbacks(IUIActions)" />
+        public void SetCallbacks(IUIActions instance)
+        {
+            foreach (var item in m_Wrapper.m_UIActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_UIActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="UIActions" /> instance referencing this action map.
+    /// </summary>
+    public UIActions @UI => new UIActions(this);
+
+    // Dev
+    private readonly InputActionMap m_Dev;
+    private List<IDevActions> m_DevActionsCallbackInterfaces = new List<IDevActions>();
+    private readonly InputAction m_Dev_Debug1;
+    private readonly InputAction m_Dev_Debug2;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Dev".
+    /// </summary>
+    public struct DevActions
+    {
+        private @PlayerInputActions m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public DevActions(@PlayerInputActions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Dev/Debug1".
+        /// </summary>
+        public InputAction @Debug1 => m_Wrapper.m_Dev_Debug1;
+        /// <summary>
+        /// Provides access to the underlying input action "Dev/Debug2".
+        /// </summary>
+        public InputAction @Debug2 => m_Wrapper.m_Dev_Debug2;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Dev; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="DevActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(DevActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="DevActions" />
+        public void AddCallbacks(IDevActions instance)
+        {
+            if (instance == null || m_Wrapper.m_DevActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_DevActionsCallbackInterfaces.Add(instance);
+            @Debug1.started += instance.OnDebug1;
+            @Debug1.performed += instance.OnDebug1;
+            @Debug1.canceled += instance.OnDebug1;
+            @Debug2.started += instance.OnDebug2;
+            @Debug2.performed += instance.OnDebug2;
+            @Debug2.canceled += instance.OnDebug2;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="DevActions" />
+        private void UnregisterCallbacks(IDevActions instance)
+        {
+            @Debug1.started -= instance.OnDebug1;
+            @Debug1.performed -= instance.OnDebug1;
+            @Debug1.canceled -= instance.OnDebug1;
+            @Debug2.started -= instance.OnDebug2;
+            @Debug2.performed -= instance.OnDebug2;
+            @Debug2.canceled -= instance.OnDebug2;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="DevActions.UnregisterCallbacks(IDevActions)" />.
+        /// </summary>
+        /// <seealso cref="DevActions.UnregisterCallbacks(IDevActions)" />
+        public void RemoveCallbacks(IDevActions instance)
+        {
+            if (m_Wrapper.m_DevActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="DevActions.AddCallbacks(IDevActions)" />
+        /// <seealso cref="DevActions.RemoveCallbacks(IDevActions)" />
+        /// <seealso cref="DevActions.UnregisterCallbacks(IDevActions)" />
+        public void SetCallbacks(IDevActions instance)
+        {
+            foreach (var item in m_Wrapper.m_DevActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_DevActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="DevActions" /> instance referencing this action map.
+    /// </summary>
+    public DevActions @Dev => new DevActions(this);
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Room" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="RoomActions.AddCallbacks(IRoomActions)" />
+    /// <seealso cref="RoomActions.RemoveCallbacks(IRoomActions)" />
+    public interface IRoomActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Move" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMove(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Look" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLook(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Jump" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnJump(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Sprint" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSprint(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Crouch" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCrouch(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Interact" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInteract(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Inventory" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInventory(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar2(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar3(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar4" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar4(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar5" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar5(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar6" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar6(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Table" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="TableActions.AddCallbacks(ITableActions)" />
+    /// <seealso cref="TableActions.RemoveCallbacks(ITableActions)" />
+    public interface ITableActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Move" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMove(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Look" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLook(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Jump" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnJump(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Sprint" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSprint(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Crouch" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCrouch(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Interact" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInteract(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Inventory" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInventory(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar2(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar3(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar4" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar4(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar5" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar5(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hotbar6" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHotbar6(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "LeanLeft" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLeanLeft(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "LeanRight" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLeanRight(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "PrimaryAction" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPrimaryAction(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SecondaryAction" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSecondaryAction(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="UIActions.AddCallbacks(IUIActions)" />
+    /// <seealso cref="UIActions.RemoveCallbacks(IUIActions)" />
+    public interface IUIActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Inventory" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInventory(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Cancel" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCancel(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Dev" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="DevActions.AddCallbacks(IDevActions)" />
+    /// <seealso cref="DevActions.RemoveCallbacks(IDevActions)" />
+    public interface IDevActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Debug1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDebug1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Debug2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDebug2(InputAction.CallbackContext context);
     }
 }

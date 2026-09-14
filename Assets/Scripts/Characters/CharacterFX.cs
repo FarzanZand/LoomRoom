@@ -2,25 +2,24 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// Per-character feel: the knockback this character's hits deal, hurt sounds and the
+// hit flash. Global tuning (flash colour, duration) comes from CombatManager.
 public class CharacterFX : MonoBehaviour
 {
     [Header("On Hit Landed")]
-    [SerializeField] bool  enableKnockback   = true;
-    [SerializeField] float knockbackForce    = 3f;
-    [SerializeField] float knockbackDuration = 0.25f;
+    [Tooltip("Knockback force this character's attacks deal by default (weapons/attacks can override).")]
+    [SerializeField] bool  enableKnockback = true;
+    [SerializeField] float knockbackForce  = 3f;
 
     [Header("On Hurt Received")]
-    [SerializeField] AudioClip[] onHurtSounds;
-    [SerializeField, Range(0f, 1f)] float onHurtVolume = 1f;
-    [SerializeField, Range(0f, 0.5f)] float onHurtPitchVariance = 0.05f;
+    [SerializeField] AudioData onHurtAudio;
 
     [Header("Hit Flash")]
     [Tooltip("Leave empty to auto-collect all mesh renderers under this object.")]
     [SerializeField] Renderer[] flashRenderers;
 
-    public bool  KnockbackEnabled   => enableKnockback;
-    public float KnockbackForce    => knockbackForce;
-    public float KnockbackDuration => knockbackDuration;
+    public bool  KnockbackEnabled => enableKnockback;
+    public float KnockbackForce   => enableKnockback ? knockbackForce : 0f;
 
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     static readonly int ColorId     = Shader.PropertyToID("_Color");
@@ -46,23 +45,21 @@ public class CharacterFX : MonoBehaviour
         renderers = collected.ToArray();
     }
 
-    public virtual void NotifyHitLanded(Vector3 contactPoint)
-    {
-    }
+    public virtual void NotifyHitLanded(DamageInfo info) { }
 
-    public virtual void NotifyHurtReceived(float amount, Vector3 direction)
+    public virtual void NotifyHurtReceived(DamageInfo info)
     {
-        AudioManager.Instance?.PlaySFXRandom(onHurtSounds, transform.position, onHurtVolume, onHurtPitchVariance);
-        TryHitFlash();
+        if (onHurtAudio != null && AudioManager.HasInstance)
+            AudioManager.Instance.PlaySFXData(onHurtAudio, transform.position);
+        if (!info.Blocked) TryHitFlash();
     }
 
     void TryHitFlash()
     {
-        var combat = CombatManager.Instance;
-        if (combat == null || !combat.hitFlashEnabled) return;
-
+        if (!CombatManager.HasInstance || !CombatManager.Instance.hitFlashEnabled) return;
         if (flashRoutine != null) StopCoroutine(flashRoutine);
-        flashRoutine = StartCoroutine(HitFlashRoutine(combat.hitFlashColor, combat.hitFlashDuration));
+        flashRoutine = StartCoroutine(HitFlashRoutine(CombatManager.Instance.hitFlashColor,
+                                                      CombatManager.Instance.hitFlashDuration));
     }
 
     IEnumerator HitFlashRoutine(Color color, float duration)
@@ -72,7 +69,7 @@ public class CharacterFX : MonoBehaviour
         flashBlock.SetColor(ColorId, color);
         ApplyFlashBlock();
 
-        yield return new WaitForSeconds(duration);
+        yield return new WaitForSecondsRealtime(duration);
 
         flashBlock.Clear();
         ApplyFlashBlock();

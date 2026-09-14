@@ -357,6 +357,10 @@ GameObject:
   - component: {fileID: 3454829785970193963}
   - component: {fileID: 984213079681443887}
   - component: {fileID: 2685329303846743532}
+  - component: {fileID: 820349502032366312}
+  - component: {fileID: 8254855258336908543}
+  - component: {fileID: 2232354572336911035}
+  - component: {fileID: 2003297156367120268}
   m_Layer: 0
   m_Name: HumanoidEnemy
   m_TagString: Untagged
@@ -379,7 +383,6 @@ Transform:
   m_Children:
   - {fileID: 577808678602192672}
   - {fileID: 7801460215452584037}
-  - {fileID: 7230691005651113824}
   - {fileID: 5123531701898103114}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -395,27 +398,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5735d254f4bc4a4095496deb4f22df0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HumanoidEnemy
-  coreSettings: 0
-  groundCheckDistance: 0.2
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  deathDuration: 2
-  wanderRadius: 8
-  minWanderDistance: 2
-  minIdleTime: 2
-  maxIdleTime: 6
+  overrideBehaviour: 0
+  localProfile: {fileID: 0}
   wanderZoneCenter: {fileID: 0}
-  wanderZoneRadius: 0
   waypoints: []
   loopPatrol: 1
-  enemyData: {fileID: 11400000, guid: e94c989b244851f478bb8a67993bfea2, type: 2}
-  overrideBehaviour: 0
-  localDefaultState: 0
-  localAggressionMode: 1
-  obstacleMask:
-    serializedVersion: 2
-    m_Bits: 0
+  attackRelay: {fileID: 0}
 --- !u!195 &4443461806256046630
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -495,9 +483,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32310309e868c7f46bacb47a39523285, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StatsComponent
-  statsData: {fileID: 0}
   overrides: []
-  faction: 0
 --- !u!114 &984213079681443887
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -512,10 +498,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyFX
   enableKnockback: 1
   knockbackForce: 3
-  knockbackDuration: 0.25
-  onHurtSounds: []
-  onHurtVolume: 1
-  onHurtPitchVariance: 0.05
+  onHurtAudio: {fileID: 0}
   flashRenderers: []
 --- !u!114 &2685329303846743532
 MonoBehaviour:
@@ -534,6 +517,61 @@ MonoBehaviour:
   damping: 8
   influenceDepth: 3
   parentFalloff: 0.45
+  attackSpeed: 20
+--- !u!114 &820349502032366312
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957184423342700410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66bf20fef542303489e63ccc5581842b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Character
+  data: {fileID: 11400000, guid: f8ab87231952f5945b7e19268733129a, type: 2}
+  animator: {fileID: 846770712117852252}
+--- !u!114 &8254855258336908543
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957184423342700410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddf8041e3ee627b4e90f55e658b47eeb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyMotor
+  groundCheckDistance: 0.2
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &2232354572336911035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957184423342700410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd4c0241f5090ae4684279901fdc76b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Perception
+--- !u!114 &2003297156367120268
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957184423342700410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4b5f9971640b79429c068dbd483853b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponAnimationRelay
 --- !u!1 &1082656234791438016
 GameObject:
   m_ObjectHideFlags: 0
@@ -1411,7 +1449,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5123531701898103114
 Transform:
   m_ObjectHideFlags: 0
@@ -1464,6 +1502,7 @@ MonoBehaviour:
   consumable: 0
   destroyOnConsume: 0
   cooldown: 0
+  effects: []
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -2669,59 +2708,6 @@ Transform:
   - {fileID: 2276776100670823492}
   m_Father: {fileID: 7306819417514780237}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &4317147315907490087
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7230691005651113824}
-  - component: {fileID: 2258662433826471937}
-  m_Layer: 0
-  m_Name: DetectionZone
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &7230691005651113824
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4317147315907490087}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 659157486100547264}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!135 &2258662433826471937
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4317147315907490087}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 5
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4433389369307582369
 GameObject:
   m_ObjectHideFlags: 0

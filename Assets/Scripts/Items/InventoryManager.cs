@@ -1,112 +1,143 @@
-using System;
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
-public class InventorySystem : Singleton<InventorySystem>
+// Item-system configuration and the shared operations that need it: picking up,
+// dropping, using. The containers themselves live on each player (Inventory,
+// Equipment); this only decides the rules.
+public class InventoryManager : Singleton<InventoryManager>
 {
-    public const int MaxSlots = 24;
+    [Header("Pickup")]
+    [Tooltip("Item types that go to the hotbar first when picked up (falls back to the bag when full).")]
+    public ItemTypeMask hotbarFirstTypes = ItemTypeMask.Weapon | ItemTypeMask.Shield | ItemTypeMask.Tool | ItemTypeMask.Consumable;
+    [Tooltip("Honour the item's Equip On Pickup flag.")]
+    public bool allowEquipOnPickup = true;
+    [Tooltip("Played when an item is picked up and the item has no pickup audio of its own.")]
+    public AudioData defaultPickupAudio;
 
-    private readonly ItemData[][] playerItems =
+    [Header("Drop")]
+    [Tooltip("Prefab with a WorldItem used when items are dropped or spawned from data.")]
+    [Required] public GameObject pickupPrefab;
+    public float dropDistance = 1.5f;
+    public float dropHeight   = 0.5f;
+
+    [Header("Catalog")]
+    [Tooltip("Every item the runtime may need to look up by name (dialogue GiveItem, saves).")]
+    [ListDrawerSettings(ShowFoldout = true)]
+    public List<ItemData> itemCatalog = new();
+
+    public Player    ActivePlayer    => PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+    public Inventory ActiveBag       => ActivePlayer != null ? ActivePlayer.Bag : null;
+    public Inventory ActiveHotbar    => ActivePlayer != null ? ActivePlayer.Hotbar : null;
+    public Equipment ActiveEquipment => ActivePlayer != null ? ActivePlayer.Equipment : null;
+
+    // ── Pickup ────────────────────────────────────────────────────────
+
+    public bool Pickup(ItemData item, Player player, int count = 1)
     {
-        new ItemData[MaxSlots], // RoomPlayer
-        new ItemData[MaxSlots], // TablePlayer
-    };
+        if (item == null || player == null) return false;
 
-    private readonly int[][] playerCounts =
-    {
-        new int[MaxSlots],
-        new int[MaxSlots],
-    };
+        bool added = false;
+        if (hotbarFirstTypes.Contains(item.itemType) && player.Hotbar != null && player.Hotbar.Accepts(item))
+            added = player.Hotbar.TryAdd(item, count);
+        if (!added && player.Bag != null)
+            added = player.Bag.TryAdd(item, count);
 
-    private int PlayerIndex =>
-        PlayerManager.Instance != null && PlayerManager.Instance.CurrentPlayer == PlayerManager.ActivePlayer.TablePlayer ? 1 : 0;
-
-    private ItemData[] CurrentItems  => playerItems[PlayerIndex];
-    private int[]      CurrentCounts => playerCounts[PlayerIndex];
-
-    public IReadOnlyList<ItemData> Items => CurrentItems;
-
-    public event Action OnInventoryChanged;
-    public event Action OnInventoryFull;
-    public event Action<ItemData, int> OnItemUsed;
-
-    public void NotifyChanged() => OnInventoryChanged?.Invoke();
-
-    public int GetCount(int index) =>
-        (index >= 0 && index < MaxSlots) ? CurrentCounts[index] : 0;
-
-    public bool TryAdd(ItemData item)
-    {
-        if (item.maxStackSize > 1)
+        if (!added)
         {
-            for (int i = 0; i < MaxSlots; i++)
-            {
-                if (CurrentItems[i] == item && CurrentCounts[i] < item.maxStackSize)
-                {
-                    CurrentCounts[i]++;
-                    OnInventoryChanged?.Invoke();
-                    return true;
-                }
-            }
+            NotificationUI.Show("Inventory full");
+            return false;
         }
 
-        for (int i = 0; i < MaxSlots; i++)
+        if (AudioManager.HasInstance)
         {
-            if (CurrentItems[i] == null)
-            {
-                CurrentItems[i]  = item;
-                CurrentCounts[i] = 1;
-                OnInventoryChanged?.Invoke();
-                return true;
-            }
+            var audio = item.pickupAudio != null ? item.pickupAudio : defaultPickupAudio;
+            if (audio != null) AudioManager.Instance.PlaySFXData2D(audio);
         }
 
-        OnInventoryFull?.Invoke();
-        return false;
+        ItemEffectProcessor.Fire(item, EffectTrigger.OnPickup, EffectContext.For(player, item));
+
+        if (allowEquipOnPickup && item.equipOnPickup && player.Equipment != null &&
+            player.Equipment.CanEquip(item) && !player.Equipment.Has(item.equipSlot))
+            player.Equipment.Equip(item);
+
+        return true;
     }
 
-    // Remove the entire stack (used when dragging).
-    public void Remove(int index)
+    // ── Use ───────────────────────────────────────────────────────────
+
+    // Use a consumable sitting in a container slot.
+    public void Use(Inventory container, int index)
     {
-        if (index < 0 || index >= MaxSlots) return;
-        CurrentItems[index]  = null;
-        CurrentCounts[index] = 0;
-        OnInventoryChanged?.Invoke();
+        var item = container?.ItemAt(index);
+        if (item == null || !item.IsConsumable) return;
+        var player = container.GetComponentInParent<Player>();
+        item.Use(player);
+        container.Consume(index);
     }
 
-    // Decrement by one; removes the slot when the stack hits zero (used when consuming).
-    public void Consume(int index)
+    // Use the consumable the player is currently holding in a hand.
+    public bool UseHeld(Player player, EquipmentSlot slot = EquipmentSlot.RightHand)
     {
-        if (index < 0 || index >= MaxSlots || CurrentItems[index] == null) return;
-        if (--CurrentCounts[index] <= 0)
+        var item = player?.Equipment?.Get(slot);
+        if (item == null || !item.IsConsumable) return false;
+
+        item.Use(player);
+        player.Equipment.Unequip(slot);
+
+        // The held item was also sitting in a container; remove one from there.
+        if (player.Hotbar != null && player.Hotbar.RemoveOne(item)) return true;
+        player.Bag?.RemoveOne(item);
+        return true;
+    }
+
+    // ── Spawn / drop ──────────────────────────────────────────────────
+
+    public WorldItem Spawn(ItemData item, Vector3 position, Quaternion rotation)
+    {
+        if (item == null || pickupPrefab == null) return null;
+        var go = Instantiate(pickupPrefab, position, rotation);
+        var wi = go.GetComponent<WorldItem>();
+        if (wi == null) { Debug.LogError("[InventoryManager] Pickup prefab has no WorldItem.", pickupPrefab); return null; }
+        wi.Init(item);
+        return wi;
+    }
+
+    public WorldItem Spawn(ItemData item, Vector3 position) => Spawn(item, position, Quaternion.identity);
+
+    public WorldItem DropFromPlayer(ItemData item, Player player)
+    {
+        if (player == null) player = ActivePlayer;
+        if (player == null) return null;
+        Transform t = player.transform;
+        Vector3 forward = player.Look != null ? player.Look.YawTransform.forward : t.forward;
+        var pos = t.position + forward * dropDistance + Vector3.up * dropHeight;
+        return Spawn(item, pos);
+    }
+
+    // ── Lookup ────────────────────────────────────────────────────────
+
+    public ItemData FindItem(string itemName)
+    {
+        if (string.IsNullOrEmpty(itemName)) return null;
+        foreach (var i in itemCatalog)
+            if (i != null && (i.itemName == itemName || i.name == itemName)) return i;
+        return null;
+    }
+
+#if UNITY_EDITOR
+    [Button("Populate Catalog From Project")]
+    void PopulateCatalog()
+    {
+        itemCatalog.Clear();
+        foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:ItemData"))
         {
-            CurrentItems[index]  = null;
-            CurrentCounts[index] = 0;
+            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+            if (path.Contains("/_Archive/")) continue;
+            var item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(path);
+            if (item != null) itemCatalog.Add(item);
         }
-        OnInventoryChanged?.Invoke();
+        UnityEditor.EditorUtility.SetDirty(this);
     }
-
-    public void Insert(int index, ItemData item, int count = 1)
-    {
-        index = Mathf.Clamp(index, 0, MaxSlots - 1);
-        CurrentItems[index]  = item;
-        CurrentCounts[index] = count;
-        OnInventoryChanged?.Invoke();
-    }
-
-    public void UseItem(int index)
-    {
-        if (index < 0 || index >= MaxSlots) return;
-        OnItemUsed?.Invoke(CurrentItems[index], index);
-    }
-
-    public bool IsFull
-    {
-        get
-        {
-            for (int i = 0; i < MaxSlots; i++)
-                if (CurrentItems[i] == null) return false;
-            return true;
-        }
-    }
+#endif
 }

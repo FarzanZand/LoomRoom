@@ -1,108 +1,126 @@
 using System;
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
-// Universal stat container — attach to any GameObject that participates
-// in the damage, buff, or progression systems.
-public class StatsComponent : MonoBehaviour, IDamageable
+// Universal stat container — health and stamina pools plus a modifier stack over the
+// base values authored on CharacterData. Resolves fully in Awake from the sibling
+// Character so nothing has to push a profile in "before Start".
+[DefaultExecutionOrder(-50)]
+public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 {
-    [Tooltip("Assign a StatProfile directly, or leave empty and let the character " +
-             "data asset (EnemyData / PlayerData) push the profile at runtime.")]
-    [SerializeField] StatProfile statsData;
-
-    [Tooltip("Per-instance overrides on top of the profile values.")]
-    [SerializeField] List<StatEntry> overrides;
-
-    [SerializeField] Faction faction = Faction.Neutral;
+    [Tooltip("Per-instance overrides on top of the CharacterData values.")]
+    [SerializeField] List<StatEntry> overrides = new();
 
     // ── Events ────────────────────────────────────────────────────────
-    public event Action<float, Vector3>   OnDamageTaken;   // (actualDamage, knockbackDir)
-    public event Action<float>            OnHealed;        // (healAmount)
-    public event Action                   OnDied;
-    public event Action<StatType, float, float> OnStatChanged; // (stat, oldValue, newValue)
+    public event Action<DamageInfo>             Damaged;
+    public event Action<float>                  Healed;
+    public event Action                         Died;
+    public event Action<StatType, float, float> StatChanged;   // (stat, old, new)
+    public event Action                         HealthChanged;
+    public event Action                         StaminaChanged;
 
     // ── State ─────────────────────────────────────────────────────────
-    public float   CurrentHealth { get; private set; }
-    public float   IncomingDamageScale { get; set; } = 1f;
-    public bool    IsAlive       => CurrentHealth > 0f;
-    public Faction Faction       => faction;
+    [ShowInInspector, ReadOnly] public float CurrentHealth  { get; private set; }
+    [ShowInInspector, ReadOnly] public float CurrentStamina { get; private set; }
+    public float MaxHealth  => GetFinal(StatType.MaxHealth);
+    public float MaxStamina => HasStat(StatType.MaxStamina) ? GetFinal(StatType.MaxStamina) : 0f;
+    public bool  IsAlive    => CurrentHealth > 0f;
+    public bool  IsExhausted { get; private set; }
 
-    readonly Dictionary<StatType, float>          baseStats  = new();
+    // IHealth
+    public float Current => CurrentHealth;
+    public float Max     => MaxHealth;
+
+    public Character Character { get; private set; }
+    public Faction   Faction   => Character != null ? Character.Faction : Faction.Neutral;
+
+    readonly Dictionary<StatType, float>               baseStats  = new();
     readonly Dictionary<StatType, (float min, float max)> statRanges = new();
-    readonly List<StatModifier>                   modifiers  = new();
+    readonly List<StatModifier>                        modifiers  = new();
+    readonly List<StatType>                            changedScratch = new();
+
+    IBlocker blocker;
+    float staminaRegenDelayTimer;
+    bool  initialised;
 
     // ── Lifecycle ─────────────────────────────────────────────────────
 
     void Awake()
     {
-        LoadProfile(statsData);
-
-        if (overrides != null)
-            foreach (var e in overrides)
-            {
-                baseStats[e.stat]  = e.baseValue;
-                statRanges[e.stat] = (e.min, e.max);
-            }
+        Character = GetComponent<Character>();
+        blocker   = GetComponent<IBlocker>();
+        LoadBase();
     }
 
     void Start()
     {
-        // Initialised here so any ApplyProfile call from a character controller's
-        // Awake has already run and MaxHealth reflects the correct value.
-        CurrentHealth = GetFinal(StatType.MaxHealth);
+        // Pools initialise here so every modifier added during Awake (starting gear) counts.
+        CurrentHealth  = MaxHealth;
+        CurrentStamina = MaxStamina;
+        initialised = true;
+        HealthChanged?.Invoke();
+        StaminaChanged?.Invoke();
+    }
+
+    void LoadBase()
+    {
+        baseStats.Clear();
+        statRanges.Clear();
+        if (Character != null && Character.data != null && Character.data.stats != null)
+            foreach (var e in Character.data.stats) SetBase(e);
+        foreach (var e in overrides) SetBase(e);
+    }
+
+    void SetBase(StatEntry e)
+    {
+        baseStats[e.stat]  = e.baseValue;
+        statRanges[e.stat] = (e.min, e.max);
     }
 
     void Update()
     {
-        // Tick timed modifiers, remove expired ones, fire change events
-        var oldValues = new Dictionary<StatType, float>();
+        TickModifiers();
+        TickStamina();
+    }
 
+    void TickModifiers()
+    {
+        changedScratch.Clear();
         for (int i = modifiers.Count - 1; i >= 0; i--)
         {
-            if (modifiers[i].IsPermanent) continue;
-
-            modifiers[i].Tick(Time.deltaTime);
-
-            if (modifiers[i].IsExpired)
-            {
-                var stat = modifiers[i].Stat;
-                if (!oldValues.ContainsKey(stat))
-                    oldValues[stat] = GetFinal(stat);
-                modifiers.RemoveAt(i);
-            }
+            var m = modifiers[i];
+            if (m.IsPermanent) continue;
+            m.Tick(Time.deltaTime);
+            if (!m.IsExpired) continue;
+            modifiers.RemoveAt(i);
+            if (!changedScratch.Contains(m.Stat)) changedScratch.Add(m.Stat);
         }
-
-        foreach (var kvp in oldValues)
-            OnStatChanged?.Invoke(kvp.Key, kvp.Value, GetFinal(kvp.Key));
+        // Old value is approximated by the current one plus nothing — callers that care
+        // about deltas subscribe to the pool events; StatChanged is a "refresh" signal here.
+        foreach (var s in changedScratch)
+            StatChanged?.Invoke(s, GetFinal(s), GetFinal(s));
     }
 
-    // ── Profile loading ───────────────────────────────────────────────
-
-    void LoadProfile(StatProfile profile)
+    void TickStamina()
     {
-        if (profile?.stats == null) return;
-        foreach (var e in profile.stats)
+        if (!initialised || !HasStat(StatType.MaxStamina)) return;
+
+        if (staminaRegenDelayTimer > 0f)
         {
-            baseStats[e.stat]  = e.baseValue;
-            statRanges[e.stat] = (e.min, e.max);
+            staminaRegenDelayTimer -= Time.deltaTime;
+            return;
         }
-    }
 
-    // Called by EnemyController in Awake to push the data asset's profile.
-    public void ApplyProfile(StatProfile profile)
-    {
-        LoadProfile(profile);
-    }
+        float max = MaxStamina;
+        if (CurrentStamina >= max) return;
 
-    // Called by PlayerController — stats embedded directly in PlayerData.
-    public void ApplyProfile(List<StatEntry> entries)
-    {
-        if (entries == null) return;
-        foreach (var e in entries)
-        {
-            baseStats[e.stat]  = e.baseValue;
-            statRanges[e.stat] = (e.min, e.max);
-        }
+        float regen = HasStat(StatType.StaminaRegen) ? GetFinal(StatType.StaminaRegen) : 0f;
+        if (regen <= 0f) return;
+
+        CurrentStamina = Mathf.Min(max, CurrentStamina + regen * Time.deltaTime);
+        if (IsExhausted && CurrentStamina >= max * 0.25f) IsExhausted = false;
+        StaminaChanged?.Invoke();
     }
 
     // ── Queries ───────────────────────────────────────────────────────
@@ -119,9 +137,9 @@ public class StatsComponent : MonoBehaviour, IDamageable
             if (mod.Stat != stat) continue;
             switch (mod.Type)
             {
-                case ModifierType.Flat:            flat       += mod.Value;         break;
-                case ModifierType.PercentAdd:      percentAdd += mod.Value;         break;
-                case ModifierType.PercentMultiply: percentMul *= (1f + mod.Value);  break;
+                case ModifierType.Flat:            flat       += mod.Value;        break;
+                case ModifierType.PercentAdd:      percentAdd += mod.Value;        break;
+                case ModifierType.PercentMultiply: percentMul *= (1f + mod.Value); break;
             }
         }
 
@@ -130,12 +148,13 @@ public class StatsComponent : MonoBehaviour, IDamageable
         if (statRanges.TryGetValue(stat, out var range))
         {
             result = Mathf.Max(result, range.min);
-            if (range.max > 0f)
-                result = Mathf.Min(result, range.max);
+            if (range.max > 0f) result = Mathf.Min(result, range.max);
         }
-
         return result;
     }
+
+    // Multiplier-style stats default to 1 when not authored, so callers can just multiply.
+    public float GetMultiplier(StatType stat) => HasStat(stat) ? GetFinal(stat) : 1f;
 
     // ── Modifiers ─────────────────────────────────────────────────────
 
@@ -143,69 +162,145 @@ public class StatsComponent : MonoBehaviour, IDamageable
     {
         float old = GetFinal(mod.Stat);
         modifiers.Add(mod);
-        OnStatChanged?.Invoke(mod.Stat, old, GetFinal(mod.Stat));
+        OnStatChanged(mod.Stat, old);
     }
 
     public void RemoveModifier(StatModifier mod)
     {
         float old = GetFinal(mod.Stat);
-        if (modifiers.Remove(mod))
-            OnStatChanged?.Invoke(mod.Stat, old, GetFinal(mod.Stat));
+        if (modifiers.Remove(mod)) OnStatChanged(mod.Stat, old);
     }
 
     public void RemoveAllFromSource(object source)
     {
-        var oldValues = new Dictionary<StatType, float>();
-
+        changedScratch.Clear();
         for (int i = modifiers.Count - 1; i >= 0; i--)
         {
             if (!ReferenceEquals(modifiers[i].Source, source)) continue;
             var stat = modifiers[i].Stat;
-            if (!oldValues.ContainsKey(stat))
-                oldValues[stat] = GetFinal(stat);
             modifiers.RemoveAt(i);
+            if (!changedScratch.Contains(stat)) changedScratch.Add(stat);
+        }
+        foreach (var s in changedScratch) OnStatChanged(s, GetFinal(s));
+    }
+
+    void OnStatChanged(StatType stat, float old)
+    {
+        float now = GetFinal(stat);
+        StatChanged?.Invoke(stat, old, now);
+        if (stat == StatType.MaxHealth)
+        {
+            CurrentHealth = Mathf.Min(CurrentHealth, now);
+            HealthChanged?.Invoke();
+        }
+        else if (stat == StatType.MaxStamina)
+        {
+            CurrentStamina = Mathf.Min(CurrentStamina, now);
+            StaminaChanged?.Invoke();
+        }
+    }
+
+    // ── Damage ────────────────────────────────────────────────────────
+
+    public void TakeDamage(DamageInfo info)
+    {
+        if (!IsAlive) return;
+
+        if (blocker != null && blocker.TryBlock(ref info))
+        {
+            info.Blocked = true;
+            float reduction = CombatManager.HasInstance ? CombatManager.Instance.blockDamageReduction : 1f;
+            info.Amount *= 1f - reduction;
         }
 
-        foreach (var kvp in oldValues)
-            OnStatChanged?.Invoke(kvp.Key, kvp.Value, GetFinal(kvp.Key));
-    }
-
-    // ── Faction ───────────────────────────────────────────────────────
-
-    public void SetFaction(Faction f) => faction = f;
-
-    // ── IDamageable ───────────────────────────────────────────────────
-
-    public void TakeFlatDamage(float amount)
-    {
-        if (!IsAlive) return;
-        CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
-        OnDamageTaken?.Invoke(amount, Vector3.zero);
-        if (!IsAlive) OnDied?.Invoke();
-    }
-
-    public void TakeDamage(float rawAmount, Vector3 knockbackDirection)
-    {
-        if (!IsAlive) return;
-
         float defense = GetFinal(StatType.Defense);
-        float actual  = Mathf.Max(0f, rawAmount - defense) * IncomingDamageScale;
+        float actual  = Mathf.Max(0f, info.Amount - defense);
+        info.Amount   = actual;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
-        OnDamageTaken?.Invoke(actual, knockbackDirection);
+        HealthChanged?.Invoke();
+        Damaged?.Invoke(info);
 
-        if (!IsAlive) OnDied?.Invoke();
+        if (!IsAlive) Died?.Invoke();
     }
+
+    public void TakeFlatDamage(float amount) => TakeDamage(DamageInfo.Simple(amount));
 
     // ── Healing ───────────────────────────────────────────────────────
 
     public void Heal(float amount)
     {
         if (!IsAlive) return;
-        float maxHP  = GetFinal(StatType.MaxHealth);
-        float healed = Mathf.Min(amount, maxHP - CurrentHealth);
+        float healed = Mathf.Min(amount, MaxHealth - CurrentHealth);
         if (healed <= 0f) return;
         CurrentHealth += healed;
-        OnHealed?.Invoke(healed);
+        HealthChanged?.Invoke();
+        Healed?.Invoke(healed);
+    }
+
+    // ── Stamina ───────────────────────────────────────────────────────
+
+    public bool HasStamina(float amount) => !HasStat(StatType.MaxStamina) || CurrentStamina >= amount;
+
+    // Spend stamina. Returns false (and spends nothing) if there isn't enough.
+    public bool TryUseStamina(float amount, float regenDelay = 0.6f)
+    {
+        if (!HasStat(StatType.MaxStamina)) return true;
+        if (amount <= 0f) return true;
+        if (CurrentStamina < amount) return false;
+        CurrentStamina -= amount;
+        staminaRegenDelayTimer = Mathf.Max(staminaRegenDelayTimer, regenDelay);
+        if (CurrentStamina <= 0.001f) { CurrentStamina = 0f; IsExhausted = true; }
+        StaminaChanged?.Invoke();
+        return true;
+    }
+
+    // Continuous drain (sprinting): spends what it can and reports whether any was left.
+    public bool DrainStamina(float perSecond, float regenDelay = 0.6f)
+    {
+        if (!HasStat(StatType.MaxStamina)) return true;
+        float cost = perSecond * Time.deltaTime;
+        if (CurrentStamina <= 0f) { IsExhausted = true; return false; }
+        CurrentStamina = Mathf.Max(0f, CurrentStamina - cost);
+        staminaRegenDelayTimer = Mathf.Max(staminaRegenDelayTimer, regenDelay);
+        if (CurrentStamina <= 0f) IsExhausted = true;
+        StaminaChanged?.Invoke();
+        return true;
+    }
+
+    public void RestoreStamina(float amount)
+    {
+        if (!HasStat(StatType.MaxStamina)) return;
+        CurrentStamina = Mathf.Min(MaxStamina, CurrentStamina + amount);
+        if (CurrentStamina > 0f) IsExhausted = false;
+        StaminaChanged?.Invoke();
+    }
+
+    // Allow sprinting again once stamina climbed back above this fraction after exhaustion.
+    public bool CanSprint(float recoveryFraction = 0.25f)
+    {
+        if (!HasStat(StatType.MaxStamina)) return true;
+        if (IsExhausted) return CurrentStamina >= MaxStamina * recoveryFraction;
+        return CurrentStamina > 0f;
+    }
+
+    // Bring a dead character back at full health (respawn, debug).
+    public void Revive()
+    {
+        CurrentHealth  = MaxHealth;
+        CurrentStamina = MaxStamina;
+        IsExhausted = false;
+        HealthChanged?.Invoke();
+        StaminaChanged?.Invoke();
+    }
+
+    // Reload base values (e.g. after swapping CharacterData at runtime).
+    public void ReloadFromData()
+    {
+        LoadBase();
+        CurrentHealth  = Mathf.Min(CurrentHealth, MaxHealth);
+        CurrentStamina = Mathf.Min(CurrentStamina, MaxStamina);
+        HealthChanged?.Invoke();
+        StaminaChanged?.Invoke();
     }
 }

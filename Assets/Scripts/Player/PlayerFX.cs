@@ -3,43 +3,35 @@ using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.UI;
 
+// Player-only feel on top of CharacterFX: camera impulses and the screen hurt flash.
+// Hit stop is requested by Hitbox through CombatManager, not here, so it fires once.
 public class PlayerFX : CharacterFX
 {
-    [Header("Received Knockback")]
-    [SerializeField] float receivedKnockbackForce = 3f;
-    public float ReceivedKnockbackForce => receivedKnockbackForce;
-
-    [Header("Hit Stop")]
-    [SerializeField] bool  enableHitStop   = true;
-    [SerializeField] float hitStopDuration = 0.07f;
-
     [Header("Camera")]
     [SerializeField] CinemachineImpulseSource onHitImpulse;
     [SerializeField] CinemachineImpulseSource onHurtImpulse;
 
     [Header("Hurt Flash")]
-    [SerializeField] bool  enableHurtFlash       = true;
+    [SerializeField] bool  enableHurtFlash = true;
     [SerializeField] Image hurtFlashImage;
-    [SerializeField] Color hurtFlashColor        = new Color(1f, 0f, 0f, 1f);
+    [SerializeField] Color hurtFlashColor  = new Color(1f, 0f, 0f, 1f);
     [SerializeField, Range(0f, 1f)] float hurtFlashPeakAlpha = 0.35f;
-    [SerializeField] float hurtFlashDuration     = 0.3f;
+    [SerializeField] float hurtFlashDuration = 0.3f;
 
     Coroutine hurtFlashRoutine;
 
-    public override void NotifyHitLanded(Vector3 contactPoint)
+    public override void NotifyHitLanded(DamageInfo info)
     {
-        base.NotifyHitLanded(contactPoint);
-        if (enableHitStop)
-            HitStopManager.Instance?.Trigger(hitStopDuration);
+        base.NotifyHitLanded(info);
         onHitImpulse?.GenerateImpulse();
     }
 
-    public override void NotifyHurtReceived(float amount, Vector3 direction)
+    public override void NotifyHurtReceived(DamageInfo info)
     {
-        base.NotifyHurtReceived(amount, direction);
+        base.NotifyHurtReceived(info);
         onHurtImpulse?.GenerateImpulse();
 
-        if (enableHurtFlash && hurtFlashImage != null)
+        if (!info.Blocked && enableHurtFlash && hurtFlashImage != null)
         {
             if (hurtFlashRoutine != null) StopCoroutine(hurtFlashRoutine);
             hurtFlashRoutine = StartCoroutine(HurtFlashRoutine());

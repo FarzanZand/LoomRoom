@@ -354,6 +354,9 @@ GameObject:
   - component: {fileID: 4443461806256046630}
   - component: {fileID: 846770712117852252}
   - component: {fileID: 78984053522660403}
+  - component: {fileID: 820349502032366312}
+  - component: {fileID: 8254855258336908543}
+  - component: {fileID: 8079303539593371990}
   m_Layer: 0
   m_Name: HumanoidNPC
   m_TagString: Untagged
@@ -376,7 +379,6 @@ Transform:
   m_Children:
   - {fileID: 577808678602192672}
   - {fileID: 7801460215452584037}
-  - {fileID: 7230691005651113824}
   - {fileID: 5123531701898103114}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -392,15 +394,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f022b6e2d4ec644e95224a63c51706a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCController
-  maxHealth: 100
-  coreSettings: 0
-  groundCheckDistance: 0.2
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 255
-  deathTrigger: Death
-  deathDuration: 2
   defaultState: 0
+  isInteractable: 1
+  prompt: Talk to {name}
+  faceSpeed: 180
   wanderRadius: 8
   minWanderDistance: 2
   minIdleTime: 2
@@ -409,8 +406,6 @@ MonoBehaviour:
   wanderZoneRadius: 0
   waypoints: []
   loopPatrol: 1
-  isInteractable: 1
-  faceSpeed: 180
 --- !u!195 &4443461806256046630
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -478,6 +473,49 @@ CapsuleCollider:
   m_Height: 1.8
   m_Direction: 1
   m_Center: {x: 0, y: 0.93, z: 0}
+--- !u!114 &820349502032366312
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957184423342700410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66bf20fef542303489e63ccc5581842b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Character
+  data: {fileID: 11400000, guid: 034e729c0402a424ba30dc708fb83b8e, type: 2}
+  animator: {fileID: 846770712117852252}
+--- !u!114 &8254855258336908543
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957184423342700410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddf8041e3ee627b4e90f55e658b47eeb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyMotor
+  groundCheckDistance: 0.2
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &8079303539593371990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957184423342700410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32310309e868c7f46bacb47a39523285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterStats
+  overrides: []
 --- !u!1 &1082656234791438016
 GameObject:
   m_ObjectHideFlags: 0
@@ -1408,6 +1446,7 @@ MonoBehaviour:
   consumable: 0
   destroyOnConsume: 0
   cooldown: 0
+  effects: []
   onInteract:
     m_PersistentCalls:
       m_Calls:
@@ -2625,59 +2664,6 @@ Transform:
   - {fileID: 2276776100670823492}
   m_Father: {fileID: 7306819417514780237}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &4317147315907490087
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7230691005651113824}
-  - component: {fileID: 2258662433826471937}
-  m_Layer: 0
-  m_Name: DetectionZone
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &7230691005651113824
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4317147315907490087}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 659157486100547264}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!135 &2258662433826471937
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4317147315907490087}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 5
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4433389369307582369
 GameObject:
   m_ObjectHideFlags: 0

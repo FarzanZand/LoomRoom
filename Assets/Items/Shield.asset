@@ -15,14 +15,28 @@ MonoBehaviour:
   itemName: Shield
   description: 'Shield test for left hand. '
   icon: {fileID: 21300000, guid: 792f20870d8be5143bbfeae5a6826986, type: 3}
+  tag: 
   worldPrefab: {fileID: 1213316036247922, guid: 691193207fb498347995d8573572685a, type: 3}
   itemType: 2
-  canBeEquipped: 1
   maxStackSize: 1
-  equipOnPickup: 0
+  pickupAudio: {fileID: 0}
+  canBeEquipped: 1
   equipSlot: 1
-  itemEffect: 0
-  effectValue: 0
-  customEffect: {fileID: 0}
-  consumeAudio: {fileID: 0}
-  consumeAudioVolume: 0
+  heldScale: 1
+  heldPosition: {x: 0, y: 0, z: -0.2}
+  heldRotation: {x: 0, y: -90, z: 0}
+  equipOnPickup: 0
+  statModifiers:
+  - stat: 1
+    value: 2
+    type: 0
+  weapon:
+    useDefaultEffects: 1
+    hitAudio: {fileID: 0}
+    swingAudio: {fileID: 0}
+    hitParticle: {fileID: 0}
+    damageMultiplier: 1
+    knockbackForce: -1
+    hitStopScale: 1
+  effects: []
+  useAudio: {fileID: 0}

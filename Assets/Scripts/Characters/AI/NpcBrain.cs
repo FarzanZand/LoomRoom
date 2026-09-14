@@ -1,123 +1,205 @@
+using System.Collections;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.AI;
 
-public enum NPCState { Idle, Wander, Patrol }
+public enum NPCState { Idle = 0, Wander = 1, Patrol = 2, Talking = 3 }
 
-public class NPCController : MovementBase, IInteractable
+// Friendly characters: idle, wander, patrol, and turn to face whoever talks to them.
+// Shares EnemyMotor with enemies; has no perception or attacks.
+[RequireComponent(typeof(Character))]
+[RequireComponent(typeof(EnemyMotor))]
+public class NpcBrain : MonoBehaviour, IInteractable
 {
     [Header("Behaviour")]
     [SerializeField] NPCState defaultState = NPCState.Idle;
 
     [Header("Interaction")]
     [SerializeField] bool isInteractable = false;
-
+    [ShowIf("isInteractable")]
+    [Tooltip("Prompt shown to the player. {name} is replaced with the character name.")]
+    [SerializeField] string prompt = "Talk to {name}";
     [ShowIf("isInteractable")]
     [Tooltip("Speed in degrees per second the NPC turns to face the player.")]
     [SerializeField] float faceSpeed = 180f;
 
-    NPCState currentState;
+    [Header("Wander")]
+    [ShowIf("@defaultState == NPCState.Wander")]
+    [SerializeField] float wanderRadius = 8f;
+    [ShowIf("@defaultState == NPCState.Wander")]
+    [SerializeField] float minWanderDistance = 2f;
+    [ShowIf("@defaultState == NPCState.Wander")]
+    [SerializeField] float minIdleTime = 2f;
+    [ShowIf("@defaultState == NPCState.Wander")]
+    [SerializeField] float maxIdleTime = 6f;
+    [ShowIf("@defaultState == NPCState.Wander")]
+    [Tooltip("Centre of the wander area. Defaults to spawn position when left empty.")]
+    [SerializeField] Transform wanderZoneCenter;
+    [ShowIf("@defaultState == NPCState.Wander")]
+    [SerializeField] float wanderZoneRadius = 0f;
+
+    [Header("Patrol")]
+    [ShowIf("@defaultState == NPCState.Patrol")]
+    [SerializeField] Transform[] waypoints;
+    [ShowIf("@defaultState == NPCState.Patrol")]
+    [SerializeField] bool loopPatrol = true;
+
+    [ShowInInspector, ReadOnly] public NPCState State { get; private set; }
+    public Character  Character { get; private set; }
+    public EnemyMotor Motor     { get; private set; }
+
     NPCState stateBeforePause;
     InteractableTrigger interactTrigger;
     Transform faceTarget;
+    Vector3   spawnPosition;
+    float     wanderTimer;
+    int       waypointIndex;
+    Coroutine rotateRoutine;
 
-    protected override bool ShowWanderFields() => defaultState == NPCState.Wander;
-    protected override bool ShowPatrolFields() => defaultState == NPCState.Patrol;
+    public string Prompt => prompt.Replace("{name}", Character != null ? Character.DisplayName : name);
+    public bool CanInteract(Character who) => isInteractable && Character.IsAlive;
 
-    protected override void Awake()
+    void Awake()
     {
-        base.Awake();
-        interactTrigger = GetComponentInChildren<InteractableTrigger>();
+        Character = GetComponent<Character>();
+        Motor     = GetComponent<EnemyMotor>();
+        interactTrigger = GetComponentInChildren<InteractableTrigger>(true);
+        spawnPosition = transform.position;
         SetInteractable(isInteractable);
     }
 
     public void SetInteractable(bool value)
     {
         isInteractable = value;
-        if (interactTrigger != null)
-            interactTrigger.gameObject.SetActive(value);
+        if (interactTrigger != null) interactTrigger.gameObject.SetActive(value);
     }
 
-    void Start()
-    {
-        SetState(defaultState);
-    }
+    void Start() => SetState(defaultState);
 
     void Update()
     {
-        if (!IsAlive) return;
-        UpdateGroundCheck();
-        UpdateState();
+        if (!Character.IsAlive) return;
+        switch (State)
+        {
+            case NPCState.Wander: HandleWander(); break;
+            case NPCState.Patrol: HandlePatrol(); break;
+        }
         UpdateFacing();
-        UpdateAnimatorParams();
+        UpdateAnimator();
     }
 
     public void SetState(NPCState state)
     {
-        currentState = state;
+        State = state;
         wanderTimer = 0f;
-
-        if (state == NPCState.Idle)
-            StopMoving();
-        else if (state == NPCState.Patrol)
-            StartPatrol();
+        if (state == NPCState.Idle || state == NPCState.Talking) Motor.Stop();
+        else Motor.Resume();
+        if (state == NPCState.Patrol && waypoints != null && waypoints.Length > 0 && waypoints[waypointIndex] != null)
+            Motor.MoveTo(waypoints[waypointIndex].position);
     }
 
-    public override void Pause()
-    {
-        stateBeforePause = currentState;
-        base.Pause();
-        currentState = NPCState.Idle;
-    }
+    // ── Interaction ───────────────────────────────────────────────────
 
-    public override void Resume()
-    {
-        faceTarget = null;
-        base.Resume();
-        SetState(stateBeforePause);
-    }
-
-    public void Interact(GameObject interactor)
+    public void Interact(Character who)
     {
         if (!isInteractable) return;
         Pause();
-        faceTarget = interactor.transform;
+        faceTarget = who != null ? who.transform : null;
     }
 
-    public void EndInteraction()
+    public void EndInteraction() => Resume();
+
+    public void Pause()
     {
-        Resume();
+        if (State == NPCState.Talking) return;
+        stateBeforePause = State;
+        SetState(NPCState.Talking);
+    }
+
+    public void Resume()
+    {
+        faceTarget = null;
+        SetState(stateBeforePause);
     }
 
     void UpdateFacing()
     {
         if (faceTarget == null) return;
-        FaceTo(faceTarget, faceSpeed);
-        Vector3 dir = faceTarget.position - transform.position;
-        dir.y = 0f;
-        if (dir.sqrMagnitude > 0.001f)
-        {
-            if (Quaternion.Angle(transform.rotation, Quaternion.LookRotation(dir)) < 0.5f)
-                faceTarget = null;
-        }
+        Motor.Face(faceTarget.position, faceSpeed);
+        if (Motor.IsFacing(faceTarget.position, 0.5f)) faceTarget = null;
     }
 
-    void UpdateState()
+    // Smoothly turns toward the active player (cutscenes).
+    [Button]
+    public void RotateTowardsPlayer(float rotateSpeed = 360f)
     {
-        switch (currentState)
+        if (!PlayerManager.HasInstance || PlayerManager.Instance.Active == null) return;
+        if (rotateRoutine != null) StopCoroutine(rotateRoutine);
+        rotateRoutine = StartCoroutine(RotateRoutine(PlayerManager.Instance.Active.transform, rotateSpeed));
+    }
+
+    [Button]
+    public void SnapRotationTowardsPlayer()
+    {
+        if (!PlayerManager.HasInstance || PlayerManager.Instance.Active == null) return;
+        if (rotateRoutine != null) { StopCoroutine(rotateRoutine); rotateRoutine = null; }
+        Motor.SnapFace(PlayerManager.Instance.Active.transform.position);
+    }
+
+    IEnumerator RotateRoutine(Transform target, float speed)
+    {
+        while (!Motor.IsFacing(target.position, 0.5f))
         {
-            case NPCState.Wander: HandleWanderMovement(); break;
-            case NPCState.Patrol: HandlePatrolMovement(); break;
+            Motor.Face(target.position, speed);
+            yield return null;
         }
+        rotateRoutine = null;
+    }
+
+    // ── Wander / patrol ───────────────────────────────────────────────
+
+    void HandleWander()
+    {
+        wanderTimer -= Time.deltaTime;
+        if (wanderTimer > 0f) return;
+
+        Vector3 center = wanderZoneCenter != null ? wanderZoneCenter.position : spawnPosition;
+        Vector3 dir = Random.insideUnitSphere; dir.y = 0f; dir.Normalize();
+        Vector3 target = center + dir * Random.Range(minWanderDistance, wanderRadius);
+        if (wanderZoneRadius > 0f)
+        {
+            Vector3 offset = target - center; offset.y = 0f;
+            if (offset.magnitude > wanderZoneRadius) target = center + offset.normalized * wanderZoneRadius;
+        }
+        if (NavMesh.SamplePosition(target, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
+            Motor.MoveTo(hit.position);
+        wanderTimer = Random.Range(minIdleTime, maxIdleTime);
+    }
+
+    void HandlePatrol()
+    {
+        if (waypoints == null || waypoints.Length == 0) return;
+        if (!Motor.ReachedDestination(0.4f)) return;
+        waypointIndex++;
+        if (waypointIndex >= waypoints.Length) waypointIndex = loopPatrol ? 0 : waypoints.Length - 1;
+        if (waypoints[waypointIndex] != null) Motor.MoveTo(waypoints[waypointIndex].position);
+    }
+
+    void UpdateAnimator()
+    {
+        var anim = Character.Animator;
+        if (anim == null || anim.runtimeAnimatorController == null) return;
+        anim.SetFloat("Speed",       Motor.Velocity.magnitude, 0.1f, Time.deltaTime);
+        anim.SetFloat("MotionSpeed", Motor.HasPath ? 1f : 0f,   0.1f, Time.deltaTime);
+        anim.SetBool("Grounded", Motor.IsGrounded);
+        anim.SetBool("FreeFall", !Motor.IsGrounded && Motor.Velocity.y < -1f);
     }
 
     void OnDrawGizmosSelected()
     {
         if (defaultState != NPCState.Wander || wanderZoneRadius <= 0f) return;
-
         Vector3 center = wanderZoneCenter != null ? wanderZoneCenter.position :
                          (Application.isPlaying ? spawnPosition : transform.position);
-
         Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.2f);
         Gizmos.DrawSphere(center, wanderZoneRadius);
         Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.8f);

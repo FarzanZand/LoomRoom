@@ -1,73 +1,69 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public class ItemDragHandler : MonoBehaviour
+// Draws the ghost icon while an ItemSlotUI is being dragged. The ghost Image is
+// authored in the scene as a child of the canvas.
+public class ItemDragHandler : Singleton<ItemDragHandler>
 {
-    public static ItemDragHandler Instance { get; private set; }
+    [Tooltip("Image that follows the pointer while dragging. Authored in the scene, disabled by default.")]
+    [SerializeField] Image ghostImage;
 
-    private Image ghostImage;
-    private RectTransform ghostRect;
-    private Canvas rootCanvas;
+    Canvas rootCanvas;
+    RectTransform ghostRect;
 
-    public bool     IsDragging    { get; private set; }
-    public bool     WasDropped    { get; private set; }
-    public ItemData DraggedItem   { get; private set; }
-    public bool     SourceIsHotbar { get; private set; }
-    public int      SourceIndex   { get; private set; }
-    public int      SourceCount   { get; private set; }
+    public bool       IsDragging { get; private set; }
+    public bool       WasDropped { get; private set; }
+    public ItemSlotUI Source     { get; private set; }
 
-    void Awake()
+    protected override void Awake()
     {
-        Instance = this;
+        base.Awake();
         rootCanvas = GetComponentInParent<Canvas>();
-
-        var go = new GameObject("DragGhost");
-        go.transform.SetParent(rootCanvas.transform, false);
-        var rt = go.AddComponent<RectTransform>();
-        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.pivot = Vector2.one * 0.5f;
-        rt.sizeDelta = new Vector2(64, 64);
-        go.AddComponent<CanvasRenderer>();
-        ghostImage = go.AddComponent<Image>();
-        ghostImage.raycastTarget = false;
-        ghostRect = rt;
-        go.SetActive(false);
+        if (rootCanvas != null) rootCanvas = rootCanvas.rootCanvas;
+        if (ghostImage != null)
+        {
+            ghostRect = ghostImage.rectTransform;
+            ghostImage.raycastTarget = false;
+            ghostImage.gameObject.SetActive(false);
+        }
     }
 
-    public void BeginDrag(ItemData item, bool fromHotbar, int sourceIndex, int sourceCount, Sprite icon, Vector2 size)
+    public void Begin(ItemSlotUI source, Vector2 size)
     {
-        DraggedItem    = item;
-        SourceIsHotbar = fromHotbar;
-        SourceIndex    = sourceIndex;
-        SourceCount    = sourceCount;
-        IsDragging     = true;
-        WasDropped     = false;
-        ghostImage.sprite = icon;
-        ghostImage.color  = new Color(1f, 1f, 1f, 0.8f);
+        Source     = source;
+        IsDragging = true;
+        WasDropped = false;
+        if (ghostImage == null) return;
+        ghostImage.sprite   = source.Item != null ? source.Item.icon : null;
+        ghostImage.color    = new Color(1f, 1f, 1f, 0.8f);
         ghostRect.sizeDelta = size;
         ghostImage.gameObject.SetActive(true);
         ghostImage.transform.SetAsLastSibling();
+        Follow();
     }
 
     public void NotifyDropped() => WasDropped = true;
 
-    public void EndDrag()
+    public void End()
     {
         IsDragging = false;
         WasDropped = false;
-        DraggedItem = null;
-        ghostImage.gameObject.SetActive(false);
+        Source     = null;
+        if (ghostImage != null) ghostImage.gameObject.SetActive(false);
     }
 
     void Update()
     {
-        if (!IsDragging) return;
-        Camera cam = rootCanvas.renderMode == RenderMode.ScreenSpaceCamera
-            ? rootCanvas.worldCamera
-            : null;
+        if (IsDragging) Follow();
+    }
+
+    void Follow()
+    {
+        if (ghostRect == null || rootCanvas == null || Mouse.current == null) return;
+        Camera cam = rootCanvas.renderMode == RenderMode.ScreenSpaceCamera ? rootCanvas.worldCamera : null;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            rootCanvas.GetComponent<RectTransform>(),
-            Input.mousePosition, cam, out var pos);
+            rootCanvas.GetComponent<RectTransform>(), Mouse.current.position.ReadValue(), cam, out var pos);
         ghostRect.localPosition = pos;
     }
 }

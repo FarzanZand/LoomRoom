@@ -1,109 +1,109 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using MFPC;
 
+// The hotbar strip. Binds to the active player's Hotbar; number keys toggle equip,
+// right mouse uses a held consumable.
 public class HotbarUI : MonoBehaviour
 {
-    [SerializeField] private List<HotbarSlot> slots;
+    [SerializeField] List<ItemSlotUI> slots = new();
 
-    private PlayerInputActions inputActions;
+    Inventory bound;
+    Equipment boundEquipment;
+    Player    player;
 
-    void Awake()
+    void OnEnable()
     {
-        inputActions = new PlayerInputActions();
-        inputActions.Enable();
-        inputActions.Player.Hotbar1.performed += _ => SelectSlot(0);
-        inputActions.Player.Hotbar2.performed += _ => SelectSlot(1);
-        inputActions.Player.Hotbar3.performed += _ => SelectSlot(2);
-        inputActions.Player.Hotbar4.performed += _ => SelectSlot(3);
-        inputActions.Player.Hotbar5.performed += _ => SelectSlot(4);
-        inputActions.Player.Hotbar6.performed += _ => SelectSlot(5);
-        inputActions.Player.SecondaryAction.performed += _ => TryEatHeldConsumable();
-        HotbarSystem.Instance.OnHotbarChanged += Refresh;
-        ItemHolder.Instance.OnHeldItemChanged  += RefreshHighlights;
+        if (InputManager.HasInstance)
+        {
+            InputManager.Instance.HotbarSelected   += SelectSlot;
+            InputManager.Instance.SecondaryPressed += TryUseHeldConsumable;
+        }
+        if (PlayerManager.HasInstance)
+        {
+            PlayerManager.Instance.PlayerSwapped += OnPlayerSwapped;
+            if (PlayerManager.Instance.Active != null) OnPlayerSwapped(PlayerManager.Instance.Active);
+        }
     }
 
-    void OnDestroy()
+    void OnDisable()
     {
-        inputActions.Disable();
-        if (HotbarSystem.Instance != null)
-            HotbarSystem.Instance.OnHotbarChanged -= Refresh;
-        if (ItemHolder.Instance != null)
-            ItemHolder.Instance.OnHeldItemChanged  -= RefreshHighlights;
+        if (InputManager.HasInstance)
+        {
+            InputManager.Instance.HotbarSelected   -= SelectSlot;
+            InputManager.Instance.SecondaryPressed -= TryUseHeldConsumable;
+        }
+        if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped -= OnPlayerSwapped;
+        Bind(null);
     }
 
     void Start()
     {
+        // Managers may awaken after this UI's OnEnable. Subscribe once they all exist.
+        if (PlayerManager.HasInstance)
+        {
+            PlayerManager.Instance.PlayerSwapped -= OnPlayerSwapped;
+            PlayerManager.Instance.PlayerSwapped += OnPlayerSwapped;
+        }
+        if (InputManager.HasInstance)
+        {
+            InputManager.Instance.HotbarSelected -= SelectSlot;
+            InputManager.Instance.HotbarSelected += SelectSlot;
+            InputManager.Instance.SecondaryPressed -= TryUseHeldConsumable;
+            InputManager.Instance.SecondaryPressed += TryUseHeldConsumable;
+        }
+        if (PlayerManager.HasInstance && PlayerManager.Instance.Active != null) OnPlayerSwapped(PlayerManager.Instance.Active);
+    }
+
+    void OnPlayerSwapped(Player p)
+    {
+        player = p;
+        Bind(p);
+    }
+
+    void Bind(Player p)
+    {
+        if (bound != null)          bound.Changed          -= Refresh;
+        if (boundEquipment != null) boundEquipment.Changed -= Refresh;
+        bound          = p != null ? p.Hotbar    : null;
+        boundEquipment = p != null ? p.Equipment : null;
+        if (bound != null)          bound.Changed          += Refresh;
+        if (boundEquipment != null) boundEquipment.Changed += Refresh;
+
         for (int i = 0; i < slots.Count; i++)
-            slots[i].Init(i);
+            if (slots[i] != null) slots[i].Bind(bound, i);
         Refresh();
     }
 
     void SelectSlot(int index)
     {
-        var item = HotbarSystem.Instance.Get(index);
-        if (item == null) { Debug.Log($"[Hotbar] Slot {index} is empty."); return; }
+        if (bound == null || player == null || index < 0 || index >= slots.Count) return;
+        if (GameManager.HasInstance && !GameManager.Instance.GameplayActive) return;
 
-        bool alreadyInHand  = item.canBeEquipped
-                           && ItemHolder.Instance.GetHeldItem(item.equipSlot) == item;
+        var item = bound.ItemAt(index);
+        if (item == null) return;
 
-        slots[index].Pulse();
+        slots[index]?.Pulse();
 
-        if (alreadyInHand)
+        var eq = player.Equipment;
+        if (eq == null || !eq.CanEquip(item))
         {
-            ItemHolder.Instance.ClearSlot(item.equipSlot);
+            if (item.IsConsumable) InventoryManager.Instance.Use(bound, index);
             return;
         }
 
-        if (item.canBeEquipped)
-            ItemHolder.Instance.HoldItem(item);
-        else
-            Debug.Log($"[Hotbar] {item.itemName} is not equippable (canBeEquipped=false).");
+        if (eq.IsEquipped(item)) eq.Unequip(item.equipSlot);
+        else eq.Equip(item);
     }
 
-    void TryEatHeldConsumable()
+    void TryUseHeldConsumable()
     {
-        var item = ItemHolder.Instance.GetHeldItem(EquipmentSlot.RightHand);
-        if (item == null || item.itemType != ItemType.Consumable) return;
-
-        item.UseEffect();
-        ItemHolder.Instance.ClearSlot(EquipmentSlot.RightHand);
-
-        // Remove from hotbar (or inventory as fallback)
-        for (int i = 0; i < HotbarSystem.SlotCount; i++)
-        {
-            if (HotbarSystem.Instance.Get(i) != item) continue;
-            HotbarSystem.Instance.Consume(i);
-            return;
-        }
-        // Fallback: was equipped from inventory
-        var invItems = InventorySystem.Instance.Items;
-        for (int i = 0; i < invItems.Count; i++)
-        {
-            if (invItems[i] != null && invItems[i] == item) { InventorySystem.Instance.Remove(i); return; }
-        }
+        if (player == null || !InventoryManager.HasInstance) return;
+        if (GameManager.HasInstance && !GameManager.Instance.GameplayActive) return;
+        InventoryManager.Instance.UseHeld(player);
     }
 
     void Refresh()
     {
-        for (int i = 0; i < slots.Count; i++)
-        {
-            var item = HotbarSystem.Instance.Get(i);
-            if (item != null) slots[i].SetItem(item, HotbarSystem.Instance.GetCount(i));
-            else              slots[i].Clear();
-        }
-        RefreshHighlights();
-    }
-
-    void RefreshHighlights()
-    {
-        for (int i = 0; i < slots.Count; i++)
-        {
-            var item      = HotbarSystem.Instance.Get(i);
-            bool equipped = item != null && item.canBeEquipped
-                         && ItemHolder.Instance.GetHeldItem(item.equipSlot) == item;
-            slots[i].SetEquipped(equipped);
-        }
+        foreach (var s in slots) if (s != null) s.Refresh();
     }
 }

@@ -15,18 +15,25 @@ MonoBehaviour:
   itemName: Small knife
   description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
   icon: {fileID: 21300000, guid: d4ef04d116a6d79449188d927fb8cc6d, type: 3}
+  tag: 
   worldPrefab: {fileID: 1808823706470762, guid: 7c2b4de056174ed499e0881bf2d69242, type: 3}
   itemType: 1
-  canBeEquipped: 1
   maxStackSize: 1
-  equipOnPickup: 0
+  pickupAudio: {fileID: 0}
+  canBeEquipped: 1
   equipSlot: 0
-  attackRange: 0.8
-  attackDamage: 10
-  hitSound: {fileID: 0}
-  hitParticlePrefab: {fileID: 0}
-  itemEffect: 0
-  effectValue: 0
-  customEffect: {fileID: 0}
-  consumeAudio: {fileID: 0}
-  consumeAudioVolume: 0
+  equipOnPickup: 0
+  statModifiers:
+  - stat: 2
+    value: 10
+    type: 0
+  weapon:
+    useDefaultEffects: 1
+    hitAudio: {fileID: 0}
+    swingAudio: {fileID: 0}
+    hitParticle: {fileID: 0}
+    damageMultiplier: 1
+    knockbackForce: -1
+    hitStopScale: 1
+  effects: []
+  useAudio: {fileID: 0}

@@ -1,107 +1,127 @@
-using MFPC;
+using System;
+using System.Collections.Generic;
+using Sirenix.OdinInspector;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
+public enum PlayerKind { Room = 0, Table = 1 }
+
+// Everything a swap needs to know about one player, wired once in the Inspector.
+[Serializable]
+public class PlayerContext
+{
+    public PlayerKind kind;
+    [Tooltip("The Player component (on the object that carries the CharacterController).")]
+    public Player player;
+    [Tooltip("Root object toggled on/off when this player becomes active or inactive.")]
+    public GameObject root;
+    [Tooltip("Optional third-person body that gets snapped to the player on swap.")]
+    public GameObject body;
+    [Tooltip("Transform whose yaw the body copies on swap (usually the LateralTorso).")]
+    public Transform torso;
+}
+
+// Owns which of the two players is live. Swapping activates the right root, switches
+// the input map, and tells everyone through PlayerSwapped. Nothing else should poke
+// SetActive on a player.
 public class PlayerManager : Singleton<PlayerManager>
 {
-    public enum ActivePlayer { RoomPlayer, TablePlayer }
+    [ListDrawerSettings(ShowFoldout = true)]
+    public List<PlayerContext> players = new();
 
-    [Header("Players")]
-    public GameObject roomPlayer;
-    public GameObject roomPlayerBody;
-    public GameObject roomPlayerTorso;
-    public GameObject tablePlayer;
-    public GameObject tablePlayerBody;
-    public GameObject tablePlayerTorso;
+    public Player Active { get; private set; }
+    public PlayerKind ActiveKind { get; private set; }
+    public bool HasActive => Active != null;
 
-    public ActivePlayer? CurrentPlayer { get; private set; }
+    public event Action<Player> PlayerSwapped;
 
-    ActivePlayer StartingPlayer =>
-        ProgressionManager.Instance != null ? ProgressionManager.Instance.startingPlayer : ActivePlayer.RoomPlayer;
+    // Convenience accessors kept for cutscene scripts.
+    public GameObject roomPlayer  => Get(PlayerKind.Room)?.root;
+    public GameObject tablePlayer => Get(PlayerKind.Table)?.root;
 
-    public GameObject ActivePlayerObject =>
-        (CurrentPlayer ?? StartingPlayer) == ActivePlayer.RoomPlayer ? roomPlayer : tablePlayer;
+    PlayerKind StartingPlayer =>
+        ProgressionManager.HasInstance ? ProgressionManager.Instance.startingPlayer : PlayerKind.Room;
 
-    public event System.Action<ActivePlayer> OnPlayerSwapped;
+    public PlayerContext Get(PlayerKind kind)
+    {
+        foreach (var p in players)
+            if (p.kind == kind) return p;
+        return null;
+    }
 
-    private PlayerInputActions inputActions;
+    public Player GetPlayer(PlayerKind kind) => Get(kind)?.player;
 
     protected override void Awake()
     {
         base.Awake();
-        inputActions = new PlayerInputActions();
-        SetPlayerControlled(roomPlayer, false);
-        SetPlayerControlled(tablePlayer, false);
+        foreach (var p in players)
+            if (p.root != null) p.root.SetActive(false);
     }
 
-    private void OnEnable()
+    void OnEnable()
     {
-        inputActions.Enable();
-        inputActions.Player.Debug1.performed += OnDebug1;
-        inputActions.Player.Debug2.performed += OnDebug2;
+        if (InputManager.HasInstance)
+            InputManager.Instance.DebugSwapRequested += SwapToPlayer;
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
-        inputActions.Player.Debug1.performed -= OnDebug1;
-        inputActions.Player.Debug2.performed -= OnDebug2;
-        inputActions.Disable();
+        if (InputManager.HasInstance)
+            InputManager.Instance.DebugSwapRequested -= SwapToPlayer;
     }
 
-    private void OnDebug1(InputAction.CallbackContext _) => SwapToPlayer(ActivePlayer.RoomPlayer);
-    private void OnDebug2(InputAction.CallbackContext _) => SwapToPlayer(ActivePlayer.TablePlayer);
-
-    private void Start()
+    void Start()
     {
-        SwapToPlayer(StartingPlayer);
+        // InputManager awakes before us (execution order) but OnEnable order isn't
+        // guaranteed, so make sure the debug hook is attached.
+        if (InputManager.HasInstance)
+        {
+            InputManager.Instance.DebugSwapRequested -= SwapToPlayer;
+            InputManager.Instance.DebugSwapRequested += SwapToPlayer;
+        }
+        SwapToPlayer(StartingPlayer, force: true);
     }
 
-    public void ForceSwapToPlayer(ActivePlayer player)
+    public void ForceSwapToPlayer(PlayerKind kind) => SwapToPlayer(kind, force: true);
+
+    public void SwapToPlayer(PlayerKind kind) => SwapToPlayer(kind, force: false);
+
+    public void SwapToPlayer(PlayerKind kind, bool force)
     {
-        CurrentPlayer = null;
-        SwapToPlayer(player);
+        if (!force && Active != null && ActiveKind == kind) return;
+
+        var ctx = Get(kind);
+        if (ctx == null || ctx.player == null)
+        {
+            Debug.LogError($"[PlayerManager] No PlayerContext wired for {kind}.", this);
+            return;
+        }
+
+        foreach (var p in players)
+        {
+            bool on = p.kind == kind;
+            if (p.body != null && p.player != null)
+            {
+                Transform src = p.torso != null ? p.torso : p.player.transform;
+                p.body.transform.SetPositionAndRotation(p.player.transform.position,
+                    Quaternion.Euler(0f, src.eulerAngles.y, 0f));
+            }
+            if (p.root != null) p.root.SetActive(on);
+        }
+
+        Active     = ctx.player;
+        ActiveKind = kind;
+
+        if (InputManager.HasInstance)
+            InputManager.Instance.SetGameplayMap(kind);
+
+        PlayerSwapped?.Invoke(Active);
     }
 
-    public void SwapToPlayer(ActivePlayer player)
-    {
-        if (CurrentPlayer == player) return;
-        CurrentPlayer = player;
-
-        if (roomPlayerBody != null)
-            roomPlayerBody.transform.SetPositionAndRotation(roomPlayer.transform.position, roomPlayerTorso.transform.rotation);
-        if (tablePlayerBody != null)
-            tablePlayerBody.transform.SetPositionAndRotation(tablePlayer.transform.position, tablePlayerTorso.transform.rotation);
-
-        SetPlayerControlled(roomPlayer, player == ActivePlayer.RoomPlayer);
-        SetPlayerControlled(tablePlayer, player == ActivePlayer.TablePlayer);
-
-        OnPlayerSwapped?.Invoke(player);
-        InventorySystem.Instance.NotifyChanged();
-        HotbarSystem.Instance.NotifyChanged();
-    }
-
+    // Kept for cutscene scripts: freezing is just the Cutscene game state.
     public void SetControlsFrozen(bool frozen)
     {
-        var activePlayer = CurrentPlayer == ActivePlayer.RoomPlayer ? roomPlayer : tablePlayer;
-        if (activePlayer == null) return;
-
-        var pc = activePlayer.GetComponentInChildren<MFPC.PlayerController>();
-        if (pc != null) pc.SetInputEnabled(!frozen);
-
-        var interact = activePlayer.GetComponentInChildren<InteractController>();
-        if (interact != null) interact.SetBlocked(frozen);
-    }
-
-    public void SetRoomPlayerControllerEnabled(bool enabled)
-    {
-        if (roomPlayer == null) return;
-        var pc = roomPlayer.GetComponentInChildren<MFPC.PlayerController>(true);
-        if (pc != null) pc.enabled = enabled;
-    }
-
-    private void SetPlayerControlled(GameObject playerObject, bool controlled)
-    {
-        if (playerObject == null) return;
-        playerObject.SetActive(controlled);
+        if (!GameManager.HasInstance) return;
+        if (frozen) GameManager.Instance.Push(GameState.Cutscene);
+        else        GameManager.Instance.Pop(GameState.Cutscene);
     }
 }

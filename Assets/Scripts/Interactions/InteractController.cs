@@ -1,103 +1,110 @@
 using System;
-using System.Collections.Generic;
-using MFPC;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
+// Camera-centred selection shared by pickups and other interactions.
+[DefaultExecutionOrder(10000)]
 public class InteractController : MonoBehaviour
 {
     public event Action<InteractableTrigger> OnActiveChanged;
+    [SerializeField] Camera rayCamera;
+    [SerializeField] float rayDistance = 3f;
+    [SerializeField] LayerMask rayMask = ~0;
+    [Header("Aim assistance")]
+    [SerializeField, Range(1, 12)] float acquireAngle = 5f;
+    [SerializeField, Range(1, 16)] float releaseAngle = 8f;
+    [SerializeField, Min(0)] float missGrace = .15f;
+    [SerializeField, Min(0)] float switchAdvantage = 1.5f;
 
-    [SerializeField] float facingDotThreshold = 0.5f; // ~60 degrees
-    [Tooltip("Transform used for facing direction. Assign lateralTorso for MFPC players. Falls back to this transform if unassigned.")]
-    [SerializeField] Transform facingTransform;
+    readonly RaycastHit[] sightHits = new RaycastHit[128];
+    InteractableTrigger activeTrigger;
+    Character character;
+    float lastOnTarget;
+    public InteractableTrigger Active => activeTrigger;
+    public Camera ViewCamera => rayCamera;
 
-    private readonly List<InteractableTrigger> inRange = new();
-    private InteractableTrigger activeTrigger;
-    private PlayerInputActions inputActions;
-    private bool blocked;
-
-    private void Awake()
+    void Awake()
     {
-        inputActions = new PlayerInputActions();
+        character = GetComponent<Character>();
+        if (rayCamera == null) rayCamera = GetComponentInChildren<Camera>(true);
     }
-
-    private void OnEnable()
+    void OnEnable() => BindInput();
+    void Start() => BindInput();
+    void BindInput()
     {
-        inputActions.Enable();
-        inputActions.Player.Interact.performed += OnInteractInput;
+        if (!InputManager.HasInstance) return;
+        InputManager.Instance.InteractPressed -= OnInteractInput;
+        InputManager.Instance.InteractPressed += OnInteractInput;
     }
-
-    private void OnDisable()
+    void OnDisable()
     {
-        inputActions.Player.Interact.performed -= OnInteractInput;
-        inputActions.Disable();
+        if (InputManager.HasInstance) InputManager.Instance.InteractPressed -= OnInteractInput;
         SetActiveTrigger(null);
     }
+    // Evaluate after camera motion, avoiding a frame of disagreement with the view.
+    void LateUpdate() => RefreshBest();
+    bool Blocked => rayCamera == null || (character is Player p && !p.IsActive) ||
+                    (GameManager.HasInstance && !GameManager.Instance.GameplayActive);
 
-    private void Update()
+    void RefreshBest()
     {
-        RefreshClosest();
-    }
-
-    public void Register(InteractableTrigger trigger)
-    {
-        if (!inRange.Contains(trigger))
-            inRange.Add(trigger);
-    }
-
-    public void Unregister(InteractableTrigger trigger)
-    {
-        inRange.Remove(trigger);
-    }
-
-    public void SetBlocked(bool value)
-    {
-        blocked = value;
-        if (blocked) SetActiveTrigger(null);
-    }
-
-    private void RefreshClosest()
-    {
-        if (blocked) return;
-
-        InteractableTrigger closest = null;
-        float minSqrDist = float.MaxValue;
-
-        for (int i = inRange.Count - 1; i >= 0; i--)
+        if (Blocked) { SetActiveTrigger(null); return; }
+        InteractableTrigger best = null;
+        float bestScore = float.MaxValue;
+        foreach (var candidate in InteractableTrigger.Available)
         {
-            if (inRange[i] == null) { inRange.RemoveAt(i); continue; }
-            float sqrDist = (inRange[i].transform.position - transform.position).sqrMagnitude;
-            if (sqrDist < minSqrDist && IsFacing(inRange[i].transform.position))
-            {
-                minSqrDist = sqrDist;
-                closest = inRange[i];
-            }
+            if (!Evaluate(candidate, out float score) || score > acquireAngle) continue;
+            if (score < bestScore) { best = candidate; bestScore = score; }
         }
-
-        SetActiveTrigger(closest);
+        if (Evaluate(activeTrigger, out float activeScore) && activeScore <= releaseAngle)
+        {
+            if (activeScore <= acquireAngle) lastOnTarget = Time.unscaledTime;
+            bool clearlyBetter = best != null && best != activeTrigger && bestScore + switchAdvantage < activeScore;
+            if (!clearlyBetter && (activeScore <= acquireAngle || Time.unscaledTime - lastOnTarget < missGrace))
+                return;
+        }
+        SetActiveTrigger(best);
     }
 
-    private bool IsFacing(Vector3 targetPosition)
+    bool Evaluate(InteractableTrigger target, out float score)
     {
-        Vector3 toTarget = targetPosition - transform.position;
-        toTarget.y = 0f;
-        if (toTarget.sqrMagnitude < 0.001f) return true;
-        Vector3 forward = (facingTransform != null ? facingTransform : transform).forward;
-        forward.y = 0f;
-        return Vector3.Dot(forward.normalized, toTarget.normalized) >= facingDotThreshold;
+        score = float.MaxValue;
+        if (target == null || !target.isActiveAndEnabled || !target.CanInteract(character) ||
+            target.transform.IsChildOf(transform) || (rayMask.value & (1 << target.gameObject.layer)) == 0) return false;
+        Vector3 origin = rayCamera.transform.position;
+        Bounds bounds = target.TargetBounds;
+        Vector3 point = bounds.center;
+        Vector3 delta = point - origin;
+        float distance = delta.magnitude;
+        if (distance < .001f || distance > rayDistance || Vector3.Dot(rayCamera.transform.forward, delta) <= 0) return false;
+        float angle = Vector3.Angle(rayCamera.transform.forward, delta);
+        // Small angular allowance follows visible size, capped so broad triggers cannot steal aim.
+        float radius = Mathf.Min(bounds.extents.x, Mathf.Min(bounds.extents.y, bounds.extents.z));
+        score = Mathf.Max(0, angle - Mathf.Min(2f, Mathf.Atan2(radius, distance) * Mathf.Rad2Deg));
+        if (score > releaseAngle) return false;
+        int count = Physics.RaycastNonAlloc(origin, delta / distance, sightHits, distance, rayMask, QueryTriggerInteraction.Ignore);
+        if (count == sightHits.Length) return false; // Never assume a truncated visibility query is clear.
+        for (int i = 0; i < count; i++)
+        {
+            var hit = sightHits[i];
+            if (hit.transform.IsChildOf(transform) || target.Owns(hit.transform)) continue;
+            return false;
+        }
+        return true;
     }
 
-    private void SetActiveTrigger(InteractableTrigger trigger)
+    void SetActiveTrigger(InteractableTrigger trigger)
     {
-        if (trigger == activeTrigger) return;
+        // Reference equality also clears a destroyed Unity object and its visible prompt.
+        if (ReferenceEquals(trigger, activeTrigger)) return;
         activeTrigger = trigger;
+        lastOnTarget = Time.unscaledTime;
         OnActiveChanged?.Invoke(activeTrigger);
     }
-
-    private void OnInteractInput(InputAction.CallbackContext _)
+    void OnInteractInput()
     {
-        if (blocked) return;
-        activeTrigger?.Interact(gameObject);
+        // Revalidate visibility/range on the actual press; grace never permits using through a wall.
+        if (Blocked || !Evaluate(activeTrigger, out float score) || score > releaseAngle) return;
+        activeTrigger.Interact(character);
+        RefreshBest();
     }
 }

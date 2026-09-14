@@ -1,62 +1,49 @@
 using UnityEngine;
 
+// A pickup in the world. Either authored as a prefab variant with the mesh already
+// inside, or spawned from data at runtime (InventoryManager.Spawn) in which case the
+// item's worldPrefab is instantiated as the visual.
 public class WorldItem : MonoBehaviour, IInteractable
 {
-    [SerializeField] private ItemData itemData;
-    [SerializeField] private AudioClip pickupAudio;
-    [SerializeField] [Range(0f, 1f)] private float pickupAudioVolume = 1f;
-    [SerializeField] private bool worldPrefabFromData = false;
-    public bool WorldPrefabFromData { get => worldPrefabFromData; set => worldPrefabFromData = value; }
+    [SerializeField] ItemData itemData;
+    [SerializeField, Min(1)] int count = 1;
+    [Tooltip("Spawn the item's worldPrefab as the visual on Start (for pickups placed without a mesh).")]
+    [SerializeField] bool worldPrefabFromData = false;
 
-    private bool _visualSpawned;
+    bool visualSpawned;
 
-    public string PromptMessage => itemData != null ? $"Pick up {itemData.itemName}" : "Pick up";
+    public ItemData Item  => itemData;
+    public int      Count => count;
 
-    private void Start()
+    public string Prompt => itemData != null ? $"Pick up {itemData.itemName}" : "Pick up";
+    public bool CanInteract(Character who) => itemData != null && who is Player;
+
+    void Start()
     {
-        if (worldPrefabFromData && !_visualSpawned)
-            SpawnVisual();
+        if (worldPrefabFromData && !visualSpawned) SpawnVisual();
     }
 
-    // Called by WorldItemSpawner at runtime — sets itemData and immediately spawns the visual.
-    public void Init(ItemData data)
+    public void Init(ItemData data, int amount = 1)
     {
         itemData = data;
+        count    = Mathf.Max(1, amount);
+        worldPrefabFromData = true;
         SpawnVisual();
     }
 
-    private void SpawnVisual()
+    void SpawnVisual()
     {
-        if (_visualSpawned || itemData?.worldPrefab == null) return;
-        _visualSpawned = true;
+        if (visualSpawned || itemData == null || itemData.worldPrefab == null) return;
+        visualSpawned = true;
         var visual = Instantiate(itemData.worldPrefab, transform);
         visual.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-        foreach (var mc in visual.GetComponentsInChildren<MeshCollider>())
-            mc.convex = true;
+        foreach (var mc in visual.GetComponentsInChildren<MeshCollider>()) mc.convex = true;
     }
 
-    public void Interact(GameObject interactor)
+    public void Interact(Character who)
     {
-        if (itemData == null) return;
-
-        bool hotbarCandidate = itemData.itemType == ItemType.Weapon
-                            || itemData.itemType == ItemType.Shield
-                            || itemData.itemType == ItemType.Tool
-                            || itemData.itemType == ItemType.Consumable;
-
-        bool added = hotbarCandidate && HotbarSystem.Instance.TryAdd(itemData);
-        if (!added) added = InventorySystem.Instance.TryAdd(itemData);
-
-        if (!added)
-        {
-            Debug.Log("[WorldItem] Inventory full.");
-            return;
-        }
-
-        if (pickupAudio != null)
-            AudioManager.Instance.PlaySFX2D(pickupAudio, pickupAudioVolume);
-        if (itemData.equipOnPickup && ItemHolder.Instance.GetHeldItem(itemData.equipSlot) == null)
-            ItemHolder.Instance.HoldItem(itemData);
-        Destroy(gameObject);
+        if (!(who is Player player) || !InventoryManager.HasInstance) return;
+        if (InventoryManager.Instance.Pickup(itemData, player, count))
+            Destroy(gameObject);
     }
 }

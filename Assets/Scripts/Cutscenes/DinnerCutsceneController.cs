@@ -1,56 +1,25 @@
-using Unity.Cinemachine;
 using UnityEngine;
-using UnityEngine.Playables;
 
-public class DinnerCutsceneController : MonoBehaviour
+public class DinnerCutsceneController : CutsceneController
 {
-    [SerializeField] PlayableDirector director;
+    [Header("Dinner")]
+    [Tooltip("Where the room player stands when dinner ends.")]
     [SerializeField] Transform roomPlayerDinner;
-    [SerializeField] CinemachineCamera dinnerCamera;
-    [Tooltip("Priority given to DinnerCamera while the cutscene is playing.")]
-    [SerializeField] int cutsceneCameraPriority = 100;
 
-    void Awake()
+    protected override void OnFinished()
     {
-        if (director == null) director = GetComponent<PlayableDirector>();
-    }
-
-    void OnEnable()  => director.stopped += OnCutsceneFinished;
-    void OnDisable() => director.stopped -= OnCutsceneFinished;
-
-    public void Play()
-    {
-        if (dinnerCamera != null)
-        {
-            var p = dinnerCamera.Priority;
-            p.Enabled = true;
-            p.Value   = cutsceneCameraPriority;
-            dinnerCamera.Priority = p;
-        }
-
-        PlayerManager.Instance?.SetControlsFrozen(true);
-        director.Play();
-    }
-
-    void OnCutsceneFinished(PlayableDirector _)
-    {
-        if (dinnerCamera != null)
-        {
-            var p = dinnerCamera.Priority;
-            p.Enabled = false;
-            dinnerCamera.Priority = p;
-        }
-
+        if (!PlayerManager.HasInstance) return;
         var pm = PlayerManager.Instance;
-        if (pm == null || roomPlayerDinner == null) return;
 
-        var roomPlayer = pm.roomPlayer;
-        if (roomPlayer != null)
-            roomPlayer.transform.SetPositionAndRotation(
-                roomPlayerDinner.position,
-                roomPlayerDinner.rotation);
+        var room = pm.roomPlayer;
+        if (room != null && roomPlayerDinner != null)
+        {
+            var ctx = pm.Get(PlayerKind.Room);
+            var target = ctx != null && ctx.player != null ? ctx.player.transform : room.transform;
+            target.SetPositionAndRotation(roomPlayerDinner.position, roomPlayerDinner.rotation);
+            ctx?.player?.Look?.SetYaw(roomPlayerDinner.eulerAngles.y);
+        }
 
-        pm.ForceSwapToPlayer(PlayerManager.ActivePlayer.RoomPlayer);
-        pm.SetControlsFrozen(false);
+        pm.ForceSwapToPlayer(PlayerKind.Room);
     }
 }

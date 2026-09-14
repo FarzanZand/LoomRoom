@@ -8,12 +8,13 @@ public class GazeLookAt : MonoBehaviour
     [SerializeField, Range(0f, 1f)] float weight = 0.7f;
     [Tooltip("Max angle the neck can turn from the character's forward direction.")]
     [SerializeField, Range(0f, 180f)] float maxLookAngle = 70f;
+    [Tooltip("Only look while this player is active.")]
+    [SerializeField] PlayerKind onlyForPlayer = PlayerKind.Table;
 
     void LateUpdate()
     {
         if (neckOrHead == null || target == null) return;
-        if (PlayerManager.Instance == null ||
-            PlayerManager.Instance.CurrentPlayer != PlayerManager.ActivePlayer.TablePlayer) return;
+        if (!PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind != onlyForPlayer) return;
 
         Vector3 dir = (target.position - neckOrHead.position).normalized;
 
