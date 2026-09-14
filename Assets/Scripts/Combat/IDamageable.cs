@@ -5,11 +5,13 @@ using UnityEngine;
 // Character.Damaged so FX, hit reactions and item triggers all see the same facts.
 public struct DamageInfo
 {
+    public HitProfile Profile;       // impact presentation, resolved by CombatManager
     public float     Amount;          // raw on the way in, actual after TakeDamage
     public Character Source;          // who did it (may be null for environment)
     public Vector3   HitPoint;
     public Vector3   Direction;       // attacker -> victim, horizontal, normalised
     public float     KnockbackForce;  // already scaled by CombatManager
+    public bool      Parried;
     public bool      Blocked;         // set by the victim's IBlocker
 
     public Vector3 Knockback => Direction * KnockbackForce;

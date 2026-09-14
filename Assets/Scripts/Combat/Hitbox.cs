@@ -37,8 +37,13 @@ public class Hitbox : MonoBehaviour
 
     HitProfile profile = HitProfile.Default;
     Character  owner;
-    readonly HashSet<Collider> hitThisSwing = new();
-    readonly Collider[] overlapBuffer = new Collider[16];
+    readonly HashSet<IDamageable> hitThisSwing = new();
+    readonly Collider[] overlapBuffer = new Collider[64];
+
+    Vector3 previousPosition;
+    Quaternion previousRotation;
+    Vector3 queryCenter;
+    bool heavy;
 
     public void SetProfile(HitProfile p) => profile = p ?? HitProfile.Default;
     public void ClearProfile()           => profile = HitProfile.Default;
@@ -63,6 +68,8 @@ public class Hitbox : MonoBehaviour
         hitThisSwing.Clear();
         owner  = GetComponentInParent<Character>();
         Active = true;
+        heavy=owner is Player p && p.Combat != null && p.Combat.HeavySwing;
+        if(weaponCollider != null) { previousPosition=weaponCollider.transform.position; previousRotation=weaponCollider.transform.rotation; }
     }
 
     public void DisableHitbox()
@@ -71,62 +78,53 @@ public class Hitbox : MonoBehaviour
         hitThisSwing.Clear();
     }
 
-    void Update()
+    void OnDisable() => DisableHitbox();
+    void LateUpdate()
     {
-        if (!Active || weaponCollider == null) return;
-
-        int count = Overlap();
-        for (int i = 0; i < count; i++)
-            ProcessHit(overlapBuffer[i]);
+        if (!Active || weaponCollider == null || owner == null || !owner.IsAlive) return;
+        if(GameManager.HasInstance && !GameManager.Instance.GameplayActive) { DisableHitbox(); return; }
+        var t=weaponCollider.transform;
+        int steps=CombatManager.HasInstance ? Mathf.Clamp(CombatManager.Instance.weaponSweepSteps,1,16) : 6;
+        for(int step=1;step<=steps;step++)
+        {
+            float f=(float)step/steps;
+            var rotation=Quaternion.Slerp(previousRotation,t.rotation,f);
+            var matrix=Matrix4x4.TRS(Vector3.Lerp(previousPosition,t.position,f),rotation,t.lossyScale);
+            int count=Overlap(matrix,rotation);
+            for(int i=0;i<count;i++) ProcessHit(overlapBuffer[i]);
+        }
+        previousPosition=t.position; previousRotation=t.rotation;
     }
 
-    int Overlap()
+    int Overlap(Matrix4x4 matrix,Quaternion rotation)
     {
-        switch (weaponCollider)
+        var scale=weaponCollider.transform.lossyScale;
+        scale=new Vector3(Mathf.Abs(scale.x),Mathf.Abs(scale.y),Mathf.Abs(scale.z));
+        float largest=Mathf.Max(scale.x,scale.y,scale.z);
+        switch(weaponCollider)
         {
             case CapsuleCollider cap:
-                GetCapsulePoints(cap, out var p1, out var p2, out var r);
-                return Physics.OverlapCapsuleNonAlloc(p1, p2, r, overlapBuffer, hitMask, QueryTriggerInteraction.Ignore);
-            case SphereCollider sph:
-            {
-                var t = sph.transform;
-                float scale = Mathf.Max(t.lossyScale.x, t.lossyScale.y, t.lossyScale.z);
-                return Physics.OverlapSphereNonAlloc(t.TransformPoint(sph.center), sph.radius * scale, overlapBuffer, hitMask, QueryTriggerInteraction.Ignore);
-            }
+                queryCenter=matrix.MultiplyPoint3x4(cap.center);
+                Vector3 localAxis=cap.direction==0 ? Vector3.right : cap.direction==1 ? Vector3.up : Vector3.forward;
+                float radius=cap.radius*largest;
+                float extent=Mathf.Max(0,cap.height*scale[cap.direction]*.5f-radius);
+                Vector3 axis=rotation*localAxis*extent;
+                return Physics.OverlapCapsuleNonAlloc(queryCenter+axis,queryCenter-axis,radius,overlapBuffer,hitMask,QueryTriggerInteraction.Ignore);
+            case SphereCollider sphere:
+                queryCenter=matrix.MultiplyPoint3x4(sphere.center);
+                return Physics.OverlapSphereNonAlloc(queryCenter,sphere.radius*largest,overlapBuffer,hitMask,QueryTriggerInteraction.Ignore);
             case BoxCollider box:
-            {
-                var t = box.transform;
-                Vector3 half = Vector3.Scale(box.size, t.lossyScale) * 0.5f;
-                return Physics.OverlapBoxNonAlloc(t.TransformPoint(box.center), half, overlapBuffer, t.rotation, hitMask, QueryTriggerInteraction.Ignore);
-            }
-            default:
-                return Physics.OverlapBoxNonAlloc(weaponCollider.bounds.center, weaponCollider.bounds.extents, overlapBuffer, Quaternion.identity, hitMask, QueryTriggerInteraction.Ignore);
+                queryCenter=matrix.MultiplyPoint3x4(box.center);
+                return Physics.OverlapBoxNonAlloc(queryCenter,Vector3.Scale(box.size,scale)*.5f,overlapBuffer,rotation,hitMask,QueryTriggerInteraction.Ignore);
+            default: return 0;
         }
-    }
-
-    static void GetCapsulePoints(CapsuleCollider cap, out Vector3 p1, out Vector3 p2, out float radius)
-    {
-        Transform t = cap.transform;
-        Vector3 center = t.TransformPoint(cap.center);
-        Vector3 axis; float axisScale;
-        switch (cap.direction)
-        {
-            case 0:  axis = t.right;   axisScale = t.lossyScale.x; break;
-            case 1:  axis = t.up;      axisScale = t.lossyScale.y; break;
-            default: axis = t.forward; axisScale = t.lossyScale.z; break;
-        }
-        float uniformScale = Mathf.Max(t.lossyScale.x, t.lossyScale.y, t.lossyScale.z);
-        radius = cap.radius * uniformScale;
-        float halfHeight = Mathf.Max(0f, cap.height * axisScale * 0.5f - radius);
-        p1 = center + axis * halfHeight;
-        p2 = center - axis * halfHeight;
     }
 
     void ProcessHit(Collider other)
     {
-        if (other.transform.IsChildOf(transform.root)) return;
         if (owner != null && other.transform.IsChildOf(owner.transform)) return;
-        if (!hitThisSwing.Add(other)) return;
+        var damageable = other.GetComponentInParent<IDamageable>();
+        if (damageable == null || hitThisSwing.Contains(damageable)) return;
 
         var target = other.GetComponentInParent<Character>();
         if (target != null)
@@ -135,7 +133,7 @@ public class Hitbox : MonoBehaviour
             if (owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction)) return;
         }
 
-        Vector3 contact = other.ClosestPoint(weaponCollider.bounds.center);
+        Vector3 contact = other.ClosestPoint(queryCenter);
 
         Vector3 attackerPos = owner != null ? owner.transform.position : transform.position;
         Vector3 targetPos   = target != null ? target.transform.position : other.transform.position;
@@ -150,8 +148,11 @@ public class Hitbox : MonoBehaviour
             : (owner != null && owner.FX != null ? owner.FX.KnockbackForce : 0f);
         if (CombatManager.HasInstance) force = CombatManager.Instance.ScaleKnockback(force);
 
+        if(heavy && CombatManager.HasInstance)
+        { baseDamage*=CombatManager.Instance.heavyDamageMultiplier; force*=CombatManager.Instance.heavyKnockbackMultiplier; }
         var info = new DamageInfo
         {
+            Profile        = profile,
             Amount         = baseDamage * profile.damageMultiplier,
             Source         = owner,
             HitPoint       = contact,
@@ -159,34 +160,8 @@ public class Hitbox : MonoBehaviour
             KnockbackForce = force,
         };
 
-        var damageable = other.GetComponentInParent<IDamageable>();
-        if (damageable != null)
-        {
-            damageable.TakeDamage(info);
-            other.GetComponentInParent<HitReactionController>()?.ReactToHit(contact, dir);
-
-            bool victimIsPlayer = target is Player;
-            if (CombatManager.HasInstance &&
-                (!victimIsPlayer || CombatManager.Instance.hitStopOnPlayerHurt))
-                CombatManager.Instance.RequestHitStop(profile.hitStopScale);
-        }
-
-        PlayHitEffects(contact, dir);
-        owner?.NotifyHitLanded(info);
-    }
-
-    void PlayHitEffects(Vector3 contact, Vector3 dir)
-    {
-        AudioData audio = profile.useDefaultEffects
-            ? (CombatManager.HasInstance ? CombatManager.Instance.defaultHitAudio : null)
-            : profile.hitAudio;
-        if (audio != null && AudioManager.HasInstance)
-            AudioManager.Instance.PlaySFXData(audio, contact);
-
-        GameObject particle = profile.useDefaultEffects
-            ? (CombatManager.HasInstance ? CombatManager.Instance.GetRandomHitParticle() : null)
-            : profile.hitParticle;
-        if (particle != null)
-            Instantiate(particle, contact, Quaternion.LookRotation(-dir));
+        if(CombatManager.HasInstance && !CombatManager.Instance.HasMeleeLineOfSight(owner,target,contact))return;
+        hitThisSwing.Add(damageable);
+        damageable.TakeDamage(info);
     }
 }

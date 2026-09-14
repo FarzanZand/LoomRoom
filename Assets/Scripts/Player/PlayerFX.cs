@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Player-only feel on top of CharacterFX: camera impulses and the screen hurt flash.
-// Hit stop is requested by Hitbox through CombatManager, not here, so it fires once.
+// Resolved damage requests hit stop through CombatManager once per impact.
 public class PlayerFX : CharacterFX
 {
     [Header("Camera")]
@@ -23,19 +23,41 @@ public class PlayerFX : CharacterFX
     public override void NotifyHitLanded(DamageInfo info)
     {
         base.NotifyHitLanded(info);
-        onHitImpulse?.GenerateImpulse();
+        Kick(CombatManager.HasInstance ? CombatManager.Instance.landedCameraKick : .65f,info);
     }
 
     public override void NotifyHurtReceived(DamageInfo info)
     {
         base.NotifyHurtReceived(info);
-        onHurtImpulse?.GenerateImpulse();
+        Kick(CombatManager.HasInstance ? (info.Blocked ? CombatManager.Instance.blockCameraKick : CombatManager.Instance.hurtCameraKick) : 2f,info);
 
-        if (!info.Blocked && enableHurtFlash && hurtFlashImage != null)
+        if ((info.Amount>0 || info.Blocked) && enableHurtFlash && hurtFlashImage != null)
         {
             if (hurtFlashRoutine != null) StopCoroutine(hurtFlashRoutine);
+            if(CombatManager.HasInstance)
+            {
+                var tuning=CombatManager.Instance;
+                hurtFlashColor=info.Blocked ? tuning.blockScreenColor : tuning.hurtScreenColor;
+                hurtFlashPeakAlpha=tuning.hurtScreenAlpha*(info.Blocked ? .45f : 1f);
+                hurtFlashDuration=tuning.hurtScreenDuration;
+            }
             hurtFlashRoutine = StartCoroutine(HurtFlashRoutine());
         }
+    }
+
+    void Kick(float amount,DamageInfo info)
+    {
+        var player=GetComponentInParent<Player>();
+        if(player==null || !player.IsActive || player.CameraRig==null || player.CameraRig.Camera==null)return;
+        // Camera shake is handled by Cinemachine impulses; character motion stays in clips.
+        var impulse=info.Source==player ? onHitImpulse : onHurtImpulse;
+        if(impulse!=null) impulse.GenerateImpulseWithForce(amount);
+    }
+    void OnDisable()
+    {
+        if(hurtFlashRoutine!=null) StopCoroutine(hurtFlashRoutine);
+        hurtFlashRoutine=null;
+        if(hurtFlashImage!=null) SetFlashAlpha(0);
     }
 
     IEnumerator HurtFlashRoutine()

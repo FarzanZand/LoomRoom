@@ -1,133 +1,113 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Runs after the Animator so rotation offsets are applied on top of the current pose.
+// Small, bounded bone offsets layered over the Animator. Never moves the character root,
+// changes Animator state, disables hitboxes, or pauses the attack/AI.
 [DefaultExecutionOrder(100)]
 public class HitReactionController : MonoBehaviour
 {
     [SerializeField] Animator animator;
-
-    [Header("Reaction Fallback")]
-    [Tooltip("Used only when CombatManager is not present in the scene.")]
     [SerializeField] float reactionAngle = 20f;
-    [SerializeField] float damping = 8f;
-    [SerializeField] int influenceDepth = 3;
-    [SerializeField, Range(0f, 1f)] float parentFalloff = 0.45f;
+    [SerializeField] float damping = 9f;
+    [SerializeField] int influenceDepth = 2;
+    [SerializeField, Range(0f, 1f)] float parentFalloff = .35f;
+    [SerializeField] float attackSpeed = 60f;
+    Character character;
+    readonly HashSet<Transform> bones = new();
+    readonly List<Reaction> reactions = new();
+    CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
 
-    [SerializeField] float attackSpeed = 20f;
-    float ReactionAngle  => CombatManager.Instance != null ? CombatManager.Instance.hitReactionAngle         : reactionAngle;
-    float Damping        => CombatManager.Instance != null ? CombatManager.Instance.hitReactionDamping        : damping;
-    float AttackSpeed    => CombatManager.Instance != null ? CombatManager.Instance.hitReactionAttackSpeed    : attackSpeed;
-    int   InfluenceDepth => CombatManager.Instance != null ? CombatManager.Instance.hitReactionInfluenceDepth : influenceDepth;
-    float ParentFalloff  => CombatManager.Instance != null ? CombatManager.Instance.hitReactionParentFalloff  : parentFalloff;
-
-    struct BoneReaction
+    class Reaction
     {
         public Transform bone;
-        public Quaternion current;  // what is actually applied this frame
-        public Quaternion target;   // peak we are moving toward
+        public Quaternion current = Quaternion.identity, target = Quaternion.identity;
+        public Quaternion baseline, applied;
+        public bool ownsPose;
     }
-
-    Transform[] bones;
-    readonly List<BoneReaction> reactions = new List<BoneReaction>();
 
     void Awake()
     {
+        character = GetComponentInParent<Character>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
-        CacheBones();
+        if (animator == null || !animator.isHuman) return;
+        // Exclude hips/root, fingers and helper transforms so recoil cannot propel or twist the actor.
+        foreach (var id in new[]{HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest,
+            HumanBodyBones.Neck, HumanBodyBones.Head, HumanBodyBones.LeftShoulder, HumanBodyBones.RightShoulder,
+            HumanBodyBones.LeftUpperArm, HumanBodyBones.RightUpperArm, HumanBodyBones.LeftLowerArm,
+            HumanBodyBones.RightLowerArm, HumanBodyBones.LeftHand, HumanBodyBones.RightHand,
+            HumanBodyBones.LeftUpperLeg, HumanBodyBones.RightUpperLeg, HumanBodyBones.LeftLowerLeg,
+            HumanBodyBones.RightLowerLeg, HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot})
+        {
+            var bone = animator.GetBoneTransform(id);
+            if (bone != null) bones.Add(bone);
+        }
     }
-
-    void CacheBones()
+    void OnEnable()
     {
-        if (animator == null) return;
-
-        var list = new List<Transform>();
-        if (animator.isHuman)
-        {
-            foreach (HumanBodyBones b in System.Enum.GetValues(typeof(HumanBodyBones)))
-            {
-                if (b == HumanBodyBones.LastBone) continue;
-                var t = animator.GetBoneTransform(b);
-                if (t != null && !list.Contains(t)) list.Add(t);
-            }
-        }
-        else
-        {
-            list.AddRange(GetComponentsInChildren<Transform>());
-        }
-        bones = list.ToArray();
+        if (character != null) { character.Damaged += OnDamaged; character.Died += Clear; }
     }
-
-    public void ReactToHit(Vector3 contactPoint, Vector3 hitDirection)
+    void OnDisable()
     {
-        if (CombatManager.Instance != null && !CombatManager.Instance.hitReactionEnabled) return;
-        if (bones == null || bones.Length == 0) return;
-
-        Transform closest = FindClosestBone(contactPoint);
-        if (closest == null) return;
-
-        Transform current = closest;
-        float strength = 1f;
-        for (int i = 0; i < InfluenceDepth && current != null; i++)
-        {
-            Vector3 axis = Vector3.Cross(Vector3.up, hitDirection);
-            if (axis.sqrMagnitude < 0.001f) axis = current.right;
-
-            Quaternion offset = Quaternion.AngleAxis(ReactionAngle * strength, axis);
-            AddOrAccumulate(current, offset);
-
-            current = current.parent;
-            strength *= ParentFalloff;
-        }
+        if (character != null) { character.Damaged -= OnDamaged; character.Died -= Clear; }
+        Clear();
     }
-
-    void AddOrAccumulate(Transform bone, Quaternion target)
+    void OnDamaged(DamageInfo hit)
     {
-        for (int i = 0; i < reactions.Count; i++)
-        {
-            if (reactions[i].bone == bone)
-            {
-                var r = reactions[i];
-                r.target = target * r.target;
-                reactions[i] = r;
-                return;
-            }
-        }
-        reactions.Add(new BoneReaction { bone = bone, current = Quaternion.identity, target = target });
+        if (character.IsAlive && !hit.Blocked && hit.Amount > 0) ReactToHit(hit.HitPoint, hit.Direction);
     }
-
-    Transform FindClosestBone(Vector3 point)
+    public void ReactToHit(Vector3 point, Vector3 direction)
     {
-        Transform closest = null;
-        float minSq = float.MaxValue;
-        foreach (var b in bones)
+        if (!isActiveAndEnabled || (Tuning != null && !Tuning.hitReactionEnabled) || direction.sqrMagnitude < .0001f) return;
+        Transform closest = null;float distance = float.MaxValue;
+        foreach (var bone in bones)
         {
-            if (b == null) continue;
-            float sq = (b.position - point).sqrMagnitude;
-            if (sq < minSq) { minSq = sq; closest = b; }
+            if (bone == null) continue;
+            float candidate = (point-bone.position).sqrMagnitude;
+            if (candidate < distance) { distance=candidate;closest=bone; }
         }
-        return closest;
+        float strength=1;
+        int depth=Tuning != null ? Tuning.hitReactionInfluenceDepth : influenceDepth;
+        for (int i=0;i<Mathf.Clamp(depth,1,4) && closest!=null && bones.Contains(closest);i++)
+        {
+            var pivot=closest.parent!=null ? closest.parent.position : closest.position;
+            var axis=Vector3.Cross(point-pivot,direction.normalized);
+            if (axis.sqrMagnitude < .0001f) axis=Vector3.Cross(Vector3.up,direction);
+            if (axis.sqrMagnitude < .0001f) axis=closest.right;
+            float angle=Mathf.Clamp(Tuning != null ? Tuning.hitReactionAngle : reactionAngle,0,30)*strength;
+            var reaction=reactions.Find(r=>r.bone==closest);
+            if (reaction==null) { reaction=new Reaction{bone=closest};reactions.Add(reaction); }
+            reaction.target=Quaternion.RotateTowards(Quaternion.identity,Quaternion.AngleAxis(angle,axis.normalized)*reaction.target,angle);
+            strength*=Mathf.Clamp01(Tuning != null ? Tuning.hitReactionParentFalloff : parentFalloff);
+            closest=closest.parent;
+        }
     }
-
+    static void Restore(Reaction r)
+    {
+        // Restore only our own last pose; never overwrite a newly evaluated Animator pose.
+        if (r.bone!=null && r.ownsPose && Quaternion.Angle(r.bone.localRotation,r.applied)<.01f)
+            r.bone.localRotation=r.baseline;
+        r.ownsPose=false;
+    }
+    void Update() { foreach (var reaction in reactions) Restore(reaction); }
+    void Clear() { foreach (var reaction in reactions) Restore(reaction);reactions.Clear(); }
     void LateUpdate()
     {
-        float attackStep = Time.deltaTime * AttackSpeed;
-        float dampStep   = Time.deltaTime * Damping;
-
-        for (int i = reactions.Count - 1; i >= 0; i--)
+        if (character!=null && !character.IsAlive) { Clear();return; }
+        float dt=Time.deltaTime;
+        float attack=1-Mathf.Exp(-Mathf.Max(0,Tuning!=null ? Tuning.hitReactionAttackSpeed : attackSpeed)*dt);
+        float decay=1-Mathf.Exp(-Mathf.Max(0,Tuning!=null ? Tuning.hitReactionDamping : damping)*dt);
+        for (int i=reactions.Count-1;i>=0;i--)
         {
-            var r = reactions[i];
-
-            // Move current toward target (attack phase), then decay target back to identity
-            r.current = Quaternion.Slerp(r.current, r.target,   attackStep);
-            r.target  = Quaternion.Slerp(r.target,  Quaternion.identity, dampStep);
-
-            r.bone.rotation = r.current * r.bone.rotation;
-            reactions[i] = r;
-
-            if (Quaternion.Angle(r.current, Quaternion.identity) < 0.5f &&
-                Quaternion.Angle(r.target,  Quaternion.identity) < 0.5f)
-                reactions.RemoveAt(i);
+            var r=reactions[i];Restore(r);
+            if (r.bone==null) { reactions.RemoveAt(i);continue; }
+            r.current=Quaternion.Slerp(r.current,r.target,attack);
+            r.target=Quaternion.Slerp(r.target,Quaternion.identity,decay);
+            if (Quaternion.Angle(r.current,Quaternion.identity)<.05f && Quaternion.Angle(r.target,Quaternion.identity)<.05f)
+            { reactions.RemoveAt(i);continue; }
+            r.baseline=r.bone.localRotation;
+            var parent=r.bone.parent!=null ? r.bone.parent.rotation : Quaternion.identity;
+            r.applied=Quaternion.Inverse(parent)*r.current*parent*r.baseline;
+            r.bone.localRotation=r.applied;r.ownsPose=true;
         }
     }
 }

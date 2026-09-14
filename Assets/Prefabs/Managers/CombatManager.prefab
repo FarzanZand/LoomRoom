@@ -45,27 +45,61 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatManager
   hitStopEnabled: 1
-  hitStopDuration: 0.1
-  hitStopTimeScale: 0.05
-  hitStopOnPlayerHurt: 0
+  hitStopDuration: 0.045
+  hitStopTimeScale: 0.12
+  hitStopOnPlayerHurt: 1
   knockbackEnabled: 1
-  knockbackForceMultiplier: 0.5
-  knockbackDuration: 0.25
+  knockbackForceMultiplier: 0.22
+  knockbackDuration: 0.18
+  playerKnockbackSpeedLimit: 2.5
+  playerKnockbackDecay: 12
   hitParticlePrefabs:
-  - {fileID: 4306488877223958017, guid: ecb38e0319a6ad44cbca52d7b5add7a6, type: 3}
-  - {fileID: 3042519775331041172, guid: 841004c4c6a39e244abe2257394de913, type: 3}
-  defaultHitAudio: {fileID: 11400000, guid: a55888db80f4ab844aedf0cc5e921d52, type: 2}
-  defaultSwingAudio: {fileID: 11400000, guid: da4af03f4ff16bc4c9e7f8e40a7f183f, type: 2}
+  - {fileID: 1354972797255141121, guid: 8f330cfbcef56b24886441ac467c8a69, type: 3}
+  defaultHitAudio: {fileID: 11400000, guid: 6d42536549be02a4aa8e2bafd38cbe4b, type: 2}
+  defaultSwingAudio: {fileID: 11400000, guid: bf3a7f0b55bbe1f41b4cdd4a60307c3a, type: 2}
   hitReactionEnabled: 1
-  hitReactionAngle: 70
-  hitReactionAttackSpeed: 20
-  hitReactionDamping: 20
-  hitReactionInfluenceDepth: 5
-  hitReactionParentFalloff: 0.255
+  hitReactionAngle: 20
+  hitReactionAttackSpeed: 60
+  hitReactionDamping: 9
+  hitReactionInfluenceDepth: 2
+  hitReactionParentFalloff: 0.35
   hitFlashEnabled: 1
-  hitFlashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
-  hitFlashDuration: 0.1
-  blockCancelWindow: 0.3
+  hitFlashColor: {r: 1, g: 0.8, b: 0.65, a: 1}
+  hitFlashDuration: 0.065
+  blockCancelWindow: 0.18
   blockDamageReduction: 1
   blockFrontalDot: -0.3
-  blockStaminaCost: 0
+  blockStaminaCost: 0.75
+  playerAttackSpeed: 1.12
+  attackInputBuffer: 0.22
+  weaponSweepSteps: 6
+  windupSpeed: 1.2
+  releaseSpeed: 1.25
+  heavyReleaseSpeed: 0.95
+  enemyHurtAnimationSpeed: 1.3
+  timedBlockWindow: 0.18
+  timedBlockRecovery: 1
+  heavyChargeTime: 0.7
+  heavyDamageMultiplier: 1.65
+  heavyKnockbackMultiplier: 1.35
+  heavyStaminaCost: 1
+  enemyAttackCommitTime: 0.65
+  enemyRecoveryTime: 0.55
+  enemyCooldownMultiplier: 1.15
+  enemyStaggerTime: 0.22
+  enemyStaggerCooldown: 0.8
+  enemyBlockedRecovery: 0.65
+  enemyMinimumWindup: 0.35
+  enemyHitFacingAngle: 55
+  landedCameraKick: 0.65
+  hurtCameraKick: 2
+  blockCameraKick: 0.8
+  hurtScreenAlpha: 0.22
+  hurtScreenDuration: 0.28
+  hurtScreenColor: {r: 0.8, g: 0.12, b: 0.1, a: 1}
+  blockScreenColor: {r: 0.55, g: 0.7, b: 0.8, a: 1}
+  blockAudio: {fileID: 11400000, guid: 6fbf046251ec3444e98b7cd096fe45d4, type: 2}
+  playerHurtAudio: {fileID: 11400000, guid: 6d42536549be02a4aa8e2bafd38cbe4b, type: 2}
+  blockParticlePrefab: {fileID: 8478314277763355861, guid: 420ad5fb586b1ff4092ea3e609068854, type: 3}
+  impactParticleLifetime: 2
+  blockHitStopScale: 0.65

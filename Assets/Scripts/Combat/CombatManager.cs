@@ -22,6 +22,12 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Seconds a knocked-back NavMesh character slides before regaining control.")]
     public float knockbackDuration = 0.25f;
 
+    [Header("Player knockback safety")]
+    [Tooltip("Maximum horizontal knockback speed, in world units per second. Never changes vertical velocity.")]
+    [Min(0)] public float playerKnockbackSpeedLimit = 2.5f;
+    [Tooltip("How quickly player knockback loses speed. A 2.5 speed kick at 12 decay travels about 0.26 units.")]
+    [Min(.1f)] public float playerKnockbackDecay = 12f;
+
     [Header("Default Hit Effects")]
     [Tooltip("Pool of hit particle prefabs. One is chosen at random when the weapon uses default effects.")]
     public List<GameObject> hitParticlePrefabs = new();
@@ -58,6 +64,81 @@ public class CombatManager : Singleton<CombatManager>
     [Range(-1f, 1f)] public float blockFrontalDot = -0.3f;
     [Tooltip("Stamina spent per blocked hit. 0 = free.")]
     public float blockStaminaCost = 0f;
+
+    [Header("Attack responsiveness")]
+    [Range(.5f,2f)] public float playerAttackSpeed = 1.12f;
+    [Min(0)] public float attackInputBuffer = .22f;
+    [Range(1,16)] public int weaponSweepSteps = 6;
+
+    [Header("Animation pacing")]
+    [Min(.1f)] public float windupSpeed = 1.2f;
+    [Min(.1f)] public float releaseSpeed = 1.25f;
+    [Min(.1f)] public float heavyReleaseSpeed = .95f;
+    [Min(.1f)] public float enemyHurtAnimationSpeed = 1.3f;
+    [Min(0)] public float timedBlockWindow = .18f;
+
+    [Header("Charged strike")]
+    [Min(.1f)] public float heavyChargeTime = .7f;
+    [Min(1)] public float heavyDamageMultiplier = 1.65f;
+    [Min(1)] public float heavyKnockbackMultiplier = 1.35f;
+    [Min(0)] public float heavyStaminaCost = 1f;
+
+    [Header("Enemy rhythm")]
+    [Min(.1f)] public float enemyAttackCommitTime = .65f;
+    [Min(0)] public float enemyRecoveryTime = .55f;
+    [Min(.1f)] public float enemyCooldownMultiplier = 1.15f;
+    [Min(0)] public float enemyMinimumWindup = .35f;
+    [Range(10,100)] public float enemyHitFacingAngle = 55f;
+
+    [Header("Player impact feedback")]
+    [Range(0,4)] public float landedCameraKick = .65f;
+    [Range(0,6)] public float hurtCameraKick = 2f;
+    [Range(0,4)] public float blockCameraKick = .8f;
+    [Range(0,1)] public float hurtScreenAlpha = .22f;
+    [Min(.05f)] public float hurtScreenDuration = .28f;
+    public Color hurtScreenColor = new(.8f,.12f,.1f,1);
+    public Color blockScreenColor = new(.55f,.7f,.8f,1);
+    public AudioData blockAudio;
+    public AudioData playerHurtAudio;
+    public GameObject blockParticlePrefab;
+    [Min(.1f)] public float impactParticleLifetime = 2f;
+    [Min(0)] public float blockHitStopScale = .65f;
+
+    readonly RaycastHit[] obstructionHits = new RaycastHit[64];
+    public bool HasMeleeLineOfSight(Character source,Character victim,Vector3 contact)
+    {
+        if(source==null)return true;
+        Vector3 origin=source.transform.position+Vector3.up*.9f;
+        Vector3 delta=contact-origin;
+        if(delta.sqrMagnitude<.001f)return true;
+        int count=Physics.RaycastNonAlloc(origin,delta.normalized,obstructionHits,delta.magnitude,~0,QueryTriggerInteraction.Ignore);
+        if(count==obstructionHits.Length)return false;
+        for(int i=0;i<count;i++)
+        {
+            var t=obstructionHits[i].transform;
+            if(t.IsChildOf(source.transform) || (victim!=null && t.IsChildOf(victim.transform)))continue;
+            return false;
+        }
+        return true;
+    }
+
+    public void PresentImpact(Character victim, DamageInfo info)
+    {
+        var profile = info.Profile;
+        bool defaults = profile == null || profile.useDefaultEffects;
+        AudioData audio = info.Blocked ? blockAudio : victim is Player && playerHurtAudio != null ? playerHurtAudio :
+            defaults ? defaultHitAudio : profile.hitAudio;
+        if(audio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(audio,info.HitPoint);
+        GameObject prefab = info.Blocked ? blockParticlePrefab : defaults ? GetRandomHitParticle() : profile.hitParticle;
+        if(prefab != null)
+        {
+            Vector3 direction = info.Direction.sqrMagnitude > .001f ? -info.Direction : Vector3.up;
+            var effect = Instantiate(prefab,info.HitPoint,Quaternion.LookRotation(direction));
+            Destroy(effect,impactParticleLifetime);
+        }
+        if(!(victim is Player) || hitStopOnPlayerHurt)
+            RequestHitStop((profile != null ? profile.hitStopScale : 1f) * (info.Blocked ? blockHitStopScale : 1f));
+    }
 
     public GameObject GetRandomHitParticle()
     {
@@ -102,6 +183,11 @@ public class CombatManager : Singleton<CombatManager>
         // permanently if a request fired mid-stop and captured the slowed value.
         Time.timeScale = 1f;
         hitStopRoutine = null;
+    }
+
+    void OnDisable()
+    {
+        if(hitStopRoutine != null) { StopCoroutine(hitStopRoutine); hitStopRoutine=null; Time.timeScale=1f; }
     }
 
     protected override void OnDestroy()

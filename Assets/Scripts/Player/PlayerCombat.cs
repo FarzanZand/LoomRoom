@@ -31,6 +31,11 @@ public class PlayerCombat : MonoBehaviour, IBlocker
 
     Player player;
     float  blockLockUntil = -1f;
+    float attackBufferedUntil=-1f;
+    float pressedAt;
+    bool charging;
+    float guardPressedAt=-10;
+    public bool HeavySwing { get; private set; }
 
     void Awake()
     {
@@ -47,6 +52,11 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (InputManager.HasInstance) InputManager.Instance.PrimaryPressed += OnPrimaryPressed;
         if (player.Equipment != null) player.Equipment.Changed += OnEquipmentChanged;
         player.Damaged += OnDamaged;
+        if(InputManager.HasInstance)
+        {
+            InputManager.Instance.PrimaryReleased += OnPrimaryReleased;
+            InputManager.Instance.SecondaryPressed += OnGuardPressed;
+        }
         OnEquipmentChanged();
     }
 
@@ -55,14 +65,31 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (InputManager.HasInstance) InputManager.Instance.PrimaryPressed -= OnPrimaryPressed;
         if (player.Equipment != null) player.Equipment.Changed -= OnEquipmentChanged;
         player.Damaged -= OnDamaged;
+        if(InputManager.HasInstance) InputManager.Instance.PrimaryReleased -= OnPrimaryReleased;
+        if(InputManager.HasInstance) InputManager.Instance.SecondaryPressed -= OnGuardPressed;
+        HeavySwing=false; charging=false; attackBufferedUntil=-1;
     }
 
     void OnPrimaryPressed()
     {
         if (!player.IsActive) return;
         if (InputManager.Instance.SecondaryHeld) return;
+        pressedAt=Time.time; HeavySwing=false; charging=true;
+        attackBufferedUntil=Time.time+(CombatManager.HasInstance ? CombatManager.Instance.attackInputBuffer : .22f);
         float window = CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f;
         blockLockUntil = Time.time + window;
+    }
+
+    void OnGuardPressed() { if(player.IsActive && Time.time >= blockLockUntil) guardPressedAt=Time.time; }
+
+    void OnPrimaryReleased()
+    {
+        if(!charging) return;
+        charging=false;
+        if(!player.IsActive || !WeaponHeld || !IsAttacking || !CombatManager.HasInstance) return;
+        var tuning=CombatManager.Instance;
+        HeavySwing=Time.time-pressedAt >= tuning.heavyChargeTime &&
+            (player.Stats==null || player.Stats.TryUseStamina(tuning.heavyStaminaCost));
     }
 
     void Update()
@@ -73,12 +100,20 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         bool primary   = gameplay && InputManager.HasInstance && InputManager.Instance.PrimaryHeld;
         bool secondary = gameplay && InputManager.HasInstance && InputManager.Instance.SecondaryHeld;
         bool blockLocked = Time.time < blockLockUntil;
+        if(CombatManager.HasInstance)
+        {
+            float attackSpeed=CombatManager.Instance.playerAttackSpeed*(player.Stats!=null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f);
+            if(Character.HasParameter(armsAnimator,"WindupSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("WindupSpeed",CombatManager.Instance.windupSpeed*attackSpeed);
+            if(Character.HasParameter(armsAnimator,"ReleaseSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("ReleaseSpeed",CombatManager.Instance.releaseSpeed*attackSpeed);
+            if(Character.HasParameter(armsAnimator,"HeavyReleaseSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("HeavyReleaseSpeed",CombatManager.Instance.heavyReleaseSpeed*attackSpeed);
+            SetBool(armsAnimator,"HeavyStrike",HeavySwing);
+        }
 
-        SetBool(armsAnimator, attackHeldParam, primary && WeaponHeld && !secondary);
+        SetBool(armsAnimator, attackHeldParam, (primary || Time.time < attackBufferedUntil) && WeaponHeld && !secondary);
         SetBool(armsAnimator, blockHeldParam,  secondary && !blockLocked && ShieldHeld);
 
         if (player.Stats != null && Character.HasParameter(armsAnimator, "AttackSpeed", AnimatorControllerParameterType.Float))
-            armsAnimator.SetFloat("AttackSpeed", player.Stats.GetMultiplier(StatType.AttackSpeed));
+            armsAnimator.SetFloat("AttackSpeed", player.Stats.GetMultiplier(StatType.AttackSpeed) * (CombatManager.HasInstance ? CombatManager.Instance.playerAttackSpeed : 1f));
     }
 
     void OnEquipmentChanged()
@@ -101,7 +136,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
 
     public bool TryBlock(ref DamageInfo info)
     {
-        if (!IsBlocking || !ShieldHeld) return false;
+        bool guardInput=InputManager.HasInstance && InputManager.Instance.SecondaryHeld && Time.time >= blockLockUntil;
+        if ((!IsBlocking && !guardInput) || !ShieldHeld) return false;
 
         if (info.Direction.sqrMagnitude > 0.001f)
         {
@@ -110,7 +146,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             if (Vector3.Dot(facing, info.Direction.normalized) >= threshold) return false;
         }
 
-        float cost = CombatManager.HasInstance ? CombatManager.Instance.blockStaminaCost : 0f;
+        info.Parried=CombatManager.HasInstance && Time.time-guardPressedAt <= CombatManager.Instance.timedBlockWindow;
+        float cost = info.Parried ? 0 : CombatManager.HasInstance ? CombatManager.Instance.blockStaminaCost : 0f;
         if (cost > 0f && player.Stats != null && !player.Stats.TryUseStamina(cost)) return false;
 
         return true;

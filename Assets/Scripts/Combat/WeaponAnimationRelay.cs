@@ -22,6 +22,7 @@ public class WeaponAnimationRelay : MonoBehaviour
 
     public void EnableHitbox()
     {
+        if(owner != null && owner.TryGetComponent<EnemyBrain>(out var brain) && !brain.CanOpenHitbox) return;
         foreach (var h in hitboxes) if (h.HitboxIndex == 0) h.EnableHitbox();
     }
 
@@ -32,6 +33,7 @@ public class WeaponAnimationRelay : MonoBehaviour
 
     public void EnableHitboxAt(int index)
     {
+        if(owner != null && owner.TryGetComponent<EnemyBrain>(out var brain) && !brain.CanOpenHitbox) return;
         foreach (var h in hitboxes) if (h.HitboxIndex == index) h.EnableHitbox();
     }
 

@@ -119,8 +119,21 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         Agent.isStopped = true;
     }
 
+    void OnDisable()
+    {
+        knockbackTimer = 0f;
+        knockbackVelocity = Vector3.zero;
+    }
+
     void TickKnockback()
     {
+        // Death can disable navigation while the last hit is still decaying.
+        if (Agent == null || !Agent.isActiveAndEnabled || !Agent.isOnNavMesh)
+        {
+            knockbackTimer = 0f;
+            knockbackVelocity = Vector3.zero;
+            return;
+        }
         knockbackTimer -= Time.deltaTime;
         Vector3 delta = knockbackVelocity * Time.deltaTime;
         delta.y = 0f;

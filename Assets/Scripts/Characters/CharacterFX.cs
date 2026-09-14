@@ -51,7 +51,7 @@ public class CharacterFX : MonoBehaviour
     {
         if (onHurtAudio != null && AudioManager.HasInstance)
             AudioManager.Instance.PlaySFXData(onHurtAudio, transform.position);
-        if (!info.Blocked) TryHitFlash();
+        if (!info.Blocked && info.Amount > 0) TryHitFlash();
     }
 
     void TryHitFlash()

@@ -77,6 +77,11 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         player     = GetComponent<Player>();
         Controller = GetComponent<CharacterController>();
         capsule    = GetComponent<CapsuleCollider>();
+        // This actor is moved only by CharacterController.Move. The legacy body exists
+        // for trigger callbacks, never for dynamic collision response.
+        var body = GetComponent<Rigidbody>();
+        if(body != null) { body.isKinematic=true; body.useGravity=false; }
+        if(capsule != null) capsule.isTrigger=true;
         if (!slopeHandler)          slopeHandler          = GetComponent<SlopeHandler>();
         if (!steepSlopeSlideModule) steepSlopeSlideModule = GetComponent<SteepSlopeSlideModule>();
         targetCharConHeight = normalCharConHeight;
@@ -254,10 +259,11 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
             if (sliding) Speed = (IsCrouching ? p.crouchSpeed : p.walkSpeed) * speedMul;
         }
 
-        movement += knockbackVelocity;
-        knockbackVelocity = Vector3.MoveTowards(knockbackVelocity, Vector3.zero, knockbackDecay * Time.deltaTime);
+        Vector3 totalVelocity = movement + knockbackVelocity;
+        float decay=CombatManager.HasInstance ? CombatManager.Instance.playerKnockbackDecay : knockbackDecay;
+        knockbackVelocity = Vector3.MoveTowards(knockbackVelocity, Vector3.zero, Mathf.Max(.1f,decay) * Time.deltaTime);
 
-        Controller.Move(movement * Time.deltaTime);
+        Controller.Move(totalVelocity * Time.deltaTime);
 
         if (sprintApplied && !sliding && p.sprintStaminaPerSecond > 0f && player != null && player.Stats != null)
             player.Stats.DrainStamina(p.sprintStaminaPerSecond, p.staminaRegenDelay);
@@ -308,6 +314,8 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     {
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.0001f || force <= 0f) return;
-        knockbackVelocity = direction.normalized * force;
+        if(float.IsNaN(force) || float.IsInfinity(force))return;
+        float limit=CombatManager.HasInstance ? CombatManager.Instance.playerKnockbackSpeedLimit : 2.5f;
+        knockbackVelocity = direction.normalized * Mathf.Min(force,Mathf.Max(0,limit));
     }
 }

@@ -60,6 +60,11 @@ public class EnemyBrain : MonoBehaviour
     bool        fallbackHitPending;
     float       fallbackHitAt;
     bool        attackWasPlaying;
+    float attackStartedAt, recoveryUntil;
+    Vector3 committedForward;
+    CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
+    public bool CanOpenHitbox => State == EnemyState.Attack && currentAttack != null;
+
 
     // ── Lifecycle ─────────────────────────────────────────────────────
 
@@ -98,6 +103,7 @@ public class EnemyBrain : MonoBehaviour
     {
         Character.Damaged -= OnDamaged;
         Character.Died    -= OnDied;
+        CancelAttack();
     }
 
     void Start()
@@ -112,6 +118,8 @@ public class EnemyBrain : MonoBehaviour
     void Update()
     {
         if (State == EnemyState.Dead) return;
+        if(GameManager.HasInstance && !GameManager.Instance.GameplayActive) { CancelAttack(); Motor.Stop(); return; }
+        if(Time.time < recoveryUntil) { Motor.Stop(); UpdateAnimator(); return; }
 
         Perception.Profile = Profile;
         for (int i = 0; i < attackCooldowns.Count; i++) attackCooldowns[i] -= Time.deltaTime;
@@ -131,8 +139,8 @@ public class EnemyBrain : MonoBehaviour
 
     void OnDamaged(DamageInfo info)
     {
-        if (State == EnemyState.Dead) return;
-        if (info.Source != null) Perception.NotifyAttackedFrom(info.Source.transform.position);
+        if (State == EnemyState.Dead || !Character.IsAlive) return;
+        if (info.Source != null) { wasProvoked=true; Perception.NotifyAttackedFrom(info.Source.transform.position); }
 
         if (Profile.aggressionMode == AggressionMode.AggressiveWhenHit && Perception.Target != null
             && State != EnemyState.Chase && State != EnemyState.Attack)
@@ -141,9 +149,18 @@ public class EnemyBrain : MonoBehaviour
             StartInvestigate(Perception.StimulusPosition);
     }
 
+    void CancelAttack()
+    {
+        if(Character.Animator!=null)
+            foreach(var attack in Attacks)
+                if(Character.HasParameter(Character.Animator,attack.animatorTrigger,AnimatorControllerParameterType.Trigger))
+                    Character.Animator.ResetTrigger(attack.animatorTrigger);
+        fallbackHitPending=false; currentAttack=null; attackWasPlaying=false;
+        if(attackRelay != null) attackRelay.DisableHitbox();
+    }
     void OnDied()
     {
-        fallbackHitPending = false;
+        CancelAttack();
         Motor.Stop();
         SetState(EnemyState.Dead);
         if (Motor.Agent != null) Motor.Agent.enabled = false;
@@ -240,6 +257,10 @@ public class EnemyBrain : MonoBehaviour
             return;
         }
 
+        if(Perception.TargetVisible && Attacks.Exists(a => a != null && dist >= a.minRange && dist <= a.maxRange))
+        {
+            Motor.Stop(); Motor.Face(target.transform.position,Profile.attackFaceSpeed); return;
+        }
         if (Perception.TargetVisible)
         {
             loseSightTimer = Profile.loseSightGracePeriod;
@@ -267,6 +288,8 @@ public class EnemyBrain : MonoBehaviour
         var target = Perception.Target;
         if (target == null) { SetState(Profile.defaultState); return; }
 
+        if(currentAttack != null && Time.time < attackStartedAt+(Tuning != null ? Tuning.enemyAttackCommitTime : .65f))
+        { if(IsPlayingAttack()) attackWasPlaying=true; return; }
         // Stay planted mid-swing — no chasing or turning until the attack animation ends.
         if (IsPlayingAttack()) { attackWasPlaying = true; return; }
         if (attackWasPlaying)
@@ -274,6 +297,9 @@ public class EnemyBrain : MonoBehaviour
             // Swing finished without its hit event firing — drop the pending hit.
             attackWasPlaying   = false;
             fallbackHitPending = false;
+            currentAttack=null;
+            recoveryUntil=Time.time+(Tuning != null ? Tuning.enemyRecoveryTime : .55f);
+            Motor.Stop(); return;
         }
 
         float dist = Perception.HorizontalDist(transform.position, target.transform.position);
@@ -287,7 +313,6 @@ public class EnemyBrain : MonoBehaviour
         Motor.Face(target.transform.position, Profile.attackFaceSpeed);
         if (!Motor.IsFacing(target.transform.position, attack.facingAngle)) return;
 
-        Motor.SnapFace(target.transform.position);
         StartAttack(attack);
     }
 
@@ -317,8 +342,9 @@ public class EnemyBrain : MonoBehaviour
     void StartAttack(EnemyAttack attack)
     {
         currentAttack = attack;
+        attackStartedAt=Time.time; committedForward=transform.forward;
         int index = Attacks.IndexOf(attack);
-        if (index >= 0) attackCooldowns[index] = attack.cooldown;
+        if (index >= 0) attackCooldowns[index] = attack.cooldown * (Tuning != null ? Tuning.enemyCooldownMultiplier : 1.15f);
 
         var hitbox = attackRelay != null ? attackRelay.GetHitbox(attack.hitboxIndex) : null;
         if (hitbox != null) hitbox.SetProfile(attack.hit);
@@ -330,14 +356,14 @@ public class EnemyBrain : MonoBehaviour
         if (hitbox == null)
         {
             fallbackHitPending = true;
-            fallbackHitAt = attack.fallbackHitDelay >= 0f ? Time.time + attack.fallbackHitDelay : float.MaxValue;
+            fallbackHitAt = attack.fallbackHitDelay >= 0f ? Time.time + Mathf.Max(attack.fallbackHitDelay,Tuning != null ? Tuning.enemyMinimumWindup : .35f) : float.MaxValue;
         }
     }
 
     // Animation event on the attack clip: the moment the swing connects.
     public void OnAttackHit()
     {
-        if (fallbackHitPending) DealFallbackHit();
+        if (fallbackHitPending && Time.time >= attackStartedAt+(Tuning != null ? Tuning.enemyMinimumWindup : .35f)) DealFallbackHit();
     }
 
     // Direct hit for enemies without a Hitbox.
@@ -350,7 +376,10 @@ public class EnemyBrain : MonoBehaviour
         // Facing was already required to start the swing; the clip may turn the model
         // by the time the hit event fires, so only distance is checked here.
         float dist = Perception.HorizontalDist(transform.position, target.transform.position);
-        if (dist > currentAttack.maxRange * 1.2f) return;
+        if (dist > currentAttack.maxRange * 1.05f || Mathf.Abs(target.transform.position.y-transform.position.y) > 1f) return;
+        Vector3 toward=target.transform.position-transform.position; toward.y=0;
+        if(Vector3.Angle(committedForward,toward) > (Tuning != null ? Tuning.enemyHitFacingAngle : 55f)) return;
+        if(!Perception.TargetVisible) return;
 
         Vector3 dir = target.transform.position - transform.position;
         dir.y = 0f;
@@ -363,6 +392,7 @@ public class EnemyBrain : MonoBehaviour
         float damage = Character.Stats != null ? Character.Stats.GetFinal(StatType.AttackDamage) : 0f;
         var info = new DamageInfo
         {
+            Profile        = currentAttack.hit,
             Amount         = damage * currentAttack.hit.damageMultiplier,
             Source         = Character,
             HitPoint       = target.transform.position + Vector3.up * 1f,
@@ -372,10 +402,9 @@ public class EnemyBrain : MonoBehaviour
 
         var damageable = target.GetComponent<IDamageable>();
         if (damageable == null) return;
+        if(Tuning != null && !Tuning.HasMeleeLineOfSight(Character,target,info.HitPoint))return;
         damageable.TakeDamage(info);
-        Character.NotifyHitLanded(info);
-        if (CombatManager.HasInstance && CombatManager.Instance.hitStopOnPlayerHurt)
-            CombatManager.Instance.RequestHitStop(currentAttack.hit.hitStopScale);
+
     }
 
     void HandleReturnToPost()
@@ -460,14 +489,16 @@ public class EnemyBrain : MonoBehaviour
         Motor.SetAngularSpeed(isCombat ? p.chaseAngularSpeed : p.passiveAngularSpeed);
     }
 
-    bool IsPlayingAttack()
+    bool IsPlayingAttack() => IsPlayingTag("Attack");
+
+    bool IsPlayingTag(string tag)
     {
         var anim = Character.Animator;
         if (anim == null || anim.runtimeAnimatorController == null) return false;
         for (int layer = 0; layer < anim.layerCount; layer++)
         {
-            if (anim.GetCurrentAnimatorStateInfo(layer).IsTag("Attack")) return true;
-            if (anim.IsInTransition(layer) && anim.GetNextAnimatorStateInfo(layer).IsTag("Attack")) return true;
+            if (anim.GetCurrentAnimatorStateInfo(layer).IsTag(tag)) return true;
+            if (anim.IsInTransition(layer) && anim.GetNextAnimatorStateInfo(layer).IsTag(tag)) return true;
         }
         return false;
     }
@@ -476,6 +507,8 @@ public class EnemyBrain : MonoBehaviour
     {
         var anim = Character.Animator;
         if (anim == null || anim.runtimeAnimatorController == null) return;
+        if(Character.HasParameter(anim,"HurtSpeed",AnimatorControllerParameterType.Float))
+            anim.SetFloat("HurtSpeed",Tuning != null ? Tuning.enemyHurtAnimationSpeed : 1.3f);
         float speed = Motor.Velocity.magnitude;
         anim.SetFloat("Speed",       speed, 0.1f, Time.deltaTime);
         anim.SetFloat("MotionSpeed", Motor.HasPath ? 1f : 0f, 0.1f, Time.deltaTime);

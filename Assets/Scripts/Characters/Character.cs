@@ -76,12 +76,17 @@ public class Character : MonoBehaviour
 
     protected virtual void OnDamaged(DamageInfo info)
     {
-        if (!info.Blocked && data != null)
+        if (!info.Blocked && data != null && GetComponent<EnemyBrain>() == null)
             TriggerAnimation(data.hurtTrigger);
 
         FX?.NotifyHurtReceived(info);
+        if (info.Amount > 0f || info.Blocked)
+        {
+            if (CombatManager.HasInstance) CombatManager.Instance.PresentImpact(this, info);
+            info.Source?.NotifyHitLanded(info);
+        }
 
-        if (info.KnockbackForce > 0f && info.Direction != Vector3.zero)
+        if (!info.Blocked && info.Amount > 0f && info.KnockbackForce > 0f && info.Direction != Vector3.zero)
             Knockback?.ApplyKnockback(info.Direction, info.KnockbackForce);
 
         Damaged?.Invoke(info);
@@ -89,6 +94,15 @@ public class Character : MonoBehaviour
 
     protected virtual void OnDied()
     {
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            // A lethal hit must not leave Hurt or Attack queued behind Death.
+            foreach (var parameter in animator.parameters)
+                if (parameter.type == AnimatorControllerParameterType.Trigger)
+                    animator.ResetTrigger(parameter.name);
+            if (HasParameter(animator, "Dead", AnimatorControllerParameterType.Bool))
+                animator.SetBool("Dead", true);
+        }
         if (data != null) TriggerAnimation(data.deathTrigger);
         Died?.Invoke();
         AnyDied?.Invoke(this);
