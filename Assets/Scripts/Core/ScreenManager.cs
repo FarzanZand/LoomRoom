@@ -6,6 +6,19 @@ public class ScreenManager : Singleton<ScreenManager>
 {
     public Image fadeFullscreenImage;
 
+    /// Blend scene lighting and sky without colouring the UI.
+    public void BlendToMood(SceneMood mood, float duration = 2f)
+    {
+        var controller = GetComponent<SceneMoodController>();
+        if (controller != null) controller.BlendToMood(mood, duration);
+    }
+
+    public void RestoreMood(float duration = 2f)
+    {
+        var controller = GetComponent<SceneMoodController>();
+        if (controller != null) controller.RestoreMood(duration);
+    }
+
     private Coroutine fadeRoutine;
 
     protected override void Awake()

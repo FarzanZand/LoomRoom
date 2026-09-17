@@ -33,9 +33,16 @@ MonoBehaviour:
     loseSightGracePeriod: 3
     maxSearchTime: 5
     useChaseSpeed: 1
-    chaseSpeed: 4
+    chaseSpeed: 4.5
     useWanderSpeed: 1
     wanderSpeed: 2
-    passiveAngularSpeed: 120
-    chaseAngularSpeed: 540
-    attackFaceSpeed: 720
+    acceleration: 30
+    preferredRangeFraction: 0.7
+    circleTarget: 1
+    circleSpeedFraction: 0.35
+    circleSwitchInterval: {x: 0.9, y: 2}
+    spacingSpeedFraction: 0.8
+    passiveAngularSpeed: 360
+    chaseAngularSpeed: 720
+    attackFaceSpeed: 900
+    windupTrackSpeed: 240

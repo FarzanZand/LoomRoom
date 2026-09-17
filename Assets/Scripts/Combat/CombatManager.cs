@@ -84,11 +84,18 @@ public class CombatManager : Singleton<CombatManager>
     [Min(0)] public float heavyStaminaCost = 1f;
 
     [Header("Enemy rhythm")]
-    [Min(.1f)] public float enemyAttackCommitTime = .65f;
-    [Min(0)] public float enemyRecoveryTime = .55f;
-    [Min(.1f)] public float enemyCooldownMultiplier = 1.15f;
-    [Min(0)] public float enemyMinimumWindup = .35f;
-    [Range(10,100)] public float enemyHitFacingAngle = 55f;
+    [Tooltip("Seconds after the swing starts during which the enemy still turns to track the target (windupTrackSpeed). After this the swing direction is committed.")]
+    [Min(.1f)] public float enemyAttackCommitTime = .4f;
+    [Tooltip("Seconds the enemy stands after a swing before it moves again.")]
+    [Min(0)] public float enemyRecoveryTime = .18f;
+    [Tooltip("Multiplier on every enemy attack cooldown.")]
+    [Min(.1f)] public float enemyCooldownMultiplier = 1f;
+    [Tooltip("The hit can never land sooner than this after the swing starts, even if the clip's event is earlier.")]
+    [Min(0)] public float enemyMinimumWindup = .3f;
+    [Tooltip("Max angle between where the enemy committed to swing and the target for the hit to land.")]
+    [Range(10,100)] public float enemyHitFacingAngle = 60f;
+    [Tooltip("Playback speed of enemy attack animations (the AttackSpeed animator parameter).")]
+    [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;
 
     [Header("Swing feel")]
     [Tooltip("Speed multiplier over the light release by normalized clip time: fast in, slower follow-through.")]

@@ -39,6 +39,7 @@ public class InputManager : Singleton<InputManager>
     public event Action SecondaryReleased;
     public event Action<int> HotbarSelected;
     public event Action<PlayerKind> DebugSwapRequested;
+    public event Action DebugMoodPreviewRequested;
 
     public PlayerInputActions Actions => actions;
 
@@ -69,6 +70,8 @@ public class InputManager : Singleton<InputManager>
 
         actions.Dev.Debug1.performed += _ => DebugSwapRequested?.Invoke(PlayerKind.Room);
         actions.Dev.Debug2.performed += _ => DebugSwapRequested?.Invoke(PlayerKind.Table);
+        actions.Dev.Get().AddAction("PreviewSceneMood", InputActionType.Button, "<Keyboard>/f5")
+            .performed += _ => DebugMoodPreviewRequested?.Invoke();
     }
 
     void Bind(InputAction move, InputAction look, InputAction jump, InputAction sprint, InputAction crouch,

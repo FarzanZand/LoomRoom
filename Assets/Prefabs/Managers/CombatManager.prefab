@@ -82,11 +82,12 @@ MonoBehaviour:
   heavyDamageMultiplier: 1.65
   heavyKnockbackMultiplier: 1.35
   heavyStaminaCost: 1
-  enemyAttackCommitTime: 0.65
-  enemyRecoveryTime: 0.55
-  enemyCooldownMultiplier: 1.15
-  enemyMinimumWindup: 0.35
-  enemyHitFacingAngle: 55
+  enemyAttackCommitTime: 0.4
+  enemyRecoveryTime: 0.18
+  enemyCooldownMultiplier: 1
+  enemyMinimumWindup: 0.3
+  enemyHitFacingAngle: 60
+  enemyAttackAnimationSpeed: 1.35
   releaseSpeedCurve:
     serializedVersion: 2
     m_Curve:

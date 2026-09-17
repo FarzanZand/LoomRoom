@@ -65,6 +65,7 @@ public class Hitbox : MonoBehaviour
 
     public void EnableHitbox()
     {
+        if (Active) return;
         hitThisSwing.Clear();
         owner  = GetComponentInParent<Character>();
         Active = true;
@@ -122,6 +123,7 @@ public class Hitbox : MonoBehaviour
 
     void ProcessHit(Collider other)
     {
+        if (!Active || owner == null || !owner.IsAlive) return;
         if (owner != null && other.transform.IsChildOf(owner.transform)) return;
         var damageable = other.GetComponentInParent<IDamageable>();
         if (damageable == null || hitThisSwing.Contains(damageable)) return;

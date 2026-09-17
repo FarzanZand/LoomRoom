@@ -71,14 +71,40 @@ public class EnemyBehaviourSettings
     [TabGroup(Tabs, "Chase"), ShowIf("useWanderSpeed")]
     public float wanderSpeed = 2f;
 
+    [TabGroup(Tabs, "Chase")]
+    [Tooltip("How quickly the agent reaches its speed. High values feel snappy; low values slide.")]
+    public float acceleration = 30f;
+
+    // ── Spacing (in range, attack recharging) ─────────────────────────
+    [TabGroup(Tabs, "Spacing")]
+    [Tooltip("Fraction of the attack's max range the enemy tries to hold while its attack recharges.")]
+    [Range(0.3f, 1f)] public float preferredRangeFraction = 0.7f;
+    [TabGroup(Tabs, "Spacing")]
+    [Tooltip("Circle sideways around the target instead of standing still while the attack recharges.")]
+    public bool circleTarget = true;
+    [TabGroup(Tabs, "Spacing"), ShowIf("circleTarget")]
+    [Tooltip("Circling speed as a fraction of chase speed.")]
+    [Range(0f, 1f)] public float circleSpeedFraction = 0.35f;
+    [TabGroup(Tabs, "Spacing"), ShowIf("circleTarget")]
+    [Tooltip("Seconds between random direction changes while circling (min / max).")]
+    public Vector2 circleSwitchInterval = new Vector2(0.9f, 2f);
+    [TabGroup(Tabs, "Spacing")]
+    [Tooltip("Speed fraction used to step in or back off to the preferred range.")]
+    [Range(0f, 1f)] public float spacingSpeedFraction = 0.8f;
+
     // ── Rotation ──────────────────────────────────────────────────────
     [TabGroup(Tabs, "Rotation")]
-    public float passiveAngularSpeed = 120f;
+    [Tooltip("Turn speed (deg/s) while wandering or patrolling.")]
+    public float passiveAngularSpeed = 360f;
     [TabGroup(Tabs, "Rotation")]
-    public float chaseAngularSpeed   = 540f;
+    [Tooltip("Turn speed (deg/s) toward the movement direction while chasing.")]
+    public float chaseAngularSpeed   = 720f;
     [TabGroup(Tabs, "Rotation")]
     [Tooltip("Degrees per second the enemy turns toward the target while in attack range.")]
-    public float attackFaceSpeed     = 720f;
+    public float attackFaceSpeed     = 900f;
+    [TabGroup(Tabs, "Rotation")]
+    [Tooltip("Degrees per second the enemy keeps tracking the target during the attack windup, before the swing commits. 0 = fully planted.")]
+    public float windupTrackSpeed    = 240f;
 
     // Deep copy, used when an EnemyBrain starts overriding: it begins from the shared values.
     public EnemyBehaviourSettings Clone() => JsonUtility.FromJson<EnemyBehaviourSettings>(JsonUtility.ToJson(this));

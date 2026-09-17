@@ -7738,6 +7738,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: HumanoidEnemy (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 957184423342700410, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2685329303846743532, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: m_Enabled
       value: 1
@@ -7748,7 +7752,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.chaseSpeed
-      value: 4
+      value: 4.5
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.wanderRadius
@@ -7760,7 +7764,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.aggressionMode
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.useWanderSpeed
@@ -7768,7 +7772,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.detectionRadius
-      value: 2
+      value: 13.4
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.investigateNoise
@@ -19511,6 +19515,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: HumanoidEnemy (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 957184423342700410, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2685329303846743532, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: m_Enabled
       value: 1
@@ -19521,7 +19529,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.chaseSpeed
-      value: 4
+      value: 4.5
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.wanderRadius
@@ -19533,7 +19541,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.aggressionMode
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.useWanderSpeed
@@ -19541,7 +19549,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.detectionRadius
-      value: 2
+      value: 13.4
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.investigateNoise
@@ -21041,6 +21049,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: HumanoidEnemy (5)
       objectReference: {fileID: 0}
+    - target: {fileID: 957184423342700410, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1615541769931481474, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -21067,7 +21079,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.chaseSpeed
-      value: 4
+      value: 4.5
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.wanderRadius
@@ -21079,7 +21091,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.aggressionMode
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.useWanderSpeed
@@ -21087,7 +21099,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.detectionRadius
-      value: 2
+      value: 13.4
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.investigateNoise
@@ -29698,7 +29710,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.chaseSpeed
-      value: 4
+      value: 4.5
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.wanderRadius
@@ -33603,6 +33615,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 581167390610533978, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 659157486100547264, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: m_LocalPosition.x
       value: -307.98
@@ -33651,6 +33667,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: HumanoidEnemy (3)
       objectReference: {fileID: 0}
+    - target: {fileID: 957184423342700410, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1515851509437579348, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -33665,7 +33685,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.chaseSpeed
-      value: 4
+      value: 4.5
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.wanderRadius
@@ -33677,7 +33697,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.aggressionMode
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.useWanderSpeed
@@ -33685,7 +33705,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.detectionRadius
-      value: 2
+      value: 13.4
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.investigateNoise
@@ -38834,6 +38854,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: HumanoidEnemy (4)
       objectReference: {fileID: 0}
+    - target: {fileID: 957184423342700410, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2623919897090469689, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -38848,7 +38872,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.chaseSpeed
-      value: 4
+      value: 4.5
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.wanderRadius
@@ -38860,7 +38884,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.aggressionMode
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.useWanderSpeed
@@ -38868,7 +38892,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.detectionRadius
-      value: 2
+      value: 13.4
       objectReference: {fileID: 0}
     - target: {fileID: 7987823238427769299, guid: 34a868154bafffc4f809f62a959f7db5, type: 3}
       propertyPath: localBehaviour.investigateNoise

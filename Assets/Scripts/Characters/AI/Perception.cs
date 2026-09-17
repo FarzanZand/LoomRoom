@@ -15,6 +15,7 @@ public class Perception : MonoBehaviour
     public Vector3 StimulusPosition { get; private set; }
 
     Character self;
+    readonly RaycastHit[] sightHits = new RaycastHit[32];
 
     void Awake() => self = GetComponent<Character>();
 
@@ -22,10 +23,10 @@ public class Perception : MonoBehaviour
     void OnDisable() => NoiseEvents.Noise -= OnNoise;
 
     // Called by the brain once per frame.
-    public void Tick()
+    public void Tick(bool trackingTarget = false)
     {
         Target = ResolveTarget();
-        TargetVisible = Target != null && CanSee(Target.transform);
+        TargetVisible = Target != null && CanSee(Target.transform, trackingTarget);
         if (TargetVisible) LastKnownTargetPosition = Target.transform.position;
     }
 
@@ -38,7 +39,7 @@ public class Perception : MonoBehaviour
         return player;
     }
 
-    public bool CanSee(Transform target)
+    public bool CanSee(Transform target, bool trackingTarget = false)
     {
         if (target == null || Profile == null) return false;
 
@@ -47,10 +48,19 @@ public class Perception : MonoBehaviour
         float   dist     = toTarget.magnitude;
 
         if (dist > Profile.detectionRadius) return false;
-        if (HorizontalDist(transform.position, target.position) <= Profile.closeDetectionRadius) return true;
-        if (Vector3.Angle(transform.forward, toTarget) > Profile.fieldOfView * 0.5f) return false;
+        bool close = HorizontalDist(transform.position, target.position) <= Profile.closeDetectionRadius;
+        if (!trackingTarget && !close && Vector3.Angle(transform.forward, toTarget) > Profile.fieldOfView * 0.5f) return false;
 
-        return !Physics.Raycast(origin, toTarget.normalized, dist, Profile.obstacleMask, QueryTriggerInteraction.Ignore);
+        // Close awareness bypasses the view cone, never walls. Ignore both character bodies.
+        int count = Physics.RaycastNonAlloc(origin, toTarget.normalized, sightHits, dist, Profile.obstacleMask, QueryTriggerInteraction.Ignore);
+        if (count == sightHits.Length) return false;
+        for (int i = 0; i < count; i++)
+        {
+            var hit = sightHits[i].transform;
+            if (hit.IsChildOf(transform) || hit.IsChildOf(target)) continue;
+            return false;
+        }
+        return true;
     }
 
     void OnNoise(Vector3 position, float radius, Character source)
@@ -69,7 +79,11 @@ public class Perception : MonoBehaviour
     {
         HasStimulus      = true;
         StimulusPosition = position;
+        // Being hit tells you where the attacker is, even if you cannot see them yet.
+        LastKnownTargetPosition = position;
     }
+
+    public void SetLastKnownTargetPosition(Vector3 position) => LastKnownTargetPosition = position;
 
     public void ConsumeStimulus() => HasStimulus = false;
 
