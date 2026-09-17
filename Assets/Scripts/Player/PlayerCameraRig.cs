@@ -31,8 +31,12 @@ public class PlayerCameraRig : MonoBehaviour
 
     public CinemachineCamera Camera => cam;
 
+    // Transient feel inputs written by PlayerFX every frame (charge pull-in, charge shake). Zero = none.
+    public float FovOffset      { get; set; }
+    public float ExtraAmplitude { get; set; }
+
     Player player;
-    float amp, freq;
+    float amp, freq, baseFov;
 
     void Awake()
     {
@@ -40,10 +44,18 @@ public class PlayerCameraRig : MonoBehaviour
         if (cam == null)   cam   = GetComponentInChildren<CinemachineCamera>(true);
         if (noise == null && cam != null) noise = cam.GetComponent<CinemachineBasicMultiChannelPerlin>();
         if (noise != null) { amp = noise.AmplitudeGain; freq = noise.FrequencyGain; }
+        if (cam != null) baseFov = cam.Lens.FieldOfView;
     }
 
     void Update()
     {
+        if (cam != null)
+        {
+            var lens = cam.Lens;
+            float fov = baseFov + FovOffset;
+            if (!Mathf.Approximately(lens.FieldOfView, fov)) { lens.FieldOfView = fov; cam.Lens = lens; }
+        }
+
         if (noise == null || player == null || player.Motor == null) return;
 
         var target = Find(player.Motor.State);
@@ -53,7 +65,7 @@ public class PlayerCameraRig : MonoBehaviour
         float t = 1f - Mathf.Exp(-blendSpeed * Time.deltaTime);
         amp  = Mathf.Lerp(amp,  ta, t);
         freq = Mathf.Lerp(freq, tf, t);
-        noise.AmplitudeGain = amp;
+        noise.AmplitudeGain = amp + ExtraAmplitude;
         noise.FrequencyGain = freq;
     }
 

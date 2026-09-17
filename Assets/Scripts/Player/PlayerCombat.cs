@@ -24,31 +24,71 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField] string blockHitTrigger        = "BlockHit";
     [SerializeField] string hurtTrigger            = "Hurt";
 
+    [Header("Charge feel")]
+    [Tooltip("0..1 charge toward a heavy strike, for the animator.")]
+    [SerializeField] string chargeParam    = "Charge";
+    [Tooltip("Speed multiplier on the hold loop; slows toward CombatManager.holdSpeedAtFullCharge as the charge builds.")]
+    [SerializeField] string holdSpeedParam = "HoldSpeed";
+    [Tooltip("Additive layer whose weight follows the charge (arm pulled back, trembling) and spikes on a heavy impact.")]
+    [SerializeField] string chargeLayer    = "ChargeAdditive";
+    [Tooltip("How fast the displayed charge follows the real one, per second.")]
+    [SerializeField, Min(1f)] float chargeSmoothing = 10f;
+
+    [Header("Light swings")]
+    [Tooltip("Alternates between the light swing variants on each press.")]
+    [SerializeField] string swingIndexParam = "SwingIndex";
+    [Tooltip("Presses further apart than this restart the swing sequence.")]
+    [SerializeField, Min(0f)] float swingSequenceReset = 1.2f;
+
     public bool IsAttacking => HasTag(attackTag);
     public bool IsBlocking  => HasTag(blockTag);
     public bool WeaponHeld  => player.Equipment != null && player.Equipment.Get(EquipmentSlot.RightHand)?.itemType == ItemType.Weapon;
     public bool ShieldHeld  => player.Equipment != null && player.Equipment.Get(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
+    // Smoothed 0..1 progress toward a heavy strike while the attack button is held.
+    public float Charge { get; private set; }
+    // Fired once when a held attack reaches full charge.
+    public event System.Action ChargeReady;
 
     Player player;
     float  blockLockUntil = -1f;
     float attackBufferedUntil=-1f;
     float pressedAt;
     bool charging;
+    bool chargeAnnounced;
+    float shudder;
+    int swingIndex = 1;   // first swing of a sequence becomes 0
+    float lastSwingAt = -10f;
+    int chargeLayerIndex = -1;
     float guardPressedAt=-10;
     public bool HeavySwing { get; private set; }
+
+    WeaponAnimationRelay relay;
 
     void Awake()
     {
         player = GetComponent<Player>();
-        if (armsAnimator == null)
-        {
-            var relay = GetComponentInChildren<WeaponAnimationRelay>(true);
-            if (relay != null) armsAnimator = relay.GetComponent<Animator>();
-        }
+        relay = GetComponentInChildren<WeaponAnimationRelay>(true);
+        if (armsAnimator == null && relay != null) armsAnimator = relay.GetComponent<Animator>();
     }
+
+    // Between the windup's AttackBegin event and the swing's PlaySwingAudio event only the real button
+    // counts as held: the press that started the swing is consumed, and a tap that lands during the
+    // windup or hold is queued for the next swing instead of stretching the current hold.
+    bool windingUp;
+    int queuedPresses;   // presses not yet turned into a windup, capped so spam can't bank swings
+    void OnAttackStarted()
+    {
+        queuedPresses = Mathf.Max(0, queuedPresses - 1); windingUp = true;
+        // Alternate the light swing per actual swing; a pause restarts the sequence.
+        swingIndex = Time.time - lastSwingAt <= swingSequenceReset ? (swingIndex + 1) % 2 : 0;
+        lastSwingAt = Time.time;
+        if (Character.HasParameter(armsAnimator, swingIndexParam, AnimatorControllerParameterType.Int)) armsAnimator.SetInteger(swingIndexParam, swingIndex);
+    }
+    void OnSwingStarted()  { windingUp = false; }
 
     void OnEnable()
     {
+        if (relay != null) { relay.AttackStarted += OnAttackStarted; relay.SwingStarted += OnSwingStarted; }
         if (InputManager.HasInstance) InputManager.Instance.PrimaryPressed += OnPrimaryPressed;
         if (player.Equipment != null) player.Equipment.Changed += OnEquipmentChanged;
         player.Damaged += OnDamaged;
@@ -62,6 +102,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
 
     void OnDisable()
     {
+        if (relay != null) { relay.AttackStarted -= OnAttackStarted; relay.SwingStarted -= OnSwingStarted; }
+        windingUp = false; queuedPresses = 0;
         if (InputManager.HasInstance) InputManager.Instance.PrimaryPressed -= OnPrimaryPressed;
         if (player.Equipment != null) player.Equipment.Changed -= OnEquipmentChanged;
         player.Damaged -= OnDamaged;
@@ -74,7 +116,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     {
         if (!player.IsActive) return;
         if (InputManager.Instance.SecondaryHeld) return;
-        pressedAt=Time.time; HeavySwing=false; charging=true;
+        pressedAt=Time.time; HeavySwing=false; charging=true; chargeAnnounced=false;
+        queuedPresses = Mathf.Min(queuedPresses + 1, 2);
         attackBufferedUntil=Time.time+(CombatManager.HasInstance ? CombatManager.Instance.attackInputBuffer : .22f);
         float window = CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f;
         blockLockUntil = Time.time + window;
@@ -102,14 +145,25 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         bool blockLocked = Time.time < blockLockUntil;
         if(CombatManager.HasInstance)
         {
-            float attackSpeed=CombatManager.Instance.playerAttackSpeed*(player.Stats!=null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f);
-            if(Character.HasParameter(armsAnimator,"WindupSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("WindupSpeed",CombatManager.Instance.windupSpeed*attackSpeed);
-            if(Character.HasParameter(armsAnimator,"ReleaseSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("ReleaseSpeed",CombatManager.Instance.releaseSpeed*attackSpeed);
-            if(Character.HasParameter(armsAnimator,"HeavyReleaseSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("HeavyReleaseSpeed",CombatManager.Instance.heavyReleaseSpeed*attackSpeed);
+            var tuning=CombatManager.Instance;
+            float attackSpeed=tuning.playerAttackSpeed*(player.Stats!=null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f);
+            // Release pacing follows a curve over the swing so it whips through the strike and settles in the recovery.
+            float phase = AttackPhase();
+            float release = tuning.releaseSpeedCurve != null ? tuning.releaseSpeedCurve.Evaluate(phase) : 1f;
+            float heavy   = tuning.heavyReleaseSpeedCurve != null ? tuning.heavyReleaseSpeedCurve.Evaluate(phase) : 1f;
+            if(Character.HasParameter(armsAnimator,"WindupSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("WindupSpeed",tuning.windupSpeed*attackSpeed);
+            if(Character.HasParameter(armsAnimator,"ReleaseSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("ReleaseSpeed",tuning.releaseSpeed*attackSpeed*release);
+            if(Character.HasParameter(armsAnimator,"HeavyReleaseSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("HeavyReleaseSpeed",tuning.heavyReleaseSpeed*attackSpeed*heavy);
             SetBool(armsAnimator,"HeavyStrike",HeavySwing);
+            UpdateCharge(tuning);
         }
 
-        SetBool(armsAnimator, attackHeldParam, (primary || Time.time < attackBufferedUntil) && WeaponHeld && !secondary);
+        if (!IsAttacking) windingUp = false;
+        // A queued press stays valid while a swing is in progress (it chains at the recovery's cancel point);
+        // when idle it expires after the buffer window like any late press.
+        if (!IsAttacking && Time.time >= attackBufferedUntil) queuedPresses = 0;
+        bool buffered = queuedPresses > 0 && !windingUp;
+        SetBool(armsAnimator, attackHeldParam, (primary || buffered) && WeaponHeld && !secondary);
         SetBool(armsAnimator, blockHeldParam,  secondary && !blockLocked && ShieldHeld);
 
         if (player.Stats != null && Character.HasParameter(armsAnimator, "AttackSpeed", AnimatorControllerParameterType.Float))
@@ -130,6 +184,39 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         string trigger = info.Blocked ? blockHitTrigger : hurtTrigger;
         Trigger(armsAnimator, trigger);
         Trigger(bodyAnimator, trigger);
+    }
+
+    // ── Charge feel ───────────────────────────────────────────────────
+
+    // Charge builds while the button stays held in an attack state, eases out otherwise. It drives the animator
+    // param, the hold-loop speed and the additive tension layer's weight; a heavy impact adds a decaying shudder.
+    void UpdateCharge(CombatManager tuning)
+    {
+        float target = charging && IsAttacking && WeaponHeld ? Mathf.Clamp01((Time.time - pressedAt) / Mathf.Max(0.01f, tuning.heavyChargeTime)) : 0f;
+        Charge = Mathf.MoveTowards(Charge, target, chargeSmoothing * Time.deltaTime * (target > Charge ? 1f : 2.5f));
+        if (charging && !chargeAnnounced && target >= 1f) { chargeAnnounced = true; ChargeReady?.Invoke(); }
+        shudder = Mathf.MoveTowards(shudder, 0f, 4f * Time.deltaTime);
+
+        if (Character.HasParameter(armsAnimator, chargeParam, AnimatorControllerParameterType.Float)) armsAnimator.SetFloat(chargeParam, Charge);
+        if (Character.HasParameter(armsAnimator, holdSpeedParam, AnimatorControllerParameterType.Float)) armsAnimator.SetFloat(holdSpeedParam, Mathf.Lerp(1f, tuning.holdSpeedAtFullCharge, Charge));
+        if (chargeLayerIndex < 0 && !string.IsNullOrEmpty(chargeLayer)) chargeLayerIndex = armsAnimator.GetLayerIndex(chargeLayer);
+        if (chargeLayerIndex >= 0) armsAnimator.SetLayerWeight(chargeLayerIndex, Mathf.Clamp01(Charge * tuning.chargeTension + shudder));
+    }
+
+    // Spike the tension layer, e.g. when a heavy hit lands; it decays on its own.
+    public void Shudder(float amount) => shudder = Mathf.Max(shudder, Mathf.Clamp01(amount));
+
+    // Normalized time of the attack-tagged state currently playing (0 when none), clamped to one pass.
+    float AttackPhase()
+    {
+        if (armsAnimator == null || armsAnimator.runtimeAnimatorController == null || string.IsNullOrEmpty(attackTag)) return 0f;
+        for (int layer = 0; layer < armsAnimator.layerCount; layer++)
+        {
+            var info = armsAnimator.GetCurrentAnimatorStateInfo(layer);
+            if (armsAnimator.IsInTransition(layer)) { var next = armsAnimator.GetNextAnimatorStateInfo(layer); if (next.IsTag(attackTag)) return Mathf.Clamp01(next.normalizedTime); }
+            if (info.IsTag(attackTag)) return Mathf.Clamp01(info.normalizedTime);
+        }
+        return 0f;
     }
 
     // ── IBlocker ──────────────────────────────────────────────────────

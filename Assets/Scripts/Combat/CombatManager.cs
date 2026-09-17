@@ -90,6 +90,32 @@ public class CombatManager : Singleton<CombatManager>
     [Min(0)] public float enemyMinimumWindup = .35f;
     [Range(10,100)] public float enemyHitFacingAngle = 55f;
 
+    [Header("Swing feel")]
+    [Tooltip("Speed multiplier over the light release by normalized clip time: fast in, slower follow-through.")]
+    public AnimationCurve releaseSpeedCurve = new AnimationCurve(new Keyframe(0f, 1.3f), new Keyframe(.45f, 1.15f), new Keyframe(1f, .7f));
+    [Tooltip("Speed multiplier over the heavy release. The heavy swing clip already carries its coil / strike / hang / recovery timing, so keep this near 1.")]
+    public AnimationCurve heavyReleaseSpeedCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(.4f, 1.1f), new Keyframe(1f, .9f));
+    [Tooltip("Camera kick when a swing starts, pushed forward for a light swing and down for a heavy one.")]
+    [Range(0,3)] public float swingCameraKick = .3f;
+    [Range(0,4)] public float heavySwingCameraKick = 1.1f;
+    [Tooltip("Hit stop scale for a heavy hit that lands.")]
+    [Min(1)] public float heavyHitStopScale = 2f;
+    [Tooltip("Tension-layer spike when a heavy hit lands, read as the arm shuddering from the impact.")]
+    [Range(0,1)] public float heavyImpactShudder = .7f;
+
+    [Header("Charge feel")]
+    [Tooltip("Hold-loop speed at full charge: the arm settles into tension instead of breathing normally.")]
+    [Range(.05f,1f)] public float holdSpeedAtFullCharge = .3f;
+    [Tooltip("Weight of the ChargeAdditive layer at full charge (arm pulled further back, trembling).")]
+    [Range(0,1)] public float chargeTension = 1f;
+    [Tooltip("Field-of-view narrowing at full charge, in degrees.")]
+    [Range(0,15)] public float chargeFovPull = 4f;
+    [Tooltip("Extra camera noise amplitude at full charge.")]
+    [Range(0,3)] public float chargeShake = .45f;
+    [Tooltip("Camera kick the moment the charge completes.")]
+    [Range(0,2)] public float chargeReadyKick = .3f;
+    public AudioData chargeReadyAudio;
+
     [Header("Player impact feedback")]
     [Range(0,4)] public float landedCameraKick = .65f;
     [Range(0,6)] public float hurtCameraKick = 2f;

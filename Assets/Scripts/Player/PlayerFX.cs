@@ -19,11 +19,62 @@ public class PlayerFX : CharacterFX
     [SerializeField] float hurtFlashDuration = 0.3f;
 
     Coroutine hurtFlashRoutine;
+    Player player;
+    WeaponAnimationRelay swingRelay;
+
+    void Start()
+    {
+        player = GetComponentInParent<Player>();
+        if (player == null) return;
+        swingRelay = player.GetComponentInChildren<WeaponAnimationRelay>(true);
+        if (swingRelay != null) swingRelay.SwingStarted += OnSwingStarted;
+        if (player.Combat != null) player.Combat.ChargeReady += OnChargeReady;
+    }
+
+    void OnDestroy()
+    {
+        if (swingRelay != null) swingRelay.SwingStarted -= OnSwingStarted;
+        if (player != null && player.Combat != null) player.Combat.ChargeReady -= OnChargeReady;
+    }
+
+    // Charge feel: the view pulls in and the camera noise rises with the charge.
+    void Update()
+    {
+        if (player == null || player.CameraRig == null || player.Combat == null) return;
+        float charge = player.Combat.Charge;
+        var tuning = CombatManager.HasInstance ? CombatManager.Instance : null;
+        player.CameraRig.FovOffset      = -(tuning != null ? tuning.chargeFovPull : 4f) * charge;
+        player.CameraRig.ExtraAmplitude =  (tuning != null ? tuning.chargeShake   : .45f) * charge;
+    }
+
+    void OnSwingStarted()
+    {
+        if (!CombatManager.HasInstance || player.Combat == null) return;
+        var tuning = CombatManager.Instance;
+        bool heavy = player.Combat.HeavySwing;
+        KickDirectional(heavy ? tuning.heavySwingCameraKick : tuning.swingCameraKick, heavy ? Vector3.down : Vector3.forward);
+    }
+
+    void OnChargeReady()
+    {
+        if (!CombatManager.HasInstance) return;
+        var tuning = CombatManager.Instance;
+        KickDirectional(tuning.chargeReadyKick, Vector3.up);
+        if (tuning.chargeReadyAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(tuning.chargeReadyAudio);
+    }
+
+    void KickDirectional(float amount, Vector3 cameraLocalDir)
+    {
+        if (amount <= 0f || player == null || !player.IsActive || player.CameraRig == null || player.CameraRig.Camera == null || onHitImpulse == null) return;
+        onHitImpulse.GenerateImpulseWithVelocity(player.CameraRig.Camera.transform.TransformDirection(cameraLocalDir) * amount);
+    }
 
     public override void NotifyHitLanded(DamageInfo info)
     {
         base.NotifyHitLanded(info);
         Kick(CombatManager.HasInstance ? CombatManager.Instance.landedCameraKick : .65f,info);
+        if (player != null && player.Combat != null && player.Combat.HeavySwing && CombatManager.HasInstance)
+            player.Combat.Shudder(CombatManager.Instance.heavyImpactShudder);
     }
 
     public override void NotifyHurtReceived(DamageInfo info)

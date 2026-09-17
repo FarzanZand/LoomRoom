@@ -10,6 +10,8 @@ public class WeaponAnimationRelay : MonoBehaviour
 
     public event System.Action AttackStarted;
     public event System.Action AttackEnded;
+    // Raised by the PlaySwingAudio event every attack clip carries at the start of the swing.
+    public event System.Action SwingStarted;
 
     void Awake()
     {
@@ -40,6 +42,7 @@ public class WeaponAnimationRelay : MonoBehaviour
     public void PlaySwingAudio()
     {
         foreach (var h in hitboxes) { h.PlaySwingAudio(); break; }
+        SwingStarted?.Invoke();
     }
 
     public void AttackBegin() => AttackStarted?.Invoke();

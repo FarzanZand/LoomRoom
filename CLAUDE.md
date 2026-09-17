@@ -30,6 +30,7 @@ First-person 3D RPG. Unity 6000.5, URP, Cinemachine 3, Input System, Odin Inspec
 | Interactions, dialogue | `Scripts/Interactions/*`, `Scripts/Dialogue/DialogueBridge.cs` (Lua: `GiveItem`, `HasItem`, `SetFlag`, `GetFlag`) |
 | Cutscenes | `Scripts/Cutscenes/{CutsceneController,WakeUpCutsceneController,DinnerCutsceneController,TableIntroController,TableManager}.cs` |
 | UI | `Scripts/UI/*` |
+| Table player arms animation | `Animations/FirstPersonTable.controller`, clips in `Animations/FirstPersonPlayer` (authored) and `Animations/FirstPersonPlayer/Generated` (derived by `Scripts/Combat/Editor/CombatFeelSetup.cs`, `Tools > LoomRoom > Apply Combat Feel`; re-run after editing source poses, never hand-edit the generated clips) |
 
 ## Known leftovers
 
