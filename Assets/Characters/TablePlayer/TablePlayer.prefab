@@ -1123,14 +1123,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d7209ba53351d54195a9038b2787664, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InteractController
-  facingDotThreshold: 0.5
-  facingTransform: {fileID: 4366348880014704552}
-  useCameraRaycast: 1
   rayCamera: {fileID: 6574924322482826056}
-  rayDistance: 3
+  rayDistance: 3.5
   rayMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  acquireAngle: 7
+  releaseAngle: 11
+  missGrace: 0.15
+  switchAdvantage: 1.5
 --- !u!114 &3187028235534754926
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1236,6 +1237,7 @@ MonoBehaviour:
   animator: {fileID: 6130295020681158343}
   kind: 1
   settings: {fileID: 11400000, guid: 4ee391231645a4848b6b8bd1db28711a, type: 2}
+  respawnDelay: 3
 --- !u!114 &5275722341667889476
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1398,6 +1400,12 @@ MonoBehaviour:
   leftHandEquippedParam: LeftHandEquipped
   blockHitTrigger: BlockHit
   hurtTrigger: Hurt
+  chargeParam: Charge
+  holdSpeedParam: HoldSpeed
+  chargeLayer: ChargeAdditive
+  chargeSmoothing: 10
+  swingIndexParam: SwingIndex
+  swingSequenceReset: 1.2
 --- !u!114 &7410263322331991923
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -33,9 +33,6 @@ public class NpcBrain : MonoBehaviour, IInteractable
     [ShowIf("@defaultState == NPCState.Wander")]
     [SerializeField] float maxIdleTime = 6f;
     [ShowIf("@defaultState == NPCState.Wander")]
-    [Tooltip("Centre of the wander area. Defaults to spawn position when left empty.")]
-    [SerializeField] Transform wanderZoneCenter;
-    [ShowIf("@defaultState == NPCState.Wander")]
     [SerializeField] float wanderZoneRadius = 0f;
 
     [Header("Patrol")]
@@ -163,7 +160,7 @@ public class NpcBrain : MonoBehaviour, IInteractable
         wanderTimer -= Time.deltaTime;
         if (wanderTimer > 0f) return;
 
-        Vector3 center = wanderZoneCenter != null ? wanderZoneCenter.position : spawnPosition;
+        Vector3 center = spawnPosition;
         Vector3 dir = Random.insideUnitSphere; dir.y = 0f; dir.Normalize();
         Vector3 target = center + dir * Random.Range(minWanderDistance, wanderRadius);
         if (wanderZoneRadius > 0f)
@@ -198,8 +195,7 @@ public class NpcBrain : MonoBehaviour, IInteractable
     void OnDrawGizmosSelected()
     {
         if (defaultState != NPCState.Wander || wanderZoneRadius <= 0f) return;
-        Vector3 center = wanderZoneCenter != null ? wanderZoneCenter.position :
-                         (Application.isPlaying ? spawnPosition : transform.position);
+        Vector3 center = Application.isPlaying ? spawnPosition : transform.position;
         Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.2f);
         Gizmos.DrawSphere(center, wanderZoneRadius);
         Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.8f);

@@ -2979,14 +2979,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d7209ba53351d54195a9038b2787664, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InteractController
-  facingDotThreshold: 0.5
-  facingTransform: {fileID: 1040043254450420784}
-  useCameraRaycast: 1
   rayCamera: {fileID: 4909181547757561118}
-  rayDistance: 3
+  rayDistance: 8
   rayMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  acquireAngle: 7
+  releaseAngle: 11
+  missGrace: 0.15
+  switchAdvantage: 1.5
 --- !u!114 &4541978091595765255
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3003,6 +3004,7 @@ MonoBehaviour:
   animator: {fileID: 217168059621872684}
   kind: 0
   settings: {fileID: 11400000, guid: 4ee391231645a4848b6b8bd1db28711a, type: 2}
+  respawnDelay: 3
 --- !u!114 &5029880150223143310
 MonoBehaviour:
   m_ObjectHideFlags: 0

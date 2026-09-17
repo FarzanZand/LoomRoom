@@ -13,14 +13,12 @@ using UnityEngine.AI;
 public class EnemyBrain : MonoBehaviour
 {
     [Header("Behaviour")]
-    [Tooltip("Override the profile from CharacterData for this instance only.")]
+    [Tooltip("Ignore the CharacterData's behaviour profile and use the values below for this instance only. " +
+             "Turning it on copies the profile's values as a starting point.")]
+    [OnValueChanged("OnOverrideToggled")]
     [SerializeField] bool overrideBehaviour = false;
-    [ShowIf("overrideBehaviour")]
-    [SerializeField] EnemyBehaviourProfile localProfile;
-
-    [Header("Wander")]
-    [Tooltip("Centre of the wander area. Defaults to spawn position when left empty.")]
-    [SerializeField] Transform wanderZoneCenter;
+    [ShowIf("overrideBehaviour"), HideLabel, InlineProperty]
+    [SerializeField] EnemyBehaviourSettings localBehaviour = new();
 
     [Header("Patrol")]
     [SerializeField] Transform[] waypoints;
@@ -35,14 +33,21 @@ public class EnemyBrain : MonoBehaviour
     public EnemyMotor Motor      { get; private set; }
     public Perception Perception { get; private set; }
 
-    public EnemyBehaviourProfile Profile =>
-        overrideBehaviour && localProfile != null ? localProfile
-        : Character != null && Character.data != null && Character.data.behaviour != null ? Character.data.behaviour
+    public EnemyBehaviourSettings Profile =>
+        overrideBehaviour ? localBehaviour
+        : Character != null && Character.data != null && Character.data.behaviour != null ? Character.data.behaviour.settings
         : FallbackProfile;
 
-    static EnemyBehaviourProfile fallback;
-    static EnemyBehaviourProfile FallbackProfile =>
-        fallback != null ? fallback : (fallback = ScriptableObject.CreateInstance<EnemyBehaviourProfile>());
+    static EnemyBehaviourSettings fallback;
+    static EnemyBehaviourSettings FallbackProfile => fallback ??= new EnemyBehaviourSettings();
+
+    // Editor only: when the override is switched on, start from the shared profile's values.
+    void OnOverrideToggled()
+    {
+        if (!overrideBehaviour) return;
+        var data = GetComponent<Character>()?.data;
+        if (data != null && data.behaviour != null) localBehaviour.CopyFrom(data.behaviour.settings);
+    }
 
     Dictionary<EnemyState, Action> handlers;
     Vector3 spawnPosition;
@@ -426,8 +431,6 @@ public class EnemyBrain : MonoBehaviour
         EnemyState def = Profile.defaultState;
         if (def == EnemyState.Patrol && waypoints != null && waypoints.Length > 0 && waypoints[waypointIndex] != null)
             return waypoints[waypointIndex].position;
-        if (def == EnemyState.Wander && wanderZoneCenter != null)
-            return wanderZoneCenter.position;
         return spawnPosition;
     }
 
@@ -439,7 +442,7 @@ public class EnemyBrain : MonoBehaviour
         if (wanderTimer > 0f) return;
 
         var p = Profile;
-        Vector3 center = wanderZoneCenter != null ? wanderZoneCenter.position : spawnPosition;
+        Vector3 center = spawnPosition;
         Vector3 dir = UnityEngine.Random.insideUnitSphere; dir.y = 0f; dir.Normalize();
         Vector3 target = center + dir * UnityEngine.Random.Range(p.minWanderDistance, p.wanderRadius);
 
@@ -527,8 +530,9 @@ public class EnemyBrain : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
-        var p = Application.isPlaying ? Profile : (overrideBehaviour && localProfile != null ? localProfile
-                : GetComponent<Character>()?.data?.behaviour);
+        var p = Application.isPlaying ? Profile
+                : overrideBehaviour ? localBehaviour
+                : GetComponent<Character>()?.data?.behaviour?.settings;
         if (p == null) return;
 
         Vector3 pos = Application.isPlaying ? spawnPosition : transform.position;
@@ -541,7 +545,7 @@ public class EnemyBrain : MonoBehaviour
 
         if (p.defaultState == EnemyState.Wander && p.wanderZoneRadius > 0f)
         {
-            Vector3 center = wanderZoneCenter != null ? wanderZoneCenter.position : pos;
+            Vector3 center = pos;
             Gizmos.color = new Color(0.9f, 0.6f, 0.1f, 0.1f);
             Gizmos.DrawSphere(center, p.wanderZoneRadius);
             Gizmos.color = new Color(0.9f, 0.6f, 0.1f, 0.8f);

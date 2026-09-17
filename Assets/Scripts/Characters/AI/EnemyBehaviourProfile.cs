@@ -1,3 +1,4 @@
+using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -6,11 +7,11 @@ public enum EnemyState { Idle = 0, Wander = 1, Patrol = 2, Chase = 3, Attack = 4
 
 public enum AggressionMode { Aggressive = 0, AggressiveWhenHit = 1, Passive = 2 }
 
-// Shareable tuning for how an enemy perceives, moves and chases. Assign on
-// CharacterData.behaviour; EnemyBrain reads it live, so adding a knob is one field
-// here and one read in the brain. Attacks are authored on CharacterData.
-[CreateAssetMenu(fileName = "NewEnemyBehaviour", menuName = "Characters/Enemy Behaviour Profile")]
-public class EnemyBehaviourProfile : ScriptableObject
+// The actual tuning knobs. A plain serializable class so the same fields can live in
+// a shared EnemyBehaviourProfile asset OR inline on an EnemyBrain that overrides it.
+// Adding a knob is one field here and one read in the brain.
+[Serializable]
+public class EnemyBehaviourSettings
 {
     const string Tabs = "Tabs";
 
@@ -78,4 +79,21 @@ public class EnemyBehaviourProfile : ScriptableObject
     [TabGroup(Tabs, "Rotation")]
     [Tooltip("Degrees per second the enemy turns toward the target while in attack range.")]
     public float attackFaceSpeed     = 720f;
+
+    // Deep copy, used when an EnemyBrain starts overriding: it begins from the shared values.
+    public EnemyBehaviourSettings Clone() => JsonUtility.FromJson<EnemyBehaviourSettings>(JsonUtility.ToJson(this));
+
+    public void CopyFrom(EnemyBehaviourSettings other)
+    {
+        if (other == null) return;
+        JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(other), this);
+    }
+}
+
+// Shareable tuning asset. Assign on CharacterData.behaviour; EnemyBrain reads it live.
+[CreateAssetMenu(fileName = "NewEnemyBehaviour", menuName = "Characters/Enemy Behaviour Profile")]
+public class EnemyBehaviourProfile : ScriptableObject
+{
+    [HideLabel, InlineProperty]
+    public EnemyBehaviourSettings settings = new();
 }

@@ -6,7 +6,7 @@ using UnityEngine;
 // worth investigating. The brain reads; this never decides.
 public class Perception : MonoBehaviour
 {
-    public EnemyBehaviourProfile Profile { get; set; }
+    public EnemyBehaviourSettings Profile { get; set; }
 
     [ShowInInspector, ReadOnly] public Character Target                  { get; private set; }
     [ShowInInspector, ReadOnly] public bool      TargetVisible           { get; private set; }

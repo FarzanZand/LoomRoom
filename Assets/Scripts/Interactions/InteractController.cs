@@ -7,11 +7,14 @@ public class InteractController : MonoBehaviour
 {
     public event Action<InteractableTrigger> OnActiveChanged;
     [SerializeField] Camera rayCamera;
-    [SerializeField] float rayDistance = 3f;
+    [Tooltip("How far from the camera things can be used.")]
+    [SerializeField] float rayDistance = 3.5f;
     [SerializeField] LayerMask rayMask = ~0;
     [Header("Aim assistance")]
-    [SerializeField, Range(1, 12)] float acquireAngle = 5f;
-    [SerializeField, Range(1, 16)] float releaseAngle = 8f;
+    [Tooltip("Degrees around an object's silhouette that still target it.")]
+    [SerializeField, Range(1, 20)] float acquireAngle = 7f;
+    [Tooltip("Degrees before a targeted object is dropped again (wider than acquire so it does not flicker).")]
+    [SerializeField, Range(1, 24)] float releaseAngle = 11f;
     [SerializeField, Min(0)] float missGrace = .15f;
     [SerializeField, Min(0)] float switchAdvantage = 1.5f;
 
@@ -70,16 +73,23 @@ public class InteractController : MonoBehaviour
         score = float.MaxValue;
         if (target == null || !target.isActiveAndEnabled || !target.CanInteract(character) ||
             target.transform.IsChildOf(transform) || (rayMask.value & (1 << target.gameObject.layer)) == 0) return false;
-        Vector3 origin = rayCamera.transform.position;
+        Vector3 origin  = rayCamera.transform.position;
+        Vector3 forward = rayCamera.transform.forward;
         Bounds bounds = target.TargetBounds;
-        Vector3 point = bounds.center;
-        Vector3 delta = point - origin;
-        float distance = delta.magnitude;
-        if (distance < .001f || distance > rayDistance || Vector3.Dot(rayCamera.transform.forward, delta) <= 0) return false;
-        float angle = Vector3.Angle(rayCamera.transform.forward, delta);
-        // Small angular allowance follows visible size, capped so broad triggers cannot steal aim.
-        float radius = Mathf.Min(bounds.extents.x, Mathf.Min(bounds.extents.y, bounds.extents.z));
-        score = Mathf.Max(0, angle - Mathf.Min(2f, Mathf.Atan2(radius, distance) * Mathf.Rad2Deg));
+        Vector3 toCenter = bounds.center - origin;
+        float depth = Vector3.Dot(forward, toCenter);
+        if (depth <= 0f) return false;
+        if (toCenter.magnitude - bounds.extents.magnitude > rayDistance) return false;
+
+        // Aim against the closest point of the object to the crosshair ray, not its centre:
+        // anywhere on a flat shield or a thin blade under the crosshair scores zero, and the
+        // acquire angle is pure margin around the object's silhouette.
+        Vector3 onRay   = origin + forward * depth;
+        Vector3 closest = bounds.ClosestPoint(onRay);
+        Vector3 delta   = closest - origin;
+        float distance  = delta.magnitude;
+        if (distance < .001f || distance > rayDistance) return false;
+        score = Vector3.Angle(forward, delta);
         if (score > releaseAngle) return false;
         int count = Physics.RaycastNonAlloc(origin, delta / distance, sightHits, distance, rayMask, QueryTriggerInteraction.Ignore);
         if (count == sightHits.Length) return false; // Never assume a truncated visibility query is clear.

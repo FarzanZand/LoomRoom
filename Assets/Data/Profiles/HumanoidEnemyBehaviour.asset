@@ -12,29 +12,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae3ed972aa5e64d458cce19ec42dcb7d, type: 3}
   m_Name: HumanoidEnemyBehaviour
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  defaultState: 0
-  aggressionMode: 1
-  wanderRadius: 4
-  minWanderDistance: 2
-  minIdleTime: 2
-  maxIdleTime: 6
-  wanderZoneRadius: 0
-  detectionRadius: 12
-  fieldOfView: 120
-  eyeHeight: 1.6
-  closeDetectionRadius: 2
-  obstacleMask:
-    serializedVersion: 2
-    m_Bits: 63
-  investigateNoise: 0
-  hearingRadius: 6
-  investigateTime: 4
-  loseSightGracePeriod: 3
-  maxSearchTime: 5
-  useChaseSpeed: 1
-  chaseSpeed: 4
-  useWanderSpeed: 1
-  wanderSpeed: 2
-  passiveAngularSpeed: 120
-  chaseAngularSpeed: 540
-  attackFaceSpeed: 720
+  settings:
+    defaultState: 0
+    aggressionMode: 1
+    wanderRadius: 4
+    minWanderDistance: 2
+    minIdleTime: 2
+    maxIdleTime: 6
+    wanderZoneRadius: 0
+    detectionRadius: 12
+    fieldOfView: 120
+    eyeHeight: 1.6
+    closeDetectionRadius: 2
+    obstacleMask:
+      serializedVersion: 2
+      m_Bits: 63
+    investigateNoise: 0
+    hearingRadius: 6
+    investigateTime: 4
+    loseSightGracePeriod: 3
+    maxSearchTime: 5
+    useChaseSpeed: 1
+    chaseSpeed: 4
+    useWanderSpeed: 1
+    wanderSpeed: 2
+    passiveAngularSpeed: 120
+    chaseAngularSpeed: 540
+    attackFaceSpeed: 720
