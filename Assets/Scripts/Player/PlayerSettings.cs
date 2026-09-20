@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// User-facing control options. Not gameplay tuning — that lives on MovementProfile.
+// User-facing control options. Gameplay tuning lives on CharacterData.
 [CreateAssetMenu(fileName = "PlayerSettings", menuName = "Player/Player Settings")]
 public class PlayerSettings : ScriptableObject
 {

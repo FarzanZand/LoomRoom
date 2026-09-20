@@ -3039,7 +3039,6 @@ MonoBehaviour:
   knockbackDecay: 12
   slopeHandler: {fileID: 0}
   steepSlopeSlideModule: {fileID: 0}
-  fallbackProfile: {fileID: 11400000, guid: 36f206dc2372ae14b99289f7e007d6fc, type: 2}
 --- !u!114 &5962629809932858704
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -25,7 +25,15 @@ MonoBehaviour:
     baseValue: 1
     min: 0
     max: 0
-  movement: {fileID: 11400000, guid: 36f206dc2372ae14b99289f7e007d6fc, type: 2}
+  walkSpeed: 35
+  sprintSpeed: 60
+  crouchSpeed: 1
+  jumpForce: 12
+  gravityMultiplier: 2.5
+  sprintStaminaPerSecond: 0
+  jumpStaminaCost: 0
+  staminaRegenDelay: 0.6
+  sprintRecoveryFraction: 0.25
   startingItems: []
   startingEquipment: []
   hurtTrigger: 

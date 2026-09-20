@@ -5,7 +5,7 @@ public enum MoveState { Idle = 0, Walk = 1, Run = 2, CrouchWalk = 3, Airborne = 
 
 // CharacterController movement: walk/sprint/crouch, jump and gravity, slope modules,
 // stamina drain and external knockback. Speeds come from the CharacterData's
-// MovementProfile multiplied by the MoveSpeed stat. Looking is PlayerLook's job.
+// movement settings multiplied by the MoveSpeed stat. Looking is PlayerLook's job.
 [RequireComponent(typeof(CharacterController))]
 [DefaultExecutionOrder(0)]
 public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
@@ -30,9 +30,6 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     [Tooltip("Forces downhill sliding on slopes above its configured angle.")]
     [SerializeField] SteepSlopeSlideModule steepSlopeSlideModule;
 
-    [Header("Fallback (used only when CharacterData has no MovementProfile)")]
-    [SerializeField] MovementProfile fallbackProfile;
-
     // ── State ─────────────────────────────────────────────────────────
     public bool  IsCrouching { get; private set; }
     public bool  IsSprinting { get; private set; }
@@ -44,8 +41,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     public MoveState State   { get; private set; }
     public Vector3   Velocity => Controller != null ? Controller.velocity : Vector3.zero;
     public CharacterController Controller { get; private set; }
-    public MovementProfile Profile =>
-        player != null && player.data != null && player.data.movement != null ? player.data.movement : FallbackProfile;
+    CharacterData Movement => player != null && player.data != null ? player.data : FallbackData;
 
     public event Action        Jumped;
     public event Action<float> Landed;   // airborne seconds
@@ -59,17 +55,21 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     bool    sprintToggleRequested;
     bool    crouchToggleRequested;
     bool    wasGrounded = true;
-    MovementProfile runtimeFallback;
+    CharacterData runtimeFallback;
     readonly Collider[] uncrouchOverlapResults = new Collider[8];
 
-    MovementProfile FallbackProfile
+    CharacterData FallbackData
     {
         get
         {
-            if (fallbackProfile != null) return fallbackProfile;
-            if (runtimeFallback == null) runtimeFallback = ScriptableObject.CreateInstance<MovementProfile>();
+            if (runtimeFallback == null) runtimeFallback = ScriptableObject.CreateInstance<CharacterData>();
             return runtimeFallback;
         }
+    }
+
+    void OnDestroy()
+    {
+        if (runtimeFallback != null) Destroy(runtimeFallback);
     }
 
     void Awake()
@@ -177,7 +177,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
 
     bool CanSprintFromStamina()
     {
-        var p = Profile;
+        var p = Movement;
         if (p.sprintStaminaPerSecond <= 0f || player == null || player.Stats == null) return true;
         return player.Stats.CanSprint(p.sprintRecoveryFraction);
     }
@@ -204,7 +204,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
 
     void ApplyMovement(Vector2 moveInput)
     {
-        var p = Profile;
+        var p = Movement;
         float speedMul = player != null && player.Stats != null ? player.Stats.GetMultiplier(StatType.MoveSpeed) : 1f;
 
         Vector3 moveDir = new Vector3(moveInput.x, 0f, moveInput.y);
@@ -297,7 +297,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
 
     void UpdateState()
     {
-        var p = Profile;
+        var p = Movement;
         if (!Controller.isGrounded && AirborneTime > 0.15f) { State = MoveState.Airborne; return; }
         if (!IsMoving)               { State = MoveState.Idle; return; }
         if (IsCrouching)             { State = MoveState.CrouchWalk; return; }

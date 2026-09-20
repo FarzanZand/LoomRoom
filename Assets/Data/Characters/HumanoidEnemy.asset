@@ -37,7 +37,6 @@ MonoBehaviour:
     baseValue: 1
     min: 0
     max: 0
-  movement: {fileID: 0}
   startingItems: []
   startingEquipment: []
   hurtTrigger: Hurt

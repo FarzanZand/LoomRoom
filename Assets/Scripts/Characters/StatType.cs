@@ -10,7 +10,7 @@ public enum StatType
     MaxHealth    = 0,
     Defense      = 1,   // flat damage reduction per hit
     AttackDamage = 2,
-    MoveSpeed    = 6,   // multiplier on the movement profile speeds (1 = normal)
+    MoveSpeed    = 6,   // multiplier on CharacterData movement speeds (1 = normal)
     AttackSpeed  = 7,   // multiplier on attack animation speed (1 = normal)
     MaxStamina   = 10,
     StaminaRegen = 11,  // stamina per second
