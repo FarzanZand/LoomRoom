@@ -113,7 +113,7 @@ public class CombatManager : Singleton<CombatManager>
     public AnimationCurve swingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.28f, 1f), new Keyframe(1f, 0f));
     [Tooltip("Heavy release: anticipation, strike, then a slower recovery.")]
     public AnimationCurve heavySwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f),
-        new Keyframe(.18f, -.15f), new Keyframe(.4f, 1f), new Keyframe(.47f, 1f), new Keyframe(1f, 0f));
+        new Keyframe(.18f, -.03f), new Keyframe(.4f, 1f), new Keyframe(.47f, 1f), new Keyframe(1f, 0f));
     [Tooltip("How quickly camera motion follows the animation and returns to neutral.")]
     [Min(1)] public float swingCameraBlendSpeed = 18f;
     [Tooltip("Speed multiplier over the light release by normalized clip time: fast in, slower follow-through.")]
@@ -128,6 +128,12 @@ public class CombatManager : Singleton<CombatManager>
     [Header("Charge feel")]
     [Tooltip("Seconds an attack must be held before charge zoom and shake begin. Capped below the full-charge time.")]
     [Min(0f)] public float chargeCameraDelay = .2f;
+    [Tooltip("Normalized heavy release time when charge zoom starts returning. Matches the end of anticipation.")]
+    [Range(0f, .95f)] public float heavyZoomReturnStart = .18f;
+    [Tooltip("Normalized heavy release time when charge zoom reaches normal. Scales with attack animation speed.")]
+    [Range(.01f, 1f)] public float heavyZoomReturnEnd = .58f;
+    [Tooltip("Zoom smoothing time for a cancelled charge or light release, in seconds.")]
+    [Min(.01f)] public float chargeZoomReturnSmoothing = .12f;
     [Tooltip("Hold-loop speed at full charge: the arm settles into tension instead of breathing normally.")]
     [Range(.05f,1f)] public float holdSpeedAtFullCharge = .3f;
     [Tooltip("Weight of the ChargeAdditive layer at full charge (arm pulled further back, trembling).")]

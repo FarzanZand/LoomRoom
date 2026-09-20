@@ -430,6 +430,8 @@ public class AudioManager : Singleton<AudioManager>
         src.volume       = data.volume;
         src.pitch        = pitch;
         src.spatialBlend = 1f;
+        src.minDistance = Mathf.Max(.01f, data.minDistance);
+        src.maxDistance = Mathf.Max(src.minDistance, data.maxDistance);
         src.Play();
         return src;
     }
@@ -530,18 +532,26 @@ public class AudioManager : Singleton<AudioManager>
     AudioSource ClaimSource(List<AudioSource> pool)
     {
         foreach (var s in pool)
-            if (!s.isPlaying) return s;
+            if (!s.isPlaying) return ResetAttenuation(s);
 
         AudioSource steal = pool[0];
         float lowestRemaining = float.MaxValue;
         foreach (var s in pool)
         {
-            if (s.clip == null) return s;
+            if (s.clip == null) return ResetAttenuation(s);
             float remaining = s.clip.length - s.time;
             if (remaining < lowestRemaining) { lowestRemaining = remaining; steal = s; }
         }
         steal.Stop();
-        return steal;
+        return ResetAttenuation(steal);
+    }
+
+    // Pooled room-scale effects must not change the attenuation of the next miniature effect.
+    static AudioSource ResetAttenuation(AudioSource source)
+    {
+        source.minDistance = 1f;
+        source.maxDistance = 500f;
+        return source;
     }
 
     static float PitchedBy(float variance) =>

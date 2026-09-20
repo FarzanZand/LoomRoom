@@ -48,6 +48,9 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     public float Charge { get; private set; }
     // Delayed camera feedback, independent of animation charge and heavy-strike timing.
     public float CameraCharge { get; private set; }
+    public float CameraZoomCharge { get; private set; }
+    float zoomVelocity, releaseZoom, zoomReleasedAt;
+    bool releasingHeavyZoom, heavyZoomStateSeen;
     // Fired once when a held attack reaches full charge.
     public event System.Action ChargeReady;
 
@@ -113,6 +116,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if(InputManager.HasInstance) InputManager.Instance.SecondaryPressed -= OnGuardPressed;
         HeavySwing=false; charging=false; attackBufferedUntil=-1;
         CameraCharge = 0f;
+        CameraZoomCharge = zoomVelocity = 0f;
+        releasingHeavyZoom = false;
     }
 
     void OnPrimaryPressed()
@@ -120,6 +125,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (!player.IsActive) return;
         if (InputManager.Instance.SecondaryHeld) return;
         pressedAt=Time.time; HeavySwing=false; charging=true; chargeAnnounced=false;
+        releasingHeavyZoom = false;
         queuedPresses = Mathf.Min(queuedPresses + 1, 2);
         attackBufferedUntil=Time.time+(CombatManager.HasInstance ? CombatManager.Instance.attackInputBuffer : .22f);
         float window = CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f;
@@ -136,6 +142,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         var tuning=CombatManager.Instance;
         HeavySwing=Time.time-pressedAt >= tuning.heavyChargeTime &&
             (player.Stats==null || player.Stats.TryUseStamina(tuning.heavyStaminaCost));
+        releasingHeavyZoom = HeavySwing;
+        heavyZoomStateSeen = false;
+        releaseZoom = CameraZoomCharge;
+        zoomReleasedAt = Time.time;
     }
 
     void Update()
@@ -204,6 +214,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             : 0f;
         CameraCharge = Mathf.MoveTowards(CameraCharge, cameraTarget,
             chargeSmoothing * Time.deltaTime * (cameraTarget > CameraCharge ? 1f : 2.5f));
+        UpdateCameraZoom(tuning, cameraTarget);
         if (charging && !chargeAnnounced && target >= 1f) { chargeAnnounced = true; ChargeReady?.Invoke(); }
         shudder = Mathf.MoveTowards(shudder, 0f, 4f * Time.deltaTime);
 
@@ -211,6 +222,57 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (Character.HasParameter(armsAnimator, holdSpeedParam, AnimatorControllerParameterType.Float)) armsAnimator.SetFloat(holdSpeedParam, Mathf.Lerp(1f, tuning.holdSpeedAtFullCharge, Charge));
         if (chargeLayerIndex < 0 && !string.IsNullOrEmpty(chargeLayer)) chargeLayerIndex = armsAnimator.GetLayerIndex(chargeLayer);
         if (chargeLayerIndex >= 0) armsAnimator.SetLayerWeight(chargeLayerIndex, Mathf.Clamp01(Charge * tuning.chargeTension + shudder));
+    }
+
+    // Zoom follows the heavy release animation; charge noise can settle independently.
+    void UpdateCameraZoom(CombatManager tuning, float chargeTarget)
+    {
+        bool gameplay = player.IsActive && WeaponHeld &&
+            (!GameManager.HasInstance || GameManager.Instance.GameplayActive);
+        if (!gameplay) releasingHeavyZoom = false;
+        float target = gameplay ? chargeTarget : 0f;
+        float smoothing = target > CameraZoomCharge ? .04f : tuning.chargeZoomReturnSmoothing;
+        if (releasingHeavyZoom)
+        {
+            if (TryHeavyReleasePhase(out float phase))
+            {
+                heavyZoomStateSeen = true;
+                float start = Mathf.Clamp(tuning.heavyZoomReturnStart, 0f, .95f);
+                float end = Mathf.Clamp(tuning.heavyZoomReturnEnd, start + .01f, 1f);
+                target = releaseZoom * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(start, end, phase)));
+                smoothing = .04f;
+            }
+            else if (!heavyZoomStateSeen && IsAttacking && Time.time - zoomReleasedAt < .3f)
+            {
+                // Preserve the zoom while the animator enters the release clip.
+                target = releaseZoom;
+                smoothing = .04f;
+            }
+            else releasingHeavyZoom = false; // Interrupted, unequipped or finished: ease home.
+        }
+        CameraZoomCharge = Mathf.SmoothDamp(CameraZoomCharge, target, ref zoomVelocity,
+            Mathf.Max(.01f, smoothing), Mathf.Infinity, Time.deltaTime);
+    }
+
+    bool TryHeavyReleasePhase(out float phase)
+    {
+        for (int layer = 0; layer < armsAnimator.layerCount; layer++)
+        {
+            var state = armsAnimator.GetCurrentAnimatorStateInfo(layer);
+            if (armsAnimator.IsInTransition(layer))
+            {
+                var next = armsAnimator.GetNextAnimatorStateInfo(layer);
+                if (next.IsName("Attack_HeavyRelease")) state = next;
+                else if (state.IsName("Attack_HeavyRelease")) continue;
+            }
+            if (state.IsName("Attack_HeavyRelease"))
+            {
+                phase = Mathf.Clamp01(state.normalizedTime);
+                return true;
+            }
+        }
+        phase = 0f;
+        return false;
     }
 
     // Spike the tension layer, e.g. when a heavy hit lands; it decays on its own.

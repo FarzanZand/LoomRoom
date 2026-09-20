@@ -168,6 +168,9 @@ MonoBehaviour:
   holdSpeedAtFullCharge: 0.3
   chargeTension: 1
   chargeFovPull: 4
+  heavyZoomReturnStart: 0.18
+  heavyZoomReturnEnd: 0.58
+  chargeZoomReturnSmoothing: 0.12
   chargeShake: 0.45
   chargeReadyKick: 0.3
   chargeReadyAudio: {fileID: 0}

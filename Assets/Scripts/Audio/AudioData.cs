@@ -8,6 +8,10 @@ public class AudioData : ScriptableObject
     [Range(0f, 2f)]  public float pitch         = 1f;
     [Range(0f, 0.5f)] public float pitchVariance = 0f;
 
+    [Header("3D attenuation (world units)")]
+    [Min(.01f)] public float minDistance = 1f;
+    [Min(.01f)] public float maxDistance = 500f;
+
     public AudioClip GetClip()
     {
         if (clips == null || clips.Length == 0) return null;

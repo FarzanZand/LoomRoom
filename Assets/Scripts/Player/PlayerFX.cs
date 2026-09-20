@@ -39,7 +39,7 @@ public class PlayerFX : CharacterFX
         if (player == null || player.CameraRig == null || player.Combat == null) return;
         float charge = player.Combat.CameraCharge;
         var tuning = CombatManager.HasInstance ? CombatManager.Instance : null;
-        player.CameraRig.FovOffset      = -(tuning != null ? tuning.chargeFovPull : 4f) * charge;
+        player.CameraRig.FovOffset      = -(tuning != null ? tuning.chargeFovPull : 4f) * player.Combat.CameraZoomCharge;
         player.CameraRig.ExtraAmplitude =  (tuning != null ? tuning.chargeShake   : .45f) * charge;
     }
 

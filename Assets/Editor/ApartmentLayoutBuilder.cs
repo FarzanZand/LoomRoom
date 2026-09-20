@@ -141,6 +141,7 @@ public static class ApartmentLayoutBuilder
     static void Fill(Transform p,Vector3 pos,float range) { var g=new GameObject("Blockout fill light"); g.transform.SetParent(p,false); g.transform.position=pos; var l=g.AddComponent<Light>(); l.type=LightType.Point; l.range=range; l.intensity=1.5f; l.shadows=LightShadows.None; }
     [MenuItem("Tools/LoomRoom/Apartment/Validate Layout")]
     public static void Validate() {
+        if(GameObject.Find("Apartment Layout/Entrance and Hall")) { ApartmentLayoutRefinement.Validate(); return; }
         Physics.SyncTransforms(); var log=new StringBuilder();
         var source=GameObject.Find("RoomPlayer").GetComponent<CharacterController>();
         float radius=source.radius*source.transform.lossyScale.x, height=source.height*source.transform.lossyScale.y;
