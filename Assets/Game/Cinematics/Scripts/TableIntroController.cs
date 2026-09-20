@@ -54,30 +54,50 @@ public class TableIntroController : MonoBehaviour
 
     float BeatSeconds => musicBPM > 0f ? 60f / musicBPM : 0.5f;
 
-    public void PlayTableIntro() => StartCoroutine(Routine());
+    public bool IsPlaying { get; private set; }
+
+    public void PlayTableIntro()
+    {
+        if (!IsPlaying) StartCoroutine(Routine());
+    }
 
     IEnumerator Routine()
     {
         var pm = PlayerManager.Instance;
         var tm = TableManager.Instance;
+        IsPlaying = true;
+        pm?.SetControlsFrozen(true);
 
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.tableEntered = true;
-        if (ScreenManager.HasInstance) ScreenManager.Instance.FadeInOut(fadeInDuration, fadedDuration, fadeOutDuration);
+        float swapTime = Mathf.Max(fadeInDuration, BeatSeconds * beatsBeforeSwap);
+        if (ScreenManager.HasInstance)
+            yield return ScreenManager.Instance.TransitionThroughBlack(fadeInDuration,
+                swapTime - fadeInDuration, Mathf.Max(0f, fadeInDuration + fadedDuration - swapTime),
+                fadeOutDuration, Swap);
+        else
+        {
+            yield return new WaitForSecondsRealtime(swapTime);
+            Swap();
+        }
 
-        yield return new WaitForSeconds(BeatSeconds * beatsBeforeSwap);
+        void Swap()
+        {
+            if (tm != null && tm.DM != null && tm.dmPlacement != null)
+                tm.DM.transform.rotation = tm.dmPlacement.rotation;
+            pm?.SwapToPlayerImmediately(PlayerKind.Table);
+            if (tableIntroAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlayMusic(tableIntroAudio);
+            StartCoroutine(PlaySteps());
+        }
+    }
 
-        if (tm != null && tm.DM != null && tm.dmPlacement != null)
-            tm.DM.transform.rotation = tm.dmPlacement.rotation;
-
-        pm?.SwapToPlayer(PlayerKind.Table);
-        pm?.SetControlsFrozen(true);
-        if (tableIntroAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlayMusic(tableIntroAudio);
-
+    IEnumerator PlaySteps()
+    {
         foreach (var step in steps)
         {
             yield return new WaitForSeconds(BeatSeconds * step.beats);
             RunStep(step);
         }
+        IsPlaying = false;
     }
 
     void RunStep(BeatStep step)

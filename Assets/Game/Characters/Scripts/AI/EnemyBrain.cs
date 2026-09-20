@@ -615,7 +615,8 @@ public class EnemyBrain : MonoBehaviour
             if (offset.magnitude > p.wanderZoneRadius) target = center + offset.normalized * p.wanderZoneRadius;
         }
 
-        if (NavMesh.SamplePosition(target, out NavMeshHit hit, p.wanderRadius, NavMesh.AllAreas))
+        var filter = new NavMeshQueryFilter { agentTypeID = Motor.Agent.agentTypeID, areaMask = Motor.Agent.areaMask };
+        if (NavMesh.SamplePosition(target, out NavMeshHit hit, p.wanderRadius, filter))
             Motor.MoveTo(hit.position);
 
         wanderTimer = UnityEngine.Random.Range(p.minIdleTime, p.maxIdleTime);

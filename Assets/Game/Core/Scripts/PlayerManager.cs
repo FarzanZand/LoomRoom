@@ -14,9 +14,8 @@ public class PlayerContext
     public Player player;
 }
 
-// Owns which of the two players is live. Swapping activates the right root, switches
-// the input map, and tells everyone through PlayerSwapped. Nothing else should poke
-// SetActive on a player.
+// Owns which player is controlled. The inactive room body remains in the world,
+// while its Controller subtree (input, movement and camera) is disabled.
 public class PlayerManager : Singleton<PlayerManager>
 {
     [ListDrawerSettings(ShowFoldout = true)]
@@ -79,6 +78,16 @@ public class PlayerManager : Singleton<PlayerManager>
 
     public void ForceSwapToPlayer(PlayerKind kind) => SwapToPlayer(kind, force: true);
 
+    // For covered transitions: discard the room-to-table camera travel.
+    public void SwapToPlayerImmediately(PlayerKind kind)
+    {
+        SwapToPlayer(kind);
+        var cam = Active != null ? Active.CameraRig?.Camera : null;
+        if (cam != null) cam.PreviousStateIsValid = false;
+        var brain = outputCamera != null ? outputCamera.GetComponent<Unity.Cinemachine.CinemachineBrain>() : null;
+        if (brain != null) brain.ResetState();
+    }
+
     public void SwapToPlayer(PlayerKind kind) => SwapToPlayer(kind, force: false);
 
     public void SwapToPlayer(PlayerKind kind, bool force)
@@ -101,7 +110,13 @@ public class PlayerManager : Singleton<PlayerManager>
             bool on = p.kind == kind;
             if (p.player == null) continue;
             p.player.SynchronizePresentation();
-            p.player.ActivationRoot.SetActive(on);
+            // BodyVisuals is a sibling of Controller, so it can stay visible without
+            // leaving any of the room player's gameplay or camera scripts running.
+            bool keepBody = !on && p.kind == PlayerKind.Room &&
+                p.player.ActivationRoot != p.player.gameObject;
+            if (!on) p.player.gameObject.SetActive(false);
+            p.player.ActivationRoot.SetActive(on || keepBody);
+            if (on) p.player.gameObject.SetActive(true);
         }
 
         if (InputManager.HasInstance)

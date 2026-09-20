@@ -168,7 +168,8 @@ public class NpcBrain : MonoBehaviour, IInteractable
             Vector3 offset = target - center; offset.y = 0f;
             if (offset.magnitude > wanderZoneRadius) target = center + offset.normalized * wanderZoneRadius;
         }
-        if (NavMesh.SamplePosition(target, out NavMeshHit hit, wanderRadius, NavMesh.AllAreas))
+        var filter = new NavMeshQueryFilter { agentTypeID = Motor.Agent.agentTypeID, areaMask = Motor.Agent.areaMask };
+        if (NavMesh.SamplePosition(target, out NavMeshHit hit, wanderRadius, filter))
             Motor.MoveTo(hit.position);
         wanderTimer = Random.Range(minIdleTime, maxIdleTime);
     }
@@ -186,8 +187,15 @@ public class NpcBrain : MonoBehaviour, IInteractable
     {
         var anim = Character.Animator;
         if (anim == null || anim.runtimeAnimatorController == null) return;
-        anim.SetFloat("Speed",       Motor.Velocity.magnitude, 0.1f, Time.deltaTime);
-        anim.SetFloat("MotionSpeed", Motor.HasPath ? 1f : 0f,   0.1f, Time.deltaTime);
+        // Idle/talking NPCs must not run because of placement or vertical settling.
+        bool locomoting = (State == NPCState.Wander || State == NPCState.Patrol) && Motor.HasPath;
+        Vector3 horizontalVelocity = Motor.Velocity;
+        horizontalVelocity.y = 0f;
+        if (locomoting)
+            anim.SetFloat("Speed", horizontalVelocity.magnitude, 0.1f, Time.deltaTime);
+        else
+            anim.SetFloat("Speed", 0f);
+        anim.SetFloat("MotionSpeed", locomoting ? 1f : 0f, 0.1f, Time.deltaTime);
         anim.SetBool("Grounded", Motor.IsGrounded);
         anim.SetBool("FreeFall", !Motor.IsGrounded && Motor.Velocity.y < -1f);
     }

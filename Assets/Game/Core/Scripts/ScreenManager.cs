@@ -24,7 +24,42 @@ public class ScreenManager : Singleton<ScreenManager>
     protected override void Awake()
     {
         base.Awake();
+        // Cutscenes hide the HUD, but must never hide the transition overlay.
+        var canvas = fadeFullscreenImage != null ? fadeFullscreenImage.canvas : null;
+        if (canvas != null)
+        {
+            var hud = canvas.GetComponentInParent<HudCanvas>();
+            if (hud != null && hud.transform != canvas.transform)
+                canvas.transform.SetParent(hud.transform.parent, false);
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 1000;
+        }
         SetAlpha(0f);
+    }
+
+    public Coroutine TransitionThroughBlack(float fadeToBlack, float holdBeforeSwap,
+        float holdAfterSwap, float fadeFromBlack, System.Action whileBlack)
+    {
+        if (fadeRoutine != null) StopCoroutine(fadeRoutine);
+        fadeRoutine = StartCoroutine(TransitionRoutine(fadeToBlack, holdBeforeSwap,
+            holdAfterSwap, fadeFromBlack, whileBlack));
+        return fadeRoutine;
+    }
+
+    IEnumerator TransitionRoutine(float fadeToBlack, float holdBeforeSwap,
+        float holdAfterSwap, float fadeFromBlack, System.Action whileBlack)
+    {
+        float alpha = fadeFullscreenImage != null && fadeFullscreenImage.gameObject.activeSelf
+            ? fadeFullscreenImage.color.a : 0f;
+        yield return LerpAlpha(alpha, 1f, fadeToBlack);
+        if (holdBeforeSwap > 0f) yield return new WaitForSecondsRealtime(holdBeforeSwap);
+        whileBlack?.Invoke();
+        // Let activation, Start and Cinemachine's LateUpdate settle behind the cover.
+        yield return null;
+        yield return null;
+        if (holdAfterSwap > 0f) yield return new WaitForSecondsRealtime(holdAfterSwap);
+        yield return LerpAlpha(1f, 0f, fadeFromBlack);
+        fadeRoutine = null;
     }
 
     /// Starts invisible, waits holdDuration, then fades to fully visible over fadeDuration.

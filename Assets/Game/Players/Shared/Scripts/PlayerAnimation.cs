@@ -24,7 +24,13 @@ public class PlayerAnimation : MonoBehaviour
     }
 
     void OnEnable()  => motor.Jumped += OnJumped;
-    void OnDisable() => motor.Jumped -= OnJumped;
+    void OnDisable()
+    {
+        motor.Jumped -= OnJumped;
+        jumpFlag = false;
+        // The room body remains visible when its controller is switched off.
+        Apply(bodyAnimator, 0f, 1f, true, false, 0f);
+    }
 
     void OnJumped() => jumpFlag = true;
 
@@ -43,20 +49,20 @@ public class PlayerAnimation : MonoBehaviour
         if (grounded) jumpFlag = false;
     }
 
-    void Apply(Animator anim, float speed, float motion, bool grounded, bool freeFall)
+    void Apply(Animator anim, float speed, float motion, bool grounded, bool freeFall, float damping = 0.1f)
     {
         if (anim == null || anim.runtimeAnimatorController == null) return;
-        SetFloat(anim, speedParam, speed);
-        SetFloat(anim, motionSpeedParam, motion);
+        SetFloat(anim, speedParam, speed, damping);
+        SetFloat(anim, motionSpeedParam, motion, damping);
         SetBool(anim, groundedParam, grounded);
         SetBool(anim, freeFallParam, freeFall);
         if (jumpFlag)       SetBool(anim, jumpParam, true);
         else if (grounded)  SetBool(anim, jumpParam, false);
     }
 
-    static void SetFloat(Animator anim, string name, float value)
+    static void SetFloat(Animator anim, string name, float value, float damping)
     {
-        if (Character.HasParameter(anim, name, AnimatorControllerParameterType.Float)) anim.SetFloat(name, value, 0.1f, Time.deltaTime);
+        if (Character.HasParameter(anim, name, AnimatorControllerParameterType.Float)) anim.SetFloat(name, value, damping, Time.deltaTime);
     }
 
     static void SetBool(Animator anim, string name, bool value)

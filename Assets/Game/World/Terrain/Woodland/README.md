@@ -16,3 +16,12 @@ Woodland Terrain.asset is a private copy; Table Terrain.asset remains the prior
 terrain. The level root owns its NavMeshSurface, which collects only its children using collider geometry. Lighting, terrain, scenery and tabletop gameplay content belong to this root. The physical table and player rigs stay outside it. Disable the root to hide the level and remove its navigation.
 Rebake it after moving solid scenery or sculpting terrain.
 
+
+Scenery and Gameplay are now children of TerrainTable1, so moving the terrain
+moves the level contents together. After sculpting heights, props may need
+regrounding and the level NavMeshSurface needs rebaking.
+
+The apartment skylight belongs to World / Apartment / Main Bedroom / Geometry /
+Skylight. Its SkylightCover component has a Covered checkbox for both edit and
+Play mode. Closing it activates the opaque cover and disables the two skylight
+lights. This room architecture is independent of the swappable table level.

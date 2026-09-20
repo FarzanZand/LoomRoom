@@ -28,6 +28,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     Vector3 knockbackVelocity;
     float   knockbackTimer;
     Vector3 lastPosition;
+    bool hasVelocitySample;
     bool    hasLookTarget;
     Vector3 lookTarget;
     float   lookSpeed;
@@ -43,7 +44,12 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         lastPosition = transform.position;
     }
 
-    void OnEnable() => lastPosition = transform.position;
+    void OnEnable()
+    {
+        lastPosition = transform.position;
+        Velocity = Vector3.zero;
+        hasVelocitySample = false;
+    }
 
     void Update()
     {
@@ -55,8 +61,11 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     void LateUpdate()
     {
         float dt = Time.deltaTime;
-        Velocity = dt > 0f ? (transform.position - lastPosition) / dt : Vector3.zero;
+        // Establish the baseline after startup placement and NavMesh alignment.
+        Velocity = hasVelocitySample && dt > 0f
+            ? (transform.position - lastPosition) / dt : Vector3.zero;
         lastPosition = transform.position;
+        hasVelocitySample = true;
     }
 
     void UpdateGroundCheck()
@@ -184,6 +193,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         if (Agent != null && Agent.isOnNavMesh) Agent.Warp(position);
         else transform.position = position;
         lastPosition = transform.position;
+        Velocity = Vector3.zero;
     }
 
     // ── Knockback ─────────────────────────────────────────────────────
