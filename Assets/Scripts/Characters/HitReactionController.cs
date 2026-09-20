@@ -23,6 +23,7 @@ public class HitReactionController : MonoBehaviour
         public Quaternion current = Quaternion.identity, target = Quaternion.identity;
         public Quaternion baseline, applied;
         public bool ownsPose;
+        public float durationScale = 1f;
     }
 
     void Awake()
@@ -53,9 +54,12 @@ public class HitReactionController : MonoBehaviour
     }
     void OnDamaged(DamageInfo hit)
     {
-        if (character.IsAlive && !hit.Blocked && hit.Amount > 0) ReactToHit(hit.HitPoint, hit.Direction);
+        bool heavy = hit.Heavy && character.GetComponent<EnemyBrain>() != null && Tuning != null;
+        if (character.IsAlive && !hit.Blocked && hit.Amount > 0)
+            ReactToHit(hit.HitPoint, hit.Direction, heavy ? Tuning.heavyRecoilMultiplier : 1f,
+                heavy ? Tuning.heavyRecoilDurationMultiplier : 1f);
     }
-    public void ReactToHit(Vector3 point, Vector3 direction)
+    public void ReactToHit(Vector3 point, Vector3 direction, float intensity = 1f, float durationScale = 1f)
     {
         if (!isActiveAndEnabled || (Tuning != null && !Tuning.hitReactionEnabled) || direction.sqrMagnitude < .0001f) return;
         Transform closest = null;float distance = float.MaxValue;
@@ -73,9 +77,10 @@ public class HitReactionController : MonoBehaviour
             var axis=Vector3.Cross(point-pivot,direction.normalized);
             if (axis.sqrMagnitude < .0001f) axis=Vector3.Cross(Vector3.up,direction);
             if (axis.sqrMagnitude < .0001f) axis=closest.right;
-            float angle=Mathf.Clamp(Tuning != null ? Tuning.hitReactionAngle : reactionAngle,0,30)*strength;
+            float angle=Mathf.Clamp((Tuning != null ? Tuning.hitReactionAngle : reactionAngle)*intensity,0,45)*strength;
             var reaction=reactions.Find(r=>r.bone==closest);
             if (reaction==null) { reaction=new Reaction{bone=closest};reactions.Add(reaction); }
+            reaction.durationScale = Mathf.Max(1f, durationScale);
             reaction.target=Quaternion.RotateTowards(Quaternion.identity,Quaternion.AngleAxis(angle,axis.normalized)*reaction.target,angle);
             strength*=Mathf.Clamp01(Tuning != null ? Tuning.hitReactionParentFalloff : parentFalloff);
             closest=closest.parent;
@@ -95,10 +100,10 @@ public class HitReactionController : MonoBehaviour
         if (character!=null && !character.IsAlive) { Clear();return; }
         float dt=Time.deltaTime;
         float attack=1-Mathf.Exp(-Mathf.Max(0,Tuning!=null ? Tuning.hitReactionAttackSpeed : attackSpeed)*dt);
-        float decay=1-Mathf.Exp(-Mathf.Max(0,Tuning!=null ? Tuning.hitReactionDamping : damping)*dt);
         for (int i=reactions.Count-1;i>=0;i--)
         {
             var r=reactions[i];Restore(r);
+            float decay=1-Mathf.Exp(-Mathf.Max(0,Tuning!=null ? Tuning.hitReactionDamping : damping)*dt/r.durationScale);
             if (r.bone==null) { reactions.RemoveAt(i);continue; }
             r.current=Quaternion.Slerp(r.current,r.target,attack);
             r.target=Quaternion.Slerp(r.target,Quaternion.identity,decay);

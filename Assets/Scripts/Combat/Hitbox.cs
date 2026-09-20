@@ -11,6 +11,7 @@ public class HitProfile
     public bool       useDefaultEffects = true;
     public AudioData  hitAudio;
     public AudioData  swingAudio;
+    public AudioData  heavySwingAudio;
     public GameObject hitParticle;
     [Tooltip("Multiplier on the attacker's AttackDamage stat.")]
     public float      damageMultiplier = 1f;
@@ -57,6 +58,18 @@ public class Hitbox : MonoBehaviour
     public void PlaySwingAudio()
     {
         if (!AudioManager.HasInstance) return;
+        var attacker = GetComponentInParent<Player>();
+        if (attacker != null && attacker.Combat != null && attacker.Combat.HeavySwing)
+        {
+            AudioData heavyAudio = profile.useDefaultEffects
+                ? (CombatManager.HasInstance ? CombatManager.Instance.defaultHeavySwingAudio : null)
+                : profile.heavySwingAudio;
+            if (heavyAudio != null)
+            {
+                AudioManager.Instance.PlaySFXData(heavyAudio, transform.position);
+                return;
+            }
+        }
         AudioData audio = profile.useDefaultEffects
             ? (CombatManager.HasInstance ? CombatManager.Instance.defaultSwingAudio : null)
             : profile.swingAudio;
@@ -160,6 +173,7 @@ public class Hitbox : MonoBehaviour
             HitPoint       = contact,
             Direction      = dir,
             KnockbackForce = force,
+            Heavy          = heavy,
         };
 
         if(CombatManager.HasInstance && !CombatManager.Instance.HasMeleeLineOfSight(owner,target,contact))return;

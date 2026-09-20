@@ -201,6 +201,8 @@ public class EnemyBrain : MonoBehaviour
         if (info.Source != null) { wasProvoked = true; Perception.NotifyAttackedFrom(info.Source.transform.position); }
 
         // Flinch only when not mid-swing: a swing is never interrupted by the player's hits.
+        if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null)
+            recoveryUntil = Mathf.Max(recoveryUntil, Time.time + Tuning.heavyStaggerDuration);
         if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null)
             Character.TriggerAnimation(Character.data.hurtTrigger);
 

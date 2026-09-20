@@ -154,8 +154,15 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  swingCameraKick: 0.3
-  heavySwingCameraKick: 1.1
+  swingCameraMotionEnabled: 1
+  lightSwingCameraRotation: {x: 0.3, y: 0.8, z: -0.35}
+  alternateSwingCameraRotation: {x: 0.5, y: 0.8, z: -0.55}
+  heavySwingCameraRotation: {x: 2, y: 0.4, z: -0.65}
+  swingCameraBlendSpeed: 18
+  heavyStaggerDuration: 0.45
+  heavyRecoilMultiplier: 1.6
+  heavyRecoilDurationMultiplier: 1.5
+  defaultHeavySwingAudio: {fileID: 11400000, guid: c192a2166bf24c72ba47e39a165f0a0c, type: 2}
   heavyHitStopScale: 2
   heavyImpactShudder: 0.7
   holdSpeedAtFullCharge: 0.3

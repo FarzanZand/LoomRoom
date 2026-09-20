@@ -35,6 +35,8 @@ public class CombatManager : Singleton<CombatManager>
     public AudioData defaultHitAudio;
     [Tooltip("Swing audio used when the weapon uses default effects.")]
     public AudioData defaultSwingAudio;
+    [Tooltip("Heavy swing audio used by weapons with default effects.")]
+    public AudioData defaultHeavySwingAudio;
 
     [Header("Hit Reaction")]
     public bool hitReactionEnabled = true;
@@ -82,6 +84,10 @@ public class CombatManager : Singleton<CombatManager>
     [Min(1)] public float heavyDamageMultiplier = 1.65f;
     [Min(1)] public float heavyKnockbackMultiplier = 1.35f;
     [Min(0)] public float heavyStaminaCost = 1f;
+    [Tooltip("Extra recovery after a heavy hit. Does not interrupt an already committed enemy swing.")]
+    [Min(0)] public float heavyStaggerDuration = .45f;
+    [Min(1)] public float heavyRecoilMultiplier = 1.6f;
+    [Min(1)] public float heavyRecoilDurationMultiplier = 1.5f;
 
     [Header("Enemy rhythm")]
     [Tooltip("Seconds after the swing starts during which the enemy still turns to track the target (windupTrackSpeed). After this the swing direction is committed.")]
@@ -98,19 +104,30 @@ public class CombatManager : Singleton<CombatManager>
     [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;
 
     [Header("Swing feel")]
+    public bool swingCameraMotionEnabled = true;
+    [Tooltip("Local pitch, yaw and roll in degrees for each authored swing.")]
+    public Vector3 lightSwingCameraRotation = new Vector3(.3f, .8f, -.35f);
+    public Vector3 alternateSwingCameraRotation = new Vector3(.5f, .8f, -.55f);
+    public Vector3 heavySwingCameraRotation = new Vector3(2f, .4f, -.65f);
+    [Tooltip("Camera motion over normalized release animation time, returning to zero at the end.")]
+    public AnimationCurve swingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.28f, 1f), new Keyframe(1f, 0f));
+    [Tooltip("Heavy release: anticipation, strike, then a slower recovery.")]
+    public AnimationCurve heavySwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f),
+        new Keyframe(.18f, -.15f), new Keyframe(.4f, 1f), new Keyframe(.47f, 1f), new Keyframe(1f, 0f));
+    [Tooltip("How quickly camera motion follows the animation and returns to neutral.")]
+    [Min(1)] public float swingCameraBlendSpeed = 18f;
     [Tooltip("Speed multiplier over the light release by normalized clip time: fast in, slower follow-through.")]
     public AnimationCurve releaseSpeedCurve = new AnimationCurve(new Keyframe(0f, 1.3f), new Keyframe(.45f, 1.15f), new Keyframe(1f, .7f));
     [Tooltip("Speed multiplier over the heavy release. The heavy swing clip already carries its coil / strike / hang / recovery timing, so keep this near 1.")]
     public AnimationCurve heavyReleaseSpeedCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(.4f, 1.1f), new Keyframe(1f, .9f));
-    [Tooltip("Camera kick when a swing starts, pushed forward for a light swing and down for a heavy one.")]
-    [Range(0,3)] public float swingCameraKick = .3f;
-    [Range(0,4)] public float heavySwingCameraKick = 1.1f;
     [Tooltip("Hit stop scale for a heavy hit that lands.")]
     [Min(1)] public float heavyHitStopScale = 2f;
     [Tooltip("Tension-layer spike when a heavy hit lands, read as the arm shuddering from the impact.")]
     [Range(0,1)] public float heavyImpactShudder = .7f;
 
     [Header("Charge feel")]
+    [Tooltip("Seconds an attack must be held before charge zoom and shake begin. Capped below the full-charge time.")]
+    [Min(0f)] public float chargeCameraDelay = .2f;
     [Tooltip("Hold-loop speed at full charge: the arm settles into tension instead of breathing normally.")]
     [Range(.05f,1f)] public float holdSpeedAtFullCharge = .3f;
     [Tooltip("Weight of the ChargeAdditive layer at full charge (arm pulled further back, trembling).")]

@@ -12,6 +12,7 @@ public struct DamageInfo
     public Vector3   Direction;       // attacker -> victim, horizontal, normalised
     public float     KnockbackForce;  // already scaled by CombatManager
     public bool      Parried;
+    public bool      Heavy;           // captured by the hitbox for this swing
     public bool      Blocked;         // set by the victim's IBlocker
 
     public Vector3 Knockback => Direction * KnockbackForce;

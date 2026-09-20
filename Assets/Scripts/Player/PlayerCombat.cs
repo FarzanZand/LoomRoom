@@ -46,6 +46,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     public bool ShieldHeld  => player.Equipment != null && player.Equipment.Get(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
     // Smoothed 0..1 progress toward a heavy strike while the attack button is held.
     public float Charge { get; private set; }
+    // Delayed camera feedback, independent of animation charge and heavy-strike timing.
+    public float CameraCharge { get; private set; }
     // Fired once when a held attack reaches full charge.
     public event System.Action ChargeReady;
 
@@ -110,6 +112,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if(InputManager.HasInstance) InputManager.Instance.PrimaryReleased -= OnPrimaryReleased;
         if(InputManager.HasInstance) InputManager.Instance.SecondaryPressed -= OnGuardPressed;
         HeavySwing=false; charging=false; attackBufferedUntil=-1;
+        CameraCharge = 0f;
     }
 
     void OnPrimaryPressed()
@@ -194,6 +197,13 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     {
         float target = charging && IsAttacking && WeaponHeld ? Mathf.Clamp01((Time.time - pressedAt) / Mathf.Max(0.01f, tuning.heavyChargeTime)) : 0f;
         Charge = Mathf.MoveTowards(Charge, target, chargeSmoothing * Time.deltaTime * (target > Charge ? 1f : 2.5f));
+        float duration = Mathf.Max(.01f, tuning.heavyChargeTime);
+        float delay = Mathf.Clamp(tuning.chargeCameraDelay, 0f, duration * .9f);
+        float cameraTarget = charging && IsAttacking && WeaponHeld
+            ? Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(delay, duration, Time.time - pressedAt))
+            : 0f;
+        CameraCharge = Mathf.MoveTowards(CameraCharge, cameraTarget,
+            chargeSmoothing * Time.deltaTime * (cameraTarget > CameraCharge ? 1f : 2.5f));
         if (charging && !chargeAnnounced && target >= 1f) { chargeAnnounced = true; ChargeReady?.Invoke(); }
         shudder = Mathf.MoveTowards(shudder, 0f, 4f * Time.deltaTime);
 
@@ -206,7 +216,35 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     // Spike the tension layer, e.g. when a heavy hit lands; it decays on its own.
     public void Shudder(float amount) => shudder = Mathf.Max(shudder, Mathf.Clamp01(amount));
 
-    // Normalized time of the attack-tagged state currently playing (0 when none), clamped to one pass.
+    // Follow the release clips, including blends to/from windup and idle.
+    public Vector3 SwingCameraRotation(CombatManager tuning)
+    {
+        if (!isActiveAndEnabled || !player.IsActive || !WeaponHeld || armsAnimator == null ||
+            armsAnimator.runtimeAnimatorController == null) return Vector3.zero;
+        for (int layer = 0; layer < armsAnimator.layerCount; layer++)
+        {
+            var current = CameraRotationForState(armsAnimator.GetCurrentAnimatorStateInfo(layer), tuning);
+            if (armsAnimator.IsInTransition(layer))
+                current = Vector3.Lerp(current,
+                    CameraRotationForState(armsAnimator.GetNextAnimatorStateInfo(layer), tuning),
+                    Mathf.Clamp01(armsAnimator.GetAnimatorTransitionInfo(layer).normalizedTime));
+            if (current.sqrMagnitude > 0f) return current;
+        }
+        return Vector3.zero;
+    }
+
+    static Vector3 CameraRotationForState(AnimatorStateInfo state, CombatManager tuning)
+    {
+        bool heavy = state.IsName("Attack_HeavyRelease");
+        bool alternate = state.IsName("Attack_Release_B");
+        if (!heavy && !alternate && !state.IsName("Attack_Release")) return Vector3.zero;
+        var rotation = heavy ? tuning.heavySwingCameraRotation
+            : alternate ? tuning.alternateSwingCameraRotation : tuning.lightSwingCameraRotation;
+        var curve = heavy ? tuning.heavySwingCameraCurve : tuning.swingCameraCurve;
+        return rotation * (curve != null ? curve.Evaluate(Mathf.Clamp01(state.normalizedTime)) : 0f);
+    }
+
+    // Normalized time of the attack-tagged state currently playing, clamped to one pass.
     float AttackPhase()
     {
         if (armsAnimator == null || armsAnimator.runtimeAnimatorController == null || string.IsNullOrEmpty(attackTag)) return 0f;

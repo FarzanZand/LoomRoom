@@ -45,6 +45,8 @@ public class PlayerCameraRig : MonoBehaviour
         if (noise == null && cam != null) noise = cam.GetComponent<CinemachineBasicMultiChannelPerlin>();
         if (noise != null) { amp = noise.AmplitudeGain; freq = noise.FrequencyGain; }
         if (cam != null) baseFov = cam.Lens.FieldOfView;
+        if (cam != null && cam.GetComponent<SwingCameraMotion>() == null)
+            cam.gameObject.AddComponent<SwingCameraMotion>();
     }
 
     void Update()

@@ -20,39 +20,27 @@ public class PlayerFX : CharacterFX
 
     Coroutine hurtFlashRoutine;
     Player player;
-    WeaponAnimationRelay swingRelay;
 
     void Start()
     {
         player = GetComponentInParent<Player>();
         if (player == null) return;
-        swingRelay = player.GetComponentInChildren<WeaponAnimationRelay>(true);
-        if (swingRelay != null) swingRelay.SwingStarted += OnSwingStarted;
         if (player.Combat != null) player.Combat.ChargeReady += OnChargeReady;
     }
 
     void OnDestroy()
     {
-        if (swingRelay != null) swingRelay.SwingStarted -= OnSwingStarted;
         if (player != null && player.Combat != null) player.Combat.ChargeReady -= OnChargeReady;
     }
 
-    // Charge feel: the view pulls in and the camera noise rises with the charge.
+    // Camera charge starts after the tap grace period, so light attacks don't pulse the view.
     void Update()
     {
         if (player == null || player.CameraRig == null || player.Combat == null) return;
-        float charge = player.Combat.Charge;
+        float charge = player.Combat.CameraCharge;
         var tuning = CombatManager.HasInstance ? CombatManager.Instance : null;
         player.CameraRig.FovOffset      = -(tuning != null ? tuning.chargeFovPull : 4f) * charge;
         player.CameraRig.ExtraAmplitude =  (tuning != null ? tuning.chargeShake   : .45f) * charge;
-    }
-
-    void OnSwingStarted()
-    {
-        if (!CombatManager.HasInstance || player.Combat == null) return;
-        var tuning = CombatManager.Instance;
-        bool heavy = player.Combat.HeavySwing;
-        KickDirectional(heavy ? tuning.heavySwingCameraKick : tuning.swingCameraKick, heavy ? Vector3.down : Vector3.forward);
     }
 
     void OnChargeReady()
