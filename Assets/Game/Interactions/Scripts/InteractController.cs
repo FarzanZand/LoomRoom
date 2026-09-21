@@ -86,6 +86,10 @@ public class InteractController : MonoBehaviour
         // acquire angle is pure margin around the object's silhouette.
         Vector3 onRay   = origin + forward * depth;
         Vector3 closest = bounds.ClosestPoint(onRay);
+        // Large targets can extend beyond interaction range while their near face is
+        // within reach. A direct aim should use that face, not the centre-depth plane.
+        if (bounds.IntersectRay(new Ray(origin, forward), out float entryDistance) && entryDistance > 0f)
+            closest = origin + forward * entryDistance;
         Vector3 delta   = closest - origin;
         float distance  = delta.magnitude;
         if (distance < .001f || distance > rayDistance) return false;

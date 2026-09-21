@@ -11,6 +11,10 @@ public class SceneMoodController : MonoBehaviour
     [Min(0)] public float blendDuration = 2f;
     [Tooltip("Optional: uses RenderSettings.sun, or the brightest active directional light when empty.")]
     public Light mainLight;
+    [Tooltip("Lights brightened by table-only mood presets.")]
+    public Light[] tableLights;
+    readonly System.Collections.Generic.Dictionary<Light, float> originalTableIntensities = new();
+    Coroutine tableRoutine;
     Coroutine routine;
     Material originalSkybox, runtimeSkybox;
     AmbientMode originalAmbientMode;
@@ -33,6 +37,11 @@ public class SceneMoodController : MonoBehaviour
     }
     void OnDisable()
     {
+        if (tableRoutine != null) StopCoroutine(tableRoutine);
+        tableRoutine = null;
+        foreach (var entry in originalTableIntensities)
+            if (entry.Key != null) entry.Key.intensity = entry.Value;
+        originalTableIntensities.Clear();
         if (InputManager.HasInstance) InputManager.Instance.DebugMoodPreviewRequested -= TogglePreview;
         if (routine != null) StopCoroutine(routine);
         routine = null;
@@ -58,6 +67,12 @@ public class SceneMoodController : MonoBehaviour
     public void BlendToMood(SceneMood mood, float duration = 2f)
     {
         if (!Application.isPlaying || mood == null) return;
+        if (mood.tableLightingOnly)
+        {
+            previewActive = false;
+            FadeTableLights(Mathf.Max(0f, mood.tableLightMultiplier), duration);
+            return;
+        }
         CaptureOriginal();
         previewActive = false;
         var target = new State { sky=mood.skyTint, exposure=Mathf.Max(0,mood.skyExposure),
@@ -69,9 +84,39 @@ public class SceneMoodController : MonoBehaviour
 
     public void RestoreMood(float duration = 2f)
     {
+        if (originalTableIntensities.Count > 0) FadeTableLights(1f, duration);
         if (!captured) return;
         previewActive = false;
         BeginBlend(original, duration, true);
+    }
+
+    void FadeTableLights(float multiplier, float duration)
+    {
+        if (tableRoutine != null) StopCoroutine(tableRoutine);
+        if (tableLights != null)
+            foreach (var light in tableLights)
+                if (light != null && !originalTableIntensities.ContainsKey(light))
+                    originalTableIntensities.Add(light, light.intensity);
+        tableRoutine = StartCoroutine(BlendTableLights(multiplier, duration));
+    }
+
+    IEnumerator BlendTableLights(float multiplier, float duration)
+    {
+        var from = new System.Collections.Generic.Dictionary<Light, float>();
+        foreach (var entry in originalTableIntensities)
+            if (entry.Key != null) from.Add(entry.Key, entry.Key.intensity);
+        double start = Time.realtimeSinceStartupAsDouble;
+        while (true)
+        {
+            float progress = duration <= 0f ? 1f : Mathf.Clamp01((float)(Time.realtimeSinceStartupAsDouble - start) / duration);
+            float eased = Mathf.SmoothStep(0f, 1f, progress);
+            foreach (var entry in from)
+                if (entry.Key != null)
+                    entry.Key.intensity = Mathf.Lerp(entry.Value, originalTableIntensities[entry.Key] * multiplier, eased);
+            if (progress >= 1f) break;
+            yield return null;
+        }
+        tableRoutine = null;
     }
 
     void CaptureOriginal()

@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
-  m_Name: Shield
+  m_Name: DebugShield
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Shield
   description: 'Shield test for left hand. '
@@ -25,7 +25,7 @@ MonoBehaviour:
   heldScale: 1
   heldPosition: {x: 0, y: 0, z: -0.2}
   heldRotation: {x: 0, y: -90, z: 0}
-  equipOnPickup: 1
+  equipOnPickup: 0
   statModifiers:
   - stat: 1
     value: 2

@@ -3,6 +3,11 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "World/Scene Mood", fileName = "NewSceneMood")]
 public class SceneMood : ScriptableObject
 {
+    [Header("Table brightness")]
+    [Tooltip("Only fade the table lights, preserving their colors and the rest of the scene lighting.")]
+    public bool tableLightingOnly;
+    [Min(0f), Tooltip("1.4 means 40% brighter than the lights were before the first mood cue.")]
+    public float tableLightMultiplier = 1.4f;
     [Header("Sky")]
     public Color skyTint = new Color(.65f, .2f, .18f);
     [Min(0)] public float skyExposure = 1f;

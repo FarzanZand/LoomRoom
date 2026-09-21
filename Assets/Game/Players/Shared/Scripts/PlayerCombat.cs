@@ -195,7 +195,9 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     void OnDamaged(DamageInfo info)
     {
         string trigger = info.Blocked ? blockHitTrigger : hurtTrigger;
-        Trigger(armsAnimator, trigger);
+        // The arms own attack timing and hitbox events. Keep windup, charge and
+        // release playing through hits, including transitions into an attack.
+        if (!IsAttacking) Trigger(armsAnimator, trigger);
         Trigger(bodyAnimator, trigger);
     }
 

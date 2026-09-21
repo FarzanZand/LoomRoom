@@ -9,14 +9,14 @@ public class ScreenManager : Singleton<ScreenManager>
     /// Blend scene lighting and sky without colouring the UI.
     public void BlendToMood(SceneMood mood, float duration = 2f)
     {
-        var controller = GetComponent<SceneMoodController>();
+        var controller = FindAnyObjectByType<LightingManager>();
         if (controller != null) controller.BlendToMood(mood, duration);
     }
 
     public void RestoreMood(float duration = 2f)
     {
-        var controller = GetComponent<SceneMoodController>();
-        if (controller != null) controller.RestoreMood(duration);
+        var controller = FindAnyObjectByType<LightingManager>();
+        if (controller != null) controller.RestoreDefault();
     }
 
     private Coroutine fadeRoutine;

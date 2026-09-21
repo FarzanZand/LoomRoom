@@ -54,7 +54,10 @@ MonoBehaviour:
   jumpStaminaCost: 0.5
   staminaRegenDelay: 0.6
   sprintRecoveryFraction: 0.25
-  startingItems: []
+  startingItems:
+  - {fileID: 11400000, guid: 32687ae994ea87041b177374a26552e4, type: 2}
+  - {fileID: 11400000, guid: 5ffea5015bc83d049831725d0af8b1c4, type: 2}
+  - {fileID: 11400000, guid: b912ab6e4fa848246b495e35607bc53a, type: 2}
   startingEquipment: []
   hurtTrigger: Hurt
   deathTrigger: Death

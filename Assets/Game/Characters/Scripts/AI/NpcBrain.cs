@@ -139,8 +139,14 @@ public class NpcBrain : MonoBehaviour, IInteractable
     public void SnapRotationTowardsPlayer()
     {
         if (!PlayerManager.HasInstance || PlayerManager.Instance.Active == null) return;
+        SnapRotationTowards(PlayerManager.Instance.Active.transform.position);
+    }
+
+    public void SnapRotationTowards(Vector3 position)
+    {
         if (rotateRoutine != null) { StopCoroutine(rotateRoutine); rotateRoutine = null; }
-        Motor.SnapFace(PlayerManager.Instance.Active.transform.position);
+        faceTarget = null;
+        Motor.SnapFace(position);
     }
 
     IEnumerator RotateRoutine(Transform target, float speed)

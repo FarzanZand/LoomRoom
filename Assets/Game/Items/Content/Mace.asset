@@ -22,7 +22,10 @@ MonoBehaviour:
   pickupAudio: {fileID: 0}
   canBeEquipped: 1
   equipSlot: 0
-  equipOnPickup: 0
+  heldScale: 1
+  heldPosition: {x: 0, y: 0, z: 0}
+  heldRotation: {x: 0, y: 0, z: 0}
+  equipOnPickup: 1
   statModifiers:
   - stat: 2
     value: 10
@@ -31,6 +34,7 @@ MonoBehaviour:
     useDefaultEffects: 1
     hitAudio: {fileID: 0}
     swingAudio: {fileID: 0}
+    heavySwingAudio: {fileID: 0}
     hitParticle: {fileID: 4306488877223958017, guid: ecb38e0319a6ad44cbca52d7b5add7a6, type: 3}
     damageMultiplier: 1
     knockbackForce: -1
