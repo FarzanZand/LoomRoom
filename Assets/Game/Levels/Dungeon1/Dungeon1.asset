@@ -16,15 +16,45 @@ MonoBehaviour:
   description: "The Amber Crypt \u2022 a new layout every run"
   kind: 1
   mood: {fileID: 11400000, guid: 4cbac9547e85c7349a10663f207bc32a, type: 2}
+  moodLightning: 0
+  overrideLighting: 0
+  lightingSettings:
+    skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+    skyExposure: 0.8
+    lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+    lightIntensity: 0.65
+    ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+    ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+    ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+    fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   backgroundMusic: {fileID: 8300000, guid: 9d5de70ebd5fb48438751ad5f84883b6, type: 3}
+  backgroundMusicVolume: 0.312
   loopMusic: 1
   musicFadeSeconds: 1.5
   environmentPrefab: {fileID: 0}
-  width: 32
-  depth: 42
+  width: 40
+  depth: 54
   cellSize: 2
-  roomCount: 12
+  roomCount: 30
+  loopPercent: 15
+  encounterChance: 0.7
+  maxEnemiesPerRoom: 2
+  roomPropPrefabs:
+  - {fileID: 908437102851283026, guid: fc59090b5bd382b40b3a0e216ac50468, type: 3}
+  - {fileID: 2626260366801120047, guid: 78690a233ec5c00458ed652ef3191e79, type: 3}
+  roomProfiles:
+  - {fileID: 11400000, guid: 19d8d4f050a70ad4090565e08a7e8d34, type: 2}
+  - {fileID: 11400000, guid: 40867d4f31470e54a99e795ac0ee7221, type: 2}
+  - {fileID: 11400000, guid: 9aacf2c86f9b97147bb7df776e08316b, type: 2}
+  - {fileID: 11400000, guid: 7feeadfd849b5ee459d026df4d62e8dd, type: 2}
   fixedSeed: 0
+  hideRoof: 1
+  hideRoofPercent: 20
+  hideEdges: 0
+  hideEdgesPercent: 5
+  multipleLevels: 0
+  levelCount: 3
+  floorSettings: []
   floorMaterial: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
   wallMaterial: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
   trimMaterial: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
@@ -36,17 +66,27 @@ MonoBehaviour:
   - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
   - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
   - {fileID: 3270041406331151002, guid: b5cc74a1c83c63a4f906481253b84779, type: 3}
-  loot: {fileID: 11400000, guid: 66571cd5f3da142419416c5d36ed7fc5, type: 2}
+  doorPrefab: {fileID: 7005205240093728226, guid: 3c6bc2dc79fc2bb42ba380732b33a2f2, type: 3}
+  chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+  doorPercent: 65
+  balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
+  loot: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
+  enemyLoot: {fileID: 11400000, guid: 4fa73d6bb675684469538d1cc9a41960, type: 2}
+  chestLoot: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
+  barrelLoot: {fileID: 11400000, guid: 5c389ef4b21c6464bb5fd8dce9928f7e, type: 2}
   startingItems:
-  - {fileID: 11400000, guid: 335b553d1e77a534ba228f8cc0fa27c1, type: 2}
-  - {fileID: 11400000, guid: b5868584276d6474e85cad2b2de39004, type: 2}
+  - {fileID: 11400000, guid: c238df0768336e34bb7e3707e9afd767, type: 2}
+  - {fileID: 11400000, guid: 5ce76942449b23b45a86430cd37d32f9, type: 2}
   - {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
-  - {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
+  - {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
   startingEquipment:
-  - {fileID: 11400000, guid: 335b553d1e77a534ba228f8cc0fa27c1, type: 2}
-  - {fileID: 11400000, guid: b5868584276d6474e85cad2b2de39004, type: 2}
-  guaranteedHealing: {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
+  - {fileID: 11400000, guid: c238df0768336e34bb7e3707e9afd767, type: 2}
+  - {fileID: 11400000, guid: 5ce76942449b23b45a86430cd37d32f9, type: 2}
+  guaranteedHealing: {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
   containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
   chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
   hudFont: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
   hotbarFrame: {fileID: 21300000, guid: 8eae82d5f061d8f49b31dcf5f503d8ef, type: 3}
+  enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
+  damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
+  messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}

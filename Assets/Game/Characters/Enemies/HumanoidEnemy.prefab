@@ -361,6 +361,7 @@ GameObject:
   - component: {fileID: 8254855258336908543}
   - component: {fileID: 2232354572336911035}
   - component: {fileID: 2003297156367120268}
+  - component: {fileID: 7930123792593592069}
   m_Layer: 0
   m_Name: HumanoidEnemy
   m_TagString: Untagged
@@ -605,6 +606,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4b5f9971640b79429c068dbd483853b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponAnimationRelay
+--- !u!114 &7930123792593592069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957184423342700410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c859608cf854734d80cae20644826f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyWeaponLoadout
+  hasWeapon: 0
+  weapon: {fileID: 11400000, guid: df7a7ba47c459f941848a7b378af6f3d, type: 2}
+  grip: {fileID: 11400000, guid: acbf81d574de0af4a8b2282cd8a41dac, type: 2}
+  animator: {fileID: 846770712117852252}
+  attachment: {fileID: 0}
+  visual: {fileID: 0}
 --- !u!1 &1082656234791438016
 GameObject:
   m_ObjectHideFlags: 0

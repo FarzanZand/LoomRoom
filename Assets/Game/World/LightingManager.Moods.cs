@@ -73,12 +73,17 @@ public sealed partial class LightingManager
     public void BlendToMood(SceneMood preset, float duration = 3f)
     {
         if (preset == null) return;
-        keyboardMoodPreview = false;
-        moodFrom = moodActive ? displayedMood : ReadBaseMood();
-        moodTo = new MoodState { sky = preset.skyTint, exposure = preset.skyExposure,
+        BlendToMood(new MoodState { sky = preset.skyTint, exposure = preset.skyExposure,
             light = preset.lightColor, intensity = preset.lightIntensity,
             top = preset.ambientSky, horizon = preset.ambientHorizon,
-            ground = preset.ambientGround, fog = preset.fogColor };
+            ground = preset.ambientGround, fog = preset.fogColor }, duration);
+    }
+
+    public void BlendToMood(MoodState settings, float duration = 3f)
+    {
+        keyboardMoodPreview = false;
+        moodFrom = moodActive ? displayedMood : ReadBaseMood();
+        moodTo = settings;
         moodActive = true;
         moodStart = Time.realtimeSinceStartupAsDouble;
         activeMoodDuration = Mathf.Max(0f, duration);

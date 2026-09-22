@@ -1,230 +1,160 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-// Overview + authoring window for every ItemData asset in the project.
-// Reads/writes the assets directly through AssetDatabase — the .asset files under
-// Assets/Game/Items/Content ARE the database. Anything under a _Archive folder is hidden by default.
 public class ItemDatabaseWindow : EditorWindow
 {
-    const string ItemFolder = "Assets/Game/Items/Content";
-
-    const float WFold    = 16f;
-    const float WIcon    = 40f;
-    const float WTag     = 100f;
-    const float WType    = 100f;
-    const float WSlot    = 90f;
-    const float WStack   = 50f;
-    const float WEffects = 60f;
-    const float WButtons = 130f;
-
-    enum SortColumn { Name, Tag, Type, Slot, Stack }
-
     List<ItemData> items = new();
-    readonly Dictionary<ItemData, Editor> editors = new();
-    readonly HashSet<ItemData> expanded = new();
-
-    SortColumn sortColumn = SortColumn.Name;
-    bool sortAscending = true;
-    string search = "";
-    Vector2 scroll;
-    bool showArchived;
-    int archivedCount;
-
-    static bool IsArchived(string assetPath) => assetPath.Contains("/_Archive/");
+    readonly Dictionary<ItemData, List<string>> issues = new();
+    [SerializeField] ItemData selected;
+    Editor inspector;
+    string search = "", tag = "";
+    int typeFilter, slotFilter;
+    bool showArchived, issuesOnly, tooltip;
+    Vector2 listScroll, detailScroll;
+    static readonly string[] Types = new[] { "All types" }.Concat(Enum.GetNames(typeof(ItemType))).ToArray();
+    static readonly string[] Slots = new[] { "All slots" }.Concat(Enum.GetNames(typeof(EquipmentSlot))).ToArray();
 
     [MenuItem("Tools/Item Database")]
-    static void ShowWindow()
+    public static void ShowWindow()
     {
-        var w = GetWindow<ItemDatabaseWindow>("Item Database");
-        w.minSize = new Vector2(720, 300);
+        var window = GetWindow<ItemDatabaseWindow>("Item Database");
+        window.minSize = new Vector2(900, 500);
     }
-
-    void OnEnable()  => Rebuild();
-    void OnFocus()   => Rebuild();
-    void OnDisable() => ClearEditors();
-
+    void OnEnable() { Rebuild(); Undo.undoRedoPerformed += Rebuild; EditorApplication.projectChanged += Rebuild; }
+    void OnDisable()
+    {
+        Undo.undoRedoPerformed -= Rebuild; EditorApplication.projectChanged -= Rebuild;
+        if (inspector != null) DestroyImmediate(inspector);
+    }
     void Rebuild()
     {
-        items = new List<ItemData>();
-        archivedCount = 0;
-        foreach (var guid in AssetDatabase.FindAssets("t:ItemData"))
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (IsArchived(path))
-            {
-                archivedCount++;
-                if (!showArchived) continue;
-            }
-            var item = AssetDatabase.LoadAssetAtPath<ItemData>(path);
-            if (item != null) items.Add(item);
-        }
-        Sort();
-        foreach (var dead in editors.Keys.Where(k => k == null || !items.Contains(k)).ToList())
-        {
-            if (editors[dead] != null) DestroyImmediate(editors[dead]);
-            editors.Remove(dead);
-        }
+        items = ItemDatabaseAuthoring.All(); issues.Clear();
+        foreach (var item in items) issues[item] = ItemDatabaseAuthoring.Issues(item, items);
+        Repaint();
     }
-
-    void ClearEditors()
+    void Select(ItemData item)
     {
-        foreach (var e in editors.Values) if (e != null) DestroyImmediate(e);
-        editors.Clear();
+        if (selected == item && inspector != null) return;
+        selected = item; detailScroll = Vector2.zero;
+        if (inspector != null) DestroyImmediate(inspector);
+        inspector = item != null ? Editor.CreateEditor(item) : null;
     }
-
-    void Sort()
-    {
-        System.Comparison<ItemData> cmp = sortColumn switch
-        {
-            SortColumn.Tag   => (a, b) => string.Compare(a.tag, b.tag, System.StringComparison.OrdinalIgnoreCase),
-            SortColumn.Type  => (a, b) => a.itemType.CompareTo(b.itemType),
-            SortColumn.Slot  => (a, b) => (a.canBeEquipped ? (int)a.equipSlot : -1).CompareTo(b.canBeEquipped ? (int)b.equipSlot : -1),
-            SortColumn.Stack => (a, b) => a.maxStackSize.CompareTo(b.maxStackSize),
-            _                => (a, b) => string.Compare(a.itemName, b.itemName, System.StringComparison.OrdinalIgnoreCase),
-        };
-        items.Sort((a, b) => sortAscending ? cmp(a, b) : cmp(b, a));
-    }
-
+    IEnumerable<ItemData> Visible() => items.Where(i => i != null &&
+        (showArchived || !ItemDatabaseAuthoring.IsArchived(i)) &&
+        (!issuesOnly || issues[i].Count > 0) &&
+        (typeFilter == 0 || i.itemType.ToString() == Types[typeFilter]) &&
+        (slotFilter == 0 || i.canBeEquipped && i.equipSlot.ToString() == Slots[slotFilter]) &&
+        (string.IsNullOrEmpty(tag) || i.tag == tag) &&
+        (string.IsNullOrWhiteSpace(search) || (i.itemName + " " + i.tag + " " + i.itemType + " " + AssetDatabase.GetAssetPath(i))
+            .IndexOf(search.Trim(), StringComparison.OrdinalIgnoreCase) >= 0));
     void OnGUI()
     {
-        DrawToolbar();
-        DrawHeader();
-
-        scroll = EditorGUILayout.BeginScrollView(scroll);
-        string q = search.Trim().ToLowerInvariant();
-        foreach (var item in items.ToList())
+        using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
         {
-            if (item == null) continue;
-            if (q.Length > 0 &&
-                !(item.itemName ?? "").ToLowerInvariant().Contains(q) &&
-                !(item.tag ?? "").ToLowerInvariant().Contains(q) &&
-                !item.itemType.ToString().ToLowerInvariant().Contains(q))
-                continue;
-            DrawRow(item);
+            Toolbar();
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUILayout.VerticalScope(GUILayout.Width(310))) List();
+                using (new EditorGUILayout.VerticalScope()) Details();
+            }
+        }
+        if (EditorApplication.isPlayingOrWillChangePlaymode) EditorGUILayout.HelpBox("Exit Play mode to edit the item database.", MessageType.Info);
+    }
+    void Toolbar()
+    {
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+        {
+            if (GUILayout.Button("New item", EditorStyles.toolbarDropDown, GUILayout.Width(85)))
+            {
+                var menu = new GenericMenu();
+                foreach (ItemType type in Enum.GetValues(typeof(ItemType)))
+                { var captured = type; menu.AddItem(new GUIContent(type.ToString()), false, () => { Select(ItemDatabaseAuthoring.Create(captured)); Rebuild(); }); }
+                menu.ShowAsContext();
+            }
+            if (GUILayout.Button("Save items", EditorStyles.toolbarButton, GUILayout.Width(85))) { ItemDatabaseAuthoring.Save(); Rebuild(); ShowNotification(new GUIContent("Items saved")); }
+            if (GUILayout.Button("Organize shown", EditorStyles.toolbarButton, GUILayout.Width(115))) Organize();
+            if (GUILayout.Button(new GUIContent("Sync runtime catalog", "Add all active items to InventoryManager's name lookup catalog. Save the scene afterwards."), EditorStyles.toolbarButton, GUILayout.Width(145)))
+                ShowNotification(new GUIContent($"Catalog updated: {ItemDatabaseAuthoring.SyncCatalog()} items. Save the scene."));
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Authoring guide", EditorStyles.toolbarButton)) EditorUtility.OpenWithDefaultApp(Path.GetFullPath("Docs/Item-database.md"));
+        }
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+        {
+            search = GUILayout.TextField(search, EditorStyles.toolbarSearchField, GUILayout.MinWidth(130));
+            typeFilter = EditorGUILayout.Popup(typeFilter, Types, GUILayout.Width(115));
+            slotFilter = EditorGUILayout.Popup(slotFilter, Slots, GUILayout.Width(115));
+            var tags = new[] { "All tags" }.Concat(items.Select(i => i.tag).Where(t => !string.IsNullOrEmpty(t)).Distinct().OrderBy(t => t)).ToArray();
+            int tagIndex = Array.IndexOf(tags, tag);
+            int next = EditorGUILayout.Popup(Mathf.Max(0, tagIndex), tags, GUILayout.Width(110)); tag = next == 0 ? "" : tags[next];
+            issuesOnly = GUILayout.Toggle(issuesOnly, "Needs attention", EditorStyles.toolbarButton);
+            showArchived = GUILayout.Toggle(showArchived, "Archived", EditorStyles.toolbarButton);
+        }
+    }
+    void List()
+    {
+        var visible = Visible().ToList();
+        EditorGUILayout.LabelField($"{visible.Count} shown / {items.Count} items", EditorStyles.miniLabel);
+        listScroll = EditorGUILayout.BeginScrollView(listScroll);
+        foreach (var item in visible)
+        {
+            Rect row = GUILayoutUtility.GetRect(290, 52, GUILayout.ExpandWidth(true));
+            if (selected == item) EditorGUI.DrawRect(row, new Color(.22f, .37f, .48f));
+            var icon = item.icon != null ? AssetPreview.GetAssetPreview(item.icon) ?? AssetPreview.GetMiniThumbnail(item.icon) : null;
+            if (icon != null) GUI.DrawTexture(new Rect(row.x + 5, row.y + 5, 40, 40), icon, ScaleMode.ScaleToFit);
+            GUI.Label(new Rect(row.x + 52, row.y + 5, row.width - 57, 22), (issues[item].Count > 0 ? "! " : "") + item.itemName, EditorStyles.boldLabel);
+            string subtitle = item.itemType + (item.canBeEquipped ? " / " + item.equipSlot : "") + (ItemDatabaseAuthoring.IsArchived(item) ? " / ARCHIVED" : "");
+            GUI.Label(new Rect(row.x + 52, row.y + 27, row.width - 57, 20), subtitle, EditorStyles.miniLabel);
+            if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition)) { Select(item); GUI.FocusControl(null); Event.current.Use(); }
         }
         EditorGUILayout.EndScrollView();
     }
-
-    void DrawToolbar()
+    void Details()
     {
-        EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-        if (GUILayout.Button("New Item", EditorStyles.toolbarButton, GUILayout.Width(80))) CreateItem();
-        if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(60))) Rebuild();
-        GUILayout.Space(8);
-        search = GUILayout.TextField(search, EditorStyles.toolbarSearchField, GUILayout.MinWidth(160));
-        GUILayout.FlexibleSpace();
-        bool wasArchived = showArchived;
-        showArchived = GUILayout.Toggle(showArchived, $"Archived ({archivedCount})", EditorStyles.toolbarButton);
-        if (wasArchived != showArchived) Rebuild();
-        GUILayout.Label($"{items.Count} items", EditorStyles.miniLabel);
-        EditorGUILayout.EndHorizontal();
-    }
-
-    void DrawHeader()
-    {
-        EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-        GUILayout.Space(WFold + WIcon);
-        HeaderButton("Name",  SortColumn.Name,  0f, expand: true);
-        HeaderButton("Tag",   SortColumn.Tag,   WTag);
-        HeaderButton("Type",  SortColumn.Type,  WType);
-        HeaderButton("Slot",  SortColumn.Slot,  WSlot);
-        HeaderButton("Stack", SortColumn.Stack, WStack);
-        GUILayout.Label("Effects", EditorStyles.toolbarButton, GUILayout.Width(WEffects));
-        GUILayout.Space(WButtons);
-        EditorGUILayout.EndHorizontal();
-    }
-
-    void HeaderButton(string label, SortColumn col, float width, bool expand = false)
-    {
-        string arrow = sortColumn == col ? (sortAscending ? " ▲" : " ▼") : "";
-        var opts = expand ? new[] { GUILayout.ExpandWidth(true) } : new[] { GUILayout.Width(width) };
-        if (GUILayout.Button(label + arrow, EditorStyles.toolbarButton, opts))
+        if (selected == null)
         {
-            if (sortColumn == col) sortAscending = !sortAscending;
-            else { sortColumn = col; sortAscending = true; }
-            Sort();
-        }
-    }
-
-    void DrawRow(ItemData item)
-    {
-        EditorGUILayout.BeginHorizontal();
-
-        bool open = expanded.Contains(item);
-        bool nowOpen = GUILayout.Toggle(open, GUIContent.none, EditorStyles.foldout, GUILayout.Width(WFold));
-        if (nowOpen != open) { if (nowOpen) expanded.Add(item); else expanded.Remove(item); }
-
-        var iconRect = GUILayoutUtility.GetRect(WIcon, 20, GUILayout.Width(WIcon));
-        if (item.icon != null) GUI.DrawTexture(iconRect, item.icon.texture, ScaleMode.ScaleToFit);
-
-        EditorGUI.BeginChangeCheck();
-        string newName = EditorGUILayout.TextField(item.itemName, GUILayout.ExpandWidth(true));
-        string newTag  = EditorGUILayout.TextField(item.tag, GUILayout.Width(WTag));
-        var newType    = (ItemType)EditorGUILayout.EnumPopup(item.itemType, GUILayout.Width(WType));
-        if (item.canBeEquipped)
-        {
-            var newSlot = (EquipmentSlot)EditorGUILayout.EnumPopup(item.equipSlot, GUILayout.Width(WSlot));
-            if (newSlot != item.equipSlot) { Undo.RecordObject(item, "Edit Item"); item.equipSlot = newSlot; EditorUtility.SetDirty(item); }
-        }
-        else GUILayout.Label("—", GUILayout.Width(WSlot));
-        int newStack = EditorGUILayout.IntField(item.maxStackSize, GUILayout.Width(WStack));
-        if (EditorGUI.EndChangeCheck())
-        {
-            Undo.RecordObject(item, "Edit Item");
-            item.itemName = newName; item.tag = newTag; item.itemType = newType; item.maxStackSize = Mathf.Max(1, newStack);
-            EditorUtility.SetDirty(item);
-        }
-
-        GUILayout.Label((item.effects?.Length ?? 0).ToString(), GUILayout.Width(WEffects));
-
-        if (GUILayout.Button("Select", GUILayout.Width(55))) { Selection.activeObject = item; EditorGUIUtility.PingObject(item); }
-        if (GUILayout.Button("Dup", GUILayout.Width(35))) Duplicate(item);
-        if (GUILayout.Button("Del", GUILayout.Width(35)) &&
-            EditorUtility.DisplayDialog("Delete item", $"Delete {item.itemName}? This cannot be undone.", "Delete", "Cancel"))
-        {
-            AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(item));
-            Rebuild();
-            EditorGUILayout.EndHorizontal();
+            GUILayout.Space(30);
+            EditorGUILayout.LabelField("Select an item to edit", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("These are the real ItemData assets used by loot tables, equipment and pickups. Changes apply everywhere that references an item. Use tags to group content without moving files.", MessageType.Info);
             return;
         }
-
-        EditorGUILayout.EndHorizontal();
-
-        if (expanded.Contains(item))
+        if (inspector == null || inspector.target != selected) Select(selected);
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
         {
-            if (!editors.TryGetValue(item, out var ed) || ed == null)
+            if (GUILayout.Button("Locate asset", EditorStyles.toolbarButton)) { Selection.activeObject = selected; EditorGUIUtility.PingObject(selected); }
+            if (GUILayout.Button("Duplicate", EditorStyles.toolbarButton)) { Select(ItemDatabaseAuthoring.Duplicate(selected)); Rebuild(); }
+            if (GUILayout.Button("Move to type folder", EditorStyles.toolbarButton)) { ItemDatabaseAuthoring.Move(selected, ItemDatabaseAuthoring.Destination(selected)); Rebuild(); }
+            bool archived = ItemDatabaseAuthoring.IsArchived(selected);
+            if (GUILayout.Button(archived ? "Restore" : "Archive", EditorStyles.toolbarButton))
             {
-                ed = Editor.CreateEditor(item);
-                editors[item] = ed;
+                if (archived) ItemDatabaseAuthoring.Move(selected, ItemDatabaseAuthoring.Destination(selected));
+                else if (EditorUtility.DisplayDialog("Archive item", "Move this asset to _Archive? Existing loot/scene references remain valid. It is excluded from future catalog syncs. Remove it from loot tables separately if it should no longer drop.", "Archive", "Cancel"))
+                    ItemDatabaseAuthoring.Move(selected, ItemDatabaseAuthoring.Root + "/_Archive/" + Path.GetFileName(AssetDatabase.GetAssetPath(selected)));
+                Rebuild();
             }
-            EditorGUI.indentLevel++;
-            EditorGUILayout.BeginVertical("box");
-            ed.OnInspectorGUI();
-            EditorGUILayout.EndVertical();
-            EditorGUI.indentLevel--;
         }
+        detailScroll = EditorGUILayout.BeginScrollView(detailScroll);
+        EditorGUILayout.SelectableLabel(AssetDatabase.GetAssetPath(selected), EditorStyles.miniLabel, GUILayout.Height(20));
+        if (issues.TryGetValue(selected, out var warnings)) foreach (string warning in warnings) EditorGUILayout.HelpBox(warning, MessageType.Warning);
+        string pickup = selected.pickupVisualPrefab != null ? selected.pickupVisualPrefab.name : selected.worldPrefab != null ? selected.worldPrefab.name : "Equipment loot pouch (InventoryManager default)";
+        EditorGUILayout.LabelField("Pickup visual", pickup);
+        tooltip = EditorGUILayout.Foldout(tooltip, "Tooltip preview", true);
+        if (tooltip) EditorGUILayout.HelpBox(selected.BuildTooltip(), MessageType.None);
+        EditorGUI.BeginChangeCheck(); inspector.OnInspectorGUI();
+        if (EditorGUI.EndChangeCheck()) { EditorUtility.SetDirty(selected); issues[selected] = ItemDatabaseAuthoring.Issues(selected, items); }
+        EditorGUILayout.EndScrollView();
     }
-
-    void CreateItem()
+    void Organize()
     {
-        var item = CreateInstance<ItemData>();
-        item.itemName = "New Item";
-        string path = AssetDatabase.GenerateUniqueAssetPath($"{ItemFolder}/NewItem.asset");
-        AssetDatabase.CreateAsset(item, path);
-        AssetDatabase.SaveAssets();
-        Rebuild();
-        expanded.Add(item);
-        Selection.activeObject = item;
-    }
-
-    void Duplicate(ItemData src)
-    {
-        string path = AssetDatabase.GetAssetPath(src);
-        string dst  = AssetDatabase.GenerateUniqueAssetPath(path);
-        AssetDatabase.CopyAsset(path, dst);
-        AssetDatabase.SaveAssets();
-        Rebuild();
+        var moves = Visible().Where(i => !ItemDatabaseAuthoring.IsArchived(i) && AssetDatabase.GetAssetPath(i).StartsWith(ItemDatabaseAuthoring.Root + "/", StringComparison.Ordinal) && AssetDatabase.GetAssetPath(i) != ItemDatabaseAuthoring.Destination(i)).ToList();
+        if (moves.Count == 0) { ShowNotification(new GUIContent("Shown items are already organized")); return; }
+        string preview = string.Join("\n", moves.Take(12).Select(i => i.name + " -> " + ItemDatabaseAuthoring.Folder(i.itemType)));
+        if (moves.Count > 12) preview += $"\n...and {moves.Count - 12} more.";
+        if (!EditorUtility.DisplayDialog("Organize " + moves.Count + " items", preview + "\n\nGUIDs and references are preserved. Only shown, active items inside Items/Data will move.", "Move assets", "Cancel")) return;
+        foreach (var item in moves) ItemDatabaseAuthoring.Move(item, ItemDatabaseAuthoring.Destination(item));
+        ItemDatabaseAuthoring.Save(); Rebuild();
     }
 }

@@ -3,9 +3,12 @@ using UnityEngine;
 
 // The opening: screen fades from black while the wake-up timeline plays and a short
 // music sting runs underneath. The room player is placed at the start marker first.
+// In the Room scene, this rig and its start marker are children of the bed so
+// designers can move or rotate the bed without retiming the local Timeline animation.
 public class WakeUpCutsceneController : CutsceneController
 {
     [Header("Wake Up")]
+    [Tooltip("Bed-relative player start marker. Keep this marker and the wake-up rig under the bed when editing its placement.")]
     [SerializeField] Transform startPositionRoom;
     [SerializeField] float screenFadeDuration = 2f;
     [SerializeField] float screenFadeHold     = 2f;

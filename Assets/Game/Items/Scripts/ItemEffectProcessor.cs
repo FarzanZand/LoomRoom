@@ -42,12 +42,16 @@ public static class ItemEffectProcessor
 
         switch (e.type)
         {
+            case EffectType.FoodRegen:
+                target?.Stats?.EatFood(e.value,e.duration);
+                break;
+
             case EffectType.Heal:
                 target?.Stats?.Heal(e.value);
                 break;
 
-            case EffectType.RestoreStamina:
-                target?.Stats?.RestoreStamina(e.value);
+            case EffectType.RestoreMana:
+                target?.Stats?.RestoreMana(e.value);
                 break;
 
             case EffectType.Damage:

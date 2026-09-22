@@ -82,11 +82,11 @@ public class Player : Character
 
         if (InventoryManager.HasInstance)
             foreach (var item in data.startingItems)
-                if (item != null) InventoryManager.Instance.Pickup(item, this);
+                if (item != null) InventoryManager.Instance.Pickup(item, this, playSound: false);
 
         if (Equipment != null)
             foreach (var item in data.startingEquipment)
-                if (item != null) Equipment.Equip(item);
+                if (item != null) Equipment.Equip(item, playSound: false);
     }
 
     protected override void OnDied()

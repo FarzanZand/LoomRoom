@@ -16,8 +16,15 @@ public class Inventory : MonoBehaviour
     [Tooltip("Item types this container accepts.")]
     [SerializeField] ItemTypeMask allowedTypes = ItemTypeMask.All;
 
+    ItemStack[] storedSlots;
+    // The table player's root may still be inactive when a level captures its bag.
+    // Initialize on first access as well as Awake, preserving any pre-activation items.
     [ShowInInspector, ReadOnly]
-    ItemStack[] slots;
+    ItemStack[] slots
+    {
+        get => storedSlots ??= new ItemStack[Mathf.Max(1, slotCount)];
+        set => storedSlots = value;
+    }
 
     public int SlotCount => slots != null ? slots.Length : slotCount;
     public ItemStack this[int index] => index >= 0 && index < slots.Length ? slots[index] : null;
@@ -148,6 +155,7 @@ public class Inventory : MonoBehaviour
     public static bool Move(Inventory src, int from, Inventory dst, int to)
     {
         if (src == null || dst == null) return false;
+        if (from < 0 || from >= src.SlotCount || to < 0 || to >= dst.SlotCount) return false;
         if (src == dst && from == to) return true;
         var a = src[from];
         if (a == null) return false;

@@ -1,0 +1,161 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88ef6b241c543ce42a7f027a823efe42, type: 3}
+  m_Name: Dungeon chest progression
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonLootTable
+  entries: []
+  enemyDropChance: 0.35
+  guaranteed: []
+  pools:
+  - label: Equipment
+    sources: 15
+    chance: 1
+    minRolls: 1
+    maxRolls: 1
+    uniqueItems: 0
+    entries:
+    - item: {fileID: 11400000, guid: 75a2b37d2afdb5140839f2492e0da112, type: 2}
+      weight: 3
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: c5e6cb90fc501dc4e9dadf7808e648b7, type: 2}
+      weight: 3
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 563551a10f338364085b317f905841b5, type: 2}
+      weight: 3
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: d79acc8aac76dbd4ebba676c78532248, type: 2}
+      weight: 3
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: c238df0768336e34bb7e3707e9afd767, type: 2}
+      weight: 3
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 5ce76942449b23b45a86430cd37d32f9, type: 2}
+      weight: 3
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 013bd0f00c525e24bbf99530378befe1, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 2
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 2
+    - item: {fileID: 11400000, guid: 01f7f3de17a8d6246a40d448eca0ca6f, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 2
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 2
+    - item: {fileID: 11400000, guid: 614d3bc1e35e87d41a5ea760fec91e5e, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 2
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 2
+    - item: {fileID: 11400000, guid: 8e0e9db94d57b364893535f73324723f, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 2
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 2
+    - item: {fileID: 11400000, guid: 1ce06e8dc283e7548875b2a315d4ddda, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 2
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 2
+    - item: {fileID: 11400000, guid: a182a059e5a75124093391fb1a868ab8, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 2
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 2
+  - label: Supplies
+    sources: 15
+    chance: 0.6
+    minRolls: 1
+    maxRolls: 1
+    uniqueItems: 0
+    entries:
+    - item: {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
+      weight: 5
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 05197bf5abf054f41987eff16771ea6e, type: 2}
+      weight: 2
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
+      weight: 4
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+  maxItemsPerReward: 3

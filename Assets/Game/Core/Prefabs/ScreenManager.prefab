@@ -46,6 +46,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   fadeFullscreenImage: {fileID: 0}
+  ambientOcclusion: 1
+  ambientOcclusionFeature: {fileID: 7833122117494664109, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
+  filmGrain: 0
+  filmGrainIntensity: 0.2
+  filmGrainResponse: 0.8
 --- !u!114 &801456997034221001
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -16,7 +16,8 @@ public class EffectEntry
     static readonly ValueDropdownList<EffectType> TypeOptions = new()
     {
         { "Vitals/Heal",             EffectType.Heal },
-        { "Vitals/Restore Stamina",  EffectType.RestoreStamina },
+        { "Vitals/Food regeneration", EffectType.FoodRegen },
+        { "Vitals/Restore Mana",  EffectType.RestoreMana },
         { "Vitals/Damage",           EffectType.Damage },
         { "Stats/Timed Stat Buff",   EffectType.TimedStatBuff },
         { "Feedback/Play Audio",     EffectType.PlayAudio },
@@ -32,7 +33,7 @@ public class EffectEntry
     [Tooltip("Percent chance the effect fires when triggered.")]
     public float chance = 100f;
 
-    [ShowIf("@type == EffectType.Heal || type == EffectType.RestoreStamina || type == EffectType.Damage || type == EffectType.TimedStatBuff")]
+    [ShowIf("@type == EffectType.FoodRegen || type == EffectType.Heal || type == EffectType.RestoreMana || type == EffectType.Damage || type == EffectType.TimedStatBuff")]
     public float value = 10f;
 
     [ShowIf("@type == EffectType.TimedStatBuff")]
@@ -41,7 +42,7 @@ public class EffectEntry
     [ShowIf("@type == EffectType.TimedStatBuff")]
     public ModifierType modifierType = ModifierType.Flat;
 
-    [ShowIf("@type == EffectType.TimedStatBuff")]
+    [ShowIf("@type == EffectType.TimedStatBuff || type == EffectType.FoodRegen")]
     [Tooltip("Seconds the buff lasts. 0 or less = permanent (removed on unequip when the trigger is OnEquip).")]
     public float duration = 10f;
 
@@ -72,8 +73,9 @@ public class EffectEntry
     {
         switch (type)
         {
+            case EffectType.FoodRegen: return $"Restores {value:0.#} Health/sec for {duration:0.#}s ({value*duration:0.#} total). Replaces existing food regeneration.";
             case EffectType.Heal:           return $"Heals {value:0.#}";
-            case EffectType.RestoreStamina: return $"Restores {value:0.#} stamina";
+            case EffectType.RestoreMana: return $"Restores {value:0.#} mana";
             case EffectType.Damage:         return $"Deals {value:0.#} damage";
             case EffectType.TimedStatBuff:
             {

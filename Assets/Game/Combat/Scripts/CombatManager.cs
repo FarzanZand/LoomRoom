@@ -61,10 +61,10 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Seconds after attacking that block is locked out. Set to just under your attack windup length.")]
     public float blockCancelWindow = 0.5f;
     [Tooltip("Fraction of incoming damage removed when guarding frontally. 1 = full block.")]
-    [Range(0f, 1f)] public float blockDamageReduction = 1f;
+    [Range(0f, 1f)] public float blockDamageReduction = .5f;
     [Tooltip("Dot product threshold: a hit is frontal (blockable) when dot(facing, hitDir) is below this.")]
     [Range(-1f, 1f)] public float blockFrontalDot = -0.3f;
-    [Tooltip("Stamina spent per blocked hit. 0 = free.")]
+    [HideInInspector]
     public float blockStaminaCost = 0f;
 
     [Header("Attack responsiveness")]
@@ -77,13 +77,13 @@ public class CombatManager : Singleton<CombatManager>
     [Min(.1f)] public float releaseSpeed = 1.25f;
     [Min(.1f)] public float heavyReleaseSpeed = .95f;
     [Min(.1f)] public float enemyHurtAnimationSpeed = 1.3f;
-    [Min(0)] public float timedBlockWindow = .18f;
+    [HideInInspector] public float timedBlockWindow; // Legacy serialized field; timed parries are disabled.
 
     [Header("Charged strike")]
     [Min(.1f)] public float heavyChargeTime = .7f;
     [Min(1)] public float heavyDamageMultiplier = 1.65f;
     [Min(1)] public float heavyKnockbackMultiplier = 1.35f;
-    [Min(0)] public float heavyStaminaCost = 1f;
+    [HideInInspector] public float heavyStaminaCost;
     [Tooltip("Extra recovery after a heavy hit. Does not interrupt an already committed enemy swing.")]
     [Min(0)] public float heavyStaggerDuration = .45f;
     [Min(1)] public float heavyRecoilMultiplier = 1.6f;

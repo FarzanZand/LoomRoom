@@ -174,6 +174,8 @@ public class PlayerFootsteps : MonoBehaviour
         if (clips.Length > 1)
             while (index == lastIndex) index = Random.Range(0, clips.Length);
         lastIndex = index;
-        AudioManager.Instance.PlaySFX(clips[index], feetTransform.position, volume, pitchVariance);
+        if (player != null && player.IsActive)
+            AudioManager.Instance.PlaySFX2D(clips[index], volume, pitchVariance);
+        else AudioManager.Instance.PlaySFX(clips[index], feetTransform.position, volume, pitchVariance);
     }
 }

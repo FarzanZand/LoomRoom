@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &1593635671755566257
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1213316036247922, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_Name
+      value: Bronze Shield
+      objectReference: {fileID: 0}
+    - target: {fileID: 4107752193856488, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4107752193856488, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4107752193856488, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4107752193856488, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 4107752193856488, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4107752193856488, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 4107752193856488, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4107752193856488, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4107752193856488, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: 4107752193856488, guid: 691193207fb498347995d8573572685a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1213316036247922, guid: 691193207fb498347995d8573572685a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3142961486915753351}
+  m_SourcePrefab: {fileID: 100100000, guid: 691193207fb498347995d8573572685a, type: 3}
+--- !u!1 &1592572988915903939 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1213316036247922, guid: 691193207fb498347995d8573572685a, type: 3}
+  m_PrefabInstance: {fileID: 1593635671755566257}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3142961486915753351
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1592572988915903939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccd943316d794b743a7a70dcc39bcd1a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemShine
+  surfaces:
+  - {fileID: 1606006403867032317}
+  shineColor: {r: 0.61, g: 0.31999996, b: 0.10999996, a: 1}
+  cycleSeconds: 3
+  strength: 0.3
+--- !u!23 &1606006403867032317 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 23667415357232716, guid: 691193207fb498347995d8573572685a, type: 3}
+  m_PrefabInstance: {fileID: 1593635671755566257}
+  m_PrefabAsset: {fileID: 0}

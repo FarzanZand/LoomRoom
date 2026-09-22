@@ -140,8 +140,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         charging=false;
         if(!player.IsActive || !WeaponHeld || !IsAttacking || !CombatManager.HasInstance) return;
         var tuning=CombatManager.Instance;
-        HeavySwing=Time.time-pressedAt >= tuning.heavyChargeTime &&
-            (player.Stats==null || player.Stats.TryUseStamina(tuning.heavyStaminaCost));
+        HeavySwing=Time.time-pressedAt >= tuning.heavyChargeTime;
         releasingHeavyZoom = HeavySwing;
         heavyZoomStateSeen = false;
         releaseZoom = CameraZoomCharge;
@@ -175,7 +174,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         // A queued press stays valid while a swing is in progress (it chains at the recovery's cancel point);
         // when idle it expires after the buffer window like any late press.
         if (!IsAttacking && Time.time >= attackBufferedUntil) queuedPresses = 0;
-        bool buffered = queuedPresses > 0 && !windingUp;
+        if (!gameplay) queuedPresses = 0;
+        bool buffered = gameplay && queuedPresses > 0 && !windingUp;
         SetBool(armsAnimator, attackHeldParam, (primary || buffered) && WeaponHeld && !secondary);
         SetBool(armsAnimator, blockHeldParam,  secondary && !blockLocked && ShieldHeld);
 
@@ -325,6 +325,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
 
     public bool TryBlock(ref DamageInfo info)
     {
+        if(GameManager.HasInstance && !GameManager.Instance.GameplayActive)return false;
         bool guardInput=InputManager.HasInstance && InputManager.Instance.SecondaryHeld && Time.time >= blockLockUntil;
         if ((!IsBlocking && !guardInput) || !ShieldHeld) return false;
 
@@ -335,9 +336,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             if (Vector3.Dot(facing, info.Direction.normalized) >= threshold) return false;
         }
 
-        info.Parried=CombatManager.HasInstance && Time.time-guardPressedAt <= CombatManager.Instance.timedBlockWindow;
-        float cost = info.Parried ? 0 : CombatManager.HasInstance ? CombatManager.Instance.blockStaminaCost : 0f;
-        if (cost > 0f && player.Stats != null && !player.Stats.TryUseStamina(cost)) return false;
+        info.Parried=false;
+
 
         return true;
     }

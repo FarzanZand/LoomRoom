@@ -32,15 +32,11 @@ public class CharacterData : ScriptableObject
     [Tooltip("Multiplier applied to gravity while airborne. Higher values make falling faster.")]
     public float gravityMultiplier = 2.5f;
 
-    [Header("Stamina")]
-    [Tooltip("Stamina drained per second while sprint speed is applied. 0 = sprint is free.")]
-    public float sprintStaminaPerSecond = 1f;
-    [Tooltip("Stamina spent on a jump. 0 = free.")]
-    public float jumpStaminaCost = 0.5f;
-    [Tooltip("Seconds before stamina starts regenerating after it was spent.")]
-    public float staminaRegenDelay = 0.6f;
-    [Tooltip("After exhaustion, sprint unlocks again once stamina is back above this fraction of max.")]
-    [Range(0f, 1f)] public float sprintRecoveryFraction = 0.25f;
+    // Retained only for old assets/editor migrations. Movement no longer spends a resource.
+    [HideInInspector] public float sprintStaminaPerSecond;
+    [HideInInspector] public float jumpStaminaCost;
+    [HideInInspector] public float staminaRegenDelay = .6f;
+    [HideInInspector] public float sprintRecoveryFraction = .25f;
 
     [Header("Starting Items (players)")]
     [Tooltip("Added to the bag or hotbar on first spawn.")]

@@ -13,13 +13,14 @@ public class WorldItem : MonoBehaviour, IInteractable
     [SerializeField] bool worldPrefabFromData = false;
 
     bool visualSpawned;
+    bool claimed;
 
     public ItemData Item  => itemData;
     public int      Count => count;
 
     public string Prompt => itemData != null ? $"Pick up {itemData.itemName}" : "Pick up";
     public bool CanInteract(Character who) =>
-        itemData != null && who is Player player && player.kind == pickupPlayer;
+        !claimed && itemData != null && who is Player player && player.kind == pickupPlayer;
 
     void Start()
     {
@@ -29,6 +30,7 @@ public class WorldItem : MonoBehaviour, IInteractable
     public void Init(ItemData data, int amount = 1)
     {
         itemData = data;
+        claimed = false;
         count    = Mathf.Max(1, amount);
         worldPrefabFromData = true;
         SpawnVisual();
@@ -36,9 +38,12 @@ public class WorldItem : MonoBehaviour, IInteractable
 
     void SpawnVisual()
     {
-        if (visualSpawned || itemData == null || itemData.worldPrefab == null) return;
+        if (visualSpawned || itemData == null) return;
+        var model = itemData.pickupVisualPrefab != null ? itemData.pickupVisualPrefab : itemData.worldPrefab;
+        if(model == null && InventoryManager.HasInstance) model = InventoryManager.Instance.defaultPickupVisual;
+        if (model == null) return;
         visualSpawned = true;
-        var visual = Instantiate(itemData.worldPrefab, transform);
+        var visual = Instantiate(model, transform);
         visual.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         foreach (var mc in visual.GetComponentsInChildren<MeshCollider>()) mc.convex = true;
     }
@@ -47,6 +52,9 @@ public class WorldItem : MonoBehaviour, IInteractable
     {
         if (!CanInteract(who) || !(who is Player player) || !InventoryManager.HasInstance) return;
         if (InventoryManager.Instance.Pickup(itemData, player, count))
+        {
+            claimed = true;
             Destroy(gameObject);
+        }
     }
 }

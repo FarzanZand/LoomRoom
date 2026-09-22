@@ -9,12 +9,15 @@ public class InventoryManager : Singleton<InventoryManager>
 {
     public event System.Action<ItemData, Player, int> ItemPickedUp;
     [Header("Pickup")]
-    [Tooltip("Item types that go to the hotbar first when picked up (falls back to the bag when full).")]
-    public ItemTypeMask hotbarFirstTypes = ItemTypeMask.Weapon | ItemTypeMask.Shield | ItemTypeMask.Tool | ItemTypeMask.Consumable;
     [Tooltip("Honour the item's Equip On Pickup flag.")]
     public bool allowEquipOnPickup = true;
+    [Tooltip("Use the shared AudioManager SFX library entry for every pickup, including items with their own audio.")]
+    public bool useSharedPickupSound = true;
+    public string pickupSoundKey = "genericPickupSound";
     [Tooltip("Played when an item is picked up and the item has no pickup audio of its own.")]
     public AudioData defaultPickupAudio;
+    [Tooltip("Pickup visual used when an item has neither a pickup visual nor a world mesh assigned.")]
+    public GameObject defaultPickupVisual;
 
     [Header("Drop")]
     [Tooltip("Prefab with a WorldItem used when items are dropped or spawned from data.")]
@@ -34,12 +37,12 @@ public class InventoryManager : Singleton<InventoryManager>
 
     // ── Pickup ────────────────────────────────────────────────────────
 
-    public bool Pickup(ItemData item, Player player, int count = 1)
+    public bool Pickup(ItemData item, Player player, int count = 1, bool preferHotbar = false, bool playSound = true)
     {
         if (item == null || player == null) return false;
 
         bool added = false;
-        if (hotbarFirstTypes.Contains(item.itemType) && player.Hotbar != null && player.Hotbar.Accepts(item))
+        if ((item.directToHotbar || preferHotbar) && player.Hotbar != null && player.Hotbar.Accepts(item))
             added = player.Hotbar.TryAdd(item, count);
         if (!added && player.Bag != null)
             added = player.Bag.TryAdd(item, count);
@@ -50,17 +53,21 @@ public class InventoryManager : Singleton<InventoryManager>
             return false;
         }
 
-        if (AudioManager.HasInstance)
+        if (playSound && AudioManager.HasInstance)
         {
-            var audio = item.pickupAudio != null ? item.pickupAudio : defaultPickupAudio;
-            if (audio != null) AudioManager.Instance.PlaySFXData2D(audio);
+            if (useSharedPickupSound) AudioManager.Instance.PlaySFX2D(pickupSoundKey);
+            else
+            {
+                var audio = item.pickupAudio != null ? item.pickupAudio : defaultPickupAudio;
+                if (audio != null) AudioManager.Instance.PlaySFXData2D(audio);
+            }
         }
 
         ItemEffectProcessor.Fire(item, EffectTrigger.OnPickup, EffectContext.For(player, item));
 
         if (allowEquipOnPickup && item.equipOnPickup && player.Equipment != null &&
             player.Equipment.CanEquip(item) && !player.Equipment.Has(item.equipSlot))
-            player.Equipment.Equip(item);
+            player.Equipment.Equip(item, playSound);
 
         ItemPickedUp?.Invoke(item, player, count);
         return true;
@@ -74,6 +81,11 @@ public class InventoryManager : Singleton<InventoryManager>
         var item = container?.ItemAt(index);
         if (item == null || !item.IsConsumable) return;
         var player = container.GetComponentInParent<Player>();
+        if (item.canBeEquipped)
+        {
+            player?.Equipment?.Equip(item);
+            return;
+        }
         item.Use(player);
         container.Consume(index);
     }
@@ -84,13 +96,22 @@ public class InventoryManager : Singleton<InventoryManager>
         var item = player?.Equipment?.Get(slot);
         if (item == null || !item.IsConsumable) return false;
 
-        item.Use(player);
-        player.Equipment.Unequip(slot);
+        if (player.Equipment.IsUsingItem) return true;
+        if (item.canBeEquipped && item.AnimationOnUse == ItemUseAnimation.Eat &&
+            player.Equipment.PlayEating(item, slot, () => CompleteHeldUse(player, slot, item))) return true;
 
-        // The held item was also sitting in a container; remove one from there.
-        if (player.Hotbar != null && player.Hotbar.RemoveOne(item)) return true;
-        player.Bag?.RemoveOne(item);
+        CompleteHeldUse(player, slot, item);
         return true;
+    }
+
+    void CompleteHeldUse(Player player, EquipmentSlot slot, ItemData item)
+    {
+        if (player == null || player.Equipment.Get(slot) != item) return;
+        // Recheck ownership when an animation completes: the stack may have been moved or dropped.
+        bool consumed=player.Hotbar!=null && player.Hotbar.RemoveOne(item);
+        if(!consumed)consumed=player.Bag!=null && player.Bag.RemoveOne(item);
+        player.Equipment.Unequip(slot);
+        if(consumed)item.Use(player);
     }
 
     // ── Spawn / drop ──────────────────────────────────────────────────
@@ -100,7 +121,7 @@ public class InventoryManager : Singleton<InventoryManager>
         if (item == null || pickupPrefab == null) return null;
         var go = Instantiate(pickupPrefab, position, rotation);
         var wi = go.GetComponent<WorldItem>();
-        if (wi == null) { Debug.LogError("[InventoryManager] Pickup prefab has no WorldItem.", pickupPrefab); return null; }
+        if (wi == null) { Debug.LogError("[InventoryManager] Pickup prefab has no WorldItem.", pickupPrefab); Destroy(go); return null; }
         wi.Init(item);
         return wi;
     }

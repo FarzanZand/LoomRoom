@@ -19,6 +19,8 @@ public class ItemData : ScriptableObject
     [HorizontalGroup("PrefabRow"), HideLabel]
     [Tooltip("Mesh prefab shown in the world and in the hand.")]
     public GameObject worldPrefab;
+    [Tooltip("Optional pickup-only visual. Empty uses World Prefab. Hand/equipment visuals still use World Prefab.")]
+    public GameObject pickupVisualPrefab;
 
     public ItemType itemType = ItemType.Generic;
 
@@ -26,6 +28,9 @@ public class ItemData : ScriptableObject
 
     [Tooltip("Sound when picked up. Empty = InventoryManager default.")]
     public AudioData pickupAudio;
+
+    [Tooltip("On pickup, try the hotbar first, then inventory if it has no room. Off sends the item straight to inventory.")]
+    public bool directToHotbar = false;
 
     // ── Equipment ─────────────────────────────────────────────────────
 
@@ -72,11 +77,24 @@ public class ItemData : ScriptableObject
     [Tooltip("Sound when consumed.")]
     public AudioData useAudio;
 
+    [BoxGroup("Consumable"), ShowIf("IsConsumable")]
+    [Tooltip("Used only when consuming equipped items from the hand. Idle keeps the original behavior; Eat moves the hand and item toward the mouth.")]
+    public ItemUseAnimation AnimationOnUse = ItemUseAnimation.Idle;
+
+    [BoxGroup("Consumable"), ShowIf("UsesEatAnimation"), Min(.1f)]
+    public float eatDuration = .65f;
+    [BoxGroup("Consumable"), ShowIf("UsesEatAnimation")]
+    [Tooltip("Mouth position relative to the first-person camera.")]
+    public Vector3 eatMouthPosition = new Vector3(0, -.12f, .13f);
+    [BoxGroup("Consumable"), ShowIf("UsesEatAnimation")]
+    public Vector3 eatMouthRotation = new Vector3(-65, 0, 0);
+
     // ── Queries ───────────────────────────────────────────────────────
 
     public bool IsWeapon     => itemType == ItemType.Weapon;
     public bool IsConsumable => itemType == ItemType.Consumable;
     public bool IsEquippable => canBeEquipped;
+    bool UsesEatAnimation => IsConsumable && canBeEquipped && AnimationOnUse == ItemUseAnimation.Eat;
 
     // Consume: fire OnUse effects for the user.
     public void Use(Character user)
@@ -126,8 +144,8 @@ public class ItemData : ScriptableObject
             return;
         }
 
-        const string basePrefabPath = "Assets/Game/Items/Content/Prefabs/_ItemPickup.prefab";
-        const string prefabFolder   = "Assets/Game/Items/Content/Prefabs/";
+        const string basePrefabPath = "Assets/Game/Items/Prefabs/Pickups/_ItemPickup.prefab";
+        const string prefabFolder   = "Assets/Game/Items/Prefabs/Pickups/";
 
         GameObject basePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(basePrefabPath);
         if (basePrefab == null) { Debug.LogError($"[ItemData] Base prefab not found at {basePrefabPath}"); return; }
@@ -135,9 +153,12 @@ public class ItemData : ScriptableObject
         GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(basePrefab);
         instance.name = itemName;
 
-        if (worldPrefab != null)
+        GameObject pickupModel = pickupVisualPrefab != null ? pickupVisualPrefab : worldPrefab;
+        if(pickupModel == null)
+            pickupModel = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Core/Prefabs/InventoryManager.prefab")?.GetComponent<InventoryManager>()?.defaultPickupVisual;
+        if (pickupModel != null)
         {
-            GameObject meshInstance = (GameObject)PrefabUtility.InstantiatePrefab(worldPrefab);
+            GameObject meshInstance = (GameObject)PrefabUtility.InstantiatePrefab(pickupModel);
             meshInstance.transform.SetParent(instance.transform);
             meshInstance.transform.localPosition = Vector3.zero;
             meshInstance.transform.localRotation = Quaternion.identity;
@@ -161,7 +182,7 @@ public class ItemData : ScriptableObject
             capsule.isTrigger = false;
         }
 
-        string variantPath = prefabFolder + itemName + ".prefab";
+        string variantPath = AssetDatabase.GenerateUniqueAssetPath(prefabFolder + itemName + ".prefab");
         GameObject savedVariant = PrefabUtility.SaveAsPrefabAsset(instance, variantPath);
         Object.DestroyImmediate(instance);
 

@@ -83,7 +83,7 @@ public class EnemyBrain : MonoBehaviour
     CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
     public bool CanOpenHitbox => isActiveAndEnabled && Character.IsAlive && State == EnemyState.Attack && currentAttack != null
         && Time.time >= attackStartedAt + (Tuning != null ? Tuning.enemyMinimumWindup : 0.3f)
-        && (!GameManager.HasInstance || GameManager.Instance.GameplayActive);
+        && (!GameManager.HasInstance || GameManager.Instance.SimulationActive);
     public bool IsSwinging    => currentAttack != null;
 
     float CommitTime   => Tuning != null ? Tuning.enemyAttackCommitTime : 0.4f;
@@ -165,7 +165,7 @@ public class EnemyBrain : MonoBehaviour
     void Update()
     {
         if (State == EnemyState.Dead) return;
-        if (GameManager.HasInstance && !GameManager.Instance.GameplayActive)
+        if (GameManager.HasInstance && !GameManager.Instance.SimulationActive)
         {
             CancelAttack(); Motor.Stop(); Motor.ClearLookTarget(); return;
         }

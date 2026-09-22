@@ -31,7 +31,14 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     TMP_FontAsset originalKeyFont, originalStackFont;
     float originalKeySize, originalStackSize;
     Color originalKeyColor, originalStackColor;
-    Image dungeonFrame;
+    [Header("Dungeon appearance")]
+    [SerializeField] Image dungeonFrame;
+    [SerializeField] Color dungeonEmptyColor=new Color(.035f,.045f,.045f,.96f);
+    [SerializeField] Color dungeonFilledColor=new Color(.09f,.11f,.105f,.98f);
+    [SerializeField] Color dungeonEquippedColor=new Color(1,.72f,.22f,.32f);
+    [SerializeField] Color dungeonKeyColor=new Color(.9f,.84f,.66f);
+    [SerializeField] TMP_FontAsset dungeonFont;
+    [SerializeField] float dungeonKeyFontSize=22,dungeonStackFontSize=22;
 
     public void SetDungeonStyle(bool enabled, TMP_FontAsset font, Sprite frame)
     {
@@ -44,17 +51,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             if(stackLabel!=null){originalStackFont=stackLabel.font;originalStackSize=stackLabel.fontSize;originalStackColor=stackLabel.color;}
         }
         dungeonStyled=enabled;
-        emptyColor=enabled ? new Color(.035f,.045f,.045f,.96f):originalEmpty;
-        filledColor=enabled ? new Color(.09f,.11f,.105f,.98f):originalFilled;
-        if(equippedHighlight!=null)equippedHighlight.color=enabled ? new Color(1,.72f,.22f,.32f):originalHighlight;
-        if(keyLabel!=null){keyLabel.font=enabled && font!=null ? font:originalKeyFont;keyLabel.fontSize=enabled ? 22:originalKeySize;keyLabel.color=enabled ? new Color(.9f,.84f,.66f):originalKeyColor;}
-        if(stackLabel!=null){stackLabel.font=enabled && font!=null ? font:originalStackFont;stackLabel.fontSize=enabled ? 22:originalStackSize;stackLabel.color=enabled ? Color.white:originalStackColor;}
-        if(enabled && frame!=null && dungeonFrame==null)
-        {
-            var go=new GameObject("Dungeon pixel frame",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);
-            dungeonFrame=go.GetComponent<Image>();dungeonFrame.sprite=frame;dungeonFrame.type=Image.Type.Sliced;dungeonFrame.raycastTarget=false;
-            var r=dungeonFrame.rectTransform;r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=r.offsetMax=Vector2.zero;
-        }
+        emptyColor=enabled ? dungeonEmptyColor:originalEmpty;
+        filledColor=enabled ? dungeonFilledColor:originalFilled;
+        if(equippedHighlight!=null)equippedHighlight.color=enabled ? dungeonEquippedColor:originalHighlight;
+        if(keyLabel!=null){keyLabel.font=enabled && (dungeonFont!=null || font!=null) ? (dungeonFont!=null?dungeonFont:font):originalKeyFont;keyLabel.fontSize=enabled ? dungeonKeyFontSize:originalKeySize;keyLabel.color=enabled ? dungeonKeyColor:originalKeyColor;}
+        if(stackLabel!=null){stackLabel.font=enabled && (dungeonFont!=null || font!=null) ? (dungeonFont!=null?dungeonFont:font):originalStackFont;stackLabel.fontSize=enabled ? dungeonStackFontSize:originalStackSize;stackLabel.color=enabled ? Color.white:originalStackColor;}
         if(dungeonFrame!=null)dungeonFrame.enabled=enabled;
         Refresh();
     }
@@ -98,6 +99,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void Pulse()
     {
+        if(TryGetComponent<UIInteractionFeedback>(out var feedback)){feedback.Pulse();return;}
         StopAllCoroutines();
         StartCoroutine(PulseRoutine());
     }
@@ -152,7 +154,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             else                     options.Add(("Equip",   () => eq.Equip(item)));
         }
 
-        if (item.IsConsumable)
+        if (item.IsConsumable && !item.canBeEquipped)
             options.Add(("Use", () => InventoryManager.Instance.Use(container, index)));
 
         if (container.role == InventoryRole.Bag && owner.Hotbar != null && owner.Hotbar.Accepts(item))
@@ -212,7 +214,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         {
             var eq = Owner?.Equipment;
             var moving = src.Item;
-            // Equipped items stay equipped when moved between containers.
+            // Equipment reconciles ownership after the transfer; hands require a hotbar slot.
             Inventory.Move(src.Container, src.Index, Container, Index);
             if (eq != null && moving != null) src.Refresh();
         }

@@ -12,8 +12,8 @@ public enum StatType
     AttackDamage = 2,
     MoveSpeed    = 6,   // multiplier on CharacterData movement speeds (1 = normal)
     AttackSpeed  = 7,   // multiplier on attack animation speed (1 = normal)
-    MaxStamina   = 10,
-    StaminaRegen = 11,  // stamina per second
+    MaxMana   = 10,
+    ManaRegen = 11,  // mana per second
 }
 
 public enum ModifierType
@@ -47,13 +47,14 @@ public class StatModifierEntry
     public float        value;
     public ModifierType type = ModifierType.Flat;
 
+    public static string Label(StatType stat)=>stat switch {StatType.Defense=>"Armor",StatType.AttackDamage=>"Damage",StatType.MaxHealth=>"Health",StatType.MaxMana=>"Mana",StatType.ManaRegen=>"Mana/sec",_=>stat.ToString()};
     public string Describe()
     {
         string sign = value >= 0 ? "+" : "";
         return type switch
         {
-            ModifierType.Flat => $"{sign}{value:0.##} {stat}",
-            _                 => $"{sign}{value * 100f:0.#}% {stat}",
+            ModifierType.Flat => $"{sign}{value:0.##} {Label(stat)}",
+            _                 => $"{sign}{value * 100f:0.#}% {Label(stat)}",
         };
     }
 }

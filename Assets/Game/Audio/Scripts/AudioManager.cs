@@ -40,6 +40,10 @@ public class AudioManager : Singleton<AudioManager>
     [Header("Pool")]
     [SerializeField, Min(4)]  private int sfxPoolSize = 20;
     [SerializeField, Min(2)]  private int uiPoolSize  = 8;
+    [Header("Default spatial SFX range")]
+    [SerializeField, Min(.01f), Tooltip("Full volume within this distance. Keeps nearby interactions audible.")]
+    float sfxMinDistance = 3.5f;
+    [SerializeField, Min(.01f)] float sfxMaxDistance = 40f;
 
     [Header("Default Volumes (0–1)")]
     [SerializeField, Range(0f, 1f)] private float defaultMasterVolume = 1f;
@@ -205,7 +209,7 @@ public class AudioManager : Singleton<AudioManager>
             () => musicRoutine = null));
     }
 
-    public void CrossfadeMusic(AudioClip clip, bool loop = true, float fadeDuration = -1f)
+    public void CrossfadeMusic(AudioClip clip, bool loop = true, float fadeDuration = -1f, float volume = 1f)
     {
         if (clip == null) return;
         if (fadeDuration < 0f) fadeDuration = defaultFadeDuration;
@@ -219,7 +223,7 @@ public class AudioManager : Singleton<AudioManager>
         incoming.loop   = loop;
         incoming.volume = 0f;
         incoming.Play();
-        musicRoutine = StartCoroutine(CrossfadeRoutine(outgoing, incoming, fadeDuration));
+        musicRoutine = StartCoroutine(CrossfadeRoutine(outgoing, incoming, fadeDuration, Mathf.Clamp01(volume)));
     }
 
     // ── Music — key overloads ──────────────────────────────────────────────────
@@ -547,10 +551,10 @@ public class AudioManager : Singleton<AudioManager>
     }
 
     // Pooled room-scale effects must not change the attenuation of the next miniature effect.
-    static AudioSource ResetAttenuation(AudioSource source)
+    AudioSource ResetAttenuation(AudioSource source)
     {
-        source.minDistance = 1f;
-        source.maxDistance = 500f;
+        source.minDistance = Mathf.Max(.01f,sfxMinDistance);
+        source.maxDistance = Mathf.Max(source.minDistance,sfxMaxDistance);
         return source;
     }
 

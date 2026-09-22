@@ -1457,8 +1457,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonLootDrop
   table: {fileID: 11400000, guid: 66571cd5f3da142419416c5d36ed7fc5, type: 2}
+  overrideLevelTable: 0
   carriedItem: {fileID: 0}
   seed: 0
+  floorNumber: 1
 --- !u!114 &2158611073452186750
 MonoBehaviour:
   m_ObjectHideFlags: 0

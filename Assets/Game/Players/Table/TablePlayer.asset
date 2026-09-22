@@ -16,19 +16,8 @@ MonoBehaviour:
   description: 
   faction: 1
   portrait: {fileID: 0}
+  bodyImpactAudio: {fileID: 0}
   stats:
-  - stat: 0
-    baseValue: 100
-    min: 0
-    max: 0
-  - stat: 1
-    baseValue: 0
-    min: 0
-    max: 0
-  - stat: 2
-    baseValue: 2
-    min: 0
-    max: 0
   - stat: 6
     baseValue: 1
     min: 0
@@ -37,12 +26,24 @@ MonoBehaviour:
     baseValue: 1
     min: 0
     max: 0
+  - stat: 0
+    baseValue: 30
+    min: 0
+    max: 0
   - stat: 10
+    baseValue: 20
+    min: 0
+    max: 0
+  - stat: 2
     baseValue: 5
     min: 0
     max: 0
+  - stat: 1
+    baseValue: 0
+    min: 0
+    max: 0
   - stat: 11
-    baseValue: 0.9
+    baseValue: 0.5
     min: 0
     max: 0
   walkSpeed: 4.5

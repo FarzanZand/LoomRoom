@@ -56,7 +56,7 @@ public class PlayerVitalsUI : MonoBehaviour
     void OnPlayerSwapped(Player player)
     {
         bound = player != null ? player.Stats : null;
-        bool hasStamina = bound != null && bound.HasStat(StatType.MaxStamina);
+        bool hasStamina = bound != null && bound.HasStat(StatType.MaxMana);
         if (staminaRoot != null) staminaRoot.SetActive(hasStamina);
         if (panelRect != null && healthRoot != null && staminaRoot != null)
         {
@@ -66,7 +66,7 @@ public class PlayerVitalsUI : MonoBehaviour
             healthRoot.anchoredPosition = healthPosition - new Vector2(0, hasStamina ? 0 : rowHeight);
         }
         healthShown = bound != null && bound.MaxHealth > 0 ? bound.CurrentHealth / bound.MaxHealth : 0f;
-        staminaShown = bound != null && bound.MaxStamina > 0 ? bound.CurrentStamina / bound.MaxStamina : 0f;
+        staminaShown = bound != null && bound.MaxMana > 0 ? bound.CurrentMana / bound.MaxMana : 0f;
     }
 
     void Update()
@@ -79,9 +79,9 @@ public class PlayerVitalsUI : MonoBehaviour
         if (healthFill != null) healthFill.fillAmount = healthShown;
         if (healthValue != null) healthValue.SetText("{0} / {1}", Mathf.CeilToInt(bound.CurrentHealth), Mathf.CeilToInt(bound.MaxHealth));
 
-        float s = bound.MaxStamina > 0f ? bound.CurrentStamina / bound.MaxStamina : 0f;
+        float s = bound.MaxMana > 0f ? bound.CurrentMana / bound.MaxMana : 0f;
         staminaShown = Mathf.Lerp(staminaShown, s, t);
         if (staminaFill != null) staminaFill.fillAmount = staminaShown;
-        if (staminaValue != null) staminaValue.SetText("{0} / {1}", Mathf.CeilToInt(bound.CurrentStamina), Mathf.CeilToInt(bound.MaxStamina));
+        if (staminaValue != null) staminaValue.SetText("{0} / {1}", Mathf.CeilToInt(bound.CurrentMana), Mathf.CeilToInt(bound.MaxMana));
     }
 }

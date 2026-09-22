@@ -1,10 +1,65 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using Sirenix.OdinInspector;
 
 public class ScreenManager : Singleton<ScreenManager>
 {
     public Image fadeFullscreenImage;
+
+    [Header("Rendering effects")]
+    [Tooltip("Toggle SSAO shading to compare the speckling on equipment. Applies during Play mode.")]
+    public bool ambientOcclusion = true;
+    [InlineEditor, Tooltip("The active renderer's SSAO feature. Expand to edit its quality, intensity and radius.")]
+    public ScriptableRendererFeature ambientOcclusionFeature;
+    public bool filmGrain;
+    [Range(0, 1), ShowIf("filmGrain")] public float filmGrainIntensity = .2f;
+    [Range(0, 1), ShowIf("filmGrain")] public float filmGrainResponse = .8f;
+
+    bool originalAO, effectsInitialized;
+    ScriptableRendererFeature controlledAO;
+    Volume effectsVolume;
+    VolumeProfile effectsProfile;
+    FilmGrain grain;
+
+    void OnEnable()
+    {
+        controlledAO = ambientOcclusionFeature;
+        if (controlledAO != null) originalAO = controlledAO.isActive;
+        var effectObject = new GameObject("Screen rendering effects");
+        effectObject.transform.SetParent(transform, false);
+        effectsVolume = effectObject.AddComponent<Volume>();
+        effectsVolume.isGlobal = true;
+        effectsVolume.priority = 10000;
+        effectsProfile = ScriptableObject.CreateInstance<VolumeProfile>();
+        effectsVolume.sharedProfile = effectsProfile;
+        grain = effectsProfile.Add<FilmGrain>(true);
+        effectsInitialized = true;
+        ApplyRenderingEffects();
+    }
+
+    void Update() => ApplyRenderingEffects();
+
+    public void ApplyRenderingEffects()
+    {
+        if (!effectsInitialized) return;
+        if (controlledAO != null && controlledAO.isActive != ambientOcclusion)
+            controlledAO.SetActive(ambientOcclusion);
+        grain.intensity.Override(filmGrain ? filmGrainIntensity : 0);
+        grain.response.Override(filmGrainResponse);
+    }
+
+    void OnDisable()
+    {
+        if (!effectsInitialized) return;
+        if (controlledAO != null) controlledAO.SetActive(originalAO);
+        if (effectsVolume != null) { effectsVolume.enabled = false; Destroy(effectsVolume.gameObject); }
+        if (grain != null) Destroy(grain);
+        if (effectsProfile != null) Destroy(effectsProfile);
+        effectsInitialized = false;
+    }
 
     /// Blend scene lighting and sky without colouring the UI.
     public void BlendToMood(SceneMood mood, float duration = 2f)

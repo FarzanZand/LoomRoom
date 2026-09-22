@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 // Right-click menu for item slots. The overlay, panel and a disabled button template
 // are authored in the scene; Show() clones the template per option.
@@ -17,6 +18,7 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
 
     Canvas rootCanvas;
     readonly List<GameObject> spawned = new();
+    Tween entrance;
 
     protected override void Awake()
     {
@@ -62,10 +64,13 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
 
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
+        entrance?.Kill();panel.localScale=Vector3.one*.94f;
+        entrance=panel.DOScale(1,.12f).SetEase(Ease.OutCubic).SetUpdate(true);
     }
 
     public void Hide()
     {
+        entrance?.Kill();
         if (overlay != null) overlay.SetActive(false);
     }
 }

@@ -47,6 +47,8 @@ MonoBehaviour:
   mixer: {fileID: 24100000, guid: 171c2312a45918546ad66f788389635e, type: 2}
   sfxPoolSize: 20
   uiPoolSize: 8
+  sfxMinDistance: 3.5
+  sfxMaxDistance: 40
   defaultMasterVolume: 1
   defaultMusicVolume: 0.8
   defaultSfxVolume: 1
@@ -61,8 +63,32 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 955566ea8cc52dc4ebcf9c95fa872d8e, type: 3}
     volume: 1
     pitchVariance: 0
+  - key: genericPickupSound
+    clip: {fileID: 8300000, guid: 8490661e47231434c9dc7fd9179e5dcf, type: 3}
+    volume: 0.4
+    pitchVariance: 0.03
   musicLibrary:
   - key: groundhog
     clip: {fileID: 8300000, guid: cc780e136a3526e4fa8acbc0a20585af, type: 3}
     volume: 0.516
-  uiLibrary: []
+  uiLibrary:
+  - key: inventoryOpen
+    clip: {fileID: 8300000, guid: 7270dd61189cd5f44a7ff507ace43954, type: 3}
+    volume: 0.85
+    pitch: 1
+  - key: inventoryClose
+    clip: {fileID: 8300000, guid: 1e12be2c3f43ea44e8164d7415ac70cd, type: 3}
+    volume: 0.75
+    pitch: 1
+  - key: uiHover
+    clip: {fileID: 8300000, guid: 6ea6d4d5d2d08ba41bd81652ba5cca2c, type: 3}
+    volume: 0.3
+    pitch: 1
+  - key: equipItem
+    clip: {fileID: 8300000, guid: ed00564f59d983440aa6f54916dce8a2, type: 3}
+    volume: 0.85
+    pitch: 1
+  - key: uiUnavailable
+    clip: {fileID: 8300000, guid: 6ea3cbcc9fcdd2440bc38f38011c728d, type: 3}
+    volume: 0.65
+    pitch: 1

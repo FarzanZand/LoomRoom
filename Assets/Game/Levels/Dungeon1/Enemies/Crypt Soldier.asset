@@ -18,24 +18,24 @@ MonoBehaviour:
   portrait: {fileID: 0}
   bodyImpactAudio: {fileID: 11400000, guid: a1c1cc224dc96be4ca1e8869136cd363, type: 2}
   stats:
-  - stat: 0
-    baseValue: 38
-    min: 0
-    max: 0
-  - stat: 2
-    baseValue: 7
-    min: 0
-    max: 0
-  - stat: 1
-    baseValue: 0
-    min: 0
-    max: 0
   - stat: 6
     baseValue: 1
     min: 0
     max: 0
   - stat: 7
     baseValue: 1
+    min: 0
+    max: 0
+  - stat: 0
+    baseValue: 40
+    min: 0
+    max: 0
+  - stat: 2
+    baseValue: 14
+    min: 0
+    max: 0
+  - stat: 1
+    baseValue: 2
     min: 0
     max: 0
   walkSpeed: 3
@@ -58,11 +58,11 @@ MonoBehaviour:
     animatorTrigger: Attack
     minRange: 0
     maxRange: 1.65
-    cooldown: 1.2
+    cooldown: 1.6
     facingAngle: 45
     weight: 1
     hitboxIndex: 0
-    fallbackHitDelay: 0.42
+    fallbackHitDelay: 0.45
     hit:
       useDefaultEffects: 1
       hitAudio: {fileID: 0}

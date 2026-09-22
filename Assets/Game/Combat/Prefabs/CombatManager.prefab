@@ -57,6 +57,7 @@ MonoBehaviour:
   - {fileID: 1354972797255141121, guid: 8f330cfbcef56b24886441ac467c8a69, type: 3}
   defaultHitAudio: {fileID: 11400000, guid: 6d42536549be02a4aa8e2bafd38cbe4b, type: 2}
   defaultSwingAudio: {fileID: 11400000, guid: bf3a7f0b55bbe1f41b4cdd4a60307c3a, type: 2}
+  defaultHeavySwingAudio: {fileID: 11400000, guid: c192a2166bf24c72ba47e39a165f0a0c, type: 2}
   hitReactionEnabled: 1
   hitReactionAngle: 20
   hitReactionAttackSpeed: 60
@@ -67,7 +68,7 @@ MonoBehaviour:
   hitFlashColor: {r: 1, g: 0.8, b: 0.65, a: 1}
   hitFlashDuration: 0.065
   blockCancelWindow: 0.18
-  blockDamageReduction: 1
+  blockDamageReduction: 0.5
   blockFrontalDot: -0.3
   blockStaminaCost: 0.75
   playerAttackSpeed: 1.12
@@ -77,17 +78,109 @@ MonoBehaviour:
   releaseSpeed: 1.25
   heavyReleaseSpeed: 0.95
   enemyHurtAnimationSpeed: 1.3
-  timedBlockWindow: 0.18
+  timedBlockWindow: 0
   heavyChargeTime: 0.7
   heavyDamageMultiplier: 1.65
   heavyKnockbackMultiplier: 1.35
   heavyStaminaCost: 1
+  heavyStaggerDuration: 0.45
+  heavyRecoilMultiplier: 1.6
+  heavyRecoilDurationMultiplier: 1.5
   enemyAttackCommitTime: 0.4
   enemyRecoveryTime: 0.18
   enemyCooldownMultiplier: 1
   enemyMinimumWindup: 0.3
   enemyHitFacingAngle: 60
   enemyAttackAnimationSpeed: 1.35
+  swingCameraMotionEnabled: 1
+  lightSwingCameraRotation: {x: 0.3, y: 0.8, z: -0.35}
+  alternateSwingCameraRotation: {x: 0.5, y: 0.8, z: -0.55}
+  heavySwingCameraRotation: {x: 2, y: 0.4, z: -0.65}
+  swingCameraCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.28
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  heavySwingCameraCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.18
+      value: -0.03
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.4
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.47
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  swingCameraBlendSpeed: 18
   releaseSpeedCurve:
     serializedVersion: 2
     m_Curve:
@@ -154,23 +247,15 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  swingCameraMotionEnabled: 1
-  lightSwingCameraRotation: {x: 0.3, y: 0.8, z: -0.35}
-  alternateSwingCameraRotation: {x: 0.5, y: 0.8, z: -0.55}
-  heavySwingCameraRotation: {x: 2, y: 0.4, z: -0.65}
-  swingCameraBlendSpeed: 18
-  heavyStaggerDuration: 0.45
-  heavyRecoilMultiplier: 1.6
-  heavyRecoilDurationMultiplier: 1.5
-  defaultHeavySwingAudio: {fileID: 11400000, guid: c192a2166bf24c72ba47e39a165f0a0c, type: 2}
   heavyHitStopScale: 2
   heavyImpactShudder: 0.7
-  holdSpeedAtFullCharge: 0.3
-  chargeTension: 1
-  chargeFovPull: 4
+  chargeCameraDelay: 0.2
   heavyZoomReturnStart: 0.18
   heavyZoomReturnEnd: 0.58
   chargeZoomReturnSmoothing: 0.12
+  holdSpeedAtFullCharge: 0.3
+  chargeTension: 1
+  chargeFovPull: 4
   chargeShake: 0.45
   chargeReadyKick: 0.3
   chargeReadyAudio: {fileID: 0}

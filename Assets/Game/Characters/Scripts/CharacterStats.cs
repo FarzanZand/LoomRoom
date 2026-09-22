@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// Universal stat container — health and stamina pools plus a modifier stack over the
+// Universal stat container — health and mana pools plus a modifier stack over the
 // base values authored on CharacterData. Resolves fully in Awake from the sibling
 // Character so nothing has to push a profile in "before Start".
 [DefaultExecutionOrder(-50)]
@@ -18,13 +18,13 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public event Action                         Died;
     public event Action<StatType, float, float> StatChanged;   // (stat, old, new)
     public event Action                         HealthChanged;
-    public event Action                         StaminaChanged;
+    public event Action                         ManaChanged;
 
     // ── State ─────────────────────────────────────────────────────────
     [ShowInInspector, ReadOnly] public float CurrentHealth  { get; private set; }
-    [ShowInInspector, ReadOnly] public float CurrentStamina { get; private set; }
+    [ShowInInspector, ReadOnly] public float CurrentMana { get; private set; }
     public float MaxHealth  => GetFinal(StatType.MaxHealth);
-    public float MaxStamina => HasStat(StatType.MaxStamina) ? GetFinal(StatType.MaxStamina) : 0f;
+    public float MaxMana => HasStat(StatType.MaxMana) ? GetFinal(StatType.MaxMana) : 0f;
     public bool  IsAlive    => CurrentHealth > 0f;
     public bool  IsExhausted { get; private set; }
 
@@ -41,7 +41,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     readonly List<StatType>                            changedScratch = new();
 
     IBlocker blocker;
-    float staminaRegenDelayTimer;
+    float manaRegenDelayTimer;
     bool  initialised;
 
     // ── Lifecycle ─────────────────────────────────────────────────────
@@ -57,10 +57,10 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     {
         // Pools initialise here so every modifier added during Awake (starting gear) counts.
         CurrentHealth  = MaxHealth;
-        CurrentStamina = MaxStamina;
+        CurrentMana = MaxMana;
         initialised = true;
         HealthChanged?.Invoke();
-        StaminaChanged?.Invoke();
+        ManaChanged?.Invoke();
     }
 
     void LoadBase()
@@ -78,10 +78,24 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         statRanges[e.stat] = (e.min, e.max);
     }
 
+    public float FoodRemaining { get; private set; }
+    public float FoodHealingPerSecond { get; private set; }
+    public void EatFood(float rate,float duration) {
+        if(!IsAlive || rate<=0 || duration<=0)return;
+        FoodHealingPerSecond=rate;FoodRemaining=duration;
+    }
+    public void ClearFood(){FoodRemaining=0;FoodHealingPerSecond=0;}
+    void TickFood() {
+        if(!IsAlive){ClearFood();return;}
+        float dt=Mathf.Min(FoodRemaining,Time.deltaTime);
+        if(dt<=0)return;
+        FoodRemaining-=dt;Heal(FoodHealingPerSecond*dt);
+    }
     void Update()
     {
         TickModifiers();
-        TickStamina();
+        TickMana();
+        TickFood();
     }
 
     void TickModifiers()
@@ -102,25 +116,25 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
             StatChanged?.Invoke(s, GetFinal(s), GetFinal(s));
     }
 
-    void TickStamina()
+    void TickMana()
     {
-        if (!initialised || !HasStat(StatType.MaxStamina)) return;
+        if (!initialised || !HasStat(StatType.MaxMana)) return;
 
-        if (staminaRegenDelayTimer > 0f)
+        if (manaRegenDelayTimer > 0f)
         {
-            staminaRegenDelayTimer -= Time.deltaTime;
+            manaRegenDelayTimer -= Time.deltaTime;
             return;
         }
 
-        float max = MaxStamina;
-        if (CurrentStamina >= max) return;
+        float max = MaxMana;
+        if (CurrentMana >= max) return;
 
-        float regen = HasStat(StatType.StaminaRegen) ? GetFinal(StatType.StaminaRegen) : 0f;
+        float regen = HasStat(StatType.ManaRegen) ? GetFinal(StatType.ManaRegen) : 0f;
         if (regen <= 0f) return;
 
-        CurrentStamina = Mathf.Min(max, CurrentStamina + regen * Time.deltaTime);
-        if (IsExhausted && CurrentStamina >= max * 0.25f) IsExhausted = false;
-        StaminaChanged?.Invoke();
+        CurrentMana = Mathf.Min(max, CurrentMana + regen * Time.deltaTime);
+        if (IsExhausted && CurrentMana >= max * 0.25f) IsExhausted = false;
+        ManaChanged?.Invoke();
     }
 
     // ── Queries ───────────────────────────────────────────────────────
@@ -193,10 +207,10 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
             CurrentHealth = Mathf.Min(CurrentHealth, now);
             HealthChanged?.Invoke();
         }
-        else if (stat == StatType.MaxStamina)
+        else if (stat == StatType.MaxMana)
         {
-            CurrentStamina = Mathf.Min(CurrentStamina, now);
-            StaminaChanged?.Invoke();
+            CurrentMana = Mathf.Min(CurrentMana, now);
+            ManaChanged?.Invoke();
         }
     }
 
@@ -209,12 +223,12 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         if (blocker != null && blocker.TryBlock(ref info))
         {
             info.Blocked = true;
-            float reduction = CombatManager.HasInstance ? CombatManager.Instance.blockDamageReduction : 1f;
-            info.Amount *= 1f - reduction;
+
         }
 
         float defense = GetFinal(StatType.Defense);
         float actual  = Mathf.Max(0f, info.Amount - defense);
+        if(info.Blocked)actual*=1f-Mathf.Clamp01(CombatManager.HasInstance?CombatManager.Instance.blockDamageReduction:.5f);
         info.Amount   = actual;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
@@ -238,60 +252,53 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         Healed?.Invoke(healed);
     }
 
-    // ── Stamina ───────────────────────────────────────────────────────
+    // ── Mana ───────────────────────────────────────────────────────
 
-    public bool HasStamina(float amount) => !HasStat(StatType.MaxStamina) || CurrentStamina >= amount;
+    public bool HasMana(float amount) => !HasStat(StatType.MaxMana) || CurrentMana >= amount;
 
-    // Spend stamina. Returns false (and spends nothing) if there isn't enough.
-    public bool TryUseStamina(float amount, float regenDelay = 0.6f)
+    // Spend mana. Returns false (and spends nothing) if there isn't enough.
+    public bool TryUseMana(float amount, float regenDelay = 0.6f)
     {
-        if (!HasStat(StatType.MaxStamina)) return true;
+        if (!HasStat(StatType.MaxMana)) return true;
         if (amount <= 0f) return true;
-        if (CurrentStamina < amount) return false;
-        CurrentStamina -= amount;
-        staminaRegenDelayTimer = Mathf.Max(staminaRegenDelayTimer, regenDelay);
-        if (CurrentStamina <= 0.001f) { CurrentStamina = 0f; IsExhausted = true; }
-        StaminaChanged?.Invoke();
+        if (CurrentMana < amount) return false;
+        CurrentMana -= amount;
+        manaRegenDelayTimer = Mathf.Max(manaRegenDelayTimer, regenDelay);
+        if (CurrentMana <= 0.001f) { CurrentMana = 0f; IsExhausted = true; }
+        ManaChanged?.Invoke();
         return true;
     }
 
-    // Continuous drain (sprinting): spends what it can and reports whether any was left.
-    public bool DrainStamina(float perSecond, float regenDelay = 0.6f)
+    // Continuous drain (channelled abilities): spends what it can and reports whether any was left.
+    public bool DrainMana(float perSecond, float regenDelay = 0.6f)
     {
-        if (!HasStat(StatType.MaxStamina)) return true;
+        if (!HasStat(StatType.MaxMana)) return true;
         float cost = perSecond * Time.deltaTime;
-        if (CurrentStamina <= 0f) { IsExhausted = true; return false; }
-        CurrentStamina = Mathf.Max(0f, CurrentStamina - cost);
-        staminaRegenDelayTimer = Mathf.Max(staminaRegenDelayTimer, regenDelay);
-        if (CurrentStamina <= 0f) IsExhausted = true;
-        StaminaChanged?.Invoke();
+        if (CurrentMana <= 0f) { IsExhausted = true; return false; }
+        CurrentMana = Mathf.Max(0f, CurrentMana - cost);
+        manaRegenDelayTimer = Mathf.Max(manaRegenDelayTimer, regenDelay);
+        if (CurrentMana <= 0f) IsExhausted = true;
+        ManaChanged?.Invoke();
         return true;
     }
 
-    public void RestoreStamina(float amount)
+    public void RestoreMana(float amount)
     {
-        if (!HasStat(StatType.MaxStamina)) return;
-        CurrentStamina = Mathf.Min(MaxStamina, CurrentStamina + amount);
-        if (CurrentStamina > 0f) IsExhausted = false;
-        StaminaChanged?.Invoke();
-    }
-
-    // Allow sprinting again once stamina climbed back above this fraction after exhaustion.
-    public bool CanSprint(float recoveryFraction = 0.25f)
-    {
-        if (!HasStat(StatType.MaxStamina)) return true;
-        if (IsExhausted) return CurrentStamina >= MaxStamina * recoveryFraction;
-        return CurrentStamina > 0f;
+        if (!HasStat(StatType.MaxMana)) return;
+        CurrentMana = Mathf.Min(MaxMana, CurrentMana + amount);
+        if (CurrentMana > 0f) IsExhausted = false;
+        ManaChanged?.Invoke();
     }
 
     // Bring a dead character back at full health (respawn, debug).
     public void Revive()
     {
+        ClearFood();
         CurrentHealth  = MaxHealth;
-        CurrentStamina = MaxStamina;
+        CurrentMana = MaxMana;
         IsExhausted = false;
         HealthChanged?.Invoke();
-        StaminaChanged?.Invoke();
+        ManaChanged?.Invoke();
     }
 
     // Reload base values (e.g. after swapping CharacterData at runtime).
@@ -299,8 +306,8 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     {
         LoadBase();
         CurrentHealth  = Mathf.Min(CurrentHealth, MaxHealth);
-        CurrentStamina = Mathf.Min(CurrentStamina, MaxStamina);
+        CurrentMana = Mathf.Min(CurrentMana, MaxMana);
         HealthChanged?.Invoke();
-        StaminaChanged?.Invoke();
+        ManaChanged?.Invoke();
     }
 }

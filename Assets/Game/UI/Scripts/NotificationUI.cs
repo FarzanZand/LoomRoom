@@ -1,4 +1,4 @@
-using System.Collections;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
@@ -10,7 +10,7 @@ public class NotificationUI : Singleton<NotificationUI>
     [SerializeField] float hold    = 1f;
     [SerializeField] float fadeOut = 0.35f;
 
-    Coroutine routine;
+    Sequence routine;
 
     protected override void Awake()
     {
@@ -28,21 +28,13 @@ public class NotificationUI : Singleton<NotificationUI>
     {
         if (label == null) return;
         label.text = message;
-        if (routine != null) StopCoroutine(routine);
-        routine = StartCoroutine(Routine());
+        routine?.Kill();
+        SetAlpha(0);
+        routine=DOTween.Sequence().SetUpdate(true).Append(label.DOFade(1,fadeIn))
+            .AppendInterval(hold).Append(label.DOFade(0,fadeOut));
     }
 
-    IEnumerator Routine()
-    {
-        float t = 0f;
-        while (t < fadeIn)  { SetAlpha(t / fadeIn);       t += Time.unscaledDeltaTime; yield return null; }
-        SetAlpha(1f);
-        yield return new WaitForSecondsRealtime(hold);
-        t = 0f;
-        while (t < fadeOut) { SetAlpha(1f - t / fadeOut); t += Time.unscaledDeltaTime; yield return null; }
-        SetAlpha(0f);
-        routine = null;
-    }
+    void OnDisable(){routine?.Kill();if(label!=null)SetAlpha(0);}
 
     void SetAlpha(float a)
     {

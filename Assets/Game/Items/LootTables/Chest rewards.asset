@@ -1,0 +1,81 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88ef6b241c543ce42a7f027a823efe42, type: 3}
+  m_Name: Chest rewards
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonLootTable
+  entries: []
+  enemyDropChance: 0.7
+  guaranteed: []
+  pools:
+  - label: Equipment
+    sources: 15
+    chance: 1
+    minRolls: 1
+    maxRolls: 1
+    uniqueItems: 1
+    entries:
+    - item: {fileID: 11400000, guid: 335b553d1e77a534ba228f8cc0fa27c1, type: 2}
+      weight: 2
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: df7a7ba47c459f941848a7b378af6f3d, type: 2}
+      weight: 2
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: ca1254f5ad9dfb44eab2336cc7ad3302, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: b5868584276d6474e85cad2b2de39004, type: 2}
+      weight: 2
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+  - label: Supplies
+    sources: 15
+    chance: 1
+    minRolls: 1
+    maxRolls: 2
+    uniqueItems: 0
+    entries:
+    - item: {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
+      weight: 5
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 0faf09e08158dc34f91d4868eedabb9e, type: 2}
+      weight: 4
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+  maxItemsPerReward: 12

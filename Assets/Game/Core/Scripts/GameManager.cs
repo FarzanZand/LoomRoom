@@ -6,15 +6,16 @@ using UnityEngine;
 // and whether the HUD shows are all decided here and nowhere else — menus, dialogue
 // and cutscenes push a state and pop it when done instead of each toggling the cursor.
 //
-// States stack: opening the inventory during Explore pushes Menu; closing pops back.
+// States stack: opening the inventory during Explore pushes Inventory; closing pops back.
 // A cutscene that starts a conversation pushes Dialogue on top of Cutscene and the
 // cutscene state is restored when the conversation ends.
 public enum GameState
 {
     Explore  = 0,   // player in control
-    Menu     = 1,   // inventory or another full-screen menu, cursor free
+    Menu     = 1,   // level selection or another full-screen menu, cursor free
     Dialogue = 2,   // Pixel Crushers conversation running, cursor free
     Cutscene = 3,   // timeline or scripted sequence, no input, HUD hidden
+    Inventory = 5, // live inventory: AI and simulation continue; player input is disabled
     Dead     = 4,   // player died, no input
 }
 
@@ -27,6 +28,7 @@ public class GameManager : Singleton<GameManager>
 
     public GameState State => stack.Count > 0 ? stack[stack.Count - 1] : GameState.Explore;
     public bool GameplayActive => State == GameState.Explore;
+    public bool SimulationActive => State == GameState.Explore || State == GameState.Inventory;
     public bool IsOpen(GameState state) => stack.Contains(state);
 
     public event Action<GameState> StateChanged;

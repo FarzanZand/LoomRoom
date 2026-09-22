@@ -18,23 +18,23 @@ MonoBehaviour:
   portrait: {fileID: 0}
   bodyImpactAudio: {fileID: 11400000, guid: 6290a583f0ed3dd4e8d09b0d5f8c5bca, type: 2}
   stats:
-  - stat: 0
-    baseValue: 20
-    min: 0
-    max: 0
-  - stat: 2
-    baseValue: 5
-    min: 0
-    max: 0
-  - stat: 1
-    baseValue: 0
-    min: 0
-    max: 0
   - stat: 6
     baseValue: 1
     min: 0
     max: 0
   - stat: 7
+    baseValue: 1
+    min: 0
+    max: 0
+  - stat: 0
+    baseValue: 30
+    min: 0
+    max: 0
+  - stat: 2
+    baseValue: 8
+    min: 0
+    max: 0
+  - stat: 1
     baseValue: 1
     min: 0
     max: 0
@@ -62,7 +62,7 @@ MonoBehaviour:
     facingAngle: 45
     weight: 1
     hitboxIndex: 0
-    fallbackHitDelay: 0.42
+    fallbackHitDelay: 0.45
     hit:
       useDefaultEffects: 1
       hitAudio: {fileID: 0}

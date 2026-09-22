@@ -17,6 +17,9 @@ public class NpcBrain : MonoBehaviour, IInteractable
     [Header("Interaction")]
     [SerializeField] bool isInteractable = false;
     [ShowIf("isInteractable")]
+    [Tooltip("Which player can talk to this NPC. Room NPCs must use Room; tabletop NPCs use Table.")]
+    [SerializeField] PlayerKind interactionPlayer = PlayerKind.Room;
+    [ShowIf("isInteractable")]
     [Tooltip("Prompt shown to the player. {name} is replaced with the character name.")]
     [SerializeField] string prompt = "Talk to {name}";
     [ShowIf("isInteractable")]
@@ -54,7 +57,8 @@ public class NpcBrain : MonoBehaviour, IInteractable
     Coroutine rotateRoutine;
 
     public string Prompt => prompt.Replace("{name}", Character != null ? Character.DisplayName : name);
-    public bool CanInteract(Character who) => isInteractable && Character.IsAlive;
+    public bool CanInteract(Character who) => isActiveAndEnabled && isInteractable && Character != null && Character.IsAlive &&
+        who is Player player && player.IsAlive && player.kind == interactionPlayer;
 
     void Awake()
     {
@@ -99,7 +103,7 @@ public class NpcBrain : MonoBehaviour, IInteractable
 
     public void Interact(Character who)
     {
-        if (!isInteractable) return;
+        if (!CanInteract(who)) return;
         Pause();
         faceTarget = who != null ? who.transform : null;
     }

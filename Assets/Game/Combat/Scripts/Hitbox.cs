@@ -96,7 +96,13 @@ public class Hitbox : MonoBehaviour
     void LateUpdate()
     {
         if (!Active || weaponCollider == null || owner == null || !owner.IsAlive) return;
-        if(GameManager.HasInstance && !GameManager.Instance.GameplayActive) { DisableHitbox(); return; }
+        if (GameManager.HasInstance && !(owner is Player
+            ? GameManager.Instance.GameplayActive
+            : GameManager.Instance.SimulationActive))
+        {
+            DisableHitbox();
+            return;
+        }
         var t=weaponCollider.transform;
         int steps=CombatManager.HasInstance ? Mathf.Clamp(CombatManager.Instance.weaponSweepSteps,1,16) : 6;
         for(int step=1;step<=steps;step++)

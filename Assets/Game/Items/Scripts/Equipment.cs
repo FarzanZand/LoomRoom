@@ -33,6 +33,90 @@ public class Equipment : MonoBehaviour
     readonly Dictionary<EquipmentSlot, GameObject> objects = new();
     readonly Dictionary<EquipmentSlot, object>     sources = new();
 
+    Transform eatingHand, eatingItem;
+    Player eatingPlayer;
+    ItemData eatingData;
+    Action eatingComplete;
+    Vector3 handPosition;
+    Quaternion handRotation;
+    float eatingStarted;
+    bool poseApplied;
+    public bool IsUsingItem => eatingData != null;
+
+    public bool PlayEating(ItemData item, EquipmentSlot slot, Action complete)
+    {
+        if (IsUsingItem || !isActiveAndEnabled || !item.canBeEquipped || Get(slot) != item ||
+            Character is not Player player || !player.IsActive ||
+            !PlayerManager.HasInstance || PlayerManager.Instance.OutputCamera == null ||
+            !objects.TryGetValue(slot, out var held) || held == null) return false;
+        var anchor = GetAnchor(slot);
+        if (anchor == null || anchor.parent == null) return false;
+        eatingHand = anchor.parent;
+        eatingItem = held.transform;
+        eatingPlayer = player;
+        eatingData = item;
+        eatingComplete = complete;
+        eatingStarted = Time.time;
+        return true;
+    }
+
+    // Restore our additive pose before the Animator evaluates the next frame.
+    void Update() => RestoreEatingPose();
+
+    void LateUpdate()
+    {
+        if (Character is Player owner)
+        {
+            // Resolve after inventory transfers finish so swaps cannot leave ghost equipment.
+            foreach (var slot in (EquipmentSlot[])Enum.GetValues(typeof(EquipmentSlot)))
+            {
+                var item = Get(slot);
+                if (item == null) continue;
+                bool hand = slot == EquipmentSlot.RightHand || slot == EquipmentSlot.LeftHand;
+                if (owner.Hotbar.IndexOf(item) < 0 && (hand || owner.Bag.IndexOf(item) < 0)) Unequip(slot);
+            }
+        }
+        if (!IsUsingItem) return;
+        if (eatingHand == null || eatingItem == null || !eatingPlayer.IsActive || !eatingPlayer.IsAlive ||
+            !PlayerManager.HasInstance || PlayerManager.Instance.OutputCamera == null)
+        { ClearEating(); return; }
+        float progress = (Time.time - eatingStarted) / Mathf.Max(.1f, eatingData.eatDuration);
+        if (progress >= 1)
+        {
+            var complete = eatingComplete;
+            ClearEating();
+            complete?.Invoke();
+            return;
+        }
+        var camera = PlayerManager.Instance.OutputCamera.transform;
+        handPosition = eatingHand.localPosition;
+        handRotation = eatingHand.localRotation;
+        poseApplied = true;
+        float t = Mathf.SmoothStep(0, 1, Mathf.Clamp01(progress / .8f));
+        var targetRotation = camera.rotation * Quaternion.Euler(eatingData.eatMouthRotation);
+        var rotation = Quaternion.Slerp(Quaternion.identity, targetRotation * Quaternion.Inverse(eatingItem.rotation), t);
+        var targetPosition = Vector3.Lerp(eatingItem.position, camera.TransformPoint(eatingData.eatMouthPosition), t);
+        eatingHand.rotation = rotation * eatingHand.rotation;
+        eatingHand.position += targetPosition - eatingItem.position;
+    }
+
+    void RestoreEatingPose()
+    {
+        if (poseApplied && eatingHand != null)
+            eatingHand.SetLocalPositionAndRotation(handPosition, handRotation);
+        poseApplied = false;
+    }
+
+    void ClearEating()
+    {
+        RestoreEatingPose();
+        eatingData = null;
+        eatingComplete = null;
+        eatingHand = eatingItem = null;
+        eatingPlayer = null;
+    }
+
+    void OnDisable() => ClearEating();
     public IEnumerable<ItemData> EquippedItems => items.Values;
 
     void Awake()
@@ -57,11 +141,17 @@ public class Equipment : MonoBehaviour
 
     public bool CanEquip(ItemData item) => item != null && item.canBeEquipped;
 
-    public bool Equip(ItemData item)
+    public bool Equip(ItemData item, bool playSound = true)
     {
         if (!CanEquip(item)) return false;
 
+        if(Character is Player owner && owner.Bag.IndexOf(item)<0 && owner.Hotbar.IndexOf(item)<0)return false;
         var slot = item.equipSlot;
+        if(Character is Player p && (slot==EquipmentSlot.RightHand || slot==EquipmentSlot.LeftHand) && p.Hotbar.IndexOf(item)<0) {
+            int from=p.Bag.IndexOf(item);int destination=Get(slot)!=null?p.Hotbar.IndexOf(Get(slot)):-1;
+            if(destination<0)destination=p.Hotbar.FirstEmpty();
+            if(from<0 || destination<0 || !Inventory.Move(p.Bag,from,p.Hotbar,destination)){NotificationUI.Show("Make room in the hotbar to equip a hand item");return false;}
+        }
         Unequip(slot);
 
         var anchor = GetAnchor(slot);
@@ -89,6 +179,7 @@ public class Equipment : MonoBehaviour
 
         ItemEffectProcessor.Fire(item, EffectTrigger.OnEquip, EffectContext.For(Character, item));
 
+        if(playSound && Character is Player){var style=UIFeedbackSettings.Shared;style?.Play(style.equipKey);}
         Equipped?.Invoke(slot, item);
         Changed?.Invoke();
         return true;
@@ -97,6 +188,7 @@ public class Equipment : MonoBehaviour
     public ItemData Unequip(EquipmentSlot slot)
     {
         if (!items.TryGetValue(slot, out var item)) return null;
+        if (item == eatingData) ClearEating();
 
         if (objects.TryGetValue(slot, out var obj) && obj != null) Destroy(obj);
         objects.Remove(slot);

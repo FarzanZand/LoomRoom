@@ -4,7 +4,7 @@ using UnityEngine;
 public enum MoveState { Idle = 0, Walk = 1, Run = 2, CrouchWalk = 3, Airborne = 4 }
 
 // CharacterController movement: walk/sprint/crouch, jump and gravity, slope modules,
-// stamina drain and external knockback. Speeds come from the CharacterData's
+// external knockback. Speeds come from the CharacterData's
 // movement settings multiplied by the MoveSpeed stat. Looking is PlayerLook's job.
 [RequireComponent(typeof(CharacterController))]
 [DefaultExecutionOrder(0)]
@@ -136,7 +136,6 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         bool autoUnSprint = settings == null || settings.autoUnSprint;
         bool crouchHeld   = input != null && input.CrouchHeld;
         bool sprintHeld   = input != null && input.SprintHeld;
-        bool canSprint    = CanSprintFromStamina();
 
         // CROUCH
         if (holdToCrouch)
@@ -153,14 +152,14 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         // SPRINT
         if (holdToSprint)
         {
-            IsSprinting = sprintHeld && canSprint;
+            IsSprinting = sprintHeld;
         }
         else
         {
             if (sprintToggleRequested)
             {
                 bool wants = !IsSprinting;
-                IsSprinting = wants && canSprint;
+                IsSprinting = wants;
             }
             if (autoUnSprint && !IsMoving) IsSprinting = false;
         }
@@ -172,15 +171,8 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
             else IsSprinting = false;
         }
 
-        if (!canSprint) IsSprinting = false;
     }
 
-    bool CanSprintFromStamina()
-    {
-        var p = Movement;
-        if (p.sprintStaminaPerSecond <= 0f || player == null || player.Stats == null) return true;
-        return player.Stats.CanSprint(p.sprintRecoveryFraction);
-    }
 
     bool CanUncrouch()
     {
@@ -235,11 +227,8 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
 
         if (jumpQueued && grounded)
         {
-            if (player == null || player.Stats == null || player.Stats.TryUseStamina(p.jumpStaminaCost, p.staminaRegenDelay))
-            {
-                movement.y = p.jumpForce;
-                Jumped?.Invoke();
-            }
+            movement.y = p.jumpForce;
+            Jumped?.Invoke();
         }
         jumpQueued = false;
 
@@ -265,8 +254,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
 
         Controller.Move(totalVelocity * Time.deltaTime);
 
-        if (sprintApplied && !sliding && p.sprintStaminaPerSecond > 0f && player != null && player.Stats != null)
-            player.Stats.DrainStamina(p.sprintStaminaPerSecond, p.staminaRegenDelay);
+
 
         // Airborne / landing bookkeeping
         grounded = Controller.isGrounded;

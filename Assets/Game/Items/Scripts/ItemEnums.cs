@@ -2,6 +2,12 @@ using System;
 
 // All values are serialized as integers. Never renumber, never reuse a retired value.
 
+public enum ItemUseAnimation
+{
+    Idle = 0,
+    Eat = 1,
+}
+
 public enum ItemType
 {
     Generic    = 0,
@@ -10,6 +16,7 @@ public enum ItemType
     Tool       = 3,
     Consumable = 4,
     Key        = 5,
+    Equipment  = 6,
 }
 
 // Bit mask over ItemType, for container filters ("the hotbar only takes these").
@@ -23,6 +30,7 @@ public enum ItemTypeMask
     Tool       = 1 << 3,
     Consumable = 1 << 4,
     Key        = 1 << 5,
+    Equipment  = 1 << 6,
     All        = ~0,
 }
 
@@ -40,17 +48,20 @@ public enum EquipmentSlot
     Body      = 3,
     Trinket1  = 4,
     Trinket2  = 5,
+    Gloves    = 6,
+    Boots     = 7,
 }
 
 public enum EffectType
 {
     Heal           = 0,   // restore health by Value
-    RestoreStamina = 1,   // restore stamina by Value
+    RestoreMana = 1,   // restore stamina by Value
     TimedStatBuff  = 2,   // add a stat modifier for Duration seconds (Duration <= 0 = permanent while equipped)
     PlayAudio      = 3,   // play an AudioData at the user
     SpawnPrefab    = 4,   // instantiate a prefab at the user or hit point
     SetFlag        = 5,   // set a progression flag
     Damage         = 6,   // deal Value damage to the target (or the user if no target)
+    FoodRegen      = 7,
     Custom         = 99,  // run an ItemEffect asset
 }
 
