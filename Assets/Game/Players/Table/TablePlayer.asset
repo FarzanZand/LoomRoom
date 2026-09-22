@@ -46,14 +46,22 @@ MonoBehaviour:
     baseValue: 0.5
     min: 0
     max: 0
+  - stat: 12
+    baseValue: 30
+    min: 0
+    max: 0
+  - stat: 13
+    baseValue: 8
+    min: 0
+    max: 0
   walkSpeed: 4.5
   sprintSpeed: 5.85
   crouchSpeed: 1.75
   jumpForce: 8
   gravityMultiplier: 2.5
-  sprintStaminaPerSecond: 1
+  sprintStaminaPerSecond: 6
   jumpStaminaCost: 0.5
-  staminaRegenDelay: 0.6
+  staminaRegenDelay: 1
   sprintRecoveryFraction: 0.25
   startingItems:
   - {fileID: 11400000, guid: 32687ae994ea87041b177374a26552e4, type: 2}

@@ -15,8 +15,8 @@ MonoBehaviour:
   displayName: Dungeon1
   description: "The Amber Crypt \u2022 a new layout every run"
   kind: 1
-  mood: {fileID: 11400000, guid: 4cbac9547e85c7349a10663f207bc32a, type: 2}
-  moodLightning: 0
+  mood: {fileID: 11400000, guid: 8277439119c14f8a956e344d01626cd7, type: 2}
+  moodLightning: 1
   overrideLighting: 0
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
@@ -27,7 +27,7 @@ MonoBehaviour:
     ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
     ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
     fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
-  backgroundMusic: {fileID: 8300000, guid: 9d5de70ebd5fb48438751ad5f84883b6, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: ef4f5eea8a3e11d4ba749bcb52683db8, type: 3}
   backgroundMusicVolume: 0.312
   loopMusic: 1
   musicFadeSeconds: 1.5

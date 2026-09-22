@@ -32,11 +32,11 @@ public class CharacterData : ScriptableObject
     [Tooltip("Multiplier applied to gravity while airborne. Higher values make falling faster.")]
     public float gravityMultiplier = 2.5f;
 
-    // Retained only for old assets/editor migrations. Movement no longer spends a resource.
-    [HideInInspector] public float sprintStaminaPerSecond;
+    [Header("Stamina (players)")]
+    [Min(0)] public float sprintStaminaPerSecond = 6f;
     [HideInInspector] public float jumpStaminaCost;
-    [HideInInspector] public float staminaRegenDelay = .6f;
-    [HideInInspector] public float sprintRecoveryFraction = .25f;
+    [Min(0)] public float staminaRegenDelay = .6f;
+    [Range(.01f, 1f)] public float sprintRecoveryFraction = .25f;
 
     [Header("Starting Items (players)")]
     [Tooltip("Added to the bag or hotbar on first spawn.")]
@@ -71,7 +71,7 @@ public class CharacterData : ScriptableObject
         stats = new List<StatEntry>
         {
             new StatEntry(StatType.MaxHealth,    100f),
-            new StatEntry(StatType.Defense,      0f),
+            new StatEntry(StatType.Armor,      0f),
             new StatEntry(StatType.AttackDamage, 5f),
             new StatEntry(StatType.MoveSpeed,    1f),
             new StatEntry(StatType.AttackSpeed,  1f),

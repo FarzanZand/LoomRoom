@@ -8,12 +8,14 @@ using UnityEngine;
 public enum StatType
 {
     MaxHealth    = 0,
-    Defense      = 1,   // flat damage reduction per hit
+    Armor        = 1,   // flat damage reduction per hit
     AttackDamage = 2,
     MoveSpeed    = 6,   // multiplier on CharacterData movement speeds (1 = normal)
     AttackSpeed  = 7,   // multiplier on attack animation speed (1 = normal)
     MaxMana   = 10,
     ManaRegen = 11,  // mana per second
+    MaxStamina = 12,
+    StaminaRegen = 13,
 }
 
 public enum ModifierType
@@ -47,7 +49,7 @@ public class StatModifierEntry
     public float        value;
     public ModifierType type = ModifierType.Flat;
 
-    public static string Label(StatType stat)=>stat switch {StatType.Defense=>"Armor",StatType.AttackDamage=>"Damage",StatType.MaxHealth=>"Health",StatType.MaxMana=>"Mana",StatType.ManaRegen=>"Mana/sec",_=>stat.ToString()};
+    public static string Label(StatType stat)=>stat switch {StatType.Armor=>"Armor",StatType.AttackDamage=>"Damage",StatType.MaxHealth=>"Health",StatType.MaxMana=>"Mana",StatType.ManaRegen=>"Mana/sec",StatType.MaxStamina=>"Stamina",StatType.StaminaRegen=>"Stamina/sec",_=>stat.ToString()};
     public string Describe()
     {
         string sign = value >= 0 ? "+" : "";

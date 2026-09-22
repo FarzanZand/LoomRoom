@@ -15,6 +15,7 @@ public class InputManager : Singleton<InputManager>
     PlayerInputActions actions;
     PlayerKind gameplayKind = PlayerKind.Room;
     bool gameplayEnabled = true;
+    int discardLookThroughFrame = -1;
 
     // ── Continuous state ──────────────────────────────────────────────
     public Vector2 Move { get; private set; }
@@ -79,7 +80,7 @@ public class InputManager : Singleton<InputManager>
     {
         move.performed += ctx => Move = ctx.ReadValue<Vector2>();
         move.canceled  += _   => Move = Vector2.zero;
-        look.performed += ctx => Look = ctx.ReadValue<Vector2>();
+        look.performed += ctx => Look = gameplayEnabled && Time.frameCount > discardLookThroughFrame ? ctx.ReadValue<Vector2>() : Vector2.zero;
         look.canceled  += _   => Look = Vector2.zero;
         jump.performed += _ => JumpPressed?.Invoke();
         sprint.performed += _ => { SprintHeld = true;  SprintPressed?.Invoke(); };
@@ -116,6 +117,12 @@ public class InputManager : Singleton<InputManager>
     // Called by GameManager: gameplay off means the UI map is live instead.
     public void SetGameplayEnabled(bool enabled)
     {
+        if (enabled && !gameplayEnabled)
+        {
+            Look = Vector2.zero;
+            // Discard the activation frame and the first input update after relocking.
+            discardLookThroughFrame = Time.frameCount + 1;
+        }
         gameplayEnabled = enabled;
         ApplyMaps();
     }

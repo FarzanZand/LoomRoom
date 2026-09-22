@@ -6,6 +6,12 @@ using UnityEngine;
 // Cutscene logic itself lives on CutsceneController subclasses.
 public class WorldManager : Singleton<WorldManager>
 {
+    [Header("Table level reveal")]
+    [InlineEditor, Tooltip("Shared assembly and camera settings for entering dungeon levels. Clear this to use the standard transition.")]
+    public TableLevelRevealSettings tableLevelReveal;
+    [Tooltip("Designer-editable adventure selection menu prefab.")]
+    public TableAdventureMenuView tableAdventureMenu;
+
     [Header("Opening")]
     public WakeUpCutsceneController wakeUpCutscene;
     public DinnerCutsceneController dinnerCutscene;

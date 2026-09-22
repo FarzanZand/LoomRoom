@@ -51,8 +51,10 @@ public class PlayerLook : MonoBehaviour
         float sensitivity = (settings != null ? settings.mouseSensitivity : 1f) / 5f;
         float smoothing   = settings != null ? settings.mouseSmoothing : 20f;
 
-        Vector2 raw = Cursor.lockState == CursorLockMode.Locked && input != null ? input.Look : Vector2.zero;
-        if (Cursor.lockState != CursorLockMode.Locked) smoothedLook = Vector2.zero;
+        bool canLook = Cursor.lockState == CursorLockMode.Locked && input != null &&
+            (!GameManager.HasInstance || GameManager.Instance.GameplayActive);
+        Vector2 raw = canLook ? input.Look : Vector2.zero;
+        if (!canLook) ResetInput();
         if (settings != null && settings.invertLook) raw.y = -raw.y;
 
         Vector2 target = raw * sensitivity;
@@ -86,8 +88,11 @@ public class PlayerLook : MonoBehaviour
     }
 
     // Snap the view to a world yaw (cutscenes, teleports).
+    public void ResetInput() => smoothedLook = Vector2.zero;
+
     public void SetYaw(float worldYaw)
     {
+        ResetInput();
         if (lateralTorso != null) lateralTorso.rotation = Quaternion.Euler(0f, worldYaw, 0f);
         if (verticalNeck != null) verticalNeck.rotation = Quaternion.Euler(-pitch, worldYaw, 0f);
     }

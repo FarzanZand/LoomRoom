@@ -90,7 +90,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     void Result(string text,Color color,float duration){if(impact==null)return;impact.text=text;impact.color=color;impactUntil=Time.time+duration;}
     void PickedUp(ItemData item,Player who,int count)
     {
-        if(who!=player || message==null)return;
+        if(who!=player || message==null || !GameManager.Instance.GameplayActive)return;
         message.text="Picked up "+item.itemName+(count>1 ? " ×"+count:"");messageUntil=Time.time+2.2f;
     }
     void LateUpdate()

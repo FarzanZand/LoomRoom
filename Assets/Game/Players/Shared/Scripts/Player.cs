@@ -75,6 +75,9 @@ public class Player : Character
         ApplyStartingItems();
     }
 
+    // Level-authored gear replaces the character's defaults, even before first activation.
+    public void UseLevelLoadout() => startingItemsApplied = true;
+
     void ApplyStartingItems()
     {
         if (startingItemsApplied || data == null) return;

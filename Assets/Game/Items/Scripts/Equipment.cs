@@ -119,8 +119,14 @@ public class Equipment : MonoBehaviour
     void OnDisable() => ClearEating();
     public IEnumerable<ItemData> EquippedItems => items.Values;
 
-    void Awake()
+    bool initialized;
+    void Awake() => EnsureInitialized();
+
+    // A level can equip the inactive table player before Unity calls this component's Awake.
+    void EnsureInitialized()
     {
+        if (initialized) return;
+        initialized = true;
         Character = GetComponent<Character>();
         if (weaponHitbox == null) weaponHitbox = GetComponentInChildren<Hitbox>(true);
         EffectDispatcher.Ensure(gameObject);
@@ -139,10 +145,19 @@ public class Equipment : MonoBehaviour
     public bool     Has(EquipmentSlot slot) => items.ContainsKey(slot);
     public bool     IsEquipped(ItemData item) => item != null && Get(item.equipSlot) == item;
 
+    public bool IsShieldSource(object source)
+    {
+        foreach (var pair in sources)
+            if (Get(pair.Key) is ItemData item && item.itemType == ItemType.Shield &&
+                (ReferenceEquals(pair.Value, source) || ReferenceEquals(item, source))) return true;
+        return false;
+    }
+
     public bool CanEquip(ItemData item) => item != null && item.canBeEquipped;
 
     public bool Equip(ItemData item, bool playSound = true)
     {
+        EnsureInitialized();
         if (!CanEquip(item)) return false;
 
         if(Character is Player owner && owner.Bag.IndexOf(item)<0 && owner.Hotbar.IndexOf(item)<0)return false;
@@ -187,6 +202,7 @@ public class Equipment : MonoBehaviour
 
     public ItemData Unequip(EquipmentSlot slot)
     {
+        EnsureInitialized();
         if (!items.TryGetValue(slot, out var item)) return null;
         if (item == eatingData) ClearEating();
 

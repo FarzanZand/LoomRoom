@@ -70,7 +70,8 @@ MonoBehaviour:
   blockCancelWindow: 0.18
   blockDamageReduction: 0.5
   blockFrontalDot: -0.3
-  blockStaminaCost: 0.75
+  blockStaminaCost: 6
+  shieldStaminaPerSecond: 2
   playerAttackSpeed: 1.12
   attackInputBuffer: 0.4
   weaponSweepSteps: 6
@@ -82,7 +83,7 @@ MonoBehaviour:
   heavyChargeTime: 0.7
   heavyDamageMultiplier: 1.65
   heavyKnockbackMultiplier: 1.35
-  heavyStaminaCost: 1
+  heavyStaminaCost: 8
   heavyStaggerDuration: 0.45
   heavyRecoilMultiplier: 1.6
   heavyRecoilDurationMultiplier: 1.5

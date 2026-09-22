@@ -71,10 +71,11 @@ public class TooltipUI : Singleton<TooltipUI>
                 if(body.Length>0) body.Append("\n\n");
                 body.Append("<color=#A1C5DE>").Append(line).Append("</color>");
             }
+        if(item.itemType == ItemType.Shield) body.Append("\n\nArmor applies only to frontal hits while blocking. Guarding and blocked hits consume stamina.");
         if(item.canBeEquipped && PlayerManager.HasInstance) {
             var equipped=PlayerManager.Instance.Active?.Equipment?.Get(item.equipSlot);
             float Bonus(ItemData data,StatType stat){float sum=0;if(data?.statModifiers!=null)foreach(var m in data.statModifiers)if(m!=null&&m.stat==stat&&m.type==ModifierType.Flat)sum+=m.value;return sum;}
-            foreach(var stat in item.IsConsumable ? System.Array.Empty<StatType>() : new[]{StatType.AttackDamage,StatType.Defense}) {
+            foreach(var stat in item.IsConsumable ? System.Array.Empty<StatType>() : new[]{StatType.AttackDamage,StatType.Armor}) {
                 float delta=Bonus(item,stat)-Bonus(equipped,stat);
                 if(Mathf.Abs(delta)>.001f)body.Append($"\n\n<color={(delta>0?"#80CEA0":"#E78787")}>{delta:+0.#;-0.#} {StatModifierEntry.Label(stat)}</color> vs equipped");
             }

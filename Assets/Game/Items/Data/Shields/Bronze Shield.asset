@@ -17,6 +17,7 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: edd463ebfc436a44ba62428dadfa248c, type: 3}
   tag: Bronze equipment
   worldPrefab: {fileID: 1592572988915903939, guid: df270dcc8849e4a4e9a1b7d31bf0faef, type: 3}
+  pickupVisualPrefab: {fileID: 0}
   itemType: 2
   maxStackSize: 1
   pickupAudio: {fileID: 0}
@@ -29,7 +30,7 @@ MonoBehaviour:
   equipOnPickup: 0
   statModifiers:
   - stat: 1
-    value: 2
+    value: 5
     type: 0
   weapon:
     useDefaultEffects: 1

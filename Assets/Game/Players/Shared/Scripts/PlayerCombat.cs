@@ -42,6 +42,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
 
     public bool IsAttacking => HasTag(attackTag);
     public bool IsBlocking  => HasTag(blockTag);
+    public bool IsGuarding => player != null && player.IsActive && ShieldHeld &&
+        (!GameManager.HasInstance || GameManager.Instance.GameplayActive) &&
+        InputManager.HasInstance && InputManager.Instance.SecondaryHeld && Time.time >= blockLockUntil &&
+        (player.Stats == null || !player.Stats.HasStat(StatType.MaxStamina) || (!player.Stats.IsExhausted && player.Stats.CurrentStamina > 0));
     public bool WeaponHeld  => player.Equipment != null && player.Equipment.Get(EquipmentSlot.RightHand)?.itemType == ItemType.Weapon;
     public bool ShieldHeld  => player.Equipment != null && player.Equipment.Get(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
     // Smoothed 0..1 progress toward a heavy strike while the attack button is held.
@@ -140,7 +144,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         charging=false;
         if(!player.IsActive || !WeaponHeld || !IsAttacking || !CombatManager.HasInstance) return;
         var tuning=CombatManager.Instance;
-        HeavySwing=Time.time-pressedAt >= tuning.heavyChargeTime;
+        HeavySwing=Time.time-pressedAt >= tuning.heavyChargeTime &&
+            (player.Stats == null || player.Stats.TryUseStamina(tuning.heavyStaminaCost, player.data != null ? player.data.staminaRegenDelay : 1f));
         releasingHeavyZoom = HeavySwing;
         heavyZoomStateSeen = false;
         releaseZoom = CameraZoomCharge;
@@ -177,10 +182,28 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (!gameplay) queuedPresses = 0;
         bool buffered = gameplay && queuedPresses > 0 && !windingUp;
         SetBool(armsAnimator, attackHeldParam, (primary || buffered) && WeaponHeld && !secondary);
-        SetBool(armsAnimator, blockHeldParam,  secondary && !blockLocked && ShieldHeld);
+        if (secondary && !blockLocked && ShieldHeld && player.Stats != null &&
+            player.Stats.HasStat(StatType.MaxStamina) && (player.Stats.IsExhausted || player.Stats.CurrentStamina <= 0))
+            player.Stats.ReportInsufficientStamina();
+        bool guarding = IsGuarding;
+        if (guarding && player.Stats != null)
+            guarding = player.Stats.DrainStamina(CombatManager.HasInstance ? CombatManager.Instance.shieldStaminaPerSecond : 2f,
+                player.data != null ? player.data.staminaRegenDelay : .6f);
+        SetBool(armsAnimator, blockHeldParam, guarding);
 
         if (player.Stats != null && Character.HasParameter(armsAnimator, "AttackSpeed", AnimatorControllerParameterType.Float))
             armsAnimator.SetFloat("AttackSpeed", player.Stats.GetMultiplier(StatType.AttackSpeed) * (CombatManager.HasInstance ? CombatManager.Instance.playerAttackSpeed : 1f));
+    }
+
+    public void PrepareEquippedPose()
+    {
+        OnEquipmentChanged();
+        if (armsAnimator == null || !armsAnimator.isActiveAndEnabled) return;
+        var culling = armsAnimator.cullingMode;
+        armsAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        armsAnimator.Update(0f);
+        armsAnimator.Update(1f); // Complete the initial equip pose while presentation is hidden.
+        armsAnimator.cullingMode = culling;
     }
 
     void OnEquipmentChanged()
@@ -326,8 +349,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     public bool TryBlock(ref DamageInfo info)
     {
         if(GameManager.HasInstance && !GameManager.Instance.GameplayActive)return false;
-        bool guardInput=InputManager.HasInstance && InputManager.Instance.SecondaryHeld && Time.time >= blockLockUntil;
-        if ((!IsBlocking && !guardInput) || !ShieldHeld) return false;
+        if (!IsGuarding) return false;
 
         if (info.Direction.sqrMagnitude > 0.001f)
         {
@@ -336,6 +358,13 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             if (Vector3.Dot(facing, info.Direction.normalized) >= threshold) return false;
         }
 
+        float cost = CombatManager.HasInstance ? CombatManager.Instance.blockStaminaCost : 6f;
+        if (player.Stats != null && !player.Stats.TryUseStamina(cost, player.data != null ? player.data.staminaRegenDelay : .6f))
+        {
+            player.Stats.ExhaustStamina(player.data != null ? player.data.staminaRegenDelay : 1f);
+            SetBool(armsAnimator, blockHeldParam, false);
+            return false;
+        }
         info.Parried=false;
 
 

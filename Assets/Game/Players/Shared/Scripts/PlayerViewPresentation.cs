@@ -24,6 +24,12 @@ public class PlayerViewPresentation : MonoBehaviour
         if (brain != null) brain.ChannelMask = channels;
     }
 
+    public void FollowTransitionCamera(Camera output, float lowerBy)
+    {
+        if (output == null) return;
+        transform.SetPositionAndRotation(output.transform.TransformPoint(0, -lowerBy, 0), output.transform.rotation);
+    }
+
     void FollowCamera(CinemachineBrain brain)
     {
         if (player == null || !player.IsActive || brain.OutputCamera == null ||

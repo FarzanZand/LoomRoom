@@ -137,7 +137,7 @@ public static class TableLevelAssetBuilder
         item=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<ItemData>(folder+original+".asset"));
         item.name=name;item.itemName=name;item.description=item.IsWeapon ? "Recovered from the crypt. Equip in your weapon hand." : "Supplies for the journey below.";
         if(item.IsWeapon) item.statModifiers=new[]{new StatModifierEntry{stat=StatType.AttackDamage,value=attack},new StatModifierEntry{stat=StatType.AttackSpeed,value=speed-1,type=ModifierType.PercentAdd}};
-        if(item.itemType==ItemType.Shield) { item.equipSlot=EquipmentSlot.LeftHand;item.statModifiers=new[]{new StatModifierEntry{stat=StatType.Defense,value=1}}; }
+        if(item.itemType==ItemType.Shield) { item.equipSlot=EquipmentSlot.LeftHand;item.statModifiers=new[]{new StatModifierEntry{stat=StatType.Armor,value=1}}; }
         AssetDatabase.CreateAsset(item,path);return item;
     }
     static Material Material(string name,Color a,Color b,bool bricks)
@@ -163,7 +163,7 @@ public static class TableLevelAssetBuilder
         profile.settings=new EnemyBehaviourSettings { defaultState=EnemyState.Wander,detectionRadius=12,closeDetectionRadius=2.5f,fieldOfView=140,useChaseSpeed=true,chaseSpeed=speed,useWanderSpeed=true,wanderSpeed=.7f,wanderRadius=3,wanderZoneRadius=4,circleTarget=speed>2,circleSpeedFraction=.22f };
         EditorUtility.SetDirty(profile);
         var data=Asset<CharacterData>(Dungeon+"Enemies/"+name+".asset");data.characterName=name;data.faction=Faction.Enemy;data.behaviour=profile;
-        data.stats=new List<StatEntry>{new(StatType.MaxHealth,hp),new(StatType.AttackDamage,damage),new(StatType.Defense,0),new(StatType.MoveSpeed,1),new(StatType.AttackSpeed,1)};
+        data.stats=new List<StatEntry>{new(StatType.MaxHealth,hp),new(StatType.AttackDamage,damage),new(StatType.Armor,0),new(StatType.MoveSpeed,1),new(StatType.AttackSpeed,1)};
         data.attacks=new List<EnemyAttack>{new(){name="Bite / strike",maxRange=1.65f,cooldown=cooldown,fallbackHitDelay=.42f,animatorTrigger="Attack",facingAngle=45}};data.deathDisableDelay=8;EditorUtility.SetDirty(data);return data;
     }
     static GameObject EnemyRoot(string name,CharacterData data,float height)

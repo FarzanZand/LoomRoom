@@ -16,6 +16,7 @@ public class DungeonHud : MonoBehaviour
         int w=dungeon.Layout.floor.GetLength(0),h=dungeon.Layout.floor.GetLength(1);
         explored=new bool[w,h];map=new Texture2D(w,h,TextureFormat.RGBA32,false);map.filterMode=FilterMode.Point;
         canvasRoot=new GameObject("Dungeon HUD",typeof(RectTransform),typeof(Canvas),typeof(CanvasScaler));
+        canvasRoot.SetActive(false); // Never render an uninitialized map during level construction.
         canvasRoot.transform.SetParent(transform,false);
         var canvas=canvasRoot.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.sortingOrder=15;
         var scaler=canvasRoot.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1920,1080);scaler.matchWidthOrHeight=.5f;

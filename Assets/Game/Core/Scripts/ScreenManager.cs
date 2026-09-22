@@ -117,6 +117,13 @@ public class ScreenManager : Singleton<ScreenManager>
         fadeRoutine = null;
     }
 
+    public void ClearFade()
+    {
+        if (fadeRoutine != null) StopCoroutine(fadeRoutine);
+        fadeRoutine = null;
+        SetAlpha(0f);
+    }
+
     /// Starts invisible, waits holdDuration, then fades to fully visible over fadeDuration.
     public void FadeIn(float fadeDuration, float holdDuration = 0f)
         => RunFade(from: 0f, to: 1f, fadeDuration, holdDuration);

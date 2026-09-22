@@ -210,6 +210,9 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         bool sprintApplied = IsSprinting && moveDir.z > 0f && !leanBlocksSprint && !IsCrouching;
 
         Speed = p.walkSpeed;
+        if (sprintApplied && player != null && player.Stats != null &&
+            !player.Stats.DrainStamina(p.sprintStaminaPerSecond, p.staminaRegenDelay))
+        { sprintApplied = false; IsSprinting = false; }
         if (sprintApplied) Speed = p.sprintSpeed;
         if (IsCrouching)   Speed = p.crouchSpeed;
         Speed *= speedMul;

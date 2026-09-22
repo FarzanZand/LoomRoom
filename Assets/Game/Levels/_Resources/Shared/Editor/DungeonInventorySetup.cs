@@ -115,7 +115,7 @@ public static class DungeonInventorySetup
         item.description=tier+" "+type.ToLowerInvariant()+". "+(hand?"Reliable dungeon equipment.":"Protective plates with a polished metal finish.");
         item.tag=tier+" equipment";item.itemType=hand?(slot==EquipmentSlot.RightHand?ItemType.Weapon:ItemType.Shield):ItemType.Equipment;
         item.canBeEquipped=true;item.equipSlot=slot;item.maxStackSize=1;item.equipOnPickup=false;item.directToHotbar=false;
-        item.statModifiers=new[]{new StatModifierEntry{stat=slot==EquipmentSlot.RightHand?StatType.AttackDamage:StatType.Defense,value=value}};
+        item.statModifiers=new[]{new StatModifierEntry{stat=slot==EquipmentSlot.RightHand?StatType.AttackDamage:StatType.Armor,value=value}};
         item.effects=Array.Empty<EffectEntry>();
         item.icon=Icon("Armory/Singles/"+(hand?"Weapon Singles/":"Armor Singles/")+art+"/"+art+"_"+icon+".png");
         item.worldPrefab=Model(item.itemName,slot,material,template?.worldPrefab);
@@ -201,12 +201,12 @@ public static class DungeonInventorySetup
     static void ConfigureData(AudioData pickup)
     {
         var player=Load<CharacterData>("Players/Table/TablePlayer.asset");
-        Stat(player,StatType.MaxHealth,30);Stat(player,StatType.MaxMana,20);Stat(player,StatType.AttackDamage,5);Stat(player,StatType.Defense,0);Stat(player,StatType.ManaRegen,.5f);
+        Stat(player,StatType.MaxHealth,30);Stat(player,StatType.MaxMana,20);Stat(player,StatType.AttackDamage,5);Stat(player,StatType.Armor,0);Stat(player,StatType.ManaRegen,.5f);
         string[] names={"Crypt Mite","Crypt Soldier","Crypt Warden"};float[] hp={30,40,50},damage={8,14,18},armor={1,2,3},cooldown={1.3f,1.6f,2.1f};
         for(int i=0;i<names.Length;i++)
         {
             var enemy=Load<CharacterData>("Levels/Dungeon1/Enemies/"+names[i]+".asset");
-            Stat(enemy,StatType.MaxHealth,hp[i]);Stat(enemy,StatType.AttackDamage,damage[i]);Stat(enemy,StatType.Defense,armor[i]);
+            Stat(enemy,StatType.MaxHealth,hp[i]);Stat(enemy,StatType.AttackDamage,damage[i]);Stat(enemy,StatType.Armor,armor[i]);
             foreach(var attack in enemy.attacks){attack.cooldown=cooldown[i];if(attack.fallbackHitDelay>=0)attack.fallbackHitDelay=i==2?.7f:.45f;attack.hit.damageMultiplier=1;}
             EditorUtility.SetDirty(enemy);
             EditPrefab(Root+"Levels/Dungeon1/Enemies/"+names[i]+".prefab",go=>{

@@ -17,9 +17,11 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 792f20870d8be5143bbfeae5a6826986, type: 3}
   tag: 
   worldPrefab: {fileID: 1213316036247922, guid: 691193207fb498347995d8573572685a, type: 3}
+  pickupVisualPrefab: {fileID: 0}
   itemType: 2
   maxStackSize: 1
   pickupAudio: {fileID: 0}
+  directToHotbar: 0
   canBeEquipped: 1
   equipSlot: 1
   heldScale: 1
@@ -28,7 +30,7 @@ MonoBehaviour:
   equipOnPickup: 1
   statModifiers:
   - stat: 1
-    value: 1
+    value: 5
     type: 0
   weapon:
     useDefaultEffects: 1
@@ -41,3 +43,7 @@ MonoBehaviour:
     hitStopScale: 1
   effects: []
   useAudio: {fileID: 0}
+  AnimationOnUse: 0
+  eatDuration: 0.65
+  eatMouthPosition: {x: 0, y: -0.12, z: 0.13}
+  eatMouthRotation: {x: -65, y: 0, z: 0}

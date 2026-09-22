@@ -52,7 +52,7 @@ public static class DungeonInventoryValidation
                 Check(loader.Dungeon!=null,"Dungeon failed to generate");
                 foreach(var brain in loader.Dungeon.GetComponentsInChildren<EnemyBrain>())brain.enabled=false;
                 Check(player.Stats.MaxHealth==30 && player.Stats.MaxMana==20,"Player baseline not applied");
-                Check(player.Stats.GetFinal(StatType.AttackDamage)==10 && player.Stats.GetFinal(StatType.Defense)==2,"Starter sword/shield stats");
+                Check(player.Stats.GetFinal(StatType.AttackDamage)==10 && player.Stats.GetFinal(StatType.Armor)==0,"Starter sword/shield stats");
                 Check(player.Equipment.Get(EquipmentSlot.RightHand)==Item("Bronze Sword") && player.Equipment.Get(EquipmentSlot.LeftHand)==Item("Bronze Shield"),"Starter hands");
                 Check(player.Hotbar.IndexOf(Item("Bronze Sword"))>=0 && player.Hotbar.IndexOf(Item("Bronze Shield"))>=0,"Starter hotbar");
                 var noMesh=ScriptableObject.CreateInstance<ItemData>();noMesh.itemName="Fallback probe";
@@ -69,7 +69,7 @@ public static class DungeonInventoryValidation
                 {
                     foreach(string part in new[]{"Helm","Armor","Gloves","Boots","Sword","Shield"})
                     {var item=Item(tier+" "+part);if(Count(player,item)==0)Check(player.Bag.TryAdd(item),"Bag rejected "+item.itemName);Check(player.Equipment.Equip(item),"Equip rejected "+item.itemName);Check(player.Equipment.Equip(item),"Repeat equip rejected");}
-                    Check(player.Stats.GetFinal(StatType.Defense)==(tier=="Bronze"?7:12),"Armor stacked or missing");
+                    Check(player.Stats.GetFinal(StatType.Armor)==(tier=="Bronze"?5:9),"Armor stacked or missing");
                     Check(player.Stats.GetFinal(StatType.AttackDamage)==(tier=="Bronze"?10:11),"Sword bonus stacked");
                 }
                 Balance(player,level);
@@ -186,7 +186,7 @@ public static class DungeonInventoryValidation
             {
                 var enemy=AssetDatabase.LoadAssetAtPath<CharacterData>("Assets/Game/Levels/Dungeon1/Enemies/"+name+".asset");
                 float incoming=enemy.GetBaseStat(StatType.AttackDamage)+data.balance.damagePerFloor*(floor-1);
-                float expected=Mathf.Max(0,incoming-p.Stats.GetFinal(StatType.Defense));
+                float expected=Mathf.Max(0,incoming-p.Stats.GetFinal(StatType.Armor));
                 p.Stats.Revive();p.Stats.TakeDamage(DamageInfo.Simple(incoming));float actual=p.Stats.MaxHealth-p.Stats.CurrentHealth;
                 Check(Mathf.Abs(actual-expected)<.01f,"Damage-Armor mismatch");
                 Check(name=="Crypt Mite" || actual>0,"Armor trivialized soldier/warden");

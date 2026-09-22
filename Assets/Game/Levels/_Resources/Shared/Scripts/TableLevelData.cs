@@ -2,7 +2,8 @@ using UnityEngine;
 using Sirenix.OdinInspector;
 
 public enum TableLevelKind { Town, Dungeon }
-public enum DungeonMoodLighting { AmberCrypt, MoonlitStone, EmeraldRuins, RoseSanctuary, GoldenHall }
+// Keep existing numeric values: level assets serialize these selections as integers.
+public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5 }
 
 [CreateAssetMenu(menuName = "Table/Level", fileName = "TableLevel")]
 public class TableLevelData : ScriptableObject

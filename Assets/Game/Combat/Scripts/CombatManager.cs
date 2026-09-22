@@ -64,8 +64,10 @@ public class CombatManager : Singleton<CombatManager>
     [Range(0f, 1f)] public float blockDamageReduction = .5f;
     [Tooltip("Dot product threshold: a hit is frontal (blockable) when dot(facing, hitDir) is below this.")]
     [Range(-1f, 1f)] public float blockFrontalDot = -0.3f;
-    [HideInInspector]
-    public float blockStaminaCost = 0f;
+    [Min(0), Tooltip("Stamina spent on each successfully blocked hit.")]
+    public float blockStaminaCost = 6f;
+    [Min(0), Tooltip("Stamina drained each second while holding the shield up.")]
+    public float shieldStaminaPerSecond = 2f;
 
     [Header("Attack responsiveness")]
     [Range(.5f,2f)] public float playerAttackSpeed = 1.12f;
@@ -83,7 +85,7 @@ public class CombatManager : Singleton<CombatManager>
     [Min(.1f)] public float heavyChargeTime = .7f;
     [Min(1)] public float heavyDamageMultiplier = 1.65f;
     [Min(1)] public float heavyKnockbackMultiplier = 1.35f;
-    [HideInInspector] public float heavyStaminaCost;
+    [Min(0), Tooltip("Stamina spent when releasing a fully charged heavy attack. Insufficient stamina releases a light attack instead.")] public float heavyStaminaCost = 8f;
     [Tooltip("Extra recovery after a heavy hit. Does not interrupt an already committed enemy swing.")]
     [Min(0)] public float heavyStaggerDuration = .45f;
     [Min(1)] public float heavyRecoilMultiplier = 1.6f;

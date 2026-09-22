@@ -10,6 +10,6 @@ public class DungeonBalance : ScriptableObject
         int depth=Mathf.Max(0,floor-1);
         enemy.Stats.AddModifier(new StatModifier(StatType.AttackDamage,damagePerFloor*depth,ModifierType.Flat,this));
         enemy.Stats.AddModifier(new StatModifier(StatType.MaxHealth,healthGrowthPerFloor*depth,ModifierType.PercentAdd,this));
-        enemy.Stats.AddModifier(new StatModifier(StatType.Defense,armorPerFloor*depth,ModifierType.Flat,this));
+        enemy.Stats.AddModifier(new StatModifier(StatType.Armor,armorPerFloor*depth,ModifierType.Flat,this));
     }
 }
