@@ -6106,7 +6106,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 127
+    m_Bits: 191
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -6210,8 +6210,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 181056620}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.95574176, z: 0, w: -0.29420704}
-  m_LocalPosition: {x: -69.79999, y: 20.27324, z: 70.90918}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: 27.625183, y: 4.3714724, z: 22.835907}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -11618,6 +11618,8 @@ MonoBehaviour:
   healthValue: {fileID: 2023029434}
   manaValue: {fileID: 813521730}
   staminaBarValue: {fileID: 4310006146584643954}
+  staminaWarning: Not enough stamina
+  staminaWarningInterval: 1.5
 --- !u!222 &358114857
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -72763,7 +72765,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!114 &4310006146584643955 stripped
 MonoBehaviour:
@@ -72774,7 +72776,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
 --- !u!1 &4310006146584643956 stripped
 GameObject:

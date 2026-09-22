@@ -149,7 +149,9 @@ public static class TableLevelAssetBuilder
         for(int y=0;y<32;y++)for(int x=0;x<32;x++)
         {
             bool seam=bricks && (y%8==0 || (x+((y/8)%2)*8)%16==0);
-            tex.SetPixel(x,y,seam ? b*.55f : Color.Lerp(a,b,(float)rng.NextDouble()*.65f));
+            var color = seam ? b*.55f : Color.Lerp(a,b,(float)rng.NextDouble()*.65f);
+            color.a = 1f; // Darken mortar RGB only; opaque walls must preview without checkerboard bleed.
+            tex.SetPixel(x,y,color);
         }
         tex.Apply();string texturePath=Dungeon+"Materials/"+name+".png";File.WriteAllBytes(texturePath,tex.EncodeToPNG());UnityEngine.Object.DestroyImmediate(tex);
         AssetDatabase.ImportAsset(texturePath);
