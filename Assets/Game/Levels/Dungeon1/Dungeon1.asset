@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc328ee221540164b95e154c00f29bf2, type: 3}
+  m_Name: Dungeon1
+  m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
+  displayName: Dungeon1
+  description: "The Amber Crypt \u2022 a new layout every run"
+  kind: 1
+  mood: {fileID: 11400000, guid: 4cbac9547e85c7349a10663f207bc32a, type: 2}
+  backgroundMusic: {fileID: 8300000, guid: 9d5de70ebd5fb48438751ad5f84883b6, type: 3}
+  loopMusic: 1
+  musicFadeSeconds: 1.5
+  environmentPrefab: {fileID: 0}
+  width: 32
+  depth: 42
+  cellSize: 2
+  roomCount: 12
+  fixedSeed: 0
+  floorMaterial: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
+  wallMaterial: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
+  trimMaterial: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
+  ceilingMaterial: {fileID: 2100000, guid: b84909f81e52f2a47a68177f1186c384, type: 2}
+  woodMaterial: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
+  metalMaterial: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
+  enemies:
+  - {fileID: 8306217807791707549, guid: 0d5602465bc50894c8c21974f5ae1087, type: 3}
+  - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
+  - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
+  - {fileID: 3270041406331151002, guid: b5cc74a1c83c63a4f906481253b84779, type: 3}
+  loot: {fileID: 11400000, guid: 66571cd5f3da142419416c5d36ed7fc5, type: 2}
+  startingItems:
+  - {fileID: 11400000, guid: 335b553d1e77a534ba228f8cc0fa27c1, type: 2}
+  - {fileID: 11400000, guid: b5868584276d6474e85cad2b2de39004, type: 2}
+  - {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
+  - {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
+  startingEquipment:
+  - {fileID: 11400000, guid: 335b553d1e77a534ba228f8cc0fa27c1, type: 2}
+  - {fileID: 11400000, guid: b5868584276d6474e85cad2b2de39004, type: 2}
+  guaranteedHealing: {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
+  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
+  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
+  hudFont: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
+  hotbarFrame: {fileID: 21300000, guid: 8eae82d5f061d8f49b31dcf5f503d8ef, type: 3}

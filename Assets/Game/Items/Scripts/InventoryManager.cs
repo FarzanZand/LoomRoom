@@ -7,6 +7,7 @@ using UnityEngine;
 // Equipment); this only decides the rules.
 public class InventoryManager : Singleton<InventoryManager>
 {
+    public event System.Action<ItemData, Player, int> ItemPickedUp;
     [Header("Pickup")]
     [Tooltip("Item types that go to the hotbar first when picked up (falls back to the bag when full).")]
     public ItemTypeMask hotbarFirstTypes = ItemTypeMask.Weapon | ItemTypeMask.Shield | ItemTypeMask.Tool | ItemTypeMask.Consumable;
@@ -61,6 +62,7 @@ public class InventoryManager : Singleton<InventoryManager>
             player.Equipment.CanEquip(item) && !player.Equipment.Has(item.equipSlot))
             player.Equipment.Equip(item);
 
+        ItemPickedUp?.Invoke(item, player, count);
         return true;
     }
 
@@ -112,7 +114,11 @@ public class InventoryManager : Singleton<InventoryManager>
         Transform t = player.transform;
         Vector3 forward = player.Look != null ? player.Look.YawTransform.forward : t.forward;
         var pos = t.position + forward * dropDistance + Vector3.up * dropHeight;
-        return Spawn(item, pos);
+        var pickup = Spawn(item, pos);
+        var level = TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+        if (pickup != null && player.kind == PlayerKind.Table && level != null && level.Dungeon != null)
+            pickup.transform.SetParent(level.Dungeon.transform, true);
+        return pickup;
     }
 
     // ── Lookup ────────────────────────────────────────────────────────

@@ -45,8 +45,8 @@ MonoBehaviour:
     baseValue: 0.9
     min: 0
     max: 0
-  walkSpeed: 3
-  sprintSpeed: 6
+  walkSpeed: 4.5
+  sprintSpeed: 5.85
   crouchSpeed: 1.75
   jumpForce: 8
   gravityMultiplier: 2.5

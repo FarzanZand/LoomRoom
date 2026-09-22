@@ -78,7 +78,7 @@ public class InventoryUI : MonoBehaviour
         Refresh();
     }
 
-    void Close()
+    public void Close()
     {
         if (!isOpen) return;
         isOpen = false;

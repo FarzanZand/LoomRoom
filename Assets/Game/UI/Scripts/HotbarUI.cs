@@ -10,6 +10,10 @@ public class HotbarUI : MonoBehaviour
     Inventory bound;
     Equipment boundEquipment;
     Player    player;
+    public void SetDungeonStyle(bool enabled, TMPro.TMP_FontAsset font = null, Sprite frame = null)
+    {
+        foreach (var slot in slots) if (slot != null) slot.SetDungeonStyle(enabled, font, frame);
+    }
 
     void OnEnable()
     {

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d1071685ae8439ca78a98c290a18326, type: 3}
+  m_Name: Town daylight
+  m_EditorClassIdentifier: Assembly-CSharp::SceneMood
+  tableLightingOnly: 0
+  tableLightMultiplier: 1.4
+  skyTint: {r: 0.7, g: 0.8, b: 0.93, a: 1}
+  skyExposure: 1
+  lightColor: {r: 1, g: 0.9, b: 0.73, a: 1}
+  lightIntensity: 1.15
+  ambientSky: {r: 0.6, g: 0.69, b: 0.8, a: 1}
+  ambientHorizon: {r: 0.48, g: 0.49, b: 0.47, a: 1}
+  ambientGround: {r: 0.25, g: 0.27, b: 0.24, a: 1}
+  fogColor: {r: 0.48, g: 0.25, b: 0.23, a: 1}

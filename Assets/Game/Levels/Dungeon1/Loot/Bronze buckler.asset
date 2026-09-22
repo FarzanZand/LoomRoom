@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
+  m_Name: Bronze buckler
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemName: Bronze buckler
+  description: Supplies for the journey below.
+  icon: {fileID: 21300000, guid: 792f20870d8be5143bbfeae5a6826986, type: 3}
+  tag: 
+  worldPrefab: {fileID: 1213316036247922, guid: 691193207fb498347995d8573572685a, type: 3}
+  itemType: 2
+  maxStackSize: 1
+  pickupAudio: {fileID: 0}
+  canBeEquipped: 1
+  equipSlot: 1
+  heldScale: 1
+  heldPosition: {x: 0, y: 0, z: -0.2}
+  heldRotation: {x: 0, y: -90, z: 0}
+  equipOnPickup: 1
+  statModifiers:
+  - stat: 1
+    value: 1
+    type: 0
+  weapon:
+    useDefaultEffects: 1
+    hitAudio: {fileID: 0}
+    swingAudio: {fileID: 0}
+    heavySwingAudio: {fileID: 0}
+    hitParticle: {fileID: 0}
+    damageMultiplier: 1
+    knockbackForce: -1
+    hitStopScale: 1
+  effects: []
+  useAudio: {fileID: 0}

@@ -184,6 +184,8 @@ public class CombatManager : Singleton<CombatManager>
         bool defaults = profile == null || profile.useDefaultEffects;
         AudioData audio = info.Blocked ? blockAudio : victim is Player && playerHurtAudio != null ? playerHurtAudio :
             defaults ? defaultHitAudio : profile.hitAudio;
+        if (!info.Blocked && defaults && victim.data != null && victim.data.bodyImpactAudio != null)
+            audio = victim.data.bodyImpactAudio;
         if(audio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(audio,info.HitPoint);
         GameObject prefab = info.Blocked ? blockParticlePrefab : defaults ? GetRandomHitParticle() : profile.hitParticle;
         if(prefab != null)

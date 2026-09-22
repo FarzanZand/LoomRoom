@@ -26,6 +26,39 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     Player Owner => Container != null ? Container.GetComponentInParent<Player>() : null;
 
+    bool dungeonStyled, savedStyle;
+    Color originalEmpty, originalFilled, originalHighlight;
+    TMP_FontAsset originalKeyFont, originalStackFont;
+    float originalKeySize, originalStackSize;
+    Color originalKeyColor, originalStackColor;
+    Image dungeonFrame;
+
+    public void SetDungeonStyle(bool enabled, TMP_FontAsset font, Sprite frame)
+    {
+        if (dungeonStyled == enabled) return;
+        if (!savedStyle)
+        {
+            savedStyle=true; originalEmpty=emptyColor;originalFilled=filledColor;
+            if(equippedHighlight!=null)originalHighlight=equippedHighlight.color;
+            if(keyLabel!=null){originalKeyFont=keyLabel.font;originalKeySize=keyLabel.fontSize;originalKeyColor=keyLabel.color;}
+            if(stackLabel!=null){originalStackFont=stackLabel.font;originalStackSize=stackLabel.fontSize;originalStackColor=stackLabel.color;}
+        }
+        dungeonStyled=enabled;
+        emptyColor=enabled ? new Color(.035f,.045f,.045f,.96f):originalEmpty;
+        filledColor=enabled ? new Color(.09f,.11f,.105f,.98f):originalFilled;
+        if(equippedHighlight!=null)equippedHighlight.color=enabled ? new Color(1,.72f,.22f,.32f):originalHighlight;
+        if(keyLabel!=null){keyLabel.font=enabled && font!=null ? font:originalKeyFont;keyLabel.fontSize=enabled ? 22:originalKeySize;keyLabel.color=enabled ? new Color(.9f,.84f,.66f):originalKeyColor;}
+        if(stackLabel!=null){stackLabel.font=enabled && font!=null ? font:originalStackFont;stackLabel.fontSize=enabled ? 22:originalStackSize;stackLabel.color=enabled ? Color.white:originalStackColor;}
+        if(enabled && frame!=null && dungeonFrame==null)
+        {
+            var go=new GameObject("Dungeon pixel frame",typeof(RectTransform),typeof(Image));go.transform.SetParent(transform,false);
+            dungeonFrame=go.GetComponent<Image>();dungeonFrame.sprite=frame;dungeonFrame.type=Image.Type.Sliced;dungeonFrame.raycastTarget=false;
+            var r=dungeonFrame.rectTransform;r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=r.offsetMax=Vector2.zero;
+        }
+        if(dungeonFrame!=null)dungeonFrame.enabled=enabled;
+        Refresh();
+    }
+
     public void Bind(Inventory container, int index)
     {
         Container = container;
@@ -55,6 +88,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         {
             var eq = Owner != null ? Owner.Equipment : null;
             equippedHighlight.gameObject.SetActive(item != null && eq != null && eq.IsEquipped(item));
+        }
+        if(dungeonStyled && dungeonFrame!=null)
+        {
+            bool equipped=item!=null && Owner?.Equipment!=null && Owner.Equipment.IsEquipped(item);
+            dungeonFrame.color=equipped ? new Color(1,.83f,.35f):new Color(.5f,.57f,.55f);
         }
     }
 

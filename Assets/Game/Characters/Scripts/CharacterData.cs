@@ -13,6 +13,8 @@ public class CharacterData : ScriptableObject
     [TextArea] public string description;
     public Faction faction = Faction.Neutral;
     public Sprite portrait;
+    [Tooltip("Optional impact sound for this creature's body, played by CombatManager through the SFX mixer.")]
+    public AudioData bodyImpactAudio;
 
     [Header("Stats")]
     [Tooltip("Base values. Anything not listed reads as 0 (or 1 for multiplier stats).")]

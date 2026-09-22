@@ -64,6 +64,14 @@ public class Inventory : MonoBehaviour
     {
         if (!Accepts(item) || count <= 0) return false;
 
+        // Pickup callers retry in the other container on failure. Refuse atomically
+        // so a partially filled hotbar cannot duplicate the same world drop in the bag.
+        long capacity = 0;
+        foreach (var slot in slots)
+            if (slot == null || slot.IsEmpty) capacity += Mathf.Max(1, item.maxStackSize);
+            else if (slot.item == item) capacity += Mathf.Max(0, item.maxStackSize - slot.count);
+        if (capacity < count) { Full?.Invoke(); return false; }
+
         int remaining = count;
         if (item.maxStackSize > 1)
         {
