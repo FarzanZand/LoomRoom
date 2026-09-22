@@ -112,6 +112,11 @@ public class Hitbox : MonoBehaviour
             var matrix=Matrix4x4.TRS(Vector3.Lerp(previousPosition,t.position,f),rotation,t.lossyScale);
             int count=Overlap(matrix,rotation);
             for(int i=0;i<count;i++) ProcessHit(overlapBuffer[i]);
+            float reach = CombatManager.HasInstance ? Mathf.Max(1, CombatManager.Instance.meleeReachMultiplier) : 1f;
+            var extension = queryCenter - owner.transform.position; extension.y = 0;
+            matrix.SetColumn(3, matrix.GetColumn(3) + (Vector4)(extension * (reach - 1f)));
+            count = Overlap(matrix, rotation);
+            for(int i=0;i<count;i++) ProcessHit(overlapBuffer[i]);
         }
         previousPosition=t.position; previousRotation=t.rotation;
     }
@@ -121,21 +126,27 @@ public class Hitbox : MonoBehaviour
         var scale=weaponCollider.transform.lossyScale;
         scale=new Vector3(Mathf.Abs(scale.x),Mathf.Abs(scale.y),Mathf.Abs(scale.z));
         float largest=Mathf.Max(scale.x,scale.y,scale.z);
+        float reach = CombatManager.HasInstance ? Mathf.Max(1, CombatManager.Instance.meleeReachMultiplier) : 1f;
+        float width = CombatManager.HasInstance ? Mathf.Max(1, CombatManager.Instance.meleeWidthMultiplier) : 1f;
         switch(weaponCollider)
         {
             case CapsuleCollider cap:
                 queryCenter=matrix.MultiplyPoint3x4(cap.center);
                 Vector3 localAxis=cap.direction==0 ? Vector3.right : cap.direction==1 ? Vector3.up : Vector3.forward;
-                float radius=cap.radius*largest;
-                float extent=Mathf.Max(0,cap.height*scale[cap.direction]*.5f-radius);
+                float radius=cap.radius*largest*width;
+                float extent=Mathf.Max(0,cap.height*scale[cap.direction]*reach*.5f-radius);
                 Vector3 axis=rotation*localAxis*extent;
                 return Physics.OverlapCapsuleNonAlloc(queryCenter+axis,queryCenter-axis,radius,overlapBuffer,hitMask,QueryTriggerInteraction.Ignore);
             case SphereCollider sphere:
                 queryCenter=matrix.MultiplyPoint3x4(sphere.center);
-                return Physics.OverlapSphereNonAlloc(queryCenter,sphere.radius*largest,overlapBuffer,hitMask,QueryTriggerInteraction.Ignore);
+                return Physics.OverlapSphereNonAlloc(queryCenter,sphere.radius*largest*width,overlapBuffer,hitMask,QueryTriggerInteraction.Ignore);
             case BoxCollider box:
                 queryCenter=matrix.MultiplyPoint3x4(box.center);
-                return Physics.OverlapBoxNonAlloc(queryCenter,Vector3.Scale(box.size,scale)*.5f,overlapBuffer,rotation,hitMask,QueryTriggerInteraction.Ignore);
+                var dimensions = Vector3.Scale(box.size, scale);
+                int lengthAxis = dimensions.x > dimensions.y ? (dimensions.x > dimensions.z ? 0 : 2) : (dimensions.y > dimensions.z ? 1 : 2);
+                dimensions *= width;
+                dimensions[lengthAxis] *= reach / width;
+                return Physics.OverlapBoxNonAlloc(queryCenter,dimensions*.5f,overlapBuffer,rotation,hitMask,QueryTriggerInteraction.Ignore);
             default: return 0;
         }
     }

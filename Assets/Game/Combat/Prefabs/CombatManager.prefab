@@ -44,6 +44,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 178482e117d362148abfe274c101dcd7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatManager
+  meleeReachMultiplier: 1.2
+  meleeWidthMultiplier: 1.25
   hitStopEnabled: 1
   hitStopDuration: 0.045
   hitStopTimeScale: 0.12

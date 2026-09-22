@@ -6,6 +6,12 @@ using UnityEngine;
 // exactly one entry point and a hit can never freeze the game twice.
 public class CombatManager : Singleton<CombatManager>
 {
+    [Header("Melee hit tolerance")]
+    [Min(1f), Tooltip("Reach multiplier for player/enemy melee queries and enemy attack selection.")]
+    public float meleeReachMultiplier = 1.2f;
+    [Min(1f), Tooltip("Thickness multiplier for melee hit queries; also widens fallback enemy hit arcs.")]
+    public float meleeWidthMultiplier = 1.25f;
+
     [Header("Hit Stop")]
     public bool hitStopEnabled = true;
     [Tooltip("Seconds the game slows when a hit lands.")]

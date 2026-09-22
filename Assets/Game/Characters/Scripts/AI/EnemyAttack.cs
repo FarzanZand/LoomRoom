@@ -13,6 +13,7 @@ public class EnemyAttack
     public float  minRange = 0f;
     [Tooltip("Usable when the target is within this distance.")]
     public float  maxRange = 1.8f;
+    public float EffectiveMaxRange => maxRange * (CombatManager.HasInstance ? Mathf.Max(1, CombatManager.Instance.meleeReachMultiplier) : 1f);
     public float  cooldown = 1.5f;
     [Tooltip("Target must be within this angle of the enemy's forward before the attack fires.")]
     [Range(0f, 180f)] public float facingAngle = 45f;

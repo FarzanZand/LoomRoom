@@ -149,7 +149,7 @@ public class EnemyBrain : MonoBehaviour
         get
         {
             float r = 0f;
-            foreach (var a in Attacks) if (a != null) r = Mathf.Max(r, a.maxRange);
+            foreach (var a in Attacks) if (a != null) r = Mathf.Max(r, a.EffectiveMaxRange);
             return r > 0f ? r : 1.8f;
         }
     }
@@ -158,7 +158,7 @@ public class EnemyBrain : MonoBehaviour
 
     bool AnyAttackCoversDistance(float dist)
     {
-        foreach (var a in Attacks) if (a != null && dist >= a.minRange && dist <= a.maxRange) return true;
+        foreach (var a in Attacks) if (a != null && dist >= a.minRange && dist <= a.EffectiveMaxRange) return true;
         return false;
     }
 
@@ -466,7 +466,7 @@ public class EnemyBrain : MonoBehaviour
         for (int i = 0; i < attacks.Count; i++)
         {
             var a = attacks[i];
-            if (a == null || dist < a.minRange || dist > a.maxRange || attackCooldowns[i] > 0f) continue;
+            if (a == null || dist < a.minRange || dist > a.EffectiveMaxRange || attackCooldowns[i] > 0f) continue;
             totalWeight += a.weight;
         }
         if (totalWeight <= 0f) return null;
@@ -475,7 +475,7 @@ public class EnemyBrain : MonoBehaviour
         for (int i = 0; i < attacks.Count; i++)
         {
             var a = attacks[i];
-            if (a == null || dist < a.minRange || dist > a.maxRange || attackCooldowns[i] > 0f) continue;
+            if (a == null || dist < a.minRange || dist > a.EffectiveMaxRange || attackCooldowns[i] > 0f) continue;
             roll -= a.weight;
             if (roll <= 0f) return a;
         }
@@ -547,9 +547,9 @@ public class EnemyBrain : MonoBehaviour
         // Facing was required to start the swing and tracking ran through the windup; at
         // impact only distance and a generous arc around the committed direction count.
         float dist = Perception.HorizontalDist(transform.position, target.transform.position);
-        if (dist > currentAttack.maxRange * 1.1f || Mathf.Abs(target.transform.position.y - transform.position.y) > 1f) return;
+        if (dist > currentAttack.EffectiveMaxRange * 1.1f || Mathf.Abs(target.transform.position.y - transform.position.y) > 1f) return;
         Vector3 toward = target.transform.position - transform.position; toward.y = 0f;
-        float arc = Tuning != null ? Tuning.enemyHitFacingAngle : 60f;
+        float arc = Tuning != null ? Mathf.Min(180f, Tuning.enemyHitFacingAngle * Tuning.meleeWidthMultiplier) : 60f;
         if (Vector3.Angle(committedForward, toward) > arc) return;
 
         Vector3 dir = toward.sqrMagnitude > 0.0001f ? toward.normalized : transform.forward;
@@ -718,7 +718,7 @@ public class EnemyBrain : MonoBehaviour
         var data = GetComponent<Character>()?.data;
         if (data != null)
             foreach (var a in data.attacks)
-                if (a != null) Gizmos.DrawWireSphere(transform.position, a.maxRange);
+                if (a != null) Gizmos.DrawWireSphere(transform.position, a.EffectiveMaxRange);
 
         if (p.defaultState == EnemyState.Wander && p.wanderZoneRadius > 0f)
         {
