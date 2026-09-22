@@ -16,7 +16,7 @@ MonoBehaviour:
   description: "The Amber Crypt \u2022 a new layout every run"
   kind: 1
   mood: {fileID: 11400000, guid: 8277439119c14f8a956e344d01626cd7, type: 2}
-  moodLightning: 1
+  moodLightning: 3
   overrideLighting: 0
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
@@ -51,12 +51,12 @@ MonoBehaviour:
   architectureTileSize: 3
   roomStyles:
   - style: {fileID: 11400000, guid: effd0936d8ae44fbaf28bf7c3494ed2a, type: 2}
-    weight: 1
+    weight: 2
   - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
-    weight: 1
+    weight: 3
   corridorsCopyConnectedRoomStyle: 1
   corridorStyles:
-  - style: {fileID: 11400000, guid: 8fb17ad018d841db9040eb45c0289c0b, type: 2}
+  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
     weight: 1
   twoTileRoomPercent: 25
   threeTileRoomPercent: 0
