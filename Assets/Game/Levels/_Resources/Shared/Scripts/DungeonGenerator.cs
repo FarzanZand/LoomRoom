@@ -22,6 +22,7 @@ public class DungeonGenerator : MonoBehaviour
     public int[] RoomHeightTiles { get; private set; }
     public int[] CorridorHeightTiles { get; private set; }
     public DungeonRoomStyle[] RegionStyles { get; private set; }
+    System.Collections.Generic.List<(Vector2Int roomCell, Vector2Int direction)> doorways;
     Material WallMaterial(int region, float bottom)
     {
         var fallback = bottom < data.architectureTileSize - .001f ? data.wallMaterial : DungeonRoomStyle.Resolve(data.upperWallMaterial, data.wallMaterial);
@@ -97,12 +98,15 @@ public class DungeonGenerator : MonoBehaviour
         FloorNumber=floorNumber;
         data = level; random = new System.Random(seed);
         Layout = new DungeonLayout(level.width, level.depth, level.roomCount, seed, level.loopPercent);
+        doorways = level.doorPrefab != null && level.doorPercent > 0
+            ? Layout.SelectDoorways(level.doorPercent) : new();
         RoomHeightTiles = SelectRoomHeights(Layout.rooms.Count, seed, level.twoTileRoomPercent, level.threeTileRoomPercent);
         SelectCorridorHeights(unchecked(seed + 3571));
         RegionStyles = new DungeonRoomStyle[Layout.RegionCount];
         var styleRandom = new System.Random(unchecked(seed + 15485863));
         for (int i = 0; i < RegionStyles.Length; i++)
             RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? level.roomStyles : level.corridorStyles, styleRandom);
+        if (level.corridorsCopyConnectedRoomStyle) CopyConnectedRoomStyles(seed);
         Roles=new RoomRole[Layout.rooms.Count];
         for(int i=0;i<Roles.Length;i++) {
             float encounter=Settings!=null && Settings.overrideEncounters ? Settings.encounterChance:data.encounterChance;
@@ -196,6 +200,56 @@ public class DungeonGenerator : MonoBehaviour
         Debug.Log($"Dungeon seed {seed}, floor {floorNumber}: {Layout.rooms.Count} rooms, {Layout.Connections.Count} connections, generated in {GenerationMilliseconds:F0} ms.",this);
     }
 
+    void CopyConnectedRoomStyles(int seed)
+    {
+        // Use the exact doorway plan later instantiated by MakeDoors. Doors remain style
+        // boundaries even after opening, so appearance never changes during play.
+        var blocked = new System.Collections.Generic.HashSet<(Vector2Int, Vector2Int)>();
+        foreach (var doorway in doorways)
+        {
+            var a = doorway.roomCell; var b = a + doorway.direction;
+            blocked.Add((a,b)); blocked.Add((b,a));
+        }
+        // Region adjacency follows actual open passages, never proximity through a wall.
+        var links = new System.Collections.Generic.SortedSet<int>[Layout.RegionCount];
+        for (int i = 0; i < links.Length; i++) links[i] = new();
+        for (int x = 0; x < data.width; x++) for (int z = 0; z < data.depth; z++)
+        {
+            int region = Layout.RegionIds[x,z];
+            if (region < 0) continue;
+            Connect(x+1,z); Connect(x,z+1);
+            void Connect(int nx, int nz)
+            {
+                if (nx >= data.width || nz >= data.depth) return;
+                if (blocked.Contains((new Vector2Int(x,z), new Vector2Int(nx,nz)))) return;
+                int other = Layout.RegionIds[nx,nz];
+                if (other < 0 || other == region) return;
+                links[region].Add(other); links[other].Add(region);
+            }
+        }
+        var rng = new System.Random(unchecked(seed + 32452843));
+        for (int region = Layout.rooms.Count; region < links.Length; region++)
+        {
+            var queue = new System.Collections.Generic.Queue<int>();
+            var seen = new System.Collections.Generic.HashSet<int> { region };
+            var candidates = new System.Collections.Generic.List<int>();
+            queue.Enqueue(region);
+            // Prefer directly adjoining rooms; search corridor junctions only if needed.
+            while (queue.Count > 0 && candidates.Count == 0)
+            {
+                int count = queue.Count;
+                for (int i = 0; i < count; i++)
+                    foreach (int neighbor in links[queue.Dequeue()])
+                    {
+                        if (!seen.Add(neighbor)) continue;
+                        if (neighbor < Layout.rooms.Count) candidates.Add(neighbor);
+                        else queue.Enqueue(neighbor);
+                    }
+            }
+            RegionStyles[region] = candidates.Count > 0 ? RegionStyles[candidates[rng.Next(candidates.Count)]] : null;
+        }
+    }
+
     DungeonRoomProfile ChooseProfile(RoomRole role)
     {
         if(data.roomProfiles==null)return null;
@@ -210,7 +264,7 @@ public class DungeonGenerator : MonoBehaviour
     void MakeDoors(int seed)
     {
         if(data.doorPrefab==null || data.doorPercent<=0)return;
-        foreach(var doorway in Layout.SelectDoorways(data.doorPercent)) {
+        foreach(var doorway in doorways) {
             var p=doorway.roomCell;
             var dir=doorway.direction;
             var n=p+dir;

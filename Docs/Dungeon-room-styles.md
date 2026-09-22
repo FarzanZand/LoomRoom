@@ -15,3 +15,7 @@ New original artwork: Assets/Game/Levels/Dungeon1/Materials/Slate Timber. Both P
 Prompt set: Upper — original cool slate masonry, four offset courses, chipped blocks and two thin cracks, coarse 32x32 pixel art, seamless flat albedo. Lower — weathered walnut timber frame, dark iron straps, diagonal corner brace and large cool slate stones, coarse 32x32 pixel art, flat horizontally repeating albedo.
 
 Enable Hide Trims on a room style to omit its generated cornices and footings. The Trim material field is hidden while enabled. Defaults off; applies to rooms and corridors using that style after regenerating the dungeon. This does not remove timber drawn into the wall texture.
+
+Corridors Copy Connected Room Style (level data, Architecture Styles): defaults off to preserve authored corridor choices. Enable to copy the complete selected style from a directly connected room. At junction-only sections, search outward through actual corridor connections for a nearest room. Ties are selected deterministically from the dungeon seed. A room using level defaults passes those defaults on too. Disable to reveal and edit the weighted Corridor Styles list; its contents are preserved. Expand the small Style arrow for inline editing. Reload to apply.
+
+Door boundaries: style inheritance uses the exact doorway plan used to spawn doors and never traverses those doorway edges. It searches only the corridor's open side for a room. If all routes to rooms cross doors, that section uses level defaults. Opening a door during play does not restyle geometry.

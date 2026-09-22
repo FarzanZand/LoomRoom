@@ -58,7 +58,9 @@ public class TableLevelData : ScriptableObject
     [Header("Architecture styles")]
     [Tooltip("Weighted styles selected once per whole room. Empty or disabled entries use the level materials.")]
     public DungeonStyleChoice[] roomStyles = new DungeonStyleChoice[0];
-    [Tooltip("Weighted styles selected once per whole corridor section. Empty uses the level materials.")]
+    [Tooltip("Copy a connected room's complete style without crossing a planned doorway. Search through open corridors if needed. If no room is reachable without crossing a door, use level defaults. Selection is seeded; opening doors does not change styles.")]
+    public bool corridorsCopyConnectedRoomStyle;
+    [HideIf(nameof(corridorsCopyConnectedRoomStyle)), Tooltip("Weighted styles selected once per whole corridor section. Expand Style to edit its materials. Empty uses the level materials.")]
     public DungeonStyleChoice[] corridorStyles = new DungeonStyleChoice[0];
     [Header("Room heights")]
     [Range(0, 100), Tooltip("Percentage of whole rooms two tiles tall. The remainder after both percentages are one tile tall. Totals over 100 are normalized.")]

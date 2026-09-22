@@ -52,6 +52,9 @@ MonoBehaviour:
   roomStyles:
   - style: {fileID: 11400000, guid: effd0936d8ae44fbaf28bf7c3494ed2a, type: 2}
     weight: 1
+  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
+    weight: 1
+  corridorsCopyConnectedRoomStyle: 1
   corridorStyles:
   - style: {fileID: 11400000, guid: 8fb17ad018d841db9040eb45c0289c0b, type: 2}
     weight: 1

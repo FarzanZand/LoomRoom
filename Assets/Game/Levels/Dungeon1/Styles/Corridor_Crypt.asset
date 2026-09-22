@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 48e1a08511ae4bb89e9a2ba01ad45eb5, type: 3}
-  m_Name: Slate and Timber
+  m_Name: Corridor_Crypt
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomStyle
-  bottomWall: {fileID: 2100000, guid: 5cf2a30fec5042549da7670274f5001b, type: 2}
-  upperWall: {fileID: 2100000, guid: 5e6cc04b80c34931b36027d60aff947c, type: 2}
-  floor: {fileID: 0}
-  ceiling: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
-  hideTrims: 1
-  trim: {fileID: 0}
+  bottomWall: {fileID: 0}
+  upperWall: {fileID: 0}
+  floor: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
+  ceiling: {fileID: 2100000, guid: b84909f81e52f2a47a68177f1186c384, type: 2}
+  hideTrims: 0
+  trim: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
