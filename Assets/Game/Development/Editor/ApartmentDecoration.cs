@@ -5,7 +5,7 @@ using Object = UnityEngine.Object;
 
 // Preview cameras are temporary; decoration itself is authored in the Room scene.
 public static class ApartmentDecoration {
- [MenuItem("LoomRoom/Apartment/Render Decoration Views")]
+ [MenuItem("Tools/LoomRoom/Apartment/Render Decoration Views")]
  public static void RenderViews(){
  Render("kitchen",new Vector3(-532,34,320),new Vector3(-648,23,302));
  Render("bedroom",new Vector3(-530,34,445),new Vector3(-625,22,509));

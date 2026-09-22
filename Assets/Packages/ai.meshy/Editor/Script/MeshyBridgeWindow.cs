@@ -47,7 +47,7 @@ public class MeshyBridgeWindow : EditorWindow
 		public int frameRate;
 	}
 
-	[MenuItem("Meshy/Bridge")]
+	[MenuItem("Tools/Meshy/Bridge")]
 	public static void ShowWindow()
 	{
 		MeshyBridgeWindow window = GetWindow<MeshyBridgeWindow>("Meshy Bridge");

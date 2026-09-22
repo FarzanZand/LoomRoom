@@ -37,7 +37,7 @@ public sealed class EditorCutaway : EditorWindow
         set => SessionState.SetBool(Prefix + "Walls", value);
     }
 
-    [MenuItem("LoomRoom/Editor Cutaway")]
+    [MenuItem("Tools/LoomRoom/Editor Cutaway")]
     public static void Open()
     {
         var window = GetWindow<EditorCutaway>("Editor Cutaway");

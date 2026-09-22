@@ -53,7 +53,7 @@ public class SyntyPackageHelper
         ProcessConfigs(LoadSyntyPackageHelperConfigs());
     }
 
-    [MenuItem("Synty/Package Helper/Install Packages")]
+    [MenuItem("Tools/Synty/Package Helper/Install Packages")]
     public static void InstallShaderGraphPackage()
     {
         ProcessConfigs(LoadSyntyPackageHelperConfigs(), true);

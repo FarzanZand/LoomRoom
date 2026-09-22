@@ -18,6 +18,65 @@ public class DungeonGenerator : MonoBehaviour
     int floorNumber=>FloorNumber;
     public enum RoomRole { Entrance, Combat, Treasure, Rest, Storage, Exit }
     public RoomRole[] Roles { get; private set; }
+    public int[] RoomHeightTiles { get; private set; }
+    public int[] CorridorHeightTiles { get; private set; }
+    float HeightAt(int x, int z) => data.cellSize * (Layout.RegionIds[x,z] < RoomHeightTiles.Length
+        ? RoomHeightTiles[Layout.RegionIds[x,z]] : CorridorHeightTiles[Layout.RegionIds[x,z] - RoomHeightTiles.Length]);
+
+    public static int[] SelectRoomHeights(int count, int seed, float threePercent, float fourPercent)
+    {
+        var heights = new int[count];
+        var order = new int[count];
+        for (int i = 0; i < count; i++) { heights[i] = 2; order[i] = i; }
+        var rng = new System.Random(unchecked(seed + 7919));
+        for (int i = count - 1; i > 0; i--) { int j = rng.Next(i + 1); (order[i], order[j]) = (order[j], order[i]); }
+        float three = Mathf.Clamp(threePercent, 0, 100), four = Mathf.Clamp(fourPercent, 0, 100);
+        float total = Mathf.Max(100, three + four);
+        int fours = Mathf.RoundToInt(count * four / total);
+        int threes = Mathf.Min(count - fours, Mathf.RoundToInt(count * three / total));
+        for (int i = 0; i < fours; i++) heights[order[i]] = 4;
+        for (int i = fours; i < fours + threes; i++) heights[order[i]] = 3;
+        return heights;
+    }
+
+    void SelectCorridorHeights(int seed)
+    {
+        int count = Layout.CorridorCount;
+        var requested = SelectRoomHeights(count, seed, data.threeTileCorridorPercent, data.fourTileCorridorPercent);
+        CorridorHeightTiles = new int[count];
+        var adjacentHeight = new int[count];
+        var order = new int[count];
+        for (int i = 0; i < count; i++) { CorridorHeightTiles[i] = 2; order[i] = i; }
+        var dirs = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
+        for (int x = 0; x < data.width; x++) for (int z = 0; z < data.depth; z++)
+        {
+            int region = Layout.RegionIds[x,z];
+            if (region < RoomHeightTiles.Length) continue;
+            foreach (var dir in dirs)
+            {
+                int nx = x + dir.x, nz = z + dir.y;
+                if (nx < 0 || nz < 0 || nx >= data.width || nz >= data.depth) continue;
+                int neighbor = Layout.RegionIds[nx,nz];
+                if (neighbor >= 0 && neighbor < RoomHeightTiles.Length)
+                    adjacentHeight[region - RoomHeightTiles.Length] = Mathf.Max(adjacentHeight[region - RoomHeightTiles.Length], RoomHeightTiles[neighbor]);
+            }
+        }
+        var rng = new System.Random(seed);
+        for (int i = count - 1; i > 0; i--) { int j = rng.Next(i + 1); (order[i], order[j]) = (order[j], order[i]); }
+        // Allocate tallest first, and never create a tall section without a direct tall-room entrance.
+        for (int height = 4; height >= 3; height--)
+        {
+            int remaining = 0;
+            foreach (int value in requested) if (value == height) remaining++;
+            foreach (int index in order)
+            {
+                if (remaining == 0) break;
+                if (CorridorHeightTiles[index] != 2 || adjacentHeight[index] < height) continue;
+                CorridorHeightTiles[index] = height;
+                remaining--;
+            }
+        }
+    }
     DungeonRoomProfile[] profiles;
     public double GenerationMilliseconds { get; private set; }
     DungeonFloorSettings Settings=>data.Floor(floorNumber);
@@ -31,6 +90,8 @@ public class DungeonGenerator : MonoBehaviour
         FloorNumber=floorNumber;
         data = level; random = new System.Random(seed);
         Layout = new DungeonLayout(level.width, level.depth, level.roomCount, seed, level.loopPercent);
+        RoomHeightTiles = SelectRoomHeights(Layout.rooms.Count, seed, level.threeTileRoomPercent, level.fourTileRoomPercent);
+        SelectCorridorHeights(unchecked(seed + 3571));
         Roles=new RoomRole[Layout.rooms.Count];
         for(int i=0;i<Roles.Length;i++) {
             float encounter=Settings!=null && Settings.overrideEncounters ? Settings.encounterChance:data.encounterChance;
@@ -42,12 +103,13 @@ public class DungeonGenerator : MonoBehaviour
         var openEdges = Layout.SelectOpenRegions(level.hideEdges ? level.hideEdgesPercent : 0, 419);
         geometry = new GameObject("Architecture").transform; geometry.SetParent(transform, false);
         ceiling = new GameObject("Ceilings").transform; ceiling.SetParent(transform, false);
-        float size = level.cellSize, height = 3.2f;
+        float size = level.cellSize;
         var dirs = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
         for (int x = 0; x < level.width; x++) for (int z = 0; z < level.depth; z++)
         {
             if (!Layout.floor[x,z]) continue;
             int room = Layout.RegionIds[x,z];
+            float height = HeightAt(x,z);
             var pos = Cell(new Vector2Int(x,z));
             Box("Flagstone", pos - Vector3.up*.12f, new Vector3(size,.24f,size), level.floorMaterial, geometry);
             var roof = Box("Ceiling", pos + Vector3.up*(height+.12f), new Vector3(size,.24f,size), level.ceilingMaterial, ceiling);
@@ -55,14 +117,18 @@ public class DungeonGenerator : MonoBehaviour
             foreach (var dir in dirs)
             {
                 int nx = x+dir.x, nz = z+dir.y;
-                if (nx>=0 && nz>=0 && nx<level.width && nz<level.depth && Layout.floor[nx,nz]) continue;
+                bool neighbor = nx>=0 && nz>=0 && nx<level.width && nz<level.depth && Layout.floor[nx,nz];
+                float bottom = neighbor ? HeightAt(nx,nz) : 0;
+                if (bottom >= height) continue;
                 Vector3 center = pos + new Vector3(dir.x,0,dir.y)*size*.5f;
-                Vector3 scale = dir.x != 0 ? new Vector3(.22f,height,size) : new Vector3(size,height,.22f);
+                Vector3 scale = dir.x != 0 ? new Vector3(.22f,size,size) : new Vector3(size,size,.22f);
                 bool visible = !(openEdges[room] && Layout.FacesOutside(new Vector2Int(x,z), dir));
-                Box("Crypt masonry", center+Vector3.up*height*.5f, scale, level.wallMaterial, geometry).GetComponent<Renderer>().enabled = visible;
+                // Square wall tiles preserve texture density; upper walls seal height changes above passages.
+                for (float y = bottom; y < height - .01f; y += size)
+                    Box("Crypt masonry", center+Vector3.up*(y+size*.5f), scale, level.wallMaterial, geometry).GetComponent<Renderer>().enabled = visible;
                 scale.y=.15f; scale.x+=.05f; scale.z+=.05f;
-                Box("Stone cornice", center+Vector3.up*2.65f, scale, level.trimMaterial, geometry).GetComponent<Renderer>().enabled = visible;
-                Box("Stone footing", center+Vector3.up*.12f, scale, level.trimMaterial, geometry).GetComponent<Renderer>().enabled = visible;
+                Box("Stone cornice", center+Vector3.up*(height-.55f), scale, level.trimMaterial, geometry).GetComponent<Renderer>().enabled = visible;
+                if (!neighbor) Box("Stone footing", center+Vector3.up*.12f, scale, level.trimMaterial, geometry).GetComponent<Renderer>().enabled = visible;
             }
         }
         for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(Layout.rooms[i],i);
@@ -136,7 +202,7 @@ public class DungeonGenerator : MonoBehaviour
             var door=Instantiate(data.doorPrefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
             // Cell width changes the span, not the doorway height or ceiling clearance.
             door.transform.localScale=new Vector3(data.cellSize/2f,1,1);
-            door.GetComponent<DungeonDoor>()?.FitCeiling(3.2f);
+            door.GetComponent<DungeonDoor>()?.FitCeiling(Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y)), data.cellSize);
         }
     }
 

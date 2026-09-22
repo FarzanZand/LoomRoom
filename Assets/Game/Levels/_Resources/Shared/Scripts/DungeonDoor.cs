@@ -24,7 +24,7 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
     public string Prompt=>open ? "Door open" : "Open dungeon door";
     public bool CanInteract(Character who)=>!open && who!=null && who.IsAlive && (who is Player || who.GetComponent<DungeonDoorAccess>()?.isActiveAndEnabled==true);
     void Awake(){closedPosition=leaf.localPosition;}
-    public void FitCeiling(float ceilingHeight)
+    public void FitCeiling(float ceilingHeight, float wallTileSize = 0)
     {
         if (lintel == null) return;
         float bottom = Mathf.Min(openingHeight, ceilingHeight) - .025f;
@@ -44,7 +44,7 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
                 if (Mathf.Abs(normals[i].y) > .5f) continue;
                 // Crop the top of a full wall texture instead of squeezing all its brick rows here.
                 uv[i].x *= Mathf.Abs(normals[i].z) > .5f ? size.x / 2f : size.z / 2f;
-                uv[i].y = (bottom + uv[i].y * size.y) / ceilingHeight;
+                uv[i].y = (bottom + uv[i].y * size.y) / (wallTileSize > 0 ? wallTileSize : ceilingHeight);
             }
             fittedLintelMesh.uv = uv;
             lintel.GetComponent<MeshFilter>().sharedMesh = fittedLintelMesh;

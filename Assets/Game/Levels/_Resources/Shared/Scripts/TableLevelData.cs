@@ -52,6 +52,16 @@ public class TableLevelData : ScriptableObject
     [Tooltip("Designer-authored decorations. Must fit inside one cell and leave walkways clear.")] public GameObject[] roomPropPrefabs;
     [Tooltip("Weighted variations for each room role, with optional enemies, rewards, props and lighting.")] public DungeonRoomProfile[] roomProfiles;
     [Tooltip("Zero generates a new seed on each entry.")] public int fixedSeed;
+    [Header("Room heights (one tile = cell size)")]
+    [Range(0, 100), Tooltip("Percentage of whole rooms that are three tiles tall. Remaining rooms are two tiles tall. If both percentages total over 100, they are normalized proportionally.")]
+    public float threeTileRoomPercent;
+    [Range(0, 100), Tooltip("Percentage of whole rooms that are four tiles tall. Counts are rounded to whole rooms; selection is repeatable for a fixed seed.")]
+    public float fourTileRoomPercent = 25;
+    [Header("Corridor heights")]
+    [Range(0, 100), Tooltip("Target percentage of whole corridor sections three tiles tall. Requires a direct connection to a room at least three tiles tall; insufficient eligible sections reduce the count. The remainder are two tiles tall. Totals over 100 are normalized proportionally.")]
+    public float threeTileCorridorPercent;
+    [Range(0, 100), Tooltip("Target percentage of whole corridor sections four tiles tall. Requires a direct connection to a four-tile room; insufficient eligible sections reduce the count. Uses the dungeon seed.")]
+    public float fourTileCorridorPercent = 25;
     [Header("Dungeon openings")]
     [Tooltip("Hide ceilings in a seeded selection of whole rooms and corridor sections to reveal the surrounding room above.")]
     public bool hideRoof;

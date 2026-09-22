@@ -1,6 +1,6 @@
 # LoomRoom project layout
 
-Open the game with **LoomRoom > Open Game Scene**. Run **LoomRoom > Validate Scene Setup** after changing player or camera wiring.
+Open the game with **Tools > LoomRoom > Open Game Scene**. Run **Tools > LoomRoom > Validate Scene Setup** after changing player or camera wiring.
 
 ## Where to edit
 
@@ -61,3 +61,7 @@ Move assets through Unity with their `.meta` files so GUID references survive. E
 The reorganization preserved all 14,483 GUIDs recorded for the main folder moves. Runtime and editor assemblies compiled successfully. Play-mode checks covered Room and Table movement through the Input System, switching both ways, first-person camera alignment, menu state, full heavy charge/release and zoom recovery, dinner-camera routing, and wake-up playback. No runtime errors were recorded during the final run.
 
 The existing Dinner Timeline has no authored duration. Its camera routing was verified directly; a complete dinner sequence still needs authored Timeline content.
+
+## Editor menus
+
+Project tools are under **Tools > LoomRoom**. Animation Rigging, Jobs/Burst, Meshy, and Synty are also grouped under Tools. PackageToolsMenu relocates Unity package commands after editor reload without modifying the package cache; Burst checkbox states follow the package settings. If upgrading Unity changes its menu registration API, the utility retains the original menus and reports a warning.

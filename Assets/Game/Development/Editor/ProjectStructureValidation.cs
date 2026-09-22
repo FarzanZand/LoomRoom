@@ -11,13 +11,13 @@ public static class ProjectStructureValidation
 {
     public const string GameScene = "Assets/Game/Scenes/Room.unity";
 
-    [MenuItem("LoomRoom/Open Game Scene")]
+    [MenuItem("Tools/LoomRoom/Open Game Scene")]
     static void OpenScene()
     {
         if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) EditorSceneManager.OpenScene(GameScene);
     }
 
-    [MenuItem("LoomRoom/Validate Scene Setup")]
+    [MenuItem("Tools/LoomRoom/Validate Scene Setup")]
     public static void Validate()
     {
         var scene = SceneManager.GetActiveScene();
