@@ -43,7 +43,9 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
             {
                 if (Mathf.Abs(normals[i].y) > .5f) continue;
                 // Crop the top of a full wall texture instead of squeezing all its brick rows here.
-                uv[i].x *= Mathf.Abs(normals[i].z) > .5f ? size.x / 2f : size.z / 2f;
+                float textureSize = wallTileSize > 0 ? wallTileSize : 2f;
+                uv[i].x *= Mathf.Abs(normals[i].z) > .5f
+                    ? size.x * transform.localScale.x / textureSize : size.z * transform.localScale.z / textureSize;
                 uv[i].y = (bottom + uv[i].y * size.y) / (wallTileSize > 0 ? wallTileSize : ceilingHeight);
             }
             fittedLintelMesh.uv = uv;

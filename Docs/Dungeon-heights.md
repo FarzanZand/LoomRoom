@@ -1,9 +1,15 @@
 # Dungeon room and corridor heights
 
-Edit `Assets/Game/Levels/Dungeon1/Dungeon1.asset` in the Inspector. Under **Room heights** and **Corridor heights**, set the percentages of three-tile and four-tile sections. The remainder are two tiles tall. Percentages select whole rooms or whole authored corridor sections, not individual cells. Counts round to the nearest whole section; totals above 100 are normalized proportionally. Selection repeats for the same seed.
+Edit `Assets/Game/Levels/Dungeon1/Dungeon1.asset` in the Inspector.
 
-Dungeon1 starts with 0% three-tile and 25% four-tile rooms and corridors. With 30 rooms, rounding produces eight four-tile rooms. One vertical tile equals Cell Size: currently 2 world units, giving ceilings at 4, 6, or 8 units. Wall textures repeat once per square tile instead of stretching over the entire wall. Floors and gameplay paths stay level.
+- **Architecture Tile Size**: 3 world units. A 32x32 texture repeats once per 3x3 square on walls, floors and ceilings. Point filtering and the existing artwork are retained.
+- **Two Tile Room Percent**: 25. **Three Tile Room Percent**: 0. Remaining rooms are one tile high.
+- **Two Tile Corridor Percent**: 25. **Three Tile Corridor Percent**: 0. Remaining corridor sections are one tile high.
 
-Tall corridor sections must directly border a room at least as tall: four-tile corridors require a four-tile room, and three-tile corridors require a three- or four-tile room. Corridor percentages are targets across all sections; when too few qualify, fewer tall corridors are generated. This never promotes extra rooms or creates isolated tall hallways. Four-tile corridors are allocated first.
+Ceilings are 3, 6 or 9 units high. Counts round to whole rooms/sections (30 rooms gives eight two-tile rooms). Percentages above 100 total normalize proportionally. Selection repeats for a fixed seed. Tall corridor sections must directly connect to a room at least as tall; if too few qualify, fewer tall corridors are generated. Three-tile corridors are allocated first.
 
-Ceilings and cornices follow each section's height. At height changes, masonry fills the space above the shorter passage, including openings without doors. Doors retain their authored opening height and their lintels fill up to the lower adjoining ceiling. Roof/edge visibility settings still operate independently of height. Reload the dungeon to apply changes.
+Layout Cell Size remains 2 units, independently of the architectural texture tile size. This preserves the current 30-room layout, walkways and table footprint. Adjacent generated cells share continuous texture coordinates: a texture tile can span more than one grid cell without stretching. Player and enemy scale are unchanged.
+
+Ceilings and cornices follow section heights. Upper masonry closes height changes above passages. Doors retain their authored 2.8-unit opening and fill above it to the lower adjoining ceiling. Floor heights stay level. Roof/edge visibility settings remain independent. Reload the dungeon to apply changes.
+
+Future room styles can assign separate bottom-wall, upper-wall, floor and ceiling materials using this same physical texture density.

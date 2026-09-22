@@ -36,10 +36,6 @@ MonoBehaviour:
   depth: 54
   cellSize: 2
   roomCount: 30
-  threeTileRoomPercent: 0
-  fourTileRoomPercent: 25
-  threeTileCorridorPercent: 0
-  fourTileCorridorPercent: 25
   loopPercent: 15
   encounterChance: 0.7
   maxEnemiesPerRoom: 2
@@ -52,6 +48,17 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9aacf2c86f9b97147bb7df776e08316b, type: 2}
   - {fileID: 11400000, guid: 7feeadfd849b5ee459d026df4d62e8dd, type: 2}
   fixedSeed: 0
+  architectureTileSize: 3
+  roomStyles:
+  - style: {fileID: 11400000, guid: effd0936d8ae44fbaf28bf7c3494ed2a, type: 2}
+    weight: 1
+  corridorStyles:
+  - style: {fileID: 11400000, guid: 8fb17ad018d841db9040eb45c0289c0b, type: 2}
+    weight: 1
+  twoTileRoomPercent: 25
+  threeTileRoomPercent: 0
+  twoTileCorridorPercent: 25
+  threeTileCorridorPercent: 0
   hideRoof: 1
   hideRoofPercent: 20
   hideEdges: 0
@@ -61,6 +68,7 @@ MonoBehaviour:
   floorSettings: []
   floorMaterial: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
   wallMaterial: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
+  upperWallMaterial: {fileID: 0}
   trimMaterial: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
   ceilingMaterial: {fileID: 2100000, guid: b84909f81e52f2a47a68177f1186c384, type: 2}
   woodMaterial: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}

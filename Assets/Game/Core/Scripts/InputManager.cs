@@ -34,6 +34,8 @@ public class InputManager : Singleton<InputManager>
     public event Action InteractPressed;
     public event Action InventoryToggled;
     public event Action CancelPressed;
+    public bool CancelHandledThisFrame => cancelFrame == Time.frameCount;
+    int cancelFrame = -1;
     public event Action PrimaryPressed;
     public event Action PrimaryReleased;
     public event Action SecondaryPressed;
@@ -67,7 +69,14 @@ public class InputManager : Singleton<InputManager>
         actions.Table.SecondaryAction.canceled  += _ => { SecondaryHeld = false; SecondaryReleased?.Invoke(); };
 
         actions.UI.Inventory.performed += _ => InventoryToggled?.Invoke();
-        actions.UI.Cancel.performed    += _ => CancelPressed?.Invoke();
+        actions.UI.Cancel.performed    += _ =>
+        {
+            if (CancelHandledThisFrame) return;
+            cancelFrame = Time.frameCount;
+            // Dismiss a nested item action menu before its underlying inventory.
+            if (ContextMenuUI.HasInstance && ContextMenuUI.Instance.IsOpen) ContextMenuUI.Instance.Hide();
+            else CancelPressed?.Invoke();
+        };
 
         actions.Dev.Debug1.performed += _ => DebugSwapRequested?.Invoke(PlayerKind.Room);
         actions.Dev.Debug2.performed += _ => DebugSwapRequested?.Invoke(PlayerKind.Table);

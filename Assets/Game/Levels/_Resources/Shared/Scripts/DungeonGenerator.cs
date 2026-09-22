@@ -13,6 +13,7 @@ public class DungeonGenerator : MonoBehaviour
     TableLevelData data;
     public TableLevelData LevelData => data;
     Transform geometry, ceiling;
+    readonly System.Collections.Generic.Dictionary<(Vector3, Vector3), Mesh> architectureMeshes = new();
     System.Random random;
     public int FloorNumber { get; private set; }=1;
     int floorNumber=>FloorNumber;
@@ -20,33 +21,39 @@ public class DungeonGenerator : MonoBehaviour
     public RoomRole[] Roles { get; private set; }
     public int[] RoomHeightTiles { get; private set; }
     public int[] CorridorHeightTiles { get; private set; }
-    float HeightAt(int x, int z) => data.cellSize * (Layout.RegionIds[x,z] < RoomHeightTiles.Length
+    public DungeonRoomStyle[] RegionStyles { get; private set; }
+    Material WallMaterial(int region, float bottom)
+    {
+        var fallback = bottom < data.architectureTileSize - .001f ? data.wallMaterial : DungeonRoomStyle.Resolve(data.upperWallMaterial, data.wallMaterial);
+        return RegionStyles[region] != null ? RegionStyles[region].Wall(bottom, data.architectureTileSize, fallback) : fallback;
+    }
+    float HeightAt(int x, int z) => data.architectureTileSize * (Layout.RegionIds[x,z] < RoomHeightTiles.Length
         ? RoomHeightTiles[Layout.RegionIds[x,z]] : CorridorHeightTiles[Layout.RegionIds[x,z] - RoomHeightTiles.Length]);
 
-    public static int[] SelectRoomHeights(int count, int seed, float threePercent, float fourPercent)
+    public static int[] SelectRoomHeights(int count, int seed, float twoPercent, float threePercent)
     {
         var heights = new int[count];
         var order = new int[count];
-        for (int i = 0; i < count; i++) { heights[i] = 2; order[i] = i; }
+        for (int i = 0; i < count; i++) { heights[i] = 1; order[i] = i; }
         var rng = new System.Random(unchecked(seed + 7919));
         for (int i = count - 1; i > 0; i--) { int j = rng.Next(i + 1); (order[i], order[j]) = (order[j], order[i]); }
-        float three = Mathf.Clamp(threePercent, 0, 100), four = Mathf.Clamp(fourPercent, 0, 100);
-        float total = Mathf.Max(100, three + four);
-        int fours = Mathf.RoundToInt(count * four / total);
-        int threes = Mathf.Min(count - fours, Mathf.RoundToInt(count * three / total));
-        for (int i = 0; i < fours; i++) heights[order[i]] = 4;
-        for (int i = fours; i < fours + threes; i++) heights[order[i]] = 3;
+        float two = Mathf.Clamp(twoPercent, 0, 100), three = Mathf.Clamp(threePercent, 0, 100);
+        float total = Mathf.Max(100, two + three);
+        int threes = Mathf.RoundToInt(count * three / total);
+        int twos = Mathf.Min(count - threes, Mathf.RoundToInt(count * two / total));
+        for (int i = 0; i < threes; i++) heights[order[i]] = 3;
+        for (int i = threes; i < threes + twos; i++) heights[order[i]] = 2;
         return heights;
     }
 
     void SelectCorridorHeights(int seed)
     {
         int count = Layout.CorridorCount;
-        var requested = SelectRoomHeights(count, seed, data.threeTileCorridorPercent, data.fourTileCorridorPercent);
+        var requested = SelectRoomHeights(count, seed, data.twoTileCorridorPercent, data.threeTileCorridorPercent);
         CorridorHeightTiles = new int[count];
         var adjacentHeight = new int[count];
         var order = new int[count];
-        for (int i = 0; i < count; i++) { CorridorHeightTiles[i] = 2; order[i] = i; }
+        for (int i = 0; i < count; i++) { CorridorHeightTiles[i] = 1; order[i] = i; }
         var dirs = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
         for (int x = 0; x < data.width; x++) for (int z = 0; z < data.depth; z++)
         {
@@ -64,14 +71,14 @@ public class DungeonGenerator : MonoBehaviour
         var rng = new System.Random(seed);
         for (int i = count - 1; i > 0; i--) { int j = rng.Next(i + 1); (order[i], order[j]) = (order[j], order[i]); }
         // Allocate tallest first, and never create a tall section without a direct tall-room entrance.
-        for (int height = 4; height >= 3; height--)
+        for (int height = 3; height >= 2; height--)
         {
             int remaining = 0;
             foreach (int value in requested) if (value == height) remaining++;
             foreach (int index in order)
             {
                 if (remaining == 0) break;
-                if (CorridorHeightTiles[index] != 2 || adjacentHeight[index] < height) continue;
+                if (CorridorHeightTiles[index] != 1 || adjacentHeight[index] < height) continue;
                 CorridorHeightTiles[index] = height;
                 remaining--;
             }
@@ -90,8 +97,12 @@ public class DungeonGenerator : MonoBehaviour
         FloorNumber=floorNumber;
         data = level; random = new System.Random(seed);
         Layout = new DungeonLayout(level.width, level.depth, level.roomCount, seed, level.loopPercent);
-        RoomHeightTiles = SelectRoomHeights(Layout.rooms.Count, seed, level.threeTileRoomPercent, level.fourTileRoomPercent);
+        RoomHeightTiles = SelectRoomHeights(Layout.rooms.Count, seed, level.twoTileRoomPercent, level.threeTileRoomPercent);
         SelectCorridorHeights(unchecked(seed + 3571));
+        RegionStyles = new DungeonRoomStyle[Layout.RegionCount];
+        var styleRandom = new System.Random(unchecked(seed + 15485863));
+        for (int i = 0; i < RegionStyles.Length; i++)
+            RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? level.roomStyles : level.corridorStyles, styleRandom);
         Roles=new RoomRole[Layout.rooms.Count];
         for(int i=0;i<Roles.Length;i++) {
             float encounter=Settings!=null && Settings.overrideEncounters ? Settings.encounterChance:data.encounterChance;
@@ -103,16 +114,17 @@ public class DungeonGenerator : MonoBehaviour
         var openEdges = Layout.SelectOpenRegions(level.hideEdges ? level.hideEdgesPercent : 0, 419);
         geometry = new GameObject("Architecture").transform; geometry.SetParent(transform, false);
         ceiling = new GameObject("Ceilings").transform; ceiling.SetParent(transform, false);
-        float size = level.cellSize;
+        float size = level.cellSize, tile = level.architectureTileSize;
         var dirs = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
         for (int x = 0; x < level.width; x++) for (int z = 0; z < level.depth; z++)
         {
             if (!Layout.floor[x,z]) continue;
             int room = Layout.RegionIds[x,z];
+            var style = RegionStyles[room];
             float height = HeightAt(x,z);
             var pos = Cell(new Vector2Int(x,z));
-            Box("Flagstone", pos - Vector3.up*.12f, new Vector3(size,.24f,size), level.floorMaterial, geometry);
-            var roof = Box("Ceiling", pos + Vector3.up*(height+.12f), new Vector3(size,.24f,size), level.ceilingMaterial, ceiling);
+            ArchitectureBox("Flagstone", pos - Vector3.up*.12f, new Vector3(size,.24f,size), DungeonRoomStyle.Resolve(style != null ? style.floor : null, level.floorMaterial), geometry);
+            var roof = ArchitectureBox("Ceiling", pos + Vector3.up*(height+.12f), new Vector3(size,.24f,size), DungeonRoomStyle.Resolve(style != null ? style.ceiling : null, level.ceilingMaterial), ceiling);
             roof.GetComponent<Renderer>().enabled = !openRoofs[room];
             foreach (var dir in dirs)
             {
@@ -121,14 +133,18 @@ public class DungeonGenerator : MonoBehaviour
                 float bottom = neighbor ? HeightAt(nx,nz) : 0;
                 if (bottom >= height) continue;
                 Vector3 center = pos + new Vector3(dir.x,0,dir.y)*size*.5f;
-                Vector3 scale = dir.x != 0 ? new Vector3(.22f,size,size) : new Vector3(size,size,.22f);
+                Vector3 scale = dir.x != 0 ? new Vector3(.22f,tile,size) : new Vector3(size,tile,.22f);
                 bool visible = !(openEdges[room] && Layout.FacesOutside(new Vector2Int(x,z), dir));
                 // Square wall tiles preserve texture density; upper walls seal height changes above passages.
-                for (float y = bottom; y < height - .01f; y += size)
-                    Box("Crypt masonry", center+Vector3.up*(y+size*.5f), scale, level.wallMaterial, geometry).GetComponent<Renderer>().enabled = visible;
-                scale.y=.15f; scale.x+=.05f; scale.z+=.05f;
-                Box("Stone cornice", center+Vector3.up*(height-.55f), scale, level.trimMaterial, geometry).GetComponent<Renderer>().enabled = visible;
-                if (!neighbor) Box("Stone footing", center+Vector3.up*.12f, scale, level.trimMaterial, geometry).GetComponent<Renderer>().enabled = visible;
+                for (float y = bottom; y < height - .01f; y += tile)
+                    ArchitectureBox("Crypt masonry", center+Vector3.up*(y+tile*.5f), scale, WallMaterial(room,y), geometry).GetComponent<Renderer>().enabled = visible;
+                if (style == null || !style.hideTrims)
+                {
+                    scale.y=.15f; scale.x+=.05f; scale.z+=.05f;
+                    var trim = DungeonRoomStyle.Resolve(style != null ? style.trim : null, level.trimMaterial);
+                    Box("Stone cornice", center+Vector3.up*(height-.55f), scale, trim, geometry).GetComponent<Renderer>().enabled = visible;
+                    if (!neighbor) Box("Stone footing", center+Vector3.up*.12f, scale, trim, geometry).GetComponent<Renderer>().enabled = visible;
+                }
             }
         }
         for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(Layout.rooms[i],i);
@@ -202,7 +218,25 @@ public class DungeonGenerator : MonoBehaviour
             var door=Instantiate(data.doorPrefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
             // Cell width changes the span, not the doorway height or ceiling clearance.
             door.transform.localScale=new Vector3(data.cellSize/2f,1,1);
-            door.GetComponent<DungeonDoor>()?.FitCeiling(Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y)), data.cellSize);
+            door.GetComponent<DungeonDoor>()?.FitCeiling(Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y)), data.architectureTileSize);
+            var gate = door.GetComponent<DungeonDoor>();
+            if (gate != null && gate.lintel != null)
+            {
+                // Split stationary lintel at tile boundaries so tall doors use the correct upper material.
+                var renderer = gate.lintel.GetComponent<Renderer>();
+                if (renderer != null) renderer.enabled = false;
+                float top = Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y));
+                float bottom = Mathf.Min(gate.openingHeight, top) - .025f;
+                for (float y = bottom; y < top + .025f;)
+                {
+                    float end = Mathf.Min(top + .025f, (Mathf.Floor(y/data.architectureTileSize)+1)*data.architectureTileSize);
+                    var span = dir.x != 0 ? new Vector3(.24f,end-y,data.cellSize) : new Vector3(data.cellSize,end-y,.24f);
+                    var lintel = ArchitectureBox("Styled door lintel", pos+Vector3.up*((y+end)*.5f), span,
+                        WallMaterial(Layout.RegionIds[p.x,p.y],y), transform);
+                    Destroy(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
+                    y = end;
+                }
+            }
         }
     }
 
@@ -211,7 +245,7 @@ public class DungeonGenerator : MonoBehaviour
         Vector3 center = Cell(DungeonLayout.Center(room));
         // Broad pools of warm and cool light, with no torch requirement.
         var lamp = new GameObject("Amber chamber light"); lamp.transform.SetParent(transform,false);
-        lamp.transform.position = center+Vector3.up*2.65f;
+        lamp.transform.position = center+Vector3.up*Mathf.Min(2.65f, data.architectureTileSize-.35f);
         var light = lamp.AddComponent<Light>(); light.type=LightType.Point;
         var lighting = data.DungeonLighting(floorNumber);
         light.color = index%3==0 ? lighting.top : lighting.light;
@@ -301,6 +335,41 @@ public class DungeonGenerator : MonoBehaviour
     }
 
     public void ShowCeilings(bool value) { if(ceiling!=null) ceiling.gameObject.SetActive(value); }
+    GameObject ArchitectureBox(string name, Vector3 pos, Vector3 size, Material material, Transform parent)
+    {
+        var go = Box(name, pos, size, material, parent);
+        float tile = Mathf.Max(.01f, data.architectureTileSize);
+        Vector3 relative = pos - transform.position;
+        // Repeat phases are shared across adjacent grid cells, even when grid spacing differs from tile size.
+        Vector3 phase = new Vector3(Mathf.Repeat(relative.x, tile), Mathf.Repeat(relative.y, tile), Mathf.Repeat(relative.z, tile));
+        phase = new Vector3(Mathf.Round(phase.x*10000)/10000, Mathf.Round(phase.y*10000)/10000, Mathf.Round(phase.z*10000)/10000);
+        var key = (size, phase);
+        if (!architectureMeshes.TryGetValue(key, out var mesh))
+        {
+            mesh = Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
+            mesh.name = "Square architectural tile UVs";
+            var vertices = mesh.vertices;
+            var normals = mesh.normals;
+            var uv = new Vector2[vertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                var point = phase + Vector3.Scale(vertices[i], size);
+                var normal = normals[i];
+                uv[i] = Mathf.Abs(normal.y) > .5f ? new Vector2(point.x, point.z) / tile
+                    : Mathf.Abs(normal.x) > .5f ? new Vector2(point.z, point.y) / tile
+                    : new Vector2(point.x, point.y) / tile;
+            }
+            mesh.uv = uv;
+            architectureMeshes.Add(key, mesh);
+        }
+        go.GetComponent<MeshFilter>().sharedMesh = mesh;
+        return go;
+    }
+    void OnDestroy()
+    {
+        foreach (var mesh in architectureMeshes.Values) if (mesh != null) Destroy(mesh);
+        architectureMeshes.Clear();
+    }
     public static GameObject Box(string name,Vector3 pos,Vector3 size,Material material,Transform parent)
     {
         var go=GameObject.CreatePrimitive(PrimitiveType.Cube);go.name=name;go.transform.SetParent(parent,true);

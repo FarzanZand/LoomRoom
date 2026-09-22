@@ -41,7 +41,7 @@ public class InventoryUI : MonoBehaviour
     void OnEnable()
     {
         if (InputManager.HasInstance) InputManager.Instance.InventoryToggled += Toggle;
-        if (InputManager.HasInstance) InputManager.Instance.CancelPressed    += Close;
+        if (InputManager.HasInstance) InputManager.Instance.CancelPressed    += OnCancel;
         if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped  += OnPlayerSwapped;
         if (PlayerManager.HasInstance && PlayerManager.Instance.Active != null) OnPlayerSwapped(PlayerManager.Instance.Active);
     }
@@ -50,7 +50,7 @@ public class InventoryUI : MonoBehaviour
     {
         transition?.Kill();isOpen=false;FinishClose();
         if (InputManager.HasInstance) InputManager.Instance.InventoryToggled -= Toggle;
-        if (InputManager.HasInstance) InputManager.Instance.CancelPressed    -= Close;
+        if (InputManager.HasInstance) InputManager.Instance.CancelPressed    -= OnCancel;
         if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped  -= OnPlayerSwapped;
         Bind(null, null);
     }
@@ -67,8 +67,8 @@ public class InventoryUI : MonoBehaviour
         {
             InputManager.Instance.InventoryToggled -= Toggle;
             InputManager.Instance.InventoryToggled += Toggle;
-            InputManager.Instance.CancelPressed -= Close;
-            InputManager.Instance.CancelPressed += Close;
+            InputManager.Instance.CancelPressed -= OnCancel;
+            InputManager.Instance.CancelPressed += OnCancel;
         }
         if (panel != null) panel.SetActive(false);
         if (PlayerManager.HasInstance && PlayerManager.Instance.Active != null) OnPlayerSwapped(PlayerManager.Instance.Active);
@@ -110,6 +110,11 @@ public class InventoryUI : MonoBehaviour
         GameManager.Instance?.Push(GameState.Inventory);
         var style=feedback!=null?feedback:UIFeedbackSettings.Shared;style?.Play(style.openKey);Animate(true);
         Refresh();
+    }
+
+    void OnCancel()
+    {
+        if (GameManager.HasInstance && GameManager.Instance.State == GameState.Inventory) Close();
     }
 
     public void Close()

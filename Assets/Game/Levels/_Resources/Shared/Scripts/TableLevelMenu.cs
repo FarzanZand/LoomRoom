@@ -37,6 +37,7 @@ public class TableLevelMenu : MonoBehaviour
         root.returnToRoom.button.onClick.AddListener(loader.ReturnToRoom);
         EventSystem.current?.SetSelectedGameObject(null);
         GameManager.Instance.Push(GameState.Menu);
+        if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel;
         root.group.alpha = 0; root.panel.localScale = Vector3.one * .97f;
         fade = root.group.DOFade(1, .18f).SetUpdate(true);
         scale = root.panel.DOScale(1, .18f).SetEase(Ease.OutCubic).SetUpdate(true);
@@ -51,10 +52,17 @@ public class TableLevelMenu : MonoBehaviour
     }
     public void Hide()
     {
+        if (InputManager.HasInstance) InputManager.Instance.CancelPressed -= OnCancel;
+        if (!IsOpen) return;
         fade?.Kill(); scale?.Kill();
         EventSystem.current?.SetSelectedGameObject(null);
         if (root != null) root.gameObject.SetActive(false);
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
     }
-    void OnDestroy() { fade?.Kill(); scale?.Kill(); if (root != null) Destroy(root.gameObject); }
+    void OnCancel()
+    {
+        if (IsOpen && GameManager.HasInstance && GameManager.Instance.State == GameState.Menu) Hide();
+    }
+    void OnDisable() => Hide();
+    void OnDestroy() { Hide(); fade?.Kill(); scale?.Kill(); if (root != null) Destroy(root.gameObject); }
 }

@@ -73,7 +73,8 @@ public class TableLevelLoader : MonoBehaviour
     void Update()
     {
         if(Busy || menu==null || menu.IsOpen || !PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind!=PlayerKind.Table) return;
-        if(Keyboard.current!=null && Keyboard.current.escapeKey.wasPressedThisFrame && GameManager.Instance.GameplayActive)
+        if(Keyboard.current!=null && Keyboard.current.escapeKey.wasPressedThisFrame && GameManager.Instance.GameplayActive
+            && (!InputManager.HasInstance || !InputManager.Instance.CancelHandledThisFrame))
             ShowSelection("Choose your next adventure");
     }
     void OnPlayerSwapped(Player active) => Dungeon?.ShowCeilings(active.kind==PlayerKind.Table);

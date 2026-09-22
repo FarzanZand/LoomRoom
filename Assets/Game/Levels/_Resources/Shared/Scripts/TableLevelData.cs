@@ -52,16 +52,24 @@ public class TableLevelData : ScriptableObject
     [Tooltip("Designer-authored decorations. Must fit inside one cell and leave walkways clear.")] public GameObject[] roomPropPrefabs;
     [Tooltip("Weighted variations for each room role, with optional enemies, rewards, props and lighting.")] public DungeonRoomProfile[] roomProfiles;
     [Tooltip("Zero generates a new seed on each entry.")] public int fixedSeed;
-    [Header("Room heights (one tile = cell size)")]
-    [Range(0, 100), Tooltip("Percentage of whole rooms that are three tiles tall. Remaining rooms are two tiles tall. If both percentages total over 100, they are normalized proportionally.")]
+    [Header("Architecture tiles")]
+    [Min(3), Tooltip("Physical width and height of one square texture tile. 32x32 artwork repeats every 3 units by default. Independent of layout grid spacing so changing art scale does not enlarge the table footprint.")]
+    public float architectureTileSize = 3f;
+    [Header("Architecture styles")]
+    [Tooltip("Weighted styles selected once per whole room. Empty or disabled entries use the level materials.")]
+    public DungeonStyleChoice[] roomStyles = new DungeonStyleChoice[0];
+    [Tooltip("Weighted styles selected once per whole corridor section. Empty uses the level materials.")]
+    public DungeonStyleChoice[] corridorStyles = new DungeonStyleChoice[0];
+    [Header("Room heights")]
+    [Range(0, 100), Tooltip("Percentage of whole rooms two tiles tall. The remainder after both percentages are one tile tall. Totals over 100 are normalized.")]
+    public float twoTileRoomPercent = 25;
+    [Range(0, 100), Tooltip("Percentage of whole rooms three tiles tall. Selection is seeded; counts round to whole rooms.")]
     public float threeTileRoomPercent;
-    [Range(0, 100), Tooltip("Percentage of whole rooms that are four tiles tall. Counts are rounded to whole rooms; selection is repeatable for a fixed seed.")]
-    public float fourTileRoomPercent = 25;
     [Header("Corridor heights")]
-    [Range(0, 100), Tooltip("Target percentage of whole corridor sections three tiles tall. Requires a direct connection to a room at least three tiles tall; insufficient eligible sections reduce the count. The remainder are two tiles tall. Totals over 100 are normalized proportionally.")]
+    [Range(0, 100), Tooltip("Target percentage two tiles tall. Requires a direct connection to a room at least two tiles tall. Too few eligible sections reduces the count. Remaining sections are one tile tall.")]
+    public float twoTileCorridorPercent = 25;
+    [Range(0, 100), Tooltip("Target percentage three tiles tall. Requires a direct connection to a three-tile room. Totals over 100 are normalized.")]
     public float threeTileCorridorPercent;
-    [Range(0, 100), Tooltip("Target percentage of whole corridor sections four tiles tall. Requires a direct connection to a four-tile room; insufficient eligible sections reduce the count. Uses the dungeon seed.")]
-    public float fourTileCorridorPercent = 25;
     [Header("Dungeon openings")]
     [Tooltip("Hide ceilings in a seeded selection of whole rooms and corridor sections to reveal the surrounding room above.")]
     public bool hideRoof;
@@ -77,7 +85,13 @@ public class TableLevelData : ScriptableObject
     public int levelCount = 3;
     [ShowIf("multipleLevels"), Tooltip("Entry 0 is floor 1, entry 1 is floor 2, and so on. Missing entries inherit the dungeon lighting.")]
     public DungeonFloorSettings[] floorSettings = new DungeonFloorSettings[0];
-    public Material floorMaterial, wallMaterial, trimMaterial, ceilingMaterial, woodMaterial, metalMaterial;
+    [Header("Default architecture materials")]
+    public Material floorMaterial;
+    [LabelText("Bottom Wall Material"), Tooltip("First wall tile, from floor to one architecture tile high. Room styles may override this.")]
+    public Material wallMaterial;
+    [Tooltip("Wall tiles above the first. Empty uses Bottom Wall Material. Room styles may override this.")]
+    public Material upperWallMaterial;
+    public Material trimMaterial, ceilingMaterial, woodMaterial, metalMaterial;
     public GameObject[] enemies;
     [Header("Room doors")]
     [Tooltip("Editable door prefab, one cell wide. Instantiated at selected room entrances.")]

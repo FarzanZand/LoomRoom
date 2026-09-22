@@ -19,6 +19,7 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
     Canvas rootCanvas;
     readonly List<GameObject> spawned = new();
     Tween entrance;
+    public bool IsOpen => overlay != null && overlay.activeInHierarchy;
 
     protected override void Awake()
     {
