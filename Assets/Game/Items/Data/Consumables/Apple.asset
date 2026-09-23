@@ -21,7 +21,11 @@ MonoBehaviour:
   pickupVisualPrefab: {fileID: 0}
   itemType: 4
   maxStackSize: 5
+  pickupAudioSource: 0
   pickupAudio: {fileID: 0}
+  pickupClip: {fileID: 0}
+  pickupClipVolume: 1
+  pickupAudioKey: 
   directToHotbar: 0
   canBeEquipped: 0
   equipSlot: 0
@@ -54,7 +58,11 @@ MonoBehaviour:
     flag: 
     flagValue: 1
     customEffect: {fileID: 0}
+  useAudioSource: 1
   useAudio: {fileID: 11400000, guid: e6a7065719906794d894b99b7267a15c, type: 2}
+  useClip: {fileID: 8300000, guid: 116bb17b3fe754f489ba1c318df3b5a9, type: 3}
+  useClipVolume: 1
+  useAudioKey: 
   AnimationOnUse: 1
   eatDuration: 0.65
   eatMouthPosition: {x: 0, y: -0.12, z: 0.13}

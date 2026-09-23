@@ -16,7 +16,7 @@ MonoBehaviour:
   description: "The Amber Crypt \u2022 a new layout every run"
   kind: 1
   mood: {fileID: 11400000, guid: 8277439119c14f8a956e344d01626cd7, type: 2}
-  moodLightning: 3
+  moodLightning: 0
   overrideLighting: 0
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
@@ -28,7 +28,7 @@ MonoBehaviour:
     ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
     fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   backgroundMusic: {fileID: 8300000, guid: ef4f5eea8a3e11d4ba749bcb52683db8, type: 3}
-  backgroundMusicVolume: 0.312
+  backgroundMusicVolume: 0.3
   loopMusic: 1
   musicFadeSeconds: 1.5
   environmentPrefab: {fileID: 0}

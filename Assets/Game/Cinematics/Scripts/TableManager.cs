@@ -9,12 +9,18 @@ public class TableManager : Singleton<TableManager>, IInteractable
     [SerializeField] string prompt = "Choose table adventure";
     TableLevelLoader loader;
     public string Prompt => prompt;
-    public bool CanInteract(Character who) => who is Player && (loader == null || !loader.Busy);
+    public bool CanInteract(Character who) => who is Player player && player.kind == PlayerKind.Room
+        && player.IsAlive && PlayerManager.HasInstance && PlayerManager.Instance.Active == player
+        && (loader == null || !loader.Busy);
     protected override void Awake()
     {
         base.Awake();
         loader = GetComponent<TableLevelLoader>() ?? gameObject.AddComponent<TableLevelLoader>();
     }
     public void Interact(Character who) { if (CanInteract(who)) EnterTable(); }
-    public void EnterTable() => loader.ShowSelection();
+    public void EnterTable()
+    {
+        if (loader == null || !PlayerManager.HasInstance || !CanInteract(PlayerManager.Instance.Active)) return;
+        loader.ShowSelection();
+    }
 }

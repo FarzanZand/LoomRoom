@@ -53,7 +53,7 @@ public class InventoryManager : Singleton<InventoryManager>
             return false;
         }
 
-        if (playSound && AudioManager.HasInstance)
+        if (playSound && AudioManager.HasInstance && !item.PlayPickupOverride())
         {
             if (useSharedPickupSound) AudioManager.Instance.PlaySFX2D(pickupSoundKey);
             else

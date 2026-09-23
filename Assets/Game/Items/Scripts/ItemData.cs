@@ -6,6 +6,8 @@ using UnityEditor;
 #endif
 
 // One asset per item. Sections show up only when the item type needs them.
+public enum ItemAudioSource { AudioData, AudioClip, AudioManagerKey }
+
 [HideMonoScript]
 [CreateAssetMenu(fileName = "NewItem", menuName = "Items/Item")]
 public class ItemData : ScriptableObject
@@ -26,8 +28,14 @@ public class ItemData : ScriptableObject
 
     [Min(1)] public int maxStackSize = 1;
 
-    [Tooltip("Sound when picked up. Empty = InventoryManager default.")]
+    [Tooltip("AudioData preserves the shared pickup setting. Clip or key explicitly overrides the shared pickup sound for this item.")]
+    public ItemAudioSource pickupAudioSource;
+    [ShowIf("PickupUsesData"), Tooltip("Sound when picked up. Empty = InventoryManager default. Shared pickup sound may override this.")]
     public AudioData pickupAudio;
+    [ShowIf("PickupUsesClip")] public AudioClip pickupClip;
+    [ShowIf("PickupUsesClip"), Range(0,1)] public float pickupClipVolume = 1;
+    [ShowIf("PickupUsesKey"), Tooltip("Key in AudioManager's SFX Library. Uses its library volume and pitch settings.")]
+    public string pickupAudioKey;
 
     [Tooltip("On pickup, try the hotbar first, then inventory if it has no room. Off sends the item straight to inventory.")]
     public bool directToHotbar = false;
@@ -74,8 +82,14 @@ public class ItemData : ScriptableObject
     public EffectEntry[] effects;
 
     [BoxGroup("Effects"), ShowIf("IsConsumable")]
+    public ItemAudioSource useAudioSource;
+    [BoxGroup("Effects"), ShowIf("UseUsesData")]
     [Tooltip("Sound when consumed.")]
     public AudioData useAudio;
+    [BoxGroup("Effects"), ShowIf("UseUsesClip")] public AudioClip useClip;
+    [BoxGroup("Effects"), ShowIf("UseUsesClip"), Range(0,1)] public float useClipVolume = 1;
+    [BoxGroup("Effects"), ShowIf("UseUsesKey"), Tooltip("Key in AudioManager's SFX Library. Uses its library volume and pitch settings.")]
+    public string useAudioKey;
 
     [BoxGroup("Consumable"), ShowIf("IsConsumable")]
     [Tooltip("Used only when consuming equipped items from the hand. Idle keeps the original behavior; Eat moves the hand and item toward the mouth.")]
@@ -95,13 +109,36 @@ public class ItemData : ScriptableObject
     public bool IsConsumable => itemType == ItemType.Consumable;
     public bool IsEquippable => canBeEquipped;
     bool UsesEatAnimation => IsConsumable && canBeEquipped && AnimationOnUse == ItemUseAnimation.Eat;
+    bool PickupUsesData => pickupAudioSource == ItemAudioSource.AudioData;
+    bool PickupUsesClip => pickupAudioSource == ItemAudioSource.AudioClip;
+    bool PickupUsesKey => pickupAudioSource == ItemAudioSource.AudioManagerKey;
+    bool UseUsesData => IsConsumable && useAudioSource == ItemAudioSource.AudioData;
+    bool UseUsesClip => IsConsumable && useAudioSource == ItemAudioSource.AudioClip;
+    bool UseUsesKey => IsConsumable && useAudioSource == ItemAudioSource.AudioManagerKey;
+
+    public bool PlayPickupOverride()
+    {
+        if (!AudioManager.HasInstance || pickupAudioSource == ItemAudioSource.AudioData) return false;
+        if (PickupUsesClip && pickupClip != null)
+        {
+            AudioManager.Instance.PlaySFX2D(pickupClip, Mathf.Clamp01(pickupClipVolume));
+            return true;
+        }
+        if (PickupUsesKey && !string.IsNullOrWhiteSpace(pickupAudioKey))
+            return AudioManager.Instance.PlaySFX2D(pickupAudioKey.Trim()) != null;
+        return false;
+    }
 
     // Consume: fire OnUse effects for the user.
     public void Use(Character user)
     {
         if (!IsConsumable) return;
-        if (useAudio != null && AudioManager.HasInstance)
-            AudioManager.Instance.PlaySFXData2D(useAudio);
+        if (AudioManager.HasInstance)
+        {
+            if (UseUsesData && useAudio != null) AudioManager.Instance.PlaySFXData2D(useAudio);
+            else if (UseUsesClip && useClip != null) AudioManager.Instance.PlaySFX2D(useClip, Mathf.Clamp01(useClipVolume));
+            else if (UseUsesKey && !string.IsNullOrWhiteSpace(useAudioKey)) AudioManager.Instance.PlaySFX2D(useAudioKey.Trim());
+        }
         ItemEffectProcessor.Fire(this, EffectTrigger.OnUse, EffectContext.For(user, this));
     }
 

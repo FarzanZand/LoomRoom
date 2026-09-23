@@ -124,17 +124,25 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         if (Item == null) return;
         if (e.button == PointerEventData.InputButton.Right) ShowContextMenu();
-        else if (e.button == PointerEventData.InputButton.Left && !e.dragging && Container.role == InventoryRole.Bag)
-            ToggleEquip();
+        else if (e.button == PointerEventData.InputButton.Left && !e.dragging && e.clickCount == 2)
+            ActivateItem();
     }
 
-    void ToggleEquip()
+    void ActivateItem()
     {
         var item = Item;
-        var eq = Owner?.Equipment;
-        if (item == null || eq == null || !eq.CanEquip(item)) return;
-        if (eq.IsEquipped(item)) eq.Unequip(item.equipSlot);
-        else eq.Equip(item);
+        var owner = Owner;
+        if (item == null || owner == null || !owner.IsAlive) return;
+        if (ContextMenuUI.HasInstance) ContextMenuUI.Instance.Hide();
+        var eq = owner.Equipment;
+        if (item.IsConsumable)
+        {
+            if (!InventoryManager.HasInstance) return;
+            if (item.canBeEquipped && eq != null && eq.Get(item.equipSlot) == item)
+                InventoryManager.Instance.UseHeld(owner, item.equipSlot);
+            else InventoryManager.Instance.Use(Container, Index);
+        }
+        else if (eq != null && eq.CanEquip(item) && !eq.IsEquipped(item)) eq.Equip(item);
     }
 
     void ShowContextMenu()
