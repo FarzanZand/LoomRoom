@@ -46,6 +46,10 @@ public class TableLevelData : ScriptableObject
     [Range(24, 56)] public int depth = 42;
     [Min(1)] public float cellSize = 2f;
     [Range(6, 36)] public int roomCount = 12;
+    [Range(0, 30), Tooltip("Whole rooms selected for extra floor space. Expansion respects other rooms and table edges.")]
+    public float largeRoomPercent = 10;
+    [Range(1, 3), Tooltip("Width/depth multiplier for the occasional larger room, multiplied by its profile size scale.")]
+    public float largeRoomScale = 1.6f;
     [Range(0,40), Tooltip("Additional short room connections, as a percentage of room count.")] public float loopPercent=15;
     [Range(0,1)] public float encounterChance=.7f;
     [Range(1,6)] public int maxEnemiesPerRoom=2;

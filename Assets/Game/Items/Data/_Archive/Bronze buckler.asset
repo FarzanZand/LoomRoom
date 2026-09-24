@@ -14,13 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Bronze buckler
   description: Supplies for the journey below.
-  icon: {fileID: 21300000, guid: 792f20870d8be5143bbfeae5a6826986, type: 3}
+  icon: {fileID: 21300000, guid: 5d263b52fa2a84647a0bb0307f976df6, type: 3}
   tag: 
   worldPrefab: {fileID: 1213316036247922, guid: 691193207fb498347995d8573572685a, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 2
   maxStackSize: 1
+  pickupAudioSource: 0
   pickupAudio: {fileID: 0}
+  pickupClip: {fileID: 0}
+  pickupClipVolume: 1
+  pickupAudioKey: 
   directToHotbar: 0
   canBeEquipped: 1
   equipSlot: 1
@@ -42,7 +46,11 @@ MonoBehaviour:
     knockbackForce: -1
     hitStopScale: 1
   effects: []
+  useAudioSource: 0
   useAudio: {fileID: 0}
+  useClip: {fileID: 0}
+  useClipVolume: 1
+  useAudioKey: 
   AnimationOnUse: 0
   eatDuration: 0.65
   eatMouthPosition: {x: 0, y: -0.12, z: 0.13}

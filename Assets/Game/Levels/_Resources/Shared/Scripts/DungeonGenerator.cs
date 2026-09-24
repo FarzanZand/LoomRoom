@@ -98,6 +98,28 @@ public class DungeonGenerator : MonoBehaviour
         FloorNumber=floorNumber;
         data = level; random = new System.Random(seed);
         Layout = new DungeonLayout(level.width, level.depth, level.roomCount, seed, level.loopPercent);
+        Roles=new RoomRole[Layout.rooms.Count];
+        for(int i=0;i<Roles.Length;i++) {
+            float encounter=Settings!=null && Settings.overrideEncounters ? Settings.encounterChance:data.encounterChance;
+            Roles[i]=i==0?RoomRole.Entrance:Layout.rooms[i].Contains(Layout.Exit)?RoomRole.Exit:random.NextDouble()<encounter?RoomRole.Combat:(RoomRole)random.Next(2,5);
+        }
+        profiles=new DungeonRoomProfile[Roles.Length];
+        for(int i=0;i<profiles.Length;i++)profiles[i]=ChooseProfile(Roles[i]);
+        var scales = new float[Layout.rooms.Count];
+        int exitRoom = 0;
+        for (int i=0;i<scales.Length;i++)
+        {
+            scales[i] = profiles[i] != null ? profiles[i].sizeScale : 1;
+            if (Roles[i] == RoomRole.Exit) exitRoom = i;
+        }
+        var sizeRandom = new System.Random(unchecked(seed + 49999));
+        var order = new int[scales.Length];
+        for (int i=0;i<order.Length;i++) order[i]=i;
+        for (int i=order.Length-1;i>0;i--) { int j=sizeRandom.Next(i+1); (order[i],order[j])=(order[j],order[i]); }
+        int largeCount = Mathf.RoundToInt(scales.Length*Mathf.Clamp(level.largeRoomPercent,0,30)/100f);
+        for (int i=0;i<largeCount;i++) scales[order[i]] *= Mathf.Clamp(level.largeRoomScale,1,3);
+        // Rebuild routes, region ownership, reserved walkways and distances around the resized rooms.
+        Layout = new DungeonLayout(level.width, level.depth, level.roomCount, seed, level.loopPercent, scales, exitRoom);
         doorways = level.doorPrefab != null && level.doorPercent > 0
             ? Layout.SelectDoorways(level.doorPercent) : new();
         RoomHeightTiles = SelectRoomHeights(Layout.rooms.Count, seed, level.twoTileRoomPercent, level.threeTileRoomPercent);
@@ -106,14 +128,9 @@ public class DungeonGenerator : MonoBehaviour
         var styleRandom = new System.Random(unchecked(seed + 15485863));
         for (int i = 0; i < RegionStyles.Length; i++)
             RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? level.roomStyles : level.corridorStyles, styleRandom);
+        for (int i=0;i<profiles.Length;i++)
+            if (profiles[i] != null && profiles[i].styleOverride != null) RegionStyles[i] = profiles[i].styleOverride;
         if (level.corridorsCopyConnectedRoomStyle) CopyConnectedRoomStyles(seed);
-        Roles=new RoomRole[Layout.rooms.Count];
-        for(int i=0;i<Roles.Length;i++) {
-            float encounter=Settings!=null && Settings.overrideEncounters ? Settings.encounterChance:data.encounterChance;
-            Roles[i]=i==0?RoomRole.Entrance:Layout.rooms[i].Contains(Layout.Exit)?RoomRole.Exit:random.NextDouble()<encounter?RoomRole.Combat:(RoomRole)random.Next(2,5);
-        }
-        profiles=new DungeonRoomProfile[Roles.Length];
-        for(int i=0;i<profiles.Length;i++)profiles[i]=ChooseProfile(Roles[i]);
         var openRoofs = Layout.SelectOpenRegions(level.hideRoof ? level.hideRoofPercent : 0, 173);
         var openEdges = Layout.SelectOpenRegions(level.hideEdges ? level.hideEdgesPercent : 0, 419);
         geometry = new GameObject("Architecture").transform; geometry.SetParent(transform, false);

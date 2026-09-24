@@ -20,7 +20,7 @@ public sealed class DungeonLayout
     public Vector2Int Exit { get; private set; }
     public static Vector2Int Center(RectInt r) => new(r.x + r.width / 2, r.y + r.height / 2);
 
-    public DungeonLayout(int width, int depth, int count, int seed, float loopPercent=15)
+    public DungeonLayout(int width, int depth, int count, int seed, float loopPercent=15, float[] roomScales=null, int exitRoom=-1)
     {
         this.seed = seed;
         floor = new bool[width, depth];
@@ -57,8 +57,9 @@ public sealed class DungeonLayout
             int w=rng.Next(3,Math.Min(8,parcel.width-1)),h=rng.Next(3,Math.Min(8,parcel.height-1));
             var room=new RectInt(rng.Next(parcel.x+1,parcel.xMax-w),rng.Next(parcel.y+1,parcel.yMax-h),w,h);
             rooms.Add(room);
-            foreach(var p in room.allPositionsWithin)floor[p.x,p.y]=true;
         }
+        if (roomScales != null) ResizeRooms(roomScales, width, depth);
+        foreach (var room in rooms) foreach(var p in room.allPositionsWithin) floor[p.x,p.y]=true;
         var connected=new HashSet<int>{0};
         while(connected.Count<rooms.Count) {
             int from=-1,to=-1,best=int.MaxValue;
@@ -96,6 +97,7 @@ public sealed class DungeonLayout
         }
         Exit = Start;
         foreach (var r in rooms) { var c = Center(r); if (distance[c.x,c.y] > distance[Exit.x,Exit.y]) Exit = c; }
+        if (exitRoom >= 0 && exitRoom < rooms.Count) Exit = Center(rooms[exitRoom]);
         RoomDistances=new int[rooms.Count];
         for(int i=0;i<rooms.Count;i++){var c=Center(rooms[i]);RoomDistances[i]=distance[c.x,c.y]-1;}
         BuildRegions();
@@ -107,6 +109,39 @@ public sealed class DungeonLayout
         }
         foreach(var p in rooms[0].allPositionsWithin)Reserved.Add(p);
         foreach(var r in rooms)if(r.Contains(Exit))foreach(var p in r.allPositionsWithin)Reserved.Add(p);
+    }
+
+    void ResizeRooms(float[] scales, int width, int depth)
+    {
+        var desired = new Vector2Int[rooms.Count];
+        for (int i=0;i<rooms.Count;i++)
+        {
+            var r=rooms[i]; float scale=i<scales.Length ? Mathf.Clamp(scales[i],.5f,6f):1;
+            desired[i]=new Vector2Int(Mathf.Max(3,Mathf.RoundToInt(r.width*scale)),Mathf.Max(3,Mathf.RoundToInt(r.height*scale)));
+            int w=Mathf.Min(r.width,desired[i].x), h=Mathf.Min(r.height,desired[i].y);
+            rooms[i]=new RectInt(r.x+(r.width-w)/2,r.y+(r.height-h)/2,w,h);
+        }
+        // Expand larger requests first into unused space, keeping a two-cell gap for passages.
+        var order=new List<int>(); for(int i=0;i<rooms.Count;i++)order.Add(i);
+        order.Sort((a,b)=> {int cmp=(desired[b].x*desired[b].y).CompareTo(desired[a].x*desired[a].y);return cmp!=0?cmp:a.CompareTo(b);});
+        foreach(int index in order)
+        {
+            bool changed=true;
+            while(changed)
+            {
+                changed=false;
+                for(int side=0;side<4;side++)
+                {
+                    var r=rooms[index]; if(side<2 ? r.width>=desired[index].x : r.height>=desired[index].y)continue;
+                    var next=side==0?new RectInt(r.x-1,r.y,r.width+1,r.height):side==1?new RectInt(r.x,r.y,r.width+1,r.height):side==2?new RectInt(r.x,r.y-1,r.width,r.height+1):new RectInt(r.x,r.y,r.width,r.height+1);
+                    if(next.xMin<2||next.yMin<2||next.xMax>width-2||next.yMax>depth-2)continue;
+                    var padded=new RectInt(next.x-2,next.y-2,next.width+4,next.height+4);
+                    bool clear=true;
+                    for(int j=0;j<rooms.Count;j++)if(j!=index&&padded.Overlaps(rooms[j])){clear=false;break;}
+                    if(clear){rooms[index]=next;changed=true;}
+                }
+            }
+        }
     }
 
     // Preserve authored corridor legs at junctions instead of merging the entire network.

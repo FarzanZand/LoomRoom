@@ -36,6 +36,8 @@ MonoBehaviour:
   depth: 54
   cellSize: 2
   roomCount: 30
+  largeRoomPercent: 10
+  largeRoomScale: 1.6
   loopPercent: 15
   encounterChance: 0.7
   maxEnemiesPerRoom: 2
@@ -62,10 +64,10 @@ MonoBehaviour:
   threeTileRoomPercent: 0
   twoTileCorridorPercent: 25
   threeTileCorridorPercent: 0
-  hideRoof: 1
-  hideRoofPercent: 20
+  hideRoof: 0
+  hideRoofPercent: 5.9
   hideEdges: 0
-  hideEdgesPercent: 5
+  hideEdgesPercent: 100
   multipleLevels: 0
   levelCount: 3
   floorSettings: []
