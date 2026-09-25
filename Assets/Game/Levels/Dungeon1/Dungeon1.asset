@@ -16,7 +16,7 @@ MonoBehaviour:
   description: "The Amber Crypt \u2022 a new layout every run"
   kind: 1
   mood: {fileID: 11400000, guid: 8277439119c14f8a956e344d01626cd7, type: 2}
-  moodLightning: 0
+  moodLighting: 0
   overrideLighting: 0
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}

@@ -16,7 +16,7 @@ MonoBehaviour:
   description: Return to the woodland village
   kind: 0
   mood: {fileID: 11400000, guid: d4f17c0d2b15de64593452a74b223d59, type: 2}
-  moodLightning: 0
+  moodLighting: 0
   overrideLighting: 0
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}

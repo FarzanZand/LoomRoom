@@ -19,6 +19,6 @@ public class EquipmentSlotUI : MonoBehaviour,IPointerClickHandler,IPointerEnterH
         var source=e.pointerDrag!=null?e.pointerDrag.GetComponent<ItemSlotUI>():null;
         if(source?.Item==null || player==null || !source.Item.canBeEquipped || source.Item.equipSlot!=slot){var s=UIFeedbackSettings.Shared;s?.Play(s.invalidKey);return;}
         player.Equipment.Equip(source.Item);
-        if(ItemDragHandler.HasInstance){ItemDragHandler.Instance.NotifyDropped();ItemDragHandler.Instance.End();}
+        if(ItemDragHandler.HasInstance)ItemDragHandler.Instance.End();
     }
 }

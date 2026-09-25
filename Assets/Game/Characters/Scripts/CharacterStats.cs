@@ -154,7 +154,8 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public bool  HasStat(StatType stat) => baseStats.ContainsKey(stat);
     public float GetBase(StatType stat) => baseStats.TryGetValue(stat, out var v) ? v : 0f;
 
-    public float GetFinal(StatType stat) => ResolveStat(stat, blocker is PlayerCombat combat && combat.IsGuarding);
+    public float GetFinal(StatType stat) =>
+        ResolveStat(stat, stat == StatType.Armor && blocker != null && blocker.IsGuarding);
 
     float ResolveStat(StatType stat, bool shieldArmor)
     {
@@ -239,6 +240,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public void TakeDamage(DamageInfo info)
     {
         if (!IsAlive) return;
+        info.Target = Character;
 
         if (blocker != null && blocker.TryBlock(ref info))
         {
@@ -257,8 +259,6 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
         if (!IsAlive) Died?.Invoke();
     }
-
-    public void TakeFlatDamage(float amount) => TakeDamage(DamageInfo.Simple(amount));
 
     // ── Healing ───────────────────────────────────────────────────────
 
@@ -348,9 +348,11 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public void RestoreStamina(float amount)
     {
         if (amount <= 0 || !HasStat(StatType.MaxStamina)) return;
-        CurrentStamina = Mathf.Min(MaxStamina, CurrentStamina + amount);
+        float max = MaxStamina;
+        if (CurrentStamina >= max && !IsExhausted) return;
+        CurrentStamina = Mathf.Min(max, CurrentStamina + amount);
         float fraction = Character != null && Character.data != null ? Character.data.sprintRecoveryFraction : .25f;
-        if (CurrentStamina >= MaxStamina * Mathf.Clamp(fraction, .01f, 1f)) IsExhausted = false;
+        if (CurrentStamina >= max * Mathf.Clamp(fraction, .01f, 1f)) IsExhausted = false;
         StaminaChanged?.Invoke();
     }
 

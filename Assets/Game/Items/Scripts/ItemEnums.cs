@@ -8,6 +8,13 @@ public enum ItemUseAnimation
     Eat = 1,
 }
 
+public enum ItemAudioSource
+{
+    AudioData       = 0,
+    AudioClip       = 1,
+    AudioManagerKey = 2,
+}
+
 public enum ItemType
 {
     Generic    = 0,
@@ -55,13 +62,13 @@ public enum EquipmentSlot
 public enum EffectType
 {
     Heal           = 0,   // restore health by Value
-    RestoreMana = 1,   // restore stamina by Value
-    TimedStatBuff  = 2,   // add a stat modifier for Duration seconds (Duration <= 0 = permanent while equipped)
+    RestoreMana    = 1,   // restore mana by Value
+    TimedStatBuff  = 2,   // add a stat modifier for Duration seconds (Duration <= 0 = permanent; OnEquip ones end on unequip)
     PlayAudio      = 3,   // play an AudioData at the user
     SpawnPrefab    = 4,   // instantiate a prefab at the user or hit point
     SetFlag        = 5,   // set a progression flag
     Damage         = 6,   // deal Value damage to the target (or the user if no target)
-    FoodRegen      = 7,
+    FoodRegen      = 7,   // heal Value per second for Duration seconds, replacing any running food regen
     Custom         = 99,  // run an ItemEffect asset
 }
 

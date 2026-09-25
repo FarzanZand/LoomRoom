@@ -24,6 +24,9 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     // Actual movement this frame, whether it came from a path or from Strafe().
     public Vector3 Velocity    { get; private set; }
     public bool  HasPath       => Agent != null && Agent.hasPath && !Agent.isStopped;
+    // A MoveTo is still wanted: set by MoveTo (even mid-knockback), cleared by Stop and Strafe.
+    public bool  HasDestination { get; private set; }
+    public Vector3 Destination  { get; private set; }
 
     Vector3 knockbackVelocity;
     float   knockbackTimer;
@@ -98,6 +101,9 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
 
     public void MoveTo(Vector3 destination)
     {
+        // Remembered even when it can't be issued yet, so the end of a knockback resumes it.
+        Destination = destination;
+        HasDestination = true;
         if (!NavigationReady || IsKnockedBack) return;
         Agent.speed = movementSpeed;
         Agent.isStopped = false;
@@ -107,6 +113,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     // A short local path preserves agent avoidance while moving independently of facing.
     public void Strafe(Vector3 worldDirection, float speed)
     {
+        HasDestination = false;
         if (!NavigationReady || IsKnockedBack) return;
         worldDirection.y = 0f;
         if (worldDirection.sqrMagnitude < 0.0001f || speed <= 0f) { Stop(); return; }
@@ -121,6 +128,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
 
     public void Stop()
     {
+        HasDestination = false;
         if (Agent == null || !Agent.isOnNavMesh) return;
         if (Agent.hasPath) Agent.ResetPath();
         Agent.isStopped = true;
@@ -141,6 +149,57 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
 
     public bool IsNear(Vector3 point, float extra = 0.1f) =>
         Perception.HorizontalDist(transform.position, point) <= (Agent != null ? Agent.stoppingDistance : 0f) + extra;
+
+    // ── Wander / patrol (shared by EnemyBrain and NpcBrain; the brains own the settings) ──
+
+    // Counts the idle timer down, then walks to a random navmesh point around center.
+    public void WanderStep(ref float timer, Vector3 center, float minDistance, float radius, float zoneRadius,
+                           float minIdle, float maxIdle)
+    {
+        timer -= Time.deltaTime;
+        if (timer > 0f) return;
+
+        Vector3 dir = Random.insideUnitSphere; dir.y = 0f; dir.Normalize();
+        Vector3 target = center + dir * Random.Range(minDistance, radius);
+        if (zoneRadius > 0f)
+        {
+            Vector3 offset = target - center; offset.y = 0f;
+            if (offset.magnitude > zoneRadius) target = center + offset.normalized * zoneRadius;
+        }
+        if (Agent != null)
+        {
+            var filter = new NavMeshQueryFilter { agentTypeID = Agent.agentTypeID, areaMask = Agent.areaMask };
+            if (NavMesh.SamplePosition(target, out NavMeshHit hit, radius, filter))
+                MoveTo(hit.position);
+        }
+        timer = Random.Range(minIdle, maxIdle);
+    }
+
+    // Advances to the next waypoint once the current one is reached.
+    public void PatrolStep(Transform[] waypoints, ref int index, bool loop)
+    {
+        if (waypoints == null || waypoints.Length == 0) return;
+        index = Mathf.Clamp(index, 0, waypoints.Length - 1);
+        // Stopped (menu, stagger, dialogue): resume the current waypoint instead of skipping it.
+        if (!HasDestination && waypoints[index] != null) { MoveTo(waypoints[index].position); return; }
+        if (!ReachedDestination(0.4f)) return;
+        index++;
+        if (index >= waypoints.Length) index = loop ? 0 : waypoints.Length - 1;
+        if (waypoints[index] != null) MoveTo(waypoints[index].position);
+    }
+
+    // Locomotion parameters for the humanoid body. Not locomoting forces an idle speed.
+    public void UpdateLocomotionAnimator(Animator anim, bool locomoting, float damping)
+    {
+        if (anim == null || anim.runtimeAnimatorController == null) return;
+        Vector3 v = Velocity; v.y = 0f;
+        float speed = v.magnitude;
+        if (locomoting) anim.SetFloat("Speed", speed, damping, Time.deltaTime);
+        else            anim.SetFloat("Speed", 0f);
+        anim.SetFloat("MotionSpeed", locomoting && speed > 0.1f ? 1f : 0f, damping, Time.deltaTime);
+        anim.SetBool("Grounded", IsGrounded);
+        anim.SetBool("FreeFall", !IsGrounded && Velocity.y < -1f);
+    }
 
     public void SetSpeed(float speed)              { movementSpeed = speed; if (Agent != null) Agent.speed = speed; }
     public void ResetSpeed()                       { SetSpeed(DefaultSpeed); }
@@ -217,6 +276,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
 
     void OnDisable()
     {
+        HasDestination = false;
         knockbackTimer = 0f;
         knockbackVelocity = Vector3.zero;
         hasLookTarget = false;
@@ -238,6 +298,10 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
             knockbackVelocity.magnitude / Mathf.Max(knockbackTimer, 0.01f) * Time.deltaTime);
         // Move() slides along the navmesh — unlike Warp, it can't pop them upward.
         if (Agent.isOnNavMesh) Agent.Move(delta);
-        if (knockbackTimer <= 0f) Agent.isStopped = false;
+        if (knockbackTimer <= 0f)
+        {
+            Agent.isStopped = false;
+            if (HasDestination) MoveTo(Destination);
+        }
     }
 }

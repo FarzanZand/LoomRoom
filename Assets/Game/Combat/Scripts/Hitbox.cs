@@ -193,7 +193,9 @@ public class Hitbox : MonoBehaviour
             Heavy          = heavy,
         };
 
-        if(CombatManager.HasInstance && !CombatManager.Instance.HasMeleeLineOfSight(owner,target,contact))return;
+        Transform victimRoot = target != null ? target.transform
+            : damageable is Component component ? component.transform : other.transform;
+        if(CombatManager.HasInstance && !CombatManager.Instance.HasMeleeLineOfSight(owner,victimRoot,contact))return;
         hitThisSwing.Add(damageable);
         damageable.TakeDamage(info);
         // A heavy hit stops the world longer. The request only extends the stop the impact already started.

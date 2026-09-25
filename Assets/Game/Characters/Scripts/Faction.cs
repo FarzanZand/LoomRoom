@@ -15,6 +15,4 @@ public static class FactionRules
         if (a == Faction.Neutral || b == Faction.Neutral) return false;
         return a != b;
     }
-
-    public static bool IsFriendly(Faction a, Faction b) => a == b;
 }

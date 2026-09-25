@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -42,6 +41,7 @@ public class InteractableTrigger : MonoBehaviour
     WorldItem worldItem;
     Collider targetCollider;
     Renderer[] itemRenderers;
+    float readyAt;
     public WorldItem WorldItem => worldItem;
     public Bounds TargetBounds
     {
@@ -80,7 +80,7 @@ public class InteractableTrigger : MonoBehaviour
 
     public bool CanInteract(Character who)
     {
-        if (!enabled) return false;
+        if (!enabled || Time.time < readyAt) return false;
         return Interactable == null || Interactable.CanInteract(who);
     }
 
@@ -104,14 +104,7 @@ public class InteractableTrigger : MonoBehaviour
             else enabled = false;
         }
         else if (cooldown > 0f)
-            StartCoroutine(CooldownRoutine());
-    }
-
-    IEnumerator CooldownRoutine()
-    {
-        enabled = false;
-        yield return new WaitForSeconds(cooldown);
-        enabled = true;
+            readyAt = Time.time + cooldown;
     }
 
     void OnDisable() => available.Remove(this);

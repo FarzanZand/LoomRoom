@@ -29,10 +29,6 @@ public class PlayerManager : Singleton<PlayerManager>
 
     public event Action<Player> PlayerSwapped;
 
-    // Convenience accessors kept for cutscene scripts.
-    public GameObject roomPlayer  => Get(PlayerKind.Room)?.player?.ActivationRoot;
-    public GameObject tablePlayer => Get(PlayerKind.Table)?.player?.ActivationRoot;
-
     PlayerKind StartingPlayer =>
         ProgressionManager.HasInstance ? ProgressionManager.Instance.startingPlayer : PlayerKind.Room;
 
@@ -123,13 +119,5 @@ public class PlayerManager : Singleton<PlayerManager>
             InputManager.Instance.SetGameplayMap(kind);
 
         PlayerSwapped?.Invoke(Active);
-    }
-
-    // Kept for cutscene scripts: freezing is just the Cutscene game state.
-    public void SetControlsFrozen(bool frozen)
-    {
-        if (!GameManager.HasInstance) return;
-        if (frozen) GameManager.Instance.Push(GameState.Cutscene);
-        else        GameManager.Instance.Pop(GameState.Cutscene);
     }
 }

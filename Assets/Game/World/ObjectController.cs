@@ -122,7 +122,6 @@ public class ObjectController : MonoBehaviour
     private bool _pulsingToTarget = true;
     private bool _pulsePausing = false;
     private float _pulsePauseTimer = 0f;
-    private bool _pulseOnceReturning = false;
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -320,9 +319,13 @@ public class ObjectController : MonoBehaviour
 
         if (_pulseT >= 1f)
         {
-            if (pulseOnce && _pulsingToTarget)
+            if (pulseOnce && !_pulsingToTarget)
             {
-                _pulseOnceReturning = true;
+                transform.localScale = _originScale;
+                scalePulse = false;
+                _pulsingToTarget = true;
+                _pulseT = 0f;
+                return;
             }
 
             _pulsingToTarget = !_pulsingToTarget;
@@ -330,13 +333,6 @@ public class ObjectController : MonoBehaviour
 
             if (pulsePauseAtEachEnd > 0f)
                 _pulsePausing = true;
-
-            if (pulseOnce && _pulseOnceReturning && !_pulsingToTarget)
-            {
-                transform.localScale = _originScale;
-                scalePulse = false;
-                _pulseOnceReturning = false;
-            }
         }
     }
 
@@ -411,7 +407,6 @@ public class ObjectController : MonoBehaviour
         _pulseT             = 0f;
         _pulsingToTarget    = true;
         _pulsePausing       = false;
-        _pulseOnceReturning = false;
         scalePulse          = true;
     }
 

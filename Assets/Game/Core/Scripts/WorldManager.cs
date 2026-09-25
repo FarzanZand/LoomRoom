@@ -56,7 +56,9 @@ public class WorldManager : Singleton<WorldManager>
 
     void Start()
     {
-        bool skip = ProgressionManager.HasInstance && ProgressionManager.Instance.skipWakeUp;
+        var progression = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+        bool skip = progression != null &&
+            (progression.skipWakeUp || progression.startingPlayer != PlayerKind.Room);
         if (!skip && wakeUpCutscene != null)
             wakeUpCutscene.Play();
     }

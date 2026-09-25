@@ -2,7 +2,7 @@ using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// One inline effect on an item. The common cases (heal, stamina, a timed buff, a
+// One inline effect on an item. The common cases (heal, mana, a timed buff, a
 // sound, a flag) are configured directly with no extra asset; Custom routes to an
 // ItemEffect ScriptableObject for anything richer. Only the fields the chosen type
 // uses are shown.
@@ -43,7 +43,7 @@ public class EffectEntry
     public ModifierType modifierType = ModifierType.Flat;
 
     [ShowIf("@type == EffectType.TimedStatBuff || type == EffectType.FoodRegen")]
-    [Tooltip("Seconds the buff lasts. 0 or less = permanent (removed on unequip when the trigger is OnEquip).")]
+    [Tooltip("Seconds the buff lasts. 0 or less = permanent: OnEquip buffs end on unequip, other triggers never end (avoid on OnHitLanded/OnHurt).")]
     public float duration = 10f;
 
     [ShowIf("@type == EffectType.PlayAudio")]
@@ -80,7 +80,8 @@ public class EffectEntry
             case EffectType.TimedStatBuff:
             {
                 string v = modifierType == ModifierType.Flat ? $"{value:+0.#;-0.#}" : $"{value * 100f:+0.#;-0.#}%";
-                return duration > 0f ? $"{v} {stat} for {duration:0.#}s" : $"{v} {stat}";
+                string label = StatModifierEntry.Label(stat);
+                return duration > 0f ? $"{v} {label} for {duration:0.#}s" : $"{v} {label}";
             }
             case EffectType.SetFlag:        return $"Sets {flag}";
             case EffectType.Custom:         return customEffect != null ? customEffect.Describe(this) : "";

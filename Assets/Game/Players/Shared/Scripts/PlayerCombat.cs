@@ -1,8 +1,9 @@
 using UnityEngine;
 
 // Table player only: attack and block. The arms animator owns the timing; this feeds it
-// the held inputs and reads back state through state TAGS ("Attack", "Block") on any
-// layer, never state names or layer indices. Hitbox windows come from animation events
+// the held inputs and reads back state through state TAGS on any layer, never state
+// names or layer indices. Windup and hold are tagged "Attack"; each release has its own
+// tag, and all four count as attacking. Hitbox windows come from animation events
 // through WeaponAnimationRelay.
 public class PlayerCombat : MonoBehaviour, IBlocker
 {
@@ -13,8 +14,11 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField] Animator bodyAnimator;
 
     [Header("State Tags")]
-    [SerializeField] string attackTag = "Attack";
-    [SerializeField] string blockTag  = "Block";
+    [Tooltip("Windup and hold.")]
+    [SerializeField] string attackTag             = "Attack";
+    [SerializeField] string releaseTag            = "AttackRelease";
+    [SerializeField] string alternateReleaseTag   = "AttackReleaseAlt";
+    [SerializeField] string heavyReleaseTag       = "AttackHeavyRelease";
 
     [Header("Animator Parameters")]
     [SerializeField] string attackHeldParam        = "AttackHeld";
@@ -23,6 +27,11 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField] string leftHandEquippedParam  = "LeftHandEquipped";
     [SerializeField] string blockHitTrigger        = "BlockHit";
     [SerializeField] string hurtTrigger            = "Hurt";
+    [SerializeField] string windupSpeedParam       = "WindupSpeed";
+    [SerializeField] string releaseSpeedParam      = "ReleaseSpeed";
+    [SerializeField] string heavyReleaseSpeedParam = "HeavyReleaseSpeed";
+    [SerializeField] string heavyStrikeParam       = "HeavyStrike";
+    [SerializeField] string attackSpeedParam       = "AttackSpeed";
 
     [Header("Charge feel")]
     [Tooltip("0..1 charge toward a heavy strike, for the animator.")]
@@ -40,8 +49,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [Tooltip("Presses further apart than this restart the swing sequence.")]
     [SerializeField, Min(0f)] float swingSequenceReset = 1.2f;
 
-    public bool IsAttacking => HasTag(attackTag);
-    public bool IsBlocking  => HasTag(blockTag);
+    public bool IsAttacking => AnyLayerAttacking();
+    bool IsReleasing        => AnyLayerReleasing();
     public bool IsGuarding => player != null && player.IsActive && ShieldHeld &&
         (!GameManager.HasInstance || GameManager.Instance.GameplayActive) &&
         InputManager.HasInstance && InputManager.Instance.SecondaryHeld && Time.time >= blockLockUntil &&
@@ -88,6 +97,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     void OnAttackStarted()
     {
         queuedPresses = Mathf.Max(0, queuedPresses - 1); windingUp = true;
+        // Cleared here, not on press: a press during a heavy release must not turn its hit light.
+        HeavySwing = false;
         // Alternate the light swing per actual swing; a pause restarts the sequence.
         swingIndex = Time.time - lastSwingAt <= swingSequenceReset ? (swingIndex + 1) % 2 : 0;
         lastSwingAt = Time.time;
@@ -128,7 +139,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     {
         if (!player.IsActive) return;
         if (InputManager.Instance.SecondaryHeld) return;
-        pressedAt=Time.time; HeavySwing=false; charging=true; chargeAnnounced=false;
+        pressedAt=Time.time; charging=true; chargeAnnounced=false;
         releasingHeavyZoom = false;
         queuedPresses = Mathf.Min(queuedPresses + 1, 2);
         attackBufferedUntil=Time.time+(CombatManager.HasInstance ? CombatManager.Instance.attackInputBuffer : .22f);
@@ -143,6 +154,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if(!charging) return;
         charging=false;
         if(!player.IsActive || !WeaponHeld || !IsAttacking || !CombatManager.HasInstance) return;
+        // The current swing already released; this press belongs to the next one.
+        if(IsReleasing) return;
         var tuning=CombatManager.Instance;
         HeavySwing=Time.time-pressedAt >= tuning.heavyChargeTime &&
             (player.Stats == null || player.Stats.TryUseStamina(tuning.heavyStaminaCost, player.data != null ? player.data.staminaRegenDelay : 1f));
@@ -168,10 +181,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             float phase = AttackPhase();
             float release = tuning.releaseSpeedCurve != null ? tuning.releaseSpeedCurve.Evaluate(phase) : 1f;
             float heavy   = tuning.heavyReleaseSpeedCurve != null ? tuning.heavyReleaseSpeedCurve.Evaluate(phase) : 1f;
-            if(Character.HasParameter(armsAnimator,"WindupSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("WindupSpeed",tuning.windupSpeed*attackSpeed);
-            if(Character.HasParameter(armsAnimator,"ReleaseSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("ReleaseSpeed",tuning.releaseSpeed*attackSpeed*release);
-            if(Character.HasParameter(armsAnimator,"HeavyReleaseSpeed",AnimatorControllerParameterType.Float)) armsAnimator.SetFloat("HeavyReleaseSpeed",tuning.heavyReleaseSpeed*attackSpeed*heavy);
-            SetBool(armsAnimator,"HeavyStrike",HeavySwing);
+            SetFloat(armsAnimator,windupSpeedParam,tuning.windupSpeed*attackSpeed);
+            SetFloat(armsAnimator,releaseSpeedParam,tuning.releaseSpeed*attackSpeed*release);
+            SetFloat(armsAnimator,heavyReleaseSpeedParam,tuning.heavyReleaseSpeed*attackSpeed*heavy);
+            SetBool(armsAnimator,heavyStrikeParam,HeavySwing);
             UpdateCharge(tuning);
         }
 
@@ -191,8 +204,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
                 player.data != null ? player.data.staminaRegenDelay : .6f);
         SetBool(armsAnimator, blockHeldParam, guarding);
 
-        if (player.Stats != null && Character.HasParameter(armsAnimator, "AttackSpeed", AnimatorControllerParameterType.Float))
-            armsAnimator.SetFloat("AttackSpeed", player.Stats.GetMultiplier(StatType.AttackSpeed) * (CombatManager.HasInstance ? CombatManager.Instance.playerAttackSpeed : 1f));
+        if (player.Stats != null)
+            SetFloat(armsAnimator, attackSpeedParam, player.Stats.GetMultiplier(StatType.AttackSpeed) * (CombatManager.HasInstance ? CombatManager.Instance.playerAttackSpeed : 1f));
     }
 
     public void PrepareEquippedPose()
@@ -221,7 +234,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         // The arms own attack timing and hitbox events. Keep windup, charge and
         // release playing through hits, including transitions into an attack.
         if (!IsAttacking) Trigger(armsAnimator, trigger);
-        Trigger(bodyAnimator, trigger);
+        // Character already plays Hurt on its own animator; only add what it doesn't.
+        if (info.Blocked || bodyAnimator != player.Animator) Trigger(bodyAnimator, trigger);
     }
 
     // ── Charge feel ───────────────────────────────────────────────────
@@ -287,10 +301,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             if (armsAnimator.IsInTransition(layer))
             {
                 var next = armsAnimator.GetNextAnimatorStateInfo(layer);
-                if (next.IsName("Attack_HeavyRelease")) state = next;
-                else if (state.IsName("Attack_HeavyRelease")) continue;
+                if (HasTag(next, heavyReleaseTag)) state = next;
+                else if (HasTag(state, heavyReleaseTag)) continue;
             }
-            if (state.IsName("Attack_HeavyRelease"))
+            if (HasTag(state, heavyReleaseTag))
             {
                 phase = Mathf.Clamp01(state.normalizedTime);
                 return true;
@@ -320,26 +334,26 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         return Vector3.zero;
     }
 
-    static Vector3 CameraRotationForState(AnimatorStateInfo state, CombatManager tuning)
+    Vector3 CameraRotationForState(AnimatorStateInfo state, CombatManager tuning)
     {
-        bool heavy = state.IsName("Attack_HeavyRelease");
-        bool alternate = state.IsName("Attack_Release_B");
-        if (!heavy && !alternate && !state.IsName("Attack_Release")) return Vector3.zero;
+        bool heavy = HasTag(state, heavyReleaseTag);
+        bool alternate = HasTag(state, alternateReleaseTag);
+        if (!heavy && !alternate && !HasTag(state, releaseTag)) return Vector3.zero;
         var rotation = heavy ? tuning.heavySwingCameraRotation
             : alternate ? tuning.alternateSwingCameraRotation : tuning.lightSwingCameraRotation;
         var curve = heavy ? tuning.heavySwingCameraCurve : tuning.swingCameraCurve;
         return rotation * (curve != null ? curve.Evaluate(Mathf.Clamp01(state.normalizedTime)) : 0f);
     }
 
-    // Normalized time of the attack-tagged state currently playing, clamped to one pass.
+    // Normalized time of the attack state (windup, hold or release) currently playing, clamped to one pass.
     float AttackPhase()
     {
-        if (armsAnimator == null || armsAnimator.runtimeAnimatorController == null || string.IsNullOrEmpty(attackTag)) return 0f;
+        if (armsAnimator == null || armsAnimator.runtimeAnimatorController == null) return 0f;
         for (int layer = 0; layer < armsAnimator.layerCount; layer++)
         {
             var info = armsAnimator.GetCurrentAnimatorStateInfo(layer);
-            if (armsAnimator.IsInTransition(layer)) { var next = armsAnimator.GetNextAnimatorStateInfo(layer); if (next.IsTag(attackTag)) return Mathf.Clamp01(next.normalizedTime); }
-            if (info.IsTag(attackTag)) return Mathf.Clamp01(info.normalizedTime);
+            if (armsAnimator.IsInTransition(layer)) { var next = armsAnimator.GetNextAnimatorStateInfo(layer); if (IsAttackState(next)) return Mathf.Clamp01(next.normalizedTime); }
+            if (IsAttackState(info)) return Mathf.Clamp01(info.normalizedTime);
         }
         return 0f;
     }
@@ -365,23 +379,52 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             SetBool(armsAnimator, blockHeldParam, false);
             return false;
         }
-        info.Parried=false;
-
-
         return true;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────
 
-    bool HasTag(string tag)
+    bool IsReleaseState(AnimatorStateInfo state) =>
+        HasTag(state, releaseTag) || HasTag(state, alternateReleaseTag) || HasTag(state, heavyReleaseTag);
+
+    bool IsAttackState(AnimatorStateInfo state) => HasTag(state, attackTag) || IsReleaseState(state);
+
+    // An empty tag would match every untagged state.
+    static bool HasTag(AnimatorStateInfo state, string tag) => !string.IsNullOrEmpty(tag) && state.IsTag(tag);
+
+    // True if the current or incoming state on any layer is an attack state.
+    bool AnyLayerAttacking()
     {
-        if (armsAnimator == null || armsAnimator.runtimeAnimatorController == null || string.IsNullOrEmpty(tag)) return false;
+        if (armsAnimator == null || armsAnimator.runtimeAnimatorController == null) return false;
         for (int layer = 0; layer < armsAnimator.layerCount; layer++)
         {
-            if (armsAnimator.GetCurrentAnimatorStateInfo(layer).IsTag(tag)) return true;
-            if (armsAnimator.IsInTransition(layer) && armsAnimator.GetNextAnimatorStateInfo(layer).IsTag(tag)) return true;
+            if (IsAttackState(armsAnimator.GetCurrentAnimatorStateInfo(layer))) return true;
+            if (armsAnimator.IsInTransition(layer) && IsAttackState(armsAnimator.GetNextAnimatorStateInfo(layer))) return true;
         }
         return false;
+    }
+
+    // A release is playing or starting, and the next windup has not begun blending in.
+    bool AnyLayerReleasing()
+    {
+        if (armsAnimator == null || armsAnimator.runtimeAnimatorController == null) return false;
+        for (int layer = 0; layer < armsAnimator.layerCount; layer++)
+        {
+            if (armsAnimator.IsInTransition(layer))
+            {
+                var next = armsAnimator.GetNextAnimatorStateInfo(layer);
+                if (HasTag(next, attackTag)) continue;
+                if (IsReleaseState(next)) return true;
+            }
+            if (IsReleaseState(armsAnimator.GetCurrentAnimatorStateInfo(layer))) return true;
+        }
+        return false;
+    }
+
+    static void SetFloat(Animator anim, string param, float value)
+    {
+        if (anim == null || anim.runtimeAnimatorController == null) return;
+        if (Character.HasParameter(anim, param, AnimatorControllerParameterType.Float)) anim.SetFloat(param, value);
     }
 
     static void SetBool(Animator anim, string param, bool value)

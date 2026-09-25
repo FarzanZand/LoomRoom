@@ -11,6 +11,9 @@ public sealed partial class LightingManager
     public SceneMood moodPreset;
     [Min(0f)] public float moodBlendDuration = 3f;
     [SerializeField, HideInInspector] LightingDefault savedDefault;
+    [SerializeField, HideInInspector] bool hasSavedDefault;
+    // Unity never leaves savedDefault null; scenes saved before the flag existed are detected by their non-zero values.
+    bool HasSavedDefault => hasSavedDefault || savedDefault != null && (savedDefault.ambient > 0f || savedDefault.sceneBrightness > 0f);
     [SerializeField, HideInInspector] Material baseSkybox;
 
     Material moodSkybox;
@@ -115,7 +118,7 @@ public sealed partial class LightingManager
     {
         if (keyboardMoodPreview) { RestoreDefault(); return; }
         if (moodPreset == null) return;
-        if (savedDefault == null) SaveCurrentAsDefault();
+        if (!HasSavedDefault) SaveCurrentAsDefault();
         BlendSelectedMood();
         keyboardMoodPreview = true;
     }
@@ -163,6 +166,7 @@ public sealed partial class LightingManager
             sceneBrightness = sceneBrightness, sceneTint = sceneTint, ambient = ambientMultiplier,
             fogOverride = overrideFogColor, fog = fogColor, hasMood = moodActive,
             mood = moodActive ? displayedMood : ReadBaseMood() };
+        hasSavedDefault = true;
 #if UNITY_EDITOR
         UnityEditor.EditorUtility.SetDirty(this);
         if (!Application.isPlaying) UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
@@ -173,7 +177,7 @@ public sealed partial class LightingManager
     public void RestoreDefault()
     {
         keyboardMoodPreview = false;
-        if (savedDefault == null) return;
+        if (!HasSavedDefault) return;
         fading = moodBlending = false;
         groupOverrideActive = false;
         brightness = savedDefault.tableBrightness; tint = savedDefault.tableTint;

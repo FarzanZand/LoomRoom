@@ -18,7 +18,6 @@ public class CharacterFX : MonoBehaviour
     [Tooltip("Leave empty to auto-collect all mesh renderers under this object.")]
     [SerializeField] Renderer[] flashRenderers;
 
-    public bool  KnockbackEnabled => enableKnockback;
     public float KnockbackForce   => enableKnockback ? knockbackForce : 0f;
 
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");

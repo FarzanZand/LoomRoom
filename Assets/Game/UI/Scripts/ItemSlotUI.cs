@@ -155,20 +155,23 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         var eq = owner.Equipment;
         var container = Container;
         int index = Index;
+        // The slot may change while the menu is open; act only if it still holds this item.
+        bool Unchanged() => container[index]?.item == item;
 
         if (eq != null && eq.CanEquip(item))
         {
-            if (eq.IsEquipped(item)) options.Add(("Unequip", () => eq.Unequip(item.equipSlot)));
-            else                     options.Add(("Equip",   () => eq.Equip(item)));
+            if (eq.IsEquipped(item)) options.Add(("Unequip", () => { if (Unchanged()) eq.Unequip(item.equipSlot); }));
+            else                     options.Add(("Equip",   () => { if (Unchanged()) eq.Equip(item); }));
         }
 
         if (item.IsConsumable && !item.canBeEquipped)
-            options.Add(("Use", () => InventoryManager.Instance.Use(container, index)));
+            options.Add(("Use", () => { if (Unchanged() && InventoryManager.HasInstance) InventoryManager.Instance.Use(container, index); }));
 
         if (container.role == InventoryRole.Bag && owner.Hotbar != null && owner.Hotbar.Accepts(item))
         {
             options.Add(("Add to Hotbar", () =>
             {
+                if (!Unchanged()) return;
                 int empty = owner.Hotbar.FirstEmpty();
                 if (empty < 0) { NotificationUI.Show("Hotbar full"); return; }
                 Inventory.Move(container, index, owner.Hotbar, empty);
@@ -178,6 +181,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         {
             options.Add(("Move to Bag", () =>
             {
+                if (!Unchanged()) return;
                 int empty = owner.Bag.FirstEmpty();
                 if (empty < 0) { NotificationUI.Show("Inventory full"); return; }
                 Inventory.Move(container, index, owner.Bag, empty);
@@ -188,10 +192,10 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         {
             options.Add(("Drop", () =>
             {
-                var stack = container[index];
-                if (stack == null) return;
-                if (eq != null && eq.IsEquipped(item) && container.TotalCount(item) <= 1) eq.Unequip(item.equipSlot);
-                InventoryManager.Instance.DropFromPlayer(item, owner);
+                if (!Unchanged() || !InventoryManager.HasInstance) return;
+                bool lastOne = eq != null && eq.IsEquipped(item) && container.TotalCount(item) <= 1;
+                if (InventoryManager.Instance.DropFromPlayer(item, owner) == null) return;
+                if (lastOne) eq.Unequip(item.equipSlot);
                 container.Consume(index);
             }));
         }
@@ -211,22 +215,16 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void OnEndDrag(PointerEventData e)
     {
-        if (ItemDragHandler.HasInstance && !ItemDragHandler.Instance.WasDropped) ItemDragHandler.Instance.End();
+        if (ItemDragHandler.HasInstance) ItemDragHandler.Instance.End();
     }
 
     public void OnDrop(PointerEventData e)
     {
         if (!ItemDragHandler.HasInstance || !ItemDragHandler.Instance.IsDragging) return;
         var src = ItemDragHandler.Instance.Source;
+        // Equipment reconciles ownership after the transfer; hands require a hotbar slot.
         if (src != null && src != this && Container != null)
-        {
-            var eq = Owner?.Equipment;
-            var moving = src.Item;
-            // Equipment reconciles ownership after the transfer; hands require a hotbar slot.
             Inventory.Move(src.Container, src.Index, Container, Index);
-            if (eq != null && moving != null) src.Refresh();
-        }
-        ItemDragHandler.Instance.NotifyDropped();
         ItemDragHandler.Instance.End();
     }
 }

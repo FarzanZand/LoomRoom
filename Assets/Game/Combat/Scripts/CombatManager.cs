@@ -169,7 +169,12 @@ public class CombatManager : Singleton<CombatManager>
     [Min(0)] public float blockHitStopScale = .65f;
 
     readonly RaycastHit[] obstructionHits = new RaycastHit[64];
-    public bool HasMeleeLineOfSight(Character source,Character victim,Vector3 contact)
+    public bool HasMeleeLineOfSight(Character source,Character victim,Vector3 contact) =>
+        HasMeleeLineOfSight(source,victim!=null ? victim.transform : null,contact);
+
+    // victim is the root of whatever is being hit (a Character, or the Component behind a prop's IDamageable);
+    // its own colliders never count as obstructions.
+    public bool HasMeleeLineOfSight(Character source,Transform victim,Vector3 contact)
     {
         if(source==null)return true;
         Vector3 origin=source.transform.position+Vector3.up*.9f;
@@ -180,7 +185,7 @@ public class CombatManager : Singleton<CombatManager>
         for(int i=0;i<count;i++)
         {
             var t=obstructionHits[i].transform;
-            if(t.IsChildOf(source.transform) || (victim!=null && t.IsChildOf(victim.transform)))continue;
+            if(t.IsChildOf(source.transform) || (victim!=null && t.IsChildOf(victim)))continue;
             return false;
         }
         return true;
@@ -219,8 +224,6 @@ public class CombatManager : Singleton<CombatManager>
 
     Coroutine hitStopRoutine;
     float hitStopEndsAt;
-
-    public bool HitStopActive => hitStopRoutine != null;
 
     // Scale lets a heavy weapon ask for a longer stop. While a stop is active, a new
     // request only extends it — it never re-freezes or shortens it.

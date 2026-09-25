@@ -13,7 +13,6 @@ public class ItemDragHandler : Singleton<ItemDragHandler>
     RectTransform ghostRect;
 
     public bool       IsDragging { get; private set; }
-    public bool       WasDropped { get; private set; }
     public ItemSlotUI Source     { get; private set; }
 
     protected override void Awake()
@@ -33,7 +32,6 @@ public class ItemDragHandler : Singleton<ItemDragHandler>
     {
         Source     = source;
         IsDragging = true;
-        WasDropped = false;
         if (ghostImage == null) return;
         ghostImage.sprite   = source.Item != null ? source.Item.icon : null;
         ghostImage.color    = new Color(1f, 1f, 1f, 0.8f);
@@ -43,12 +41,9 @@ public class ItemDragHandler : Singleton<ItemDragHandler>
         Follow();
     }
 
-    public void NotifyDropped() => WasDropped = true;
-
     public void End()
     {
         IsDragging = false;
-        WasDropped = false;
         Source     = null;
         if (ghostImage != null) ghostImage.gameObject.SetActive(false);
     }

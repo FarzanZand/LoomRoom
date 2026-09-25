@@ -1,6 +1,6 @@
 # Dungeon authoring guide
 
-Start with `Assets/Game/Levels/Dungeon1/Dungeon1.asset`. Existing authored assets are never regenerated on import. `Tools > Table Levels > Create missing dungeon system assets` creates defaults only when references/assets are missing.
+Start with `Assets/Game/Levels/Dungeon1/Dungeon1.asset`. Levels appear in the adventure menu through the single catalog `Assets/Game/Levels/Resources/TableLevels.asset`. There is no asset-generation menu; create levels with **Create > Table > Level** and room profiles with **Create > Table > Room profile**, then add the level to the catalog.
 
 ## Layout and navigation
 
@@ -45,7 +45,7 @@ The inventory is live: opening it releases the cursor and disables player moveme
 
 ## Verification and limits
 
-The validation helper tests 100 seeded layouts, loot distribution and deterministic filtering, two-floor progression, door opening, chest quantities/duplicate protection, enemy navigation and failed-load rollback. Test requests are local development files under Temp, not runtime behavior.
+There is no automated validation helper in the project. At runtime, generation itself checks NavMesh paths from the entrance to every room and rejects the floor if any is unreachable; a rejected or failed load restores the previous environment and floor number, logs the exception and reopens the adventure menu. Everything else (door behaviour, loot, multi-floor runs) needs a manual play-mode check.
 
 This is a usable dungeon/content system, not a promise that every authored content combination is safe. New large props/enemy types need playtesting. Save/resume across application restarts, locked-door/key puzzles, quests, boss logic and hand-built room geometry are not included. Generation is synchronous behind the fade; the Console timings help identify when to move it to staged generation for larger maps.
 

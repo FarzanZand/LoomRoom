@@ -9,7 +9,7 @@ using UnityEngine.Rendering;
 [ExecuteAlways]
 public sealed partial class LightingManager : MonoBehaviour
 {
-    public enum Scope { TableOnly, WholeScene }
+    public enum Scope { TableOnly = 0, WholeScene = 1 }
 
     [Title("Lighting controls")]
     [EnumToggleButtons]
@@ -68,7 +68,7 @@ public sealed partial class LightingManager : MonoBehaviour
     {
         EnableMoods();
         originalProbe = RenderSettings.ambientProbe;
-        if (Application.isPlaying && savedDefault != null) RestoreDefault();
+        if (Application.isPlaying && HasSavedDefault) RestoreDefault();
         else if (Application.isPlaying) brightness = startingBrightness;
         Apply();
     }

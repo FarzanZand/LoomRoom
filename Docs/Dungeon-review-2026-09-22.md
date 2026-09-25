@@ -33,7 +33,7 @@ The dungeon is a playable prototype, not a finished procedural design system. Th
 | Medium | New doors are one-way opening gates. Enemies have no deliberate door-opening/breaking behavior, and doors cannot be reclosed. | Choose enemy-specific door permissions; add clear gate audio and feedback. Test door chokepoints against enemy avoidance. |
 | Medium | Dungeon UI still constructs much of its hierarchy and styling in code. This does not meet the intended designer-prefab workflow. | Move enemy bars, damage numbers and reusable slots into editable UI prefabs. Keep behavior scripts separate from authored visuals. |
 | Medium | Architecture uses many separate primitive GameObjects/renderers/colliders and builds navigation synchronously. | Profile first; combine static meshes by material per room/chunk, reduce colliders, and stage floor generation under the fade. |
-| Low | Two level catalog assets exist, one under `_Resources` and one under `Resources`. Only the latter path participates in the current Resources lookup. | Consolidate around one explicit catalog reference and retire duplicates after checking all references. |
+| Low | **Resolved.** Two level catalog assets existed, one under `_Resources` and one under `Resources`. | Only `Assets/Game/Levels/Resources/TableLevels.asset` remains; `TableLevelLoader` loads it and logs an error if it is missing. |
 
 Melee wall occlusion is already checked in both Hitbox and the enemy fallback hit path; this review does not identify "attacks through walls" as a confirmed bug.
 

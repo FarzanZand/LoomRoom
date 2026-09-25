@@ -1,7 +1,7 @@
 using UnityEngine;
 using Sirenix.OdinInspector;
 
-public enum TableLevelKind { Town, Dungeon }
+public enum TableLevelKind { Town = 0, Dungeon = 1 }
 // Keep existing numeric values: level assets serialize these selections as integers.
 public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6 }
 
@@ -14,7 +14,8 @@ public class TableLevelData : ScriptableObject
     public SceneMood mood;
     [Header("Dungeon mood lighting")]
     [ShowIf("IsDungeon"), HideIf("overrideLighting")]
-    public DungeonMoodLighting moodLightning = DungeonMoodLighting.AmberCrypt;
+    [UnityEngine.Serialization.FormerlySerializedAs("moodLightning")]
+    public DungeonMoodLighting moodLighting = DungeonMoodLighting.AmberCrypt;
     [ShowIf("IsDungeon"), Tooltip("Use the settings below instead of the selected lighting style.")]
     public bool overrideLighting;
     [ShowIf("ShowLightingOverride"), InlineProperty, HideLabel]
@@ -27,7 +28,7 @@ public class TableLevelData : ScriptableObject
         if(multipleLevels && floorSettings!=null && floorNumber>0 && floorNumber<=floorSettings.Length && floorSettings[floorNumber-1]!=null)
             return floorSettings[floorNumber-1].Lighting(mood);
         if (overrideLighting) return lightingSettings.ToState();
-        var preset = Resources.Load<SceneMood>("DungeonLighting/" + moodLightning);
+        var preset = Resources.Load<SceneMood>("DungeonLighting/" + moodLighting);
         if (preset == null) preset = mood;
         return preset != null ? LightingManager.FromPreset(preset) : lightingSettings.ToState();
     }
@@ -127,14 +128,14 @@ public class DungeonFloorSettings
     [ShowIf("overrideEncounters"), Range(1,6)] public int maxEnemiesPerRoom=2;
     [Tooltip("Empty inherits level enemies.")] public GameObject[] enemies;
     [Tooltip("Empty references inherit the level's reward tables.")] public DungeonLootTable enemyLoot, chestLoot, barrelLoot;
-    [HideIf("overrideLighting")] public DungeonMoodLighting moodLightning;
+    [HideIf("overrideLighting"), UnityEngine.Serialization.FormerlySerializedAs("moodLightning")] public DungeonMoodLighting moodLighting;
     public bool overrideLighting;
     [ShowIf("overrideLighting"), InlineProperty, HideLabel]
     public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();
     public LightingManager.MoodState Lighting(SceneMood fallback)
     {
         if(overrideLighting)return lightingSettings.ToState();
-        var preset=Resources.Load<SceneMood>("DungeonLighting/"+moodLightning);
+        var preset=Resources.Load<SceneMood>("DungeonLighting/"+moodLighting);
         if(preset==null)preset=fallback;
         return preset==null ? lightingSettings.ToState() : LightingManager.FromPreset(preset);
     }

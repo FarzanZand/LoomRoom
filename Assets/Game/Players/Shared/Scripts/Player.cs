@@ -39,6 +39,7 @@ public class Player : Character
     // Starting items are applied once per play session even if the player is swapped
     // out and back in (the root gets SetActive toggled, which re-runs OnEnable).
     bool startingItemsApplied;
+    bool respawnPending;
     Vector3    spawnPosition;
     Quaternion spawnRotation;
 
@@ -87,9 +88,15 @@ public class Player : Character
             foreach (var item in data.startingItems)
                 if (item != null) InventoryManager.Instance.Pickup(item, this, playSound: false);
 
-        if (Equipment != null)
-            foreach (var item in data.startingEquipment)
-                if (item != null) Equipment.Equip(item, playSound: false);
+        if (Equipment == null) return;
+        foreach (var item in data.startingEquipment)
+        {
+            if (item == null) continue;
+            bool owned = (Bag != null && Bag.IndexOf(item) >= 0) || (Hotbar != null && Hotbar.IndexOf(item) >= 0);
+            if (!owned && InventoryManager.HasInstance)
+                owned = InventoryManager.Instance.Pickup(item, this, preferHotbar: true, playSound: false);
+            if (owned) Equipment.Equip(item, playSound: false);
+        }
     }
 
     public void Warp(Vector3 position, float yawDelta = 0f)
@@ -107,7 +114,11 @@ public class Player : Character
     {
         base.OnDied();
         if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Dead);
-        if (respawnDelay > 0f) StartCoroutine(RespawnRoutine());
+        if (respawnDelay > 0f)
+        {
+            respawnPending = true;
+            StartCoroutine(RespawnRoutine());
+        }
     }
 
     System.Collections.IEnumerator RespawnRoutine()
@@ -115,12 +126,31 @@ public class Player : Character
         yield return new WaitForSeconds(respawnDelay);
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeInOut(0.5f, 0.3f, 0.8f);
         yield return new WaitForSeconds(0.6f);
+        Respawn();
+    }
 
+    void Respawn()
+    {
+        respawnPending = false;
         Warp(spawnPosition);
         transform.rotation = spawnRotation;
         Look?.SetYaw(spawnRotation.eulerAngles.y);
 
         Stats?.Revive();
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
+    }
+
+    // Deactivating (player swap) kills the respawn coroutine: release Dead now, restart it on return.
+    void OnDisable()
+    {
+        if (respawnPending && GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
+    }
+
+    void OnEnable()
+    {
+        if (!respawnPending) return;
+        if (IsAlive) { respawnPending = false; return; }
+        if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Dead);
+        StartCoroutine(RespawnRoutine());
     }
 }

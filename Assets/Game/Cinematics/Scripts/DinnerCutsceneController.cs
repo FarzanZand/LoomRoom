@@ -11,13 +11,12 @@ public class DinnerCutsceneController : CutsceneController
         if (!PlayerManager.HasInstance) return;
         var pm = PlayerManager.Instance;
 
-        var room = pm.roomPlayer;
+        var room = pm.GetPlayer(PlayerKind.Room);
         if (room != null && roomPlayerDinner != null)
         {
-            var ctx = pm.Get(PlayerKind.Room);
-            var target = ctx != null && ctx.player != null ? ctx.player.transform : room.transform;
-            target.SetPositionAndRotation(roomPlayerDinner.position, roomPlayerDinner.rotation);
-            ctx?.player?.Look?.SetYaw(roomPlayerDinner.eulerAngles.y);
+            room.Warp(roomPlayerDinner.position);
+            room.transform.rotation = roomPlayerDinner.rotation;
+            room.Look?.SetYaw(roomPlayerDinner.eulerAngles.y);
         }
 
         pm.ForceSwapToPlayer(PlayerKind.Room);

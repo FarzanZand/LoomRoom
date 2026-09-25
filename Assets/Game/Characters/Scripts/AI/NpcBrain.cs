@@ -1,7 +1,6 @@
 using System.Collections;
 using Sirenix.OdinInspector;
 using UnityEngine;
-using UnityEngine.AI;
 
 public enum NPCState { Idle = 0, Wander = 1, Patrol = 2, Talking = 3 }
 
@@ -165,50 +164,14 @@ public class NpcBrain : MonoBehaviour, IInteractable
 
     // ── Wander / patrol ───────────────────────────────────────────────
 
-    void HandleWander()
-    {
-        wanderTimer -= Time.deltaTime;
-        if (wanderTimer > 0f) return;
+    void HandleWander() =>
+        Motor.WanderStep(ref wanderTimer, spawnPosition, minWanderDistance, wanderRadius, wanderZoneRadius, minIdleTime, maxIdleTime);
 
-        Vector3 center = spawnPosition;
-        Vector3 dir = Random.insideUnitSphere; dir.y = 0f; dir.Normalize();
-        Vector3 target = center + dir * Random.Range(minWanderDistance, wanderRadius);
-        if (wanderZoneRadius > 0f)
-        {
-            Vector3 offset = target - center; offset.y = 0f;
-            if (offset.magnitude > wanderZoneRadius) target = center + offset.normalized * wanderZoneRadius;
-        }
-        var filter = new NavMeshQueryFilter { agentTypeID = Motor.Agent.agentTypeID, areaMask = Motor.Agent.areaMask };
-        if (NavMesh.SamplePosition(target, out NavMeshHit hit, wanderRadius, filter))
-            Motor.MoveTo(hit.position);
-        wanderTimer = Random.Range(minIdleTime, maxIdleTime);
-    }
+    void HandlePatrol() => Motor.PatrolStep(waypoints, ref waypointIndex, loopPatrol);
 
-    void HandlePatrol()
-    {
-        if (waypoints == null || waypoints.Length == 0) return;
-        if (!Motor.ReachedDestination(0.4f)) return;
-        waypointIndex++;
-        if (waypointIndex >= waypoints.Length) waypointIndex = loopPatrol ? 0 : waypoints.Length - 1;
-        if (waypoints[waypointIndex] != null) Motor.MoveTo(waypoints[waypointIndex].position);
-    }
-
-    void UpdateAnimator()
-    {
-        var anim = Character.Animator;
-        if (anim == null || anim.runtimeAnimatorController == null) return;
-        // Idle/talking NPCs must not run because of placement or vertical settling.
-        bool locomoting = (State == NPCState.Wander || State == NPCState.Patrol) && Motor.HasPath;
-        Vector3 horizontalVelocity = Motor.Velocity;
-        horizontalVelocity.y = 0f;
-        if (locomoting)
-            anim.SetFloat("Speed", horizontalVelocity.magnitude, 0.1f, Time.deltaTime);
-        else
-            anim.SetFloat("Speed", 0f);
-        anim.SetFloat("MotionSpeed", locomoting ? 1f : 0f, 0.1f, Time.deltaTime);
-        anim.SetBool("Grounded", Motor.IsGrounded);
-        anim.SetBool("FreeFall", !Motor.IsGrounded && Motor.Velocity.y < -1f);
-    }
+    // Idle/talking NPCs must not run because of placement or vertical settling.
+    void UpdateAnimator() =>
+        Motor.UpdateLocomotionAnimator(Character.Animator, (State == NPCState.Wander || State == NPCState.Patrol) && Motor.HasPath, 0.1f);
 
     void OnDrawGizmosSelected()
     {

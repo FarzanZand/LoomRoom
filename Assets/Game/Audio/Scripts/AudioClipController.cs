@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class AudioClipController : MonoBehaviour
 {
-    public enum Channel { SFX, SFX2D, Music, UI }
+    public enum Channel { SFX = 0, SFX2D = 1, Music = 2, UI = 3 }
 
     [SerializeField] Channel channel = Channel.SFX2D;
     [SerializeField] AudioData audioData;

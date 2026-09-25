@@ -30,7 +30,6 @@ public class Inventory : MonoBehaviour
     public ItemStack this[int index] => index >= 0 && index < slots.Length ? slots[index] : null;
 
     public event Action Changed;
-    public event Action Full;
 
     void Awake()
     {
@@ -77,7 +76,7 @@ public class Inventory : MonoBehaviour
         foreach (var slot in slots)
             if (slot == null || slot.IsEmpty) capacity += Mathf.Max(1, item.maxStackSize);
             else if (slot.item == item) capacity += Mathf.Max(0, item.maxStackSize - slot.count);
-        if (capacity < count) { Full?.Invoke(); return false; }
+        if (capacity < count) return false;
 
         int remaining = count;
         if (item.maxStackSize > 1)
@@ -103,7 +102,6 @@ public class Inventory : MonoBehaviour
 
         bool addedAny = remaining < count;
         if (addedAny) Changed?.Invoke();
-        if (remaining > 0) Full?.Invoke();
         return remaining == 0;
     }
 

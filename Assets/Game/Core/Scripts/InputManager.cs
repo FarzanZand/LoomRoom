@@ -34,6 +34,9 @@ public class InputManager : Singleton<InputManager>
     public event Action InteractPressed;
     public event Action InventoryToggled;
     public event Action CancelPressed;
+    public event Action PausePressed;    // Table gameplay: open the adventure menu
+    public event Action NavigatePressed; // UI: move between menu options
+    public event Action SubmitPressed;   // UI: confirm or skip
     public bool CancelHandledThisFrame => cancelFrame == Time.frameCount;
     int cancelFrame = -1;
     public event Action PrimaryPressed;
@@ -68,6 +71,9 @@ public class InputManager : Singleton<InputManager>
         actions.Table.SecondaryAction.performed += _ => { SecondaryHeld = true;  SecondaryPressed?.Invoke(); };
         actions.Table.SecondaryAction.canceled  += _ => { SecondaryHeld = false; SecondaryReleased?.Invoke(); };
 
+        actions.Table.Pause.performed += _ => PausePressed?.Invoke();
+        actions.UI.Navigate.performed += _ => NavigatePressed?.Invoke();
+        actions.UI.Submit.performed   += _ => SubmitPressed?.Invoke();
         actions.UI.Inventory.performed += _ => InventoryToggled?.Invoke();
         actions.UI.Cancel.performed    += _ =>
         {
@@ -80,8 +86,7 @@ public class InputManager : Singleton<InputManager>
 
         actions.Dev.Debug1.performed += _ => DebugSwapRequested?.Invoke(PlayerKind.Room);
         actions.Dev.Debug2.performed += _ => DebugSwapRequested?.Invoke(PlayerKind.Table);
-        actions.Dev.Get().AddAction("PreviewSceneMood", InputActionType.Button, "<Keyboard>/f5")
-            .performed += _ => DebugMoodPreviewRequested?.Invoke();
+        actions.Dev.PreviewSceneMood.performed += _ => DebugMoodPreviewRequested?.Invoke();
     }
 
     void Bind(InputAction move, InputAction look, InputAction jump, InputAction sprint, InputAction crouch,
@@ -114,6 +119,13 @@ public class InputManager : Singleton<InputManager>
     void OnDisable()
     {
         actions.Disable();
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        actions?.Dispose();
+        actions = null;
     }
 
     // Called by PlayerManager on swap: Room and Table players have different controls.

@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using DG.Tweening;
 
 public class TableLevelMenu : MonoBehaviour
@@ -37,22 +36,28 @@ public class TableLevelMenu : MonoBehaviour
         root.returnToRoom.button.onClick.AddListener(loader.ReturnToRoom);
         EventSystem.current?.SetSelectedGameObject(null);
         GameManager.Instance.Push(GameState.Menu);
-        if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel;
+        if (InputManager.HasInstance)
+        {
+            InputManager.Instance.CancelPressed += OnCancel;
+            InputManager.Instance.NavigatePressed += OnNavigate;
+        }
         root.group.alpha = 0; root.panel.localScale = Vector3.one * .97f;
         fade = root.group.DOFade(1, .18f).SetUpdate(true);
         scale = root.panel.DOScale(1, .18f).SetEase(Ease.OutCubic).SetUpdate(true);
     }
-    void Update()
+    // The first navigation press selects an option; the EventSystem handles it from there.
+    void OnNavigate()
     {
         if (!IsOpen || EventSystem.current == null || EventSystem.current.currentSelectedGameObject != null || firstOption == null) return;
-        var keys = Keyboard.current; var pad = Gamepad.current;
-        bool navigate = keys != null && (keys.tabKey.wasPressedThisFrame || keys.downArrowKey.wasPressedThisFrame || keys.upArrowKey.wasPressedThisFrame);
-        navigate |= pad != null && (pad.dpad.up.wasPressedThisFrame || pad.dpad.down.wasPressedThisFrame || pad.leftStick.ReadValue().sqrMagnitude > .4f);
-        if (navigate) EventSystem.current.SetSelectedGameObject(firstOption.gameObject);
+        EventSystem.current.SetSelectedGameObject(firstOption.gameObject);
     }
     public void Hide()
     {
-        if (InputManager.HasInstance) InputManager.Instance.CancelPressed -= OnCancel;
+        if (InputManager.HasInstance)
+        {
+            InputManager.Instance.CancelPressed -= OnCancel;
+            InputManager.Instance.NavigatePressed -= OnNavigate;
+        }
         if (!IsOpen) return;
         fade?.Kill(); scale?.Kill();
         EventSystem.current?.SetSelectedGameObject(null);

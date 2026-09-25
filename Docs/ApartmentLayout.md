@@ -28,7 +28,7 @@ The prefab includes stationary jambs, casing and door stops that hide the side/h
 
 Play-mode checks passed for all four doors: open, close, changing prompts, opening/closing AudioData playback, obstruction stopping and safe reversal. Camera-centred selection and the existing interaction input handler were exercised from about 31 world units away. Both Room/Table player swaps and gameplay cameras were checked. Full-size capsule and floor-support samples cover the rooms, hall, entrance recess and landing with doors open; the dining clearance is also checked.
 
-Use `Tools > LoomRoom > Apartment > Validate Refined Layout` to repeat geometry clearance checks. In edit mode it temporarily opens doors for the checks, then restores them. `Render Refined Views` writes previews into Temp. The apartment is authored scene geometry with no runtime construction dependency.
+The `Tools > LoomRoom > Apartment > Validate Refined Layout` and `Render Refined Views` editor commands are no longer in the project; repeat clearance checks manually. The apartment is authored scene geometry with no runtime construction dependency.
 
 After the frame repair, all four doors passed 101 collision-clearance poses each across their full swing. The 583 circulation/floor samples and dining clearance still pass; rendered close-ups check the repaired frame from both sides.
 

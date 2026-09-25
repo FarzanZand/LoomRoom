@@ -161,107 +161,49 @@ public class AudioManager : Singleton<AudioManager>
     void SetMixerDb(string param, float linear) =>
         mixer?.SetFloat(param, LinearToDb(linear));
 
-    void SaveVolumes()
-    {
-        PlayerPrefs.SetFloat(K_MASTER, masterVolume);
-        PlayerPrefs.SetFloat(K_MUSIC,  musicVolume);
-        PlayerPrefs.SetFloat(K_SFX,    sfxVolume);
-        PlayerPrefs.SetFloat(K_UI,     uiVolume);
-        PlayerPrefs.Save();
-    }
-
-    public void SetMasterVolume(float v) { masterVolume = Mathf.Clamp01(v); SetMixerDb(P_MASTER, v); SaveVolumes(); }
-    public void SetMusicVolume(float v)  { musicVolume  = Mathf.Clamp01(v); SetMixerDb(P_MUSIC,  v); SaveVolumes(); }
-    public void SetSfxVolume(float v)    { sfxVolume    = Mathf.Clamp01(v); SetMixerDb(P_SFX,    v); SaveVolumes(); }
-    public void SetUiVolume(float v)     { uiVolume     = Mathf.Clamp01(v); SetMixerDb(P_UI,     v); SaveVolumes(); }
-
-    public bool TryGetMixerVolume(string param, out float linear)
-    {
-        if (mixer != null && mixer.GetFloat(param, out float db))
-        {
-            linear = DbToLinear(db);
-            return true;
-        }
-        linear = 1f;
-        return false;
-    }
-
     static float LinearToDb(float linear) =>
         linear <= 0f ? -80f : Mathf.Max(-80f, 20f * Mathf.Log10(linear));
 
-    static float DbToLinear(float db) =>
-        db <= -80f ? 0f : Mathf.Pow(10f, db / 20f);
+    // ── Music ──────────────────────────────────────────────────────────────────
 
-    // ── Music — clip overloads ─────────────────────────────────────────────────
+    public void PlayMusic(AudioClip clip, bool loop = true, float fadeDuration = -1f) =>
+        StartMusic(clip, loop, fadeDuration, 1f, 1f, crossfade: false);
 
-    public void PlayMusic(AudioClip clip, bool loop = true, float fadeDuration = -1f)
+    public void CrossfadeMusic(AudioClip clip, bool loop = true, float fadeDuration = -1f, float volume = 1f) =>
+        StartMusic(clip, loop, fadeDuration, Mathf.Clamp01(volume), 1f, crossfade: true);
+
+    public void PlayMusic(string key, bool loop = true, float fadeDuration = -1f)
     {
-        if (clip == null) return;
-        if (fadeDuration < 0f) fadeDuration = defaultFadeDuration;
-        StopMusicRoutine();
-
-        var src    = ActiveMusic;
-        src.clip   = clip;
-        src.loop   = loop;
-        src.volume = 0f;
-        src.Play();
-        musicRoutine = StartCoroutine(FadeSource(src, 0f, 1f, fadeDuration,
-            () => musicRoutine = null));
+        if (!musicDict.TryGetValue(key, out var entry))
+        { Debug.LogWarning($"[AudioManager] Music key '{key}' not found."); return; }
+        StartMusic(entry.clip, loop, fadeDuration, entry.volume, 1f, crossfade: false);
     }
 
-    public void CrossfadeMusic(AudioClip clip, bool loop = true, float fadeDuration = -1f, float volume = 1f)
+    public void PlayMusicData(AudioData data, bool loop = true, float fadeDuration = -1f)
+    {
+        if (data == null) return;
+        StartMusic(data.GetClip(), loop, fadeDuration, data.volume, data.pitch, crossfade: false);
+    }
+
+    void StartMusic(AudioClip clip, bool loop, float fadeDuration, float volume, float pitch, bool crossfade)
     {
         if (clip == null) return;
         if (fadeDuration < 0f) fadeDuration = defaultFadeDuration;
         StopMusicRoutine();
 
         var outgoing = ActiveMusic;
-        usingMusicA  = !usingMusicA;
+        if (crossfade) usingMusicA = !usingMusicA;
         var incoming = ActiveMusic;
 
         incoming.clip   = clip;
         incoming.loop   = loop;
         incoming.volume = 0f;
-        incoming.Play();
-        musicRoutine = StartCoroutine(CrossfadeRoutine(outgoing, incoming, fadeDuration, Mathf.Clamp01(volume)));
-    }
-
-    // ── Music — key overloads ──────────────────────────────────────────────────
-
-    public void PlayMusic(string key, bool loop = true, float fadeDuration = -1f)
-    {
-        if (!musicDict.TryGetValue(key, out var entry))
-        { Debug.LogWarning($"[AudioManager] Music key '{key}' not found."); return; }
-        PlayMusicEntry(entry, loop, fadeDuration, crossfade: false);
-    }
-
-    public void CrossfadeMusic(string key, bool loop = true, float fadeDuration = -1f)
-    {
-        if (!musicDict.TryGetValue(key, out var entry))
-        { Debug.LogWarning($"[AudioManager] Music key '{key}' not found."); return; }
-        PlayMusicEntry(entry, loop, fadeDuration, crossfade: true);
-    }
-
-    void PlayMusicEntry(MusicEntry entry, bool loop, float fadeDuration, bool crossfade)
-    {
-        if (fadeDuration < 0f) fadeDuration = defaultFadeDuration;
-        StopMusicRoutine();
-
-        AudioSource outgoing = ActiveMusic;
-        if (crossfade) usingMusicA = !usingMusicA;
-        AudioSource incoming = ActiveMusic;
-
-        incoming.clip   = entry.clip;
-        incoming.loop   = loop;
-        incoming.volume = 0f;
+        incoming.pitch  = pitch;
         incoming.Play();
 
-        float targetVol = entry.volume;
-        if (crossfade)
-            musicRoutine = StartCoroutine(CrossfadeRoutine(outgoing, incoming, fadeDuration, targetVol));
-        else
-            musicRoutine = StartCoroutine(FadeSource(incoming, 0f, targetVol, fadeDuration,
-                () => musicRoutine = null));
+        musicRoutine = crossfade
+            ? StartCoroutine(CrossfadeRoutine(outgoing, incoming, fadeDuration, volume))
+            : StartCoroutine(FadeSource(incoming, 0f, volume, fadeDuration, () => musicRoutine = null));
     }
 
     // ── Music — control ────────────────────────────────────────────────────────
@@ -279,13 +221,15 @@ public class AudioManager : Singleton<AudioManager>
         }));
     }
 
-    public void PauseMusic()  => ActiveMusic.Pause();
-    public void ResumeMusic() => ActiveMusic.UnPause();
-    public bool IsMusicPlaying => ActiveMusic.isPlaying;
-
+    // Killing a crossfade mid-way would leave its outgoing source looping at partial volume.
     void StopMusicRoutine()
     {
-        if (musicRoutine != null) { StopCoroutine(musicRoutine); musicRoutine = null; }
+        if (musicRoutine == null) return;
+        StopCoroutine(musicRoutine);
+        musicRoutine = null;
+        var inactive = usingMusicA ? musicB : musicA;
+        inactive.Stop();
+        inactive.volume = 0f;
     }
 
     IEnumerator CrossfadeRoutine(AudioSource outgoing, AudioSource incoming, float duration, float targetVol = 1f)
@@ -350,32 +294,6 @@ public class AudioManager : Singleton<AudioManager>
         return src;
     }
 
-    public AudioSource PlaySFXRandom(AudioClip[] clips, Vector3 position, float volume = 1f, float pitchVariance = 0.05f)
-    {
-        if (clips == null || clips.Length == 0) return null;
-        return PlaySFX(clips[Random.Range(0, clips.Length)], position, volume, pitchVariance);
-    }
-
-    public AudioSource PlaySFX2DRandom(AudioClip[] clips, float volume = 1f, float pitchVariance = 0.05f)
-    {
-        if (clips == null || clips.Length == 0) return null;
-        return PlaySFX2D(clips[Random.Range(0, clips.Length)], volume, pitchVariance);
-    }
-
-    public AudioSource PlaySFXLooping(AudioClip clip, Vector3 position, float volume = 1f)
-    {
-        if (clip == null) return null;
-        var src = ClaimSource(sfxPool);
-        src.transform.position = position;
-        src.clip         = clip;
-        src.loop         = true;
-        src.volume       = volume;
-        src.pitch        = 1f;
-        src.spatialBlend = 1f;
-        src.Play();
-        return src;
-    }
-
     // ── SFX — key overloads ────────────────────────────────────────────────────
 
     public AudioSource PlaySFX(string key, Vector3 position)
@@ -390,18 +308,6 @@ public class AudioManager : Singleton<AudioManager>
         if (!sfxDict.TryGetValue(key, out var e))
         { Debug.LogWarning($"[AudioManager] SFX key '{key}' not found."); return null; }
         return PlaySFX2D(e.clip, e.volume, e.pitchVariance);
-    }
-
-    public AudioSource PlaySFXLooping(string key, Vector3 position)
-    {
-        if (!sfxDict.TryGetValue(key, out var e))
-        { Debug.LogWarning($"[AudioManager] SFX key '{key}' not found."); return null; }
-        return PlaySFXLooping(e.clip, position, e.volume);
-    }
-
-    public void StopAllSFX()
-    {
-        foreach (var s in sfxPool) { s.Stop(); s.clip = null; }
     }
 
     // ── UI — clip overloads ────────────────────────────────────────────────────
@@ -456,23 +362,6 @@ public class AudioManager : Singleton<AudioManager>
         return src;
     }
 
-    public void PlayMusicData(AudioData data, bool loop = true, float fadeDuration = -1f)
-    {
-        if (data == null) return;
-        var clip = data.GetClip();
-        if (clip == null) return;
-        if (fadeDuration < 0f) fadeDuration = defaultFadeDuration;
-        StopMusicRoutine();
-        var src    = ActiveMusic;
-        src.clip   = clip;
-        src.loop   = loop;
-        src.volume = 0f;
-        src.pitch  = data.pitch;
-        src.Play();
-        float targetVol = data.volume;
-        musicRoutine = StartCoroutine(FadeSource(src, 0f, targetVol, fadeDuration, () => musicRoutine = null));
-    }
-
     public AudioSource PlayUIData(AudioData data)
     {
         if (data == null) return null;
@@ -489,20 +378,6 @@ public class AudioManager : Singleton<AudioManager>
         if (!uiDict.TryGetValue(key, out var e))
         { Debug.LogWarning($"[AudioManager] UI key '{key}' not found."); return null; }
         return PlayUI(e.clip, e.volume, e.pitch);
-    }
-
-    // ── Pause ──────────────────────────────────────────────────────────────────
-
-    public void OnGamePause()
-    {
-        PauseMusic();
-        foreach (var s in sfxPool) if (s.isPlaying) s.Pause();
-    }
-
-    public void OnGameResume()
-    {
-        ResumeMusic();
-        foreach (var s in sfxPool) s.UnPause();
     }
 
     // ── Internals ──────────────────────────────────────────────────────────────

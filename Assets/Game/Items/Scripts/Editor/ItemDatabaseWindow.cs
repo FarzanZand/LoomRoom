@@ -15,6 +15,7 @@ public class ItemDatabaseWindow : EditorWindow
     int typeFilter, slotFilter;
     bool showArchived, issuesOnly, tooltip;
     Vector2 listScroll, detailScroll;
+    static GUIStyle tooltipStyle;
     static readonly string[] Types = new[] { "All types" }.Concat(Enum.GetNames(typeof(ItemType))).ToArray();
     static readonly string[] Slots = new[] { "All slots" }.Concat(Enum.GetNames(typeof(EquipmentSlot))).ToArray();
 
@@ -142,7 +143,11 @@ public class ItemDatabaseWindow : EditorWindow
         string pickup = selected.pickupVisualPrefab != null ? selected.pickupVisualPrefab.name : selected.worldPrefab != null ? selected.worldPrefab.name : "Equipment loot pouch (InventoryManager default)";
         EditorGUILayout.LabelField("Pickup visual", pickup);
         tooltip = EditorGUILayout.Foldout(tooltip, "Tooltip preview", true);
-        if (tooltip) EditorGUILayout.HelpBox(selected.BuildTooltip(), MessageType.None);
+        if (tooltip)
+        {
+            tooltipStyle ??= new GUIStyle(EditorStyles.helpBox) { richText = true, wordWrap = true };
+            GUILayout.Label(selected.BuildTooltip(), tooltipStyle);
+        }
         EditorGUI.BeginChangeCheck(); inspector.OnInspectorGUI();
         if (EditorGUI.EndChangeCheck()) { EditorUtility.SetDirty(selected); issues[selected] = ItemDatabaseAuthoring.Issues(selected, items); }
         EditorGUILayout.EndScrollView();

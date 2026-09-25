@@ -153,18 +153,8 @@ public class InventoryManager : Singleton<InventoryManager>
     }
 
 #if UNITY_EDITOR
+    // The editor assembly owns the sync (ItemDatabaseAuthoring.SyncCatalog); runtime code cannot reference it.
     [Button("Populate Catalog From Project")]
-    void PopulateCatalog()
-    {
-        itemCatalog.Clear();
-        foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:ItemData"))
-        {
-            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-            if (path.Contains("/_Archive/")) continue;
-            var item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(path);
-            if (item != null) itemCatalog.Add(item);
-        }
-        UnityEditor.EditorUtility.SetDirty(this);
-    }
+    void PopulateCatalog() => UnityEditor.EditorApplication.ExecuteMenuItem("Tools/LoomRoom/Sync Item Catalog");
 #endif
 }

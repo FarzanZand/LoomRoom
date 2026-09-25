@@ -7,6 +7,7 @@ public class WeaponAnimationRelay : MonoBehaviour
 {
     Hitbox[] hitboxes;
     Character owner;
+    EnemyBrain brain;
 
     public event System.Action AttackStarted;
     public event System.Action AttackEnded;
@@ -16,33 +17,31 @@ public class WeaponAnimationRelay : MonoBehaviour
     void Awake()
     {
         owner = GetComponentInParent<Character>();
+        brain = owner != null ? owner.GetComponent<EnemyBrain>() : null;
         Transform root = owner != null ? owner.transform : transform.root;
         hitboxes = root.GetComponentsInChildren<Hitbox>(true);
     }
 
     // ── Called by animation events ────────────────────────────────────
 
-    public void EnableHitbox()
-    {
-        if (!AllowHitbox()) return;
-        foreach (var h in hitboxes) if (h.HitboxIndex == 0) h.EnableHitbox();
-    }
+    public void EnableHitbox() => EnableHitboxAt(0);
 
     public void DisableHitbox()
     {
+        if (brain != null) brain.NotifyHitboxClosed();
         foreach (var h in hitboxes) h.DisableHitbox();
     }
 
     public void EnableHitboxAt(int index)
     {
-        if (!AllowHitbox()) return;
+        if (!AllowHitbox(index)) return;
         foreach (var h in hitboxes) if (h.HitboxIndex == index) h.EnableHitbox();
     }
 
     public void PlaySwingAudio()
     {
         // The enemy brain owns its whoosh, including attacks without a physical hitbox.
-        if (owner != null && owner.TryGetComponent<EnemyBrain>(out _)) return;
+        if (brain != null) return;
         foreach (var h in hitboxes) { h.PlaySwingAudio(); break; }
         SwingStarted?.Invoke();
     }
@@ -56,11 +55,13 @@ public class WeaponAnimationRelay : MonoBehaviour
         return null;
     }
 
-    bool AllowHitbox()
+    bool AllowHitbox(int index)
     {
         if (owner == null || !owner.IsAlive) return false;
-        if (owner.TryGetComponent<EnemyBrain>(out var brain))
+        if (brain != null)
         {
+            // Before the minimum windup the brain replays this event later instead of dropping it.
+            if (brain.DeferHitboxIfEarly(index)) return false;
             if (!brain.CanOpenHitbox) return false;
             brain.CommitDirection();
         }
@@ -70,6 +71,6 @@ public class WeaponAnimationRelay : MonoBehaviour
     // Also supports animators placed on a child instead of on the character root.
     public void OnAttackHit()
     {
-        if (owner != null && owner.TryGetComponent<EnemyBrain>(out var brain)) brain.OnAttackHit();
+        if (brain != null) brain.OnAttackHit();
     }
 }

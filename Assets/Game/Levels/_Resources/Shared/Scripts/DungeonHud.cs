@@ -23,7 +23,6 @@ public class DungeonHud : MonoBehaviour
         var go=new GameObject("Explored map",typeof(RectTransform),typeof(RawImage));go.transform.SetParent(canvasRoot.transform,false);
         mapImage=go.GetComponent<RawImage>();mapImage.texture=map;mapImage.raycastTarget=false;
         var r=mapImage.rectTransform;r.anchorMin=r.anchorMax=new Vector2(1,1);r.pivot=new Vector2(1,1);r.anchoredPosition=new Vector2(-30,-54);r.sizeDelta=new Vector2(w*4,h*4);
-        var loader=TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
         string heading=generator.LevelData.displayName.ToUpperInvariant()+(generator.LevelData.multipleLevels ? " · "+generator.FloorNumber+" / "+Mathf.Max(1,generator.LevelData.levelCount) : "");
         var title=Label(heading,18);var tr=title.rectTransform;tr.anchorMin=tr.anchorMax=new Vector2(1,1);tr.pivot=new Vector2(1,1);tr.anchoredPosition=new Vector2(-30,-24);tr.sizeDelta=new Vector2(340,28);title.alignment=TextAlignmentOptions.MidlineRight;
         gameObject.AddComponent<DungeonCombatFeedback>().Initialize(generator,canvasRoot.GetComponent<RectTransform>(),generator.LevelData.hudFont);

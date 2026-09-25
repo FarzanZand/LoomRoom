@@ -178,11 +178,6 @@ public class ScreenManager : Singleton<ScreenManager>
 
     // ── Fades ─────────────────────────────────────────────────────────
 
-    /// Fades to black, runs whileBlack, waits for the scene to settle, then fades back.
-    public Coroutine TransitionThroughBlack(float fadeToBlack, float holdBeforeSwap,
-        float holdAfterSwap, float fadeFromBlack, System.Action whileBlack)
-        => RunFade(TransitionRoutine(fadeToBlack, holdBeforeSwap, holdAfterSwap, fadeFromBlack, whileBlack));
-
     /// Starts invisible, waits holdDuration, then fades to fully visible over fadeDuration.
     public void FadeIn(float fadeDuration, float holdDuration = 0f)
         => RunFade(FadeRoutine(0f, 1f, fadeDuration, holdDuration));
@@ -213,21 +208,6 @@ public class ScreenManager : Singleton<ScreenManager>
     {
         yield return routine;
         fadeRoutine = null;
-    }
-
-    IEnumerator TransitionRoutine(float fadeToBlack, float holdBeforeSwap,
-        float holdAfterSwap, float fadeFromBlack, System.Action whileBlack)
-    {
-        float alpha = fadeFullscreenImage != null && fadeFullscreenImage.gameObject.activeSelf
-            ? fadeFullscreenImage.color.a : 0f;
-        yield return LerpAlpha(alpha, 1f, fadeToBlack);
-        if (holdBeforeSwap > 0f) yield return new WaitForSecondsRealtime(holdBeforeSwap);
-        whileBlack?.Invoke();
-        // Let activation, Start and Cinemachine's LateUpdate settle behind the cover.
-        yield return null;
-        yield return null;
-        if (holdAfterSwap > 0f) yield return new WaitForSecondsRealtime(holdAfterSwap);
-        yield return LerpAlpha(1f, 0f, fadeFromBlack);
     }
 
     IEnumerator FadeRoutine(float from, float to, float fadeDuration, float holdDuration)

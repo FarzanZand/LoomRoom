@@ -72,22 +72,15 @@ public class EnemyBrain : MonoBehaviour
     float circleStuckSince = -1f;
 
     // Attacks
-    readonly List<float> attackCooldowns = new();
-    EnemyAttack currentAttack;
-    bool        fallbackHitPending;
-    float       fallbackHitAt;
-    bool        attackWasPlaying;
-    float       attackStartedAt, recoveryUntil;
-    Vector3     committedForward;
-    bool        directionCommitted;
+    EnemyAttackRunner attackRunner;
+    float recoveryUntil;
     CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
-    public bool CanOpenHitbox => isActiveAndEnabled && Character.IsAlive && State == EnemyState.Attack && currentAttack != null
-        && Time.time >= attackStartedAt + (Tuning != null ? Tuning.enemyMinimumWindup : 0.3f)
-        && (!GameManager.HasInstance || GameManager.Instance.SimulationActive);
-    public bool IsSwinging    => currentAttack != null;
+    public bool CanOpenHitbox => attackRunner != null && attackRunner.CanOpenHitbox;
+    public bool IsSwinging    => attackRunner != null && attackRunner.IsSwinging;
+    internal WeaponAnimationRelay AttackRelay => attackRelay;
 
-    float CommitTime   => Tuning != null ? Tuning.enemyAttackCommitTime : 0.4f;
-    float RecoveryTime => Tuning != null ? Tuning.enemyRecoveryTime : 0.18f;
+    // Stand still (a flinch, a stagger, the pause after a swing); only ever extends.
+    internal void BeginRecovery(float seconds) => recoveryUntil = Mathf.Max(recoveryUntil, Time.time + seconds);
 
     // ── Lifecycle ─────────────────────────────────────────────────────
 
@@ -114,9 +107,8 @@ public class EnemyBrain : MonoBehaviour
             { EnemyState.Dead,         null },
         };
 
-        attackCooldowns.Clear();
-        var attacks = Attacks;
-        for (int i = 0; i < attacks.Count; i++) attackCooldowns.Add(0f);
+        attackRunner ??= new EnemyAttackRunner(this);
+        attackRunner.ResetCooldowns();
     }
 
     void OnEnable()
@@ -140,7 +132,7 @@ public class EnemyBrain : MonoBehaviour
         SetState(Profile.defaultState);
     }
 
-    List<EnemyAttack> Attacks =>
+    internal List<EnemyAttack> Attacks =>
         Character != null && Character.data != null ? Character.data.attacks : emptyAttacks;
     static readonly List<EnemyAttack> emptyAttacks = new();
 
@@ -173,15 +165,15 @@ public class EnemyBrain : MonoBehaviour
         Perception.Profile = Profile;
         Perception.Tick(State == EnemyState.Chase || State == EnemyState.Attack);
         Motor.SuppressKnockback = IsSwinging;
-        for (int i = 0; i < attackCooldowns.Count; i++) attackCooldowns[i] -= Time.deltaTime;
-
-        if (fallbackHitPending && Time.time >= fallbackHitAt) DealFallbackHit();
+        attackRunner.Tick();
 
         if (Time.time < recoveryUntil)
         {
             // Catch breath, but keep the eyes on the target so the next move is instant.
+            // A committed swing never tracks.
             Motor.Stop();
-            if (Perception.Target != null) Motor.LookAt(Perception.Target.transform.position, Profile.attackFaceSpeed);
+            if (Perception.Target != null && State != EnemyState.Attack)
+                Motor.LookAt(Perception.Target.transform.position, Profile.attackFaceSpeed);
             UpdateAnimator();
             return;
         }
@@ -201,8 +193,12 @@ public class EnemyBrain : MonoBehaviour
         if (info.Source != null) { wasProvoked = true; Perception.NotifyAttackedFrom(info.Source.transform.position); }
 
         // Flinch only when not mid-swing: a swing is never interrupted by the player's hits.
+        // A heavy stagger taken mid-swing is applied when the swing ends.
         if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null)
-            recoveryUntil = Mathf.Max(recoveryUntil, Time.time + Tuning.heavyStaggerDuration);
+        {
+            if (IsSwinging) attackRunner.QueueStagger(Tuning.heavyStaggerDuration);
+            else            BeginRecovery(Tuning.heavyStaggerDuration);
+        }
         if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null)
             Character.TriggerAnimation(Character.data.hurtTrigger);
 
@@ -215,16 +211,7 @@ public class EnemyBrain : MonoBehaviour
             StartInvestigate(Perception.StimulusPosition);
     }
 
-    void CancelAttack()
-    {
-        if (Character != null && Character.Animator != null)
-            foreach (var attack in Attacks)
-                if (attack != null && Character.HasParameter(Character.Animator, attack.animatorTrigger, AnimatorControllerParameterType.Trigger))
-                    Character.Animator.ResetTrigger(attack.animatorTrigger);
-        fallbackHitPending = false; currentAttack = null; attackWasPlaying = false;
-        if (attackRelay != null) attackRelay.DisableHitbox();
-        if (Motor != null) Motor.SuppressKnockback = false;
-    }
+    void CancelAttack() => attackRunner?.Cancel();
 
     void OnDied()
     {
@@ -265,7 +252,11 @@ public class EnemyBrain : MonoBehaviour
             investigateTimer = Profile.investigateTime;
         }
 
-        if (Motor.IsNear(investigatePoint, 0.5f) || Motor.ReachedDestination(0.5f))
+        bool near = Motor.IsNear(investigatePoint, 0.5f);
+        // A stagger or pause stopped the walk before it got there: walk again.
+        if (!near && !Motor.HasDestination) { Motor.MoveTo(investigatePoint); return; }
+
+        if (near || Motor.ReachedDestination(0.5f))
         {
             investigateTimer -= Time.deltaTime;
             if (investigateTimer <= 0f) SetState(EnemyState.ReturnToPost);
@@ -332,14 +323,14 @@ public class EnemyBrain : MonoBehaviour
 
         // Ready attack in range: face it fast and swing the moment we are lined up.
         // A cancelled animation may still be blending out after a menu or cutscene.
-        var attack = IsPlayingAttack() ? null : PickAttack(dist);
+        var attack = attackRunner.IsPlayingAttack() ? null : attackRunner.PickAttack(dist);
         if (attack != null)
         {
             Motor.LookAt(targetPos, p.attackFaceSpeed);
             if (Motor.IsFacing(targetPos, attack.facingAngle)
                 && Mathf.Abs(targetPos.y - transform.position.y) <= 1f
                 && (Tuning == null || Tuning.HasMeleeLineOfSight(Character, target, targetPos + Vector3.up * 0.9f)))
-                StartAttack(attack);
+                attackRunner.StartAttack(attack);
             else HandleSpacing(targetPos, dist);
             return;
         }
@@ -422,158 +413,14 @@ public class EnemyBrain : MonoBehaviour
         else circleStuckSince = -1f;
     }
 
-    void HandleAttack()
-    {
-        var target = Perception.Target;
-        if (target == null) { CancelAttack(); SetState(Profile.defaultState); return; }
-        if (currentAttack == null) { SetState(EnemyState.Chase); return; }
-
-        Motor.Stop();
-
-        // Windup: keep tracking the target so circling does not trivially dodge. Then commit.
-        float sinceStart = Time.time - attackStartedAt;
-        if (!directionCommitted && sinceStart < CommitTime && Profile.windupTrackSpeed > 0f)
-        {
-            Motor.LookAt(target.transform.position, Profile.windupTrackSpeed);
-        }
-        else
-        {
-            CommitDirection();
-            if (!swingAudioPlayed) { swingAudioPlayed = true; PlaySwingAudio(); }
-        }
-
-        if (IsPlayingAttack()) { attackWasPlaying = true; return; }
-
-        // Swing finished (or never started because the animator has no such state).
-        float startupTimeout = Mathf.Max(0.5f, currentAttack.fallbackHitDelay + 0.1f);
-        if (attackWasPlaying || sinceStart > startupTimeout)
-        {
-            // Cooldown counts from the END of the swing, so there is always an opening
-            // between attacks where the enemy spaces and circles instead of chaining swings.
-            int index = Attacks.IndexOf(currentAttack);
-            if (index >= 0) attackCooldowns[index] = currentAttack.cooldown * (Tuning != null ? Tuning.enemyCooldownMultiplier : 1f);
-
-            CancelAttack();
-            recoveryUntil = Time.time + RecoveryTime;
-            SetState(EnemyState.Chase);
-        }
-    }
-
-    EnemyAttack PickAttack(float dist)
-    {
-        var attacks = Attacks;
-        float totalWeight = 0f;
-        for (int i = 0; i < attacks.Count; i++)
-        {
-            var a = attacks[i];
-            if (a == null || dist < a.minRange || dist > a.EffectiveMaxRange || attackCooldowns[i] > 0f) continue;
-            totalWeight += a.weight;
-        }
-        if (totalWeight <= 0f) return null;
-
-        float roll = UnityEngine.Random.Range(0f, totalWeight);
-        for (int i = 0; i < attacks.Count; i++)
-        {
-            var a = attacks[i];
-            if (a == null || dist < a.minRange || dist > a.EffectiveMaxRange || attackCooldowns[i] > 0f) continue;
-            roll -= a.weight;
-            if (roll <= 0f) return a;
-        }
-        return null;
-    }
-
-    // The whoosh plays when the windup commits, just before the hit event.
-    void PlaySwingAudio()
-    {
-        if (currentAttack == null || !AudioManager.HasInstance) return;
-        var hit = currentAttack.hit;
-        AudioData audio = hit.useDefaultEffects ? (Tuning != null ? Tuning.defaultSwingAudio : null) : hit.swingAudio;
-        if (audio != null) AudioManager.Instance.PlaySFXData(audio, transform.position + Vector3.up);
-    }
-
-    bool swingAudioPlayed;
-
-    void StartAttack(EnemyAttack attack)
-    {
-        currentAttack = attack;
-        attackStartedAt = Time.time;
-        committedForward = transform.forward;
-        directionCommitted = false;
-        attackWasPlaying = false;
-        swingAudioPlayed = false;
-        var hitbox = attackRelay != null ? attackRelay.GetHitbox(attack.hitboxIndex) : null;
-        if (hitbox != null) hitbox.SetProfile(attack.hit);
-
-        SetState(EnemyState.Attack);
-        Motor.SuppressKnockback = true;
-        // Clear a flinch queued earlier this frame before it can override this swing.
-        if (Character.data != null && Character.HasParameter(Character.Animator, Character.data.hurtTrigger, AnimatorControllerParameterType.Trigger))
-            Character.Animator.ResetTrigger(Character.data.hurtTrigger);
-        Character.TriggerAnimation(attack.animatorTrigger);
-
-        // Without a hitbox the hit lands either on the clip's OnAttackHit animation event
-        // or, if the clip has none, after fallbackHitDelay seconds.
-        if (hitbox == null)
-        {
-            fallbackHitPending = true;
-            float minWindup = Tuning != null ? Tuning.enemyMinimumWindup : 0.3f;
-            fallbackHitAt = attack.fallbackHitDelay >= 0f ? Time.time + Mathf.Max(attack.fallbackHitDelay, minWindup) : float.MaxValue;
-        }
-    }
+    void HandleAttack() => attackRunner.HandleAttackState();
 
     // Animation event on the attack clip: the moment the swing connects.
-    public void OnAttackHit()
-    {
-        float minWindup = Tuning != null ? Tuning.enemyMinimumWindup : 0.3f;
-        if (fallbackHitPending && Time.time >= attackStartedAt + minWindup) DealFallbackHit();
-    }
-
-    public void CommitDirection()
-    {
-        if (currentAttack == null || directionCommitted) return;
-        directionCommitted = true;
-        committedForward = transform.forward;
-        Motor.ClearLookTarget();
-    }
-
-    // Direct hit for enemies without a Hitbox.
-    void DealFallbackHit()
-    {
-        fallbackHitPending = false;
-        var target = Perception.Target;
-        if (!CanOpenHitbox || target == null || !target.IsAlive || !FactionRules.IsHostile(Character.Faction, target.Faction)) return;
-        CommitDirection();
-
-        // Facing was required to start the swing and tracking ran through the windup; at
-        // impact only distance and a generous arc around the committed direction count.
-        float dist = Perception.HorizontalDist(transform.position, target.transform.position);
-        if (dist > currentAttack.EffectiveMaxRange * 1.1f || Mathf.Abs(target.transform.position.y - transform.position.y) > 1f) return;
-        Vector3 toward = target.transform.position - transform.position; toward.y = 0f;
-        float arc = Tuning != null ? Mathf.Min(180f, Tuning.enemyHitFacingAngle * Tuning.meleeWidthMultiplier) : 60f;
-        if (Vector3.Angle(committedForward, toward) > arc) return;
-
-        Vector3 dir = toward.sqrMagnitude > 0.0001f ? toward.normalized : transform.forward;
-
-        float force = currentAttack.hit.knockbackForce >= 0f ? currentAttack.hit.knockbackForce
-                    : (Character.FX != null ? Character.FX.KnockbackForce : 1f);
-        if (CombatManager.HasInstance) force = CombatManager.Instance.ScaleKnockback(force);
-
-        float damage = Character.Stats != null ? Character.Stats.GetFinal(StatType.AttackDamage) : 0f;
-        var info = new DamageInfo
-        {
-            Profile        = currentAttack.hit,
-            Amount         = damage * currentAttack.hit.damageMultiplier,
-            Source         = Character,
-            HitPoint       = target.transform.position + Vector3.up * 1f,
-            Direction      = dir,
-            KnockbackForce = force,
-        };
-
-        var damageable = target.GetComponent<IDamageable>();
-        if (damageable == null) return;
-        if (Tuning != null && !Tuning.HasMeleeLineOfSight(Character, target, info.HitPoint)) return;
-        damageable.TakeDamage(info);
-    }
+    public void OnAttackHit() => attackRunner?.OnAttackHit();
+    public void CommitDirection() => attackRunner?.CommitDirection();
+    // Called by WeaponAnimationRelay for EnableHitbox / DisableHitbox events.
+    public bool DeferHitboxIfEarly(int index) => attackRunner != null && attackRunner.DeferHitboxIfEarly(index);
+    public void NotifyHitboxClosed() => attackRunner?.NotifyHitboxClosed();
 
     void HandleReturnToPost()
     {
@@ -601,35 +448,12 @@ public class EnemyBrain : MonoBehaviour
 
     void HandleWanderMovement()
     {
-        wanderTimer -= Time.deltaTime;
-        if (wanderTimer > 0f) return;
-
         var p = Profile;
-        Vector3 center = spawnPosition;
-        Vector3 dir = UnityEngine.Random.insideUnitSphere; dir.y = 0f; dir.Normalize();
-        Vector3 target = center + dir * UnityEngine.Random.Range(p.minWanderDistance, p.wanderRadius);
-
-        if (p.wanderZoneRadius > 0f)
-        {
-            Vector3 offset = target - center; offset.y = 0f;
-            if (offset.magnitude > p.wanderZoneRadius) target = center + offset.normalized * p.wanderZoneRadius;
-        }
-
-        var filter = new NavMeshQueryFilter { agentTypeID = Motor.Agent.agentTypeID, areaMask = Motor.Agent.areaMask };
-        if (NavMesh.SamplePosition(target, out NavMeshHit hit, p.wanderRadius, filter))
-            Motor.MoveTo(hit.position);
-
-        wanderTimer = UnityEngine.Random.Range(p.minIdleTime, p.maxIdleTime);
+        Motor.WanderStep(ref wanderTimer, spawnPosition, p.minWanderDistance, p.wanderRadius, p.wanderZoneRadius,
+                         p.minIdleTime, p.maxIdleTime);
     }
 
-    void HandlePatrolMovement()
-    {
-        if (waypoints == null || waypoints.Length == 0) return;
-        if (!Motor.ReachedDestination(0.4f)) return;
-        waypointIndex++;
-        if (waypointIndex >= waypoints.Length) waypointIndex = loopPatrol ? 0 : waypoints.Length - 1;
-        if (waypoints[waypointIndex] != null) Motor.MoveTo(waypoints[waypointIndex].position);
-    }
+    void HandlePatrolMovement() => Motor.PatrolStep(waypoints, ref waypointIndex, loopPatrol);
 
     // ── State plumbing ────────────────────────────────────────────────
 
@@ -638,6 +462,8 @@ public class EnemyBrain : MonoBehaviour
         if (State == EnemyState.Attack && newState != EnemyState.Attack) CancelAttack();
         State = newState;
         wanderTimer = 0f;
+        // Hits and noises taken while chasing are old news once the enemy gives up.
+        if (newState == EnemyState.ReturnToPost) Perception.ConsumeStimulus();
 
         var p = Profile;
         bool isCombat = newState == EnemyState.Chase || newState == EnemyState.Attack;
@@ -663,20 +489,6 @@ public class EnemyBrain : MonoBehaviour
         Motor.SetStoppingDistance(isCombat ? PreferredDistance : 0.3f);
     }
 
-    bool IsPlayingAttack() => IsPlayingTag("Attack");
-
-    bool IsPlayingTag(string tag)
-    {
-        var anim = Character.Animator;
-        if (anim == null || anim.runtimeAnimatorController == null) return false;
-        for (int layer = 0; layer < anim.layerCount; layer++)
-        {
-            if (anim.GetCurrentAnimatorStateInfo(layer).IsTag(tag)) return true;
-            if (anim.IsInTransition(layer) && anim.GetNextAnimatorStateInfo(layer).IsTag(tag)) return true;
-        }
-        return false;
-    }
-
     void UpdateAnimator()
     {
         var anim = Character.Animator;
@@ -688,12 +500,7 @@ public class EnemyBrain : MonoBehaviour
             float statMul = Character.Stats != null ? Character.Stats.GetMultiplier(StatType.AttackSpeed) : 1f;
             anim.SetFloat("AttackSpeed", (Tuning != null ? Tuning.enemyAttackAnimationSpeed : 1.35f) * statMul);
         }
-        Vector3 v = Motor.Velocity; v.y = 0f;
-        float speed = v.magnitude;
-        anim.SetFloat("Speed",       speed, 0.08f, Time.deltaTime);
-        anim.SetFloat("MotionSpeed", speed > 0.1f ? 1f : 0f, 0.08f, Time.deltaTime);
-        anim.SetBool("Grounded", Motor.IsGrounded);
-        anim.SetBool("FreeFall", !Motor.IsGrounded && Motor.Velocity.y < -1f);
+        Motor.UpdateLocomotionAnimator(anim, true, 0.08f);
     }
 
     // Kept for cutscene scripts and Odin buttons.

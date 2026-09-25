@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Table entry selects a level. The legacy beat intro stays authored but is bypassed.
+// Table entry selects a level. The intro steps only tell TableLevelLoader what belongs to the town.
 public class TableManager : Singleton<TableManager>, IInteractable
 {
     public TableIntroController tableIntroController;

@@ -8,9 +8,18 @@ public struct EffectContext
     public ItemData   Item;
     public Vector3    Point;
     public DamageInfo Hit;      // valid when the trigger came from a hit
+    public object     ModifierSource;   // stat modifiers are tagged with this; null = a fresh ItemBuffSource per effect
 
     public static EffectContext For(Character user, ItemData item) =>
         new EffectContext { User = user, Item = item, Point = user != null ? user.transform.position : Vector3.zero };
+}
+
+// Source of a stat modifier added by a non-equip effect. One per application, so
+// unequipping the item never cancels it; Equipment still recognises shield buffs by Item.
+public sealed class ItemBuffSource
+{
+    public readonly ItemData Item;
+    public ItemBuffSource(ItemData item) => Item = item;
 }
 
 // Runs EffectEntry lists. Items, equipment and the dispatcher all come through here.
@@ -55,18 +64,22 @@ public static class ItemEffectProcessor
                 break;
 
             case EffectType.Damage:
-                target?.Stats?.TakeDamage(new DamageInfo
+                // No explicit target means the effect hurts its own user; anyone else must be hostile.
+                if (target?.Stats == null) break;
+                if (ctx.Target != null && user != null && target != user && !FactionRules.IsHostile(user.Faction, target.Faction)) break;
+                target.Stats.TakeDamage(new DamageInfo
                 {
-                    Amount = e.value, Source = user, HitPoint = ctx.Point, Direction = Vector3.zero,
+                    Amount = e.value, Source = user, Target = target, FromEffect = true,
+                    HitPoint = ctx.Point, Direction = Vector3.zero,
                 });
                 break;
 
             case EffectType.TimedStatBuff:
                 if (target?.Stats != null)
                 {
-                    // Source is the item so OnUnequip can strip permanent buffs it added.
                     float dur = e.duration > 0f ? e.duration : -1f;
-                    target.Stats.AddModifier(new StatModifier(e.stat, e.value, e.modifierType, ctx.Item, dur));
+                    object source = ctx.ModifierSource ?? new ItemBuffSource(ctx.Item);
+                    target.Stats.AddModifier(new StatModifier(e.stat, e.value, e.modifierType, source, dur));
                 }
                 break;
 

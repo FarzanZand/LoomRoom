@@ -11,12 +11,12 @@ using UnityEngine;
 // cutscene state is restored when the conversation ends.
 public enum GameState
 {
-    Explore  = 0,   // player in control
-    Menu     = 1,   // level selection or another full-screen menu, cursor free
-    Dialogue = 2,   // Pixel Crushers conversation running, cursor free
-    Cutscene = 3,   // timeline or scripted sequence, no input, HUD hidden
-    Inventory = 5, // live inventory: AI and simulation continue; player input is disabled
-    Dead     = 4,   // player died, no input
+    Explore   = 0,   // player in control
+    Menu      = 1,   // level selection or another full-screen menu, cursor free
+    Dialogue  = 2,   // Pixel Crushers conversation running, cursor free
+    Cutscene  = 3,   // timeline or scripted sequence, no input, HUD hidden
+    Dead      = 4,   // player died, no input
+    Inventory = 5,   // live inventory: AI and simulation continue; player input is disabled
 }
 
 public class GameManager : Singleton<GameManager>
@@ -25,39 +25,53 @@ public class GameManager : Singleton<GameManager>
     [SerializeField] bool hideHudInCutscenes = true;
 
     readonly List<GameState> stack = new();
+    readonly Dictionary<GameState, int> owners = new();
 
     public GameState State => stack.Count > 0 ? stack[stack.Count - 1] : GameState.Explore;
     public bool GameplayActive => State == GameState.Explore;
     public bool SimulationActive => State == GameState.Explore || State == GameState.Inventory;
-    public bool IsOpen(GameState state) => stack.Contains(state);
 
     public event Action<GameState> StateChanged;
     public event Action<bool>      HudVisibilityChanged;
 
     void Start() => Apply();
 
-    // Enter a state on top of whatever is running. Pushing the same state twice is a no-op
-    // so two systems that both open "Menu" don't need to coordinate.
+    // Dead is a flag, not a count: level loads clear it without knowing whether anyone died.
+    static bool Counted(GameState state) => state != GameState.Dead;
+
+    // Enter a state on top of whatever is running. States are reference-counted: every
+    // Push needs its own Pop, and the state stays active until the last owner pops it.
     public void Push(GameState state)
     {
         if (state == GameState.Explore) return;
-        if (stack.Contains(state)) return;
+        owners.TryGetValue(state, out int count);
+        if (count > 0)
+        {
+            if (Counted(state)) owners[state] = count + 1;
+            return;
+        }
+        owners[state] = 1;
         stack.Add(state);
         Apply();
     }
 
-    // Leave a state. Removes it wherever it sits in the stack so callers never have to
-    // worry about ordering (a dialogue closing under an open menu just disappears).
+    // Leave a state. Removes it wherever it sits in the stack once no owner is left, so
+    // callers never have to worry about ordering.
     public void Pop(GameState state)
     {
-        if (!stack.Remove(state)) return;
-        Apply();
-    }
-
-    public void PopAll()
-    {
-        if (stack.Count == 0) return;
-        stack.Clear();
+        owners.TryGetValue(state, out int count);
+        if (count <= 0)
+        {
+            if (Counted(state)) Debug.LogWarning($"[GameManager] Pop({state}) without a matching Push.", this);
+            return;
+        }
+        if (Counted(state) && count > 1)
+        {
+            owners[state] = count - 1;
+            return;
+        }
+        owners[state] = 0;
+        stack.Remove(state);
         Apply();
     }
 

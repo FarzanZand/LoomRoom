@@ -6,8 +6,6 @@ using UnityEditor;
 #endif
 
 // One asset per item. Sections show up only when the item type needs them.
-public enum ItemAudioSource { AudioData, AudioClip, AudioManagerKey }
-
 [HideMonoScript]
 [CreateAssetMenu(fileName = "NewItem", menuName = "Items/Item")]
 public class ItemData : ScriptableObject
@@ -107,7 +105,6 @@ public class ItemData : ScriptableObject
 
     public bool IsWeapon     => itemType == ItemType.Weapon;
     public bool IsConsumable => itemType == ItemType.Consumable;
-    public bool IsEquippable => canBeEquipped;
     bool UsesEatAnimation => IsConsumable && canBeEquipped && AnimationOnUse == ItemUseAnimation.Eat;
     bool PickupUsesData => pickupAudioSource == ItemAudioSource.AudioData;
     bool PickupUsesClip => pickupAudioSource == ItemAudioSource.AudioClip;
@@ -142,24 +139,54 @@ public class ItemData : ScriptableObject
         ItemEffectProcessor.Fire(this, EffectTrigger.OnUse, EffectContext.For(user, this));
     }
 
-    // Tooltip body: stat lines then effect lines.
+    // Rich-text tooltip body shared by the in-game tooltip and the Item Database preview.
+    // The comparison with equipped gear and the hint appear only while a player exists.
     public string BuildTooltip()
     {
-        var sb = new StringBuilder();
-        if (!string.IsNullOrEmpty(description)) sb.AppendLine(description);
-
+        var body = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(description))
+            body.Append("<size=18><color=#B7BABF>").Append(description.Trim()).Append("</color></size>");
         if (canBeEquipped && statModifiers != null)
-            foreach (var m in statModifiers)
-                sb.AppendLine(m.Describe());
-
-        if (effects != null)
-            foreach (var e in effects)
+            foreach (var modifier in statModifiers)
             {
-                string line = e.Describe();
-                if (!string.IsNullOrEmpty(line)) sb.AppendLine(line);
+                if (modifier == null) continue;
+                if (body.Length > 0) body.Append("\n\n");
+                string line = modifier.Describe();
+                int split = line.IndexOf(' ');
+                body.Append("<color=").Append(modifier.value < 0 ? "#E78787>" : "#80CEA0>")
+                    .Append(line.Substring(0, split)).Append("</color>").Append(line.Substring(split));
             }
+        if (effects != null)
+            foreach (var effect in effects)
+            {
+                string line = effect?.Describe();
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                if (body.Length > 0) body.Append("\n\n");
+                body.Append("<color=#A1C5DE>").Append(line).Append("</color>");
+            }
+        if (itemType == ItemType.Shield) body.Append("\n\nArmor applies only to frontal hits while blocking. Guarding and blocked hits consume stamina.");
+        if (canBeEquipped && PlayerManager.HasInstance)
+        {
+            var equipped = PlayerManager.Instance.Active?.Equipment?.Get(equipSlot);
+            if (!IsConsumable)
+                foreach (var stat in new[] { StatType.AttackDamage, StatType.Armor })
+                {
+                    float delta = FlatBonus(this, stat) - FlatBonus(equipped, stat);
+                    if (Mathf.Abs(delta) > .001f)
+                        body.Append($"\n\n<color={(delta > 0 ? "#80CEA0" : "#E78787")}>{delta:+0.#;-0.#} {StatModifierEntry.Label(stat)}</color> vs equipped");
+                }
+            body.Append(IsConsumable ? "\n\n<size=17>Equip, close inventory, then use from your hand.</size>" : "\n\n<size=17>Equip from inventory or drag to its equipment slot.</size>");
+        }
+        return body.ToString();
+    }
 
-        return sb.ToString().TrimEnd();
+    static float FlatBonus(ItemData data, StatType stat)
+    {
+        float sum = 0;
+        if (data?.statModifiers != null)
+            foreach (var m in data.statModifiers)
+                if (m != null && m.stat == stat && m.type == ModifierType.Flat) sum += m.value;
+        return sum;
     }
 
     void OnValidate()

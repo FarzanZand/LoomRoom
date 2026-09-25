@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -36,7 +37,7 @@ public class Character : MonoBehaviour
     public static event Action<Character> AnyDied;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetStatics() { Spawned = null; AnyDied = null; }
+    static void ResetStatics() { Spawned = null; AnyDied = null; parameterCache.Clear(); }
 
     protected virtual void Awake()
     {
@@ -83,7 +84,7 @@ public class Character : MonoBehaviour
         if (info.Amount > 0f || info.Blocked)
         {
             if (CombatManager.HasInstance) CombatManager.Instance.PresentImpact(this, info);
-            info.Source?.NotifyHitLanded(info);
+            if (info.Source != null && info.Source != this && !info.FromEffect) info.Source.NotifyHitLanded(info);
         }
 
         if (!info.Blocked && info.Amount > 0f && info.KnockbackForce > 0f && info.Direction != Vector3.zero)
@@ -133,11 +134,27 @@ public class Character : MonoBehaviour
             animator.SetTrigger(triggerName);
     }
 
+    // Animator.parameters allocates, so each controller's (name, type) pairs are cached once.
+    static readonly Dictionary<RuntimeAnimatorController, HashSet<(int, AnimatorControllerParameterType)>> parameterCache = new();
+
     public static bool HasParameter(Animator anim, string name, AnimatorControllerParameterType type)
     {
-        if (anim == null) return false;
-        foreach (var p in anim.parameters)
-            if (p.name == name && p.type == type) return true;
-        return false;
+        if (anim == null || string.IsNullOrEmpty(name)) return false;
+        var controller = anim.runtimeAnimatorController;
+        if (controller == null) return false;
+        if (!parameterCache.TryGetValue(controller, out var set))
+        {
+            // An uninitialised animator (inactive object) reports no parameters; don't cache that.
+            if (!anim.isInitialized)
+            {
+                foreach (var p in anim.parameters)
+                    if (p.name == name && p.type == type) return true;
+                return false;
+            }
+            set = new HashSet<(int, AnimatorControllerParameterType)>();
+            foreach (var p in anim.parameters) set.Add((p.nameHash, p.type));
+            parameterCache[controller] = set;
+        }
+        return set.Contains((Animator.StringToHash(name), type));
     }
 }

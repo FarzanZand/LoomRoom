@@ -10,6 +10,6 @@ Shield Armor is conditional: it contributes only while guarding, and only to suc
 
 HUD order is Health, Stamina, Mana. Reusable bar prefabs are in `Assets/Game/UI/Prefabs/Vitals/`. Edit these for bar artwork and sizing. The character panel also displays stamina. Shield tooltips explain their conditional armor.
 
-Explicit editor checks: `Temp/StaminaSetup.request` authors missing HUD content without running on normal imports. `Temp/StaminaValidation.request` runs the action/resource/armor checks in Play mode and saves a HUD capture to `Temp/StaminaHUD.png`.
+The `Temp/StaminaSetup.request` and `Temp/StaminaValidation.request` editor checks are no longer in the project; verify stamina, resource and armor behaviour manually in Play Mode.
 
 Failed stamina actions show a centered "Not enough stamina" notification. Edit the wording and repeat interval on the scene PlayerVitalsUI component; presentation comes from the existing Pickup notification prefab under UI/Prefabs/Feedback. The cooldown prevents held inputs from continually restarting the fade.

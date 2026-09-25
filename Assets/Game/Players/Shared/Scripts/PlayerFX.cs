@@ -73,20 +73,21 @@ public class PlayerFX : CharacterFX
         if ((info.Amount>0 || info.Blocked) && enableHurtFlash && hurtFlashImage != null)
         {
             if (hurtFlashRoutine != null) StopCoroutine(hurtFlashRoutine);
+            Color color = hurtFlashColor;
+            float peak = hurtFlashPeakAlpha, duration = hurtFlashDuration;
             if(CombatManager.HasInstance)
             {
                 var tuning=CombatManager.Instance;
-                hurtFlashColor=info.Blocked ? tuning.blockScreenColor : tuning.hurtScreenColor;
-                hurtFlashPeakAlpha=tuning.hurtScreenAlpha*(info.Blocked ? .45f : 1f);
-                hurtFlashDuration=tuning.hurtScreenDuration;
+                color=info.Blocked ? tuning.blockScreenColor : tuning.hurtScreenColor;
+                peak=tuning.hurtScreenAlpha*(info.Blocked ? .45f : 1f);
+                duration=tuning.hurtScreenDuration;
             }
-            hurtFlashRoutine = StartCoroutine(HurtFlashRoutine());
+            hurtFlashRoutine = StartCoroutine(HurtFlashRoutine(color, peak, duration));
         }
     }
 
     void Kick(float amount,DamageInfo info)
     {
-        var player=GetComponentInParent<Player>();
         if(player==null || !player.IsActive || player.CameraRig==null || player.CameraRig.Camera==null)return;
         // Camera shake is handled by Cinemachine impulses; character motion stays in clips.
         var impulse=info.Source==player ? onHitImpulse : onHurtImpulse;
@@ -96,28 +97,27 @@ public class PlayerFX : CharacterFX
     {
         if(hurtFlashRoutine!=null) StopCoroutine(hurtFlashRoutine);
         hurtFlashRoutine=null;
-        if(hurtFlashImage!=null) SetFlashAlpha(0);
+        if(hurtFlashImage!=null) SetFlashAlpha(hurtFlashColor, 0f);
     }
 
-    IEnumerator HurtFlashRoutine()
+    IEnumerator HurtFlashRoutine(Color color, float peak, float duration)
     {
-        SetFlashAlpha(hurtFlashPeakAlpha);
+        SetFlashAlpha(color, peak);
         float elapsed = 0f;
-        while (elapsed < hurtFlashDuration)
+        while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
-            SetFlashAlpha(Mathf.Lerp(hurtFlashPeakAlpha, 0f, elapsed / hurtFlashDuration));
+            SetFlashAlpha(color, Mathf.Lerp(peak, 0f, elapsed / duration));
             yield return null;
         }
-        SetFlashAlpha(0f);
+        SetFlashAlpha(color, 0f);
         hurtFlashRoutine = null;
     }
 
-    void SetFlashAlpha(float alpha)
+    void SetFlashAlpha(Color color, float alpha)
     {
-        Color c = hurtFlashColor;
-        c.a = alpha;
-        hurtFlashImage.color = c;
+        color.a = alpha;
+        hurtFlashImage.color = color;
         hurtFlashImage.gameObject.SetActive(alpha > 0f);
     }
 }

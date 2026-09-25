@@ -45,7 +45,6 @@ public class PlayerAnimation : MonoBehaviour
         Apply(bodyAnimator, horizontal, motion, grounded, freeFall);
         Apply(armsAnimator, horizontal, motion, grounded, freeFall);
 
-        if (grounded && !jumpFlag) { }
         if (grounded) jumpFlag = false;
     }
 

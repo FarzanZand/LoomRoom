@@ -59,13 +59,6 @@ public class CharacterData : ScriptableObject
     [ListDrawerSettings(ShowFoldout = true)]
     public List<EnemyAttack> attacks = new();
 
-    public float GetBaseStat(StatType type)
-    {
-        foreach (var s in stats)
-            if (s.stat == type) return s.baseValue;
-        return 0f;
-    }
-
     void Reset()
     {
         stats = new List<StatEntry>

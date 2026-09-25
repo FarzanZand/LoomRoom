@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 
 // Fans a character's combat events out to the items it has equipped, so gear with
@@ -36,11 +37,12 @@ public class EffectDispatcher : MonoBehaviour
     void OnHitLanded(DamageInfo hit)
     {
         if (equipment == null) return;
-        foreach (var item in equipment.EquippedItems)
+        // Snapshot: an effect may equip or unequip while we iterate.
+        foreach (var item in equipment.EquippedItems.ToArray())
         {
             if (!ItemEffectProcessor.HasTrigger(item, EffectTrigger.OnHitLanded)) continue;
             var ctx = EffectContext.For(character, item);
-            ctx.Target = hit.Source == character ? null : FindVictim(hit);
+            ctx.Target = hit.Target;
             ctx.Point  = hit.HitPoint;
             ctx.Hit    = hit;
             ItemEffectProcessor.Fire(item, EffectTrigger.OnHitLanded, ctx);
@@ -49,8 +51,9 @@ public class EffectDispatcher : MonoBehaviour
 
     void OnHurt(DamageInfo hit)
     {
-        if (equipment == null) return;
-        foreach (var item in equipment.EquippedItems)
+        // Effect damage never procs OnHurt, so two thorns wearers can't bounce damage forever.
+        if (equipment == null || hit.FromEffect) return;
+        foreach (var item in equipment.EquippedItems.ToArray())
         {
             if (!ItemEffectProcessor.HasTrigger(item, EffectTrigger.OnHurt)) continue;
             var ctx = EffectContext.For(character, item);
@@ -59,18 +62,5 @@ public class EffectDispatcher : MonoBehaviour
             ctx.Hit    = hit;
             ItemEffectProcessor.Fire(item, EffectTrigger.OnHurt, ctx);
         }
-    }
-
-    // The DamageInfo carries the attacker, not the victim; for OnHitLanded the victim is
-    // whoever is at the hit point. Cheap lookup that is good enough for effects.
-    static Character FindVictim(DamageInfo hit)
-    {
-        var cols = Physics.OverlapSphere(hit.HitPoint, 0.5f);
-        foreach (var c in cols)
-        {
-            var ch = c.GetComponentInParent<Character>();
-            if (ch != null && ch != hit.Source) return ch;
-        }
-        return null;
     }
 }

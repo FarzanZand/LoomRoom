@@ -8,9 +8,7 @@ using UnityEngine;
 // Sits on the Dialogue Manager object.
 public class DialogueBridge : MonoBehaviour
 {
-    static DialogueBridge instance;
-
-    void Awake() => instance = this;
+    NpcBrain talkingNpc;
 
     void OnEnable()
     {
@@ -41,14 +39,17 @@ public class DialogueBridge : MonoBehaviour
     void OnConversationStarted(Transform actor)
     {
         if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Dialogue);
+        // Pixel Crushers passes the actor (the player); the NPC is the conversant.
+        var conversant = DialogueManager.currentConversant;
+        talkingNpc = conversant != null ? conversant.GetComponentInParent<NpcBrain>() : null;
     }
 
     void OnConversationEnded(Transform actor)
     {
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
-        // Let the NPC we talked to resume.
-        var npc = actor != null ? actor.GetComponentInParent<NpcBrain>() : null;
-        npc?.EndInteraction();
+        var npc = talkingNpc;
+        talkingNpc = null;
+        if (npc != null) npc.EndInteraction();
     }
 
     public static bool StartConversation(string title, Transform actor, Transform conversant)

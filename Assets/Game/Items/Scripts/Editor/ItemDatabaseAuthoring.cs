@@ -70,27 +70,26 @@ public static class ItemDatabaseAuthoring
             issues.Add("This consumable has no OnUse effect.");
         if (item.effects != null && item.effects.Any(e => e != null && e.type == EffectType.FoodRegen && (e.value <= 0 || e.duration <= 0)))
             issues.Add("Food regeneration needs a positive rate and duration.");
+        if (item.effects != null && item.effects.Any(e => e != null && e.type == EffectType.TimedStatBuff && e.duration <= 0 &&
+                (e.trigger == EffectTrigger.OnHitLanded || e.trigger == EffectTrigger.OnHurt)))
+            issues.Add("A permanent stat buff on OnHitLanded/OnHurt stacks forever, once per proc. Give it a duration.");
         return issues;
     }
-    public static void Save()
-    {
-        var previous = EditorSettings.serializationMode;
-        try { EditorSettings.serializationMode = SerializationMode.ForceText; AssetDatabase.SaveAssets(); }
-        finally { EditorSettings.serializationMode = previous; }
-    }
+    public static void Save() => AssetDatabase.SaveAssets();
+    // InventoryManager's catalog button runs this by menu path.
+    [MenuItem("Tools/LoomRoom/Sync Item Catalog")]
+    static void SyncCatalogFromMenu() => Debug.Log($"[ItemDatabase] Catalog updated: {SyncCatalog()} items. Save the scene.");
     public static int SyncCatalog()
     {
         var items = All().Where(i => !IsArchived(i)).ToList();
         const string path = "Assets/Game/Core/Prefabs/InventoryManager.prefab";
         var root = PrefabUtility.LoadPrefabContents(path);
-        var previous = EditorSettings.serializationMode;
         try
         {
-            EditorSettings.serializationMode = SerializationMode.ForceText;
             root.GetComponent<InventoryManager>().itemCatalog = items;
             PrefabUtility.SaveAsPrefabAsset(root, path);
         }
-        finally { PrefabUtility.UnloadPrefabContents(root); EditorSettings.serializationMode = previous; }
+        finally { PrefabUtility.UnloadPrefabContents(root); }
         foreach (var manager in UnityEngine.Object.FindObjectsByType<InventoryManager>(FindObjectsInactive.Include))
         {
             Undo.RecordObject(manager, "Sync item catalog");

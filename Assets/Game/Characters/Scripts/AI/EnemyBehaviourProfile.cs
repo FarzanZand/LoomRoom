@@ -106,9 +106,7 @@ public class EnemyBehaviourSettings
     [Tooltip("Degrees per second the enemy keeps tracking the target during the attack windup, before the swing commits. 0 = fully planted.")]
     public float windupTrackSpeed    = 240f;
 
-    // Deep copy, used when an EnemyBrain starts overriding: it begins from the shared values.
-    public EnemyBehaviourSettings Clone() => JsonUtility.FromJson<EnemyBehaviourSettings>(JsonUtility.ToJson(this));
-
+    // Used when an EnemyBrain starts overriding: it begins from the shared values.
     public void CopyFrom(EnemyBehaviourSettings other)
     {
         if (other == null) return;

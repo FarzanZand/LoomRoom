@@ -23,12 +23,12 @@ public class WakeUpCutsceneController : CutsceneController
 
         if (PlayerManager.HasInstance && startPositionRoom != null)
         {
-            var ctx = PlayerManager.Instance.Get(PlayerKind.Room);
-            var target = ctx != null && ctx.player != null ? ctx.player.transform : PlayerManager.Instance.roomPlayer?.transform;
-            if (target != null)
+            var room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
+            if (room != null)
             {
-                target.SetPositionAndRotation(startPositionRoom.position, startPositionRoom.rotation);
-                ctx?.player?.Look?.SetYaw(startPositionRoom.eulerAngles.y);
+                room.Warp(startPositionRoom.position);
+                room.transform.rotation = startPositionRoom.rotation;
+                room.Look?.SetYaw(startPositionRoom.eulerAngles.y);
             }
         }
 

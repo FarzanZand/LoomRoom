@@ -24,51 +24,34 @@ public class Equipment : MonoBehaviour
     [SerializeField] Hitbox weaponHitbox;
 
     public event Action Changed;
-    public event Action<EquipmentSlot, ItemData> Equipped;
-    public event Action<EquipmentSlot, ItemData> Unequipped;
 
     public Character Character { get; private set; }
+
+    static readonly EquipmentSlot[] AllSlots = (EquipmentSlot[])Enum.GetValues(typeof(EquipmentSlot));
 
     readonly Dictionary<EquipmentSlot, ItemData>   items   = new();
     readonly Dictionary<EquipmentSlot, GameObject> objects = new();
     readonly Dictionary<EquipmentSlot, object>     sources = new();
+    readonly HeldItemEating eating = new();
 
-    Transform eatingHand, eatingItem;
-    Player eatingPlayer;
-    ItemData eatingData;
-    Action eatingComplete;
-    Vector3 handPosition;
-    Quaternion handRotation;
-    float eatingStarted;
-    bool poseApplied;
-    public bool IsUsingItem => eatingData != null;
+    public bool IsUsingItem => eating.IsPlaying;
 
     public bool PlayEating(ItemData item, EquipmentSlot slot, Action complete)
     {
         if (IsUsingItem || !isActiveAndEnabled || !item.canBeEquipped || Get(slot) != item ||
-            Character is not Player player || !player.IsActive ||
-            !PlayerManager.HasInstance || PlayerManager.Instance.OutputCamera == null ||
-            !objects.TryGetValue(slot, out var held) || held == null) return false;
-        var anchor = GetAnchor(slot);
-        if (anchor == null || anchor.parent == null) return false;
-        eatingHand = anchor.parent;
-        eatingItem = held.transform;
-        eatingPlayer = player;
-        eatingData = item;
-        eatingComplete = complete;
-        eatingStarted = Time.time;
-        return true;
+            Character is not Player player || !objects.TryGetValue(slot, out var held)) return false;
+        return eating.Play(player, item, GetAnchor(slot), held, complete);
     }
 
-    // Restore our additive pose before the Animator evaluates the next frame.
-    void Update() => RestoreEatingPose();
+    // Restore the eating pose before the Animator evaluates the next frame.
+    void Update() => eating.RestorePose();
 
     void LateUpdate()
     {
         if (Character is Player owner)
         {
             // Resolve after inventory transfers finish so swaps cannot leave ghost equipment.
-            foreach (var slot in (EquipmentSlot[])Enum.GetValues(typeof(EquipmentSlot)))
+            foreach (var slot in AllSlots)
             {
                 var item = Get(slot);
                 if (item == null) continue;
@@ -76,47 +59,10 @@ public class Equipment : MonoBehaviour
                 if (owner.Hotbar.IndexOf(item) < 0 && (hand || owner.Bag.IndexOf(item) < 0)) Unequip(slot);
             }
         }
-        if (!IsUsingItem) return;
-        if (eatingHand == null || eatingItem == null || !eatingPlayer.IsActive || !eatingPlayer.IsAlive ||
-            !PlayerManager.HasInstance || PlayerManager.Instance.OutputCamera == null)
-        { ClearEating(); return; }
-        float progress = (Time.time - eatingStarted) / Mathf.Max(.1f, eatingData.eatDuration);
-        if (progress >= 1)
-        {
-            var complete = eatingComplete;
-            ClearEating();
-            complete?.Invoke();
-            return;
-        }
-        var camera = PlayerManager.Instance.OutputCamera.transform;
-        handPosition = eatingHand.localPosition;
-        handRotation = eatingHand.localRotation;
-        poseApplied = true;
-        float t = Mathf.SmoothStep(0, 1, Mathf.Clamp01(progress / .8f));
-        var targetRotation = camera.rotation * Quaternion.Euler(eatingData.eatMouthRotation);
-        var rotation = Quaternion.Slerp(Quaternion.identity, targetRotation * Quaternion.Inverse(eatingItem.rotation), t);
-        var targetPosition = Vector3.Lerp(eatingItem.position, camera.TransformPoint(eatingData.eatMouthPosition), t);
-        eatingHand.rotation = rotation * eatingHand.rotation;
-        eatingHand.position += targetPosition - eatingItem.position;
+        eating.Tick();
     }
 
-    void RestoreEatingPose()
-    {
-        if (poseApplied && eatingHand != null)
-            eatingHand.SetLocalPositionAndRotation(handPosition, handRotation);
-        poseApplied = false;
-    }
-
-    void ClearEating()
-    {
-        RestoreEatingPose();
-        eatingData = null;
-        eatingComplete = null;
-        eatingHand = eatingItem = null;
-        eatingPlayer = null;
-    }
-
-    void OnDisable() => ClearEating();
+    void OnDisable() => eating.Clear();
     public IEnumerable<ItemData> EquippedItems => items.Values;
 
     bool initialized;
@@ -130,7 +76,7 @@ public class Equipment : MonoBehaviour
         Character = GetComponent<Character>();
         if (weaponHitbox == null) weaponHitbox = GetComponentInChildren<Hitbox>(true);
         EffectDispatcher.Ensure(gameObject);
-        foreach (EquipmentSlot s in Enum.GetValues(typeof(EquipmentSlot)))
+        foreach (var s in AllSlots)
             sources[s] = new object();
     }
 
@@ -149,7 +95,7 @@ public class Equipment : MonoBehaviour
     {
         foreach (var pair in sources)
             if (Get(pair.Key) is ItemData item && item.itemType == ItemType.Shield &&
-                (ReferenceEquals(pair.Value, source) || ReferenceEquals(item, source))) return true;
+                (ReferenceEquals(pair.Value, source) || source is ItemBuffSource buff && buff.Item == item)) return true;
         return false;
     }
 
@@ -159,6 +105,7 @@ public class Equipment : MonoBehaviour
     {
         EnsureInitialized();
         if (!CanEquip(item)) return false;
+        if (IsEquipped(item)) return true;
 
         if(Character is Player owner && owner.Bag.IndexOf(item)<0 && owner.Hotbar.IndexOf(item)<0)return false;
         var slot = item.equipSlot;
@@ -192,10 +139,11 @@ public class Equipment : MonoBehaviour
             else               weaponHitbox.ClearProfile();
         }
 
-        ItemEffectProcessor.Fire(item, EffectTrigger.OnEquip, EffectContext.For(Character, item));
+        var equipContext = EffectContext.For(Character, item);
+        equipContext.ModifierSource = sources[slot];   // removed with the slot's stat modifiers on unequip
+        ItemEffectProcessor.Fire(item, EffectTrigger.OnEquip, equipContext);
 
         if(playSound && Character is Player){var style=UIFeedbackSettings.Shared;style?.Play(style.equipKey);}
-        Equipped?.Invoke(slot, item);
         Changed?.Invoke();
         return true;
     }
@@ -204,24 +152,20 @@ public class Equipment : MonoBehaviour
     {
         EnsureInitialized();
         if (!items.TryGetValue(slot, out var item)) return null;
-        if (item == eatingData) ClearEating();
+        if (item == eating.Item) eating.Clear();
 
         if (objects.TryGetValue(slot, out var obj) && obj != null) Destroy(obj);
         objects.Remove(slot);
         items.Remove(slot);
 
         if (Character.Stats != null)
-        {
             Character.Stats.RemoveAllFromSource(sources[slot]);
-            Character.Stats.RemoveAllFromSource(item);   // permanent buffs the item's OnEquip effects added
-        }
 
         if (slot == EquipmentSlot.RightHand && weaponHitbox != null)
             weaponHitbox.ClearProfile();
 
         ItemEffectProcessor.Fire(item, EffectTrigger.OnUnequip, EffectContext.For(Character, item));
 
-        Unequipped?.Invoke(slot, item);
         Changed?.Invoke();
         return item;
     }

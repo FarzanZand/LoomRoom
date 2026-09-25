@@ -15,5 +15,4 @@ public class ItemStack
     }
 
     public bool IsEmpty => item == null || count <= 0;
-    public bool CanStackWith(ItemData other) => item == other && item != null && count < item.maxStackSize;
 }

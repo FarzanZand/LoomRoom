@@ -1,4 +1,3 @@
-using System.Text;
 using TMPro;
 using UnityEngine.UI;
 using UnityEngine;
@@ -37,7 +36,7 @@ public class TooltipUI : Singleton<TooltipUI>
         if (panel == null || item == null) return;
         if (nameText != null)        nameText.text = item.itemName;
         if (typeText != null)        typeText.text = item.IsConsumable ? "CONSUMABLE" : item.canBeEquipped ? EquipmentSlotUI.Display(item.equipSlot) : item.itemType.ToString().ToUpperInvariant();
-        if (descriptionText != null) descriptionText.text = FormatBody(item);
+        if (descriptionText != null) descriptionText.text = item.BuildTooltip();
         panel.SetActive(true);
         // Unity can reset overrideSorting while an authored nested canvas is inactive.
         var overlay=panel.GetComponent<Canvas>();if(overlay!=null)overlay.overrideSorting=true;
@@ -46,42 +45,6 @@ public class TooltipUI : Singleton<TooltipUI>
         if(visibility!=null){visibility.alpha=0;fade=visibility.DOFade(1,.12f).SetUpdate(true);}
         LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         FollowMouse();
-    }
-
-    static string FormatBody(ItemData item)
-    {
-        var body=new StringBuilder();
-        if (!string.IsNullOrWhiteSpace(item.description))
-            body.Append("<size=18><color=#B7BABF>").Append(item.description.Trim()).Append("</color></size>");
-        if (item.canBeEquipped && item.statModifiers != null)
-            foreach(var modifier in item.statModifiers)
-            {
-                if(modifier==null) continue;
-                if(body.Length>0) body.Append("\n\n");
-                string line=modifier.Describe();
-                int split=line.IndexOf(' ');
-                body.Append("<color=").Append(modifier.value<0 ? "#E78787>" : "#80CEA0>")
-                    .Append(line.Substring(0,split)).Append("</color>").Append(line.Substring(split));
-            }
-        if(item.effects!=null)
-            foreach(var effect in item.effects)
-            {
-                string line=effect?.Describe();
-                if(string.IsNullOrWhiteSpace(line)) continue;
-                if(body.Length>0) body.Append("\n\n");
-                body.Append("<color=#A1C5DE>").Append(line).Append("</color>");
-            }
-        if(item.itemType == ItemType.Shield) body.Append("\n\nArmor applies only to frontal hits while blocking. Guarding and blocked hits consume stamina.");
-        if(item.canBeEquipped && PlayerManager.HasInstance) {
-            var equipped=PlayerManager.Instance.Active?.Equipment?.Get(item.equipSlot);
-            float Bonus(ItemData data,StatType stat){float sum=0;if(data?.statModifiers!=null)foreach(var m in data.statModifiers)if(m!=null&&m.stat==stat&&m.type==ModifierType.Flat)sum+=m.value;return sum;}
-            foreach(var stat in item.IsConsumable ? System.Array.Empty<StatType>() : new[]{StatType.AttackDamage,StatType.Armor}) {
-                float delta=Bonus(item,stat)-Bonus(equipped,stat);
-                if(Mathf.Abs(delta)>.001f)body.Append($"\n\n<color={(delta>0?"#80CEA0":"#E78787")}>{delta:+0.#;-0.#} {StatModifierEntry.Label(stat)}</color> vs equipped");
-            }
-            body.Append(item.IsConsumable?"\n\n<size=17>Equip, close inventory, then use from your hand.</size>":"\n\n<size=17>Equip from inventory or drag to its equipment slot.</size>");
-        }
-        return body.ToString();
     }
 
     public void Hide()

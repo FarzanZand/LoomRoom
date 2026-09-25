@@ -10,14 +10,15 @@ public class DungeonGenerator : MonoBehaviour
     public Quaternion SpawnRotation { get; private set; }=Quaternion.identity;
     public Vector3 ExitPoint { get; private set; }
     public NavMeshSurface Surface { get; private set; }
+    NavMeshData navMeshData;
     TableLevelData data;
     public TableLevelData LevelData => data;
     Transform geometry, ceiling;
     readonly System.Collections.Generic.Dictionary<(Vector3, Vector3), Mesh> architectureMeshes = new();
     System.Random random;
     public int FloorNumber { get; private set; }=1;
-    int floorNumber=>FloorNumber;
-    public enum RoomRole { Entrance, Combat, Treasure, Rest, Storage, Exit }
+    // Serialized in DungeonRoomProfile.role; Build casts random.Next(2,5) to Treasure..Storage.
+    public enum RoomRole { Entrance = 0, Combat = 1, Treasure = 2, Rest = 3, Storage = 4, Exit = 5 }
     public RoomRole[] Roles { get; private set; }
     public int[] RoomHeightTiles { get; private set; }
     public int[] CorridorHeightTiles { get; private set; }
@@ -87,7 +88,7 @@ public class DungeonGenerator : MonoBehaviour
     }
     DungeonRoomProfile[] profiles;
     public double GenerationMilliseconds { get; private set; }
-    DungeonFloorSettings Settings=>data.Floor(floorNumber);
+    DungeonFloorSettings Settings=>data.Floor(FloorNumber);
     DungeonLootTable Loot(DungeonLootSource source)=>source==DungeonLootSource.Enemy ? (Settings?.enemyLoot ?? data.enemyLoot ?? data.loot) : source==DungeonLootSource.Chest ? (Settings?.chestLoot ?? data.chestLoot ?? data.loot) : (Settings?.barrelLoot ?? data.barrelLoot ?? data.loot);
 
     public Vector3 Cell(Vector2Int p) => transform.position + new Vector3((p.x-data.width*.5f)*data.cellSize, 0, (p.y-data.depth*.5f)*data.cellSize);
@@ -168,7 +169,8 @@ public class DungeonGenerator : MonoBehaviour
                 }
             }
         }
-        for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(Layout.rooms[i],i);
+        var lighting = data.DungeonLighting(FloorNumber);
+        for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(Layout.rooms[i],i,lighting);
         var batching=gameObject.AddComponent<DungeonStaticGeometry>();
         batching.Combine(geometry,data.cellSize*8);
         batching.Combine(ceiling,data.cellSize*8);
@@ -178,6 +180,7 @@ public class DungeonGenerator : MonoBehaviour
         Surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
         Surface.overrideVoxelSize = true; Surface.voxelSize = .12f;
         Surface.BuildNavMesh();
+        navMeshData = Surface.navMeshData;
         ValidateNavigation();
         MakeDoors(seed);
         SpawnPoint = Cell(Layout.Start)+Vector3.up*.12f;
@@ -271,7 +274,7 @@ public class DungeonGenerator : MonoBehaviour
     {
         if(data.roomProfiles==null)return null;
         float total=0;
-        bool Eligible(DungeonRoomProfile p)=>p!=null && p.role==role && p.weight>0 && floorNumber>=p.minFloor && (p.maxFloor<=0||floorNumber<=p.maxFloor);
+        bool Eligible(DungeonRoomProfile p)=>p!=null && p.role==role && p.weight>0 && FloorNumber>=p.minFloor && (p.maxFloor<=0||FloorNumber<=p.maxFloor);
         foreach(var profile in data.roomProfiles)if(Eligible(profile))total+=profile.weight;
         double roll=random.NextDouble()*total;
         foreach(var profile in data.roomProfiles)if(Eligible(profile)){roll-=profile.weight;if(roll<0)return profile;}
@@ -289,8 +292,8 @@ public class DungeonGenerator : MonoBehaviour
             var door=Instantiate(data.doorPrefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
             // Cell width changes the span, not the doorway height or ceiling clearance.
             door.transform.localScale=new Vector3(data.cellSize/2f,1,1);
-            door.GetComponent<DungeonDoor>()?.FitCeiling(Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y)), data.architectureTileSize);
             var gate = door.GetComponent<DungeonDoor>();
+            if (gate != null) gate.FitCeiling(Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y)), data.architectureTileSize);
             if (gate != null && gate.lintel != null)
             {
                 // Split stationary lintel at tile boundaries so tall doors use the correct upper material.
@@ -311,14 +314,13 @@ public class DungeonGenerator : MonoBehaviour
         }
     }
 
-    void DecorateRoom(RectInt room,int index)
+    void DecorateRoom(RectInt room,int index,LightingManager.MoodState lighting)
     {
         Vector3 center = Cell(DungeonLayout.Center(room));
         // Broad pools of warm and cool light, with no torch requirement.
         var lamp = new GameObject("Amber chamber light"); lamp.transform.SetParent(transform,false);
         lamp.transform.position = center+Vector3.up*Mathf.Min(2.65f, data.architectureTileSize-.35f);
         var light = lamp.AddComponent<Light>(); light.type=LightType.Point;
-        var lighting = data.DungeonLighting(floorNumber);
         light.color = index%3==0 ? lighting.top : lighting.light;
         var profile=profiles[index];
         light.range=profile!=null && profile.overrideLight?profile.lightRange:20;
@@ -379,7 +381,7 @@ public class DungeonGenerator : MonoBehaviour
                 DestroyImmediate(band.GetComponent<Collider>());
             }
         }
-        var container=go.GetComponent<DungeonContainer>() ?? go.AddComponent<DungeonContainer>(); container.chest=chest; container.loot=rewardOverride ?? Loot(chest?DungeonLootSource.Chest:DungeonLootSource.Barrel); container.floorNumber=floorNumber;
+        var container=go.GetComponent<DungeonContainer>() ?? go.AddComponent<DungeonContainer>(); container.chest=chest; container.loot=rewardOverride ?? Loot(chest?DungeonLootSource.Chest:DungeonLootSource.Barrel); container.floorNumber=FloorNumber;
         container.seed=random.Next(); container.debrisMaterial=data.woodMaterial;
         container.openAudio=chest ? data.chestOpenAudio:data.containerBreakAudio;
         if(healing) container.guaranteedItem=data.guaranteedHealing;
@@ -392,7 +394,7 @@ public class DungeonGenerator : MonoBehaviour
 
     void MakeExit(Vector3 pos,bool entrance)
     {
-        bool descending=!entrance && data.multipleLevels && floorNumber<Mathf.Max(1,data.levelCount);
+        bool descending=!entrance && data.multipleLevels && FloorNumber<Mathf.Max(1,data.levelCount);
         var go=new GameObject(entrance ? "Entrance stair" : descending ? "Stairs down" : "Final exit stair"); go.transform.SetParent(transform,false); go.transform.position=pos;
         for(int i=0;i<5;i++) {
             int step=descending ? 4-i:i;
@@ -440,6 +442,9 @@ public class DungeonGenerator : MonoBehaviour
     {
         foreach (var mesh in architectureMeshes.Values) if (mesh != null) Destroy(mesh);
         architectureMeshes.Clear();
+        // NavMeshSurface only removes its data instance on disable; the NavMeshData asset itself is ours to free.
+        if (navMeshData != null) Destroy(navMeshData);
+        navMeshData = null;
     }
     public static GameObject Box(string name,Vector3 pos,Vector3 size,Material material,Transform parent)
     {

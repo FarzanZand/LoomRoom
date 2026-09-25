@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Unity.Cinemachine;
 
 // Presentation only: the seeded layout and navigation are already ready before playback.
@@ -25,7 +24,9 @@ public sealed class TableLevelReveal : MonoBehaviour
     ParticleSystem dust;
     DungeonGenerator dungeon;
     AudioSource sound;
-    bool captured, completed;
+    AudioClip soundClip;
+    bool captured, completed, skipWindow;
+    InputManager skipInput;
     PlayerViewPresentation entryHands;
     Matrix4x4 originalProjection;
     public bool IsPlaying { get; private set; }
@@ -88,9 +89,16 @@ public sealed class TableLevelReveal : MonoBehaviour
             yield return MoveCamera(overview, overviewRotation, overviewProjection, settings.cameraTransitionSeconds);
             float elapsed = 0, duration = settings.blueprintSeconds + settings.buildSeconds + settings.settleSeconds;
             bool started = false, settled = false;
+            if (settings.allowSkip && InputManager.HasInstance)
+            {
+                skipInput = InputManager.Instance;
+                skipInput.CancelPressed += OnSkipInput;
+                skipInput.SubmitPressed += OnSkipInput;
+            }
+            skipWindow = settings.allowSkip;
             while (elapsed < duration)
             {
-                if (settings.allowSkip && (SkipRequested || Keyboard.current != null && (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.escapeKey.wasPressedThisFrame))) { SkipRequested = true; break; }
+                if (settings.allowSkip && SkipRequested) break;
                 float build = (elapsed - settings.blueprintSeconds) / Mathf.Max(.1f, settings.buildSeconds);
                 foreach (var piece in pieces)
                 {
@@ -112,6 +120,7 @@ public sealed class TableLevelReveal : MonoBehaviour
                 elapsed += Time.unscaledDeltaTime;
                 yield return null;
             }
+            skipWindow = false;
             RestorePieces();
             if (blueprint != null) blueprint.SetActive(false);
             var tablePlayer = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
@@ -204,10 +213,20 @@ public sealed class TableLevelReveal : MonoBehaviour
         foreach (var actor in actors) if (actor.target != null) actor.target.SetActive(actor.active);
     }
 
+    // Cancel and Submit arrive through InputManager's UI map, which is live during the cutscene state.
+    void OnSkipInput() { if (skipWindow) SkipRequested = true; }
+
     void PlaySound(AudioClip clip, float volume)
     {
-        if (sound != null) sound.Stop();
-        if (clip != null && AudioManager.HasInstance) sound = AudioManager.Instance.PlaySFX2D(clip, volume);
+        StopSound();
+        if (clip != null && AudioManager.HasInstance) { sound = AudioManager.Instance.PlaySFX2D(clip, volume); soundClip = clip; }
+    }
+
+    // The source is pooled: once our clip ends it may already be playing someone else's sound.
+    void StopSound()
+    {
+        if (sound != null && sound.clip == soundClip) sound.Stop();
+        sound = null; soundClip = null;
     }
 
     void BuildBlueprint(TableLevelRevealSettings settings)
@@ -252,7 +271,10 @@ public sealed class TableLevelReveal : MonoBehaviour
         handRenderers.Clear();
         foreach (var entry in roomRenderers) if (entry.renderer != null) entry.renderer.forceRenderingOff = entry.forcedOff;
         roomRenderers.Clear();
-        if (sound != null) sound.Stop();
+        skipWindow = false;
+        if (skipInput != null) { skipInput.CancelPressed -= OnSkipInput; skipInput.SubmitPressed -= OnSkipInput; }
+        skipInput = null;
+        StopSound();
         if (blueprint != null) Destroy(blueprint);
         if (dust != null) Destroy(dust.gameObject);
         if (captured && output != null)

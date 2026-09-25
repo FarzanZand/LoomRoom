@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class TableLevelLoader : MonoBehaviour
 {
@@ -24,12 +23,15 @@ public class TableLevelLoader : MonoBehaviour
     ItemStack[] townBag, townHotbar;
     readonly List<ItemData> townEquipment = new();
     readonly Dictionary<GameObject,bool> townObjects = new();
+    readonly List<GameObject> hiddenTownDrops = new();
+    Bounds tableBounds;
     GameObject environment;
 
     IEnumerator Start()
     {
         Initialize();
         if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped += OnPlayerSwapped;
+        if (InputManager.HasInstance) InputManager.Instance.PausePressed += OnPausePressed;
         yield return null;
         if(PlayerManager.Instance.ActiveKind==PlayerKind.Table && Current==null) ShowSelection();
     }
@@ -38,8 +40,11 @@ public class TableLevelLoader : MonoBehaviour
         if(initialized) return;
         initialized=true;
         if(catalog==null) catalog=Resources.Load<TableLevelCatalog>("TableLevels");
+        if(catalog==null) Debug.LogError("TableLevelLoader: no TableLevelCatalog at Resources/TableLevels; the adventure menu will be empty.", this);
         if(townRoot==null) townRoot=transform.Find("Woodland Village")?.gameObject;
+        if(townRoot==null) Debug.LogError("TableLevelLoader: no \"Woodland Village\" child under the table; the town cannot be shown or hidden.", this);
         if(lighting==null) lighting=FindAnyObjectByType<LightingManager>();
+        if(lighting==null) Debug.LogError("TableLevelLoader: no LightingManager in the scene; level moods will not be applied.", this);
         player=PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         townPosition=player.transform.position;townRotation=player.transform.rotation;defaultRespawn=player.respawnDelay;
         menu=gameObject.AddComponent<TableLevelMenu>();menu.loader=this;
@@ -57,7 +62,7 @@ public class TableLevelLoader : MonoBehaviour
                 }
             }
         }
-        var tableBounds=GetComponent<BoxCollider>().bounds;
+        tableBounds=GetComponent<BoxCollider>().bounds;
         tableBounds.Expand(new Vector3(0,70,0));
         foreach(var c in FindObjectsByType<Character>(FindObjectsInactive.Include))
             if(!(c is Player) && tableBounds.Contains(c.transform.position)) townObjects.TryAdd(c.gameObject,c.gameObject.activeSelf);
@@ -68,14 +73,13 @@ public class TableLevelLoader : MonoBehaviour
     void OnDestroy()
     {
         if(PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped-=OnPlayerSwapped;
+        if(InputManager.HasInstance) InputManager.Instance.PausePressed-=OnPausePressed;
         if(player!=null) player.Died-=OnDied;
     }
-    void Update()
+    void OnPausePressed()
     {
         if(Busy || menu==null || menu.IsOpen || !PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind!=PlayerKind.Table) return;
-        if(Keyboard.current!=null && Keyboard.current.escapeKey.wasPressedThisFrame && GameManager.Instance.GameplayActive
-            && (!InputManager.HasInstance || !InputManager.Instance.CancelHandledThisFrame))
-            ShowSelection("Choose your next adventure");
+        if(GameManager.HasInstance && GameManager.Instance.GameplayActive) ShowSelection("Choose your next adventure");
     }
     void OnPlayerSwapped(Player active) => Dungeon?.ShowCeilings(active.kind==PlayerKind.Table);
     public void ShowSelection(string title="Choose your adventure")
@@ -103,71 +107,98 @@ public class TableLevelLoader : MonoBehaviour
         GameManager.Instance.Push(GameState.Cutscene);
         var revealSettings = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
         bool useReveal = !descending && level.kind == TableLevelKind.Dungeon && revealSettings != null;
-        if (useReveal)
+        bool faded=false, completed=false;
+        TableLevelReveal reveal=null;
+        // C# forbids yield in try/catch, so only Prepare is caught; the finally always releases the cutscene and fade.
+        try
         {
-            ScreenManager.Instance.ClearFade();
-            if (AudioManager.HasInstance) AudioManager.Instance.StopMusic(revealSettings.cameraTransitionSeconds);
-        }
-        if (!useReveal)
-        {
-            ScreenManager.Instance.FadeIn(.45f);
-            yield return new WaitForSecondsRealtime(.5f);
-        }
-        bool ready=false;
-        try { Prepare(level, useReveal); ready=true; }
-        catch(Exception e) { Debug.LogException(e); }
-        if (!useReveal) yield return null;
-        if(ready)
-        {
-            if(level.kind==TableLevelKind.Dungeon && !descending)
+            if (useReveal) ScreenManager.Instance.ClearFade();
+            else
             {
-                if(!townSaved) SaveTownInventory();
-                player.UseLevelLoadout();
-                player.Equipment.UnequipAll();player.Bag.Clear();player.Hotbar.Clear();
-                if(level.startingItems!=null) foreach(var item in level.startingItems)
-                    InventoryManager.Instance.Pickup(item,player,preferHotbar: level.startingEquipment!=null && Array.IndexOf(level.startingEquipment,item)>=0,playSound:false);
-                if(level.startingEquipment!=null) foreach(var item in level.startingEquipment) if(item!=null) {
-                    bool owned=player.Bag.IndexOf(item)>=0 || player.Hotbar.IndexOf(item)>=0;
-                    if(!owned)owned=InventoryManager.Instance.Pickup(item,player,preferHotbar:true,playSound:false);
-                    if(owned)player.Equipment.Equip(item,playSound:false);
-                }
+                ScreenManager.Instance.FadeIn(.45f); faded=true;
+                yield return new WaitForSecondsRealtime(.5f);
             }
-            else if(level.kind==TableLevelKind.Town) RestoreTownInventory();
-            if(!descending) player.Stats.Revive();
-            if(ProgressionManager.HasInstance) ProgressionManager.Instance.tableEntered=true;
-        }
-        else
-        {
-            FloorNumber=previousFloor;runSeed=previousSeed;
-            if(Current==null)PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
-        }
-        if (ready && useReveal)
-        {
-            var reveal = gameObject.AddComponent<TableLevelReveal>();
-            yield return reveal.Play(Dungeon, revealSettings, () =>
+            bool ready=false;
+            try { Prepare(level, useReveal); ready=true; }
+            catch(Exception e) { Debug.LogException(e); }
+            if (ready && useReveal && AudioManager.HasInstance) AudioManager.Instance.StopMusic(revealSettings.cameraTransitionSeconds);
+            if (!useReveal) yield return null;
+            if(ready)
             {
-                if (lighting != null) lighting.BlendToMood(level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
-            });
-            Destroy(reveal);
+                if(level.kind==TableLevelKind.Dungeon && !descending)
+                {
+                    player.UseLevelLoadout();
+                    player.Equipment.UnequipAll();player.Bag.Clear();player.Hotbar.Clear();
+                    if(level.startingItems!=null) foreach(var item in level.startingItems)
+                        InventoryManager.Instance.Pickup(item,player,preferHotbar: level.startingEquipment!=null && Array.IndexOf(level.startingEquipment,item)>=0,playSound:false);
+                    if(level.startingEquipment!=null) foreach(var item in level.startingEquipment) if(item!=null) {
+                        bool owned=player.Bag.IndexOf(item)>=0 || player.Hotbar.IndexOf(item)>=0;
+                        if(!owned)owned=InventoryManager.Instance.Pickup(item,player,preferHotbar:true,playSound:false);
+                        if(owned)player.Equipment.Equip(item,playSound:false);
+                    }
+                }
+                else if(level.kind==TableLevelKind.Town) RestoreTownInventory();
+                if(!descending) player.Stats.Revive();
+                if(ProgressionManager.HasInstance) ProgressionManager.Instance.tableEntered=true;
+            }
+            else
+            {
+                FloorNumber=previousFloor;runSeed=previousSeed;
+                if(Current==null)PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
+            }
+            if (ready && useReveal)
+            {
+                reveal = gameObject.AddComponent<TableLevelReveal>();
+                yield return RunGuarded(reveal.Play(Dungeon, revealSettings, () =>
+                {
+                    if (lighting != null) lighting.BlendToMood(level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
+                }));
+            }
+            if (faded)
+            {
+                ScreenManager.Instance.FadeOut(.6f); faded=false;
+                yield return new WaitForSecondsRealtime(.65f);
+            }
+            if (ready && AudioManager.HasInstance)
+            {
+                if (level.backgroundMusic != null) AudioManager.Instance.CrossfadeMusic(level.backgroundMusic, level.loopMusic, level.musicFadeSeconds, level.backgroundMusicVolume);
+                else AudioManager.Instance.StopMusic(level.musicFadeSeconds);
+            }
+            completed=ready;
         }
-
-        if (!useReveal)
+        finally
         {
-            ScreenManager.Instance.FadeOut(.6f);
-            yield return new WaitForSecondsRealtime(.65f);
+            if (reveal != null) Destroy(reveal);
+            if (faded && ScreenManager.HasInstance) ScreenManager.Instance.FadeOut(.6f);
+            if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
+            Busy=false;
+            if(!completed) ShowSelection("Could not load level — select another adventure");
         }
-        if (ready && AudioManager.HasInstance)
+    }
+    // Unity never resumes a coroutine whose nested routine threw, so step nested routines here and log instead.
+    static IEnumerator RunGuarded(IEnumerator routine)
+    {
+        var stack=new Stack<IEnumerator>();
+        stack.Push(routine);
+        while(stack.Count>0)
         {
-            if (level.backgroundMusic != null) AudioManager.Instance.CrossfadeMusic(level.backgroundMusic, level.loopMusic, level.musicFadeSeconds, level.backgroundMusicVolume);
-            else AudioManager.Instance.StopMusic(level.musicFadeSeconds);
+            object current=null;
+            bool failed=false, advanced=false;
+            try { advanced=stack.Peek().MoveNext(); if(advanced) current=stack.Peek().Current; }
+            catch(Exception e) { Debug.LogException(e); failed=true; }
+            if(failed)
+            {
+                while(stack.Count>0) (stack.Pop() as IDisposable)?.Dispose();
+                yield break;
+            }
+            if(!advanced) { stack.Pop(); continue; }
+            if(current is IEnumerator nested) stack.Push(nested);
+            else yield return current;
         }
-        GameManager.Instance.Pop(GameState.Cutscene);Busy=false;
-        if(!ready) ShowSelection("Could not load level — select another adventure");
     }
     void Prepare(TableLevelData level, bool deferPlayerSwitch = false)
     {
         var previousEnvironment=environment;
-        var previousDungeon=Dungeon;
         bool previousTown=Current!=null && Current.kind==TableLevelKind.Town;
         GameObject candidate=null;
         DungeonGenerator candidateDungeon=null;
@@ -189,7 +220,7 @@ public class TableLevelLoader : MonoBehaviour
         } catch {
             if(candidate!=null){candidate.SetActive(false);Destroy(candidate);}
             if(previousEnvironment!=null)previousEnvironment.SetActive(true);
-            Dungeon=previousDungeon;SetTown(previousTown);throw;
+            SetTown(previousTown);throw;
         }
         if(Current==null || Current.kind==TableLevelKind.Town)SaveTownInventory();
         environment=candidate;Dungeon=candidateDungeon;
@@ -214,9 +245,23 @@ public class TableLevelLoader : MonoBehaviour
     {
         if(townRoot!=null) townRoot.SetActive(active);
         foreach(var pair in townObjects) if(pair.Key!=null) pair.Key.SetActive(active && pair.Value);
+        if(active)
+        {
+            foreach(var go in hiddenTownDrops) if(go!=null) go.SetActive(true);
+            hiddenTownDrops.Clear();
+            return;
+        }
+        // Items dropped in town after Initialize are unparented, so townObjects never saw them.
+        foreach(var item in FindObjectsByType<WorldItem>())
+        {
+            var go=item.gameObject;
+            if(townObjects.ContainsKey(go) || !tableBounds.Contains(item.transform.position)) continue;
+            if(environment!=null && item.transform.IsChildOf(environment.transform)) continue;
+            go.SetActive(false);hiddenTownDrops.Add(go);
+        }
     }
     void OnDied() { if(Current!=null && Current.kind==TableLevelKind.Dungeon) StartCoroutine(DeathMenu()); }
-    IEnumerator DeathMenu() { yield return new WaitForSecondsRealtime(.8f);ShowSelection("You fell — choose Dungeon1 to retry"); }
+    IEnumerator DeathMenu() { yield return new WaitForSecondsRealtime(.8f);ShowSelection("You fell — choose an adventure to try again"); }
     public void ReturnToRoom()
     {
         if(Busy)return;

@@ -71,7 +71,7 @@ The designer database is available under **Tools > Item Database**. See [Item da
 
 Doorways use the editable `Dungeon door.prefab`, including stationary **Doorway masonry lintel**. Its wall texture is cropped to the upper part of a full wall, preserving brick scale rather than compressing the texture into the short header. Door span follows cell width; doorway height stays fixed. The lintel fills to the ceiling and remains solid when the gate opens.
 
-Editor menus under **Tools > Table Levels** run explicit validation. `DungeonInventoryValidation` checks authored content, actual equipment/damage resolution, pickup fallback/routing, live panels, hand consumption, food replacement, Synty chest opening and floor scaling. `LiveInventoryValidation` checks time, enemy/player hitbox behavior and input state. `DungeonReviewValidation` checks 100 seeded layouts, loot rules, navigation, doors, two-floor transitions and failure rollback.
+The validation tools this pass originally used (`DungeonInventoryValidation`, `LiveInventoryValidation`, `DungeonReviewValidation` under **Tools > Table Levels**) are no longer in the project; re-check these behaviours manually in Play Mode.
 
 Numerical validation is a starting balance pass, not a substitute for repeated human playthroughs. Encounter density, healing availability and heavy attack pacing remain editable for playtesting.
 

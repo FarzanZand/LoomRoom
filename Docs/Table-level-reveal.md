@@ -15,9 +15,9 @@ The actual generated floor plan is traced in steel blue. Geometry rises in spati
 
 The renderer positions, visibility, lights, actors, camera lens and Cinemachine state are restored when playback ends or is interrupted. Navigation is generated before presentation and no new layout is generated during the animation. The existing level is replaced before the assembly starts, without a black overlay. The camera projection blends continuously between overview and first-person lenses.
 
-Validation: `TableRevealValidation` is an explicit development test triggered by `Temp/TableRevealValidation.request`. It checks the overview angle, unchanged room POV, no visible black overlay, frozen simulation, smooth camera handoff, enemy restoration and early skipping, and captures the overview and first-person result. It does not run automatically on import.
+There is no automated reveal test in the project. Check changes in Play Mode: overview angle, room POV, no black overlay, frozen simulation, camera handoff, enemy restoration and skipping. If playback throws, `TableLevelLoader` logs the exception, the reveal restores the camera and players, and the load still finishes.
 
-Room lighting is held during construction and blends to the dungeon mood during the entrance flight. Dungeon BGM starts after the camera has arrived; construction sounds remain on the SFX mixer. Cold-start validation begins with the table player inactive and uses the actual adventure-menu button. Blueprint lines are transparent from creation, including the initial camera move.
+Room lighting is held during construction and blends to the dungeon mood during the entrance flight. Dungeon BGM starts after the camera has arrived; construction sounds remain on the SFX mixer. Blueprint lines are transparent from creation, including the initial camera move.
 
 ## Adventure menu and equipped hands
 

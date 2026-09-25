@@ -17,8 +17,3 @@ MonoBehaviour:
   hoverScale: 1.035
   pressScale: 1.07
   hoverDuration: 0.1
-  open: {fileID: 11400000, guid: 0c9bd9722d297e04e987889146a1fe47, type: 2}
-  close: {fileID: 11400000, guid: 9d3b5fc7f20a7634da70c7b76e177084, type: 2}
-  hover: {fileID: 11400000, guid: 58c2229e917cab04c8d632c4f51ad4a5, type: 2}
-  equip: {fileID: 11400000, guid: 7be8c8914f79d00448f18f2a06dc4efb, type: 2}
-  invalid: {fileID: 11400000, guid: a4895754c5c94c941a2f5169f8e94d17, type: 2}

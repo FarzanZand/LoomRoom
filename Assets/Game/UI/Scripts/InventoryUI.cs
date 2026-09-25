@@ -104,10 +104,10 @@ public class InventoryUI : MonoBehaviour
             ownsMenu=true;
             if(inventoryPanel!=null)inventoryPanel.anchoredPosition=inventoryHome+Vector2.left*(inventoryPanel.rect.width+80);
             if(statsPanel!=null)statsPanel.anchoredPosition=statsHome+Vector2.right*(statsPanel.rect.width+80);
+            if(GameManager.HasInstance)GameManager.Instance.Push(GameState.Inventory);
         }
         isOpen = true;
         if (panel != null) panel.SetActive(true);
-        GameManager.Instance?.Push(GameState.Inventory);
         var style=feedback!=null?feedback:UIFeedbackSettings.Shared;style?.Play(style.openKey);Animate(true);
         Refresh();
     }
