@@ -12,6 +12,7 @@ public sealed class EditorCutaway : EditorWindow
 {
     const string Prefix = "LoomRoom.EditorCutaway.";
     const string OwnedKey = Prefix + "OwnedObjects";
+    static string PersistentOwnedKey => OwnedKey + "." + Application.dataPath;
     static bool queued;
 
     [Serializable]
@@ -54,8 +55,11 @@ public sealed class EditorCutaway : EditorWindow
         bool walls = EditorGUILayout.ToggleLeft("Hide walls and window frames", Walls);
         if (EditorGUI.EndChangeCheck())
         {
+            bool restoreCeilings = Ceilings && !ceilings;
+            bool restoreWalls = Walls && !walls;
             Ceilings = ceilings;
             Walls = walls;
+            RestoreShell(restoreCeilings, restoreWalls);
             Apply();
         }
 
@@ -64,6 +68,7 @@ public sealed class EditorCutaway : EditorWindow
         if (GUILayout.Button("Show cutaway objects again"))
         {
             Ceilings = Walls = false;
+            RestoreShell(true, true);
             Apply();
         }
     }
@@ -81,7 +86,19 @@ public sealed class EditorCutaway : EditorWindow
         EditorApplication.delayCall += () => { queued = false; Apply(); };
     }
 
-    static IEnumerable<GameObject> Targets()
+    static void RestoreShell(bool ceilings, bool walls)
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+        foreach (var obj in Targets(ceilings, walls))
+        {
+            // Explicit user restoration also recovers visibility hidden before our ownership record existed.
+            SceneVisibilityManager.instance.Show(obj, true);
+            for (var parent = obj.transform.parent; parent != null; parent = parent.parent)
+                SceneVisibilityManager.instance.Show(parent.gameObject, false);
+        }
+    }
+
+    static IEnumerable<GameObject> Targets(bool ceilings, bool walls)
     {
         for (int s = 0; s < SceneManager.sceneCount; s++)
         {
@@ -102,7 +119,7 @@ public sealed class EditorCutaway : EditorWindow
                         bool ceiling = name.Contains("ceiling") || name.Contains("roof");
                         // Room Geometry contains architectural shell pieces. Floors and skirting stay visible.
                         bool wall = !ceiling && !name.Contains("floor") && !name.Contains("skirting");
-                        if ((ceiling && Ceilings) || (wall && Walls)) yield return piece.gameObject;
+                        if ((ceiling && ceilings) || (wall && walls)) yield return piece.gameObject;
                     }
                 }
             }
@@ -113,8 +130,8 @@ public sealed class EditorCutaway : EditorWindow
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) return;
         var visibility = SceneVisibilityManager.instance;
-        var owned = JsonUtility.FromJson<HiddenObjects>(SessionState.GetString(OwnedKey, "{}")) ?? new HiddenObjects();
-        var wanted = new HashSet<GameObject>(Targets());
+        var owned = JsonUtility.FromJson<HiddenObjects>(EditorPrefs.GetString(PersistentOwnedKey, SessionState.GetString(OwnedKey, "{}"))) ?? new HiddenObjects();
+        var wanted = new HashSet<GameObject>(Targets(Ceilings, Walls));
         var retained = new HiddenObjects();
 
         foreach (string id in owned.ids ?? new List<string>())
@@ -136,6 +153,7 @@ public sealed class EditorCutaway : EditorWindow
         }
 
         SessionState.SetString(OwnedKey, JsonUtility.ToJson(retained));
+        EditorPrefs.SetString(PersistentOwnedKey, JsonUtility.ToJson(retained));
         SceneView.RepaintAll();
     }
 }

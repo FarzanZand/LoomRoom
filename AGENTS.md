@@ -21,4 +21,7 @@
 
 ## Editor menus
 
+- Ask the user before creating any new editor tool or adding menu entries. Do not add one-time setup, migration, repair, preview, or validation tools to Unity menus. Use temporary non-menu checks for one-off work and remove them afterward.
+- Keep approved reusable project tools together under `Tools/LoomRoom/`. Do not reintroduce removed tools without asking first.
+
 - Put new project menu commands under `Tools/LoomRoom/` (or an existing feature submenu under Tools). Do not add new top-level menu groups.
