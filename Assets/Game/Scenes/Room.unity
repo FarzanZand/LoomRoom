@@ -73208,26 +73208,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 540669809}
     m_Modifications:
-    - target: {fileID: 801456997034221001, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 801456997034221001, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
-      propertyPath: tableLights.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 801456997034221001, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
-      propertyPath: 'tableLights.Array.data[0]'
-      value: 
-      objectReference: {fileID: 1631269675}
-    - target: {fileID: 801456997034221001, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
-      propertyPath: 'tableLights.Array.data[1]'
-      value: 
-      objectReference: {fileID: 325781983}
-    - target: {fileID: 801456997034221001, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
-      propertyPath: 'tableLights.Array.data[2]'
-      value: 
-      objectReference: {fileID: 683447402}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: fadeFullscreenImage
       value: 

@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2536780497629174226}
   - component: {fileID: 1559000830571180014}
-  - component: {fileID: 801456997034221001}
   m_Layer: 0
   m_Name: ScreenManager
   m_TagString: Untagged
@@ -46,23 +45,49 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   fadeFullscreenImage: {fileID: 0}
-  ambientOcclusion: 1
   ambientOcclusionFeature: {fileID: 7833122117494664109, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
-  filmGrain: 0
-  filmGrainIntensity: 0.2
-  filmGrainResponse: 0.8
---- !u!114 &801456997034221001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7975078229416571197}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 88684a8f9e5a4a91a56976f01f90510a, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::SceneMoodController
-  selectedMood: {fileID: 11400000, guid: 8277439119c14f8a956e344d01626cd7, type: 2}
-  blendDuration: 2
-  mainLight: {fileID: 0}
+  retroScreenFeature: {fileID: 6238588630179067837, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
+  roomEffects:
+    ambientOcclusion: 1
+    filmGrain: 1
+    grainType: 4
+    filmGrainIntensity: 0.45
+    filmGrainResponse: 0.7
+    pixelate: 1
+    pixelLines: 240
+    colorBanding: 1
+    colorLevels: 20
+    dither: 1
+    vignette: 1
+    vignetteIntensity: 0.4
+    vignetteSmoothness: 0.5
+    vignetteColor: {r: 0, g: 0, b: 0, a: 1}
+    chromaticAberration: 1
+    chromaticAberrationIntensity: 0.15
+    colorGrading: 1
+    contrast: 20
+    saturation: -25
+    colorFilter: {r: 1, g: 0.9, b: 0.76, a: 1}
+    postExposure: 0.15
+  tableEffects:
+    ambientOcclusion: 1
+    filmGrain: 0
+    grainType: 0
+    filmGrainIntensity: 0.2
+    filmGrainResponse: 0.8
+    pixelate: 0
+    pixelLines: 320
+    colorBanding: 0
+    colorLevels: 24
+    dither: 1
+    vignette: 0
+    vignetteIntensity: 0.45
+    vignetteSmoothness: 0.4
+    vignetteColor: {r: 0, g: 0, b: 0, a: 1}
+    chromaticAberration: 0
+    chromaticAberrationIntensity: 0.15
+    colorGrading: 0
+    contrast: 0
+    saturation: 0
+    colorFilter: {r: 1, g: 1, b: 1, a: 1}
+    postExposure: 0
