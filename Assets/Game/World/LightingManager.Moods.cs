@@ -17,13 +17,25 @@ public sealed partial class LightingManager
     double moodStart;
     float activeMoodDuration;
     MoodState displayedMood, moodFrom, moodTo;
+    bool groupOverrideActive;
+    float previousTableBrightness, previousRoomBrightness, groupFromTable, groupFromRoom, groupToTable, groupToRoom;
+    Color previousTableTint, previousRoomTint, groupFromTableTint, groupFromRoomTint, groupToTableTint, groupToRoomTint;
 
     [Serializable]
     public struct MoodState
     {
         public Color sky, light, top, horizon, ground, fog;
         public float exposure, intensity;
+        public bool overrideLightGroups;
+        public float tableBrightness, roomBrightness;
+        public Color tableTint, roomTint;
     }
+
+    public static MoodState FromPreset(SceneMood preset) => new MoodState {
+        sky=preset.skyTint, exposure=preset.skyExposure, light=preset.lightColor, intensity=preset.lightIntensity,
+        top=preset.ambientSky, horizon=preset.ambientHorizon, ground=preset.ambientGround, fog=preset.fogColor,
+        overrideLightGroups=preset.overrideLightGroups, tableBrightness=preset.tableBrightness,
+        roomBrightness=preset.roomBrightness, tableTint=preset.tableTint, roomTint=preset.roomTint };
 
     [Serializable]
     public class LightingDefault
@@ -73,15 +85,25 @@ public sealed partial class LightingManager
     public void BlendToMood(SceneMood preset, float duration = 3f)
     {
         if (preset == null) return;
-        BlendToMood(new MoodState { sky = preset.skyTint, exposure = preset.skyExposure,
-            light = preset.lightColor, intensity = preset.lightIntensity,
-            top = preset.ambientSky, horizon = preset.ambientHorizon,
-            ground = preset.ambientGround, fog = preset.fogColor }, duration);
+        BlendToMood(FromPreset(preset), duration);
     }
 
     public void BlendToMood(MoodState settings, float duration = 3f)
     {
         keyboardMoodPreview = false;
+        fading = false;
+        if (settings.overrideLightGroups && !groupOverrideActive)
+        {
+            previousTableBrightness=brightness; previousRoomBrightness=sceneBrightness;
+            previousTableTint=tint; previousRoomTint=sceneTint;
+        }
+        groupFromTable=brightness; groupFromRoom=sceneBrightness;
+        groupFromTableTint=tint; groupFromRoomTint=sceneTint;
+        groupToTable=settings.overrideLightGroups ? settings.tableBrightness : groupOverrideActive ? previousTableBrightness : brightness;
+        groupToRoom=settings.overrideLightGroups ? settings.roomBrightness : groupOverrideActive ? previousRoomBrightness : sceneBrightness;
+        groupToTableTint=settings.overrideLightGroups ? settings.tableTint : groupOverrideActive ? previousTableTint : tint;
+        groupToRoomTint=settings.overrideLightGroups ? settings.roomTint : groupOverrideActive ? previousRoomTint : sceneTint;
+        groupOverrideActive=settings.overrideLightGroups;
         moodFrom = moodActive ? displayedMood : ReadBaseMood();
         moodTo = settings;
         moodActive = true;
@@ -113,6 +135,7 @@ public sealed partial class LightingManager
         keyboardMoodPreview = false;
         if (savedDefault == null) return;
         fading = moodBlending = false;
+        groupOverrideActive = false;
         brightness = savedDefault.tableBrightness; tint = savedDefault.tableTint;
         sceneBrightness = savedDefault.sceneBrightness; sceneTint = savedDefault.sceneTint;
         ambientMultiplier = savedDefault.ambient; overrideFogColor = savedDefault.fogOverride;
@@ -142,10 +165,16 @@ public sealed partial class LightingManager
         if (!moodBlending) return;
         float t = activeMoodDuration <= 0f ? 1f : Mathf.Clamp01((float)(Time.realtimeSinceStartupAsDouble - moodStart) / activeMoodDuration);
         float ease = Mathf.SmoothStep(0, 1, t);
+        brightness=Mathf.Lerp(groupFromTable,groupToTable,ease);
+        sceneBrightness=Mathf.Lerp(groupFromRoom,groupToRoom,ease);
+        tint=Color.Lerp(groupFromTableTint,groupToTableTint,ease);
+        sceneTint=Color.Lerp(groupFromRoomTint,groupToRoomTint,ease);
         displayedMood = new MoodState { sky = Color.Lerp(moodFrom.sky, moodTo.sky, ease), exposure = Mathf.Lerp(moodFrom.exposure, moodTo.exposure, ease),
             light = Color.Lerp(moodFrom.light, moodTo.light, ease), intensity = Mathf.Lerp(moodFrom.intensity, moodTo.intensity, ease),
             top = Color.Lerp(moodFrom.top, moodTo.top, ease), horizon = Color.Lerp(moodFrom.horizon, moodTo.horizon, ease),
-            ground = Color.Lerp(moodFrom.ground, moodTo.ground, ease), fog = Color.Lerp(moodFrom.fog, moodTo.fog, ease) };
+            ground = Color.Lerp(moodFrom.ground, moodTo.ground, ease), fog = Color.Lerp(moodFrom.fog, moodTo.fog, ease),
+            overrideLightGroups=moodTo.overrideLightGroups, tableBrightness=brightness, roomBrightness=sceneBrightness,
+            tableTint=tint, roomTint=sceneTint };
         if (t >= 1f) moodBlending = false;
     }
 

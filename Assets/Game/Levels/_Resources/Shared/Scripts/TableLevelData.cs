@@ -3,7 +3,7 @@ using Sirenix.OdinInspector;
 
 public enum TableLevelKind { Town, Dungeon }
 // Keep existing numeric values: level assets serialize these selections as integers.
-public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5 }
+public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6 }
 
 [CreateAssetMenu(menuName = "Table/Level", fileName = "TableLevel")]
 public class TableLevelData : ScriptableObject
@@ -29,11 +29,7 @@ public class TableLevelData : ScriptableObject
         if (overrideLighting) return lightingSettings.ToState();
         var preset = Resources.Load<SceneMood>("DungeonLighting/" + moodLightning);
         if (preset == null) preset = mood;
-        return preset != null ? new LightingManager.MoodState {
-            sky = preset.skyTint, exposure = preset.skyExposure, light = preset.lightColor,
-            intensity = preset.lightIntensity, top = preset.ambientSky, horizon = preset.ambientHorizon,
-            ground = preset.ambientGround, fog = preset.fogColor
-        } : lightingSettings.ToState();
+        return preset != null ? LightingManager.FromPreset(preset) : lightingSettings.ToState();
     }
     public AudioClip backgroundMusic;
     [Range(0f, 1f), Tooltip("BGM volume for this level: 0 is silent, 1 is full volume. Still respects the AudioManager Music and Master mixer settings. Reload the level to apply changes.")]
@@ -140,10 +136,7 @@ public class DungeonFloorSettings
         if(overrideLighting)return lightingSettings.ToState();
         var preset=Resources.Load<SceneMood>("DungeonLighting/"+moodLightning);
         if(preset==null)preset=fallback;
-        return preset==null ? lightingSettings.ToState() : new LightingManager.MoodState {
-            sky=preset.skyTint,exposure=preset.skyExposure,light=preset.lightColor,intensity=preset.lightIntensity,
-            top=preset.ambientSky,horizon=preset.ambientHorizon,ground=preset.ambientGround,fog=preset.fogColor
-        };
+        return preset==null ? lightingSettings.ToState() : LightingManager.FromPreset(preset);
     }
 }
 

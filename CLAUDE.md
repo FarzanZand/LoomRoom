@@ -2,6 +2,10 @@
 
 First-person 3D RPG. Unity 6000.5, URP, Cinemachine 3, Input System, Odin Inspector, Pixel Crushers Dialogue System, Synty art. Two controllable players: the **Room player** (exploration, never fights) and the **Table player** (first-person arms, melee combat). Rewritten in September 2026 on the conventions used in LoomyDungeons.
 
+## Tooling
+
+- **Use the Unity CLI (`unity-cli` skill) for all editor, scene, prefab and asset work. Never use Unity MCP servers (coplay-mcp, UnityMCP), not even to check editor state.**
+
 ## Settled decisions
 
 - **Single `Assembly-CSharp`, no namespaces.** Same rule as LoomyDungeons. Do not propose asmdefs or namespaces.

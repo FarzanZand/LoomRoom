@@ -11,9 +11,11 @@ public class HingedDoor : MonoBehaviour, IInteractable
     [SerializeField, Range(-170,170)] float openAngle = 100;
     [SerializeField, Min(1)] float degreesPerSecond = 140;
     [SerializeField] bool startsOpen;
+    [SerializeField] bool locked;
     [SerializeField] LayerMask obstructionMask = ~0;
     [SerializeField] InteractionEffect openingEffect = new() { type = InteractionEffectType.PlayAudio };
     [SerializeField] InteractionEffect closingEffect = new() { type = InteractionEffectType.PlayAudio };
+    [SerializeField] InteractionEffect lockedEffect = new() { type = InteractionEffectType.PlayAudio };
 
     readonly Collider[] overlaps = new Collider[64];
     Quaternion closedRotation;
@@ -22,8 +24,13 @@ public class HingedDoor : MonoBehaviour, IInteractable
     bool moving;
     Character lastInteractor;
 
-    public string Prompt => (targetOpen ? "Close " : "Open ") + doorName;
+    public string Prompt => locked ? "Locked " + doorName : (targetOpen ? "Close " : "Open ") + doorName;
     public bool IsOpen => targetOpen;
+    public bool Locked
+    {
+        get => locked;
+        set { locked = value; if (locked) SetOpen(false); }
+    }
     public bool IsMoving => moving;
     public float CurrentAngle => angle;
     public Transform Hinge => hinge;
@@ -32,13 +39,18 @@ public class HingedDoor : MonoBehaviour, IInteractable
     {
         if (!hinge || !leafCollider || !interactionTrigger) { Debug.LogError("Door requires hinge, leaf collider and interaction trigger.", this); enabled=false; return; }
         closedRotation=hinge.localRotation;
-        targetOpen=startsOpen;
-        angle=startsOpen ? openAngle : 0;
+        targetOpen=startsOpen && !locked;
+        angle=targetOpen ? openAngle : 0;
         ApplyPose(angle);
     }
 
     public bool CanInteract(Character who) => isActiveAndEnabled && hinge && leafCollider;
-    public void Interact(Character who) { if(CanInteract(who)) SetOpen(!targetOpen,who); }
+    public void Interact(Character who)
+    {
+        if(!CanInteract(who)) return;
+        if(locked) lockedEffect?.Execute(new InteractionContext { Who=who, Trigger=interactionTrigger });
+        else SetOpen(!targetOpen,who);
+    }
 
     public void SetOpen(bool open, Character who = null)
     {

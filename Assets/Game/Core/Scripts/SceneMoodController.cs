@@ -22,6 +22,7 @@ public class SceneMoodController : MonoBehaviour
     float originalAmbientIntensity;
     State original;
     bool captured, previewActive;
+    LightingManager delegatedLighting;
     string skyTintProperty;
 
     struct State
@@ -67,6 +68,15 @@ public class SceneMoodController : MonoBehaviour
     public void BlendToMood(SceneMood mood, float duration = 2f)
     {
         if (!Application.isPlaying || mood == null) return;
+        if (mood.overrideLightGroups)
+        {
+            delegatedLighting = FindAnyObjectByType<LightingManager>();
+            if (delegatedLighting != null)
+            {
+                delegatedLighting.BlendToMood(mood, duration);
+                return;
+            }
+        }
         if (mood.tableLightingOnly)
         {
             previewActive = false;
@@ -84,6 +94,7 @@ public class SceneMoodController : MonoBehaviour
 
     public void RestoreMood(float duration = 2f)
     {
+        if (delegatedLighting != null) { delegatedLighting.RestoreDefault(); delegatedLighting = null; }
         if (originalTableIntensities.Count > 0) FadeTableLights(1f, duration);
         if (!captured) return;
         previewActive = false;

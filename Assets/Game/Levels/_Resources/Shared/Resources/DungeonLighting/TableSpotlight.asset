@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d1071685ae8439ca78a98c290a18326, type: 3}
+  m_Name: Table Spotlight
+  m_EditorClassIdentifier: Assembly-CSharp::SceneMood
+  tableLightingOnly: 0
+  tableLightMultiplier: 1.4
+  overrideLightGroups: 1
+  tableBrightness: 1.4
+  tableTint: {r: 1, g: 0.87, b: 0.68, a: 1}
+  roomBrightness: 0.04
+  roomTint: {r: 0.65, g: 0.72, b: 0.85, a: 1}
+  skyTint: {r: 0.025, g: 0.035, b: 0.055, a: 1}
+  skyExposure: 0.12
+  lightColor: {r: 0.48, g: 0.58, b: 0.78, a: 1}
+  lightIntensity: 0.1
+  ambientSky: {r: 0.12, g: 0.15, b: 0.2, a: 1}
+  ambientHorizon: {r: 0.08, g: 0.09, b: 0.12, a: 1}
+  ambientGround: {r: 0.035, g: 0.03, b: 0.025, a: 1}
+  fogColor: {r: 0.012, g: 0.016, b: 0.024, a: 1}

@@ -97,5 +97,13 @@ public class PlayerLook : MonoBehaviour
         if (verticalNeck != null) verticalNeck.rotation = Quaternion.Euler(-pitch, worldYaw, 0f);
     }
 
+    // Turns the view about world up, keeping pitch, lean and look smoothing (seamless teleports).
+    public void RotateYaw(float degrees)
+    {
+        float yaw = YawTransform.eulerAngles.y + degrees;
+        if (lateralTorso != null) lateralTorso.rotation = Quaternion.Euler(0f, yaw, CurrentLeanAngle);
+        if (verticalNeck != null) verticalNeck.rotation = Quaternion.Euler(-pitch, yaw, -CurrentLeanAngle);
+    }
+
     static float NormalizeAngle(float a) => a > 180f ? a - 360f : a;
 }

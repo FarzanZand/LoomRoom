@@ -92,6 +92,17 @@ public class Player : Character
                 if (item != null) Equipment.Equip(item, playSound: false);
     }
 
+    public void Warp(Vector3 position, float yawDelta = 0f)
+    {
+        // CharacterController fights direct transform writes; disable it for the teleport.
+        var controller = Motor != null ? Motor.Controller : null;
+        if (controller != null) controller.enabled = false;
+        transform.position = position;
+        if (controller != null) controller.enabled = true;
+        if (yawDelta != 0f) Look?.RotateYaw(yawDelta);
+        SynchronizePresentation();
+    }
+
     protected override void OnDied()
     {
         base.OnDied();
@@ -105,10 +116,8 @@ public class Player : Character
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeInOut(0.5f, 0.3f, 0.8f);
         yield return new WaitForSeconds(0.6f);
 
-        // CharacterController fights direct transform writes; disable it for the teleport.
-        if (Motor != null && Motor.Controller != null) Motor.Controller.enabled = false;
-        transform.SetPositionAndRotation(spawnPosition, spawnRotation);
-        if (Motor != null && Motor.Controller != null) Motor.Controller.enabled = true;
+        Warp(spawnPosition);
+        transform.rotation = spawnRotation;
         Look?.SetYaw(spawnRotation.eulerAngles.y);
 
         Stats?.Revive();
