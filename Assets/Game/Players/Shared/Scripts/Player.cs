@@ -33,6 +33,7 @@ public class Player : Character
     public Inventory         Bag       { get; private set; }
     public Inventory         Hotbar    { get; private set; }
     public Equipment         Equipment { get; private set; }
+    public Wallet            Wallet    { get; private set; }
 
     public bool IsActive => PlayerManager.HasInstance && PlayerManager.Instance.Active == this;
 
@@ -59,6 +60,7 @@ public class Player : Character
         CameraRig = GetComponentInChildren<PlayerCameraRig>(true);
         Interact  = GetComponent<InteractController>();
         Equipment = GetComponent<Equipment>();
+        Wallet    = GetComponent<Wallet>();
 
         foreach (var inv in GetComponents<Inventory>())
         {

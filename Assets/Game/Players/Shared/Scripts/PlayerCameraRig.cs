@@ -54,7 +54,8 @@ public class PlayerCameraRig : MonoBehaviour
         if (cam != null)
         {
             var lens = cam.Lens;
-            float fov = baseFov + FovOffset;
+            float user = UserSettings.FieldOfView;
+            float fov = (user > 0f ? user : baseFov) + FovOffset;
             if (!Mathf.Approximately(lens.FieldOfView, fov)) { lens.FieldOfView = fov; cam.Lens = lens; }
         }
 

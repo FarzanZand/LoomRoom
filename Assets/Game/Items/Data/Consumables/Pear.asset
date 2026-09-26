@@ -21,6 +21,7 @@ MonoBehaviour:
   pickupVisualPrefab: {fileID: 0}
   itemType: 4
   maxStackSize: 5
+  value: 5
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}
@@ -63,6 +64,7 @@ MonoBehaviour:
   useClip: {fileID: 8300000, guid: 116bb17b3fe754f489ba1c318df3b5a9, type: 3}
   useClipVolume: 1
   useAudioKey: 
+  useMessage: 
   AnimationOnUse: 1
   eatDuration: 0.65
   eatMouthPosition: {x: 0, y: -0.12, z: 0.13}

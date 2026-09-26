@@ -16,6 +16,8 @@ public struct DamageInfo
     public bool      Heavy;           // captured by the hitbox for this swing
     public bool      Blocked;         // set by the victim's IBlocker
     public bool      FromEffect;      // created by an item effect; never counts as a landed hit
+    public bool      Critical;        // rolled by the hitbox; bigger number, longer hit stop
+    public bool      Backstab;        // struck an unaware or turned-away enemy
 
     public static DamageInfo Simple(float amount, Character source = null)
         => new DamageInfo { Amount = amount, Source = source, Direction = Vector3.zero };

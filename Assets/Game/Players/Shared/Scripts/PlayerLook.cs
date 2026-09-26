@@ -48,7 +48,7 @@ public class PlayerLook : MonoBehaviour
         var input    = InputManager.HasInstance ? InputManager.Instance : null;
 
         // ── Look input ──
-        float sensitivity = (settings != null ? settings.mouseSensitivity : 1f) / 5f;
+        float sensitivity = (settings != null ? settings.mouseSensitivity : 1f) * UserSettings.MouseSensitivity / 5f;
         float smoothing   = settings != null ? settings.mouseSmoothing : 20f;
 
         bool canLook = Cursor.lockState == CursorLockMode.Locked && input != null &&

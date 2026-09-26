@@ -34,7 +34,7 @@ public class InputManager : Singleton<InputManager>
     public event Action InteractPressed;
     public event Action InventoryToggled;
     public event Action CancelPressed;
-    public event Action PausePressed;    // Table gameplay: open the adventure menu
+    public event Action PausePressed;    // Room or Table gameplay: open the pause menu
     public event Action NavigatePressed; // UI: move between menu options
     public event Action SubmitPressed;   // UI: confirm or skip
     public bool CancelHandledThisFrame => cancelFrame == Time.frameCount;
@@ -72,6 +72,8 @@ public class InputManager : Singleton<InputManager>
         actions.Table.SecondaryAction.canceled  += _ => { SecondaryHeld = false; SecondaryReleased?.Invoke(); };
 
         actions.Table.Pause.performed += _ => PausePressed?.Invoke();
+        actions.Room.Pause.performed  += _ => PausePressed?.Invoke();
+        LoadBindingOverrides();
         actions.UI.Navigate.performed += _ => NavigatePressed?.Invoke();
         actions.UI.Submit.performed   += _ => SubmitPressed?.Invoke();
         actions.UI.Inventory.performed += _ => InventoryToggled?.Invoke();
@@ -126,6 +128,109 @@ public class InputManager : Singleton<InputManager>
         base.OnDestroy();
         actions?.Dispose();
         actions = null;
+    }
+
+    // ── Rebinding ─────────────────────────────────────────────────────
+    // Room and Table share action names; a rebind is made on the Table action and mirrored
+    // onto the Room action with the same name, so both players keep the same keys.
+
+    const string BindingsPref = "input_bindings";
+    UnityEngine.InputSystem.InputActionRebindingExtensions.RebindingOperation rebind;
+    public bool IsRebinding => rebind != null;
+
+    void LoadBindingOverrides()
+    {
+        string json = PlayerPrefs.GetString(BindingsPref, "");
+        if (string.IsNullOrEmpty(json)) return;
+        try { actions.asset.LoadBindingOverridesFromJson(json); }
+        catch (Exception e) { Debug.LogWarning($"[InputManager] Ignoring saved bindings: {e.Message}"); }
+    }
+
+    void SaveBindingOverrides() => PlayerPrefs.SetString(BindingsPref, actions.asset.SaveBindingOverridesAsJson());
+
+    public void ResetBindings()
+    {
+        actions.asset.RemoveAllBindingOverrides();
+        PlayerPrefs.DeleteKey(BindingsPref);
+    }
+
+    // The keyboard/mouse binding for an action, or one part of a composite ("up", "left"...).
+    static int FindBinding(InputAction action, string part)
+    {
+        if (action == null) return -1;
+        for (int i = 0; i < action.bindings.Count; i++)
+        {
+            var b = action.bindings[i];
+            if (b.isComposite) continue;
+            if (!string.IsNullOrEmpty(part) != b.isPartOfComposite) continue;
+            if (!string.IsNullOrEmpty(part) && !string.Equals(b.name, part, StringComparison.OrdinalIgnoreCase)) continue;
+            string path = b.effectivePath ?? "";
+            if (path.StartsWith("<Keyboard>") || path.StartsWith("<Mouse>")) return i;
+        }
+        return -1;
+    }
+
+    InputAction TableAction(string name) => actions.Table.Get().FindAction(name);
+    InputAction RoomAction(string name) => actions.Room.Get().FindAction(name);
+
+    public string BindingDisplay(string actionName, string part = null)
+    {
+        var action = TableAction(actionName) ?? RoomAction(actionName);
+        int index = FindBinding(action, part);
+        return index < 0 ? "-" : action.GetBindingDisplayString(index, InputBinding.DisplayStringOptions.DontIncludeInteractions);
+    }
+
+    // Listens for the next key or mouse button. Escape cancels. onDone runs either way.
+    public void StartRebind(string actionName, string part, Action onDone)
+    {
+        CancelRebind();
+        var action = TableAction(actionName) ?? RoomAction(actionName);
+        int index = FindBinding(action, part);
+        if (index < 0) { onDone?.Invoke(); return; }
+        bool wasEnabled = action.enabled;
+        action.Disable();
+        rebind = action.PerformInteractiveRebinding(index)
+            .WithControlsHavingToMatchPath("<Keyboard>")
+            .WithControlsHavingToMatchPath("<Mouse>")
+            .WithControlsExcluding("<Mouse>/position")
+            .WithControlsExcluding("<Mouse>/delta")
+            .WithControlsExcluding("<Mouse>/scroll")
+            .WithCancelingThrough("<Keyboard>/escape")
+            .OnMatchWaitForAnother(.1f)
+            .OnComplete(op =>
+            {
+                Mirror(action, index);
+                SaveBindingOverrides();
+                Finish();
+            })
+            .OnCancel(_ => Finish());
+        rebind.Start();
+
+        void Finish()
+        {
+            rebind?.Dispose();
+            rebind = null;
+            if (wasEnabled) action.Enable();
+            // The UI map sees the pressed key too; do not let it close the menu.
+            cancelFrame = Time.frameCount;
+            onDone?.Invoke();
+        }
+    }
+
+    public void CancelRebind() => rebind?.Cancel();
+
+    void Mirror(InputAction source, int index)
+    {
+        var binding = source.bindings[index];
+        var map = source.actionMap == actions.Table.Get() ? actions.Room.Get() : actions.Table.Get();
+        var other = map.FindAction(source.name);
+        if (other == null) return;
+        for (int i = 0; i < other.bindings.Count; i++)
+        {
+            var b = other.bindings[i];
+            if (b.isComposite || b.path != binding.path || b.name != binding.name) continue;
+            other.ApplyBindingOverride(i, binding.overridePath);
+        }
     }
 
     // Called by PlayerManager on swap: Room and Table players have different controls.

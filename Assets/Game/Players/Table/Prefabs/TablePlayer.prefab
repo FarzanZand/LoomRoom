@@ -1874,6 +1874,7 @@ GameObject:
   - component: {fileID: 5153306241458268471}
   - component: {fileID: 7338048636684075036}
   - component: {fileID: 6359001954766408055}
+  - component: {fileID: 6711956814867190061}
   m_Layer: 6
   m_Name: Controller
   m_TagString: Player
@@ -2270,13 +2271,20 @@ MonoBehaviour:
   armsAnimator: {fileID: 2764288027749529575}
   bodyAnimator: {fileID: 7889041209531401463}
   attackTag: Attack
-  blockTag: Block
+  releaseTag: AttackRelease
+  alternateReleaseTag: AttackReleaseAlt
+  heavyReleaseTag: AttackHeavyRelease
   attackHeldParam: AttackHeld
   blockHeldParam: BlockHeld
   rightHandEquippedParam: RightHandEquipped
   leftHandEquippedParam: LeftHandEquipped
   blockHitTrigger: BlockHit
   hurtTrigger: Hurt
+  windupSpeedParam: WindupSpeed
+  releaseSpeedParam: ReleaseSpeed
+  heavyReleaseSpeedParam: HeavyReleaseSpeed
+  heavyStrikeParam: HeavyStrike
+  attackSpeedParam: AttackSpeed
   chargeParam: Charge
   holdSpeedParam: HoldSpeed
   chargeLayer: ChargeAdditive
@@ -2302,6 +2310,19 @@ MonoBehaviour:
   groundedParam: Grounded
   freeFallParam: FreeFall
   jumpParam: Jump
+--- !u!114 &6711956814867190061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1704639430885474574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ff5df4302a85f24fa31861017486105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Wallet
+  gold: 0
 --- !u!1 &1806632151189951013
 GameObject:
   m_ObjectHideFlags: 0

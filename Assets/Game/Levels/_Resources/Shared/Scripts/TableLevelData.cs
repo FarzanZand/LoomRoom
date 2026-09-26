@@ -25,6 +25,13 @@ public class TableLevelData : ScriptableObject
 
     public LightingManager.MoodState DungeonLighting(int floorNumber=1)
     {
+        var theme=Theme(floorNumber);
+        if(theme!=null && theme.overrideLighting) return theme.lightingSettings.ToState();
+        if(theme!=null && theme.useThemeMood)
+        {
+            var themed=Resources.Load<SceneMood>("DungeonLighting/"+theme.moodLighting);
+            if(themed!=null) return LightingManager.FromPreset(themed);
+        }
         if(multipleLevels && floorSettings!=null && floorNumber>0 && floorNumber<=floorSettings.Length && floorSettings[floorNumber-1]!=null)
             return floorSettings[floorNumber-1].Lighting(mood);
         if (overrideLighting) return lightingSettings.ToState();
@@ -107,6 +114,73 @@ public class TableLevelData : ScriptableObject
     public DungeonLootTable loot;
     public DungeonLootTable enemyLoot, chestLoot, barrelLoot;
     public DungeonFloorSettings Floor(int number)=>multipleLevels && floorSettings!=null && number>0 && number<=floorSettings.Length ? floorSettings[number-1]:null;
+
+    [Header("Themes")]
+    [Tooltip("Used by floors without their own theme. Empty means plain level settings.")]
+    public DungeonTheme defaultTheme;
+    public DungeonTheme Theme(int floor)
+    {
+        var settings=Floor(floor);
+        return settings!=null && settings.theme!=null ? settings.theme : defaultTheme;
+    }
+    public AudioClip MusicFor(int floor,out float volume)
+    {
+        var theme=kind==TableLevelKind.Dungeon ? Theme(floor) : null;
+        if(theme!=null && theme.music!=null){volume=theme.musicVolume*backgroundMusicVolume;return theme.music;}
+        volume=backgroundMusicVolume;return backgroundMusic;
+    }
+
+    [Header("Milestones (boss floors)")]
+    [Tooltip("One entry per boss floor. The boss waits in a hand-built arena in the exit room; the way down stays sealed until it falls.")]
+    [ListDrawerSettings(ShowFoldout = true, ListElementLabelName = nameof(DungeonMilestone.Label))]
+    public DungeonMilestone[] milestones = new DungeonMilestone[0];
+    public DungeonMilestone Milestone(int floor)
+    {
+        if(milestones==null)return null;
+        foreach(var m in milestones)if(m!=null && m.enabled && m.floor==floor && m.boss!=null)return m;
+        return null;
+    }
+#if UNITY_EDITOR
+    [Button("Fill milestones every N floors"), PropertyTooltip("Adds a milestone on floor N, 2N, 3N... up to the floor count, copying the first milestone's boss, arena and audio. Existing floors are kept.")]
+    void FillMilestones([MinValue(2)] int every=4)
+    {
+        var template=milestones!=null && milestones.Length>0 ? milestones[0] : null;
+        var list=new System.Collections.Generic.List<DungeonMilestone>(milestones ?? new DungeonMilestone[0]);
+        int count=multipleLevels ? Mathf.Max(1,levelCount) : 1;
+        for(int f=every;f<=count;f+=every)
+        {
+            if(list.Exists(m=>m!=null && m.floor==f))continue;
+            list.Add(template!=null ? template.CopyForFloor(f) : new DungeonMilestone{floor=f});
+        }
+        list.Sort((a,b)=>(a?.floor ?? 0).CompareTo(b?.floor ?? 0));
+        UnityEditor.Undo.RecordObject(this,"Fill milestones");
+        milestones=list.ToArray();
+        UnityEditor.EditorUtility.SetDirty(this);
+    }
+#endif
+
+    [Header("Breakables and features")]
+    [Tooltip("Barrels, crates, pots and cobwebs. Storage and supply spots use Floor placements; cobwebs hang in corners.")]
+    public DungeonWeightedPrefab[] destructibles = new DungeonWeightedPrefab[0];
+    [Tooltip("Extra breakables scattered per room, on top of supply spots.")]
+    [MinMaxSlider(0, 8, true)] public Vector2Int destructiblesPerRoom = new Vector2Int(1, 3);
+    [Tooltip("Fountains, altars, graves, bookshelves, levers. Each has a chance per eligible room.")]
+    public DungeonFeature[] features = new DungeonFeature[0];
+
+    [Header("Merchant")]
+    [Tooltip("Merchant prefab with a Merchant component. Placed in a quiet room on floors that roll one.")]
+    public GameObject merchantPrefab;
+    [Tooltip("Rolled for the merchant's wares (Chest source).")]
+    public DungeonLootTable merchantStock;
+    [Range(0,1), Tooltip("Chance per floor when neither the floor nor its theme sets one.")]
+    public float merchantChance = .3f;
+    public float MerchantChance(int floor)
+    {
+        var settings=Floor(floor);
+        if(settings!=null && settings.overrideMerchant)return settings.merchantChance;
+        var theme=Theme(floor);
+        return theme!=null ? theme.merchantChance : merchantChance;
+    }
     public ItemData[] startingItems;
     public ItemData[] startingEquipment;
     public ItemData guaranteedHealing;
@@ -122,6 +196,12 @@ public class TableLevelData : ScriptableObject
 [System.Serializable]
 public class DungeonFloorSettings
 {
+    [Tooltip("Crypt, catacombs, sewer, mines... Supplies styles, enemies, loot, ambience and music. Settings below override it.")]
+    [InlineEditor(InlineEditorObjectFieldModes.Foldout)]
+    public DungeonTheme theme;
+    [Tooltip("Use Merchant Chance below instead of the theme's.")]
+    public bool overrideMerchant;
+    [ShowIf("overrideMerchant"), Range(0,1)] public float merchantChance=.3f;
     [Header("Encounters and rewards")]
     public bool overrideEncounters;
     [ShowIf("overrideEncounters"), Range(0,1)] public float encounterChance=.7f;
@@ -157,4 +237,74 @@ public class DungeonLightingSettings
         sky = skyTint, exposure = skyExposure, light = lightColor, intensity = lightIntensity,
         top = ambientSky, horizon = ambientHorizon, ground = ambientGround, fog = fogColor
     };
+}
+
+[System.Flags]
+public enum DungeonRoomRoles { None = 0, Entrance = 1, Combat = 2, Treasure = 4, Rest = 8, Storage = 16, Exit = 32, Any = 63 }
+
+[System.Serializable]
+public class DungeonWeightedPrefab
+{
+    [AssetsOnly] public GameObject prefab;
+    [Min(0)] public float weight = 1;
+    public static GameObject Choose(DungeonWeightedPrefab[] choices, System.Random random, System.Func<GameObject,bool> filter = null)
+    {
+        if (choices == null) return null;
+        double total = 0;
+        foreach (var c in choices) if (c != null && c.prefab != null && c.weight > 0 && (filter == null || filter(c.prefab))) total += c.weight;
+        if (total <= 0) return null;
+        double roll = random.NextDouble() * total;
+        foreach (var c in choices)
+        {
+            if (c == null || c.prefab == null || c.weight <= 0 || (filter != null && !filter(c.prefab))) continue;
+            roll -= c.weight;
+            if (roll < 0) return c.prefab;
+        }
+        return null;
+    }
+}
+
+[System.Serializable]
+public class DungeonFeature
+{
+    [AssetsOnly, Tooltip("Fountain, altar, grave, bookshelf or lever prefab. Must fit in one cell.")]
+    public GameObject prefab;
+    [Range(0, 1)] public float chancePerRoom = .12f;
+    public DungeonRoomRoles rooms = DungeonRoomRoles.Combat | DungeonRoomRoles.Treasure | DungeonRoomRoles.Rest | DungeonRoomRoles.Storage;
+    [Min(1)] public int minFloor = 1;
+    [Min(0), Tooltip("Zero means no limit.")] public int maxPerFloor = 2;
+}
+
+[System.Serializable]
+public class DungeonMilestone
+{
+    public bool enabled = true;
+    [Min(1)] public int floor = 3;
+    [AssetsOnly, Tooltip("Boss enemy prefab. Spawned at the arena's Boss socket, or the exit room centre.")]
+    public GameObject boss;
+    [AssetsOnly, Tooltip("Hand-built arena (DungeonRoomTemplate) placed in the exit room. Empty keeps the generated room.")]
+    public GameObject arena;
+    [Tooltip("Shown under the boss name on the health bar.")]
+    public string title = "Guardian of the Crypt";
+    [TextArea] public string introMessage = "The dead stir. Something vast rises from its throne.";
+    public AudioClip introSting;
+    [Range(0, 1)] public float stingVolume = 1f;
+    public AudioClip bossMusic;
+    [Range(0, 1)] public float bossMusicVolume = 1f;
+    [Tooltip("The stairs stay sealed until the boss dies.")]
+    public bool sealExit = true;
+    [Tooltip("Boss reward table. Empty uses the boss prefab's own.")]
+    public DungeonLootTable bossLoot;
+    [Min(0)] public int bonusGold = 60;
+    [Min(1), Tooltip("Exit room is enlarged by at least this factor to fit the arena.")]
+    public float arenaSizeScale = 1.5f;
+
+    public string Label => $"Floor {floor}: {(boss != null ? boss.name : "(no boss)")}{(enabled ? "" : " (off)")}";
+
+    public DungeonMilestone CopyForFloor(int newFloor)
+    {
+        var copy = (DungeonMilestone)MemberwiseClone();
+        copy.floor = newFloor;
+        return copy;
+    }
 }

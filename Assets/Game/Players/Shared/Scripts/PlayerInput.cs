@@ -208,6 +208,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Pause"",
+                    ""type"": ""Button"",
+                    ""id"": ""eb73a492-5413-4e2f-a1bf-7d94ce16f08a"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -505,6 +514,28 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Hotbar6"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""edd1df2e-81d4-4ee7-8579-3b727b6d2b46"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Pause"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""4998c3e8-2ed7-4211-aff1-7c69f5346681"",
+                    ""path"": ""<Gamepad>/start"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Pause"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1272,6 +1303,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Room_Hotbar4 = m_Room.FindAction("Hotbar4", throwIfNotFound: true);
         m_Room_Hotbar5 = m_Room.FindAction("Hotbar5", throwIfNotFound: true);
         m_Room_Hotbar6 = m_Room.FindAction("Hotbar6", throwIfNotFound: true);
+        m_Room_Pause = m_Room.FindAction("Pause", throwIfNotFound: true);
         // Table
         m_Table = asset.FindActionMap("Table", throwIfNotFound: true);
         m_Table_Move = m_Table.FindAction("Move", throwIfNotFound: true);
@@ -1399,6 +1431,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Room_Hotbar4;
     private readonly InputAction m_Room_Hotbar5;
     private readonly InputAction m_Room_Hotbar6;
+    private readonly InputAction m_Room_Pause;
     /// <summary>
     /// Provides access to input actions defined in input action map "Room".
     /// </summary>
@@ -1462,6 +1495,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Room/Hotbar6".
         /// </summary>
         public InputAction @Hotbar6 => m_Wrapper.m_Room_Hotbar6;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Pause".
+        /// </summary>
+        public InputAction @Pause => m_Wrapper.m_Room_Pause;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1527,6 +1564,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Hotbar6.started += instance.OnHotbar6;
             @Hotbar6.performed += instance.OnHotbar6;
             @Hotbar6.canceled += instance.OnHotbar6;
+            @Pause.started += instance.OnPause;
+            @Pause.performed += instance.OnPause;
+            @Pause.canceled += instance.OnPause;
         }
 
         /// <summary>
@@ -1577,6 +1617,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Hotbar6.started -= instance.OnHotbar6;
             @Hotbar6.performed -= instance.OnHotbar6;
             @Hotbar6.canceled -= instance.OnHotbar6;
+            @Pause.started -= instance.OnPause;
+            @Pause.performed -= instance.OnPause;
+            @Pause.canceled -= instance.OnPause;
         }
 
         /// <summary>
@@ -2238,6 +2281,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnHotbar6(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Pause" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPause(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Table" which allows adding and removing callbacks.

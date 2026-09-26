@@ -55,7 +55,7 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
     void OnDestroy() { if (fittedLintelMesh != null) Destroy(fittedLintelMesh); }
     public void Interact(Character who){if(CanInteract(who))Open();}
     public void TakeDamage(DamageInfo info){if(open)return;health-=Mathf.Max(0,info.Amount);if(health<=0)Open();}
-    void Open(){open=true;NoiseEvents.Report(transform.position,7);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position);}
+    public void Open(){open=true;NoiseEvents.Report(transform.position,7);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position);}
     void Update(){
         if(!open)return;
         leaf.localPosition=Vector3.MoveTowards(leaf.localPosition,closedPosition+Vector3.up*liftHeight,openingSpeed*Time.deltaTime);

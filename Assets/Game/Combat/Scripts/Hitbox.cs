@@ -192,6 +192,8 @@ public class Hitbox : MonoBehaviour
             KnockbackForce = force,
             Heavy          = heavy,
         };
+        if (owner is Player && target != null && CombatManager.HasInstance)
+            CombatManager.Instance.RollCriticalOrBackstab(ref info, target);
 
         Transform victimRoot = target != null ? target.transform
             : damageable is Component component ? component.transform : other.transform;

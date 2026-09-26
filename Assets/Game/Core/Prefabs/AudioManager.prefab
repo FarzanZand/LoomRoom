@@ -92,3 +92,169 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 6ea3cbcc9fcdd2440bc38f38011c728d, type: 3}
     volume: 0.65
     pitch: 1
+  creatureLibrary:
+  - label: Crypt Soldier
+    characters:
+    - {fileID: 11400000, guid: 976d645c0681c5e4089785cd16b50fdf, type: 2}
+    idle:
+    - {fileID: 8300000, guid: d1a332b63479f9d47b9d98330d69b641, type: 3}
+    - {fileID: 8300000, guid: cca8f9ceb0da2e748a5f0816001ccd03, type: 3}
+    - {fileID: 8300000, guid: 735fee94ee583a34db94a4529d984050, type: 3}
+    - {fileID: 8300000, guid: 834796c7aab09a542adbd1234f756fcf, type: 3}
+    - {fileID: 8300000, guid: 3e5b020ebc233bf4fa7ed272fc529852, type: 3}
+    alert:
+    - {fileID: 8300000, guid: 31de1cccf148f0747b9a3d3353af3fd5, type: 3}
+    pain:
+    - {fileID: 8300000, guid: e4f8523e0f390ed418bb3319e678af6f, type: 3}
+    - {fileID: 8300000, guid: 9170416de89bc7d4ea5d38d63c7e9cad, type: 3}
+    - {fileID: 8300000, guid: a0ec7d8869f875249adb9124494699ac, type: 3}
+    death:
+    - {fileID: 8300000, guid: d7b847c2faea56048a132bffb57f95f9, type: 3}
+    footsteps:
+    - {fileID: 8300000, guid: badf5acfcf64f77489f701c8cdc6b1f5, type: 3}
+    - {fileID: 8300000, guid: 869818a031ae8094388e923cbbd68881, type: 3}
+    - {fileID: 8300000, guid: 44a4a1908f87a7547b5306ca6f9e5e8d, type: 3}
+    - {fileID: 8300000, guid: 59e465d6da0164b4ba31dc8e39a9a502, type: 3}
+    - {fileID: 8300000, guid: e2211ab21cd762e4a9f11f5b8c402207, type: 3}
+    voiceVolume: 0.9
+    footstepVolume: 0.55
+    pitchVariance: 0.08
+    pitch: 0.85
+    minDistance: 2
+    maxDistance: 26
+    idleInterval: {x: 6, y: 14}
+    walkStepInterval: 0.55
+    runStepInterval: 0.34
+    painCooldown: 0.6
+  - label: Crypt Warden
+    characters:
+    - {fileID: 11400000, guid: 6d0bba65f0dfbb24faaa753efcf96a43, type: 2}
+    idle:
+    - {fileID: 8300000, guid: 0a6cf2b696cef86479692dd9b133d0f8, type: 3}
+    - {fileID: 8300000, guid: 9a2d865fd37a7f74bb71e9c834b1cf2f, type: 3}
+    - {fileID: 8300000, guid: c59659b408648eb47973bc92c811060e, type: 3}
+    - {fileID: 8300000, guid: 33990c79b943d55449570ebc9446fa7f, type: 3}
+    alert:
+    - {fileID: 8300000, guid: a98a95988280b2d45974c610bcddde25, type: 3}
+    pain:
+    - {fileID: 8300000, guid: 503efb51525c4e34b9044c0543f95b8e, type: 3}
+    - {fileID: 8300000, guid: 3e4449b321d780446a4abe68130416bf, type: 3}
+    - {fileID: 8300000, guid: 0e1b2b5a70303fa47a550ab3b9389f1e, type: 3}
+    death:
+    - {fileID: 8300000, guid: d7b847c2faea56048a132bffb57f95f9, type: 3}
+    footsteps:
+    - {fileID: 8300000, guid: f203194e74b53d744a65298b80721333, type: 3}
+    - {fileID: 8300000, guid: 19e8abe4c1e83f94f8aa10b42a30906d, type: 3}
+    - {fileID: 8300000, guid: 98b0c0aea4da2684b94f4915c6c6e221, type: 3}
+    - {fileID: 8300000, guid: af95aea575228364aac3081fffd9f4ea, type: 3}
+    - {fileID: 8300000, guid: 13489e661e9219146b9dee101cfca45f, type: 3}
+    voiceVolume: 0.9
+    footstepVolume: 0.7
+    pitchVariance: 0.08
+    pitch: 0.7
+    minDistance: 2
+    maxDistance: 26
+    idleInterval: {x: 6, y: 14}
+    walkStepInterval: 0.62
+    runStepInterval: 0.4
+    painCooldown: 0.6
+  - label: Crypt Mite
+    characters:
+    - {fileID: 11400000, guid: f458fdcbcd4301e46a88b3e27d1b49f2, type: 2}
+    idle:
+    - {fileID: 8300000, guid: 0a6cf2b696cef86479692dd9b133d0f8, type: 3}
+    - {fileID: 8300000, guid: 9a2d865fd37a7f74bb71e9c834b1cf2f, type: 3}
+    - {fileID: 8300000, guid: c59659b408648eb47973bc92c811060e, type: 3}
+    - {fileID: 8300000, guid: 33990c79b943d55449570ebc9446fa7f, type: 3}
+    alert:
+    - {fileID: 8300000, guid: 31de1cccf148f0747b9a3d3353af3fd5, type: 3}
+    pain:
+    - {fileID: 8300000, guid: 1fb51b981956d7543a9899449b265042, type: 3}
+    - {fileID: 8300000, guid: b716211feea6460478ec3add51400d9d, type: 3}
+    - {fileID: 8300000, guid: dfb30afbfd26c0e4694cf5c9501ca820, type: 3}
+    death:
+    - {fileID: 8300000, guid: b3a7ef36f35dc8e4ca2899d1cedaf6d6, type: 3}
+    - {fileID: 8300000, guid: 52c7918ab56e47e41bbf76c5587a9eb7, type: 3}
+    - {fileID: 8300000, guid: 3eca4d3e22fd2b14a93350f477661844, type: 3}
+    footsteps:
+    - {fileID: 8300000, guid: af940a0d51d125e42abeae1d05ea8906, type: 3}
+    - {fileID: 8300000, guid: 54a7f74e8234f154e8b330a586084d44, type: 3}
+    - {fileID: 8300000, guid: 4be8d3d4e28a1224589ea502780c4707, type: 3}
+    - {fileID: 8300000, guid: 56ace94963be63c418fc11aa8ea2bf31, type: 3}
+    - {fileID: 8300000, guid: ade593964bab65e4d8c5b20c475348d3, type: 3}
+    voiceVolume: 0.7
+    footstepVolume: 0.45
+    pitchVariance: 0.08
+    pitch: 1.7
+    minDistance: 2
+    maxDistance: 20
+    idleInterval: {x: 4, y: 10}
+    walkStepInterval: 0.28
+    runStepInterval: 0.17
+    painCooldown: 0.6
+  - label: Crypt Lord
+    characters:
+    - {fileID: 11400000, guid: 19340e5d1d127ee45a038ca1cfd47fcc, type: 2}
+    idle:
+    - {fileID: 8300000, guid: 8a6afee57096b6148b153b63a3ff8f31, type: 3}
+    - {fileID: 8300000, guid: 535c1d90f1a9dd842a37b49b18f6d181, type: 3}
+    alert:
+    - {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
+    pain:
+    - {fileID: 8300000, guid: 503efb51525c4e34b9044c0543f95b8e, type: 3}
+    - {fileID: 8300000, guid: 3e4449b321d780446a4abe68130416bf, type: 3}
+    - {fileID: 8300000, guid: 0e1b2b5a70303fa47a550ab3b9389f1e, type: 3}
+    death:
+    - {fileID: 8300000, guid: a98a95988280b2d45974c610bcddde25, type: 3}
+    footsteps:
+    - {fileID: 8300000, guid: f203194e74b53d744a65298b80721333, type: 3}
+    - {fileID: 8300000, guid: 19e8abe4c1e83f94f8aa10b42a30906d, type: 3}
+    - {fileID: 8300000, guid: 98b0c0aea4da2684b94f4915c6c6e221, type: 3}
+    - {fileID: 8300000, guid: af95aea575228364aac3081fffd9f4ea, type: 3}
+    - {fileID: 8300000, guid: 13489e661e9219146b9dee101cfca45f, type: 3}
+    voiceVolume: 0.9
+    footstepVolume: 0.85
+    pitchVariance: 0.08
+    pitch: 0.6
+    minDistance: 2
+    maxDistance: 40
+    idleInterval: {x: 10, y: 18}
+    walkStepInterval: 0.55
+    runStepInterval: 0.34
+    painCooldown: 0.6
+  - label: Fallback (anything unlisted)
+    characters: []
+    idle:
+    - {fileID: 8300000, guid: d1a332b63479f9d47b9d98330d69b641, type: 3}
+    - {fileID: 8300000, guid: cca8f9ceb0da2e748a5f0816001ccd03, type: 3}
+    - {fileID: 8300000, guid: 735fee94ee583a34db94a4529d984050, type: 3}
+    - {fileID: 8300000, guid: 834796c7aab09a542adbd1234f756fcf, type: 3}
+    - {fileID: 8300000, guid: 3e5b020ebc233bf4fa7ed272fc529852, type: 3}
+    alert:
+    - {fileID: 8300000, guid: 31de1cccf148f0747b9a3d3353af3fd5, type: 3}
+    pain:
+    - {fileID: 8300000, guid: e4f8523e0f390ed418bb3319e678af6f, type: 3}
+    - {fileID: 8300000, guid: 9170416de89bc7d4ea5d38d63c7e9cad, type: 3}
+    - {fileID: 8300000, guid: a0ec7d8869f875249adb9124494699ac, type: 3}
+    - {fileID: 8300000, guid: 503efb51525c4e34b9044c0543f95b8e, type: 3}
+    - {fileID: 8300000, guid: 3e4449b321d780446a4abe68130416bf, type: 3}
+    - {fileID: 8300000, guid: 0e1b2b5a70303fa47a550ab3b9389f1e, type: 3}
+    death:
+    - {fileID: 8300000, guid: d7b847c2faea56048a132bffb57f95f9, type: 3}
+    footsteps:
+    - {fileID: 8300000, guid: 058a76462f841bc4383f779174232e8d, type: 3}
+    - {fileID: 8300000, guid: 0398300606886cb48a0aa04f24ec3fb1, type: 3}
+    - {fileID: 8300000, guid: 40ba53cbe53ba624694dae76d121144e, type: 3}
+    - {fileID: 8300000, guid: 71f37161ecd15c648a402570a293f155, type: 3}
+    - {fileID: 8300000, guid: 9d35bd0c158bfd4438f82a64b51c8938, type: 3}
+    voiceVolume: 0.9
+    footstepVolume: 0.55
+    pitchVariance: 0.08
+    pitch: 1
+    minDistance: 2
+    maxDistance: 26
+    idleInterval: {x: 6, y: 14}
+    walkStepInterval: 0.55
+    runStepInterval: 0.34
+    painCooldown: 0.6
+  ambienceFadeDuration: 2

@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a1e253b86dec094b84a2f3baf28630b, type: 3}
+  m_Name: Crypt
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonTheme
+  displayName: The Crypt
+  entryMessage: Cold stone and old candle smoke. The crypt is quiet, but not empty.
+  roomStyles:
+  - style: {fileID: 11400000, guid: effd0936d8ae44fbaf28bf7c3494ed2a, type: 2}
+    weight: 2
+  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
+    weight: 3
+  corridorStyles:
+  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
+    weight: 1
+  props: []
+  destructibles: []
+  features: []
+  overrideLighting: 0
+  moodLighting: 0
+  useThemeMood: 1
+  lightingSettings:
+    skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+    skyExposure: 0.8
+    lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+    lightIntensity: 0.65
+    ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+    ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+    ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+    fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  roomLightTint: {r: 1, g: 1, b: 1, a: 0}
+  enemies:
+  - {fileID: 8306217807791707549, guid: 0d5602465bc50894c8c21974f5ae1087, type: 3}
+  - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
+  - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
+  - {fileID: 3270041406331151002, guid: b5cc74a1c83c63a4f906481253b84779, type: 3}
+  enemyLoot: {fileID: 0}
+  chestLoot: {fileID: 0}
+  barrelLoot: {fileID: 0}
+  ambience: {fileID: 8300000, guid: 8e21df6c7df508947b685b6f747894ee, type: 3}
+  ambienceVolume: 0.45
+  ambientOneShots:
+  - {fileID: 8300000, guid: 30b9ef683561cb243893c37030b1f3ea, type: 3}
+  - {fileID: 8300000, guid: 5876170168f3bf143b71314874ce3a86, type: 3}
+  - {fileID: 8300000, guid: 71329d926b5698341bfc6b7dda00a56d, type: 3}
+  - {fileID: 8300000, guid: 6135cda50a94a464abae8bdf7e6ea8bb, type: 3}
+  oneShotInterval: {x: 10, y: 24}
+  oneShotVolume: 0.5
+  music: {fileID: 0}
+  musicVolume: 1
+  merchantChance: 0.25

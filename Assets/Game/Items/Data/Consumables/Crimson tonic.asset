@@ -20,7 +20,12 @@ MonoBehaviour:
   pickupVisualPrefab: {fileID: 0}
   itemType: 4
   maxStackSize: 3
+  value: 25
+  pickupAudioSource: 0
   pickupAudio: {fileID: 0}
+  pickupClip: {fileID: 0}
+  pickupClipVolume: 1
+  pickupAudioKey: 
   directToHotbar: 0
   canBeEquipped: 0
   equipSlot: 0
@@ -53,7 +58,12 @@ MonoBehaviour:
     flag: 
     flagValue: 1
     customEffect: {fileID: 0}
+  useAudioSource: 0
   useAudio: {fileID: 11400000, guid: 63129266ddf03ab40b85ca3e8de5d7ce, type: 2}
+  useClip: {fileID: 0}
+  useClipVolume: 1
+  useAudioKey: 
+  useMessage: The tonic burns going down, then warmth floods back into you.
   AnimationOnUse: 1
   eatDuration: 0.65
   eatMouthPosition: {x: 0, y: -0.12, z: 0.13}

@@ -164,6 +164,8 @@ GameObject:
   - component: {fileID: 2283309229898264946}
   - component: {fileID: 3183225313720536879}
   - component: {fileID: 2048406925955866338}
+  - component: {fileID: 6175250280506307910}
+  - component: {fileID: 2533893457641159193}
   m_Layer: 0
   m_Name: Crypt Warden
   m_TagString: Untagged
@@ -355,6 +357,7 @@ MonoBehaviour:
   carriedItem: {fileID: 0}
   seed: 0
   floorNumber: 1
+  bonusGold: 0
 --- !u!114 &3183225313720536879
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -386,6 +389,34 @@ MonoBehaviour:
   animator: {fileID: 5213140948791921277}
   attachment: {fileID: 6374321027591195985}
   visual: {fileID: 2944592895507907956}
+--- !u!114 &6175250280506307910
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3270041406331151002}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b557cf5ef9a17da41a9e9e282deada94, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyVoice
+  minStepSpeed: 0.35
+  reportUnseenAlerts: 1
+--- !u!114 &2533893457641159193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3270041406331151002}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 720d80db9ce042443834bddc5665d46d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyRagdoll
+  totalMass: 40
+  settleSeconds: 5
 --- !u!1001 &2976318534169867762
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -39,6 +39,8 @@ All game code lives in `Assets/Game/<Area>/Scripts` (paths below are relative to
 | Cutscenes | `Cinematics/Scripts/{CutsceneController,WakeUpCutsceneController,DinnerCutsceneController,TableIntroController,TableManager}.cs` |
 | Table levels (town, dungeons) | `Levels/_Resources/Shared/Scripts/*` (`TableLevelLoader`, `TableLevelReveal`, `DungeonGenerator`...), catalog `Levels/Resources/TableLevels.asset` |
 | UI | `UI/Scripts/*` |
+| Runs, log, currency, pooling, settings | `Game/Core/Scripts/{RunManager,MessageLog,PoolManager,UserSettings}.cs`, `Game/Items/Scripts/Currency/*` (CurrencyManager config, Wallet on the player), UI in `Game/UI/Scripts/{MessageLogUI,GoldCounterUI,BossBarUI,RunRecapUI,PauseMenuUI,SettingsUI,ShopUI}.cs` |
+| Dungeon themes, bosses, templates, features | `Levels/_Resources/Shared/Scripts/{DungeonTheme,DungeonBossEncounter,DungeonRoomTemplate,DungeonSocket,DungeonDestructible,DungeonCorpse,Merchant,DungeonAmbience}.cs`, `Features/*`; guide in `Docs/Dungeon-features.md` |
 | Table player arms animation | `Players/Shared/Animations/FirstPersonTable.controller`, clips in `Players/Shared/Animations/FirstPersonPlayer` (all hand-authored) |
 
 ## Known leftovers

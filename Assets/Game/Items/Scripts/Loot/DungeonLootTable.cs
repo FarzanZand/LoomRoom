@@ -40,6 +40,29 @@ public class DungeonLootTable : ScriptableObject
     public Entry[] guaranteed = Array.Empty<Entry>();
     public Pool[] pools = Array.Empty<Pool>();
     [Range(1,64), Tooltip("Maximum total items in one reward. Guaranteed entries receive priority; prevents accidental loot floods.")] public int maxItemsPerReward=12;
+    [Serializable] public class GoldReward
+    {
+        public DungeonLootSource sources = DungeonLootSource.All;
+        [Range(0,1), Tooltip("Chance of any gold. Independent of the enemy item gate.")] public float chance = .5f;
+        [Min(0)] public int min = 2, max = 8;
+        [Range(0,1), Tooltip("Added to both bounds per floor beyond the first, as a fraction of the base amount.")] public float growthPerFloor = .2f;
+    }
+    [Tooltip("Gold coins scattered with the reward. Rolled after items, so item results are unchanged by gold settings.")]
+    public GoldReward[] gold = Array.Empty<GoldReward>();
+
+    public int RollGold(System.Random random, int floor, DungeonLootSource source)
+    {
+        if(random==null || gold==null)return 0;
+        floor=Math.Max(1,floor);
+        int total=0;
+        foreach(var g in gold) {
+            if(g==null || (g.sources&source)==0 || random.NextDouble()>=Mathf.Clamp01(g.chance))continue;
+            float scale=1f+Mathf.Max(0,g.growthPerFloor)*(floor-1);
+            int min=Mathf.RoundToInt(Mathf.Max(0,g.min)*scale),max=Mathf.Max(min,Mathf.RoundToInt(Mathf.Max(0,g.max)*scale));
+            total+=random.Next(min,max+1);
+        }
+        return total;
+    }
 
     public List<Drop> RollDrops(System.Random random, int floor, DungeonLootSource source)
     {

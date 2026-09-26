@@ -21,6 +21,36 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Also hit-stop when an enemy lands a hit on the player.")]
     public bool hitStopOnPlayerHurt = false;
 
+    [Header("Critical hits and backstabs (player attacks)")]
+    public bool criticalHitsEnabled = true;
+    [Range(0f, 1f)] public float critChance = .08f;
+    [Min(1f)] public float critMultiplier = 1.75f;
+    [Min(1f), Tooltip("Hit stop length multiplier for a critical hit.")]
+    public float critHitStopScale = 2.5f;
+    public AudioData critAudio;
+    [Tooltip("Hitting an enemy that is not chasing or attacking, or one facing away, is a backstab.")]
+    public bool backstabsEnabled = true;
+    [Min(1f)] public float backstabMultiplier = 2.5f;
+    [Range(-1f, 1f), Tooltip("A hit counts as from behind when dot(victim forward, attack direction) is above this.")]
+    public float backstabBehindDot = .35f;
+    [Tooltip("Also backstab alert enemies when struck from behind. Off: only unaware enemies.")]
+    public bool backstabAlertFromBehind = true;
+    [Min(1f)] public float backstabHitStopScale = 3f;
+    public AudioData backstabAudio;
+    [Min(1f), Tooltip("Size multiplier of the damage number for critical hits and backstabs.")]
+    public float critNumberScale = 1.6f;
+
+    [Header("Death")]
+    [Tooltip("Enemies collapse as physics ragdolls. Off plays the death animation instead.")]
+    public bool ragdollDeath = true;
+    [Tooltip("Impulse applied along the killing blow's direction.")]
+    [Min(0)] public float ragdollImpulse = 4.5f;
+    [Min(0)] public float ragdollUpwardImpulse = 1.5f;
+    [Tooltip("Enemy loot stays on the corpse until the player searches it. Off scatters it on death.")]
+    public bool lootableCorpses = true;
+    [Tooltip("Seconds before a corpse is removed. 0 keeps corpses for the whole floor.")]
+    [Min(0)] public float corpseLifetime = 0f;
+
     [Header("Knockback")]
     public bool knockbackEnabled = true;
     [Tooltip("Scales every knockback force in the game.")]
@@ -191,6 +221,27 @@ public class CombatManager : Singleton<CombatManager>
         return true;
     }
 
+    public void RollCriticalOrBackstab(ref DamageInfo info, Character target)
+    {
+        if (target == null || info.Amount <= 0f) return;
+        var brain = target.GetComponent<EnemyBrain>();
+        if (backstabsEnabled && brain != null)
+        {
+            bool behind = info.Direction.sqrMagnitude > .001f && Vector3.Dot(target.transform.forward, info.Direction) > backstabBehindDot;
+            if (!brain.IsAlerted || (backstabAlertFromBehind && behind))
+            {
+                info.Backstab = true;
+                info.Amount *= backstabMultiplier;
+                return;
+            }
+        }
+        if (criticalHitsEnabled && Random.value < critChance)
+        {
+            info.Critical = true;
+            info.Amount *= critMultiplier;
+        }
+    }
+
     public void PresentImpact(Character victim, DamageInfo info)
     {
         var profile = info.Profile;
@@ -200,15 +251,17 @@ public class CombatManager : Singleton<CombatManager>
         if (!info.Blocked && defaults && victim.data != null && victim.data.bodyImpactAudio != null)
             audio = victim.data.bodyImpactAudio;
         if(audio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(audio,info.HitPoint);
+        var special = info.Blocked ? null : info.Backstab ? backstabAudio : info.Critical ? critAudio : null;
+        if(special != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(special,info.HitPoint);
         GameObject prefab = info.Blocked ? blockParticlePrefab : defaults ? GetRandomHitParticle() : profile.hitParticle;
         if(prefab != null)
         {
             Vector3 direction = info.Direction.sqrMagnitude > .001f ? -info.Direction : Vector3.up;
-            var effect = Instantiate(prefab,info.HitPoint,Quaternion.LookRotation(direction));
-            Destroy(effect,impactParticleLifetime);
+            PoolManager.SpawnOrInstantiate(prefab,info.HitPoint,Quaternion.LookRotation(direction),impactParticleLifetime);
         }
         if(!(victim is Player) || hitStopOnPlayerHurt)
-            RequestHitStop((profile != null ? profile.hitStopScale : 1f) * (info.Blocked ? blockHitStopScale : 1f));
+            RequestHitStop((profile != null ? profile.hitStopScale : 1f) * (info.Blocked ? blockHitStopScale
+                : info.Backstab ? backstabHitStopScale : info.Critical ? critHitStopScale : 1f));
     }
 
     public GameObject GetRandomHitParticle()

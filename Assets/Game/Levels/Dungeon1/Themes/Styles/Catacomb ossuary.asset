@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48e1a08511ae4bb89e9a2ba01ad45eb5, type: 3}
+  m_Name: Catacomb ossuary
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomStyle
+  bottomWall: {fileID: 2100000, guid: f07ff2963493bd145bb486b7f96ffc82, type: 2}
+  upperWall: {fileID: 2100000, guid: 13fc2e0a3772bc445b319338823e2ba5, type: 2}
+  floor: {fileID: 2100000, guid: aa9f59ba11bbd0c41a5dc0c26fa2c148, type: 2}
+  ceiling: {fileID: 2100000, guid: b84909f81e52f2a47a68177f1186c384, type: 2}
+  hideTrims: 0
+  trim: {fileID: 2100000, guid: f07ff2963493bd145bb486b7f96ffc82, type: 2}

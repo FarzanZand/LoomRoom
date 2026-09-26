@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3733395904268285077
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1606787641335560891}
+  - component: {fileID: 8193291746306785873}
+  m_Layer: 0
+  m_Name: CurrencyManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1606787641335560891
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3733395904268285077}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8193291746306785873
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3733395904268285077}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a646f6f6fd2b41542a96af092f70c515, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CurrencyManager
+  currencyName: gold
+  coinIcon: {fileID: 21300000, guid: a4b5f30bd57565a459e49d70d505fb28, type: 3}
+  pickupClip: {fileID: 8300000, guid: 4027ae3913ff79441a94827eb4abcd19, type: 3}
+  pickupVolume: 0.9
+  coinVisuals:
+  - minAmount: 1
+    prefab: {fileID: 3893912976215769978, guid: b128d6ee1ae18674aac74a914d79652e, type: 3}
+    scale: 1.3
+  - minAmount: 12
+    prefab: {fileID: 2957133505187866865, guid: b9ae89d8a0968554f92aec7cb3610c52, type: 3}
+    scale: 1
+  - minAmount: 40
+    prefab: {fileID: 4601325628514313937, guid: 4b5a571f5965945428f0221820974a6c, type: 3}
+    scale: 1.1
+  collectOnTouch: 1
+  pickupRadius: 0.6
+  sellMultiplier: 0.4
+  fallbackItemValue: 5

@@ -109,6 +109,10 @@ public class Character : MonoBehaviour
         AnyDied?.Invoke(this);
 
         float delay = data != null ? data.deathDisableDelay : 0f;
+        // Ragdolled or searchable bodies stay as long as CombatManager says (0 = the whole floor).
+        if (CombatManager.HasInstance && !(this is Player) && GetComponent<EnemyBrain>() != null
+            && (CombatManager.Instance.ragdollDeath || CombatManager.Instance.lootableCorpses))
+            delay = CombatManager.Instance.corpseLifetime;
         if (delay > 0f) StartCoroutine(DisableAfterDeath(delay));
     }
 

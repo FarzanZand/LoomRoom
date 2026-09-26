@@ -26,6 +26,9 @@ public class ItemData : ScriptableObject
 
     [Min(1)] public int maxStackSize = 1;
 
+    [Tooltip("Price in gold at a merchant. Selling pays CurrencyManager's sell fraction of this. Zero uses the manager's fallback price.")]
+    [Min(0)] public int value;
+
     [Tooltip("AudioData preserves the shared pickup setting. Clip or key explicitly overrides the shared pickup sound for this item.")]
     public ItemAudioSource pickupAudioSource;
     [ShowIf("PickupUsesData"), Tooltip("Sound when picked up. Empty = InventoryManager default. Shared pickup sound may override this.")]
@@ -90,6 +93,10 @@ public class ItemData : ScriptableObject
     public string useAudioKey;
 
     [BoxGroup("Consumable"), ShowIf("IsConsumable")]
+    [Tooltip("Line added to the message log when used, e.g. \"The potion tastes bitter.\" Empty posts \"You use <item>.\"")]
+    public string useMessage;
+
+    [BoxGroup("Consumable"), ShowIf("IsConsumable")]
     [Tooltip("Used only when consuming equipped items from the hand. Idle keeps the original behavior; Eat moves the hand and item toward the mouth.")]
     public ItemUseAnimation AnimationOnUse = ItemUseAnimation.Idle;
 
@@ -136,6 +143,8 @@ public class ItemData : ScriptableObject
             else if (UseUsesClip && useClip != null) AudioManager.Instance.PlaySFX2D(useClip, Mathf.Clamp01(useClipVolume));
             else if (UseUsesKey && !string.IsNullOrWhiteSpace(useAudioKey)) AudioManager.Instance.PlaySFX2D(useAudioKey.Trim());
         }
+        if (user is Player p && p.kind == PlayerKind.Table)
+            MessageLog.Post(string.IsNullOrWhiteSpace(useMessage) ? $"You use the {itemName}." : useMessage.Trim(), MessageKind.Info);
         ItemEffectProcessor.Fire(this, EffectTrigger.OnUse, EffectContext.For(user, this));
     }
 

@@ -20,7 +20,12 @@ MonoBehaviour:
   pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
   itemType: 6
   maxStackSize: 1
+  value: 15
+  pickupAudioSource: 0
   pickupAudio: {fileID: 0}
+  pickupClip: {fileID: 0}
+  pickupClipVolume: 1
+  pickupAudioKey: 
   directToHotbar: 0
   canBeEquipped: 1
   equipSlot: 2
@@ -42,7 +47,12 @@ MonoBehaviour:
     knockbackForce: -1
     hitStopScale: 1
   effects: []
+  useAudioSource: 0
   useAudio: {fileID: 0}
+  useClip: {fileID: 0}
+  useClipVolume: 1
+  useAudioKey: 
+  useMessage: 
   AnimationOnUse: 0
   eatDuration: 0.65
   eatMouthPosition: {x: 0, y: -0.12, z: 0.13}

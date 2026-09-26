@@ -17,6 +17,7 @@ public enum GameState
     Cutscene  = 3,   // timeline or scripted sequence, no input, HUD hidden
     Dead      = 4,   // player died, no input
     Inventory = 5,   // live inventory: AI and simulation continue; player input is disabled
+    Paused    = 6,   // pause menu: time stopped, cursor free
 }
 
 public class GameManager : Singleton<GameManager>

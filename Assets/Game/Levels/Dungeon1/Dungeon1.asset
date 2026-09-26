@@ -49,6 +49,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 40867d4f31470e54a99e795ac0ee7221, type: 2}
   - {fileID: 11400000, guid: 9aacf2c86f9b97147bb7df776e08316b, type: 2}
   - {fileID: 11400000, guid: 7feeadfd849b5ee459d026df4d62e8dd, type: 2}
+  - {fileID: 11400000, guid: c20ef9685e373554c8072e3be2d59f9c, type: 2}
   fixedSeed: 0
   architectureTileSize: 3
   roomStyles:
@@ -68,9 +69,219 @@ MonoBehaviour:
   hideRoofPercent: 5.9
   hideEdges: 0
   hideEdgesPercent: 100
-  multipleLevels: 0
-  levelCount: 3
-  floorSettings: []
+  multipleLevels: 1
+  levelCount: 10
+  floorSettings:
+  - theme: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
+    overrideMerchant: 0
+    merchantChance: 0.3
+    overrideEncounters: 0
+    encounterChance: 0.7
+    maxEnemiesPerRoom: 2
+    enemies: []
+    enemyLoot: {fileID: 0}
+    chestLoot: {fileID: 0}
+    barrelLoot: {fileID: 0}
+    moodLighting: 0
+    overrideLighting: 0
+    lightingSettings:
+      skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+      skyExposure: 0.8
+      lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+      lightIntensity: 0.65
+      ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+      ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+      ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+      fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  - theme: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
+    overrideMerchant: 0
+    merchantChance: 0.3
+    overrideEncounters: 0
+    encounterChance: 0.7
+    maxEnemiesPerRoom: 2
+    enemies: []
+    enemyLoot: {fileID: 0}
+    chestLoot: {fileID: 0}
+    barrelLoot: {fileID: 0}
+    moodLighting: 0
+    overrideLighting: 0
+    lightingSettings:
+      skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+      skyExposure: 0.8
+      lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+      lightIntensity: 0.65
+      ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+      ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+      ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+      fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  - theme: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
+    overrideMerchant: 0
+    merchantChance: 0.3
+    overrideEncounters: 0
+    encounterChance: 0.7
+    maxEnemiesPerRoom: 2
+    enemies: []
+    enemyLoot: {fileID: 0}
+    chestLoot: {fileID: 0}
+    barrelLoot: {fileID: 0}
+    moodLighting: 0
+    overrideLighting: 0
+    lightingSettings:
+      skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+      skyExposure: 0.8
+      lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+      lightIntensity: 0.65
+      ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+      ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+      ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+      fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  - theme: {fileID: 11400000, guid: b543f3f0b0f4629488bde41b32acc0ab, type: 2}
+    overrideMerchant: 0
+    merchantChance: 0.3
+    overrideEncounters: 0
+    encounterChance: 0.7
+    maxEnemiesPerRoom: 2
+    enemies: []
+    enemyLoot: {fileID: 0}
+    chestLoot: {fileID: 0}
+    barrelLoot: {fileID: 0}
+    moodLighting: 0
+    overrideLighting: 0
+    lightingSettings:
+      skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+      skyExposure: 0.8
+      lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+      lightIntensity: 0.65
+      ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+      ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+      ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+      fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  - theme: {fileID: 11400000, guid: b543f3f0b0f4629488bde41b32acc0ab, type: 2}
+    overrideMerchant: 0
+    merchantChance: 0.3
+    overrideEncounters: 0
+    encounterChance: 0.7
+    maxEnemiesPerRoom: 2
+    enemies: []
+    enemyLoot: {fileID: 0}
+    chestLoot: {fileID: 0}
+    barrelLoot: {fileID: 0}
+    moodLighting: 0
+    overrideLighting: 0
+    lightingSettings:
+      skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+      skyExposure: 0.8
+      lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+      lightIntensity: 0.65
+      ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+      ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+      ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+      fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  - theme: {fileID: 11400000, guid: b4c02c6330baeae4fbe69ffb720a6b9c, type: 2}
+    overrideMerchant: 0
+    merchantChance: 0.3
+    overrideEncounters: 0
+    encounterChance: 0.7
+    maxEnemiesPerRoom: 2
+    enemies: []
+    enemyLoot: {fileID: 0}
+    chestLoot: {fileID: 0}
+    barrelLoot: {fileID: 0}
+    moodLighting: 0
+    overrideLighting: 0
+    lightingSettings:
+      skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+      skyExposure: 0.8
+      lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+      lightIntensity: 0.65
+      ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+      ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+      ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+      fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  - theme: {fileID: 11400000, guid: b4c02c6330baeae4fbe69ffb720a6b9c, type: 2}
+    overrideMerchant: 0
+    merchantChance: 0.3
+    overrideEncounters: 0
+    encounterChance: 0.7
+    maxEnemiesPerRoom: 2
+    enemies: []
+    enemyLoot: {fileID: 0}
+    chestLoot: {fileID: 0}
+    barrelLoot: {fileID: 0}
+    moodLighting: 0
+    overrideLighting: 0
+    lightingSettings:
+      skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+      skyExposure: 0.8
+      lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+      lightIntensity: 0.65
+      ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+      ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+      ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+      fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  - theme: {fileID: 11400000, guid: fb1cbdf7dbcc1124498d794d71b01ee3, type: 2}
+    overrideMerchant: 0
+    merchantChance: 0.3
+    overrideEncounters: 0
+    encounterChance: 0.7
+    maxEnemiesPerRoom: 2
+    enemies: []
+    enemyLoot: {fileID: 0}
+    chestLoot: {fileID: 0}
+    barrelLoot: {fileID: 0}
+    moodLighting: 0
+    overrideLighting: 0
+    lightingSettings:
+      skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+      skyExposure: 0.8
+      lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+      lightIntensity: 0.65
+      ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+      ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+      ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+      fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  - theme: {fileID: 11400000, guid: fb1cbdf7dbcc1124498d794d71b01ee3, type: 2}
+    overrideMerchant: 0
+    merchantChance: 0.3
+    overrideEncounters: 0
+    encounterChance: 0.7
+    maxEnemiesPerRoom: 2
+    enemies: []
+    enemyLoot: {fileID: 0}
+    chestLoot: {fileID: 0}
+    barrelLoot: {fileID: 0}
+    moodLighting: 0
+    overrideLighting: 0
+    lightingSettings:
+      skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+      skyExposure: 0.8
+      lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+      lightIntensity: 0.65
+      ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+      ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+      ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+      fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  - theme: {fileID: 11400000, guid: fb1cbdf7dbcc1124498d794d71b01ee3, type: 2}
+    overrideMerchant: 0
+    merchantChance: 0.3
+    overrideEncounters: 0
+    encounterChance: 0.7
+    maxEnemiesPerRoom: 2
+    enemies: []
+    enemyLoot: {fileID: 0}
+    chestLoot: {fileID: 0}
+    barrelLoot: {fileID: 0}
+    moodLighting: 0
+    overrideLighting: 0
+    lightingSettings:
+      skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+      skyExposure: 0.8
+      lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+      lightIntensity: 0.65
+      ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+      ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+      ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+      fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   floorMaterial: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
   wallMaterial: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
   upperWallMaterial: {fileID: 0}
@@ -91,6 +302,84 @@ MonoBehaviour:
   enemyLoot: {fileID: 11400000, guid: 4fa73d6bb675684469538d1cc9a41960, type: 2}
   chestLoot: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
   barrelLoot: {fileID: 11400000, guid: 5c389ef4b21c6464bb5fd8dce9928f7e, type: 2}
+  defaultTheme: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
+  milestones:
+  - enabled: 1
+    floor: 3
+    boss: {fileID: 2330004206700819348, guid: 47169fc13bdc8ad41a6b7008da9bdd6a, type: 3}
+    arena: {fileID: 6094011178556838177, guid: fcaf31c71d0815649912203b428b86ef, type: 3}
+    title: Lord of the Crypt
+    introMessage: The dead stir. Something vast rises from its throne of bones.
+    introSting: {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
+    stingVolume: 1
+    bossMusic: {fileID: 8300000, guid: 1a5a3acb675126f4e88462bf1321974b, type: 3}
+    bossMusicVolume: 0.8
+    sealExit: 1
+    bossLoot: {fileID: 11400000, guid: a3379be8b75048a42a1986d09ef637a8, type: 2}
+    bonusGold: 60
+    arenaSizeScale: 1.6
+  - enabled: 1
+    floor: 7
+    boss: {fileID: 2330004206700819348, guid: 47169fc13bdc8ad41a6b7008da9bdd6a, type: 3}
+    arena: {fileID: 6094011178556838177, guid: fcaf31c71d0815649912203b428b86ef, type: 3}
+    title: The Drowned King
+    introMessage: Black water ripples. The crypt's old master followed you down.
+    introSting: {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
+    stingVolume: 1
+    bossMusic: {fileID: 8300000, guid: 1a5a3acb675126f4e88462bf1321974b, type: 3}
+    bossMusicVolume: 0.8
+    sealExit: 1
+    bossLoot: {fileID: 11400000, guid: a3379be8b75048a42a1986d09ef637a8, type: 2}
+    bonusGold: 120
+    arenaSizeScale: 1.6
+  - enabled: 1
+    floor: 10
+    boss: {fileID: 2330004206700819348, guid: 47169fc13bdc8ad41a6b7008da9bdd6a, type: 3}
+    arena: {fileID: 6094011178556838177, guid: fcaf31c71d0815649912203b428b86ef, type: 3}
+    title: Lord of the Deep
+    introMessage: The mountain holds its breath. Your oldest enemy waits at the bottom.
+    introSting: {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
+    stingVolume: 1
+    bossMusic: {fileID: 8300000, guid: 1a5a3acb675126f4e88462bf1321974b, type: 3}
+    bossMusicVolume: 0.8
+    sealExit: 1
+    bossLoot: {fileID: 11400000, guid: a3379be8b75048a42a1986d09ef637a8, type: 2}
+    bonusGold: 200
+    arenaSizeScale: 1.6
+  destructibles:
+  - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+    weight: 3
+  - prefab: {fileID: 3676609536429769752, guid: 74294ce93f890d0479859cebe2ea259e, type: 3}
+    weight: 2
+  - prefab: {fileID: 6976356556941518252, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
+    weight: 2
+  - prefab: {fileID: 4940602601245648603, guid: fb562eb337691f54c8a6648dcc1a3045, type: 3}
+    weight: 2
+  destructiblesPerRoom: {x: 1, y: 3}
+  features:
+  - prefab: {fileID: 1139990893470972911, guid: 69b99ad0ca2199f40ba3c9ac972343da, type: 3}
+    chancePerRoom: 0.08
+    rooms: 30
+    minFloor: 1
+    maxPerFloor: 1
+  - prefab: {fileID: 2628686250012602643, guid: 8605074f6c2806a418b4153f5c861b1f, type: 3}
+    chancePerRoom: 0.07
+    rooms: 28
+    minFloor: 2
+    maxPerFloor: 1
+  - prefab: {fileID: 1038405016691299456, guid: dc5b6f6ac339db9489cb8fe203951f1b, type: 3}
+    chancePerRoom: 0.1
+    rooms: 22
+    minFloor: 1
+    maxPerFloor: 2
+  - prefab: {fileID: 2510687268772921315, guid: 1a1941feba8c9704db9d6c4b74284941, type: 3}
+    chancePerRoom: 0.1
+    rooms: 30
+    minFloor: 1
+    maxPerFloor: 2
+  merchantPrefab: {fileID: 3318657465412568994, guid: 1d2025c71f6ccbf4fb69df3f1e2204d8, type: 3}
+  merchantStock: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
+  merchantChance: 0.3
   startingItems:
   - {fileID: 11400000, guid: c238df0768336e34bb7e3707e9afd767, type: 2}
   - {fileID: 11400000, guid: 5ce76942449b23b45a86430cd37d32f9, type: 2}

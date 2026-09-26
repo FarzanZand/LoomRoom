@@ -56,3 +56,9 @@ MonoBehaviour:
       sources: 15
       weightPerFloor: 0
   maxItemsPerReward: 3
+  gold:
+  - sources: 2
+    chance: 0.35
+    min: 1
+    max: 5
+    growthPerFloor: 0.2

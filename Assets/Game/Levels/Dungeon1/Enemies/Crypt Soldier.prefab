@@ -164,6 +164,8 @@ GameObject:
   - component: {fileID: 5009668765712721319}
   - component: {fileID: 7420368207733409059}
   - component: {fileID: 6730432621212743267}
+  - component: {fileID: 653791513424132919}
+  - component: {fileID: 1441963497595293014}
   m_Layer: 0
   m_Name: Crypt Soldier
   m_TagString: Untagged
@@ -355,6 +357,7 @@ MonoBehaviour:
   carriedItem: {fileID: 0}
   seed: 0
   floorNumber: 1
+  bonusGold: 0
 --- !u!114 &7420368207733409059
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -386,6 +389,34 @@ MonoBehaviour:
   animator: {fileID: 4583649653495099157}
   attachment: {fileID: 6812598714580580083}
   visual: {fileID: 4883447566128967981}
+--- !u!114 &653791513424132919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8306217807791707549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b557cf5ef9a17da41a9e9e282deada94, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyVoice
+  minStepSpeed: 0.35
+  reportUnseenAlerts: 1
+--- !u!114 &1441963497595293014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8306217807791707549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 720d80db9ce042443834bddc5665d46d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyRagdoll
+  totalMass: 40
+  settleSeconds: 5
 --- !u!1001 &6605618680128526753
 PrefabInstance:
   m_ObjectHideFlags: 0

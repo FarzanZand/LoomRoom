@@ -50,6 +50,23 @@ MonoBehaviour:
   hitStopDuration: 0.045
   hitStopTimeScale: 0.12
   hitStopOnPlayerHurt: 1
+  criticalHitsEnabled: 1
+  critChance: 0.08
+  critMultiplier: 1.75
+  critHitStopScale: 2.5
+  critAudio: {fileID: 11400000, guid: c6a2858c4e28f704bad62aba7cdb9f3d, type: 2}
+  backstabsEnabled: 1
+  backstabMultiplier: 2.5
+  backstabBehindDot: 0.35
+  backstabAlertFromBehind: 1
+  backstabHitStopScale: 3
+  backstabAudio: {fileID: 11400000, guid: fd765cee151cf714891777d45a481eea, type: 2}
+  critNumberScale: 1.6
+  ragdollDeath: 1
+  ragdollImpulse: 4.5
+  ragdollUpwardImpulse: 1.5
+  lootableCorpses: 1
+  corpseLifetime: 0
   knockbackEnabled: 1
   knockbackForceMultiplier: 0.22
   knockbackDuration: 0.18

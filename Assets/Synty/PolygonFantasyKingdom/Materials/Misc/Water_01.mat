@@ -49,7 +49,7 @@ Material:
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 3000
   stringTagMap:
-    RenderType: TransparentCutout
+    RenderType: Transparent
   disabledShaderPasses:
   - DepthOnly
   - MOTIONVECTORS
@@ -126,7 +126,7 @@ Material:
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
-    - _DstBlendAlpha: 0
+    - _DstBlendAlpha: 10
     - _Enable_Animation: 0
     - _Enable_Emission: 0
     - _GlossMapScale: 1

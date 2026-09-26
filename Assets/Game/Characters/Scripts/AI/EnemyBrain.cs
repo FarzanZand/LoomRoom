@@ -40,6 +40,20 @@ public class EnemyBrain : MonoBehaviour
     public EnemyMotor Motor      { get; private set; }
     public Perception Perception { get; private set; }
 
+    // (previous, next). Voices bark on the switch into combat; bosses and logs listen too.
+    public event Action<EnemyState, EnemyState> StateChanged;
+    // Chasing or attacking: it knows where the player is. Anything else can be backstabbed.
+    public bool IsAlerted => State == EnemyState.Chase || State == EnemyState.Attack;
+
+    // Force the enemy to hunt the target now (a boss waking, a grave's occupant rising).
+    public void Alert()
+    {
+        if (State == EnemyState.Dead || !Character.IsAlive) return;
+        wasProvoked = true;
+        Perception.Tick(true);
+        if (Perception.Target != null) EnterCombat();
+    }
+
     public EnemyBehaviourSettings Profile =>
         overrideBehaviour ? localBehaviour
         : Character != null && Character.data != null && Character.data.behaviour != null ? Character.data.behaviour.settings
@@ -460,6 +474,7 @@ public class EnemyBrain : MonoBehaviour
     public void SetState(EnemyState newState)
     {
         if (State == EnemyState.Attack && newState != EnemyState.Attack) CancelAttack();
+        var previous = State;
         State = newState;
         wanderTimer = 0f;
         // Hits and noises taken while chasing are old news once the enemy gives up.
@@ -487,6 +502,7 @@ public class EnemyBrain : MonoBehaviour
         Motor.SetAngularSpeed(isCombat ? p.chaseAngularSpeed : p.passiveAngularSpeed);
         Motor.SetAutoBraking(!isCombat);
         Motor.SetStoppingDistance(isCombat ? PreferredDistance : 0.3f);
+        if (previous != newState) StateChanged?.Invoke(previous, newState);
     }
 
     void UpdateAnimator()

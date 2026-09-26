@@ -31,7 +31,6 @@ public class TableLevelLoader : MonoBehaviour
     {
         Initialize();
         if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped += OnPlayerSwapped;
-        if (InputManager.HasInstance) InputManager.Instance.PausePressed += OnPausePressed;
         yield return null;
         if(PlayerManager.Instance.ActiveKind==PlayerKind.Table && Current==null) ShowSelection();
     }
@@ -73,13 +72,7 @@ public class TableLevelLoader : MonoBehaviour
     void OnDestroy()
     {
         if(PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped-=OnPlayerSwapped;
-        if(InputManager.HasInstance) InputManager.Instance.PausePressed-=OnPausePressed;
         if(player!=null) player.Died-=OnDied;
-    }
-    void OnPausePressed()
-    {
-        if(Busy || menu==null || menu.IsOpen || !PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind!=PlayerKind.Table) return;
-        if(GameManager.HasInstance && GameManager.Instance.GameplayActive) ShowSelection("Choose your next adventure");
     }
     void OnPlayerSwapped(Player active) => Dungeon?.ShowCeilings(active.kind==PlayerKind.Table);
     public void ShowSelection(string title="Choose your adventure")
@@ -140,6 +133,18 @@ public class TableLevelLoader : MonoBehaviour
                 else if(level.kind==TableLevelKind.Town) RestoreTownInventory();
                 if(!descending) player.Stats.Revive();
                 if(ProgressionManager.HasInstance) ProgressionManager.Instance.tableEntered=true;
+                if(level.kind==TableLevelKind.Dungeon && RunManager.HasInstance)
+                {
+                    if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); }
+                    RunManager.Instance.ReachFloor(FloorNumber);
+                    // The theme's line only when the surroundings change; otherwise just the depth.
+                    var theme=level.Theme(FloorNumber);
+                    bool newTheme=!descending || theme!=level.Theme(FloorNumber-1);
+                    string arrival=newTheme && theme!=null && !string.IsNullOrWhiteSpace(theme.entryMessage) ? theme.entryMessage.Trim()
+                        : descending ? $"You descend to floor {FloorNumber}." : $"You enter {level.displayName}.";
+                    MessageLog.Post(arrival,MessageKind.Lore);
+                }
+                else if(RunManager.HasInstance) RunManager.Instance.Abandon();
             }
             else
             {
@@ -161,7 +166,8 @@ public class TableLevelLoader : MonoBehaviour
             }
             if (ready && AudioManager.HasInstance)
             {
-                if (level.backgroundMusic != null) AudioManager.Instance.CrossfadeMusic(level.backgroundMusic, level.loopMusic, level.musicFadeSeconds, level.backgroundMusicVolume);
+                var music = level.MusicFor(FloorNumber, out float musicVolume);
+                if (music != null) AudioManager.Instance.CrossfadeMusic(music, level.loopMusic, level.musicFadeSeconds, musicVolume);
                 else AudioManager.Instance.StopMusic(level.musicFadeSeconds);
             }
             completed=ready;
@@ -260,12 +266,25 @@ public class TableLevelLoader : MonoBehaviour
             go.SetActive(false);hiddenTownDrops.Add(go);
         }
     }
-    void OnDied() { if(Current!=null && Current.kind==TableLevelKind.Dungeon) StartCoroutine(DeathMenu()); }
+    void OnDied()
+    {
+        if(Current==null || Current.kind!=TableLevelKind.Dungeon) return;
+        if(RunManager.HasInstance && RunManager.Instance.PlayDeath()) return;
+        StartCoroutine(DeathMenu());
+    }
+    // The final stair: the run summary if there is one, otherwise the adventure menu.
+    public void CompleteRun()
+    {
+        if(Busy) return;
+        if(RunManager.HasInstance && RunManager.Instance.Running && RunManager.Instance.recap!=null) { RunManager.Instance.EndRunInVictory(); return; }
+        ShowSelection("Dungeon complete");
+    }
     IEnumerator DeathMenu() { yield return new WaitForSecondsRealtime(.8f);ShowSelection("You fell — choose an adventure to try again"); }
     public void ReturnToRoom()
     {
         if(Busy)return;
         menu.Hide();GameManager.Instance.Pop(GameState.Dead);
+        if(RunManager.HasInstance) RunManager.Instance.Abandon();
         PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
         Dungeon?.ShowCeilings(false);
     }

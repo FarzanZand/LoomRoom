@@ -19,6 +19,22 @@ public class ScreenManager : Singleton<ScreenManager>
     [Min(0), Tooltip("Seconds to crossfade between the room and table effects when the active player changes.")]
     public float effectBlendSeconds = 1.5f;
 
+    [FoldoutGroup("Pixelation"), Tooltip("Master switch for the pixel grid on both players. Off keeps colour banding and every other effect.")]
+    public bool pixelationEnabled = true;
+    [FoldoutGroup("Pixelation"), Range(0f, 2f), Tooltip("Multiplier on pixel size for both players. 1 = the per-player Pixel Lines above; 2 = pixels twice as large.")]
+    public float pixelationStrength = 1f;
+    [FoldoutGroup("Pixelation"), ShowInInspector, ReadOnly, Tooltip("Player's choice from the settings menu. -1 = use the authored values, 0 = off.")]
+    public int UserPixelLines { get; private set; } = -1;
+    const string PixelLinesPref = "pixel_lines";
+
+    [Tooltip("Blended on top while the player dies: colour drains, the edges darken.")]
+    public ScreenEffectSettings deathEffects = new()
+    {
+        ambientOcclusion = true,
+        vignette = true, vignetteIntensity = .5f, vignetteSmoothness = .45f, vignetteColor = new Color(.12f, 0f, 0f),
+        colorGrading = true, saturation = -100f, contrast = 15f, colorFilter = new Color(.9f, .85f, .85f), postExposure = -.2f,
+    };
+
     [FoldoutGroup("Renderer features"), Tooltip("The Desktop Renderer's SSAO feature, switched by the Ambient Occlusion toggles. Its quality settings live on Assets/Game/Rendering/Desktop Renderer.asset.")]
     public ScriptableRendererFeature ambientOcclusionFeature;
     [FoldoutGroup("Renderer features"), Tooltip("The Desktop Renderer's full-screen pass using Hidden/LoomRoom/Retro Screen (pixelate and colour banding).")]
@@ -34,7 +50,8 @@ public class ScreenManager : Singleton<ScreenManager>
 
     bool originalAO, originalRetro, effectsInitialized;
     ScriptableRendererFeature controlledAO, controlledRetro;
-    EffectLayer roomLayer, tableLayer;
+    EffectLayer roomLayer, tableLayer, deathLayer;
+    float deathWeight;
     float tableWeight; // 0 = room effects, 1 = table effects
     Coroutine fadeRoutine;
 
@@ -122,6 +139,8 @@ public class ScreenManager : Singleton<ScreenManager>
 
         roomLayer = new EffectLayer(transform, "Room screen effects", 10000);
         tableLayer = new EffectLayer(transform, "Table screen effects", 10001);
+        deathLayer = new EffectLayer(transform, "Death screen effects", 10002);
+        UserPixelLines = PlayerPrefs.GetInt(PixelLinesPref, -1);
         tableWeight = TargetTableWeight;
         effectsInitialized = true;
         ApplyRenderingEffects();
@@ -141,6 +160,7 @@ public class ScreenManager : Singleton<ScreenManager>
         if (controlledRetro != null) controlledRetro.SetActive(originalRetro);
         roomLayer.Destroy();
         tableLayer.Destroy();
+        deathLayer.Destroy();
         effectsInitialized = false;
     }
 
@@ -155,6 +175,7 @@ public class ScreenManager : Singleton<ScreenManager>
         float t = Mathf.SmoothStep(0f, 1f, tableWeight);
         roomLayer.Apply(roomEffects, 1f - t);
         tableLayer.Apply(tableEffects, t);
+        deathLayer.Apply(deathEffects, deathWeight);
         SetFeature(controlledAO, (t < .5f ? roomEffects : tableEffects).ambientOcclusion);
 
         // One full-screen pass: the stronger side's settings, faded by how much of each side uses it.
@@ -163,13 +184,37 @@ public class ScreenManager : Singleton<ScreenManager>
         var retro = tableRetro > roomRetro ? tableEffects : roomEffects;
         float strength = roomRetro + tableRetro;
         SetFeature(controlledRetro, strength > .001f);
-        Shader.SetGlobalFloat(PixelLinesId, retro.pixelate ? retro.pixelLines : 0);
+        Shader.SetGlobalFloat(PixelLinesId, PixelLinesFor(retro));
         Shader.SetGlobalFloat(ColorLevelsId, retro.colorBanding ? retro.colorLevels : 0);
         Shader.SetGlobalFloat(DitherId, retro.dither);
         Shader.SetGlobalFloat(StrengthId, strength);
     }
 
-    static bool UsesRetro(ScreenEffectSettings fx) => fx.pixelate || fx.colorBanding;
+    bool UsesRetro(ScreenEffectSettings fx) => PixelLinesFor(fx) > 0 || fx.colorBanding;
+
+    // Authored lines, scaled by strength, replaced by the player's own choice when set.
+    float PixelLinesFor(ScreenEffectSettings fx)
+    {
+        if (!pixelationEnabled || !fx.pixelate || UserPixelLines == 0) return 0;
+        float lines = UserPixelLines > 0 ? UserPixelLines : fx.pixelLines;
+        if (pixelationStrength <= .001f) return 0;
+        return Mathf.Clamp(lines / pixelationStrength, 90, 2160);
+    }
+
+    // Settings menu: -1 authored, 0 off, otherwise vertical pixel lines.
+    public void SetUserPixelLines(int lines)
+    {
+        UserPixelLines = lines < 0 ? -1 : lines;
+        PlayerPrefs.SetInt(PixelLinesPref, UserPixelLines);
+        ApplyRenderingEffects();
+    }
+
+    // 0 = normal, 1 = fully drained (the death moment).
+    public void SetDeathEffect(float weight)
+    {
+        deathWeight = Mathf.Clamp01(weight);
+        ApplyRenderingEffects();
+    }
 
     static void SetFeature(ScriptableRendererFeature feature, bool on)
     {

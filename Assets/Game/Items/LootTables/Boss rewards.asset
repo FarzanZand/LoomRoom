@@ -1,0 +1,104 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88ef6b241c543ce42a7f027a823efe42, type: 3}
+  m_Name: Boss rewards
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonLootTable
+  entries: []
+  enemyDropChance: 1
+  guaranteed:
+  - item: {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
+    weight: 1
+    minQuantity: 2
+    maxQuantity: 2
+    minFloor: 1
+    maxFloor: 0
+    sources: 15
+    weightPerFloor: 0
+  - item: {fileID: 11400000, guid: 05197bf5abf054f41987eff16771ea6e, type: 2}
+    weight: 1
+    minQuantity: 1
+    maxQuantity: 2
+    minFloor: 1
+    maxFloor: 0
+    sources: 15
+    weightPerFloor: 0
+  pools:
+  - label: Iron gear
+    sources: 15
+    chance: 1
+    minRolls: 2
+    maxRolls: 2
+    uniqueItems: 1
+    entries:
+    - item: {fileID: 11400000, guid: 1ce06e8dc283e7548875b2a315d4ddda, type: 2}
+      weight: 2
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: a182a059e5a75124093391fb1a868ab8, type: 2}
+      weight: 2
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 013bd0f00c525e24bbf99530378befe1, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 01f7f3de17a8d6246a40d448eca0ca6f, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 614d3bc1e35e87d41a5ea760fec91e5e, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: 8e0e9db94d57b364893535f73324723f, type: 2}
+      weight: 1
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+    - item: {fileID: 11400000, guid: ca1254f5ad9dfb44eab2336cc7ad3302, type: 2}
+      weight: 1.5
+      minQuantity: 1
+      maxQuantity: 1
+      minFloor: 1
+      maxFloor: 0
+      sources: 15
+      weightPerFloor: 0
+  maxItemsPerReward: 12
+  gold:
+  - sources: 15
+    chance: 1
+    min: 30
+    max: 50
+    growthPerFloor: 0.15
