@@ -1,0 +1,212 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &5198480584171725425
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3339500706979355620, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4600654034603763255, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: data
+      value: 
+      objectReference: {fileID: -8644375173445383690}
+    - target: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_Name
+      value: Crypt Lord
+      objectReference: {fileID: 0}
+    - target: {fileID: 5104944804803677969, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6825269756428179685, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+--- !u!114 &-8644375173445383690
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fe21949aa936544fa1740287c279a2a, type: 3}
+  m_Name: Crypt Lord
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  portrait: {fileID: 0}
+  characterName: Crypt Lord
+  faction: 2
+  description: Crowned in rust, enthroned on bones. It remembers being a king.
+  stats:
+  - stat: 6
+    baseValue: 1
+    min: 0
+    max: 0
+  - stat: 7
+    baseValue: 1
+    min: 0
+    max: 0
+  - stat: 0
+    baseValue: 190
+    min: 0
+    max: 0
+  - stat: 2
+    baseValue: 22
+    min: 0
+    max: 0
+  - stat: 1
+    baseValue: 4
+    min: 0
+    max: 0
+  audio:
+    idle:
+    - {fileID: 8300000, guid: 8a6afee57096b6148b153b63a3ff8f31, type: 3}
+    - {fileID: 8300000, guid: 535c1d90f1a9dd842a37b49b18f6d181, type: 3}
+    alert:
+    - {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
+    pain: []
+    death:
+    - {fileID: 8300000, guid: a98a95988280b2d45974c610bcddde25, type: 3}
+    footsteps:
+    - {fileID: 8300000, guid: f203194e74b53d744a65298b80721333, type: 3}
+    - {fileID: 8300000, guid: 19e8abe4c1e83f94f8aa10b42a30906d, type: 3}
+    - {fileID: 8300000, guid: 98b0c0aea4da2684b94f4915c6c6e221, type: 3}
+    - {fileID: 8300000, guid: af95aea575228364aac3081fffd9f4ea, type: 3}
+    - {fileID: 8300000, guid: 13489e661e9219146b9dee101cfca45f, type: 3}
+    impact:
+    - {fileID: 8300000, guid: 1fb51b981956d7543a9899449b265042, type: 3}
+    - {fileID: 8300000, guid: b716211feea6460478ec3add51400d9d, type: 3}
+    - {fileID: 8300000, guid: dfb30afbfd26c0e4694cf5c9501ca820, type: 3}
+    - {fileID: 8300000, guid: fb8cfd63c9e610347a25369a6ed70158, type: 3}
+    voiceVolume: 0.9
+    footstepVolume: 0.85
+    impactVolume: 0.45
+    pitch: 0.6
+    pitchVariance: 0.08
+    minDistance: 2
+    maxDistance: 40
+    idleInterval: {x: 10, y: 18}
+    walkStepInterval: 0.55
+    runStepInterval: 0.34
+    painCooldown: 0.6
+  hurtTrigger: Hurt
+  deathTrigger: Death
+  deathDisableDelay: 0
+  behaviour: {fileID: 0}
+  behaviourSettings:
+    defaultState: 0
+    aggressionMode: 0
+    wanderRadius: 3
+    minWanderDistance: 2
+    minIdleTime: 2
+    maxIdleTime: 6
+    wanderZoneRadius: 4
+    detectionRadius: 12
+    fieldOfView: 140
+    eyeHeight: 1.6
+    closeDetectionRadius: 2.5
+    obstacleMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    investigateNoise: 1
+    hearingRadius: 6
+    investigateTime: 4
+    loseSightGracePeriod: 3
+    maxSearchTime: 5
+    useChaseSpeed: 1
+    chaseSpeed: 1.6
+    useWanderSpeed: 1
+    wanderSpeed: 0.7
+    acceleration: 30
+    preferredRangeFraction: 0.7
+    circleTarget: 0
+    circleSpeedFraction: 0.22
+    circleSwitchInterval: {x: 0.9, y: 2}
+    spacingSpeedFraction: 0.8
+    passiveAngularSpeed: 360
+    chaseAngularSpeed: 720
+    attackFaceSpeed: 900
+    windupTrackSpeed: 240
+  attacks:
+  - name: Bite / strike
+    weight: 1
+    animatorTrigger: Attack
+    minRange: 0
+    maxRange: 1.65
+    cooldown: 2.1
+    facingAngle: 45
+    hitboxIndex: 0
+    fallbackHitDelay: 0.7
+    hit:
+      useDefaultEffects: 1
+      hitAudio: {fileID: 0}
+      swingAudio: {fileID: 0}
+      heavySwingAudio: {fileID: 0}
+      hitParticle: {fileID: 0}
+      damageMultiplier: 1
+      knockbackForce: -1
+      hitStopScale: 1

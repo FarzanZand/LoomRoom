@@ -3,7 +3,7 @@ using UnityEngine.AI;
 
 // Idle mutters, the alert bark, pain grunts, death sounds and footsteps, all positioned
 // in 3D so the player hears what is coming before it rounds the corner. Clips and ranges
-// come from AudioManager's Creature Library, looked up by this character's CharacterData.
+// come from this character's CharacterData (Audio tab).
 [RequireComponent(typeof(Character))]
 public class EnemyVoice : MonoBehaviour
 {
@@ -15,7 +15,7 @@ public class EnemyVoice : MonoBehaviour
     Character character;
     EnemyBrain brain;
     NavMeshAgent agent;
-    CreatureAudioEntry entry;
+    CreatureAudio entry;
     float nextIdle, nextStep, nextPain;
     Vector3 lastPosition;
 
@@ -45,7 +45,7 @@ public class EnemyVoice : MonoBehaviour
 
     void Start()
     {
-        entry = AudioManager.HasInstance ? AudioManager.Instance.GetCreatureAudio(character.data) : null;
+        entry = character.data != null ? character.data.audio : null;
         lastPosition = transform.position;
         ScheduleIdle(true);
     }
@@ -107,10 +107,7 @@ public class EnemyVoice : MonoBehaviour
 
     void Play(AudioClip[] clips, float volume)
     {
-        var clip = CreatureAudioEntry.Pick(clips);
-        if (clip == null || entry == null || !AudioManager.HasInstance) return;
-        AudioManager.Instance.PlaySFX(clip, transform.position + Vector3.up, volume, entry.pitch, entry.pitchVariance,
-            entry.minDistance, entry.maxDistance);
+        entry?.PlayAt(clips, transform.position + Vector3.up, volume);
     }
 
     bool PlayerCanSee()

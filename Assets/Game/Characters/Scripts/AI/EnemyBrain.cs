@@ -54,9 +54,12 @@ public class EnemyBrain : MonoBehaviour
         if (Perception.Target != null) EnterCombat();
     }
 
+    // The enemy's own data (stored inside its prefab). Null if the Character holds another kind.
+    public EnemyData Data => Character != null ? Character.data as EnemyData : GetComponent<Character>()?.data as EnemyData;
+
     public EnemyBehaviourSettings Profile =>
         overrideBehaviour ? localBehaviour
-        : Character != null && Character.data != null && Character.data.behaviour != null ? Character.data.behaviour.settings
+        : Data != null ? Data.Behaviour
         : FallbackProfile;
 
     static EnemyBehaviourSettings fallback;
@@ -66,8 +69,8 @@ public class EnemyBrain : MonoBehaviour
     void OnOverrideToggled()
     {
         if (!overrideBehaviour) return;
-        var data = GetComponent<Character>()?.data;
-        if (data != null && data.behaviour != null) localBehaviour.CopyFrom(data.behaviour.settings);
+        var data = Data;
+        if (data != null) localBehaviour.CopyFrom(data.Behaviour);
     }
 
     Dictionary<EnemyState, Action> handlers;
@@ -143,11 +146,11 @@ public class EnemyBrain : MonoBehaviour
 
     void Start()
     {
+        if (Data == null) Debug.LogWarning($"{name}: EnemyBrain needs EnemyData on its Character (has {(Character.data != null ? Character.data.GetType().Name : "none")}).", this);
         SetState(Profile.defaultState);
     }
 
-    internal List<EnemyAttack> Attacks =>
-        Character != null && Character.data != null ? Character.data.attacks : emptyAttacks;
+    internal List<EnemyAttack> Attacks => Data != null ? Data.attacks : emptyAttacks;
     static readonly List<EnemyAttack> emptyAttacks = new();
 
     float MaxAttackRange
@@ -532,13 +535,13 @@ public class EnemyBrain : MonoBehaviour
     {
         var p = Application.isPlaying ? Profile
                 : overrideBehaviour ? localBehaviour
-                : GetComponent<Character>()?.data?.behaviour?.settings;
+                : Data?.Behaviour;
         if (p == null) return;
 
         Vector3 pos = Application.isPlaying ? spawnPosition : transform.position;
 
         Gizmos.color = Color.yellow;
-        var data = GetComponent<Character>()?.data;
+        var data = Data;
         if (data != null)
             foreach (var a in data.attacks)
                 if (a != null) Gizmos.DrawWireSphere(transform.position, a.EffectiveMaxRange);

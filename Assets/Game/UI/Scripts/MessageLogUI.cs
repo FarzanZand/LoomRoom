@@ -2,7 +2,8 @@ using TMPro;
 using UnityEngine;
 
 // Draws the newest MessageLog lines into authored text rows (oldest at the top). Lines
-// fade after a few seconds of gameplay; opening the inventory shows the whole feed again.
+// fade after a few seconds of gameplay. Hidden behind menus and the inventory, whose
+// panels share this corner of the screen.
 public class MessageLogUI : MonoBehaviour
 {
     [Tooltip("Authored rows, top to bottom. The bottom row shows the newest message.")]
@@ -52,10 +53,9 @@ public class MessageLogUI : MonoBehaviour
         if (lines == null || !MessageLog.HasInstance) return;
         var state = GameManager.HasInstance ? GameManager.Instance.State : GameState.Explore;
         bool table = !tableOnly || (PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table);
-        bool show = table && (state == GameState.Explore || state == GameState.Inventory || state == GameState.Dead);
+        bool show = table && (state == GameState.Explore || state == GameState.Dead);
         if (group != null) group.alpha = show ? 1f : 0f;
         if (!show) return;
-        bool keepAll = state == GameState.Inventory;
         var history = MessageLog.Instance.History;
         float now = Time.unscaledTime;
         for (int i = 0; i < lines.Length; i++)
@@ -64,7 +64,7 @@ public class MessageLogUI : MonoBehaviour
             var line = lines[i];
             if (line == null || index < 0) continue;
             float age = now - history[index].time;
-            float alpha = keepAll ? 1f : Mathf.Clamp01((visibleSeconds + fadeSeconds - age) / fadeSeconds);
+            float alpha = Mathf.Clamp01((visibleSeconds + fadeSeconds - age) / fadeSeconds);
             var c = line.color; c.a = alpha; line.color = c;
         }
     }

@@ -1,0 +1,248 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &4144216657887180055
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 144097435738051639, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_CullingMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 660694316659390664, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: data
+      value: 
+      objectReference: {fileID: -8897512928509996853}
+    - target: {fileID: 1003370941759221726, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_EditorClassIdentifier
+      value: Assembly-CSharp::HumanoidEnemy
+      objectReference: {fileID: 0}
+    - target: {fileID: 1476940245912558083, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_Speed
+      value: 4.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1476940245912558083, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_Radius
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1476940245912558083, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_BaseOffset
+      value: -0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1476940245912558083, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_AutoBraking
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1476940245912558083, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_Acceleration
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 1476940245912558083, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_AngularSpeed
+      value: 720
+      objectReference: {fileID: 0}
+    - target: {fileID: 1476940245912558083, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_StoppingDistance
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2394890005418548588, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_EditorClassIdentifier
+      value: Assembly-CSharp::StatsComponent
+      objectReference: {fileID: 0}
+    - target: {fileID: 3599921206689178014, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: weapon
+      value: 
+      objectReference: {fileID: 11400000, guid: df7a7ba47c459f941848a7b378af6f3d, type: 2}
+    - target: {fileID: 3599921206689178014, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: hasWeapon
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3918742567328430383, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_Radius
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3918742567328430383, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_Center.y
+      value: 0.93
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7439072402100927313, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: animator
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8520137168989438645, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_Name
+      value: Village Brute
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+--- !u!114 &-8897512928509996853
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fe21949aa936544fa1740287c279a2a, type: 3}
+  m_Name: Village Brute
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  portrait: {fileID: 0}
+  characterName: Village Brute
+  faction: 2
+  description: A skeleton that never stopped guarding the village it died in.
+  stats:
+  - stat: 0
+    baseValue: 100
+    min: 0
+    max: 0
+  - stat: 1
+    baseValue: 0
+    min: 0
+    max: 0
+  - stat: 2
+    baseValue: 10
+    min: 0
+    max: 0
+  - stat: 6
+    baseValue: 1
+    min: 0
+    max: 0
+  - stat: 7
+    baseValue: 1
+    min: 0
+    max: 0
+  audio:
+    idle:
+    - {fileID: 8300000, guid: d1a332b63479f9d47b9d98330d69b641, type: 3}
+    - {fileID: 8300000, guid: 735fee94ee583a34db94a4529d984050, type: 3}
+    - {fileID: 8300000, guid: 3e5b020ebc233bf4fa7ed272fc529852, type: 3}
+    alert:
+    - {fileID: 8300000, guid: 31de1cccf148f0747b9a3d3353af3fd5, type: 3}
+    pain:
+    - {fileID: 8300000, guid: e4f8523e0f390ed418bb3319e678af6f, type: 3}
+    - {fileID: 8300000, guid: 9170416de89bc7d4ea5d38d63c7e9cad, type: 3}
+    - {fileID: 8300000, guid: a0ec7d8869f875249adb9124494699ac, type: 3}
+    death:
+    - {fileID: 8300000, guid: d7b847c2faea56048a132bffb57f95f9, type: 3}
+    footsteps:
+    - {fileID: 8300000, guid: 058a76462f841bc4383f779174232e8d, type: 3}
+    - {fileID: 8300000, guid: 0398300606886cb48a0aa04f24ec3fb1, type: 3}
+    - {fileID: 8300000, guid: 40ba53cbe53ba624694dae76d121144e, type: 3}
+    - {fileID: 8300000, guid: 71f37161ecd15c648a402570a293f155, type: 3}
+    - {fileID: 8300000, guid: 9d35bd0c158bfd4438f82a64b51c8938, type: 3}
+    impact: []
+    voiceVolume: 0.9
+    footstepVolume: 0.55
+    impactVolume: 0.9
+    pitch: 0.9
+    pitchVariance: 0.08
+    minDistance: 2
+    maxDistance: 26
+    idleInterval: {x: 6, y: 14}
+    walkStepInterval: 0.55
+    runStepInterval: 0.34
+    painCooldown: 0.6
+  hurtTrigger: Hurt
+  deathTrigger: Death
+  deathDisableDelay: 20
+  behaviour: {fileID: 0}
+  behaviourSettings:
+    defaultState: 0
+    aggressionMode: 0
+    wanderRadius: 4
+    minWanderDistance: 2
+    minIdleTime: 2
+    maxIdleTime: 6
+    wanderZoneRadius: 0
+    detectionRadius: 13.4
+    fieldOfView: 120
+    eyeHeight: 1.6
+    closeDetectionRadius: 2
+    obstacleMask:
+      serializedVersion: 2
+      m_Bits: 63
+    investigateNoise: 0
+    hearingRadius: 6
+    investigateTime: 4
+    loseSightGracePeriod: 3
+    maxSearchTime: 5
+    useChaseSpeed: 1
+    chaseSpeed: 4.5
+    useWanderSpeed: 1
+    wanderSpeed: 2
+    acceleration: 30
+    preferredRangeFraction: 0.7
+    circleTarget: 1
+    circleSpeedFraction: 0.35
+    circleSwitchInterval: {x: 0.9, y: 2}
+    spacingSpeedFraction: 0.8
+    passiveAngularSpeed: 360
+    chaseAngularSpeed: 720
+    attackFaceSpeed: 900
+    windupTrackSpeed: 240
+  attacks:
+  - name: Swing
+    weight: 1
+    animatorTrigger: Attack
+    minRange: 0
+    maxRange: 1.8
+    cooldown: 0.85
+    facingAngle: 35
+    hitboxIndex: 0
+    fallbackHitDelay: -1
+    hit:
+      useDefaultEffects: 1
+      hitAudio: {fileID: 0}
+      swingAudio: {fileID: 0}
+      heavySwingAudio: {fileID: 0}
+      hitParticle: {fileID: 0}
+      damageMultiplier: 1
+      knockbackForce: -1
+      hitStopScale: 1

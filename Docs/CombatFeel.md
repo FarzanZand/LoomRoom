@@ -4,7 +4,7 @@ Tap primary attack for a light strike; consecutive taps alternate between the tw
 
 ## Animation editing
 
-The first-person controller is `Assets/Game/Players/Shared/Animations/FirstPersonTable.controller`; its clips live under `Assets/Game/Players/Shared/Animations` (mostly `FirstPersonPlayer`). Code reads the arms animator by state tag only, on any layer:
+The first-person controller is `Assets/Game/Characters/Animations/FirstPersonTable.controller`; its clips live under `Assets/Game/Characters/Animations` (mostly `FirstPersonPlayer`). Code reads the arms animator by state tag only, on any layer:
 
 | State | Tag |
 |---|---|
@@ -18,7 +18,7 @@ All four attack tags count as attacking. The tag names are fields on `PlayerComb
 
 Windup draws the hand up and slightly back. Release contains the cutting stroke, follow-through, and return to idle. The held pose has a small looping motion. Core motion is stored in clips; the runtime feeds Animator parameters and processes clip hitbox events (`AttackBegin`, `EnableHitbox`, `DisableHitbox`, `PlaySwingAudio`). Edit poses and hitbox event positions in the Animation window.
 
-Enemy attacks, hurt and death use `Assets/Game/Players/Shared/Animations/HumanoidController.controller`; enemy attack states are tagged `Attack`.
+Enemy attacks, hurt and death use `Assets/Game/Characters/Animations/HumanoidController.controller`; enemy attack states are tagged `Attack`.
 
 ## Enemy hit reactions
 

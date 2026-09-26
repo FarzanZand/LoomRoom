@@ -33,7 +33,7 @@ public class DungeonAmbience : MonoBehaviour
         }
         if (!active || Time.time < nextOneShot) return;
         Schedule();
-        var clip = CreatureAudioEntry.Pick(theme.ambientOneShots);
+        var clip = CreatureAudio.Pick(theme.ambientOneShots);
         var player = PlayerManager.Instance.Active;
         if (clip == null || player == null) return;
         // Somewhere off to the side, far enough to feel like another room.

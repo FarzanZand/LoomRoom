@@ -8,7 +8,7 @@
 - `Assets/Game/Items/Prefabs/Equipment`: hand models and generic armor models. `Prefabs/Consumables` holds food models.
 - `Assets/Game/Items/Prefabs/Props/Equipment loot pouch.prefab`: nested Synty `SM_Item_Pouch_01`, with editable glint. Armor uses this as its pickup-only visual. InventoryManager's **Default Pickup Visual** makes meshless items use it automatically. Lookup order: item Pickup Visual Prefab, item World Prefab, manager fallback. Hand visuals are independent.
 - `Assets/Game/Levels/Dungeon1/Prefabs/Props/Supply chest.prefab`: nested Synty `SM_Prop_Chest_01`, collider, interaction and editable lid rotation/timing. Level data references this prefab. Opening retains the chest, opens its lid and releases loot once.
-- `Assets/Game/Levels/Dungeon1/Dungeon balance.asset`: per-floor enemy scaling. Base character values remain on TablePlayer and the three dungeon enemy CharacterData assets.
+- `Assets/Game/Levels/Dungeon1/Dungeon balance.asset`: per-floor enemy scaling. Base character values remain on the TablePlayer prefab's PlayerData and each dungeon enemy prefab's EnemyData.
 - `Assets/Game/Items/LootTables/Dungeon * progression.asset`: current enemy, chest and barrel reward pools. Level/floor overrides remain supported.
 
 Setup migrations are explicit editor operations. They do not run during imports or gameplay. The installer refuses to overwrite an already installed inventory setup; subsequent design changes belong in the authored assets.
@@ -61,7 +61,7 @@ Mite baseline follows the [Barony rat](https://barony.wiki.gg/wiki/Rat). Soldier
 
 Food stacks to five; Crimson tonic stacks to three and heals 12 immediately after use completes. New runs start with one tonic and one apple plus equipped bronze sword/shield. Safe supplies use apples rather than a full potion at every rest location.
 
-Enemy reward chance: 35%; successful rewards contain a supply and have a 12% additional equipment chance. Chest: one equipment roll and a 60% supply chance. Barrel: 35% supply chance. Tonic has low relative weight. Iron equipment enters pools at floor 2 and gains relative weight with depth. Carried loot, if explicitly configured on a future enemy, drops independently.
+Enemy reward chance: 45%; successful rewards contain a supply and have a 25% equipment chance (about 11% gear per kill). Chest: one equipment roll and a 60% supply chance. Breakables: 35% supply chance and 4% equipment. Loot drops on the floor where the enemy dies (`CombatManager > Lootable Corpses` is off). All sources share one gear pool: bronze armour pieces are common early, the starting sword and shield are rare duplicates, knives and the mace add variety, bronze fades with depth while iron (floor 2+) and the grave mace (floor 4+) rise.
 
 10,000 seeded enemy rolls yielded 64.9% empty rewards and 3.44 potential healing per kill (before health caps, wasted food or replacement). The previous much more generous supply tables remain available as alternative assets, but are no longer Dungeon1's active defaults.
 

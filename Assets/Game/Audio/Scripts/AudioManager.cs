@@ -30,37 +30,6 @@ public class UIEntry
     [Range(0.5f, 2f)] public float pitch = 1f;
 }
 
-// One creature's voice and footsteps. Enemies look themselves up by CharacterData;
-// an entry with no characters listed is the fallback for anything unlisted.
-[System.Serializable]
-public class CreatureAudioEntry
-{
-    public string label;
-    [Tooltip("Characters using this entry. Leave empty to make this the fallback entry.")]
-    public CharacterData[] characters = new CharacterData[0];
-    [Tooltip("Muttering while idle, wandering or patrolling.")]
-    public AudioClip[] idle = new AudioClip[0];
-    [Tooltip("The bark when it spots the player. Plays before it comes around the corner.")]
-    public AudioClip[] alert = new AudioClip[0];
-    public AudioClip[] pain = new AudioClip[0];
-    public AudioClip[] death = new AudioClip[0];
-    public AudioClip[] footsteps = new AudioClip[0];
-    [Range(0f, 1f)] public float voiceVolume = .9f;
-    [Range(0f, 1f)] public float footstepVolume = .55f;
-    [Range(0f, .5f)] public float pitchVariance = .08f;
-    [Tooltip("Base pitch. Lower for big creatures, higher for small ones.")]
-    [Range(.3f, 2f)] public float pitch = 1f;
-    [Min(.1f), Tooltip("Full volume within this distance.")] public float minDistance = 2f;
-    [Min(1f), Tooltip("Silent beyond this distance. Large values let the player hear things around corners.")] public float maxDistance = 26f;
-    [Tooltip("Seconds between idle mutters (random in range).")] public Vector2 idleInterval = new Vector2(6f, 14f);
-    [Min(.05f)] public float walkStepInterval = .55f;
-    [Min(.05f)] public float runStepInterval = .34f;
-    [Min(0f)] public float painCooldown = .6f;
-
-    public static AudioClip Pick(AudioClip[] clips) =>
-        clips == null || clips.Length == 0 ? null : clips[Random.Range(0, clips.Length)];
-}
-
 // ──────────────────────────────────────────────────────────────────────────────
 public class AudioManager : Singleton<AudioManager>
 {
@@ -93,9 +62,6 @@ public class AudioManager : Singleton<AudioManager>
 
     [Header("UI Library")]
     [SerializeField] private UIEntry[] uiLibrary;
-
-    [Header("Creature Library (enemy voices and footsteps)")]
-    [SerializeField] private CreatureAudioEntry[] creatureLibrary;
 
     [Header("Ambience")]
     [SerializeField, Min(0f)] private float ambienceFadeDuration = 2f;
@@ -138,8 +104,6 @@ public class AudioManager : Singleton<AudioManager>
     readonly Dictionary<string, SFXEntry>   sfxDict   = new();
     readonly Dictionary<string, MusicEntry> musicDict = new();
     readonly Dictionary<string, UIEntry>    uiDict    = new();
-    readonly Dictionary<CharacterData, CreatureAudioEntry> creatureDict = new();
-    CreatureAudioEntry creatureFallback;
     AudioSource ambience;
     Coroutine   ambienceRoutine;
 
@@ -168,18 +132,7 @@ public class AudioManager : Singleton<AudioManager>
         if (uiLibrary != null)
             foreach (var e in uiLibrary)
                 if (!string.IsNullOrEmpty(e.key)) uiDict[e.key] = e;
-
-        if (creatureLibrary != null)
-            foreach (var e in creatureLibrary)
-            {
-                if (e == null) continue;
-                if (e.characters == null || e.characters.Length == 0) { creatureFallback ??= e; continue; }
-                foreach (var c in e.characters) if (c != null) creatureDict[c] = e;
-            }
     }
-
-    public CreatureAudioEntry GetCreatureAudio(CharacterData character) =>
-        character != null && creatureDict.TryGetValue(character, out var e) ? e : creatureFallback;
 
     void ResolveGroups()
     {

@@ -2,64 +2,38 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// One asset type for players, enemies and NPCs. They differ by which optional sections
-// are filled in: a player has movement settings and starting items, an enemy has a
-// behaviour profile and attacks, an NPC has neither.
-[CreateAssetMenu(fileName = "NewCharacterData", menuName = "Characters/Character Data")]
+// What every character has: identity, stats, voice and animation triggers. NPCs use this
+// type directly; PlayerData adds movement and starting items, EnemyData adds behaviour and
+// attacks. Health, damage, factions and death all work from this base type.
+[CreateAssetMenu(fileName = "NewCharacterData", menuName = "Characters/NPC Data")]
 public class CharacterData : ScriptableObject
 {
-    [Header("Identity")]
-    public string characterName;
-    [TextArea] public string description;
-    public Faction faction = Faction.Neutral;
+    [HorizontalGroup("Identity", 64), PreviewField(64, ObjectFieldAlignment.Left), HideLabel]
     public Sprite portrait;
-    [Tooltip("Optional impact sound for this creature's body, played by CombatManager through the SFX mixer.")]
-    public AudioData bodyImpactAudio;
+    [VerticalGroup("Identity/Right"), LabelWidth(90)]
+    public string characterName;
+    [VerticalGroup("Identity/Right"), LabelWidth(90), Tooltip("Who this character is hostile to.")]
+    public Faction faction = Faction.Neutral;
+    [VerticalGroup("Identity/Right"), LabelWidth(90), TextArea(2, 4)]
+    public string description;
 
-    [Header("Stats")]
-    [Tooltip("Base values. Anything not listed reads as 0 (or 1 for multiplier stats).")]
-    [ListDrawerSettings(ShowFoldout = true)]
+    [FoldoutGroup("Stats", Expanded = true, Order = 0), Tooltip("Base values. Anything not listed reads as 0 (or 1 for multiplier stats). Dungeon enemies are scaled per floor by the level's balance asset.")]
+    [ListDrawerSettings(ShowFoldout = false)]
     public List<StatEntry> stats = new();
 
-    [Header("Movement (players)")]
-    [Header("Speeds (m/s)")]
-    public float walkSpeed   = 3f;
-    public float sprintSpeed = 6f;
-    public float crouchSpeed = 1.75f;
+    // Players have their own footstep system; NPCs and enemies use this.
+    protected virtual bool HasCreatureAudio => true;
+    [FoldoutGroup("Audio", Order = 10), ShowIf(nameof(HasCreatureAudio)), InlineProperty, HideLabel]
+    public CreatureAudio audio = new();
 
-    [Header("Jump & Gravity")]
-    public float jumpForce         = 8f;
-    [Tooltip("Multiplier applied to gravity while airborne. Higher values make falling faster.")]
-    public float gravityMultiplier = 2.5f;
-
-    [Header("Stamina (players)")]
-    [Min(0)] public float sprintStaminaPerSecond = 6f;
-    [HideInInspector] public float jumpStaminaCost;
-    [Min(0)] public float staminaRegenDelay = .6f;
-    [Range(.01f, 1f)] public float sprintRecoveryFraction = .25f;
-
-    [Header("Starting Items (players)")]
-    [Tooltip("Added to the bag or hotbar on first spawn.")]
-    public List<ItemData> startingItems = new();
-    [Tooltip("Equipped directly on first spawn.")]
-    public List<ItemData> startingEquipment = new();
-
-    [Header("Animation")]
-    [Tooltip("Animator trigger fired when hurt. Leave empty to skip.")]
+    [FoldoutGroup("Animation", Order = 20), Tooltip("Animator trigger fired when hurt. Leave empty to skip.")]
     public string hurtTrigger = "Hurt";
-    [Tooltip("Animator trigger fired on death. Leave empty to skip.")]
+    [FoldoutGroup("Animation"), Tooltip("Animator trigger fired on death. Leave empty to skip.")]
     public string deathTrigger = "Death";
-    [Tooltip("Seconds after death before the object is disabled. 0 = never disable.")]
+    [FoldoutGroup("Animation"), Tooltip("Seconds after death before the object is disabled. 0 = never disable. Dungeon enemies follow CombatManager's corpse lifetime instead.")]
     public float deathDisableDelay = 20f;
 
-    [Header("Enemy")]
-    [Tooltip("Perception, movement and chase tuning. Only enemies need this.")]
-    public EnemyBehaviourProfile behaviour;
-    [ShowIf("@behaviour != null")]
-    [ListDrawerSettings(ShowFoldout = true)]
-    public List<EnemyAttack> attacks = new();
-
-    void Reset()
+    protected virtual void Reset()
     {
         stats = new List<StatEntry>
         {
@@ -69,11 +43,5 @@ public class CharacterData : ScriptableObject
             new StatEntry(StatType.MoveSpeed,    1f),
             new StatEntry(StatType.AttackSpeed,  1f),
         };
-    }
-    void OnValidate()
-    {
-        walkSpeed   = Mathf.Max(0.1f, walkSpeed);
-        sprintSpeed = Mathf.Max(walkSpeed, sprintSpeed);
-        crouchSpeed = Mathf.Clamp(crouchSpeed, 0.1f, walkSpeed);
     }
 }

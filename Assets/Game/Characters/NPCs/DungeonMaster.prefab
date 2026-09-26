@@ -15,7 +15,7 @@ PrefabInstance:
     - target: {fileID: 3815232741937082389, guid: 674e86dbfd8a94f4eac7271021377b8c, type: 3}
       propertyPath: data
       value: 
-      objectReference: {fileID: 11400000, guid: 4218dfec4999ae04680eb6c61914be28, type: 2}
+      objectReference: {fileID: 6515935774157267121}
     - target: {fileID: 3942292677865225277, guid: 674e86dbfd8a94f4eac7271021377b8c, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -81,3 +81,45 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 674e86dbfd8a94f4eac7271021377b8c, type: 3}
+--- !u!114 &6515935774157267121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 151288b46384ba7468558d8b27dff77f, type: 3}
+  m_Name: DungeonMaster
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  portrait: {fileID: 0}
+  characterName: Dungeon Master
+  faction: 0
+  description: 
+  stats:
+  - stat: 0
+    baseValue: 100
+    min: 0
+    max: 0
+  audio:
+    idle: []
+    alert: []
+    pain: []
+    death: []
+    footsteps: []
+    impact: []
+    voiceVolume: 0.9
+    footstepVolume: 0.55
+    impactVolume: 0.9
+    pitch: 1
+    pitchVariance: 0.08
+    minDistance: 2
+    maxDistance: 26
+    idleInterval: {x: 6, y: 14}
+    walkStepInterval: 0.55
+    runStepInterval: 0.34
+    painCooldown: 0.6
+  hurtTrigger: 
+  deathTrigger: 
+  deathDisableDelay: 20

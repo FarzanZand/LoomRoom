@@ -1,6 +1,6 @@
 # Stamina and blocking
 
-Edit `Assets/Game/Players/Table/TablePlayer.asset` for stamina capacity (30), regeneration (8/second), sprint drain (6/second), regeneration delay (1 second), and exhaustion recovery fraction (25%). Mana remains a separate resource.
+Edit the TablePlayer prefab's data (`Assets/Game/Characters/Players/Table/TablePlayer.prefab`, Character component, Stamina section) for stamina capacity (30), regeneration (8/second), sprint drain (6/second), regeneration delay (1 second), and exhaustion recovery fraction (25%). Mana remains a separate resource.
 
 Edit `Assets/Game/Combat/Prefabs/CombatManager.prefab` for raised-shield drain (2/second), blocked-hit cost (6), and heavy-release cost (8). The Room scene uses this manager. Costs are paid only for the relevant action: idle sprint input does not drain stamina, rear hits are not blocked, and light attacks are free. A charged release with insufficient stamina becomes a light attack. Exhaustion prevents sprinting and guarding until 25% stamina returns. No timed parries.
 

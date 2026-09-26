@@ -351,7 +351,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         float max = MaxStamina;
         if (CurrentStamina >= max && !IsExhausted) return;
         CurrentStamina = Mathf.Min(max, CurrentStamina + amount);
-        float fraction = Character != null && Character.data != null ? Character.data.sprintRecoveryFraction : .25f;
+        float fraction = Character != null && Character.data is PlayerData player ? player.sprintRecoveryFraction : .25f;
         if (CurrentStamina >= max * Mathf.Clamp(fraction, .01f, 1f)) IsExhausted = false;
         StaminaChanged?.Invoke();
     }

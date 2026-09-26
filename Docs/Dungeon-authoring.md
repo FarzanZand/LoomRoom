@@ -35,7 +35,7 @@ Edit `Assets/Game/Items/LootTables`. Dungeon1 is wired to Enemy rewards, Chest r
 - World drops split quantities into valid item stacks and scatter on nearby navigation without crossing its edges. A source can reward only once, including repeated interaction or damage calls.
 - Pickup routing still uses ItemData.directToHotbar (off by default), with inventory fallback. Item definitions remain under Items/Data; pickup models remain under Items/Prefabs/Pickups.
 
-Current Dungeon1 defaults use the Dungeon enemy/chest/barrel progression tables: enemies have a 35% reward chance, chests award equipment plus a 60% supply chance, and barrels have a 35% supply chance. Iron gear appears from floor 2. Earlier reward tables remain optional alternatives. See `Dungeon-inventory-and-balance.md` for the complete values.
+Current Dungeon1 defaults use the Dungeon enemy/chest/barrel progression tables: enemies have a 45% reward chance (about 11% gear per kill), chests award equipment plus a 60% supply chance, and breakables have a 35% supply and 4% gear chance. Iron gear appears from floor 2. Earlier reward tables remain optional alternatives. See `Dungeon-inventory-and-balance.md` for the complete values.
 
 ## UI styling
 

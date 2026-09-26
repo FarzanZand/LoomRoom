@@ -15,6 +15,7 @@ MonoBehaviour:
   displayName: Dungeon1
   description: "The Amber Crypt \u2022 a new layout every run"
   kind: 1
+  environmentPrefab: {fileID: 0}
   mood: {fileID: 11400000, guid: 8277439119c14f8a956e344d01626cd7, type: 2}
   moodLighting: 0
   overrideLighting: 0
@@ -31,7 +32,7 @@ MonoBehaviour:
   backgroundMusicVolume: 0.3
   loopMusic: 1
   musicFadeSeconds: 1.5
-  environmentPrefab: {fileID: 0}
+  fixedSeed: 0
   width: 40
   depth: 54
   cellSize: 2
@@ -39,19 +40,24 @@ MonoBehaviour:
   largeRoomPercent: 10
   largeRoomScale: 1.6
   loopPercent: 15
-  encounterChance: 0.7
-  maxEnemiesPerRoom: 2
-  roomPropPrefabs:
-  - {fileID: 908437102851283026, guid: fc59090b5bd382b40b3a0e216ac50468, type: 3}
-  - {fileID: 2626260366801120047, guid: 78690a233ec5c00458ed652ef3191e79, type: 3}
-  roomProfiles:
-  - {fileID: 11400000, guid: 19d8d4f050a70ad4090565e08a7e8d34, type: 2}
-  - {fileID: 11400000, guid: 40867d4f31470e54a99e795ac0ee7221, type: 2}
-  - {fileID: 11400000, guid: 9aacf2c86f9b97147bb7df776e08316b, type: 2}
-  - {fileID: 11400000, guid: 7feeadfd849b5ee459d026df4d62e8dd, type: 2}
-  - {fileID: 11400000, guid: c20ef9685e373554c8072e3be2d59f9c, type: 2}
-  fixedSeed: 0
+  doorPrefab: {fileID: 7005205240093728226, guid: 3c6bc2dc79fc2bb42ba380732b33a2f2, type: 3}
+  doorPercent: 65
+  twoTileRoomPercent: 25
+  threeTileRoomPercent: 0
+  twoTileCorridorPercent: 25
+  threeTileCorridorPercent: 0
+  hideRoof: 0
+  hideRoofPercent: 5.9
+  hideEdges: 0
+  hideEdgesPercent: 100
   architectureTileSize: 3
+  floorMaterial: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
+  wallMaterial: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
+  upperWallMaterial: {fileID: 0}
+  trimMaterial: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
+  ceilingMaterial: {fileID: 2100000, guid: b84909f81e52f2a47a68177f1186c384, type: 2}
+  woodMaterial: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
+  metalMaterial: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
   roomStyles:
   - style: {fileID: 11400000, guid: effd0936d8ae44fbaf28bf7c3494ed2a, type: 2}
     weight: 2
@@ -61,16 +67,74 @@ MonoBehaviour:
   corridorStyles:
   - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
     weight: 1
-  twoTileRoomPercent: 25
-  threeTileRoomPercent: 0
-  twoTileCorridorPercent: 25
-  threeTileCorridorPercent: 0
-  hideRoof: 0
-  hideRoofPercent: 5.9
-  hideEdges: 0
-  hideEdgesPercent: 100
+  roomProfiles:
+  - {fileID: 11400000, guid: 19d8d4f050a70ad4090565e08a7e8d34, type: 2}
+  - {fileID: 11400000, guid: 40867d4f31470e54a99e795ac0ee7221, type: 2}
+  - {fileID: 11400000, guid: 9aacf2c86f9b97147bb7df776e08316b, type: 2}
+  - {fileID: 11400000, guid: 7feeadfd849b5ee459d026df4d62e8dd, type: 2}
+  - {fileID: 11400000, guid: c20ef9685e373554c8072e3be2d59f9c, type: 2}
+  roomPropPrefabs:
+  - {fileID: 908437102851283026, guid: fc59090b5bd382b40b3a0e216ac50468, type: 3}
+  - {fileID: 2626260366801120047, guid: 78690a233ec5c00458ed652ef3191e79, type: 3}
+  chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+  destructibles:
+  - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+    weight: 3
+  - prefab: {fileID: 3676609536429769752, guid: 74294ce93f890d0479859cebe2ea259e, type: 3}
+    weight: 2
+  - prefab: {fileID: 6976356556941518252, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
+    weight: 2
+  - prefab: {fileID: 4940602601245648603, guid: fb562eb337691f54c8a6648dcc1a3045, type: 3}
+    weight: 2
+  destructiblesPerRoom: {x: 1, y: 3}
+  features:
+  - prefab: {fileID: 1139990893470972911, guid: 69b99ad0ca2199f40ba3c9ac972343da, type: 3}
+    chancePerRoom: 0.08
+    rooms: 30
+    minFloor: 1
+    maxPerFloor: 1
+  - prefab: {fileID: 2628686250012602643, guid: 8605074f6c2806a418b4153f5c861b1f, type: 3}
+    chancePerRoom: 0.07
+    rooms: 28
+    minFloor: 2
+    maxPerFloor: 1
+  - prefab: {fileID: 1038405016691299456, guid: dc5b6f6ac339db9489cb8fe203951f1b, type: 3}
+    chancePerRoom: 0.1
+    rooms: 22
+    minFloor: 1
+    maxPerFloor: 2
+  - prefab: {fileID: 2510687268772921315, guid: 1a1941feba8c9704db9d6c4b74284941, type: 3}
+    chancePerRoom: 0.1
+    rooms: 30
+    minFloor: 1
+    maxPerFloor: 2
+  encounterChance: 0.7
+  maxEnemiesPerRoom: 2
+  enemies:
+  - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  - {fileID: 1189686515746966260, guid: 9904694f715ecef4c9340c75f994a7cc, type: 3}
+  - {fileID: 1189686515746966260, guid: 9904694f715ecef4c9340c75f994a7cc, type: 3}
+  - {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+  balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
+  loot: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
+  enemyLoot: {fileID: 11400000, guid: 4fa73d6bb675684469538d1cc9a41960, type: 2}
+  chestLoot: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
+  barrelLoot: {fileID: 11400000, guid: 5c389ef4b21c6464bb5fd8dce9928f7e, type: 2}
+  guaranteedHealing: {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
+  startingItems:
+  - {fileID: 11400000, guid: c238df0768336e34bb7e3707e9afd767, type: 2}
+  - {fileID: 11400000, guid: 5ce76942449b23b45a86430cd37d32f9, type: 2}
+  - {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
+  - {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
+  startingEquipment:
+  - {fileID: 11400000, guid: c238df0768336e34bb7e3707e9afd767, type: 2}
+  - {fileID: 11400000, guid: 5ce76942449b23b45a86430cd37d32f9, type: 2}
+  merchantPrefab: {fileID: 3318657465412568994, guid: 1d2025c71f6ccbf4fb69df3f1e2204d8, type: 3}
+  merchantStock: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
+  merchantChance: 0.3
   multipleLevels: 1
   levelCount: 10
+  defaultTheme: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
   floorSettings:
   - theme: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
     overrideMerchant: 0
@@ -282,31 +346,10 @@ MonoBehaviour:
       ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
       ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
       fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
-  floorMaterial: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
-  wallMaterial: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
-  upperWallMaterial: {fileID: 0}
-  trimMaterial: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
-  ceilingMaterial: {fileID: 2100000, guid: b84909f81e52f2a47a68177f1186c384, type: 2}
-  woodMaterial: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
-  metalMaterial: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
-  enemies:
-  - {fileID: 8306217807791707549, guid: 0d5602465bc50894c8c21974f5ae1087, type: 3}
-  - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
-  - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
-  - {fileID: 3270041406331151002, guid: b5cc74a1c83c63a4f906481253b84779, type: 3}
-  doorPrefab: {fileID: 7005205240093728226, guid: 3c6bc2dc79fc2bb42ba380732b33a2f2, type: 3}
-  chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
-  doorPercent: 65
-  balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
-  loot: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
-  enemyLoot: {fileID: 11400000, guid: 4fa73d6bb675684469538d1cc9a41960, type: 2}
-  chestLoot: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
-  barrelLoot: {fileID: 11400000, guid: 5c389ef4b21c6464bb5fd8dce9928f7e, type: 2}
-  defaultTheme: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
   milestones:
   - enabled: 1
     floor: 3
-    boss: {fileID: 2330004206700819348, guid: 47169fc13bdc8ad41a6b7008da9bdd6a, type: 3}
+    boss: {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
     arena: {fileID: 6094011178556838177, guid: fcaf31c71d0815649912203b428b86ef, type: 3}
     title: Lord of the Crypt
     introMessage: The dead stir. Something vast rises from its throne of bones.
@@ -320,7 +363,7 @@ MonoBehaviour:
     arenaSizeScale: 1.6
   - enabled: 1
     floor: 7
-    boss: {fileID: 2330004206700819348, guid: 47169fc13bdc8ad41a6b7008da9bdd6a, type: 3}
+    boss: {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
     arena: {fileID: 6094011178556838177, guid: fcaf31c71d0815649912203b428b86ef, type: 3}
     title: The Drowned King
     introMessage: Black water ripples. The crypt's old master followed you down.
@@ -334,7 +377,7 @@ MonoBehaviour:
     arenaSizeScale: 1.6
   - enabled: 1
     floor: 10
-    boss: {fileID: 2330004206700819348, guid: 47169fc13bdc8ad41a6b7008da9bdd6a, type: 3}
+    boss: {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
     arena: {fileID: 6094011178556838177, guid: fcaf31c71d0815649912203b428b86ef, type: 3}
     title: Lord of the Deep
     introMessage: The mountain holds its breath. Your oldest enemy waits at the bottom.
@@ -346,53 +389,10 @@ MonoBehaviour:
     bossLoot: {fileID: 11400000, guid: a3379be8b75048a42a1986d09ef637a8, type: 2}
     bonusGold: 200
     arenaSizeScale: 1.6
-  destructibles:
-  - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
-    weight: 3
-  - prefab: {fileID: 3676609536429769752, guid: 74294ce93f890d0479859cebe2ea259e, type: 3}
-    weight: 2
-  - prefab: {fileID: 6976356556941518252, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
-    weight: 2
-  - prefab: {fileID: 4940602601245648603, guid: fb562eb337691f54c8a6648dcc1a3045, type: 3}
-    weight: 2
-  destructiblesPerRoom: {x: 1, y: 3}
-  features:
-  - prefab: {fileID: 1139990893470972911, guid: 69b99ad0ca2199f40ba3c9ac972343da, type: 3}
-    chancePerRoom: 0.08
-    rooms: 30
-    minFloor: 1
-    maxPerFloor: 1
-  - prefab: {fileID: 2628686250012602643, guid: 8605074f6c2806a418b4153f5c861b1f, type: 3}
-    chancePerRoom: 0.07
-    rooms: 28
-    minFloor: 2
-    maxPerFloor: 1
-  - prefab: {fileID: 1038405016691299456, guid: dc5b6f6ac339db9489cb8fe203951f1b, type: 3}
-    chancePerRoom: 0.1
-    rooms: 22
-    minFloor: 1
-    maxPerFloor: 2
-  - prefab: {fileID: 2510687268772921315, guid: 1a1941feba8c9704db9d6c4b74284941, type: 3}
-    chancePerRoom: 0.1
-    rooms: 30
-    minFloor: 1
-    maxPerFloor: 2
-  merchantPrefab: {fileID: 3318657465412568994, guid: 1d2025c71f6ccbf4fb69df3f1e2204d8, type: 3}
-  merchantStock: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
-  merchantChance: 0.3
-  startingItems:
-  - {fileID: 11400000, guid: c238df0768336e34bb7e3707e9afd767, type: 2}
-  - {fileID: 11400000, guid: 5ce76942449b23b45a86430cd37d32f9, type: 2}
-  - {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
-  - {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
-  startingEquipment:
-  - {fileID: 11400000, guid: c238df0768336e34bb7e3707e9afd767, type: 2}
-  - {fileID: 11400000, guid: 5ce76942449b23b45a86430cd37d32f9, type: 2}
-  guaranteedHealing: {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
-  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
-  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
   hudFont: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
   hotbarFrame: {fileID: 21300000, guid: 8eae82d5f061d8f49b31dcf5f503d8ef, type: 3}
   enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
   damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
   messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}
+  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
+  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}

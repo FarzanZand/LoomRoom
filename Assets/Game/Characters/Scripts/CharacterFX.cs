@@ -25,6 +25,7 @@ public class CharacterFX : MonoBehaviour
 
     Renderer[] renderers;
     MaterialPropertyBlock flashBlock;
+    MaterialPropertyBlock[] originals;
     Coroutine flashRoutine;
 
     protected virtual void Awake()
@@ -53,31 +54,57 @@ public class CharacterFX : MonoBehaviour
         if (!info.Blocked && info.Amount > 0) TryHitFlash();
     }
 
+    // The one hit flash in the game (players, enemies, NPCs). Each renderer's own property
+    // block is saved before the flash and put back after, so a flash never leaves a tint.
     void TryHitFlash()
     {
-        if (!CombatManager.HasInstance || !CombatManager.Instance.hitFlashEnabled) return;
+        if (!CombatManager.HasInstance || !CombatManager.Instance.hitFlashEnabled || renderers == null) return;
         if (flashRoutine != null) StopCoroutine(flashRoutine);
+        else SaveBlocks();
         flashRoutine = StartCoroutine(HitFlashRoutine(CombatManager.Instance.hitFlashColor,
                                                       CombatManager.Instance.hitFlashDuration));
     }
 
+    void SaveBlocks()
+    {
+        if (originals == null || originals.Length != renderers.Length)
+        {
+            originals = new MaterialPropertyBlock[renderers.Length];
+            for (int i = 0; i < originals.Length; i++) originals[i] = new MaterialPropertyBlock();
+        }
+        for (int i = 0; i < renderers.Length; i++)
+            if (renderers[i] != null) renderers[i].GetPropertyBlock(originals[i]);
+    }
+
     IEnumerator HitFlashRoutine(Color color, float duration)
     {
-        flashBlock.Clear();
-        flashBlock.SetColor(BaseColorId, color);
-        flashBlock.SetColor(ColorId, color);
-        ApplyFlashBlock();
-
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            var r = renderers[i];
+            if (r == null) continue;
+            r.GetPropertyBlock(flashBlock);
+            flashBlock.SetColor(BaseColorId, color);
+            flashBlock.SetColor(ColorId, color);
+            r.SetPropertyBlock(flashBlock);
+        }
+        // Real time: a hit stop must not stretch the flash.
         yield return new WaitForSecondsRealtime(duration);
-
-        flashBlock.Clear();
-        ApplyFlashBlock();
+        RestoreBlocks();
         flashRoutine = null;
     }
 
-    void ApplyFlashBlock()
+    void RestoreBlocks()
     {
-        foreach (var r in renderers)
-            if (r != null) r.SetPropertyBlock(flashBlock);
+        if (originals == null) return;
+        for (int i = 0; i < renderers.Length && i < originals.Length; i++)
+            if (renderers[i] != null) renderers[i].SetPropertyBlock(originals[i]);
+    }
+
+    protected virtual void OnDisable()
+    {
+        if (flashRoutine == null) return;
+        StopCoroutine(flashRoutine);
+        flashRoutine = null;
+        RestoreBlocks();
     }
 }

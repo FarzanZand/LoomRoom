@@ -48,10 +48,10 @@ MonoBehaviour:
     fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   roomLightTint: {r: 0.55, g: 1, b: 0.7, a: 0.4}
   enemies:
-  - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
-  - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
-  - {fileID: 4079306204332708788, guid: 2bb2d84a8e27872438e9efea23c4edd5, type: 3}
-  - {fileID: 8306217807791707549, guid: 0d5602465bc50894c8c21974f5ae1087, type: 3}
+  - {fileID: 1189686515746966260, guid: 9904694f715ecef4c9340c75f994a7cc, type: 3}
+  - {fileID: 1189686515746966260, guid: 9904694f715ecef4c9340c75f994a7cc, type: 3}
+  - {fileID: 1189686515746966260, guid: 9904694f715ecef4c9340c75f994a7cc, type: 3}
+  - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
   enemyLoot: {fileID: 0}
   chestLoot: {fileID: 0}
   barrelLoot: {fileID: 0}

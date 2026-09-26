@@ -89,7 +89,8 @@ public class CombatManager : Singleton<CombatManager>
 
     [Header("Hit Flash")]
     public bool hitFlashEnabled = true;
-    public Color hitFlashColor = new Color(1f, 0.25f, 0.25f);
+    [ColorUsage(false, true), Tooltip("Tint every character flashes when hit. Values above 1 glow.")]
+    public Color hitFlashColor = new Color(2.4f, 1.9f, 1.45f);
     [Tooltip("Seconds the flash tint stays on the character's renderers.")]
     public float hitFlashDuration = 0.1f;
 
@@ -248,9 +249,9 @@ public class CombatManager : Singleton<CombatManager>
         bool defaults = profile == null || profile.useDefaultEffects;
         AudioData audio = info.Blocked ? blockAudio : victim is Player && playerHurtAudio != null ? playerHurtAudio :
             defaults ? defaultHitAudio : profile.hitAudio;
-        if (!info.Blocked && defaults && victim.data != null && victim.data.bodyImpactAudio != null)
-            audio = victim.data.bodyImpactAudio;
-        if(audio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(audio,info.HitPoint);
+        var body = !info.Blocked && defaults && victim.data != null ? victim.data.audio : null;
+        if (body != null && body.impact != null && body.impact.Length > 0) body.PlayAt(body.impact, info.HitPoint, body.impactVolume);
+        else if(audio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(audio,info.HitPoint);
         var special = info.Blocked ? null : info.Backstab ? backstabAudio : info.Critical ? critAudio : null;
         if(special != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(special,info.HitPoint);
         GameObject prefab = info.Blocked ? blockParticlePrefab : defaults ? GetRandomHitParticle() : profile.hitParticle;

@@ -12,7 +12,9 @@ using UnityEngine;
 [DefaultExecutionOrder(-100)]
 public class Character : MonoBehaviour
 {
-    [Required] public CharacterData data;
+    [Required, InlineEditor(InlineEditorObjectFieldModes.Foldout, Expanded = true)]
+    [Tooltip("Stats, behaviour, attacks and audio. Enemies keep theirs inside their own prefab file; edit it right here.")]
+    public CharacterData data;
     [Tooltip("Animator that plays hurt/death. Leave empty to search children.")]
     [SerializeField] Animator animator;
 

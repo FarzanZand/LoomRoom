@@ -1,0 +1,301 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &3257632459553295243
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 3384671739911184247}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: e9e43f7f18e02bb40a6993e7f1cf4a53, type: 2}
+    - target: {fileID: 919132149155446097, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_Name
+      value: SM_Chr_Attach_Skeleton_HeavyArmor_Helmet_01
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+--- !u!4 &3080416013528444000 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+  m_PrefabInstance: {fileID: 3257632459553295243}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &3959666290638741247
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 660694316659390664, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: data
+      value: 
+      objectReference: {fileID: 4023650924144474120}
+    - target: {fileID: 3102938182718239760, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: groundMask.m_Bits
+      value: 2047
+      objectReference: {fileID: 0}
+    - target: {fileID: 3599921206689178014, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: visual
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3599921206689178014, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: weapon
+      value: 
+      objectReference: {fileID: 11400000, guid: ca1254f5ad9dfb44eab2336cc7ad3302, type: 2}
+    - target: {fileID: 3599921206689178014, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: animator
+      value: 
+      objectReference: {fileID: 3966651310071761608}
+    - target: {fileID: 3599921206689178014, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: attachment
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 4575188465394925276, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5696880301978830409, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7515299610668172826, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8520137168989438645, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: m_Name
+      value: Crypt Warden
+      objectReference: {fileID: 0}
+    - target: {fileID: 8630804550172175359, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      propertyPath: table
+      value: 
+      objectReference: {fileID: 11400000, guid: 66571cd5f3da142419416c5d36ed7fc5, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 1732560398896972168, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3080416013528444000}
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+--- !u!4 &3384671739911184247 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1732560398896972168, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+  m_PrefabInstance: {fileID: 3959666290638741247}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &3966651310071761608 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 144097435738051639, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+  m_PrefabInstance: {fileID: 3959666290638741247}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4023650924144474120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fe21949aa936544fa1740287c279a2a, type: 3}
+  m_Name: Crypt Warden
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  portrait: {fileID: 0}
+  characterName: Crypt Warden
+  faction: 2
+  description: 
+  stats:
+  - stat: 6
+    baseValue: 1
+    min: 0
+    max: 0
+  - stat: 7
+    baseValue: 1
+    min: 0
+    max: 0
+  - stat: 0
+    baseValue: 50
+    min: 0
+    max: 0
+  - stat: 2
+    baseValue: 18
+    min: 0
+    max: 0
+  - stat: 1
+    baseValue: 3
+    min: 0
+    max: 0
+  audio:
+    idle:
+    - {fileID: 8300000, guid: 0a6cf2b696cef86479692dd9b133d0f8, type: 3}
+    - {fileID: 8300000, guid: 9a2d865fd37a7f74bb71e9c834b1cf2f, type: 3}
+    - {fileID: 8300000, guid: c59659b408648eb47973bc92c811060e, type: 3}
+    - {fileID: 8300000, guid: 33990c79b943d55449570ebc9446fa7f, type: 3}
+    alert:
+    - {fileID: 8300000, guid: a98a95988280b2d45974c610bcddde25, type: 3}
+    pain: []
+    death:
+    - {fileID: 8300000, guid: d7b847c2faea56048a132bffb57f95f9, type: 3}
+    footsteps:
+    - {fileID: 8300000, guid: f203194e74b53d744a65298b80721333, type: 3}
+    - {fileID: 8300000, guid: 19e8abe4c1e83f94f8aa10b42a30906d, type: 3}
+    - {fileID: 8300000, guid: 98b0c0aea4da2684b94f4915c6c6e221, type: 3}
+    - {fileID: 8300000, guid: af95aea575228364aac3081fffd9f4ea, type: 3}
+    - {fileID: 8300000, guid: 13489e661e9219146b9dee101cfca45f, type: 3}
+    impact:
+    - {fileID: 8300000, guid: 1fb51b981956d7543a9899449b265042, type: 3}
+    - {fileID: 8300000, guid: b716211feea6460478ec3add51400d9d, type: 3}
+    - {fileID: 8300000, guid: dfb30afbfd26c0e4694cf5c9501ca820, type: 3}
+    - {fileID: 8300000, guid: fb8cfd63c9e610347a25369a6ed70158, type: 3}
+    voiceVolume: 0.9
+    footstepVolume: 0.7
+    impactVolume: 0.45
+    pitch: 0.7
+    pitchVariance: 0.08
+    minDistance: 2
+    maxDistance: 26
+    idleInterval: {x: 6, y: 14}
+    walkStepInterval: 0.62
+    runStepInterval: 0.4
+    painCooldown: 0.6
+  hurtTrigger: Hurt
+  deathTrigger: Death
+  deathDisableDelay: 8
+  behaviour: {fileID: 0}
+  behaviourSettings:
+    defaultState: 1
+    aggressionMode: 0
+    wanderRadius: 3
+    minWanderDistance: 2
+    minIdleTime: 2
+    maxIdleTime: 6
+    wanderZoneRadius: 4
+    detectionRadius: 12
+    fieldOfView: 140
+    eyeHeight: 1.6
+    closeDetectionRadius: 2.5
+    obstacleMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    investigateNoise: 1
+    hearingRadius: 6
+    investigateTime: 4
+    loseSightGracePeriod: 3
+    maxSearchTime: 5
+    useChaseSpeed: 1
+    chaseSpeed: 1.6
+    useWanderSpeed: 1
+    wanderSpeed: 0.7
+    acceleration: 30
+    preferredRangeFraction: 0.7
+    circleTarget: 0
+    circleSpeedFraction: 0.22
+    circleSwitchInterval: {x: 0.9, y: 2}
+    spacingSpeedFraction: 0.8
+    passiveAngularSpeed: 360
+    chaseAngularSpeed: 720
+    attackFaceSpeed: 900
+    windupTrackSpeed: 240
+  attacks:
+  - name: Bite / strike
+    weight: 1
+    animatorTrigger: Attack
+    minRange: 0
+    maxRange: 1.65
+    cooldown: 2.1
+    facingAngle: 45
+    hitboxIndex: 0
+    fallbackHitDelay: 0.7
+    hit:
+      useDefaultEffects: 1
+      hitAudio: {fileID: 0}
+      swingAudio: {fileID: 0}
+      heavySwingAudio: {fileID: 0}
+      hitParticle: {fileID: 0}
+      damageMultiplier: 1
+      knockbackForce: -1
+      hitStopScale: 1

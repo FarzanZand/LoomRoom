@@ -66,7 +66,6 @@ public class DungeonCombatFeedback : MonoBehaviour
         var view=new EnemyView{character=character,root=root,fill=bar.healthFill,loss=bar.recentDamageFill};
         view.handler=info=>EnemyDamaged(view,info);character.Damaged+=view.handler;
         root.gameObject.SetActive(false);enemies.Add(view);
-        if(character.GetComponent<DungeonHitFlash>()==null)character.gameObject.AddComponent<DungeonHitFlash>();
     }
     void EnemyDamaged(EnemyView view,DamageInfo info)
     {

@@ -368,8 +368,8 @@ public class DungeonGenerator : MonoBehaviour
         for(int i=available.Count-1;i>0;i--){int j=random.Next(i+1);(available[i],available[j])=(available[j],available[i]);}
         int cursor=0;
         bool Spot(out Vector3 pos) {pos=default;if(cursor>=available.Count)return false;pos=Cell(available[cursor++]);return true;}
-        if(Spot(out var supply))MakeContainer(supply,Roles[index]==RoomRole.Treasure,Roles[index]==RoomRole.Rest,profile?.rewards);
-        if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,false,profile?.rewards);
+        if(Spot(out var supply))MakeContainer(supply,Roles[index]==RoomRole.Treasure,Roles[index]==RoomRole.Rest,profile?.rewards,FaceCenter(supply,room));
+        if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,false,profile?.rewards,FaceCenter(extra,room));
         int min=profile!=null?Mathf.Clamp(profile.minProps,0,8):1;
         int max=profile!=null?Mathf.Clamp(profile.maxProps,min,8):3;
         int props=random.Next(min,max+1);
@@ -396,7 +396,16 @@ public class DungeonGenerator : MonoBehaviour
         }
     }
 
-    void MakeContainer(Vector3 pos,bool chest,bool healing,DungeonLootTable rewardOverride=null)
+    // A rotation whose forward (+Z, the chest's latch side) points at the room centre, snapped to 90 degrees.
+    Quaternion FaceCenter(Vector3 pos,RectInt room)
+    {
+        var toCenter=Cell(DungeonLayout.Center(room))-pos; toCenter.y=0;
+        if(toCenter.sqrMagnitude<.01f)return Quaternion.identity;
+        var facing=Mathf.Abs(toCenter.x)>Mathf.Abs(toCenter.z) ? new Vector3(Mathf.Sign(toCenter.x),0,0) : new Vector3(0,0,Mathf.Sign(toCenter.z));
+        return Quaternion.LookRotation(facing);
+    }
+
+    void MakeContainer(Vector3 pos,bool chest,bool healing,DungeonLootTable rewardOverride=null,Quaternion? facing=null)
     {
         if(!chest)
         {
@@ -405,6 +414,7 @@ public class DungeonGenerator : MonoBehaviour
         }
         bool authoredChest=chest && data.chestPrefab!=null;
         var go=authoredChest ? Instantiate(data.chestPrefab,transform) : new GameObject(chest ? "Supply chest" : "Breakable barrel"); go.transform.SetParent(transform,false); go.transform.position=pos;
+        if(chest && facing.HasValue)go.transform.rotation=facing.Value;
         if(chest && !authoredChest)
         {
             Box("Chest",pos+Vector3.up*.43f,new Vector3(1.25f,.85f,.7f),data.woodMaterial,go.transform);
@@ -474,9 +484,7 @@ public class DungeonGenerator : MonoBehaviour
             if(prefab==null)continue;
             templates[i]=prefab.GetComponent<DungeonRoomTemplate>();
             if(templates[i]==null){Debug.LogWarning($"Room template {prefab.name} has no DungeonRoomTemplate component; generating the room normally.",prefab);continue;}
-            var room=Layout.rooms[i];
-            if(room.width<templates[i].minimumCells.x || room.height<templates[i].minimumCells.y)
-                Debug.LogWarning($"Room {i} is {room.width}x{room.height} cells; template {prefab.name} expects {templates[i].minimumCells.x}x{templates[i].minimumCells.y}. Pieces on walkways are removed; others may clip walls.",prefab);
+            // Smaller rooms still get the template: pieces outside the room or on walkways are removed.
         }
         if(data.merchantPrefab==null || extraRandom.NextDouble()>=data.MerchantChance(FloorNumber))return;
         var candidates=new System.Collections.Generic.List<int>();
@@ -528,7 +536,7 @@ public class DungeonGenerator : MonoBehaviour
             var t=socket.transform;
             switch(socket.type)
             {
-                case DungeonSocketType.Chest: MakeContainer(t.position,true,false,rewards); break;
+                case DungeonSocketType.Chest: MakeContainer(t.position,true,false,rewards,t.rotation); break;
                 case DungeonSocketType.Breakable:
                 {
                     var prefab=socket.overridePrefab!=null ? socket.overridePrefab : DungeonWeightedPrefab.Choose(Destructibles,extraRandom);
@@ -611,7 +619,8 @@ public class DungeonGenerator : MonoBehaviour
         return null;
     }
 
-    // Room corners, pulled into the corner so hanging cobwebs meet both walls.
+    // Room corners at ceiling height, pulled into the corner so hanging cobwebs meet both walls
+    // and the ceiling. Corner prefabs hang down from their pivot.
     System.Collections.Generic.List<Pose> Corners(RectInt room)
     {
         var list=new System.Collections.Generic.List<Pose>();
@@ -619,7 +628,7 @@ public class DungeonGenerator : MonoBehaviour
         foreach(var (cell,sx,sz) in new[]{(new Vector2Int(room.xMin,room.yMin),-1,-1),(new Vector2Int(room.xMax-1,room.yMin),1,-1),(new Vector2Int(room.xMin,room.yMax-1),-1,1),(new Vector2Int(room.xMax-1,room.yMax-1),1,1)})
         {
             if(Layout.Reserved.Contains(cell))continue;
-            var pos=Cell(cell)+new Vector3(sx*inset,0,sz*inset);
+            var pos=Cell(cell)+new Vector3(sx*inset,HeightAt(cell.x,cell.y)-.02f,sz*inset);
             list.Add(new Pose(pos,Quaternion.LookRotation(new Vector3(-sx,0,-sz))));
         }
         return list;

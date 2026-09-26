@@ -64,5 +64,12 @@ public class EnemyWeaponLoadout : MonoBehaviour
         visual.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         foreach (var collider in visual.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
         foreach (var body in visual.GetComponentsInChildren<Rigidbody>(true)) { body.isKinematic = true; body.detectCollisions = false; }
+        // Edit-mode previews are never saved into the prefab: the weapon is spawned at runtime,
+        // and a baked copy would be inherited by every variant of this enemy.
+        if (!Application.isPlaying)
+        {
+            attachment.gameObject.hideFlags = HideFlags.DontSave;
+            foreach (var t in visual.GetComponentsInChildren<Transform>(true)) t.gameObject.hideFlags = HideFlags.DontSave;
+        }
     }
 }
