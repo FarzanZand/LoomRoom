@@ -10,16 +10,16 @@ public class DungeonBossEncounter : MonoBehaviour
     DungeonMilestone milestone;
     Character boss;
     EnemyBrain brain;
-    RectInt room;
+    int room;
     DungeonExit exit;
     bool started, finished;
 
     public Character Boss => boss;
     public bool Started => started;
 
-    public void Initialize(DungeonGenerator generator, DungeonMilestone data, Character bossCharacter, RectInt arena, DungeonExit sealedExit)
+    public void Initialize(DungeonGenerator generator, DungeonMilestone data, Character bossCharacter, int arenaRoom, DungeonExit sealedExit)
     {
-        dungeon = generator; milestone = data; boss = bossCharacter; room = arena; exit = sealedExit;
+        dungeon = generator; milestone = data; boss = bossCharacter; room = arenaRoom; exit = sealedExit;
         brain = boss != null ? boss.GetComponent<EnemyBrain>() : null;
         if (boss != null) boss.Died += OnBossDied;
         if (brain != null) brain.StateChanged += OnBossState;
@@ -42,10 +42,16 @@ public class DungeonBossEncounter : MonoBehaviour
         if (!PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind != PlayerKind.Table) return;
         var player = PlayerManager.Instance.Active;
         if (player == null || !player.IsAlive) return;
-        // Inside the arena's rectangle, one cell in from the doorway so the sting lands as you step in.
+        // Inside the arena, one cell in from the doorway so the sting lands as you step in.
         var cell = dungeon.CellOf(player.transform.position);
-        var inner = new RectInt(room.x + 1, room.y + 1, Mathf.Max(1, room.width - 2), Mathf.Max(1, room.height - 2));
-        if (inner.Contains(cell)) Begin();
+        var layout = dungeon.Layout;
+        if (!layout.InRoom(room, cell)) return;
+        foreach (var d in new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down })
+        {
+            var n = cell + d;
+            if (layout.InBounds(n) && layout.floor[n.x, n.y] && !layout.InRoom(room, n)) return;
+        }
+        Begin();
     }
 
     void OnBossState(EnemyState previous, EnemyState next)

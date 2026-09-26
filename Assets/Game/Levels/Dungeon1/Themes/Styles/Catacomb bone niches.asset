@@ -18,3 +18,12 @@ MonoBehaviour:
   ceiling: {fileID: 2100000, guid: aa9f59ba11bbd0c41a5dc0c26fa2c148, type: 2}
   hideTrims: 1
   trim: {fileID: 2100000, guid: f07ff2963493bd145bb486b7f96ffc82, type: 2}
+  wallBaseWeight: 10
+  wallVariants: []
+  floorBaseWeight: 10
+  floorVariants: []
+  wallDecor: []
+  wallDecorPerTenFaces: 0.6
+  corridorDressing: {fileID: 0}
+  dressingSpacing: 3
+  stretchDressingToCeiling: 1

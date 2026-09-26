@@ -60,6 +60,41 @@ public class TableLevelData : ScriptableObject
     public float largeRoomScale = 1.6f;
     [TabGroup(Tabs, Layout), ShowIf(D), Range(0, 40), Tooltip("Additional short room connections, as a percentage of room count.")]
     public float loopPercent = 15;
+    [TabGroup(Tabs, Layout), ShowIf(D), Title("Layout style", HorizontalLine = false), Tooltip("Partition: the original, one rectangular room per slice of the grid. Grown: shaped rooms packed outwards from the entrance with winding tunnels, dead ends and loops.")]
+    public DungeonLayoutMode layoutMode = DungeonLayoutMode.Grown;
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), MinMaxSlider(3, 16, true), Tooltip("Room width and depth range in cells, before profile and large-room scaling. Painted shapes keep their own size.")]
+    public Vector2Int roomSize = new Vector2Int(4, 9);
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), MinMaxSlider(1, 8, true), Tooltip("Rock between a new room and the room it grows from. 1 often gives a doorway straight through the wall.")]
+    public Vector2Int roomSpacing = new Vector2Int(1, 4);
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Range(0, 4), Tooltip("How much tunnels wander. 0 digs the shortest route.")]
+    public float corridorWander = 1.2f;
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Range(0, 100), Tooltip("Chance a tunnel is two cells wide.")]
+    public float wideCorridorPercent = 15;
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Range(0, 100), Tooltip("Spurs that lead nowhere, as a percentage of room count. Some hide a breakable or a chest.")]
+    public float deadEndPercent = 0;
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Range(2, 24), Tooltip("Furthest gap, in cells, a loop connection may tunnel across.")]
+    public int loopReach = 10;
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Tooltip("Weighted room shapes. Authored entries use a painted Room Shape asset (Create > Table > Room Shape). Themes and room profiles can replace this list.")]
+    public DungeonShapeChoice[] roomShapes = DefaultShapes();
+
+    bool IsGrown => IsDungeon && layoutMode == DungeonLayoutMode.Grown;
+    public DungeonGrowthSettings Growth => new DungeonGrowthSettings
+    {
+        spacing = roomSpacing, wander = corridorWander, widePercent = wideCorridorPercent,
+        deadEndPercent = deadEndPercent, loopPercent = loopPercent, loopReach = loopReach,
+    };
+    public static DungeonShapeChoice[] DefaultShapes() => new[]
+    {
+        new DungeonShapeChoice { kind = DungeonShapeKind.Rectangle, weight = 3 },
+        new DungeonShapeChoice { kind = DungeonShapeKind.CutCorners, weight = 2 },
+        new DungeonShapeChoice { kind = DungeonShapeKind.LShape, weight = 2 },
+        new DungeonShapeChoice { kind = DungeonShapeKind.TShape, weight = 1 },
+        new DungeonShapeChoice { kind = DungeonShapeKind.Cross, weight = 1 },
+        new DungeonShapeChoice { kind = DungeonShapeKind.PillarHall, weight = 2 },
+        new DungeonShapeChoice { kind = DungeonShapeKind.Ring, weight = 1 },
+        new DungeonShapeChoice { kind = DungeonShapeKind.RoomInRoom, weight = 1 },
+        new DungeonShapeChoice { kind = DungeonShapeKind.Cave, weight = 1 },
+    };
     [TabGroup(Tabs, Layout), ShowIf(D), Title("Doors", HorizontalLine = false), LabelText("Door Prefab"), Tooltip("Editable door prefab, one cell wide. Instantiated at selected room entrances.")]
     public GameObject doorPrefab;
     [TabGroup(Tabs, Layout), ShowIf(D), Range(0, 100), Tooltip("Chance for each connected corridor passage to have one door. Other entrances stay open; 0 leaves every passage open.")]
@@ -106,6 +141,8 @@ public class TableLevelData : ScriptableObject
     public DungeonRoomProfile[] roomProfiles;
     [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Props"), Tooltip("Designer-authored decorations. Must fit inside one cell and leave walkways clear. Profiles and themes can replace them.")]
     public GameObject[] roomPropPrefabs;
+    [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Furnishing"), Tooltip("Props placed by rule and scaled by floor area: against walls, in corners, in the middle. When a profile, theme or this level has rules, they replace the plain Props list at that level.")]
+    public DungeonPropRule[] propRules = new DungeonPropRule[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Authored chest prefab with DungeonContainer, lid reference and interaction collider.")]
     public GameObject chestPrefab;
     [TabGroup(Tabs, Rooms), ShowIf(D), Title("Breakables", HorizontalLine = false), Tooltip("Barrels, crates, pots and cobwebs. Storage and supply spots use Floor placements; cobwebs hang in ceiling corners. Themes can replace this list.")]

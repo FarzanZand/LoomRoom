@@ -22,6 +22,10 @@ public class DungeonTheme : ScriptableObject
     public DungeonWeightedPrefab[] destructibles = new DungeonWeightedPrefab[0];
     [Tooltip("Fountains, graves, bookshelves... Empty uses the level's features.")]
     public DungeonFeature[] features = new DungeonFeature[0];
+    [Tooltip("Weighted room shapes for grown layouts. Empty uses the level's shapes.")]
+    public DungeonShapeChoice[] roomShapes = new DungeonShapeChoice[0];
+    [Tooltip("Furnishing rules. Replace the level's rules and props when set.")]
+    public DungeonPropRule[] propRules = new DungeonPropRule[0];
 
     [Title("Lighting")]
     public bool overrideLighting;

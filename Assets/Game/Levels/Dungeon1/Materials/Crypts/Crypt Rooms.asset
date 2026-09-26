@@ -16,4 +16,14 @@ MonoBehaviour:
   upperWall: {fileID: 0}
   floor: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
   ceiling: {fileID: 2100000, guid: b84909f81e52f2a47a68177f1186c384, type: 2}
+  hideTrims: 0
   trim: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
+  wallBaseWeight: 10
+  wallVariants: []
+  floorBaseWeight: 10
+  floorVariants: []
+  wallDecor: []
+  wallDecorPerTenFaces: 0.5
+  corridorDressing: {fileID: 0}
+  dressingSpacing: 3
+  stretchDressingToCeiling: 1

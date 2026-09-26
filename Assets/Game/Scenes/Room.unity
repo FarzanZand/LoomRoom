@@ -23631,11 +23631,11 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1998643432}
+  - {fileID: 1122942440}
   - {fileID: 1275394513}
   - {fileID: 1210057108}
   - {fileID: 1169947659}
   - {fileID: 87319280}
-  - {fileID: 1122942440}
   - {fileID: 677241888}
   - {fileID: 1332402558}
   - {fileID: 497994709}
@@ -100646,7 +100646,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: roomEffects.colorLevels
-      value: 40
+      value: 64
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: roomEffects.colorBanding
@@ -100658,11 +100658,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: roomEffects.colorFilter.b
-      value: 0.8726415
+      value: 0.9103774
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: roomEffects.colorFilter.g
-      value: 0.9478039
+      value: 0.9635908
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: roomEffects.ambientOcclusion

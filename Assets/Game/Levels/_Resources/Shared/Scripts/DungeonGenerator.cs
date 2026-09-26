@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using Unity.AI.Navigation;
 
-public class DungeonGenerator : MonoBehaviour
+public partial class DungeonGenerator : MonoBehaviour
 {
     public DungeonLayout Layout { get; private set; }
     public Vector3 SpawnPoint { get; private set; }
@@ -123,6 +123,17 @@ public class DungeonGenerator : MonoBehaviour
         Theme = level.Theme(floorNumber);
         Milestone = level.Milestone(floorNumber);
         actorSockets.Clear(); featureCounts.Clear(); MerchantRoom = -1;
+        BeginDressing(seed);
+        if (level.layoutMode == DungeonLayoutMode.Grown) GrowLayout(level, seed);
+        else PartitionLayout(level, seed);
+        doorways = level.doorPrefab != null && level.doorPercent > 0
+            ? Layout.SelectDoorways(level.doorPercent) : new();
+        BuildArchitecture(level, seed, floorNumber, watch);
+    }
+
+    // The original layout: one rectangular room per partition of the grid.
+    void PartitionLayout(TableLevelData level, int seed)
+    {
         Layout = new DungeonLayout(level.width, level.depth, level.roomCount, seed, level.loopPercent);
         Roles=new RoomRole[Layout.rooms.Count];
         for(int i=0;i<Roles.Length;i++) {
@@ -147,8 +158,10 @@ public class DungeonGenerator : MonoBehaviour
         if (Milestone != null) scales[exitRoom] = Mathf.Max(scales[exitRoom], Mathf.Clamp(Milestone.arenaSizeScale,1,3));
         // Rebuild routes, region ownership, reserved walkways and distances around the resized rooms.
         Layout = new DungeonLayout(level.width, level.depth, level.roomCount, seed, level.loopPercent, scales, exitRoom);
-        doorways = level.doorPrefab != null && level.doorPercent > 0
-            ? Layout.SelectDoorways(level.doorPercent) : new();
+    }
+
+    void BuildArchitecture(TableLevelData level, int seed, int floorNumber, System.Diagnostics.Stopwatch watch)
+    {
         RoomHeightTiles = SelectRoomHeights(Layout.rooms.Count, seed, level.twoTileRoomPercent, level.threeTileRoomPercent);
         SelectCorridorHeights(unchecked(seed + 3571));
         RegionStyles = new DungeonRoomStyle[Layout.RegionCount];
@@ -171,7 +184,7 @@ public class DungeonGenerator : MonoBehaviour
             var style = RegionStyles[room];
             float height = HeightAt(x,z);
             var pos = Cell(new Vector2Int(x,z));
-            ArchitectureBox("Flagstone", pos - Vector3.up*.12f, new Vector3(size,.24f,size), DungeonRoomStyle.Resolve(style != null ? style.floor : null, level.floorMaterial), geometry);
+            ArchitectureBox("Flagstone", pos - Vector3.up*.12f, new Vector3(size,.24f,size), FloorMaterial(room, x, z), geometry);
             var roof = ArchitectureBox("Ceiling", pos + Vector3.up*(height+.12f), new Vector3(size,.24f,size), DungeonRoomStyle.Resolve(style != null ? style.ceiling : null, level.ceilingMaterial), ceiling);
             roof.GetComponent<Renderer>().enabled = !openRoofs[room];
             foreach (var dir in dirs)
@@ -183,9 +196,10 @@ public class DungeonGenerator : MonoBehaviour
                 Vector3 center = pos + new Vector3(dir.x,0,dir.y)*size*.5f;
                 Vector3 scale = dir.x != 0 ? new Vector3(.22f,tile,size) : new Vector3(size,tile,.22f);
                 bool visible = !(openEdges[room] && Layout.FacesOutside(new Vector2Int(x,z), dir));
+                if (!neighbor && visible) wallFaces.Add((new Vector2Int(x,z), dir, room));
                 // Square wall tiles preserve texture density; upper walls seal height changes above passages.
                 for (float y = bottom; y < height - .01f; y += tile)
-                    ArchitectureBox("Crypt masonry", center+Vector3.up*(y+tile*.5f), scale, WallMaterial(room,y), geometry).GetComponent<Renderer>().enabled = visible;
+                    ArchitectureBox("Crypt masonry", center+Vector3.up*(y+tile*.5f), scale, WallSurface(room,y,x,z,dir), geometry).GetComponent<Renderer>().enabled = visible;
                 if (style == null || !style.hideTrims)
                 {
                     scale.y=.15f; scale.x+=.05f; scale.z+=.05f;
@@ -197,7 +211,10 @@ public class DungeonGenerator : MonoBehaviour
         }
         var lighting = data.DungeonLighting(FloorNumber);
         ChooseTemplatesAndMerchant();
-        for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(Layout.rooms[i],i,lighting);
+        for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(i,lighting);
+        DecorateWalls();
+        DressCorridors();
+        StockDeadEnds();
         var batching=gameObject.AddComponent<DungeonStaticGeometry>();
         batching.Combine(geometry,data.cellSize*8);
         batching.Combine(ceiling,data.cellSize*8);
@@ -211,11 +228,10 @@ public class DungeonGenerator : MonoBehaviour
         ValidateNavigation();
         MakeDoors(seed);
         SpawnPoint = Cell(Layout.Start)+Vector3.up*.12f;
-        var entranceRoom=Layout.rooms[0];
         float closest=float.MaxValue;
-        foreach(var cell in entranceRoom.allPositionsWithin)foreach(var direction in dirs) {
+        foreach(var cell in Layout.RoomCells(0))foreach(var direction in dirs) {
             var outside=cell+direction;
-            if(entranceRoom.Contains(outside) || !Layout.floor[outside.x,outside.y])continue;
+            if(Layout.InRoom(0,outside) || !Layout.floor[outside.x,outside.y])continue;
             var delta=Cell(outside)-Cell(Layout.Start);
             if(delta.sqrMagnitude<closest){closest=delta.sqrMagnitude;SpawnRotation=Quaternion.LookRotation(delta);}
         }
@@ -225,7 +241,6 @@ public class DungeonGenerator : MonoBehaviour
         // Spawn after navigation exists. The first room is always safe.
         for (int i=1;i<Layout.rooms.Count;i++)
         {
-            var room = Layout.rooms[i];
             if(Roles[i]!=RoomRole.Combat && Roles[i]!=RoomRole.Exit)continue;
             int max=Settings!=null && Settings.overrideEncounters ? Settings.maxEnemiesPerRoom:data.maxEnemiesPerRoom;
             int count=random.Next(1,Mathf.Clamp(max,1,6)+1);
@@ -236,7 +251,7 @@ public class DungeonGenerator : MonoBehaviour
             {
                 if (choices == null || choices.Length == 0) break;
                 var prefab = choices[random.Next(choices.Length)];
-                var pos = Cell(DungeonLayout.Center(room)) + Vector3.right*((j%3)-1)*1.1f+Vector3.forward*(j/3)*1.2f;
+                var pos = Cell(Layout.RoomCenter(i)) + Vector3.right*((j%3)-1)*1.1f+Vector3.forward*(j/3)*1.2f;
                 if (prefab == null || !NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas)) continue;
                 var enemy = Instantiate(prefab,hit.position,Quaternion.Euler(0,random.Next(360),0),transform);
                 level.balance?.Apply(enemy.GetComponent<Character>(),floorNumber);
@@ -299,6 +314,20 @@ public class DungeonGenerator : MonoBehaviour
             }
             RegionStyles[region] = candidates.Count > 0 ? RegionStyles[candidates[rng.Next(candidates.Count)]] : null;
         }
+        // Spurs and passages cut off by doors on every side: take the style of whatever they touch.
+        for (int pass = 0; pass < 4; pass++)
+            for (int x = 0; x < data.width; x++) for (int z = 0; z < data.depth; z++)
+            {
+                int region = Layout.RegionIds[x,z];
+                if (region < Layout.rooms.Count || RegionStyles[region] != null) continue;
+                foreach (var d in new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down })
+                {
+                    var n = new Vector2Int(x + d.x, z + d.y);
+                    if (!Layout.InBounds(n) || !Layout.floor[n.x,n.y]) continue;
+                    var style = RegionStyles[Layout.RegionIds[n.x,n.y]];
+                    if (style != null) { RegionStyles[region] = style; break; }
+                }
+            }
     }
 
     DungeonRoomProfile ChooseProfile(RoomRole role)
@@ -345,11 +374,11 @@ public class DungeonGenerator : MonoBehaviour
         }
     }
 
-    void DecorateRoom(RectInt room,int index,LightingManager.MoodState lighting)
+    void DecorateRoom(int index,LightingManager.MoodState lighting)
     {
-        Vector3 center = Cell(DungeonLayout.Center(room));
+        Vector3 center = Cell(Layout.RoomCenter(index));
         var template = templates[index];
-        if (template != null && !template.keepRoomLight) { PlaceTemplate(room,index); return; }
+        if (template != null && !template.keepRoomLight) { PlaceTemplate(index); return; }
         // Broad pools of warm and cool light, with no torch requirement.
         var lamp = new GameObject("Amber chamber light"); lamp.transform.SetParent(transform,false);
         lamp.transform.position = center+Vector3.up*Mathf.Min(2.65f, data.architectureTileSize-.35f);
@@ -361,22 +390,28 @@ public class DungeonGenerator : MonoBehaviour
         if(profile!=null && profile.overrideLight)light.color=profile.lightColor;
         else if(Theme!=null && Theme.roomLightTint.a>0)light.color=Color.Lerp(light.color,new Color(Theme.roomLightTint.r,Theme.roomLightTint.g,Theme.roomLightTint.b),Theme.roomLightTint.a);
         light.shadows=LightShadows.None;
-        if (template != null) { PlaceTemplate(room,index); return; }
+        if (template != null) { PlaceTemplate(index); return; }
         // Only decorate cells outside the reserved doorway-to-centre routes.
         var available=new System.Collections.Generic.List<Vector2Int>();
-        foreach(var p in room.allPositionsWithin)if(!Layout.Reserved.Contains(p))available.Add(p);
+        foreach(var p in Layout.RoomCells(index))if(!Layout.Reserved.Contains(p))available.Add(p);
         for(int i=available.Count-1;i>0;i--){int j=random.Next(i+1);(available[i],available[j])=(available[j],available[i]);}
         int cursor=0;
         bool Spot(out Vector3 pos) {pos=default;if(cursor>=available.Count)return false;pos=Cell(available[cursor++]);return true;}
-        if(Spot(out var supply))MakeContainer(supply,Roles[index]==RoomRole.Treasure,Roles[index]==RoomRole.Rest,profile?.rewards,FaceCenter(supply,room));
-        if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,false,profile?.rewards,FaceCenter(extra,room));
+        if(Spot(out var supply))MakeContainer(supply,Roles[index]==RoomRole.Treasure,Roles[index]==RoomRole.Rest,profile?.rewards,FaceCenter(supply,index));
+        if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,false,profile?.rewards,FaceCenter(extra,index));
+        var (rules,prefabs)=Furnishing(profile);
+        if(rules!=null)
+        {
+            int left=PlaceExtras(index,available,cursor,profile?.rewards);
+            PlaceRules(index,available.GetRange(left,available.Count-left),rules);
+            return;
+        }
         int min=profile!=null?Mathf.Clamp(profile.minProps,0,8):1;
         int max=profile!=null?Mathf.Clamp(profile.maxProps,min,8):3;
         int props=random.Next(min,max+1);
-        var prefabs=FirstList(profile?.props,Theme?.props,data.roomPropPrefabs);
         // Newer placement draws from the extra stream, after the original props consumed theirs.
         int propCursor=cursor+props;
-        PlaceExtras(room,index,available,propCursor,profile?.rewards);
+        PlaceExtras(index,available,propCursor,profile?.rewards);
         for(int i=0;i<props && Spot(out var pos);i++) {
             if(prefabs!=null && prefabs.Length>0) {
                 var prefab=prefabs[random.Next(prefabs.Length)];
@@ -389,17 +424,17 @@ public class DungeonGenerator : MonoBehaviour
     {
         if(!NavMesh.SamplePosition(Cell(Layout.Start),out var start,1f,NavMesh.AllAreas))throw new InvalidOperationException("No navigation at dungeon entrance.");
         var path=new NavMeshPath();
-        foreach(var room in Layout.rooms) {
-            if(!NavMesh.SamplePosition(Cell(DungeonLayout.Center(room)),out var target,1f,NavMesh.AllAreas) ||
+        for(int i=0;i<Layout.rooms.Count;i++) {
+            if(!NavMesh.SamplePosition(Cell(Layout.RoomCenter(i)),out var target,1f,NavMesh.AllAreas) ||
                 !NavMesh.CalculatePath(start.position,target.position,NavMesh.AllAreas,path) || path.status!=NavMeshPathStatus.PathComplete)
-                throw new InvalidOperationException($"Furnished dungeon has an unreachable room. Seed {Layout.seed}; room {room}. Check prop collider sizes.");
+                throw new InvalidOperationException($"Furnished dungeon has an unreachable room. Seed {Layout.seed}; room {i} at {Layout.rooms[i]}. Check prop collider sizes.");
         }
     }
 
     // A rotation whose forward (+Z, the chest's latch side) points at the room centre, snapped to 90 degrees.
-    Quaternion FaceCenter(Vector3 pos,RectInt room)
+    Quaternion FaceCenter(Vector3 pos,int room)
     {
-        var toCenter=Cell(DungeonLayout.Center(room))-pos; toCenter.y=0;
+        var toCenter=Cell(Layout.RoomCenter(room))-pos; toCenter.y=0;
         if(toCenter.sqrMagnitude<.01f)return Quaternion.identity;
         var facing=Mathf.Abs(toCenter.x)>Mathf.Abs(toCenter.z) ? new Vector3(Mathf.Sign(toCenter.x),0,0) : new Vector3(0,0,Mathf.Sign(toCenter.z));
         return Quaternion.LookRotation(facing);
@@ -494,44 +529,34 @@ public class DungeonGenerator : MonoBehaviour
         MerchantRoom=candidates[extraRandom.Next(candidates.Count)];
     }
 
-    // Walkways inside a room: the centre cross and every doorway approach.
-    System.Collections.Generic.HashSet<Vector2Int> Lanes(RectInt room)
+    // Walkways inside a room: every doorway approach, and the centre cross or the routes to the centre.
+    System.Collections.Generic.HashSet<Vector2Int> Lanes(int room)
     {
         var lanes=new System.Collections.Generic.HashSet<Vector2Int>();
-        var c=DungeonLayout.Center(room);
-        var dirs=new[]{Vector2Int.right,Vector2Int.left,Vector2Int.up,Vector2Int.down};
-        foreach(var p in room.allPositionsWithin)
-        {
-            if(p.x==c.x || p.y==c.y)lanes.Add(p);
-            foreach(var d in dirs)
-            {
-                var n=p+d;
-                if(room.Contains(n) || n.x<0 || n.y<0 || n.x>=data.width || n.y>=data.depth || !Layout.floor[n.x,n.y])continue;
-                lanes.Add(p);lanes.Add(p-d);
-            }
-        }
+        foreach(var p in Layout.RoomCells(room))if(Layout.Walkways.Contains(p))lanes.Add(p);
         return lanes;
     }
 
-    void PlaceTemplate(RectInt room,int index)
+    void PlaceTemplate(int index)
     {
         var template=templates[index];
-        var instance=Instantiate(template.gameObject,Cell(DungeonLayout.Center(room)),Quaternion.identity,transform);
+        // Grown rooms built from a template footprint may be turned; the interior turns with them.
+        var instance=Instantiate(template.gameObject,Cell(Layout.RoomCenter(index)),Quaternion.Euler(0,90*Layout.RoomRotation(index),0),transform);
         instance.name=template.gameObject.name;
         templateInstances[index]=instance;
-        var lanes=Lanes(room);
+        var lanes=Lanes(index);
         foreach(var piece in instance.GetComponentsInChildren<DungeonTemplatePiece>(true))
         {
             if(piece==null)continue;
             var cell=CellOf(piece.transform.position);
             // Outside a smaller room it would sit in a wall; on a walkway it would block the route.
-            if(!room.Contains(cell) || (piece.removeIfBlocking && lanes.Contains(cell)))
+            if(!Layout.InRoom(index,cell) || (piece.removeIfBlocking && lanes.Contains(cell)))
                 DestroyImmediate(piece.gameObject); // navigation is baked this frame
         }
         var rewards=profiles[index]?.rewards;
         foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))
         {
-            if(!room.Contains(CellOf(socket.transform.position)))continue;
+            if(!Layout.InRoom(index,CellOf(socket.transform.position)))continue;
             if(socket.chance<1f && extraRandom.NextDouble()>=socket.chance)continue;
             var t=socket.transform;
             switch(socket.type)
@@ -559,13 +584,14 @@ public class DungeonGenerator : MonoBehaviour
         if(!template.replaceGeneratedProps)
         {
             var available=new System.Collections.Generic.List<Vector2Int>();
-            foreach(var p in room.allPositionsWithin)if(!lanes.Contains(p) && !Layout.Reserved.Contains(p))available.Add(p);
-            PlaceExtras(room,index,available,0,rewards);
+            foreach(var p in Layout.RoomCells(index))if(!lanes.Contains(p) && !Layout.Reserved.Contains(p))available.Add(p);
+            PlaceExtras(index,available,0,rewards);
         }
     }
 
     // Breakables and features in the room's free cells, starting after the ones already used.
-    void PlaceExtras(RectInt room,int index,System.Collections.Generic.List<Vector2Int> available,int cursor,DungeonLootTable rewards)
+    // Returns the first cell left unused.
+    int PlaceExtras(int index,System.Collections.Generic.List<Vector2Int> available,int cursor,DungeonLootTable rewards)
     {
         if(index==MerchantRoom && cursor<available.Count)cursor++; // keep a free cell for the stall
         var breakables=Destructibles;
@@ -573,7 +599,7 @@ public class DungeonGenerator : MonoBehaviour
         {
             int min=Mathf.Clamp(data.destructiblesPerRoom.x,0,8),max=Mathf.Clamp(data.destructiblesPerRoom.y,min,8);
             int count=extraRandom.Next(min,max+1);
-            var corners=Corners(room);
+            var corners=Corners(index);
             for(int i=0;i<count;i++)
             {
                 var prefab=DungeonWeightedPrefab.Choose(breakables,extraRandom);
@@ -590,16 +616,17 @@ public class DungeonGenerator : MonoBehaviour
                 SpawnDestructible(prefab,Cell(available[cursor++]),Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewards,null,extraRandom.Next());
             }
         }
-        if(Roles[index]==RoomRole.Entrance || (Roles[index]==RoomRole.Exit && Milestone!=null))return;
+        if(Roles[index]==RoomRole.Entrance || (Roles[index]==RoomRole.Exit && Milestone!=null))return cursor;
         var feature=PickFeature(index);
         if(feature!=null && cursor<available.Count)
         {
             var cell=available[cursor++];
             var pos=Cell(cell);
-            var toCenter=Cell(DungeonLayout.Center(room))-pos;
+            var toCenter=Cell(Layout.RoomCenter(index))-pos;
             var facing=Mathf.Abs(toCenter.x)>Mathf.Abs(toCenter.z) ? new Vector3(Mathf.Sign(toCenter.x),0,0) : new Vector3(0,0,Mathf.Sign(toCenter.z)==0?1:Mathf.Sign(toCenter.z));
             SpawnFeature(feature.prefab,pos,Quaternion.LookRotation(facing));
         }
+        return cursor;
     }
 
     DungeonFeature PickFeature(int index)
@@ -621,11 +648,20 @@ public class DungeonGenerator : MonoBehaviour
 
     // Room corners at ceiling height, pulled into the corner so hanging cobwebs meet both walls
     // and the ceiling. Corner prefabs hang down from their pivot.
-    System.Collections.Generic.List<Pose> Corners(RectInt room)
+    System.Collections.Generic.List<Pose> Corners(int index)
     {
         var list=new System.Collections.Generic.List<Pose>();
         float inset=data.cellSize*.5f-.14f;
-        foreach(var (cell,sx,sz) in new[]{(new Vector2Int(room.xMin,room.yMin),-1,-1),(new Vector2Int(room.xMax-1,room.yMin),1,-1),(new Vector2Int(room.xMin,room.yMax-1),-1,1),(new Vector2Int(room.xMax-1,room.yMax-1),1,1)})
+        var room=Layout.rooms[index];
+        var candidates=new System.Collections.Generic.List<(Vector2Int,int,int)>();
+        if(Layout.IsRectangular(index))
+            candidates.AddRange(new[]{(new Vector2Int(room.xMin,room.yMin),-1,-1),(new Vector2Int(room.xMax-1,room.yMin),1,-1),(new Vector2Int(room.xMin,room.yMax-1),-1,1),(new Vector2Int(room.xMax-1,room.yMax-1),1,1)});
+        else
+            // Shaped rooms: every inside corner, including those around pillars.
+            foreach(var p in Layout.RoomCells(index))
+                foreach(var (sx,sz) in new[]{(-1,-1),(1,-1),(-1,1),(1,1)})
+                    if(!Open(p+new Vector2Int(sx,0)) && !Open(p+new Vector2Int(0,sz)))candidates.Add((p,sx,sz));
+        foreach(var (cell,sx,sz) in candidates)
         {
             if(Layout.Reserved.Contains(cell))continue;
             var pos=Cell(cell)+new Vector3(sx*inset,HeightAt(cell.x,cell.y)-.02f,sz*inset);
@@ -697,27 +733,27 @@ public class DungeonGenerator : MonoBehaviour
         }
         if(Milestone!=null && boss==null && exitIndex>=0)
         {
-            var c=Cell(DungeonLayout.Center(Layout.rooms[exitIndex]));
+            var c=Cell(Layout.RoomCenter(exitIndex));
             var toExit=ExitPoint-c;toExit.y=0;
             boss=SpawnBoss(c+(toExit.sqrMagnitude>.01f ? -toExit.normalized*data.cellSize : Vector3.zero),Quaternion.LookRotation(toExit.sqrMagnitude>.01f ? -toExit : Vector3.forward));
         }
         if(boss!=null)
         {
             BossEncounter=gameObject.AddComponent<DungeonBossEncounter>();
-            BossEncounter.Initialize(this,Milestone,boss,Layout.rooms[exitIndex],exitStair);
+            BossEncounter.Initialize(this,Milestone,boss,exitIndex,exitStair);
         }
         if(MerchantRoom>=0 && FindAnyMerchant()==null)
         {
-            var room=Layout.rooms[MerchantRoom];
-            var lanes=Lanes(room);
-            foreach(var p in room.allPositionsWithin)
+            var lanes=Lanes(MerchantRoom);
+            var middle=Cell(Layout.RoomCenter(MerchantRoom));
+            foreach(var p in Layout.RoomCells(MerchantRoom))
             {
                 if(lanes.Contains(p) || Layout.Reserved.Contains(p) || Blocked(Cell(p)))continue;
-                var toCenter=Cell(DungeonLayout.Center(room))-Cell(p);
+                var toCenter=middle-Cell(p);
                 SpawnMerchant(Cell(p),Quaternion.LookRotation(toCenter.sqrMagnitude>.01f ? toCenter : Vector3.forward));
                 break;
             }
-            if(FindAnyMerchant()==null)SpawnMerchant(Cell(DungeonLayout.Center(room))+Vector3.right*data.cellSize*.5f,Quaternion.identity);
+            if(FindAnyMerchant()==null)SpawnMerchant(middle+Vector3.right*data.cellSize*.5f,Quaternion.identity);
         }
     }
 

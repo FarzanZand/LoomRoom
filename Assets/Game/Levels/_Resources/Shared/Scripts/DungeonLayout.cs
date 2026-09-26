@@ -2,31 +2,61 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Seeded partition layout with explicit room connections and routed corridor sections.
-public sealed class DungeonLayout
+// Serialized by integer: append only.
+public enum DungeonLayoutMode { Partition = 0, Grown = 1 }
+
+// Seeded dungeon layout: rooms, routed corridor sections, regions and reserved walkways.
+// Partition (the original) cuts the grid into one rectangular room per parcel. Grown
+// (DungeonLayout.Grown.cs) packs shaped rooms outwards from the entrance.
+public sealed partial class DungeonLayout
 {
     public readonly bool[,] floor;
+    // Bounding boxes. A shaped room's floor is RoomCells(i); use InRoom, never rooms[i].Contains.
     public readonly List<RectInt> rooms = new();
     public readonly int seed;
     public readonly List<Vector2Int> Connections = new();
+    // Walkways plus the whole entrance and exit rooms: never furnished.
     public readonly HashSet<Vector2Int> Reserved = new();
+    // Routes from each room's doorways to its centre (and the centre cross in partition rooms).
+    public readonly HashSet<Vector2Int> Walkways = new();
+    // Corridor spurs that lead nowhere: the last cell and the direction it was dug in.
+    public readonly List<(Vector2Int cell, Vector2Int direction)> DeadEnds = new();
     public int[] RoomDistances { get; private set; }
     readonly int[,] corridorOwners;
     int nextCorridor;
     public int[,] RegionIds { get; private set; }
     public int RegionCount { get; private set; }
     public int CorridorCount => RegionCount - rooms.Count;
-    public Vector2Int Start => Center(rooms[0]);
+    readonly List<List<Vector2Int>> roomCells = new();
+    readonly List<Vector2Int> roomCenters = new();
+    public Vector2Int Start => roomCenters[0];
     public Vector2Int Exit { get; private set; }
     public static Vector2Int Center(RectInt r) => new(r.x + r.width / 2, r.y + r.height / 2);
+    public Vector2Int RoomCenter(int room) => roomCenters[room];
+    public IReadOnlyList<Vector2Int> RoomCells(int room) => roomCells[room];
+    public bool InBounds(Vector2Int p) => p.x >= 0 && p.y >= 0 && p.x < floor.GetLength(0) && p.y < floor.GetLength(1);
+    // Room index of a floor cell, or -1 for corridors, walls and pillars.
+    public int RoomAt(Vector2Int p) => InBounds(p) && floor[p.x,p.y] && RegionIds[p.x,p.y] < rooms.Count ? RegionIds[p.x,p.y] : -1;
+    public bool InRoom(int room, Vector2Int p) => RoomAt(p) == room;
+    public bool IsRectangular(int room) => roomCells[room].Count == rooms[room].width * rooms[room].height;
+    // Grown layouts only: the shape each room was built from, and quarter turns for its template.
+    public DungeonShape[] Shapes { get; private set; }
+    public int RoomRotation(int room) => Shapes != null && Shapes[room] != null ? Shapes[room].rotation : 0;
+    // Grown layouts only: which requested room each placed room came from (rooms that did not fit are dropped).
+    public int[] PlacedRequests { get; private set; }
 
-    public DungeonLayout(int width, int depth, int count, int seed, float loopPercent=15, float[] roomScales=null, int exitRoom=-1)
+    DungeonLayout(int width, int depth, int seed)
     {
+        if(width<14 || depth<14)throw new ArgumentException("Dungeon requires dimensions >=14.");
         this.seed = seed;
         floor = new bool[width, depth];
         corridorOwners = new int[width, depth];
         for(int x=0;x<width;x++)for(int y=0;y<depth;y++)corridorOwners[x,y]=-1;
-        if(width<14 || depth<14 || count<2)throw new ArgumentException("Dungeon requires dimensions >=14 and at least two rooms.");
+    }
+
+    public DungeonLayout(int width, int depth, int count, int seed, float loopPercent=15, float[] roomScales=null, int exitRoom=-1) : this(width, depth, seed)
+    {
+        if(count<2)throw new ArgumentException("Dungeon requires at least two rooms.");
         var rng = new System.Random(seed);
         var partitions=new List<RectInt>{new RectInt(1,1,width-2,depth-2)};
         int Capacity(RectInt r)=>(r.width/6)*(r.height/6);
@@ -59,7 +89,12 @@ public sealed class DungeonLayout
             rooms.Add(room);
         }
         if (roomScales != null) ResizeRooms(roomScales, width, depth);
-        foreach (var room in rooms) foreach(var p in room.allPositionsWithin) floor[p.x,p.y]=true;
+        foreach (var room in rooms)
+        {
+            var cells = new List<Vector2Int>();
+            foreach(var p in room.allPositionsWithin) { floor[p.x,p.y]=true; cells.Add(p); }
+            roomCells.Add(cells); roomCenters.Add(Center(room));
+        }
         var connected=new HashSet<int>{0};
         while(connected.Count<rooms.Count) {
             int from=-1,to=-1,best=int.MaxValue;
@@ -80,21 +115,8 @@ public sealed class DungeonLayout
             }
             if(from>=0)Route(from,to);
         }
-        // Choose the most distant room by walkable path, not Euclidean distance.
-        var distance = new int[width, depth];
-        var queue = new Queue<Vector2Int>();
-        queue.Enqueue(Start); distance[Start.x, Start.y] = 1;
-        var directions = new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
-        while (queue.Count > 0)
-        {
-            var p = queue.Dequeue();
-            foreach (var dir in directions)
-            {
-                var n = p + dir;
-                if (n.x < 0 || n.y < 0 || n.x >= width || n.y >= depth || !floor[n.x,n.y] || distance[n.x,n.y] != 0) continue;
-                distance[n.x,n.y] = distance[p.x,p.y] + 1; queue.Enqueue(n);
-            }
-        }
+        // Choose the most distant room by walking path, not Euclidean distance.
+        var distance = Distances(Start);
         Exit = Start;
         foreach (var r in rooms) { var c = Center(r); if (distance[c.x,c.y] > distance[Exit.x,Exit.y]) Exit = c; }
         if (exitRoom >= 0 && exitRoom < rooms.Count) Exit = Center(rooms[exitRoom]);
@@ -102,13 +124,69 @@ public sealed class DungeonLayout
         for(int i=0;i<rooms.Count;i++){var c=Center(rooms[i]);RoomDistances[i]=distance[c.x,c.y]-1;}
         BuildRegions();
         // Preserve a clear cross in each chamber and clearance at every doorway.
-        foreach(var r in rooms)foreach(var p in r.allPositionsWithin) {
-            var c=Center(r);
-            if(p.x==c.x || p.y==c.y)Reserved.Add(p);
-            foreach(var d in directions){var n=p+d;if(!r.Contains(n)&&floor[n.x,n.y]){Reserved.Add(p);Reserved.Add(p-d);}}
-        }
-        foreach(var p in rooms[0].allPositionsWithin)Reserved.Add(p);
+        BuildWalkways(true, false);
+        foreach(var p in roomCells[0])Reserved.Add(p);
         foreach(var r in rooms)if(r.Contains(Exit))foreach(var p in r.allPositionsWithin)Reserved.Add(p);
+    }
+
+    static readonly Vector2Int[] Directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+
+    // Walking distance over floor cells: 1 at the start, 0 where unreachable.
+    int[,] Distances(Vector2Int start)
+    {
+        int width = floor.GetLength(0), depth = floor.GetLength(1);
+        var distance = new int[width, depth];
+        var queue = new Queue<Vector2Int>();
+        queue.Enqueue(start); distance[start.x, start.y] = 1;
+        while (queue.Count > 0)
+        {
+            var p = queue.Dequeue();
+            foreach (var dir in Directions)
+            {
+                var n = p + dir;
+                if (!InBounds(n) || !floor[n.x,n.y] || distance[n.x,n.y] != 0) continue;
+                distance[n.x,n.y] = distance[p.x,p.y] + 1; queue.Enqueue(n);
+            }
+        }
+        return distance;
+    }
+
+    // Doorway clearance in every room, plus the centre cross (partition rooms) or the shortest
+    // path from every doorway to the centre (shaped rooms, whose cross may run into a pillar).
+    void BuildWalkways(bool cross, bool paths)
+    {
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            var c = roomCenters[i];
+            var doors = new List<Vector2Int>();
+            foreach (var p in roomCells[i])
+            {
+                if (cross && (p.x == c.x || p.y == c.y)) Walkways.Add(p);
+                foreach (var d in Directions)
+                {
+                    var n = p + d;
+                    if (!InBounds(n) || RoomAt(n) == i || !floor[n.x,n.y]) continue;
+                    Walkways.Add(p); Walkways.Add(p - d); doors.Add(p);
+                }
+            }
+            if (!paths || doors.Count == 0) continue;
+            var previous = new Dictionary<Vector2Int, Vector2Int> { [c] = c };
+            var queue = new Queue<Vector2Int>(); queue.Enqueue(c);
+            while (queue.Count > 0)
+            {
+                var p = queue.Dequeue();
+                foreach (var d in Directions)
+                {
+                    var n = p + d;
+                    if (RoomAt(n) != i || previous.ContainsKey(n)) continue;
+                    previous[n] = p; queue.Enqueue(n);
+                }
+            }
+            Walkways.Add(c);
+            foreach (var door in doors)
+                for (var p = door; p != c && previous.TryGetValue(p, out var back); p = back) Walkways.Add(p);
+        }
+        foreach (var p in Walkways) Reserved.Add(p);
     }
 
     void ResizeRooms(float[] scales, int width, int depth)
@@ -151,7 +229,7 @@ public sealed class DungeonLayout
         RegionIds = new int[width, depth];
         for (int x = 0; x < width; x++) for (int y = 0; y < depth; y++) RegionIds[x,y] = -1;
         for (int i = 0; i < rooms.Count; i++)
-            foreach (var p in rooms[i].allPositionsWithin) RegionIds[p.x,p.y] = i;
+            foreach (var p in roomCells[i]) RegionIds[p.x,p.y] = i;
         RegionCount = rooms.Count;
         var queue = new Queue<Vector2Int>();
         var directions = new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
