@@ -37,8 +37,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Min(1)] int maxLines = 4;
 
     [Header("Mumble")]
-    [SerializeField, Tooltip("Key prefix in AudioManager's UI Library: every entry starting with it is a syllable (dmMumble1, dmMumble2...).")] string mumbleKey = "dmMumble";
-    [SerializeField, Range(0, .5f)] float mumblePitchVariance = .12f;
+    [SerializeField, Tooltip("UI Library key played once per syllable. Make it a Data entry to pick from several syllables.")] string mumbleKey = "dmMumble";
     [SerializeField, Min(.03f), Tooltip("Seconds between syllables.")] float syllableGap = .09f;
     [SerializeField, Min(1), Tooltip("Syllables per word, capped by Max Syllables.")] float syllablesPerWord = 1.5f;
     [SerializeField, Min(1)] int maxSyllables = 14;
@@ -131,7 +130,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     {
         for (int i = 0; i < count; i++)
         {
-            if (AudioManager.HasInstance) AudioManager.Instance.PlayUIVariant(mumbleKey, mumblePitchVariance);
+            if (AudioManager.HasInstance && AudioManager.Instance.HasUI(mumbleKey)) AudioManager.Instance.PlayUI(mumbleKey);
             yield return new WaitForSecondsRealtime(syllableGap * Random.Range(.8f, 1.25f));
         }
     }

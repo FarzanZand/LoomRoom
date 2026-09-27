@@ -20,7 +20,7 @@ MonoBehaviour:
   props: []
   propRules: []
   destructibles: []
-  lighting: 7
+  lighting: 8
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
     skyExposure: 0.8

@@ -73,59 +73,57 @@ MonoBehaviour:
     volume: 0.516
   uiLibrary:
   - key: inventoryOpen
+    source: 0
     clip: {fileID: 8300000, guid: 7270dd61189cd5f44a7ff507ace43954, type: 3}
+    data: {fileID: 0}
     volume: 0.85
     pitch: 1
   - key: inventoryClose
+    source: 0
     clip: {fileID: 8300000, guid: 1e12be2c3f43ea44e8164d7415ac70cd, type: 3}
+    data: {fileID: 0}
     volume: 0.75
     pitch: 1
   - key: uiHover
+    source: 0
     clip: {fileID: 8300000, guid: 6ea6d4d5d2d08ba41bd81652ba5cca2c, type: 3}
+    data: {fileID: 0}
     volume: 0.3
     pitch: 1
   - key: equipItem
+    source: 0
     clip: {fileID: 8300000, guid: ed00564f59d983440aa6f54916dce8a2, type: 3}
+    data: {fileID: 0}
     volume: 0.85
     pitch: 1
   - key: uiUnavailable
+    source: 0
     clip: {fileID: 8300000, guid: 6ea3cbcc9fcdd2440bc38f38011c728d, type: 3}
+    data: {fileID: 0}
     volume: 0.65
     pitch: 1
   - key: skillUp
+    source: 0
     clip: {fileID: 8300000, guid: 09c58929b9008154abfd00b38fec4e6e, type: 3}
+    data: {fileID: 0}
     volume: 0.7
     pitch: 1
   - key: levelUp
+    source: 0
     clip: {fileID: 8300000, guid: 85c19deaf97648e41ad99a308d860bd0, type: 3}
+    data: {fileID: 0}
     volume: 0.8
     pitch: 1
   - key: shopTrade
+    source: 0
     clip: {fileID: 8300000, guid: 4027ae3913ff79441a94827eb4abcd19, type: 3}
+    data: {fileID: 0}
     volume: 0.8
     pitch: 1
-  - key: dmMumble1
-    clip: {fileID: 8300000, guid: 2654cc9f26fd25843a5026c3924f0c7b, type: 3}
-    volume: 0.6
-    pitch: 1
-  - key: dmMumble2
-    clip: {fileID: 8300000, guid: 3c34e18f06fdb8640892a0c20c89122e, type: 3}
-    volume: 0.6
-    pitch: 1
-  - key: dmMumble3
-    clip: {fileID: 8300000, guid: 1a0b575ff61102548aa3086396bb0bd1, type: 3}
-    volume: 0.6
-    pitch: 1
-  - key: dmMumble4
-    clip: {fileID: 8300000, guid: 4101b8d0e04b10646a73ca19925cb3de, type: 3}
-    volume: 0.6
-    pitch: 1
-  - key: dmMumble5
-    clip: {fileID: 8300000, guid: 2856f0fef2bc3ab4ba43668663531705, type: 3}
-    volume: 0.6
-    pitch: 1
-  - key: dmMumble6
-    clip: {fileID: 8300000, guid: 24c49bf25d54a6946ab06d80de0f581e, type: 3}
-    volume: 0.6
+  - key: dmMumble
+    source: 1
+    clip: {fileID: 0}
+    data: {fileID: 11400000, guid: bcdd07d533031f047aae4c29c037f61b, type: 2}
+    volume: 1
     pitch: 1
   ambienceFadeDuration: 2

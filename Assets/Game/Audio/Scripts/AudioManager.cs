@@ -24,10 +24,16 @@ public class MusicEntry
 [System.Serializable]
 public class UIEntry
 {
+    public enum Source { Clip = 0, Data = 1 }
     public string          key;
-    public AudioClip       clip;
-    [Range(0f, 1f)]  public float volume = 1f;
-    [Range(0.5f, 2f)] public float pitch = 1f;
+    [Tooltip("Clip: one sound. Data: an AudioData asset (several clips picked at random, its own pitch variance).")]
+    public Source          source;
+    [Sirenix.OdinInspector.ShowIf(nameof(UsesClip))] public AudioClip clip;
+    [Sirenix.OdinInspector.ShowIf(nameof(UsesData))] public AudioData data;
+    [Range(0f, 1f), Tooltip("With Data, multiplies the asset's own volume.")] public float volume = 1f;
+    [Range(0.5f, 2f), Sirenix.OdinInspector.ShowIf(nameof(UsesClip))] public float pitch = 1f;
+    bool UsesClip => source == Source.Clip;
+    bool UsesData => source == Source.Data;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -420,17 +426,6 @@ public class AudioManager : Singleton<AudioManager>
 
     public bool HasUI(string key) => !string.IsNullOrEmpty(key) && uiDict.ContainsKey(key);
 
-    // A random UI Library entry whose key starts with the prefix ("dmMumble" -> dmMumble1, dmMumble2...).
-    readonly List<UIEntry> variants = new();
-    public AudioSource PlayUIVariant(string keyPrefix, float pitchJitter = 0f)
-    {
-        variants.Clear();
-        foreach (var pair in uiDict) if (pair.Key.StartsWith(keyPrefix, System.StringComparison.Ordinal) && pair.Value.clip != null) variants.Add(pair.Value);
-        if (variants.Count == 0) return null;
-        var e = variants[Random.Range(0, variants.Count)];
-        return PlayUI(e.clip, e.volume, e.pitch + (pitchJitter > 0 ? Random.Range(-pitchJitter, pitchJitter) : 0));
-    }
-
     // Game cues: entries in the UI Library, so they're swapped there with the other UI sounds.
     public const string SkillUpKey = "skillUp", LevelUpKey = "levelUp";
     public void PlaySkillUp() => PlayUI(SkillUpKey);
@@ -442,6 +437,12 @@ public class AudioManager : Singleton<AudioManager>
     {
         if (!uiDict.TryGetValue(key, out var e))
         { Debug.LogWarning($"[AudioManager] UI key '{key}' not found."); return null; }
+        if (e.source == UIEntry.Source.Data)
+        {
+            var src = PlayUIData(e.data);
+            if (src != null) src.volume *= e.volume;
+            return src;
+        }
         return PlayUI(e.clip, e.volume, e.pitch);
     }
 
