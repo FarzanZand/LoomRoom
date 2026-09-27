@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: adsss
   saveId: 91bd6bbd2bd79784da8e7bffd2b6c3dd
   weaponCategory: 0
+  spell: {fileID: 0}
   description: 'asdsa a '
   icon: {fileID: 21300000, guid: deeae33315027e045bf104c3f198179d, type: 3}
   tag: 
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 0
   maxStackSize: 1
   value: 0
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Bronze buckler
   saveId: b5868584276d6474e85cad2b2de39004
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Supplies for the journey below.
   icon: {fileID: 21300000, guid: 5d263b52fa2a84647a0bb0307f976df6, type: 3}
   tag: 
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 2
   maxStackSize: 1
   value: 0
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

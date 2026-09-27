@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Bronze Gloves
   saveId: 563551a10f338364085b317f905841b5
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Bronze gloves. Protective plates with a polished metal finish.
   icon: {fileID: 21300000, guid: b779c6985253f3849a8121bd4da73350, type: 3}
   tag: Bronze equipment
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 6
   maxStackSize: 1
   value: 12
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

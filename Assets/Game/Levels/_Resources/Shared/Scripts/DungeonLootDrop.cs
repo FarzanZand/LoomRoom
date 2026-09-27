@@ -4,7 +4,7 @@ using UnityEngine;
 [RequireComponent(typeof(Character))]
 public class DungeonLootDrop : MonoBehaviour
 {
-    public DungeonLootTable table;
+    public LootSource table;
     [Tooltip("Use this enemy's own table instead of its floor/room reward table.")] public bool overrideLevelTable;
     public ItemData carriedItem;
     public int seed;
@@ -19,8 +19,8 @@ public class DungeonLootDrop : MonoBehaviour
         if (dropped) return;
         dropped = true;
         var rng = new System.Random(seed);
-        var drops = new List<DungeonLootTable.Drop>();
-        if (carriedItem != null) drops.Add(new DungeonLootTable.Drop(carriedItem,1));
+        var drops = new List<LootSource.Drop>();
+        if (carriedItem != null) drops.Add(new LootSource.Drop(carriedItem,1));
         if (table != null) drops.AddRange(table.RollDrops(rng,floorNumber,DungeonLootSource.Enemy));
         // Gold rolls after items so the item results match earlier seeds.
         int gold = bonusGold + (table != null ? table.RollGold(rng,floorNumber,DungeonLootSource.Enemy) : 0);
@@ -33,7 +33,7 @@ public class DungeonLootDrop : MonoBehaviour
         }
         Spill(drops, gold, transform.position, transform.parent);
     }
-    public static void Spill(IReadOnlyList<DungeonLootTable.Drop> drops, int gold, Vector3 position, Transform parent)
+    public static void Spill(IReadOnlyList<LootSource.Drop> drops, int gold, Vector3 position, Transform parent)
     {
         if (drops != null && drops.Count > 0) DungeonPickup.SpawnDrops(drops, position, parent);
         if (gold > 0 && CurrencyManager.HasInstance) CurrencyManager.Instance.SpawnCoins(gold, position, parent);

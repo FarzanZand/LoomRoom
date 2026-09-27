@@ -6,7 +6,7 @@ using UnityEngine;
 // where the body actually lies (the ragdoll's hips), then stays as scenery.
 public class DungeonCorpse : MonoBehaviour, IInteractable
 {
-    readonly List<DungeonLootTable.Drop> drops = new();
+    readonly List<LootSource.Drop> drops = new();
     int gold;
     bool searched, filled;
     Character character;
@@ -15,7 +15,7 @@ public class DungeonCorpse : MonoBehaviour, IInteractable
     public string Prompt => "Search the " + (character != null ? character.DisplayName : "body");
     public bool CanInteract(Character who) => filled && !searched && who is Player;
 
-    public void Fill(IReadOnlyList<DungeonLootTable.Drop> loot, int coins)
+    public void Fill(IReadOnlyList<LootSource.Drop> loot, int coins)
     {
         character = GetComponent<Character>();
         drops.Clear();

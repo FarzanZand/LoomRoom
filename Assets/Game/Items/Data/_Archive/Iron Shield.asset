@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Iron Shield
   saveId: a182a059e5a75124093391fb1a868ab8
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Iron shield. Reliable dungeon equipment.
   icon: {fileID: 21300000, guid: 792f20870d8be5143bbfeae5a6826986, type: 3}
   tag: Iron equipment
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 2
   maxStackSize: 1
   value: 50
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

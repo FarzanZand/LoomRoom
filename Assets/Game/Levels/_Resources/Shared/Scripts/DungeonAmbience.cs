@@ -1,14 +1,14 @@
 using UnityEngine;
 
-// The floor's background bed and occasional distant sounds, from its DungeonTheme. Plays
+// The floor's background bed and occasional distant sounds, from its DungeonBiome. Plays
 // only while the table player is active; the room player hears the apartment instead.
 public class DungeonAmbience : MonoBehaviour
 {
-    DungeonTheme theme;
+    DungeonBiome theme;
     bool playing;
     float nextOneShot;
 
-    public void Initialize(DungeonTheme floorTheme)
+    public void Initialize(DungeonBiome floorTheme)
     {
         theme = floorTheme;
         Schedule();

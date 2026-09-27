@@ -73,7 +73,7 @@ public class EffectEntry
     {
         switch (type)
         {
-            case EffectType.FoodRegen: return $"Restores {value:0.#} Health/sec for {duration:0.#}s ({value*duration:0.#} total). Replaces existing food regeneration.";
+            case EffectType.FoodRegen: return $"Heals {value*duration:0.#} over {duration:0.#}s";
             case EffectType.Heal:           return $"Heals {value:0.#}";
             case EffectType.RestoreMana: return $"Restores {value:0.#} mana";
             case EffectType.Damage:         return $"Deals {value:0.#} damage";

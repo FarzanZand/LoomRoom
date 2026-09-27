@@ -17,7 +17,7 @@ public class DungeonRoomProfile : ScriptableObject
     [Tooltip("Grown layouts: shapes for this room. Empty uses the theme's, then the level's. A template with a footprint overrides this.")]
     public DungeonShapeChoice[] shapes = new DungeonShapeChoice[0];
     [Tooltip("Leave empty to inherit level enemies.")] public GameObject[] enemies;
-    [Tooltip("Overrides rewards for enemies and containers in this room only.")] public DungeonLootTable rewards;
+    [Tooltip("Overrides rewards for enemies and containers in this room only.")] public LootSource rewards;
     [Tooltip("Empty uses the level props. Models should fit within a cell; reserved routes are never used.")] public GameObject[] props;
     [Range(0,8)] public int minProps=1,maxProps=3;
     [Tooltip("Furnishing rules for this room. Replace the theme's and level's rules and props when set.")]

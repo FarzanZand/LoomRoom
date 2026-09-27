@@ -4,7 +4,7 @@ using DG.Tweening;
 public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
 {
     public bool chest;
-    public DungeonLootTable loot;
+    public LootSource loot;
     public int seed;
     [Min(1)] public int floorNumber=1;
     public ItemData guaranteedItem;

@@ -15,7 +15,8 @@ MonoBehaviour:
   itemName: Heal Potion
   saveId: 19d156fcb4bb95c4e8f0d4d53f3d6f61
   weaponCategory: 0
-  description: 'Heal for 5 health on use. '
+  spell: {fileID: 0}
+  description: 
   icon: {fileID: 21300000, guid: 48d9b4085f8410e49927b68655616e34, type: 3}
   tag: 
   worldPrefab: {fileID: 6798015009763888447, guid: 68da6e11f0050cb48a708855e9c3aee3, type: 3}
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 4
   maxStackSize: 5
   value: 25
+  tier: 1
+  lootWeight: 0.8
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

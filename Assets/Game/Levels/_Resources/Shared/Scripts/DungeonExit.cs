@@ -6,7 +6,9 @@ public class DungeonExit : MonoBehaviour, IInteractable
     TableLevelLoader Loader => TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
     public string Prompt => !entrance && Sealed ? "Blocked" : entrance ? "No way back" : Loader!=null && Loader.HasNextFloor ? "Descend to floor "+(Loader.FloorNumber+1) : "Complete dungeon and return";
     // A living boss seals the way down (see DungeonBossEncounter).
-    public bool Sealed { get; set; }
+    public bool Sealed { get => isSealed; set { isSealed = value; if (grate != null) grate.SetActive(value); } }
+    bool isSealed;
+    [HideInInspector] public GameObject grate;
     public bool CanInteract(Character who) => who is Player p && p.kind==PlayerKind.Table && p.IsAlive && Loader!=null && !Loader.Busy;
     public void Interact(Character who)
     {

@@ -135,12 +135,13 @@ public class TableLevelLoader : MonoBehaviour
             }
             bool ready=false;
             try {
-                DungeonLootTable.GenerationLevel = resume != null ? Mathf.Max(1, resume.lootLevel) : descending ? player.GetComponent<AdventurerProgress>().Level : 1;
-                generationLevel = DungeonLootTable.GenerationLevel.Value;
+                LootSource.BiomeProgress = floor => { level.BiomeAt(floor, out int at, out int count); return count <= 1 ? 1 : (at - 1f) / (count - 1); };
+                LootSource.GenerationLevel = resume != null ? Mathf.Max(1, resume.lootLevel) : descending ? player.GetComponent<AdventurerProgress>().Level : 1;
+                generationLevel = LootSource.GenerationLevel.Value;
                 Prepare(level, useReveal); ready=true;
             }
             catch(Exception e) { Debug.LogException(e); }
-            finally { DungeonLootTable.GenerationLevel = null; }
+            finally { LootSource.GenerationLevel = null; }
             if (ready && useReveal && AudioManager.HasInstance) AudioManager.Instance.StopMusic(revealSettings.cameraTransitionSeconds);
             if (!useReveal) yield return null;
             if(ready)
@@ -165,10 +166,10 @@ public class TableLevelLoader : MonoBehaviour
                     if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); }
                     RunManager.Instance.ReachFloor(FloorNumber);
                     if (resume != null) player.GetComponent<AdventureSave>()?.Restore(resume);
-                    // The theme's line only when the surroundings change; otherwise just the depth.
-                    var theme=level.Theme(FloorNumber);
-                    bool newTheme=!descending || theme!=level.Theme(FloorNumber-1);
-                    string arrival=newTheme && theme!=null && !string.IsNullOrWhiteSpace(theme.entryMessage) ? theme.entryMessage.Trim()
+                    // The biome's line only when the surroundings change; otherwise just the depth.
+                    var biome=level.Biome(FloorNumber);
+                    bool newBiome=!descending || biome!=level.Biome(FloorNumber-1);
+                    string arrival=newBiome && biome!=null && !string.IsNullOrWhiteSpace(biome.entryMessage) ? biome.entryMessage.Trim()
                         : descending ? $"You descend to floor {FloorNumber}." : $"You enter {level.displayName}.";
                     MessageLog.Post(arrival,MessageKind.Lore);
                 }

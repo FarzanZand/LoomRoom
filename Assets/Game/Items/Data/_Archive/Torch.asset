@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: afafa
   saveId: eb2166e0f2f58c644a7d5fcc22d0ab13
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
   icon: {fileID: 21300000, guid: 0b9136b640a740b49982787fefd30da1, type: 3}
   tag: 
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 2
   maxStackSize: 1
   value: 0
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

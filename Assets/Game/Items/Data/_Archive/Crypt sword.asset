@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Crypt sword
   saveId: df7a7ba47c459f941848a7b378af6f3d
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Recovered from the crypt. Equip in your weapon hand.
   icon: {fileID: 21300000, guid: 7d3cecaf9cb7e9e45b2f7dea63ddf503, type: 3}
   tag: 
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 1
   maxStackSize: 1
   value: 0
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

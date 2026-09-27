@@ -13,7 +13,7 @@ public class DungeonGrave : MonoBehaviour, IInteractable
     public bool lootEvenIfWoken = true;
     [AssetsOnly] public GameObject[] occupants = new GameObject[0];
     [Tooltip("Rolled as a Chest reward. Empty uses the floor's chest table.")]
-    public DungeonLootTable loot;
+    public LootSource loot;
     [Tooltip("Earth mound lowered when dug.")]
     public Transform mound;
     public AudioClip digClip;
@@ -23,7 +23,7 @@ public class DungeonGrave : MonoBehaviour, IInteractable
 
     [HideInInspector] public int seed;
     [HideInInspector] public int floorNumber = 1;
-    [HideInInspector] public DungeonLootTable fallbackLoot;
+    [HideInInspector] public LootSource fallbackLoot;
 
     bool dug, digging;
 

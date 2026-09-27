@@ -150,7 +150,7 @@ public class PlayerSpellcasting : MonoBehaviour
         recovery = spell.recoverySeconds;
         // Checked again at release: health may have filled or mana drained during the wind-up.
         if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { SetTrigger(cancelParameter); Refuse("Health is full"); return; }
-        if (!player.Stats.TryUseMana(Cost(spell))) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
+        if (!player.Stats.TryUseMana(Cost(spell), 0f)) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
 
         SetTrigger(releaseParameter);
         if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(spell.releaseSound);

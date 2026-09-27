@@ -9285,7 +9285,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 11
-    baseValue: 0
+    baseValue: 0.3
     min: 0
     max: 0
   - stat: 12

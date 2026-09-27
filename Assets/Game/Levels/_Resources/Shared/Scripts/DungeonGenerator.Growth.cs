@@ -24,7 +24,7 @@ public partial class DungeonGenerator
     {
         int count = Mathf.Max(2, level.roomCount);
         var roles = new RoomRole[count];
-        float encounter = Settings != null && Settings.overrideEncounters ? Settings.encounterChance : level.encounterChance;
+        float encounter = EncounterChance;
         for (int i = 0; i < count; i++)
             roles[i] = i == 0 ? RoomRole.Entrance : i == count - 1 ? RoomRole.Exit : random.NextDouble() < encounter ? RoomRole.Combat : (RoomRole)random.Next(2, 5);
         var chosen = new DungeonRoomProfile[count];
@@ -52,7 +52,7 @@ public partial class DungeonGenerator
             if (template.footprint != null) return template.footprint.ToShape(rng, false);
             return DungeonShape.Rectangle(Mathf.Max(w, template.minimumCells.x), Mathf.Max(h, template.minimumCells.y));
         }
-        var choices = FirstList(profile?.shapes, Theme?.roomShapes, data.roomShapes);
+        var choices = FirstList(profile?.shapes, Biome?.roomShapes, data.roomShapes);
         // Stairs stand beside the centre of the entrance and exit, so those need open floor there.
         bool needsOpenCentre = role == RoomRole.Entrance || role == RoomRole.Exit;
         for (int attempt = 0; attempt < 6; attempt++)
@@ -213,13 +213,13 @@ public partial class DungeonGenerator
 
     // ── Furnishing ───────────────────────────────────────────────────
 
-    // The most specific level (profile, theme, level) that has rules or plain props wins.
+    // The most specific level (profile, biome, level) that has rules or plain props wins.
     (DungeonPropRule[] rules, GameObject[] props) Furnishing(DungeonRoomProfile profile)
     {
         if (profile != null && profile.propRules != null && profile.propRules.Length > 0) return (profile.propRules, null);
         if (profile != null && profile.props != null && profile.props.Length > 0) return (null, profile.props);
-        if (Theme != null && Theme.propRules != null && Theme.propRules.Length > 0) return (Theme.propRules, null);
-        if (Theme != null && Theme.props != null && Theme.props.Length > 0) return (null, Theme.props);
+        if (Biome != null && Biome.propRules != null && Biome.propRules.Length > 0) return (Biome.propRules, null);
+        if (Biome != null && Biome.props != null && Biome.props.Length > 0) return (null, Biome.props);
         if (data.propRules != null && data.propRules.Length > 0) return (data.propRules, null);
         return (null, data.roomPropPrefabs);
     }

@@ -17,13 +17,13 @@ public class DungeonBookshelf : MonoBehaviour, IInteractable
     };
     [Range(0, 1)] public float findChance = .35f;
     [Tooltip("Rolled as a Chest reward on a find. Empty uses the floor's chest table.")]
-    public DungeonLootTable loot;
+    public LootSource loot;
     public AudioClip searchClip;
     [Range(0, 1)] public float searchVolume = .8f;
 
     [HideInInspector] public int seed;
     [HideInInspector] public int floorNumber = 1;
-    [HideInInspector] public DungeonLootTable fallbackLoot;
+    [HideInInspector] public LootSource fallbackLoot;
 
     bool searched;
 

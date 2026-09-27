@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Bronze Helm
   saveId: 75a2b37d2afdb5140839f2492e0da112
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Bronze helm. Protective plates with a polished metal finish.
   icon: {fileID: 21300000, guid: 2c335fd573e9f7e459a85634302ebfe5, type: 3}
   tag: Bronze equipment
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 6
   maxStackSize: 1
   value: 15
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

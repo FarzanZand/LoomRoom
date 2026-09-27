@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Sword
   saveId: 81469cac0b07b6648b71470b0ee9cc04
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j Test Description
     asdasdj adj asjd ajd asjdjasd jasd aj aj j Test Description asdasdj adj asjd
     ajd asjdjasd jasd aj aj j Test Description asdasdj adj asjd ajd asjdjasd jasd
@@ -26,6 +27,8 @@ MonoBehaviour:
   itemType: 1
   maxStackSize: 1
   value: 0
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

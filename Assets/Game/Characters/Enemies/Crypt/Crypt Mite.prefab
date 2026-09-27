@@ -2508,15 +2508,15 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 0
-    baseValue: 30
+    baseValue: 14
     min: 0
     max: 0
   - stat: 2
-    baseValue: 8
+    baseValue: 5
     min: 0
     max: 0
   - stat: 1
-    baseValue: 1
+    baseValue: 0
     min: 0
     max: 0
   audio:
@@ -2611,3 +2611,4 @@ MonoBehaviour:
       damageMultiplier: 1
       knockbackForce: -1
       hitStopScale: 1
+  experience: 10

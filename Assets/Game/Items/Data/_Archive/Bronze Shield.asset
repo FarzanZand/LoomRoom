@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Bronze Shield
   saveId: 5ce76942449b23b45a86430cd37d32f9
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Bronze shield. Reliable dungeon equipment.
   icon: {fileID: 21300000, guid: edd463ebfc436a44ba62428dadfa248c, type: 3}
   tag: Bronze equipment
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 2
   maxStackSize: 1
   value: 25
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

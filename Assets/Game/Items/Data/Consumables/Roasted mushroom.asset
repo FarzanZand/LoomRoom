@@ -15,8 +15,8 @@ MonoBehaviour:
   itemName: Roasted mushroom
   saveId: c94488e517e3d7d4f9bb0817226b113b
   weaponCategory: 0
-  description: Eat from your hand to recover health gradually. A new meal replaces
-    the previous meal.
+  spell: {fileID: 0}
+  description: 
   icon: {fileID: 21300000, guid: 4c3deefccfb877b43a5c9927c8db3234, type: 3}
   tag: Food
   worldPrefab: {fileID: 6919315452465704725, guid: 6d40dfae9ecec5042a89e1a6468d1eeb, type: 3}
@@ -24,6 +24,8 @@ MonoBehaviour:
   itemType: 4
   maxStackSize: 5
   value: 6
+  tier: 1
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

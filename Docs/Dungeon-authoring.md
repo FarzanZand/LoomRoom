@@ -15,15 +15,27 @@ Start with `Assets/Game/Levels/Dungeon1/Dungeon1.asset`. Levels appear in the ad
 
 `Assets/Game/Levels/Dungeon1/Rooms` contains room profiles for guard chambers, treasuries, supply stores and quiet chambers. Profiles control props, their quantity, optional local lighting, enemy prefab choices and rewards. Add multiple profiles of the same role with different weights and floor ranges to introduce variation. A room without a matching profile inherits level settings.
 
-Entrance is safe; the exit is guarded. Encounter Chance sets the chance of combat in other rooms; remaining rooms become treasure, rest or storage rooms. Max Enemies Per Room controls encounter size. Props live in `Dungeon1/Prefabs/Props`; keep their collider footprint inside one cell. Large custom content requires appropriately wider reserved paths and should be checked with navigation validation.
+Entrance is safe; the exit is guarded. The biome's Encounter Chance sets the chance of combat in other rooms; remaining rooms become treasure, rest or storage rooms. Its Max Enemies Per Room controls encounter size. Props live in `Dungeon1/Prefabs/Props`; keep their collider footprint inside one cell. Large custom content requires appropriately wider reserved paths and should be checked with navigation validation.
 
-Enable multipleLevels and set levelCount for a run with descending stairs. floorSettings entry 0 is floor 1. Each entry selects mood lighting and optionally replaces encounter density, maximum enemies, enemy choices and reward tables. Empty references inherit level settings. Room reward overrides take precedence over floor rewards. A per-enemy overrideLevelTable takes precedence over both.
+## Biomes and the run plan
+
+A level's **Run** tab lists its **Biomes** in order with a floor count each; the floor count of the run is their sum. Dungeon1 is Cellars (3 floors) then Crypt (17). A **Dungeon Biome** asset (`Create > LoomRoom > Dungeon Biome`, kept in `Levels/Dungeon1/Biomes`) holds everything that makes a stretch of the run feel different:
+
+- **Look**: room and corridor styles, room shapes, props and furnishing rules, breakables, lighting and room-light tint. Empty lists use the level's.
+- **Population**: enemies with a weight and a **From floor** (counted from the biome's first floor), an encounter chance that ramps from the biome's first floor to its last, max enemies per room, and features (their Min Floor also counts from the biome's first floor).
+- **Rewards**: the biome's **Loot** and merchant chance.
+- **Guardian**: waits in the exit room of the biome's last floor and seals the stairs until killed. Health and damage multipliers let an ordinary enemy serve as a guardian.
+- **Audio**: ambience, distant one-shots, music.
+
+A room profile's own enemies or rewards replace the biome's for that room. A per-enemy overrideLevelTable takes precedence over both. The entry line posts when the run enters a new biome.
 
 Descending preserves health, equipment and inventory. Starting equipment is granted on a new run only. The last floor has an exit. Generation failure restores the previous environment and floor number; the run is not discarded.
 
-## Loot tables
+## Loot
 
-Edit `Assets/Game/Items/LootTables`. Dungeon1 is wired to Enemy rewards, Chest rewards and Barrel rewards. Crypt supplies remains a compatible fallback. Create new tables with **Create > Table > Loot Table**.
+Everyday loot is a **Loot Profile** (`Create > LoomRoom > Loot Profile`, one per biome next to the biome asset). It does not list items. It sets a gear tier range, an upgrade chance, gold growth per floor, and for each source (enemies, breakables, chests/bookshelves/graves) the chance of gold, one piece of gear, one recovery item and one tome. Items are picked from the item catalog by **Tier** (1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal, 0 never random) and **Loot Weight**, both on the ItemData. Across a biome the low tier is most common on its first floor and the high tier on its last; the upgrade roll gives one tier above. A new item joins the loot just by getting a tier.
+
+Hand-listed **Loot Tables** (`Assets/Game/Items/LootTables`, `Create > Table > Loot Table`) are for special cases: Guardian rewards, Merchant stock, room profile rewards. Anything that takes loot accepts either kind. Old tables are in `LootTables/_Archive`. The rules below apply to hand-listed tables.
 
 - Enemy Drop Chance is the probability of any table reward on death. Carried gear drops independently. Chest/barrel/floor rewards do not use this enemy gate.
 - Guaranteed entries award their quantities when their floor/source restrictions match. For enemies they still obey the overall enemy chance gate.

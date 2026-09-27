@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Iron Armor
   saveId: 01f7f3de17a8d6246a40d448eca0ca6f
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Iron armor. Protective plates with a polished metal finish.
   icon: {fileID: 21300000, guid: 893b1498002a7cf429000f8c82dd7437, type: 3}
   tag: Iron equipment
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 6
   maxStackSize: 1
   value: 55
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

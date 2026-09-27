@@ -15,8 +15,8 @@ MonoBehaviour:
   itemName: Cooked meat
   saveId: 05197bf5abf054f41987eff16771ea6e
   weaponCategory: 0
-  description: Eat from your hand to recover health gradually. A new meal replaces
-    the previous meal.
+  spell: {fileID: 0}
+  description: 
   icon: {fileID: 21300000, guid: 0a31e5764f8b863479f9b6a7e36853e6, type: 3}
   tag: Food
   worldPrefab: {fileID: 3122038492748939175, guid: 35d09e3d1811d2849bd9c71be50938ed, type: 3}
@@ -24,6 +24,8 @@ MonoBehaviour:
   itemType: 4
   maxStackSize: 5
   value: 10
+  tier: 1
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

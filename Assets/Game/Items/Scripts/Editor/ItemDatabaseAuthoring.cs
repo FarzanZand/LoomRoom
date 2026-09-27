@@ -9,6 +9,7 @@ using UnityEngine;
 public static class ItemDatabaseAuthoring
 {
     public const string Root = "Assets/Game/Items/Data";
+    const string CatalogPrefab = "Assets/Game/Core/Prefabs/InventoryManager.prefab";
     public static bool IsArchived(ItemData item) => AssetDatabase.GetAssetPath(item).Contains("/_Archive/");
     public static List<ItemData> All() => AssetDatabase.FindAssets("t:ItemData")
         .Select(g => AssetDatabase.LoadAssetAtPath<ItemData>(AssetDatabase.GUIDToAssetPath(g)))
@@ -75,6 +76,30 @@ public static class ItemDatabaseAuthoring
             issues.Add("A permanent stat buff on OnHitLanded/OnHurt stacks forever, once per proc. Give it a duration.");
         return issues;
     }
+    // Assets, prefabs and scenes (other than the item itself and the runtime catalog) that name
+    // the item: loot tables, starting kits, merchants, pickups placed in scenes...
+    public static List<string> References(ItemData item)
+    {
+        string path = AssetDatabase.GetAssetPath(item);
+        string guid = AssetDatabase.AssetPathToGUID(path);
+        var found = new List<string>();
+        foreach (string file in Directory.EnumerateFiles("Assets", "*.*", SearchOption.AllDirectories))
+        {
+            if (!(file.EndsWith(".asset") || file.EndsWith(".prefab") || file.EndsWith(".unity") || file.EndsWith(".controller"))) continue;
+            string asset = file.Replace('\\', '/');
+            if (asset == path || asset == CatalogPrefab) continue;
+            if (File.ReadAllText(file).Contains(guid)) found.Add(asset);
+        }
+        return found;
+    }
+    // Moves the asset to the operating system's trash (recoverable there) and drops it from the catalog.
+    public static bool Delete(ItemData item)
+    {
+        string path = AssetDatabase.GetAssetPath(item);
+        if (!AssetDatabase.MoveAssetToTrash(path)) return false;
+        SyncCatalog();
+        return true;
+    }
     public static void Save() => AssetDatabase.SaveAssets();
     // InventoryManager's catalog button runs this by menu path.
     [MenuItem("Tools/LoomRoom/Sync Item Catalog")]
@@ -82,7 +107,7 @@ public static class ItemDatabaseAuthoring
     public static int SyncCatalog()
     {
         var items = All().Where(i => !IsArchived(i)).ToList();
-        const string path = "Assets/Game/Core/Prefabs/InventoryManager.prefab";
+        const string path = CatalogPrefab;
         var root = PrefabUtility.LoadPrefabContents(path);
         try
         {

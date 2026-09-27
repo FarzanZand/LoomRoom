@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a1e253b86dec094b84a2f3baf28630b, type: 3}
+  m_Name: Crypt
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonTheme
+  displayName: The Crypt
+  entryMessage: The cellars give way to an old crypt.
+  roomStyles:
+  - style: {fileID: 11400000, guid: effd0936d8ae44fbaf28bf7c3494ed2a, type: 2}
+    weight: 2
+  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
+    weight: 3
+  corridorStyles:
+  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
+    weight: 1
+  roomShapes: []
+  props: []
+  propRules: []
+  destructibles: []
+  overrideLighting: 0
+  moodLighting: 0
+  useThemeMood: 1
+  lightingSettings:
+    skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+    skyExposure: 0.8
+    lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+    lightIntensity: 0.65
+    ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+    ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+    ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+    fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  roomLightTint: {r: 1, g: 1, b: 1, a: 0}
+  enemies:
+  - enemy: {fileID: 1189686515746966260, guid: 9904694f715ecef4c9340c75f994a7cc, type: 3}
+    weight: 1
+    fromFloor: 1
+  - enemy: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+    weight: 1.5
+    fromFloor: 1
+  - enemy: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+    weight: 1.2
+    fromFloor: 1
+  encounterChance: {x: 0.5, y: 0.7}
+  maxEnemiesPerRoom: 2
+  features: []
+  loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
+  merchantChance: 0.25
+  guardian:
+    enabled: 1
+    floor: 20
+    boss: {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
+    healthMultiplier: 1
+    damageMultiplier: 1
+    arena: {fileID: 6094011178556838177, guid: fcaf31c71d0815649912203b428b86ef, type: 3}
+    title: Lord of the Crypt
+    introMessage: Something rises from the throne.
+    introSting: {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
+    stingVolume: 1
+    bossMusic: {fileID: 8300000, guid: 1a5a3acb675126f4e88462bf1321974b, type: 3}
+    bossMusicVolume: 0.8
+    sealExit: 1
+    bossLoot: {fileID: 11400000, guid: eb289ad8ef9ee0a4b8687b34b29e45f7, type: 2}
+    bonusGold: 60
+    arenaSizeScale: 1.6
+  ambience: {fileID: 8300000, guid: 8e21df6c7df508947b685b6f747894ee, type: 3}
+  ambienceVolume: 0.45
+  ambientOneShots:
+  - {fileID: 8300000, guid: 30b9ef683561cb243893c37030b1f3ea, type: 3}
+  - {fileID: 8300000, guid: 5876170168f3bf143b71314874ce3a86, type: 3}
+  - {fileID: 8300000, guid: 71329d926b5698341bfc6b7dda00a56d, type: 3}
+  - {fileID: 8300000, guid: 6135cda50a94a464abae8bdf7e6ea8bb, type: 3}
+  oneShotInterval: {x: 10, y: 24}
+  oneShotVolume: 0.5
+  music: {fileID: 0}
+  musicVolume: 1

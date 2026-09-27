@@ -32,6 +32,11 @@ public class ItemData : ScriptableObject
     [Tooltip("Price in gold at a merchant. Selling pays CurrencyManager's sell fraction of this. Zero uses the manager's fallback price.")]
     [Min(0)] public int value;
 
+    [Tooltip("Random loot tier: 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal. 0 = never dropped at random (quest items, keys, uniques placed by hand). Biome loot profiles pick gear by tier.")]
+    [Range(0, 4)] public int tier;
+    [Tooltip("How often this item is picked among others of its tier and kind.")]
+    [Min(0)] public float lootWeight = 1;
+
     [Tooltip("AudioData preserves the shared pickup setting. Clip or key explicitly overrides the shared pickup sound for this item.")]
     public ItemAudioSource pickupAudioSource;
     [ShowIf("PickupUsesData"), Tooltip("Sound when picked up. Empty = InventoryManager default. Shared pickup sound may override this.")]
@@ -153,48 +158,37 @@ public class ItemData : ScriptableObject
 
     // Rich-text tooltip body shared by the in-game tooltip and the Item Database preview.
     // The comparison with equipped gear and the hint appear only while a player exists.
+    // Short on purpose: description, one line per stat (with the change against what is worn), effects.
     public string BuildTooltip()
     {
-        var body = new StringBuilder();
+        var lines = new System.Collections.Generic.List<string>();
         if (!string.IsNullOrWhiteSpace(description))
-            body.Append("<size=18><color=#B7BABF>").Append(description.Trim()).Append("</color></size>");
+            lines.Add("<color=#9AA3AD>" + description.Trim() + "</color>");
+        var equipped = canBeEquipped && !IsConsumable && PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment?.Get(equipSlot) : null;
         if (canBeEquipped && statModifiers != null)
             foreach (var modifier in statModifiers)
             {
                 if (modifier == null) continue;
-                if (body.Length > 0) body.Append("\n\n");
-                string line = modifier.Describe();
-                int split = line.IndexOf(' ');
-                body.Append("<color=").Append(modifier.value < 0 ? "#E78787>" : "#80CEA0>")
-                    .Append(line.Substring(0, split)).Append("</color>").Append(line.Substring(split));
+                string line = $"<color={(modifier.value < 0 ? "#E78787" : "#E6E1D6")}>{modifier.Describe()}</color>";
+                if (equipped != null && equipped != this && modifier.type == ModifierType.Flat)
+                {
+                    float delta = FlatBonus(this, modifier.stat) - FlatBonus(equipped, modifier.stat);
+                    if (Mathf.Abs(delta) > .001f) line += $"  <color={(delta > 0 ? "#80CEA0" : "#E78787")}>({delta:+0.#;-0.#})</color>";
+                }
+                lines.Add(line);
             }
         if (effects != null)
             foreach (var effect in effects)
             {
                 string line = effect?.Describe();
-                if (string.IsNullOrWhiteSpace(line)) continue;
-                if (body.Length > 0) body.Append("\n\n");
-                body.Append("<color=#A1C5DE>").Append(line).Append("</color>");
+                if (!string.IsNullOrWhiteSpace(line)) lines.Add("<color=#A1C5DE>" + line + "</color>");
             }
-        if (itemType == ItemType.Shield) body.Append("\n\nArmor applies only to frontal hits while blocking. Guarding and blocked hits consume stamina.");
         if (spell != null)
         {
             var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
-            body.Append($"\n\n{(caster != null ? caster.Cost(spell) : spell.manaCost):0.#} MP · {(caster != null ? caster.Power(spell) : spell.power):0.#} {(spell.spell == LeftHandSpell.Heal ? "healing" : "damage")}");
+            lines.Add($"{(caster != null ? caster.Cost(spell) : spell.manaCost):0.#} mana, {(caster != null ? caster.Power(spell) : spell.power):0.#} {(spell.spell == LeftHandSpell.Heal ? "healing" : "damage")}");
         }
-        if (canBeEquipped && PlayerManager.HasInstance)
-        {
-            var equipped = PlayerManager.Instance.Active?.Equipment?.Get(equipSlot);
-            if (!IsConsumable)
-                foreach (var stat in new[] { StatType.AttackDamage, StatType.Armor })
-                {
-                    float delta = FlatBonus(this, stat) - FlatBonus(equipped, stat);
-                    if (Mathf.Abs(delta) > .001f)
-                        body.Append($"\n\n<color={(delta > 0 ? "#80CEA0" : "#E78787")}>{delta:+0.#;-0.#} {StatModifierEntry.Label(stat)}</color> vs equipped");
-                }
-            body.Append(IsConsumable ? "\n\n<size=17>Equip, close inventory, then use from your hand.</size>" : "\n\n<size=17>Equip from inventory or drag to its equipment slot.</size>");
-        }
-        return body.ToString();
+        return string.Join("\n", lines);
     }
 
     static float FlatBonus(ItemData data, StatType stat)

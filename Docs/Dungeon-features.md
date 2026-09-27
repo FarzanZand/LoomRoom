@@ -2,12 +2,12 @@
 
 Everything below is authored data; code only reads it. Reload the dungeon to see edits.
 
-## Floors, themes and bosses — `Assets/Game/Levels/Dungeon1/Dungeon1.asset`
+## Biomes and guardians — `Assets/Game/Levels/Dungeon1/Dungeon1.asset`
 
-- **Dungeon Floors**: 10 floors. Each entry has a **Theme**: Crypt (1–3), Catacombs (4–5), Flooded sewer (6–7), Mines (8–10). Resolution for anything both set: floor override > theme > level.
-- **Themes** (`Levels/Dungeon1/Themes`): room/corridor styles, props, breakables, features, lighting mood and room-light tint, enemy pool, reward tables, ambience loop plus random distant one-shots, optional music, merchant chance, and the arrival line posted to the log. The arrival line only posts when the theme changes; otherwise the log says "You descend to floor N".
-- **Milestones**: one entry per boss floor (3, 7, 10: Crypt Lord). Each has a boss prefab, an arena template, a title, an intro line, a sting, boss music, a reward table and bonus gold. **Seal Exit** keeps the stairs shut until the boss dies. The exit room is enlarged by **Arena Size Scale**. **Fill milestones every N floors** copies the first entry down the run.
-- Boss: `Characters/Enemies/Crypt/Crypt Lord.prefab`, a variant of the Warden. It uses its own data and behaviour (waits Idle until the fight starts) and `Items/LootTables/Boss rewards.asset`.
+- **Run** tab: Cellars (floors 1–3), Crypt (4–20). See [Dungeon authoring](Dungeon-authoring.md#biomes-and-the-run-plan) for what a biome holds.
+- **Biomes** (`Levels/Dungeon1/Biomes`): Cellars and Crypt. Room styles and their materials are in `Dungeon1/Styles`. Catacombs, Flooded sewer and Mines are spare looks (styles, materials, furnishing) in `Levels/_Archive`; move one back and give it enemies and loot to use it. The arrival line only posts when the biome changes; otherwise the log says "You descend to floor N".
+- **Guardians**: each biome's Guardian tab. Cellars: a Crypt Warden ×1.8 health, ×1.2 damage with Guardian rewards. Crypt: the Crypt Lord in its arena with a sting, boss music and the Crypt Lord loot profile. **Seal Exit** keeps the stairs shut until the guardian dies; the exit room is enlarged by **Arena Size Scale**.
+- Boss: `Characters/Enemies/Crypt/Crypt Lord.prefab`, a variant of the Warden with its own data and behaviour (waits Idle until the fight starts).
 
 ## Hand-built rooms — `Levels/Dungeon1/Rooms/Templates`
 
@@ -34,8 +34,8 @@ A room profile's **Room Template** is optional; empty generates the room as befo
 
 - `Systems/CurrencyManager` holds the coin icon, pickup sound, and coin models by pile size (1+, 12+, 40+). It also sets touch-to-collect and the sell fraction.
 - Gold lives on the player's `Wallet` (Table player) and resets each run.
-- Loot tables have a **Gold** section, rolled after items so existing item results for a seed are unchanged. Items have a **Value** (price).
-- `Characters/NPCs/Dungeon merchant.prefab` has staples plus rolled stock and a markup that grows with depth. The player can sell anything that isn't equipped. The level's **Merchant Prefab / Merchant Stock / Merchant Chance** (or theme/floor override) decide where one appears. The shop screen is `UI/Canvas/Shop`.
+- Loot profiles and loot tables both roll gold. Items have a **Value** (price).
+- `Characters/NPCs/Dungeon merchant.prefab` has staples plus rolled stock and a markup that grows with depth. The player can sell anything that isn't equipped. The level's **Merchant Prefab / Merchant Stock** and the biome's **Merchant Chance** decide where one appears. The shop screen is `UI/Canvas/Shop`.
 
 ## Combat and enemies
 

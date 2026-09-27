@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Mace
   saveId: adf18e3964f4bec4e8358337d7806458
   weaponCategory: 1
+  spell: {fileID: 0}
   description: 'Mace for smashing. '
   icon: {fileID: 21300000, guid: 0323defcc7204924787491d8a559435e, type: 3}
   tag: 
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 1
   maxStackSize: 1
   value: 35
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

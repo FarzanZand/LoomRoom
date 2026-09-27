@@ -10,8 +10,8 @@ public class TableLevelData : ScriptableObject
 {
     // Inspector layout only. Field names are unchanged: level assets keep their data.
     const string Tabs = "Tabs";
-    const string Look = "Look & Sound", Layout = "Layout", Architecture = "Architecture", Rooms = "Rooms",
-                 Enemies = "Enemies", Loot = "Loot & Shop", Floors = "Floors & Bosses", Hud = "HUD";
+    const string Run = "Run", Look = "Look & Sound", Layout = "Layout", Architecture = "Architecture", Rooms = "Rooms",
+                 Loot = "Loot & Shop", Hud = "HUD";
     const string D = nameof(IsDungeon);
     bool IsDungeon => kind == TableLevelKind.Dungeon;
     bool ShowLightingOverride => IsDungeon && overrideLighting;
@@ -26,13 +26,42 @@ public class TableLevelData : ScriptableObject
     [Tooltip("Town: the authored environment. Dungeon: optional root for the generated floor.")]
     public GameObject environmentPrefab;
 
+    // ── Run ───────────────────────────────────────────────────────────
+    [System.Serializable]
+    public class BiomeStage
+    {
+        [HorizontalGroup, HideLabel, AssetsOnly] public DungeonBiome biome;
+        [HorizontalGroup(90), LabelText("Floors"), LabelWidth(40), Min(1)] public int floors = 3;
+    }
+    [TabGroup(Tabs, Run), ShowIf(D), Title("Biomes", "In order from the top floor down. Each biome lasts its number of floors and its guardian waits on its last floor.", HorizontalLine = false)]
+    [ListDrawerSettings(ShowFoldout = true), OnValueChanged(nameof(CountFloors), true)]
+    public BiomeStage[] stages = new BiomeStage[0];
+    [TabGroup(Tabs, Run), ShowIf(D), ShowInInspector, ReadOnly, LabelText("Floors in a run")]
+    int FloorsInRun => multipleLevels ? Mathf.Max(1, levelCount) : 1;
+    [TabGroup(Tabs, Run), ShowIf(D), Tooltip("Per-floor enemy scaling across the whole run.")]
+    public DungeonBalance balance;
+
+    // Derived from the stages; kept serialized for the loader, HUD and run records.
+    [HideInInspector] public bool multipleLevels;
+    [HideInInspector] public int levelCount = 1;
+
+    void CountFloors()
+    {
+        int total = 0;
+        if (stages != null) foreach (var s in stages) if (s != null && s.biome != null) total += Mathf.Max(1, s.floors);
+        if (total == 0) return;
+        levelCount = total;
+        multipleLevels = total > 1;
+    }
+    void OnValidate() { if (IsDungeon) CountFloors(); }
+
     // ── Look & Sound ──────────────────────────────────────────────────
     [TabGroup(Tabs, Look), Tooltip("Town lighting. Dungeons use it as the fallback when a lighting preset is missing.")]
     public SceneMood mood;
     [TabGroup(Tabs, Look), ShowIf(D), HideIf(nameof(overrideLighting)), LabelText("Dungeon Lighting")]
     [UnityEngine.Serialization.FormerlySerializedAs("moodLightning")]
     public DungeonMoodLighting moodLighting = DungeonMoodLighting.AmberCrypt;
-    [TabGroup(Tabs, Look), ShowIf(D), Tooltip("Use the settings below instead of the selected lighting style. Floors and themes can still override.")]
+    [TabGroup(Tabs, Look), ShowIf(D), Tooltip("Use the settings below instead of the selected lighting style. Biomes can still override.")]
     public bool overrideLighting;
     [TabGroup(Tabs, Look), ShowIf(nameof(ShowLightingOverride)), InlineProperty, HideLabel]
     public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();
@@ -76,7 +105,7 @@ public class TableLevelData : ScriptableObject
     public float deadEndPercent = 0;
     [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Range(2, 24), Tooltip("Furthest gap, in cells, a loop connection may tunnel across.")]
     public int loopReach = 10;
-    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Tooltip("Weighted room shapes. Authored entries use a painted Room Shape asset (Create > Table > Room Shape). Themes and room profiles can replace this list.")]
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Tooltip("Weighted room shapes. Authored entries use a painted Room Shape asset (Create > Table > Room Shape). Biomes and room profiles can replace this list.")]
     public DungeonShapeChoice[] roomShapes = DefaultShapes();
 
     bool IsGrown => IsDungeon && layoutMode == DungeonLayoutMode.Grown;
@@ -121,7 +150,7 @@ public class TableLevelData : ScriptableObject
     // ── Architecture ──────────────────────────────────────────────────
     [TabGroup(Tabs, Architecture), ShowIf(D), Min(3), Tooltip("Physical width and height of one square texture tile. 32x32 artwork repeats every 3 units by default. Independent of layout grid spacing so changing art scale does not enlarge the table footprint.")]
     public float architectureTileSize = 3f;
-    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Default materials", "Used where no theme, style or profile overrides them.", HorizontalLine = false)]
+    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Default materials", "Used where no biome, style or profile overrides them.", HorizontalLine = false)]
     public Material floorMaterial;
     [TabGroup(Tabs, Architecture), ShowIf(D), LabelText("Bottom Wall Material"), Tooltip("First wall tile, from floor to one architecture tile high. Room styles may override this.")]
     public Material wallMaterial;
@@ -131,7 +160,7 @@ public class TableLevelData : ScriptableObject
     public Material trimMaterial, ceilingMaterial;
     [TabGroup(Tabs, Architecture), ShowIf(D), Tooltip("Procedural chests and barrels only.")]
     public Material woodMaterial, metalMaterial;
-    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Styles", "Floors with a theme use the theme's styles instead.", HorizontalLine = false), Tooltip("Weighted styles selected once per whole room. Empty or disabled entries use the level materials.")]
+    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Styles", "Biomes with their own styles replace these.", HorizontalLine = false), Tooltip("Weighted styles selected once per whole room. Empty or disabled entries use the level materials.")]
     public DungeonStyleChoice[] roomStyles = new DungeonStyleChoice[0];
     [TabGroup(Tabs, Architecture), ShowIf(D), Tooltip("Copy a connected room's complete style without crossing a planned doorway. Search through open corridors if needed. If no room is reachable without crossing a door, use level defaults. Selection is seeded; opening doors does not change styles.")]
     public bool corridorsCopyConnectedRoomStyle;
@@ -141,35 +170,21 @@ public class TableLevelData : ScriptableObject
     // ── Rooms ─────────────────────────────────────────────────────────
     [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Weighted variations for each room role, with optional enemies, rewards, props, lighting and a hand-built Room Template.")]
     public DungeonRoomProfile[] roomProfiles;
-    [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Props"), Tooltip("Designer-authored decorations. Must fit inside one cell and leave walkways clear. Profiles and themes can replace them.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Props"), Tooltip("Designer-authored decorations. Must fit inside one cell and leave walkways clear. Profiles and biomes can replace them.")]
     public GameObject[] roomPropPrefabs;
-    [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Furnishing"), Tooltip("Props placed by rule and scaled by floor area: against walls, in corners, in the middle. When a profile, theme or this level has rules, they replace the plain Props list at that level.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Furnishing"), Tooltip("Props placed by rule and scaled by floor area: against walls, in corners, in the middle. When a profile, biome or this level has rules, they replace the plain Props list at that level.")]
     public DungeonPropRule[] propRules = new DungeonPropRule[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Authored chest prefab with DungeonContainer, lid reference and interaction collider.")]
     public GameObject chestPrefab;
-    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Breakables", HorizontalLine = false), Tooltip("Barrels, crates, pots and cobwebs. Storage and supply spots use Floor placements; cobwebs hang in ceiling corners. Themes can replace this list.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Breakables", HorizontalLine = false), Tooltip("Barrels, crates, pots and cobwebs. Storage and supply spots use Floor placements; cobwebs hang in ceiling corners. Biomes can replace this list.")]
     public DungeonWeightedPrefab[] destructibles = new DungeonWeightedPrefab[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Extra Per Room"), Tooltip("Extra breakables scattered per room, on top of supply spots.")]
     [MinMaxSlider(0, 8, true)] public Vector2Int destructiblesPerRoom = new Vector2Int(1, 3);
-    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Features", HorizontalLine = false), Tooltip("Fountains, altars, graves, bookshelves, levers. Each has a chance per eligible room. Themes can replace this list.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Features", HorizontalLine = false), Tooltip("Fountains, altars, graves, bookshelves, levers. Each has a chance per eligible room. Biomes can replace this list.")]
     public DungeonFeature[] features = new DungeonFeature[0];
 
-    // ── Enemies ───────────────────────────────────────────────────────
-    [TabGroup(Tabs, Enemies), ShowIf(D), Range(0, 1), Tooltip("Chance a non-entrance room is a combat room.")]
-    public float encounterChance = .7f;
-    [TabGroup(Tabs, Enemies), ShowIf(D), Range(1, 6)]
-    public int maxEnemiesPerRoom = 2;
-    [TabGroup(Tabs, Enemies), ShowIf(D), Tooltip("Enemy pool when no profile, floor or theme provides one. Repeat an entry to weight it.")]
-    public GameObject[] enemies;
-    [TabGroup(Tabs, Enemies), ShowIf(D), Tooltip("Per-floor enemy scaling.")]
-    public DungeonBalance balance;
-
     // ── Loot & Shop ───────────────────────────────────────────────────
-    [TabGroup(Tabs, Loot), ShowIf(D), Title("Reward tables", "Floors, themes and room profiles can override these.", HorizontalLine = false), LabelText("Fallback")]
-    public DungeonLootTable loot;
-    [TabGroup(Tabs, Loot), ShowIf(D)]
-    public DungeonLootTable enemyLoot, chestLoot, barrelLoot;
-    [TabGroup(Tabs, Loot), ShowIf(D), Tooltip("Placed in the rest room's supply container.")]
+    [TabGroup(Tabs, Loot), ShowIf(D), Tooltip("Placed in the rest room's supply container. Everyday loot comes from each biome.")]
     public ItemData guaranteedHealing;
     [TabGroup(Tabs, Loot), ShowIf(D), Title("Starting kit", "Given on a new run; descending keeps the current loadout.", HorizontalLine = false)]
     public ItemData[] startingItems;
@@ -177,24 +192,8 @@ public class TableLevelData : ScriptableObject
     public ItemData[] startingEquipment;
     [TabGroup(Tabs, Loot), ShowIf(D), Title("Merchant", HorizontalLine = false), LabelText("Prefab"), Tooltip("Merchant prefab with a Merchant component. Placed in a quiet room on floors that roll one.")]
     public GameObject merchantPrefab;
-    [TabGroup(Tabs, Loot), ShowIf(D), LabelText("Stock"), Tooltip("Rolled for the merchant's wares (Chest source).")]
-    public DungeonLootTable merchantStock;
-    [TabGroup(Tabs, Loot), ShowIf(D), Range(0, 1), LabelText("Chance Per Floor"), Tooltip("Used when neither the floor nor its theme sets one.")]
-    public float merchantChance = .3f;
-
-    // ── Floors & Bosses ───────────────────────────────────────────────
-    [TabGroup(Tabs, Floors), ShowIf(D), LabelText("Multiple Floors")]
-    public bool multipleLevels;
-    [TabGroup(Tabs, Floors), ShowIf(D), EnableIf(nameof(multipleLevels)), Min(1), LabelText("Floor Count"), Tooltip("Total floors in a run, including the first. Final floor has an exit instead of descending stairs.")]
-    public int levelCount = 3;
-    [TabGroup(Tabs, Floors), ShowIf(D), Tooltip("Used by floors without their own theme. Empty means plain level settings.")]
-    public DungeonTheme defaultTheme;
-    [TabGroup(Tabs, Floors), ShowIf(D), EnableIf(nameof(multipleLevels)), LabelText("Floors"), Tooltip("Entry 0 is floor 1, entry 1 is floor 2, and so on. Missing entries inherit the level.")]
-    [ListDrawerSettings(ShowFoldout = true, ShowIndexLabels = true)]
-    public DungeonFloorSettings[] floorSettings = new DungeonFloorSettings[0];
-    [TabGroup(Tabs, Floors), ShowIf(D), Title("Milestones", "One entry per boss floor. The boss waits in a hand-built arena in the exit room; the way down stays sealed until it falls.", HorizontalLine = false)]
-    [ListDrawerSettings(ShowFoldout = true, ListElementLabelName = nameof(DungeonMilestone.Label))]
-    public DungeonMilestone[] milestones = new DungeonMilestone[0];
+    [TabGroup(Tabs, Loot), ShowIf(D), LabelText("Stock"), Tooltip("Rolled for the merchant's wares (Chest source). Empty uses the biome's loot. How often a merchant appears is set per biome.")]
+    public LootSource merchantStock;
 
     // ── HUD ───────────────────────────────────────────────────────────
     [TabGroup(Tabs, Hud), ShowIf(D)]
@@ -214,25 +213,36 @@ public class TableLevelData : ScriptableObject
 
     // ── Queries ───────────────────────────────────────────────────────
 
-    public DungeonFloorSettings Floor(int number) => multipleLevels && floorSettings != null && number > 0 && number <= floorSettings.Length ? floorSettings[number - 1] : null;
+    public DungeonBiome Biome(int floor) => BiomeAt(floor, out _, out _);
 
-    public DungeonTheme Theme(int floor)
+    // The biome a floor belongs to, which of its floors this is (1-based) and how many it has.
+    // Floors past the plan stay on the last biome's deepest floor.
+    public DungeonBiome BiomeAt(int floor, out int floorInBiome, out int biomeFloors)
     {
-        var settings = Floor(floor);
-        return settings != null && settings.theme != null ? settings.theme : defaultTheme;
+        int start = 1;
+        BiomeStage last = null;
+        if (stages != null)
+            foreach (var stage in stages)
+            {
+                if (stage == null || stage.biome == null) continue;
+                int count = Mathf.Max(1, stage.floors);
+                if (floor < start + count) { floorInBiome = Mathf.Max(1, floor - start + 1); biomeFloors = count; return stage.biome; }
+                last = stage; start += count;
+            }
+        biomeFloors = last != null ? Mathf.Max(1, last.floors) : 1;
+        floorInBiome = biomeFloors;
+        return last?.biome;
     }
 
     public LightingManager.MoodState DungeonLighting(int floorNumber = 1)
     {
-        var theme = Theme(floorNumber);
-        if (theme != null && theme.overrideLighting) return theme.lightingSettings.ToState();
-        if (theme != null && theme.useThemeMood)
+        var biome = Biome(floorNumber);
+        if (biome != null && biome.overrideLighting) return biome.lightingSettings.ToState();
+        if (biome != null && biome.useThemeMood)
         {
-            var themed = Resources.Load<SceneMood>("DungeonLighting/" + theme.moodLighting);
+            var themed = Resources.Load<SceneMood>("DungeonLighting/" + biome.moodLighting);
             if (themed != null) return LightingManager.FromPreset(themed);
         }
-        var floor = Floor(floorNumber);
-        if (floor != null) return floor.Lighting(mood);
         if (overrideLighting) return lightingSettings.ToState();
         var preset = Resources.Load<SceneMood>("DungeonLighting/" + moodLighting);
         if (preset == null) preset = mood;
@@ -241,85 +251,22 @@ public class TableLevelData : ScriptableObject
 
     public AudioClip MusicFor(int floor, out float volume)
     {
-        var theme = kind == TableLevelKind.Dungeon ? Theme(floor) : null;
-        if (theme != null && theme.music != null) { volume = theme.musicVolume * backgroundMusicVolume; return theme.music; }
+        var biome = kind == TableLevelKind.Dungeon ? Biome(floor) : null;
+        if (biome != null && biome.music != null) { volume = biome.musicVolume * backgroundMusicVolume; return biome.music; }
         volume = backgroundMusicVolume;
         return backgroundMusic;
     }
 
+    // The biome's guardian, on the biome's last floor.
     public DungeonMilestone Milestone(int floor)
     {
-        if (milestones == null) return null;
-        foreach (var m in milestones) if (m != null && m.enabled && m.floor == floor && m.boss != null) return m;
-        return null;
+        if (floor > FloorsInRun) return null;
+        var biome = BiomeAt(floor, out int floorInBiome, out int biomeFloors);
+        var guardian = biome != null ? biome.guardian : null;
+        return guardian != null && guardian.enabled && guardian.boss != null && floorInBiome == biomeFloors ? guardian : null;
     }
 
-    public float MerchantChance(int floor)
-    {
-        var settings = Floor(floor);
-        if (settings != null && settings.overrideMerchant) return settings.merchantChance;
-        var theme = Theme(floor);
-        return theme != null ? theme.merchantChance : merchantChance;
-    }
-
-#if UNITY_EDITOR
-    [TabGroup(Tabs, Floors), ShowIf(D), Button("Fill milestones every N floors"), PropertyTooltip("Adds a milestone on floor N, 2N, 3N... up to the floor count, copying the first milestone's boss, arena and audio. Existing floors are kept.")]
-    void FillMilestones([MinValue(2)] int every = 4)
-    {
-        var template = milestones != null && milestones.Length > 0 ? milestones[0] : null;
-        var list = new System.Collections.Generic.List<DungeonMilestone>(milestones ?? new DungeonMilestone[0]);
-        int count = multipleLevels ? Mathf.Max(1, levelCount) : 1;
-        for (int f = every; f <= count; f += every)
-        {
-            if (list.Exists(m => m != null && m.floor == f)) continue;
-            list.Add(template != null ? template.CopyForFloor(f) : new DungeonMilestone { floor = f });
-        }
-        list.Sort((a, b) => (a?.floor ?? 0).CompareTo(b?.floor ?? 0));
-        UnityEditor.Undo.RecordObject(this, "Fill milestones");
-        milestones = list.ToArray();
-        UnityEditor.EditorUtility.SetDirty(this);
-    }
-
-    [TabGroup(Tabs, Floors), ShowIf(D), Button("Match floor list to floor count"), PropertyTooltip("Adds or removes Floors entries so there is exactly one per floor. Existing entries keep their settings.")]
-    void MatchFloors()
-    {
-        int count = Mathf.Max(1, levelCount);
-        var list = new System.Collections.Generic.List<DungeonFloorSettings>(floorSettings ?? new DungeonFloorSettings[0]);
-        while (list.Count < count) list.Add(new DungeonFloorSettings { theme = list.Count > 0 ? list[list.Count - 1].theme : defaultTheme });
-        if (list.Count > count) list.RemoveRange(count, list.Count - count);
-        UnityEditor.Undo.RecordObject(this, "Match floors");
-        floorSettings = list.ToArray();
-        UnityEditor.EditorUtility.SetDirty(this);
-    }
-#endif
-}
-
-[System.Serializable]
-public class DungeonFloorSettings
-{
-    [Tooltip("Crypt, catacombs, sewer, mines... Supplies styles, enemies, loot, ambience and music. Settings below override it.")]
-    [InlineEditor(InlineEditorObjectFieldModes.Foldout)]
-    public DungeonTheme theme;
-    [Tooltip("Use Merchant Chance below instead of the theme's.")]
-    public bool overrideMerchant;
-    [ShowIf("overrideMerchant"), Range(0,1)] public float merchantChance=.3f;
-    [Header("Encounters and rewards")]
-    public bool overrideEncounters;
-    [ShowIf("overrideEncounters"), Range(0,1)] public float encounterChance=.7f;
-    [ShowIf("overrideEncounters"), Range(1,6)] public int maxEnemiesPerRoom=2;
-    [Tooltip("Empty inherits level enemies.")] public GameObject[] enemies;
-    [Tooltip("Empty references inherit the level's reward tables.")] public DungeonLootTable enemyLoot, chestLoot, barrelLoot;
-    [HideIf("overrideLighting"), UnityEngine.Serialization.FormerlySerializedAs("moodLightning")] public DungeonMoodLighting moodLighting;
-    public bool overrideLighting;
-    [ShowIf("overrideLighting"), InlineProperty, HideLabel]
-    public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();
-    public LightingManager.MoodState Lighting(SceneMood fallback)
-    {
-        if(overrideLighting)return lightingSettings.ToState();
-        var preset=Resources.Load<SceneMood>("DungeonLighting/"+moodLighting);
-        if(preset==null)preset=fallback;
-        return preset==null ? lightingSettings.ToState() : LightingManager.FromPreset(preset);
-    }
+    public float MerchantChance(int floor) => Biome(floor)?.merchantChance ?? 0;
 }
 
 [System.Serializable]
@@ -382,14 +329,15 @@ public class DungeonFeature
 public class DungeonMilestone
 {
     public bool enabled = true;
-    [Min(1)] public int floor = 3;
     [AssetsOnly, Tooltip("Boss enemy prefab. Spawned at the arena's Boss socket, or the exit room centre.")]
     public GameObject boss;
+    [Tooltip("Lets an ordinary enemy serve as a guardian: its health and damage are multiplied.")]
+    [Min(.1f)] public float healthMultiplier = 1, damageMultiplier = 1;
     [AssetsOnly, Tooltip("Hand-built arena (DungeonRoomTemplate) placed in the exit room. Empty keeps the generated room.")]
     public GameObject arena;
     [Tooltip("Shown under the boss name on the health bar.")]
-    public string title = "Guardian of the Crypt";
-    [TextArea] public string introMessage = "The dead stir. Something vast rises from its throne.";
+    public string title = "Guardian";
+    [TextArea] public string introMessage = "Something guards the stairs down.";
     public AudioClip introSting;
     [Range(0, 1)] public float stingVolume = 1f;
     public AudioClip bossMusic;
@@ -397,17 +345,8 @@ public class DungeonMilestone
     [Tooltip("The stairs stay sealed until the boss dies.")]
     public bool sealExit = true;
     [Tooltip("Boss reward table. Empty uses the boss prefab's own.")]
-    public DungeonLootTable bossLoot;
+    public LootSource bossLoot;
     [Min(0)] public int bonusGold = 60;
     [Min(1), Tooltip("Exit room is enlarged by at least this factor to fit the arena.")]
     public float arenaSizeScale = 1.5f;
-
-    public string Label => $"Floor {floor}: {(boss != null ? boss.name : "(no boss)")}{(enabled ? "" : " (off)")}";
-
-    public DungeonMilestone CopyForFloor(int newFloor)
-    {
-        var copy = (DungeonMilestone)MemberwiseClone();
-        copy.floor = newFloor;
-        return copy;
-    }
 }

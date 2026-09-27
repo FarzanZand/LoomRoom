@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[Flags] public enum DungeonLootSource { Enemy=1, Barrel=2, Chest=4, Floor=8, All=15 }
-
+// A hand-listed reward table, for rewards that must be exact: a guardian's drop, a room override, a
+// merchant's stock. Everyday biome loot uses DungeonLootProfile, which picks gear by item tier.
 [CreateAssetMenu(menuName = "Table/Loot Table")]
-public class DungeonLootTable : ScriptableObject
+public class DungeonLootTable : LootSource
 {
-    public static int? GenerationLevel { get; set; }
     [Serializable] public class Entry
     {
         public ItemData item;
@@ -28,12 +27,6 @@ public class DungeonLootTable : ScriptableObject
         [Tooltip("Each item can be selected only once within this pool per reward.")] public bool uniqueItems;
         public Entry[] entries = Array.Empty<Entry>();
     }
-    public readonly struct Drop
-    {
-        public readonly ItemData item;
-        public readonly int quantity;
-        public Drop(ItemData item,int quantity) { this.item=item;this.quantity=quantity; }
-    }
     [Tooltip("Legacy single-pick pool. Used only when no reward pools are configured.")]
     public Entry[] entries;
     [Tooltip("Overall chance of a table reward when an enemy dies. Carried items always drop.")]
@@ -52,7 +45,7 @@ public class DungeonLootTable : ScriptableObject
     [Tooltip("Gold coins scattered with the reward. Rolled after items, so item results are unchanged by gold settings.")]
     public GoldReward[] gold = Array.Empty<GoldReward>();
 
-    public int RollGold(System.Random random, int floor, DungeonLootSource source)
+    public override int RollGold(System.Random random, int floor, DungeonLootSource source)
     {
         if(random==null || gold==null)return 0;
         floor=Math.Max(1,floor);
@@ -66,7 +59,7 @@ public class DungeonLootTable : ScriptableObject
         return total;
     }
 
-    public List<Drop> RollDrops(System.Random random, int floor, DungeonLootSource source)
+    public override List<Drop> RollDrops(System.Random random, int floor, DungeonLootSource source)
     {
         if(random==null)throw new ArgumentNullException(nameof(random));
         floor=Math.Max(1,floor);

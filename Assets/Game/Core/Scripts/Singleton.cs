@@ -5,7 +5,8 @@ using UnityEngine;
 // Managers live as prefabs under Assets/Game/Core/Prefabs and are placed in the scene.
 //
 // HasInstance only reports the cached field — use it for cheap null-safe reads in
-// hot paths. Instance does a scene lookup on first access.
+// hot paths. Instance does a scene lookup on first access. Outside Play mode both find the
+// manager placed in the open scene, so editor tools can read and change its settings.
 public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 {
     private static T _instance;
@@ -13,7 +14,17 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
     private static bool _applicationIsQuitting;
 #endif
 
-    public static bool HasInstance => _instance != null;
+    public static bool HasInstance
+    {
+        get
+        {
+#if UNITY_EDITOR
+            if (_instance == null && !UnityEditor.EditorApplication.isPlaying)
+                _instance = FindAnyObjectByType<T>(FindObjectsInactive.Include);
+#endif
+            return _instance != null;
+        }
+    }
 
     public static T Instance
     {
@@ -27,8 +38,9 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
                 return null;
 #endif
 #if UNITY_EDITOR
+            // Edit mode: find the scene's manager quietly; a scene without one is normal here.
             if (!UnityEditor.EditorApplication.isPlaying)
-                return null;
+                return _instance = FindAnyObjectByType<T>(FindObjectsInactive.Include);
 #endif
             _instance = FindAnyObjectByType<T>(FindObjectsInactive.Include);
             if (_instance == null)

@@ -27,8 +27,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 81b6668be32317d4ead244d16620e2b9, type: 2}
   xpPerEnemy: 15
   xpPerFloor: 35
-  levelXp: 70
-  levelXpGrowth: 35
+  levelXp: 100
+  levelXpGrowth: 50
   healthPerLevel: 3
   manaPerLevel: 2
   athleticsMetres: 12

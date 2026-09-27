@@ -20,7 +20,7 @@ public class Merchant : MonoBehaviour, IInteractable
     public ItemData[] staples = new ItemData[0];
     [Min(1)] public int stapleCount = 3;
     [Tooltip("Rolled as Chest rewards for the rest of the stock. The generator sets this from the level when empty.")]
-    public DungeonLootTable stockTable;
+    public LootSource stockTable;
     [Min(0)] public int stockRolls = 5;
     [Range(.5f, 3f)] public float priceMultiplier = 1.2f;
     [Range(0f, .5f), Tooltip("Price increase per floor beyond the first.")]

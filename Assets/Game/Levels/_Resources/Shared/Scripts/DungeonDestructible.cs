@@ -25,7 +25,7 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
     [Tooltip("Noise radius when broken; enemies within it investigate.")]
     [Min(0)] public float noiseRadius = 6f;
 
-    [HideInInspector] public DungeonLootTable loot;
+    [HideInInspector] public LootSource loot;
     [HideInInspector] public int seed;
     [HideInInspector] public int floorNumber = 1;
     [HideInInspector] public ItemData guaranteedItem;

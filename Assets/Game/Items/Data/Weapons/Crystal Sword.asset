@@ -17,13 +17,15 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   description: 
-  icon: {fileID: 21300000, guid: 70e257e9c992d06459b6e3ada86d3226, type: 3}
+  icon: {fileID: 21300000, guid: 17a50a82653c101499bebf4e6eca7ab4, type: 3}
   tag: Crystal equipment
   worldPrefab: {fileID: 8011566013882336049, guid: 2d1b288c4815e28498d754a794475903, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 1
   maxStackSize: 1
   value: 700
+  tier: 4
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}
@@ -38,7 +40,7 @@ MonoBehaviour:
   equipOnPickup: 0
   statModifiers:
   - stat: 2
-    value: 11
+    value: 12
     type: 0
   weapon:
     useDefaultEffects: 1

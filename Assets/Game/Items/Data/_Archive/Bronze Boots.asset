@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Bronze Boots
   saveId: d79acc8aac76dbd4ebba676c78532248
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Bronze boots. Protective plates with a polished metal finish.
   icon: {fileID: 21300000, guid: 016e52f861984d541b71305bbca3ea92, type: 3}
   tag: Bronze equipment
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 6
   maxStackSize: 1
   value: 12
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

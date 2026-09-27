@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public static class DungeonPickup
 {
-    public static void SpawnDrops(IReadOnlyList<DungeonLootTable.Drop> drops, Vector3 origin, Transform parent)
+    public static void SpawnDrops(IReadOnlyList<LootSource.Drop> drops, Vector3 origin, Transform parent)
     {
         int index=0;
         foreach(var drop in drops) {
@@ -43,6 +43,25 @@ public static class DungeonPickup
         }
         var body = pickup.GetComponent<Rigidbody>();
         if (body != null) { body.isKinematic = true; body.useGravity = false; }
+        SettleOnFloor(pickup);
         return pickup;
+    }
+
+    // Kinematic loot doesn't fall, so place it resting on whatever is below it.
+    static void SettleOnFloor(WorldItem pickup)
+    {
+        var renderers = pickup.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0) return;
+        var bounds = renderers[0].bounds;
+        foreach (var r in renderers) bounds.Encapsulate(r.bounds);
+        var from = new Vector3(bounds.center.x, bounds.max.y + .5f, bounds.center.z);
+        var hits = Physics.RaycastAll(from, Vector3.down, 3f, ~0, QueryTriggerInteraction.Ignore);
+        System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));
+        foreach (var hit in hits)
+        {
+            if (hit.transform.IsChildOf(pickup.transform)) continue;
+            pickup.transform.position += Vector3.up * (hit.point.y + .02f - bounds.min.y);
+            return;
+        }
     }
 }

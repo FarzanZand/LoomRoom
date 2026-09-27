@@ -80,15 +80,15 @@ public class PlayerVitalsUI : MonoBehaviour
         float h = bound.MaxHealth > 0f ? bound.CurrentHealth / bound.MaxHealth : 0f;
         healthShown = Mathf.Lerp(healthShown, h, t);
         if (healthFill != null) healthFill.fillAmount = healthShown;
-        if (healthValue != null) healthValue.SetText("{0} / {1}", Mathf.CeilToInt(bound.CurrentHealth), Mathf.CeilToInt(bound.MaxHealth));
+        if (healthValue != null) healthValue.SetText("{0}/{1}", Mathf.CeilToInt(bound.CurrentHealth), Mathf.CeilToInt(bound.MaxHealth));
 
         float m = bound.MaxMana > 0f ? bound.CurrentMana / bound.MaxMana : 0f;
         manaShown = Mathf.Lerp(manaShown, m, t);
         if (manaFill != null) manaFill.fillAmount = manaShown;
-        if (manaValue != null) manaValue.SetText("{0} / {1}", Mathf.CeilToInt(bound.CurrentMana), Mathf.CeilToInt(bound.MaxMana));
+        if (manaValue != null) manaValue.SetText("{0}/{1}", Mathf.CeilToInt(bound.CurrentMana), Mathf.CeilToInt(bound.MaxMana));
         float s = bound.MaxStamina > 0 ? bound.CurrentStamina / bound.MaxStamina : 0;
         staminaShown = Mathf.Lerp(staminaShown, s, t);
         if (staminaBarFill != null) staminaBarFill.fillAmount = staminaShown;
-        if (staminaBarValue != null) staminaBarValue.SetText("{0} / {1}", Mathf.CeilToInt(bound.CurrentStamina), Mathf.CeilToInt(bound.MaxStamina));
+        if (staminaBarValue != null) staminaBarValue.SetText("{0}/{1}", Mathf.CeilToInt(bound.CurrentStamina), Mathf.CeilToInt(bound.MaxStamina));
     }
 }

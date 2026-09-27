@@ -69,13 +69,7 @@ public class ItemDatabaseWindow : EditorWindow
     {
         using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
         {
-            if (GUILayout.Button("New item", EditorStyles.toolbarDropDown, GUILayout.Width(85)))
-            {
-                var menu = new GenericMenu();
-                foreach (ItemType type in Enum.GetValues(typeof(ItemType)))
-                { var captured = type; menu.AddItem(new GUIContent(type.ToString()), false, () => { Select(ItemDatabaseAuthoring.Create(captured)); Rebuild(); }); }
-                menu.ShowAsContext();
-            }
+            if (GUILayout.Button("New item", EditorStyles.toolbarDropDown, GUILayout.Width(85))) NewItemMenu();
             if (GUILayout.Button("Save items", EditorStyles.toolbarButton, GUILayout.Width(85))) { ItemDatabaseAuthoring.Save(); Rebuild(); ShowNotification(new GUIContent("Items saved")); }
             if (GUILayout.Button("Organize shown", EditorStyles.toolbarButton, GUILayout.Width(115))) Organize();
             if (GUILayout.Button(new GUIContent("Sync runtime catalog", "Add all active items to InventoryManager's name lookup catalog. Save the scene afterwards."), EditorStyles.toolbarButton, GUILayout.Width(145)))
@@ -98,7 +92,13 @@ public class ItemDatabaseWindow : EditorWindow
     void List()
     {
         var visible = Visible().ToList();
-        EditorGUILayout.LabelField($"{visible.Count} shown / {items.Count} items", EditorStyles.miniLabel);
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField($"{visible.Count} shown / {items.Count} items", EditorStyles.miniLabel);
+            if (GUILayout.Button(new GUIContent("+ Add item", "Create a new item of the chosen type."), EditorStyles.miniButton, GUILayout.Width(80))) NewItemMenu();
+            using (new EditorGUI.DisabledScope(selected == null))
+                if (GUILayout.Button(new GUIContent("- Delete", "Delete the selected item."), EditorStyles.miniButton, GUILayout.Width(62))) { Delete(selected); GUIUtility.ExitGUI(); }
+        }
         listScroll = EditorGUILayout.BeginScrollView(listScroll);
         foreach (var item in visible)
         {
@@ -109,7 +109,21 @@ public class ItemDatabaseWindow : EditorWindow
             GUI.Label(new Rect(row.x + 52, row.y + 5, row.width - 57, 22), (issues[item].Count > 0 ? "! " : "") + item.itemName, EditorStyles.boldLabel);
             string subtitle = item.itemType + (item.canBeEquipped ? " / " + item.equipSlot : "") + (ItemDatabaseAuthoring.IsArchived(item) ? " / ARCHIVED" : "");
             GUI.Label(new Rect(row.x + 52, row.y + 27, row.width - 57, 20), subtitle, EditorStyles.miniLabel);
-            if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition)) { Select(item); GUI.FocusControl(null); Event.current.Use(); }
+            if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
+            {
+                Select(item); GUI.FocusControl(null);
+                if (Event.current.button == 1)
+                {
+                    var captured = item;
+                    var menu = new GenericMenu();
+                    menu.AddItem(new GUIContent("Duplicate"), false, () => { Select(ItemDatabaseAuthoring.Duplicate(captured)); ItemDatabaseAuthoring.SyncCatalog(); Rebuild(); });
+                    menu.AddItem(new GUIContent("Locate asset"), false, () => { Selection.activeObject = captured; EditorGUIUtility.PingObject(captured); });
+                    menu.AddSeparator("");
+                    menu.AddItem(new GUIContent("Delete..."), false, () => Delete(captured));
+                    menu.ShowAsContext();
+                }
+                Event.current.Use();
+            }
         }
         EditorGUILayout.EndScrollView();
     }
@@ -126,7 +140,7 @@ public class ItemDatabaseWindow : EditorWindow
         using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
         {
             if (GUILayout.Button("Locate asset", EditorStyles.toolbarButton)) { Selection.activeObject = selected; EditorGUIUtility.PingObject(selected); }
-            if (GUILayout.Button("Duplicate", EditorStyles.toolbarButton)) { Select(ItemDatabaseAuthoring.Duplicate(selected)); Rebuild(); }
+            if (GUILayout.Button("Duplicate", EditorStyles.toolbarButton)) { Select(ItemDatabaseAuthoring.Duplicate(selected)); ItemDatabaseAuthoring.SyncCatalog(); Rebuild(); }
             if (GUILayout.Button("Move to type folder", EditorStyles.toolbarButton)) { ItemDatabaseAuthoring.Move(selected, ItemDatabaseAuthoring.Destination(selected)); Rebuild(); }
             bool archived = ItemDatabaseAuthoring.IsArchived(selected);
             if (GUILayout.Button(archived ? "Restore" : "Archive", EditorStyles.toolbarButton))
@@ -136,6 +150,11 @@ public class ItemDatabaseWindow : EditorWindow
                     ItemDatabaseAuthoring.Move(selected, ItemDatabaseAuthoring.Root + "/_Archive/" + Path.GetFileName(AssetDatabase.GetAssetPath(selected)));
                 Rebuild();
             }
+            GUILayout.FlexibleSpace();
+            var old = GUI.backgroundColor; GUI.backgroundColor = new Color(1f, .55f, .5f);
+            bool delete = GUILayout.Button("Delete", EditorStyles.toolbarButton);
+            GUI.backgroundColor = old;
+            if (delete) { Delete(selected); GUIUtility.ExitGUI(); }
         }
         detailScroll = EditorGUILayout.BeginScrollView(detailScroll);
         EditorGUILayout.SelectableLabel(AssetDatabase.GetAssetPath(selected), EditorStyles.miniLabel, GUILayout.Height(20));
@@ -152,6 +171,50 @@ public class ItemDatabaseWindow : EditorWindow
         if (EditorGUI.EndChangeCheck()) { EditorUtility.SetDirty(selected); issues[selected] = ItemDatabaseAuthoring.Issues(selected, items); }
         EditorGUILayout.EndScrollView();
     }
+    void NewItemMenu()
+    {
+        var menu = new GenericMenu();
+        foreach (ItemType type in Enum.GetValues(typeof(ItemType)))
+        {
+            var captured = type;
+            menu.AddItem(new GUIContent(type.ToString()), false, () =>
+            {
+                var item = ItemDatabaseAuthoring.Create(captured);
+                ItemDatabaseAuthoring.SyncCatalog();
+                // Clear the filters so the new item shows in the list.
+                search = ""; typeFilter = 0; slotFilter = 0; tag = ""; issuesOnly = false;
+                Rebuild(); Select(item);
+            });
+        }
+        menu.ShowAsContext();
+    }
+
+    // Lists what still uses the item, then moves it to the trash (recoverable from the OS).
+    void Delete(ItemData item)
+    {
+        if (item == null) return;
+        var uses = ItemDatabaseAuthoring.References(item);
+        string message = $"Delete '{item.itemName}'?\n\nThe asset goes to the Recycle Bin and is removed from the runtime catalog.";
+        if (uses.Count > 0)
+            message += $"\n\nStill used by {uses.Count} asset(s); those references will become empty:\n" +
+                       string.Join("\n", uses.Take(12).Select(Path.GetFileNameWithoutExtension)) + (uses.Count > 12 ? $"\n...and {uses.Count - 12} more." : "") +
+                       "\n\nArchive keeps them working instead.";
+        int choice = uses.Count > 0
+            ? EditorUtility.DisplayDialogComplex("Delete item", message, "Delete", "Cancel", "Archive instead")
+            : EditorUtility.DisplayDialog("Delete item", message, "Delete", "Cancel") ? 0 : 1;
+        if (choice == 1) return;
+        if (choice == 2)
+        {
+            ItemDatabaseAuthoring.Move(item, ItemDatabaseAuthoring.Root + "/_Archive/" + Path.GetFileName(AssetDatabase.GetAssetPath(item)));
+            Rebuild(); return;
+        }
+        string name = item.itemName;
+        if (selected == item) Select(null);
+        if (!ItemDatabaseAuthoring.Delete(item)) { EditorUtility.DisplayDialog("Delete item", "Could not delete " + name + ".", "OK"); return; }
+        Rebuild();
+        ShowNotification(new GUIContent($"Deleted {name}. Save the scene to keep the catalog change."));
+    }
+
     void Organize()
     {
         var moves = Visible().Where(i => !ItemDatabaseAuthoring.IsArchived(i) && AssetDatabase.GetAssetPath(i).StartsWith(ItemDatabaseAuthoring.Root + "/", StringComparison.Ordinal) && AssetDatabase.GetAssetPath(i) != ItemDatabaseAuthoring.Destination(i)).ToList();

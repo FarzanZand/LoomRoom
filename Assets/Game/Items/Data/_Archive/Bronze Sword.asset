@@ -15,6 +15,7 @@ MonoBehaviour:
   itemName: Simple Sword
   saveId: c238df0768336e34bb7e3707e9afd767
   weaponCategory: 0
+  spell: {fileID: 0}
   description: Simple sword. Reliable dungeon equipment.
   icon: {fileID: 21300000, guid: 70e257e9c992d06459b6e3ada86d3226, type: 3}
   tag: Bronze equipment
@@ -23,6 +24,8 @@ MonoBehaviour:
   itemType: 1
   maxStackSize: 1
   value: 30
+  tier: 0
+  lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}
