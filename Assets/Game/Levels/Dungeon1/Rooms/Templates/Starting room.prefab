@@ -1,0 +1,338 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5028400866232581150
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1155478975073825723}
+  - component: {fileID: 8666241217550258338}
+  m_Layer: 0
+  m_Name: Torch left of door
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1155478975073825723
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5028400866232581150}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2, y: 0, z: 6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2339606432226783817}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8666241217550258338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5028400866232581150}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 6
+  chance: 1
+  overridePrefab: {fileID: 0}
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+--- !u!1 &7318103106866180065
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8037433004012360808}
+  - component: {fileID: 4232239666121740508}
+  m_Layer: 0
+  m_Name: Torch right of door
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8037433004012360808
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7318103106866180065}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2, y: 0, z: 6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2339606432226783817}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4232239666121740508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7318103106866180065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 6
+  chance: 1
+  overridePrefab: {fileID: 0}
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+--- !u!1 &7647481684650771359
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2339606432226783817}
+  - component: {fileID: 7158968555923997367}
+  m_Layer: 0
+  m_Name: Starting room
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2339606432226783817
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7647481684650771359}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3956052805865082293}
+  - {fileID: 7264817660628110577}
+  - {fileID: 1155478975073825723}
+  - {fileID: 8037433004012360808}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7158968555923997367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7647481684650771359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  paintFootprint: 1
+  footprint: {fileID: 0}
+  allowRotation: 1
+  width: 7
+  height: 7
+  rows:
+  - '#######'
+  - '#######'
+  - '#######'
+  - '###*###'
+  - '#######'
+  - '#######'
+  - '###+###'
+  minimumCells: {x: 7, y: 7}
+  style: {fileID: 0}
+  heightTiles: 1
+  replaceGeneratedProps: 1
+  replaceGeneratedEnemies: 1
+  keepRoomLight: 1
+  replaceGeneratedTorches: 1
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  previewLevel: {fileID: 11400000, guid: 42db8accb58492743bedbc91bbca4ba3, type: 2}
+  previewCellSize: 2
+--- !u!1001 &2946215204002954859
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2339606432226783817}
+    m_Modifications:
+    - target: {fileID: 5150163699762866208, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_Name
+      value: SM_Prop_Bone_Pile_01
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.9659259
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.25881907
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5150163699762866208, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6421444436012523294}
+  m_SourcePrefab: {fileID: 100100000, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+--- !u!4 &7264817660628110577 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5490695218049741466, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+  m_PrefabInstance: {fileID: 2946215204002954859}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &8041741765717874251 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5150163699762866208, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+  m_PrefabInstance: {fileID: 2946215204002954859}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6421444436012523294
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8041741765717874251}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cfcc53c6f975784caaf88564c0061db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonTemplatePiece
+  removeIfBlocking: 1
+--- !u!1001 &3931124994086450284
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2339606432226783817}
+    m_Modifications:
+    - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -6
+      objectReference: {fileID: 0}
+    - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -2
+      objectReference: {fileID: 0}
+    - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 802556520236082019, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_Name
+      value: SM_Prop_Candle_Rack_01
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 802556520236082019, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7846794616476306879}
+  m_SourcePrefab: {fileID: 100100000, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+--- !u!4 &3956052805865082293 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+  m_PrefabInstance: {fileID: 3931124994086450284}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &4444324669985052431 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 802556520236082019, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+  m_PrefabInstance: {fileID: 3931124994086450284}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7846794616476306879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4444324669985052431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cfcc53c6f975784caaf88564c0061db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonTemplatePiece
+  removeIfBlocking: 1

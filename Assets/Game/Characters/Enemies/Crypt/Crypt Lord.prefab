@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2446587815060436698, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3339500706979355620, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -28,17 +32,21 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7685282957616017104, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.3
+      value: 1.3689
       objectReference: {fileID: 0}
     - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.3
+      value: 1.3689
       objectReference: {fileID: 0}
     - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.3
+      value: 1.3689
       objectReference: {fileID: 0}
     - target: {fileID: 8790162190415042742, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
       propertyPath: m_LocalPosition.x
@@ -210,3 +218,29 @@ MonoBehaviour:
       damageMultiplier: 1
       knockbackForce: -1
       hitStopScale: 1
+  archer: 0
+  archery:
+    bow: {fileID: 0}
+    arrow: {fileID: 0}
+    animatorTrigger: BowShot
+    minRange: 3
+    maxRange: 14
+    cooldown: 2.2
+    aimTrackSpeed: 300
+    fallbackReleaseTime: 1.3
+    maxHeightDifference: 4
+    arrowSpeed: 22
+    spread: 2.5
+    leadTarget: 0.5
+    hit:
+      useDefaultEffects: 1
+      hitAudio: {fileID: 0}
+      swingAudio: {fileID: 0}
+      heavySwingAudio: {fileID: 0}
+      hitParticle: {fileID: 0}
+      damageMultiplier: 1
+      knockbackForce: 1.5
+      hitStopScale: 0.5
+    pullAudio: {fileID: 0}
+    fireAudio: {fileID: 0}
+  experience: 0

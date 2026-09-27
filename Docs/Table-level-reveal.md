@@ -1,6 +1,6 @@
 # Table level reveal
 
-Select **Systems > WorldManager > Table Level Reveal** in the Room scene. The shared settings expand directly in the Inspector. The assigned asset is `Assets/Game/Levels/_Resources/Shared/Resources/TableReveal/Table assembly.asset`; dungeon data no longer owns a reveal reference. Clear the WorldManager reference to use the standard transition, or create another asset with Create > Table > Level Reveal.
+Select **Systems > WorldManager > Table Level Reveal** in the Room scene. The shared settings expand directly in the Inspector. The assigned asset is `Assets/Game/Levels/Resources/TableReveal/Table assembly.asset`; dungeon data no longer owns a reveal reference. Clear the WorldManager reference to use the standard transition, or create another asset with Create > Table > Level Reveal.
 
 The actual generated floor plan is traced in steel blue. Geometry rises in spatial chunks, lights awaken, enemies appear, and the camera flies into first person without fading to black. **Use Room Player POV** keeps the room player's position and look direction while the table assembles. With it disabled, **Camera Angle** controls overview pitch (90 is straight down). Camera Transition Seconds controls the move to the overview; Approach Seconds controls entry into the dungeon. Roofs stay hidden during the overview. The sequence runs on unscaled time with gameplay simulation blocked. Space or Escape skips after generation is ready; Allow Skip can disable this. Descending to another floor retains the short fade.
 

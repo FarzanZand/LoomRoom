@@ -1,6 +1,6 @@
 # Table Spotlight mood
 
-Preset: Assets/Game/Levels/_Resources/Shared/Resources/DungeonLighting/TableSpotlight.asset.
+Preset: Assets/Game/Levels/Resources/DungeonLighting/TableSpotlight.asset.
 
 The Room scene Lighting Manager now has this preset selected. Use its existing Preview Mood or Blend to Mood buttons, or F5 in play mode. Restore Default returns to saved scene lighting. Selecting the preset does not replace the saved startup lighting. Dungeon level/floor Mood Lighting also offers Table Spotlight.
 

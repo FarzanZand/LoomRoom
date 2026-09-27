@@ -19,7 +19,13 @@ public class EnemyData : CharacterData
     [ListDrawerSettings(ShowFoldout = false, ListElementLabelName = "name")]
     public List<EnemyAttack> attacks = new();
 
-    [FoldoutGroup("Rewards", Expanded = true, Order = 3)]
+    [FoldoutGroup("Archer", Expanded = true, Order = 3)]
+    [Tooltip("Carries a bow and shoots from range, keeping its distance. Melee attacks above are still used when the target gets close.")]
+    public bool archer;
+    [FoldoutGroup("Archer"), ShowIf(nameof(archer)), InlineProperty, HideLabel]
+    public EnemyArchery archery = new();
+
+    [FoldoutGroup("Rewards", Expanded = true, Order = 4)]
     [Tooltip("Character experience for killing this enemy. Zero derives it from maximum health, so tougher enemies are worth more.")]
     [Min(0)] public float experience;
 

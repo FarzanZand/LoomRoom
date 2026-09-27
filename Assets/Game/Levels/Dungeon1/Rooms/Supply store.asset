@@ -16,12 +16,17 @@ MonoBehaviour:
   weight: 1
   minFloor: 1
   maxFloor: 0
+  styleOverride: {fileID: 0}
+  sizeScale: 1
+  roomTemplate: {fileID: 0}
+  shapes: []
   enemies: []
   rewards: {fileID: 0}
   props: []
   minProps: 1
   maxProps: 4
+  propRules: []
   overrideLight: 0
-  lightColor: {r: 1, g: 0.75, b: 0.4, a: 1}
+  lightColor: {r: 0.39999998, g: 0.95763636, b: 1, a: 1}
   lightIntensity: 5
   lightRange: 20

@@ -2,7 +2,7 @@
 
 Moods belong to **LightingManager** (`Assets/Game/World/LightingManager.cs` and `LightingManager.Moods.cs`), on the **Lighting Manager** object in the Room scene. There is no separate mood controller; ScreenManager only handles fades.
 
-A mood is a `SceneMood` asset (**Create > World > Scene Mood**). It sets sky tint and exposure, directional light colour and intensity, ambient sky/horizon/ground colours and fog colour. **Override Light Groups** additionally sets the table and room light groups (brightness and tint) while the mood is active; see `Table-spotlight-mood.md`. Examples: `Assets/Game/World/Moods/RedSky.asset` and the dungeon presets in `Assets/Game/Levels/_Resources/Shared/Resources/DungeonLighting`.
+A mood is a `SceneMood` asset (**Create > World > Scene Mood**). It sets sky tint and exposure, directional light colour and intensity, ambient sky/horizon/ground colours and fog colour. **Override Light Groups** additionally sets the table and room light groups (brightness and tint) while the mood is active; see `Table-spotlight-mood.md`. Examples: `Assets/Game/World/Moods/RedSky.asset` and the dungeon presets in `Assets/Game/Levels/Resources/DungeonLighting`.
 
 ## Inspector
 

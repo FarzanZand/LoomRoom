@@ -86,6 +86,7 @@ public class EnemyAttackRunner
                 if (attack != null && Character.HasParameter(Character.Animator, attack.animatorTrigger, AnimatorControllerParameterType.Trigger))
                     Character.Animator.ResetTrigger(attack.animatorTrigger);
         fallbackHitPending = false; current = null; attackWasPlaying = false;
+        if (brain.Loadout != null) brain.Loadout.SetArrowNocked(false);
         if (brain.AttackRelay != null) brain.AttackRelay.DisableHitbox();
         hitboxOpenPending = false; hitboxCloseAt = -1f; pendingHitboxWindow = -1f;
         pendingStagger = 0f;
@@ -139,6 +140,18 @@ public class EnemyAttackRunner
             Character.Animator.ResetTrigger(Character.data.hurtTrigger);
         Character.TriggerAnimation(attack.animatorTrigger);
 
+        // A bow shot is loosed by the release clip's OnAttackHit event (or a late fallback).
+        if (attack.IsBowShot)
+        {
+            var bow = attack.bowShot;
+            fallbackHitPending = true;
+            fallbackHitAt = Time.time + Mathf.Max(bow.fallbackReleaseTime, MinWindup);
+            if (brain.Loadout != null) brain.Loadout.SetArrowNocked(true);
+            if (bow.pullAudio != null && AudioManager.HasInstance)
+                AudioManager.Instance.PlaySFXData(bow.pullAudio, brain.transform.position + Vector3.up * 1.4f);
+            return;
+        }
+
         // Without a hitbox the hit lands either on the clip's OnAttackHit animation event
         // or, if the clip has none, after fallbackHitDelay seconds.
         if (hitbox == null)
@@ -160,8 +173,14 @@ public class EnemyAttackRunner
         Motor.Stop();
 
         // Windup: keep tracking the target so circling does not trivially dodge. Then commit.
+        // A drawn bow keeps aiming until the arrow is loosed.
         float sinceStart = Time.time - attackStartedAt;
-        if (!directionCommitted && sinceStart < CommitTime && brain.Profile.windupTrackSpeed > 0f)
+        if (current.IsBowShot)
+        {
+            if (fallbackHitPending) Motor.LookAt(target.transform.position, current.bowShot.aimTrackSpeed);
+            else CommitDirection();
+        }
+        else if (!directionCommitted && sinceStart < CommitTime && brain.Profile.windupTrackSpeed > 0f)
         {
             Motor.LookAt(target.transform.position, brain.Profile.windupTrackSpeed);
         }
@@ -174,7 +193,7 @@ public class EnemyAttackRunner
         if (IsPlayingAttack()) { attackWasPlaying = true; return; }
 
         // Swing finished (or never started because the animator has no such state).
-        float startupTimeout = Mathf.Max(0.5f, current.fallbackHitDelay + 0.1f);
+        float startupTimeout = current.IsBowShot ? current.bowShot.fallbackReleaseTime + 0.2f : Mathf.Max(0.5f, current.fallbackHitDelay + 0.1f);
         if (attackWasPlaying || sinceStart > startupTimeout)
         {
             // Cooldown counts from the END of the swing, so there is always an opening
@@ -249,6 +268,7 @@ public class EnemyAttackRunner
     void DealFallbackHit()
     {
         fallbackHitPending = false;
+        if (current != null && current.IsBowShot) { LooseArrow(); return; }
         var target = Perception.Target;
         if (!CanOpenHitbox || target == null || !target.IsAlive || !FactionRules.IsHostile(Character.Faction, target.Faction)) return;
         CommitDirection();
@@ -283,5 +303,56 @@ public class EnemyAttackRunner
         if (damageable == null) return;
         if (Tuning != null && !Tuning.HasMeleeLineOfSight(Character, target, info.HitPoint)) return;
         damageable.TakeDamage(info);
+    }
+
+    // ── Bow ───────────────────────────────────────────────────────────
+
+    // The release: an arrow from the nocking hand toward the target's chest, led a little.
+    void LooseArrow()
+    {
+        var bow = current.bowShot;
+        if (brain.Loadout != null) brain.Loadout.SetArrowNocked(false);
+        var target = Perception.Target;
+        if (!SwingLive || target == null || !target.IsAlive) return;
+        CommitDirection();
+
+        Vector3 origin = brain.Loadout != null ? brain.Loadout.ArrowOrigin : brain.transform.position + Vector3.up * 1.45f;
+        Vector3 aim = AimPoint(target);
+        float flight = Vector3.Distance(origin, aim) / Mathf.Max(1f, bow.arrowSpeed);
+        var mover = target.GetComponent<CharacterController>();
+        if (mover != null) { Vector3 v = mover.velocity; v.y = 0; aim += v * flight * bow.leadTarget; }
+
+        Vector3 dir = aim - origin;
+        dir = Quaternion.AngleAxis(Random.Range(-bow.spread, bow.spread), Vector3.up)
+            * Quaternion.AngleAxis(Random.Range(-bow.spread, bow.spread) * .5f, Vector3.Cross(Vector3.up, dir).normalized) * dir;
+
+        if (bow.fireAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(bow.fireAudio, origin);
+        if (bow.arrow == null) return;
+
+        float damage = (Character.Stats != null ? Character.Stats.GetFinal(StatType.AttackDamage) : 0f) * bow.hit.damageMultiplier;
+        var arrow = Object.Instantiate(bow.arrow, origin, Quaternion.LookRotation(dir));
+        arrow.Launch(Character, dir, bow.arrowSpeed, damage, bow.hit);
+    }
+
+    static Vector3 AimPoint(Character target)
+    {
+        var col = target.GetComponent<Collider>();
+        return col != null ? col.bounds.center + Vector3.up * col.bounds.extents.y * .35f : target.transform.position + Vector3.up * 1.2f;
+    }
+
+    // Clear shot from the bow to the target: nothing solid in between.
+    public bool HasArrowLineOfSight(Character target)
+    {
+        if (target == null) return false;
+        Vector3 origin = brain.transform.position + Vector3.up * 1.45f;
+        Vector3 aim = AimPoint(target);
+        Vector3 delta = aim - origin;
+        foreach (var hit in Physics.SphereCastAll(origin, .08f, delta.normalized, delta.magnitude, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (hit.transform.IsChildOf(brain.transform) || hit.transform.IsChildOf(target.transform)) continue;
+            // Other enemies in the way block the shot too: archers do not shoot their friends.
+            return false;
+        }
+        return true;
     }
 }

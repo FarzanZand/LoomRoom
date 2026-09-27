@@ -39,6 +39,9 @@ public class EnemyBrain : MonoBehaviour
     public Character  Character  { get; private set; }
     public EnemyMotor Motor      { get; private set; }
     public Perception Perception { get; private set; }
+    public EnemyWeaponLoadout Loadout { get; private set; }
+    // EnemyData.archer: shoots from range and keeps its distance.
+    public bool IsArcher => Data is { archer: true };
 
     // (previous, next). Voices bark on the switch into combat; bosses and logs listen too.
     public event Action<EnemyState, EnemyState> StateChanged;
@@ -108,6 +111,7 @@ public class EnemyBrain : MonoBehaviour
         Character  = GetComponent<Character>();
         Motor      = GetComponent<EnemyMotor>();
         Perception = GetComponent<Perception>();
+        Loadout    = GetComponent<EnemyWeaponLoadout>();
         Perception.Profile = Profile;
         if (attackRelay == null) attackRelay = GetComponentInChildren<WeaponAnimationRelay>(true);
         spawnPosition = transform.position;
@@ -155,8 +159,22 @@ public class EnemyBrain : MonoBehaviour
         SetState(Profile.defaultState);
     }
 
-    internal List<EnemyAttack> Attacks => Data != null ? Data.attacks : emptyAttacks;
+    // The data's melee attacks, plus the bow shot for archers.
+    internal List<EnemyAttack> Attacks
+    {
+        get
+        {
+            var data = Data;
+            if (data == null) return emptyAttacks;
+            if (!data.archer) return data.attacks;
+            withBow.Clear();
+            withBow.AddRange(data.attacks);
+            withBow.Add(data.archery.Shot);
+            return withBow;
+        }
+    }
     static readonly List<EnemyAttack> emptyAttacks = new();
+    readonly List<EnemyAttack> withBow = new();
 
     float MaxAttackRange
     {
@@ -243,6 +261,7 @@ public class EnemyBrain : MonoBehaviour
         Motor.Stop();
         Motor.ClearLookTarget();
         SetState(EnemyState.Dead);
+        SetHoldingBow(false);
         if (Motor.Agent != null) Motor.Agent.enabled = false;
         foreach (var col in GetComponents<Collider>()) col.enabled = false;
     }
@@ -351,9 +370,11 @@ public class EnemyBrain : MonoBehaviour
         if (attack != null)
         {
             Motor.LookAt(targetPos, p.attackFaceSpeed);
-            if (Motor.IsFacing(targetPos, attack.facingAngle)
-                && Mathf.Abs(targetPos.y - transform.position.y) <= 1f
-                && (Tuning == null || Tuning.HasMeleeLineOfSight(Character, target, targetPos + Vector3.up * 0.9f)))
+            float height = Mathf.Abs(targetPos.y - transform.position.y);
+            bool clear = attack.IsBowShot
+                ? height <= attack.bowShot.maxHeightDifference && attackRunner.HasArrowLineOfSight(target)
+                : height <= 1f && (Tuning == null || Tuning.HasMeleeLineOfSight(Character, target, targetPos + Vector3.up * 0.9f));
+            if (Motor.IsFacing(targetPos, attack.facingAngle) && clear)
                 attackRunner.StartAttack(attack);
             else HandleSpacing(targetPos, dist);
             return;
@@ -526,7 +547,16 @@ public class EnemyBrain : MonoBehaviour
             float statMul = Character.Stats != null ? Character.Stats.GetMultiplier(StatType.AttackSpeed) : 1f;
             anim.SetFloat("AttackSpeed", (Tuning != null ? Tuning.enemyAttackAnimationSpeed : 1.35f) * statMul);
         }
+        SetHoldingBow(IsArcher && State != EnemyState.Attack);
         Motor.UpdateLocomotionAnimator(anim, true, 0.08f);
+    }
+
+    // Left-arm bow carry pose (HumanoidController, LeftArm layer), dropped for the draw and on death.
+    void SetHoldingBow(bool holding)
+    {
+        var anim = Character.Animator;
+        if (anim != null && anim.runtimeAnimatorController != null && Character.HasParameter(anim, "HoldingBow", AnimatorControllerParameterType.Bool))
+            anim.SetBool("HoldingBow", holding);
     }
 
     // Kept for cutscene scripts and Odin buttons.
@@ -552,6 +582,11 @@ public class EnemyBrain : MonoBehaviour
         if (data != null)
             foreach (var a in data.attacks)
                 if (a != null) Gizmos.DrawWireSphere(transform.position, a.EffectiveMaxRange);
+        if (data != null && data.archer)
+        {
+            Gizmos.color = new Color(1f, .5f, .2f);
+            Gizmos.DrawWireSphere(transform.position, data.archery.maxRange);
+        }
 
         if (p.defaultState == EnemyState.Wander && p.wanderZoneRadius > 0f)
         {

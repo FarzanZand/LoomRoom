@@ -17,7 +17,7 @@ public class EnemyAttack
     public float  minRange = 0f;
     [FoldoutGroup("Timing and reach"), Tooltip("Usable when the target is within this distance.")]
     public float  maxRange = 1.8f;
-    public float EffectiveMaxRange => maxRange * (CombatManager.HasInstance ? Mathf.Max(1, CombatManager.Instance.meleeReachMultiplier) : 1f);
+    public float EffectiveMaxRange => IsBowShot ? maxRange : maxRange * (CombatManager.HasInstance ? Mathf.Max(1, CombatManager.Instance.meleeReachMultiplier) : 1f);
     [FoldoutGroup("Timing and reach")]
     public float  cooldown = 1.5f;
     [FoldoutGroup("Timing and reach"), Tooltip("Target must be within this angle of the enemy's forward before the attack fires.")]
@@ -28,4 +28,8 @@ public class EnemyAttack
     public float  fallbackHitDelay = 0.4f;
     [FoldoutGroup("On hit"), HideLabel, InlineProperty]
     public HitProfile hit = new HitProfile();
+
+    // Set on the shot an archer's EnemyArchery builds at runtime; never serialized.
+    [NonSerialized] public EnemyArchery bowShot;
+    public bool IsBowShot => bowShot != null;
 }

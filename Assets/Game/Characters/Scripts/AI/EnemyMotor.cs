@@ -196,6 +196,13 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         float speed = v.magnitude;
         if (locomoting) anim.SetFloat("Speed", speed, damping, Time.deltaTime);
         else            anim.SetFloat("Speed", 0f);
+        // Local-space velocity for directional locomotion (strafing and backing off while facing a target).
+        if (Character.HasParameter(anim, "MoveX", AnimatorControllerParameterType.Float))
+        {
+            Vector3 local = locomoting ? transform.InverseTransformDirection(v) : Vector3.zero;
+            anim.SetFloat("MoveX", local.x, damping, Time.deltaTime);
+            anim.SetFloat("MoveZ", local.z, damping, Time.deltaTime);
+        }
         anim.SetFloat("MotionSpeed", locomoting && speed > 0.1f ? 1f : 0f, damping, Time.deltaTime);
         anim.SetBool("Grounded", IsGrounded);
         anim.SetBool("FreeFall", !IsGrounded && Velocity.y < -1f);
