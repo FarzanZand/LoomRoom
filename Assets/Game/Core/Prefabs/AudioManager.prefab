@@ -92,6 +92,40 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 6ea3cbcc9fcdd2440bc38f38011c728d, type: 3}
     volume: 0.65
     pitch: 1
-  skillUp: {fileID: 11400000, guid: 4efb200dce867d44ca4514d5ca5b2f1a, type: 2}
-  levelUp: {fileID: 11400000, guid: 6134a6562773e8a4dbf76dc7d751458c, type: 2}
+  - key: skillUp
+    clip: {fileID: 8300000, guid: 09c58929b9008154abfd00b38fec4e6e, type: 3}
+    volume: 0.7
+    pitch: 1
+  - key: levelUp
+    clip: {fileID: 8300000, guid: 85c19deaf97648e41ad99a308d860bd0, type: 3}
+    volume: 0.8
+    pitch: 1
+  - key: shopTrade
+    clip: {fileID: 8300000, guid: 4027ae3913ff79441a94827eb4abcd19, type: 3}
+    volume: 0.8
+    pitch: 1
+  - key: dmMumble1
+    clip: {fileID: 8300000, guid: 2654cc9f26fd25843a5026c3924f0c7b, type: 3}
+    volume: 0.6
+    pitch: 1
+  - key: dmMumble2
+    clip: {fileID: 8300000, guid: 3c34e18f06fdb8640892a0c20c89122e, type: 3}
+    volume: 0.6
+    pitch: 1
+  - key: dmMumble3
+    clip: {fileID: 8300000, guid: 1a0b575ff61102548aa3086396bb0bd1, type: 3}
+    volume: 0.6
+    pitch: 1
+  - key: dmMumble4
+    clip: {fileID: 8300000, guid: 4101b8d0e04b10646a73ca19925cb3de, type: 3}
+    volume: 0.6
+    pitch: 1
+  - key: dmMumble5
+    clip: {fileID: 8300000, guid: 2856f0fef2bc3ab4ba43668663531705, type: 3}
+    volume: 0.6
+    pitch: 1
+  - key: dmMumble6
+    clip: {fileID: 8300000, guid: 24c49bf25d54a6946ab06d80de0f581e, type: 3}
+    volume: 0.6
+    pitch: 1
   ambienceFadeDuration: 2

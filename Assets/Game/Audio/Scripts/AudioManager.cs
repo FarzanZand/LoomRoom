@@ -63,10 +63,6 @@ public class AudioManager : Singleton<AudioManager>
     [Header("UI Library")]
     [SerializeField] private UIEntry[] uiLibrary;
 
-    [Header("Game cues")]
-    [SerializeField, Tooltip("A skill goes up.")] private AudioData skillUp;
-    [SerializeField, Tooltip("Character level goes up. Empty uses Skill Up.")] private AudioData levelUp;
-
     [Header("Ambience")]
     [SerializeField, Min(0f)] private float ambienceFadeDuration = 2f;
 
@@ -422,8 +418,23 @@ public class AudioManager : Singleton<AudioManager>
         return PlayUI(clip, data.volume, pitch);
     }
 
-    public void PlaySkillUp() => PlayUIData(skillUp);
-    public void PlayLevelUp() => PlayUIData(levelUp != null ? levelUp : skillUp);
+    public bool HasUI(string key) => !string.IsNullOrEmpty(key) && uiDict.ContainsKey(key);
+
+    // A random UI Library entry whose key starts with the prefix ("dmMumble" -> dmMumble1, dmMumble2...).
+    readonly List<UIEntry> variants = new();
+    public AudioSource PlayUIVariant(string keyPrefix, float pitchJitter = 0f)
+    {
+        variants.Clear();
+        foreach (var pair in uiDict) if (pair.Key.StartsWith(keyPrefix, System.StringComparison.Ordinal) && pair.Value.clip != null) variants.Add(pair.Value);
+        if (variants.Count == 0) return null;
+        var e = variants[Random.Range(0, variants.Count)];
+        return PlayUI(e.clip, e.volume, e.pitch + (pitchJitter > 0 ? Random.Range(-pitchJitter, pitchJitter) : 0));
+    }
+
+    // Game cues: entries in the UI Library, so they're swapped there with the other UI sounds.
+    public const string SkillUpKey = "skillUp", LevelUpKey = "levelUp";
+    public void PlaySkillUp() => PlayUI(SkillUpKey);
+    public void PlayLevelUp() => PlayUI(uiDict.ContainsKey(LevelUpKey) ? LevelUpKey : SkillUpKey);
 
     // ── UI — key overloads ─────────────────────────────────────────────────────
 

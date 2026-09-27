@@ -52,7 +52,8 @@ public partial class DungeonGenerator
             if (template.footprint != null) return template.footprint.ToShape(rng, false);
             return DungeonShape.Rectangle(Mathf.Max(w, template.minimumCells.x), Mathf.Max(h, template.minimumCells.y));
         }
-        var choices = FirstList(profile?.shapes, Biome?.roomShapes, data.roomShapes);
+        // A room profile's own shapes replace the rest; otherwise the level's and the biome's together.
+        var choices = FirstList(profile?.shapes, Both(data.roomShapes, Biome?.roomShapes));
         // Stairs stand beside the centre of the entrance and exit, so those need open floor there.
         bool needsOpenCentre = role == RoomRole.Entrance || role == RoomRole.Exit;
         for (int attempt = 0; attempt < 6; attempt++)
@@ -128,6 +129,56 @@ public partial class DungeonGenerator
     // ── Walls and corridors ──────────────────────────────────────────
 
     bool Open(Vector2Int p) => Layout.InBounds(p) && Layout.floor[p.x, p.y];
+
+    // Wall torches: a few per lit room, spread apart, and the odd one along corridors.
+    void PlaceTorches()
+    {
+        if (data.wallTorch == null) return;
+        var torchRandom = new System.Random(unchecked(Layout.rooms.Count * 7919 + FloorNumber * 104729 + (int)(Cell(Vector2Int.zero).x * 13)));
+        var parent = new GameObject("Torches").transform; parent.SetParent(transform, false);
+        var byRegion = new Dictionary<int, List<(Vector2Int cell, Vector2Int dir)>>();
+        foreach (var (cell, dir, region) in wallFaces)
+        {
+            if (furnished.Contains(cell) || NextToOpening(cell, region)) continue;
+            if (!byRegion.TryGetValue(region, out var list)) byRegion[region] = list = new();
+            list.Add((cell, dir));
+        }
+        foreach (var pair in byRegion)
+        {
+            int region = pair.Key; var faces = pair.Value;
+            bool room = region < Layout.rooms.Count;
+            for (int i = faces.Count - 1; i > 0; i--) { int j = torchRandom.Next(i + 1); (faces[i], faces[j]) = (faces[j], faces[i]); }
+            int count;
+            if (room)
+            {
+                bool always = Roles[region] == RoomRole.Entrance || Roles[region] == RoomRole.Exit;
+                if (!always && torchRandom.NextDouble() >= data.litRoomChance) continue;
+                count = torchRandom.Next(data.torchesPerRoom.x, data.torchesPerRoom.y + 1);
+                if (always) count = Mathf.Max(1, count);
+            }
+            else
+            {
+                count = 0;
+                for (int n = faces.Count / 8 + 1; n > 0; n--) if (torchRandom.NextDouble() < data.corridorTorchChance) count++;
+            }
+            var placed = new List<Vector2Int>();
+            foreach (var (cell, dir) in faces)
+            {
+                if (placed.Count >= count) break;
+                bool crowded = false;
+                foreach (var p in placed) if ((p - cell).sqrMagnitude < 16) { crowded = true; break; }
+                if (crowded) continue;
+                placed.Add(cell);
+                var outward = new Vector3(dir.x, 0, dir.y);
+                // The prefab carries its own mounting height; its origin sits on the floor at the wall face.
+                var torch = Instantiate(data.wallTorch, Cell(cell) + outward * (data.cellSize * .5f - WallThickness * .5f), Quaternion.LookRotation(-outward), parent);
+                var profile = room ? profiles[region] : null;
+                if (profile != null && profile.overrideLight)
+                    foreach (var l in torch.GetComponentsInChildren<Light>()) { l.color = profile.lightColor; l.GetComponent<TorchFlicker>()?.Rebase(); }
+                furnished.Add(cell);
+            }
+        }
+    }
 
     void DecorateWalls()
     {
@@ -213,15 +264,15 @@ public partial class DungeonGenerator
 
     // ── Furnishing ───────────────────────────────────────────────────
 
-    // The most specific level (profile, biome, level) that has rules or plain props wins.
+    // The most specific level (the room profile replaces; level and biome combine) that has rules or plain props wins.
     (DungeonPropRule[] rules, GameObject[] props) Furnishing(DungeonRoomProfile profile)
     {
         if (profile != null && profile.propRules != null && profile.propRules.Length > 0) return (profile.propRules, null);
         if (profile != null && profile.props != null && profile.props.Length > 0) return (null, profile.props);
-        if (Biome != null && Biome.propRules != null && Biome.propRules.Length > 0) return (Biome.propRules, null);
-        if (Biome != null && Biome.props != null && Biome.props.Length > 0) return (null, Biome.props);
-        if (data.propRules != null && data.propRules.Length > 0) return (data.propRules, null);
-        return (null, data.roomPropPrefabs);
+        // Level and biome together: furnishing rules when either has any, otherwise plain props.
+        var rules = Both(data.propRules, Biome?.propRules);
+        if (rules != null && rules.Length > 0) return (rules, null);
+        return (null, Both(data.roomPropPrefabs, Biome?.props));
     }
 
     void PlaceRules(int index, List<Vector2Int> free, DungeonPropRule[] rules)

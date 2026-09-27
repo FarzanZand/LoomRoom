@@ -38,7 +38,7 @@ public class DialogueBridge : MonoBehaviour
         Lua.UnregisterFunction("DMSay");
     }
 
-    // Lua: DMSay("Mind the stairs.", true) types a line at the top of the screen, mumbling if true.
+    // Lua: DMSay("Mind the stairs.", true) shows a Dungeon Master line, mumbling if true.
     void DMSay(string text, bool mumble) => DungeonMaster.Say(text, (AudioClip)null, mumble);
 
     void OnConversationStarted(Transform actor)

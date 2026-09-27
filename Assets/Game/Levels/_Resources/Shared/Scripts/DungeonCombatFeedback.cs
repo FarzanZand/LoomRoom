@@ -56,7 +56,7 @@ public class DungeonCombatFeedback : MonoBehaviour
         DungeonDestructible.Hit+=ObjectHit;
         player=PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         player.Damaged+=PlayerDamaged;player.HitLanded+=HitLanded;
-        if(InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp+=PickedUp;
+        // Pickups are narrated by the message log now (DungeonMaster's screen log).
         hotbar=FindAnyObjectByType<HotbarUI>(FindObjectsInactive.Include);
         // Pickup placement belongs to the authored prefab, not a hard-coded hotbar offset.
         message=Instantiate(dungeon.LevelData.messagePrefab,canvas);
@@ -114,11 +114,6 @@ public class DungeonCombatFeedback : MonoBehaviour
             info.Backstab || info.Critical ? new Color(1,.5f,.25f):info.Heavy ? new Color(1,.8f,.3f):Color.white,info.Backstab || info.Critical ? .5f:.22f);
     }
     void Result(string text,Color color,float duration){if(impact==null)return;impact.text=text;impact.color=color;impactUntil=Time.time+duration;}
-    void PickedUp(ItemData item,Player who,int count)
-    {
-        if(who!=player || message==null || !GameManager.Instance.GameplayActive)return;
-        message.text="Picked up "+item.itemName+(count>1 ? " ×"+count:"");messageUntil=Time.time+2.2f;
-    }
     void LateUpdate()
     {
         if(canvas==null || dungeon==null)return;
@@ -202,7 +197,6 @@ public class DungeonCombatFeedback : MonoBehaviour
         DungeonDestructible.Hit-=ObjectHit;
         foreach(var e in enemies)if(e.character!=null)e.character.Damaged-=e.handler;
         if(player!=null){player.Damaged-=PlayerDamaged;player.HitLanded-=HitLanded;}
-        if(InventoryManager.HasInstance)InventoryManager.Instance.ItemPickedUp-=PickedUp;
         if(styled)hotbar?.SetDungeonStyle(false);
     }
 }

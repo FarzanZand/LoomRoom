@@ -26,6 +26,7 @@ public class Merchant : MonoBehaviour, IInteractable
     [Range(0f, .5f), Tooltip("Price increase per floor beyond the first.")]
     public float pricePerFloor = .1f;
     public bool buysItems = true;
+    public const string ShopTradeKey = "shopTrade";
     public AudioClip tradeClip;
     [Range(0, 1)] public float tradeVolume = .9f;
 
@@ -146,6 +147,8 @@ public class Merchant : MonoBehaviour, IInteractable
 
     void PlayTrade()
     {
+        // The UI Library's "shopTrade" entry when there is one; otherwise this merchant's own clip or the coin sound.
+        if (AudioManager.HasInstance && AudioManager.Instance.HasUI(ShopTradeKey)) { AudioManager.Instance.PlayUI(ShopTradeKey); return; }
         var clip = tradeClip != null ? tradeClip : CurrencyManager.HasInstance ? CurrencyManager.Instance.pickupClip : null;
         if (clip != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(clip, tradeVolume, .05f);
     }

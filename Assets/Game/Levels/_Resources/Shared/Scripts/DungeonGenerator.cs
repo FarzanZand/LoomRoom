@@ -91,6 +91,15 @@ public partial class DungeonGenerator : MonoBehaviour
     // Room profile > biome > level. Unity's null check, not ??: empty references can be non-null wrappers.
     static T First<T>(params T[] options) where T:UnityEngine.Object { foreach(var o in options) if(o!=null) return o; return null; }
     static T[] FirstList<T>(params T[][] options) { foreach(var o in options) if(o!=null && o.Length>0) return o; return null; }
+    // The level's list is shared by every biome; the biome's list adds to it.
+    static T[] Both<T>(T[] level, T[] biome)
+    {
+        if (biome == null || biome.Length == 0) return level;
+        if (level == null || level.Length == 0) return biome;
+        var all = new T[level.Length + biome.Length];
+        level.CopyTo(all, 0); biome.CopyTo(all, level.Length);
+        return all;
+    }
     // The biome's loot answers for every source; the source only picks which of its rules applies.
     LootSource Loot(DungeonLootSource source)=>Biome!=null ? Biome.loot : null;
     public LootSource EnemyLootTable=>Loot(DungeonLootSource.Enemy);
@@ -170,8 +179,9 @@ public partial class DungeonGenerator : MonoBehaviour
         SelectCorridorHeights(unchecked(seed + 3571));
         RegionStyles = new DungeonRoomStyle[Layout.RegionCount];
         var styleRandom = new System.Random(unchecked(seed + 15485863));
+        var roomStyles = Both(level.roomStyles, Biome?.roomStyles); var corridorStyles = Both(level.corridorStyles, Biome?.corridorStyles);
         for (int i = 0; i < RegionStyles.Length; i++)
-            RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? FirstList(Biome?.roomStyles, level.roomStyles) : FirstList(Biome?.corridorStyles, level.corridorStyles), styleRandom);
+            RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? roomStyles : corridorStyles, styleRandom);
         for (int i=0;i<profiles.Length;i++)
             if (profiles[i] != null && profiles[i].styleOverride != null) RegionStyles[i] = profiles[i].styleOverride;
         if (level.corridorsCopyConnectedRoomStyle) CopyConnectedRoomStyles(seed);
@@ -223,11 +233,14 @@ public partial class DungeonGenerator : MonoBehaviour
         ChooseTemplatesAndMerchant();
         for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(i,lighting);
         DecorateWalls();
+        PlaceTorches();
         DressCorridors();
         StockDeadEnds();
         var batching=gameObject.AddComponent<DungeonStaticGeometry>();
         batching.Combine(geometry,data.cellSize*8);
         batching.Combine(ceiling,data.cellSize*8);
+        // Ceilings also answer to the player's ceiling light (see FirstPersonLighting).
+        foreach(var r in ceiling.GetComponentsInChildren<Renderer>(true)) r.renderingLayerMask |= FirstPersonLighting.CeilingLayer;
         Physics.SyncTransforms();
         Surface = gameObject.AddComponent<NavMeshSurface>();
         Surface.collectObjects = CollectObjects.Children;
@@ -246,7 +259,12 @@ public partial class DungeonGenerator : MonoBehaviour
             if(delta.sqrMagnitude<closest){closest=delta.sqrMagnitude;SpawnRotation=Quaternion.LookRotation(delta);}
         }
         ExitPoint = Cell(Layout.Exit);
-        MakeExit(SpawnPoint + Vector3.left*2, true);
+        // The way in: a ladder right behind the player, who starts facing away from it into the room.
+        var forward = SpawnRotation * Vector3.forward;
+        var ladderAt = SpawnPoint - forward * 1.1f;
+        var ladderCell = CellOf(ladderAt);
+        if (!Layout.InBounds(ladderCell) || !Layout.floor[ladderCell.x, ladderCell.y]) { ladderAt = SpawnPoint; SpawnPoint += forward * 1.2f; }
+        MakeExit(ladderAt - Vector3.up * .12f, true).transform.rotation = SpawnRotation;
         var exitStair = MakeExit(ExitPoint, false);
         // Spawn after navigation exists. The first room is always safe.
         for (int i=1;i<Layout.rooms.Count;i++)
@@ -388,17 +406,8 @@ public partial class DungeonGenerator : MonoBehaviour
         Vector3 center = Cell(Layout.RoomCenter(index));
         var template = templates[index];
         if (template != null && !template.keepRoomLight) { PlaceTemplate(index); return; }
-        // Broad pools of warm and cool light, with no torch requirement.
-        var lamp = new GameObject("Amber chamber light"); lamp.transform.SetParent(transform,false);
-        lamp.transform.position = center+Vector3.up*Mathf.Min(2.65f, data.architectureTileSize-.35f);
-        var light = lamp.AddComponent<Light>(); light.type=LightType.Point;
-        light.color = index%3==0 ? lighting.top : lighting.light;
+        // Light comes from wall torches (PlaceTorches) and the player, like Barony.
         var profile=profiles[index];
-        light.range=profile!=null && profile.overrideLight?profile.lightRange:20;
-        light.intensity=profile!=null && profile.overrideLight?profile.lightIntensity:5;
-        if(profile!=null && profile.overrideLight)light.color=profile.lightColor;
-        else if(Biome!=null && Biome.roomLightTint.a>0)light.color=Color.Lerp(light.color,new Color(Biome.roomLightTint.r,Biome.roomLightTint.g,Biome.roomLightTint.b),Biome.roomLightTint.a);
-        light.shadows=LightShadows.None;
         if (template != null) { PlaceTemplate(index); return; }
         // Only decorate cells outside the reserved doorway-to-centre routes.
         var available=new System.Collections.Generic.List<Vector2Int>();
@@ -569,8 +578,8 @@ public partial class DungeonGenerator : MonoBehaviour
 
     // ── Templates, breakables, features, merchant, boss ──────────────
 
-    DungeonWeightedPrefab[] Destructibles => FirstList(Biome?.destructibles, data.destructibles);
-    DungeonFeature[] Features => FirstList(Biome?.features, data.features);
+    DungeonWeightedPrefab[] Destructibles => Both(data.destructibles, Biome?.destructibles);
+    DungeonFeature[] Features => Both(data.features, Biome?.features);
     static bool IsFloorBreakable(GameObject prefab) { var d=prefab.GetComponent<DungeonDestructible>(); return d==null || d.placement==DestructiblePlacement.Floor; }
     static DungeonRoomRoles Mask(RoomRole role) => (DungeonRoomRoles)(1<<(int)role);
 
@@ -896,9 +905,19 @@ public partial class DungeonGenerator : MonoBehaviour
         // quarter of rock, so only the north/south-facing piece reaches the corner.
         if (side && WallAt(cell + end + d, -end, y)) return zFacing ? 0 : -WallThickness;
         if (side) return zFacing ? WallThickness : -proud;
-        if (!WallAt(cell + end, d, y) && WallAt(cell + end + d, -end, y)) return zFacing ? proud : -WallThickness;
+        if (!WallAt(cell + end, d, y) && WallAt(cell + end + d, -end, y))
+        {
+            // An opening's corner (a doorway between a room and a corridor): the room's wall keeps
+            // the corner so the corridor wall's end never shows as a strip in the room's wall.
+            bool room = IsRoomCell(cell), otherRoom = IsRoomCell(cell + end + d);
+            if (room && !otherRoom) return zFacing ? proud : 0;
+            if (!room && otherRoom) return -WallThickness;
+            return zFacing ? proud : -WallThickness;
+        }
         return 0;
     }
+
+    bool IsRoomCell(Vector2Int c) => Layout.InBounds(c) && Layout.floor[c.x, c.y] && Layout.RegionIds[c.x, c.y] < Layout.rooms.Count;
 
     (Vector3 center, Vector3 scale) WallPiece(Vector2Int cell, Vector2Int d, float probeY, float proud, float height, float centerY)
     {

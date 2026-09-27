@@ -93,6 +93,18 @@ public class PlayerManager : Singleton<PlayerManager>
 
     public void ForceSwapToPlayer(PlayerKind kind) => SwapToPlayer(kind, force: true);
 
+    // Players start switched off (see Awake), so a player that has never been active hasn't run its
+    // own Awake yet: no Stats, Bag or Equipment. Wake it without making it the active player.
+    public void EnsureInitialized(PlayerKind kind)
+    {
+        var player = GetPlayer(kind);
+        if (player == null || player.Equipment != null || player == Active) return;
+        var root = player.ActivationRoot;
+        bool rootActive = root.activeSelf, selfActive = player.gameObject.activeSelf;
+        player.gameObject.SetActive(true); root.SetActive(true);
+        root.SetActive(rootActive); player.gameObject.SetActive(selfActive);
+    }
+
     // For covered transitions: discard the room-to-table camera travel.
     public void SwapToPlayerImmediately(PlayerKind kind)
     {

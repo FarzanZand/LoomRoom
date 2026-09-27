@@ -21,7 +21,9 @@ Entrance is safe; the exit is guarded. The biome's Encounter Chance sets the cha
 
 A level's **Run** tab lists its **Biomes** in order with a floor count each; the floor count of the run is their sum. Dungeon1 is Cellars (3 floors) then Crypt (17). A **Dungeon Biome** asset (`Create > LoomRoom > Dungeon Biome`, kept in `Levels/Dungeon1/Biomes`) holds everything that makes a stretch of the run feel different:
 
-- **Look**: room and corridor styles, room shapes, props and furnishing rules, breakables, lighting and room-light tint. Empty lists use the level's.
+**Level or biome?** The level holds what every biome shares; a biome holds what makes it different. Lists (styles, room shapes, props, furnishing, breakables, features) combine: the level's plus the biome's. Single settings (lighting, music) change only when the biome sets one. A room profile's own lists replace both for its rooms.
+
+- **Look**: extra room and corridor styles, room shapes, props and furnishing rules, breakables, and optional lighting.
 - **Population**: enemies with a weight and a **From floor** (counted from the biome's first floor), an encounter chance that ramps from the biome's first floor to its last, max enemies per room, and features (their Min Floor also counts from the biome's first floor).
 - **Rewards**: the biome's **Loot** and merchant chance.
 - **Guardian**: waits in the exit room of the biome's last floor and seals the stairs until killed. Health and damage multipliers let an ordinary enemy serve as a guardian.

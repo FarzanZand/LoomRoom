@@ -11,6 +11,7 @@ public enum MessageKind
     Bad     = 4,
     Warning = 5,
     Lore    = 6,
+    Kill    = 7,
 }
 
 // The Barony-style text feed. Owns the history and the colours; MessageLogUI only
@@ -40,6 +41,7 @@ public class MessageLog : Singleton<MessageLog>
         new KindColor { kind = MessageKind.Bad,     color = new Color(1f, .45f, .38f) },
         new KindColor { kind = MessageKind.Warning, color = new Color(1f, .68f, .3f) },
         new KindColor { kind = MessageKind.Lore,    color = new Color(.65f, .78f, .95f) },
+        new KindColor { kind = MessageKind.Kill,    color = new Color(1f, .6f, .22f) },
     };
 
     public struct Entry
@@ -53,6 +55,8 @@ public class MessageLog : Singleton<MessageLog>
     readonly List<Entry> history = new();
     public IReadOnlyList<Entry> History => history;
     public event Action Changed;
+    // Every post, including a repeat (then with its new count), for on-screen feeds.
+    public event Action<Entry> Posted;
 
     Player tablePlayer;
 
@@ -73,12 +77,15 @@ public class MessageLog : Singleton<MessageLog>
                 last.repeats++;
                 last.time = now;
                 history[^1] = last;
+                Posted?.Invoke(last);
                 Changed?.Invoke();
                 return;
             }
         }
-        history.Add(new Entry { text = text, kind = kind, time = now, repeats = 1 });
+        var entry = new Entry { text = text, kind = kind, time = now, repeats = 1 };
+        history.Add(entry);
         if (history.Count > historySize) history.RemoveAt(0);
+        Posted?.Invoke(entry);
         Changed?.Invoke();
     }
 
@@ -136,16 +143,17 @@ public class MessageLog : Singleton<MessageLog>
         if (info.Blocked) { Add($"{TheCap(info.Target)} blocks your attack.", MessageKind.Combat); return; }
         if (info.Amount <= 0f) { Add($"Your attack glances off {The(info.Target)}.", MessageKind.Combat); return; }
         string verb = info.Backstab ? "You backstab" : info.Critical ? "Critical hit! You strike" : info.Heavy ? "You smash" : "You hit";
-        Add($"{verb} {The(info.Target)} for {Round(info.Amount)}.", info.Backstab || info.Critical ? MessageKind.Warning : MessageKind.Combat);
+        Add($"{verb} {The(info.Target)} for {Round(info.Amount)}.", MessageKind.Combat);
     }
 
     void OnPlayerDamaged(DamageInfo info)
     {
         if (info.Blocked) { Add($"You block {The(info.Source)}'s attack.", MessageKind.Combat); return; }
         if (info.Amount <= 0f) return;
-        if (info.Source != null) Add($"{TheCap(info.Source)} hits you for {Round(info.Amount)}.", MessageKind.Bad);
-        else if (!string.IsNullOrWhiteSpace(info.SourceName)) Add($"{Cap(info.SourceName)} hurts you for {Round(info.Amount)}.", MessageKind.Bad);
-        else Add($"You take {Round(info.Amount)} damage.", MessageKind.Bad);
+        // Damage lines are for the history only; floating numbers show them on screen.
+        if (info.Source != null) Add($"{TheCap(info.Source)} hits you for {Round(info.Amount)}.", MessageKind.Combat);
+        else if (!string.IsNullOrWhiteSpace(info.SourceName)) Add($"{Cap(info.SourceName)} hurts you for {Round(info.Amount)}.", MessageKind.Combat);
+        else Add($"You take {Round(info.Amount)} damage.", MessageKind.Combat);
     }
 
     void OnPlayerDied() => Add("You die...", MessageKind.Bad);
@@ -153,7 +161,7 @@ public class MessageLog : Singleton<MessageLog>
     void OnAnyDied(Character c)
     {
         if (c == null || c is Player || tablePlayer == null || !tablePlayer.IsActive) return;
-        Add($"You destroy {The(c)}.", MessageKind.Good);
+        Add($"You killed {The(c)}!", MessageKind.Kill);
     }
 
     void OnPickedUp(ItemData item, Player who, int count)

@@ -25,6 +25,7 @@ public class AdventurerProgress : MonoBehaviour
     public event Action Changed;
     // Raised whenever a skill gains a point: (skill, new rank).
     public event Action<AdventureSkill, int> SkillRaised;
+    public event Action<float> ExperienceGained;
 
     Player player;
     readonly object source = new object();
@@ -97,7 +98,8 @@ public class AdventurerProgress : MonoBehaviour
         if (teacher != null) { taught.TryGetValue((teacher, skill), out int given); taught[(teacher, skill)] = given + 1; }
         string tierBefore = AdventureSkills.Tier(Ranks[i] - 1), tier = AdventureSkills.Tier(Ranks[i]);
         MessageLog.Post($"Your {def.displayName} skill increases to {Ranks[i]}.", MessageKind.Good);
-        AnnouncementUI.Show($"{def.displayName} {Ranks[i]}", tier != tierBefore ? (Ranks[i] >= 100 ? $"Legendary. {def.legendaryText}" : tier) : null);
+        // Shown under the XP bar (ExperienceBarUI); a new tier is also worth the middle of the screen.
+        if (tier != tierBefore) AnnouncementUI.Show($"{def.displayName}: {tier}", Ranks[i] >= 100 ? def.legendaryText : null);
         if (AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
         ApplyStats();
         SkillRaised?.Invoke(skill, Ranks[i]);
@@ -180,6 +182,7 @@ public class AdventurerProgress : MonoBehaviour
     {
         if (!InRun || amount <= 0 || rules == null) return;
         Experience += amount;
+        ExperienceGained?.Invoke(amount);
         while (Experience >= NextLevelXp && Level < 100)
         {
             Experience -= NextLevelXp; Level++;

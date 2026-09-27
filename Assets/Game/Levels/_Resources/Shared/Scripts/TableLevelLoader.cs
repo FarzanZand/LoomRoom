@@ -11,6 +11,8 @@ public class TableLevelLoader : MonoBehaviour
     public TableLevelData Current { get; private set; }
     public DungeonGenerator Dungeon { get; private set; }
     public bool Busy { get; private set; }
+    [SerializeField, Min(0), Tooltip("Seconds after arriving in a new biome before the Dungeon Master speaks.")] float entryLineDelay = 5f;
+    DungeonMaster.Line entryLine;
     public int FloorNumber { get; private set; } = 1;
     int generationLevel = 1;
     public int GenerationLevel => generationLevel;
@@ -112,6 +114,8 @@ public class TableLevelLoader : MonoBehaviour
     IEnumerator LoadRoutine(TableLevelData level, bool descending=false)
     {
         Busy=true; menu.Hide();
+        // Loading from the room: the table player may never have been active yet.
+        PlayerManager.Instance.EnsureInitialized(PlayerKind.Table);
         int previousFloor=FloorNumber, previousSeed=runSeed;
         if(descending) FloorNumber++;
         else { FloorNumber=1;runSeed=level.fixedSeed!=0 ? level.fixedSeed : UnityEngine.Random.Range(1,int.MaxValue); }
@@ -172,6 +176,7 @@ public class TableLevelLoader : MonoBehaviour
                     string arrival=newBiome && biome!=null && !string.IsNullOrWhiteSpace(biome.entryMessage) ? biome.entryMessage.Trim()
                         : descending ? $"You descend to floor {FloorNumber}." : $"You enter {level.displayName}.";
                     MessageLog.Post(arrival,MessageKind.Lore);
+                    if(newBiome && biome!=null) entryLine=biome.PickEntryLine();
                 }
                 else if(RunManager.HasInstance) RunManager.Instance.Abandon();
             }
@@ -209,6 +214,9 @@ public class TableLevelLoader : MonoBehaviour
             if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
             Busy=false;
             if(!completed) ShowSelection("Could not load that level");
+            // The biome's Dungeon Master line, a moment after the player is actually standing in it.
+            else if(entryLine!=null) DungeonMaster.Say(entryLine,null,entryLineDelay);
+            entryLine=null;
         }
     }
     // Unity never resumes a coroutine whose nested routine threw, so step nested routines here and log instead.

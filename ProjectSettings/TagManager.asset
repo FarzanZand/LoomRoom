@@ -44,4 +44,6 @@ TagManager:
     locked: 0
   m_RenderingLayers:
   - Default
+  - First Person
+  - Ceiling
   m_MigratedRenderPipelines: []

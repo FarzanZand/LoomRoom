@@ -11,6 +11,10 @@ public class EnemyVoice : MonoBehaviour
     [SerializeField, Min(0)] float minStepSpeed = .35f;
     [Tooltip("Post \"You hear something...\" when this enemy spots the player from out of sight.")]
     [SerializeField] bool reportUnseenAlerts = true;
+    [Tooltip("Idle mutters only play this close to the player, so a floor full of enemies isn't a constant drone.")]
+    [SerializeField, Min(0)] float idleEarshot = 8f;
+    [Tooltip("Footsteps only play this close to the player.")]
+    [SerializeField, Min(0)] float stepEarshot = 12f;
 
     Character character;
     EnemyBrain brain;
@@ -67,8 +71,10 @@ public class EnemyVoice : MonoBehaviour
             : (transform.position - lastPosition).magnitude / Mathf.Max(Time.deltaTime, .0001f);
         lastPosition = transform.position;
         bool alerted = brain != null && brain.IsAlerted;
+        var listener = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+        float heard = listener != null ? (listener.transform.position - transform.position).sqrMagnitude : float.MaxValue;
 
-        if (speed > minStepSpeed && Time.time >= nextStep)
+        if (speed > minStepSpeed && Time.time >= nextStep && heard <= stepEarshot * stepEarshot)
         {
             Play(entry.footsteps, entry.footstepVolume);
             nextStep = Time.time + (alerted ? entry.runStepInterval : entry.walkStepInterval);
@@ -76,7 +82,7 @@ public class EnemyVoice : MonoBehaviour
 
         if (!alerted && Time.time >= nextIdle)
         {
-            Play(entry.idle, entry.voiceVolume * .8f);
+            if (heard <= idleEarshot * idleEarshot) Play(entry.idle, entry.voiceVolume * .8f);
             ScheduleIdle();
         }
     }

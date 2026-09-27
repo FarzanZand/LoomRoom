@@ -12,13 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d1071685ae8439ca78a98c290a18326, type: 3}
   m_Name: Default
   m_EditorClassIdentifier: Assembly-CSharp::SceneMood
-  tableLightingOnly: 0
-  tableLightMultiplier: 1.4
+  overrideLightGroups: 0
+  tableBrightness: 2
+  tableTint: {r: 1, g: 0.83, b: 0.62, a: 1}
+  roomBrightness: 0.08
+  roomTint: {r: 0.65, g: 0.72, b: 0.85, a: 1}
   skyTint: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   skyExposure: 1.3
   lightColor: {r: 1, g: 1, b: 1, a: 1}
   lightIntensity: 1.3
-  ambientSky: {r: 0.66625136, g: 0.68425226, b: 0.7169812, a: 1}
-  ambientHorizon: {r: 0.32, g: 0.35, b: 0.4, a: 1}
-  ambientGround: {r: 0.19, g: 0.18, b: 0.16, a: 1}
+  ambientSky: {r: 0.68, g: 0.68, b: 0.68, a: 1}
+  ambientHorizon: {r: 0.36, g: 0.36, b: 0.36, a: 1}
+  ambientGround: {r: 0.18, g: 0.18, b: 0.18, a: 1}
   fogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}

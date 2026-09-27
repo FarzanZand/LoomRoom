@@ -3,7 +3,7 @@ using Sirenix.OdinInspector;
 
 public enum TableLevelKind { Town = 0, Dungeon = 1 }
 // Keep existing numeric values: level assets serialize these selections as integers.
-public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6 }
+public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6, Darkness = 7, Standard = 8 }
 
 [CreateAssetMenu(menuName = "Table/Level", fileName = "TableLevel")]
 public class TableLevelData : ScriptableObject
@@ -14,7 +14,10 @@ public class TableLevelData : ScriptableObject
                  Loot = "Loot & Shop", Hud = "HUD";
     const string D = nameof(IsDungeon);
     bool IsDungeon => kind == TableLevelKind.Dungeon;
-    bool ShowLightingOverride => IsDungeon && overrideLighting;
+    bool ShowLightingOverride => ShowLevelLighting && overrideLighting;
+    // With biomes, each biome sets its own lighting; the level's is only for biome-less dungeons.
+    bool HasBiomes => IsDungeon && stages != null && System.Array.Exists(stages, s => s != null && s.biome != null);
+    bool ShowLevelLighting => IsDungeon && !HasBiomes;
 
     // ── Identity ──────────────────────────────────────────────────────
     [Title("Level")]
@@ -58,14 +61,14 @@ public class TableLevelData : ScriptableObject
     // ── Look & Sound ──────────────────────────────────────────────────
     [TabGroup(Tabs, Look), Tooltip("Town lighting. Dungeons use it as the fallback when a lighting preset is missing.")]
     public SceneMood mood;
-    [TabGroup(Tabs, Look), ShowIf(D), HideIf(nameof(overrideLighting)), LabelText("Dungeon Lighting")]
+    [TabGroup(Tabs, Look), ShowIf(nameof(ShowLevelLighting)), HideIf(nameof(overrideLighting)), LabelText("Dungeon Lighting")]
     [UnityEngine.Serialization.FormerlySerializedAs("moodLightning")]
     public DungeonMoodLighting moodLighting = DungeonMoodLighting.AmberCrypt;
-    [TabGroup(Tabs, Look), ShowIf(D), Tooltip("Use the settings below instead of the selected lighting style. Biomes can still override.")]
+    [TabGroup(Tabs, Look), ShowIf(nameof(ShowLevelLighting)), Tooltip("Use the settings below instead of the selected lighting style.")]
     public bool overrideLighting;
     [TabGroup(Tabs, Look), ShowIf(nameof(ShowLightingOverride)), InlineProperty, HideLabel]
     public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();
-    [TabGroup(Tabs, Look), Title("Music", HorizontalLine = false)]
+    [TabGroup(Tabs, Look), InfoBox("Dungeon lighting is set on each biome (its Look tab).", VisibleIf = nameof(HasBiomes)), Title("Music", HorizontalLine = false)]
     public AudioClip backgroundMusic;
     [TabGroup(Tabs, Look), Range(0f, 1f), LabelText("Volume"), Tooltip("BGM volume for this level: 0 is silent, 1 is full volume. Still respects the AudioManager Music and Master mixer settings. Reload the level to apply changes.")]
     public float backgroundMusicVolume = 1f;
@@ -105,7 +108,7 @@ public class TableLevelData : ScriptableObject
     public float deadEndPercent = 0;
     [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Range(2, 24), Tooltip("Furthest gap, in cells, a loop connection may tunnel across.")]
     public int loopReach = 10;
-    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Tooltip("Weighted room shapes. Authored entries use a painted Room Shape asset (Create > Table > Room Shape). Biomes and room profiles can replace this list.")]
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Tooltip("Weighted room shapes. Authored entries use a painted Room Shape asset (Create > Table > Room Shape). Shared by every biome; a biome's shapes add to it, a room profile's replace it.")]
     public DungeonShapeChoice[] roomShapes = DefaultShapes();
 
     bool IsGrown => IsDungeon && layoutMode == DungeonLayoutMode.Grown;
@@ -160,7 +163,7 @@ public class TableLevelData : ScriptableObject
     public Material trimMaterial, ceilingMaterial;
     [TabGroup(Tabs, Architecture), ShowIf(D), Tooltip("Procedural chests and barrels only.")]
     public Material woodMaterial, metalMaterial;
-    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Styles", "Biomes with their own styles replace these.", HorizontalLine = false), Tooltip("Weighted styles selected once per whole room. Empty or disabled entries use the level materials.")]
+    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Styles", "Shared by every biome. A biome's own styles are added to these.", HorizontalLine = false), Tooltip("Weighted styles selected once per whole room. Empty or disabled entries use the level materials.")]
     public DungeonStyleChoice[] roomStyles = new DungeonStyleChoice[0];
     [TabGroup(Tabs, Architecture), ShowIf(D), Tooltip("Copy a connected room's complete style without crossing a planned doorway. Search through open corridors if needed. If no room is reachable without crossing a door, use level defaults. Selection is seeded; opening doors does not change styles.")]
     public bool corridorsCopyConnectedRoomStyle;
@@ -168,19 +171,27 @@ public class TableLevelData : ScriptableObject
     public DungeonStyleChoice[] corridorStyles = new DungeonStyleChoice[0];
 
     // ── Rooms ─────────────────────────────────────────────────────────
-    [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Weighted variations for each room role, with optional enemies, rewards, props, lighting and a hand-built Room Template.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), InfoBox("Everything here is shared by every biome. A biome adds its own props, furnishing, breakables and features on top; a room profile replaces them for its rooms."), Tooltip("Weighted variations for each room role, with optional enemies, rewards, props, lighting and a hand-built Room Template.")]
     public DungeonRoomProfile[] roomProfiles;
-    [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Props"), Tooltip("Designer-authored decorations. Must fit inside one cell and leave walkways clear. Profiles and biomes can replace them.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Props"), Tooltip("Designer-authored decorations. Must fit inside one cell and leave walkways clear. Shared by every biome; a biome's props add to them, a room profile's replace them.")]
     public GameObject[] roomPropPrefabs;
-    [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Furnishing"), Tooltip("Props placed by rule and scaled by floor area: against walls, in corners, in the middle. When a profile, biome or this level has rules, they replace the plain Props list at that level.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Torches", "The only lights in the dungeon besides the player's own.", HorizontalLine = false), LabelText("Wall Torch")]
+    public GameObject wallTorch;
+    [TabGroup(Tabs, Rooms), ShowIf(D), MinMaxSlider(0, 4, true), Tooltip("Torches in a lit room.")]
+    public Vector2Int torchesPerRoom = new Vector2Int(1, 2);
+    [TabGroup(Tabs, Rooms), ShowIf(D), Range(0, 1), Tooltip("Chance a room has torches. The entrance and exit always do.")]
+    public float litRoomChance = .75f;
+    [TabGroup(Tabs, Rooms), ShowIf(D), Range(0, 1), Tooltip("Chance of a torch on each stretch of corridor wall (about every 8 cells).")]
+    public float corridorTorchChance = .3f;
+    [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Furnishing"), Tooltip("Props placed by rule and scaled by floor area: against walls, in corners, in the middle. Shared by every biome; a biome's rules are added, a room profile's replace them. Rules win over the plain Props list.")]
     public DungeonPropRule[] propRules = new DungeonPropRule[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Authored chest prefab with DungeonContainer, lid reference and interaction collider.")]
     public GameObject chestPrefab;
-    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Breakables", HorizontalLine = false), Tooltip("Barrels, crates, pots and cobwebs. Storage and supply spots use Floor placements; cobwebs hang in ceiling corners. Biomes can replace this list.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Breakables", HorizontalLine = false), Tooltip("Barrels, crates, pots and cobwebs. Storage and supply spots use Floor placements; cobwebs hang in ceiling corners. Shared by every biome; a biome's own entries are added.")]
     public DungeonWeightedPrefab[] destructibles = new DungeonWeightedPrefab[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Extra Per Room"), Tooltip("Extra breakables scattered per room, on top of supply spots.")]
     [MinMaxSlider(0, 8, true)] public Vector2Int destructiblesPerRoom = new Vector2Int(1, 3);
-    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Features", HorizontalLine = false), Tooltip("Fountains, altars, graves, bookshelves, levers. Each has a chance per eligible room. Biomes can replace this list.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Features", HorizontalLine = false), Tooltip("Fountains, altars, graves, bookshelves, levers. Each has a chance per eligible room. Shared by every biome; a biome's own entries are added.")]
     public DungeonFeature[] features = new DungeonFeature[0];
 
     // ── Loot & Shop ───────────────────────────────────────────────────
@@ -234,13 +245,14 @@ public class TableLevelData : ScriptableObject
         return last?.biome;
     }
 
+    // The floor's biome decides; the level's own setting only applies to dungeons without biomes.
     public LightingManager.MoodState DungeonLighting(int floorNumber = 1)
     {
         var biome = Biome(floorNumber);
-        if (biome != null && biome.overrideLighting) return biome.lightingSettings.ToState();
-        if (biome != null && biome.useThemeMood)
+        if (biome != null && biome.lighting == DungeonBiome.Lighting.Custom) return biome.lightingSettings.ToState();
+        if (biome != null)
         {
-            var themed = Resources.Load<SceneMood>("DungeonLighting/" + biome.moodLighting);
+            var themed = Resources.Load<SceneMood>("DungeonLighting/" + (DungeonMoodLighting)(int)biome.lighting);
             if (themed != null) return LightingManager.FromPreset(themed);
         }
         if (overrideLighting) return lightingSettings.ToState();

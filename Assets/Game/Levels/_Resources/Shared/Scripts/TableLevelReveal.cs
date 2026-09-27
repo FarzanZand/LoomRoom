@@ -11,6 +11,8 @@ public sealed class TableLevelReveal : MonoBehaviour
     readonly List<Piece> pieces = new();
     readonly List<(GameObject target, bool active)> actors = new();
     readonly List<(Light light, bool enabled, float delay)> lights = new();
+    // Particle effects (torch flames and the like) stay switched off until their spot is built.
+    readonly List<(GameObject effect, bool active, float delay)> effects = new();
     readonly List<LineRenderer> outlines = new();
     readonly List<(Renderer renderer, bool forcedOff)> handRenderers = new();
     readonly List<(Renderer renderer, bool forcedOff)> roomRenderers = new();
@@ -79,6 +81,14 @@ public sealed class TableLevelReveal : MonoBehaviour
             }
             foreach (var light in dungeon.GetComponentsInChildren<Light>())
             { lights.Add((light, light.enabled, Vector3.Distance(light.transform.position, dungeon.SpawnPoint) / range * .72f)); light.enabled = false; }
+            foreach (var system in dungeon.GetComponentsInChildren<ParticleSystem>())
+            {
+                // One entry per effect: nested systems follow their root.
+                if (system.transform.parent != null && system.transform.parent.GetComponentInParent<ParticleSystem>() != null) continue;
+                var go = system.gameObject;
+                effects.Add((go, go.activeSelf, Vector3.Distance(go.transform.position, dungeon.SpawnPoint) / range * .72f));
+                go.SetActive(false);
+            }
             BuildBlueprint(settings);
             if (settings.dustPrefab != null)
             {
@@ -108,6 +118,11 @@ public sealed class TableLevelReveal : MonoBehaviour
                     piece.renderer.transform.position = piece.position - Vector3.up * settings.liftDistance * (1 - settings.rise.Evaluate(t));
                 }
                 foreach (var entry in lights) if (entry.light != null) entry.light.enabled = entry.enabled && build > entry.delay + .25f;
+                foreach (var entry in effects)
+                {
+                    bool on = entry.active && build > entry.delay + .25f;
+                    if (entry.effect != null && entry.effect.activeSelf != on) entry.effect.SetActive(on);
+                }
                 foreach (var line in outlines)
                 {
                     var color = settings.blueprintColor;
@@ -210,6 +225,7 @@ public sealed class TableLevelReveal : MonoBehaviour
     {
         foreach (var piece in pieces) if (piece.renderer != null) { piece.renderer.transform.position = piece.position; piece.renderer.enabled = true; }
         foreach (var entry in lights) if (entry.light != null) entry.light.enabled = entry.enabled;
+        foreach (var entry in effects) if (entry.effect != null) entry.effect.SetActive(entry.active);
         foreach (var actor in actors) if (actor.target != null) actor.target.SetActive(actor.active);
     }
 
