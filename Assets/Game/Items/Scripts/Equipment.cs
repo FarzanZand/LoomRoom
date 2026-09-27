@@ -51,12 +51,11 @@ public class Equipment : MonoBehaviour
         if (Character is Player owner)
         {
             // Resolve after inventory transfers finish so swaps cannot leave ghost equipment.
-            foreach (var slot in AllSlots)
+            // Only hands: worn items are held by Equipment itself, not the bag.
+            foreach (var slot in new[] { EquipmentSlot.RightHand, EquipmentSlot.LeftHand })
             {
                 var item = Get(slot);
-                if (item == null) continue;
-                bool hand = slot == EquipmentSlot.RightHand || slot == EquipmentSlot.LeftHand;
-                if (owner.Hotbar.IndexOf(item) < 0 && (hand || owner.Bag.IndexOf(item) < 0)) Unequip(slot);
+                if (item != null && owner.Hotbar.IndexOf(item) < 0) Unequip(slot);
             }
         }
         eating.Tick();
@@ -89,7 +88,15 @@ public class Equipment : MonoBehaviour
 
     public ItemData Get(EquipmentSlot slot) => items.TryGetValue(slot, out var i) ? i : null;
     public bool     Has(EquipmentSlot slot) => items.ContainsKey(slot);
-    public bool     IsEquipped(ItemData item) => item != null && Get(item.equipSlot) == item;
+    public bool     IsEquipped(ItemData item) => item != null && (Get(item.equipSlot) == item || IsTrinket(item.equipSlot) && (Get(EquipmentSlot.Trinket1) == item || Get(EquipmentSlot.Trinket2) == item));
+    public static bool IsTrinket(EquipmentSlot slot) => slot == EquipmentSlot.Trinket1 || slot == EquipmentSlot.Trinket2;
+    // Trinkets fit either trinket slot: the first free one, else the first.
+    EquipmentSlot SlotFor(ItemData item)
+    {
+        if (!IsTrinket(item.equipSlot)) return item.equipSlot;
+        return !Has(EquipmentSlot.Trinket1) ? EquipmentSlot.Trinket1 : !Has(EquipmentSlot.Trinket2) ? EquipmentSlot.Trinket2 : EquipmentSlot.Trinket1;
+    }
+    public bool Fits(ItemData item, EquipmentSlot slot) => item != null && item.canBeEquipped && (item.equipSlot == slot || IsTrinket(item.equipSlot) && IsTrinket(slot));
 
     public bool IsShieldSource(object source)
     {
@@ -100,21 +107,29 @@ public class Equipment : MonoBehaviour
     }
 
     public bool CanEquip(ItemData item) => item != null && item.canBeEquipped;
+    // Hand items stay in the hotbar (it is how you switch them); worn items leave the bag while equipped.
+    public static bool IsHand(EquipmentSlot slot) => slot == EquipmentSlot.RightHand || slot == EquipmentSlot.LeftHand;
 
-    public bool Equip(ItemData item, bool playSound = true)
+    // grant: equip an item the player doesn't carry (restoring a save), without taking it from the bag.
+    // into: a specific slot (a trinket dropped on the second trinket slot).
+    public bool Equip(ItemData item, bool playSound = true, bool grant = false, EquipmentSlot? into = null)
     {
         EnsureInitialized();
         if (!CanEquip(item)) return false;
-        if (IsEquipped(item)) return true;
+        if (IsHand(item.equipSlot) && IsEquipped(item)) return true;
 
-        if(Character is Player owner && owner.Bag.IndexOf(item)<0 && owner.Hotbar.IndexOf(item)<0)return false;
-        var slot = item.equipSlot;
+        var slot = into.HasValue && Fits(item, into.Value) ? into.Value : SlotFor(item);
+        if(Character is Player owner && !(grant && !IsHand(slot)))
+        {
+            if(owner.Bag.IndexOf(item)<0 && owner.Hotbar.IndexOf(item)<0)return false;
+            if(!IsHand(slot) && !owner.Bag.RemoveOne(item) && !owner.Hotbar.RemoveOne(item))return false;
+        }
         if(Character is Player p && (slot==EquipmentSlot.RightHand || slot==EquipmentSlot.LeftHand) && p.Hotbar.IndexOf(item)<0) {
             int from=p.Bag.IndexOf(item);int destination=Get(slot)!=null?p.Hotbar.IndexOf(Get(slot)):-1;
             if(destination<0)destination=p.Hotbar.FirstEmpty();
             if(from<0 || destination<0 || !Inventory.Move(p.Bag,from,p.Hotbar,destination)){NotificationUI.Show("Make room in the hotbar to equip a hand item");return false;}
         }
-        Unequip(slot);
+        Unequip(slot);   // a worn item goes back into the bag
 
         var anchor = GetAnchor(slot);
         if (anchor != null && item.worldPrefab != null)
@@ -148,10 +163,15 @@ public class Equipment : MonoBehaviour
         return true;
     }
 
-    public ItemData Unequip(EquipmentSlot slot)
+    public ItemData Unequip(EquipmentSlot slot) => Unequip(slot, true);
+
+    // toBag: a worn item returns to the bag, or drops at the player's feet when it is full.
+    ItemData Unequip(EquipmentSlot slot, bool toBag)
     {
         EnsureInitialized();
         if (!items.TryGetValue(slot, out var item)) return null;
+        if (toBag && !IsHand(slot) && Character is Player owner && !owner.Bag.TryAdd(item) && !owner.Hotbar.TryAdd(item) && InventoryManager.HasInstance)
+            InventoryManager.Instance.DropFromPlayer(item, owner);
         if (item == eating.Item) eating.Clear();
 
         if (objects.TryGetValue(slot, out var obj) && obj != null) Destroy(obj);
@@ -172,14 +192,15 @@ public class Equipment : MonoBehaviour
 
     public bool Unequip(ItemData item)
     {
-        if (!IsEquipped(item)) return false;
-        Unequip(item.equipSlot);
-        return true;
+        foreach (var pair in items)
+            if (pair.Value == item) { Unequip(pair.Key); return true; }
+        return false;
     }
 
+    // Clears every slot without returning worn items: callers reset the bag right after.
     public void UnequipAll()
     {
         foreach (var slot in new List<EquipmentSlot>(items.Keys))
-            Unequip(slot);
+            Unequip(slot, false);
     }
 }

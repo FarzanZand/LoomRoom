@@ -3,12 +3,12 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 
 // Serialized by integer. Skills index AdventurerProgress.Ranks and AdventurerClass.skills.
-public enum AdventureSkill { Swords = 0, Maces = 1, Blocking = 2, Sorcery = 3, Thaumaturgy = 4, Athletics = 5, Trading = 6 }
+public enum AdventureSkill { Swords = 0, Maces = 1, Blocking = 2, Sorcery = 3, Thaumaturgy = 4, Athletics = 5, Trading = 6, Stealth = 7 }
 public enum LeftHandSpell { Shield = 0, Fireball = 1, Heal = 2 }
 
 public static class AdventureSkills
 {
-    public const int Count = 7;
+    public const int Count = 8;
     public static readonly AdventureSkill[] All = (AdventureSkill[])Enum.GetValues(typeof(AdventureSkill));
 
     // Barony's proficiency tiers.

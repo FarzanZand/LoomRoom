@@ -21,6 +21,7 @@ public class DialogueBridge : MonoBehaviour
         Lua.RegisterFunction("HasItem",  this, SymbolExtensions.GetMethodInfo(() => HasItem(string.Empty)));
         Lua.RegisterFunction("SetFlag",  this, SymbolExtensions.GetMethodInfo(() => SetFlag(string.Empty, 0d)));
         Lua.RegisterFunction("GetFlag",  this, SymbolExtensions.GetMethodInfo(() => GetFlag(string.Empty)));
+        Lua.RegisterFunction("DMSay",    this, SymbolExtensions.GetMethodInfo(() => DMSay(string.Empty, false)));
     }
 
     void OnDisable()
@@ -34,7 +35,11 @@ public class DialogueBridge : MonoBehaviour
         Lua.UnregisterFunction("HasItem");
         Lua.UnregisterFunction("SetFlag");
         Lua.UnregisterFunction("GetFlag");
+        Lua.UnregisterFunction("DMSay");
     }
+
+    // Lua: DMSay("Mind the stairs.", true) types a line at the top of the screen, mumbling if true.
+    void DMSay(string text, bool mumble) => DungeonMaster.Say(text, (AudioClip)null, mumble);
 
     void OnConversationStarted(Transform actor)
     {

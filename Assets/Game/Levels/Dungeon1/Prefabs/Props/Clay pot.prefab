@@ -67,11 +67,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1831ef80ad0fd9e4996bc9c4e96b58d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonDestructible
-  health: 3
+  health: 1
+  displayName: 
   placement: 0
   model: {fileID: 7336270052869833892}
   breakClip: {fileID: 8300000, guid: 572e727401af7694b86b014fce8727f3, type: 3}
   breakVolume: 0.75
+  hitClip: {fileID: 0}
+  hitVolume: 0.6
   debrisPrefab: {fileID: 6842055400893197210, guid: 81b627037152d1241a2b0341bda4f836, type: 3}
   debrisCount: 8
   debrisForce: 2.2

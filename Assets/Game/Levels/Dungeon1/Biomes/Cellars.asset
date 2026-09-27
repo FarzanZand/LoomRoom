@@ -27,7 +27,7 @@ MonoBehaviour:
   propRules: []
   destructibles: []
   overrideLighting: 0
-  moodLighting: 0
+  moodLighting: 5
   useThemeMood: 1
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
@@ -56,7 +56,6 @@ MonoBehaviour:
   merchantChance: 0.25
   guardian:
     enabled: 1
-    floor: 3
     boss: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
     healthMultiplier: 1.8
     damageMultiplier: 1.2

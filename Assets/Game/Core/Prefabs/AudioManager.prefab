@@ -92,4 +92,6 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 6ea3cbcc9fcdd2440bc38f38011c728d, type: 3}
     volume: 0.65
     pitch: 1
+  skillUp: {fileID: 11400000, guid: 4efb200dce867d44ca4514d5ca5b2f1a, type: 2}
+  levelUp: {fileID: 11400000, guid: 6134a6562773e8a4dbf76dc7d751458c, type: 2}
   ambienceFadeDuration: 2

@@ -25,8 +25,8 @@ MonoBehaviour:
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
   multipleLevels: 1
   levelCount: 20
-  mood: {fileID: 11400000, guid: 8277439119c14f8a956e344d01626cd7, type: 2}
-  moodLighting: 5
+  mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
+  moodLighting: 0
   overrideLighting: 0
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
@@ -150,13 +150,6 @@ MonoBehaviour:
     perRoom: {x: 0, y: 3}
     chance: 1
     rooms: 20
-  - prefab: {fileID: 2222619136061443150, guid: bb8c6330c6c316e4fbe9f4d33d3dcef9, type: 3}
-    placement: 1
-    footprint: {x: 1, y: 1}
-    perTenCells: 0.3
-    perRoom: {x: 0, y: 3}
-    chance: 1
-    rooms: 18
   - prefab: {fileID: 3374654030368360499, guid: a1d87d53c95240445aafc898c33831f5, type: 3}
     placement: 1
     footprint: {x: 1, y: 1}
@@ -247,7 +240,6 @@ MonoBehaviour:
   startingEquipment: []
   merchantPrefab: {fileID: 3318657465412568994, guid: 1d2025c71f6ccbf4fb69df3f1e2204d8, type: 3}
   merchantStock: {fileID: 11400000, guid: c5e3e540ddf4f324699d7c42ffaaa6ea, type: 2}
-  milestones: []
   hudFont: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
   hotbarFrame: {fileID: 21300000, guid: 8eae82d5f061d8f49b31dcf5f503d8ef, type: 3}
   enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}

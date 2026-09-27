@@ -40,6 +40,11 @@ public class CombatManager : Singleton<CombatManager>
     [Min(1f), Tooltip("Size multiplier of the damage number for critical hits and backstabs.")]
     public float critNumberScale = 1.6f;
 
+    [Header("Stealth")]
+    [SerializeField, Range(0, 1), Tooltip("How close the player can get behind an enemy before it notices, as a share of its close radius.")] float unseenCloseScale = .6f;
+    [SerializeField, Range(0, 1), Tooltip("The same while sneaking.")] float sneakCloseScale = .2f;
+    [SerializeField, Range(0, 1), Tooltip("Enemy sight range while the player sneaks, as a share of normal.")] float sneakSightScale = .6f;
+
     [Header("Death")]
     [Tooltip("Enemies collapse as physics ragdolls. Off plays the death animation instead.")]
     public bool ragdollDeath = true;
@@ -222,6 +227,22 @@ public class CombatManager : Singleton<CombatManager>
         return true;
     }
 
+    // How close an enemy notices the player without looking at them, and how far it can see,
+    // as shares of its profile's radii. Sneaking (crouching) and the Stealth skill shrink both.
+    public void StealthScales(Transform target, out float close, out float sight)
+    {
+        close = 1; sight = 1;
+        if (target == null) return;
+        if (target != stealthTarget) { stealthTarget = target; stealthPlayer = target.GetComponent<Player>(); }
+        if (stealthPlayer == null) return;
+        bool sneaking = stealthPlayer.Motor != null && stealthPlayer.Motor.IsCrouching;
+        float skill = sneaking && stealthPlayer.TryGetComponent<AdventurerProgress>(out var progress) && progress.InRun ? progress.Bonus(AdventureSkill.Stealth) : 0;
+        close = (sneaking ? sneakCloseScale : unseenCloseScale) * Mathf.Clamp01(1 - skill);
+        sight = sneaking ? sneakSightScale * Mathf.Clamp01(1 - skill * .5f) : 1;
+    }
+    Transform stealthTarget;
+    Player stealthPlayer;
+
     public void RollCriticalOrBackstab(ref DamageInfo info, Character target)
     {
         if (target == null || info.Amount <= 0f) return;
@@ -233,6 +254,8 @@ public class CombatManager : Singleton<CombatManager>
             {
                 info.Backstab = true;
                 info.Amount *= backstabMultiplier;
+                // Legendary Stealth doubles backstabs.
+                if (info.Source != null && info.Source.TryGetComponent<AdventurerProgress>(out var progress) && progress.InRun && progress.Rank(AdventureSkill.Stealth) >= 100) info.Amount *= 2;
                 return;
             }
         }

@@ -393,6 +393,6 @@ public class TableLevelLoader : MonoBehaviour
         player.Equipment.UnequipAll();player.Bag.Clear();player.Hotbar.Clear();
         for(int i=0;i<townBag.Length;i++)player.Bag.Set(i,townBag[i]==null ? null:new ItemStack(townBag[i].item,townBag[i].count));
         for(int i=0;i<townHotbar.Length;i++)player.Hotbar.Set(i,townHotbar[i]==null ? null:new ItemStack(townHotbar[i].item,townHotbar[i].count));
-        foreach(var item in townEquipment)player.Equipment.Equip(item,playSound:false);
+        foreach(var item in townEquipment)player.Equipment.Equip(item,playSound:false,grant:true);
     }
 }

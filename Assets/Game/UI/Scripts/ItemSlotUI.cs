@@ -160,7 +160,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
         if (eq != null && eq.CanEquip(item))
         {
-            if (eq.IsEquipped(item)) options.Add(("Unequip", () => { if (Unchanged()) eq.Unequip(item.equipSlot); }));
+            if (eq.IsEquipped(item)) options.Add(("Unequip", () => { if (Unchanged()) eq.Unequip(item); }));
             else                     options.Add(("Equip",   () => { if (Unchanged()) eq.Equip(item); }));
         }
 
@@ -195,7 +195,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
                 if (!Unchanged() || !InventoryManager.HasInstance) return;
                 bool lastOne = eq != null && eq.IsEquipped(item) && container.TotalCount(item) <= 1;
                 if (InventoryManager.Instance.DropFromPlayer(item, owner) == null) return;
-                if (lastOne) eq.Unequip(item.equipSlot);
+                if (lastOne) eq.Unequip(item);
                 container.Consume(index);
             }));
         }

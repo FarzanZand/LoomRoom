@@ -29,7 +29,7 @@ public class AdventureSave : MonoBehaviour
     }
     [Serializable] public class Data
     {
-        public const int Current = 2;   // 2: Barony skills (seven ranks, no partial training)
+        public const int Current = 3;   // 2: Barony skills (seven ranks, no partial training). 3: Stealth skill (eight ranks)
         public int version = Current;
         public Checkpoint checkpoint;
         public List<Memorial> memorials = new();
@@ -119,7 +119,7 @@ public class AdventureSave : MonoBehaviour
         ItemData Item(string id) => InventoryManager.Instance.itemCatalog.Find(x => x != null && x.saveId == id);
         void Fill(Inventory inventory, Stack[] stacks) { for (int i = 0; i < stacks.Length && i < inventory.SlotCount; i++) if (stacks[i] != null && stacks[i].count > 0) inventory.Set(i, new ItemStack(Item(stacks[i].item), stacks[i].count)); }
         Fill(player.Bag, checkpoint.bag); Fill(player.Hotbar, checkpoint.hotbar);
-        foreach (var id in checkpoint.equipped) player.Equipment.Equip(Item(id), false);
+        foreach (var id in checkpoint.equipped) player.Equipment.Equip(Item(id), false, grant: true);
         progress.Restore(checkpoint.characterLevel, checkpoint.xp, (int[])checkpoint.ranks.Clone(), (int[])checkpoint.growth.Clone());
         player.Stats.RemoveAllFromSource(RunManager.BlessingSource);
         if (checkpoint.blessings != null) foreach(var b in checkpoint.blessings) player.Stats.AddModifier(new StatModifier(b.stat,b.value,b.type,RunManager.BlessingSource,b.duration));

@@ -97,7 +97,8 @@ public class AdventurerProgress : MonoBehaviour
         if (teacher != null) { taught.TryGetValue((teacher, skill), out int given); taught[(teacher, skill)] = given + 1; }
         string tierBefore = AdventureSkills.Tier(Ranks[i] - 1), tier = AdventureSkills.Tier(Ranks[i]);
         MessageLog.Post($"Your {def.displayName} skill increases to {Ranks[i]}.", MessageKind.Good);
-        if (tier != tierBefore) NotificationUI.Show(Ranks[i] >= 100 ? $"{def.displayName}: Legendary! {def.legendaryText}" : $"{def.displayName}: {tier}");
+        AnnouncementUI.Show($"{def.displayName} {Ranks[i]}", tier != tierBefore ? (Ranks[i] >= 100 ? $"Legendary. {def.legendaryText}" : tier) : null);
+        if (AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
         ApplyStats();
         SkillRaised?.Invoke(skill, Ranks[i]);
         Changed?.Invoke();
@@ -109,6 +110,7 @@ public class AdventurerProgress : MonoBehaviour
         if (hit.FromEffect || hit.Magic || hit.Target == null || !FactionRules.IsHostile(player.Faction, hit.Target.Faction)) return;
         if (hit.Amount <= 0 && !hit.Blocked) return;
         Practise(AdventureSkills.ForWeapon(hit.Weapon), hit.Target.IsAlive ? SkillAction.Hit : SkillAction.Kill, hit.Target);
+        if (hit.Backstab) Practise(AdventureSkill.Stealth, SkillAction.Backstab, hit.Target);
     }
 
     void OnHurt(DamageInfo hit)
@@ -185,7 +187,8 @@ public class AdventurerProgress : MonoBehaviour
             int raised = growth != null && growth.Length > 0 ? Mathf.Clamp(growth[(Level - 2) % growth.Length], 0, 5) : -1;
             if (raised >= 0) Growth[raised]++;
             ApplyStats();
-            NotificationUI.Show(raised >= 0 ? $"Level {Level}!  +1 {StatNames[raised]}" : $"Level {Level}!");
+            AnnouncementUI.Show($"Level {Level}", raised >= 0 ? $"+1 {StatNames[raised]}" : null);
+            if (AudioManager.HasInstance) AudioManager.Instance.PlayLevelUp();
             MessageLog.Post($"You are now level {Level}.", MessageKind.Good);
         }
         Changed?.Invoke();
@@ -208,6 +211,7 @@ public class AdventurerProgress : MonoBehaviour
         }
         var position = transform.position; float moved = Vector3.Distance(position, lastPosition); lastPosition = position;
         if (!InRun || !player.IsActive || rules == null || !GameManager.HasInstance || !GameManager.Instance.GameplayActive) return;
+        PractiseSneaking();
         if (moved > 3 || moved < .001f || player.Motor == null || !player.Motor.IsSprinting) return;
         // Athletics: sprinting across ground you haven't covered yet this floor.
         var cell = new Vector2Int(Mathf.FloorToInt(position.x / 2), Mathf.FloorToInt(position.z / 2));
@@ -216,6 +220,22 @@ public class AdventurerProgress : MonoBehaviour
         if (sprintDistance < rules.athleticsMetres) return;
         sprintDistance -= rules.athleticsMetres;
         Practise(AdventureSkill.Athletics, SkillAction.Sprint);
+    }
+
+    // Stealth: crouching close to an enemy that hasn't noticed you. Each enemy teaches a few points at most.
+    float nextSneakCheck;
+    void PractiseSneaking()
+    {
+        if (Time.time < nextSneakCheck || player.Motor == null || !player.Motor.IsCrouching) return;
+        nextSneakCheck = Time.time + 1f;
+        foreach (var brain in EnemyBrain.Active)
+        {
+            if (brain == null || brain.Character == null || !brain.Character.IsAlive || brain.IsAlerted) continue;
+            if (brain.Perception != null && brain.Perception.TargetVisible) continue;
+            if ((brain.transform.position - transform.position).sqrMagnitude > rules.sneakPractiseRange * rules.sneakPractiseRange) continue;
+            Practise(AdventureSkill.Stealth, SkillAction.Sneak, brain.Character);
+            return;
+        }
     }
 
     public void Restore(int level, float xp, int[] ranks, int[] growth)

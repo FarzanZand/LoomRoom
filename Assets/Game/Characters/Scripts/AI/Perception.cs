@@ -47,8 +47,10 @@ public class Perception : MonoBehaviour
         Vector3 toTarget = target.position + Vector3.up * 0.9f - origin;
         float   dist     = toTarget.magnitude;
 
-        if (dist > Profile.detectionRadius) return false;
-        bool close = HorizontalDist(transform.position, target.position) <= Profile.closeDetectionRadius;
+        float closeScale = 1, sightScale = 1;
+        if (!trackingTarget && CombatManager.HasInstance) CombatManager.Instance.StealthScales(target, out closeScale, out sightScale);
+        if (dist > Profile.detectionRadius * sightScale) return false;
+        bool close = HorizontalDist(transform.position, target.position) <= Profile.closeDetectionRadius * closeScale;
         if (!trackingTarget && !close && Vector3.Angle(transform.forward, toTarget) > Profile.fieldOfView * 0.5f) return false;
 
         // Close awareness bypasses the view cone, never walls. Ignore both character bodies.

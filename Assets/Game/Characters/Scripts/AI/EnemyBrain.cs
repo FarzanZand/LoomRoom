@@ -128,6 +128,9 @@ public class EnemyBrain : MonoBehaviour
         attackRunner.ResetCooldowns();
     }
 
+    // Enabled brains, for cheap scans (stealth training, the seen indicator).
+    public static readonly System.Collections.Generic.List<EnemyBrain> Active = new();
+
     void OnEnable()
     {
         // Unity can reload scripts while retaining scene objects; nonserialized handlers
@@ -135,10 +138,12 @@ public class EnemyBrain : MonoBehaviour
         if (handlers == null) Initialize();
         Character.Damaged += OnDamaged;
         Character.Died    += OnDied;
+        Active.Add(this);
     }
 
     void OnDisable()
     {
+        Active.Remove(this);
         Character.Damaged -= OnDamaged;
         Character.Died    -= OnDied;
         CancelAttack();

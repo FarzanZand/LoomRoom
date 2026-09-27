@@ -66,7 +66,7 @@ public class InventoryManager : Singleton<InventoryManager>
         ItemEffectProcessor.Fire(item, EffectTrigger.OnPickup, EffectContext.For(player, item));
 
         if (allowEquipOnPickup && item.equipOnPickup && player.Equipment != null &&
-            player.Equipment.CanEquip(item) && !player.Equipment.Has(item.equipSlot))
+            player.Equipment.CanEquip(item) && !player.Equipment.Has(item.equipSlot) && !(Equipment.IsTrinket(item.equipSlot) && player.Equipment.Has(EquipmentSlot.Trinket2)))
             player.Equipment.Equip(item, playSound);
 
         ItemPickedUp?.Invoke(item, player, count);

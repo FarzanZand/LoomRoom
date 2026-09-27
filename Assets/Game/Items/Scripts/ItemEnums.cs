@@ -62,6 +62,7 @@ public enum EquipmentSlot
     Trinket2  = 5,
     Gloves    = 6,
     Boots     = 7,
+    Legs      = 8,
 }
 
 public enum EffectType

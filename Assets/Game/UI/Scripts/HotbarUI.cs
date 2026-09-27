@@ -96,7 +96,7 @@ public class HotbarUI : MonoBehaviour
             return;
         }
 
-        if (eq.IsEquipped(item)) eq.Unequip(item.equipSlot);
+        if (eq.IsEquipped(item)) eq.Unequip(item);
         else eq.Equip(item);
     }
 

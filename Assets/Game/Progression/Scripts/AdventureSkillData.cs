@@ -3,7 +3,7 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 
 // What a skill can be practised with. Serialized by integer; append only.
-public enum SkillAction { Hit = 0, Kill = 1, Block = 2, Cast = 3, Heal = 4, Sprint = 5, Swim = 6, Buy = 7, Sell = 8 }
+public enum SkillAction { Hit = 0, Kill = 1, Block = 2, Cast = 3, Heal = 4, Sprint = 5, Swim = 6, Buy = 7, Sell = 8, Backstab = 9, Sneak = 10 }
 
 // One Barony-style skill: 0-100, raised one point at a time by chance whenever the player
 // successfully does the thing it is about. Benefits grow with the rank and a Legendary bonus

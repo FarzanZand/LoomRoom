@@ -35,7 +35,13 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         if(!chest || lid==null)foreach(var collider in GetComponentsInChildren<Collider>())collider.enabled=false;
         var dropPosition=transform.position+(chest && lid!=null ? transform.forward*.9f : Vector3.zero);
         if(guaranteedItem!=null)DungeonPickup.Spawn(guaranteedItem,dropPosition,transform.parent);
-        if(loot!=null)DungeonPickup.SpawnDrops(loot.RollDrops(rng,floorNumber,chest ? DungeonLootSource.Chest:DungeonLootSource.Barrel),dropPosition,transform.parent);
+        var source=chest ? DungeonLootSource.Chest:DungeonLootSource.Barrel;
+        var drops=loot!=null ? loot.RollDrops(rng,floorNumber,source) : new System.Collections.Generic.List<LootSource.Drop>();
+        int gold=loot!=null ? loot.RollGold(rng,floorNumber,source) : 0;
+        // A chest is never empty: reroll the items a few times, then fall back to a little gold.
+        for(int i=0;chest && drops.Count==0 && guaranteedItem==null && loot!=null && i<4;i++) drops=loot.RollDrops(rng,floorNumber,source);
+        if(chest && drops.Count==0 && guaranteedItem==null && gold<=0) gold=3+rng.Next(0,3)+floorNumber*2;
+        DungeonLootDrop.Spill(drops,gold,dropPosition,transform.parent);
         if(chest && lid!=null){lid.DOLocalRotate(lidOpenRotation,lidOpenSeconds).SetEase(Ease.OutCubic).SetLink(gameObject);return;}
         for (int i = 0; i < 6; i++)
         {

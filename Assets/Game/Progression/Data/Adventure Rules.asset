@@ -25,6 +25,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 24683b17171b220419d7d5138d5815c7, type: 2}
   - {fileID: 11400000, guid: f5960d972d4d9d64f947103800f1dde7, type: 2}
   - {fileID: 11400000, guid: 81b6668be32317d4ead244d16620e2b9, type: 2}
+  - {fileID: 11400000, guid: bbbe9293f40bf5243a7a05ff280ce2af, type: 2}
+  sneakPractiseRange: 4
   xpPerEnemy: 15
   xpPerFloor: 35
   levelXp: 100

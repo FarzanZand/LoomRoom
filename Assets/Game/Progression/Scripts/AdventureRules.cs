@@ -6,6 +6,8 @@ public class AdventureRules : ScriptableObject
 {
     public AdventurerClass[] classes;
     public AdventureSkillData[] skills;
+    [Tooltip("Stealth trains while crouching within this many metres of an enemy that hasn't noticed you.")]
+    [Min(1)] public float sneakPractiseRange = 4f;
     [Header("Character growth")]
     public float xpPerEnemy = 15, xpPerFloor = 35, levelXp = 70, levelXpGrowth = 35;
     public float healthPerLevel = 3, manaPerLevel = 2;

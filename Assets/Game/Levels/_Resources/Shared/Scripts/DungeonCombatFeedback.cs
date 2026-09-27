@@ -15,16 +15,25 @@ public class DungeonCombatFeedback : MonoBehaviour
         public float until, lossUntil, displayed=1;
         public Action<DamageInfo> handler;
     }
+    // A sturdy breakable that took a hit without breaking.
+    sealed class ObjectView
+    {
+        public DungeonDestructible target;
+        public RectTransform root;
+        public Image fill, loss;
+        public float until, lossUntil, displayed=1;
+    }
     sealed class Popup
     {
         public TMP_Text label;
-        public Character target;
+        public Transform target;
         public Vector3 position;
         public float started, until, scale=1;
         public Color color;
     }
     readonly List<EnemyView> enemies=new();
     readonly List<Popup> popups=new();
+    readonly List<ObjectView> objects=new();
     readonly RaycastHit[] sightHits=new RaycastHit[48];
     RectTransform canvas;
     DungeonGenerator dungeon;
@@ -44,6 +53,7 @@ public class DungeonCombatFeedback : MonoBehaviour
         dungeon=generator;canvas=parent;font=pixelFont;
         foreach(var c in generator.GetComponentsInChildren<Character>()) Register(c);
         Character.Spawned+=Register;
+        DungeonDestructible.Hit+=ObjectHit;
         player=PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         player.Damaged+=PlayerDamaged;player.HitLanded+=HitLanded;
         if(InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp+=PickedUp;
@@ -73,12 +83,24 @@ public class DungeonCombatFeedback : MonoBehaviour
         bool special=!info.Blocked && (info.Critical || info.Backstab);
         float scale=special && CombatManager.HasInstance ? CombatManager.Instance.critNumberScale:1;
         string amount=Mathf.CeilToInt(info.Amount).ToString();
-        ShowNumber(view.character,info.Blocked ? "BLOCK":info.Backstab ? "BACKSTAB "+amount:info.Critical ? amount+"!":amount,
+        ShowNumber(view.character.transform,Head(view.character),info.Blocked ? "BLOCK":info.Backstab ? "BACKSTAB "+amount:info.Critical ? amount+"!":amount,
             info.Blocked ? new Color(.53f,.85f,1):info.Backstab ? new Color(1,.42f,.3f):info.Critical ? new Color(1,.6f,.2f):info.Heavy ? new Color(1,.78f,.25f):new Color(1,.93f,.79f),scale);
     }
-    void ShowNumber(Character target,string text,Color color,float scale=1)
+    void ObjectHit(DungeonDestructible target,DamageInfo info)
     {
-        var p=popups[popupIndex++%popups.Count];p.target=target;p.position=Head(target);p.started=Time.time;p.until=Time.time+(scale>1 ? 1.2f:.85f);p.color=color;p.label.text=text;
+        if(target==null || !target.transform.IsChildOf(dungeon.transform))return;
+        var view=objects.Find(o=>o.target==target);
+        if(view==null)
+        {
+            var bar=Instantiate(dungeon.LevelData.enemyBarPrefab,canvas);bar.enemyName.text=target.DisplayName;
+            view=new ObjectView{target=target,root=bar.Rect,fill=bar.healthFill,loss=bar.recentDamageFill};objects.Add(view);
+        }
+        view.until=Time.time+3f;view.lossUntil=Time.time+.35f;
+        ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f));
+    }
+    void ShowNumber(Transform target,Vector3 position,string text,Color color,float scale=1)
+    {
+        var p=popups[popupIndex++%popups.Count];p.target=target;p.position=position;p.started=Time.time;p.until=Time.time+(scale>1 ? 1.2f:.85f);p.color=color;p.label.text=text;
         p.scale=scale;p.label.rectTransform.localScale=Vector3.one*scale;
     }
     void PlayerDamaged(DamageInfo info)
@@ -114,12 +136,24 @@ public class DungeonCombatFeedback : MonoBehaviour
             Vector3 body=e.character.transform.position+(head-e.character.transform.position)*.55f;
             bool aimed=e.character.IsAlive && distance<10 && Vector3.Angle(camera.transform.forward,body-camera.transform.position)<7;
             bool bossBar=BossBarUI.HasInstance && BossBarUI.Instance.Boss==e.character;
-            bool visible=show && !bossBar && distance<18 && (aimed || Time.time<e.until) && HasSight(camera,e.character,body);
+            bool visible=show && !bossBar && distance<18 && (aimed || Time.time<e.until) && HasSight(camera,e.character.transform,body);
             e.root.gameObject.SetActive(visible && Project(camera,head+Vector3.up*.14f,e.root));
             float health=e.character.Stats.MaxHealth>0 ? Mathf.Clamp01(e.character.Stats.CurrentHealth/e.character.Stats.MaxHealth):0;
             e.fill.rectTransform.anchorMax=new Vector2(health,1);
             if(Time.time>e.lossUntil)e.displayed=Mathf.MoveTowards(e.displayed,health,Time.deltaTime*1.6f);
             e.displayed=Mathf.Max(e.displayed,health);e.loss.rectTransform.anchorMax=new Vector2(e.displayed,1);
+        }
+        for(int i=objects.Count-1;i>=0;i--)
+        {
+            var o=objects[i];
+            if(o.target==null || o.target.Broken){Destroy(o.root.gameObject);objects.RemoveAt(i);continue;}
+            Vector3 top=o.target.Top;
+            bool visible=show && Time.time<o.until && Vector3.Distance(camera.transform.position,top)<18 && HasSight(camera,o.target.transform,top);
+            o.root.gameObject.SetActive(visible && Project(camera,top+Vector3.up*.2f,o.root));
+            float health=o.target.HealthFraction;
+            o.fill.rectTransform.anchorMax=new Vector2(health,1);
+            if(Time.time>o.lossUntil)o.displayed=Mathf.MoveTowards(o.displayed,health,Time.deltaTime*1.6f);
+            o.displayed=Mathf.Max(o.displayed,health);o.loss.rectTransform.anchorMax=new Vector2(o.displayed,1);
         }
         foreach(var p in popups)
         {
@@ -130,7 +164,7 @@ public class DungeonCombatFeedback : MonoBehaviour
         if(message!=null){var color=new Color(.94f,.87f,.69f,Mathf.Clamp01((messageUntil-Time.time)/.4f));message.color=color;}
         if(impact!=null)impact.gameObject.SetActive(show && Time.time<impactUntil);
     }
-    public bool HasSight(Camera camera,Character target,Vector3 point)
+    public bool HasSight(Camera camera,Transform target,Vector3 point)
     {
         Vector3 delta=point-camera.transform.position;
         if(Vector3.Dot(camera.transform.forward,delta)<=0)return false;
@@ -139,7 +173,7 @@ public class DungeonCombatFeedback : MonoBehaviour
         for(int i=0;i<count;i++)
         {
             var t=sightHits[i].transform;
-            if(t.IsChildOf(target.transform) || (player!=null && t.IsChildOf(player.ActivationRoot.transform)))continue;
+            if(t.IsChildOf(target) || (player!=null && t.IsChildOf(player.ActivationRoot.transform)))continue;
             return false;
         }
         return true;
@@ -165,6 +199,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     void OnDestroy()
     {
         Character.Spawned-=Register;
+        DungeonDestructible.Hit-=ObjectHit;
         foreach(var e in enemies)if(e.character!=null)e.character.Damaged-=e.handler;
         if(player!=null){player.Damaged-=PlayerDamaged;player.HitLanded-=HitLanded;}
         if(InventoryManager.HasInstance)InventoryManager.Instance.ItemPickedUp-=PickedUp;

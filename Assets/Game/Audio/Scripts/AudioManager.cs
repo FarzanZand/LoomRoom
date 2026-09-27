@@ -63,6 +63,10 @@ public class AudioManager : Singleton<AudioManager>
     [Header("UI Library")]
     [SerializeField] private UIEntry[] uiLibrary;
 
+    [Header("Game cues")]
+    [SerializeField, Tooltip("A skill goes up.")] private AudioData skillUp;
+    [SerializeField, Tooltip("Character level goes up. Empty uses Skill Up.")] private AudioData levelUp;
+
     [Header("Ambience")]
     [SerializeField, Min(0f)] private float ambienceFadeDuration = 2f;
 
@@ -417,6 +421,9 @@ public class AudioManager : Singleton<AudioManager>
         float pitch = data.pitch + (data.pitchVariance > 0f ? Random.Range(-data.pitchVariance, data.pitchVariance) : 0f);
         return PlayUI(clip, data.volume, pitch);
     }
+
+    public void PlaySkillUp() => PlayUIData(skillUp);
+    public void PlayLevelUp() => PlayUIData(levelUp != null ? levelUp : skillUp);
 
     // ── UI — key overloads ─────────────────────────────────────────────────────
 
