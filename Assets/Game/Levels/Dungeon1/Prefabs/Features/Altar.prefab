@@ -72,8 +72,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b598bd766f8827a46b8e5f91ff0f3b95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonAltar
-  baseOffering: 20
-  offeringPerFloor: 10
+  baseOffering: 5
+  offeringPerFloor: 2
   prayers: 1
   activeGlow: {fileID: 8988220335454980029}
   prayClip: {fileID: 8300000, guid: 8c58b14774bc97046830afe67ee25aa4, type: 3}

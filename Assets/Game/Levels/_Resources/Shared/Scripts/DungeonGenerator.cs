@@ -193,19 +193,25 @@ public partial class DungeonGenerator : MonoBehaviour
                 bool neighbor = nx>=0 && nz>=0 && nx<level.width && nz<level.depth && Layout.floor[nx,nz];
                 float bottom = neighbor ? HeightAt(nx,nz) : 0;
                 if (bottom >= height) continue;
-                Vector3 center = pos + new Vector3(dir.x,0,dir.y)*size*.5f;
-                Vector3 scale = dir.x != 0 ? new Vector3(.22f,tile,size) : new Vector3(size,tile,.22f);
-                bool visible = !(openEdges[room] && Layout.FacesOutside(new Vector2Int(x,z), dir));
-                if (!neighbor && visible) wallFaces.Add((new Vector2Int(x,z), dir, room));
+                var cell = new Vector2Int(x,z);
+                bool visible = !(openEdges[room] && Layout.FacesOutside(cell, dir));
+                if (!neighbor && visible) wallFaces.Add((cell, dir, room));
                 // Square wall tiles preserve texture density; upper walls seal height changes above passages.
                 for (float y = bottom; y < height - .01f; y += tile)
-                    ArchitectureBox("Crypt masonry", center+Vector3.up*(y+tile*.5f), scale, WallSurface(room,y,x,z,dir), geometry).GetComponent<Renderer>().enabled = visible;
+                {
+                    var (wallCenter, wallScale) = WallPiece(cell, dir, y, 0, tile, y+tile*.5f);
+                    ArchitectureBox("Crypt masonry", wallCenter, wallScale, WallSurface(room,y,x,z,dir), geometry).GetComponent<Renderer>().enabled = visible;
+                }
                 if (style == null || !style.hideTrims)
                 {
-                    scale.y=.15f; scale.x+=.05f; scale.z+=.05f;
                     var trim = DungeonRoomStyle.Resolve(style != null ? style.trim : null, level.trimMaterial);
-                    Box("Stone cornice", center+Vector3.up*(height-.55f), scale, trim, geometry).GetComponent<Renderer>().enabled = visible;
-                    if (!neighbor) Box("Stone footing", center+Vector3.up*.12f, scale, trim, geometry).GetComponent<Renderer>().enabled = visible;
+                    var (corniceCenter, corniceScale) = WallPiece(cell, dir, height-.6f, TrimDepth, .15f, height-.55f);
+                    Box("Stone cornice", corniceCenter, corniceScale, trim, geometry).GetComponent<Renderer>().enabled = visible;
+                    if (!neighbor)
+                    {
+                        var (footCenter, footScale) = WallPiece(cell, dir, 0, TrimDepth, .15f, .12f);
+                        Box("Stone footing", footCenter, footScale, trim, geometry).GetComponent<Renderer>().enabled = visible;
+                    }
                 }
             }
         }
@@ -364,8 +370,9 @@ public partial class DungeonGenerator : MonoBehaviour
                 for (float y = bottom; y < top + .025f;)
                 {
                     float end = Mathf.Min(top + .025f, (Mathf.Floor(y/data.architectureTileSize)+1)*data.architectureTileSize);
-                    var span = dir.x != 0 ? new Vector3(.24f,end-y,data.cellSize) : new Vector3(data.cellSize,end-y,.24f);
-                    var lintel = ArchitectureBox("Styled door lintel", pos+Vector3.up*((y+end)*.5f), span,
+                    var span = dir.x != 0 ? new Vector3(WallThickness,end-y,data.cellSize) : new Vector3(data.cellSize,end-y,WallThickness);
+                    // In line with the room walls either side, which sit behind the edge on the corridor side.
+                    var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
                         WallMaterial(Layout.RegionIds[p.x,p.y],y), transform);
                     Destroy(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
                     y = end;
@@ -452,9 +459,11 @@ public partial class DungeonGenerator : MonoBehaviour
         if(chest && facing.HasValue)go.transform.rotation=facing.Value;
         if(chest && !authoredChest)
         {
+            // Built in local space so the latch (+Z) turns with the facing.
             Box("Chest",pos+Vector3.up*.43f,new Vector3(1.25f,.85f,.7f),data.woodMaterial,go.transform);
             Box("Lid",pos+Vector3.up*.92f,new Vector3(1.35f,.16f,.78f),data.woodMaterial,go.transform);
-            Box("Latch",pos+new Vector3(0,.66f,-.42f),new Vector3(.15f,.3f,.08f),data.metalMaterial,go.transform);
+            Box("Latch",pos+new Vector3(0,.66f,.42f),new Vector3(.15f,.3f,.08f),data.metalMaterial,go.transform);
+            foreach(Transform part in go.transform){part.localPosition=part.position-pos;part.localRotation=Quaternion.identity;}
         }
         else if(!chest)
         {
@@ -618,7 +627,15 @@ public partial class DungeonGenerator : MonoBehaviour
         }
         if(Roles[index]==RoomRole.Entrance || (Roles[index]==RoomRole.Exit && Milestone!=null))return cursor;
         var feature=PickFeature(index);
-        if(feature!=null && cursor<available.Count)
+        if(feature!=null && feature.placement!=DungeonPropPlacement.Anywhere)
+        {
+            // Against a wall, in a corner or in the middle, among the cells nothing else has taken.
+            var free=available.GetRange(cursor,available.Count-cursor);
+            var open=new System.Collections.Generic.HashSet<Vector2Int>(free);
+            open.ExceptWith(furnished);
+            if(FindSpot(feature.placement,Vector2Int.one,index,free,open,out var spot,out var turn))BackToWall(SpawnFeature(feature.prefab,spot,turn),feature.placement,Vector2Int.one);
+        }
+        else if(feature!=null && cursor<available.Count)
         {
             var cell=available[cursor++];
             var pos=Cell(cell);
@@ -651,7 +668,7 @@ public partial class DungeonGenerator : MonoBehaviour
     System.Collections.Generic.List<Pose> Corners(int index)
     {
         var list=new System.Collections.Generic.List<Pose>();
-        float inset=data.cellSize*.5f-.14f;
+        float inset=data.cellSize*.5f-.03f; // walls are flush with the cell edge
         var room=Layout.rooms[index];
         var candidates=new System.Collections.Generic.List<(Vector2Int,int,int)>();
         if(Layout.IsRectangular(index))
@@ -781,6 +798,51 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     public void ShowCeilings(bool value) { if(ceiling!=null) ceiling.gameObject.SetActive(value); }
+
+    // ── Wall corners ─────────────────────────────────────────────────
+    // Wall pieces sit flush with the cell edge on the room side and extend into the rock behind
+    // it; trims also stand TrimDepth proud of the wall. Each end of a piece is lengthened or
+    // shortened so neighbouring pieces meet exactly, with no overlap and no gap:
+    //   inside corner:  the north/south-facing piece runs through the corner, the east/west one
+    //                   stops at its face;
+    //   outside corner: the north/south-facing piece reaches the corner, the east/west one starts
+    //                   behind it (also where two rooms touch only diagonally).
+    const float WallThickness = .22f, TrimDepth = .04f;
+
+    bool OpenCell(Vector2Int p) => Layout.InBounds(p) && Layout.floor[p.x,p.y];
+
+    // Does the cell carry a wall piece facing d at height y?
+    bool WallAt(Vector2Int cell, Vector2Int d, float y)
+    {
+        if (!OpenCell(cell) || y >= HeightAt(cell.x,cell.y) - .01f) return false;
+        var n = cell + d;
+        return !OpenCell(n) || HeightAt(n.x,n.y) <= y + .01f;
+    }
+
+    float EndAdjust(Vector2Int cell, Vector2Int d, Vector2Int end, float y, float proud)
+    {
+        bool zFacing = d.y != 0;
+        bool side = WallAt(cell, end, y);
+        // Checkerboard: another room touches this one only at the corner; its wall shares this
+        // quarter of rock, so only the north/south-facing piece reaches the corner.
+        if (side && WallAt(cell + end + d, -end, y)) return zFacing ? 0 : -WallThickness;
+        if (side) return zFacing ? WallThickness : -proud;
+        if (!WallAt(cell + end, d, y) && WallAt(cell + end + d, -end, y)) return zFacing ? proud : -WallThickness;
+        return 0;
+    }
+
+    (Vector3 center, Vector3 scale) WallPiece(Vector2Int cell, Vector2Int d, float probeY, float proud, float height, float centerY)
+    {
+        var end = d.x != 0 ? Vector2Int.up : Vector2Int.right;
+        var along = new Vector3(end.x, 0, end.y);
+        var outward = new Vector3(d.x, 0, d.y);
+        float y = probeY + .001f;
+        float back = EndAdjust(cell, d, -end, y, proud), front = EndAdjust(cell, d, end, y, proud);
+        float length = data.cellSize + back + front, thickness = WallThickness + proud;
+        var center = Cell(cell) + outward * (data.cellSize * .5f + (WallThickness - proud) * .5f)
+            + along * ((front - back) * .5f) + Vector3.up * centerY;
+        return (center, d.x != 0 ? new Vector3(thickness, height, length) : new Vector3(length, height, thickness));
+    }
     GameObject ArchitectureBox(string name, Vector3 pos, Vector3 size, Material material, Transform parent)
     {
         var go = Box(name, pos, size, material, parent);

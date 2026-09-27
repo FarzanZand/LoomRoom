@@ -26,7 +26,7 @@ public class DungeonFountain : MonoBehaviour, IInteractable
         if (AudioManager.HasInstance && drinkClip != null) AudioManager.Instance.PlaySFX(drinkClip, transform.position, drinkVolume, .05f);
         MessageLog.Post("You drink from the fountain.", MessageKind.Info);
         var outcome = DungeonBoon.Choose(outcomes);
-        if (outcome != null) outcome.Apply(player, transform.position + Vector3.up, transform.parent);
+        if (outcome != null) outcome.Apply(player, transform.position + Vector3.up, transform.parent, "the fountain");
         else MessageLog.Post("The water tastes of stone. Nothing happens.", MessageKind.Info);
         if (sips <= 0)
         {

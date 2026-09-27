@@ -9,6 +9,7 @@ public struct EffectContext
     public Vector3    Point;
     public DamageInfo Hit;      // valid when the trigger came from a hit
     public object     ModifierSource;   // stat modifiers are tagged with this; null = a fresh ItemBuffSource per effect
+    public string     SourceName;       // what the effect comes from when it is not the user's doing ("the fountain")
 
     public static EffectContext For(Character user, ItemData item) =>
         new EffectContext { User = user, Item = item, Point = user != null ? user.transform.position : Vector3.zero };
@@ -67,9 +68,13 @@ public static class ItemEffectProcessor
                 // No explicit target means the effect hurts its own user; anyone else must be hostile.
                 if (target?.Stats == null) break;
                 if (ctx.Target != null && user != null && target != user && !FactionRules.IsHostile(user.Faction, target.Faction)) break;
+                // Hurting yourself (a curse, a foul fountain) is not an attack by you: name the cause instead.
+                bool self = target == user;
+                string cause = !string.IsNullOrWhiteSpace(ctx.SourceName) ? ctx.SourceName
+                    : self && ctx.Item != null ? "the " + ctx.Item.itemName : null;
                 target.Stats.TakeDamage(new DamageInfo
                 {
-                    Amount = e.value, Source = user, Target = target, FromEffect = true,
+                    Amount = e.value, Source = self ? null : user, SourceName = cause, Target = target, FromEffect = true,
                     HitPoint = ctx.Point, Direction = Vector3.zero,
                 });
                 break;

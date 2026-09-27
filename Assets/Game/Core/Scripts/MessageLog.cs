@@ -127,6 +127,7 @@ public class MessageLog : Singleton<MessageLog>
 
     static string The(Character c) => c == null ? "something" : "the " + c.DisplayName;
     static string TheCap(Character c) => c == null ? "Something" : "The " + c.DisplayName;
+    static string Cap(string s) => char.ToUpperInvariant(s[0]) + s.Substring(1);
     static int Round(float amount) => Mathf.Max(0, Mathf.CeilToInt(amount));
 
     void OnPlayerHitLanded(DamageInfo info)
@@ -142,8 +143,9 @@ public class MessageLog : Singleton<MessageLog>
     {
         if (info.Blocked) { Add($"You block {The(info.Source)}'s attack.", MessageKind.Combat); return; }
         if (info.Amount <= 0f) return;
-        string source = info.Source != null ? TheCap(info.Source) + " hits you" : "You take";
-        Add($"{source} for {Round(info.Amount)}.", MessageKind.Bad);
+        if (info.Source != null) Add($"{TheCap(info.Source)} hits you for {Round(info.Amount)}.", MessageKind.Bad);
+        else if (!string.IsNullOrWhiteSpace(info.SourceName)) Add($"{Cap(info.SourceName)} hurts you for {Round(info.Amount)}.", MessageKind.Bad);
+        else Add($"You take {Round(info.Amount)} damage.", MessageKind.Bad);
     }
 
     void OnPlayerDied() => Add("You die...", MessageKind.Bad);

@@ -138,6 +138,7 @@ public sealed partial class LightingManager
     public void BlendToMood(MoodState settings, float duration = 3f)
     {
         keyboardMoodPreview = false;
+        clearMoodAfterBlend = false;
         fading = false;
         var current = CurrentGroups;
         if (settings.overrideLightGroups && !groupOverrideActive) groupsBeforeOverride = current;
@@ -154,6 +155,42 @@ public sealed partial class LightingManager
         activeMoodDuration = Mathf.Max(0f, duration);
         moodBlending = true;
         Update();
+    }
+
+    // Everything the lights show now, to come back to later (the room after a table level).
+    public struct Snapshot
+    {
+        public MoodState mood;           // includes the light groups
+        public bool hadMood;             // false: the scene's own ambient and sky were showing
+        public bool groupOverride;
+        public MoodState groupsBefore;   // only the group fields are used
+    }
+
+    public Snapshot Capture()
+    {
+        var mood = moodActive ? displayedMood : ReadBaseMood();
+        mood.overrideLightGroups = true;
+        mood.tableBrightness = brightness; mood.roomBrightness = sceneBrightness;
+        mood.tableTint = tint; mood.roomTint = sceneTint;
+        return new Snapshot
+        {
+            mood = mood, hadMood = moodActive, groupOverride = groupOverrideActive,
+            groupsBefore = new MoodState { tableBrightness = groupsBeforeOverride.table, roomBrightness = groupsBeforeOverride.room,
+                                           tableTint = groupsBeforeOverride.tableTint, roomTint = groupsBeforeOverride.roomTint },
+        };
+    }
+
+    public void Restore(Snapshot snapshot, float duration = 0f)
+    {
+        BlendToMood(snapshot.mood, duration);
+        // Without a mood the scene's own sky, ambient probe and fog were showing: blend towards
+        // them, then hand back to them exactly.
+        clearMoodAfterBlend = !snapshot.hadMood;
+        if (clearMoodAfterBlend && !moodBlending) FinishClearingMood();
+        // Afterwards behave as if the intervening moods never happened.
+        groupOverrideActive = snapshot.groupOverride;
+        groupsBeforeOverride = new LightGroups { table = snapshot.groupsBefore.tableBrightness, room = snapshot.groupsBefore.roomBrightness,
+                                                 tableTint = snapshot.groupsBefore.tableTint, roomTint = snapshot.groupsBefore.roomTint };
     }
 
     [Button("Save Current as Default"), HorizontalGroup("Default actions")]
@@ -189,6 +226,16 @@ public sealed partial class LightingManager
         Apply();
     }
 
+    bool clearMoodAfterBlend;
+
+    void FinishClearingMood()
+    {
+        clearMoodAfterBlend = false;
+        moodActive = false;
+        ClearMoodSky();
+        Apply();
+    }
+
     void UpdateMoodBlend()
     {
         if (!moodBlending) return;
@@ -201,6 +248,7 @@ public sealed partial class LightingManager
         mood.tableTint = tint; mood.roomTint = sceneTint;
         displayedMood = mood;
         if (t >= 1f) moodBlending = false;
+        if (t >= 1f && clearMoodAfterBlend) FinishClearingMood();
     }
 
     MoodState ReadBaseMood()

@@ -369,6 +369,8 @@ public class DungeonFeature
     [AssetsOnly, Tooltip("Fountain, altar, grave, bookshelf or lever prefab. Must fit in one cell.")]
     public GameObject prefab;
     [Range(0, 1)] public float chancePerRoom = .12f;
+    [Tooltip("Against Wall, Corner and Centre work as for Furnishing. Anywhere picks any free cell and faces the room centre.")]
+    public DungeonPropPlacement placement = DungeonPropPlacement.Anywhere;
     public DungeonRoomRoles rooms = DungeonRoomRoles.Combat | DungeonRoomRoles.Treasure | DungeonRoomRoles.Rest | DungeonRoomRoles.Storage;
     [Min(1)] public int minFloor = 1;
     [Min(0), Tooltip("Zero means no limit.")] public int maxPerFloor = 2;

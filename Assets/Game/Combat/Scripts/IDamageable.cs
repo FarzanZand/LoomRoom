@@ -8,6 +8,7 @@ public struct DamageInfo
     public HitProfile Profile;       // impact presentation, resolved by CombatManager
     public float     Amount;          // raw on the way in, actual after TakeDamage
     public Character Source;          // who did it (may be null for environment)
+    public string    SourceName;      // what did it when no character did: "the fountain", "the Cursed Ring"
     public Character Target;          // the victim, set by CharacterStats.TakeDamage (null for props)
     public Vector3   HitPoint;
     public Vector3   Direction;       // attacker -> victim, horizontal, normalised

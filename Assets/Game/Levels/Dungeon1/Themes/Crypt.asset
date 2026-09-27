@@ -25,6 +25,8 @@ MonoBehaviour:
   props: []
   destructibles: []
   features: []
+  roomShapes: []
+  propRules: []
   overrideLighting: 0
   moodLighting: 0
   useThemeMood: 1

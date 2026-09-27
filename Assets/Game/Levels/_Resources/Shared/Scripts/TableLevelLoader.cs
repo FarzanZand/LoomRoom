@@ -26,6 +26,11 @@ public class TableLevelLoader : MonoBehaviour
     readonly List<GameObject> hiddenTownDrops = new();
     Bounds tableBounds;
     GameObject environment;
+    // The room as it was before a table level changed its lighting and music; put back on Return to Room.
+    LightingManager.Snapshot? roomLighting;
+    AudioClip roomMusic;
+    bool roomMusicLoops;
+    float roomMusicVolume;
 
     IEnumerator Start()
     {
@@ -98,6 +103,7 @@ public class TableLevelLoader : MonoBehaviour
         else { FloorNumber=1;runSeed=level.fixedSeed!=0 ? level.fixedSeed : UnityEngine.Random.Range(1,int.MaxValue); }
         GameManager.Instance.Pop(GameState.Dead);
         GameManager.Instance.Push(GameState.Cutscene);
+        RememberRoom();
         var revealSettings = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
         bool useReveal = !descending && level.kind == TableLevelKind.Dungeon && revealSettings != null;
         bool faded=false, completed=false;
@@ -283,10 +289,55 @@ public class TableLevelLoader : MonoBehaviour
     public void ReturnToRoom()
     {
         if(Busy)return;
+        StartCoroutine(ReturnRoutine());
+    }
+    // Fade out, switch to the room player and put the room's lighting and music back under the
+    // black, then fade in.
+    IEnumerator ReturnRoutine()
+    {
+        Busy=true;
         menu.Hide();GameManager.Instance.Pop(GameState.Dead);
         if(RunManager.HasInstance) RunManager.Instance.Abandon();
-        PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
-        Dungeon?.ShowCeilings(false);
+        GameManager.Instance.Push(GameState.Cutscene);
+        bool fade=ScreenManager.HasInstance;
+        try
+        {
+            if(fade) { ScreenManager.Instance.FadeIn(.45f); yield return new WaitForSecondsRealtime(.5f); }
+            PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
+            Dungeon?.ShowCeilings(false);
+            RestoreRoom(.6f);
+            yield return null;
+            if(fade) { ScreenManager.Instance.FadeOut(.6f); fade=false; yield return new WaitForSecondsRealtime(.65f); }
+        }
+        finally
+        {
+            if(fade && ScreenManager.HasInstance) ScreenManager.Instance.FadeOut(.6f);
+            if(GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
+            Busy=false;
+        }
+    }
+    // Once per visit to the table: later loads (descending, retrying) keep the first snapshot.
+    void RememberRoom()
+    {
+        if(roomLighting.HasValue) return;
+        if(lighting!=null) roomLighting=lighting.Capture();
+        if(AudioManager.HasInstance)
+        {
+            roomMusic=AudioManager.Instance.CurrentMusic;
+            roomMusicLoops=AudioManager.Instance.CurrentMusicLoops;
+            roomMusicVolume=AudioManager.Instance.CurrentMusicVolume;
+        }
+    }
+    void RestoreRoom(float musicFade)
+    {
+        if(!roomLighting.HasValue) return;
+        if(lighting!=null) lighting.Restore(roomLighting.Value,0);
+        if(AudioManager.HasInstance)
+        {
+            if(roomMusic!=null) AudioManager.Instance.CrossfadeMusic(roomMusic,roomMusicLoops,musicFade,roomMusicVolume);
+            else AudioManager.Instance.StopMusic(musicFade);
+        }
+        roomLighting=null;roomMusic=null;
     }
     void SaveTownInventory()
     {

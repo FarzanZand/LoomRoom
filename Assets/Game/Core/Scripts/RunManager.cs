@@ -180,7 +180,9 @@ public class RunManager : Singleton<RunManager>
     void OnPlayerDamaged(DamageInfo info)
     {
         if (!Running || info.Amount <= 0f || info.Blocked) return;
-        Killer = info.Source == null ? "the dungeon" : info.Source == player ? "a curse" : info.Source.DisplayName;
+        Killer = info.Source != null && info.Source != player ? info.Source.DisplayName
+            : !string.IsNullOrWhiteSpace(info.SourceName) ? info.SourceName
+            : info.Source == player ? "a curse" : "the dungeon";
     }
 
     void OnGold(int total, int delta)

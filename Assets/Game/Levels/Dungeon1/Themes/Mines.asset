@@ -28,14 +28,18 @@ MonoBehaviour:
   features:
   - prefab: {fileID: 2628686250012602643, guid: 8605074f6c2806a418b4153f5c861b1f, type: 3}
     chancePerRoom: 0.07
+    placement: 0
     rooms: 28
     minFloor: 1
     maxPerFloor: 1
   - prefab: {fileID: 1139990893470972911, guid: 69b99ad0ca2199f40ba3c9ac972343da, type: 3}
     chancePerRoom: 0.05
+    placement: 2
     rooms: 28
     minFloor: 1
     maxPerFloor: 1
+  roomShapes: []
+  propRules: []
   overrideLighting: 0
   moodLighting: 4
   useThemeMood: 1

@@ -154,7 +154,7 @@ public partial class DungeonGenerator
                 var prefab = DungeonWeightedPrefab.Choose(style.wallDecor, decorRandom);
                 if (prefab == null) break;
                 var outward = new Vector3(dir.x, 0, dir.y);
-                Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f - .11f), Quaternion.LookRotation(-outward), geometry);
+                Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f), Quaternion.LookRotation(-outward), geometry);
                 count--;
             }
         }
@@ -227,6 +227,7 @@ public partial class DungeonGenerator
     void PlaceRules(int index, List<Vector2Int> free, DungeonPropRule[] rules)
     {
         var open = new HashSet<Vector2Int>(free);
+        open.ExceptWith(furnished);
         var role = Mask(Roles[index]);
         int area = Layout.RoomCells(index).Count;
         foreach (var rule in rules)
@@ -244,6 +245,36 @@ public partial class DungeonGenerator
     bool PlaceProp(DungeonPropRule rule, int index, List<Vector2Int> order, HashSet<Vector2Int> open)
     {
         var size = new Vector2Int(Mathf.Clamp(rule.footprint.x, 1, 6), Mathf.Clamp(rule.footprint.y, 1, 6));
+        if (!FindSpot(rule.placement, size, index, order, open, out var pos, out var rotation)) return false;
+        BackToWall(Instantiate(rule.prefab, pos, rotation, geometry), rule.placement, size);
+        return true;
+    }
+
+    // Against Wall and Corner: slide the object back until its rear touches the wall behind its
+    // footprint, whatever the prefab's pivot.
+    void BackToWall(GameObject go, DungeonPropPlacement placement, Vector2Int size)
+    {
+        if (go == null || (placement != DungeonPropPlacement.AgainstWall && placement != DungeonPropPlacement.Corner)) return;
+        var forward = go.transform.forward;
+        float rear = float.MaxValue;
+        foreach (var r in go.GetComponentsInChildren<Renderer>())
+        {
+            if (r is ParticleSystemRenderer || !r.enabled) continue;
+            var b = r.bounds;
+            float along = Vector3.Dot(b.center - go.transform.position, forward);
+            float half = Mathf.Abs(forward.x) * b.extents.x + Mathf.Abs(forward.z) * b.extents.z;
+            rear = Mathf.Min(rear, along - half);
+        }
+        if (rear == float.MaxValue) return;
+        float wall = -data.cellSize * size.y * .5f;   // wall face behind the footprint's back row
+        go.transform.position += forward * (wall + .03f - rear);
+    }
+
+    // First free spot for a footprint with the given placement; claims its cells.
+    bool FindSpot(DungeonPropPlacement placement, Vector2Int size, int index, List<Vector2Int> order, HashSet<Vector2Int> open, out Vector3 pos, out Quaternion rotation)
+    {
+        pos = default; rotation = Quaternion.identity;
+        if (order.Count == 0) return false;
         int start = propRandom.Next(order.Count);
         for (int k = 0; k < order.Count; k++)
         {
@@ -253,11 +284,11 @@ public partial class DungeonGenerator
             for (int t = 0; t < 4; t++)
             {
                 var forward = Sides[(turn + t) & 3];
-                if (!Fits(rule.placement, size, index, anchor, forward, open)) continue;
+                if (!Fits(placement, size, index, anchor, forward, open)) continue;
                 var right = new Vector2Int(forward.y, -forward.x);
                 var offset = ((Vector2)right * (size.x - 1) + (Vector2)forward * (size.y - 1)) * .5f;
-                var pos = Cell(anchor) + new Vector3(offset.x, 0, offset.y) * data.cellSize;
-                Instantiate(rule.prefab, pos, Quaternion.LookRotation(new Vector3(forward.x, 0, forward.y)), geometry);
+                pos = Cell(anchor) + new Vector3(offset.x, 0, offset.y) * data.cellSize;
+                rotation = Quaternion.LookRotation(new Vector3(forward.x, 0, forward.y));
                 for (int i = 0; i < size.x; i++) for (int j = 0; j < size.y; j++)
                 {
                     var c = anchor + right * i + forward * j;

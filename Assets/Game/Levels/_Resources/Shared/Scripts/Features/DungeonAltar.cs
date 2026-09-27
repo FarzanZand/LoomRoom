@@ -40,7 +40,7 @@ public class DungeonAltar : MonoBehaviour, IInteractable
         if (AudioManager.HasInstance && prayClip != null) AudioManager.Instance.PlaySFX(prayClip, transform.position, prayVolume, .03f);
         MessageLog.Post($"You offer {Offering} {Currency} and pray.", MessageKind.Info);
         var outcome = DungeonBoon.Choose(outcomes);
-        if (outcome != null) outcome.Apply(player, transform.position + Vector3.up, transform.parent);
+        if (outcome != null) outcome.Apply(player, transform.position + Vector3.up, transform.parent, "the altar");
         if (prayers <= 0 && activeGlow != null) activeGlow.SetActive(false);
     }
 }

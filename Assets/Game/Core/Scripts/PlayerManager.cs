@@ -72,6 +72,25 @@ public class PlayerManager : Singleton<PlayerManager>
         SwapToPlayer(StartingPlayer, force: true);
     }
 
+#if UNITY_EDITOR
+    // Outside play mode the Game view renders through the output camera as saved in the scene.
+    // Give it the starting player's view (culling mask, clip planes) so it never shows that
+    // player's own head from the inside.
+    void OnValidate()
+    {
+        if (Application.isPlaying || outputCamera == null) return;
+        var progression = FindAnyObjectByType<ProgressionManager>();
+        var view = Get(progression != null ? progression.startingPlayer : PlayerKind.Room)?.player?.ViewPresentation;
+        if (view == null || outputCamera.cullingMask == view.cullingMask) return;
+        UnityEditor.EditorApplication.delayCall += () =>
+        {
+            if (this == null || outputCamera == null || view == null || Application.isPlaying) return;
+            UnityEditor.Undo.RecordObject(outputCamera, "Match starting player view");
+            view.Configure(outputCamera);
+        };
+    }
+#endif
+
     public void ForceSwapToPlayer(PlayerKind kind) => SwapToPlayer(kind, force: true);
 
     // For covered transitions: discard the room-to-table camera travel.

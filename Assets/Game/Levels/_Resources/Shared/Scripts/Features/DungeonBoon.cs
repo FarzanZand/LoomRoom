@@ -19,11 +19,13 @@ public class DungeonBoon
     public AudioClip sound;
     [Range(0, 1)] public float soundVolume = .9f;
 
-    public void Apply(Player who, Vector3 at, Transform parent)
+    // source: what the player used, named in the log when an effect hurts them ("the fountain").
+    public void Apply(Player who, Vector3 at, Transform parent, string source)
     {
         if (who == null) return;
         var ctx = EffectContext.For(who, null);
         ctx.Point = at;
+        ctx.SourceName = source;
         ctx.ModifierSource = RunManager.BlessingSource;
         if (effects != null)
             foreach (var e in effects)

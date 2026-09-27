@@ -95,6 +95,11 @@ public class AudioManager : Singleton<AudioManager>
     Coroutine   musicRoutine;
 
     AudioSource ActiveMusic => usingMusicA ? musicA : musicB;
+    float musicTargetVolume = 1f;
+    // What is playing now, so a caller can come back to it later (the room after a dungeon).
+    public AudioClip CurrentMusic => ActiveMusic != null && ActiveMusic.isPlaying ? ActiveMusic.clip : null;
+    public bool CurrentMusicLoops => ActiveMusic == null || ActiveMusic.loop;
+    public float CurrentMusicVolume => musicTargetVolume;
 
     // ── Pools ──────────────────────────────────────────────────────────────────
     readonly List<AudioSource> sfxPool = new();
@@ -218,6 +223,7 @@ public class AudioManager : Singleton<AudioManager>
         if (clip == null) return;
         if (fadeDuration < 0f) fadeDuration = defaultFadeDuration;
         StopMusicRoutine();
+        musicTargetVolume = volume;
 
         var outgoing = ActiveMusic;
         if (crossfade) usingMusicA = !usingMusicA;
