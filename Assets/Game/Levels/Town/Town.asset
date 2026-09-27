@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc328ee221540164b95e154c00f29bf2, type: 3}
   m_Name: Town
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
-  displayName: Town
-  description: Return to the woodland village
+  displayName: The Village
+  description: A small village. Brutes in the woods nearby.
+  cardArt: {fileID: 21300000, guid: 5dae8b473ac332a438d7555710ae1eda, type: 3}
   kind: 0
+  environmentPrefab: {fileID: 0}
   mood: {fileID: 11400000, guid: d4f17c0d2b15de64593452a74b223d59, type: 2}
   moodLighting: 0
   overrideLighting: 0
@@ -28,30 +30,103 @@ MonoBehaviour:
     ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
     fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   backgroundMusic: {fileID: 0}
+  backgroundMusicVolume: 1
   loopMusic: 1
   musicFadeSeconds: 1.5
-  environmentPrefab: {fileID: 0}
+  fixedSeed: 0
   width: 32
   depth: 42
   cellSize: 2
   roomCount: 12
-  fixedSeed: 0
+  largeRoomPercent: 10
+  largeRoomScale: 1.6
+  loopPercent: 15
+  layoutMode: 1
+  roomSize: {x: 4, y: 9}
+  roomSpacing: {x: 1, y: 4}
+  corridorWander: 1.2
+  wideCorridorPercent: 15
+  deadEndPercent: 0
+  loopReach: 10
+  roomShapes:
+  - kind: 0
+    shape: {fileID: 0}
+    weight: 3
+  - kind: 1
+    shape: {fileID: 0}
+    weight: 2
+  - kind: 2
+    shape: {fileID: 0}
+    weight: 2
+  - kind: 3
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 4
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 5
+    shape: {fileID: 0}
+    weight: 2
+  - kind: 6
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 7
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 8
+    shape: {fileID: 0}
+    weight: 1
+  doorPrefab: {fileID: 0}
+  doorPercent: 65
+  twoTileRoomPercent: 25
+  threeTileRoomPercent: 0
+  twoTileCorridorPercent: 25
+  threeTileCorridorPercent: 0
   hideRoof: 0
   hideRoofPercent: 100
   hideEdges: 0
   hideEdgesPercent: 100
+  architectureTileSize: 3
   floorMaterial: {fileID: 0}
   wallMaterial: {fileID: 0}
+  upperWallMaterial: {fileID: 0}
   trimMaterial: {fileID: 0}
   ceilingMaterial: {fileID: 0}
   woodMaterial: {fileID: 0}
   metalMaterial: {fileID: 0}
+  roomStyles: []
+  corridorsCopyConnectedRoomStyle: 0
+  corridorStyles: []
+  roomProfiles: []
+  roomPropPrefabs: []
+  propRules: []
+  chestPrefab: {fileID: 0}
+  destructibles: []
+  destructiblesPerRoom: {x: 1, y: 3}
+  features: []
+  encounterChance: 0.7
+  maxEnemiesPerRoom: 2
   enemies: []
+  balance: {fileID: 0}
   loot: {fileID: 0}
+  enemyLoot: {fileID: 0}
+  chestLoot: {fileID: 0}
+  barrelLoot: {fileID: 0}
+  guaranteedHealing: {fileID: 0}
   startingItems: []
   startingEquipment: []
-  guaranteedHealing: {fileID: 0}
-  containerBreakAudio: {fileID: 0}
-  chestOpenAudio: {fileID: 0}
+  merchantPrefab: {fileID: 0}
+  merchantStock: {fileID: 0}
+  merchantChance: 0.3
+  multipleLevels: 0
+  levelCount: 3
+  defaultTheme: {fileID: 0}
+  floorSettings: []
+  milestones: []
   hudFont: {fileID: 0}
   hotbarFrame: {fileID: 0}
+  enemyBarPrefab: {fileID: 0}
+  damageNumberPrefab: {fileID: 0}
+  messagePrefab: {fileID: 0}
+  containerBreakAudio: {fileID: 0}
+  chestOpenAudio: {fileID: 0}

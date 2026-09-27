@@ -26,14 +26,26 @@ public class TableLevelMenu : MonoBehaviour
                 if (level == null) continue;
                 var captured = level;
                 var option = Instantiate(root.optionPrefab, root.options);
-                option.title.text = level.displayName;
-                option.description.text = level.description;
+                option.gameObject.SetActive(true);
+                option.Bind(level);
                 option.button.onClick.AddListener(() => loader.Load(captured));
                 if (firstOption == null) firstOption = option.button;
             }
-        root.resume.gameObject.SetActive(PlayerManager.Instance.Active == null || PlayerManager.Instance.Active.IsAlive);
-        root.resume.button.onClick.AddListener(Hide);
-        root.returnToRoom.button.onClick.AddListener(loader.ReturnToRoom);
+        if (root.optionPrefab.gameObject.scene.IsValid()) root.optionPrefab.gameObject.SetActive(false);
+
+        // A run saved on quit can be picked up where it left off.
+        var save = PlayerManager.Instance.GetPlayer(PlayerKind.Table)?.GetComponent<AdventureSave>();
+        var checkpoint = save != null && save.HasCheckpoint && save.CanRestore(save.Saved.checkpoint) ? save.Saved.checkpoint : null;
+        root.resume.gameObject.SetActive(checkpoint != null);
+        if (checkpoint != null)
+        {
+            var saved = System.Array.Find(loader.catalog.levels, l => l != null && l.name == checkpoint.level);
+            var cls = save.GetComponent<AdventurerProgress>().rules.classes;
+            var savedClass = System.Array.Find(cls, c => c != null && c.id == checkpoint.classId);
+            root.resumeDetail.text = $"{savedClass?.displayName}  ·  Level {checkpoint.characterLevel}  ·  {(saved != null ? saved.displayName : checkpoint.level)} floor {checkpoint.floor}";
+            root.resume.onClick.AddListener(loader.ResumeAdventure);
+        }
+        root.returnToRoom.onClick.AddListener(loader.ReturnToRoom);
         EventSystem.current?.SetSelectedGameObject(null);
         GameManager.Instance.Push(GameState.Menu);
         if (InputManager.HasInstance)

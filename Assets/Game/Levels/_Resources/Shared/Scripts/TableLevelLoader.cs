@@ -12,6 +12,8 @@ public class TableLevelLoader : MonoBehaviour
     public DungeonGenerator Dungeon { get; private set; }
     public bool Busy { get; private set; }
     public int FloorNumber { get; private set; } = 1;
+    int generationLevel = 1;
+    public int GenerationLevel => generationLevel;
     public bool HasNextFloor => Current!=null && Current.multipleLevels && Current.kind==TableLevelKind.Dungeon && FloorNumber<Mathf.Max(1,Current.levelCount);
     int runSeed;
     TableLevelMenu menu;
@@ -90,6 +92,18 @@ public class TableLevelLoader : MonoBehaviour
         if(Busy || level==null) return;
         Initialize(); StartCoroutine(LoadRoutine(level));
     }
+    AdventureSave.Checkpoint pendingResume;
+    public void ResumeAdventure()
+    {
+        Initialize();
+        var save = player.GetComponent<AdventureSave>();
+        if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) { NotificationUI.Show("No compatible saved adventure"); return; }
+        var checkpoint = save.Saved.checkpoint;
+        var level = Array.Find(catalog.levels, x => x != null && x.name == checkpoint.level);
+        if (level == null) return;
+        pendingResume = checkpoint;
+        StartCoroutine(LoadRoutine(level));
+    }
     public void Descend()
     {
         if(Busy || !HasNextFloor || player==null || !player.IsAlive)return;
@@ -101,6 +115,8 @@ public class TableLevelLoader : MonoBehaviour
         int previousFloor=FloorNumber, previousSeed=runSeed;
         if(descending) FloorNumber++;
         else { FloorNumber=1;runSeed=level.fixedSeed!=0 ? level.fixedSeed : UnityEngine.Random.Range(1,int.MaxValue); }
+        var resume = pendingResume; pendingResume = null;
+        if (resume != null) { FloorNumber = resume.floor; runSeed = resume.seed; }
         GameManager.Instance.Pop(GameState.Dead);
         GameManager.Instance.Push(GameState.Cutscene);
         RememberRoom();
@@ -118,8 +134,13 @@ public class TableLevelLoader : MonoBehaviour
                 yield return new WaitForSecondsRealtime(.5f);
             }
             bool ready=false;
-            try { Prepare(level, useReveal); ready=true; }
+            try {
+                DungeonLootTable.GenerationLevel = resume != null ? Mathf.Max(1, resume.lootLevel) : descending ? player.GetComponent<AdventurerProgress>().Level : 1;
+                generationLevel = DungeonLootTable.GenerationLevel.Value;
+                Prepare(level, useReveal); ready=true;
+            }
             catch(Exception e) { Debug.LogException(e); }
+            finally { DungeonLootTable.GenerationLevel = null; }
             if (ready && useReveal && AudioManager.HasInstance) AudioManager.Instance.StopMusic(revealSettings.cameraTransitionSeconds);
             if (!useReveal) yield return null;
             if(ready)
@@ -143,6 +164,7 @@ public class TableLevelLoader : MonoBehaviour
                 {
                     if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); }
                     RunManager.Instance.ReachFloor(FloorNumber);
+                    if (resume != null) player.GetComponent<AdventureSave>()?.Restore(resume);
                     // The theme's line only when the surroundings change; otherwise just the depth.
                     var theme=level.Theme(FloorNumber);
                     bool newTheme=!descending || theme!=level.Theme(FloorNumber-1);
@@ -177,6 +199,7 @@ public class TableLevelLoader : MonoBehaviour
                 else AudioManager.Instance.StopMusic(level.musicFadeSeconds);
             }
             completed=ready;
+            if (ready && level.kind == TableLevelKind.Dungeon) player.GetComponent<AdventureSave>()?.CaptureFloor();
         }
         finally
         {
@@ -184,7 +207,7 @@ public class TableLevelLoader : MonoBehaviour
             if (faded && ScreenManager.HasInstance) ScreenManager.Instance.FadeOut(.6f);
             if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
             Busy=false;
-            if(!completed) ShowSelection("Could not load level — select another adventure");
+            if(!completed) ShowSelection("Could not load that level");
         }
     }
     // Unity never resumes a coroutine whose nested routine threw, so step nested routines here and log instead.
@@ -223,11 +246,21 @@ public class TableLevelLoader : MonoBehaviour
                 // Hide and unregister the old surface while keeping it intact for rollback.
                 if(previousEnvironment!=null)previousEnvironment.SetActive(false);
                 SetTown(false);
-                candidate=level.environmentPrefab!=null ? Instantiate(level.environmentPrefab) : new GameObject(level.displayName+" — generated");
-                candidate.transform.position=new Vector3(bounds.center.x,bounds.max.y+.08f,bounds.center.z);
-                candidateDungeon=candidate.GetComponent<DungeonGenerator>() ?? candidate.AddComponent<DungeonGenerator>();
                 int seed=unchecked(runSeed+(FloorNumber-1)*104729);
-                candidateDungeon.Build(level,seed,FloorNumber);spawn=candidateDungeon.SpawnPoint;rotation=candidateDungeon.SpawnRotation;
+                // A layout can fail validation (a room cut off by props). Try the next derived seed
+                // rather than failing the floor; the sequence is fixed, so runs stay reproducible.
+                for(int attempt=0;;attempt++) {
+                    candidate=level.environmentPrefab!=null ? Instantiate(level.environmentPrefab) : new GameObject(level.displayName+" — generated");
+                    candidate.transform.position=new Vector3(bounds.center.x,bounds.max.y+.08f,bounds.center.z);
+                    candidateDungeon=candidate.GetComponent<DungeonGenerator>();
+                    if(candidateDungeon==null)candidateDungeon=candidate.AddComponent<DungeonGenerator>();
+                    try { candidateDungeon.Build(level,unchecked(seed+attempt*7907),FloorNumber); break; }
+                    catch(InvalidOperationException e) when (attempt<7) {
+                        Debug.LogWarning($"Floor {FloorNumber} layout rejected, trying another: {e.Message}");
+                        candidate.SetActive(false);DestroyImmediate(candidate);candidate=null;
+                    }
+                }
+                spawn=candidateDungeon.SpawnPoint;rotation=candidateDungeon.SpawnRotation;
             } else if(level.environmentPrefab!=null)candidate=Instantiate(level.environmentPrefab,transform.position,Quaternion.identity);
         } catch {
             if(candidate!=null){candidate.SetActive(false);Destroy(candidate);}
@@ -285,10 +318,11 @@ public class TableLevelLoader : MonoBehaviour
         if(RunManager.HasInstance && RunManager.Instance.Running && RunManager.Instance.recap!=null) { RunManager.Instance.EndRunInVictory(); return; }
         ShowSelection("Dungeon complete");
     }
-    IEnumerator DeathMenu() { yield return new WaitForSecondsRealtime(.8f);ShowSelection("You fell — choose an adventure to try again"); }
+    IEnumerator DeathMenu() { yield return new WaitForSecondsRealtime(.8f);ShowSelection("You died"); }
     public void ReturnToRoom()
     {
         if(Busy)return;
+        if (RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended) return;
         StartCoroutine(ReturnRoutine());
     }
     // Fade out, switch to the room player and put the room's lighting and music back under the

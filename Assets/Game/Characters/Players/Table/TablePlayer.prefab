@@ -1875,6 +1875,9 @@ GameObject:
   - component: {fileID: 7338048636684075036}
   - component: {fileID: 6359001954766408055}
   - component: {fileID: 6711956814867190061}
+  - component: {fileID: 324389227773858431}
+  - component: {fileID: 1246289324833527587}
+  - component: {fileID: 3000882379713468094}
   m_Layer: 6
   m_Name: Controller
   m_TagString: Player
@@ -1898,6 +1901,7 @@ Transform:
   - {fileID: 1074305613612139928}
   - {fileID: 9010373250482269959}
   - {fileID: 5678531908922292518}
+  - {fileID: 4397039381440287161}
   m_Father: {fileID: 1273398871155006025}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &279718850674304595
@@ -2237,7 +2241,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Inventory
   role: 1
   slotCount: 6
-  allowedTypes: 30
+  allowedTypes: 158
 --- !u!114 &5153306241458268471
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2323,6 +2327,59 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Wallet
   gold: 0
+--- !u!114 &324389227773858431
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1704639430885474574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3625afb8ad711943b9f93b95403832a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AdventurerProgress
+  rules: {fileID: 11400000, guid: 11287e425e881074b9ec2c3371b5e5be, type: 2}
+  selectedClass: {fileID: 11400000, guid: 720138e1d8556ba48b73655c9111a72d, type: 2}
+  perceptionLight: {fileID: 1259709410926309357}
+  baseVisibilityRange: 6
+--- !u!114 &1246289324833527587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1704639430885474574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12325bd25ef03f443bea5ea950565d2d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSpellcasting
+  fireball: {fileID: 11400000, guid: 97ab782aa2e5c9545b64aafe17d3c498, type: 2}
+  heal: {fileID: 11400000, guid: b8ae3872aac7c474a82ca91162f9a632, type: 2}
+  arms: {fileID: 2764288027749529575}
+  castOrigin: {fileID: 2031158504740361208}
+  spellLayer: Left Hand Spell
+  castParameter: SpellCast
+  releaseParameter: SpellRelease
+  cancelParameter: SpellCancel
+  equippedParameter: SpellEquipped
+  typeParameter: SpellType
+  speedParameter: SpellSpeed
+  switchSeconds: 0.3
+  fizzleSound: {fileID: 11400000, guid: cd8a97bfe87c3f448afe749bba1e13a9, type: 2}
+--- !u!114 &3000882379713468094
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1704639430885474574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b329f8bb369365d448845e805b787d62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AdventureSave
 --- !u!1 &1806632151189951013
 GameObject:
   m_ObjectHideFlags: 0
@@ -3132,6 +3189,103 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5857149113344844874}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2948871884539771106
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4397039381440287161}
+  - component: {fileID: 1259709410926309357}
+  m_Layer: 0
+  m_Name: Perception fill light
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4397039381440287161
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2948871884539771106}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6230123730989384956}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!108 &1259709410926309357
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2948871884539771106}
+  m_Enabled: 1
+  serializedVersion: 13
+  m_Type: 2
+  m_Color: {r: 0.72, g: 0.8, b: 1, a: 1}
+  m_Intensity: 0.12
+  m_Range: 6
+  m_SpotAngle: 30
+  m_InnerSpotAngle: 21.80208
+  m_CookieSize2D: {x: 0.5, y: 0.5}
+  m_Shadows:
+    m_Type: 0
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ForceVisible: 0
+  m_ShapeRadius: 0.025
+  m_ShadowAngle: 0
+  m_LightUnit: 1
+  m_LuxAtDistance: 1
+  m_EnableSpotReflector: 1
 --- !u!1 &3086792290277247026
 GameObject:
   m_ObjectHideFlags: 0
@@ -3744,6 +3898,37 @@ Transform:
   - {fileID: 6792986255220602261}
   m_Father: {fileID: 6431648404998695170}
   m_LocalEulerAnglesHint: {x: -5.756, y: -4.107, z: 0}
+--- !u!1 &3686147073060774707
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2031158504740361208}
+  m_Layer: 0
+  m_Name: Spell Origin
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2031158504740361208
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3686147073060774707}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.05, y: -0.1, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7537150640060250274}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3824912284712737547
 GameObject:
   m_ObjectHideFlags: 0
@@ -4829,6 +5014,7 @@ Transform:
   - {fileID: 195985526719833218}
   - {fileID: 7296381146445402785}
   - {fileID: 1628677022270616517}
+  - {fileID: 2031158504740361208}
   m_Father: {fileID: 4640167511224671836}
   m_LocalEulerAnglesHint: {x: -5.756, y: -4.107, z: 0}
 --- !u!1 &4844478593427925768
@@ -9091,7 +9277,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 2
-    baseValue: 5
+    baseValue: 0
     min: 0
     max: 0
   - stat: 1
@@ -9099,7 +9285,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 11
-    baseValue: 0.5
+    baseValue: 0
     min: 0
     max: 0
   - stat: 12
@@ -9109,6 +9295,30 @@ MonoBehaviour:
   - stat: 13
     baseValue: 8
     min: 0
+    max: 0
+  - stat: 14
+    baseValue: 0
+    min: -100
+    max: 0
+  - stat: 15
+    baseValue: 0
+    min: -100
+    max: 0
+  - stat: 16
+    baseValue: 0
+    min: -100
+    max: 0
+  - stat: 17
+    baseValue: 0
+    min: -100
+    max: 0
+  - stat: 18
+    baseValue: 0
+    min: -100
+    max: 0
+  - stat: 19
+    baseValue: 0
+    min: -100
     max: 0
   audio:
     idle: []

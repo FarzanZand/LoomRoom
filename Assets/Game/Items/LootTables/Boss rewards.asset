@@ -23,6 +23,7 @@ MonoBehaviour:
     maxFloor: 0
     sources: 15
     weightPerFloor: 0
+    weightPerLevel: 0
   - item: {fileID: 11400000, guid: 05197bf5abf054f41987eff16771ea6e, type: 2}
     weight: 1
     minQuantity: 1
@@ -31,6 +32,7 @@ MonoBehaviour:
     maxFloor: 0
     sources: 15
     weightPerFloor: 0
+    weightPerLevel: 0
   pools:
   - label: Iron gear
     sources: 15
@@ -39,7 +41,7 @@ MonoBehaviour:
     maxRolls: 2
     uniqueItems: 1
     entries:
-    - item: {fileID: 11400000, guid: 1ce06e8dc283e7548875b2a315d4ddda, type: 2}
+    - item: {fileID: 11400000, guid: f4e99b53585eca643bdaa6867018a4aa, type: 2}
       weight: 2
       minQuantity: 1
       maxQuantity: 1
@@ -47,7 +49,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
-    - item: {fileID: 11400000, guid: a182a059e5a75124093391fb1a868ab8, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: 49d3c10a30673d240982e4adce0127fd, type: 2}
       weight: 2
       minQuantity: 1
       maxQuantity: 1
@@ -55,7 +58,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
-    - item: {fileID: 11400000, guid: 013bd0f00c525e24bbf99530378befe1, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: b355af85d8d55fb4485c941d151db904, type: 2}
       weight: 1
       minQuantity: 1
       maxQuantity: 1
@@ -63,7 +67,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
-    - item: {fileID: 11400000, guid: 01f7f3de17a8d6246a40d448eca0ca6f, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: 20154782471c9cb4ca51964d50a47397, type: 2}
       weight: 1
       minQuantity: 1
       maxQuantity: 1
@@ -71,7 +76,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
-    - item: {fileID: 11400000, guid: 614d3bc1e35e87d41a5ea760fec91e5e, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: ee18f666f410d3a4b8e6d980e041b6b1, type: 2}
       weight: 1
       minQuantity: 1
       maxQuantity: 1
@@ -79,7 +85,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
-    - item: {fileID: 11400000, guid: 8e0e9db94d57b364893535f73324723f, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: e23a2bb6edba93146bdad2eb243d9f2f, type: 2}
       weight: 1
       minQuantity: 1
       maxQuantity: 1
@@ -87,6 +94,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
+      weightPerLevel: 0
     - item: {fileID: 11400000, guid: ca1254f5ad9dfb44eab2336cc7ad3302, type: 2}
       weight: 1.5
       minQuantity: 1
@@ -95,6 +103,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
+      weightPerLevel: 0
   maxItemsPerReward: 12
   gold:
   - sources: 15

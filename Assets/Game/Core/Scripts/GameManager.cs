@@ -16,7 +16,7 @@ public enum GameState
     Dialogue  = 2,   // Pixel Crushers conversation running, cursor free
     Cutscene  = 3,   // timeline or scripted sequence, no input, HUD hidden
     Dead      = 4,   // player died, no input
-    Inventory = 5,   // live inventory: AI and simulation continue; player input is disabled
+    Inventory = 5,   // character menu: simulation paused; player input is disabled
     Paused    = 6,   // pause menu: time stopped, cursor free
 }
 
@@ -30,7 +30,8 @@ public class GameManager : Singleton<GameManager>
 
     public GameState State => stack.Count > 0 ? stack[stack.Count - 1] : GameState.Explore;
     public bool GameplayActive => State == GameState.Explore;
-    public bool SimulationActive => State == GameState.Explore || State == GameState.Inventory;
+    public bool SimulationActive => State == GameState.Explore;
+    bool inventoryPaused;
 
     public event Action<GameState> StateChanged;
     public event Action<bool>      HudVisibilityChanged;
@@ -79,6 +80,8 @@ public class GameManager : Singleton<GameManager>
     void Apply()
     {
         GameState s = State;
+        if (s == GameState.Inventory) { Time.timeScale = 0; inventoryPaused = true; }
+        else if (inventoryPaused) { inventoryPaused = false; if (s != GameState.Paused) Time.timeScale = 1; }
 
         bool locked = s == GameState.Explore || s == GameState.Cutscene || s == GameState.Dead;
         Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;

@@ -34,9 +34,15 @@ public class TooltipUI : Singleton<TooltipUI>
     public void Show(ItemData item)
     {
         if (panel == null || item == null) return;
-        if (nameText != null)        nameText.text = item.itemName;
-        if (typeText != null)        typeText.text = item.IsConsumable ? "CONSUMABLE" : item.canBeEquipped ? EquipmentSlotUI.Display(item.equipSlot) : item.itemType.ToString().ToUpperInvariant();
-        if (descriptionText != null) descriptionText.text = item.BuildTooltip();
+        ShowText(item.itemName, item.IsConsumable ? "CONSUMABLE" : item.canBeEquipped ? EquipmentSlotUI.Display(item.equipSlot) : item.itemType.ToString().ToUpperInvariant(), item.BuildTooltip());
+    }
+
+    public void ShowText(string title, string subtitle, string description)
+    {
+        if (panel == null) return;
+        if (nameText != null) nameText.text = title;
+        if (typeText != null) typeText.text = subtitle;
+        if (descriptionText != null) descriptionText.text = description;
         panel.SetActive(true);
         // Unity can reset overrideSorting while an authored nested canvas is inactive.
         var overlay=panel.GetComponent<Canvas>();if(overlay!=null)overlay.overrideSorting=true;

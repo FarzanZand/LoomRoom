@@ -23,7 +23,7 @@ MonoBehaviour:
     maxRolls: 1
     uniqueItems: 0
     entries:
-    - item: {fileID: 11400000, guid: 75a2b37d2afdb5140839f2492e0da112, type: 2}
+    - item: {fileID: 11400000, guid: 1ba720940abfc634789e033fabe50259, type: 2}
       weight: 4
       minQuantity: 1
       maxQuantity: 1
@@ -31,7 +31,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: -0.4
-    - item: {fileID: 11400000, guid: c5e6cb90fc501dc4e9dadf7808e648b7, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: a28df57d3014dee4c81499eaf4753671, type: 2}
       weight: 4
       minQuantity: 1
       maxQuantity: 1
@@ -39,7 +40,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: -0.4
-    - item: {fileID: 11400000, guid: 563551a10f338364085b317f905841b5, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: 8539e05408475f247ad2bcbf50e3d7fe, type: 2}
       weight: 4
       minQuantity: 1
       maxQuantity: 1
@@ -47,7 +49,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: -0.4
-    - item: {fileID: 11400000, guid: d79acc8aac76dbd4ebba676c78532248, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: 0fa67589586481d43b0d3147311b842c, type: 2}
       weight: 4
       minQuantity: 1
       maxQuantity: 1
@@ -55,7 +58,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: -0.4
-    - item: {fileID: 11400000, guid: c238df0768336e34bb7e3707e9afd767, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
       weight: 1
       minQuantity: 1
       maxQuantity: 1
@@ -63,7 +67,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: -0.1
-    - item: {fileID: 11400000, guid: 5ce76942449b23b45a86430cd37d32f9, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}
       weight: 1
       minQuantity: 1
       maxQuantity: 1
@@ -71,6 +76,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: -0.1
+      weightPerLevel: 0
     - item: {fileID: 11400000, guid: 4c4a17a16a14b5a49bd9466ac8e9b724, type: 2}
       weight: 2
       minQuantity: 1
@@ -79,6 +85,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: -0.2
+      weightPerLevel: 0
     - item: {fileID: 11400000, guid: 335b553d1e77a534ba228f8cc0fa27c1, type: 2}
       weight: 2
       minQuantity: 1
@@ -87,7 +94,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: -0.2
-    - item: {fileID: 11400000, guid: adf18e3964f4bec4e8358337d7806458, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: 6fc213fd8195b2c48a8426320b3e6011, type: 2}
       weight: 2
       minQuantity: 1
       maxQuantity: 1
@@ -95,7 +103,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0.2
-    - item: {fileID: 11400000, guid: 013bd0f00c525e24bbf99530378befe1, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: b355af85d8d55fb4485c941d151db904, type: 2}
       weight: 1.5
       minQuantity: 1
       maxQuantity: 1
@@ -103,7 +112,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0.6
-    - item: {fileID: 11400000, guid: 01f7f3de17a8d6246a40d448eca0ca6f, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: 20154782471c9cb4ca51964d50a47397, type: 2}
       weight: 1.5
       minQuantity: 1
       maxQuantity: 1
@@ -111,7 +121,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0.6
-    - item: {fileID: 11400000, guid: 614d3bc1e35e87d41a5ea760fec91e5e, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: ee18f666f410d3a4b8e6d980e041b6b1, type: 2}
       weight: 1.5
       minQuantity: 1
       maxQuantity: 1
@@ -119,7 +130,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0.6
-    - item: {fileID: 11400000, guid: 8e0e9db94d57b364893535f73324723f, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: e23a2bb6edba93146bdad2eb243d9f2f, type: 2}
       weight: 1.5
       minQuantity: 1
       maxQuantity: 1
@@ -127,7 +139,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0.6
-    - item: {fileID: 11400000, guid: 1ce06e8dc283e7548875b2a315d4ddda, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: f4e99b53585eca643bdaa6867018a4aa, type: 2}
       weight: 1.5
       minQuantity: 1
       maxQuantity: 1
@@ -135,7 +148,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0.5
-    - item: {fileID: 11400000, guid: a182a059e5a75124093391fb1a868ab8, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: 49d3c10a30673d240982e4adce0127fd, type: 2}
       weight: 1.5
       minQuantity: 1
       maxQuantity: 1
@@ -143,6 +157,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0.5
+      weightPerLevel: 0
     - item: {fileID: 11400000, guid: ca1254f5ad9dfb44eab2336cc7ad3302, type: 2}
       weight: 1
       minQuantity: 1
@@ -151,6 +166,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0.5
+      weightPerLevel: 0
   - label: Supplies
     sources: 15
     chance: 0.6
@@ -166,6 +182,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
+      weightPerLevel: 0
     - item: {fileID: 11400000, guid: 05197bf5abf054f41987eff16771ea6e, type: 2}
       weight: 2
       minQuantity: 1
@@ -174,6 +191,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
+      weightPerLevel: 0
     - item: {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
       weight: 1
       minQuantity: 1
@@ -182,6 +200,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
+      weightPerLevel: 0
     - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
       weight: 4
       minQuantity: 1
@@ -190,6 +209,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
+      weightPerLevel: 0
   maxItemsPerReward: 3
   gold:
   - sources: 4

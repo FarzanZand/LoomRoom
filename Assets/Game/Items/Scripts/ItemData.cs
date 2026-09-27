@@ -11,6 +11,9 @@ using UnityEditor;
 public class ItemData : ScriptableObject
 {
     public string itemName;
+    [Tooltip("Stable save identifier; do not change after shipping.")] public string saveId;
+    public WeaponCategory weaponCategory;
+    [Tooltip("Makes this item a spell tome: held in the left hand, it casts this spell.")] public SpellDefinition spell;
     [TextArea] public string description;
     public Sprite icon;
     [Tooltip("Free-form label for grouping in the Item Database window.")]
@@ -174,6 +177,11 @@ public class ItemData : ScriptableObject
                 body.Append("<color=#A1C5DE>").Append(line).Append("</color>");
             }
         if (itemType == ItemType.Shield) body.Append("\n\nArmor applies only to frontal hits while blocking. Guarding and blocked hits consume stamina.");
+        if (spell != null)
+        {
+            var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
+            body.Append($"\n\n{(caster != null ? caster.Cost(spell) : spell.manaCost):0.#} MP · {(caster != null ? caster.Power(spell) : spell.power):0.#} {(spell.spell == LeftHandSpell.Heal ? "healing" : "damage")}");
+        }
         if (canBeEquipped && PlayerManager.HasInstance)
         {
             var equipped = PlayerManager.Instance.Active?.Equipment?.Get(equipSlot);

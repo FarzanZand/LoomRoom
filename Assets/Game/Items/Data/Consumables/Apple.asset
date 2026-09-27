@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Apple
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Apple
+  saveId: 7edd7accc8c3dec46a7db977105134df
+  weaponCategory: 0
   description: Eat from your hand to recover health gradually. A new meal replaces
     the previous meal.
   icon: {fileID: 21300000, guid: a0c6de4f14179ac49bb7244c12b6c529, type: 3}

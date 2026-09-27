@@ -86,7 +86,7 @@ public class InputManager : Singleton<InputManager>
             else CancelPressed?.Invoke();
         };
 
-        actions.Dev.Debug1.performed += _ => DebugSwapRequested?.Invoke(PlayerKind.Room);
+        actions.Dev.Debug1.performed += _ => { if (!RunManager.HasInstance || !RunManager.Instance.Running || RunManager.Instance.Ended) DebugSwapRequested?.Invoke(PlayerKind.Room); };
         actions.Dev.Debug2.performed += _ => DebugSwapRequested?.Invoke(PlayerKind.Table);
         actions.Dev.PreviewSceneMood.performed += _ => DebugMoodPreviewRequested?.Invoke();
     }

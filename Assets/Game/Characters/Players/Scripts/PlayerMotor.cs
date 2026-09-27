@@ -47,6 +47,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     public event Action<float> Landed;   // airborne seconds
 
     Player player;
+    AdventurerProgress adventurer;   // Athletics lowers the sprint cost
     CapsuleCollider capsule;
     Vector3 movement;
     Vector3 knockbackVelocity;
@@ -75,6 +76,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     void Awake()
     {
         player     = GetComponent<Player>();
+        adventurer = GetComponent<AdventurerProgress>();
         Controller = GetComponent<CharacterController>();
         capsule    = GetComponent<CapsuleCollider>();
         // This actor is moved only by CharacterController.Move. The legacy body exists
@@ -211,7 +213,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
 
         Speed = p.walkSpeed;
         if (sprintApplied && player != null && player.Stats != null &&
-            !player.Stats.DrainStamina(p.sprintStaminaPerSecond, p.staminaRegenDelay))
+            !player.Stats.DrainStamina(p.sprintStaminaPerSecond * (adventurer != null ? adventurer.SprintCost : 1), p.staminaRegenDelay))
         { sprintApplied = false; IsSprinting = false; }
         if (sprintApplied) Speed = p.sprintSpeed;
         if (IsCrouching)   Speed = p.crouchSpeed;

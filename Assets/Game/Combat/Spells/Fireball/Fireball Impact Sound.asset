@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: Fireball Impact Sound
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 35ac4ff00d47b9e45ad51e59cafe785d, type: 3}
+  - {fileID: 8300000, guid: b90b80997f1647548babeb63ba2d2be9, type: 3}
+  - {fileID: 8300000, guid: f0d740deb829c564597eebb0f63c8519, type: 3}
+  - {fileID: 8300000, guid: aebd023c4e816ea418f95898edc746b7, type: 3}
+  - {fileID: 8300000, guid: b6706314f0ae7c447973953913ac1c0e, type: 3}
+  volume: 0.9
+  pitch: 1
+  pitchVariance: 0.08
+  minDistance: 2
+  maxDistance: 35

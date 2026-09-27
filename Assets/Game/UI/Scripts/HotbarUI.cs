@@ -103,6 +103,7 @@ public class HotbarUI : MonoBehaviour
     void TryUseHeldConsumable()
     {
         if (player == null || !InventoryManager.HasInstance) return;
+        if (player.GetComponent<PlayerSpellcasting>()?.Selected != null) return;
         if (GameManager.HasInstance && !GameManager.Instance.GameplayActive) return;
         InventoryManager.Instance.UseHeld(player);
     }

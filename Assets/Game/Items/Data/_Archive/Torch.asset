@@ -13,15 +13,27 @@ MonoBehaviour:
   m_Name: Torch
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: afafa
+  saveId: eb2166e0f2f58c644a7d5fcc22d0ab13
+  weaponCategory: 0
   description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
   icon: {fileID: 21300000, guid: 0b9136b640a740b49982787fefd30da1, type: 3}
   tag: 
   worldPrefab: {fileID: 1808823706470762, guid: 7c2b4de056174ed499e0881bf2d69242, type: 3}
+  pickupVisualPrefab: {fileID: 0}
   itemType: 2
   maxStackSize: 1
+  value: 0
+  pickupAudioSource: 0
   pickupAudio: {fileID: 0}
+  pickupClip: {fileID: 0}
+  pickupClipVolume: 1
+  pickupAudioKey: 
+  directToHotbar: 0
   canBeEquipped: 1
   equipSlot: 1
+  heldScale: 1
+  heldPosition: {x: 0, y: 0, z: 0}
+  heldRotation: {x: 0, y: 0, z: 0}
   equipOnPickup: 0
   statModifiers:
   - stat: 1
@@ -31,9 +43,19 @@ MonoBehaviour:
     useDefaultEffects: 1
     hitAudio: {fileID: 0}
     swingAudio: {fileID: 0}
+    heavySwingAudio: {fileID: 0}
     hitParticle: {fileID: 0}
     damageMultiplier: 1
     knockbackForce: -1
     hitStopScale: 1
   effects: []
+  useAudioSource: 0
   useAudio: {fileID: 0}
+  useClip: {fileID: 0}
+  useClipVolume: 1
+  useAudioKey: 
+  useMessage: 
+  AnimationOnUse: 0
+  eatDuration: 0.65
+  eatMouthPosition: {x: 0, y: -0.12, z: 0.13}
+  eatMouthRotation: {x: -65, y: 0, z: 0}

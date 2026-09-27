@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5d9f0b6401f5914fae2a37cd8cf619f, type: 3}
+  m_Name: Heal
+  m_EditorClassIdentifier: Assembly-CSharp::SpellDefinition
+  spell: 2
+  displayName: Heal
+  description: Heals you.
+  icon: {fileID: 21300000, guid: 3ff4d37375fe3c54c9dda24f0f2070ce, type: 3}
+  manaCost: 15
+  power: 25
+  castSeconds: 1
+  recoverySeconds: 0.4
+  castMoveSpeed: 0.6
+  projectile: {fileID: 0}
+  radius: 1.5
+  speed: 14
+  lifetime: 5
+  heldVisual: {fileID: 5355545213222503845, guid: 23ccdbd968ae47044b023cbe722f9032, type: 3}
+  impact: {fileID: 2389264184699733371, guid: 2215c46c3070b1b4bbf73445b78cd978, type: 3}
+  animation: 2
+  chargeClipSeconds: 1
+  equipSound: {fileID: 11400000, guid: a953a73d2b3f04c4f90150d00b39ca0a, type: 2}
+  chargeSound: {fileID: 11400000, guid: 189924615559ea24681703eeb0568eaa, type: 2}
+  releaseSound: {fileID: 11400000, guid: a6c07c7ed7e56754bab6ce203ab1dbb0, type: 2}
+  flightSound: {fileID: 0}
+  impactSound: {fileID: 0}

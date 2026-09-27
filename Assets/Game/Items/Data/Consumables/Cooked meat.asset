@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Cooked meat
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Cooked meat
+  saveId: 05197bf5abf054f41987eff16771ea6e
+  weaponCategory: 0
   description: Eat from your hand to recover health gradually. A new meal replaces
     the previous meal.
   icon: {fileID: 21300000, guid: 0a31e5764f8b863479f9b6a7e36853e6, type: 3}

@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5d9f0b6401f5914fae2a37cd8cf619f, type: 3}
+  m_Name: Fireball
+  m_EditorClassIdentifier: Assembly-CSharp::SpellDefinition
+  spell: 1
+  displayName: Fireball
+  description: Throws a fireball that explodes on impact.
+  icon: {fileID: 21300000, guid: 8b3a24607a8a42347b64de5d5cf286d7, type: 3}
+  manaCost: 12
+  power: 20
+  castSeconds: 0.6
+  recoverySeconds: 0.35
+  castMoveSpeed: 0.6
+  projectile: {fileID: 6498514768978316980, guid: e43e91865fe7ea147b56044f4351bd23, type: 3}
+  radius: 1.5
+  speed: 16
+  lifetime: 4
+  heldVisual: {fileID: 5233650602891333819, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
+  impact: {fileID: 8076800287552310254, guid: b8c209c642364fb49bebf225b0e07ed8, type: 3}
+  animation: 1
+  chargeClipSeconds: 0.6
+  equipSound: {fileID: 11400000, guid: ade9f09db0fba5540948a7017ca45771, type: 2}
+  chargeSound: {fileID: 11400000, guid: fb7210e310a69a549a244a701d8bf402, type: 2}
+  releaseSound: {fileID: 11400000, guid: a536da981b4a8e44b94753fea1b72cd3, type: 2}
+  flightSound: {fileID: 11400000, guid: 852e66b0a83da1c44a930c6e71472374, type: 2}
+  impactSound: {fileID: 11400000, guid: 312e1b75d0a7b864985ab21fa98aa34c, type: 2}

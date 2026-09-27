@@ -182,11 +182,15 @@ public class Hitbox : MonoBehaviour
 
         if(heavy && CombatManager.HasInstance)
         { baseDamage*=CombatManager.Instance.heavyDamageMultiplier; force*=CombatManager.Instance.heavyKnockbackMultiplier; }
+        var weapon = owner is Player wielder && wielder.Equipment != null ? wielder.Equipment.Get(EquipmentSlot.RightHand) : null;
+        var skills = owner is Player trainee ? trainee.GetComponent<AdventurerProgress>() : null;
+        if (skills != null) baseDamage = skills.MeleeDamage(baseDamage, weapon, heavy);
         var info = new DamageInfo
         {
             Profile        = profile,
             Amount         = baseDamage * profile.damageMultiplier,
             Source         = owner,
+            Weapon         = weapon,
             HitPoint       = contact,
             Direction      = dir,
             KnockbackForce = force,

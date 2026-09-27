@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: healPotion
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Heal Potion
+  saveId: 19d156fcb4bb95c4e8f0d4d53f3d6f61
+  weaponCategory: 0
   description: 'Heal for 5 health on use. '
   icon: {fileID: 21300000, guid: 48d9b4085f8410e49927b68655616e34, type: 3}
   tag: 

@@ -38,9 +38,11 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     readonly Dictionary<StatType, float>               baseStats  = new();
     readonly Dictionary<StatType, (float min, float max)> statRanges = new();
     readonly List<StatModifier>                        modifiers  = new();
+    public System.Collections.Generic.IReadOnlyList<StatModifier> Modifiers => modifiers;
     readonly List<StatType>                            changedScratch = new();
 
     IBlocker blocker;
+    AdventurerProgress adventurer;   // players only: attribute-derived stats and skill rules
     Equipment equipment;
     float manaRegenDelayTimer;
     float staminaRegenDelayTimer;
@@ -57,6 +59,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     {
         Character = GetComponent<Character>();
         blocker   = GetComponent<IBlocker>();
+        adventurer = GetComponent<AdventurerProgress>();
         equipment = GetComponent<Equipment>();
         LoadBase();
     }
@@ -97,6 +100,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     }
     public void ClearFood(){FoodRemaining=0;FoodHealingPerSecond=0;}
     void TickFood() {
+        if (GameManager.HasInstance && !GameManager.Instance.SimulationActive) return;
         if(!IsAlive){ClearFood();return;}
         float dt=Mathf.Min(FoodRemaining,Time.deltaTime);
         if(dt<=0)return;
@@ -112,6 +116,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
     void TickModifiers()
     {
+        if (GameManager.HasInstance && !GameManager.Instance.SimulationActive) return;
         changedScratch.Clear();
         for (int i = modifiers.Count - 1; i >= 0; i--)
         {
@@ -130,6 +135,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
     void TickMana()
     {
+        if (GameManager.HasInstance && !GameManager.Instance.SimulationActive) return;
         if (!initialised || !HasStat(StatType.MaxMana)) return;
 
         if (manaRegenDelayTimer > 0f)
@@ -173,7 +179,17 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
             }
         }
 
-        float result = (GetBase(stat) + flat) * (1f + percentAdd) * percentMul;
+        float derived = 0;
+        var rules = adventurer != null ? adventurer.rules : null;
+        if (rules != null)
+        {
+            if (stat == StatType.AttackDamage) derived = ResolveStat(StatType.Strength, false) * rules.strengthAttack;
+            else if (stat == StatType.Armor) derived = ResolveStat(StatType.Constitution, false) * rules.constitutionArmor;
+            else if (stat == StatType.MaxHealth) derived = ResolveStat(StatType.Constitution, false) * rules.constitutionHealth;
+            else if (stat == StatType.MaxMana) derived = ResolveStat(StatType.Intelligence, false) * rules.intelligenceMana;
+            else if (stat == StatType.MoveSpeed || stat == StatType.AttackSpeed) derived = Mathf.Clamp(ResolveStat(StatType.Dexterity, false) * rules.dexteritySpeed, -.2f, .3f);
+        }
+        float result = (GetBase(stat) + flat + derived) * (1f + percentAdd) * percentMul;
 
         if (statRanges.TryGetValue(stat, out var range))
         {
@@ -242,15 +258,17 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         if (!IsAlive) return;
         info.Target = Character;
 
-        if (blocker != null && blocker.TryBlock(ref info))
+        if (!info.Magic && blocker != null && blocker.TryBlock(ref info))
         {
             info.Blocked = true;
 
         }
 
-        float armor = ResolveStat(StatType.Armor, info.Blocked);
+        float armor = info.Magic ? 0 : ResolveStat(StatType.Armor, info.Blocked);
         float actual  = Mathf.Max(0f, info.Amount - armor);
         if(info.Blocked)actual*=1f-Mathf.Clamp01(CombatManager.HasInstance?CombatManager.Instance.blockDamageReduction:.5f);
+        // Legendary Blocking: nothing gets through a successful block.
+        if (info.Blocked && adventurer != null && adventurer.BlockAbsorbsAll) actual = 0;
         info.Amount   = actual;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
@@ -368,6 +386,15 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         IsExhausted = false;
         HealthChanged?.Invoke();
         ManaChanged?.Invoke();
+    }
+
+    public void RestorePools(float health, float mana, float stamina)
+    {
+        CurrentHealth = Mathf.Clamp(health, 0, MaxHealth);
+        CurrentMana = Mathf.Clamp(mana, 0, MaxMana);
+        CurrentStamina = Mathf.Clamp(stamina, 0, MaxStamina);
+        IsExhausted = CurrentStamina <= 0;
+        HealthChanged?.Invoke(); ManaChanged?.Invoke(); StaminaChanged?.Invoke();
     }
 
     // Reload base values (e.g. after swapping CharacterData at runtime).

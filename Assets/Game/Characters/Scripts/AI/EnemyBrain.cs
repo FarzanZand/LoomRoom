@@ -213,8 +213,10 @@ public class EnemyBrain : MonoBehaviour
         // A heavy stagger taken mid-swing is applied when the swing ends.
         if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null)
         {
-            if (IsSwinging) attackRunner.QueueStagger(Tuning.heavyStaggerDuration);
-            else            BeginRecovery(Tuning.heavyStaggerDuration);
+            var trainee = info.Source != null ? info.Source.GetComponent<AdventurerProgress>() : null;
+            float duration = Tuning.heavyStaggerDuration * (trainee != null ? trainee.StaggerMultiplier(info.Weapon) : 1);
+            if (IsSwinging) attackRunner.QueueStagger(duration);
+            else            BeginRecovery(duration);
         }
         if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null)
             Character.TriggerAnimation(Character.data.hurtTrigger);

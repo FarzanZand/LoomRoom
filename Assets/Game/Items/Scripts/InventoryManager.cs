@@ -130,6 +130,7 @@ public class InventoryManager : Singleton<InventoryManager>
 
     public WorldItem DropFromPlayer(ItemData item, Player player)
     {
+        if (item == null) return null;
         if (player == null) player = ActivePlayer;
         if (player == null) return null;
         Transform t = player.transform;

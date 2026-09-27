@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: Heal Release Sound
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: f394b5b617270824091df493c9d188b7, type: 3}
+  - {fileID: 8300000, guid: b5db2eda32ea4cf41913dc38eed0a56a, type: 3}
+  - {fileID: 8300000, guid: 2d2a802b68593b94291b4f7f2e30d366, type: 3}
+  - {fileID: 8300000, guid: a6e28b437bce6c04e88bef7a38727375, type: 3}
+  - {fileID: 8300000, guid: 93ebed09a7a5f7a43b66c84efd157997, type: 3}
+  volume: 0.5
+  pitch: 0.85
+  pitchVariance: 0.06
+  minDistance: 2
+  maxDistance: 30

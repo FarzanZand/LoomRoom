@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e1245925be5b504991286fe52736323, type: 3}
+  m_Name: Arcanist
+  m_EditorClassIdentifier: Assembly-CSharp::AdventurerClass
+  id: spellblade
+  displayName: Arcanist
+  description: Sword and a Fireball Tome. Quick, but fragile.
+  portrait: {fileID: 21300000, guid: 293f3cf007bf42a438328c01b10f6578, type: 3}
+  miniature: {fileID: 4805614000556487136, guid: 5c624b2e55c5cf7469acc41b4e524e81, type: 3}
+  unlockFlag: class.spellblade
+  lockedHint: Solve the puzzle in the room to unlock it.
+  equipment:
+  - {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
+  spells:
+  - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
+  supplies:
+  - item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
+    count: 2
+  - item: {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
+    count: 2
+  - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
+    count: 2
+  leftHand: 1
+  attributes: ffffffff01000000ffffffff0100000001000000ffffffff
+  growth: 030000000200000000000000
+  health: 25
+  mana: 40
+  stamina: 30
+  skills: 1400000000000000000000001e000000000000000a00000000000000

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e1245925be5b504991286fe52736323, type: 3}
+  m_Name: Cleric
+  m_EditorClassIdentifier: Assembly-CSharp::AdventurerClass
+  id: cleric
+  displayName: Cleric
+  description: Mace, shield and a Heal Tome.
+  portrait: {fileID: 21300000, guid: 1d817ca439b2c534baddb60371f4aec0, type: 3}
+  miniature: {fileID: 9058385677225207783, guid: 631d397a04272644e86d53db57b46ad0, type: 3}
+  unlockFlag: 
+  lockedHint: Solve the room's puzzle to unlock.
+  equipment:
+  - {fileID: 11400000, guid: b1a6850fe492d4643b2c79564b88c087, type: 2}
+  - {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}
+  - {fileID: 11400000, guid: a28df57d3014dee4c81499eaf4753671, type: 2}
+  spells:
+  - {fileID: 11400000, guid: efb210faa4ae384408891531f33ee657, type: 2}
+  supplies:
+  - item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
+    count: 2
+  - item: {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
+    count: 2
+  - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
+    count: 2
+  leftHand: 0
+  attributes: 00000000ffffffff01000000000000000100000000000000
+  growth: 030000000200000000000000
+  health: 30
+  mana: 30
+  stamina: 30
+  skills: 00000000190000000a0000000000000028000000000000000a000000

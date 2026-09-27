@@ -2,6 +2,9 @@ using System;
 
 // All values are serialized as integers. Never renumber, never reuse a retired value.
 
+// Which weapon skill a weapon trains and scales with (see AdventureSkills.ForWeapon).
+public enum WeaponCategory { Sword = 0, Mace = 1 }
+
 public enum ItemUseAnimation
 {
     Idle = 0,
@@ -24,6 +27,7 @@ public enum ItemType
     Consumable = 4,
     Key        = 5,
     Equipment  = 6,
+    Spell      = 7,
 }
 
 // Bit mask over ItemType, for container filters ("the hotbar only takes these").
@@ -38,6 +42,7 @@ public enum ItemTypeMask
     Consumable = 1 << 4,
     Key        = 1 << 5,
     Equipment  = 1 << 6,
+    Spell      = 1 << 7,
     All        = ~0,
 }
 

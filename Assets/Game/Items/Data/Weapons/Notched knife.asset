@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Notched knife
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Notched knife
-  description: Recovered from the crypt. Equip in your weapon hand.
+  saveId: 335b553d1e77a534ba228f8cc0fa27c1
+  weaponCategory: 0
+  spell: {fileID: 0}
+  description: Very quick, very weak.
   icon: {fileID: 21300000, guid: d4ef04d116a6d79449188d927fb8cc6d, type: 3}
   tag: 
   worldPrefab: {fileID: 1808823706470762, guid: 7c2b4de056174ed499e0881bf2d69242, type: 3}
@@ -38,8 +41,8 @@ MonoBehaviour:
     value: 3
     type: 0
   - stat: 7
-    value: 0.35000002
-    type: 1
+    value: 0.35
+    type: 0
   weapon:
     useDefaultEffects: 1
     hitAudio: {fileID: 0}

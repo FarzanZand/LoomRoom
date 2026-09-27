@@ -12,15 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: Bronze Sword
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Simple Sword
-  description: Simple sword. Reliable dungeon equipment.
+  itemName: Bronze Sword
+  saveId: 5eeb4a0424f6f2f42a1fe5f9fa6177b2
+  weaponCategory: 0
+  spell: {fileID: 0}
+  description: 
   icon: {fileID: 21300000, guid: 70e257e9c992d06459b6e3ada86d3226, type: 3}
   tag: Bronze equipment
   worldPrefab: {fileID: 8011566013882336049, guid: 2d1b288c4815e28498d754a794475903, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 1
   maxStackSize: 1
-  value: 30
+  value: 20
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

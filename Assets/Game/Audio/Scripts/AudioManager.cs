@@ -88,6 +88,8 @@ public class AudioManager : Singleton<AudioManager>
 
     // ── Mixer groups ───────────────────────────────────────────────────────────
     AudioMixerGroup musicGroup, sfxGroup, uiGroup;
+    // For looping sources owned by effects (a flame crackling in the hand).
+    public AudioMixerGroup SfxGroup => sfxGroup;
 
     // ── Music ──────────────────────────────────────────────────────────────────
     AudioSource musicA, musicB;

@@ -68,6 +68,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     public event System.Action ChargeReady;
 
     Player player;
+    PlayerSpellcasting spells;
+    AdventurerProgress progress;
     float  blockLockUntil = -1f;
     float attackBufferedUntil=-1f;
     float pressedAt;
@@ -85,6 +87,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     void Awake()
     {
         player = GetComponent<Player>();
+        spells = GetComponent<PlayerSpellcasting>();
+        progress = GetComponent<AdventurerProgress>();
         relay = GetComponentInChildren<WeaponAnimationRelay>(true);
         if (armsAnimator == null && relay != null) armsAnimator = relay.GetComponent<Animator>();
     }
@@ -137,7 +141,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
 
     void OnPrimaryPressed()
     {
-        if (!player.IsActive) return;
+        if (!player.IsActive || (spells != null && spells.Busy)) return;
         if (InputManager.Instance.SecondaryHeld) return;
         pressedAt=Time.time; charging=true; chargeAnnounced=false;
         releasingHeavyZoom = false;
@@ -170,7 +174,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (armsAnimator == null || armsAnimator.runtimeAnimatorController == null) return;
 
         bool gameplay = !GameManager.HasInstance || GameManager.Instance.GameplayActive;
-        bool primary   = gameplay && InputManager.HasInstance && InputManager.Instance.PrimaryHeld;
+        bool primary   = gameplay && (spells == null || !spells.Busy) && InputManager.HasInstance && InputManager.Instance.PrimaryHeld;
         bool secondary = gameplay && InputManager.HasInstance && InputManager.Instance.SecondaryHeld;
         bool blockLocked = Time.time < blockLockUntil;
         if(CombatManager.HasInstance)
@@ -193,7 +197,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         // when idle it expires after the buffer window like any late press.
         if (!IsAttacking && Time.time >= attackBufferedUntil) queuedPresses = 0;
         if (!gameplay) queuedPresses = 0;
-        bool buffered = gameplay && queuedPresses > 0 && !windingUp;
+        bool buffered = gameplay && (spells == null || !spells.Busy) && queuedPresses > 0 && !windingUp;
         SetBool(armsAnimator, attackHeldParam, (primary || buffered) && WeaponHeld && !secondary);
         if (secondary && !blockLocked && ShieldHeld && player.Stats != null &&
             player.Stats.HasStat(StatType.MaxStamina) && (player.Stats.IsExhausted || player.Stats.CurrentStamina <= 0))
@@ -373,6 +377,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         }
 
         float cost = CombatManager.HasInstance ? CombatManager.Instance.blockStaminaCost : 6f;
+        if (progress != null) cost *= progress.BlockCost;
         if (player.Stats != null && !player.Stats.TryUseStamina(cost, player.PlayerData != null ? player.PlayerData.staminaRegenDelay : .6f))
         {
             player.Stats.ExhaustStamina(player.PlayerData != null ? player.PlayerData.staminaRegenDelay : 1f);

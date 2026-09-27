@@ -41,7 +41,7 @@ public class Merchant : MonoBehaviour, IInteractable
 
     readonly List<Ware> wares = new();
     bool stocked;
-    public IReadOnlyList<Ware> Wares { get { EnsureStock(); return wares; } }
+    public IReadOnlyList<Ware> Wares { get { EnsureStock(); foreach (var w in wares) w.price=PriceOf(w.item); return wares; } }
     public string Currency => CurrencyManager.HasInstance ? CurrencyManager.Instance.currencyName : "gold";
 
     public string Prompt => $"Trade with the {merchantName}";
@@ -80,11 +80,19 @@ public class Merchant : MonoBehaviour, IInteractable
     public int PriceOf(ItemData item)
     {
         int basePrice = CurrencyManager.HasInstance ? CurrencyManager.Instance.BuyPrice(item) : Mathf.Max(1, item.value);
-        return Mathf.Max(1, Mathf.CeilToInt(basePrice * priceMultiplier * (1f + pricePerFloor * Mathf.Max(0, floorNumber - 1))));
+        float haggle = Trader != null ? Trader.BuyPriceMultiplier : 1;
+        // Never cheaper than the merchant pays, so buying and selling back can't make money.
+        return Mathf.Max(SellPriceOf(item) + 1, Mathf.CeilToInt(basePrice * priceMultiplier * (1f + pricePerFloor * Mathf.Max(0, floorNumber - 1)) * haggle));
     }
 
-    public int SellPriceOf(ItemData item) =>
-        CurrencyManager.HasInstance ? CurrencyManager.Instance.SellPrice(item) : Mathf.Max(1, item.value / 3);
+    public int SellPriceOf(ItemData item)
+    {
+        int basePrice = CurrencyManager.HasInstance ? CurrencyManager.Instance.SellPrice(item) : Mathf.Max(1, item.value / 3);
+        return Mathf.Max(1, Mathf.FloorToInt(basePrice * (Trader != null ? Trader.SellPriceMultiplier : 1)));
+    }
+
+    // Trading and Charisma of whoever is shopping (the active player).
+    static AdventurerProgress Trader => PlayerManager.HasInstance && PlayerManager.Instance.Active != null ? PlayerManager.Instance.Active.GetComponent<AdventurerProgress>() : null;
 
     public bool Buy(int index, Player player, out string message)
     {
@@ -92,6 +100,7 @@ public class Merchant : MonoBehaviour, IInteractable
         message = null;
         if (index < 0 || index >= wares.Count || player == null) return false;
         var ware = wares[index];
+        ware.price = PriceOf(ware.item);
         var wallet = player.Wallet;
         if (wallet == null || !wallet.CanAfford(ware.price)) { message = $"You cannot afford the {ware.item.itemName}."; return false; }
         if (!InventoryManager.HasInstance || !InventoryManager.Instance.Pickup(ware.item, player, 1, playSound: false))
@@ -104,6 +113,7 @@ public class Merchant : MonoBehaviour, IInteractable
         PlayTrade();
         message = $"You buy the {ware.item.itemName} for {ware.price} {Currency}.";
         MessageLog.Post(message, MessageKind.Loot);
+        player.GetComponent<AdventurerProgress>()?.Practise(AdventureSkill.Trading, SkillAction.Buy);
         return true;
     }
 
@@ -130,6 +140,7 @@ public class Merchant : MonoBehaviour, IInteractable
         PlayTrade();
         message = $"You sell the {item.itemName} for {price} {Currency}.";
         MessageLog.Post(message, MessageKind.Loot);
+        player.GetComponent<AdventurerProgress>()?.Practise(AdventureSkill.Trading, SkillAction.Sell);
         return true;
     }
 

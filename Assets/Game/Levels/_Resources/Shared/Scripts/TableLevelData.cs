@@ -20,6 +20,8 @@ public class TableLevelData : ScriptableObject
     [Title("Level")]
     public string displayName;
     [TextArea] public string description;
+    [Tooltip("Picture on the adventure card at the table (a shot of the level).")]
+    [PreviewField(80)] public Sprite cardArt;
     public TableLevelKind kind;
     [Tooltip("Town: the authored environment. Dungeon: optional root for the generated floor.")]
     public GameObject environmentPrefab;

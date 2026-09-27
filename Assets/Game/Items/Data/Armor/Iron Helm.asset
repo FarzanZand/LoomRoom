@@ -13,14 +13,17 @@ MonoBehaviour:
   m_Name: Iron Helm
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Iron Helm
-  description: Iron helm. Protective plates with a polished metal finish.
+  saveId: b355af85d8d55fb4485c941d151db904
+  weaponCategory: 0
+  spell: {fileID: 0}
+  description: 
   icon: {fileID: 21300000, guid: f8a9d046f5ade5249b948e48df5f9dc1, type: 3}
   tag: Iron equipment
   worldPrefab: {fileID: 8066756647021376762, guid: 0951e2140941dad4197ccae14789721d, type: 3}
   pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
   itemType: 6
   maxStackSize: 1
-  value: 35
+  value: 30
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

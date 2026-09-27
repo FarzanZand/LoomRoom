@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64bb7423da7612544b626b15a29c1f0f, type: 3}
+  m_Name: Trading
+  m_EditorClassIdentifier: Assembly-CSharp::AdventureSkillData
+  skill: 6
+  displayName: Trading
+  icon: {fileID: 21300000, guid: a4b5f30bd57565a459e49d70d505fb28, type: 3}
+  associatedStat: 19
+  description: Better prices with merchants.
+  practice:
+  - action: 7
+    oneIn: 3
+    text: Buying from a merchant
+  - action: 8
+    oneIn: 5
+    text: Selling to a merchant
+  chanceAtMaster: 0.5
+  perEnemyLimit: 0
+  bonusAt100: 0.2
+  bonusText: -{0}% prices
+  legendaryText: Prices 10% lower.

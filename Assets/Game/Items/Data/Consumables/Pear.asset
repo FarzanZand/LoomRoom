@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Pear
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Pear
+  saveId: e4e9de3d3ed801b44bcef84d0ed5ccc8
+  weaponCategory: 0
   description: Eat from your hand to recover health gradually. A new meal replaces
     the previous meal.
   icon: {fileID: 21300000, guid: ced073ca4cedbff46b5d9ae41fd0984e, type: 3}

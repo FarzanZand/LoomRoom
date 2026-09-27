@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Iron Gloves
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Iron Gloves
-  description: Iron gloves. Protective plates with a polished metal finish.
+  saveId: ee18f666f410d3a4b8e6d980e041b6b1
+  weaponCategory: 0
+  spell: {fileID: 0}
+  description: 
   icon: {fileID: 21300000, guid: b784bad17e700ba4bb7c9c11d93b5cda, type: 3}
   tag: Iron equipment
   worldPrefab: {fileID: 758805501712008079, guid: 0fcaf855ae6fddc4f9e062cf99b51f77, type: 3}

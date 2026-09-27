@@ -13,14 +13,17 @@ MonoBehaviour:
   m_Name: Iron Boots
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Iron Boots
-  description: Iron boots. Protective plates with a polished metal finish.
+  saveId: e23a2bb6edba93146bdad2eb243d9f2f
+  weaponCategory: 0
+  spell: {fileID: 0}
+  description: 
   icon: {fileID: 21300000, guid: 38f4e1a097b7e64449cecca289240cb0, type: 3}
   tag: Iron equipment
   worldPrefab: {fileID: 4755564757874122133, guid: 3a649471129c7054aac5572f992c3bc9, type: 3}
   pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
   itemType: 6
   maxStackSize: 1
-  value: 30
+  value: 35
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

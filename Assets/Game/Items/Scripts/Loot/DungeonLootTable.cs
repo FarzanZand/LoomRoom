@@ -7,6 +7,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Table/Loot Table")]
 public class DungeonLootTable : ScriptableObject
 {
+    public static int? GenerationLevel { get; set; }
     [Serializable] public class Entry
     {
         public ItemData item;
@@ -16,6 +17,7 @@ public class DungeonLootTable : ScriptableObject
         [Tooltip("Zero means no upper floor limit.")] [Min(0)] public int maxFloor;
         public DungeonLootSource sources = DungeonLootSource.All;
         [Tooltip("Added to the weight per floor beyond minFloor.")] public float weightPerFloor;
+        [Tooltip("Extra weight per character level, capped at 5 levels beyond this entry's starting floor.")] public float weightPerLevel;
     }
     [Serializable] public class Pool
     {
@@ -96,6 +98,10 @@ public class DungeonLootTable : ScriptableObject
     static bool Eligible(Entry e,int floor,DungeonLootSource source)=>e!=null && e.item!=null && floor>=Math.Max(1,e.minFloor) && (e.maxFloor<=0 || floor<=e.maxFloor) && (e.sources&source)!=0;
     static double Weight(Entry e,int floor) {
         double value=e.weight+(double)e.weightPerFloor*(floor-Math.Max(1,e.minFloor));
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        var progress = player != null ? player.GetComponent<AdventurerProgress>() : null;
+        int level = GenerationLevel ?? (progress != null ? progress.Level : 1);
+        value += e.weightPerLevel * Mathf.Clamp(level - 1, 0, 5);
         return double.IsNaN(value)||double.IsInfinity(value) ? 0 : Math.Max(0,value);
     }
     static Entry Select(Entry[] choices,System.Random random,int floor,DungeonLootSource source,HashSet<ItemData> used) {

@@ -41,15 +41,16 @@ public class RunRecapUI : MonoBehaviour
         root.SetActive(true);
         if (title != null) { title.text = s.victory ? "VICTORY" : "YOU DIED"; title.color = s.victory ? victoryColor : deathColor; }
         if (cause != null)
-            cause.text = s.victory
+            cause.text = (string.IsNullOrEmpty(s.adventurer) ? "" : $"<color=#E8C77A>{s.adventurer}</color>\n") + (s.victory
                 ? $"You conquered {s.levelName}."
-                : $"Killed by {Article(s.killer)} on floor {s.floor} of {s.levelName}.";
+                : $"Killed by {Article(s.killer)} on floor {s.floor} of {s.levelName}.");
         if (stats != null)
             stats.text = $"Floor reached  <b>{s.floor}</b> / {s.floors}\n" +
                          $"Enemies slain  <b>{s.kills}</b>\n" +
                          (s.bosses > 0 ? $"Bosses slain  <b>{s.bosses}</b>\n" : "") +
                          $"Gold found  <b>{s.gold}</b>\n" +
-                         $"Time  <b>{s.TimeText}</b>";
+                         $"Time  <b>{s.TimeText}</b>" +
+                         (string.IsNullOrEmpty(s.skills) ? "" : $"\n\n<color=#8C8173>{s.skills}</color>");
         if (seed != null) seed.text = $"Seed {s.seed}";
         fade?.Kill();
         if (group != null)

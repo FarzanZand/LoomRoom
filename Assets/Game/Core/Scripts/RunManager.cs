@@ -48,6 +48,7 @@ public class RunManager : Singleton<RunManager>
     void Start()
     {
         player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        player?.GetComponent<AdventureSave>()?.Initialize();
         if (player != null)
         {
             player.Damaged += OnPlayerDamaged;
@@ -89,11 +90,22 @@ public class RunManager : Singleton<RunManager>
             player.Wallet?.Clear();
         }
         recap?.Hide();
+        player?.GetComponent<AdventurerProgress>()?.Begin();
         RunStarted?.Invoke();
     }
 
-    public void ReachFloor(int floor) => Floor = Mathf.Max(Floor, floor);
+    public void ReachFloor(int floor)
+    {
+        bool advanced = floor > Floor;
+        Floor = Mathf.Max(Floor, floor);
+        if (ProgressionManager.HasInstance && Floor > ProgressionManager.Instance.GetFlag("adventure.deepestFloor"))
+        {
+            ProgressionManager.Instance.SetFlag("adventure.deepestFloor", Floor);
+        }
+        if (advanced) player?.GetComponent<AdventurerProgress>()?.ReachedFloor();
+    }
     public void NoteBossSlain() => BossesSlain++;
+    public void RestoreTotals(int kills, int bosses, int gold, float seconds) { Kills=Mathf.Max(0,kills); BossesSlain=Mathf.Max(0,bosses); GoldFound=Mathf.Max(0,gold); Seconds=Mathf.Max(0,seconds); }
 
     public void EndRunInVictory()
     {
@@ -173,7 +185,24 @@ public class RunManager : Singleton<RunManager>
         bosses = BossesSlain,
         seconds = Seconds,
         seed = Seed,
+        adventurer = Adventurer(out var skills),
+        skills = skills,
     };
+
+    // "Level 4 Wizard" and the three best skills, for the recap.
+    string Adventurer(out string skills)
+    {
+        skills = "";
+        var progress = player != null ? player.GetComponent<AdventurerProgress>() : null;
+        if (progress == null || progress.selectedClass == null) return "";
+        var best = new System.Collections.Generic.List<AdventureSkill>(AdventureSkills.All);
+        best.RemoveAll(x => progress.Rank(x) <= 0);
+        best.Sort((a, b) => progress.Rank(b).CompareTo(progress.Rank(a)));
+        var parts = new System.Collections.Generic.List<string>();
+        for (int i = 0; i < best.Count && i < 3; i++) parts.Add($"{progress.Definition(best[i])?.displayName ?? best[i].ToString()} {progress.Rank(best[i])}");
+        skills = string.Join("   ·   ", parts);
+        return $"Level {progress.Level} {progress.selectedClass.displayName}";
+    }
 
     // ── Listeners ─────────────────────────────────────────────────────
 
@@ -194,12 +223,20 @@ public class RunManager : Singleton<RunManager>
     {
         if (!Running || Ended || c == null || c is Player || c.GetComponent<EnemyBrain>() == null) return;
         Kills++;
+        var progress = player != null ? player.GetComponent<AdventurerProgress>() : null;
+        if (progress == null || progress.rules == null) return;
+        // Tougher enemies are worth more: an authored value, or one scaled from maximum health.
+        var data = c.GetComponent<EnemyBrain>().Data;
+        float xp = data != null && data.experience > 0 ? data.experience
+                 : progress.rules.xpPerEnemy * Mathf.Clamp(c.Stats != null ? c.Stats.MaxHealth / 20f : 1f, .5f, 6f);
+        progress.GainExperience(xp * (1 + (Floor - 1) * .12f));
     }
 }
 
 public struct RunSummary
 {
     public bool victory;
+    public string adventurer, skills;
     public string levelName, killer;
     public int floor, floors, kills, gold, bosses, seed;
     public float seconds;

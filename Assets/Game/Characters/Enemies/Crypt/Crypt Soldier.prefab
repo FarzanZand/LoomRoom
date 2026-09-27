@@ -23,7 +23,7 @@ PrefabInstance:
     - target: {fileID: 3599921206689178014, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
       propertyPath: weapon
       value: 
-      objectReference: {fileID: 11400000, guid: df7a7ba47c459f941848a7b378af6f3d, type: 2}
+      objectReference: {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
     - target: {fileID: 3599921206689178014, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
       propertyPath: animator
       value: 
@@ -230,3 +230,4 @@ MonoBehaviour:
       damageMultiplier: 1
       knockbackForce: -1
       hitStopScale: 1
+  experience: 0

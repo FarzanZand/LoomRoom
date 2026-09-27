@@ -16,6 +16,12 @@ public enum StatType
     ManaRegen = 11,  // mana per second
     MaxStamina = 12,
     StaminaRegen = 13,
+    Strength = 14,
+    Dexterity = 15,
+    Constitution = 16,
+    Intelligence = 17,
+    Perception = 18,
+    Charisma = 19,
 }
 
 public enum ModifierType

@@ -55,7 +55,7 @@ public class PauseMenuUI : MonoBehaviour
         settings?.Close();
         if (pausePanel != null) pausePanel.SetActive(true);
         bool table = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
-        if (adventuresButton != null) adventuresButton.gameObject.SetActive(table && Loader != null && !Loader.Busy);
+        if (adventuresButton != null) adventuresButton.gameObject.SetActive(table && Loader != null && !Loader.Busy && !(RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended));
         resumeButton?.Select();
     }
 

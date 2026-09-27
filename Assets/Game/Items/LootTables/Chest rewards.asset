@@ -31,7 +31,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
-    - item: {fileID: 11400000, guid: df7a7ba47c459f941848a7b378af6f3d, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
       weight: 2
       minQuantity: 1
       maxQuantity: 1
@@ -39,6 +40,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
+      weightPerLevel: 0
     - item: {fileID: 11400000, guid: ca1254f5ad9dfb44eab2336cc7ad3302, type: 2}
       weight: 1
       minQuantity: 1
@@ -47,7 +49,8 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
-    - item: {fileID: 11400000, guid: b5868584276d6474e85cad2b2de39004, type: 2}
+      weightPerLevel: 0
+    - item: {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}
       weight: 2
       minQuantity: 1
       maxQuantity: 1
@@ -55,6 +58,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
+      weightPerLevel: 0
   - label: Supplies
     sources: 15
     chance: 1
@@ -70,6 +74,7 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
+      weightPerLevel: 0
     - item: {fileID: 11400000, guid: 0faf09e08158dc34f91d4868eedabb9e, type: 2}
       weight: 4
       minQuantity: 1
@@ -78,4 +83,6 @@ MonoBehaviour:
       maxFloor: 0
       sources: 15
       weightPerFloor: 0
+      weightPerLevel: 0
   maxItemsPerReward: 12
+  gold: []

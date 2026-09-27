@@ -8,12 +8,14 @@ public struct DamageInfo
     public HitProfile Profile;       // impact presentation, resolved by CombatManager
     public float     Amount;          // raw on the way in, actual after TakeDamage
     public Character Source;          // who did it (may be null for environment)
+    public ItemData  Weapon;          // the weapon that struck, if any (trains and scales its weapon skill)
     public string    SourceName;      // what did it when no character did: "the fountain", "the Cursed Ring"
     public Character Target;          // the victim, set by CharacterStats.TakeDamage (null for props)
     public Vector3   HitPoint;
     public Vector3   Direction;       // attacker -> victim, horizontal, normalised
     public float     KnockbackForce;  // already scaled by CombatManager
     public bool      Parried;
+    public bool      Magic;           // spell damage bypasses physical armor and shield blocking
     public bool      Heavy;           // captured by the hitbox for this swing
     public bool      Blocked;         // set by the victim's IBlocker
     public bool      FromEffect;      // created by an item effect; never counts as a landed hit

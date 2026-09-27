@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Knife
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Small knife
-  description: Test Description asdasdj adj asjd ajd asjdjasd jasd aj aj j
+  saveId: 4c4a17a16a14b5a49bd9466ac8e9b724
+  weaponCategory: 0
+  spell: {fileID: 0}
+  description: Quick but weak.
   icon: {fileID: 21300000, guid: d4ef04d116a6d79449188d927fb8cc6d, type: 3}
   tag: 
   worldPrefab: {fileID: 1808823706470762, guid: 7c2b4de056174ed499e0881bf2d69242, type: 3}
@@ -35,7 +38,10 @@ MonoBehaviour:
   equipOnPickup: 1
   statModifiers:
   - stat: 2
-    value: 10
+    value: 4
+    type: 0
+  - stat: 7
+    value: 0.2
     type: 0
   weapon:
     useDefaultEffects: 1
