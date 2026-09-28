@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class DungeonHud : MonoBehaviour
 {
@@ -23,15 +22,8 @@ public class DungeonHud : MonoBehaviour
         var scaler=canvasRoot.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1920,1080);scaler.matchWidthOrHeight=.5f;
         var go=new GameObject("Explored map",typeof(RectTransform),typeof(RawImage));go.transform.SetParent(canvasRoot.transform,false);
         mapImage=go.GetComponent<RawImage>();mapImage.texture=map;mapImage.raycastTarget=false;
-        var r=mapImage.rectTransform;r.anchorMin=r.anchorMax=new Vector2(1,1);r.pivot=new Vector2(1,1);r.anchoredPosition=new Vector2(-30,-54);r.sizeDelta=new Vector2(w*4,h*4);
-        string heading=generator.LevelData.displayName.ToUpperInvariant()+(generator.LevelData.multipleLevels ? " · "+generator.FloorNumber+" / "+Mathf.Max(1,generator.LevelData.levelCount) : "");
-        var title=Label(heading,18);var tr=title.rectTransform;tr.anchorMin=tr.anchorMax=new Vector2(1,1);tr.pivot=new Vector2(1,1);tr.anchoredPosition=new Vector2(-30,-24);tr.sizeDelta=new Vector2(340,28);title.alignment=TextAlignmentOptions.MidlineRight;
+        var r=mapImage.rectTransform;r.anchorMin=r.anchorMax=new Vector2(1,1);r.pivot=new Vector2(1,1);r.anchoredPosition=new Vector2(-30,-24);r.sizeDelta=new Vector2(w*4,h*4);
         gameObject.AddComponent<DungeonCombatFeedback>().Initialize(generator,canvasRoot.GetComponent<RectTransform>(),generator.LevelData.hudFont);
-    }
-    TMP_Text Label(string value,int size)
-    {
-        var go=new GameObject(value,typeof(RectTransform),typeof(TextMeshProUGUI));go.transform.SetParent(canvasRoot.transform,false);
-        var text=go.GetComponent<TextMeshProUGUI>();if(dungeon.LevelData.hudFont!=null)text.font=dungeon.LevelData.hudFont;text.text=value;text.fontSize=size+4;text.color=new Color(.9f,.83f,.66f);text.raycastTarget=false;return text;
     }
 
     void Update()

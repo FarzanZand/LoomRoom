@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc328ee221540164b95e154c00f29bf2, type: 3}
   m_Name: Dungeon1
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
-  displayName: The Descent
+  displayName: Dungeon
   description: Twenty floors down. A new layout every run.
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
   kind: 1
