@@ -97,8 +97,7 @@ public class AdventurerProgress : MonoBehaviour
         Ranks[i]++;
         if (teacher != null) { taught.TryGetValue((teacher, skill), out int given); taught[(teacher, skill)] = given + 1; }
         string tierBefore = AdventureSkills.Tier(Ranks[i] - 1), tier = AdventureSkills.Tier(Ranks[i]);
-        MessageLog.Post($"Your {def.displayName} skill increases to {Ranks[i]}.", MessageKind.Good);
-        // Shown under the XP bar (ExperienceBarUI); a new tier is also worth the middle of the screen.
+        // Shown under the XP bar (ExperienceBarUI), not in the message feed; a new tier is also worth the middle of the screen.
         if (tier != tierBefore) AnnouncementUI.Show($"{def.displayName}: {tier}", Ranks[i] >= 100 ? def.legendaryText : null);
         if (AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
         ApplyStats();

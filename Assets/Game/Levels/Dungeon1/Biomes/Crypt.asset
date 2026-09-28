@@ -36,9 +36,6 @@ MonoBehaviour:
     overrideColor: 0
     color: {r: 1, g: 0.6, b: 0.3, a: 1}
   enemies:
-  - enemy: {fileID: 1189686515746966260, guid: 9904694f715ecef4c9340c75f994a7cc, type: 3}
-    weight: 1
-    fromFloor: 1
   - enemy: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
     weight: 1.5
     fromFloor: 1
@@ -48,11 +45,17 @@ MonoBehaviour:
   - enemy: {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
     weight: 0.5
     fromFloor: 1
-  encounterChance: {x: 0.6, y: 0.8}
+  - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
+    weight: 1
+    fromFloor: 1
+  - enemy: {fileID: 4124661246665639223, guid: 3586c32b1afcd3d4cbe9a5c37627895b, type: 3}
+    weight: 1
+    fromFloor: 1
+  encounterChance: {x: 0.8, y: 0.9}
   maxEnemiesPerRoom: 3
   features: []
   loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
-  merchantChance: 0.25
+  merchantChance: 0.5
   guardian:
     enabled: 1
     boss: {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}

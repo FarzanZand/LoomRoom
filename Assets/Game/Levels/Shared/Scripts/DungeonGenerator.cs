@@ -126,12 +126,21 @@ public partial class DungeonGenerator : MonoBehaviour
         return new Vector2Int(Mathf.RoundToInt(local.x/data.cellSize+data.width*.5f),Mathf.RoundToInt(local.z/data.cellSize+data.depth*.5f));
     }
 
+    static int Scramble(int x)
+    {
+        uint h=unchecked((uint)x);
+        h^=h>>16; h=unchecked(h*0x85ebca6b); h^=h>>13; h=unchecked(h*0xc2b2ae35); h^=h>>16;
+        return (int)(h&0x7fffffff);
+    }
+
     public void Build(TableLevelData level, int seed, int floorNumber=1)
     {
         var watch=System.Diagnostics.Stopwatch.StartNew();
         FloorNumber=floorNumber;
         data = level; random = new System.Random(seed);
-        extraRandom = new System.Random(unchecked(seed + 60013));
+        // Hashed: System.Random's first values follow evenly spaced seeds almost linearly, so floor
+        // seeds (runSeed + floor * step) made the merchant roll march in lockstep through a run.
+        extraRandom = new System.Random(Scramble(unchecked(seed + 60013)));
         Biome = level.BiomeAt(floorNumber, out int floorInBiome, out int biomeFloors);
         FloorInBiome = floorInBiome; BiomeFloors = biomeFloors;
         Milestone = level.Milestone(floorNumber);
@@ -272,8 +281,10 @@ public partial class DungeonGenerator : MonoBehaviour
         // Spawn after navigation exists. The first room is always safe.
         for (int i=1;i<Layout.rooms.Count;i++)
         {
-            if(Roles[i]!=RoomRole.Combat && Roles[i]!=RoomRole.Exit)continue;
-            int count=random.Next(1,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
+            // Treasure and storage rooms are guarded half the time; rest rooms stay safe.
+            bool guarded=Roles[i]==RoomRole.Treasure || Roles[i]==RoomRole.Storage;
+            if(Roles[i]!=RoomRole.Combat && Roles[i]!=RoomRole.Exit && !guarded)continue;
+            int count=guarded ? (random.NextDouble()<.5 ? 1 : 0) : random.Next(1,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
             if(templates[i]!=null && templates[i].replaceGeneratedEnemies)count=0;
             if(i==MerchantRoom)count=0;
             for(int j=0;j<count;j++)
@@ -418,8 +429,8 @@ public partial class DungeonGenerator : MonoBehaviour
         for(int i=available.Count-1;i>0;i--){int j=random.Next(i+1);(available[i],available[j])=(available[j],available[i]);}
         int cursor=0;
         bool Spot(out Vector3 pos) {pos=default;if(cursor>=available.Count)return false;pos=Cell(available[cursor++]);return true;}
-        if(Spot(out var supply))MakeContainer(supply,Roles[index]==RoomRole.Treasure,Roles[index]==RoomRole.Rest,profile?.rewards,FaceCenter(supply,index));
-        if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,false,profile?.rewards,FaceCenter(extra,index));
+        if(Spot(out var supply))MakeContainer(supply,Roles[index]==RoomRole.Treasure,profile?.rewards,FaceCenter(supply,index));
+        if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,profile?.rewards,FaceCenter(extra,index));
         var (rules,prefabs)=Furnishing(profile);
         if(rules!=null)
         {
@@ -461,12 +472,12 @@ public partial class DungeonGenerator : MonoBehaviour
         return Quaternion.LookRotation(facing);
     }
 
-    void MakeContainer(Vector3 pos,bool chest,bool healing,LootSource rewardOverride=null,Quaternion? facing=null)
+    void MakeContainer(Vector3 pos,bool chest,LootSource rewardOverride=null,Quaternion? facing=null)
     {
         if(!chest)
         {
             var breakable=DungeonWeightedPrefab.Choose(Destructibles,extraRandom,IsFloorBreakable);
-            if(breakable!=null){SpawnDestructible(breakable,pos,Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewardOverride,healing ? data.guaranteedHealing:null,random.Next());return;}
+            if(breakable!=null){SpawnDestructible(breakable,pos,Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewardOverride,random.Next());return;}
         }
         bool authoredChest=chest && data.chestPrefab!=null;
         var go=authoredChest ? Instantiate(data.chestPrefab,transform) : new GameObject(chest ? "Supply chest" : "Breakable barrel"); go.transform.SetParent(transform,false); go.transform.position=pos;
@@ -495,7 +506,6 @@ public partial class DungeonGenerator : MonoBehaviour
         var container=go.GetComponent<DungeonContainer>() ?? go.AddComponent<DungeonContainer>(); container.chest=chest; container.loot=rewardOverride ?? Loot(chest?DungeonLootSource.Chest:DungeonLootSource.Barrel); container.floorNumber=FloorNumber;
         container.seed=random.Next(); container.debrisMaterial=data.woodMaterial;
         container.openAudio=chest ? data.chestOpenAudio:data.containerBreakAudio;
-        if(healing) container.guaranteedItem=data.guaranteedHealing;
         if(chest && !authoredChest)
         {
             var col=go.AddComponent<BoxCollider>(); col.center=Vector3.up*.5f; col.size=new Vector3(1.4f,1,.9f);
@@ -597,6 +607,7 @@ public partial class DungeonGenerator : MonoBehaviour
     // The hand-built interior for a room: the starting room, a milestone arena or the profile's template.
     GameObject TemplatePrefab(int i) =>
         i==0 && UsesStartingRoom ? data.startingRoom
+        : i==MerchantRoom && i!=0 && data.shopRoom!=null ? data.shopRoom
         : Roles[i]==RoomRole.Exit && Milestone!=null && Milestone.arena!=null ? Milestone.arena : profiles[i]?.roomTemplate;
     DungeonRoomTemplate TemplateOf(int i) { var p=TemplatePrefab(i); return p!=null ? p.GetComponent<DungeonRoomTemplate>() : null; }
 
@@ -604,6 +615,7 @@ public partial class DungeonGenerator : MonoBehaviour
     {
         templates=new DungeonRoomTemplate[Layout.rooms.Count];
         templateInstances=new GameObject[Layout.rooms.Count];
+        ChooseMerchantRoom();
         for(int i=0;i<templates.Length;i++)
         {
             var prefab=TemplatePrefab(i);
@@ -612,10 +624,18 @@ public partial class DungeonGenerator : MonoBehaviour
             if(templates[i]==null){Debug.LogWarning($"Room template {prefab.name} has no DungeonRoomTemplate component; generating the room normally.",prefab);continue;}
             // Smaller rooms still get the template: pieces outside the room or on walkways are removed.
         }
+    }
+
+    // A quiet room for the merchant. With a shop room template, rooms that have no hand-built
+    // interior of their own are preferred so the shop never replaces a shrine or an arena.
+    void ChooseMerchantRoom()
+    {
         if(data.merchantPrefab==null || extraRandom.NextDouble()>=data.MerchantChance(FloorNumber))return;
         var candidates=new System.Collections.Generic.List<int>();
+        var plain=new System.Collections.Generic.List<int>();
         for(int i=1;i<Roles.Length;i++)
-            if(Roles[i]==RoomRole.Rest || Roles[i]==RoomRole.Storage || Roles[i]==RoomRole.Treasure)candidates.Add(i);
+            if(Roles[i]==RoomRole.Rest || Roles[i]==RoomRole.Storage || Roles[i]==RoomRole.Treasure){candidates.Add(i);if(TemplatePrefab(i)==null)plain.Add(i);}
+        if(data.shopRoom!=null && plain.Count>0)candidates=plain;
         if(candidates.Count==0)candidates.Add(0);
         MerchantRoom=candidates[extraRandom.Next(candidates.Count)];
     }
@@ -652,11 +672,11 @@ public partial class DungeonGenerator : MonoBehaviour
             var t=socket.transform;
             switch(socket.type)
             {
-                case DungeonSocketType.Chest: MakeContainer(t.position,true,false,rewards,t.rotation); break;
+                case DungeonSocketType.Chest: MakeContainer(t.position,true,rewards,t.rotation); break;
                 case DungeonSocketType.Breakable:
                 {
                     var prefab=socket.overridePrefab!=null ? socket.overridePrefab : DungeonWeightedPrefab.Choose(Destructibles,extraRandom);
-                    if(prefab!=null)SpawnDestructible(prefab,t.position,t.rotation,rewards,null,extraRandom.Next());
+                    if(prefab!=null)SpawnDestructible(prefab,t.position,t.rotation,rewards,extraRandom.Next());
                     break;
                 }
                 case DungeonSocketType.WallLight: SocketLight(socket,index); break;
@@ -720,11 +740,11 @@ public partial class DungeonGenerator : MonoBehaviour
                 {
                     if(corners.Count==0)continue;
                     int pick=extraRandom.Next(corners.Count);var corner=corners[pick];corners.RemoveAt(pick);
-                    SpawnDestructible(prefab,corner.position,corner.rotation,null,null,extraRandom.Next());
+                    SpawnDestructible(prefab,corner.position,corner.rotation,null,extraRandom.Next());
                     continue;
                 }
                 if(cursor>=available.Count)continue;
-                SpawnDestructible(prefab,Cell(available[cursor++]),Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewards,null,extraRandom.Next());
+                SpawnDestructible(prefab,Cell(available[cursor++]),Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewards,extraRandom.Next());
             }
         }
         if(Roles[index]==RoomRole.Entrance || (Roles[index]==RoomRole.Exit && Milestone!=null))return cursor;
@@ -789,13 +809,13 @@ public partial class DungeonGenerator : MonoBehaviour
         return list;
     }
 
-    DungeonDestructible SpawnDestructible(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewardOverride,ItemData guaranteed,int seed)
+    DungeonDestructible SpawnDestructible(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewardOverride,int seed)
     {
         var go=Instantiate(prefab,pos,rotation,transform);
         var d=go.GetComponent<DungeonDestructible>();
         if(d==null)return null;
         d.loot=First(rewardOverride,Loot(DungeonLootSource.Barrel));
-        d.seed=seed;d.floorNumber=FloorNumber;d.guaranteedItem=guaranteed;
+        d.seed=seed;d.floorNumber=FloorNumber;
         return d;
     }
 
@@ -876,7 +896,8 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     bool Blocked(Vector3 pos)=>Physics.CheckBox(pos+Vector3.up*.6f,new Vector3(.45f,.5f,.45f),Quaternion.identity,~0,QueryTriggerInteraction.Ignore);
-    Merchant FindAnyMerchant()=>GetComponentInChildren<Merchant>();
+    Merchant FindAnyMerchant()=>GetComponentInChildren<Merchant>(true);
+    public Merchant Merchant=>FindAnyMerchant();
 
     Character SpawnBoss(Vector3 pos,Quaternion rotation)
     {
@@ -898,7 +919,7 @@ public partial class DungeonGenerator : MonoBehaviour
         if(data.merchantPrefab==null || FindAnyMerchant()!=null)return;
         if(NavMesh.SamplePosition(pos,out var hit,1.5f,NavMesh.AllAreas))pos=hit.position;
         var go=Instantiate(data.merchantPrefab,pos,rotation,transform);
-        var merchant=go.GetComponent<Merchant>();
+        var merchant=go.GetComponentInChildren<Merchant>(true);
         if(merchant==null)return;
         if(merchant.stockTable==null)merchant.stockTable=data.merchantStock!=null ? data.merchantStock : Loot(DungeonLootSource.Chest);
         merchant.seed=extraRandom.Next();merchant.floorNumber=FloorNumber;

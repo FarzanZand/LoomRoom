@@ -125,14 +125,14 @@ public class TableLevelLoader : MonoBehaviour
         GameManager.Instance.Push(GameState.Cutscene);
         RememberRoom();
         var revealSettings = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
-        bool useReveal = !descending && level.kind == TableLevelKind.Dungeon && revealSettings != null;
+        bool useReveal = !DebugDungeonSession.Active && !descending && level.kind == TableLevelKind.Dungeon && revealSettings != null;
         bool faded=false, completed=false;
         TableLevelReveal reveal=null;
         // C# forbids yield in try/catch, so only Prepare is caught; the finally always releases the cutscene and fade.
         try
         {
             if (useReveal) ScreenManager.Instance.ClearFade();
-            else
+            else if (!DebugDungeonSession.Active)
             {
                 ScreenManager.Instance.FadeIn(.45f); faded=true;
                 yield return new WaitForSecondsRealtime(.5f);
@@ -142,7 +142,9 @@ public class TableLevelLoader : MonoBehaviour
                 LootSource.BiomeProgress = floor => { level.BiomeAt(floor, out int at, out int count); return count <= 1 ? 1 : (at - 1f) / (count - 1); };
                 LootSource.GenerationLevel = resume != null ? Mathf.Max(1, resume.lootLevel) : descending ? player.GetComponent<AdventurerProgress>().Level : 1;
                 generationLevel = LootSource.GenerationLevel.Value;
-                Prepare(level, useReveal); ready=true;
+                Prepare(level, useReveal);
+                DebugDungeonSession.ConfigureEnemies(Dungeon);
+                ready=true;
             }
             catch(Exception e) { Debug.LogException(e); }
             finally { LootSource.GenerationLevel = null; }
@@ -201,8 +203,9 @@ public class TableLevelLoader : MonoBehaviour
             if (ready && AudioManager.HasInstance)
             {
                 var music = level.MusicFor(FloorNumber, out float musicVolume);
-                if (music != null) AudioManager.Instance.CrossfadeMusic(music, level.loopMusic, level.musicFadeSeconds, musicVolume);
-                else AudioManager.Instance.StopMusic(level.musicFadeSeconds);
+                // A floor with the same track as the one above keeps it playing instead of restarting it.
+                if (music == null) AudioManager.Instance.StopMusic(level.musicFadeSeconds);
+                else if (music != AudioManager.Instance.CurrentMusic) AudioManager.Instance.CrossfadeMusic(music, level.loopMusic, level.musicFadeSeconds, musicVolume);
             }
             completed=ready;
             if (ready && level.kind == TableLevelKind.Dungeon) player.GetComponent<AdventureSave>()?.CaptureFloor();
@@ -217,6 +220,7 @@ public class TableLevelLoader : MonoBehaviour
             // The biome's Dungeon Master line, a moment after the player is actually standing in it.
             else if(entryLine!=null) DungeonMaster.Say(entryLine,null,entryLineDelay);
             entryLine=null;
+            if(completed && Dungeon!=null && Dungeon.Merchant!=null) MessageLog.Post("A merchant has set up shop on this floor.", MessageKind.Info);
         }
     }
     // Unity never resumes a coroutine whose nested routine threw, so step nested routines here and log instead.

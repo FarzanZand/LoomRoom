@@ -18,6 +18,13 @@ public class GoldCounterUI : MonoBehaviour
     {
         if (icon != null && CurrencyManager.HasInstance && CurrencyManager.Instance.coinIcon != null)
             icon.sprite = CurrencyManager.Instance.coinIcon;
+        Bind();
+    }
+
+    // The table player may not be registered yet when the HUD starts, so keep trying until it is.
+    void Bind()
+    {
+        if (wallet != null) return;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         wallet = player != null ? player.Wallet : null;
         if (wallet != null) wallet.Changed += OnChanged;
@@ -44,6 +51,7 @@ public class GoldCounterUI : MonoBehaviour
 
     void Update()
     {
+        Bind();
         if (group == null) return;
         var state = GameManager.HasInstance ? GameManager.Instance.State : GameState.Explore;
         bool table = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;

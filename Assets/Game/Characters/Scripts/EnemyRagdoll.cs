@@ -4,7 +4,8 @@ using UnityEngine;
 
 // Barony-style floppy deaths. While alive nothing exists: the ragdoll is built from the
 // humanoid skeleton at the moment of death, so it never interferes with animation,
-// hitboxes or navigation. Non-humanoid bodies (the mite) tumble as one rigid body.
+// hitboxes or navigation. Non-humanoid bodies tumble as one rigid body,
+// or play their death clip (deathAnimationInstead).
 // CombatManager.ragdollDeath switches between this and the authored death animation.
 [RequireComponent(typeof(Character))]
 public class EnemyRagdoll : MonoBehaviour
@@ -12,6 +13,8 @@ public class EnemyRagdoll : MonoBehaviour
     [SerializeField, Min(.1f)] float totalMass = 40f;
     [Tooltip("Seconds after death before the bodies freeze in place (saves physics time).")]
     [SerializeField, Min(.5f)] float settleSeconds = 5f;
+    [Tooltip("Play the authored death animation instead of tumbling. For non-humanoid bodies that one rigid box fits badly (long animals like the rat).")]
+    [SerializeField] bool deathAnimationInstead;
 
     Character character;
     DamageInfo lastHit;
@@ -43,6 +46,7 @@ public class EnemyRagdoll : MonoBehaviour
     void OnDied()
     {
         if (!CombatManager.HasInstance || !CombatManager.Instance.ragdollDeath || IsRagdolled) return;
+        if (deathAnimationInstead && character.Animator != null && character.Animator.runtimeAnimatorController != null) return;
         IsRagdolled = true;
         var anim = character.Animator;
         if (anim != null && anim.isHuman) BuildHumanoid(anim);
@@ -51,7 +55,6 @@ public class EnemyRagdoll : MonoBehaviour
         // Anything still posing the skeleton would fight the physics.
         if (anim != null) anim.enabled = false;
         foreach (var hr in GetComponentsInChildren<HitReactionController>()) hr.enabled = false;
-        foreach (var mite in GetComponentsInChildren<CryptMiteAnimation>()) mite.enabled = false;
 
         IgnorePlayers();
         var cm = CombatManager.Instance;

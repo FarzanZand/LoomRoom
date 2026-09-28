@@ -292,11 +292,11 @@ public partial class DungeonGenerator
         {
             double roll = decorRandom.NextDouble();
             var facing = Quaternion.LookRotation(new Vector3(-dir.x, 0, -dir.y));
-            if (roll < .15) MakeContainer(Cell(cell), true, false, null, facing);
+            if (roll < .15) MakeContainer(Cell(cell), true, null, facing);
             else if (roll < .65)
             {
                 var prefab = DungeonWeightedPrefab.Choose(Destructibles, decorRandom, IsFloorBreakable);
-                if (prefab != null) SpawnDestructible(prefab, Cell(cell), Quaternion.Euler(0, decorRandom.Next(4) * 90, 0), null, null, decorRandom.Next());
+                if (prefab != null) SpawnDestructible(prefab, Cell(cell), Quaternion.Euler(0, decorRandom.Next(4) * 90, 0), null, decorRandom.Next());
             }
         }
     }

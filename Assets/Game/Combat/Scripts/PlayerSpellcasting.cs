@@ -89,7 +89,7 @@ public class PlayerSpellcasting : MonoBehaviour
         }
         shown = selected;
         ShowHeld();
-        if (raising && selected.equipSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(selected.equipSound);
+        if (raising && selected.equipSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(selected.equipSound, selected.equipVolume);
         Changed?.Invoke();
     }
 
@@ -139,7 +139,7 @@ public class PlayerSpellcasting : MonoBehaviour
         SetFloat(speedParameter, spell.chargeClipSeconds / castTime);
         SetTrigger(castParameter);
         player.Stats.AddModifier(new StatModifier(StatType.MoveSpeed, spell.castMoveSpeed - 1, ModifierType.PercentMultiply, slowSource));
-        if (spell.chargeSound != null && AudioManager.HasInstance) chargeAudio = AudioManager.Instance.PlaySFXData2D(spell.chargeSound);
+        if (spell.chargeSound != null && AudioManager.HasInstance) chargeAudio = AudioManager.Instance.PlaySFX2D(spell.chargeSound, spell.chargeVolume);
         Changed?.Invoke();
     }
 
@@ -153,14 +153,14 @@ public class PlayerSpellcasting : MonoBehaviour
         if (!player.Stats.TryUseMana(Cost(spell), 0f)) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
 
         SetTrigger(releaseParameter);
-        if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(spell.releaseSound);
+        if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.releaseSound, spell.releaseVolume);
         if (spell.spell == LeftHandSpell.Heal)
         {
             float before = player.Stats.CurrentHealth;
             player.Stats.Heal(Power(spell));
             progress?.PractiseHeal(player.Stats.CurrentHealth - before);
             if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation, player.transform);
-            if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(spell.impactSound);
+            if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
         }
         else if (spell.projectile != null) Launch(spell);
         Changed?.Invoke();
@@ -259,3 +259,4 @@ public class PlayerSpellcasting : MonoBehaviour
         foreach (var t in go.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = layer;
     }
 }
+

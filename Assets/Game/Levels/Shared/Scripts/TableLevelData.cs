@@ -198,8 +198,6 @@ public class TableLevelData : ScriptableObject
     public DungeonFeature[] features = new DungeonFeature[0];
 
     // ── Loot & Shop ───────────────────────────────────────────────────
-    [TabGroup(Tabs, Loot), ShowIf(D), Tooltip("Placed in the rest room's supply container. Everyday loot comes from each biome.")]
-    public ItemData guaranteedHealing;
     [TabGroup(Tabs, Loot), ShowIf(D), Title("Starting kit", "Given on a new run; descending keeps the current loadout.", HorizontalLine = false)]
     public ItemData[] startingItems;
     [TabGroup(Tabs, Loot), ShowIf(D)]
@@ -208,6 +206,8 @@ public class TableLevelData : ScriptableObject
     public GameObject merchantPrefab;
     [TabGroup(Tabs, Loot), ShowIf(D), LabelText("Stock"), Tooltip("Rolled for the merchant's wares (Chest source). Empty uses the biome's loot. How often a merchant appears is set per biome.")]
     public LootSource merchantStock;
+    [TabGroup(Tabs, Loot), ShowIf(D), LabelText("Shop Room"), Tooltip("Room template the merchant's room is built from (a Merchant socket marks where he stands). Empty puts him in a quiet side room as it is.")]
+    public GameObject shopRoom;
 
     // ── HUD ───────────────────────────────────────────────────────────
     [TabGroup(Tabs, Hud), ShowIf(D)]

@@ -23,12 +23,9 @@ public class SpellProjectile : MonoBehaviour
     {
         owner = source; spell = definition; power = damage; progress = skills;
         visual = GetComponent<SpellVisual>();
-        if (visual.loop != null && spell.flightSound != null)
+        if (visual.loop != null && spell.flightSound != null && AudioManager.HasInstance)
         {
-            visual.loop.clip = spell.flightSound.GetClip();
-            visual.loop.volume = spell.flightSound.volume;
-            visual.loop.pitch = spell.flightSound.pitch + Random.Range(-spell.flightSound.pitchVariance, spell.flightSound.pitchVariance);
-            visual.loop.Play();
+            AudioManager.Instance.PlaySFXLoop(visual.loop, spell.flightSound, spell.flightVolume);
         }
     }
 
@@ -83,7 +80,7 @@ public class SpellProjectile : MonoBehaviour
         // One practice roll per cast that hurt an enemy, however many it caught.
         if (struck) progress?.Practise(spell.Skill, SkillAction.Cast);
         if (spell.impact != null) Instantiate(spell.impact, centre, Quaternion.LookRotation(normal));
-        if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(spell.impactSound, centre);
+        if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.impactSound, centre, spell.impactVolume);
         GetComponent<SpellVisual>().Stop();
     }
 
@@ -94,3 +91,4 @@ public class SpellProjectile : MonoBehaviour
 
     static Vector3 Flat(Vector3 v) { v.y = 0; return v.sqrMagnitude > .0001f ? v.normalized : Vector3.forward; }
 }
+

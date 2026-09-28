@@ -19,9 +19,9 @@ MonoBehaviour:
     goldChance: 0.6
     goldMin: 2
     goldMax: 6
-    gearChance: 0.04
-    recoveryChance: 0.08
-    tomeChance: 0.01
+    gearChance: 0.15
+    recoveryChance: 0.2
+    tomeChance: 0.02
   breakables:
     goldChance: 0.5
     goldMin: 1

@@ -38,12 +38,18 @@ public class SpellDefinition : ScriptableObject
     [Min(.1f)] public float chargeClipSeconds = .6f;
 
     [Title("Audio")]
-    public AudioData equipSound;
-    public AudioData chargeSound;
-    public AudioData releaseSound;
-    [ShowIf(nameof(IsProjectile))] public AudioData flightSound;
-    public AudioData impactSound;
+    public AudioClip equipSound;
+    [Range(0, 1)] public float equipVolume = 1f;
+    public AudioClip chargeSound;
+    [Range(0, 1)] public float chargeVolume = 1f;
+    public AudioClip releaseSound;
+    [Range(0, 1)] public float releaseVolume = 1f;
+    [ShowIf(nameof(IsProjectile))] public AudioClip flightSound;
+    [Range(0, 1)] public float flightVolume = 1f;
+    public AudioClip impactSound;
+    [Range(0, 1)] public float impactVolume = 1f;
 
     public bool IsProjectile => spell != LeftHandSpell.Heal;
     public AdventureSkill Skill => spell == LeftHandSpell.Heal ? AdventureSkill.Thaumaturgy : AdventureSkill.Sorcery;
 }
+

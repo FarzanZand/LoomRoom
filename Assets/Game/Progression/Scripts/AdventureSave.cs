@@ -39,7 +39,7 @@ public class AdventureSave : MonoBehaviour
     public bool HasCheckpoint => Saved.checkpoint != null;
     public event Action Changed;
     Player player; AdventurerProgress progress;
-    string FilePath => Path.Combine(Application.persistentDataPath, "loomroom-adventure.json");
+    string FilePath => Path.Combine(Application.persistentDataPath, DebugDungeonSession.Active ? "loomroom-debug.json" : "loomroom-adventure.json");
     bool loading, initialized;
     void Start() => Initialize();
     public void Initialize()

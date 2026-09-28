@@ -79,3 +79,9 @@ Sources: [Warrior](https://barony.wiki.gg/wiki/Warrior), [Wizard](https://barony
 UI palette: edit Assets/Game/UI/Sprites/Kit/Copper Plum.mat for panel plum, border shadow, copper and highlight colors. Shared kit sprites retain their original pixel layout; the material recolors their authored shading. Tab opens the character menu during dungeon play; Skills opens skill levels and hover details. Skill tooltips show only rank and current effect. The separate skill detail and spell panels have been removed.
 
 
+
+
+
+
+Spell audio: each SpellDefinition now holds direct AudioClip references and individual 0–1 volumes for equip, charge, release, flight and impact. One-shots use AudioManager SFX; the moving flight loop uses AudioManager.PlaySFXLoop and the SFX mixer. Existing Fireball and Heal clips and volumes were migrated.
+

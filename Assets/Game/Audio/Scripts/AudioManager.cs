@@ -309,6 +309,18 @@ public class AudioManager : Singleton<AudioManager>
 
     // ── SFX — clip overloads ───────────────────────────────────────────────────
 
+    // Moving loops retain their prefab-owned source and stop with their visual.
+    public void PlaySFXLoop(AudioSource source, AudioClip clip, float volume = 1f)
+    {
+        if (source == null || clip == null) return;
+        source.outputAudioMixerGroup = SfxGroup;
+        source.clip = clip;
+        source.volume = Mathf.Clamp01(volume);
+        source.pitch = 1f;
+        source.loop = true;
+        source.Play();
+    }
+
     public AudioSource PlaySFX(AudioClip clip, Vector3 position, float volume = 1f, float pitchVariance = 0f)
     {
         if (clip == null) return null;

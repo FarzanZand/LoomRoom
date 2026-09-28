@@ -1,0 +1,256 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc328ee221540164b95e154c00f29bf2, type: 3}
+  m_Name: Debug Dungeon
+  m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
+  displayName: Debug Dungeon
+  description: Twenty floors down. A new layout every run.
+  cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
+  kind: 1
+  environmentPrefab: {fileID: 0}
+  stages:
+  - biome: {fileID: 11400000, guid: fe707f3bdf69e7b45919069a6aede8af, type: 2}
+    floors: 1
+  balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
+  multipleLevels: 0
+  levelCount: 20
+  mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
+  moodLighting: 8
+  overrideLighting: 0
+  lightingSettings:
+    skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
+    skyExposure: 0.8
+    lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+    lightIntensity: 0.65
+    ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
+    ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
+    ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
+    fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  backgroundMusic: {fileID: 8300000, guid: 9b6676d6e31306043b7c187ddb5cd29c, type: 3}
+  backgroundMusicVolume: 0.3
+  loopMusic: 1
+  musicFadeSeconds: 1.5
+  fixedSeed: 31415
+  width: 40
+  depth: 54
+  cellSize: 2
+  roomCount: 4
+  largeRoomPercent: 10
+  largeRoomScale: 1.6
+  loopPercent: 15
+  layoutMode: 1
+  roomSize: {x: 4, y: 9}
+  roomSpacing: {x: 1, y: 4}
+  corridorWander: 1.2
+  wideCorridorPercent: 15
+  deadEndPercent: 0
+  loopReach: 10
+  roomShapes:
+  - kind: 0
+    shape: {fileID: 0}
+    weight: 3
+  - kind: 1
+    shape: {fileID: 0}
+    weight: 2
+  - kind: 2
+    shape: {fileID: 0}
+    weight: 2
+  - kind: 3
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 4
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 5
+    shape: {fileID: 0}
+    weight: 2
+  - kind: 6
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 7
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 8
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 9
+    shape: {fileID: 11400000, guid: ea0db8439193e10459cc0c558c73244b, type: 2}
+    weight: 0.6
+  - kind: 9
+    shape: {fileID: 11400000, guid: d7bbc65db8e0e7b41b27f9bd028d5a1e, type: 2}
+    weight: 0.6
+  - kind: 9
+    shape: {fileID: 11400000, guid: dc8ef7b381958914ca2eeb67cdc2397a, type: 2}
+    weight: 0.6
+  - kind: 9
+    shape: {fileID: 11400000, guid: 0079639818c389346ad08832809d67ef, type: 2}
+    weight: 0.6
+  - kind: 9
+    shape: {fileID: 11400000, guid: b83f1b9ea222f1f4690c0e00502d6342, type: 2}
+    weight: 0.6
+  startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  doorPrefab: {fileID: 7005205240093728226, guid: 3c6bc2dc79fc2bb42ba380732b33a2f2, type: 3}
+  doorPercent: 65
+  twoTileRoomPercent: 25
+  threeTileRoomPercent: 0
+  twoTileCorridorPercent: 25
+  threeTileCorridorPercent: 0
+  hideRoof: 0
+  hideRoofPercent: 5.9
+  hideEdges: 0
+  hideEdgesPercent: 100
+  architectureTileSize: 3
+  floorMaterial: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
+  wallMaterial: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
+  upperWallMaterial: {fileID: 0}
+  trimMaterial: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
+  ceilingMaterial: {fileID: 2100000, guid: b84909f81e52f2a47a68177f1186c384, type: 2}
+  woodMaterial: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
+  metalMaterial: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
+  roomStyles:
+  - style: {fileID: 11400000, guid: effd0936d8ae44fbaf28bf7c3494ed2a, type: 2}
+    weight: 2
+  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
+    weight: 3
+  corridorsCopyConnectedRoomStyle: 1
+  corridorStyles:
+  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
+    weight: 1
+  roomProfiles:
+  - {fileID: 11400000, guid: 19d8d4f050a70ad4090565e08a7e8d34, type: 2}
+  - {fileID: 11400000, guid: 40867d4f31470e54a99e795ac0ee7221, type: 2}
+  - {fileID: 11400000, guid: 9aacf2c86f9b97147bb7df776e08316b, type: 2}
+  - {fileID: 11400000, guid: 7feeadfd849b5ee459d026df4d62e8dd, type: 2}
+  - {fileID: 11400000, guid: c20ef9685e373554c8072e3be2d59f9c, type: 2}
+  roomPropPrefabs:
+  - {fileID: 908437102851283026, guid: fc59090b5bd382b40b3a0e216ac50468, type: 3}
+  - {fileID: 2626260366801120047, guid: 78690a233ec5c00458ed652ef3191e79, type: 3}
+  lightingPrefabs:
+  - prefab: {fileID: 3904118440429741045, guid: 91efdc5ce7c631c43a3188387ca652aa, type: 3}
+    weight: 1
+    overrideColor: 0
+    color: {r: 1, g: 0.6, b: 0.3, a: 1}
+  torchesPerRoom: {x: 1, y: 2}
+  litRoomChance: 0.7
+  corridorTorchChance: 0.3
+  propRules:
+  - prefab: {fileID: 1026660711950778362, guid: 337fb5179aa668747b05b0ca7fa0d18b, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.25
+    perRoom: {x: 0, y: 2}
+    chance: 1
+    rooms: 28
+  - prefab: {fileID: 759428823644684438, guid: ccb20845667e7da4185af0474145cc67, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.3
+    perRoom: {x: 0, y: 3}
+    chance: 1
+    rooms: 20
+  - prefab: {fileID: 3374654030368360499, guid: a1d87d53c95240445aafc898c33831f5, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.25
+    perRoom: {x: 0, y: 2}
+    chance: 1
+    rooms: 24
+  - prefab: {fileID: 6767656520330155690, guid: 9886cff71386c294eb4bebd4149fca9a, type: 3}
+    placement: 2
+    footprint: {x: 2, y: 1}
+    perTenCells: 0.15
+    perRoom: {x: 0, y: 1}
+    chance: 0.7
+    rooms: 28
+  - prefab: {fileID: 4693130425851065715, guid: 21821b8a402cc394887d00028526a263, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.12
+    perRoom: {x: 0, y: 2}
+    chance: 0.6
+    rooms: 38
+  - prefab: {fileID: 7876819902557966450, guid: 0f1c9129ac0b5794d9e7f9e886679e98, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.25
+    perRoom: {x: 0, y: 3}
+    chance: 1
+    rooms: 34
+  - prefab: {fileID: 4680903443510535991, guid: bfc82bfcac228d748a8f45cfd76b72c2, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.15
+    perRoom: {x: 0, y: 2}
+    chance: 1
+    rooms: 2
+  - prefab: {fileID: 4334703388222251006, guid: deec40fd991fccd428866c7ce2ec5e97, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.08
+    perRoom: {x: 0, y: 1}
+    chance: 0.5
+    rooms: 62
+  - prefab: {fileID: 681768560511825066, guid: 4948b969fdede3648a643a537ec14358, type: 3}
+    placement: 2
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.15
+    perRoom: {x: 0, y: 1}
+    chance: 0.6
+    rooms: 12
+  chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+  destructibles:
+  - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+    weight: 3
+  - prefab: {fileID: 3676609536429769752, guid: 74294ce93f890d0479859cebe2ea259e, type: 3}
+    weight: 2
+  - prefab: {fileID: 6976356556941518252, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
+    weight: 2
+  - prefab: {fileID: 4940602601245648603, guid: fb562eb337691f54c8a6648dcc1a3045, type: 3}
+    weight: 2
+  destructiblesPerRoom: {x: 1, y: 2}
+  features:
+  - prefab: {fileID: 1139990893470972911, guid: 69b99ad0ca2199f40ba3c9ac972343da, type: 3}
+    chancePerRoom: 0.08
+    placement: 2
+    rooms: 30
+    minFloor: 1
+    maxPerFloor: 1
+  - prefab: {fileID: 2628686250012602643, guid: 8605074f6c2806a418b4153f5c861b1f, type: 3}
+    chancePerRoom: 0.07
+    placement: 0
+    rooms: 28
+    minFloor: 2
+    maxPerFloor: 1
+  - prefab: {fileID: 1038405016691299456, guid: dc5b6f6ac339db9489cb8fe203951f1b, type: 3}
+    chancePerRoom: 0.1
+    placement: 0
+    rooms: 22
+    minFloor: 1
+    maxPerFloor: 2
+  - prefab: {fileID: 2510687268772921315, guid: 1a1941feba8c9704db9d6c4b74284941, type: 3}
+    chancePerRoom: 0.1
+    placement: 0
+    rooms: 30
+    minFloor: 1
+    maxPerFloor: 2
+  startingItems: []
+  startingEquipment: []
+  merchantPrefab: {fileID: 6335521276860554555, guid: 0b9bfb4bda23a524ba9567e96ba16304, type: 3}
+  merchantStock: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
+  shopRoom: {fileID: 729654494956090050, guid: 20a0a3a67173c774abd0169ec0deff6e, type: 3}
+  hudFont: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
+  hotbarFrame: {fileID: 21300000, guid: 8eae82d5f061d8f49b31dcf5f503d8ef, type: 3}
+  enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
+  damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
+  messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}
+  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
+  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}

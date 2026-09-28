@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &9112764836970843598
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6466577858580885139}
+  - component: {fileID: 5437315749502071360}
+  m_Layer: 0
+  m_Name: UIManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6466577858580885139
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9112764836970843598}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5437315749502071360
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9112764836970843598}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e37b0fa2e1c76454b87fd975a37b23d7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIManager
+  kitMaterial: {fileID: 2100000, guid: 80f060d7ffe21b043a6ee32d5d9f4e3a, type: 2}
+  shadow: {r: 0.043, g: 0.055, b: 0.067, a: 1}
+  panel: {r: 0.114, g: 0.145, b: 0.173, a: 1}
+  panelShading: 0.25
+  frame: {r: 0.64, g: 0.34, b: 0.24, a: 1}
+  frameHighlight: {r: 0.88, g: 0.53, b: 0.35, a: 1}
+  text: {r: 0.902, g: 0.902, b: 0.902, a: 1}
+  dimText: {r: 0.847, g: 0.8, b: 0.706, a: 1}
+  health: {r: 0.659, g: 0.275, b: 0.243, a: 1}
+  mana: {r: 0.267, g: 0.439, b: 0.624, a: 1}
+  stamina: {r: 0.549, g: 0.604, b: 0.384, a: 1}
+  experience: {r: 0.722, g: 0.565, b: 0.243, a: 1}
+  gold: {r: 1, g: 0.851, b: 0.4, a: 1}
+  bossHealth: {r: 0.722, g: 0.122, b: 0.122, a: 1}
+  recentDamage: {r: 0.949, g: 0.62, b: 0.298, a: 1}

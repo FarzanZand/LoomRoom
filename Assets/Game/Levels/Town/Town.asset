@@ -17,6 +17,10 @@ MonoBehaviour:
   cardArt: {fileID: 21300000, guid: 5dae8b473ac332a438d7555710ae1eda, type: 3}
   kind: 0
   environmentPrefab: {fileID: 0}
+  stages: []
+  balance: {fileID: 0}
+  multipleLevels: 0
+  levelCount: 3
   mood: {fileID: 11400000, guid: d4f17c0d2b15de64593452a74b223d59, type: 2}
   moodLighting: 0
   overrideLighting: 0
@@ -76,6 +80,7 @@ MonoBehaviour:
   - kind: 8
     shape: {fileID: 0}
     weight: 1
+  startingRoom: {fileID: 0}
   doorPrefab: {fileID: 0}
   doorPercent: 65
   twoTileRoomPercent: 25
@@ -99,30 +104,19 @@ MonoBehaviour:
   corridorStyles: []
   roomProfiles: []
   roomPropPrefabs: []
+  lightingPrefabs: []
+  torchesPerRoom: {x: 1, y: 2}
+  litRoomChance: 0.75
+  corridorTorchChance: 0.3
   propRules: []
   chestPrefab: {fileID: 0}
   destructibles: []
   destructiblesPerRoom: {x: 1, y: 3}
   features: []
-  encounterChance: 0.7
-  maxEnemiesPerRoom: 2
-  enemies: []
-  balance: {fileID: 0}
-  loot: {fileID: 0}
-  enemyLoot: {fileID: 0}
-  chestLoot: {fileID: 0}
-  barrelLoot: {fileID: 0}
-  guaranteedHealing: {fileID: 0}
   startingItems: []
   startingEquipment: []
   merchantPrefab: {fileID: 0}
   merchantStock: {fileID: 0}
-  merchantChance: 0.3
-  multipleLevels: 0
-  levelCount: 3
-  defaultTheme: {fileID: 0}
-  floorSettings: []
-  milestones: []
   hudFont: {fileID: 0}
   hotbarFrame: {fileID: 0}
   enemyBarPrefab: {fileID: 0}

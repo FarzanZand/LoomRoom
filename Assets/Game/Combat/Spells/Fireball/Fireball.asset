@@ -29,8 +29,13 @@ MonoBehaviour:
   impact: {fileID: 8076800287552310254, guid: b8c209c642364fb49bebf225b0e07ed8, type: 3}
   animation: 1
   chargeClipSeconds: 0.6
-  equipSound: {fileID: 11400000, guid: ade9f09db0fba5540948a7017ca45771, type: 2}
-  chargeSound: {fileID: 11400000, guid: fb7210e310a69a549a244a701d8bf402, type: 2}
-  releaseSound: {fileID: 11400000, guid: a536da981b4a8e44b94753fea1b72cd3, type: 2}
-  flightSound: {fileID: 11400000, guid: 852e66b0a83da1c44a930c6e71472374, type: 2}
-  impactSound: {fileID: 11400000, guid: 312e1b75d0a7b864985ab21fa98aa34c, type: 2}
+  equipSound: {fileID: 8300000, guid: ecdb0127810c63e47b877aed9e1b44f0, type: 3}
+  equipVolume: 0.28
+  chargeSound: {fileID: 8300000, guid: d6361d5a30811a946aad6835c2d24cd3, type: 3}
+  chargeVolume: 0.45
+  releaseSound: {fileID: 8300000, guid: f9a748cb16d0cd4448c7a136dee97131, type: 3}
+  releaseVolume: 0.65
+  flightSound: {fileID: 8300000, guid: 762d023a571ffaf4aa61782dfce7fd45, type: 3}
+  flightVolume: 0.55
+  impactSound: {fileID: 8300000, guid: 35ac4ff00d47b9e45ad51e59cafe785d, type: 3}
+  impactVolume: 0.9

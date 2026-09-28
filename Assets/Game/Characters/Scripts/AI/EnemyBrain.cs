@@ -66,6 +66,12 @@ public class EnemyBrain : MonoBehaviour
         : FallbackProfile;
 
     static EnemyBehaviourSettings fallback;
+    public void SetBehaviourOverride(EnemyBehaviourSettings settings)
+    {
+        localBehaviour.CopyFrom(settings);
+        overrideBehaviour = true;
+        if (Perception != null) Perception.Profile = localBehaviour;
+    }
     static EnemyBehaviourSettings FallbackProfile => fallback ??= new EnemyBehaviourSettings();
 
     // Editor only: when the override is switched on, start from the shared profile's values.

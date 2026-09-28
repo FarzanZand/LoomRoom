@@ -74,7 +74,7 @@ MonoBehaviour:
   lootEvenIfWoken: 1
   occupants:
   - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
-  - {fileID: 1189686515746966260, guid: 9904694f715ecef4c9340c75f994a7cc, type: 3}
+  - {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   loot: {fileID: 0}
   mound: {fileID: 8226815657154211491}
   digClip: {fileID: 8300000, guid: f306f489c1c38fd42b478e5895df6a6c, type: 3}

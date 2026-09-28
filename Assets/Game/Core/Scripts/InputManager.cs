@@ -15,6 +15,7 @@ public class InputManager : Singleton<InputManager>
     PlayerInputActions actions;
     PlayerKind gameplayKind = PlayerKind.Room;
     bool gameplayEnabled = true;
+    bool movementOnly;
     int discardLookThroughFrame = -1;
 
     // ── Continuous state ──────────────────────────────────────────────
@@ -241,8 +242,10 @@ public class InputManager : Singleton<InputManager>
     }
 
     // Called by GameManager: gameplay off means the UI map is live instead.
-    public void SetGameplayEnabled(bool enabled)
+    // allowMovement keeps walking (Move, Sprint) live while gameplay is off, e.g. with the inventory open.
+    public void SetGameplayEnabled(bool enabled, bool allowMovement = false)
     {
+        movementOnly = !enabled && allowMovement;
         if (enabled && !gameplayEnabled)
         {
             Look = Vector2.zero;
@@ -264,21 +267,29 @@ public class InputManager : Singleton<InputManager>
         Toggle(actions.Table.Get(), table);
         Toggle(actions.UI.Get(),    !gameplayEnabled);
 
-        if (!gameplayEnabled) ClearHeldState();
+        if (movementOnly)
+        {
+            var map = gameplayKind == PlayerKind.Table ? actions.Table.Get() : actions.Room.Get();
+            map.FindAction("Move").Enable();
+            map.FindAction("Sprint").Enable();
+        }
+
+        if (!gameplayEnabled) ClearHeldState(movementOnly);
     }
 
+    // Unconditional: map.enabled is already true when only Move is live (movementOnly).
     static void Toggle(InputActionMap map, bool on)
     {
-        if (on && !map.enabled) map.Enable();
-        else if (!on && map.enabled) map.Disable();
+        if (on) map.Enable();
+        else map.Disable();
     }
 
     // Disabling a map fires canceled on active actions, but clear explicitly too so a
     // held key never leaks a stale "true" into the next Explore frame.
-    void ClearHeldState()
+    void ClearHeldState(bool keepMovement = false)
     {
-        Move = Vector2.zero;
+        if (!keepMovement) { Move = Vector2.zero; SprintHeld = false; }
         Look = Vector2.zero;
-        SprintHeld = CrouchHeld = LeanLeftHeld = LeanRightHeld = PrimaryHeld = SecondaryHeld = false;
+        CrouchHeld = LeanLeftHeld = LeanRightHeld = PrimaryHeld = SecondaryHeld = false;
     }
 }

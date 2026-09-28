@@ -244,11 +244,11 @@ MonoBehaviour:
     rooms: 30
     minFloor: 1
     maxPerFloor: 2
-  guaranteedHealing: {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
   startingItems: []
   startingEquipment: []
-  merchantPrefab: {fileID: 3318657465412568994, guid: 1d2025c71f6ccbf4fb69df3f1e2204d8, type: 3}
+  merchantPrefab: {fileID: 6335521276860554555, guid: 0b9bfb4bda23a524ba9567e96ba16304, type: 3}
   merchantStock: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
+  shopRoom: {fileID: 729654494956090050, guid: 20a0a3a67173c774abd0169ec0deff6e, type: 3}
   hudFont: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
   hotbarFrame: {fileID: 21300000, guid: 8eae82d5f061d8f49b31dcf5f503d8ef, type: 3}
   enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
