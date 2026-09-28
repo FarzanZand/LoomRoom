@@ -5558,6 +5558,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Slot_5
       objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_text
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -5640,15 +5644,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.b
-      value: 0.902
+      value: 0.706
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.g
-      value: 0.902
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.r
-      value: 0.902
+      value: 0.847
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -30937,6 +30941,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Slot_4
       objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_text
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -31019,15 +31027,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.b
-      value: 0.902
+      value: 0.706
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.g
-      value: 0.902
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.r
-      value: 0.902
+      value: 0.847
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -36809,6 +36817,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Slot_3
       objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_text
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -36891,15 +36903,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.b
-      value: 0.902
+      value: 0.706
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.g
-      value: 0.902
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.r
-      value: 0.902
+      value: 0.847
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -44559,6 +44571,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Slot_2
       objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_text
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -44641,15 +44657,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.b
-      value: 0.902
+      value: 0.706
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.g
-      value: 0.902
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.r
-      value: 0.902
+      value: 0.847
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -58349,6 +58365,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Slot_6
       objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_text
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -58431,15 +58451,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.b
-      value: 0.902
+      value: 0.706
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.g
-      value: 0.902
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.r
-      value: 0.902
+      value: 0.847
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -65522,15 +65542,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.b
-      value: 0.902
+      value: 0.706
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.g
-      value: 0.902
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 9085092156063966659, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_fontColor.r
-      value: 0.902
+      value: 0.847
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -211,7 +211,20 @@ public partial class DungeonGenerator : MonoBehaviour
             float height = HeightAt(x,z);
             var pos = Cell(new Vector2Int(x,z));
             ArchitectureBox("Flagstone", pos - Vector3.up*.12f, new Vector3(size,.24f,size), FloorMaterial(room, x, z), geometry);
-            var roof = ArchitectureBox("Ceiling", pos + Vector3.up*(height+.12f), new Vector3(size,.24f,size), DungeonRoomStyle.Resolve(style != null ? style.ceiling : null, level.ceilingMaterial), ceiling);
+            // A taller neighbor's upper wall occupies a strip inside this cell. End the
+            // ceiling just inside that wall's back. Ending exactly on the back face
+            // makes the ceiling's vertical edge coplanar with the upper masonry.
+            float CeilingInset(Vector2Int direction)
+            {
+                var neighborCell = new Vector2Int(x, z) + direction;
+                return OpenCell(neighborCell) && HeightAt(neighborCell.x, neighborCell.y) > height
+                    ? WallThickness - CeilingWallOverlap : 0;
+            }
+            float left = CeilingInset(Vector2Int.left), right = CeilingInset(Vector2Int.right);
+            float back = CeilingInset(Vector2Int.down), front = CeilingInset(Vector2Int.up);
+            var roofCenter = pos + new Vector3((left-right)*.5f, height+.12f, (back-front)*.5f);
+            var roofSize = new Vector3(size-left-right, .24f, size-back-front);
+            var roof = ArchitectureBox("Ceiling", roofCenter, roofSize, DungeonRoomStyle.Resolve(style != null ? style.ceiling : null, level.ceilingMaterial), ceiling);
             roof.GetComponent<Renderer>().enabled = !openRoofs[room];
             foreach (var dir in dirs)
             {
@@ -401,9 +414,10 @@ public partial class DungeonGenerator : MonoBehaviour
                 if (renderer != null) renderer.enabled = false;
                 float top = Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y));
                 float bottom = Mathf.Min(gate.openingHeight, top) - .025f;
-                for (float y = bottom; y < top + .025f;)
+                // Meet the upper wall at ceiling height without overlapping its front face.
+                for (float y = bottom; y < top;)
                 {
-                    float end = Mathf.Min(top + .025f, (Mathf.Floor(y/data.architectureTileSize)+1)*data.architectureTileSize);
+                    float end = Mathf.Min(top, (Mathf.Floor(y/data.architectureTileSize)+1)*data.architectureTileSize);
                     var span = dir.x != 0 ? new Vector3(WallThickness,end-y,data.cellSize) : new Vector3(data.cellSize,end-y,WallThickness);
                     // In line with the room walls either side, which sit behind the edge on the corridor side.
                     var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
@@ -936,6 +950,7 @@ public partial class DungeonGenerator : MonoBehaviour
     //   outside corner: the north/south-facing piece reaches the corner, the east/west one starts
     //                   behind it (also where two rooms touch only diagonally).
     const float WallThickness = .22f, TrimDepth = .04f;
+    const float CeilingWallOverlap = .02f;
 
     bool OpenCell(Vector2Int p) => Layout.InBounds(p) && Layout.floor[p.x,p.y];
 

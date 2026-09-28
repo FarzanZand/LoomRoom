@@ -19,6 +19,10 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     [SerializeField] Color emptyColor  = new Color(0.12f, 0.12f, 0.12f, 0.85f);
     [SerializeField] Color filledColor = new Color(0.22f, 0.22f, 0.22f, 0.95f);
+    [Tooltip("Keep the prefab's appearance; only item contents and equipped state change at runtime.")]
+    [SerializeField] bool useAuthoredAppearance;
+    [SerializeField] Color frameColor = new Color(.5f,.57f,.55f);
+    [SerializeField] Color equippedFrameColor = new Color(1,.83f,.35f);
 
     public Inventory Container { get; private set; }
     public int       Index     { get; private set; }
@@ -42,6 +46,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void SetDungeonStyle(bool enabled, TMP_FontAsset font, Sprite frame)
     {
+        if (useAuthoredAppearance) return;
         if (dungeonStyled == enabled) return;
         if (!savedStyle)
         {
@@ -79,7 +84,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             iconImage.sprite  = item != null ? item.icon : null;
             iconImage.enabled = item != null && item.icon != null;
         }
-        if (background != null) background.color = item != null ? filledColor : emptyColor;
+        if (background != null && !useAuthoredAppearance) background.color = item != null ? filledColor : emptyColor;
         if (stackLabel != null)
         {
             stackLabel.text = count > 1 ? $"x{count}" : "";
@@ -90,10 +95,10 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             var eq = Owner != null ? Owner.Equipment : null;
             equippedHighlight.gameObject.SetActive(item != null && eq != null && eq.IsEquipped(item));
         }
-        if(dungeonStyled && dungeonFrame!=null)
+        if(!useAuthoredAppearance && dungeonStyled && dungeonFrame!=null)
         {
             bool equipped=item!=null && Owner?.Equipment!=null && Owner.Equipment.IsEquipped(item);
-            dungeonFrame.color=equipped ? new Color(1,.83f,.35f):new Color(.5f,.57f,.55f);
+            dungeonFrame.color=equipped ? equippedFrameColor:frameColor;
         }
     }
 

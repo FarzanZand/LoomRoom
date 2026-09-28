@@ -41,8 +41,6 @@ public class DungeonCombatFeedback : MonoBehaviour
     TMP_Text message, impact;
     float messageUntil, impactUntil;
     Player player;
-    HotbarUI hotbar;
-    bool styled;
     int popupIndex;
     public int RegisteredEnemies => enemies.Count;
     public int VisibleBars { get { int n=0;foreach(var e in enemies)if(e.root.gameObject.activeSelf)n++;return n; } }
@@ -57,7 +55,6 @@ public class DungeonCombatFeedback : MonoBehaviour
         player=PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         player.Damaged+=PlayerDamaged;player.HitLanded+=HitLanded;
         // Pickups are narrated by the message log now (DungeonMaster's screen log).
-        hotbar=FindAnyObjectByType<HotbarUI>(FindObjectsInactive.Include);
         // Pickup placement belongs to the authored prefab, not a hard-coded hotbar offset.
         message=Instantiate(dungeon.LevelData.messagePrefab,canvas);
         impact=Instantiate(dungeon.LevelData.messagePrefab,canvas);SetRect(impact.rectTransform,new Vector2(.5f,.5f),new Vector2(0,-46));
@@ -118,7 +115,6 @@ public class DungeonCombatFeedback : MonoBehaviour
     {
         if(canvas==null || dungeon==null)return;
         bool active=PlayerManager.Instance.Active==player;
-        if(styled!=active){styled=active;hotbar?.SetDungeonStyle(styled,font,dungeon.LevelData.hotbarFrame);}
         bool show=active && GameManager.Instance.GameplayActive;
         var camera=PlayerManager.Instance.OutputCamera;
         if(camera==null)return;
@@ -189,7 +185,6 @@ public class DungeonCombatFeedback : MonoBehaviour
     static void SetRect(RectTransform r,Vector2 anchor,Vector2 position){r.anchorMin=r.anchorMax=anchor;r.anchoredPosition=position;}
     void OnDisable()
     {
-        if(styled){hotbar?.SetDungeonStyle(false);styled=false;}
     }
     void OnDestroy()
     {
@@ -197,6 +192,6 @@ public class DungeonCombatFeedback : MonoBehaviour
         DungeonDestructible.Hit-=ObjectHit;
         foreach(var e in enemies)if(e.character!=null)e.character.Damaged-=e.handler;
         if(player!=null){player.Damaged-=PlayerDamaged;player.HitLanded-=HitLanded;}
-        if(styled)hotbar?.SetDungeonStyle(false);
     }
 }
+

@@ -86,6 +86,7 @@ GameObject:
   - component: {fileID: 252201758904142255}
   - component: {fileID: 4141835776462408552}
   - component: {fileID: 4398070461049920375}
+  - component: {fileID: 1389060438879991899}
   m_Layer: 0
   m_Name: KeyLabel
   m_TagString: Untagged
@@ -140,17 +141,17 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 4
+  m_text: 1
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
+  m_sharedMaterial: {fileID: -7708394129502214064, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
     rgba: 4288914339
-  m_fontColor: {r: 0.64, g: 0.64, b: 0.64, a: 1}
+  m_fontColor: {r: 0.847, g: 0.8, b: 0.706, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -167,8 +168,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16
-  m_fontSizeBase: 16
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -212,6 +213,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1389060438879991899
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1900253262983627677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e67b969bb93c6334095286ea15b63343, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIColor
+  slot: 5
+  alpha: 1
 --- !u!1 &2124349368523248622
 GameObject:
   m_ObjectHideFlags: 0
@@ -225,6 +240,7 @@ GameObject:
   - component: {fileID: 5613828116353594162}
   - component: {fileID: 7620568469483116724}
   - component: {fileID: 7903898079768161773}
+  - component: {fileID: 1845603918583350156}
   m_Layer: 0
   m_Name: Hotbar slot
   m_TagString: Untagged
@@ -313,6 +329,9 @@ MonoBehaviour:
   stackLabel: {fileID: 9085092156063966659}
   emptyColor: {r: 0.24, g: 0.24, b: 0.24, a: 1}
   filledColor: {r: 0.24, g: 0.24, b: 0.24, a: 1}
+  useAuthoredAppearance: 1
+  frameColor: {r: 0.5, g: 0.57, b: 0.55, a: 1}
+  equippedFrameColor: {r: 1, g: 0.83, b: 0.35, a: 1}
   dungeonFrame: {fileID: 7898274797941649203}
   dungeonEmptyColor: {r: 0.035, g: 0.045, b: 0.045, a: 0.96}
   dungeonFilledColor: {r: 0.09, g: 0.11, b: 0.105, a: 0.98}
@@ -334,6 +353,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIInteractionFeedback
   settings: {fileID: 0}
+--- !u!114 &1845603918583350156
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2124349368523248622}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e67b969bb93c6334095286ea15b63343, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIColor
+  slot: 1
+  alpha: 1
 --- !u!1 &2818387569101517711
 GameObject:
   m_ObjectHideFlags: 0
@@ -345,6 +378,7 @@ GameObject:
   - component: {fileID: 3638585138827195324}
   - component: {fileID: 2051253560248761460}
   - component: {fileID: 9085092156063966659}
+  - component: {fileID: 122527140388096981}
   m_Layer: 0
   m_Name: StackCount
   m_TagString: Untagged
@@ -401,15 +435,15 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
+  m_sharedMaterial: {fileID: -7708394129502214064, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+  m_fontColor: {r: 0.847, g: 0.8, b: 0.706, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -426,8 +460,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 17
-  m_fontSizeBase: 17
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -471,6 +505,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &122527140388096981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2818387569101517711}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e67b969bb93c6334095286ea15b63343, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIColor
+  slot: 5
+  alpha: 1
 --- !u!1 &5612898150505213196
 GameObject:
   m_ObjectHideFlags: 0
@@ -482,6 +530,7 @@ GameObject:
   - component: {fileID: 4755704014233376745}
   - component: {fileID: 5543442878985367665}
   - component: {fileID: 3344158904564442165}
+  - component: {fileID: 5379757809234825028}
   m_Layer: 0
   m_Name: SelectionBorder
   m_TagString: Untagged
@@ -529,7 +578,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.64, g: 0.64, b: 0.64, a: 1}
+  m_Color: {r: 0.16571732, g: 0.18492389, b: 0.26415092, a: 0.32}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -546,6 +595,20 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5379757809234825028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5612898150505213196}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e67b969bb93c6334095286ea15b63343, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIColor
+  slot: 3
+  alpha: 0.32
 --- !u!1 &8725527144611974591
 GameObject:
   m_ObjectHideFlags: 0
@@ -598,7 +661,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8725527144611974591}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
