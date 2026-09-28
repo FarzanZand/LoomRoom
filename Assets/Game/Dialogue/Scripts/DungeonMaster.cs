@@ -67,7 +67,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
         label.alignment = middle ? TextAlignmentOptions.Bottom : TextAlignmentOptions.BottomLeft;
         label.fontSize = fontSize;
         label.color = Color.white;
-        label.enableWordWrapping = true;
+        label.textWrappingMode = TextWrappingModes.Normal;
         label.raycastTarget = false;
         if (Application.isPlaying) { label.outlineWidth = outline; label.outlineColor = Color.black; }
     }
