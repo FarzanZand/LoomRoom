@@ -31,9 +31,9 @@ MonoBehaviour:
   chargeClipSeconds: 1
   equipSound: {fileID: 8300000, guid: f394b5b617270824091df493c9d188b7, type: 3}
   equipVolume: 0.18
-  chargeSound: {fileID: 8300000, guid: f04d6a0e8cf30b24f95ef5e0e00803c9, type: 3}
+  chargeSound: {fileID: 8300000, guid: c0eba6ab885b5494f9f5102f8085ac1e, type: 3}
   chargeVolume: 0.35
-  releaseSound: {fileID: 8300000, guid: f394b5b617270824091df493c9d188b7, type: 3}
+  releaseSound: {fileID: 8300000, guid: 6b88d4011cd4bc646a38b12ffd492d41, type: 3}
   releaseVolume: 0.5
   flightSound: {fileID: 0}
   flightVolume: 1

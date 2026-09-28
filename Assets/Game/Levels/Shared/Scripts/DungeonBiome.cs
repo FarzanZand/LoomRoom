@@ -34,6 +34,8 @@ public class DungeonBiome : ScriptableObject
     public enum Lighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6, Darkness = 7, Standard = 8, Custom = 100 }
     [TabGroup(Look), Title("Lighting"), Tooltip("The lighting in this biome: a preset, or Custom to set every value below.")]
     public Lighting lighting = Lighting.Darkness;
+    [TabGroup(Look), Tooltip("Skip the Lighting Manager's dungeon darkness here: the preset's ambient light reaches everywhere, so unlit places stay visible.")]
+    public bool litThroughout;
     bool CustomLighting => lighting == Lighting.Custom;
     [TabGroup(Look), ShowIf(nameof(CustomLighting)), InlineProperty, HideLabel]
     public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();

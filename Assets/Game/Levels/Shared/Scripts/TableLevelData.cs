@@ -249,7 +249,16 @@ public class TableLevelData : ScriptableObject
     }
 
     // The floor's biome decides; the level's own setting only applies to dungeons without biomes.
+    // Every dungeon floor is marked for the Lighting Manager's dungeon darkness unless its biome is Lit Throughout.
     public LightingManager.MoodState DungeonLighting(int floorNumber = 1)
+    {
+        var state = DungeonLightingPreset(floorNumber);
+        var biome = Biome(floorNumber);
+        state.darkness = biome != null && biome.litThroughout ? 0f : 1f;
+        return state;
+    }
+
+    LightingManager.MoodState DungeonLightingPreset(int floorNumber)
     {
         var biome = Biome(floorNumber);
         if (biome != null && biome.lighting == DungeonBiome.Lighting.Custom) return biome.lightingSettings.ToState();

@@ -42,6 +42,26 @@ public sealed partial class LightingManager : MonoBehaviour
     [Min(0f), Tooltip("Seconds to reach the revealed brightness after ReachOut starts.")]
     public float fadeDuration = 6f;
 
+    [Title("Dungeon darkness")]
+    [OnValueChanged(nameof(Apply))]
+    [Tooltip("Dungeons are dark away from light sources whatever their lighting preset: ambient light and the sun are held down, so only torches and the player's own light show the way. A biome can opt out with Lit Throughout.")]
+    public bool dungeonDarkness = true;
+    [ShowIf(nameof(dungeonDarkness)), Range(0f, 1f), OnValueChanged(nameof(Apply))]
+    [Tooltip("Brightest the preset's ambient colours may be in a dungeon: how visible unlit places are. 0.11 matches the Darkness preset; 0 is pitch black.")]
+    public float darkAmbient = .11f;
+    [ShowIf(nameof(dungeonDarkness)), Range(0f, 1f), OnValueChanged(nameof(Apply))]
+    [Tooltip("Strongest the directional (sun) light may be in a dungeon. 0.02 matches the Darkness preset.")]
+    public float darkSunIntensity = .02f;
+    [ShowIf(nameof(dungeonDarkness)), OnValueChanged(nameof(Apply))]
+    [Tooltip("Also fade distant things into a fog colour, even where a light reaches them.")]
+    public bool darknessFog;
+    [ShowIf("@dungeonDarkness && darknessFog"), OnValueChanged(nameof(Apply))]
+    public Color darknessFogColor = Color.black;
+    [ShowIf("@dungeonDarkness && darknessFog"), Min(0f), OnValueChanged(nameof(Apply)), Tooltip("Metres from the camera where the fog starts.")]
+    public float darknessFogStart = 6f;
+    [ShowIf("@dungeonDarkness && darknessFog"), Min(0f), OnValueChanged(nameof(Apply)), Tooltip("Metres from the camera where everything is fog.")]
+    public float darknessFogEnd = 24f;
+
     [Serializable]
     public class Source
     {
@@ -134,7 +154,7 @@ public sealed partial class LightingManager : MonoBehaviour
         ApplyGroup(sources, brightness, tint);
         ApplyGroup(sceneSources, sceneBrightness, sceneTint);
         if (moodActive) ApplyMood();
-        else ApplyAmbient(sceneBrightness * ambientMultiplier, sceneTint, overrideFogColor);
+        else { ApplyAmbient(sceneBrightness * ambientMultiplier, sceneTint, overrideFogColor); RestoreSceneFog(); }
         sceneApplied = true;
     }
 

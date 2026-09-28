@@ -5558,9 +5558,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Slot_5
       objectReference: {fileID: 0}
+    - target: {fileID: 2818387569101517711, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_text
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4290039000
       objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x
@@ -30941,9 +30949,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Slot_4
       objectReference: {fileID: 0}
+    - target: {fileID: 2818387569101517711, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_text
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4290039000
       objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x
@@ -36817,9 +36833,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Slot_3
       objectReference: {fileID: 0}
+    - target: {fileID: 2818387569101517711, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_text
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4290039000
       objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x
@@ -44571,9 +44595,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Slot_2
       objectReference: {fileID: 0}
+    - target: {fileID: 2818387569101517711, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_text
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4290039000
       objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x
@@ -58365,9 +58397,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Slot_6
       objectReference: {fileID: 0}
+    - target: {fileID: 2818387569101517711, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_text
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4290039000
       objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x
@@ -61008,6 +61048,7 @@ MonoBehaviour:
       roomBrightness: 0
       tableTint: {r: 0, g: 0, b: 0, a: 0}
       roomTint: {r: 0, g: 0, b: 0, a: 0}
+      darkness: 0
   hasSavedDefault: 0
   baseSkybox: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
   controlScope: 0
@@ -61022,6 +61063,13 @@ MonoBehaviour:
   revealedBrightness: 1.39
   revealDelay: 1.5
   fadeDuration: 4
+  dungeonDarkness: 1
+  darkAmbient: 0.11
+  darkSunIntensity: 0.02
+  darknessFog: 0
+  darknessFogColor: {r: 0, g: 0, b: 0, a: 1}
+  darknessFogStart: 6
+  darknessFogEnd: 24
   sources:
   - light: {fileID: 1631269675}
     baseIntensity: 3200
@@ -65459,6 +65507,14 @@ PrefabInstance:
     - target: {fileID: 2124349368523248622, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Name
       value: Slot_1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2818387569101517711, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4398070461049920375, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4290039000
       objectReference: {fileID: 0}
     - target: {fileID: 7696539591317200853, guid: 24d536d4fa5f7404aaf75378ced5545c, type: 3}
       propertyPath: m_Pivot.x

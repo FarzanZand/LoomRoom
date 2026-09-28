@@ -34,8 +34,11 @@ public sealed partial class LightingManager
         public bool overrideLightGroups;
         public float tableBrightness, roomBrightness;
         public Color tableTint, roomTint;
+        // 1 for dungeon floors: the Lighting Manager's dungeon darkness applies. 0 for the room.
+        public float darkness;
 
         public static MoodState LerpEnvironment(MoodState a, MoodState b, float t) => new MoodState {
+            darkness = Mathf.Lerp(a.darkness, b.darkness, t),
             sky = Color.Lerp(a.sky, b.sky, t), exposure = Mathf.Lerp(a.exposure, b.exposure, t),
             light = Color.Lerp(a.light, b.light, t), intensity = Mathf.Lerp(a.intensity, b.intensity, t),
             top = Color.Lerp(a.top, b.top, t), horizon = Color.Lerp(a.horizon, b.horizon, t),
@@ -278,21 +281,52 @@ public sealed partial class LightingManager
             if (tintProperty != null) moodSkybox.SetColor(tintProperty, displayedMood.sky);
             if (moodSkybox.HasProperty("_Exposure")) moodSkybox.SetFloat("_Exposure", displayedMood.exposure);
         }
+        float dark = dungeonDarkness ? Mathf.Clamp01(displayedMood.darkness) : 0f;
         if (sceneSources != null) foreach (var source in sceneSources)
             if (IsDirectional(source))
             {
                 source.light.color = displayedMood.light * sceneTint;
-                source.light.intensity = displayedMood.intensity * sceneBrightness;
+                float sun = displayedMood.intensity * sceneBrightness;
+                source.light.intensity = Mathf.Lerp(sun, Mathf.Min(sun, darkSunIntensity), dark);
             }
         float level = sceneBrightness * ambientMultiplier;
         var top = displayedMood.top * sceneTint * level;
         var horizon = displayedMood.horizon * sceneTint * level;
         var ground = displayedMood.ground * sceneTint * level;
+        // Dungeon darkness: hold the preset's ambient down to darkAmbient (measured on its own colours,
+        // so the Darkness preset is unchanged), keeping the preset's hues.
+        float peak = Mathf.Max(displayedMood.top.maxColorComponent, Mathf.Max(displayedMood.horizon.maxColorComponent, displayedMood.ground.maxColorComponent));
+        if (dark > 0f && peak > darkAmbient)
+        {
+            float scale = Mathf.Lerp(1f, darkAmbient / peak, dark);
+            top *= scale; horizon *= scale; ground *= scale;
+        }
         RenderSettings.ambientSkyColor = top; RenderSettings.ambientEquatorColor = horizon;
         RenderSettings.ambientGroundColor = ground; RenderSettings.ambientLight = horizon;
         RenderSettings.ambientIntensity = originalAmbientIntensity * level;
         RenderSettings.ambientProbe = GradientProbe(top, horizon, ground);
         RenderSettings.fogColor = overrideFogColor ? fogColor : displayedMood.fog;
+        if (darknessFog && dark > .001f)
+        {
+            if (!sceneFogSaved) { sceneFogSaved = true; sceneFogOn = RenderSettings.fog; sceneFogMode = RenderSettings.fogMode; sceneFogStart = RenderSettings.fogStartDistance; sceneFogEnd = RenderSettings.fogEndDistance; }
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogStartDistance = darknessFogStart;
+            RenderSettings.fogEndDistance = Mathf.Lerp(darknessFogEnd * 20f, Mathf.Max(darknessFogStart + .1f, darknessFogEnd), dark);
+            RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor, darknessFogColor, dark);
+        }
+        else RestoreSceneFog();
+    }
+
+    // The scene's own fog, put back when the dungeon darkness fog is no longer shown.
+    bool sceneFogSaved, sceneFogOn;
+    FogMode sceneFogMode;
+    float sceneFogStart, sceneFogEnd;
+    void RestoreSceneFog()
+    {
+        if (!sceneFogSaved) return;
+        sceneFogSaved = false;
+        RenderSettings.fog = sceneFogOn; RenderSettings.fogMode = sceneFogMode;
+        RenderSettings.fogStartDistance = sceneFogStart; RenderSettings.fogEndDistance = sceneFogEnd;
     }
 
     void ClearMoodSky()
