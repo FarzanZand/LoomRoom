@@ -90,12 +90,12 @@ public class DungeonLootProfile : LootSource
     {
         if (!InventoryManager.HasInstance || InventoryManager.Instance.itemCatalog == null) return null;
         float total = 0;
-        foreach (var i in InventoryManager.Instance.itemCatalog) if (i != null && i.tier > 0 && match(i)) total += i.lootWeight;
+        foreach (var i in InventoryManager.Instance.itemCatalog) if (i != null && i.tier > 0 && match(i) && InventoryManager.Instance.CanDropLoot(i)) total += i.lootWeight;
         if (total <= 0) return null;
         double roll = random.NextDouble() * total;
         foreach (var i in InventoryManager.Instance.itemCatalog)
         {
-            if (i == null || i.tier <= 0 || !match(i)) continue;
+            if (i == null || i.tier <= 0 || !match(i) || !InventoryManager.Instance.CanDropLoot(i)) continue;
             roll -= i.lootWeight;
             if (roll < 0) return i;
         }

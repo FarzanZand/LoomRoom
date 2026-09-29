@@ -25,6 +25,28 @@ public class InventoryManager : Singleton<InventoryManager>
     public float dropDistance = 1.5f;
     public float dropHeight   = 0.5f;
 
+    [Header("Loot duplicates")]
+    [Tooltip("Exclude tomes already in the dungeon player's bag, hotbar or equipment from loot rolls.")]
+    public bool preventDuplicateTomes = true;
+    [Tooltip("Exclude exact weapon, shield and armor items already owned from loot rolls. Different items of the same type remain eligible.")]
+    public bool preventDuplicateEquipment;
+
+    public bool CanDropLoot(ItemData item)
+    {
+        if (item == null) return false;
+        bool filtered = item.spell != null ? preventDuplicateTomes
+            : preventDuplicateEquipment && (item.itemType == ItemType.Weapon || item.itemType == ItemType.Shield || item.itemType == ItemType.Equipment);
+        if (!filtered) return true;
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if (player == null) return true;
+        if (player.Bag != null && player.Bag.TotalCount(item) > 0) return false;
+        if (player.Hotbar != null && player.Hotbar.TotalCount(item) > 0) return false;
+        if (player.Equipment != null)
+            foreach (EquipmentSlot slot in System.Enum.GetValues(typeof(EquipmentSlot)))
+                if (player.Equipment.Get(slot) == item) return false;
+        return true;
+    }
+
     [Header("Catalog")]
     [Tooltip("Every item the runtime may need to look up by name (dialogue GiveItem, saves).")]
     [ListDrawerSettings(ShowFoldout = true)]

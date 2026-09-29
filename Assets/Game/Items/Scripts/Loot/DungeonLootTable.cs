@@ -88,7 +88,8 @@ public class DungeonLootTable : LootSource
         }
         return result;
     }
-    static bool Eligible(Entry e,int floor,DungeonLootSource source)=>e!=null && e.item!=null && floor>=Math.Max(1,e.minFloor) && (e.maxFloor<=0 || floor<=e.maxFloor) && (e.sources&source)!=0;
+    static bool Eligible(Entry e,int floor,DungeonLootSource source)=>e!=null && e.item!=null && floor>=Math.Max(1,e.minFloor) && (e.maxFloor<=0 || floor<=e.maxFloor) && (e.sources&source)!=0
+        && (!InventoryManager.HasInstance || InventoryManager.Instance.CanDropLoot(e.item));
     static double Weight(Entry e,int floor) {
         double value=e.weight+(double)e.weightPerFloor*(floor-Math.Max(1,e.minFloor));
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;

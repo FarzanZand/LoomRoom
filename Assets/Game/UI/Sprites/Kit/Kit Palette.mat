@@ -38,9 +38,9 @@ Material:
     - _StencilWriteMask: 255
     - _UseUIAlphaClip: 0
     m_Colors:
-    - _BorderColor: {r: 0.26633143, g: 0.29668728, b: 0.4245283, a: 1}
+    - _BorderColor: {r: 0.64, g: 0.34, b: 0.24, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _HighlightColor: {r: 0.16571732, g: 0.18492389, b: 0.26415092, a: 1}
+    - _HighlightColor: {r: 0.88, g: 0.53, b: 0.35, a: 1}
     - _PanelColor: {r: 0.114, g: 0.145, b: 0.173, a: 1}
     - _ShadowColor: {r: 0.043, g: 0.055, b: 0.067, a: 1}
   m_BuildTextureStacks: []

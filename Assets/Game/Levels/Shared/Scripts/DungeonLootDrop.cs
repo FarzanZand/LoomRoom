@@ -20,7 +20,7 @@ public class DungeonLootDrop : MonoBehaviour
         dropped = true;
         var rng = new System.Random(seed);
         var drops = new List<LootSource.Drop>();
-        if (carriedItem != null) drops.Add(new LootSource.Drop(carriedItem,1));
+        if (carriedItem != null && (!InventoryManager.HasInstance || InventoryManager.Instance.CanDropLoot(carriedItem))) drops.Add(new LootSource.Drop(carriedItem,1));
         if (table != null) drops.AddRange(table.RollDrops(rng,floorNumber,DungeonLootSource.Enemy));
         // Gold rolls after items so the item results match earlier seeds.
         int gold = bonusGold + (table != null ? table.RollGold(rng,floorNumber,DungeonLootSource.Enemy) : 0);

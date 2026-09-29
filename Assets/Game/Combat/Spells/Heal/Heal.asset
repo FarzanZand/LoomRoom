@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Heals you.
   icon: {fileID: 21300000, guid: 3ff4d37375fe3c54c9dda24f0f2070ce, type: 3}
   manaCost: 15
-  power: 25
+  power: 10
   castSeconds: 1
   recoverySeconds: 0.4
   castMoveSpeed: 0.6

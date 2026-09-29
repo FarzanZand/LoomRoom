@@ -52,6 +52,8 @@ MonoBehaviour:
   pickupPrefab: {fileID: 1330799697983367974, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
   dropDistance: 1.5
   dropHeight: 0.5
+  preventDuplicateTomes: 1
+  preventDuplicateEquipment: 0
   itemCatalog:
   - {fileID: 11400000, guid: 91bd6bbd2bd79784da8e7bffd2b6c3dd, type: 2}
   - {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}

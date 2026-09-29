@@ -9585,7 +9585,7 @@ MonoBehaviour:
   deathTrigger: Death
   deathDisableDelay: 0
   walkSpeed: 4.5
-  sprintSpeed: 5.85
+  sprintSpeed: 7.2
   crouchSpeed: 1.75
   jumpForce: 8
   gravityMultiplier: 2.5
