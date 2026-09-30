@@ -8,28 +8,30 @@ public class PlayerData : CharacterData
 {
     protected override bool HasCreatureAudio => false;
 
-    [FoldoutGroup("Movement", Expanded = true, Order = 1), Title("Speeds (m/s)", HorizontalLine = false)]
+    [TabGroup(InspectorTabs, "Movement", Order = 10), Title("Speeds (m/s)", HorizontalLine = false)]
     public float walkSpeed   = 3f;
-    [FoldoutGroup("Movement")]
+    [TabGroup(InspectorTabs, "Movement")]
     public float sprintSpeed = 6f;
-    [FoldoutGroup("Movement")]
+    [TabGroup(InspectorTabs, "Movement")]
     public float crouchSpeed = 1.75f;
-    [FoldoutGroup("Movement"), Title("Jump & gravity", HorizontalLine = false)]
+    [TabGroup(InspectorTabs, "Movement"), Title("Jump & gravity", HorizontalLine = false)]
     public float jumpForce = 8f;
-    [FoldoutGroup("Movement"), Tooltip("Multiplier applied to gravity while airborne. Higher values make falling faster.")]
+    [TabGroup(InspectorTabs, "Movement"), Tooltip("Multiplier applied to gravity while airborne. Higher values make falling faster.")]
     public float gravityMultiplier = 2.5f;
 
-    [FoldoutGroup("Stamina", Order = 2), Min(0)]
+    [TabGroup(InspectorTabs, "Movement"), Title("Stamina", HorizontalLine = false), Min(0)]
     public float sprintStaminaPerSecond = 6f;
     [HideInInspector] public float jumpStaminaCost;
-    [FoldoutGroup("Stamina"), Min(0)]
+    [TabGroup(InspectorTabs, "Movement"), Min(0)]
     public float staminaRegenDelay = .6f;
-    [FoldoutGroup("Stamina"), Range(.01f, 1f), Tooltip("Exhaustion ends once stamina refills to this fraction.")]
+    [TabGroup(InspectorTabs, "Movement"), Range(.01f, 1f), Tooltip("Exhaustion ends once stamina refills to this fraction.")]
     public float sprintRecoveryFraction = .25f;
 
-    [FoldoutGroup("Starting items", Order = 3), Tooltip("Added to the bag or hotbar on first spawn.")]
+    [TabGroup(InspectorTabs, "Inventory", Order = 20), Tooltip("Added to the bag or hotbar on first spawn.")]
+    [ListDrawerSettings(ShowFoldout = false, ShowPaging = true, NumberOfItemsPerPage = 6)]
     public List<ItemData> startingItems = new();
-    [FoldoutGroup("Starting items"), Tooltip("Equipped directly on first spawn.")]
+    [TabGroup(InspectorTabs, "Inventory"), Tooltip("Equipped directly on first spawn.")]
+    [ListDrawerSettings(ShowFoldout = false, ShowPaging = true, NumberOfItemsPerPage = 6)]
     public List<ItemData> startingEquipment = new();
 
     void OnValidate()

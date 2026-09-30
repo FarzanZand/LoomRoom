@@ -12917,6 +12917,10 @@ PrefabInstance:
       propertyPath: m_sharedMaterial
       value: 
       objectReference: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+    - target: {fileID: 7181193519676449194, guid: 78df50a14ebeec341a15cda701f58b1c, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4291616998
+      objectReference: {fileID: 0}
     - target: {fileID: 8401374421255950216, guid: 78df50a14ebeec341a15cda701f58b1c, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4290039000
@@ -107137,11 +107141,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: tableEffects.pixelate
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: roomEffects.colorLevels
       value: 64
+      objectReference: {fileID: 0}
+    - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
+      propertyPath: tableEffects.pixelLines
+      value: 160
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: roomEffects.colorBanding

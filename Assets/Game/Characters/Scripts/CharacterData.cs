@@ -8,6 +8,8 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "NewCharacterData", menuName = "Characters/NPC Data")]
 public class CharacterData : ScriptableObject
 {
+    protected const string InspectorTabs = "CharacterTabs";
+
     [HorizontalGroup("Identity", 64), PreviewField(64, ObjectFieldAlignment.Left), HideLabel]
     public Sprite portrait;
     [VerticalGroup("Identity/Right"), LabelWidth(90)]
@@ -17,20 +19,20 @@ public class CharacterData : ScriptableObject
     [VerticalGroup("Identity/Right"), LabelWidth(90), TextArea(2, 4)]
     public string description;
 
-    [FoldoutGroup("Stats", Expanded = true, Order = 0), Tooltip("Base values. Anything not listed reads as 0 (or 1 for multiplier stats). Dungeon enemies are scaled per floor by the level's balance asset.")]
-    [ListDrawerSettings(ShowFoldout = false)]
+    [TabGroup(InspectorTabs, "Stats", Order = 0), Tooltip("Base values. Anything not listed reads as 0 (or 1 for multiplier stats). Dungeon enemies are scaled per floor by the level's balance asset.")]
+    [ListDrawerSettings(ShowFoldout = false, ShowPaging = true, NumberOfItemsPerPage = 8)]
     public List<StatEntry> stats = new();
 
     // Players have their own footstep system; NPCs and enemies use this.
     protected virtual bool HasCreatureAudio => true;
-    [FoldoutGroup("Audio", Order = 10), ShowIf(nameof(HasCreatureAudio)), InlineProperty, HideLabel]
+    [TabGroup(InspectorTabs, "Presentation", Order = 30), TabGroup("CharacterTabs/Presentation/Details", "Audio"), ShowIf(nameof(HasCreatureAudio)), InlineProperty, HideLabel]
     public CreatureAudio audio = new();
 
-    [FoldoutGroup("Animation", Order = 20), Tooltip("Animator trigger fired when hurt. Leave empty to skip.")]
+    [TabGroup(InspectorTabs, "Presentation"), TabGroup("CharacterTabs/Presentation/Details", "Animation"), Tooltip("Animator trigger fired when hurt. Leave empty to skip.")]
     public string hurtTrigger = "Hurt";
-    [FoldoutGroup("Animation"), Tooltip("Animator trigger fired on death. Leave empty to skip.")]
+    [TabGroup("CharacterTabs/Presentation/Details", "Animation"), Tooltip("Animator trigger fired on death. Leave empty to skip.")]
     public string deathTrigger = "Death";
-    [FoldoutGroup("Animation"), Tooltip("Seconds after death before the object is disabled. 0 = never disable. Dungeon enemies follow CombatManager's corpse lifetime instead.")]
+    [TabGroup("CharacterTabs/Presentation/Details", "Animation"), Tooltip("Seconds after death before the object is disabled. 0 = never disable. Dungeon enemies follow CombatManager's corpse lifetime instead.")]
     public float deathDisableDelay = 20f;
 
     protected virtual void Reset()

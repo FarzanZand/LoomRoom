@@ -9,23 +9,23 @@ public class EnemyData : CharacterData
 {
     bool UsesInlineBehaviour => behaviour == null;
 
-    [FoldoutGroup("Behaviour", Expanded = true, Order = 1)]
+    [TabGroup(InspectorTabs, "Behaviour", Order = 10)]
     [Tooltip("Optional shared tuning asset, for when several enemies should always behave alike. Empty uses the settings below, which belong to this enemy only.")]
     public EnemyBehaviourProfile behaviour;
-    [FoldoutGroup("Behaviour"), ShowIf(nameof(UsesInlineBehaviour)), InlineProperty, HideLabel]
+    [TabGroup(InspectorTabs, "Behaviour"), ShowIf(nameof(UsesInlineBehaviour)), InlineProperty, HideLabel]
     public EnemyBehaviourSettings behaviourSettings = new();
 
-    [FoldoutGroup("Attacks", Expanded = true, Order = 2), HideLabel]
-    [ListDrawerSettings(ShowFoldout = false, ListElementLabelName = "name")]
+    [TabGroup(InspectorTabs, "Combat", Order = 20), TabGroup("CharacterTabs/Combat/Details", "Melee"), HideLabel]
+    [ListDrawerSettings(ShowFoldout = false, ShowPaging = true, NumberOfItemsPerPage = 4, ListElementLabelName = "name")]
     public List<EnemyAttack> attacks = new();
 
-    [FoldoutGroup("Archer", Expanded = true, Order = 3)]
+    [TabGroup("CharacterTabs/Combat/Details", "Archery")]
     [Tooltip("Carries a bow and shoots from range, keeping its distance. Melee attacks above are still used when the target gets close.")]
     public bool archer;
-    [FoldoutGroup("Archer"), ShowIf(nameof(archer)), InlineProperty, HideLabel]
+    [TabGroup("CharacterTabs/Combat/Details", "Archery"), ShowIf(nameof(archer)), InlineProperty, HideLabel]
     public EnemyArchery archery = new();
 
-    [FoldoutGroup("Rewards", Expanded = true, Order = 4)]
+    [TabGroup(InspectorTabs, "Stats"), Title("Rewards")]
     [Tooltip("Character experience for killing this enemy. Zero derives it from maximum health, so tougher enemies are worth more.")]
     [Min(0)] public float experience;
 
