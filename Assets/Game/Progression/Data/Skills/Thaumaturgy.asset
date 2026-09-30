@@ -19,9 +19,10 @@ MonoBehaviour:
   description: Healing and cast speed.
   practice:
   - action: 4
-    oneIn: 3
+    experience: 33.3333
     text: Healing wounds dealt by enemies
-  chanceAtMaster: 0.5
+  rankExperience: 100
+  masterExperienceMultiplier: 2.0
   perEnemyLimit: 0
   bonusAt100: 0.6
   bonusText: +{0}% healing

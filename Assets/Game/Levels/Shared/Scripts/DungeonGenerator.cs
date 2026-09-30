@@ -15,6 +15,7 @@ public partial class DungeonGenerator : MonoBehaviour
     public TableLevelData LevelData => data;
     Transform geometry, ceiling;
     readonly System.Collections.Generic.Dictionary<(Vector3, Vector3), Mesh> architectureMeshes = new();
+    readonly System.Collections.Generic.List<Mesh> cornerMeshes = new();
     System.Random random;
     public int FloorNumber { get; private set; }=1;
     // Serialized in DungeonRoomProfile.role; Build casts random.Next(2,5) to Treasure..Storage.
@@ -239,17 +240,23 @@ public partial class DungeonGenerator : MonoBehaviour
                 for (float y = bottom; y < height - .01f; y += tile)
                 {
                     var (wallCenter, wallScale) = WallPiece(cell, dir, y, 0, tile, y+tile*.5f);
-                    ArchitectureBox("Crypt masonry", wallCenter, wallScale, WallSurface(room,y,x,z,dir), geometry).GetComponent<Renderer>().enabled = visible;
+                    var wall = ArchitectureBox("Crypt masonry", wallCenter, wallScale, WallSurface(room,y,x,z,dir), geometry);
+                    MiterDiagonalEnds(wall, cell, dir, y, 0, true);
+                    wall.GetComponent<Renderer>().enabled = visible;
                 }
                 if (style == null || !style.hideTrims)
                 {
                     var trim = DungeonRoomStyle.Resolve(style != null ? style.trim : null, level.trimMaterial);
                     var (corniceCenter, corniceScale) = WallPiece(cell, dir, height-.6f, TrimDepth, .15f, height-.55f);
-                    Box("Stone cornice", corniceCenter, corniceScale, trim, geometry).GetComponent<Renderer>().enabled = visible;
+                    var cornice = Box("Stone cornice", corniceCenter, corniceScale, trim, geometry);
+                    MiterDiagonalEnds(cornice, cell, dir, height-.6f, TrimDepth, false);
+                    cornice.GetComponent<Renderer>().enabled = visible;
                     if (!neighbor)
                     {
                         var (footCenter, footScale) = WallPiece(cell, dir, 0, TrimDepth, .15f, .12f);
-                        Box("Stone footing", footCenter, footScale, trim, geometry).GetComponent<Renderer>().enabled = visible;
+                        var footing = Box("Stone footing", footCenter, footScale, trim, geometry);
+                        MiterDiagonalEnds(footing, cell, dir, 0, TrimDepth, false);
+                        footing.GetComponent<Renderer>().enabled = visible;
                     }
                 }
             }
@@ -948,7 +955,9 @@ public partial class DungeonGenerator : MonoBehaviour
     //   inside corner:  the north/south-facing piece runs through the corner, the east/west one
     //                   stops at its face;
     //   outside corner: the north/south-facing piece reaches the corner, the east/west one starts
-    //                   behind it (also where two rooms touch only diagonally).
+    //                   behind it.
+    // Diagonally touching rooms retain these box colliders, but their visible meshes are
+    // mitered by MiterDiagonalEnds so neither room exposes the other room's wall end.
     const float WallThickness = .22f, TrimDepth = .04f;
     const float CeilingWallOverlap = .02f;
 
@@ -983,6 +992,53 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     bool IsRoomCell(Vector2Int c) => Layout.InBounds(c) && Layout.floor[c.x, c.y] && Layout.RegionIds[c.x, c.y] < Layout.rooms.Count;
+
+    void MiterDiagonalEnds(GameObject piece, Vector2Int cell, Vector2Int direction, float probeY, float proud, bool tiled)
+    {
+        var along = direction.x != 0 ? Vector2Int.up : Vector2Int.right;
+        float y = probeY + .001f;
+        bool Diagonal(Vector2Int end) => WallAt(cell, end, y) && WallAt(cell + end + direction, -end, y);
+        bool back = Diagonal(-along), front = Diagonal(along);
+        if (!back && !front) return;
+
+        var filter = piece.GetComponent<MeshFilter>();
+        // Architecture meshes are shared by size and UV phase; never edit them in place.
+        var mesh = Instantiate(filter.sharedMesh);
+        mesh.name = "Mitered diagonal wall corner";
+        cornerMeshes.Add(mesh);
+        var vertices = mesh.vertices;
+        var normals = mesh.normals;
+        var uv = mesh.uv;
+        var scale = piece.transform.localScale;
+        var outward = new Vector3(direction.x, 0, direction.y);
+        var tangent = new Vector3(along.x, 0, along.y);
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            bool positive = Vector3.Dot(vertices[i], tangent) > 0;
+            if (positive ? !front : !back) continue;
+            var end = positive ? along : -along;
+            float oldEnd = EndAdjust(cell, direction, end, y, proud);
+            // Inner edge reaches the room corner (including projecting trim); outer
+            // edge retreats into the rock. Opposing pieces meet on a diagonal plane.
+            float depth = (Vector3.Dot(vertices[i], outward) + .5f) * (WallThickness + proud);
+            float newEnd = proud - depth;
+            var shift = new Vector3(end.x, 0, end.y) * (newEnd - oldEnd);
+            vertices[i] += new Vector3(shift.x / scale.x, 0, shift.z / scale.z);
+            if (tiled)
+            {
+                var normal = normals[i];
+                uv[i] += (Mathf.Abs(normal.y) > .5f ? new Vector2(shift.x, shift.z)
+                    : Mathf.Abs(normal.x) > .5f ? new Vector2(shift.z, 0)
+                    : new Vector2(shift.x, 0)) / Mathf.Max(.01f, data.architectureTileSize);
+            }
+        }
+        mesh.vertices = vertices;
+        mesh.uv = uv;
+        mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
+        mesh.RecalculateBounds();
+        filter.sharedMesh = mesh;
+    }
 
     (Vector3 center, Vector3 scale) WallPiece(Vector2Int cell, Vector2Int d, float probeY, float proud, float height, float centerY)
     {
@@ -1030,6 +1086,8 @@ public partial class DungeonGenerator : MonoBehaviour
     {
         foreach (var mesh in architectureMeshes.Values) if (mesh != null) Destroy(mesh);
         architectureMeshes.Clear();
+        foreach (var mesh in cornerMeshes) if (mesh != null) Destroy(mesh);
+        cornerMeshes.Clear();
         // NavMeshSurface only removes its data instance on disable; the NavMeshData asset itself is ours to free.
         if (navMeshData != null) Destroy(navMeshData);
         navMeshData = null;

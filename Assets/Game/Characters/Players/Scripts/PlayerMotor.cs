@@ -168,7 +168,9 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
 
         if (IsSprinting && IsCrouching)
         {
-            bool crouchLocked = holdToCrouch && crouchHeld;
+            // Entering crouch cancels an existing sprint. Only a fresh sprint press
+            // may stand a toggled crouch back up; a held/toggled sprint is not new input.
+            bool crouchLocked = (holdToCrouch && crouchHeld) || crouchToggleRequested || !sprintToggleRequested;
             if (!crouchLocked && CanUncrouch()) IsCrouching = false;
             else IsSprinting = false;
         }

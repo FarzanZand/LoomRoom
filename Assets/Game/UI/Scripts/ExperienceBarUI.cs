@@ -4,8 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Barony's top bar: level, class and experience, and under it "Swords increased!" with the
-// skill's icon and new rank whenever a skill goes up. Only shown during a dungeon run.
+// Character XP bar and queued, animated skill XP notifications.
 public class ExperienceBarUI : MonoBehaviour
 {
     [SerializeField] CanvasGroup bar;
@@ -13,15 +12,45 @@ public class ExperienceBarUI : MonoBehaviour
     [SerializeField] Image fill;
     [SerializeField, Min(.1f)] float fillSpeed = 2f;
 
-    [Header("Skill increase")]
+    [Header("Skill XP notification")]
     [SerializeField] CanvasGroup popup;
     [SerializeField] TMP_Text popupTitle, popupRank;
-    [SerializeField] Image popupIcon;
+    [SerializeField] Image popupIcon, popupRing;
+    [SerializeField, Min(.05f)] float progressDuration = .45f;
     [SerializeField, Min(0)] float popupHold = 2.5f, popupFade = .4f;
+
+    [Header("Skill rank celebration")]
+    [SerializeField] CanvasGroup xpVisuals, rankVisuals, rankFlash;
+    [SerializeField] TMP_Text rankTitle, rankNumber;
+    [SerializeField] Image rankIcon;
+    [SerializeField, Min(0)] float rankHold = 3f, rankRevealDuration = .25f;
+    [SerializeField, Range(0, .5f)] float rankPunch = .15f;
+    [SerializeField] RectTransform rankBadge;
+    [SerializeField] CanvasGroup rankLabelGroup, rankValueGroup, rankGainGroup;
+    [SerializeField] TMP_Text rankGainText;
+    [SerializeField, Min(.05f)] float iconSettleDuration = .3f, rankCountDuration = .4f;
+    [SerializeField, Min(1)] float iconRevealScale = 1.65f;
+    [SerializeField] float gainRise = 10f;
+    Vector2 badgePosition, gainPosition;
+    Vector3 badgeScale, valueScale;
+    Vector3 rankBaseScale;
+    void Awake()
+    {
+        if (rankVisuals != null) rankBaseScale = rankVisuals.transform.localScale;
+        if (rankBadge != null) { badgePosition = rankBadge.anchoredPosition; badgeScale = rankBadge.localScale; }
+        if (rankGainGroup != null) gainPosition = ((RectTransform)rankGainGroup.transform).anchoredPosition;
+        if (rankValueGroup != null) valueScale = rankValueGroup.transform.localScale;
+    }
 
     AdventurerProgress progress;
     float shown;
-    readonly Queue<(AdventureSkill skill, int rank)> raises = new();
+    class Gain
+    {
+        public AdventureSkill skill;
+        public float xp, before, after;
+        public int ranks, resultingRank;
+    }
+    readonly List<Gain> raises = new();
     Sequence popupRoutine;
 
     void OnEnable() { if (popup != null) popup.alpha = 0; if (bar != null) bar.alpha = 0; }
@@ -34,7 +63,7 @@ public class ExperienceBarUI : MonoBehaviour
         if (current != progress) Bind(current);
         bool visible = progress != null && progress.InRun && player.IsActive && progress.selectedClass != null;
         if (bar != null) bar.alpha = visible ? 1 : 0;
-        if (!visible) return;
+        if (!visible) { popupRoutine?.Kill(); popupRoutine = null; raises.Clear(); if (popup != null) popup.alpha = 0; return; }
         float target = progress.NextLevelXp > 0 ? Mathf.Clamp01(progress.Experience / progress.NextLevelXp) : 0;
         shown = target < shown ? target : Mathf.MoveTowards(shown, target, Time.unscaledDeltaTime * fillSpeed);
         if (fill != null) fill.fillAmount = shown;
@@ -44,15 +73,19 @@ public class ExperienceBarUI : MonoBehaviour
 
     void Bind(AdventurerProgress next)
     {
-        if (progress != null) progress.SkillRaised -= OnSkillRaised;
+        if (progress != null) progress.SkillExperienceGained -= OnSkillExperienceGained;
+        popupRoutine?.Kill(); popupRoutine = null; raises.Clear();
+        if (popup != null) popup.alpha = 0;
         progress = next;
-        if (progress != null) progress.SkillRaised += OnSkillRaised;
+        if (progress != null) progress.SkillExperienceGained += OnSkillExperienceGained;
         shown = progress != null && progress.NextLevelXp > 0 ? progress.Experience / progress.NextLevelXp : 0;
     }
 
-    void OnSkillRaised(AdventureSkill skill, int rank)
+    void OnSkillExperienceGained(AdventureSkill skill, float xp, float before, float after, int ranks)
     {
-        raises.Enqueue((skill, rank));
+        var pending = raises.Find(x => x.skill == skill);
+        if (pending != null) { pending.xp += xp; pending.after = after; pending.ranks += ranks; pending.resultingRank = progress.Rank(skill); }
+        else raises.Add(new Gain { skill = skill, xp = xp, before = before, after = after, ranks = ranks, resultingRank = progress.Rank(skill) });
         if (popupRoutine == null || !popupRoutine.IsActive()) NextPopup();
     }
 
@@ -60,16 +93,65 @@ public class ExperienceBarUI : MonoBehaviour
     {
         popupRoutine = null;
         if (popup == null || raises.Count == 0 || progress == null) return;
-        var (skill, rank) = raises.Dequeue();
-        var def = progress.Definition(skill);
-        if (popupTitle != null) popupTitle.text = $"{(def != null ? def.displayName : skill.ToString())} increased!";
-        if (popupRank != null) popupRank.text = rank.ToString();
+        var gain = raises[0]; raises.RemoveAt(0);
+        var def = progress.Definition(gain.skill);
+        if (popupTitle != null) popupTitle.text = def?.displayName ?? gain.skill.ToString();
+        if (popupRank != null) popupRank.text = $"+{gain.xp:0.#} XP";
         if (popupIcon != null) { popupIcon.sprite = def != null ? def.icon : null; popupIcon.enabled = popupIcon.sprite != null; }
+        if (xpVisuals != null) xpVisuals.alpha = 1;
+        if (rankVisuals != null) { rankVisuals.alpha = 0; rankVisuals.transform.localScale = rankBaseScale; }
+        if (rankFlash != null) rankFlash.alpha = 0;
         popup.alpha = 0;
-        popupRoutine = DOTween.Sequence().SetUpdate(true)
-            .Append(popup.DOFade(1, .12f))
-            .AppendInterval(raises.Count > 0 ? popupHold * .5f : popupHold)
-            .Append(popup.DOFade(0, popupFade))
-            .OnComplete(NextPopup);
+        popupRoutine = DOTween.Sequence().SetUpdate(true).Append(popup.DOFade(1, .12f));
+        if (popupRing != null)
+        {
+            popupRing.fillAmount = gain.before;
+            if (gain.ranks > 0)
+            {
+                popupRoutine.Append(popupRing.DOFillAmount(1, progressDuration).SetEase(Ease.OutCubic));
+                if (rankVisuals == null && gain.after < 1) popupRoutine.AppendCallback(() => popupRing.fillAmount = 0)
+                    .Append(popupRing.DOFillAmount(gain.after, progressDuration).SetEase(Ease.OutCubic));
+            }
+            else popupRoutine.Append(popupRing.DOFillAmount(gain.after, progressDuration).SetEase(Ease.OutCubic));
+        }
+        if (gain.ranks > 0 && rankVisuals != null)
+        {
+            popupRoutine.AppendCallback(() =>
+            {
+                if (rankTitle != null) rankTitle.text = $"{def?.displayName ?? gain.skill.ToString()} increased!";
+                if (rankNumber != null) rankNumber.text = (gain.resultingRank - gain.ranks).ToString();
+                if (rankLabelGroup != null) rankLabelGroup.alpha = 0;
+                if (rankValueGroup != null) { rankValueGroup.alpha = 0; rankValueGroup.transform.localScale = valueScale; }
+                if (rankBadge != null) { rankBadge.anchoredPosition = new Vector2(0, badgePosition.y); rankBadge.localScale = badgeScale * iconRevealScale; }
+                if (rankGainGroup != null) { rankGainGroup.alpha = 0; ((RectTransform)rankGainGroup.transform).anchoredPosition = gainPosition; }
+                if (rankGainText != null) rankGainText.text = $"+{gain.ranks}";
+                if (rankIcon != null) { rankIcon.sprite = def != null ? def.icon : null; rankIcon.enabled = rankIcon.sprite != null; }
+                if (rankFlash != null) rankFlash.alpha = 1;
+            });
+            if (xpVisuals != null) popupRoutine.Append(xpVisuals.DOFade(0, .1f));
+            popupRoutine.Append(rankVisuals.DOFade(1, .1f));
+            if (rankBadge != null)
+                popupRoutine.Append(rankBadge.DOScale(badgeScale, iconSettleDuration).SetEase(Ease.OutCubic))
+                    .Join(rankBadge.DOAnchorPos(badgePosition, iconSettleDuration).SetEase(Ease.InOutSine));
+            if (rankLabelGroup != null) popupRoutine.Append(rankLabelGroup.DOFade(1, rankRevealDuration));
+            if (rankValueGroup != null) popupRoutine.Join(rankValueGroup.DOFade(1, rankRevealDuration));
+            popupRoutine.AppendInterval(.15f);
+            int displayedRank = gain.resultingRank - gain.ranks;
+            popupRoutine.Append(DOTween.To(() => displayedRank, value =>
+            {
+                displayedRank = value;
+                if (rankNumber != null) rankNumber.text = value.ToString();
+            }, gain.resultingRank, rankCountDuration).SetEase(Ease.Linear));
+            if (rankValueGroup != null) popupRoutine.Join(rankValueGroup.transform.DOPunchScale(Vector3.one * rankPunch, rankCountDuration, 1, .4f));
+            if (rankGainGroup != null)
+            {
+                popupRoutine.Join(rankGainGroup.DOFade(1, .12f));
+                popupRoutine.Join(((RectTransform)rankGainGroup.transform).DOAnchorPosY(gainPosition.y + gainRise, rankCountDuration + .35f).SetEase(Ease.OutSine));
+                popupRoutine.Append(rankGainGroup.DOFade(0, .3f));
+            }
+            if (rankFlash != null) popupRoutine.Join(rankFlash.DOFade(0, rankRevealDuration));
+        }
+        popupRoutine.AppendInterval(gain.ranks > 0 ? rankHold : (raises.Count > 0 ? popupHold * .5f : popupHold))
+            .Append(popup.DOFade(0, popupFade)).OnComplete(NextPopup);
     }
 }

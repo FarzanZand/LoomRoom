@@ -157,10 +157,10 @@ public class TableLevelLoader : MonoBehaviour
                     player.UseLevelLoadout();
                     player.Equipment.UnequipAll();player.Bag.Clear();player.Hotbar.Clear();
                     if(level.startingItems!=null) foreach(var item in level.startingItems)
-                        InventoryManager.Instance.Pickup(item,player,preferHotbar: level.startingEquipment!=null && Array.IndexOf(level.startingEquipment,item)>=0,playSound:false);
+                        InventoryManager.Instance.Pickup(item,player,preferHotbar: level.startingEquipment!=null && Array.IndexOf(level.startingEquipment,item)>=0,playSound:false,announcePickup:false);
                     if(level.startingEquipment!=null) foreach(var item in level.startingEquipment) if(item!=null) {
                         bool owned=player.Bag.IndexOf(item)>=0 || player.Hotbar.IndexOf(item)>=0;
-                        if(!owned)owned=InventoryManager.Instance.Pickup(item,player,preferHotbar:true,playSound:false);
+                        if(!owned)owned=InventoryManager.Instance.Pickup(item,player,preferHotbar:true,playSound:false,announcePickup:false);
                         if(owned)player.Equipment.Equip(item,playSound:false);
                     }
                 }

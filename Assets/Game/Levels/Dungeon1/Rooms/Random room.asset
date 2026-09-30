@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 19111587f461af44396cbda3f8ae6ffd, type: 3}
-  m_Name: Treasury
+  m_Name: Random room
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomProfile
-  role: 2
+  role: 3
   weight: 1
   minFloor: 1
   maxFloor: 0
   enemies: []
   rewards: {fileID: 0}
   props: []
-  minProps: 1
+  minProps: 0
   maxProps: 2
   overrideLight: 0
   lightColor: {r: 1, g: 0.75, b: 0.4, a: 1}

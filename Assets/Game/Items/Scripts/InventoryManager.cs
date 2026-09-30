@@ -59,7 +59,7 @@ public class InventoryManager : Singleton<InventoryManager>
 
     // ── Pickup ────────────────────────────────────────────────────────
 
-    public bool Pickup(ItemData item, Player player, int count = 1, bool preferHotbar = false, bool playSound = true)
+    public bool Pickup(ItemData item, Player player, int count = 1, bool preferHotbar = false, bool playSound = true, bool announcePickup = true)
     {
         if (item == null || player == null) return false;
 
@@ -91,7 +91,7 @@ public class InventoryManager : Singleton<InventoryManager>
             player.Equipment.CanEquip(item) && !player.Equipment.Has(item.equipSlot) && !(Equipment.IsTrinket(item.equipSlot) && player.Equipment.Has(EquipmentSlot.Trinket2)))
             player.Equipment.Equip(item, playSound);
 
-        ItemPickedUp?.Invoke(item, player, count);
+        if (announcePickup) ItemPickedUp?.Invoke(item, player, count);
         return true;
     }
 

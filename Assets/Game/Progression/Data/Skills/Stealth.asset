@@ -19,12 +19,13 @@ MonoBehaviour:
   description: Getting close without being noticed.
   practice:
   - action: 9
-    oneIn: 2
+    experience: 50
     text: Backstabbing
   - action: 10
-    oneIn: 5
+    experience: 20
     text: Sneaking up on enemies
-  chanceAtMaster: 0.5
+  rankExperience: 100
+  masterExperienceMultiplier: 2.0
   perEnemyLimit: 3
   bonusAt100: 0.5
   bonusText: '{0}% harder to notice while sneaking'

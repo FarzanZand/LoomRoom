@@ -605,7 +605,7 @@ MonoBehaviour:
   deathDisableDelay: 8
   behaviour: {fileID: 0}
   behaviourSettings:
-    defaultState: 1
+    defaultState: 0
     aggressionMode: 0
     wanderRadius: 3
     minWanderDistance: 2

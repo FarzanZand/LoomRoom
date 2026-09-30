@@ -12,7 +12,7 @@ public class AdventureRules : ScriptableObject
     public float xpPerEnemy = 15, xpPerFloor = 35, levelXp = 70, levelXpGrowth = 35;
     public float healthPerLevel = 3, manaPerLevel = 2;
     [Header("Skills")]
-    [Tooltip("Metres of new ground sprinted per Athletics roll.")]
+    [Tooltip("Metres of new ground sprinted per Athletics XP award.")]
     public float athleticsMetres = 12;
     [Tooltip("Flat Attack added by a Legendary weapon skill.")]
     public float legendaryAttack = 5;

@@ -5,9 +5,7 @@ using UnityEngine;
 // What a skill can be practised with. Serialized by integer; append only.
 public enum SkillAction { Hit = 0, Kill = 1, Block = 2, Cast = 3, Heal = 4, Sprint = 5, Swim = 6, Buy = 7, Sell = 8, Backstab = 9, Sneak = 10 }
 
-// One Barony-style skill: 0-100, raised one point at a time by chance whenever the player
-// successfully does the thing it is about. Benefits grow with the rank and a Legendary bonus
-// arrives at 100. The numbers here are read by AdventurerProgress; the text is for the UI.
+// Skills earn XP from qualifying actions; rank benefits and Legendary bonuses stay unchanged.
 [CreateAssetMenu(menuName = "LoomRoom/Adventure Skill")]
 public class AdventureSkillData : ScriptableObject
 {
@@ -22,14 +20,14 @@ public class AdventureSkillData : ScriptableObject
     public class Practice
     {
         [HorizontalGroup, HideLabel] public SkillAction action;
-        [HorizontalGroup, LabelText("1 in"), LabelWidth(28), Min(1)] public float oneIn = 10;
+        [HorizontalGroup, LabelText("XP"), Min(0)] public float experience = 10;
         [Tooltip("Shown in the skill sheet, e.g. \"Hitting an enemy with a sword\".")] public string text;
     }
     [Title("Practice")]
-    [InfoBox("Each successful action rolls once. A success raises the skill by one point.")]
+    [InfoBox("Each qualifying action awards XP. Reaching the threshold raises the skill one rank.")]
     public Practice[] practice = new Practice[0];
-    [Tooltip("Chance multiplier at rank 100; ranks in between blend toward it, so high ranks take longer.")]
-    [Range(.1f, 1)] public float chanceAtMaster = .5f;
+    [Min(1), Tooltip("XP required to advance from rank zero.")] public float rankExperience = 100;
+    [Min(1), Tooltip("XP cost multiplier near rank 100.")] public float masterExperienceMultiplier = 2;
     [Tooltip("Most points one enemy can teach (0 = no limit). Stops farming a single foe.")]
     [Min(0)] public int perEnemyLimit;
 
@@ -40,9 +38,11 @@ public class AdventureSkillData : ScriptableObject
     public string bonusText = "+{0}% damage";
     public string legendaryText;
 
-    public float OneIn(SkillAction action)
+    public float ExperienceRequired(int rank) => Mathf.Max(1, rankExperience * Mathf.Lerp(1, Mathf.Max(1, masterExperienceMultiplier), Mathf.Clamp01(rank / 100f)));
+
+    public float ExperienceFor(SkillAction action)
     {
-        if (practice != null) foreach (var p in practice) if (p != null && p.action == action) return p.oneIn;
+        if (practice != null) foreach (var p in practice) if (p != null && p.action == action) return p.experience;
         return 0;
     }
 }

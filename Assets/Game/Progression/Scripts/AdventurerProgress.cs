@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// The adventurer's growth within one run: character level from experience, and Barony-style skills
-// that rise one point at a time by chance whenever the player successfully does what the skill is
-// about (a sword hit trains Swords, a blocked blow trains Blocking, a heal trains Thaumaturgy...).
+// Character and skill levels advance through experience earned during the run.
 // Everything resets when a new run begins. Other systems read the bonuses through the helpers below.
 [DisallowMultipleComponent]
 public class AdventurerProgress : MonoBehaviour
@@ -18,6 +16,10 @@ public class AdventurerProgress : MonoBehaviour
     public int Level { get; private set; } = 1;
     public float Experience { get; private set; }
     public int[] Ranks { get; private set; } = new int[AdventureSkills.Count];
+    public float[] SkillExperience { get; private set; } = new float[AdventureSkills.Count];
+    // Skill, awarded XP, previous fraction, resulting fraction, ranks gained.
+    public event Action<AdventureSkill, float, float, float, int> SkillExperienceGained;
+    public float SkillProgress(AdventureSkill skill) => Rank(skill) >= 100 ? 1 : SkillExperience[(int)skill] / (Definition(skill)?.ExperienceRequired(Rank(skill)) ?? 100);
     public int[] Growth { get; private set; } = new int[6];
     public float NextLevelXp => rules != null ? rules.levelXp + (Level - 1) * rules.levelXpGrowth : 100;
     public bool InRun => RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;
@@ -78,32 +80,45 @@ public class AdventurerProgress : MonoBehaviour
     float Charisma => rules != null ? Mathf.Clamp(Attribute(StatType.Charisma) * rules.charismaDiscountPerPoint, 0, rules.charismaDiscountCap) : 0;
 
     // ── Practising skills ──────────────────────────────────────────────────────
-    // Rolls once for a successful action. Returns true if the skill went up.
+    // Every eligible action earns XP. Returns true if at least one rank was gained.
     public bool Practise(AdventureSkill skill, SkillAction action, Character teacher = null)
     {
         if (!InRun) return false;
         int i = (int)skill;
         if (Ranks[i] >= 100) return false;
         var def = Definition(skill); if (def == null) return false;
-        float oneIn = def.OneIn(action); if (oneIn <= 0) return false;
+        float award = def.ExperienceFor(action);
+        if (award <= 0 || float.IsNaN(award) || float.IsInfinity(award)) return false;
+        taught.TryGetValue((teacher, skill), out int given);
         if (teacher != null && def.perEnemyLimit > 0)
         {
-            taught.TryGetValue((teacher, skill), out int given);
             if (given >= def.perEnemyLimit) return false;
+            float capacity = -SkillExperience[i];
+            for (int r = Ranks[i]; r < Mathf.Min(100, Ranks[i] + def.perEnemyLimit - given); r++) capacity += def.ExperienceRequired(r);
+            award = Mathf.Min(award, capacity);
         }
-        float chance = 1f / oneIn * Mathf.Lerp(1, def.chanceAtMaster, Ranks[i] * .01f);
-        if (UnityEngine.Random.value > chance) return false;
-
-        Ranks[i]++;
-        if (teacher != null) { taught.TryGetValue((teacher, skill), out int given); taught[(teacher, skill)] = given + 1; }
-        string tierBefore = AdventureSkills.Tier(Ranks[i] - 1), tier = AdventureSkills.Tier(Ranks[i]);
-        // Shown under the XP bar (ExperienceBarUI), not in the message feed; a new tier is also worth the middle of the screen.
-        if (tier != tierBefore) AnnouncementUI.Show($"{def.displayName}: {tier}", Ranks[i] >= 100 ? def.legendaryText : null);
-        if (AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
-        ApplyStats();
-        SkillRaised?.Invoke(skill, Ranks[i]);
+        float before = SkillProgress(skill);
+        int oldRank = Ranks[i];
+        SkillExperience[i] += award;
+        while (Ranks[i] < 100 && SkillExperience[i] >= def.ExperienceRequired(Ranks[i]))
+        {
+            SkillExperience[i] -= def.ExperienceRequired(Ranks[i]);
+            Ranks[i]++;
+            if (teacher != null) taught[(teacher, skill)] = ++given;
+            string tierBefore = AdventureSkills.Tier(Ranks[i] - 1), tier = AdventureSkills.Tier(Ranks[i]);
+            if (tier != tierBefore) AnnouncementUI.Show($"{def.displayName}: {tier}", Ranks[i] >= 100 ? def.legendaryText : null);
+            SkillRaised?.Invoke(skill, Ranks[i]);
+        }
+        if (Ranks[i] >= 100) SkillExperience[i] = 0;
+        bool raised = Ranks[i] > oldRank;
+        if (raised)
+        {
+            if (AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
+            ApplyStats();
+        }
+        SkillExperienceGained?.Invoke(skill, award, before, SkillProgress(skill), Ranks[i] - oldRank);
         Changed?.Invoke();
-        return true;
+        return raised;
     }
 
     void OnHit(DamageInfo hit)
@@ -142,6 +157,7 @@ public class AdventurerProgress : MonoBehaviour
         if (rules == null || rules.classes == null || rules.classes.Length == 0) return;
         if (selectedClass == null || !selectedClass.Unlocked) selectedClass = rules.classes[0];
         Level = 1; Experience = 0; Growth = new int[6];
+        SkillExperience = new float[AdventureSkills.Count];
         Ranks = new int[AdventureSkills.Count];
         foreach (var skill in AdventureSkills.All) Ranks[(int)skill] = selectedClass.StartingRank(skill);
         taught.Clear(); visited.Clear(); sprintDistance = healCredit = 0; lastPosition = transform.position;
@@ -235,15 +251,26 @@ public class AdventurerProgress : MonoBehaviour
             if (brain == null || brain.Character == null || !brain.Character.IsAlive || brain.IsAlerted) continue;
             if (brain.Perception != null && brain.Perception.TargetVisible) continue;
             if ((brain.transform.position - transform.position).sqrMagnitude > rules.sneakPractiseRange * rules.sneakPractiseRange) continue;
+            var definition = Definition(AdventureSkill.Stealth);
+            if (definition != null && definition.perEnemyLimit > 0 &&
+                taught.TryGetValue((brain.Character, AdventureSkill.Stealth), out int given) && given >= definition.perEnemyLimit) continue;
             Practise(AdventureSkill.Stealth, SkillAction.Sneak, brain.Character);
             return;
         }
     }
 
-    public void Restore(int level, float xp, int[] ranks, int[] growth)
+    public void Restore(int level, float xp, int[] ranks, int[] growth, float[] skillExperience = null)
     {
         Level = Mathf.Clamp(level, 1, 100); Experience = Mathf.Max(0, xp);
         Ranks = ranks != null && ranks.Length == AdventureSkills.Count ? ranks : new int[AdventureSkills.Count];
+        SkillExperience = new float[AdventureSkills.Count];
+        for (int i = 0; i < Ranks.Length; i++)
+        {
+            Ranks[i] = Mathf.Clamp(Ranks[i], 0, 100);
+            float value = skillExperience != null && i < skillExperience.Length ? skillExperience[i] : 0;
+            SkillExperience[i] = Ranks[i] >= 100 || float.IsNaN(value) || float.IsInfinity(value) ? 0 : Mathf.Clamp(value, 0, (Definition((AdventureSkill)i)?.ExperienceRequired(Ranks[i]) ?? 100) - .001f);
+        }
+        taught.Clear();
         Growth = growth != null && growth.Length == 6 ? growth : new int[6];
         ApplyStats();
     }

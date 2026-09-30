@@ -85,3 +85,20 @@ UI palette: edit Assets/Game/UI/Sprites/Kit/Copper Plum.mat for panel plum, bord
 
 Spell audio: each SpellDefinition now holds direct AudioClip references and individual 0–1 volumes for equip, charge, release, flight and impact. One-shots use AudioManager SFX; the moving flight loop uses AudioManager.PlaySFXLoop and the SFX mixer. Existing Fireball and Heal clips and volumes were migrated.
 
+
+
+## Skill XP and notifications
+
+Skills earn XP from every qualifying action. Skill assets in `Assets/Game/Progression/Data/Skills/` expose XP per action, base rank XP, the high-rank cost multiplier, and the existing per-enemy rank limit. Rank benefits and the Legendary bonus at 100 are unchanged. Default cost starts at 100 XP and rises toward 200 at rank 100. Sword and mace hits grant 10 XP; kills grant 12.5 XP instead of the hit award. A Warrior starting at Swords 25 needs 125 XP for the next rank.
+
+Overflow carries into the next rank. Partial XP is included in floor checkpoints; older compatible saves retain ranks and start with zero partial XP. A new run resets partial XP. Existing practice eligibility restrictions remain in place.
+
+`Assets/Game/UI/Prefabs/Progression/Skill XP Popup.prefab` controls the top-center icon, progress ring, typography, colors and dimensions. ExperienceBarUI on the scene's Experience object controls animation duration, hold and fade times. Pending awards for the same skill merge; rank gains fill and reset the ring. Character XP remains under the hotbar.
+
+Verified in Unity: deterministic awards, rank overflow, partial-XP JSON round trip, legacy saves, rank 100, per-enemy caps, and rendered popup in Game view.
+
+The reusable `Assets/Game/UI/Prefabs/Progression/Stealth Eye.prefab` replaces the old stealth label. It appears just below screen center while crouching: a pale closed lid when unseen, an amber open eye when a living enemy sees the player. Standing hides it. Edit the root RectTransform for position and size, StealthIndicatorUI for colors and transition duration, and the Eye child for the lid curve, pupil radius, stroke and outline. The graphic uses native UI geometry and does not copy external game artwork.
+
+Skill rank gains now complete the XP ring and replace it with the prefab's Rank Celebration group: original compact skill icon and rank boxes, cream announcement, green new rank and subtle scale pulse. The existing skill-up sound still plays once when progression awards the rank. ExperienceBarUI exposes rank hold, reveal duration and punch amount. Pending notifications retain their earned rank so later gains do not change an earlier announcement. Ordinary XP uses only the XP Visuals group.
+
+Rank notifications reveal the centered icon first, settle it left, reveal the previous rank, then increment the number with a floating +N and a subtle pulse. ExperienceBarUI exposes icon reveal scale, settle duration, rank count duration and gain rise. The compact original styling remains the default.

@@ -14,6 +14,7 @@ public class AdventureSave : MonoBehaviour
         public int floor, seed, characterLevel, gold, lootLevel = 1;
         public float xp, health, mana, stamina;
         public int[] ranks, growth;
+        public float[] skillExperience;
         public Stack[] bag, hotbar;
         public string[] equipped;
         public LeftHandSpell leftHand;
@@ -99,7 +100,7 @@ public class AdventureSave : MonoBehaviour
         if (!progress.InRun) return;
         var run = RunManager.Instance;
         Saved.checkpoint = new Checkpoint { level = run.Level.name, floor = run.Floor, seed = run.Seed, classId = progress.selectedClass.id,
-            characterLevel = progress.Level, lootLevel = TableManager.Instance.GetComponent<TableLevelLoader>().GenerationLevel, xp = progress.Experience, ranks = (int[])progress.Ranks.Clone(), growth = (int[])progress.Growth.Clone(),
+            characterLevel = progress.Level, lootLevel = TableManager.Instance.GetComponent<TableLevelLoader>().GenerationLevel, xp = progress.Experience, skillExperience = (float[])progress.SkillExperience.Clone(), ranks = (int[])progress.Ranks.Clone(), growth = (int[])progress.Growth.Clone(),
             health = player.Stats.CurrentHealth, mana = player.Stats.CurrentMana, stamina = player.Stats.CurrentStamina, gold = player.Wallet.Gold,
             bag = Capture(player.Bag), hotbar = Capture(player.Hotbar), equipped = player.Equipment.EquippedItems.Select(x => x.saveId).ToArray(), leftHand = GetComponent<PlayerSpellcasting>().Equipped,
             blessings = player.Stats.Modifiers.Where(m => ReferenceEquals(m.Source, RunManager.BlessingSource)).Select(m => new Blessing { stat=m.Stat, type=m.Type, value=m.Value, duration=m.Duration }).ToArray(),
@@ -120,7 +121,7 @@ public class AdventureSave : MonoBehaviour
         void Fill(Inventory inventory, Stack[] stacks) { for (int i = 0; i < stacks.Length && i < inventory.SlotCount; i++) if (stacks[i] != null && stacks[i].count > 0) inventory.Set(i, new ItemStack(Item(stacks[i].item), stacks[i].count)); }
         Fill(player.Bag, checkpoint.bag); Fill(player.Hotbar, checkpoint.hotbar);
         foreach (var id in checkpoint.equipped) player.Equipment.Equip(Item(id), false, grant: true);
-        progress.Restore(checkpoint.characterLevel, checkpoint.xp, (int[])checkpoint.ranks.Clone(), (int[])checkpoint.growth.Clone());
+        progress.Restore(checkpoint.characterLevel, checkpoint.xp, (int[])checkpoint.ranks.Clone(), (int[])checkpoint.growth.Clone(), checkpoint.skillExperience);
         player.Stats.RemoveAllFromSource(RunManager.BlessingSource);
         if (checkpoint.blessings != null) foreach(var b in checkpoint.blessings) player.Stats.AddModifier(new StatModifier(b.stat,b.value,b.type,RunManager.BlessingSource,b.duration));
         player.Stats.ClearFood();

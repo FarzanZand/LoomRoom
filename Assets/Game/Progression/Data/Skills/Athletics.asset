@@ -19,9 +19,10 @@ MonoBehaviour:
   description: Less stamina used when sprinting.
   practice:
   - action: 5
-    oneIn: 5
+    experience: 20
     text: Sprinting over new ground on a floor
-  chanceAtMaster: 0.5
+  rankExperience: 100
+  masterExperienceMultiplier: 2.0
   perEnemyLimit: 0
   bonusAt100: 0.5
   bonusText: -{0}% sprint stamina

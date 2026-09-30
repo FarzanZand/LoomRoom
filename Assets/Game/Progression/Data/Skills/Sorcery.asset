@@ -19,9 +19,10 @@ MonoBehaviour:
   description: Fireball damage and cast speed.
   practice:
   - action: 3
-    oneIn: 4
+    experience: 25
     text: Hitting an enemy with Fireball
-  chanceAtMaster: 0.5
+  rankExperience: 100
+  masterExperienceMultiplier: 2.0
   perEnemyLimit: 0
   bonusAt100: 0.6
   bonusText: +{0}% spell damage

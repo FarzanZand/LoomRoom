@@ -91,7 +91,7 @@ public class Player : Character
 
         if (InventoryManager.HasInstance)
             foreach (var item in kit.startingItems)
-                if (item != null) InventoryManager.Instance.Pickup(item, this, playSound: false);
+                if (item != null) InventoryManager.Instance.Pickup(item, this, playSound: false, announcePickup: false);
 
         if (Equipment == null) return;
         foreach (var item in kit.startingEquipment)
@@ -99,7 +99,7 @@ public class Player : Character
             if (item == null) continue;
             bool owned = (Bag != null && Bag.IndexOf(item) >= 0) || (Hotbar != null && Hotbar.IndexOf(item) >= 0);
             if (!owned && InventoryManager.HasInstance)
-                owned = InventoryManager.Instance.Pickup(item, this, preferHotbar: true, playSound: false);
+                owned = InventoryManager.Instance.Pickup(item, this, preferHotbar: true, playSound: false, announcePickup: false);
             if (owned) Equipment.Equip(item, playSound: false);
         }
     }

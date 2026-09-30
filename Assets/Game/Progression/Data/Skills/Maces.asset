@@ -19,12 +19,13 @@ MonoBehaviour:
   description: Damage with maces.
   practice:
   - action: 0
-    oneIn: 10
+    experience: 10
     text: Hitting an enemy with a mace
   - action: 1
-    oneIn: 8
+    experience: 12.5
     text: Killing an enemy with a mace
-  chanceAtMaster: 0.5
+  rankExperience: 100
+  masterExperienceMultiplier: 2.0
   perEnemyLimit: 3
   bonusAt100: 0.5
   bonusText: +{0}% mace damage

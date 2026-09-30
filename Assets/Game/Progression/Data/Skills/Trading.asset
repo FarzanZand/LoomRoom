@@ -19,12 +19,13 @@ MonoBehaviour:
   description: Better prices with merchants.
   practice:
   - action: 7
-    oneIn: 3
+    experience: 33.3333
     text: Buying from a merchant
   - action: 8
-    oneIn: 5
+    experience: 20
     text: Selling to a merchant
-  chanceAtMaster: 0.5
+  rankExperience: 100
+  masterExperienceMultiplier: 2.0
   perEnemyLimit: 0
   bonusAt100: 0.2
   bonusText: -{0}% prices
