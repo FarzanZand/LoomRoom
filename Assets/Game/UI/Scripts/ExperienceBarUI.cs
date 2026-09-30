@@ -52,6 +52,7 @@ public class ExperienceBarUI : MonoBehaviour
     }
     readonly List<Gain> raises = new();
     Sequence popupRoutine;
+    Gain activeGain;
 
     void OnEnable() { if (popup != null) popup.alpha = 0; if (bar != null) bar.alpha = 0; }
     void OnDisable() { Bind(null); popupRoutine?.Kill(); raises.Clear(); }
@@ -63,7 +64,7 @@ public class ExperienceBarUI : MonoBehaviour
         if (current != progress) Bind(current);
         bool visible = progress != null && progress.InRun && player.IsActive && progress.selectedClass != null;
         if (bar != null) bar.alpha = visible ? 1 : 0;
-        if (!visible) { popupRoutine?.Kill(); popupRoutine = null; raises.Clear(); if (popup != null) popup.alpha = 0; return; }
+        if (!visible) { popupRoutine?.Kill(); popupRoutine = null; activeGain = null; raises.Clear(); if (popup != null) popup.alpha = 0; return; }
         float target = progress.NextLevelXp > 0 ? Mathf.Clamp01(progress.Experience / progress.NextLevelXp) : 0;
         shown = target < shown ? target : Mathf.MoveTowards(shown, target, Time.unscaledDeltaTime * fillSpeed);
         if (fill != null) fill.fillAmount = shown;
@@ -74,7 +75,7 @@ public class ExperienceBarUI : MonoBehaviour
     void Bind(AdventurerProgress next)
     {
         if (progress != null) progress.SkillExperienceGained -= OnSkillExperienceGained;
-        popupRoutine?.Kill(); popupRoutine = null; raises.Clear();
+        popupRoutine?.Kill(); popupRoutine = null; activeGain = null; raises.Clear();
         if (popup != null) popup.alpha = 0;
         progress = next;
         if (progress != null) progress.SkillExperienceGained += OnSkillExperienceGained;
@@ -83,17 +84,30 @@ public class ExperienceBarUI : MonoBehaviour
 
     void OnSkillExperienceGained(AdventureSkill skill, float xp, float before, float after, int ranks)
     {
-        var pending = raises.Find(x => x.skill == skill);
-        if (pending != null) { pending.xp += xp; pending.after = after; pending.ranks += ranks; pending.resultingRank = progress.Rank(skill); }
+        // XP may coalesce, but rank events retain their own rank and animation.
+        var pending = ranks == 0 ? raises.Find(x => x.skill == skill && x.ranks == 0) : null;
+        if (pending != null) { pending.xp += xp; pending.after = after; pending.resultingRank = progress.Rank(skill); }
         else raises.Add(new Gain { skill = skill, xp = xp, before = before, after = after, ranks = ranks, resultingRank = progress.Rank(skill) });
+        if (ranks > 0)
+        {
+            // The rank reveal supersedes stale progress for this skill.
+            raises.RemoveAll(x => x.skill == skill && x.ranks == 0);
+            if (activeGain != null && activeGain.ranks == 0)
+            {
+                popupRoutine?.Kill(); popupRoutine = null; activeGain = null;
+            }
+        }
         if (popupRoutine == null || !popupRoutine.IsActive()) NextPopup();
     }
 
     void NextPopup()
     {
-        popupRoutine = null;
+        popupRoutine = null; activeGain = null;
         if (popup == null || raises.Count == 0 || progress == null) return;
-        var gain = raises[0]; raises.RemoveAt(0);
+        int index = raises.FindIndex(x => x.ranks > 0);
+        if (index < 0) index = 0;
+        var gain = raises[index]; raises.RemoveAt(index);
+        activeGain = gain;
         var def = progress.Definition(gain.skill);
         if (popupTitle != null) popupTitle.text = def?.displayName ?? gain.skill.ToString();
         if (popupRank != null) popupRank.text = $"+{gain.xp:0.#} XP";

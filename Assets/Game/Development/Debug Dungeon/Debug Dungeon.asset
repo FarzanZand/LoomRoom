@@ -126,7 +126,6 @@ MonoBehaviour:
   - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
     weight: 1
   roomProfiles:
-  - {fileID: 11400000, guid: 7feeadfd849b5ee459d026df4d62e8dd, type: 2}
   - {fileID: 11400000, guid: c20ef9685e373554c8072e3be2d59f9c, type: 2}
   roomPropPrefabs:
   - {fileID: 908437102851283026, guid: fc59090b5bd382b40b3a0e216ac50468, type: 3}

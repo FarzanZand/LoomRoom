@@ -421,11 +421,16 @@ public partial class DungeonGenerator : MonoBehaviour
                 if (renderer != null) renderer.enabled = false;
                 float top = Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y));
                 float bottom = Mathf.Min(gate.openingHeight, top) - .025f;
-                // Meet the upper wall at ceiling height without overlapping its front face.
+                // Bury the cap inside the ceiling so its top never shares the ceiling plane.
+                // Recess both vertical faces slightly to avoid coplanar overlap with upper
+                // masonry when the rooms on either side have different ceiling heights.
+                top += CeilingWallOverlap;
+                const float lintelFaceInset = .005f;
                 for (float y = bottom; y < top;)
                 {
                     float end = Mathf.Min(top, (Mathf.Floor(y/data.architectureTileSize)+1)*data.architectureTileSize);
-                    var span = dir.x != 0 ? new Vector3(WallThickness,end-y,data.cellSize) : new Vector3(data.cellSize,end-y,WallThickness);
+                    float depth = WallThickness - lintelFaceInset * 2;
+                    var span = dir.x != 0 ? new Vector3(depth,end-y,data.cellSize) : new Vector3(data.cellSize,end-y,depth);
                     // In line with the room walls either side, which sit behind the edge on the corridor side.
                     var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
                         WallMaterial(Layout.RegionIds[p.x,p.y],y), transform);

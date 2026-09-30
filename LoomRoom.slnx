@@ -1,7 +1,10 @@
 ﻿<Solution>
+  <Project Path="Unity.RenderPipelines.GPUDriven.Runtime.csproj" />
   <Project Path="Assembly-CSharp-firstpass.csproj" />
   <Project Path="Assembly-CSharp-Editor-firstpass.csproj" />
+  <Project Path="ProPixelizer.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="Unity.RenderPipelines.Universal.Editor.csproj" />
   <Project Path="VHierarchy.csproj" />
   <Project Path="VInspector.csproj" />
   <Project Path="VFolders.csproj" />

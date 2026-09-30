@@ -105,8 +105,6 @@ public class AdventurerProgress : MonoBehaviour
             SkillExperience[i] -= def.ExperienceRequired(Ranks[i]);
             Ranks[i]++;
             if (teacher != null) taught[(teacher, skill)] = ++given;
-            string tierBefore = AdventureSkills.Tier(Ranks[i] - 1), tier = AdventureSkills.Tier(Ranks[i]);
-            if (tier != tierBefore) AnnouncementUI.Show($"{def.displayName}: {tier}", Ranks[i] >= 100 ? def.legendaryText : null);
             SkillRaised?.Invoke(skill, Ranks[i]);
         }
         if (Ranks[i] >= 100) SkillExperience[i] = 0;
@@ -205,7 +203,6 @@ public class AdventurerProgress : MonoBehaviour
             int raised = growth != null && growth.Length > 0 ? Mathf.Clamp(growth[(Level - 2) % growth.Length], 0, 5) : -1;
             if (raised >= 0) Growth[raised]++;
             ApplyStats();
-            AnnouncementUI.Show($"Level {Level}", raised >= 0 ? $"+1 {StatNames[raised]}" : null);
             if (AudioManager.HasInstance) AudioManager.Instance.PlayLevelUp();
             MessageLog.Post($"You are now level {Level}.", MessageKind.Good);
         }
