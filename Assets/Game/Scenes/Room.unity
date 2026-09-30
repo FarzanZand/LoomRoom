@@ -1711,8 +1711,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
-  m_fontSizeBase: 20
+  m_fontSize: 16
+  m_fontSizeBase: 16
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -8985,8 +8985,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 181056620}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 15.130005, y: 4.37024, z: 6.6591797}
+  m_LocalRotation: {x: 0, y: -0.95574176, z: 0, w: -0.29420704}
+  m_LocalPosition: {x: -69.79999, y: 20.27324, z: 70.90918}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -37413,7 +37413,7 @@ RectTransform:
   m_GameObject: {fileID: 783246013}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.25, y: 1.25, z: 1.25}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 157472287}
@@ -37423,7 +37423,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: 100}
+  m_AnchoredPosition: {x: 0, y: -40}
   m_SizeDelta: {x: 400, y: 66}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!225 &783246015
@@ -71583,8 +71583,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
-  m_fontSizeBase: 20
+  m_fontSize: 16
+  m_fontSizeBase: 16
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -90750,18 +90750,17 @@ RectTransform:
   m_GameObject: {fileID: 1822712613}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.6, y: 0.6, z: 0.6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1934232905}
   - {fileID: 783246014}
   m_Father: {fileID: 333104000}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 32, y: 110}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
+  m_AnchoredPosition: {x: 0, y: -14}
   m_SizeDelta: {x: 560, y: 110}
-  m_Pivot: {x: 0, y: 1}
+  m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1822712615
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -95869,6 +95868,7 @@ GameObject:
   - component: {fileID: 1934232908}
   - component: {fileID: 1934232907}
   - component: {fileID: 1934232906}
+  - component: {fileID: 1934232909}
   m_Layer: 5
   m_Name: Bar
   m_TagString: Untagged
@@ -95883,7 +95883,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1934232904}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -95891,12 +95891,12 @@ RectTransform:
   - {fileID: 873228663}
   - {fileID: 1446586630}
   - {fileID: 5699439}
-  m_Father: {fileID: 1822712614}
+  m_Father: {fileID: 1945214971}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 1}
-  m_AnchorMax: {x: 0.5, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 560, y: 30}
+  m_SizeDelta: {x: -24, y: 20}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1934232906
 MonoBehaviour:
@@ -95948,6 +95948,26 @@ CanvasGroup:
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
+--- !u!114 &1934232909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934232904}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
+  m_IgnoreLayout: 1
+  m_MinWidth: -1
+  m_MinHeight: -1
+  m_PreferredWidth: -1
+  m_PreferredHeight: -1
+  m_FlexibleWidth: -1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1
 --- !u!1 &1936190062
 GameObject:
   m_ObjectHideFlags: 0
@@ -96626,6 +96646,7 @@ RectTransform:
   - {fileID: 185591759}
   - {fileID: 313696275}
   - {fileID: 2068845619}
+  - {fileID: 1934232905}
   m_Father: {fileID: 333104000}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
@@ -107720,7 +107741,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: tableEffects.pixelate
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: roomEffects.colorLevels
