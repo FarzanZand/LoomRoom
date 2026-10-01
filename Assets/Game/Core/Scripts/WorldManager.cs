@@ -35,6 +35,29 @@ public class WorldManager : Singleton<WorldManager>
     public WakeUpCutsceneController wakeUpCutscene;
     public DinnerCutsceneController dinnerCutscene;
 
+    [FoldoutGroup("Pixelator"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLook))]
+    [Tooltip("Shadowglass-style 3D pixel art: Pixel Lit materials and a pixel camera. Off = the default look. Applies in Play mode and can be flipped live.")]
+    public bool pixelLook;
+    [FoldoutGroup("Pixelator"), LabelText("Camera"), OnValueChanged(nameof(ApplyPixelLook))]
+    [Tooltip("Default = ScreenManager's own effects. Clean = native resolution, crisp, the library's clean effects (for when the walls keep their own pixel textures). Low Res = real low-res render, the library's low-res effects.")]
+    public PixelatorCamera pixelatorCamera = PixelatorCamera.LowRes;
+    [FoldoutGroup("Pixelator"), LabelText("Architecture"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Walls, floors, ceilings and dungeon tiles.")]
+    public bool pixelateArchitecture = true;
+    [FoldoutGroup("Pixelator"), LabelText("Props"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Furniture, decor, loot and everything else.")]
+    public bool pixelateProps = true;
+    [FoldoutGroup("Pixelator"), LabelText("Characters"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Players' arms and held items, enemies, NPCs.")]
+    public bool pixelateCharacters = true;
+    [FoldoutGroup("Pixelator"), LabelText("Library"), InlineEditor, OnValueChanged(nameof(ApplyPixelLook))]
+    [Tooltip("Material pairs, texel scales and the camera effects per mode (Tools > LoomRoom > Pixel Look).")]
+    public PixelLookLibrary pixelLookLibrary;
+
+    PixelLook.Parts PixelatorParts => new()
+    {
+        camera = pixelatorCamera, architecture = pixelateArchitecture, props = pixelateProps, characters = pixelateCharacters,
+    };
+
+    public PixelLook PixelLook { get; } = new();
+
     [Header("Lighting")]
     public Light directionalLight;
     [Tooltip("Light colour used while the game starts in the room (night).")]
@@ -61,6 +84,33 @@ public class WorldManager : Singleton<WorldManager>
             (progression.skipWakeUp || progression.startingPlayer != PlayerKind.Room);
         if (!skip && wakeUpCutscene != null)
             wakeUpCutscene.Play();
+        ApplyPixelLook();
+    }
+
+    void Update() => PixelLook.Tick();
+
+    void OnDisable() => PixelLook.Set(pixelLookLibrary, false, PixelatorParts);
+
+    // ── Pixel Look ────────────────────────────────────────────────────
+
+    public void SetPixelLook(bool on)
+    {
+        pixelLook = on;
+        ApplyPixelLook();
+    }
+
+    public void SetPixelLookParts(PixelatorCamera camera, bool architecture, bool props, bool characters)
+    {
+        pixelatorCamera = camera;
+        pixelateArchitecture = architecture;
+        pixelateProps = props;
+        pixelateCharacters = characters;
+        ApplyPixelLook();
+    }
+
+    void ApplyPixelLook()
+    {
+        if (Application.isPlaying && isActiveAndEnabled) PixelLook.Set(pixelLookLibrary, pixelLook, PixelatorParts);
     }
 
     [Button]

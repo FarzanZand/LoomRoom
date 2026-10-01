@@ -1,0 +1,256 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d167fcc6aa2d2f43b042c60f873f606, type: 3}
+  m_Name: Pixel Look Library
+  m_EditorClassIdentifier: Assembly-CSharp::PixelLookLibrary
+  roomEffects:
+    ambientOcclusion: 0
+    filmGrain: 0
+    grainType: 0
+    filmGrainIntensity: 0.2
+    filmGrainResponse: 0.8
+    pixelate: 1
+    pixelLines: 270
+    colorBanding: 0
+    colorLevels: 28
+    dither: 0.6
+    vignette: 1
+    vignetteIntensity: 0.3
+    vignetteSmoothness: 0.5
+    vignetteColor: {r: 0, g: 0, b: 0, a: 1}
+    chromaticAberration: 0
+    chromaticAberrationIntensity: 0.15
+    colorGrading: 1
+    contrast: 12
+    saturation: 5
+    colorFilter: {r: 1, g: 1, b: 1, a: 1}
+    postExposure: 0
+  tableEffects:
+    ambientOcclusion: 0
+    filmGrain: 0
+    grainType: 0
+    filmGrainIntensity: 0.2
+    filmGrainResponse: 0.8
+    pixelate: 1
+    pixelLines: 270
+    colorBanding: 1
+    colorLevels: 28
+    dither: 0.6
+    vignette: 1
+    vignetteIntensity: 0.3
+    vignetteSmoothness: 0.5
+    vignetteColor: {r: 0, g: 0, b: 0, a: 1}
+    chromaticAberration: 0
+    chromaticAberrationIntensity: 0.15
+    colorGrading: 1
+    contrast: 12
+    saturation: 5
+    colorFilter: {r: 1, g: 1, b: 1, a: 1}
+    postExposure: 0
+  cleanRoomEffects:
+    ambientOcclusion: 0
+    filmGrain: 0
+    grainType: 0
+    filmGrainIntensity: 0.2
+    filmGrainResponse: 0.8
+    pixelate: 0
+    pixelLines: 320
+    colorBanding: 0
+    colorLevels: 24
+    dither: 1
+    vignette: 1
+    vignetteIntensity: 0.3
+    vignetteSmoothness: 0.5
+    vignetteColor: {r: 0, g: 0, b: 0, a: 1}
+    chromaticAberration: 0
+    chromaticAberrationIntensity: 0.15
+    colorGrading: 1
+    contrast: 10
+    saturation: 0
+    colorFilter: {r: 1, g: 1, b: 1, a: 1}
+    postExposure: 0.3
+  cleanTableEffects:
+    ambientOcclusion: 0
+    filmGrain: 0
+    grainType: 0
+    filmGrainIntensity: 0.2
+    filmGrainResponse: 0.8
+    pixelate: 0
+    pixelLines: 320
+    colorBanding: 0
+    colorLevels: 24
+    dither: 1
+    vignette: 1
+    vignetteIntensity: 0.3
+    vignetteSmoothness: 0.5
+    vignetteColor: {r: 0, g: 0, b: 0, a: 1}
+    chromaticAberration: 0
+    chromaticAberrationIntensity: 0.15
+    colorGrading: 1
+    contrast: 10
+    saturation: 0
+    colorFilter: {r: 1, g: 1, b: 1, a: 1}
+    postExposure: 0
+  roomTexelScale: 0.045
+  tableTexelScale: 1
+  outputFolder: Assets/Game/Rendering/PixelLook/Materials
+  entries:
+  - original: {fileID: 2100000, guid: 76ea0cb3eb788304eade5cb9f03a7f87, type: 2}
+    pixel: {fileID: 2100000, guid: ccbcd8488c98d1e449c1d17522cc0b43, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 50d8b468f5a58bc49b350f67304ba188, type: 2}
+    pixel: {fileID: 2100000, guid: 4e68a9a9fe7b2404cb7aabedb1e6152b, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
+    pixel: {fileID: 2100000, guid: 9b1d32fb5e0f721498c3b9e68244499f, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
+    pixel: {fileID: 2100000, guid: 956bfc44ca6d6324594d1d9b4cebd506, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
+    pixel: {fileID: 2100000, guid: 57ab37fab4236ab41bfa3d19f501f1d1, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 25d515228c5e00945ba99ea45cce08e6, type: 2}
+    pixel: {fileID: 2100000, guid: 7ce6fa73e0e1efa44b723d35561772e1, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 78ae07bec4b14b94fa70b33211eb7e8a, type: 2}
+    pixel: {fileID: 2100000, guid: 3ae2b400777aa4b449083dad2398344b, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 362174d4a9be98e48bc5db06e70b17bc, type: 2}
+    pixel: {fileID: 2100000, guid: ce7edbd27e5f05447b7739fa2653785e, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: b21deb4dc6337174d881f5d2cd2511ce, type: 2}
+    pixel: {fileID: 2100000, guid: ccec137daf5cc3248b2244160eb0bcfd, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+    pixel: {fileID: 2100000, guid: b6d98faf2a3515c4cae5abe5cc465cf6, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: d0b9329747e400f4386816573b331e9c, type: 2}
+    pixel: {fileID: 2100000, guid: abce2e63fd78876488cc1da639bf8a1c, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: b23ffb065feea644884d63f2ab7d244a, type: 2}
+    pixel: {fileID: 2100000, guid: 3f8793d0358ad9f4b9133b055ac91334, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 853b3b0480565584bbffa476dc178049, type: 2}
+    pixel: {fileID: 2100000, guid: bfd4adf989d80c946a763a45ef48f154, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 5e6cc04b80c34931b36027d60aff947c, type: 2}
+    pixel: {fileID: 2100000, guid: ca3dac31460b0fe4c8ac8319f91229a2, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: 5cf2a30fec5042549da7670274f5001b, type: 2}
+    pixel: {fileID: 2100000, guid: 634fde97592994644ad2af9a897896df, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: b84909f81e52f2a47a68177f1186c384, type: 2}
+    pixel: {fileID: 2100000, guid: 8148aa478156edc4da000c582d920b5b, type: 2}
+    category: 0
+  - original: {fileID: 2100000, guid: f79f70c982ed21641b755058c8aa91a5, type: 2}
+    pixel: {fileID: 2100000, guid: 77289b2d7ac8de84682a7985283e0ea0, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
+    pixel: {fileID: 2100000, guid: d98a7401e11fc5e4ea1bf004a643c298, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 3b06e8f7cf74bb64ab2c9d1ec2627782, type: 2}
+    pixel: {fileID: 2100000, guid: 86ca14e7315465a44a92255db88d00a1, type: 2}
+    category: 1
+  - original: {fileID: 3328223294733118019, guid: 74dc49966e04b82479f65478b97a66b4, type: 3}
+    pixel: {fileID: 2100000, guid: f022b7ad6cdd195428dd8de17fba49c4, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: eb31147fbd55d224683baad1fb8a6c2d, type: 2}
+    pixel: {fileID: 2100000, guid: 26c7dd55b8b510c48822644c02fa583f, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: a81d8d9e14c23f44bb66dd3bc629bf2d, type: 2}
+    pixel: {fileID: 2100000, guid: 9e82c820a27781f44b9fbb0efde96482, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: da8cd3d62cd10b04c92ee3be19ec84eb, type: 2}
+    pixel: {fileID: 2100000, guid: b70db729a2fd5a1468eee892cb65ec0f, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 99338f2df5376274c9becde53f844907, type: 2}
+    pixel: {fileID: 2100000, guid: 7bbdb60484397b14ebac00112de06f88, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: ab7fc76844db4534ca895cb4b1a7d426, type: 2}
+    pixel: {fileID: 2100000, guid: 5151c16a5df63d74eb834f9886ed4046, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: a2ffc82d2dc64af4aaaaa1c300c3b3aa, type: 2}
+    pixel: {fileID: 2100000, guid: 2b75c0a19c23ef94d8772d5df49579ca, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 41d583873a1328143a758dcdd56e96bb, type: 2}
+    pixel: {fileID: 2100000, guid: 181358a5e2b6c3b4cba52a23078b37fd, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 2a95f9ff80948c643a57b9e94a98eb3f, type: 2}
+    pixel: {fileID: 2100000, guid: a1249e560fa73ea468d16bf6617457be, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: f55dbe6093a6c604994974155c59c172, type: 2}
+    pixel: {fileID: 2100000, guid: 9eb959d8faf734242b84c4b07fd9a719, type: 2}
+    category: 1
+  - original: {fileID: -981361187174696150, guid: 74dc49966e04b82479f65478b97a66b4, type: 3}
+    pixel: {fileID: 2100000, guid: 7015fedff563a1d4f94d5cc6a3d8471e, type: 2}
+    category: 1
+  - original: {fileID: -8462213102726034710, guid: 74dc49966e04b82479f65478b97a66b4, type: 3}
+    pixel: {fileID: 2100000, guid: 21115767d107876458ab936db8e42239, type: 2}
+    category: 1
+  - original: {fileID: 8210998124993320556, guid: 74dc49966e04b82479f65478b97a66b4, type: 3}
+    pixel: {fileID: 2100000, guid: 29225366b242da0408a05af968b59654, type: 2}
+    category: 1
+  - original: {fileID: -6705897223255893148, guid: 74dc49966e04b82479f65478b97a66b4, type: 3}
+    pixel: {fileID: 2100000, guid: de68f03d121101a42b80bb697b62ba8b, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 0088f02ca994c9641afd10f99022b55e, type: 2}
+    pixel: {fileID: 2100000, guid: a4e97274e0c93674e835e91ffe24867f, type: 2}
+    category: 1
+  - original: {fileID: 5561349426305759274, guid: fa03fba57733b5d4f94914faa55adde3, type: 3}
+    pixel: {fileID: 2100000, guid: ec7875b4a096596439b324581c775a14, type: 2}
+    category: 1
+  - original: {fileID: 5561349426305759274, guid: 359b4d419a43b854c955f05601733518, type: 3}
+    pixel: {fileID: 2100000, guid: 8fdf721f6ff5a734ca0535494c1eb424, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 081d7f53c9da45f46917f4c1edc86505, type: 2}
+    pixel: {fileID: 2100000, guid: 69998d3a61461e742aad88d4e1a7e7ad, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: f526aad1673ea3c4785e1df77e5c84ac, type: 2}
+    pixel: {fileID: 2100000, guid: 4bbedf7bda783e444ba29997e4c0b228, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
+    pixel: {fileID: 2100000, guid: 7f07bb7474987254e9fa26ace7392c7e, type: 2}
+    category: 1
+  - original: {fileID: -8985374253860341204, guid: 74dc49966e04b82479f65478b97a66b4, type: 3}
+    pixel: {fileID: 2100000, guid: 9db4ea8d70514574983340e17d02d203, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: e9e43f7f18e02bb40a6993e7f1cf4a53, type: 2}
+    pixel: {fileID: 2100000, guid: 61ec41d53ede23d4790b1e6e51428c17, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 4d90784937e728743bc2b33bb58a9257, type: 2}
+    pixel: {fileID: 2100000, guid: 3a42b29906bbd5b4fb07b5d4071a9bce, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 71e41e43b459a244abaf5acca76b89ee, type: 2}
+    pixel: {fileID: 2100000, guid: d96316a986524014595f8f3203e75d63, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: f8cdfec67051f5b49b89bb558b39d63c, type: 2}
+    pixel: {fileID: 2100000, guid: c3bbc967e9973834393b1650596bcc81, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 50d65a1c442a0c840adaefe5f6899db3, type: 2}
+    pixel: {fileID: 2100000, guid: 56f747478e37f944b833d7340b777911, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 28646867ddcf90a4989276acd313ea43, type: 2}
+    pixel: {fileID: 2100000, guid: b182fd037b7a61e43bf857f987e35687, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 92cf22b10ca8a23479c029dded712fca, type: 2}
+    pixel: {fileID: 2100000, guid: edb0eb087fe616646b38af5634de2e68, type: 2}
+    category: 1
+  - original: {fileID: 2100000, guid: 51bcde51def0b4a4fb5450e49e655688, type: 2}
+    pixel: {fileID: 2100000, guid: affcae60199712847827e9f3cbc848b7, type: 2}
+    category: 2
+  - original: {fileID: 2100000, guid: 8ca720a02727af84aa0360f3f5f8cb9b, type: 2}
+    pixel: {fileID: 2100000, guid: a0a0b19ff08c06848b375213d6ac8ac7, type: 2}
+    category: 2
+  - original: {fileID: 2100000, guid: 1922e9e06c248834882f08eff44b62fa, type: 2}
+    pixel: {fileID: 2100000, guid: 26df39928b4975f4699139304310db83, type: 2}
+    category: 2

@@ -50,6 +50,13 @@ public class ScreenManager : Singleton<ScreenManager>
 
     bool originalAO, originalRetro, effectsInitialized;
     ScriptableRendererFeature controlledAO, controlledRetro;
+
+    // Pixel Look camera: real low-res rendering through the pipeline asset, restored when it ends.
+    UniversalRenderPipelineAsset lowResAsset;
+    float originalRenderScale;
+    UpscalingFilterSelection originalUpscaling;
+    UniversalAdditionalCameraData lowResCamera;
+    AntialiasingMode originalAntialiasing;
     EffectLayer roomLayer, tableLayer, deathLayer;
     float deathWeight;
     float tableWeight; // 0 = room effects, 1 = table effects
@@ -158,6 +165,7 @@ public class ScreenManager : Singleton<ScreenManager>
         if (!effectsInitialized) return;
         if (controlledAO != null) controlledAO.SetActive(originalAO);
         if (controlledRetro != null) controlledRetro.SetActive(originalRetro);
+        SetPixelCamera(PixelatorCamera.Default, 0);
         roomLayer.Destroy();
         tableLayer.Destroy();
         deathLayer.Destroy();
@@ -166,6 +174,20 @@ public class ScreenManager : Singleton<ScreenManager>
 
     // ── Rendering effects ─────────────────────────────────────────────
 
+    PixelatorCamera PixelCamera => WorldManager.HasInstance ? WorldManager.Instance.PixelLook.CameraMode : PixelatorCamera.Default;
+    ScreenEffectSettings RoomFx => PixelCamera switch
+    {
+        PixelatorCamera.LowRes => WorldManager.Instance.PixelLook.Library.roomEffects,
+        PixelatorCamera.Clean => WorldManager.Instance.PixelLook.Library.cleanRoomEffects,
+        _ => roomEffects,
+    };
+    ScreenEffectSettings TableFx => PixelCamera switch
+    {
+        PixelatorCamera.LowRes => WorldManager.Instance.PixelLook.Library.tableEffects,
+        PixelatorCamera.Clean => WorldManager.Instance.PixelLook.Library.cleanTableEffects,
+        _ => tableEffects,
+    };
+
     float TargetTableWeight =>
         PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table ? 1f : 0f;
 
@@ -173,18 +195,25 @@ public class ScreenManager : Singleton<ScreenManager>
     {
         if (!effectsInitialized) return;
         float t = Mathf.SmoothStep(0f, 1f, tableWeight);
-        roomLayer.Apply(roomEffects, 1f - t);
-        tableLayer.Apply(tableEffects, t);
+        var room = RoomFx;
+        var table = TableFx;
+        roomLayer.Apply(room, 1f - t);
+        tableLayer.Apply(table, t);
         deathLayer.Apply(deathEffects, deathWeight);
-        SetFeature(controlledAO, (t < .5f ? roomEffects : tableEffects).ambientOcclusion);
+        SetFeature(controlledAO, (t < .5f ? room : table).ambientOcclusion);
 
         // One full-screen pass: the stronger side's settings, faded by how much of each side uses it.
-        float roomRetro = UsesRetro(roomEffects) ? 1f - t : 0f;
-        float tableRetro = UsesRetro(tableEffects) ? t : 0f;
-        var retro = tableRetro > roomRetro ? tableEffects : roomEffects;
+        float roomRetro = UsesRetro(room) ? 1f - t : 0f;
+        float tableRetro = UsesRetro(table) ? t : 0f;
+        var retro = tableRetro > roomRetro ? table : room;
         float strength = roomRetro + tableRetro;
         SetFeature(controlledRetro, strength > .001f);
-        Shader.SetGlobalFloat(PixelLinesId, PixelLinesFor(retro));
+        // The Low Res camera renders at the pixel resolution itself, so the pass only bands colours.
+        // Clean renders at native resolution without anti-aliasing.
+        var mode = PixelCamera;
+        bool lowRes = mode == PixelatorCamera.LowRes;
+        SetPixelCamera(mode, lowRes ? PixelLinesFor(t < .5f ? room : table) : 0);
+        Shader.SetGlobalFloat(PixelLinesId, lowRes ? 0 : PixelLinesFor(retro));
         Shader.SetGlobalFloat(ColorLevelsId, retro.colorBanding ? retro.colorLevels : 0);
         Shader.SetGlobalFloat(DitherId, retro.dither);
         Shader.SetGlobalFloat(StrengthId, strength);
@@ -214,6 +243,42 @@ public class ScreenManager : Singleton<ScreenManager>
     {
         deathWeight = Mathf.Clamp01(weight);
         ApplyRenderingEffects();
+    }
+
+    // Low Res renders the camera at about `lines` vertical pixels (an integer fraction of the
+    // screen) and scales up with nearest-neighbour; Clean renders at native size. Both turn off
+    // anti-aliasing. Default puts back the pipeline's and camera's own settings.
+    void SetPixelCamera(PixelatorCamera mode, float lines)
+    {
+        if (mode != PixelatorCamera.Default)
+        {
+            if (lowResAsset == null)
+            {
+                lowResAsset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+                if (lowResAsset == null) return;
+                originalRenderScale = lowResAsset.renderScale;
+                originalUpscaling = lowResAsset.upscalingFilter;
+            }
+            var cam = Camera.main;
+            if (lowResCamera == null && cam != null && cam.TryGetComponent(out lowResCamera))
+                originalAntialiasing = lowResCamera.antialiasing;
+            if (lowResCamera != null) lowResCamera.antialiasing = AntialiasingMode.None;
+
+            float factor = lines > 0 ? Mathf.Max(1f, Mathf.Round(Screen.height / lines)) : 1f;
+            lowResAsset.renderScale = Mathf.Max(.1f, 1f / factor);
+            lowResAsset.upscalingFilter = UpscalingFilterSelection.Point;
+        }
+        else
+        {
+            if (lowResAsset != null)
+            {
+                lowResAsset.renderScale = originalRenderScale;
+                lowResAsset.upscalingFilter = originalUpscaling;
+                lowResAsset = null;
+            }
+            if (lowResCamera != null) lowResCamera.antialiasing = originalAntialiasing;
+            lowResCamera = null;
+        }
     }
 
     static void SetFeature(ScriptableRendererFeature feature, bool on)
