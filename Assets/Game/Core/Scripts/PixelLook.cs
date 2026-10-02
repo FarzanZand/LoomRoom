@@ -26,6 +26,11 @@ public class PixelLook
     {
         public PixelatorCamera camera;
         public bool architecture, props, characters;
+        public int objectPixelSize;                   // per-object pixelation: screen pixels per object pixel, 1 = off
+        public bool lowResCharacters, lowResProps;    // which categories get per-object pixelation
+        public bool LowRes(PixelLookCategory c) =>
+            camera != PixelatorCamera.LowRes && objectPixelSize > 1 &&
+            (c == PixelLookCategory.Character ? lowResCharacters : c == PixelLookCategory.Prop && lowResProps);
         public bool Has(PixelLookCategory c) => c switch
         {
             PixelLookCategory.Architecture => architecture,
@@ -43,6 +48,9 @@ public class PixelLook
 
     readonly List<Material> buffer = new();
     readonly Dictionary<Renderer, bool> isCharacter = new();
+    readonly Dictionary<Material, Material> objectTwin = new();     // Pixel Lit material -> its per-object twin
+    readonly Dictionary<Material, Material> twinOriginal = new();   // twin -> the game's original material
+    Shader objectShader;
     Parts parts;
     float nextScan;
 
@@ -60,6 +68,8 @@ public class PixelLook
             SwapAll(restoreAll: !Active);
             Shader.SetGlobalFloat(TexelScaleId, TexelScale);
         }
+        PixelObjectFeature.PixelSize = Mathf.Max(1, parts.objectPixelSize);
+        PixelObjectFeature.Enabled = Active && (parts.LowRes(PixelLookCategory.Character) || parts.LowRes(PixelLookCategory.Prop));
         if (ScreenManager.HasInstance) ScreenManager.Instance.ApplyRenderingEffects();
     }
 
@@ -91,15 +101,30 @@ public class PixelLook
         for (int i = 0; i < buffer.Count; i++)
         {
             var m = buffer[i];
-            var original = Library.OriginalFor(m) ?? m;
+            var original = (m != null && twinOriginal.TryGetValue(m, out var o) ? o : null) ?? Library.OriginalFor(m) ?? m;
             var entry = Library.EntryFor(original);
             if (entry == null) continue;
             var category = character ? PixelLookCategory.Character : entry.category;
-            var wanted = !restoreAll && Active && parts.Has(category) ? entry.pixel : original;
+            var wanted = original;
+            if (!restoreAll && Active && parts.Has(category))
+                wanted = parts.LowRes(category) ? TwinOf(entry) : entry.pixel;
             if (wanted == m) continue;
             buffer[i] = wanted;
             changed = true;
         }
         if (changed) r.SetSharedMaterials(buffer);
+    }
+
+    // The per-object twin: same material on Hidden/LoomRoom/Pixel Lit Object, made once per run.
+    Material TwinOf(PixelLookLibrary.Entry entry)
+    {
+        if (objectTwin.TryGetValue(entry.pixel, out var twin) && twin != null) return twin;
+        if (objectShader == null) objectShader = Shader.Find("Hidden/LoomRoom/Pixel Lit Object");
+        if (objectShader == null) return entry.pixel;
+        twin = new Material(entry.pixel) { shader = objectShader, name = entry.pixel.name + " (object)" };
+        twin.renderQueue = entry.pixel.renderQueue;
+        objectTwin[entry.pixel] = twin;
+        twinOriginal[twin] = entry.original;
+        return twin;
     }
 }

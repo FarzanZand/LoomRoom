@@ -24,6 +24,7 @@ CBUFFER_START(UnityPerMaterial)
     half _Gloss;
     half _GlossSize;
     half _AmbientStrength;
+    half _DitherAlpha;      // 1 = transparency as an ordered screen-door dither (opaque pass)
 CBUFFER_END
 
 TEXTURE2D(_BaseMap);

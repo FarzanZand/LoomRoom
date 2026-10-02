@@ -140,7 +140,6 @@ public static class PixelLookBuilder
     static bool IsSource(Material m)
     {
         if (!SourceShaders.Contains(m.shader.name)) return false;
-        if (m.HasProperty("_Surface") && m.GetFloat("_Surface") > .5f) return false; // transparent
         string n = m.name.ToLowerInvariant();
         return !(n.Contains("glass") || n.Contains("water") || n.Contains("window") || n.Contains("screen"));
     }
@@ -217,7 +216,10 @@ public static class PixelLookBuilder
         }
         dst.SetColor("_EmissionColor", emission);
         dst.SetTexture("_EmissionMap", emissionMap);
-        dst.renderQueue = clip ? (int)UnityEngine.Rendering.RenderQueue.AlphaTest : -1;
+        // See-through materials become an ordered screen-door dither in the opaque pass.
+        bool transparent = src.HasProperty("_Surface") && src.GetFloat("_Surface") > .5f;
+        dst.SetFloat("_DitherAlpha", transparent ? 1 : 0);
+        dst.renderQueue = clip || transparent ? (int)UnityEngine.Rendering.RenderQueue.AlphaTest : -1;
     }
 
     // Default look per material: how texels are found, which pattern, gloss.

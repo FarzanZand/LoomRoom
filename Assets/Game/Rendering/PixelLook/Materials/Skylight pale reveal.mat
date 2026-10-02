@@ -44,6 +44,7 @@ Material:
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailStrength: 0
+    - _DitherAlpha: 0
     - _Gloss: 0
     - _GlossSize: 0.05
     - _LightSteps: 8

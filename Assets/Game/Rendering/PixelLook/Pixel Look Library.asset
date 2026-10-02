@@ -152,6 +152,9 @@ MonoBehaviour:
   - original: {fileID: 2100000, guid: b84909f81e52f2a47a68177f1186c384, type: 2}
     pixel: {fileID: 2100000, guid: 8148aa478156edc4da000c582d920b5b, type: 2}
     category: 0
+  - original: {fileID: 2100000, guid: f79f70c982ed21641b755058c8aa91a5, type: 2}
+    pixel: {fileID: 2100000, guid: 77289b2d7ac8de84682a7985283e0ea0, type: 2}
+    category: 1
   - original: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
     pixel: {fileID: 2100000, guid: d98a7401e11fc5e4ea1bf004a643c298, type: 2}
     category: 1
@@ -247,6 +250,9 @@ MonoBehaviour:
     category: 2
   - original: {fileID: 2100000, guid: 8ca720a02727af84aa0360f3f5f8cb9b, type: 2}
     pixel: {fileID: 2100000, guid: a0a0b19ff08c06848b375213d6ac8ac7, type: 2}
+    category: 2
+  - original: {fileID: 2100000, guid: 67924dc79db0c8f4da3a031d1e900935, type: 2}
+    pixel: {fileID: 2100000, guid: 0c8bc45e09d19be42a2ccdc7b48cafdb, type: 2}
     category: 2
   - original: {fileID: 2100000, guid: 1922e9e06c248834882f08eff44b62fa, type: 2}
     pixel: {fileID: 2100000, guid: 26df39928b4975f4699139304310db83, type: 2}
