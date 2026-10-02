@@ -100006,8 +100006,8 @@ MonoBehaviour:
   wakeUpCutscene: {fileID: 178767176}
   dinnerCutscene: {fileID: 42668560}
   pixelLook: 1
-  pixelatorCamera: 2
-  pixelateArchitecture: 0
+  pixelatorCamera: 0
+  pixelateArchitecture: 1
   pixelateProps: 1
   pixelateCharacters: 1
   pixelLookLibrary: {fileID: 11400000, guid: 94c4c15171db79440bb3f1ee5e5b2742, type: 2}
