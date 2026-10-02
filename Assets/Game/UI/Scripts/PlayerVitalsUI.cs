@@ -7,6 +7,10 @@ using UnityEngine.Serialization;
 public class PlayerVitalsUI : MonoBehaviour
 {
     [SerializeField] Image healthFill;
+    [Tooltip("Optional bar behind the health fill that lingers on lost health, then drains (UIColor Recent Damage).")]
+    [SerializeField] Image healthTrail;
+    [SerializeField, Min(0)] float trailDelay = .35f;
+    [SerializeField, Min(.1f)] float trailSpeed = 2.5f;
     [FormerlySerializedAs("staminaFill"), SerializeField] Image manaFill;
     [SerializeField] Image staminaBarFill;
     [FormerlySerializedAs("staminaRoot"), SerializeField] GameObject manaRoot;
@@ -30,7 +34,8 @@ public class PlayerVitalsUI : MonoBehaviour
     }
 
     CharacterStats bound;
-    float healthShown = 1f, staminaShown = 1f, manaShown = 1f;
+    float healthShownLast = 1f;
+    float healthShown = 1f, staminaShown = 1f, manaShown = 1f, trailShown = 1f, trailWaitUntil;
 
     void OnEnable()
     {
@@ -68,6 +73,7 @@ public class PlayerVitalsUI : MonoBehaviour
         if (manaRoot != null) manaRoot.SetActive(bound != null && bound.HasStat(StatType.MaxMana));
         if (staminaBarRoot != null) staminaBarRoot.SetActive(bound != null && bound.HasStat(StatType.MaxStamina));
         healthShown = bound != null && bound.MaxHealth > 0 ? bound.CurrentHealth / bound.MaxHealth : 0f;
+        trailShown = healthShown;
         manaShown = bound != null && bound.MaxMana > 0 ? bound.CurrentMana / bound.MaxMana : 0f;
         staminaShown = bound != null && bound.MaxStamina > 0 ? bound.CurrentStamina / bound.MaxStamina : 0f;
     }
@@ -79,16 +85,22 @@ public class PlayerVitalsUI : MonoBehaviour
 
         float h = bound.MaxHealth > 0f ? bound.CurrentHealth / bound.MaxHealth : 0f;
         healthShown = Mathf.Lerp(healthShown, h, t);
-        if (healthFill != null) healthFill.fillAmount = healthShown;
+        UIBar.Set(healthFill, healthShown);
+        // The trail holds where health was for a moment after a hit, then drains down to it.
+        if (h >= trailShown) trailShown = h;
+        else if (Time.unscaledTime >= trailWaitUntil) trailShown = Mathf.MoveTowards(trailShown, h, trailSpeed * .25f * Time.unscaledDeltaTime);
+        if (h < healthShownLast - .0001f) trailWaitUntil = Time.unscaledTime + trailDelay;
+        healthShownLast = h;
+        UIBar.Set(healthTrail, trailShown);
         if (healthValue != null) healthValue.SetText("{0}/{1}", Mathf.CeilToInt(bound.CurrentHealth), Mathf.CeilToInt(bound.MaxHealth));
 
         float m = bound.MaxMana > 0f ? bound.CurrentMana / bound.MaxMana : 0f;
         manaShown = Mathf.Lerp(manaShown, m, t);
-        if (manaFill != null) manaFill.fillAmount = manaShown;
+        UIBar.Set(manaFill, manaShown);
         if (manaValue != null) manaValue.SetText("{0}/{1}", Mathf.CeilToInt(bound.CurrentMana), Mathf.CeilToInt(bound.MaxMana));
         float s = bound.MaxStamina > 0 ? bound.CurrentStamina / bound.MaxStamina : 0;
         staminaShown = Mathf.Lerp(staminaShown, s, t);
-        if (staminaBarFill != null) staminaBarFill.fillAmount = staminaShown;
+        UIBar.Set(staminaBarFill, staminaShown);
         if (staminaBarValue != null) staminaBarValue.SetText("{0}/{1}", Mathf.CeilToInt(bound.CurrentStamina), Mathf.CeilToInt(bound.MaxStamina));
     }
 }

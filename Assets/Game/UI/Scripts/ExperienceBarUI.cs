@@ -67,7 +67,7 @@ public class ExperienceBarUI : MonoBehaviour
         if (!visible) { popupRoutine?.Kill(); popupRoutine = null; activeGain = null; raises.Clear(); if (popup != null) popup.alpha = 0; return; }
         float target = progress.NextLevelXp > 0 ? Mathf.Clamp01(progress.Experience / progress.NextLevelXp) : 0;
         shown = target < shown ? target : Mathf.MoveTowards(shown, target, Time.unscaledDeltaTime * fillSpeed);
-        if (fill != null) fill.fillAmount = shown;
+        UIBar.Set(fill, shown);
         if (title != null) title.text = $"LVL {progress.Level}  {progress.selectedClass.displayName}";
         if (amount != null) amount.text = $"{progress.Experience:0} / {progress.NextLevelXp:0} XP";
     }
