@@ -107730,6 +107730,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
+      propertyPath: lightHitStopDuration
+      value: 0.06
+      objectReference: {fileID: 0}
+    - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
+      propertyPath: lightHitStopTimeScale
+      value: 0.015
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
