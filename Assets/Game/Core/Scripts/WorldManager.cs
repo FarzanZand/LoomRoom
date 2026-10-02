@@ -35,6 +35,10 @@ public class WorldManager : Singleton<WorldManager>
     public WakeUpCutsceneController wakeUpCutscene;
     public DinnerCutsceneController dinnerCutscene;
 
+    [FoldoutGroup("Head Bob"), HideLabel, InlineProperty]
+    [Tooltip("Camera bob while walking, running and crouch-walking. Read live by HeadBob on each player's camera.")]
+    public HeadBobSettings headBob = new();
+
     [FoldoutGroup("Pixelator"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLook))]
     [Tooltip("Shadowglass-style 3D pixel art: Pixel Lit materials and a pixel camera. Off = the default look. Applies in Play mode and can be flipped live.")]
     public bool pixelLook;

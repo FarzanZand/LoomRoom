@@ -47,6 +47,8 @@ public class PlayerCameraRig : MonoBehaviour
         if (cam != null) baseFov = cam.Lens.FieldOfView;
         if (cam != null && cam.GetComponent<SwingCameraMotion>() == null)
             cam.gameObject.AddComponent<SwingCameraMotion>();
+        if (cam != null && cam.GetComponent<HeadBob>() == null)
+            cam.gameObject.AddComponent<HeadBob>();
     }
 
     void Update()

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 // Central toggles and tuning for combat feel. Hit stop lives here too, so there is
 // exactly one entry point and a hit can never freeze the game twice.
@@ -14,10 +15,19 @@ public class CombatManager : Singleton<CombatManager>
 
     [Header("Hit Stop")]
     public bool hitStopEnabled = true;
-    [Tooltip("Seconds the game slows when a hit lands.")]
-    public float hitStopDuration = 0.05f;
-    [Tooltip("Time scale during hit stop. A hair above zero keeps animations creeping, which reads better than a hard freeze.")]
-    [Range(0f, 0.5f)] public float hitStopTimeScale = 0.05f;
+    [FormerlySerializedAs("hitStopDuration"), Min(0), Tooltip("Seconds the game slows when a light attack lands.")]
+    public float lightHitStopDuration = 0.06f;
+    [FormerlySerializedAs("hitStopTimeScale"), Range(0f, 0.5f)]
+    [Tooltip("Time scale during a light hit stop. A hair above zero keeps animations creeping, which reads better than a hard freeze.")]
+    public float lightHitStopTimeScale = 0.05f;
+    [Min(0), Tooltip("Seconds the game slows when a heavy (charged) attack lands.")]
+    public float heavyHitStopDuration = 0.11f;
+    [Range(0f, 0.5f), Tooltip("Time scale during a heavy hit stop.")]
+    public float heavyHitStopTimeScale = 0.02f;
+    [Min(0), Tooltip("Seconds time takes to ramp back to full speed after the stop, instead of snapping. Softens the release.")]
+    public float hitStopRecovery = 0.06f;
+    [Min(0), Tooltip("How far the struck character's model shakes during the stop, in metres at its own scale. Heavy hits shake twice as far.")]
+    public float hitStopShake = 0.035f;
     [Tooltip("Also hit-stop when an enemy lands a hit on the player.")]
     public bool hitStopOnPlayerHurt = false;
 
@@ -164,8 +174,6 @@ public class CombatManager : Singleton<CombatManager>
     public AnimationCurve releaseSpeedCurve = new AnimationCurve(new Keyframe(0f, 1.3f), new Keyframe(.45f, 1.15f), new Keyframe(1f, .7f));
     [Tooltip("Speed multiplier over the heavy release. The heavy swing clip already carries its coil / strike / hang / recovery timing, so keep this near 1.")]
     public AnimationCurve heavyReleaseSpeedCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(.4f, 1.1f), new Keyframe(1f, .9f));
-    [Tooltip("Hit stop scale for a heavy hit that lands.")]
-    [Min(1)] public float heavyHitStopScale = 2f;
     [Tooltip("Tension-layer spike when a heavy hit lands, read as the arm shuddering from the impact.")]
     [Range(0,1)] public float heavyImpactShudder = .7f;
 
@@ -284,8 +292,8 @@ public class CombatManager : Singleton<CombatManager>
             PoolManager.SpawnOrInstantiate(prefab,info.HitPoint,Quaternion.LookRotation(direction),impactParticleLifetime);
         }
         if(!(victim is Player) || hitStopOnPlayerHurt)
-            RequestHitStop((profile != null ? profile.hitStopScale : 1f) * (info.Blocked ? blockHitStopScale
-                : info.Backstab ? backstabHitStopScale : info.Critical ? critHitStopScale : 1f));
+            RequestHitStop(info.Heavy, (profile != null ? profile.hitStopScale : 1f) * (info.Blocked ? blockHitStopScale
+                : info.Backstab ? backstabHitStopScale : info.Critical ? critHitStopScale : 1f), victim);
     }
 
     public GameObject GetRandomHitParticle()
@@ -300,39 +308,99 @@ public class CombatManager : Singleton<CombatManager>
     // ── Hit stop ──────────────────────────────────────────────────────
 
     Coroutine hitStopRoutine;
-    float hitStopEndsAt;
+    float hitStopEndsAt, hitStopScaleNow, shakeAmount;
+    readonly List<(Transform model, Vector3 rest)> shaking = new();
 
-    // Scale lets a heavy weapon ask for a longer stop. While a stop is active, a new
-    // request only extends it — it never re-freezes or shortens it.
-    public void RequestHitStop(float scale = 1f)
+    // Light and heavy attacks have their own length and depth; scale stretches the length (weapon
+    // profile, crit, backstab, block). While a stop is active, a new request only extends or deepens
+    // it — it never re-freezes or shortens it.
+    public void RequestHitStop(bool heavy, float scale = 1f, Character victim = null)
     {
         if (!hitStopEnabled) return;
-        float duration = hitStopDuration * Mathf.Max(0f, scale);
+        float duration = (heavy ? heavyHitStopDuration : lightHitStopDuration) * Mathf.Max(0f, scale);
         if (duration <= 0f) return;
+        float timeScale = heavy ? heavyHitStopTimeScale : lightHitStopTimeScale;
 
         float end = Time.unscaledTime + duration;
+        AddShake(victim, heavy);
         if (hitStopRoutine != null)
         {
             hitStopEndsAt = Mathf.Max(hitStopEndsAt, end);
+            hitStopScaleNow = Mathf.Min(hitStopScaleNow, timeScale);
+            Time.timeScale = hitStopScaleNow;
             return;
         }
         hitStopEndsAt = end;
+        hitStopScaleNow = timeScale;
         hitStopRoutine = StartCoroutine(HitStopRoutine());
     }
 
     IEnumerator HitStopRoutine()
     {
-        Time.timeScale = hitStopTimeScale;
-        while (Time.unscaledTime < hitStopEndsAt)
-            yield return null;
+        while (true)
+        {
+            Time.timeScale = hitStopScaleNow;
+            float start = Time.unscaledTime, length = Mathf.Max(.001f, hitStopEndsAt - start);
+            while (Time.unscaledTime < hitStopEndsAt)
+            {
+                Shake(1f - (Time.unscaledTime - start) / length);
+                yield return null;
+            }
+            EndShake();
+
+            // Ease back to full speed; a new hit during the ease drops straight back into the stop.
+            bool again = false;
+            for (float t = 0f; t < hitStopRecovery; t += Time.unscaledDeltaTime)
+            {
+                if (Time.unscaledTime < hitStopEndsAt) { again = true; break; }
+                float k = t / hitStopRecovery;
+                Time.timeScale = Mathf.Lerp(hitStopScaleNow, 1f, k * k);
+                yield return null;
+            }
+            if (!again) break;
+        }
         // Restore to 1 explicitly: capturing the previous value would freeze the game
         // permanently if a request fired mid-stop and captured the slowed value.
         Time.timeScale = 1f;
         hitStopRoutine = null;
     }
 
+    // The struck character's model (its "Model" child, never the root, so AI and physics are untouched)
+    // jitters while the world is stopped.
+    void AddShake(Character victim, bool heavy)
+    {
+        if (victim == null || victim is Player || hitStopShake <= 0f) return;
+        var model = victim.transform.Find("Model");
+        if (model == null) return;
+        shakeAmount = Mathf.Max(shakeAmount, hitStopShake * (heavy ? 2f : 1f));
+        foreach (var s in shaking) if (s.model == model) return;
+        shaking.Add((model, model.localPosition));
+    }
+
+    void Shake(float strength)
+    {
+        int frame = Time.frameCount;
+        foreach (var (model, rest) in shaking)
+        {
+            if (model == null || model.parent == null) continue;
+            // Alternate sides every frame for a crisp shudder, with a little randomness, fading out.
+            Vector3 dir = new Vector3(frame % 2 == 0 ? 1f : -1f, Random.Range(-.4f, .4f), Random.Range(-.4f, .4f));
+            float local = shakeAmount * strength / Mathf.Max(.0001f, model.parent.lossyScale.x);
+            model.localPosition = rest + model.parent.InverseTransformDirection(Camera.main != null
+                ? Camera.main.transform.TransformDirection(dir) : dir) * local;
+        }
+    }
+
+    void EndShake()
+    {
+        foreach (var (model, rest) in shaking) if (model != null) model.localPosition = rest;
+        shaking.Clear();
+        shakeAmount = 0f;
+    }
+
     void OnDisable()
     {
+        EndShake();
         if(hitStopRoutine != null) { StopCoroutine(hitStopRoutine); hitStopRoutine=null; Time.timeScale=1f; }
     }
 

@@ -100005,6 +100005,26 @@ MonoBehaviour:
   tableAdventureMenu: {fileID: 7660879619418300038, guid: 4ebb244c96981ed4ea378e501942c212, type: 3}
   wakeUpCutscene: {fileID: 178767176}
   dinnerCutscene: {fileID: 42668560}
+  headBob:
+    enabled: 1
+    strength: 1
+    tempo: 1
+    blendSpeed: 8
+    walk:
+      stepsPerSecond: 1.8
+      vertical: 0.035
+      sideways: 0.025
+      roll: 0
+    run:
+      stepsPerSecond: 2.6
+      vertical: 0.065
+      sideways: 0.04
+      roll: 0
+    crouch:
+      stepsPerSecond: 1.3
+      vertical: 0.02
+      sideways: 0.02
+      roll: 0
   pixelLook: 1
   pixelatorCamera: 0
   pixelateArchitecture: 1
@@ -100013,6 +100033,7 @@ MonoBehaviour:
   objectPixelSize: 4
   lowResCharacters: 1
   lowResProps: 1
+  ditherTransparents: 0
   pixelLookLibrary: {fileID: 11400000, guid: 94c4c15171db79440bb3f1ee5e5b2742, type: 2}
   directionalLight: {fileID: 410087040}
   roomStartLightColor: {r: 0, g: 0, b: 0, a: 1}
