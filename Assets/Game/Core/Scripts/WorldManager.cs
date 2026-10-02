@@ -48,12 +48,19 @@ public class WorldManager : Singleton<WorldManager>
     [FoldoutGroup("Pixelator"), LabelText("Characters"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Players' arms and held items, enemies, NPCs.")]
     public bool pixelateCharacters = true;
     [FoldoutGroup("Pixelator"), LabelText("Object Pixel Size"), Range(1, 8), OnValueChanged(nameof(ApplyPixelLook))]
+    [HideIf(nameof(objectMethod), PixelatorObjectMethod.ProPixelizer)]
     [Tooltip("Per-object pixelation: characters and props drawn at 1/N resolution inside a full-res scene. 1 = off. Not used with the Low Res camera (everything is already low-res).")]
     public int objectPixelSize = 4;
     [FoldoutGroup("Pixelator"), LabelText("Low-res Characters"), OnValueChanged(nameof(ApplyPixelLook))]
     public bool lowResCharacters = true;
     [FoldoutGroup("Pixelator"), LabelText("Low-res Props"), OnValueChanged(nameof(ApplyPixelLook))]
     public bool lowResProps;
+    [FoldoutGroup("Pixelator"), LabelText("Object Method"), OnValueChanged(nameof(ApplyPixelLook))]
+    [Tooltip("How per-object pixelation is drawn. LoomRoom keeps the stepped per-texel lighting; ProPixelizer (test) uses its own shader, toon ramp and outlines.")]
+    public PixelatorObjectMethod objectMethod = PixelatorObjectMethod.LoomRoom;
+    [FoldoutGroup("Pixelator"), LabelText("ProPixelizer"), ShowIf(nameof(objectMethod), PixelatorObjectMethod.ProPixelizer)]
+    [InlineProperty, OnValueChanged(nameof(ApplyPixelLook), true)]
+    public ProPixelizerOptions proPixelizer = new();
     [FoldoutGroup("Pixelator"), LabelText("Library"), InlineEditor, OnValueChanged(nameof(ApplyPixelLook))]
     [Tooltip("Material pairs, texel scales and the camera effects per mode (Tools > LoomRoom > Pixel Look).")]
     public PixelLookLibrary pixelLookLibrary;
@@ -61,7 +68,9 @@ public class WorldManager : Singleton<WorldManager>
     PixelLook.Parts PixelatorParts => new()
     {
         camera = pixelatorCamera, architecture = pixelateArchitecture, props = pixelateProps, characters = pixelateCharacters,
-        objectPixelSize = objectPixelSize, lowResCharacters = lowResCharacters, lowResProps = lowResProps,
+        objectPixelSize = objectMethod == PixelatorObjectMethod.ProPixelizer ? Mathf.Max(2, proPixelizer.pixelSize) : objectPixelSize,
+        lowResCharacters = lowResCharacters, lowResProps = lowResProps,
+        objectMethod = objectMethod, proPixelizer = proPixelizer,
     };
 
     public PixelLook PixelLook { get; } = new();

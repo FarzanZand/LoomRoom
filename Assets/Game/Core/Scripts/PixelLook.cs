@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 public enum PixelatorCamera
 {
@@ -28,6 +29,8 @@ public class PixelLook
         public bool architecture, props, characters;
         public int objectPixelSize;                   // per-object pixelation: screen pixels per object pixel, 1 = off
         public bool lowResCharacters, lowResProps;    // which categories get per-object pixelation
+        public PixelatorObjectMethod objectMethod;
+        public ProPixelizerOptions proPixelizer;
         public bool LowRes(PixelLookCategory c) =>
             camera != PixelatorCamera.LowRes && objectPixelSize > 1 &&
             (c == PixelLookCategory.Character ? lowResCharacters : c == PixelLookCategory.Prop && lowResProps);
@@ -50,14 +53,17 @@ public class PixelLook
     readonly Dictionary<Renderer, bool> isCharacter = new();
     readonly Dictionary<Material, Material> objectTwin = new();     // Pixel Lit material -> its per-object twin
     readonly Dictionary<Material, Material> twinOriginal = new();   // twin -> the game's original material
-    Shader objectShader;
+    readonly Dictionary<Material, Material> proTwin = new();        // Pixel Lit material -> ProPixelizer twin
+    Shader objectShader, proShader;
+    ScriptableRendererFeature proFeature;
+    bool proFeatureWasActive, proFeatureTouched;
     Parts parts;
     float nextScan;
 
     public void Set(PixelLookLibrary library, bool on, Parts which)
     {
         bool active = on && library != null;
-        if (active == Active && library == Library && which.Equals(parts)) return;
+        if (active == Active && library == Library && which.Equals(parts)) { RefreshProTwins(); return; }
         if (Library != null && Library != library) SwapAll(restoreAll: true);
         Library = library;
         Active = active;
@@ -68,8 +74,12 @@ public class PixelLook
             SwapAll(restoreAll: !Active);
             Shader.SetGlobalFloat(TexelScaleId, TexelScale);
         }
+        bool lowResObjects = Active && (parts.LowRes(PixelLookCategory.Character) || parts.LowRes(PixelLookCategory.Prop));
+        bool pro = lowResObjects && parts.objectMethod == PixelatorObjectMethod.ProPixelizer;
         PixelObjectFeature.PixelSize = Mathf.Max(1, parts.objectPixelSize);
-        PixelObjectFeature.Enabled = Active && (parts.LowRes(PixelLookCategory.Character) || parts.LowRes(PixelLookCategory.Prop));
+        PixelObjectFeature.Enabled = lowResObjects && !pro;
+        SetProFeature(pro);
+        RefreshProTwins();
         if (ScreenManager.HasInstance) ScreenManager.Instance.ApplyRenderingEffects();
     }
 
@@ -107,7 +117,8 @@ public class PixelLook
             var category = character ? PixelLookCategory.Character : entry.category;
             var wanted = original;
             if (!restoreAll && Active && parts.Has(category))
-                wanted = parts.LowRes(category) ? TwinOf(entry) : entry.pixel;
+                wanted = !parts.LowRes(category) ? entry.pixel
+                       : parts.objectMethod == PixelatorObjectMethod.ProPixelizer ? ProTwinOf(entry) : TwinOf(entry);
             if (wanted == m) continue;
             buffer[i] = wanted;
             changed = true;
@@ -126,5 +137,76 @@ public class PixelLook
         objectTwin[entry.pixel] = twin;
         twinOriginal[twin] = entry.original;
         return twin;
+    }
+
+    // ── ProPixelizer test ─────────────────────────────────────────────
+
+    static readonly int ProBaseMap = Shader.PropertyToID("_BaseMap"), ProBaseMapST = Shader.PropertyToID("_BaseMap_ST"),
+        ProBaseColor = Shader.PropertyToID("_BaseColor"), ProPixelSize = Shader.PropertyToID("_PixelSize"),
+        ProRamp = Shader.PropertyToID("_LightingRamp"), ProAmbient = Shader.PropertyToID("_AmbientLight"),
+        ProOutline = Shader.PropertyToID("_OutlineColor"), ProEdge = Shader.PropertyToID("_EdgeHighlightColor"),
+        ProPalette = Shader.PropertyToID("_PaletteLUT"), ProId = Shader.PropertyToID("_ID"),
+        ProEmission = Shader.PropertyToID("_EmissionColor"), ProEmissionMap = Shader.PropertyToID("_EmissionMap"), ProClip = Shader.PropertyToID("_AlphaClipThreshold");
+
+    // The same material on ProPixelizer/SRP/PixelizedWithOutline, made once per run.
+    Material ProTwinOf(PixelLookLibrary.Entry entry)
+    {
+        if (proTwin.TryGetValue(entry.pixel, out var twin) && twin != null) return twin;
+        if (proShader == null) proShader = Shader.Find("ProPixelizer/SRP/PixelizedWithOutline");
+        if (proShader == null) return TwinOf(entry);
+        var src = entry.pixel;
+        twin = new Material(proShader) { name = src.name + " (ProPixelizer)" };
+        twin.SetTexture(ProBaseMap, src.GetTexture("_BaseMap"));
+        var scale = src.GetTextureScale("_BaseMap"); var offset = src.GetTextureOffset("_BaseMap");
+        twin.SetVector(ProBaseMapST, new Vector4(scale.x, scale.y, offset.x, offset.y));
+        twin.SetColor(ProBaseColor, src.GetColor("_BaseColor"));
+        // Emission is colour x map; without the map ProPixelizer's default white map lights the whole model.
+        var emissionMap = src.GetTexture("_EmissionMap");
+        twin.SetColor(ProEmission, emissionMap != null || src.GetColor("_EmissionColor").maxColorComponent <= 0 ? src.GetColor("_EmissionColor") : Color.black);
+        if (emissionMap != null) twin.SetTexture(ProEmissionMap, emissionMap);
+        twin.SetFloat(ProClip, src.GetFloat("_AlphaClip") > .5f ? src.GetFloat("_Cutoff") : 0f);
+        twin.SetFloat(ProId, 1 + proTwin.Count % 254);
+        proTwin[src] = twin;
+        twinOriginal[twin] = entry.original;
+        ApplyProOptions(twin);
+        return twin;
+    }
+
+    void RefreshProTwins()
+    {
+        foreach (var twin in proTwin.Values) if (twin != null) ApplyProOptions(twin);
+    }
+
+    void ApplyProOptions(Material m)
+    {
+        var o = parts.proPixelizer;
+        if (o == null) return;
+        m.SetFloat(ProPixelSize, o.pixelSize);
+        if (o.lightingRamp != null) m.SetTexture(ProRamp, o.lightingRamp);
+        m.SetColor(ProAmbient, o.ambientLight);
+        m.SetColor(ProOutline, o.outlineColor);
+        m.SetColor(ProEdge, o.edgeHighlightColor);
+        SetToggle(m, "PROPIXELIZER_DITHERING", o.dithering);
+        SetToggle(m, "COLOR_GRADING", o.colorGrading && o.paletteLUT != null);
+        if (o.paletteLUT != null) m.SetTexture(ProPalette, o.paletteLUT);
+        SetToggle(m, "RECEIVE_SHADOWS", true);
+    }
+
+    static void SetToggle(Material m, string name, bool on)
+    {
+        m.SetFloat(name, on ? 1 : 0);
+        if (on) m.EnableKeyword(name + "_ON"); else m.DisableKeyword(name + "_ON");
+    }
+
+    // ProPixelizer's renderer feature lives on the Desktop Renderer, off by default; switched on only
+    // while it is the object method, and put back as found afterwards.
+    void SetProFeature(bool on)
+    {
+        if (proFeature == null)
+            foreach (var f in Resources.FindObjectsOfTypeAll<ProPixelizer.ProPixelizerRenderFeature>()) { proFeature = f; break; }
+        if (proFeature == null) return;
+        if (on && !proFeatureTouched) { proFeatureWasActive = proFeature.isActive; proFeatureTouched = true; }
+        if (on) proFeature.SetActive(true);
+        else if (proFeatureTouched) { proFeature.SetActive(proFeatureWasActive); proFeatureTouched = false; }
     }
 }

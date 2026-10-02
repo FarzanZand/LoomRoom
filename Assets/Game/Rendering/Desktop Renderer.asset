@@ -1,5 +1,38 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8496489199956525304
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ef6d2d7bf3633e4baf72310f121f717, type: 3}
+  m_Name: ProPixelizer
+  m_EditorClassIdentifier: ProPixelizer::ProPixelizer.ProPixelizerRenderFeature
+  m_Active: 0
+  UseDepthTestingForIDOutlines: 1
+  DepthTestThreshold: 0.0001
+  UseNormalsForEdgeDetection: 1
+  NormalEdgeDetectionThreshold: 2
+  UseDepthTestingForEdgeOutlines: 1
+  DefaultLowResScale: 1
+  UsePixelExpansion: 1
+  PixelizedLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  PrepassConfiguration: 0
+  EditorPixelExpansion: 1
+  GenerateWarnings: 1
+  Shaders:
+    CopyDepth: {fileID: 4800000, guid: 5854eec6cff8aa8449c5f14562cf9c11, type: 3}
+    PixelizationMap: {fileID: 4800000, guid: 8dd346b62451e76418dabc2355815f15, type: 3}
+    ApplyPixelizationMap: {fileID: 4800000, guid: f47f4f650fb29834684600d9a95f41c7, type: 3}
+    FullScreenColorGrading: {fileID: 4800000, guid: d5205d08ab9a61a4fa1cdf7f0ab15dc2, type: 3}
+    SceneRecomposition: {fileID: 4800000, guid: 4f9c7b9bd70101044a040d46b79507b5, type: 3}
+    OutlineDetection: {fileID: 4800000, guid: c59878161c7e0ad40b0661b47620d0e5, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28,7 +61,8 @@ MonoBehaviour:
   - {fileID: 7833122117494664109}
   - {fileID: 6238588630179067837}
   - {fileID: 6682714957060939216}
-  m_RendererFeatureMap: ad6b866f10d7b46cbd379d414eeb9356d09dceced8c5bd5c
+  - {fileID: -8496489199956525304}
+  m_RendererFeatureMap: ad6b866f10d7b46cbd379d414eeb9356d09dceced8c5bd5c08ffa5c61668168a
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3

@@ -51,7 +51,7 @@ Shader "ProPixelizer/SRP/PixelizedWithOutline"
 	{
 		Tags { "RenderType" = "ProPixelizer" "RenderPipeline" = "UniversalPipeline" }
 
-		UsePass "ProPixelizer/Hidden/ProPixelizerBase/UNIVERSAL FORWARD"
+		UsePass "ProPixelizer/Hidden/ProPixelizerBase/FORWARDLIT" // Unity 6.5 Shader Graph names this pass ForwardLit (was "Universal Forward")
 		UsePass "ProPixelizer/Hidden/ProPixelizerBase/SHADOWCASTER"
 		UsePass "ProPixelizer/Hidden/ProPixelizerBase/DEPTHONLY"
 		UsePass "ProPixelizer/Hidden/ProPixelizerBase/DEPTHNORMALS"
