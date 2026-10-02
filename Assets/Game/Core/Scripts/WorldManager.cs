@@ -54,6 +54,9 @@ public class WorldManager : Singleton<WorldManager>
     public bool lowResCharacters = true;
     [FoldoutGroup("Pixelator"), LabelText("Low-res Props"), OnValueChanged(nameof(ApplyPixelLook))]
     public bool lowResProps;
+    [FoldoutGroup("Pixelator"), LabelText("Dither Transparents"), OnValueChanged(nameof(ApplyPixelLook))]
+    [Tooltip("See-through materials (slime jelly, glassy things) as a pixel screen-door dither. Off = they keep their original smooth transparency.")]
+    public bool ditherTransparents;
     [FoldoutGroup("Pixelator"), LabelText("Library"), InlineEditor, OnValueChanged(nameof(ApplyPixelLook))]
     [Tooltip("Material pairs, texel scales and the camera effects per mode (Tools > LoomRoom > Pixel Look).")]
     public PixelLookLibrary pixelLookLibrary;
@@ -62,6 +65,7 @@ public class WorldManager : Singleton<WorldManager>
     {
         camera = pixelatorCamera, architecture = pixelateArchitecture, props = pixelateProps, characters = pixelateCharacters,
         objectPixelSize = objectPixelSize, lowResCharacters = lowResCharacters, lowResProps = lowResProps,
+        ditherTransparents = ditherTransparents,
     };
 
     public PixelLook PixelLook { get; } = new();

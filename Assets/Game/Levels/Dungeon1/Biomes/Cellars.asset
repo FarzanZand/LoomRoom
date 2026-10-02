@@ -51,7 +51,7 @@ MonoBehaviour:
   - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
     weight: 1
     fromFloor: 1
-  - enemy: {fileID: 4124661246665639223, guid: 3586c32b1afcd3d4cbe9a5c37627895b, type: 3}
+  - enemy: {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
     weight: 1
     fromFloor: 1
   encounterChance: {x: 0.75, y: 0.85}

@@ -218,7 +218,7 @@ MonoBehaviour:
     kind: 4
     effects: []
     spawnEnemies:
-    - {fileID: 4124661246665639223, guid: 3586c32b1afcd3d4cbe9a5c37627895b, type: 3}
+    - {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
     sound: {fileID: 0}
     soundVolume: 0.9
 --- !u!1 &5177725952202656524

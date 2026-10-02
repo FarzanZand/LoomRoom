@@ -28,6 +28,7 @@ public class PixelLook
         public bool architecture, props, characters;
         public int objectPixelSize;                   // per-object pixelation: screen pixels per object pixel, 1 = off
         public bool lowResCharacters, lowResProps;    // which categories get per-object pixelation
+        public bool ditherTransparents;               // see-through materials as a screen-door dither, else left original
         public bool LowRes(PixelLookCategory c) =>
             camera != PixelatorCamera.LowRes && objectPixelSize > 1 &&
             (c == PixelLookCategory.Character ? lowResCharacters : c == PixelLookCategory.Prop && lowResProps);
@@ -40,6 +41,7 @@ public class PixelLook
     }
 
     static readonly int TexelScaleId = Shader.PropertyToID("_PixelLookTexelScale");
+    static readonly int DitherAlphaId = Shader.PropertyToID("_DitherAlpha");
     const float RescanSeconds = .25f;
 
     public bool Active { get; private set; }
@@ -106,7 +108,8 @@ public class PixelLook
             if (entry == null) continue;
             var category = character ? PixelLookCategory.Character : entry.category;
             var wanted = original;
-            if (!restoreAll && Active && parts.Has(category))
+            bool seeThrough = entry.pixel.GetFloat(DitherAlphaId) > .5f;
+            if (!restoreAll && Active && parts.Has(category) && (!seeThrough || parts.ditherTransparents))
                 wanted = parts.LowRes(category) ? TwinOf(entry) : entry.pixel;
             if (wanted == m) continue;
             buffer[i] = wanted;

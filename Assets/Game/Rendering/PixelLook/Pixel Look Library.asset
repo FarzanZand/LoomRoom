@@ -251,6 +251,9 @@ MonoBehaviour:
   - original: {fileID: 2100000, guid: 8ca720a02727af84aa0360f3f5f8cb9b, type: 2}
     pixel: {fileID: 2100000, guid: a0a0b19ff08c06848b375213d6ac8ac7, type: 2}
     category: 2
+  - original: {fileID: 2100000, guid: 2fc9dd26c585ec84fac703955100e4d5, type: 2}
+    pixel: {fileID: 2100000, guid: 9cb17dbf009273d4594b5b420e6304fe, type: 2}
+    category: 2
   - original: {fileID: 2100000, guid: 67924dc79db0c8f4da3a031d1e900935, type: 2}
     pixel: {fileID: 2100000, guid: 0c8bc45e09d19be42a2ccdc7b48cafdb, type: 2}
     category: 2
