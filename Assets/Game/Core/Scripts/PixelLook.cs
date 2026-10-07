@@ -41,6 +41,8 @@ public class PixelLook
     }
 
     static readonly int TexelScaleId = Shader.PropertyToID("_PixelLookTexelScale");
+    static readonly int RoomTexelScaleId = Shader.PropertyToID("_PixelLookRoomTexelScale");
+    static readonly int TableTexelScaleId = Shader.PropertyToID("_PixelLookTableTexelScale");
     static readonly int BrightnessId = Shader.PropertyToID("_PixelLookBrightness");
     static readonly int DitherAlphaId = Shader.PropertyToID("_DitherAlpha");
     const float RescanSeconds = .25f;
@@ -89,6 +91,9 @@ public class PixelLook
     {
         bool table = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
         Shader.SetGlobalFloat(TexelScaleId, table ? Library.tableTexelScale : Library.roomTexelScale);
+        // Per world, so the room seen from the table (skylights, windows) keeps its own texels.
+        Shader.SetGlobalFloat(RoomTexelScaleId, Library.roomTexelScale);
+        Shader.SetGlobalFloat(TableTexelScaleId, Library.tableTexelScale);
         Shader.SetGlobalFloat(BrightnessId, table ? Library.tableBrightness : Library.roomBrightness);
     }
 

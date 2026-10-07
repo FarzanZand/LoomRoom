@@ -31,8 +31,13 @@ TEXTURE2D(_BaseMap);
 TEXTURE2D(_DetailMap);
 TEXTURE2D(_EmissionMap);
 
-// Set by PixelLook. Multiplies every material's texel density; 1 = as authored.
+// Set by PixelLook. Multiplies every material's texel density; 1 = as authored. The room is built at a
+// much larger scale than the table's levels, so each world keeps its own: surfaces on the Room rendering
+// layer (LightingManager.RoomLayer, bit 8) use the room scale, everything else the table scale, whoever
+// is looking. _PixelLookTexelScale is the fallback before those are set.
 float _PixelLookTexelScale;
+float _PixelLookRoomTexelScale;
+float _PixelLookTableTexelScale;
 // Set by PixelLook. Multiplies all light on Pixel Lit materials; 0 (never set) reads as 1.
 float _PixelLookBrightness;
 
@@ -52,7 +57,9 @@ float Bayer4(float2 cell)
 
 float TexelDensity()
 {
-    float scale = _PixelLookTexelScale > 0 ? _PixelLookTexelScale : 1.0;
+    bool room = (asuint(unity_RenderingLayer.x) & 8u) != 0;
+    float scale = room ? _PixelLookRoomTexelScale : _PixelLookTableTexelScale;
+    if (scale <= 0) scale = _PixelLookTexelScale > 0 ? _PixelLookTexelScale : 1.0;
     return max(_TexelsPerUnit * scale, 0.01);
 }
 

@@ -200,6 +200,17 @@ public partial class DungeonGenerator : MonoBehaviour
         if (level.corridorsCopyConnectedRoomStyle) CopyConnectedRoomStyles(seed);
         var openRoofs = Layout.SelectOpenRegions(level.hideRoof ? level.hideRoofPercent : 0, 173);
         var openEdges = Layout.SelectOpenRegions(level.hideEdges ? level.hideEdgesPercent : 0, 419);
+        // A room template can open its own ceiling (the starting room's way in), with its own frame.
+        var frames = new float[openRoofs.Length];
+        for (int i = 0; i < frames.Length; i++)
+        {
+            var t = i < Layout.rooms.Count ? TemplateOf(i) : null;
+            if (t != null && t.openCeiling) openRoofs[i] = true;
+            frames[i] = t != null && t.openCeiling ? t.ceilingFrame : level.skylightFrame;
+        }
+        bool RoofOpen(Vector2Int c) => OpenCell(c) && openRoofs[Layout.RegionIds[c.x, c.y]];
+        SpawnRoofOpen = RoofOpen(Layout.Start);
+        bool WindowAt(Vector2Int c, Vector2Int d) => OpenCell(c) && openEdges[Layout.RegionIds[c.x, c.y]] && !OpenCell(c + d) && Layout.FacesOutside(c, d);
         geometry = new GameObject("Architecture").transform; geometry.SetParent(transform, false);
         ceiling = new GameObject("Ceilings").transform; ceiling.SetParent(transform, false);
         float size = level.cellSize, tile = level.architectureTileSize;
@@ -225,8 +236,10 @@ public partial class DungeonGenerator : MonoBehaviour
             float back = CeilingInset(Vector2Int.down), front = CeilingInset(Vector2Int.up);
             var roofCenter = pos + new Vector3((left-right)*.5f, height+.12f, (back-front)*.5f);
             var roofSize = new Vector3(size-left-right, .24f, size-back-front);
-            var roof = ArchitectureBox("Ceiling", roofCenter, roofSize, DungeonRoomStyle.Resolve(style != null ? style.ceiling : null, level.ceilingMaterial), ceiling);
-            roof.GetComponent<Renderer>().enabled = !openRoofs[room];
+            var ceilingMaterial = DungeonRoomStyle.Resolve(style != null ? style.ceiling : null, level.ceilingMaterial);
+            if (!openRoofs[room]) ArchitectureBox("Ceiling", roofCenter, roofSize, ceilingMaterial, ceiling);
+            else Skylight(new Vector2Int(x, z), roofCenter, roofSize, frames[room], ceilingMaterial,
+                DungeonRoomStyle.Resolve(style != null ? style.trim : null, level.trimMaterial), RoofOpen);
             foreach (var dir in dirs)
             {
                 int nx = x+dir.x, nz = z+dir.y;
@@ -234,8 +247,12 @@ public partial class DungeonGenerator : MonoBehaviour
                 float bottom = neighbor ? HeightAt(nx,nz) : 0;
                 if (bottom >= height) continue;
                 var cell = new Vector2Int(x,z);
-                bool visible = !(openEdges[room] && Layout.FacesOutside(cell, dir));
+                bool window = !neighbor && WindowAt(cell, dir);
+                bool visible = !window;
                 if (!neighbor && visible) wallFaces.Add((cell, dir, room));
+                // The full wall stays as collision; the window shows its sill, lintel and jambs.
+                if (window) Window(cell, dir, height, WallSurface(room, 0, x, z, dir), WallSurface(room, Mathf.Max(0, height - tile), x, z, dir),
+                    DungeonRoomStyle.Resolve(style != null ? style.trim : null, level.trimMaterial), WindowAt);
                 // Square wall tiles preserve texture density; upper walls seal height changes above passages.
                 for (float y = bottom; y < height - .01f; y += tile)
                 {
@@ -250,13 +267,13 @@ public partial class DungeonGenerator : MonoBehaviour
                     var (corniceCenter, corniceScale) = WallPiece(cell, dir, height-.6f, TrimDepth, .15f, height-.55f);
                     var cornice = Box("Stone cornice", corniceCenter, corniceScale, trim, geometry);
                     MiterDiagonalEnds(cornice, cell, dir, height-.6f, TrimDepth, false);
-                    cornice.GetComponent<Renderer>().enabled = visible;
+                    cornice.GetComponent<Renderer>().enabled = visible || window;
                     if (!neighbor)
                     {
                         var (footCenter, footScale) = WallPiece(cell, dir, 0, TrimDepth, .15f, .12f);
                         var footing = Box("Stone footing", footCenter, footScale, trim, geometry);
                         MiterDiagonalEnds(footing, cell, dir, 0, TrimDepth, false);
-                        footing.GetComponent<Renderer>().enabled = visible;
+                        footing.GetComponent<Renderer>().enabled = visible || window;
                     }
                 }
             }
@@ -968,6 +985,74 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     public void ShowCeilings(bool value) { if(ceiling!=null) ceiling.gameObject.SetActive(value); }
+    public Transform Ceilings => ceiling;
+    // The spawn room has a skylight: the table reveal's camera can fly in through it.
+    public bool SpawnRoofOpen { get; private set; }
+
+    // ── Openings ──────────────────────────────────────────────────────
+
+    // An open ceiling cell keeps a frame of ceiling only along its sides that border closed ceiling,
+    // so neighbouring open cells join into one skylight. A trim lip runs along the frame's inner edge.
+    void Skylight(Vector2Int cell, Vector3 center, Vector3 size, float frame, Material ceilingMaterial, Material trim, System.Func<Vector2Int, bool> open)
+    {
+        float halfX = size.x * .5f, halfZ = size.z * .5f;
+        float fx = Mathf.Min(frame, halfX), fz = Mathf.Min(frame, halfZ);
+        bool l = !open(cell + Vector2Int.left), r = !open(cell + Vector2Int.right);
+        bool b = !open(cell + Vector2Int.down), f = !open(cell + Vector2Int.up);
+        const float lip = .1f, lipHeight = .14f;
+        float lipY = center.y - size.y * .5f - lipHeight * .5f + .02f;
+        void Strip(Vector3 at, Vector3 scale) => ArchitectureBox("Skylight frame", at, scale, ceilingMaterial, ceiling);
+        void Lip(Vector3 at, Vector3 scale)
+        {
+            var lipBox = Box("Skylight trim", at, scale, trim, ceiling);
+            Destroy(lipBox.GetComponent<Collider>());
+        }
+        if (l) { Strip(center + new Vector3(-halfX + fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x - halfX + fx + lip * .5f, lipY, center.z), new Vector3(lip, lipHeight, size.z)); }
+        if (r) { Strip(center + new Vector3(halfX - fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x + halfX - fx - lip * .5f, lipY, center.z), new Vector3(lip, lipHeight, size.z)); }
+        if (b) { Strip(center + new Vector3(0, 0, -halfZ + fz * .5f), new Vector3(size.x, size.y, fz)); Lip(new Vector3(center.x, lipY, center.z - halfZ + fz + lip * .5f), new Vector3(size.x, lipHeight, lip)); }
+        if (f) { Strip(center + new Vector3(0, 0, halfZ - fz * .5f), new Vector3(size.x, size.y, fz)); Lip(new Vector3(center.x, lipY, center.z + halfZ - fz - lip * .5f), new Vector3(size.x, lipHeight, lip)); }
+        // Inner corners: both sides open but the diagonal cell closed; fill the frame's corner square.
+        void Corner(Vector2Int a, Vector2Int c, float sx, float sz)
+        {
+            if (open(cell + a) && open(cell + c) && !open(cell + a + c))
+                Strip(center + new Vector3(sx * (halfX - fx * .5f), 0, sz * (halfZ - fz * .5f)), new Vector3(fx, size.y, fz));
+        }
+        Corner(Vector2Int.left, Vector2Int.down, -1, -1); Corner(Vector2Int.right, Vector2Int.down, 1, -1);
+        Corner(Vector2Int.left, Vector2Int.up, -1, 1); Corner(Vector2Int.right, Vector2Int.up, 1, 1);
+    }
+
+    // A window in an outer wall: sill and lintel along the whole cell, jambs where the run of windows
+    // ends, and a ledge on the sill. Visual only; the hidden full wall keeps the collision.
+    void Window(Vector2Int cell, Vector2Int dir, float height, Material lower, Material upper, Material trim, System.Func<Vector2Int, Vector2Int, bool> windowAt)
+    {
+        float sill = Mathf.Min(data.windowSill, height * .4f), lintel = Mathf.Min(data.windowLintel, height * .4f);
+        GameObject Piece(string name, Vector3 at, Vector3 scale, Material material)
+        {
+            var go = ArchitectureBox(name, at, scale, material, geometry);
+            Destroy(go.GetComponent<Collider>());
+            return go;
+        }
+        if (sill > .01f) { var (c, s) = WallPiece(cell, dir, 0, 0, sill, sill * .5f); Piece("Window sill wall", c, s, lower); }
+        { var (c, s) = WallPiece(cell, dir, height - lintel, 0, lintel, height - lintel * .5f); Piece("Window lintel", c, s, upper); }
+        var (ledgeCenter, ledgeScale) = WallPiece(cell, dir, sill, TrimDepth * 3, .1f, sill + .05f);
+        var ledge = Box("Window ledge", ledgeCenter, ledgeScale, trim, geometry);
+        Destroy(ledge.GetComponent<Collider>());
+        // Jambs where the neighbouring cell along the wall has no window facing the same way.
+        var end = dir.x != 0 ? Vector2Int.up : Vector2Int.right;
+        var along = new Vector3(end.x, 0, end.y);
+        float openHeight = height - sill - lintel;
+        if (openHeight <= .01f) return;
+        var (mid, scale) = WallPiece(cell, dir, sill, 0, openHeight, sill + openHeight * .5f);
+        float length = dir.x != 0 ? scale.z : scale.x;
+        float jamb = Mathf.Min(data.windowJamb, length * .45f);
+        foreach (var side in new[] { -1, 1 })
+        {
+            if (windowAt(cell + end * side, dir)) continue;
+            var at = mid + along * side * (length * .5f - jamb * .5f);
+            var jambScale = dir.x != 0 ? new Vector3(scale.x, openHeight, jamb) : new Vector3(jamb, openHeight, scale.z);
+            Piece("Window jamb", at, jambScale, lower);
+        }
+    }
 
     // ── Wall corners ─────────────────────────────────────────────────
     // Wall pieces sit flush with the cell edge on the room side and extend into the rock behind

@@ -14,6 +14,7 @@ public sealed class TableLevelReveal : MonoBehaviour
     // Particle effects (torch flames and the like) stay switched off until their spot is built.
     readonly List<(GameObject effect, bool active, float delay)> effects = new();
     readonly List<LineRenderer> outlines = new();
+    readonly List<Renderer> liftedCeilings = new();
     readonly List<(Renderer renderer, bool forcedOff)> handRenderers = new();
     readonly List<(Renderer renderer, bool forcedOff)> roomRenderers = new();
     Camera output;
@@ -67,7 +68,7 @@ public sealed class TableLevelReveal : MonoBehaviour
                 // Keep the exact view if the player was already looking from the room.
                 if (Vector3.Distance(cameraPosition, overview) < 1f) { overview = cameraPosition; overviewRotation = cameraRotation; overviewProjection = originalProjection; }
             }
-            dungeon.ShowCeilings(false);
+            dungeon.ShowCeilings(true);
             foreach (var character in dungeon.GetComponentsInChildren<Character>())
             { actors.Add((character.gameObject, character.gameObject.activeSelf)); character.gameObject.SetActive(false); }
             float range = Mathf.Max(1, new Vector2(width, depth).magnitude);
@@ -75,7 +76,9 @@ public sealed class TableLevelReveal : MonoBehaviour
             {
                 if (!renderer.enabled || renderer is ParticleSystemRenderer || renderer.GetComponentInParent<Canvas>() != null) continue;
                 float distance = Vector3.Distance(renderer.bounds.center, dungeon.SpawnPoint) / range;
-                float stage = renderer.bounds.size.y < .5f ? 0 : .08f;
+                // Floors first, then walls, then the ceilings close over the rooms.
+                bool roof = dungeon.Ceilings != null && renderer.transform.IsChildOf(dungeon.Ceilings);
+                float stage = roof ? .22f : renderer.bounds.size.y < .5f ? 0 : .08f;
                 pieces.Add(new Piece { renderer = renderer, position = renderer.transform.position, delay = Mathf.Clamp01(distance + stage) * .72f });
                 renderer.enabled = false;
             }
@@ -148,7 +151,14 @@ public sealed class TableLevelReveal : MonoBehaviour
             // First activation initializes the rig's Awake/Start and look pivots. Keep the
             // output under our control, and hold first-person hands until the flight ends.
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Table);
-            dungeon.ShowCeilings(false);
+            // The way in is the spawn room's skylight. Without one (a resumed floor), lift the
+            // ceiling over the spawn point for the flight only.
+            if (!dungeon.SpawnRoofOpen && dungeon.Ceilings != null)
+                foreach (var r in dungeon.Ceilings.GetComponentsInChildren<Renderer>())
+                {
+                    var b = r.bounds; b.Expand(new Vector3(2f, 50f, 2f));
+                    if (r.enabled && b.Contains(dungeon.SpawnPoint)) { liftedCeilings.Add(r); r.enabled = false; }
+                }
             if (tablePlayer.ViewPresentation != null)
                 foreach (var renderer in tablePlayer.ViewPresentation.GetComponentsInChildren<Renderer>(true))
                 { handRenderers.Add((renderer, renderer.forceRenderingOff)); renderer.forceRenderingOff = true; }
@@ -166,7 +176,7 @@ public sealed class TableLevelReveal : MonoBehaviour
                 SkipRequested ? .3f : settings.approachSeconds, true, targetCamera);
             output.fieldOfView = target.Lens.FieldOfView;
             HasArrived = true;
-            dungeon.ShowCeilings(true);
+            RestoreCeilings();
             // The loadout is ready, but belongs only to the dungeon POV. Reveal it at
             // the destination, never attached to the room camera during the flight.
             entryHands?.FollowTransitionCamera(output, 0);
@@ -219,6 +229,12 @@ public sealed class TableLevelReveal : MonoBehaviour
             projection = Matrix4x4.Perspective(live.Lens.FieldOfView, output.aspect, live.Lens.NearClipPlane, live.Lens.FarClipPlane);
         }
         output.transform.SetPositionAndRotation(destination, rotation); output.projectionMatrix = projection;
+    }
+
+    void RestoreCeilings()
+    {
+        foreach (var r in liftedCeilings) if (r != null) r.enabled = true;
+        liftedCeilings.Clear();
     }
 
     void RestorePieces()
@@ -303,6 +319,7 @@ public sealed class TableLevelReveal : MonoBehaviour
             if (brain != null) { brain.enabled = brainEnabled; if (!completed) brain.ResetState(); }
         }
         if (captured && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind != PlayerKind.Table) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Table);
+        RestoreCeilings();
         if (dungeon != null) dungeon.ShowCeilings(true);
         pieces.Clear(); actors.Clear(); lights.Clear(); outlines.Clear(); captured = false; IsPlaying = false;
     }

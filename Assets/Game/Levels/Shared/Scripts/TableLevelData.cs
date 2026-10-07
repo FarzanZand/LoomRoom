@@ -143,14 +143,22 @@ public class TableLevelData : ScriptableObject
     public float twoTileCorridorPercent = 25;
     [TabGroup(Tabs, Layout), ShowIf(D), Range(0, 100), LabelText("Three Tiles %"), Tooltip("Target percentage three tiles tall. Requires a direct connection to a three-tile room. Totals over 100 are normalized.")]
     public float threeTileCorridorPercent;
-    [TabGroup(Tabs, Layout), ShowIf(D), Title("Openings (room player view)", HorizontalLine = false), Tooltip("Hide ceilings in a seeded selection of whole rooms and corridor sections to reveal the surrounding room above.")]
+    [TabGroup(Tabs, Layout), ShowIf(D), Title("Openings (room player view)", HorizontalLine = false), Tooltip("Open a skylight in the ceiling of a seeded selection of whole rooms and corridor sections, so the room above shows through. A frame of ceiling stays round its edge.")]
     public bool hideRoof;
-    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideRoof)), Range(0, 100), Tooltip("Percentage of whole rooms and connected corridor sections without visible ceilings. 100 hides every ceiling.")]
+    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideRoof)), Range(0, 100), Tooltip("Percentage of whole rooms and connected corridor sections with a skylight. 100 opens every ceiling.")]
     public float hideRoofPercent = 100;
-    [TabGroup(Tabs, Layout), ShowIf(D), Tooltip("Hide outward-facing perimeter walls only. Interior walls stay visible; collision remains to keep actors on the table.")]
+    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideRoof)), Range(.1f, 3f), Tooltip("Width of the ceiling frame left round a skylight, in world units. Room templates with Open Ceiling use their own.")]
+    public float skylightFrame = .9f;
+    [TabGroup(Tabs, Layout), ShowIf(D), Tooltip("Open a window in the outward-facing perimeter walls of a seeded selection. Interior walls stay solid; collision remains to keep actors on the table.")]
     public bool hideEdges;
-    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideEdges)), Range(0, 100), Tooltip("Percentage of whole rooms and connected corridor sections whose exposed outer walls are hidden. 100 hides all exposed edges.")]
+    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideEdges)), Range(0, 100), Tooltip("Percentage of whole rooms and connected corridor sections whose outer walls have windows. 100 opens every exposed edge.")]
     public float hideEdgesPercent = 100;
+    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideEdges)), Range(0f, 2f), Tooltip("Wall kept below a window, in world units.")]
+    public float windowSill = .55f;
+    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideEdges)), Range(.2f, 2f), Tooltip("Wall kept above a window, in world units.")]
+    public float windowLintel = .75f;
+    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideEdges)), Range(.1f, 1f), Tooltip("Wall kept at each end of a run of windows, in world units.")]
+    public float windowJamb = .45f;
 
     // ── Architecture ──────────────────────────────────────────────────
     [TabGroup(Tabs, Architecture), ShowIf(D), Min(3), Tooltip("Physical width and height of one square texture tile. 32x32 artwork repeats every 3 units by default. Independent of layout grid spacing so changing art scale does not enlarge the table footprint.")]

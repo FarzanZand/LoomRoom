@@ -83,7 +83,8 @@ public class TableLevelLoader : MonoBehaviour
         if(PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped-=OnPlayerSwapped;
         if(player!=null) player.Died-=OnDied;
     }
-    void OnPlayerSwapped(Player active) => Dungeon?.ShowCeilings(active.kind==PlayerKind.Table);
+    // The miniature keeps its ceilings from both sides; skylights and windows are the way to look in.
+    void OnPlayerSwapped(Player active) => Dungeon?.ShowCeilings(true);
     public void ShowSelection(string title="Choose your adventure")
     {
         Initialize();
@@ -360,7 +361,6 @@ public class TableLevelLoader : MonoBehaviour
         {
             if(fade) { ScreenManager.Instance.FadeIn(.45f); yield return new WaitForSecondsRealtime(.5f); }
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
-            Dungeon?.ShowCeilings(false);
             RestoreRoom(.6f);
             yield return null;
             if(whileDark!=null) { fade=false; whileDark(); }

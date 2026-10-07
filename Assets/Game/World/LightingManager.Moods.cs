@@ -91,7 +91,7 @@ public sealed partial class LightingManager
     }
 
     // InputManager may not exist yet during OnEnable.
-    void Start() => BindMoodInput();
+    void Start() { BindMoodInput(); TagRoom(); }
 
     void BindMoodInput()
     {

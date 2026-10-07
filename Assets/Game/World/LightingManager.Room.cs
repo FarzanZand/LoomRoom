@@ -32,6 +32,19 @@ public sealed partial class LightingManager
 
     bool RoomSeparated => Application.isPlaying && roomRoots != null && roomRoots.Length > 0;
 
+    // Room renderers carry the Room rendering layer for good: the pixel look reads it to give the room
+    // its own texel scale, and the held sun lights only that layer.
+    void TagRoom()
+    {
+        if (!RoomSeparated) return;
+        foreach (var root in roomRoots)
+        {
+            if (root == null) continue;
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+                if (r != null && !IsNotRoom(r.transform)) r.renderingLayerMask |= RoomLayer;
+        }
+    }
+
     Light Sun()
     {
         if (sceneSources != null) foreach (var s in sceneSources) if (IsDirectional(s)) return s.light;

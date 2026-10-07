@@ -43,6 +43,11 @@ public class DungeonRoomTemplate : MonoBehaviour
     [Range(0, 3), Tooltip("Room height in wall tiles. 0 lets the generator choose.")]
     public int heightTiles;
 
+    [Tooltip("A very large skylight over the whole room: only a thin frame of ceiling stays, so the room above shows through. The starting room uses it for the way in.")]
+    public bool openCeiling;
+    [ShowIf(nameof(openCeiling)), Range(.1f, 2f), Tooltip("Width of the ceiling frame left round the skylight, in world units.")]
+    public float ceilingFrame = .35f;
+
     [Title("Contents")]
     [Tooltip("Skip the generator's random props, supply container and features in this room.")]
     public bool replaceGeneratedProps = true;

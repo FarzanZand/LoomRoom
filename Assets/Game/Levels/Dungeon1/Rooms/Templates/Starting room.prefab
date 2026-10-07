@@ -162,6 +162,8 @@ MonoBehaviour:
   minimumCells: {x: 7, y: 7}
   style: {fileID: 0}
   heightTiles: 1
+  openCeiling: 1
+  ceilingFrame: 0.35
   replaceGeneratedProps: 1
   replaceGeneratedEnemies: 1
   keepRoomLight: 1
