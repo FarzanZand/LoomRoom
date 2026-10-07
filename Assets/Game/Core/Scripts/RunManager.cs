@@ -49,12 +49,19 @@ public class RunManager : Singleton<RunManager>
     {
         player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         player?.GetComponent<AdventureSave>()?.Initialize();
-        if (player != null)
-        {
-            player.Damaged += OnPlayerDamaged;
-            if (player.Wallet != null) player.Wallet.Changed += OnGold;
-        }
+        if (player != null) player.Damaged += OnPlayerDamaged;
         Character.AnyDied += OnAnyDied;
+    }
+
+    // The table player wakes (and gets its Wallet) only when first used, after Start: listen per run.
+    Wallet wallet;
+    void ListenToWallet()
+    {
+        var w = player != null ? player.GetComponent<Wallet>() : null;
+        if (w == wallet) return;
+        if (wallet != null) wallet.Changed -= OnGold;
+        wallet = w;
+        if (wallet != null) wallet.Changed += OnGold;
     }
 
     protected override void OnDestroy()
@@ -63,7 +70,7 @@ public class RunManager : Singleton<RunManager>
         if (player != null)
         {
             player.Damaged -= OnPlayerDamaged;
-            if (player.Wallet != null) player.Wallet.Changed -= OnGold;
+            if (wallet != null) wallet.Changed -= OnGold;
         }
         Character.AnyDied -= OnAnyDied;
         if (deathRoutine != null) Time.timeScale = 1f;
@@ -84,6 +91,7 @@ public class RunManager : Singleton<RunManager>
         Running = true; Ended = false;
         Level = level; Seed = seed; Floor = 1;
         Kills = 0; GoldFound = 0; BossesSlain = 0; Seconds = 0f; Killer = null;
+        ListenToWallet();
         if (player != null)
         {
             player.Stats?.RemoveAllFromSource(BlessingSource);

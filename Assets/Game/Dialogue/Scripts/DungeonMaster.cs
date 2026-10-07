@@ -90,6 +90,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     // True while lines are still queued or being spoken.
     public bool Speaking => running != null;
+    bool wasCutscene;
 
     // Drops lines not yet said (a run ended: what was meant for the dungeon is not said in the room).
     public void Silence()
@@ -132,7 +133,9 @@ public class DungeonMaster : Singleton<DungeonMaster>
     // Shows the line and starts its voice or mumble. Returns the seconds of speech.
     float Speak(Line line)
     {
-        if (!line.inPerson && !string.IsNullOrWhiteSpace(prefix)) Show(prefix, color);
+        // The "voice in your head" introduction once per stretch of lines, not before each one.
+        bool stillOnScreen = lines.Exists(l => l.text == prefix);
+        if (!line.inPerson && !string.IsNullOrWhiteSpace(prefix) && !stillOnScreen) Show(prefix, color);
         Show($"\"{line.text.Trim()}\"", color);
         Spoke?.Invoke(line);
         float speaking = .5f;
@@ -177,8 +180,14 @@ public class DungeonMaster : Singleton<DungeonMaster>
         float now = Time.unscaledTime;
         lines.RemoveAll(l => now - l.shown > hold + fadeOut);
         builder.Clear();
-        // Full-screen menus (the run recap shares this canvas) are not written over.
-        if (GameManager.HasInstance && GameManager.Instance.State == GameState.Menu) { label.text = ""; return; }
+        // Full-screen menus (the run recap shares this canvas) are not written over, and a conversation
+        // has its own subtitles and choices in the same spot.
+        if ((GameManager.HasInstance && (GameManager.Instance.State == GameState.Menu || GameManager.Instance.State == GameState.Paused))
+            || PixelCrushers.DialogueSystem.DialogueManager.isConversationActive) { label.text = ""; return; }
+        // A cutscene (the descent into a table level) leaves the lines from before it behind.
+        bool cutscene = GameManager.HasInstance && GameManager.Instance.State == GameState.Cutscene;
+        if (cutscene && !wasCutscene) lines.Clear();
+        wasCutscene = cutscene;
         foreach (var (text, shown, tint) in lines)
         {
             float alpha = Mathf.Clamp01(1 - (now - shown - hold) / Mathf.Max(.01f, fadeOut));

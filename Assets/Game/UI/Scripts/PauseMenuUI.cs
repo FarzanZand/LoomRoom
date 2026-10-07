@@ -10,6 +10,7 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField] Button settingsButton;
     [SerializeField] Button adventuresButton;
     [SerializeField] Button quitButton;
+    Vector2? quitHome;
     [SerializeField] SettingsUI settings;
     [Tooltip("Hidden while settings are open so the two panels never overlap.")]
     [SerializeField] GameObject pausePanel;
@@ -56,6 +57,12 @@ public class PauseMenuUI : MonoBehaviour
         if (pausePanel != null) pausePanel.SetActive(true);
         bool table = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
         if (adventuresButton != null) adventuresButton.gameObject.SetActive(table && Loader != null && !Loader.Busy && !(RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended));
+        // Quit moves up into the adventures slot when that button is hidden, so the list has no gap.
+        if (adventuresButton != null && quitButton != null && quitButton.transform is RectTransform quitRect && adventuresButton.transform is RectTransform advRect)
+        {
+            quitHome ??= quitRect.anchoredPosition;
+            quitRect.anchoredPosition = adventuresButton.gameObject.activeSelf ? quitHome.Value : advRect.anchoredPosition;
+        }
         resumeButton?.Select();
     }
 

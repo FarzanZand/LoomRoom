@@ -111,6 +111,7 @@ public class DungeonCombatFeedback : MonoBehaviour
             info.Backstab || info.Critical ? new Color(1,.5f,.25f):info.Heavy ? new Color(1,.8f,.3f):Color.white,info.Backstab || info.Critical ? .5f:.22f);
     }
     void Result(string text,Color color,float duration){if(impact==null)return;impact.text=text;impact.color=color;impactUntil=Time.time+duration;}
+    [SerializeField,Min(0),Tooltip("Enemy bars stay this far below the top of the screen (the skill popup's space).")] float barTopMargin=260;
     void LateUpdate()
     {
         if(canvas==null || dungeon==null)return;
@@ -127,8 +128,11 @@ public class DungeonCombatFeedback : MonoBehaviour
             Vector3 body=e.character.transform.position+(head-e.character.transform.position)*.55f;
             bool aimed=e.character.IsAlive && distance<10 && Vector3.Angle(camera.transform.forward,body-camera.transform.position)<7;
             bool bossBar=BossBarUI.HasInstance && BossBarUI.Instance.Boss==e.character;
-            bool visible=show && !bossBar && distance<18 && (aimed || Time.time<e.until) && HasSight(camera,e.character.transform,body);
+            // A dead enemy's bar goes with it; the kill line and the body say enough.
+            bool visible=show && e.character.IsAlive && !bossBar && distance<18 && (aimed || Time.time<e.until) && HasSight(camera,e.character.transform,body);
             e.root.gameObject.SetActive(visible && Project(camera,head+Vector3.up*.14f,e.root));
+            // Up close a head projects near the top edge, where the skill popup lives: keep the bar under it.
+            if(e.root.gameObject.activeSelf){var at=e.root.anchoredPosition;float top=canvas.rect.height*.5f-barTopMargin;if(at.y>top){at.y=top;e.root.anchoredPosition=at;}}
             float health=e.character.Stats.MaxHealth>0 ? Mathf.Clamp01(e.character.Stats.CurrentHealth/e.character.Stats.MaxHealth):0;
             e.fill.rectTransform.anchorMax=new Vector2(health,1);
             if(Time.time>e.lossUntil)e.displayed=Mathf.MoveTowards(e.displayed,health,Time.deltaTime*1.6f);

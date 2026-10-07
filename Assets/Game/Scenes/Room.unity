@@ -1702,7 +1702,7 @@ MonoBehaviour:
   m_text: 0 / 100 XP
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
-  m_sharedMaterial: {fileID: 1989890380}
+  m_sharedMaterial: {fileID: 2100000, guid: 9a7eb1fae98115c4cb46d5d478cc2c91, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 1989890380}
   m_fontMaterials: []
@@ -76263,7 +76263,7 @@ MonoBehaviour:
   m_text: LVL 1  Warrior
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
-  m_sharedMaterial: {fileID: 1983472017}
+  m_sharedMaterial: {fileID: 2100000, guid: 9a7eb1fae98115c4cb46d5d478cc2c91, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 1983472017}
   m_fontMaterials: []
