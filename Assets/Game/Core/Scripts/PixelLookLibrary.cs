@@ -59,6 +59,12 @@ public class PixelLookLibrary : ScriptableObject
     [Tooltip("Same for the Table player (dungeons and town).")]
     public float tableTexelScale = 1f;
 
+    [Header("Brightness")]
+    [Range(.1f, 3f), Tooltip("Multiplies all light on Pixel Lit materials while the Room player is active, on every camera mode. 1 = as lit; 1.2 = 20% lighter. Live in Play mode.")]
+    public float roomBrightness = 1.2f;
+    [Range(.1f, 3f), Tooltip("Same for the Table player (dungeons and town).")]
+    public float tableBrightness = 1f;
+
     [Header("Materials")]
     [Tooltip("Folder the generated Pixel Lit materials are written to.")]
     [FolderPath] public string outputFolder = "Assets/Game/Rendering/PixelLook/Materials";

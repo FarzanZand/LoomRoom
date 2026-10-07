@@ -41,6 +41,7 @@ public class PixelLook
     }
 
     static readonly int TexelScaleId = Shader.PropertyToID("_PixelLookTexelScale");
+    static readonly int BrightnessId = Shader.PropertyToID("_PixelLookBrightness");
     static readonly int DitherAlphaId = Shader.PropertyToID("_DitherAlpha");
     const float RescanSeconds = .25f;
 
@@ -68,7 +69,7 @@ public class PixelLook
         {
             Library.Rebuild();
             SwapAll(restoreAll: !Active);
-            Shader.SetGlobalFloat(TexelScaleId, TexelScale);
+            SetGlobals();
         }
         PixelObjectFeature.PixelSize = Mathf.Max(1, parts.objectPixelSize);
         PixelObjectFeature.Enabled = Active && (parts.LowRes(PixelLookCategory.Character) || parts.LowRes(PixelLookCategory.Prop));
@@ -80,12 +81,16 @@ public class PixelLook
         if (!Active || Time.unscaledTime < nextScan) return;
         nextScan = Time.unscaledTime + RescanSeconds;
         if (isCharacter.Count > 4096) isCharacter.Clear(); // forget destroyed renderers
-        Shader.SetGlobalFloat(TexelScaleId, TexelScale);
+        SetGlobals();
         SwapAll(restoreAll: false);
     }
 
-    float TexelScale => PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table
-        ? Library.tableTexelScale : Library.roomTexelScale;
+    void SetGlobals()
+    {
+        bool table = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
+        Shader.SetGlobalFloat(TexelScaleId, table ? Library.tableTexelScale : Library.roomTexelScale);
+        Shader.SetGlobalFloat(BrightnessId, table ? Library.tableBrightness : Library.roomBrightness);
+    }
 
     void SwapAll(bool restoreAll)
     {

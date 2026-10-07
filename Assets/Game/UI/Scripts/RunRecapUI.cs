@@ -4,7 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // The run summary after death or victory: what killed you, how deep, kills, gold, time,
-// seed, then a new run, the adventure menu or back to the room.
+// seed, then a new run, the adventure menu or back to the room. With Wake In Bed it offers only
+// "Wake up": back to bed for the next morning (after a win, WorldManager's ending).
 public class RunRecapUI : MonoBehaviour
 {
     [SerializeField] GameObject root;
@@ -19,8 +20,12 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField, Min(.05f)] float fadeSeconds = .8f;
     [SerializeField] Color deathColor = new Color(.85f, .22f, .18f);
     [SerializeField] Color victoryColor = new Color(1f, .8f, .35f);
+    [SerializeField, Tooltip("Every run ends by waking in bed: the only button is Wake up.")] bool wakeInBed = true;
+    [SerializeField, Tooltip("The return button's label when waking in bed.")] string wakeLabel = "Wake up";
 
-    bool open;
+    bool open, wakes, won;
+    string returnLabel;
+    Vector2? returnPosition;
     Tween fade;
 
     static TableLevelLoader Loader => TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
@@ -58,7 +63,24 @@ public class RunRecapUI : MonoBehaviour
             group.alpha = 0f;
             fade = group.DOFade(1f, fadeSeconds).SetUpdate(true);
         }
-        if (newRunButton != null) newRunButton.Select();
+        // With the morning loop, a run has one way on: waking up in bed.
+        wakes = wakeInBed && WorldManager.HasInstance && WorldManager.Instance.wakeUpCutscene != null;
+        won = s.victory;
+        if (newRunButton != null) newRunButton.gameObject.SetActive(!wakes);
+        if (adventuresButton != null) adventuresButton.gameObject.SetActive(!wakes);
+        var label = returnButton != null ? returnButton.GetComponentInChildren<TMP_Text>(true) : null;
+        if (label != null)
+        {
+            returnLabel ??= label.text;
+            label.text = wakes ? wakeLabel : returnLabel;
+        }
+        // Alone, it takes the middle slot.
+        if (returnButton != null && returnButton.transform is RectTransform rect)
+        {
+            returnPosition ??= rect.anchoredPosition;
+            rect.anchoredPosition = wakes ? new Vector2(0f, returnPosition.Value.y) : returnPosition.Value;
+        }
+        (wakes ? returnButton : newRunButton)?.Select();
     }
 
     // "a Crypt Soldier", "an Ogre"; phrases that already read as a noun ("the dungeon", "a curse") pass through.
@@ -94,10 +116,21 @@ public class RunRecapUI : MonoBehaviour
         Loader?.ShowSelection("Choose your adventure");
     }
 
+    // A death wakes the player in bed, briefly; a win plays the ending.
+    static void WakeUp(bool victory)
+    {
+        var world = WorldManager.Instance;
+        if (victory && world.ending != null) { world.ending.Play(); return; }
+        if (Loader != null) Loader.ReturnToRoom(() => world.wakeUpCutscene.Play(true));
+        else world.wakeUpCutscene.Play(true);
+    }
+
     void ReturnToRoom()
     {
+        bool wake = wakes, victory = won;
         Hide();
         if (RunManager.HasInstance) RunManager.Instance.Abandon();
-        Loader?.ReturnToRoom();
+        if (wake) WakeUp(victory);
+        else Loader?.ReturnToRoom();
     }
 }

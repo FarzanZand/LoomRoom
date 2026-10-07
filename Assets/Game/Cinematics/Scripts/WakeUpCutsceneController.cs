@@ -3,6 +3,7 @@ using UnityEngine;
 
 // The opening: screen fades from black while the wake-up timeline plays and a short
 // music sting runs underneath. The room player is placed at the start marker first.
+// After a death the run recap plays it again, brief: the player wakes in bed for the next run.
 // In the Room scene, this rig and its start marker are children of the bed so
 // designers can move or rotate the bed without retiming the local Timeline animation.
 public class WakeUpCutsceneController : CutsceneController
@@ -17,9 +18,42 @@ public class WakeUpCutsceneController : CutsceneController
     [SerializeField] float musicDelay    = 1f;
     [SerializeField] float musicDuration = 12f;
 
+    [Header("Brief (waking again after a death)")]
+    [Tooltip("Seconds of the timeline's end that a brief wake-up plays.")]
+    [SerializeField, Min(0)] float briefSeconds = 3f;
+    [SerializeField, Min(0)] float briefFadeDuration = .8f;
+    [SerializeField, Min(0)] float briefFadeHold = .4f;
+    [SerializeField, Min(0)] float briefMusicDuration = 4f;
+
+    bool brief;
+
+    // When the player can move again; true after a brief (death) wake-up.
+    public event System.Action<bool> Woke;
+
+    // The full opening, or the short version for every morning after a death.
+    public void Play(bool brief)
+    {
+        if (IsPlaying) return;
+        this.brief = brief;
+        Play();
+        if (brief && director != null && IsPlaying)
+        {
+            director.time = Mathf.Max(0f, (float)director.duration - briefSeconds);
+            director.Evaluate();
+        }
+    }
+
+    protected override void OnFinished()
+    {
+        bool wasBrief = brief;
+        brief = false;
+        Woke?.Invoke(wasBrief);
+    }
+
     protected override void OnPlay()
     {
-        if (ScreenManager.HasInstance) ScreenManager.Instance.FadeOut(screenFadeDuration, screenFadeHold);
+        if (ScreenManager.HasInstance)
+            ScreenManager.Instance.FadeOut(brief ? briefFadeDuration : screenFadeDuration, brief ? briefFadeHold : screenFadeHold);
 
         if (PlayerManager.HasInstance && startPositionRoom != null)
         {
@@ -32,14 +66,23 @@ public class WakeUpCutsceneController : CutsceneController
             }
         }
 
-        if (!string.IsNullOrEmpty(musicKey)) StartCoroutine(MusicRoutine());
+        if (!string.IsNullOrEmpty(musicKey))
+        {
+            if (music != null) StopCoroutine(music);
+            music = StartCoroutine(MusicRoutine(brief ? 0f : musicDelay, brief ? briefMusicDuration : musicDuration));
+        }
     }
 
-    IEnumerator MusicRoutine()
+    Coroutine music;
+
+    IEnumerator MusicRoutine(float delay, float duration)
     {
-        yield return new WaitForSeconds(musicDelay);
-        if (AudioManager.HasInstance) AudioManager.Instance.PlayMusic(musicKey);
-        yield return new WaitForSeconds(musicDuration);
-        if (AudioManager.HasInstance) AudioManager.Instance.StopMusic(1f);
+        yield return new WaitForSeconds(delay);
+        if (!AudioManager.HasInstance) yield break;
+        AudioManager.Instance.PlayMusic(musicKey);
+        var clip = AudioManager.Instance.CurrentMusic;
+        yield return new WaitForSeconds(duration);
+        // Leave it alone if the player has already sat down and the table's music took over.
+        if (AudioManager.HasInstance && AudioManager.Instance.CurrentMusic == clip) AudioManager.Instance.StopMusic(1f);
     }
 }

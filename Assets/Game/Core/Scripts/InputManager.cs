@@ -50,6 +50,10 @@ public class InputManager : Singleton<InputManager>
 
     public PlayerInputActions Actions => actions;
 
+    // The mouse for picking things in the world while the cursor is free (ClassFigures).
+    public Vector2 PointerPosition => Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+    public bool PointerClicked => Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+
     protected override void Awake()
     {
         base.Awake();

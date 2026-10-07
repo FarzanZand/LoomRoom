@@ -13,6 +13,9 @@ public class AdventureMemorial : MonoBehaviour, IInteractable
     public Material figureMaterial;
     public float figureScale = 3f;
 
+    // A miniature was looked at closely (DungeonMasterRemarks notices).
+    public static event System.Action<AdventureSave.Memorial> Inspected;
+
     AdventureSave save;
     AdventureSave.Memorial record;
     GameObject figure;
@@ -64,14 +67,16 @@ public class AdventureMemorial : MonoBehaviour, IInteractable
         return System.Array.Find(rules.classes, c => c != null && (c.id == record.classId || (string.IsNullOrEmpty(record.classId) && c.displayName == record.className)));
     }
 
-    static string Describe(AdventureSave.Memorial r) => $"{r.className}, level {r.level}, reached floor {r.floor}";
+    // A forgotten figure (from a new save) is just its class.
+    static string Describe(AdventureSave.Memorial r) => r.forgotten ? r.className : $"{r.className}, level {r.level}, reached floor {r.floor}";
 
     public bool CanInteract(Character who) => record != null && who is Player player && player.kind == PlayerKind.Room;
 
     public void Interact(Character who)
     {
         if (!CanInteract(who)) return;
-        string killer = string.IsNullOrEmpty(record.killer) ? "" : $" Killed by {record.killer}.";
+        string killer = record.forgotten || string.IsNullOrEmpty(record.killer) ? "" : $" Killed by {record.killer}.";
         MessageLog.Post($"{Describe(record)}.{killer}", MessageKind.Lore);
+        Inspected?.Invoke(record);
     }
 }

@@ -33,6 +33,8 @@ TEXTURE2D(_EmissionMap);
 
 // Set by PixelLook. Multiplies every material's texel density; 1 = as authored.
 float _PixelLookTexelScale;
+// Set by PixelLook. Multiplies all light on Pixel Lit materials; 0 (never set) reads as 1.
+float _PixelLookBrightness;
 
 float PixelHash(float2 p)
 {

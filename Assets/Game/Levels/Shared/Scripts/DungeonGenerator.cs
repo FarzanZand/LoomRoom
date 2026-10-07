@@ -301,10 +301,10 @@ public partial class DungeonGenerator : MonoBehaviour
         // Spawn after navigation exists. The first room is always safe.
         for (int i=1;i<Layout.rooms.Count;i++)
         {
-            // Treasure and storage rooms are guarded half the time; rest rooms stay safe.
+            // Treasure and storage rooms always have a guard; rest rooms stay safe.
             bool guarded=Roles[i]==RoomRole.Treasure || Roles[i]==RoomRole.Storage;
             if(Roles[i]!=RoomRole.Combat && Roles[i]!=RoomRole.Exit && !guarded)continue;
-            int count=guarded ? (random.NextDouble()<.5 ? 1 : 0) : random.Next(1,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
+            int count=guarded ? 1 : random.Next(1,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
             if(templates[i]!=null && templates[i].replaceGeneratedEnemies)count=0;
             if(i==MerchantRoom)count=0;
             for(int j=0;j<count;j++)
@@ -312,7 +312,9 @@ public partial class DungeonGenerator : MonoBehaviour
                 var prefab = ChooseEnemy(i, random);
                 if (prefab == null) break;
                 var pos = Cell(Layout.RoomCenter(i)) + Vector3.right*((j%3)-1)*1.1f+Vector3.forward*(j/3)*1.2f;
-                if (prefab == null || !NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas)) continue;
+                // A fountain or pillar in the middle can hide the floor near the centre; search the rest of the room
+                // before giving up, so a combat room never ends up empty by accident.
+                if (!NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas) && !FindRoomFloor(i,random,out hit)) continue;
                 var enemy = Instantiate(prefab,hit.position,Quaternion.Euler(0,random.Next(360),0),transform);
                 level.balance?.Apply(enemy.GetComponent<Character>(),floorNumber);
                 var drop = enemy.GetComponent<DungeonLootDrop>();
@@ -324,6 +326,20 @@ public partial class DungeonGenerator : MonoBehaviour
         gameObject.AddComponent<DungeonHud>().Initialize(this);
         watch.Stop();GenerationMilliseconds=watch.Elapsed.TotalMilliseconds;
         Debug.Log($"Dungeon seed {seed}, floor {floorNumber}: {Layout.rooms.Count} rooms, {Layout.Connections.Count} connections, generated in {GenerationMilliseconds:F0} ms.",this);
+    }
+
+    // A walkable point somewhere inside the room, for spawns whose usual spot is blocked.
+    bool FindRoomFloor(int room, System.Random rng, out NavMeshHit hit)
+    {
+        var rect = Layout.rooms[room];
+        for (int attempt = 0; attempt < 12; attempt++)
+        {
+            var cell = new Vector2Int(rng.Next(rect.xMin, rect.xMax), rng.Next(rect.yMin, rect.yMax));
+            if (!Layout.InBounds(cell) || !Layout.floor[cell.x, cell.y]) continue;
+            if (NavMesh.SamplePosition(Cell(cell), out hit, data.cellSize, NavMesh.AllAreas)) return true;
+        }
+        hit = default;
+        return false;
     }
 
     void CopyConnectedRoomStyles(int seed)

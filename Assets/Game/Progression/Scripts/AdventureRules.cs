@@ -5,6 +5,8 @@ using UnityEngine;
 public class AdventureRules : ScriptableObject
 {
     public AdventurerClass[] classes;
+    [Tooltip("Blank miniatures already on the memorial table in a new save: figures lost before the player remembers. Class only, no details.")]
+    public AdventurerClass[] startingMemorials = System.Array.Empty<AdventurerClass>();
     public AdventureSkillData[] skills;
     [Tooltip("Stealth trains while crouching within this many metres of an enemy that hasn't noticed you.")]
     [Min(1)] public float sneakPractiseRange = 4f;

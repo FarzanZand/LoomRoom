@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 // An invisible plane across the middle leg of a loop corridor, blue arrow pointing away from the room.
@@ -11,6 +12,9 @@ public class RoomLoopPortal : MonoBehaviour
     [SerializeField] RoomLoopPortal destination;
     [Tooltip("Opening width and height. Centred on this transform, bottom edge at its origin.")]
     [SerializeField] Vector2 size = new(1.6f, 2.6f);
+
+    // Someone walked through a loop and came back into the room (DungeonMasterRemarks notices).
+    public static event Action<Player> Crossed;
 
     float lastSide = float.NaN;
     Player lastPlayer;
@@ -39,6 +43,7 @@ public class RoomLoopPortal : MonoBehaviour
         lastSide = float.NaN;
         destination.lastPlayer = player;
         destination.lastSide = destination.transform.InverseTransformPoint(target).z;
+        Crossed?.Invoke(player);
     }
 
     void OnDrawGizmos()

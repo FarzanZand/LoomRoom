@@ -29,6 +29,9 @@ public class PlayerLook : MonoBehaviour
     public Transform YawTransform   => lateralTorso != null ? lateralTorso : transform;
     public Transform PitchTransform => verticalNeck != null ? verticalNeck : YawTransform;
     public float CurrentLeanAngle { get; private set; }
+    // Set while seated (TableManager): camera height above the feet instead of standing or crouching.
+    public float? HeightOverride { get; set; }
+    public float Pitch => pitch;
 
     Player  player;
     Vector2 smoothedLook;
@@ -81,7 +84,7 @@ public class PlayerLook : MonoBehaviour
 
         // ── Crouch height ──
         bool crouching = player != null && player.Motor != null && player.Motor.IsCrouching;
-        float desiredY = crouching ? crouchCameraHeight : normalCameraHeight;
+        float desiredY = HeightOverride ?? (crouching ? crouchCameraHeight : normalCameraHeight);
         float t = 1f - Mathf.Exp(-crouchingCameraSmoothTime * Time.deltaTime);
         cameraHeight.y = Mathf.Lerp(cameraHeight.y, desiredY, t);
         if (lateralTorso != null) lateralTorso.localPosition = cameraHeight;
@@ -96,6 +99,9 @@ public class PlayerLook : MonoBehaviour
         if (lateralTorso != null) lateralTorso.rotation = Quaternion.Euler(0f, worldYaw, 0f);
         if (verticalNeck != null) verticalNeck.rotation = Quaternion.Euler(-pitch, worldYaw, 0f);
     }
+
+    // Tilt the view (positive looks up), clamped like mouse look. Applied on the next Update.
+    public void SetPitch(float degrees) => pitch = Mathf.Clamp(degrees, minClamp, maxClamp);
 
     // Turns the view about world up, keeping pitch, lean and look smoothing (seamless teleports).
     public void RotateYaw(float degrees)

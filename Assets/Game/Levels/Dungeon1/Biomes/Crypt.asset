@@ -52,7 +52,7 @@ MonoBehaviour:
   - enemy: {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
     weight: 1
     fromFloor: 1
-  encounterChance: {x: 0.8, y: 0.9}
+  encounterChance: {x: 0.92, y: 1}
   maxEnemiesPerRoom: 3
   features: []
   loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
@@ -82,15 +82,19 @@ MonoBehaviour:
   musicVolume: 1
   entryLineChance: 0.7
   entryLines:
-  - text: Deeper still? Brave, or foolish.
+  - text: The crypt now.
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
+    inPerson: 0
   - text: The dead don't like visitors.
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
-  - text: Hahahahaha!
+    inPerson: 0
+  - text: Keep your shield up.
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
-  - text: I'd turn back if I were you.
+    inPerson: 0
+  - text: Not many get this far.
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
+    inPerson: 0

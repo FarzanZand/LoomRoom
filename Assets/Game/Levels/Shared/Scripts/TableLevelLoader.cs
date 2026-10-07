@@ -332,15 +332,24 @@ public class TableLevelLoader : MonoBehaviour
         ShowSelection("Dungeon complete");
     }
     IEnumerator DeathMenu() { yield return new WaitForSecondsRealtime(.8f);ShowSelection("You died"); }
-    public void ReturnToRoom()
+    // Sweeps the last floor off the table before a new game is set up (never during a run).
+    public void ClearTable()
+    {
+        if(Busy || environment==null || (RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended)) return;
+        Destroy(environment); environment=null; Dungeon=null;
+    }
+    public void ReturnToRoom() => ReturnToRoom(null);
+    // whileDark runs once the room is back under the black and takes over the fade from black
+    // (the run recap wakes the player in bed).
+    public void ReturnToRoom(Action whileDark)
     {
         if(Busy)return;
         if (RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended) return;
-        StartCoroutine(ReturnRoutine());
+        StartCoroutine(ReturnRoutine(whileDark));
     }
     // Fade out, switch to the room player and put the room's lighting and music back under the
     // black, then fade in.
-    IEnumerator ReturnRoutine()
+    IEnumerator ReturnRoutine(Action whileDark)
     {
         Busy=true;
         menu.Hide();GameManager.Instance.Pop(GameState.Dead);
@@ -354,6 +363,7 @@ public class TableLevelLoader : MonoBehaviour
             Dungeon?.ShowCeilings(false);
             RestoreRoom(.6f);
             yield return null;
+            if(whileDark!=null) { fade=false; whileDark(); }
             if(fade) { ScreenManager.Instance.FadeOut(.6f); fade=false; yield return new WaitForSecondsRealtime(.65f); }
         }
         finally

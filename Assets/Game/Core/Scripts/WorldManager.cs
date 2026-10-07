@@ -34,6 +34,8 @@ public class WorldManager : Singleton<WorldManager>
     [Header("Opening")]
     public WakeUpCutsceneController wakeUpCutscene;
     public DinnerCutsceneController dinnerCutscene;
+    [Tooltip("Winning a run: the last morning.")]
+    public EndingController ending;
 
     [FoldoutGroup("Head Bob"), HideLabel, InlineProperty]
     [Tooltip("Camera bob while walking, running and crouch-walking. Read live by HeadBob on each player's camera.")]
@@ -98,8 +100,7 @@ public class WorldManager : Singleton<WorldManager>
         var progression = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
         bool skip = progression != null &&
             (progression.skipWakeUp || progression.startingPlayer != PlayerKind.Room);
-        if (!skip && wakeUpCutscene != null)
-            wakeUpCutscene.Play();
+        if (!skip && wakeUpCutscene != null) wakeUpCutscene.Play(brief: false);
         ApplyPixelLook();
     }
 

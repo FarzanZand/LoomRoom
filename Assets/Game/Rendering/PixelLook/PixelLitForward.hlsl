@@ -189,6 +189,7 @@ half4 Frag(Varyings input) : SV_Target
     // Darker areas lean towards the shade tint.
     half shadeAmount = saturate(1.0 - max(light.r, max(light.g, light.b)));
     light *= lerp(half3(1, 1, 1), _ShadeColor.rgb, shadeAmount);
+    light *= _PixelLookBrightness > 0 ? _PixelLookBrightness : 1.0;
 
     half3 color = albedo * light + gloss;
     color += _EmissionColor.rgb * SAMPLE_TEXTURE2D(_EmissionMap, sampler_PointRepeat, input.uv).rgb;

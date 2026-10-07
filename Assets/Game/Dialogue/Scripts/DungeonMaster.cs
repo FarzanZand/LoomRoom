@@ -21,6 +21,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
         [TextArea] public string text;
         [Tooltip("Recorded voice. Empty uses the mumble if Mumble is on.")] public AudioData voice;
         [Tooltip("Barony-style gibberish when the line appears.")] public bool mumble = true;
+        [Tooltip("Said across the table in the room, so no \"voice inside your head\" prefix.")] public bool inPerson;
     }
 
     [SerializeField] TextMeshProUGUI label;
@@ -35,6 +36,9 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Min(0), Tooltip("Seconds a line stays before fading.")] float hold = 6f;
     [SerializeField, Min(0)] float fadeOut = 1.5f;
     [SerializeField, Min(1)] int maxLines = 4;
+    [SerializeField, Min(0), Tooltip("Lines said in person (a conversation at the table) stay at least this long, plus the time per word, before the next one.")]
+    float readBase = 1.2f;
+    [SerializeField, Min(0)] float readPerWord = .3f;
 
     [Header("Mumble")]
     [SerializeField, Tooltip("UI Library key played once per syllable. Make it a Data entry to pick from several syllables.")] string mumbleKey = "dmMumble";
@@ -74,17 +78,30 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     public static void Say(string text, AudioClip clip = null, bool mumble = false) => Say(new Line { text = text, mumble = mumble }, clip);
     public static void Say(string text, AudioData data, bool mumble = false) => Say(new Line { text = text, voice = data, mumble = mumble });
-    public static void Say(DMLine asset) { if (asset != null) Say(new Line { text = asset.text, voice = asset.voice, mumble = asset.mumble }); }
+    public static void Say(DMLine asset) { if (asset != null) Say(asset.With(asset.text)); }
     public static void Say(Line line, AudioClip clip = null, float delay = 0)
     {
         if (!HasInstance || line == null || string.IsNullOrWhiteSpace(line.text)) return;
         Instance.Enqueue(line, clip, delay);
     }
 
+    // Each line as it appears (DungeonMasterSeat gestures on the ones said in person).
+    public static event Action<Line> Spoke;
+
+    // True while lines are still queued or being spoken.
+    public bool Speaking => running != null;
+
+    // Drops lines not yet said (a run ended: what was meant for the dungeon is not said in the room).
+    public void Silence()
+    {
+        queue.Clear(); pendingClip = null;
+        if (running != null) { StopCoroutine(running); running = null; }
+    }
+
     AudioClip pendingClip;
     void Enqueue(Line line, AudioClip clip, float delay)
     {
-        if (clip != null) { line = new Line { text = line.text, mumble = false }; pendingClip = clip; }
+        if (clip != null) { line = new Line { text = line.text, mumble = false, inPerson = line.inPerson }; pendingClip = clip; }
         queue.Enqueue((line, delay));
         if (running == null && isActiveAndEnabled) running = StartCoroutine(Run());
     }
@@ -95,20 +112,39 @@ public class DungeonMaster : Singleton<DungeonMaster>
         {
             var (line, delay) = queue.Dequeue();
             if (delay > 0) yield return new WaitForSecondsRealtime(delay);
-            if (!string.IsNullOrWhiteSpace(prefix)) Show(prefix, color);
-            Show($"\"{line.text.Trim()}\"", color);
-            float speaking = .5f;
-            if (AudioManager.HasInstance)
-            {
-                AudioSource voice = null;
-                if (line.voice != null) voice = AudioManager.Instance.PlayUIData(line.voice);
-                else if (pendingClip != null) { voice = AudioManager.Instance.PlayUI(pendingClip); pendingClip = null; }
-                if (voice != null && voice.clip != null) speaking = voice.clip.length;
-                else if (line.mumble) speaking = Mumble(line.text);
-            }
-            yield return new WaitForSecondsRealtime(speaking + .6f);
+            // The label sits on the HUD canvas, which cutscenes hide: hold the line until it can be read.
+            while (GameManager.HasInstance && GameManager.Instance.State == GameState.Cutscene) yield return null;
+            float speaking = Speak(line);
+            float pause = speaking + .6f;
+            if (line.inPerson) pause = Mathf.Max(pause, readBase + readPerWord * line.text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length);
+            yield return new WaitForSecondsRealtime(pause);
         }
         running = null;
+    }
+
+    // A line straight away, outside the queue: a conversation paces its own lines.
+    public void SayNow(Line line)
+    {
+        if (line == null || string.IsNullOrWhiteSpace(line.text)) return;
+        Speak(line);
+    }
+
+    // Shows the line and starts its voice or mumble. Returns the seconds of speech.
+    float Speak(Line line)
+    {
+        if (!line.inPerson && !string.IsNullOrWhiteSpace(prefix)) Show(prefix, color);
+        Show($"\"{line.text.Trim()}\"", color);
+        Spoke?.Invoke(line);
+        float speaking = .5f;
+        if (AudioManager.HasInstance)
+        {
+            AudioSource voice = null;
+            if (line.voice != null) voice = AudioManager.Instance.PlayUIData(line.voice);
+            else if (pendingClip != null) { voice = AudioManager.Instance.PlayUI(pendingClip); pendingClip = null; }
+            if (voice != null && voice.clip != null) speaking = voice.clip.length;
+            else if (line.mumble) speaking = Mumble(line.text);
+        }
+        return speaking;
     }
 
     void Show(string text, Color tint)
@@ -141,6 +177,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
         float now = Time.unscaledTime;
         lines.RemoveAll(l => now - l.shown > hold + fadeOut);
         builder.Clear();
+        // Full-screen menus (the run recap shares this canvas) are not written over.
+        if (GameManager.HasInstance && GameManager.Instance.State == GameState.Menu) { label.text = ""; return; }
         foreach (var (text, shown, tint) in lines)
         {
             float alpha = Mathf.Clamp01(1 - (now - shown - hold) / Mathf.Max(.01f, fadeOut));

@@ -54,7 +54,7 @@ MonoBehaviour:
   - enemy: {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
     weight: 1
     fromFloor: 1
-  encounterChance: {x: 0.75, y: 0.85}
+  encounterChance: {x: 0.9, y: 0.95}
   maxEnemiesPerRoom: 3
   features: []
   loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
@@ -84,15 +84,19 @@ MonoBehaviour:
   musicVolume: 1
   entryLineChance: 1
   entryLines:
-  - text: Best of luck, mortal.
-    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
-    mumble: 0
-  - text: Another one. Let's see how long you last.
-    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
-    mumble: 0
   - text: Mind the stairs.
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
-  - text: Hahahahaha!
+    inPerson: 0
+  - text: Rats first. Then worse.
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
+    inPerson: 0
+  - text: Take it slow this time.
+    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
+    mumble: 0
+    inPerson: 0
+  - text: Same cellars. New rooms.
+    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
+    mumble: 0
+    inPerson: 0

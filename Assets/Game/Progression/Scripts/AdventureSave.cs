@@ -27,6 +27,8 @@ public class AdventureSave : MonoBehaviour
         public string id, classId, className, killer;
         public int floor, level;
         public int[] skills;
+        [Tooltip("A starting memorial: a figure from before the player remembers, with no details.")]
+        public bool forgotten;
     }
     [Serializable] public class Data
     {
@@ -48,7 +50,7 @@ public class AdventureSave : MonoBehaviour
         if (initialized) return;
         initialized = true;
         player = GetComponent<Player>(); progress = GetComponent<AdventurerProgress>();
-        Read();
+        bool existed = Read();
         Saved.memorials ??= new(); Saved.flags ??= new();
         if (ProgressionManager.HasInstance)
         {
@@ -57,13 +59,25 @@ public class AdventureSave : MonoBehaviour
             loading = false; ProgressionManager.Instance.FlagChanged += FlagChanged;
         }
         if (RunManager.HasInstance) RunManager.Instance.RunEnded += Ended;
+        if (!existed) SeedStartingMemorials();
+    }
+
+    // A new save starts with the rules' blank figures on the memorial table.
+    void SeedStartingMemorials()
+    {
+        var starting = progress != null && progress.rules != null ? progress.rules.startingMemorials : null;
+        if (starting == null || starting.Length == 0) return;
+        foreach (var c in starting)
+            if (c != null) Saved.memorials.Add(new Memorial { id = Guid.NewGuid().ToString("N"), classId = c.id, className = c.displayName, forgotten = true });
+        Write();
     }
     void OnDestroy()
     {
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= FlagChanged;
         if (RunManager.HasInstance) RunManager.Instance.RunEnded -= Ended;
     }
-    void Read()
+    // False when there is no save yet.
+    bool Read()
     {
         foreach (var path in new[] { FilePath, FilePath + ".bak" })
         {
@@ -71,9 +85,10 @@ public class AdventureSave : MonoBehaviour
             try { var data = JsonUtility.FromJson<Data>(File.ReadAllText(path)); if (data == null) continue;
                 // Older saves keep their memorials and unlocks; a run checkpoint from another format is dropped.
                 if (data.version != Data.Current) { data.checkpoint = null; data.version = Data.Current; }
-                Saved = data; return; }
+                Saved = data; return true; }
             catch (Exception e) { Debug.LogWarning($"Could not read adventure save: {e.Message}"); }
         }
+        return false;
     }
     void FlagChanged(string key, int value) { if (!loading) Write(); }
     public void Write()

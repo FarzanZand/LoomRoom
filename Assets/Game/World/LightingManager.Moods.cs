@@ -107,6 +107,7 @@ public sealed partial class LightingManager
         moodInput = null;
         keyboardMoodPreview = false;
         moodBlending = moodActive = false;
+        if (roomHeld) ReleaseRoom();
         ClearMoodSky();
 #if UNITY_EDITOR
         UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= BeforeSceneSave;
@@ -274,16 +275,18 @@ public sealed partial class LightingManager
     {
         if (baseSkybox != null && moodSkybox == null)
             moodSkybox = new Material(baseSkybox) { name = "Lighting Manager sky preview", hideFlags = HideFlags.HideAndDontSave };
+        float dark = dungeonDarkness ? Mathf.Clamp01(displayedMood.darkness) : 0f;
+        HoldRoom(dark);
         if (moodSkybox != null)
         {
             RenderSettings.skybox = moodSkybox;
+            bool held = HeldSky(out var heldSkyTint, out var heldSkyExposure);
             string tintProperty = SkyTintProperty(moodSkybox);
-            if (tintProperty != null) moodSkybox.SetColor(tintProperty, displayedMood.sky);
-            if (moodSkybox.HasProperty("_Exposure")) moodSkybox.SetFloat("_Exposure", displayedMood.exposure);
+            if (tintProperty != null) moodSkybox.SetColor(tintProperty, held ? heldSkyTint : displayedMood.sky);
+            if (moodSkybox.HasProperty("_Exposure")) moodSkybox.SetFloat("_Exposure", held ? heldSkyExposure : displayedMood.exposure);
         }
-        float dark = dungeonDarkness ? Mathf.Clamp01(displayedMood.darkness) : 0f;
         if (sceneSources != null) foreach (var source in sceneSources)
-            if (IsDirectional(source))
+            if (IsDirectional(source) && !HeldSun(source.light))
             {
                 source.light.color = displayedMood.light * sceneTint;
                 float sun = displayedMood.intensity * sceneBrightness;
