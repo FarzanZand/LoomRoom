@@ -82271,6 +82271,11 @@ MonoBehaviour:
   seatedState: Sitting Idle
   talkingState: Sitting Talking
   talkBlend: 0.25
+  standState: Sit To Stand
+  sitState: Stand To Sit
+  postureBlend: 0.3
+  turnSpeed: 90
+  standOffset: {x: -9, y: 0, z: 1}
   prompt: Talk
   conversation: Room/Talk
 --- !u!1 &1580930834
