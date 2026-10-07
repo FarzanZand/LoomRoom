@@ -102,6 +102,8 @@ MonoBehaviour:
     postExposure: 0
   roomTexelScale: 0.045
   tableTexelScale: 1
+  roomBrightness: 1.5
+  tableBrightness: 1
   outputFolder: Assets/Game/Rendering/PixelLook/Materials
   entries:
   - original: {fileID: 2100000, guid: 76ea0cb3eb788304eade5cb9f03a7f87, type: 2}

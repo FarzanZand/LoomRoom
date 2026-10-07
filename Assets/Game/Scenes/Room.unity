@@ -496,6 +496,18 @@ PrefabInstance:
       propertyPath: m_AgentTypeID
       value: -1372625422
       objectReference: {fileID: 0}
+    - target: {fileID: 6196986129027006977, guid: e5c4aa3abed34f8429a5eff626d667d0, type: 3}
+      propertyPath: m_Radius
+      value: 0.45
+      objectReference: {fileID: 0}
+    - target: {fileID: 6196986129027006977, guid: e5c4aa3abed34f8429a5eff626d667d0, type: 3}
+      propertyPath: m_Center.y
+      value: 0.55
+      objectReference: {fileID: 0}
+    - target: {fileID: 6196986129027006977, guid: e5c4aa3abed34f8429a5eff626d667d0, type: 3}
+      propertyPath: m_Center.z
+      value: 0.1
+      objectReference: {fileID: 0}
     - target: {fileID: 8272895588186849192, guid: e5c4aa3abed34f8429a5eff626d667d0, type: 3}
       propertyPath: m_LocalScale.x
       value: 20

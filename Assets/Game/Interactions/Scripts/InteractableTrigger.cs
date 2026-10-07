@@ -62,12 +62,17 @@ public class InteractableTrigger : MonoBehaviour
             return found ? result : targetCollider != null ? targetCollider.bounds : result;
         }
     }
+    // Hits on these never block the line of sight to this trigger: its own object, and the whole
+    // character it belongs to (an NPC's body stands between the eye and its interaction sphere up close).
     public bool Owns(Transform other)
     {
         Transform owner = worldItem != null ? worldItem.transform :
             Interactable is Component component ? component.transform : transform;
-        return other.IsChildOf(owner);
+        if (other.IsChildOf(owner)) return true;
+        if (character == null) character = GetComponentInParent<Character>();
+        return character != null && other.IsChildOf(character.transform);
     }
+    Character character;
     void OnEnable() => available.Add(this);
 
     void Awake()
