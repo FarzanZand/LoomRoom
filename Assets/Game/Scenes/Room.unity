@@ -2476,7 +2476,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8d64aa7ad9a59e04e8e1719c55924a52, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c425f8336a2af1e4f8ef0f290240d3fe, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -7604,14 +7604,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.9, g: 0.86, b: 0.78, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 29f73f0aea8f7234ea83abd51cb2f696, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 65633a2418b07a74a88b4b22bf0d0bb4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -10862,7 +10862,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8d64aa7ad9a59e04e8e1719c55924a52, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c425f8336a2af1e4f8ef0f290240d3fe, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -13720,7 +13720,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8d64aa7ad9a59e04e8e1719c55924a52, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c425f8336a2af1e4f8ef0f290240d3fe, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -37964,7 +37964,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8d64aa7ad9a59e04e8e1719c55924a52, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c425f8336a2af1e4f8ef0f290240d3fe, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -50084,8 +50084,8 @@ MonoBehaviour:
   - {fileID: 262457515}
   - {fileID: 2063177944}
   pipOn: {r: 0.22, g: 0.14, b: 0.08, a: 1}
-  pipOff: {r: 0.55, g: 0.45, b: 0.33, a: 1}
-  pipLocked: {r: 0.75, g: 0.67, b: 0.54, a: 1}
+  pipOff: {r: 0.316, g: 0.21800001, b: 0.134, a: 1}
+  pipLocked: {r: 0.228, g: 0.16200002, b: 0.102000006, a: 0.6}
   healthColor: {r: 0.62, g: 0.16, b: 0.1, a: 1}
   manaColor: {r: 0.14, g: 0.28, b: 0.58, a: 1}
   staminaColor: {r: 0.13, g: 0.42, b: 0.27, a: 1}
@@ -50931,7 +50931,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 7845560308588b049a6b0e4a5281dccc, type: 3}
+  m_Sprite: {fileID: 21300000, guid: bcb03a9988e336d4d8459b6c945dabe5, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -51752,7 +51752,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8d64aa7ad9a59e04e8e1719c55924a52, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c425f8336a2af1e4f8ef0f290240d3fe, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -58000,7 +58000,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: d4613434f2167ed4fb3efdbd3d4e2b55, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 70c1317d263257047ba82a7d50cb1875, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -62119,7 +62119,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8d64aa7ad9a59e04e8e1719c55924a52, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c425f8336a2af1e4f8ef0f290240d3fe, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -80844,7 +80844,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8d64aa7ad9a59e04e8e1719c55924a52, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c425f8336a2af1e4f8ef0f290240d3fe, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -100055,7 +100055,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8d64aa7ad9a59e04e8e1719c55924a52, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c425f8336a2af1e4f8ef0f290240d3fe, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -104297,7 +104297,56 @@ MonoBehaviour:
   roomLighting: 2
   roomTint: {r: 1, g: 1, b: 1, a: 1}
   lamp: {fileID: 108572490}
-  lampColor: {r: 1, g: 0.76, b: 0.48, a: 1}
+  style: 0
+  looks:
+  - style: 0
+    lamp: {r: 1, g: 0.76, b: 0.48, a: 1}
+    eyes: {r: 1, g: 0.78, b: 0.4, a: 1}
+    boardLight: {r: 1, g: 0.86, b: 0.68, a: 1}
+    card: {fileID: 21300000, guid: 65633a2418b07a74a88b4b22bf0d0bb4, type: 3}
+    banner: {fileID: 21300000, guid: 70c1317d263257047ba82a7d50cb1875, type: 3}
+    inset: {fileID: 21300000, guid: c425f8336a2af1e4f8ef0f290240d3fe, type: 3}
+    divider: {fileID: 21300000, guid: bcb03a9988e336d4d8459b6c945dabe5, type: 3}
+    ink: {r: 0.22, g: 0.14, b: 0.08, a: 1}
+    inkSoft: {r: 0.38, g: 0.27, b: 0.17, a: 1}
+    name: {r: 0.97, g: 0.91, b: 0.78, a: 1}
+    health: {r: 0.62, g: 0.16, b: 0.1, a: 1}
+    mana: {r: 0.14, g: 0.28, b: 0.58, a: 1}
+    stamina: {r: 0.13, g: 0.42, b: 0.27, a: 1}
+    rank: {r: 0.55, g: 0.18, b: 0.08, a: 1}
+    tier: {r: 0.45, g: 0.37, b: 0.28, a: 1}
+  - style: 1
+    lamp: {r: 0.66, g: 0.84, b: 1, a: 1}
+    eyes: {r: 0.55, g: 0.95, b: 1, a: 1}
+    boardLight: {r: 0.74, g: 0.86, b: 1, a: 1}
+    card: {fileID: 21300000, guid: 3c71d624c44857a4a9363b177189cd7f, type: 3}
+    banner: {fileID: 21300000, guid: 5c40dec20ab61a3448e2334a649e2af5, type: 3}
+    inset: {fileID: 21300000, guid: 66f93cf49a1c7df49b614e02a5207706, type: 3}
+    divider: {fileID: 21300000, guid: d9c4d91297a29f64ebc683563b7a7871, type: 3}
+    ink: {r: 0.86, g: 0.89, b: 0.92, a: 1}
+    inkSoft: {r: 0.58, g: 0.66, b: 0.74, a: 1}
+    name: {r: 0.95, g: 0.98, b: 0.98, a: 1}
+    health: {r: 0.94, g: 0.45, b: 0.42, a: 1}
+    mana: {r: 0.5, g: 0.72, b: 1, a: 1}
+    stamina: {r: 0.48, g: 0.86, b: 0.64, a: 1}
+    rank: {r: 0.45, g: 0.88, b: 0.86, a: 1}
+    tier: {r: 0.55, g: 0.62, b: 0.7, a: 1}
+  - style: 2
+    lamp: {r: 0.86, g: 0.8, b: 0.76, a: 1}
+    eyes: {r: 0.86, g: 0.9, b: 0.78, a: 1}
+    boardLight: {r: 0.88, g: 0.86, b: 0.84, a: 1}
+    card: {fileID: 21300000, guid: 3bf8f3ca5ba59874d95124ca487761a5, type: 3}
+    banner: {fileID: 21300000, guid: 50f1fd99ec2154249aea3df6a91dc331, type: 3}
+    inset: {fileID: 21300000, guid: 4e5312dae96bd6749aac7c49a321846a, type: 3}
+    divider: {fileID: 21300000, guid: 0b61e522248f8ed4fbb25579ad4945e1, type: 3}
+    ink: {r: 0.17, g: 0.18, b: 0.24, a: 1}
+    inkSoft: {r: 0.36, g: 0.37, b: 0.44, a: 1}
+    name: {r: 0.96, g: 0.92, b: 0.95, a: 1}
+    health: {r: 0.6, g: 0.18, b: 0.2, a: 1}
+    mana: {r: 0.2, g: 0.3, b: 0.56, a: 1}
+    stamina: {r: 0.16, g: 0.4, b: 0.32, a: 1}
+    rank: {r: 0.42, g: 0.2, b: 0.36, a: 1}
+    tier: {r: 0.4, g: 0.4, b: 0.46, a: 1}
   dmEyes: {fileID: 1997636109}
   lighting: {fileID: 1275394512}
   openingBlack: 2
@@ -117585,7 +117634,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8d64aa7ad9a59e04e8e1719c55924a52, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c425f8336a2af1e4f8ef0f290240d3fe, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1

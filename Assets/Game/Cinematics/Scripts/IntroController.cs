@@ -1,4 +1,5 @@
 using System.Collections;
+using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
@@ -30,8 +31,13 @@ public class IntroController : Singleton<IntroController>
     [ColorUsage(false)] public Color roomTint = Color.white;
     [Tooltip("The one lamp over the corner of the table. Off until the Dungeon Master lights it.")]
     public Light lamp;
-    [Tooltip("The lamp's colour (warm yellow, white, red ...). Changes live, also in Play mode. The practice board's own light is on the IntroDungeon level (Look tab).")]
-    [ColorUsage(false)] public Color lampColor = new(1f, .76f, .48f);
+    [Tooltip("The intro's colour scheme: the lamp, the Dungeon Master's eyes, the practice board's light and the class card. Changes live, also in Play mode.")]
+    [OnValueChanged(nameof(ApplyStyle))] public IntroStyle style = IntroStyle.Cold;
+    [Tooltip("What each style looks like. Edit a style's colours or card art here.")]
+    [ListDrawerSettings(ShowFoldout = true, DefaultExpandedState = false), OnValueChanged(nameof(ApplyStyle), true)]
+    public IntroLook[] looks = new IntroLook[0];
+    // The lamp's colour comes from the style.
+    Color lampColor = new(1f, .76f, .48f);
     [Tooltip("The Dungeon Master's eyes (GlowInDark: they show only while he sits in the dark). Closed for the night at the end of the intro.")]
     public GameObject dmEyes;
     public LightingManager lighting;
@@ -101,6 +107,7 @@ public class IntroController : Singleton<IntroController>
     protected override void Awake()
     {
         base.Awake();
+        ApplyStyle();
         if (lamp != null) { lampIntensity = lamp.intensity; lamp.enabled = false; lamp.color = lampColor; }
         if (lighting == null) lighting = FindAnyObjectByType<LightingManager>();
     }
@@ -288,7 +295,23 @@ public class IntroController : Singleton<IntroController>
     }
 
     // At the table the lamp lights everything; the Lighting Manager limits it to the room during a dungeon.
-    void OnValidate() { if (lamp != null) lamp.color = lampColor; }
+    void OnValidate() => ApplyStyle();
+
+    IntroLook Look => System.Array.Find(looks ?? new IntroLook[0], l => l != null && l.style == style);
+
+    // The chosen style onto the lamp, the eyes, the practice board's light and the class card.
+    public void ApplyStyle()
+    {
+        var look = Look;
+        if (look == null) return;
+        lampColor = look.lamp;
+        if (lamp != null) lamp.color = lampColor;
+        var glow = dmEyes != null ? dmEyes.GetComponent<GlowInDark>() : null;
+        if (glow != null) glow.glow = look.eyes;
+        if (introDungeon != null) introDungeon.boardLightColor = look.boardLight;
+        var figures = TableManager.HasInstance ? TableManager.Instance.GetComponentInChildren<ClassFigures>(true) : FindAnyObjectByType<ClassFigures>(FindObjectsInactive.Include);
+        look.ApplyToCard(figures);
+    }
 
     void LightLamp(float level)
     {

@@ -1,7 +1,9 @@
-"""Paper card art for the floating class card: parchment, hand-inked frame, ribbon banner, insets.
+"""Card art for the floating class card, in the intro's three styles (IntroController.style):
+Warm (parchment, brown ink, red ribbon), Cold (slate card, bone-white ink, teal ribbon) and Dusk
+(grey parchment, slate ink, plum ribbon). Card stock, inked frame, ribbon banner, insets, divider.
 
 Drawn at half the card's UI size (one texel = two UI units) so it sits with the pixel UI kit.
-Run: python -I Tools/paper_card.py Assets/Game/UI/Sprites/Paper
+Run: python -I Tools/paper_card.py Assets/Game/UI/Sprites/Paper Warm|Cold|Dusk
 """
 import sys, os, math, random
 from PIL import Image, ImageDraw, ImageFilter
@@ -9,11 +11,22 @@ import numpy as np
 
 random.seed(4)
 rng = np.random.default_rng(4)
-out = sys.argv[1]
+STYLE = sys.argv[2] if len(sys.argv) > 2 else "Cold"
+out = os.path.join(sys.argv[1], STYLE)
 os.makedirs(out, exist_ok=True)
 
-PAPER = np.array([226, 208, 168], float)
-INK = (62, 40, 24)
+# Per style: card stock, ink, edge browning (r, g, b), stain, fold shadow and light, ribbon (face, tail, fold), inset wash.
+STYLES = {
+    "Warm": dict(paper=(226, 208, 168), ink=(62, 40, 24), edge=(.05, .12, .25), stain=(140, 100, 55, 15), fold=((120, 90, 55), (255, 245, 220)),
+                 ribbon=((150, 46, 34), (96, 28, 22), (74, 20, 16)), wash=(120, 90, 50, 26)),
+    "Cold": dict(paper=(52, 62, 82), ink=(214, 222, 228), edge=(.25, .18, .05), stain=(20, 26, 40, 30), fold=((14, 18, 28), (150, 170, 190)),
+                 ribbon=((38, 128, 132), (24, 84, 90), (14, 54, 60)), wash=(10, 14, 24, 60)),
+    "Dusk": dict(paper=(186, 182, 170), ink=(42, 46, 60), edge=(.12, .14, .12), stain=(80, 78, 90, 18), fold=((70, 70, 80), (230, 228, 220)),
+                 ribbon=((104, 58, 88), (70, 38, 60), (50, 26, 44)), wash=(40, 42, 56, 34)),
+}
+P = STYLES[STYLE]
+PAPER = np.array(P["paper"], float)
+INK = P["ink"]
 
 
 def noise(w, h, scale, octaves=3):
@@ -61,7 +74,7 @@ def paper(w, h, edge_dark=.28):
     shade *= (1 - edge_dark) + edge_dark * vign ** .6
     rgb = PAPER[None, None, :] * shade[..., None]
     # warm the edges toward brown, like old card stock
-    rgb = rgb * (1 - (1 - vign[..., None]) * np.array([.05, .12, .25]))
+    rgb = rgb * (1 - (1 - vign[..., None]) * np.array(P["edge"]))
     return np.clip(rgb, 0, 255)
 
 
@@ -99,12 +112,12 @@ for cx, cy in ((8, 8), (W - 9, 8), (8, H - 9), (W - 9, H - 9)):
 stains = Image.new("RGBA", (W, H), (0, 0, 0, 0)); sd = ImageDraw.Draw(stains)
 for _ in range(4):
     x, y, r = random.randint(24, W - 24), random.randint(24, H - 24), random.uniform(4, 9)
-    sd.ellipse([x - r, y - r, x + r, y + r], fill=(140, 100, 55, random.randint(10, 20)))
+    sd.ellipse([x - r, y - r, x + r, y + r], fill=P["stain"][:3] + (random.randint(P["stain"][3] // 2, P["stain"][3]),))
 img = Image.alpha_composite(img, stains.filter(ImageFilter.GaussianBlur(3))); d = ImageDraw.Draw(img)
 crease = int(H * .52)
 for x in range(14, W - 14):
     a = int(7 + 3 * math.sin(x * .05))
-    d.point((x, crease), fill=(120, 90, 55, a)); d.point((x, crease + 1), fill=(255, 245, 220, a // 3))
+    d.point((x, crease), fill=P["fold"][0] + (a,)); d.point((x, crease + 1), fill=P["fold"][1] + (a // 6,))
 alpha = (deckle_mask(W, H) * 255).astype(np.uint8)
 img.putalpha(Image.fromarray(alpha))
 save(img, "Paper card.png")
@@ -113,7 +126,7 @@ save(img, "Paper card.png")
 BW, BH = 232, 34
 ban = Image.new("RGBA", (BW, BH), (0, 0, 0, 0))
 bd = ImageDraw.Draw(ban)
-red = (150, 46, 34, 255); dark = (96, 28, 22, 255); fold = (74, 20, 16, 255)
+red, dark, fold = (c + (255,) for c in P["ribbon"])
 body = [(16, 4), (BW - 16, 4), (BW - 16, BH - 6), (16, BH - 6)]
 tail_l = [(2, 9), (16, 9), (16, BH - 2), (2, BH - 2), (8, (9 + BH - 2) // 2)]
 tail_r = [(BW - 3, 9), (BW - 17, 9), (BW - 17, BH - 2), (BW - 3, BH - 2), (BW - 9, (9 + BH - 2) // 2)]
@@ -136,7 +149,7 @@ save(ban, "Paper banner.png")
 S = 24
 ins = Image.new("RGBA", (S, S), (0, 0, 0, 0))
 idr = ImageDraw.Draw(ins)
-idr.rectangle([2, 2, S - 3, S - 3], fill=(120, 90, 50, 26))
+idr.rectangle([2, 2, S - 3, S - 3], fill=P["wash"])
 ink_rect(idr, 1, 1, S - 2, S - 2, step=4, fill=INK + (220,), amp=.25)
 ink_rect(idr, 3, 3, S - 4, S - 4, step=4, fill=INK + (90,), amp=.25)
 save(ins, "Paper inset.png")
