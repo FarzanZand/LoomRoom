@@ -18,8 +18,22 @@ public sealed partial class LightingManager
     [Tooltip("Under a room root but not part of the room (the table's own levels).")]
     public Transform[] notRoom = Array.Empty<Transform>();
 
-    [Tooltip("The lamp over the table: lit while a level keeps the room dark (Room Lighting: Dark), on the room's rendering layer only so the miniature keeps its own darkness.")]
+    [Tooltip("The lamp over the table: lit while the room is dark (Room Lighting: Dark). Over a dungeon floor it lights only the room's rendering layer, so the miniature keeps its own darkness. Its colour is the lamp's own.")]
     public Light tableLamp;
+    // Something else is working the lamp (the intro lights and puts it out itself): leave it alone.
+    [System.NonSerialized] public bool lampHeld;
+
+    // The room as it looks now, with a level's (or the intro's) Room Lighting and Room Tint. Board levels
+    // and the intro blend to this; dungeon floors get the same two values through their own mood.
+    public MoodState RoomLook(RoomLighting look, Color tint)
+    {
+        var state = Capture().mood;
+        state.overrideLightGroups = false;
+        state.darkness = 0f;
+        state.roomDark = look == RoomLighting.Dark ? 1f : look == RoomLighting.Dim ? .6f : 0f;
+        state.roomShade = new Color(tint.r, tint.g, tint.b, 1f);
+        return state;
+    }
 
     // Rendering layer added to room renderers; the sun lights only this layer during darkness.
     public const uint RoomLayer = 8;
@@ -139,7 +153,7 @@ public sealed partial class LightingManager
                 r.SetPropertyBlock(roomBlock);
             }
         }
-        if (tableLamp == null) return;
+        if (tableLamp == null || lampHeld) return;
         if (lampBase < 0f) lampBase = tableLamp.intensity;
         float lamp = Mathf.InverseLerp(.7f, 1f, d);
         if (lamp > 0f)
@@ -147,8 +161,8 @@ public sealed partial class LightingManager
             lampDriven = true;
             tableLamp.enabled = true;
             tableLamp.intensity = lampBase * lamp;
-            // Over a dungeon floor's darkness it lights only the room; over a board, everything.
-            FirstPersonLighting.SetLayers(tableLamp, roomHeld ? RoomLayer : uint.MaxValue);
+            // It lights only the room: a dungeon floor keeps its darkness, a board its own light.
+            FirstPersonLighting.SetLayers(tableLamp, RoomLayer);
         }
         else if (lampDriven)
         {

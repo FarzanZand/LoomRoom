@@ -1,43 +1,37 @@
 using System.Collections;
 using System.Linq;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 // When the Dungeon Master speaks. Listens to the game (waking, sitting down, runs starting and ending,
-// a new deepest floor, the looping door, a forgotten figure, idling, the ending) and picks what is
-// said, as DMLine assets (Dialogue/Lines/{Room,Table,Dungeon}). The introduction is a Dialogue Database
-// conversation started by talking to the DM (DungeonMasterSeat). Sits on the Dialogue Manager.
+// the looping door, a forgotten figure, idling, the ending) and says the lines typed here. During a run
+// it says the level's own Dialogue entries (TableLevelData: trigger, chance, lines). The introduction is a
+// Dialogue Database conversation started by talking to the DM (DungeonMasterSeat). Sits on the Dialogue Manager.
 public class DungeonMasterRemarks : MonoBehaviour
 {
     [Header("Room")]
-    [Tooltip("After the opening wake-up.")] public DMLine morning;
-    [Tooltip("After waking, until the player has talked to the DM once.")] public DMLine callOver;
-    [Tooltip("After walking about for a while without sitting down.")] public DMLine idle;
-    [Tooltip("The first time the door loops back into the room.")] public DMLine door;
-    [Tooltip("When the door has looped a few times in one session.")] public DMLine doorAgain;
-    [Tooltip("The first time the player looks at a blank figure on the memorial table.")] public DMLine forgottenFigure;
+    [Tooltip("After the opening wake-up.")] public DungeonMaster.Line morning;
+    [Tooltip("After waking, until the player has talked to the DM once.")] public DungeonMaster.Line callOver;
+    [Tooltip("After walking about for a while without sitting down.")] public DungeonMaster.Line idle;
+    [Tooltip("The first time the door loops back into the room.")] public DungeonMaster.Line door;
+    [Tooltip("When the door has looped a few times in one session.")] public DungeonMaster.Line doorAgain;
+    [Tooltip("The first time the player looks at a blank figure on the memorial table.")] public DungeonMaster.Line forgottenFigure;
     [Min(0), Tooltip("Seconds after waking before the greeting.")] public float greetingDelay = 1.5f;
     [Min(5), Tooltip("Seconds of walking about after waking, without sitting down, before a nudge.")] public float idleSeconds = 75f;
     [Min(2), Tooltip("The door's second remark comes on this many loops in one session.")] public int doorLoopAgainAt = 4;
     [Header("Table")]
-    [Tooltip("Sitting down after a death.")] public DMLine again;
-    [Tooltip("Sitting down after a death deeper than any before.")] public DMLine further;
-    [Tooltip("Sitting down after two deaths to the same enemy. {killer} is its name.")] public DMLine sameKiller;
-    [Tooltip("Sitting down the first time after the ending.")] public DMLine afterTheEnd;
-    [Tooltip("Sitting down after a class was unlocked. Its figure is picked first.")] public DMLine newFigure;
+    [Tooltip("Sitting down after a death.")] public DungeonMaster.Line again;
+    [Tooltip("Sitting down after a death deeper than any before.")] public DungeonMaster.Line further;
+    [Tooltip("Sitting down after two deaths to the same enemy. {killer} is its name.")] public DungeonMaster.Line sameKiller;
+    [Tooltip("Sitting down the first time after the ending.")] public DungeonMaster.Line afterTheEnd;
+    [Tooltip("Sitting down after a class was unlocked. Its figure is picked first.")] public DungeonMaster.Line newFigure;
 
     [Header("Runs")]
-    [Tooltip("Run start, with the class the player has lost most often.")] public DMLine usualPick;
-    [Tooltip("Run start, with a class the player has lost before.")] public DMLine samePick;
-    [Tooltip("Run start, with a class none of the figures has.")] public DMLine newPick;
-    [Tooltip("Once a run, on the first floor deeper than any before.")] public DMLine deeper;
-
-    [Header("During a run (each at most once a run, and never two within Remark Gap)")]
-    [Tooltip("The first enemy killed.")] public DMLine firstKill;
-    [Tooltip("The first backstab.")] public DMLine firstBackstab;
-    [Tooltip("Surviving a hit that leaves you under Close Call of your health.")] public DMLine closeCall;
-    [Range(.05f, .5f)] public float closeCallFraction = .25f;
-    [Tooltip("The first character level gained.")] public DMLine levelUp;
-    [Tooltip("Picking up gear of a higher tier than anything carried.")] public DMLine betterGear;
+    [Tooltip("Run start, with the class the player has lost most often.")] public DungeonMaster.Line usualPick;
+    [Tooltip("Run start, with a class the player has lost before.")] public DungeonMaster.Line samePick;
+    [Tooltip("Run start, with a class none of the figures has.")] public DungeonMaster.Line newPick;
+    [InfoBox("What he says during a run (kills, close calls, new floors, rooms) is set on each level's Dialogue tab.")]
+    [Range(.05f, .5f), Tooltip("Health left, as a fraction, that counts as a close call.")] public float closeCallFraction = .25f;
     [Min(0), Tooltip("Seconds between two run remarks.")] public float remarkGap = 25f;
     [Min(0), Tooltip("Seconds after arriving in the dungeon before a remark.")] public float runRemarkDelay = 1.5f;
 
@@ -48,7 +42,8 @@ public class DungeonMasterRemarks : MonoBehaviour
     AdventurerProgress progress;
     bool died, won, beatRecord, saidDeeper, satThisMorning, nudged;
     int recordAtRunStart, loops;
-    readonly System.Collections.Generic.HashSet<DMLine> saidThisRun = new();
+    readonly System.Collections.Generic.HashSet<DungeonDialogue> saidThisRun = new();
+    int lastRoom = -1;
     float lastRemark = -999f;
     Player tablePlayer;
     float idleTime;
@@ -92,7 +87,7 @@ public class DungeonMasterRemarks : MonoBehaviour
 
     static bool Flag(string key) => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(key);
     static void SetFlag(string key) { if (ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(key); }
-    static void Say(DMLine line) => DungeonMaster.Say(line);
+    static void Say(DungeonMaster.Line line) { if (line != null) DungeonMaster.Say(line); }
     static bool EndingRunning => WorldManager.HasInstance && WorldManager.Instance.ending != null && WorldManager.Instance.ending.Running;
     static bool RoomPlayerFree => PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Room
         && GameManager.HasInstance && GameManager.Instance.State == GameState.Explore;
@@ -121,9 +116,22 @@ public class DungeonMasterRemarks : MonoBehaviour
 
     void Update()
     {
+        WatchRooms();
         if (nudged || satThisMorning || EndingRunning || !RoomPlayerFree) return;
         idleTime += Time.deltaTime;
         if (idleTime > idleSeconds) { nudged = true; Say(idle); }
+    }
+
+    // Walking into a room of the floor plan (EnterRoom entries).
+    void WatchRooms()
+    {
+        if (!RunOn || tablePlayer == null || !TableManager.HasInstance) return;
+        var dungeon = TableManager.Instance.GetComponent<TableLevelLoader>()?.Dungeon;
+        if (dungeon == null || dungeon.Layout == null) return;
+        int room = dungeon.Layout.RoomAt(dungeon.CellOf(tablePlayer.transform.position));
+        if (room == lastRoom || room < 0) return;
+        lastRoom = room;
+        Trigger(DungeonDialogueTrigger.EnterRoom, room);
     }
 
     void OnLooped(Player player)
@@ -193,47 +201,61 @@ public class DungeonMasterRemarks : MonoBehaviour
 
     static bool RunOn => RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;
 
-    // Once a run per line, and spaced out so the DM never chatters.
-    void Remark(DMLine line)
+    // The level's Dialogue entries for this trigger: the first that passes its chance (and has not had
+    // its one go this run) is said. Spaced out so the DM never chatters.
+    void Trigger(DungeonDialogueTrigger trigger, int room = -1, float delay = .6f)
     {
-        if (line == null || !RunOn || IntroController.PracticeRunning || saidThisRun.Contains(line) || Time.time - lastRemark < remarkGap) return;
-        saidThisRun.Add(line); lastRemark = Time.time;
-        DungeonMaster.Say(line.With(line.text), null, .6f);
+        if (!RunOn || IntroController.PracticeRunning || Time.time - lastRemark < remarkGap) return;
+        var entries = RunManager.Instance.Level != null ? RunManager.Instance.Level.dialogue : null;
+        if (entries == null) return;
+        foreach (var entry in entries)
+        {
+            if (entry == null || entry.trigger != trigger || (trigger == DungeonDialogueTrigger.EnterRoom && entry.room != room)) continue;
+            if (entry.oncePerRun && saidThisRun.Contains(entry)) continue;
+            if (Random.value > entry.chance) continue;
+            var line = entry.Pick();
+            if (line == null) continue;
+            saidThisRun.Add(entry); lastRemark = Time.time;
+            DungeonMaster.Say(line, null, delay);
+            return;
+        }
     }
 
     void OnAnyDied(Character c)
     {
-        if (c != null && !(c is Player) && c.GetComponent<EnemyBrain>() != null) Remark(firstKill);
+        if (c != null && !(c is Player) && c.GetComponent<EnemyBrain>() != null) Trigger(DungeonDialogueTrigger.Kill);
     }
 
-    void OnHitLanded(DamageInfo info) { if (info.Backstab && !info.Blocked) Remark(firstBackstab); }
+    void OnHitLanded(DamageInfo info) { if (info.Backstab && !info.Blocked) Trigger(DungeonDialogueTrigger.Backstab); }
 
     void OnPlayerDamaged(DamageInfo info)
     {
         var stats = tablePlayer != null ? tablePlayer.Stats : null;
         if (stats == null || info.Blocked || !tablePlayer.IsAlive || stats.MaxHealth <= 0) return;
-        if (stats.CurrentHealth / stats.MaxHealth < closeCallFraction) Remark(closeCall);
+        if (stats.CurrentHealth / stats.MaxHealth < closeCallFraction) Trigger(DungeonDialogueTrigger.CloseCall);
+        else Trigger(DungeonDialogueTrigger.Hurt);
     }
 
     int levelSeen = 1;
     void OnProgress()
     {
         if (progress == null) return;
-        if (progress.Level > levelSeen && progress.Level >= 2) Remark(levelUp);
+        if (progress.Level > levelSeen && progress.Level >= 2) Trigger(DungeonDialogueTrigger.LevelUp);
         levelSeen = progress.Level;
     }
 
     void OnPickedUp(ItemData item, Player who, int count)
     {
-        if (item == null || who != tablePlayer || item.tier <= 0 || !RunOn) return;
+        if (item == null || who != tablePlayer || !RunOn) return;
         int best = 0;
         foreach (var e in who.Equipment.EquippedItems) if (e != null && e != item) best = Mathf.Max(best, e.tier);
-        if (item.tier > best) Remark(betterGear);
+        if (item.tier > 0 && item.tier > best) Trigger(DungeonDialogueTrigger.BetterGear);
+        else Trigger(DungeonDialogueTrigger.PickUp);
     }
 
     void OnRunStarted()
     {
-        saidThisRun.Clear(); levelSeen = 1;
+        saidThisRun.Clear(); levelSeen = 1; lastRoom = -1;
         lastRemark = Time.time - remarkGap + 8f; // not right on top of the run-start remark
         recordAtRunStart = Record();
         saidDeeper = false;
@@ -259,6 +281,10 @@ public class DungeonMasterRemarks : MonoBehaviour
         int count = memorials.Count(m => m.classId == progress.selectedClass.id);
         int most = memorials.Count == 0 ? 0 : memorials.GroupBy(m => m.classId).Max(g => g.Count());
         SayInDungeon(count == 0 ? newPick : count >= 2 && count == most ? usualPick : samePick);
+        // The level's own opening remark, after the class comment.
+        yield return new WaitForSeconds(runRemarkDelay + .5f);
+        lastRemark = -999f;
+        Trigger(DungeonDialogueTrigger.RunStart, -1, runRemarkDelay);
     }
 
     void OnFlag(string key, int value)
@@ -266,13 +292,13 @@ public class DungeonMasterRemarks : MonoBehaviour
         if (key != DeepestFlag || saidDeeper || recordAtRunStart < 1 || value <= recordAtRunStart) return;
         if (!RunManager.HasInstance || !RunManager.Instance.Running || RunManager.Instance.Ended) return;
         saidDeeper = true;
-        SayInDungeon(deeper);
+        Trigger(DungeonDialogueTrigger.NewDeepestFloor, -1, runRemarkDelay);
     }
 
     // Queued now, while the floor is still being set up: the DM feed holds it through the descent and
     // says it a moment after arrival, ahead of the biome's own entry line.
-    void SayInDungeon(DMLine line)
+    void SayInDungeon(DungeonMaster.Line line)
     {
-        if (line != null) DungeonMaster.Say(line.With(line.text), null, runRemarkDelay);
+        if (line != null && !line.IsEmpty) DungeonMaster.Say(line.With(line.text), null, runRemarkDelay);
     }
 }

@@ -151,8 +151,11 @@ public sealed partial class LightingManager : MonoBehaviour
 
     void Apply()
     {
-        ApplyGroup(sources, brightness, tint);
-        ApplyGroup(sceneSources, sceneBrightness * (1f - RoomDark), sceneTint * RoomTint);
+        // Room Lighting dims the room's lights; without a dungeon floor's darkness (the intro, a board) the
+        // table and skylight group belongs to the room too.
+        float roomLevel = 1f - RoomDark;
+        ApplyGroup(sources, brightness * (roomHeld ? 1f : roomLevel), tint * (roomHeld ? Color.white : RoomTint));
+        ApplyGroup(sceneSources, sceneBrightness * roomLevel, sceneTint * RoomTint);
         if (moodActive) ApplyMood();
         else { HoldRoom(0f); ApplyAmbient(sceneBrightness * ambientMultiplier, sceneTint, overrideFogColor); RestoreSceneFog(); }
         sceneApplied = true;

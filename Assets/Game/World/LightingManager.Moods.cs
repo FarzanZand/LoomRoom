@@ -290,13 +290,13 @@ public sealed partial class LightingManager
             bool held = HeldSky(out var heldSkyTint, out var heldSkyExposure);
             string tintProperty = SkyTintProperty(moodSkybox);
             if (tintProperty != null) moodSkybox.SetColor(tintProperty, held ? heldSkyTint : displayedMood.sky);
-            if (moodSkybox.HasProperty("_Exposure")) moodSkybox.SetFloat("_Exposure", held ? heldSkyExposure : displayedMood.exposure);
+            if (moodSkybox.HasProperty("_Exposure")) moodSkybox.SetFloat("_Exposure", held ? heldSkyExposure : displayedMood.exposure * (1f - RoomDark));
         }
         if (sceneSources != null) foreach (var source in sceneSources)
             if (IsDirectional(source) && !HeldSun(source.light))
             {
-                source.light.color = displayedMood.light * sceneTint;
-                float sun = displayedMood.intensity * sceneBrightness;
+                source.light.color = displayedMood.light * sceneTint * RoomTint;
+                float sun = displayedMood.intensity * sceneBrightness * (1f - RoomDark);
                 source.light.intensity = Mathf.Lerp(sun, Mathf.Min(sun, darkSunIntensity), dark);
             }
         float level = sceneBrightness * ambientMultiplier;

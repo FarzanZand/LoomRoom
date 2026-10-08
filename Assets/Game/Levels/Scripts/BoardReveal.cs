@@ -16,9 +16,8 @@ public class BoardReveal : MonoBehaviour
     public float dropHeight = 1.4f;
     [Tooltip("Seconds a prop or figure takes to stand up once its tile is down.")]
     public float popSeconds = .16f;
-    [Tooltip("A soft light hung over the whole board, like a lamp over a gaming table: every room is lit without torches.")]
-    public float boardLightHeight = 34f, boardLightIntensity = 2600f;
-    public Color boardLightColor = new(1f, .86f, .68f);
+    [Tooltip("Height of the light hung over the board (its colour and strength are on the level's Look tab).")]
+    public float boardLightHeight = 34f;
     [Tooltip("Soft taps as tiles land: one every few tiles, quiet and short.")]
     public AudioClip[] tileTaps = new AudioClip[0];
     [Range(0, 1)] public float tapVolume = .22f;
@@ -84,20 +83,49 @@ public class BoardReveal : MonoBehaviour
         var go = new GameObject("Board light"); go.transform.SetParent(transform, false);
         go.transform.position = transform.position + Vector3.up * boardLightHeight;
         go.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-        var light = go.AddComponent<Light>();
+        var light = boardLight = go.AddComponent<Light>();
         light.type = LightType.Spot;
         light.spotAngle = Mathf.Clamp(2f * Mathf.Atan(half * 1.15f / boardLightHeight) * Mathf.Rad2Deg, 30f, 150f);
         light.innerSpotAngle = light.spotAngle * .55f;
         light.range = boardLightHeight * 2.2f;
-        light.intensity = boardLightIntensity;
-        light.color = boardLightColor;
+        light.intensity = data.boardLightIntensity;
+        light.color = data.boardLightColor;
         light.shadows = LightShadows.Soft;
         FirstPersonLighting.SetLayers(light, uint.MaxValue);
+    }
+
+    Light boardLight;
+    [Tooltip("On a board the player's carried light takes the board light's colour at this share of its strength, so the board's colour reads up close too.")]
+    [Range(0, 1)] public float carriedLight = .5f;
+    Light worldLight;
+    Color worldColor;
+    float worldIntensity;
+
+    // The level's colour and strength, followed live so they can be tried out in Play mode.
+    void Update()
+    {
+        if (boardLight == null || dungeon == null) return;
+        boardLight.color = dungeon.LevelData.boardLightColor;
+        boardLight.intensity = dungeon.LevelData.boardLightIntensity;
+        if (worldLight == null)
+        {
+            // The table player's carried light (its FirstPersonLighting may sit on the camera rig, not under the player).
+            var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+            if (player == null) return;
+            var root = player.transform.parent != null ? player.transform.parent : player.transform;
+            foreach (var lights in FindObjectsByType<FirstPersonLighting>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (lights.worldLight != null && lights.worldLight.transform.IsChildOf(root)) { worldLight = lights.worldLight; break; }
+            if (worldLight == null) return;
+            worldColor = worldLight.color; worldIntensity = worldLight.intensity;
+        }
+        worldLight.color = dungeon.LevelData.boardLightColor;
+        worldLight.intensity = worldIntensity * carriedLight;
     }
 
     void OnDestroy()
     {
         foreach (var (door, _, _) in doors) if (door != null) door.Opened -= OnOpened;
+        if (worldLight != null) { worldLight.color = worldColor; worldLight.intensity = worldIntensity; }
     }
 
     int NearestRegion(Vector3 world)

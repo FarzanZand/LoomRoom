@@ -23,8 +23,6 @@ MonoBehaviour:
   - biome: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
     floors: 17
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
-  multipleLevels: 1
-  levelCount: 20
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   moodLighting: 8
   overrideLighting: 0
@@ -37,11 +35,16 @@ MonoBehaviour:
     ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
     ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
     fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  roomLighting: 0
+  roomTint: {r: 1, g: 1, b: 1, a: 1}
+  boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
+  boardLightIntensity: 2600
   backgroundMusic: {fileID: 8300000, guid: 9b6676d6e31306043b7c187ddb5cd29c, type: 3}
   backgroundMusicVolume: 0.3
   loopMusic: 1
   musicFadeSeconds: 1.5
   fixedSeed: 0
+  startFacingDungeonMaster: 0
   width: 40
   depth: 54
   cellSize: 2
@@ -100,17 +103,31 @@ MonoBehaviour:
     shape: {fileID: 11400000, guid: b83f1b9ea222f1f4690c0e00502d6342, type: 2}
     weight: 0.6
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  authoredMap: 
+  authoredContent: 
+  authoredRooms: []
+  authoredMarkers: []
   doorPrefab: {fileID: 7005205240093728226, guid: 3c6bc2dc79fc2bb42ba380732b33a2f2, type: 3}
   doorPercent: 65
+  boardEdgeMaterial: {fileID: 0}
+  boardGridMaterial: {fileID: 0}
+  boardTileThickness: 0.14
+  boardLayerHeight: 0.32
+  boardMaxRaise: 2
+  boardTileTaps: []
+  architectureTileSize: 3
   twoTileRoomPercent: 25
   threeTileRoomPercent: 0
   twoTileCorridorPercent: 25
   threeTileCorridorPercent: 0
   hideRoof: 0
   hideRoofPercent: 5.9
+  skylightFrame: 0.9
   hideEdges: 0
   hideEdgesPercent: 100
-  architectureTileSize: 3
+  windowSill: 0.55
+  windowLintel: 0.75
+  windowJamb: 0.45
   floorMaterial: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
   wallMaterial: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
   upperWallMaterial: {fileID: 0}
@@ -205,6 +222,8 @@ MonoBehaviour:
     chance: 0.6
     rooms: 12
   chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
+  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
   destructibles:
   - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
     weight: 3
@@ -250,5 +269,63 @@ MonoBehaviour:
   enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
   damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
   messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}
-  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
-  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
+  dialogue:
+  - trigger: 1
+    room: 0
+    chance: 1
+    oncePerRun: 1
+    lines:
+    - One.
+    - That's one.
+    - First blood.
+    inPerson: 0
+  - trigger: 2
+    room: 0
+    chance: 1
+    oncePerRun: 1
+    lines:
+    - From behind. Good.
+    - They never look behind them.
+    inPerson: 0
+  - trigger: 3
+    room: 0
+    chance: 1
+    oncePerRun: 1
+    lines:
+    - Careful.
+    - That was close.
+    - Don't die yet.
+    inPerson: 0
+  - trigger: 4
+    room: 0
+    chance: 1
+    oncePerRun: 1
+    lines:
+    - You're learning.
+    - Better already.
+    inPerson: 0
+  - trigger: 5
+    room: 0
+    chance: 1
+    oncePerRun: 1
+    lines:
+    - That's better than what you had.
+    - Keep that one.
+    inPerson: 0
+  - trigger: 6
+    room: 0
+    chance: 1
+    oncePerRun: 1
+    lines:
+    - You've never been this deep.
+    - Further than ever.
+    inPerson: 0
+  - trigger: 1
+    room: 0
+    chance: 0.08
+    oncePerRun: 0
+    lines:
+    - Another one.
+    - And another.
+    - They keep coming.
+    inPerson: 0

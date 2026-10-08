@@ -7173,30 +7173,80 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d2487d19a3278b47bf823703251d030, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonMasterRemarks
-  morning: {fileID: 11400000, guid: 804add19e5a06334d9854ee744501c80, type: 2}
-  callOver: {fileID: 11400000, guid: c8a4b7898c2d3814d9d628bef23c0db8, type: 2}
-  idle: {fileID: 11400000, guid: ea7b1fb32cbcf584591bd22dc6a9b9e7, type: 2}
-  door: {fileID: 11400000, guid: cdafcfb1c2d5fa94bbba98ff5268d793, type: 2}
-  doorAgain: {fileID: 11400000, guid: 34181fb79fae3c943982cbc30bac369d, type: 2}
-  forgottenFigure: {fileID: 11400000, guid: fbce1e077bc48c84ba906c2fc907f86f, type: 2}
+  morning:
+    text: Morning.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  callOver:
+    text: Over here. Come and talk to me.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  idle:
+    text: Whenever you're ready.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  door:
+    text: It doesn't go anywhere.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  doorAgain:
+    text: It still doesn't go anywhere.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  forgottenFigure:
+    text: You don't remember that one.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   greetingDelay: 1.5
   idleSeconds: 75
   doorLoopAgainAt: 4
-  again: {fileID: 11400000, guid: d52a274a530b4064cb64d74750c8f370, type: 2}
-  further: {fileID: 11400000, guid: 1f39458331ab39a4cb41f69500890703, type: 2}
-  sameKiller: {fileID: 11400000, guid: 685e5c89f7e22b541bf81901e0f3c00b, type: 2}
-  afterTheEnd: {fileID: 11400000, guid: 715e5517bda2dcc4a9b2b3ac8f036535, type: 2}
-  newFigure: {fileID: 11400000, guid: fe11a902df94906409a633454ea23427, type: 2}
-  usualPick: {fileID: 11400000, guid: c493472a43d7bd3449a27e7aae1847b1, type: 2}
-  samePick: {fileID: 11400000, guid: 9372d7e62e668504da30b9d86199b964, type: 2}
-  newPick: {fileID: 11400000, guid: 7f56d24750b250047a339ba706ca41ea, type: 2}
-  deeper: {fileID: 11400000, guid: f54abd8bfaf7c8643a1550db24db2024, type: 2}
-  firstKill: {fileID: 11400000, guid: fd982be430883114ebf82ed23f9240c7, type: 2}
-  firstBackstab: {fileID: 11400000, guid: 19426d2bbca03cb4eb7202119c9519d7, type: 2}
-  closeCall: {fileID: 11400000, guid: a07e3944752b28a4286f0e5fbf5c0692, type: 2}
+  again:
+    text: Again.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  further:
+    text: Further than before.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  sameKiller:
+    text: The {killer} again.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  afterTheEnd:
+    text: Again?
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  newFigure:
+    text: You haven't tried this one.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  usualPick:
+    text: You always pick that one.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  samePick:
+    text: That one again.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  newPick:
+    text: That's new.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
   closeCallFraction: 0.25
-  levelUp: {fileID: 11400000, guid: cf69a66a8d5dcca428d195c36f6d9b9c, type: 2}
-  betterGear: {fileID: 11400000, guid: 15daf3fd9353dee4d92abe2a2f1fa156, type: 2}
   remarkGap: 15
   runRemarkDelay: 1.5
 --- !u!1 &87579320
@@ -42005,7 +42055,11 @@ MonoBehaviour:
   DM: {fileID: 2040675284}
   dmPlacement: {fileID: 1994036524}
   prompt: Play
-  talkFirst: {fileID: 11400000, guid: 1f56c3247e957864396d18112140aa23, type: 2}
+  talkFirst:
+    text: Not yet. Talk to me first.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   sitSeconds: 1.1
   figureViewDistance: 28
   figureZoom: -14
@@ -68154,6 +68208,7 @@ MonoBehaviour:
       roomTint: {r: 0, g: 0, b: 0, a: 0}
       darkness: 0
       roomDark: 0
+      roomShade: {r: 0, g: 0, b: 0, a: 0}
   hasSavedDefault: 0
   baseSkybox: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
   roomRoots:
@@ -104239,56 +104294,117 @@ MonoBehaviour:
   eyeHeight: 0.55
   zoom: -24
   aimBelowHead: 7
-  darkMood: {fileID: 11400000, guid: 02d70f37a894db34483d8ca3b64af905, type: 2}
+  roomLighting: 2
+  roomTint: {r: 1, g: 1, b: 1, a: 1}
   lamp: {fileID: 108572490}
+  lampColor: {r: 1, g: 0.76, b: 0.48, a: 1}
   dmEyes: {fileID: 1997636109}
   lighting: {fileID: 1275394512}
   openingBlack: 2
   openingFade: 3
   beforeLamp:
-  - {fileID: 11400000, guid: 877939f2548dee548b60a3110e7436e7, type: 2}
-  - {fileID: 11400000, guid: 942a625e97b3be1428766e242b237b8e, type: 2}
+  - text: There you are.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: Hold still. I can't find the lamp.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   afterLamp:
-  - {fileID: 11400000, guid: 3cb1badce0cd8d64d9f781d3e02becbc, type: 2}
-  - {fileID: 11400000, guid: 7f2b59ec49df85245ba7c282964129c1, type: 2}
-  - {fileID: 11400000, guid: 19c3fa88cc9426541afbced0b44ef836, type: 2}
-  - {fileID: 11400000, guid: f40db10a62b04474386ef9b67d6b3563, type: 2}
-  - {fileID: 11400000, guid: b6637fbcb08177241af5fca1f166b7dc, type: 2}
+  - text: There.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: Good. You're awake. More or less.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: We're going to play a game. I've been looking forward to it.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: You'll be one small figure. I'll be everything else.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: We'll start you on something small. I don't want to break you on the first
+      night.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   lampSound: {fileID: 0}
   introDungeon: {fileID: 11400000, guid: c645aab0a734a674c819d23a78475cc7, type: 2}
   practiceClass: {fileID: 11400000, guid: 720138e1d8556ba48b73655c9111a72d, type: 2}
-  takeIt: {fileID: 11400000, guid: 0ca28dc50d1261b4caf99e4562d6429b, type: 2}
+  takeIt:
+    text: This one. Pick him up.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   firstStepDelay: 2
   steps:
   - goal: 0
     room: -1
     amount: 6
-    line: {fileID: 11400000, guid: b1fe7a7499c8f4f49badce19f41de764, type: 2}
-    doneLine: {fileID: 0}
+    line:
+      text: You wake on cold stone. It smells of wet rope and rats. Have a look around.
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    doneLine:
+      text: 
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
     hint: Move with {Move}. Look with the mouse.
     hintDelay: 5
     giveUpAfter: 0
   - goal: 1
     room: 1
     amount: 1
-    line: {fileID: 11400000, guid: 504398e93d0d5e444ba8a9b4224d02e9, type: 2}
-    doneLine: {fileID: 11400000, guid: f297ae5ecc8704f4eaaa715a25e691de, type: 2}
+    line:
+      text: Something scratches behind the pillars. A rat. A big one, I've decided.
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    doneLine:
+      text: It didn't like that.
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
     hint: Attack with {PrimaryAction}. Hold it for a heavy swing.
     hintDelay: 6
     giveUpAfter: 0
   - goal: 2
     room: -1
     amount: 1
-    line: {fileID: 11400000, guid: d84f082a5ef2e7745a5610e2f61df7da, type: 2}
-    doneLine: {fileID: 11400000, guid: f27fda321af69be449eca9ec06f7b11a, type: 2}
+    line:
+      text: Finish it. It won't hold a grudge.
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    doneLine:
+      text: One rat fewer. The other rats will hear about this.
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
     hint: 
     hintDelay: 99
     giveUpAfter: 90
   - goal: 3
     room: 2
     amount: 1
-    line: {fileID: 11400000, guid: c5951128445ae474388be4bc75ec0ebd, type: 2}
-    doneLine: {fileID: 11400000, guid: 5f280b3ff88b9314495cdbb14d0f7c2b, type: 2}
+    line:
+      text: A storeroom. Whoever lived here left in a hurry. Help yourself.
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    doneLine:
+      text: Keep it. Your figure holds on to everything until it dies. Then it's
+        mine.
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
     hint: Pick things up with {Interact}. Barrels and crates break. Your bag is on
       {Inventory}.
     hintDelay: 8
@@ -104296,43 +104412,104 @@ MonoBehaviour:
   - goal: 4
     room: 3
     amount: 0.6
-    line: {fileID: 11400000, guid: f2ccb034c3bb7434f958369e9d0c3502, type: 2}
-    doneLine: {fileID: 11400000, guid: e48b50590bcb8f34baff2dc87b9403dd, type: 2}
+    line:
+      text: Something wet is sitting in the next room. A slime. It jumps, so raise
+        your shield.
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    doneLine:
+      text: See? Shields. Nobody ever thinks about shields.
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
     hint: Hold {SecondaryAction} to block.
     hintDelay: 4
     giveUpAfter: 45
   - goal: 2
     room: -1
     amount: 2
-    line: {fileID: 0}
-    doneLine: {fileID: 11400000, guid: ebbb5f8aeecb97d40a945c7b28782e6d, type: 2}
+    line:
+      text: 
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    doneLine:
+      text: Messy. Wipe your boots.
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
     hint: 
     hintDelay: 99
     giveUpAfter: 90
-  idleLine: {fileID: 11400000, guid: 003090b492f08894f971e4148e64a23f, type: 2}
+  idleLine:
+    text: I can wait. I have all night.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
   idleSeconds: 22
-  hurtLine: {fileID: 11400000, guid: ff13bf9d135c590478a35938afe3277b, type: 2}
+  hurtLine:
+    text: Careful. That chips the paint.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
   finaleRoom: 4
-  enough: {fileID: 11400000, guid: 94e37f4aa0cb25e4691a01cc2bbba055, type: 2}
-  killerComing: {fileID: 11400000, guid: ab3664417efdae94e9dd16782695a173, type: 2}
+  enough:
+    text: That's enough practice.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  killerComing:
+    text: Do you hear that? Something is coming up the stairs.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
   killer: {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
   killerHealth: 10
   killerDamage: 3
-  killerLine: {fileID: 11400000, guid: 9c0da7fc5c2a1844ab86e30ebcd3d240, type: 2}
+  killerLine:
+    text: I wasn't going to show you this one yet.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
   killerSeconds: 25
-  timeUp: {fileID: 11400000, guid: fe8cfa08e1d9b3b47bbe37dc6c2b8147, type: 2}
+  timeUp:
+    text: No. That one was always going to die.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
   afterPractice:
-  - {fileID: 11400000, guid: e51b4b62219094b42a9d20b19b8f1c28, type: 2}
-  diedAtEnd: {fileID: 11400000, guid: 6fbe133787ef17341bd1f2ec9b4ba143, type: 2}
-  diedEarly: {fileID: 11400000, guid: baf05db057c501b4abbacc4c0ef3fdec, type: 2}
+  - text: When a figure dies, it stays dead. That's the one rule I never bend.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  diedAtEnd:
+    text: That one's done. I'll put it with the others.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  diedEarly:
+    text: Killed by {killer}. I'll put it with the others anyway.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   goodnight:
-  - {fileID: 11400000, guid: 21b5643fc2eecf24bb85acba3541a808, type: 2}
-  - {fileID: 11400000, guid: b3338711510ce184ebee260d2973275a, type: 2}
+  - text: That's enough for tonight. Tomorrow we play properly.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: Get some sleep.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   lampOutSound: {fileID: 0}
   eyesLinger: 2.5
   nightSeconds: 2
   firstMorning:
-  - {fileID: 11400000, guid: 12edc22e6601e14448e3c817caad3403, type: 2}
+  - text: Morning. The table's ready when you are.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   skipInEditor: 0
 --- !u!1 &1891048602
 GameObject:
@@ -106161,10 +106338,22 @@ MonoBehaviour:
   card: {fileID: 920789317}
   cardPanel: {fileID: 0}
   floatingCard: {fileID: 1930098288}
-  prompt: {fileID: 11400000, guid: f25b09c9ca320104a8353781fe3059a3, type: 2}
-  resumePrompt: {fileID: 11400000, guid: cab9d9fb87586694fb4ee6b2dc45aa4f, type: 2}
+  prompt:
+    text: Pick one.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  resumePrompt:
+    text: Where we left off.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   how: {fileID: 2105669072}
-  taken: {fileID: 11400000, guid: cce9c145eb366f841a23d97003f227a2, type: 2}
+  taken:
+    text: Down you go.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
 --- !u!1 &1931187365 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5362447199542998173, guid: 929d67b1415f69246b0eaa2b5bdc33ec, type: 3}

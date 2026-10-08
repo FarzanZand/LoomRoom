@@ -35,6 +35,9 @@ MonoBehaviour:
     ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
     fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   roomLighting: 2
+  roomTint: {r: 1, g: 1, b: 1, a: 1}
+  boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
+  boardLightIntensity: 2600
   backgroundMusic: {fileID: 8300000, guid: 9b6676d6e31306043b7c187ddb5cd29c, type: 3}
   backgroundMusicVolume: 0.3
   loopMusic: 1
@@ -251,6 +254,7 @@ MonoBehaviour:
   boardTileThickness: 0.14
   boardLayerHeight: 0.32
   boardMaxRaise: 2
+  boardTileTaps: []
   architectureTileSize: 3
   twoTileRoomPercent: 25
   threeTileRoomPercent: 0
@@ -405,3 +409,4 @@ MonoBehaviour:
   enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
   damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
   messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}
+  dialogue: []

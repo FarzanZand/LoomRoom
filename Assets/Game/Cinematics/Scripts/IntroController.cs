@@ -24,10 +24,14 @@ public class IntroController : Singleton<IntroController>
     public float aimBelowHead = 7f;
 
     [Header("Darkness")]
-    [Tooltip("The room while the intro runs: near black, room lights off.")]
-    public SceneMood darkMood;
+    [Tooltip("The room while the intro runs, the same setting a level has: Dark is black but for the lamp.")]
+    public RoomLighting roomLighting = RoomLighting.Dark;
+    [Tooltip("The colour the room's light takes during the intro. White leaves it as it is. The lamp's colour is on the lamp.")]
+    [ColorUsage(false)] public Color roomTint = Color.white;
     [Tooltip("The one lamp over the corner of the table. Off until the Dungeon Master lights it.")]
     public Light lamp;
+    [Tooltip("The lamp's colour (warm yellow, white, red ...). Changes live, also in Play mode. The practice board's own light is on the IntroDungeon level (Look tab).")]
+    [ColorUsage(false)] public Color lampColor = new(1f, .76f, .48f);
     [Tooltip("The Dungeon Master's eyes (GlowInDark: they show only while he sits in the dark). Closed for the night at the end of the intro.")]
     public GameObject dmEyes;
     public LightingManager lighting;
@@ -97,7 +101,7 @@ public class IntroController : Singleton<IntroController>
     protected override void Awake()
     {
         base.Awake();
-        if (lamp != null) { lampIntensity = lamp.intensity; lamp.enabled = false; }
+        if (lamp != null) { lampIntensity = lamp.intensity; lamp.enabled = false; lamp.color = lampColor; }
         if (lighting == null) lighting = FindAnyObjectByType<LightingManager>();
     }
 
@@ -224,6 +228,7 @@ public class IntroController : Singleton<IntroController>
         if (lamp != null) lamp.enabled = false;
         // Open again for good: they only glow when he is in the dark.
         if (dmEyes != null) dmEyes.SetActive(true);
+        if (lighting != null) lighting.lampHeld = false;
         if (lighting != null && roomLight.HasValue) lighting.Restore(roomLight.Value, 0f);
         roomLight = null;
         if (room != null && room.Look != null) room.Look.HeightOverride = null;
@@ -235,7 +240,8 @@ public class IntroController : Singleton<IntroController>
         if (lighting != null)
         {
             roomLight ??= lighting.Capture();
-            if (darkMood != null) lighting.BlendToMood(darkMood, 0f);
+            lighting.lampHeld = true;
+            lighting.BlendToMood(lighting.RoomLook(roomLighting, roomTint), 0f);
         }
         if (dmEyes != null) dmEyes.SetActive(true);
         Sit();
@@ -282,9 +288,12 @@ public class IntroController : Singleton<IntroController>
     }
 
     // At the table the lamp lights everything; the Lighting Manager limits it to the room during a dungeon.
+    void OnValidate() { if (lamp != null) lamp.color = lampColor; }
+
     void LightLamp(float level)
     {
         if (lamp == null) return;
+        lamp.color = lampColor;
         lamp.enabled = level > 0f;
         lamp.intensity = lampIntensity * level;
         FirstPersonLighting.SetLayers(lamp, uint.MaxValue);
@@ -318,6 +327,8 @@ public class IntroController : Singleton<IntroController>
 
     IEnumerator Teach()
     {
+        // On the board the lamp lights only the room around it; the board has its own light (its colour is the level's).
+        if (lamp != null) FirstPersonLighting.SetLayers(lamp, LightingManager.RoomLayer);
         walked = guarded = 0f; hits = kills = pickups = 0; finale = false; fromStairs = false;
         stillFor = 0f; saidIdle = saidHurt = endedByFinale = false;
         Listen();
@@ -438,8 +449,10 @@ public class IntroController : Singleton<IntroController>
     {
         if (killer == null || loader.Dungeon == null) return null;
         // Up the stairs, when the player has come to them.
-        if (fromStairs && NavMesh.SamplePosition(loader.Dungeon.ExitPoint, out var stairs, 3f, NavMesh.AllAreas))
-            return Configure(Instantiate(killer, stairs.position, Quaternion.LookRotation(Vector3.ProjectOnPlane(table.transform.position - stairs.position, Vector3.up).sqrMagnitude > .001f ? Vector3.ProjectOnPlane(table.transform.position - stairs.position, Vector3.up) : Vector3.forward), loader.Dungeon.transform));
+        // Up the stairs, when the player has come to them: out of the stairwell's mouth, not inside its stone
+        // housing (a board's exit is a solid stairwell, and the exit point is its middle).
+        if (fromStairs && StairsMouth(out var stairs))
+            return Configure(Instantiate(killer, stairs, Quaternion.LookRotation(Vector3.ProjectOnPlane(table.transform.position - stairs, Vector3.up).sqrMagnitude > .001f ? Vector3.ProjectOnPlane(table.transform.position - stairs, Vector3.up) : Vector3.forward), loader.Dungeon.transform));
         var view = table.Look != null ? table.Look.YawTransform.forward : table.transform.forward;
         view.y = 0f; view.Normalize();
         // Behind the player if there is floor there in plain sight, otherwise to a side, otherwise ahead.
@@ -457,6 +470,25 @@ public class IntroController : Singleton<IntroController>
             }
         if (!found && NavMesh.SamplePosition(table.transform.position, out var near, 2f, NavMesh.AllAreas)) at = near.position;
         return Configure(Instantiate(killer, at, Quaternion.LookRotation(Vector3.ProjectOnPlane(table.transform.position - at, Vector3.up).sqrMagnitude > .001f ? Vector3.ProjectOnPlane(table.transform.position - at, Vector3.up) : Vector3.forward), loader.Dungeon.transform));
+    }
+
+    // Floor just outside the exit stairwell's opening (its local -z), clear of the stonework.
+    bool StairsMouth(out Vector3 at)
+    {
+        at = loader.Dungeon.ExitPoint;
+        DungeonExit exit = null;
+        foreach (var e in loader.Dungeon.GetComponentsInChildren<DungeonExit>(true)) if (!e.entrance) { exit = e; break; }
+        var mouth = exit != null ? exit.transform.position - exit.transform.forward * 1.6f : at;
+        foreach (var distance in new[] { 0f, .6f, 1.2f })
+        {
+            var probe = mouth - (exit != null ? exit.transform.forward : Vector3.zero) * distance;
+            if (!NavMesh.SamplePosition(probe, out var hit, 1f, NavMesh.AllAreas)) continue;
+            // Not inside anything solid.
+            if (Physics.CheckCapsule(hit.position + Vector3.up * .5f, hit.position + Vector3.up * 1.4f, .3f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            at = hit.position;
+            return true;
+        }
+        return false;
     }
 
     Character Configure(GameObject go)

@@ -14,7 +14,7 @@ public class TableLevelData : ScriptableObject
     // Inspector layout only. Field names are unchanged: level assets keep their data.
     const string Tabs = "Tabs";
     const string Run = "Run", Look = "Look & Sound", Layout = "Layout", Architecture = "Architecture", Rooms = "Rooms",
-                 Loot = "Loot & Shop", Hud = "HUD";
+                 Loot = "Loot & Shop", Hud = "HUD", Dialogue = "Dialogue";
     const string D = nameof(IsDungeon);
     // Dungeons and board-game dungeons: everything a run needs.
     public bool IsDungeon => kind != TableLevelKind.Town;
@@ -84,6 +84,9 @@ public class TableLevelData : ScriptableObject
     public RoomLighting roomLighting;
     [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), Tooltip("The colour the room's light takes while this level is played: dark yellow, cold blue ... White leaves it as it is.")]
     [ColorUsage(false)] public Color roomTint = Color.white;
+    [TabGroup(Tabs, Look), ShowIf(nameof(IsBoard)), Tooltip("The light hung over a board level, like a lamp over a gaming table: it lights every room.")]
+    [ColorUsage(false)] public Color boardLightColor = new Color(1f, .86f, .68f);
+    [TabGroup(Tabs, Look), ShowIf(nameof(IsBoard)), Min(0)] public float boardLightIntensity = 2600f;
     [TabGroup(Tabs, Look), InfoBox("Dungeon lighting is set on each biome (its Look tab).", VisibleIf = nameof(HasBiomes)), Title("Music", HorizontalLine = false)]
     public AudioClip backgroundMusic;
     [TabGroup(Tabs, Look), Range(0f, 1f), LabelText("Volume"), Tooltip("BGM volume for this level: 0 is silent, 1 is full volume. Still respects the AudioManager Music and Master mixer settings. Reload the level to apply changes.")]
@@ -300,6 +303,10 @@ public class TableLevelData : ScriptableObject
     [TabGroup(Tabs, Hud), ShowIf(D)]
     public TMPro.TMP_Text messagePrefab;
 
+    // ── Dialogue ──────────────────────────────────────────────────────
+    [TabGroup(Tabs, Dialogue), ShowIf(D), ListDrawerSettings(ShowFoldout = true), Tooltip("What the Dungeon Master says during a run here: a trigger, a chance, and lines to pick from. Never two within the remark gap set on the Dialogue Manager.")]
+    public DungeonDialogue[] dialogue = new DungeonDialogue[0];
+
     // ── Queries ───────────────────────────────────────────────────────
 
     public DungeonBiome Biome(int floor) => BiomeAt(floor, out _, out _);
@@ -338,15 +345,7 @@ public class TableLevelData : ScriptableObject
     float RoomDarkness => roomLighting == RoomLighting.Dark ? 1f : roomLighting == RoomLighting.Dim ? .6f : 0f;
 
     // A board lies under the room's own light: the room as it is now, with this level's Room Lighting and tint.
-    public LightingManager.MoodState BoardLighting(LightingManager lighting)
-    {
-        var state = lighting.Capture().mood;
-        state.overrideLightGroups = false;
-        state.darkness = 0f;
-        state.roomDark = RoomDarkness;
-        state.roomShade = new Color(roomTint.r, roomTint.g, roomTint.b, 1f);
-        return state;
-    }
+    public LightingManager.MoodState BoardLighting(LightingManager lighting) => lighting.RoomLook(roomLighting, roomTint);
 
     LightingManager.MoodState DungeonLightingPreset(int floorNumber)
     {
