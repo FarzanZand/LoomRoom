@@ -42,15 +42,15 @@ MonoBehaviour:
   loopMusic: 1
   musicFadeSeconds: 1.5
   fixedSeed: 1211
-  startFacingDungeonMaster: 1
-  width: 26
+  startFacingDungeonMaster: 0
+  width: 30
   depth: 32
   cellSize: 2
   roomCount: 5
   largeRoomPercent: 10
   largeRoomScale: 1.6
   loopPercent: 15
-  layoutMode: 1
+  layoutMode: 2
   roomSize: {x: 4, y: 9}
   roomSpacing: {x: 1, y: 4}
   corridorWander: 1.2
@@ -101,6 +101,135 @@ MonoBehaviour:
     shape: {fileID: 11400000, guid: b83f1b9ea222f1f4690c0e00502d6342, type: 2}
     weight: 0.6
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  authoredMap: '##############################
+
+    ##############################
+
+    ###########222222222###333333#
+
+    ###########222222222###333333#
+
+    ###########222222222..+333333#
+
+    ###########222222222###333333#
+
+    ###########222222222###333333#
+
+    ###############+#######333333#
+
+    ###############.#######333333#
+
+    ###############.#########.####
+
+    ###############.#########.####
+
+    ###############.#########.####
+
+    ##0000000###1111111######.####
+
+    ##0000000###1111111######.####
+
+    ##0000000###11#1#11######...##
+
+    ##0000000+..1111111######.####
+
+    ##0000000###11#1#11######.####
+
+    ##0000000###1111111######.####
+
+    ##0000000###1111111######.####
+
+    #########################+####
+
+    ####################444444444#
+
+    ####################444444444#
+
+    ####################44#444#44#
+
+    ####################444444444#
+
+    ####################444444444#
+
+    ####################444444444#
+
+    ####################44#444#44#
+
+    ####################444444444#
+
+    ####################444444444#
+
+    ##############################
+
+    ##############################
+
+    ##############################'
+  authoredContent: "\r\n\r\n            b     k\r\n            b\r\n              
+    p\r\n                          s\r\n                   b\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n                          
+    f\r\n                 r\r\n\r\n\r\n\r\n\r\n\r\n                     x     x\r\n\r\n\r\n\r\n\r\n\r\n                          
+    x\r\n\r\n\r\n\r\n"
+  authoredRooms:
+  - label: Landing
+    role: 0
+    template: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+    turns: 3
+    height: 0
+  - label: Rat den
+    role: 1
+    template: {fileID: 0}
+    turns: 0
+    height: 0
+  - label: Storeroom
+    role: 4
+    template: {fileID: 0}
+    turns: 0
+    height: 0
+  - label: Guard room
+    role: 1
+    template: {fileID: 0}
+    turns: 0
+    height: 0
+  - label: Stair hall
+    role: 5
+    template: {fileID: 0}
+    turns: 0
+    height: 0
+  authoredMarkers:
+  - key: r
+    prefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
+    item: {fileID: 0}
+    count: 1
+    loot: {fileID: 0}
+  - key: s
+    prefab: {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
+    item: {fileID: 0}
+    count: 1
+    loot: {fileID: 0}
+  - key: b
+    prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+    item: {fileID: 0}
+    count: 1
+    loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
+  - key: k
+    prefab: {fileID: 3676609536429769752, guid: 74294ce93f890d0479859cebe2ea259e, type: 3}
+    item: {fileID: 0}
+    count: 1
+    loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
+  - key: p
+    prefab: {fileID: 0}
+    item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
+    count: 1
+    loot: {fileID: 0}
+  - key: f
+    prefab: {fileID: 0}
+    item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
+    count: 1
+    loot: {fileID: 0}
+  - key: x
+    prefab: {fileID: 7876819902557966450, guid: 0f1c9129ac0b5794d9e7f9e886679e98, type: 3}
+    item: {fileID: 0}
+    count: 1
+    loot: {fileID: 0}
   doorPrefab: {fileID: 7005205240093728226, guid: 3c6bc2dc79fc2bb42ba380732b33a2f2, type: 3}
   doorPercent: 65
   twoTileRoomPercent: 25

@@ -28,7 +28,7 @@ public class IntroController : Singleton<IntroController>
     public SceneMood darkMood;
     [Tooltip("The one lamp over the corner of the table. Off until the Dungeon Master lights it.")]
     public Light lamp;
-    [Tooltip("The Dungeon Master's eyes, shown while the room is dark.")]
+    [Tooltip("The Dungeon Master's eyes (GlowInDark: they show only while he sits in the dark). Closed for the night at the end of the intro.")]
     public GameObject dmEyes;
     public LightingManager lighting;
     [Min(0)] public float openingBlack = 2f;
@@ -47,9 +47,15 @@ public class IntroController : Singleton<IntroController>
     [Tooltip("Said once the practice figure is down.")] public DMLine takeIt;
     [Min(0), Tooltip("Seconds after arriving before the first step.")] public float firstStepDelay = 2f;
     public TutorialStep[] steps = new TutorialStep[0];
+    [Tooltip("Said once if the player stands still for Idle Seconds during the practice.")] public DMLine idleLine;
+    [Min(5)] public float idleSeconds = 22f;
+    [Tooltip("Said the first time the practice figure gets hurt.")] public DMLine hurtLine;
 
     [Header("The end of the practice")]
+    [Tooltip("Walking into this room (its number on the floor plan) ends the practice: the killer comes up the stairs. -1: after the last step.")]
+    public int finaleRoom = -1;
     [Tooltip("Said when the steps are done, before the killer arrives.")] public DMLine enough;
+    [Tooltip("Said before the killer appears.")] public DMLine killerComing;
     [Tooltip("Enemy that ends the practice. It comes up behind the player.")] public GameObject killer;
     [Min(1)] public float killerHealth = 10f;
     [Min(1)] public float killerDamage = 3f;
@@ -60,6 +66,8 @@ public class IntroController : Singleton<IntroController>
 
     [Header("Back at the table")]
     [Tooltip("After the practice death, with the lamp still on.")] public DMLine[] afterPractice = new DMLine[0];
+    [Tooltip("Said first when the killer did it.")] public DMLine diedAtEnd;
+    [Tooltip("Said first instead when something else killed the figure before the end. {killer} is its name.")] public DMLine diedEarly;
     [Tooltip("The last words before he puts the lamp out.")] public DMLine[] goodnight = new DMLine[0];
     [Tooltip("Played when the lamp goes out.")] public AudioClip lampOutSound;
     [Min(0), Tooltip("Seconds of darkness with only his eyes before they close.")] public float eyesLinger = 2.5f;
@@ -90,7 +98,6 @@ public class IntroController : Singleton<IntroController>
     {
         base.Awake();
         if (lamp != null) { lampIntensity = lamp.intensity; lamp.enabled = false; }
-        if (dmEyes != null) dmEyes.SetActive(false);
         if (lighting == null) lighting = FindAnyObjectByType<LightingManager>();
     }
 
@@ -151,6 +158,16 @@ public class IntroController : Singleton<IntroController>
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeOut(1.5f, .8f);
         yield return new WaitForSeconds(2.3f);
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(IntroFlag);
+        // Killed by the rat or the slime before the end: that is remarked on first.
+        if (endedByFinale) yield return SayAll(new[] { diedAtEnd });
+        else if (diedEarly != null)
+        {
+            string killer = RunManager.HasInstance && !string.IsNullOrEmpty(RunManager.Instance.Killer) ? RunManager.Instance.Killer : "the dungeon";
+            if (!killer.StartsWith("the ") && !killer.StartsWith("a ")) killer = ("aeiouAEIOU".IndexOf(killer[0]) >= 0 ? "an " : "a ") + killer.ToLower();
+            DungeonMaster.Say(diedEarly.With(diedEarly.text.Replace("{killer}", killer)));
+            yield return null;
+            while (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking) yield return null;
+        }
         yield return SayAll(afterPractice);
         yield return new WaitForSeconds(.6f);
         yield return SayAll(goodnight);
@@ -205,7 +222,8 @@ public class IntroController : Singleton<IntroController>
             ProgressionManager.Instance.SetFlag(RoomOpenFlag);
         }
         if (lamp != null) lamp.enabled = false;
-        if (dmEyes != null) dmEyes.SetActive(false);
+        // Open again for good: they only glow when he is in the dark.
+        if (dmEyes != null) dmEyes.SetActive(true);
         if (lighting != null && roomLight.HasValue) lighting.Restore(roomLight.Value, 0f);
         roomLight = null;
         if (room != null && room.Look != null) room.Look.HeightOverride = null;
@@ -295,40 +313,72 @@ public class IntroController : Singleton<IntroController>
     {
         if (!running || !PracticeRunning) return;
         StopAllCoroutines();
-        StartCoroutine(Teach());
+        teaching = StartCoroutine(Teach());
     }
 
     IEnumerator Teach()
     {
-        walked = guarded = 0f; hits = kills = pickups = 0; finale = false;
+        walked = guarded = 0f; hits = kills = pickups = 0; finale = false; fromStairs = false;
+        stillFor = 0f; saidIdle = saidHurt = endedByFinale = false;
         Listen();
         while (loader.Busy) yield return null;
         yield return new WaitForSeconds(firstStepDelay);
         Vector3 last = table.transform.position;
+        if (finaleRoom >= 0) StartCoroutine(WatchFinaleRoom());
         foreach (var step in steps)
         {
             if (step == null || Met(step)) continue;
+            while (step.room >= 0 && PlayerRoom() != step.room)
+            {
+                if (!PracticeRunning || !table.IsAlive) yield break;
+                Track(ref last);
+                yield return null;
+            }
+            if (Met(step)) continue;
             yield return SayAll(new[] { step.line });
             var hint = Hint(step.hint);
-            if (!string.IsNullOrEmpty(hint)) MessageLog.Post(hint, MessageKind.Info);
+            bool hinted = string.IsNullOrEmpty(hint);
             float started = Time.time;
             while (!Met(step) && (step.giveUpAfter <= 0f || Time.time - started < step.giveUpAfter))
             {
                 if (!PracticeRunning || !table.IsAlive) yield break;
                 Track(ref last);
+                // The controls only if the player has not worked it out.
+                if (!hinted && Time.time - started >= step.hintDelay) { hinted = true; MessageLog.Post(hint, MessageKind.Info); }
                 if (step.goal == TutorialGoal.Wait && Time.time - started >= step.amount) break;
                 yield return null;
             }
+            if (Met(step) && step.doneLine != null) yield return SayAll(new[] { step.doneLine });
         }
         yield return Finale();
     }
 
-    bool finale;
+    bool finale, fromStairs;
+    Coroutine teaching;
+
+    // The player's room on the floor plan, -1 in a passage.
+    int PlayerRoom()
+    {
+        var dungeon = loader != null ? loader.Dungeon : null;
+        return dungeon != null && dungeon.Layout != null ? dungeon.Layout.RoomAt(dungeon.CellOf(table.transform.position)) : -1;
+    }
+
+    // Reaching the finale room ends the lessons wherever they are.
+    IEnumerator WatchFinaleRoom()
+    {
+        while (PracticeRunning && !finale)
+        {
+            if (PlayerRoom() == finaleRoom) { fromStairs = true; if (teaching != null) StopCoroutine(teaching); StartCoroutine(Finale()); yield break; }
+            yield return null;
+        }
+    }
 
     IEnumerator Finale()
     {
-        finale = true;
+        finale = true; endedByFinale = true;
         yield return SayAll(new[] { enough });
+        yield return new WaitForSeconds(.6f);
+        yield return SayAll(new[] { killerComing });
         yield return EndPractice();
     }
 
@@ -337,14 +387,21 @@ public class IntroController : Singleton<IntroController>
     public bool StairsReached()
     {
         if (!running || !PracticeRunning) return false;
-        if (!finale) { StopAllCoroutines(); StartCoroutine(Finale()); }
+        if (!finale) { fromStairs = true; StopAllCoroutines(); StartCoroutine(Finale()); }
         return true;
     }
+
+    float stillFor;
+    bool saidIdle, saidHurt, endedByFinale;
 
     void Track(ref Vector3 last)
     {
         var p = table.transform.position;
-        walked += Vector3.Distance(new Vector3(p.x, 0f, p.z), new Vector3(last.x, 0f, last.z));
+        float moved = Vector3.Distance(new Vector3(p.x, 0f, p.z), new Vector3(last.x, 0f, last.z));
+        walked += moved;
+        // Standing about: one remark, once.
+        stillFor = moved > .001f ? 0f : stillFor + Time.deltaTime;
+        if (!saidIdle && idleLine != null && stillFor > idleSeconds && !DungeonMaster.Instance.Speaking) { saidIdle = true; DungeonMaster.Say(idleLine); }
         last = p;
         if (table.Combat != null && table.Combat.IsGuarding) guarded += Time.deltaTime;
     }
@@ -380,6 +437,9 @@ public class IntroController : Singleton<IntroController>
     Character SpawnKiller()
     {
         if (killer == null || loader.Dungeon == null) return null;
+        // Up the stairs, when the player has come to them.
+        if (fromStairs && NavMesh.SamplePosition(loader.Dungeon.ExitPoint, out var stairs, 3f, NavMesh.AllAreas))
+            return Configure(Instantiate(killer, stairs.position, Quaternion.LookRotation(Vector3.ProjectOnPlane(table.transform.position - stairs.position, Vector3.up).sqrMagnitude > .001f ? Vector3.ProjectOnPlane(table.transform.position - stairs.position, Vector3.up) : Vector3.forward), loader.Dungeon.transform));
         var view = table.Look != null ? table.Look.YawTransform.forward : table.transform.forward;
         view.y = 0f; view.Normalize();
         // Behind the player if there is floor there in plain sight, otherwise to a side, otherwise ahead.
@@ -396,7 +456,11 @@ public class IntroController : Singleton<IntroController>
                 at = hit.position; found = true; break;
             }
         if (!found && NavMesh.SamplePosition(table.transform.position, out var near, 2f, NavMesh.AllAreas)) at = near.position;
-        var go = Instantiate(killer, at, Quaternion.LookRotation(Vector3.ProjectOnPlane(table.transform.position - at, Vector3.up).sqrMagnitude > .001f ? Vector3.ProjectOnPlane(table.transform.position - at, Vector3.up) : Vector3.forward), loader.Dungeon.transform);
+        return Configure(Instantiate(killer, at, Quaternion.LookRotation(Vector3.ProjectOnPlane(table.transform.position - at, Vector3.up).sqrMagnitude > .001f ? Vector3.ProjectOnPlane(table.transform.position - at, Vector3.up) : Vector3.forward), loader.Dungeon.transform));
+    }
+
+    Character Configure(GameObject go)
+    {
         var character = go.GetComponent<Character>();
         if (character != null && character.Stats != null)
         {
@@ -441,6 +505,7 @@ public class IntroController : Singleton<IntroController>
         if (listening || table == null) return;
         listening = true;
         table.HitLanded += OnHit;
+        table.Damaged += OnHurt;
         Character.AnyDied += OnAnyDied;
         if (InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp += OnPickedUp;
     }
@@ -449,12 +514,17 @@ public class IntroController : Singleton<IntroController>
     {
         if (!listening) return;
         listening = false;
-        if (table != null) table.HitLanded -= OnHit;
+        if (table != null) { table.HitLanded -= OnHit; table.Damaged -= OnHurt; }
         Character.AnyDied -= OnAnyDied;
         if (InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp -= OnPickedUp;
     }
 
     void OnHit(DamageInfo info) { if (!info.FromEffect) hits++; }
+    void OnHurt(DamageInfo info)
+    {
+        if (saidHurt || finale || hurtLine == null || info.Amount <= 0f || info.Blocked || !table.IsAlive) return;
+        saidHurt = true; DungeonMaster.Say(hurtLine);
+    }
     void OnAnyDied(Character c) { if (c != null && !(c is Player) && c.GetComponent<EnemyBrain>() != null) kills++; }
     void OnPickedUp(ItemData item, Player who, int count) { if (who == table) pickups++; }
 

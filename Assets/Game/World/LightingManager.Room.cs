@@ -109,6 +109,14 @@ public sealed partial class LightingManager
         return false;
     }
 
+    // The ambient a renderer is lit by now: the held room light (scaled by Room Lighting) for room
+    // renderers while a dungeon floor is dark, otherwise the scene's.
+    public SphericalHarmonicsL2 AmbientFor(Renderer r)
+    {
+        if (roomHeld && r != null && r.lightProbeUsage == LightProbeUsage.CustomProvided) return heldProbe * (1f - RoomDark);
+        return RenderSettings.ambientProbe;
+    }
+
     // The held room light scaled down by the level's Room Lighting, and the table lamp for a dark room.
     void ApplyRoomDark()
     {

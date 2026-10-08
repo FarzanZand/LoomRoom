@@ -104249,50 +104249,82 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 877939f2548dee548b60a3110e7436e7, type: 2}
   - {fileID: 11400000, guid: 942a625e97b3be1428766e242b237b8e, type: 2}
   afterLamp:
-  - {fileID: 11400000, guid: 14a61649bb3a18b4e8edcac30624e9e0, type: 2}
-  - {fileID: 11400000, guid: 67c06cf8b4f98684b996ec9ee8b1eedd, type: 2}
-  - {fileID: 11400000, guid: e6b5ab1e5eebfb743ac452415ff96607, type: 2}
+  - {fileID: 11400000, guid: 3cb1badce0cd8d64d9f781d3e02becbc, type: 2}
+  - {fileID: 11400000, guid: 7f2b59ec49df85245ba7c282964129c1, type: 2}
+  - {fileID: 11400000, guid: 19c3fa88cc9426541afbced0b44ef836, type: 2}
+  - {fileID: 11400000, guid: f40db10a62b04474386ef9b67d6b3563, type: 2}
+  - {fileID: 11400000, guid: b6637fbcb08177241af5fca1f166b7dc, type: 2}
   lampSound: {fileID: 0}
   introDungeon: {fileID: 11400000, guid: c645aab0a734a674c819d23a78475cc7, type: 2}
   practiceClass: {fileID: 11400000, guid: 720138e1d8556ba48b73655c9111a72d, type: 2}
-  takeIt: {fileID: 11400000, guid: 89f645d6d50a5e84092b1fb24d8293be, type: 2}
+  takeIt: {fileID: 11400000, guid: 0ca28dc50d1261b4caf99e4562d6429b, type: 2}
   firstStepDelay: 2
   steps:
   - goal: 0
-    amount: 8
-    line: {fileID: 11400000, guid: a1e4f09c66e00534fb9e8a0b74fa5c9f, type: 2}
+    room: -1
+    amount: 6
+    line: {fileID: 11400000, guid: b1fe7a7499c8f4f49badce19f41de764, type: 2}
+    doneLine: {fileID: 0}
     hint: Move with {Move}. Look with the mouse.
+    hintDelay: 5
     giveUpAfter: 0
   - goal: 1
+    room: 1
     amount: 1
-    line: {fileID: 11400000, guid: f113ef416e76ef24ba2177880ac61b68, type: 2}
+    line: {fileID: 11400000, guid: 504398e93d0d5e444ba8a9b4224d02e9, type: 2}
+    doneLine: {fileID: 11400000, guid: f297ae5ecc8704f4eaaa715a25e691de, type: 2}
     hint: Attack with {PrimaryAction}. Hold it for a heavy swing.
-    giveUpAfter: 150
-  - goal: 4
-    amount: 0.6
-    line: {fileID: 11400000, guid: e5413e9a8e60d544ca2711596b5be22a, type: 2}
-    hint: Hold {SecondaryAction} to block.
-    giveUpAfter: 40
+    hintDelay: 6
+    giveUpAfter: 0
   - goal: 2
+    room: -1
     amount: 1
-    line: {fileID: 11400000, guid: c996ba8e943f09e48a09158d6807ac33, type: 2}
+    line: {fileID: 11400000, guid: d84f082a5ef2e7745a5610e2f61df7da, type: 2}
+    doneLine: {fileID: 11400000, guid: f27fda321af69be449eca9ec06f7b11a, type: 2}
     hint: 
-    giveUpAfter: 120
+    hintDelay: 99
+    giveUpAfter: 90
   - goal: 3
+    room: 2
     amount: 1
-    line: {fileID: 11400000, guid: d20d71a22ee440541a3b567297eaa9e7, type: 2}
-    hint: Pick things up with {Interact}. Open your bag with {Inventory}.
+    line: {fileID: 11400000, guid: c5951128445ae474388be4bc75ec0ebd, type: 2}
+    doneLine: {fileID: 11400000, guid: 5f280b3ff88b9314495cdbb14d0f7c2b, type: 2}
+    hint: Pick things up with {Interact}. Barrels and crates break. Your bag is on
+      {Inventory}.
+    hintDelay: 8
     giveUpAfter: 60
+  - goal: 4
+    room: 3
+    amount: 0.6
+    line: {fileID: 11400000, guid: f2ccb034c3bb7434f958369e9d0c3502, type: 2}
+    doneLine: {fileID: 11400000, guid: e48b50590bcb8f34baff2dc87b9403dd, type: 2}
+    hint: Hold {SecondaryAction} to block.
+    hintDelay: 4
+    giveUpAfter: 45
+  - goal: 2
+    room: -1
+    amount: 2
+    line: {fileID: 0}
+    doneLine: {fileID: 11400000, guid: ebbb5f8aeecb97d40a945c7b28782e6d, type: 2}
+    hint: 
+    hintDelay: 99
+    giveUpAfter: 90
+  idleLine: {fileID: 11400000, guid: 003090b492f08894f971e4148e64a23f, type: 2}
+  idleSeconds: 22
+  hurtLine: {fileID: 11400000, guid: ff13bf9d135c590478a35938afe3277b, type: 2}
+  finaleRoom: 4
   enough: {fileID: 11400000, guid: 94e37f4aa0cb25e4691a01cc2bbba055, type: 2}
+  killerComing: {fileID: 11400000, guid: ab3664417efdae94e9dd16782695a173, type: 2}
   killer: {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
   killerHealth: 10
   killerDamage: 3
-  killerLine: {fileID: 11400000, guid: 740686e6e1df188418495f5d4d8e29e1, type: 2}
+  killerLine: {fileID: 11400000, guid: 9c0da7fc5c2a1844ab86e30ebcd3d240, type: 2}
   killerSeconds: 25
-  timeUp: {fileID: 11400000, guid: 19904cd7530fd544b839095920196965, type: 2}
+  timeUp: {fileID: 11400000, guid: fe8cfa08e1d9b3b47bbe37dc6c2b8147, type: 2}
   afterPractice:
-  - {fileID: 11400000, guid: 6fbe133787ef17341bd1f2ec9b4ba143, type: 2}
   - {fileID: 11400000, guid: e51b4b62219094b42a9d20b19b8f1c28, type: 2}
+  diedAtEnd: {fileID: 11400000, guid: 6fbe133787ef17341bd1f2ec9b4ba143, type: 2}
+  diedEarly: {fileID: 11400000, guid: baf05db057c501b4abbacc4c0ef3fdec, type: 2}
   goodnight:
   - {fileID: 11400000, guid: 21b5643fc2eecf24bb85acba3541a808, type: 2}
   - {fileID: 11400000, guid: b3338711510ce184ebee260d2973275a, type: 2}
@@ -104562,7 +104594,7 @@ MonoBehaviour:
   m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
-  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: 518eccb459c894f4cb92f7559ac888ca, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -110995,6 +111027,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1997636110}
+  - component: {fileID: 1997636111}
   m_Layer: 0
   m_Name: DM eyes
   m_TagString: Untagged
@@ -111019,6 +111052,27 @@ Transform:
   - {fileID: 886071625}
   m_Father: {fileID: 1955455232}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1997636111
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1997636109}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8297779b986f9247b2a77ab68bbd263, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GlowInDark
+  eyes:
+  - {fileID: 57904151}
+  - {fileID: 886071626}
+  face: {fileID: 2069459644}
+  glow: {r: 1, g: 0.78, b: 0.4, a: 1}
+  fullBelow: 0.04
+  goneAbove: 0.14
+  fade: 0.35
+  measured: 0
 --- !u!1 &1998643431
 GameObject:
   m_ObjectHideFlags: 0
@@ -115028,6 +115082,11 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!137 &2069459644 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8221513333800178314, guid: e5c4aa3abed34f8429a5eff626d667d0, type: 3}
+  m_PrefabInstance: {fileID: 4023663}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2069667275
 PrefabInstance:
   m_ObjectHideFlags: 0

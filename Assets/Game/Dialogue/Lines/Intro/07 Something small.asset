@@ -10,9 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e23bd367d3e6feb42b5512f43e178574, type: 3}
-  m_Name: 31 Stays dead
+  m_Name: 07 Something small
   m_EditorClassIdentifier: Assembly-CSharp::DMLine
-  text: When a figure dies, it stays dead. That's the one rule I never bend.
+  text: We'll start you on something small. I don't want to break you on the first
+    night.
   voice: {fileID: 0}
   mumble: 1
   inPerson: 1
