@@ -23,7 +23,7 @@ MonoBehaviour:
   propRules: []
   destructibles: []
   lighting: 8
-  litThroughout: 0
+  litThroughout: 1
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
     skyExposure: 0.8
@@ -87,12 +87,16 @@ MonoBehaviour:
   - text: Best of luck, mortal.
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
+    inPerson: 0
   - text: Another one. Let's see how long you last.
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
+    inPerson: 0
   - text: Mind the stairs.
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
+    inPerson: 0
   - text: Hahahahaha!
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
+    inPerson: 0

@@ -25,7 +25,7 @@ public static class DebugDungeonToolbar
 
     [MainToolbarElement("LoomRoom/Debug", defaultDockPosition = MainToolbarDockPosition.Middle, defaultDockIndex = 1)]
     public static MainToolbarElement Button() => new MainToolbarButton(
-        new MainToolbarContent("Debug", "Start the test dungeon. Enemies retaliate only when attacked."), StartDebug);
+        new MainToolbarContent("Debug", "Start the test arena: one open room, enemies from Debug Dungeon Settings standing just outside detection range."), StartDebug);
 
     public static void StartDebug()
     {

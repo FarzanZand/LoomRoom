@@ -5,7 +5,7 @@ using Sirenix.OdinInspector;
 // Boardgame: a dungeon laid out as board-game tiles on the table, no walls, rooms revealed as their doors open.
 public enum TableLevelKind { Town = 0, Dungeon = 1, Boardgame = 2 }
 // How the room looks while a table level is played (seen from the dungeon through its skylights).
-public enum RoomLighting { Normal = 0, Dim = 1, Dark = 2 }
+public enum RoomLighting { Normal = 0, Dim = 1, Dark = 2, Night = 3 }
 public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6, Darkness = 7, Standard = 8 }
 
 [CreateAssetMenu(menuName = "Table/Level", fileName = "TableLevel")]
@@ -342,7 +342,7 @@ public class TableLevelData : ScriptableObject
         return state;
     }
 
-    float RoomDarkness => roomLighting == RoomLighting.Dark ? 1f : roomLighting == RoomLighting.Dim ? .6f : 0f;
+    float RoomDarkness => LightingManager.Darkness(roomLighting);
 
     // A board lies under the room's own light: the room as it is now, with this level's Room Lighting and tint.
     public LightingManager.MoodState BoardLighting(LightingManager lighting) => lighting.RoomLook(roomLighting, roomTint);

@@ -44,7 +44,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
     TableLevelLoader loader;
     TableLevelMenu menu;
     Coroutine sitting;
-    public string Prompt => prompt;
+    public string Prompt => IntroController.WaitingForSeat ? "Sit down" : prompt;
     public bool CanInteract(Character who) => who is Player player && player.kind == PlayerKind.Room
         && player.IsAlive && PlayerManager.HasInstance && PlayerManager.Instance.Active == player
         && (loader == null || !loader.Busy) && sitting == null
@@ -59,6 +59,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
     public void Interact(Character who)
     {
         if (!CanInteract(who)) return;
+        // The tabletop intro: the Dungeon Master is waiting for the player to sit down.
+        if (IntroController.HasInstance && IntroController.Instance.TakeSeat()) return;
         if (DungeonMasterSeat.Introduced) EnterTable();
         else if (talkFirst != null && !talkFirst.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(talkFirst);
     }
@@ -66,15 +68,15 @@ public class TableManager : Singleton<TableManager>, IInteractable
 
     // level: where the figure goes (empty: Figure Level). only: set out just this figure (the intro's
     // practice board), with prompt said instead of the figures' own line.
-    public void Play(TableLevelData level = null, AdventurerClass only = null, DungeonMaster.Line prompt = null)
+    public void Play(TableLevelData level = null, AdventurerClass only = null, DungeonMaster.Line prompt = null, bool showCard = true)
     {
         if (loader == null || !PlayerManager.HasInstance || !CanInteract(PlayerManager.Instance.Active)) return;
-        if (GameManager.HasInstance) sitting = StartCoroutine(SitThenChoose(PlayerManager.Instance.Active, level, only, prompt));
+        if (GameManager.HasInstance) sitting = StartCoroutine(SitThenChoose(PlayerManager.Instance.Active, level, only, prompt, showCard));
         else loader.ShowSelection();
     }
 
     // Dialogue state while sitting and listening: no movement or look, HUD (and the DM's lines) visible.
-    IEnumerator SitThenChoose(Player player, TableLevelData chosenLevel = null, AdventurerClass only = null, DungeonMaster.Line prompt = null)
+    IEnumerator SitThenChoose(Player player, TableLevelData chosenLevel = null, AdventurerClass only = null, DungeonMaster.Line prompt = null, bool showCard = true)
     {
         GameManager.Instance.Push(GameState.Dialogue);
         yield return Sit(player);
@@ -91,19 +93,23 @@ public class TableManager : Singleton<TableManager>, IInteractable
             }
             yield return new WaitForSecondsRealtime(afterSpeech);
         }
+        // The first morning after the intro: the character sheet and dice come first.
+        if (IntroController.SheetPending && only == null) yield return IntroController.Instance.FirstMorningSheet(player);
         if (figures != null && figures.HasFigures)
         {
             // The board is swept and the figures go down where the last floor stood.
             loader.ClearTable();
-            // Seated through the intro: the view only tips down to the figures.
-            if (IntroController.Seated) yield return Turn(player, figures.FocusPoint(only != null) + Vector3.up * figureAimHeight, lookSeconds);
+            // Seated (the intro, or the chair the sheet put them in): the view only tips down to the figures.
+            if (IntroController.Seated || IntroController.SheetAtTable) yield return Turn(player, figures.FocusPoint(only != null) + Vector3.up * figureAimHeight, lookSeconds);
             else yield return StepToFigures(player);
             AdventurerClass picked = null;
             AdventurerClass savedClass = null; string savedDetail = null;
             if (only == null) SavedRun(out savedClass, out savedDetail);
             // Through the intro there is no standing up: Esc does nothing.
             bool canStand = !IntroController.Seated;
-            yield return figures.Choose(c => picked = c, savedClass, savedDetail, only, prompt, canStand);
+            yield return figures.Choose(c => picked = c, savedClass, savedDetail, only, prompt, canStand, showCard);
+            if (IntroController.HasInstance) IntroController.Instance.WriteClass(picked);
+            if (picked == null && IntroController.HasInstance) IntroController.Instance.EndSheetAtTable();
             GameManager.Instance.Pop(GameState.Dialogue);
             yield return Zoom(player, 0f, .35f);
             var level = chosenLevel != null ? chosenLevel : figureLevel != null ? figureLevel : loader.catalog != null ? System.Array.Find(loader.catalog.levels, l => l != null && l.IsDungeon) : null;

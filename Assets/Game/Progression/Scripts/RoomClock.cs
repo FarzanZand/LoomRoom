@@ -20,7 +20,15 @@ public class RoomClock : MonoBehaviour, IInteractable
 
     Quaternion hourBase, minuteBase;
 
-    int TotalMinutes => startHour * 60 + startMinute
+    // Shown instead while set (the intro's night), in minutes after midnight; -1 for the usual morning.
+    static int nightMinutes = -1;
+    public static void SetNight(int hour, int minute)
+    {
+        nightMinutes = hour < 0 ? -1 : hour * 60 + minute;
+        foreach (var clock in FindObjectsByType<RoomClock>(FindObjectsSortMode.None)) clock.Refresh();
+    }
+
+    int TotalMinutes => nightMinutes >= 0 ? nightMinutes : startHour * 60 + startMinute
         + Mathf.Clamp(ProgressionManager.HasInstance ? ProgressionManager.Instance.GetFlag(progressFlag) : 0, 0, maxMinutes);
     public string TimeText { get { int t = TotalMinutes; int h = t / 60 % 12; return $"{(h == 0 ? 12 : h)}:{t % 60:00}"; } }
     public string Prompt => TimeText;

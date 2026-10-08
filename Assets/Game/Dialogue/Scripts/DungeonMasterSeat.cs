@@ -34,7 +34,7 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     public const string PlayNowVariable = "PlayNow";
     public static bool Introduced => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(DungeonMasterRemarks.SatFlag);
 
-    public string Prompt => prompt;
+    public string Prompt => IntroController.WaitingForSeat ? "Sit down" : prompt;
 
     Transform body;
     Vector3 seatPosition;
@@ -103,8 +103,19 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
         }
     }
 
+    float gestureUntil;
+
+    // A seated gesture (an animator state, e.g. pushing the character sheet across); talking waits for it.
+    public void Gesture(string state, float seconds)
+    {
+        if (standing || animator == null || !animator.isActiveAndEnabled || string.IsNullOrEmpty(state)) return;
+        animator.CrossFadeInFixedTime(state, .2f, 0);
+        gestureUntil = Time.time + seconds;
+    }
+
     void OnSpoke(DungeonMaster.Line line)
     {
+        if (Time.time < gestureUntil) return;
         if (!standing && line.inPerson && animator != null && animator.isActiveAndEnabled) animator.CrossFadeInFixedTime(talkingState, talkBlend, 0);
     }
 
@@ -115,6 +126,7 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     public void Interact(Character who)
     {
         if (!CanInteract(who)) return;
+        if (IntroController.HasInstance && IntroController.Instance.TakeSeat()) return;
         bool first = !Introduced;
         if (first && DungeonMaster.HasInstance) DungeonMaster.Instance.Silence();
         PixelCrushers.DialogueSystem.DialogueLua.SetVariable(PlayNowVariable, false);

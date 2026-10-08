@@ -5,8 +5,8 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
-// Whole-screen presentation: per-player rendering effects and the black fade overlay.
-// Scene lighting and moods belong to LightingManager.
+// Whole-screen presentation: per-player rendering effects, the retro pixel grid, the Pixelator (the 3D
+// pixel-art look) and the black fade overlay. Scene lighting and moods belong to LightingManager.
 public class ScreenManager : Singleton<ScreenManager>
 {
     public Image fadeFullscreenImage;
@@ -19,13 +19,48 @@ public class ScreenManager : Singleton<ScreenManager>
     [Min(0), Tooltip("Seconds to crossfade between the room and table effects when the active player changes.")]
     public float effectBlendSeconds = 1.5f;
 
-    [FoldoutGroup("Pixelation"), Tooltip("Master switch for the pixel grid on both players. Off keeps colour banding and every other effect.")]
+    [FoldoutGroup("Retro pixel grid"), Tooltip("Master switch for the full-screen pixel grid on both players (Retro Screen pass). Off keeps colour banding and every other effect.")]
     public bool pixelationEnabled = true;
-    [FoldoutGroup("Pixelation"), Range(0f, 2f), Tooltip("Multiplier on pixel size for both players. 1 = the per-player Pixel Lines above; 2 = pixels twice as large.")]
+    [FoldoutGroup("Retro pixel grid"), Range(0f, 2f), Tooltip("Multiplier on pixel size for both players. 1 = the per-player Pixel Lines in the effects; 2 = pixels twice as large.")]
     public float pixelationStrength = 1f;
-    [FoldoutGroup("Pixelation"), ShowInInspector, ReadOnly, Tooltip("Player's choice from the settings menu. -1 = use the authored values, 0 = off.")]
+    [FoldoutGroup("Retro pixel grid"), ShowInInspector, ReadOnly, Tooltip("Player's choice from the settings menu. -1 = use the authored values, 0 = off.")]
     public int UserPixelLines { get; private set; } = -1;
     const string PixelLinesPref = "pixel_lines";
+
+    [FoldoutGroup("Pixelator"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLook))]
+    [Tooltip("Shadowglass-style 3D pixel art: Pixel Lit materials and a pixel camera. Off = the default look. Applies in Play mode and can be flipped live.")]
+    public bool pixelLook;
+    [FoldoutGroup("Pixelator"), LabelText("Camera"), OnValueChanged(nameof(ApplyPixelLook))]
+    [Tooltip("Default = the Rendering effects above. Clean = native resolution, crisp, the library's clean effects (for when the walls keep their own pixel textures). Low Res = real low-res render, the library's low-res effects.")]
+    public PixelatorCamera pixelatorCamera = PixelatorCamera.LowRes;
+    [FoldoutGroup("Pixelator"), LabelText("Architecture"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Walls, floors, ceilings and dungeon tiles.")]
+    public bool pixelateArchitecture = true;
+    [FoldoutGroup("Pixelator"), LabelText("Props"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Furniture, decor, loot and everything else.")]
+    public bool pixelateProps = true;
+    [FoldoutGroup("Pixelator"), LabelText("Characters"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Players' arms and held items, enemies, NPCs.")]
+    public bool pixelateCharacters = true;
+    [FoldoutGroup("Pixelator"), LabelText("Object Pixel Size"), Range(1, 8), OnValueChanged(nameof(ApplyPixelLook))]
+    [Tooltip("Per-object pixelation: characters and props drawn at 1/N resolution inside a full-res scene. 1 = off. Not used with the Low Res camera (everything is already low-res).")]
+    public int objectPixelSize = 4;
+    [FoldoutGroup("Pixelator"), LabelText("Low-res Characters"), OnValueChanged(nameof(ApplyPixelLook))]
+    public bool lowResCharacters = true;
+    [FoldoutGroup("Pixelator"), LabelText("Low-res Props"), OnValueChanged(nameof(ApplyPixelLook))]
+    public bool lowResProps;
+    [FoldoutGroup("Pixelator"), LabelText("Dither Transparents"), OnValueChanged(nameof(ApplyPixelLook))]
+    [Tooltip("See-through materials (slime jelly, glassy things) as a pixel screen-door dither. Off = they keep their original smooth transparency.")]
+    public bool ditherTransparents;
+    [FoldoutGroup("Pixelator"), LabelText("Library"), InlineEditor, OnValueChanged(nameof(ApplyPixelLook))]
+    [Tooltip("Material pairs, texel scales and the camera effects per mode (Tools > LoomRoom > Pixel Look).")]
+    public PixelLookLibrary pixelLookLibrary;
+
+    PixelLook.Parts PixelatorParts => new()
+    {
+        camera = pixelatorCamera, architecture = pixelateArchitecture, props = pixelateProps, characters = pixelateCharacters,
+        objectPixelSize = objectPixelSize, lowResCharacters = lowResCharacters, lowResProps = lowResProps,
+        ditherTransparents = ditherTransparents,
+    };
+
+    public PixelLook PixelLook { get; } = new();
 
     [Tooltip("Blended on top while the player dies: colour drains, the edges darken.")]
     public ScreenEffectSettings deathEffects = new()
@@ -49,7 +84,6 @@ public class ScreenManager : Singleton<ScreenManager>
     static readonly int StrengthId    = Shader.PropertyToID("_RetroStrength");
 
     bool originalAO, originalRetro, effectsInitialized;
-    ScriptableRendererFeature controlledAO, controlledRetro;
 
     // Pixel Look camera: real low-res rendering through the pipeline asset, restored when it ends.
     UniversalRenderPipelineAsset lowResAsset;
@@ -139,10 +173,8 @@ public class ScreenManager : Singleton<ScreenManager>
     void OnEnable()
     {
         // Renderer features live on a shared asset; remember their state so Play mode leaves it untouched.
-        controlledAO = ambientOcclusionFeature;
-        if (controlledAO != null) originalAO = controlledAO.isActive;
-        controlledRetro = retroScreenFeature;
-        if (controlledRetro != null) originalRetro = controlledRetro.isActive;
+        if (ambientOcclusionFeature != null) originalAO = ambientOcclusionFeature.isActive;
+        if (retroScreenFeature != null) originalRetro = retroScreenFeature.isActive;
 
         roomLayer = new EffectLayer(transform, "Room screen effects", 10000);
         tableLayer = new EffectLayer(transform, "Table screen effects", 10001);
@@ -153,8 +185,11 @@ public class ScreenManager : Singleton<ScreenManager>
         ApplyRenderingEffects();
     }
 
+    void Start() => ApplyPixelLook();
+
     void Update()
     {
+        PixelLook.Tick();
         float step = effectBlendSeconds > 0f ? Time.unscaledDeltaTime / effectBlendSeconds : 1f;
         tableWeight = Mathf.MoveTowards(tableWeight, TargetTableWeight, step);
         ApplyRenderingEffects();
@@ -162,9 +197,10 @@ public class ScreenManager : Singleton<ScreenManager>
 
     void OnDisable()
     {
+        PixelLook.Set(pixelLookLibrary, false, PixelatorParts);
         if (!effectsInitialized) return;
-        if (controlledAO != null) controlledAO.SetActive(originalAO);
-        if (controlledRetro != null) controlledRetro.SetActive(originalRetro);
+        if (ambientOcclusionFeature != null) ambientOcclusionFeature.SetActive(originalAO);
+        if (retroScreenFeature != null) retroScreenFeature.SetActive(originalRetro);
         SetPixelCamera(PixelatorCamera.Default, 0);
         roomLayer.Destroy();
         tableLayer.Destroy();
@@ -174,17 +210,25 @@ public class ScreenManager : Singleton<ScreenManager>
 
     // ── Rendering effects ─────────────────────────────────────────────
 
-    PixelatorCamera PixelCamera => WorldManager.HasInstance ? WorldManager.Instance.PixelLook.CameraMode : PixelatorCamera.Default;
+    // ── Pixelator ─────────────────────────────────────────────────────
+
+    // Play mode only; can be flipped live from the inspector.
+    void ApplyPixelLook()
+    {
+        if (Application.isPlaying && isActiveAndEnabled) PixelLook.Set(pixelLookLibrary, pixelLook, PixelatorParts);
+    }
+
+    PixelatorCamera PixelCamera => PixelLook.CameraMode;
     ScreenEffectSettings RoomFx => PixelCamera switch
     {
-        PixelatorCamera.LowRes => WorldManager.Instance.PixelLook.Library.roomEffects,
-        PixelatorCamera.Clean => WorldManager.Instance.PixelLook.Library.cleanRoomEffects,
+        PixelatorCamera.LowRes => PixelLook.Library.roomEffects,
+        PixelatorCamera.Clean => PixelLook.Library.cleanRoomEffects,
         _ => roomEffects,
     };
     ScreenEffectSettings TableFx => PixelCamera switch
     {
-        PixelatorCamera.LowRes => WorldManager.Instance.PixelLook.Library.tableEffects,
-        PixelatorCamera.Clean => WorldManager.Instance.PixelLook.Library.cleanTableEffects,
+        PixelatorCamera.LowRes => PixelLook.Library.tableEffects,
+        PixelatorCamera.Clean => PixelLook.Library.cleanTableEffects,
         _ => tableEffects,
     };
 
@@ -200,14 +244,14 @@ public class ScreenManager : Singleton<ScreenManager>
         roomLayer.Apply(room, 1f - t);
         tableLayer.Apply(table, t);
         deathLayer.Apply(deathEffects, deathWeight);
-        SetFeature(controlledAO, (t < .5f ? room : table).ambientOcclusion);
+        SetFeature(ambientOcclusionFeature, (t < .5f ? room : table).ambientOcclusion);
 
         // One full-screen pass: the stronger side's settings, faded by how much of each side uses it.
         float roomRetro = UsesRetro(room) ? 1f - t : 0f;
         float tableRetro = UsesRetro(table) ? t : 0f;
         var retro = tableRetro > roomRetro ? table : room;
         float strength = roomRetro + tableRetro;
-        SetFeature(controlledRetro, strength > .001f);
+        SetFeature(retroScreenFeature, strength > .001f);
         // The Low Res camera renders at the pixel resolution itself, so the pass only bands colours.
         // Clean renders at native resolution without anti-aliasing.
         var mode = PixelCamera;

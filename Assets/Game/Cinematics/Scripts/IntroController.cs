@@ -5,12 +5,13 @@ using UnityEngine.AI;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
-// The first launch, Inscryption style. The player opens already seated at the table in the dark, across
-// from the Dungeon Master (only his eyes show). He lights the lamp, says what the game is and sets out
+// The first launch. Two openings (IntroOpening): Lamp, the player seated at the table in the dark across
+// from the Dungeon Master (only his eyes show) until he lights the lamp; or Tabletop (IntroController.Tabletop.cs),
+// asleep at the table, a desk lamp, a character sheet and dice. Either way he sets out
 // one figure for the IntroDungeon: a small table level where he teaches as you go (TutorialStep) and a
 // death you cannot avoid. Back at the table he says a few words and puts the lamp out; the player wakes
 // in bed for the first morning and the room is theirs. WorldManager asks TryPlay before the wake-up.
-public class IntroController : Singleton<IntroController>
+public partial class IntroController : Singleton<IntroController>
 {
     public const string IntroFlag = "story.intro", RoomOpenFlag = "story.roomOpen";
 
@@ -25,10 +26,16 @@ public class IntroController : Singleton<IntroController>
     public float aimBelowHead = 7f;
 
     [Header("Darkness")]
-    [Tooltip("The room while the intro runs, the same setting a level has: Dark is black but for the lamp.")]
-    public RoomLighting roomLighting = RoomLighting.Dark;
-    [Tooltip("The colour the room's light takes during the intro. White leaves it as it is. The lamp's colour is on the lamp.")]
-    [ColorUsage(false)] public Color roomTint = Color.white;
+    [Tooltip("The room during the Lamp opening, the same setting a level has: Dark is black but for the lamp.")]
+    [ShowIf(nameof(IsLampOpening))] public RoomLighting roomLighting = RoomLighting.Dark;
+    [Tooltip("The colour the room's light takes during the Lamp opening. White leaves it as it is.")]
+    [ShowIf(nameof(IsLampOpening)), ColorUsage(false)] public Color roomTint = Color.white;
+    [Tooltip("The room during the Tabletop opening (night): Night leaves the room and the Dungeon Master visible before the lamp.")]
+    [ShowIf(nameof(IsTabletopOpening)), LabelText("Room Lighting")] public RoomLighting tabletopRoomLighting = RoomLighting.Night;
+    [Tooltip("The colour the room's light takes during the Tabletop opening. White leaves it as it is; a blue reads as city light at night.")]
+    [ShowIf(nameof(IsTabletopOpening)), LabelText("Room Tint"), ColorUsage(false)] public Color tabletopRoomTint = Color.white;
+    bool IsLampOpening => opening == IntroOpening.Lamp;
+    bool IsTabletopOpening => opening == IntroOpening.Tabletop;
     [Tooltip("The one lamp over the corner of the table. Off until the Dungeon Master lights it.")]
     public Light lamp;
     [Tooltip("The intro's colour scheme: the lamp, the Dungeon Master's eyes, the practice board's light and the class card. Changes live, also in Play mode.")]
@@ -109,6 +116,7 @@ public class IntroController : Singleton<IntroController>
         base.Awake();
         ApplyStyle();
         if (lamp != null) { lampIntensity = lamp.intensity; lamp.enabled = false; lamp.color = lampColor; }
+        SetupOpening();
         if (lighting == null) lighting = FindAnyObjectByType<LightingManager>();
     }
 
@@ -137,7 +145,7 @@ public class IntroController : Singleton<IntroController>
 
         running = true;
         if (RunManager.HasInstance) { RunManager.Instance.RunStarted -= OnRunStarted; RunManager.Instance.RunStarted += OnRunStarted; }
-        StartCoroutine(Opening());
+        StartCoroutine(Tabletop ? TabletopNight() : Opening());
         return true;
     }
 
@@ -164,6 +172,7 @@ public class IntroController : Singleton<IntroController>
     {
         GameManager.Instance.Push(GameState.Dialogue);
         Darken();
+        if (Tabletop && dmEyes != null) dmEyes.SetActive(false);
         LightLamp(1f);
         if (RunManager.HasInstance) RunManager.Instance.RecapClosed();
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeOut(1.5f, .8f);
@@ -179,14 +188,18 @@ public class IntroController : Singleton<IntroController>
             yield return null;
             while (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking) yield return null;
         }
-        yield return SayAll(afterPractice);
-        yield return new WaitForSeconds(.6f);
-        yield return SayAll(goodnight);
-        yield return new WaitForSeconds(.8f);
-        yield return LampOut();
-        yield return new WaitForSeconds(eyesLinger);
-        if (dmEyes != null) dmEyes.SetActive(false);
-        yield return new WaitForSeconds(nightSeconds);
+        if (Tabletop) yield return TabletopGoodnight();
+        else
+        {
+            yield return SayAll(afterPractice);
+            yield return new WaitForSeconds(.6f);
+            yield return SayAll(goodnight);
+            yield return new WaitForSeconds(.8f);
+            yield return LampOut();
+            yield return new WaitForSeconds(eyesLinger);
+            if (dmEyes != null) dmEyes.SetActive(false);
+            yield return new WaitForSeconds(nightSeconds);
+        }
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeIn(.01f);
         yield return null;
         GameManager.Instance.Pop(GameState.Dialogue);
@@ -209,7 +222,7 @@ public class IntroController : Singleton<IntroController>
     // The flame dies down: a few weak flickers and out.
     IEnumerator LampOut()
     {
-        if (lamp == null) yield break;
+        if (ActiveLamp == null) yield break;
         if (lampOutSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(lampOutSound, 1f);
         float[] flicker = { .7f, .85f, .45f, .6f, .25f, .35f, .1f };
         foreach (var level in flicker)
@@ -232,7 +245,7 @@ public class IntroController : Singleton<IntroController>
             ProgressionManager.Instance.SetFlag(DungeonMasterRemarks.SatFlag);
             ProgressionManager.Instance.SetFlag(RoomOpenFlag);
         }
-        if (lamp != null) lamp.enabled = false;
+        if (ActiveLamp != null) ActiveLamp.enabled = false;
         // Open again for good: they only glow when he is in the dark.
         if (dmEyes != null) dmEyes.SetActive(true);
         if (lighting != null) lighting.lampHeld = false;
@@ -248,7 +261,7 @@ public class IntroController : Singleton<IntroController>
         {
             roomLight ??= lighting.Capture();
             lighting.lampHeld = true;
-            lighting.BlendToMood(lighting.RoomLook(roomLighting, roomTint), 0f);
+            lighting.BlendToMood(Tabletop ? lighting.RoomLook(tabletopRoomLighting, tabletopRoomTint) : lighting.RoomLook(roomLighting, roomTint), 0f);
         }
         if (dmEyes != null) dmEyes.SetActive(true);
         Sit();
@@ -281,7 +294,7 @@ public class IntroController : Singleton<IntroController>
 
     IEnumerator LampOn()
     {
-        if (lamp == null) yield break;
+        if (ActiveLamp == null) yield break;
         if (lampSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(lampSound, 1f);
         // A wick catching: a few flickers, then steady.
         float[] flicker = { .35f, 0f, .6f, .15f, .8f, .5f, 1f };
@@ -305,21 +318,22 @@ public class IntroController : Singleton<IntroController>
         var look = Look;
         if (look == null) return;
         lampColor = look.lamp;
-        if (lamp != null) lamp.color = lampColor;
+        if (ActiveLamp != null) ActiveLamp.color = lampColor;
         var glow = dmEyes != null ? dmEyes.GetComponent<GlowInDark>() : null;
         if (glow != null) glow.glow = look.eyes;
         if (introDungeon != null) introDungeon.boardLightColor = look.boardLight;
         var figures = TableManager.HasInstance ? TableManager.Instance.GetComponentInChildren<ClassFigures>(true) : FindAnyObjectByType<ClassFigures>(FindObjectsInactive.Include);
         look.ApplyToCard(figures);
+        if (sheet != null) look.ApplyTo(sheet.transform);
     }
 
     void LightLamp(float level)
     {
-        if (lamp == null) return;
-        lamp.color = lampColor;
-        lamp.enabled = level > 0f;
-        lamp.intensity = lampIntensity * level;
-        FirstPersonLighting.SetLayers(lamp, uint.MaxValue);
+        if (ActiveLamp == null) return;
+        ActiveLamp.color = lampColor;
+        ActiveLamp.enabled = level > 0f;
+        ActiveLamp.intensity = ActiveIntensity * level;
+        FirstPersonLighting.SetLayers(ActiveLamp, uint.MaxValue);
     }
 
     static IEnumerator SayAll(DungeonMaster.Line[] lines)
@@ -351,7 +365,8 @@ public class IntroController : Singleton<IntroController>
     IEnumerator Teach()
     {
         // On the board the lamp lights only the room around it; the board has its own light (its colour is the level's).
-        if (lamp != null) FirstPersonLighting.SetLayers(lamp, LightingManager.RoomLayer);
+        if (ActiveLamp != null) FirstPersonLighting.SetLayers(ActiveLamp, LightingManager.RoomLayer);
+        if (sheet != null) sheet.Hide();
         walked = guarded = 0f; hits = kills = pickups = 0; finale = false; fromStairs = false;
         stillFor = 0f; saidIdle = saidHurt = endedByFinale = false;
         Listen();

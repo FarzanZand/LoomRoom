@@ -95,10 +95,10 @@ public static class PixelLookBuilder
         EditorUtility.SetDirty(library);
         AssetDatabase.SaveAssets();
 
-        if (WorldManager.HasInstance && WorldManager.Instance.pixelLookLibrary == null)
+        if (ScreenManager.HasInstance && ScreenManager.Instance.pixelLookLibrary == null)
         {
             Undo.RecordObject(WorldManager.Instance, "Assign Pixel Look Library");
-            WorldManager.Instance.pixelLookLibrary = library;
+            ScreenManager.Instance.pixelLookLibrary = library;
             EditorUtility.SetDirty(WorldManager.Instance);
         }
         string report = $"Pixel Look: {created} created, {updated} kept, {library.entries.Count} pairs.";

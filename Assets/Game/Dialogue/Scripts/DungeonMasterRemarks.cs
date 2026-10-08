@@ -98,7 +98,8 @@ public class DungeonMasterRemarks : MonoBehaviour
     {
         idleTime = 0f; nudged = false; satThisMorning = false;
         if (greeting != null) StopCoroutine(greeting);
-        greeting = !brief && !EndingRunning ? StartCoroutine(Greet()) : null;
+        // The intro's own night wake-up has its own words.
+        greeting = !brief && !EndingRunning && !IntroController.Seated ? StartCoroutine(Greet()) : null;
     }
 
     // "Morning", and until the player has sat down once, a call to the table.
@@ -158,7 +159,7 @@ public class DungeonMasterRemarks : MonoBehaviour
         if (greeting != null) { StopCoroutine(greeting); greeting = null; }
         satThisMorning = true;
         // The intro does the talking until the room opens.
-        if (IntroController.Seated) { died = won = beatRecord = false; return; }
+        if (IntroController.Seated || IntroController.SheetPending) { died = won = beatRecord = false; return; }
         if (won) Say(afterTheEnd);
         else if (died)
         {

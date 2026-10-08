@@ -39,7 +39,7 @@ MonoBehaviour:
   roomTint: {r: 1, g: 1, b: 1, a: 1}
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
-  backgroundMusic: {fileID: 8300000, guid: 9b6676d6e31306043b7c187ddb5cd29c, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: 3e25e9dbd7070094cb330f72b3a95156, type: 3}
   backgroundMusicVolume: 0.3
   loopMusic: 1
   musicFadeSeconds: 1.5

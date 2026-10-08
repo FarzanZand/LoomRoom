@@ -10,7 +10,7 @@ public enum RoomExitMode
     LockOneDoor = 2, // the apartment door works, the other door is locked
 }
 
-// World-level helpers: the directional light, the room's exits and the opening sequence hook.
+// World-level helpers: the directional light, the room's exits, head bob and the opening sequence hook.
 // Cutscene logic itself lives on CutsceneController subclasses.
 public class WorldManager : Singleton<WorldManager>
 {
@@ -41,40 +41,6 @@ public class WorldManager : Singleton<WorldManager>
     [Tooltip("Camera bob while walking, running and crouch-walking. Read live by HeadBob on each player's camera.")]
     public HeadBobSettings headBob = new();
 
-    [FoldoutGroup("Pixelator"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLook))]
-    [Tooltip("Shadowglass-style 3D pixel art: Pixel Lit materials and a pixel camera. Off = the default look. Applies in Play mode and can be flipped live.")]
-    public bool pixelLook;
-    [FoldoutGroup("Pixelator"), LabelText("Camera"), OnValueChanged(nameof(ApplyPixelLook))]
-    [Tooltip("Default = ScreenManager's own effects. Clean = native resolution, crisp, the library's clean effects (for when the walls keep their own pixel textures). Low Res = real low-res render, the library's low-res effects.")]
-    public PixelatorCamera pixelatorCamera = PixelatorCamera.LowRes;
-    [FoldoutGroup("Pixelator"), LabelText("Architecture"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Walls, floors, ceilings and dungeon tiles.")]
-    public bool pixelateArchitecture = true;
-    [FoldoutGroup("Pixelator"), LabelText("Props"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Furniture, decor, loot and everything else.")]
-    public bool pixelateProps = true;
-    [FoldoutGroup("Pixelator"), LabelText("Characters"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Players' arms and held items, enemies, NPCs.")]
-    public bool pixelateCharacters = true;
-    [FoldoutGroup("Pixelator"), LabelText("Object Pixel Size"), Range(1, 8), OnValueChanged(nameof(ApplyPixelLook))]
-    [Tooltip("Per-object pixelation: characters and props drawn at 1/N resolution inside a full-res scene. 1 = off. Not used with the Low Res camera (everything is already low-res).")]
-    public int objectPixelSize = 4;
-    [FoldoutGroup("Pixelator"), LabelText("Low-res Characters"), OnValueChanged(nameof(ApplyPixelLook))]
-    public bool lowResCharacters = true;
-    [FoldoutGroup("Pixelator"), LabelText("Low-res Props"), OnValueChanged(nameof(ApplyPixelLook))]
-    public bool lowResProps;
-    [FoldoutGroup("Pixelator"), LabelText("Dither Transparents"), OnValueChanged(nameof(ApplyPixelLook))]
-    [Tooltip("See-through materials (slime jelly, glassy things) as a pixel screen-door dither. Off = they keep their original smooth transparency.")]
-    public bool ditherTransparents;
-    [FoldoutGroup("Pixelator"), LabelText("Library"), InlineEditor, OnValueChanged(nameof(ApplyPixelLook))]
-    [Tooltip("Material pairs, texel scales and the camera effects per mode (Tools > LoomRoom > Pixel Look).")]
-    public PixelLookLibrary pixelLookLibrary;
-
-    PixelLook.Parts PixelatorParts => new()
-    {
-        camera = pixelatorCamera, architecture = pixelateArchitecture, props = pixelateProps, characters = pixelateCharacters,
-        objectPixelSize = objectPixelSize, lowResCharacters = lowResCharacters, lowResProps = lowResProps,
-        ditherTransparents = ditherTransparents,
-    };
-
-    public PixelLook PixelLook { get; } = new();
 
     [Header("Lighting")]
     public Light directionalLight;
@@ -98,38 +64,12 @@ public class WorldManager : Singleton<WorldManager>
     void Start()
     {
         var progression = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
-        bool skip = progression != null &&
+        // The editor's Debug button goes straight to the test arena.
+        bool skip = DebugDungeonSession.Active || progression != null &&
             (progression.skipWakeUp || progression.startingPlayer != PlayerKind.Room);
         // The first launch opens at the table in the dark instead (IntroController).
         bool intro = !skip && IntroController.HasInstance && IntroController.Instance.TryPlay();
         if (!skip && !intro && wakeUpCutscene != null) wakeUpCutscene.Play(brief: false);
-        ApplyPixelLook();
-    }
-
-    void Update() => PixelLook.Tick();
-
-    void OnDisable() => PixelLook.Set(pixelLookLibrary, false, PixelatorParts);
-
-    // ── Pixel Look ────────────────────────────────────────────────────
-
-    public void SetPixelLook(bool on)
-    {
-        pixelLook = on;
-        ApplyPixelLook();
-    }
-
-    public void SetPixelLookParts(PixelatorCamera camera, bool architecture, bool props, bool characters)
-    {
-        pixelatorCamera = camera;
-        pixelateArchitecture = architecture;
-        pixelateProps = props;
-        pixelateCharacters = characters;
-        ApplyPixelLook();
-    }
-
-    void ApplyPixelLook()
-    {
-        if (Application.isPlaying && isActiveAndEnabled) PixelLook.Set(pixelLookLibrary, pixelLook, PixelatorParts);
     }
 
     [Button]

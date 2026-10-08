@@ -3,7 +3,7 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 
 // The Pixel Look: every world material paired with a LoomRoom/Pixel Lit copy, plus the camera
-// settings used while the look is on. WorldManager.pixelLook switches between the two; the
+// settings used while the look is on. ScreenManager.pixelLook switches between the two; the
 // original materials are never modified. Build and refresh the pairs with Tools > LoomRoom > Pixel Look.
 [CreateAssetMenu(menuName = "LoomRoom/Pixel Look Library")]
 public class PixelLookLibrary : ScriptableObject

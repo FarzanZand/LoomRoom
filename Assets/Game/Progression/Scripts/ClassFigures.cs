@@ -64,8 +64,12 @@ public class ClassFigures : MonoBehaviour
         ShowCard(false);
     }
 
+    bool showCard = true;
+
+    // showCard false (the tabletop intro, where the character sheet is the card): nothing is shown.
     void ShowCard(bool show)
     {
+        if (!showCard) show = false;
         if (floatingCard != null) { if (show) floatingCard.Show(); else floatingCard.Hide(); }
         if (cardPanel != null) cardPanel.SetActive(show);
         if (card != null) card.gameObject.SetActive(show);
@@ -76,8 +80,9 @@ public class ClassFigures : MonoBehaviour
     // only: just this figure (the intro's practice board), with promptOverride said instead of Prompt.
     // canCancel false: Esc does nothing.
     public IEnumerator Choose(Action<AdventurerClass> done, AdventurerClass savedClass = null, string savedDetail = null,
-        AdventurerClass only = null, DungeonMaster.Line promptOverride = null, bool canCancel = true)
+        AdventurerClass only = null, DungeonMaster.Line promptOverride = null, bool canCancel = true, bool showCard = true)
     {
+        this.showCard = showCard;
         this.canCancel = canCancel;
         saved = savedClass; this.savedDetail = savedDetail;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
@@ -101,6 +106,8 @@ public class ClassFigures : MonoBehaviour
         Highlight(figures.Find(f => f.adventurer == (saved != null ? saved : progress.selectedClass)) ?? figures[0]);
         if (card != null) card.Single = only != null;
         ShowCard(true);
+        // Without the card there is no hint on it: say it in the feed.
+        if (!showCard) MessageLog.Post(only != null ? "Click the figure to take it." : "Click a figure to take it.", MessageKind.Info);
         if (card != null) card.Refresh();
         choosing = true;
         if (InputManager.HasInstance)

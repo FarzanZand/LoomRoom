@@ -39,20 +39,31 @@ public class DebugDungeonSession : MonoBehaviour
         loader.Load(settings.level);
     }
 
+    // The arena brings no enemies of its own: the settings' list stands in an arc in front of the player,
+    // each just outside its detection radius, and stays put until it notices them.
     public static void ConfigureEnemies(DungeonGenerator dungeon)
     {
         if (!Active || dungeon == null) return;
-        // Keep those closest to the entrance so testing requires little walking.
-        var enemies = dungeon.GetComponentsInChildren<EnemyBrain>()
-            .OrderBy(e => (e.transform.position - dungeon.SpawnPoint).sqrMagnitude).ToArray();
-        for (int i = 0; i < enemies.Length; i++)
+        foreach (var generated in dungeon.GetComponentsInChildren<EnemyBrain>()) { generated.gameObject.SetActive(false); Destroy(generated.gameObject); }
+        var level = settings.level;
+        var spawned = settings.enemies.Where(p => p != null).ToArray();
+        for (int i = 0; i < spawned.Length; i++)
         {
-            var enemy = enemies[i];
-            if (i >= settings.enemyCount) { enemy.gameObject.SetActive(false); Destroy(enemy.gameObject); continue; }
+            var prefabBrain = spawned[i].GetComponent<EnemyBrain>();
+            float radius = (prefabBrain != null ? prefabBrain.Profile.detectionRadius : 12f) + settings.margin;
+            // Spread evenly across the view.
+            float angle = spawned.Length == 1 ? 0f : Mathf.Lerp(-70f, 70f, (float)i / (spawned.Length - 1));
+            var pos = dungeon.SpawnPoint + Quaternion.Euler(0f, angle, 0f) * (dungeon.SpawnRotation * Vector3.forward) * radius;
+            if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var hit, radius, UnityEngine.AI.NavMesh.AllAreas)) pos = hit.position;
+            var look = dungeon.SpawnPoint - pos; look.y = 0f;
+            var go = Instantiate(spawned[i], pos, look.sqrMagnitude > .01f ? Quaternion.LookRotation(look) : Quaternion.identity, dungeon.transform);
+            if (level.balance != null && go.TryGetComponent<Character>(out var character)) level.balance.Apply(character, 1);
+            var enemy = go.GetComponent<EnemyBrain>();
+            if (enemy == null) continue;
             var profile = new EnemyBehaviourSettings();
             profile.CopyFrom(enemy.Profile);
-            profile.aggressionMode = AggressionMode.AggressiveWhenHit;
             profile.defaultState = EnemyState.Idle;
+            if (settings.retaliateOnly) profile.aggressionMode = AggressionMode.AggressiveWhenHit;
             enemy.SetBehaviourOverride(profile);
         }
     }

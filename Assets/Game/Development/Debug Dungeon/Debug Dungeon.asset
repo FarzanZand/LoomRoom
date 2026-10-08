@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Debug Dungeon
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
   displayName: Debug Dungeon
-  description: Twenty floors down. A new layout every run.
+  description: 'Test arena: one open room, enemies placed by Debug Dungeon Settings.'
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
   kind: 1
   environmentPrefab: {fileID: 0}
@@ -21,8 +21,6 @@ MonoBehaviour:
   - biome: {fileID: 11400000, guid: fe707f3bdf69e7b45919069a6aede8af, type: 2}
     floors: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
-  multipleLevels: 0
-  levelCount: 20
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   moodLighting: 8
   overrideLighting: 0
@@ -35,19 +33,24 @@ MonoBehaviour:
     ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
     ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
     fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
+  roomLighting: 0
+  roomTint: {r: 1, g: 1, b: 1, a: 1}
+  boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
+  boardLightIntensity: 2600
   backgroundMusic: {fileID: 8300000, guid: 9b6676d6e31306043b7c187ddb5cd29c, type: 3}
   backgroundMusicVolume: 0.3
   loopMusic: 1
   musicFadeSeconds: 1.5
   fixedSeed: 31415
-  width: 40
-  depth: 54
+  startFacingDungeonMaster: 0
+  width: 28
+  depth: 30
   cellSize: 2
   roomCount: 4
   largeRoomPercent: 10
   largeRoomScale: 1.6
   loopPercent: 15
-  layoutMode: 1
+  layoutMode: 2
   roomSize: {x: 4, y: 9}
   roomSpacing: {x: 1, y: 4}
   corridorWander: 1.2
@@ -97,18 +100,102 @@ MonoBehaviour:
   - kind: 9
     shape: {fileID: 11400000, guid: b83f1b9ea222f1f4690c0e00502d6342, type: 2}
     weight: 0.6
-  startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  startingRoom: {fileID: 0}
+  authoredMap: '############################
+
+    ############1111############
+
+    ############1111############
+
+    ############1111############
+
+    #############..#############
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ##000000000000000000000000##
+
+    ############################'
+  authoredContent: 
+  authoredRooms:
+  - label: Arena
+    role: 0
+    template: {fileID: 0}
+    turns: 0
+    height: 0
+    raised: 0
+  - label: Exit
+    role: 5
+    template: {fileID: 0}
+    turns: 0
+    height: 0
+    raised: 0
+  authoredMarkers: []
   doorPrefab: {fileID: 7005205240093728226, guid: 3c6bc2dc79fc2bb42ba380732b33a2f2, type: 3}
   doorPercent: 65
+  boardEdgeMaterial: {fileID: 0}
+  boardGridMaterial: {fileID: 0}
+  boardTileThickness: 0.14
+  boardLayerHeight: 0.32
+  boardMaxRaise: 2
+  boardTileTaps: []
+  architectureTileSize: 3
   twoTileRoomPercent: 25
   threeTileRoomPercent: 0
   twoTileCorridorPercent: 25
   threeTileCorridorPercent: 0
   hideRoof: 0
   hideRoofPercent: 5.9
+  skylightFrame: 0.9
   hideEdges: 0
   hideEdgesPercent: 100
-  architectureTileSize: 3
+  windowSill: 0.55
+  windowLintel: 0.75
+  windowJamb: 0.45
   floorMaterial: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
   wallMaterial: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
   upperWallMaterial: {fileID: 0}
@@ -203,6 +290,8 @@ MonoBehaviour:
     chance: 0.6
     rooms: 12
   chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
+  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
   destructibles:
   - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
     weight: 3
@@ -248,5 +337,4 @@ MonoBehaviour:
   enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
   damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
   messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}
-  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
-  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
+  dialogue: []

@@ -30,7 +30,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _ColorMask: 15
-    - _PanelShading: 1
+    - _PanelShading: 0.25
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0
@@ -38,10 +38,10 @@ Material:
     - _StencilWriteMask: 255
     - _UseUIAlphaClip: 0
     m_Colors:
-    - _BorderColor: {r: 0.6320754, g: 0.4424528, b: 0, a: 1}
+    - _BorderColor: {r: 0.64, g: 0.34, b: 0.24, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _HighlightColor: {r: 0.6981132, g: 0.56277144, b: 0.24697402, a: 1}
-    - _PanelColor: {r: 0.207, g: 0.178, b: 0.216, a: 1}
-    - _ShadowColor: {r: 0.078431375, g: 0.06666667, b: 0.09019608, a: 1}
+    - _HighlightColor: {r: 0.88, g: 0.53, b: 0.35, a: 1}
+    - _PanelColor: {r: 0.114, g: 0.145, b: 0.173, a: 1}
+    - _ShadowColor: {r: 0.043, g: 0.055, b: 0.067, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

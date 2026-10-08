@@ -23,7 +23,18 @@ public class IntroLook
     public void ApplyToCard(ClassFigures figures)
     {
         if (figures == null || figures.floatingCard == null) return;
-        var root = figures.floatingCard.transform;
+        ApplyTo(figures.floatingCard.transform);
+        var ui = figures.card;
+        if (ui == null) return;
+        ui.healthColor = health; ui.manaColor = mana; ui.staminaColor = stamina; ui.rankColor = rank; ui.tierColor = tier;
+        ui.pipOn = ink; ui.pipOff = Color.Lerp(ink, inkSoft, .6f); ui.pipLocked = inkSoft * .6f;
+        if (ui.isActiveAndEnabled) ui.Refresh();
+    }
+
+    // Any card-like canvas built from the same parts (the class card, the character sheet).
+    public void ApplyTo(Transform root)
+    {
+        if (root == null) return;
         foreach (var image in root.GetComponentsInChildren<Image>(true))
         {
             var n = image.gameObject.name;
@@ -36,13 +47,9 @@ public class IntroLook
         foreach (var text in root.GetComponentsInChildren<TMPro.TMP_Text>(true))
         {
             var n = text.gameObject.name;
+            if (n == "Stamp") continue; // keeps its own red
             text.color = n == "Name" ? name : n == "Label" || n == "Skills Label" || n == "Locked Hint" || n == "How" ? inkSoft : ink;
         }
-        var ui = figures.card;
-        if (ui == null) return;
-        ui.healthColor = health; ui.manaColor = mana; ui.staminaColor = stamina; ui.rankColor = rank; ui.tierColor = tier;
-        ui.pipOn = ink; ui.pipOff = Color.Lerp(ink, inkSoft, .6f); ui.pipLocked = inkSoft * .6f;
-        if (ui.isActiveAndEnabled) ui.Refresh();
     }
 
     static void Set(Image image, Sprite sprite)
