@@ -187,7 +187,7 @@ public class DungeonRoomTemplate : MonoBehaviour
             foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:TableLevelData"))
             {
                 var level = UnityEditor.AssetDatabase.LoadAssetAtPath<TableLevelData>(UnityEditor.AssetDatabase.GUIDToAssetPath(guid));
-                if (level != null && level.kind == TableLevelKind.Dungeon) { previewLevel = level; UnityEditor.EditorUtility.SetDirty(this); break; }
+                if (level != null && level.IsDungeon) { previewLevel = level; UnityEditor.EditorUtility.SetDirty(this); break; }
             }
         if (previewLevel == null) return;
 

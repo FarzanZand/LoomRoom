@@ -16,9 +16,9 @@ public class TutorialStep
     [Tooltip("Walk: distance (world units). Hit, Kill, Pick Up: how many. Guard and Wait: seconds.")]
     [Min(0)] public float amount = 1;
     [Tooltip("Said when the step starts, inside the player's head.")]
-    public DMLine line;
+    public DungeonMaster.Line line;
     [Tooltip("Said when the player does it (not when the step is given up on).")]
-    public DMLine doneLine;
+    public DungeonMaster.Line doneLine;
     [TextArea(1, 3), Tooltip("Posted to the feed only if the player has not done it after Hint Delay. {Move}, {PrimaryAction}, {SecondaryAction}, {Interact}, {Inventory} … become the Table map's current bindings.")]
     public string hint;
     [Min(0)] public float hintDelay = 6f;

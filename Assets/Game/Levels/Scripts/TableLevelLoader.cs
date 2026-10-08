@@ -16,7 +16,7 @@ public class TableLevelLoader : MonoBehaviour
     public int FloorNumber { get; private set; } = 1;
     int generationLevel = 1;
     public int GenerationLevel => generationLevel;
-    public bool HasNextFloor => Current!=null && Current.kind==TableLevelKind.Dungeon && FloorNumber<Current.FloorCount;
+    public bool HasNextFloor => Current!=null && Current.IsDungeon && FloorNumber<Current.FloorCount;
     int runSeed;
     TableLevelMenu menu;
     Player player;
@@ -129,7 +129,7 @@ public class TableLevelLoader : MonoBehaviour
         GameManager.Instance.Push(GameState.Cutscene);
         RememberRoom();
         var revealSettings = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
-        bool useReveal = !DebugDungeonSession.Active && !descending && level.kind == TableLevelKind.Dungeon && revealSettings != null;
+        bool useReveal = !DebugDungeonSession.Active && !descending && level.IsDungeon && revealSettings != null;
         bool faded=false, completed=false;
         TableLevelReveal reveal=null;
         // C# forbids yield in try/catch, so only Prepare is caught; the finally always releases the cutscene and fade.
@@ -156,7 +156,7 @@ public class TableLevelLoader : MonoBehaviour
             if (!useReveal) yield return null;
             if(ready)
             {
-                if(level.kind==TableLevelKind.Dungeon && !descending)
+                if(level.IsDungeon && !descending)
                 {
                     player.UseLevelLoadout();
                     player.Equipment.UnequipAll();player.Bag.Clear();player.Hotbar.Clear();
@@ -171,7 +171,7 @@ public class TableLevelLoader : MonoBehaviour
                 else if(level.kind==TableLevelKind.Town) RestoreTownInventory();
                 if(!descending) player.Stats.Revive();
                 if(ProgressionManager.HasInstance) ProgressionManager.Instance.tableEntered=true;
-                if(level.kind==TableLevelKind.Dungeon && RunManager.HasInstance)
+                if(level.IsDungeon && RunManager.HasInstance)
                 {
                     if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); }
                     RunManager.Instance.ReachFloor(FloorNumber);
@@ -196,7 +196,7 @@ public class TableLevelLoader : MonoBehaviour
                 reveal = gameObject.AddComponent<TableLevelReveal>();
                 yield return RunGuarded(reveal.Play(Dungeon, revealSettings, () =>
                 {
-                    if (lighting != null) lighting.BlendToMood(level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
+                    if (lighting != null) lighting.BlendToMood(level.IsBoard ? level.BoardLighting(lighting) : level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
                 }));
             }
             if (faded)
@@ -212,7 +212,7 @@ public class TableLevelLoader : MonoBehaviour
                 else if (music != AudioManager.Instance.CurrentMusic) AudioManager.Instance.CrossfadeMusic(music, level.loopMusic, level.musicFadeSeconds, musicVolume);
             }
             completed=ready;
-            if (ready && level.kind == TableLevelKind.Dungeon) player.GetComponent<AdventureSave>()?.CaptureFloor();
+            if (ready && level.IsDungeon) player.GetComponent<AdventureSave>()?.CaptureFloor();
         }
         finally
         {
@@ -256,7 +256,7 @@ public class TableLevelLoader : MonoBehaviour
         DungeonGenerator candidateDungeon=null;
         Vector3 spawn=townPosition;Quaternion rotation=townRotation;
         try {
-            if(level.kind==TableLevelKind.Dungeon) {
+            if(level.IsDungeon) {
                 var bounds=GetComponent<BoxCollider>().bounds;
                 if(level.cellSize<=0 || level.width*level.cellSize>bounds.size.x-2 || level.depth*level.cellSize>bounds.size.z-2)
                     throw new InvalidOperationException("Dungeon dimensions exceed the table. Reduce dimensions on the level asset.");
@@ -295,13 +295,14 @@ public class TableLevelLoader : MonoBehaviour
         SetTown(level.kind==TableLevelKind.Town);
         Current=level;
         if(lighting!=null && !deferPlayerSwitch) {
-            if(level.kind==TableLevelKind.Dungeon) lighting.BlendToMood(level.DungeonLighting(FloorNumber),0);
+            if(level.IsBoard) lighting.BlendToMood(level.BoardLighting(lighting),0);
+            else if(level.IsDungeon) lighting.BlendToMood(level.DungeonLighting(FloorNumber),0);
             else if(level.mood!=null) lighting.BlendToMood(level.mood,0);
             else lighting.RestoreDefault();
         }
         if (!deferPlayerSwitch) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Table);
         player.StopAllCoroutines();
-        player.respawnDelay=level.kind==TableLevelKind.Dungeon ? 0 : defaultRespawn;
+        player.respawnDelay=level.IsDungeon ? 0 : defaultRespawn;
         player.Died-=OnDied;player.Died+=OnDied;
         var controller=player.GetComponent<CharacterController>();
         controller.enabled=false;player.transform.SetPositionAndRotation(spawn,rotation);controller.enabled=true;
@@ -338,7 +339,7 @@ public class TableLevelLoader : MonoBehaviour
     }
     void OnDied()
     {
-        if(Current==null || Current.kind!=TableLevelKind.Dungeon) return;
+        if(Current==null || !Current.IsDungeon) return;
         if(RunManager.HasInstance && RunManager.Instance.PlayDeath()) return;
         StartCoroutine(DeathMenu());
     }

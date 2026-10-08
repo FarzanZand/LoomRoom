@@ -39,9 +39,12 @@ public sealed partial class LightingManager
         // While a dungeon floor is dark, how much of the room's own light is taken away: 0 keeps it, 1 is black
         // with only the table lamp (TableLevelData.roomLighting).
         public float roomDark;
+        // The colour the room's light takes while a table level is played; alpha 0 leaves it alone.
+        public Color roomShade;
 
         public static MoodState LerpEnvironment(MoodState a, MoodState b, float t) => new MoodState {
             darkness = Mathf.Lerp(a.darkness, b.darkness, t), roomDark = Mathf.Lerp(a.roomDark, b.roomDark, t),
+            roomShade = Color.Lerp(a.roomShade.a > 0 ? a.roomShade : Color.white, b.roomShade.a > 0 ? b.roomShade : Color.white, t),
             sky = Color.Lerp(a.sky, b.sky, t), exposure = Mathf.Lerp(a.exposure, b.exposure, t),
             light = Color.Lerp(a.light, b.light, t), intensity = Mathf.Lerp(a.intensity, b.intensity, t),
             top = Color.Lerp(a.top, b.top, t), horizon = Color.Lerp(a.horizon, b.horizon, t),
@@ -297,9 +300,12 @@ public sealed partial class LightingManager
                 source.light.intensity = Mathf.Lerp(sun, Mathf.Min(sun, darkSunIntensity), dark);
             }
         float level = sceneBrightness * ambientMultiplier;
-        var top = displayedMood.top * sceneTint * level;
-        var horizon = displayedMood.horizon * sceneTint * level;
-        var ground = displayedMood.ground * sceneTint * level;
+        // Without a dungeon floor's darkness the ambient is the room's own: the level's Room Lighting applies to it.
+        if (!roomHeld) level *= 1f - RoomDark;
+        var roomColor = roomHeld ? Color.white : RoomTint;
+        var top = displayedMood.top * sceneTint * roomColor * level;
+        var horizon = displayedMood.horizon * sceneTint * roomColor * level;
+        var ground = displayedMood.ground * sceneTint * roomColor * level;
         // Dungeon darkness: hold the preset's ambient down to darkAmbient (measured on its own colours,
         // so the Darkness preset is unchanged), keeping the preset's hues.
         float peak = Mathf.Max(displayedMood.top.maxColorComponent, Mathf.Max(displayedMood.horizon.maxColorComponent, displayedMood.ground.maxColorComponent));

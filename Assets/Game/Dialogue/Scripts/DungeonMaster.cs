@@ -10,7 +10,7 @@ using Random = UnityEngine.Random;
 // and the Dungeon Master's voice in its own colour ("You hear a voice inside your head..." and the
 // quoted line, with a recorded clip or a short gibberish mumble). Lines appear whole in the lower
 // middle (or bottom left) and fade. Damage lines stay out: floating numbers show those.
-// The DM speaks through DungeonMaster.Say(...), a DMLine asset, a biome's entry lines, or Lua DMSay("...").
+// The DM speaks through DungeonMaster.Say(...), lines typed on the components and levels that use them, a biome's entry lines, or Lua DMSay("...").
 public class DungeonMaster : Singleton<DungeonMaster>
 {
     public enum Placement { LowerMiddle = 0, BottomLeft = 1 }
@@ -22,6 +22,10 @@ public class DungeonMaster : Singleton<DungeonMaster>
         [Tooltip("Recorded voice. Empty uses the mumble if Mumble is on.")] public AudioData voice;
         [Tooltip("Barony-style gibberish when the line appears.")] public bool mumble = true;
         [Tooltip("Said across the table in the room, so no \"voice inside your head\" prefix.")] public bool inPerson;
+
+        // The line with its text changed (a name filled in), keeping voice and delivery.
+        public Line With(string newText) => new() { text = newText, voice = voice, mumble = mumble, inPerson = inPerson };
+        public bool IsEmpty => string.IsNullOrWhiteSpace(text);
     }
 
     [SerializeField] TextMeshProUGUI label;
@@ -81,7 +85,6 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     public static void Say(string text, AudioClip clip = null, bool mumble = false) => Say(new Line { text = text, mumble = mumble }, clip);
     public static void Say(string text, AudioData data, bool mumble = false) => Say(new Line { text = text, voice = data, mumble = mumble });
-    public static void Say(DMLine asset) { if (asset != null) Say(asset.With(asset.text)); }
     public static void Say(Line line, AudioClip clip = null, float delay = 0)
     {
         if (!HasInstance || line == null || string.IsNullOrWhiteSpace(line.text)) return;

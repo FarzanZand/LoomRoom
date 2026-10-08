@@ -16,14 +16,12 @@ MonoBehaviour:
   description: The Dungeon Master's small board for learning the game. Played once,
     at the start of a new game.
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
-  kind: 1
+  kind: 2
   environmentPrefab: {fileID: 0}
   stages:
   - biome: {fileID: 11400000, guid: 6cdedb18b0a27e040b83d9876f0ad625, type: 2}
     floors: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
-  multipleLevels: 0
-  levelCount: 1
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   moodLighting: 8
   overrideLighting: 0
@@ -105,47 +103,39 @@ MonoBehaviour:
 
     ##############################
 
-    ###########222222222###333333#
+    ##############################
 
-    ###########222222222###333333#
+    ##############################
 
-    ###########222222222..+333333#
+    #####################333333###
 
-    ###########222222222###333333#
+    ##########222222222##333333###
 
-    ###########222222222###333333#
+    ##########222222222##333333###
 
-    ###############+#######333333#
+    ##########222222222+.333333###
 
-    ###############.#######333333#
+    ##########222222222##333333###
 
-    ###############.#########.####
+    ##########222222222##333333###
 
-    ###############.#########.####
+    ##############.######333333###
 
-    ###############.#########.####
+    ##############+#########+#####
 
-    ##0000000###1111111######.####
+    ##0000000##1111111######.#####
 
-    ##0000000###1111111######.####
+    ##0000000##1111111##444444444#
 
-    ##0000000###11#1#11######...##
+    ##0000000##1111111##444444444#
 
-    ##0000000+..1111111######.####
+    ##0000000+.1111111##444444444#
 
-    ##0000000###11#1#11######.####
+    ##0000000##1111111##444444444#
 
-    ##0000000###1111111######.####
+    ##0000000##1111111##444444444#
 
-    ##0000000###1111111######.####
-
-    #########################+####
-
-    ####################444444444#
-
-    ####################444444444#
-
-    ####################44#444#44#
+    ##0000000##1111111##444444444#
 
     ####################444444444#
 
@@ -153,47 +143,61 @@ MonoBehaviour:
 
     ####################444444444#
 
-    ####################44#444#44#
+    ##############################
 
-    ####################444444444#
+    ##############################
 
-    ####################444444444#
+    ##############################
+
+    ##############################
+
+    ##############################
+
+    ##############################
+
+    ##############################
 
     ##############################
 
     ##############################
 
     ##############################'
-  authoredContent: "\r\n\r\n            b     k\r\n            b\r\n              
-    p\r\n                          s\r\n                   b\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n                          
-    f\r\n                 r\r\n\r\n\r\n\r\n\r\n\r\n                     x     x\r\n\r\n\r\n\r\n\r\n\r\n                          
-    x\r\n\r\n\r\n\r\n"
+  authoredContent: "\r\n\r\n\r\n\r\n                          f\r\n           b    
+    k\r\n           b            s\r\n               p\r\n\r\n\r\n\r\n\r\n          
+    q\r\n                r\r\n                     x     x\r\n                     
+    o   o\r\n\r\n\r\n           q     q\r\n                      o   o\r\n                          
+    x\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n"
   authoredRooms:
   - label: Landing
     role: 0
     template: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
     turns: 3
     height: 0
+    raised: 0
   - label: Rat den
     role: 1
     template: {fileID: 0}
     turns: 0
     height: 0
+    raised: 1
   - label: Storeroom
     role: 4
     template: {fileID: 0}
     turns: 0
     height: 0
+    raised: 2
   - label: Guard room
     role: 1
     template: {fileID: 0}
     turns: 0
     height: 0
+    raised: 1
   - label: Stair hall
     role: 5
     template: {fileID: 0}
     turns: 0
     height: 0
+    raised: 0
   authoredMarkers:
   - key: r
     prefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
@@ -230,8 +234,24 @@ MonoBehaviour:
     item: {fileID: 0}
     count: 1
     loot: {fileID: 0}
+  - key: o
+    prefab: {fileID: 4334703388222251006, guid: deec40fd991fccd428866c7ce2ec5e97, type: 3}
+    item: {fileID: 0}
+    count: 1
+    loot: {fileID: 0}
+  - key: q
+    prefab: {fileID: 3374654030368360499, guid: a1d87d53c95240445aafc898c33831f5, type: 3}
+    item: {fileID: 0}
+    count: 1
+    loot: {fileID: 0}
   doorPrefab: {fileID: 7005205240093728226, guid: 3c6bc2dc79fc2bb42ba380732b33a2f2, type: 3}
   doorPercent: 65
+  boardEdgeMaterial: {fileID: 2100000, guid: b9c4c0e160db0d6449dad9e7fafa73d9, type: 2}
+  boardGridMaterial: {fileID: 2100000, guid: acc03c58dc02a3f41a0780fa30b8e880, type: 2}
+  boardTileThickness: 0.14
+  boardLayerHeight: 0.32
+  boardMaxRaise: 2
+  architectureTileSize: 3
   twoTileRoomPercent: 25
   threeTileRoomPercent: 0
   twoTileCorridorPercent: 25
@@ -244,7 +264,6 @@ MonoBehaviour:
   windowSill: 0.55
   windowLintel: 0.75
   windowJamb: 0.45
-  architectureTileSize: 3
   floorMaterial: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
   wallMaterial: {fileID: 2100000, guid: 014628dcf66483d4d9c97b6c366d07f1, type: 2}
   upperWallMaterial: {fileID: 0}
@@ -339,6 +358,8 @@ MonoBehaviour:
     chance: 0.6
     rooms: 12
   chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
+  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
   destructibles:
   - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
     weight: 3
@@ -384,5 +405,3 @@ MonoBehaviour:
   enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
   damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
   messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}
-  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
-  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}

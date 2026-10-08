@@ -34,6 +34,8 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
     Vector3 closedPosition;
     bool open;
     public bool IsOpen=>open;
+    // The moment it starts to open (board-game levels lay out what lies behind it).
+    public event System.Action<DungeonDoor> Opened;
     public string Prompt=>open ? "Door open" : "Open dungeon door";
     public bool CanInteract(Character who)=>!open && who!=null && who.IsAlive && (who is Player || who.GetComponent<DungeonDoorAccess>()?.isActiveAndEnabled==true);
     Quaternion closedRotation, swingTarget;
@@ -83,7 +85,7 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
             // With the hinge on their left, turning the same way always takes the leaf away from them.
             swingTarget=closedRotation*Quaternion.Euler(0,-Mathf.Abs(swingDegrees),0);
         }
-        open=true;NoiseEvents.Report(transform.position,7);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position);}
+        open=true;Opened?.Invoke(this);NoiseEvents.Report(transform.position,7);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position);}
     void Update(){
         if(!open)return;
         if(opening==Opening.Swing)

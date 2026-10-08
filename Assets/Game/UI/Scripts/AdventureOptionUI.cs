@@ -25,7 +25,7 @@ public class AdventureOptionUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
         title.text = level.displayName;
         description.text = level.description;
         if (tagLine != null)
-            tagLine.text = level.kind == TableLevelKind.Dungeon
+            tagLine.text = level.IsDungeon
                 ? (level.MultipleFloors ? $"DUNGEON  ·  {level.FloorCount} FLOORS" : "DUNGEON")
                 : "TOWN";
         if (art != null)

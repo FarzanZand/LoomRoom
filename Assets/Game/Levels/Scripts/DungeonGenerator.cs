@@ -120,7 +120,8 @@ public partial class DungeonGenerator : MonoBehaviour
     readonly System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<DungeonSocket>> actorSockets = new();
     readonly System.Collections.Generic.Dictionary<GameObject,int> featureCounts = new();
 
-    public Vector3 Cell(Vector2Int p) => transform.position + new Vector3((p.x-data.width*.5f)*data.cellSize, 0, (p.y-data.depth*.5f)*data.cellSize);
+    // On a board-game level the floor of a raised room or a stair is above the table: Cell stands on it.
+    public Vector3 Cell(Vector2Int p) => transform.position + new Vector3((p.x-data.width*.5f)*data.cellSize, BoardElevation(p), (p.y-data.depth*.5f)*data.cellSize);
     public Vector2Int CellOf(Vector3 world)
     {
         var local=world-transform.position;
@@ -273,6 +274,7 @@ public partial class DungeonGenerator : MonoBehaviour
         bool RoofOpen(Vector2Int c) => OpenCell(c) && openRoofs[Layout.RegionIds[c.x, c.y]];
         SpawnRoofOpen = RoofOpen(Layout.Start);
         bool WindowAt(Vector2Int c, Vector2Int d) => OpenCell(c) && openEdges[Layout.RegionIds[c.x, c.y]] && !OpenCell(c + d) && Layout.FacesOutside(c, d);
+        if (Board) { ComputeBoardElevations(seed); BeginBoard(); }
         geometry = new GameObject("Architecture").transform; geometry.SetParent(transform, false);
         ceiling = new GameObject("Ceilings").transform; ceiling.SetParent(transform, false);
         float size = level.cellSize, tile = level.architectureTileSize;
@@ -280,6 +282,7 @@ public partial class DungeonGenerator : MonoBehaviour
         for (int x = 0; x < level.width; x++) for (int z = 0; z < level.depth; z++)
         {
             if (!Layout.floor[x,z]) continue;
+            if (Board) { BuildBoardCell(x, z); continue; }
             int room = Layout.RegionIds[x,z];
             var style = RegionStyles[room];
             float height = HeightAt(x,z);
@@ -347,8 +350,10 @@ public partial class DungeonGenerator : MonoBehaviour
         PlaceTorches();
         DressCorridors();
         StockDeadEnds();
+        if (Board) BuildBoardRim();
+        // Board tiles stay separate: they are laid out one by one as rooms are revealed.
         var batching=gameObject.AddComponent<DungeonStaticGeometry>();
-        batching.Combine(geometry,data.cellSize*8);
+        if (!Board) batching.Combine(geometry,data.cellSize*8);
         batching.Combine(ceiling,data.cellSize*8);
         // Ceilings also answer to the player's ceiling light (see FirstPersonLighting).
         foreach(var r in ceiling.GetComponentsInChildren<Renderer>(true)) r.renderingLayerMask |= FirstPersonLighting.CeilingLayer;
@@ -366,7 +371,7 @@ public partial class DungeonGenerator : MonoBehaviour
         foreach(var cell in Layout.RoomCells(0))foreach(var direction in dirs) {
             var outside=cell+direction;
             if(Layout.InRoom(0,outside) || !Layout.floor[outside.x,outside.y])continue;
-            var delta=Cell(outside)-Cell(Layout.Start);
+            var delta=Cell(outside)-Cell(Layout.Start); delta.y=0;
             if(delta.sqrMagnitude<closest){closest=delta.sqrMagnitude;SpawnRotation=Quaternion.LookRotation(delta);}
         }
         ExitPoint = Cell(Layout.Exit);
@@ -404,6 +409,7 @@ public partial class DungeonGenerator : MonoBehaviour
         SpawnSocketActors(exitStair);
         gameObject.AddComponent<DungeonAmbience>().Initialize(Biome);
         gameObject.AddComponent<DungeonHud>().Initialize(this);
+        if (Board) gameObject.AddComponent<BoardReveal>().Initialize(this);
         watch.Stop();GenerationMilliseconds=watch.Elapsed.TotalMilliseconds;
         Debug.Log($"Dungeon seed {seed}, floor {floorNumber}: {Layout.rooms.Count} rooms, {Layout.Connections.Count} connections, generated in {GenerationMilliseconds:F0} ms.",this);
     }
@@ -505,6 +511,7 @@ public partial class DungeonGenerator : MonoBehaviour
             var dir=doorway.direction;
             var n=p+dir;
             var pos=(Cell(p)+Cell(n))*.5f;
+            if (Board) pos.y = Cell(p).y; // it stands at the room's edge, where the steps begin
             var door=Instantiate(data.doorPrefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
             // Cell width changes the span, not the doorway height or ceiling clearance.
             door.transform.localScale=new Vector3(data.cellSize/2f,1,1);
@@ -526,14 +533,19 @@ public partial class DungeonGenerator : MonoBehaviour
                 {
                     float end = Mathf.Min(top, (Mathf.Floor(y/data.architectureTileSize)+1)*data.architectureTileSize);
                     float depth = WallThickness - lintelFaceInset * 2;
-                    var span = dir.x != 0 ? new Vector3(depth,end-y,data.cellSize) : new Vector3(data.cellSize,end-y,depth);
+                    // On a board the lintel is the arch's beam: across both posts, and part of the door.
+                    float spanWidth = Board ? data.cellSize + .68f : data.cellSize;
+                    if (Board) depth = WallThickness + .06f;
+                    var span = dir.x != 0 ? new Vector3(depth,end-y,spanWidth) : new Vector3(spanWidth,end-y,depth);
                     // In line with the room walls either side, which sit behind the edge on the corridor side.
-                    var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
-                        WallMaterial(Layout.RegionIds[p.x,p.y],y), transform);
+                    var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(Board ? 0 : WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
+                        WallMaterial(Layout.RegionIds[p.x,p.y],y), Board ? door.transform : transform);
                     Destroy(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
                     y = end;
                 }
+                if (Board) BoardDoorFrame(gate, p, n, pos.y + top);
             }
+            if (Board && gate != null) boardDoors.Add((gate, p, n));
         }
     }
 
@@ -643,8 +655,9 @@ public partial class DungeonGenerator : MonoBehaviour
         var go=new GameObject(entrance ? "Entrance stair" : descending ? "Stairs down" : "Final exit stair"); go.transform.SetParent(transform,false); go.transform.position=pos;
         var exit=go.AddComponent<DungeonExit>(); exit.entrance=entrance;
         var col=go.AddComponent<BoxCollider>(); col.isTrigger=true;
-        if(descending){ BuildStairwell(go.transform,exit); col.center=new Vector3(0,1f,.3f); col.size=new Vector3(1.1f,1.6f,1f); }
-        else { BuildLadder(go.transform); col.center=new Vector3(0,1,0); col.size=new Vector3(1.2f,2,1.2f); }
+        // On a board the way on is always the stone stairwell, and there is no ladder to climb in by.
+        if(descending || (Board && !entrance)){ BuildStairwell(go.transform,exit); col.center=new Vector3(0,1f,.3f); col.size=new Vector3(1.1f,1.6f,1f); }
+        else { if(!Board) BuildLadder(go.transform); col.center=new Vector3(0,1,0); col.size=new Vector3(1.2f,2,1.2f); }
         go.AddComponent<InteractableTrigger>();
         return exit;
     }

@@ -25,9 +25,11 @@ public sealed partial class LightingManager
     public const uint RoomLayer = 8;
 
     float lampBase = -1f, appliedRoomDark = -1f;
+    Color appliedTint = Color.white;
     bool lampDriven;
     // How much of the held room light is taken away now (the level's Room Lighting).
-    float RoomDark => moodActive && roomHeld ? Mathf.Clamp01(displayedMood.roomDark) : 0f;
+    float RoomDark => moodActive ? Mathf.Clamp01(displayedMood.roomDark) : 0f;
+    Color RoomTint => moodActive && displayedMood.roomShade.a > 0f ? displayedMood.roomShade : Color.white;
 
     bool roomHeld;
     SphericalHarmonicsL2 heldProbe;
@@ -121,10 +123,14 @@ public sealed partial class LightingManager
     void ApplyRoomDark()
     {
         float d = RoomDark;
-        if (roomHeld && Mathf.Abs(d - appliedRoomDark) > .001f)
+        if (roomHeld && (Mathf.Abs(d - appliedRoomDark) > .001f || RoomTint != appliedTint))
         {
-            appliedRoomDark = d;
-            var probe = new[] { heldProbe * (1f - d) };
+            appliedRoomDark = d; appliedTint = RoomTint;
+            var tinted = heldProbe * (1f - d);
+            var tint = RoomTint;
+            for (int channel = 0; channel < 3; channel++)
+                for (int coefficient = 0; coefficient < 9; coefficient++) tinted[channel, coefficient] *= tint[channel];
+            var probe = new[] { tinted };
             foreach (var (r, _) in roomRenderers)
             {
                 if (r == null) continue;
@@ -141,7 +147,8 @@ public sealed partial class LightingManager
             lampDriven = true;
             tableLamp.enabled = true;
             tableLamp.intensity = lampBase * lamp;
-            FirstPersonLighting.SetLayers(tableLamp, RoomLayer);
+            // Over a dungeon floor's darkness it lights only the room; over a board, everything.
+            FirstPersonLighting.SetLayers(tableLamp, roomHeld ? RoomLayer : uint.MaxValue);
         }
         else if (lampDriven)
         {
@@ -179,7 +186,7 @@ public sealed partial class LightingManager
     {
         if (!roomHeld || sun == null) return false;
         sun.intensity = heldSun * (1f - RoomDark);
-        sun.color = heldSunColor;
+        sun.color = heldSunColor * RoomTint;
         FirstPersonLighting.SetLayers(sun, RoomLayer);
         return true;
     }

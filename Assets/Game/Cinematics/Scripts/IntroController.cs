@@ -35,8 +35,8 @@ public class IntroController : Singleton<IntroController>
     [Min(0)] public float openingFade = 3f;
 
     [Header("Opening")]
-    [Tooltip("Said in the dark.")] public DMLine[] beforeLamp = new DMLine[0];
-    [Tooltip("Said once the lamp is on, before the practice figure comes out.")] public DMLine[] afterLamp = new DMLine[0];
+    [Tooltip("Said in the dark.")] public DungeonMaster.Line[] beforeLamp = new DungeonMaster.Line[0];
+    [Tooltip("Said once the lamp is on, before the practice figure comes out.")] public DungeonMaster.Line[] afterLamp = new DungeonMaster.Line[0];
     [Tooltip("Played when the lamp comes on.")] public AudioClip lampSound;
 
     [Header("Practice board")]
@@ -44,35 +44,35 @@ public class IntroController : Singleton<IntroController>
     [FormerlySerializedAs("practiceLevel")] public TableLevelData introDungeon;
     [Tooltip("The one figure set out for the practice board.")]
     public AdventurerClass practiceClass;
-    [Tooltip("Said once the practice figure is down.")] public DMLine takeIt;
+    [Tooltip("Said once the practice figure is down.")] public DungeonMaster.Line takeIt;
     [Min(0), Tooltip("Seconds after arriving before the first step.")] public float firstStepDelay = 2f;
     public TutorialStep[] steps = new TutorialStep[0];
-    [Tooltip("Said once if the player stands still for Idle Seconds during the practice.")] public DMLine idleLine;
+    [Tooltip("Said once if the player stands still for Idle Seconds during the practice.")] public DungeonMaster.Line idleLine;
     [Min(5)] public float idleSeconds = 22f;
-    [Tooltip("Said the first time the practice figure gets hurt.")] public DMLine hurtLine;
+    [Tooltip("Said the first time the practice figure gets hurt.")] public DungeonMaster.Line hurtLine;
 
     [Header("The end of the practice")]
     [Tooltip("Walking into this room (its number on the floor plan) ends the practice: the killer comes up the stairs. -1: after the last step.")]
     public int finaleRoom = -1;
-    [Tooltip("Said when the steps are done, before the killer arrives.")] public DMLine enough;
-    [Tooltip("Said before the killer appears.")] public DMLine killerComing;
+    [Tooltip("Said when the steps are done, before the killer arrives.")] public DungeonMaster.Line enough;
+    [Tooltip("Said before the killer appears.")] public DungeonMaster.Line killerComing;
     [Tooltip("Enemy that ends the practice. It comes up behind the player.")] public GameObject killer;
     [Min(1)] public float killerHealth = 10f;
     [Min(1)] public float killerDamage = 3f;
-    [Tooltip("Said as the killer arrives.")] public DMLine killerLine;
+    [Tooltip("Said as the killer arrives.")] public DungeonMaster.Line killerLine;
     [Min(1), Tooltip("If the player is still alive after this many seconds, the Dungeon Master ends it himself.")]
     public float killerSeconds = 20f;
-    [Tooltip("Said when he ends it himself.")] public DMLine timeUp;
+    [Tooltip("Said when he ends it himself.")] public DungeonMaster.Line timeUp;
 
     [Header("Back at the table")]
-    [Tooltip("After the practice death, with the lamp still on.")] public DMLine[] afterPractice = new DMLine[0];
-    [Tooltip("Said first when the killer did it.")] public DMLine diedAtEnd;
-    [Tooltip("Said first instead when something else killed the figure before the end. {killer} is its name.")] public DMLine diedEarly;
-    [Tooltip("The last words before he puts the lamp out.")] public DMLine[] goodnight = new DMLine[0];
+    [Tooltip("After the practice death, with the lamp still on.")] public DungeonMaster.Line[] afterPractice = new DungeonMaster.Line[0];
+    [Tooltip("Said first when the killer did it.")] public DungeonMaster.Line diedAtEnd;
+    [Tooltip("Said first instead when something else killed the figure before the end. {killer} is its name.")] public DungeonMaster.Line diedEarly;
+    [Tooltip("The last words before he puts the lamp out.")] public DungeonMaster.Line[] goodnight = new DungeonMaster.Line[0];
     [Tooltip("Played when the lamp goes out.")] public AudioClip lampOutSound;
     [Min(0), Tooltip("Seconds of darkness with only his eyes before they close.")] public float eyesLinger = 2.5f;
     [Min(0), Tooltip("Seconds of black before the first morning.")] public float nightSeconds = 2f;
-    [Tooltip("Said once the player is up on the first morning, instead of the usual greeting.")] public DMLine[] firstMorning = new DMLine[0];
+    [Tooltip("Said once the player is up on the first morning, instead of the usual greeting.")] public DungeonMaster.Line[] firstMorning = new DungeonMaster.Line[0];
 
     [Header("Testing")]
     [Tooltip("Editor only: start with the wake-up as before.")]
@@ -188,7 +188,7 @@ public class IntroController : Singleton<IntroController>
     bool firstMorningPending;
 
     // The first morning's greeting, once (DungeonMasterRemarks says it instead of the usual one).
-    public DMLine[] TakeFirstMorning()
+    public DungeonMaster.Line[] TakeFirstMorning()
     {
         if (!firstMorningPending) return null;
         firstMorningPending = false;
@@ -290,7 +290,7 @@ public class IntroController : Singleton<IntroController>
         FirstPersonLighting.SetLayers(lamp, uint.MaxValue);
     }
 
-    static IEnumerator SayAll(DMLine[] lines)
+    static IEnumerator SayAll(DungeonMaster.Line[] lines)
     {
         foreach (var line in lines)
         {

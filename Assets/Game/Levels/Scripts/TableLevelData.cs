@@ -2,7 +2,8 @@ using UnityEngine;
 using Sirenix.OdinInspector;
 
 // All serialized by integer: append only.
-public enum TableLevelKind { Town = 0, Dungeon = 1 }
+// Boardgame: a dungeon laid out as board-game tiles on the table, no walls, rooms revealed as their doors open.
+public enum TableLevelKind { Town = 0, Dungeon = 1, Boardgame = 2 }
 // How the room looks while a table level is played (seen from the dungeon through its skylights).
 public enum RoomLighting { Normal = 0, Dim = 1, Dark = 2 }
 public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6, Darkness = 7, Standard = 8 }
@@ -15,7 +16,9 @@ public class TableLevelData : ScriptableObject
     const string Run = "Run", Look = "Look & Sound", Layout = "Layout", Architecture = "Architecture", Rooms = "Rooms",
                  Loot = "Loot & Shop", Hud = "HUD";
     const string D = nameof(IsDungeon);
-    bool IsDungeon => kind == TableLevelKind.Dungeon;
+    // Dungeons and board-game dungeons: everything a run needs.
+    public bool IsDungeon => kind != TableLevelKind.Town;
+    public bool IsBoard => kind == TableLevelKind.Boardgame;
     bool ShowLightingOverride => ShowLevelLighting && overrideLighting;
     // With biomes, each biome sets its own lighting; the level's is only for biome-less dungeons.
     bool HasBiomes => IsDungeon && stages != null && System.Array.Exists(stages, s => s != null && s.biome != null);
@@ -79,6 +82,8 @@ public class TableLevelData : ScriptableObject
     public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();
     [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), Tooltip("The room while this level is played. Normal: as it was when you sat down, visible from the dungeon. Dim: its lights lowered. Dark: black, with only the lamp over the table lit (the intro's look).")]
     public RoomLighting roomLighting;
+    [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), Tooltip("The colour the room's light takes while this level is played: dark yellow, cold blue ... White leaves it as it is.")]
+    [ColorUsage(false)] public Color roomTint = Color.white;
     [TabGroup(Tabs, Look), InfoBox("Dungeon lighting is set on each biome (its Look tab).", VisibleIf = nameof(HasBiomes)), Title("Music", HorizontalLine = false)]
     public AudioClip backgroundMusic;
     [TabGroup(Tabs, Look), Range(0f, 1f), LabelText("Volume"), Tooltip("BGM volume for this level: 0 is silent, 1 is full volume. Still respects the AudioManager Music and Master mixer settings. Reload the level to apply changes.")]
@@ -135,6 +140,7 @@ public class TableLevelData : ScriptableObject
         [HorizontalGroup, LabelWidth(60), AssetsOnly, Tooltip("A room template prefab for this room's interior (room 0 falls back to Starting Room).")] public GameObject template;
         [HorizontalGroup(70), LabelWidth(40), Range(0, 3), Tooltip("Quarter turns of the template.")] public int turns;
         [HorizontalGroup(80), LabelWidth(44), Min(0), Tooltip("Height in tiles; 0 keeps the generated height.")] public int height;
+        [HorizontalGroup(70), LabelWidth(36), Range(0, 3), Tooltip("Board-game levels: how many layers the room is raised; stairs lead up to it.")] public int raised;
     }
     [System.Serializable]
     public class AuthoredMarker
@@ -182,6 +188,20 @@ public class TableLevelData : ScriptableObject
     public GameObject doorPrefab;
     [TabGroup(Tabs, Layout), ShowIf(nameof(IsGenerated)), Range(0, 100), Tooltip("Chance for each connected corridor passage to have one door. Other entrances stay open; 0 leaves every passage open.")]
     public float doorPercent = 65;
+    // ── Board game ────────────────────────────────────────────────────
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Title("Board", "Board-game levels: the tiles' printed tops use the floor materials; these make the rest.", HorizontalLine = false), Tooltip("The cut edge of a ground-level tile: layers of card.")]
+    public Material boardEdgeMaterial;
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Tooltip("Printed grid over each tile (transparent).")]
+    public Material boardGridMaterial;
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Range(.05f, .4f), Tooltip("Thickness of a tile (world units).")]
+    public float boardTileThickness = .14f;
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Range(.1f, 1f), Tooltip("Height of one layer a room can be raised by (world units).")]
+    public float boardLayerHeight = .32f;
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Range(0, 3), Tooltip("Generated board levels: the most layers a room is raised.")]
+    public int boardMaxRaise = 2;
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Tooltip("Soft taps played as tiles land when a room is revealed (Tools/board_tap.py makes them).")]
+    public AudioClip[] boardTileTaps = new AudioClip[0];
+
     // ── Architecture ──────────────────────────────────────────────────
     [TabGroup(Tabs, Architecture), ShowIf(D), Min(3), Tooltip("Physical width and height of one square texture tile. 32x32 artwork repeats every 3 units by default. Independent of layout grid spacing so changing art scale does not enlarge the table footprint.")]
     public float architectureTileSize = 3f;
@@ -310,7 +330,21 @@ public class TableLevelData : ScriptableObject
         var state = DungeonLightingPreset(floorNumber);
         var biome = Biome(floorNumber);
         state.darkness = biome != null && biome.litThroughout ? 0f : 1f;
-        state.roomDark = roomLighting == RoomLighting.Dark ? 1f : roomLighting == RoomLighting.Dim ? .6f : 0f;
+        state.roomDark = RoomDarkness;
+        state.roomShade = new Color(roomTint.r, roomTint.g, roomTint.b, 1f);
+        return state;
+    }
+
+    float RoomDarkness => roomLighting == RoomLighting.Dark ? 1f : roomLighting == RoomLighting.Dim ? .6f : 0f;
+
+    // A board lies under the room's own light: the room as it is now, with this level's Room Lighting and tint.
+    public LightingManager.MoodState BoardLighting(LightingManager lighting)
+    {
+        var state = lighting.Capture().mood;
+        state.overrideLightGroups = false;
+        state.darkness = 0f;
+        state.roomDark = RoomDarkness;
+        state.roomShade = new Color(roomTint.r, roomTint.g, roomTint.b, 1f);
         return state;
     }
 
@@ -331,7 +365,7 @@ public class TableLevelData : ScriptableObject
 
     public AudioClip MusicFor(int floor, out float volume)
     {
-        var biome = kind == TableLevelKind.Dungeon ? Biome(floor) : null;
+        var biome = IsDungeon ? Biome(floor) : null;
         if (biome != null && biome.music != null) { volume = biome.musicVolume * backgroundMusicVolume; return biome.music; }
         volume = backgroundMusicVolume;
         return backgroundMusic;

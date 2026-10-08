@@ -27,16 +27,16 @@ public class ClassFigures : MonoBehaviour
     [Tooltip("The paper card that lifts off the table while picking (holds Card). Empty: Card Panel is shown on the HUD.")]
     public FloatingCard floatingCard;
     [Tooltip("Said once the figures are down.")]
-    public DMLine prompt;
+    public DungeonMaster.Line prompt;
     [Tooltip("Said instead when a saved run is waiting.")]
-    public DMLine resumePrompt;
+    public DungeonMaster.Line resumePrompt;
     [Tooltip("The card's hint line, rewritten for the saved run's figure.")]
     public TMPro.TMP_Text how;
     AdventurerClass saved; string savedDetail, howDefault;
     // The figure taken plays the saved run.
     public bool ResumeChosen { get; private set; }
     [Tooltip("Said when a figure is taken.")]
-    public DMLine taken;
+    public DungeonMaster.Line taken;
 
     readonly List<ClassFigure> figures = new();
     ClassFigure highlighted, chosen, lastUnder;
@@ -76,7 +76,7 @@ public class ClassFigures : MonoBehaviour
     // only: just this figure (the intro's practice board), with promptOverride said instead of Prompt.
     // canCancel false: Esc does nothing.
     public IEnumerator Choose(Action<AdventurerClass> done, AdventurerClass savedClass = null, string savedDetail = null,
-        AdventurerClass only = null, DMLine promptOverride = null, bool canCancel = true)
+        AdventurerClass only = null, DungeonMaster.Line promptOverride = null, bool canCancel = true)
     {
         this.canCancel = canCancel;
         saved = savedClass; this.savedDetail = savedDetail;
@@ -96,7 +96,7 @@ public class ClassFigures : MonoBehaviour
             yield return new WaitForSecondsRealtime(placeInterval);
         }
         if (figures.Count == 0) { done?.Invoke(null); yield break; }
-        DungeonMaster.Say(promptOverride != null ? promptOverride : saved != null && resumePrompt != null ? resumePrompt : prompt);
+        DungeonMaster.Say(promptOverride != null && !promptOverride.IsEmpty ? promptOverride : saved != null && resumePrompt != null && !resumePrompt.IsEmpty ? resumePrompt : prompt);
 
         Highlight(figures.Find(f => f.adventurer == (saved != null ? saved : progress.selectedClass)) ?? figures[0]);
         if (card != null) card.Single = only != null;

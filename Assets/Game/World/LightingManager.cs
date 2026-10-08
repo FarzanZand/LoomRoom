@@ -152,7 +152,7 @@ public sealed partial class LightingManager : MonoBehaviour
     void Apply()
     {
         ApplyGroup(sources, brightness, tint);
-        ApplyGroup(sceneSources, sceneBrightness * (1f - RoomDark), sceneTint);
+        ApplyGroup(sceneSources, sceneBrightness * (1f - RoomDark), sceneTint * RoomTint);
         if (moodActive) ApplyMood();
         else { HoldRoom(0f); ApplyAmbient(sceneBrightness * ambientMultiplier, sceneTint, overrideFogColor); RestoreSceneFog(); }
         sceneApplied = true;
