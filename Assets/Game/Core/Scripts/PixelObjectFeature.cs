@@ -47,12 +47,17 @@ public class PixelObjectFeature : ScriptableRendererFeature
         static readonly int DepthId = Shader.PropertyToID("_PixelObjectDepth");
         static readonly int BlitTextureId = Shader.PropertyToID("_BlitTexture");
         static readonly int BlitScaleBiasId = Shader.PropertyToID("_BlitScaleBias");
+        static readonly int SceneDepthId = Shader.PropertyToID("_PixelObjectSceneDepth");
+        static readonly int SceneSizeId = Shader.PropertyToID("_PixelObjectSceneSize");
+        static readonly int ZTestId = Shader.PropertyToID("_PixelObjectZTest");
 
         public Material composite;
         readonly MaterialPropertyBlock props = new();
 
         class DrawData { public RendererListHandle list; public Vector4 size; }
         class CompositeData { public TextureHandle color, depth; public Material material; public MaterialPropertyBlock props; public Vector4 size; }
+        class SeedData { public TextureHandle sceneDepth; public Material material; public MaterialPropertyBlock props; public Vector4 sceneSize; }
+        readonly MaterialPropertyBlock seedProps = new();
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
@@ -70,11 +75,32 @@ public class PixelObjectFeature : ScriptableRendererFeature
                 name = "_PixelObjectColor", format = GraphicsFormat.R16G16B16A16_SFloat,
                 filterMode = FilterMode.Point, clearBuffer = true, clearColor = Color.clear,
             });
+            // The scene's depth (from the depth prepass, which leaves out the pixel objects) seeds the
+            // buffer's depth, so only what is actually visible is drawn into it.
+            bool seed = resources.cameraDepthTexture.IsValid();
+            composite.SetFloat(ZTestId, (float)(seed ? CompareFunction.Always : CompareFunction.LessEqual));
             var depth = renderGraph.CreateTexture(new TextureDesc(w, h)
             {
                 name = "_PixelObjectDepth", format = GraphicsFormat.D32_SFloat,
-                filterMode = FilterMode.Point, clearBuffer = true,
+                filterMode = FilterMode.Point, clearBuffer = !seed,
             });
+            if (seed)
+            {
+                using var builder = renderGraph.AddRasterRenderPass<SeedData>("Pixel Object Depth Seed", out var data);
+                data.sceneDepth = resources.cameraDepthTexture;
+                data.material = composite;
+                data.props = seedProps;
+                data.sceneSize = new Vector4(target.width, target.height, PixelSize, 0);
+                builder.UseTexture(resources.cameraDepthTexture);
+                builder.SetRenderAttachmentDepth(depth, AccessFlags.Write);
+                builder.SetRenderFunc(static (SeedData d, RasterGraphContext ctx) =>
+                {
+                    d.props.SetTexture(SceneDepthId, d.sceneDepth);
+                    d.props.SetVector(SceneSizeId, d.sceneSize);
+                    d.props.SetVector(BlitScaleBiasId, new Vector4(1, 1, 0, 0));
+                    ctx.cmd.DrawProcedural(Matrix4x4.identity, d.material, 1, MeshTopology.Triangles, 3, 1, d.props);
+                });
+            }
 
             using (var builder = renderGraph.AddRasterRenderPass<DrawData>("Pixel Objects", out var data))
             {
@@ -83,7 +109,7 @@ public class PixelObjectFeature : ScriptableRendererFeature
                 data.size = size;
                 builder.UseRendererList(data.list);
                 builder.SetRenderAttachment(color, 0, AccessFlags.Write);
-                builder.SetRenderAttachmentDepth(depth, AccessFlags.Write);
+                builder.SetRenderAttachmentDepth(depth, seed ? AccessFlags.ReadWrite : AccessFlags.Write);
                 if (resources.mainShadowsTexture.IsValid()) builder.UseTexture(resources.mainShadowsTexture);
                 if (resources.additionalShadowsTexture.IsValid()) builder.UseTexture(resources.additionalShadowsTexture);
                 builder.UseAllGlobalTextures(true);

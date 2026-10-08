@@ -24,6 +24,13 @@ public class ClassFigures : MonoBehaviour
     public GameObject cardPanel;
     [Tooltip("Said once the figures are down.")]
     public DMLine prompt;
+    [Tooltip("Said instead when a saved run is waiting.")]
+    public DMLine resumePrompt;
+    [Tooltip("The card's hint line, rewritten for the saved run's figure.")]
+    public TMPro.TMP_Text how;
+    AdventurerClass saved; string savedDetail, howDefault;
+    // The figure taken plays the saved run.
+    public bool ResumeChosen { get; private set; }
     [Tooltip("Said when a figure is taken.")]
     public DMLine taken;
 
@@ -57,8 +64,10 @@ public class ClassFigures : MonoBehaviour
     }
 
     // Sets the figures down, waits for a choice and clears them. done gets null when cancelled.
-    public IEnumerator Choose(Action<AdventurerClass> done)
+    // savedClass: a run saved on quit, played by that figure. It is picked first and the card says so.
+    public IEnumerator Choose(Action<AdventurerClass> done, AdventurerClass savedClass = null, string savedDetail = null)
     {
+        saved = savedClass; this.savedDetail = savedDetail;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         progress = player != null ? player.GetComponent<AdventurerProgress>() : null;
         if (progress == null || progress.rules == null) { done?.Invoke(null); yield break; }
@@ -73,9 +82,9 @@ public class ClassFigures : MonoBehaviour
             yield return new WaitForSecondsRealtime(placeInterval);
         }
         if (figures.Count == 0) { done?.Invoke(null); yield break; }
-        DungeonMaster.Say(prompt);
+        DungeonMaster.Say(saved != null && resumePrompt != null ? resumePrompt : prompt);
 
-        Highlight(figures.Find(f => f.adventurer == progress.selectedClass) ?? figures[0]);
+        Highlight(figures.Find(f => f.adventurer == (saved != null ? saved : progress.selectedClass)) ?? figures[0]);
         ShowCard(true);
         if (card != null) card.Refresh();
         choosing = true;
@@ -104,6 +113,8 @@ public class ClassFigures : MonoBehaviour
         }
         ShowCard(false);
         var result = chosen != null ? chosen.adventurer : null;
+        ResumeChosen = result != null && result == saved;
+        if (how != null && howDefault != null) how.text = howDefault;
         if (result != null)
         {
             DungeonMaster.Say(taken);
@@ -157,6 +168,11 @@ public class ClassFigures : MonoBehaviour
         highlighted = figure;
         if (progress != null && !progress.InRun && progress.selectedClass != figure.adventurer) progress.SelectClass(figure.adventurer);
         if (card != null && card.isActiveAndEnabled) card.Refresh();
+        if (how != null)
+        {
+            howDefault ??= how.text;
+            how.text = saved != null && figure.adventurer == saved ? $"Click to continue your run: {savedDetail}." : saved != null ? "Click to start a new run. Your saved run is lost. Esc to step back." : howDefault;
+        }
         if (choosing && UIFeedbackSettings.Shared != null) UIFeedbackSettings.Shared.Hover();
     }
 

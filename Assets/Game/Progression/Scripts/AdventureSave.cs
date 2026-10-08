@@ -39,6 +39,10 @@ public class AdventureSave : MonoBehaviour
         public List<ProgressionManager.FlagEntry> flags = new();
     }
     public Data Saved { get; private set; } = new();
+    [Tooltip("In the Unity editor, every Play session starts as a new game: the save file is neither read nor written. Turn off to test saving and continuing.")]
+    [SerializeField] bool freshStartInEditor = true;
+    // Built games always save; the editor only when Fresh Start In Editor is off.
+    bool UsesFile => !(Application.isEditor && freshStartInEditor);
     public bool HasCheckpoint => Saved.checkpoint != null;
     public event Action Changed;
     Player player; AdventurerProgress progress;
@@ -50,7 +54,7 @@ public class AdventureSave : MonoBehaviour
         if (initialized) return;
         initialized = true;
         player = GetComponent<Player>(); progress = GetComponent<AdventurerProgress>();
-        bool existed = Read();
+        bool existed = UsesFile && Read();
         Saved.memorials ??= new(); Saved.flags ??= new();
         if (ProgressionManager.HasInstance)
         {
@@ -93,6 +97,7 @@ public class AdventureSave : MonoBehaviour
     void FlagChanged(string key, int value) { if (!loading) Write(); }
     public void Write()
     {
+        if (!UsesFile) { Changed?.Invoke(); return; }
         if (ProgressionManager.HasInstance) Saved.flags = ProgressionManager.Instance.AllFlags.Select(x => new ProgressionManager.FlagEntry { key = x.Key, value = x.Value }).ToList();
         try
         {

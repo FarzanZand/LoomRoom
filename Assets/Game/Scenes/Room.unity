@@ -6671,7 +6671,7 @@ PrefabInstance:
     - target: {fileID: 11426072, guid: 58ac37417e60e534f91138088a3e6f70, type: 3}
       propertyPath: displaySettings.dialogueUI
       value: 
-      objectReference: {fileID: 1024589797444566, guid: 576820d27454daf4bb3b31f6c63b04ca, type: 3}
+      objectReference: {fileID: 4874844970011031442, guid: 0cf1903993426284298c693c36b7d5df, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -6874,7 +6874,6 @@ MonoBehaviour:
   greetingDelay: 1.5
   idleSeconds: 75
   doorLoopAgainAt: 4
-  introduction: Table/Introduction
   again: {fileID: 11400000, guid: d52a274a530b4064cb64d74750c8f370, type: 2}
   further: {fileID: 11400000, guid: 1f39458331ab39a4cb41f69500890703, type: 2}
   sameKiller: {fileID: 11400000, guid: 685e5c89f7e22b541bf81901e0f3c00b, type: 2}
@@ -6884,6 +6883,13 @@ MonoBehaviour:
   samePick: {fileID: 11400000, guid: 9372d7e62e668504da30b9d86199b964, type: 2}
   newPick: {fileID: 11400000, guid: 7f56d24750b250047a339ba706ca41ea, type: 2}
   deeper: {fileID: 11400000, guid: f54abd8bfaf7c8643a1550db24db2024, type: 2}
+  firstKill: {fileID: 11400000, guid: fd982be430883114ebf82ed23f9240c7, type: 2}
+  firstBackstab: {fileID: 11400000, guid: 19426d2bbca03cb4eb7202119c9519d7, type: 2}
+  closeCall: {fileID: 11400000, guid: a07e3944752b28a4286f0e5fbf5c0692, type: 2}
+  closeCallFraction: 0.25
+  levelUp: {fileID: 11400000, guid: cf69a66a8d5dcca428d195c36f6d9b9c, type: 2}
+  betterGear: {fileID: 11400000, guid: 15daf3fd9353dee4d92abe2a2f1fa156, type: 2}
+  remarkGap: 15
   runRemarkDelay: 1.5
 --- !u!1 &87579320
 GameObject:
@@ -40479,7 +40485,6 @@ Transform:
   m_Children:
   - {fileID: 557176940}
   - {fileID: 1596806268}
-  - {fileID: 803883184}
   - {fileID: 1930558111}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -40519,11 +40524,13 @@ MonoBehaviour:
   tableIntroController: {fileID: 729092101}
   DM: {fileID: 2040675284}
   dmPlacement: {fileID: 1994036524}
-  prompt: Sit down
-  playerSeat: {fileID: 803883184}
+  prompt: Play
+  talkFirst: {fileID: 11400000, guid: 1f56c3247e957864396d18112140aa23, type: 2}
   sitSeconds: 1.1
-  seatedCameraHeight: 0.55
-  standUpDistance: 16
+  figureViewDistance: 20
+  figureZoom: -14
+  stepSeconds: 0.9
+  figureAimHeight: 3
   afterSpeech: 1.5
   maxSpeechWait: 60
   figures: {fileID: 1930558112}
@@ -40945,37 +40952,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4176354919613106, guid: b932914ce87c734468a4c00f71611068, type: 3}
   m_PrefabInstance: {fileID: 803474950}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &803883183
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 803883184}
-  m_Layer: 0
-  m_Name: Player seat
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &803883184
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 803883183}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.76604444, z: -0, w: 0.64278764}
-  m_LocalPosition: {x: -54.450134, y: -10.9, z: -46.516724}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 794788859}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &804139642
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -57902,7 +57878,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Click a figure to take it. Esc to stand up.
+  m_text: Click a figure to take it. Esc to step back.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
   m_sharedMaterial: {fileID: -7708394129502214064, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
@@ -82277,6 +82253,7 @@ MonoBehaviour:
   turnSpeed: 90
   standOffset: {x: -9, y: 0, z: 1}
   prompt: Talk
+  introduction: Table/Introduction
   conversation: Room/Talk
 --- !u!1 &1580930834
 GameObject:
@@ -101685,6 +101662,8 @@ MonoBehaviour:
   card: {fileID: 1000669159}
   cardPanel: {fileID: 1901727154}
   prompt: {fileID: 11400000, guid: f25b09c9ca320104a8353781fe3059a3, type: 2}
+  resumePrompt: {fileID: 11400000, guid: cab9d9fb87586694fb4ee6b2dc45aa4f, type: 2}
+  how: {fileID: 1133886968}
   taken: {fileID: 11400000, guid: cce9c145eb366f841a23d97003f227a2, type: 2}
 --- !u!1 &1931187365 stripped
 GameObject:
@@ -114760,12 +114739,36 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
+      propertyPath: heavyStaminaCost
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
+      propertyPath: landedCameraKick
+      value: 0.85
+      objectReference: {fileID: 0}
+    - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
+      propertyPath: heavyStaggerDuration
+      value: 0.65
+      objectReference: {fileID: 0}
+    - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
       propertyPath: lightHitStopDuration
-      value: 0.06
+      value: 0.07
+      objectReference: {fileID: 0}
+    - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
+      propertyPath: heavyDamageMultiplier
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
       propertyPath: lightHitStopTimeScale
       value: 0.015
+      objectReference: {fileID: 0}
+    - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
+      propertyPath: heavyKnockbackMultiplier
+      value: 1.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
+      propertyPath: knockbackForceMultiplier
+      value: 0.35
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -115377,7 +115380,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2977784773749122855, guid: c1c1c1907ebe2c3448d5425757749676, type: 3}
       propertyPath: skipWakeUp
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2977784773749122855, guid: c1c1c1907ebe2c3448d5425757749676, type: 3}
       propertyPath: startingPlayer

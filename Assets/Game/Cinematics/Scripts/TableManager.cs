@@ -2,25 +2,28 @@ using System.Collections;
 using UnityEngine;
 
 // Table entry selects a level. The intro steps only tell TableLevelLoader what belongs to the town.
-// Sitting down is its own moment: the room player moves into the seat at the near end of the table
-// and turns to the Dungeon Master, who may speak (DungeonMasterRemarks listens to Seated); then the view drops to the class figures
-// on the table (ClassFigures) and taking one starts the dungeon. With a saved run to resume the
-// adventure menu opens instead. Cancelling, or closing the menu, stands the player back up.
+// Using the table is its own moment: the room player, standing where they are, turns to the Dungeon
+// Master, who may speak (DungeonMasterRemarks listens to Seated); then the
+// view drops to the class figures on the table (ClassFigures) and taking one starts the dungeon. A run
+// saved on quit is its class's figure, picked first: taking it continues the run. Cancelling stands
+// the player go. Without figures the adventure menu opens instead.
 public class TableManager : Singleton<TableManager>, IInteractable
 {
     public TableIntroController tableIntroController;
     public GameObject DM;
     public Transform dmPlacement;
-    [SerializeField] string prompt = "Sit down";
+    [SerializeField] string prompt = "Play";
+    [SerializeField, Tooltip("Said when the table is used before the player has talked to the Dungeon Master.")]
+    DMLine talkFirst;
 
-    [Header("Sitting")]
-    [Tooltip("Where the room player sits: feet position, facing the Dungeon Master.")]
-    [SerializeField] Transform playerSeat;
-    [SerializeField, Min(.1f)] float sitSeconds = 1.1f;
-    [SerializeField, Tooltip("Camera height while seated, in the same units as PlayerLook's camera heights.")]
-    float seatedCameraHeight = .55f;
-    [SerializeField, Tooltip("Where standing up puts the player, back from the seat.")]
-    float standUpDistance = 16f;
+    [Header("At the table")]
+    [SerializeField, Min(.1f), Tooltip("Seconds for the view to turn to the Dungeon Master.")] float sitSeconds = 1.1f;
+    [SerializeField, Min(0), Tooltip("When the figures come out the player steps up to them: this far from the figures, on the side they face (world units).")]
+    float figureViewDistance = 20f;
+    [SerializeField, Tooltip("Field of view change while picking a figure (negative zooms in).")]
+    float figureZoom = -14f;
+    [SerializeField, Min(.1f)] float stepSeconds = .9f;
+    [SerializeField, Min(0), Tooltip("How far above the table the view aims while picking (world units).")] float figureAimHeight = 3f;
     [SerializeField, Min(0), Tooltip("Extra seconds the Dungeon Master's last line stays readable before the menu covers it.")]
     float afterSpeech = 1.5f;
     [SerializeField, Min(1), Tooltip("Longest wait for the Dungeon Master before the menu opens anyway.")]
@@ -52,7 +55,13 @@ public class TableManager : Singleton<TableManager>, IInteractable
         base.Awake();
         loader = GetComponent<TableLevelLoader>() ?? gameObject.AddComponent<TableLevelLoader>();
     }
-    public void Interact(Character who) { if (CanInteract(who)) EnterTable(); }
+    // Until the Dungeon Master has introduced the game, the table sends the player to him.
+    public void Interact(Character who)
+    {
+        if (!CanInteract(who)) return;
+        if (DungeonMasterSeat.Introduced) EnterTable();
+        else if (talkFirst != null && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(talkFirst);
+    }
     public void EnterTable()
     {
         if (loader == null || !PlayerManager.HasInstance || !CanInteract(PlayerManager.Instance.Active)) return;
@@ -78,19 +87,22 @@ public class TableManager : Singleton<TableManager>, IInteractable
             }
             yield return new WaitForSecondsRealtime(afterSpeech);
         }
-        if (figures != null && figures.HasFigures && !HasSavedRun())
+        if (figures != null && figures.HasFigures)
         {
             // The board is swept and the figures go down where the last floor stood.
             loader.ClearTable();
-            yield return Turn(player, figures.Centre, lookSeconds);
+            yield return StepToFigures(player);
             AdventurerClass picked = null;
-            yield return figures.Choose(c => picked = c);
+            SavedRun(out var savedClass, out var savedDetail);
+            yield return figures.Choose(c => picked = c, savedClass, savedDetail);
             GameManager.Instance.Pop(GameState.Dialogue);
+            yield return Zoom(player, 0f, .35f);
             var level = figureLevel != null ? figureLevel : loader.catalog != null ? System.Array.Find(loader.catalog.levels, l => l != null && l.kind == TableLevelKind.Dungeon) : null;
             if (picked != null && level != null)
             {
                 player.Look.HeightOverride = null;
-                loader.Load(level);
+                if (figures.ResumeChosen) loader.ResumeAdventure();
+                else loader.Load(level);
             }
             else StandUp(player);
             sitting = null;
@@ -109,14 +121,55 @@ public class TableManager : Singleton<TableManager>, IInteractable
         sitting = null;
     }
 
-    // A run saved on quit: the adventure menu offers to resume it.
-    bool HasSavedRun()
+    // A run saved on quit: its class and where it stopped, for the figures.
+    void SavedRun(out AdventurerClass cls, out string detail)
     {
-        var save = PlayerManager.Instance.GetPlayer(PlayerKind.Table)?.GetComponent<AdventureSave>();
-        return save != null && save.HasCheckpoint && save.CanRestore(save.Saved.checkpoint);
+        cls = null; detail = null;
+        var table = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
+        var save = table != null ? table.GetComponent<AdventureSave>() : null;
+        if (save == null || !save.HasCheckpoint || !save.CanRestore(save.Saved.checkpoint)) return;
+        var c = save.Saved.checkpoint;
+        var rules = table.GetComponent<AdventurerProgress>()?.rules;
+        cls = rules != null ? System.Array.Find(rules.classes, x => x != null && x.id == c.classId) : null;
+        detail = $"level {c.characterLevel}, floor {c.floor}";
     }
 
-    // Turns the seated view to a point on the table.
+    // Up to the table edge in front of the figures, looking down at them, zooming in on the way.
+    IEnumerator StepToFigures(Player player)
+    {
+        if (player.Look == null || figures.spots.Length == 0 || figures.spots[0] == null) { yield return Turn(player, figures.Centre, lookSeconds); yield break; }
+        var facing = figures.spots[0].forward; facing.y = 0; facing.Normalize();
+        // Aim at the figures' middle, not their feet.
+        var centre = figures.Centre + Vector3.up * figureAimHeight;
+        var to = new Vector3(centre.x, player.transform.position.y, centre.z) + facing * figureViewDistance;
+        var from = player.transform.position;
+        float fromYaw = player.Look.YawTransform.eulerAngles.y, fromPitch = player.Look.Pitch;
+        float fromZoom = player.CameraRig != null ? player.CameraRig.FovOffset : 0f;
+        for (float t = 0; t < stepSeconds; t += Time.deltaTime)
+        {
+            float k = Mathf.SmoothStep(0f, 1f, t / stepSeconds);
+            player.Warp(Vector3.Lerp(from, to, k));
+            var d = centre - player.Look.PitchTransform.position;
+            float yaw = Quaternion.LookRotation(new Vector3(d.x, 0f, d.z)).eulerAngles.y;
+            float pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
+            player.Look.SetYaw(Mathf.LerpAngle(fromYaw, yaw, k));
+            player.Look.SetPitch(Mathf.Lerp(fromPitch, pitch, k));
+            if (player.CameraRig != null) player.CameraRig.FovOffset = Mathf.Lerp(fromZoom, figureZoom, k);
+            yield return null;
+        }
+        player.Warp(to);
+        yield return Turn(player, centre, .15f);
+    }
+
+    IEnumerator Zoom(Player player, float target, float seconds)
+    {
+        var rig = player.CameraRig; if (rig == null) yield break;
+        float from = rig.FovOffset;
+        for (float t = 0; t < seconds; t += Time.deltaTime) { rig.FovOffset = Mathf.Lerp(from, target, t / seconds); yield return null; }
+        rig.FovOffset = target;
+    }
+
+    // Turns the view to a point on the table.
     IEnumerator Turn(Player player, Vector3 target, float seconds)
     {
         if (player.Look == null) yield break;
@@ -135,22 +188,19 @@ public class TableManager : Singleton<TableManager>, IInteractable
         player.Look.SetPitch(pitch);
     }
 
+    // The player stays standing where they are; only the view turns to the Dungeon Master.
     IEnumerator Sit(Player player)
     {
-        if (playerSeat == null || player.Look == null) yield break;
-        Vector3 from = player.transform.position;
+        if (player.Look == null) yield break;
         float fromYaw = player.Look.YawTransform.eulerAngles.y, fromPitch = player.Look.Pitch;
-        player.Look.HeightOverride = seatedCameraHeight;
         for (float t = 0; t < sitSeconds; t += Time.deltaTime)
         {
             float k = Mathf.SmoothStep(0f, 1f, t / sitSeconds);
-            player.Warp(Vector3.Lerp(from, playerSeat.position, k));
             Aim(player, out float yaw, out float pitch);
             player.Look.SetYaw(Mathf.LerpAngle(fromYaw, yaw, k));
             player.Look.SetPitch(Mathf.Lerp(fromPitch, pitch, k));
             yield return null;
         }
-        player.Warp(playerSeat.position);
         Aim(player, out float endYaw, out float endPitch);
         player.Look.SetYaw(endYaw);
         player.Look.SetPitch(endPitch);
@@ -165,14 +215,15 @@ public class TableManager : Singleton<TableManager>, IInteractable
         var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
         if (head != null) target = head.position;
         Vector3 d = target - eye;
-        yaw = playerSeat != null && d.sqrMagnitude < .01f ? playerSeat.eulerAngles.y : Quaternion.LookRotation(new Vector3(d.x, 0f, d.z)).eulerAngles.y;
+        yaw = d.sqrMagnitude < .01f ? player.Look.YawTransform.eulerAngles.y : Quaternion.LookRotation(new Vector3(d.x, 0f, d.z)).eulerAngles.y;
         pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
     }
 
+    // Nothing to stand up from any more: just hand the view back.
     void StandUp(Player player)
     {
         if (player.Look != null) player.Look.HeightOverride = null;
-        if (playerSeat != null) player.Warp(playerSeat.position - playerSeat.forward * standUpDistance);
+        if (player.CameraRig != null) player.CameraRig.FovOffset = 0f;
     }
 
     void OnDisable()

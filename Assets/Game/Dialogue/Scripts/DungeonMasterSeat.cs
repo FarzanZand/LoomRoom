@@ -1,7 +1,10 @@
 using UnityEngine;
 
 // The Dungeon Master in the room, seated across the table. Plays the talking gesture whenever a line
-// is said in person, and talking to them starts their conversation in the Dialogue Database. Sits on
+// is said in person, and talking to them starts their conversation in the Dialogue Database: the
+// introduction the first time (the table stays shut until then), and afterwards the everyday talk.
+// When the introduction ends, or the talk ends on a choice that sets the Lua variable PlayNow, the
+// player goes straight to the table. Sits on
 // the DM's interaction trigger, so it is used instead of the NpcBrain conversation. While the player is
 // in a table level the DM stands beside the chair, and sits back down when the player returns.
 public class DungeonMasterSeat : MonoBehaviour, IInteractable
@@ -23,8 +26,13 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     [Tooltip("Where he stands, relative to where he sits (world units): beside the chair, clear of the table.")]
     public Vector3 standOffset = new(-9f, 0f, 1f);
     public string prompt = "Talk";
-    [Tooltip("Dialogue Database conversation started when the player talks to the DM.")]
+    [Tooltip("Dialogue Database conversation the first time the player talks to the DM. When it ends the player goes to the table.")]
+    public string introduction = "Table/Introduction";
+    [Tooltip("Dialogue Database conversation started when the player talks to the DM after the introduction.")]
     public string conversation = "Room/Talk";
+
+    public const string PlayNowVariable = "PlayNow";
+    public static bool Introduced => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(DungeonMasterRemarks.SatFlag);
 
     public string Prompt => prompt;
 
@@ -106,6 +114,21 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
 
     public void Interact(Character who)
     {
-        if (CanInteract(who)) DialogueBridge.StartConversation(conversation, who.transform, animator != null ? animator.transform : transform);
+        if (!CanInteract(who)) return;
+        bool first = !Introduced;
+        if (first && DungeonMaster.HasInstance) DungeonMaster.Instance.Silence();
+        PixelCrushers.DialogueSystem.DialogueLua.SetVariable(PlayNowVariable, false);
+        if (DialogueBridge.StartConversation(first ? introduction : conversation, who.transform, animator != null ? animator.transform : transform))
+            StartCoroutine(AfterTalk(first));
+    }
+
+    System.Collections.IEnumerator AfterTalk(bool first)
+    {
+        yield return null;
+        while (PixelCrushers.DialogueSystem.DialogueManager.isConversationActive) yield return null;
+        bool play = first || PixelCrushers.DialogueSystem.DialogueLua.GetVariable(PlayNowVariable).asBool;
+        if (first && ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(DungeonMasterRemarks.SatFlag);
+        yield return null; // the Dialogue state is popped as the conversation ends
+        if (play && TableManager.HasInstance) TableManager.Instance.EnterTable();
     }
 }

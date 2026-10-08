@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e23bd367d3e6feb42b5512f43e178574, type: 3}
-  m_Name: Call over
+  m_Name: Talk first
   m_EditorClassIdentifier: Assembly-CSharp::DMLine
-  text: Over here. Come and talk to me.
+  text: Not yet. Talk to me first.
   voice: {fileID: 0}
   mumble: 1
   inPerson: 1

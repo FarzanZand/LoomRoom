@@ -96,6 +96,8 @@ public class TableLevelLoader : MonoBehaviour
         Initialize(); StartCoroutine(LoadRoutine(level));
     }
     AdventureSave.Checkpoint pendingResume;
+    // The current run was continued from a save, not started fresh.
+    public bool Resumed { get; private set; }
     public void ResumeAdventure()
     {
         Initialize();
@@ -121,6 +123,7 @@ public class TableLevelLoader : MonoBehaviour
         if(descending) FloorNumber++;
         else { FloorNumber=1;runSeed=level.fixedSeed!=0 ? level.fixedSeed : UnityEngine.Random.Range(1,int.MaxValue); }
         var resume = pendingResume; pendingResume = null;
+        if (!descending) Resumed = resume != null;
         if (resume != null) { FloorNumber = resume.floor; runSeed = resume.seed; }
         GameManager.Instance.Pop(GameState.Dead);
         GameManager.Instance.Push(GameState.Cutscene);

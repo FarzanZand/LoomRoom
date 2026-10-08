@@ -49,6 +49,14 @@ public class DialogueBridge : MonoBehaviour
         talkingNpc = conversant != null ? conversant.GetComponentInParent<NpcBrain>() : null;
     }
 
+    // Sent by Pixel Crushers before each line is shown: NPC lines are quoted, like the DM's feed.
+    void OnConversationLine(Subtitle subtitle)
+    {
+        if (subtitle == null || subtitle.speakerInfo == null || subtitle.speakerInfo.isPlayer) return;
+        var text = subtitle.formattedText.text;
+        if (!string.IsNullOrWhiteSpace(text) && !text.StartsWith("\"")) subtitle.formattedText.text = "\"" + text + "\"";
+    }
+
     void OnConversationEnded(Transform actor)
     {
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);

@@ -4,13 +4,13 @@ using UnityEngine;
 
 // When the Dungeon Master speaks. Listens to the game (waking, sitting down, runs starting and ending,
 // a new deepest floor, the looping door, a forgotten figure, idling, the ending) and picks what is
-// said: a DMLine asset for the simple lines (Dialogue/Lines/{Room,Table,Dungeon}), or a Dialogue
-// Database conversation for the first introduction. Sits on the Dialogue Manager.
+// said, as DMLine assets (Dialogue/Lines/{Room,Table,Dungeon}). The introduction is a Dialogue Database
+// conversation started by talking to the DM (DungeonMasterSeat). Sits on the Dialogue Manager.
 public class DungeonMasterRemarks : MonoBehaviour
 {
     [Header("Room")]
     [Tooltip("After the opening wake-up.")] public DMLine morning;
-    [Tooltip("After waking, until the player has sat down once.")] public DMLine callOver;
+    [Tooltip("After waking, until the player has talked to the DM once.")] public DMLine callOver;
     [Tooltip("After walking about for a while without sitting down.")] public DMLine idle;
     [Tooltip("The first time the door loops back into the room.")] public DMLine door;
     [Tooltip("When the door has looped a few times in one session.")] public DMLine doorAgain;
@@ -19,7 +19,6 @@ public class DungeonMasterRemarks : MonoBehaviour
     [Min(5), Tooltip("Seconds of walking about after waking, without sitting down, before a nudge.")] public float idleSeconds = 75f;
     [Min(2), Tooltip("The door's second remark comes on this many loops in one session.")] public int doorLoopAgainAt = 4;
     [Header("Table")]
-    [Tooltip("Dialogue Database conversation, the first time the player sits down.")] public string introduction = "Table/Introduction";
     [Tooltip("Sitting down after a death.")] public DMLine again;
     [Tooltip("Sitting down after a death deeper than any before.")] public DMLine further;
     [Tooltip("Sitting down after two deaths to the same enemy. {killer} is its name.")] public DMLine sameKiller;
@@ -31,6 +30,15 @@ public class DungeonMasterRemarks : MonoBehaviour
     [Tooltip("Run start, with a class the player has lost before.")] public DMLine samePick;
     [Tooltip("Run start, with a class none of the figures has.")] public DMLine newPick;
     [Tooltip("Once a run, on the first floor deeper than any before.")] public DMLine deeper;
+
+    [Header("During a run (each at most once a run, and never two within Remark Gap)")]
+    [Tooltip("The first enemy killed.")] public DMLine firstKill;
+    [Tooltip("The first backstab.")] public DMLine firstBackstab;
+    [Tooltip("Surviving a hit that leaves you under Close Call of your health.")] public DMLine closeCall;
+    [Range(.05f, .5f)] public float closeCallFraction = .25f;
+    [Tooltip("The first character level gained.")] public DMLine levelUp;
+    [Tooltip("Picking up gear of a higher tier than anything carried.")] public DMLine betterGear;
+    [Min(0), Tooltip("Seconds between two run remarks.")] public float remarkGap = 25f;
     [Min(0), Tooltip("Seconds after arriving in the dungeon before a remark.")] public float runRemarkDelay = 1.5f;
 
     public const string SatFlag = "story.sat", OfferedPrefix = "story.offered.", LoopedFlag = "story.loopedDoor", ForgottenSeenFlag = "story.forgottenSeen";
@@ -40,6 +48,9 @@ public class DungeonMasterRemarks : MonoBehaviour
     AdventurerProgress progress;
     bool died, won, beatRecord, saidDeeper, satThisMorning, nudged;
     int recordAtRunStart, loops;
+    readonly System.Collections.Generic.HashSet<DMLine> saidThisRun = new();
+    float lastRemark = -999f;
+    Player tablePlayer;
     float idleTime;
     Coroutine greeting;
 
@@ -56,6 +67,11 @@ public class DungeonMasterRemarks : MonoBehaviour
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged += OnFlag;
         RoomLoopPortal.Crossed += OnLooped;
         AdventureMemorial.Inspected += OnInspected;
+        tablePlayer = player;
+        Character.AnyDied += OnAnyDied;
+        if (tablePlayer != null) { tablePlayer.HitLanded += OnHitLanded; tablePlayer.Damaged += OnPlayerDamaged; }
+        if (progress != null) progress.Changed += OnProgress;
+        if (InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp += OnPickedUp;
     }
 
     void OnDestroy()
@@ -68,6 +84,10 @@ public class DungeonMasterRemarks : MonoBehaviour
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= OnFlag;
         RoomLoopPortal.Crossed -= OnLooped;
         AdventureMemorial.Inspected -= OnInspected;
+        Character.AnyDied -= OnAnyDied;
+        if (tablePlayer != null) { tablePlayer.HitLanded -= OnHitLanded; tablePlayer.Damaged -= OnPlayerDamaged; }
+        if (progress != null) progress.Changed -= OnProgress;
+        if (InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp -= OnPickedUp;
     }
 
     static bool Flag(string key) => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(key);
@@ -126,14 +146,7 @@ public class DungeonMasterRemarks : MonoBehaviour
     {
         if (greeting != null) { StopCoroutine(greeting); greeting = null; }
         satThisMorning = true;
-        if (!Flag(SatFlag))
-        {
-            // The first time: who they are and what the game is. Replaces anything still waiting to be said.
-            if (DungeonMaster.HasInstance) DungeonMaster.Instance.Silence();
-            var dm = TableManager.Instance.DM;
-            DialogueBridge.StartConversation(introduction, player.transform, dm != null ? dm.transform : TableManager.Instance.transform);
-        }
-        else if (won) Say(afterTheEnd);
+        if (won) Say(afterTheEnd);
         else if (died)
         {
             string killer = LastTwoKiller();
@@ -141,7 +154,6 @@ public class DungeonMasterRemarks : MonoBehaviour
             else if (killer != null && sameKiller != null) DungeonMaster.Say(sameKiller.With(sameKiller.text.Replace("{killer}", killer)));
             else Say(again);
         }
-        SetFlag(SatFlag);
         died = won = beatRecord = false;
 
         // A class unlocked since the last time: said, and its figure picked first.
@@ -172,8 +184,52 @@ public class DungeonMasterRemarks : MonoBehaviour
         return floor;
     }
 
+    // ── During a run ──────────────────────────────────────────────────
+
+    static bool RunOn => RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;
+
+    // Once a run per line, and spaced out so the DM never chatters.
+    void Remark(DMLine line)
+    {
+        if (line == null || !RunOn || saidThisRun.Contains(line) || Time.time - lastRemark < remarkGap) return;
+        saidThisRun.Add(line); lastRemark = Time.time;
+        DungeonMaster.Say(line.With(line.text), null, .6f);
+    }
+
+    void OnAnyDied(Character c)
+    {
+        if (c != null && !(c is Player) && c.GetComponent<EnemyBrain>() != null) Remark(firstKill);
+    }
+
+    void OnHitLanded(DamageInfo info) { if (info.Backstab && !info.Blocked) Remark(firstBackstab); }
+
+    void OnPlayerDamaged(DamageInfo info)
+    {
+        var stats = tablePlayer != null ? tablePlayer.Stats : null;
+        if (stats == null || info.Blocked || !tablePlayer.IsAlive || stats.MaxHealth <= 0) return;
+        if (stats.CurrentHealth / stats.MaxHealth < closeCallFraction) Remark(closeCall);
+    }
+
+    int levelSeen = 1;
+    void OnProgress()
+    {
+        if (progress == null) return;
+        if (progress.Level > levelSeen && progress.Level >= 2) Remark(levelUp);
+        levelSeen = progress.Level;
+    }
+
+    void OnPickedUp(ItemData item, Player who, int count)
+    {
+        if (item == null || who != tablePlayer || item.tier <= 0 || !RunOn) return;
+        int best = 0;
+        foreach (var e in who.Equipment.EquippedItems) if (e != null && e != item) best = Mathf.Max(best, e.tier);
+        if (item.tier > best) Remark(betterGear);
+    }
+
     void OnRunStarted()
     {
+        saidThisRun.Clear(); levelSeen = 1;
+        lastRemark = Time.time - remarkGap + 8f; // not right on top of the run-start remark
         recordAtRunStart = Record();
         saidDeeper = false;
         StartCoroutine(CommentOnClass());
@@ -192,6 +248,8 @@ public class DungeonMasterRemarks : MonoBehaviour
         yield return null;
         if (progress == null || progress.selectedClass == null || save == null || !RunManager.HasInstance) yield break;
         if (RunManager.Instance.Floor > 1 || RunManager.Instance.Seconds > 0) yield break;
+        var loader = TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+        if (loader != null && loader.Resumed) yield break; // continuing, not picking
         var memorials = save.Saved.memorials;
         int count = memorials.Count(m => m.classId == progress.selectedClass.id);
         int most = memorials.Count == 0 ? 0 : memorials.GroupBy(m => m.classId).Max(g => g.Count());
