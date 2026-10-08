@@ -31,7 +31,6 @@ public class AdventurerClass : ScriptableObject
     [AssetsOnly] public GameObject miniature;
     [Tooltip("Empty = available from the start. Otherwise the progression flag that unlocks it.")]
     public string unlockFlag;
-    [TextArea(1, 2), ShowIf("@!string.IsNullOrEmpty(unlockFlag)")] public string lockedHint = "Solve the room's puzzle to unlock.";
 
     [Title("Starting kit")]
     public ItemData[] equipment = Array.Empty<ItemData>();

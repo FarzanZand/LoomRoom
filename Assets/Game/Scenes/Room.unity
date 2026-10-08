@@ -123866,6 +123866,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 540669809}
     m_Modifications:
     - target: {fileID: 2977784773749122855, guid: c1c1c1907ebe2c3448d5425757749676, type: 3}
+      propertyPath: startAt
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2977784773749122855, guid: c1c1c1907ebe2c3448d5425757749676, type: 3}
       propertyPath: skipWakeUp
       value: 0
       objectReference: {fileID: 0}

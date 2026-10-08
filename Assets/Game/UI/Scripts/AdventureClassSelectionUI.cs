@@ -9,7 +9,7 @@ using UnityEngine.UI;
 public class AdventureClassSelectionUI : MonoBehaviour
 {
     public Image portrait;
-    public TMP_Text className, description, resources, lockedHint;
+    public TMP_Text className, description, resources;
     [Tooltip("Icon + label pairs for the class's best starting skills, strongest first.")]
     public Image[] skillIcons;
     public TMP_Text[] skillLabels;
@@ -87,14 +87,6 @@ public class AdventureClassSelectionUI : MonoBehaviour
             bool shown = i < kit.Length;
             kitIcons[i].transform.parent.gameObject.SetActive(shown);
             if (shown) kitIcons[i].sprite = kit[i].icon;
-        }
-
-        int locked = classes.Count(x => x != null && !x.Unlocked);
-        lockedHint.gameObject.SetActive(locked > 0 && !Single);
-        if (locked > 0)
-        {
-            var hint = classes.First(x => x != null && !x.Unlocked);
-            lockedHint.text = locked == 1 ? $"One class is still hidden. {hint.lockedHint}" : $"{locked} classes are still hidden. {hint.lockedHint}";
         }
 
         for (int i = 0; i < pips.Length; i++)
