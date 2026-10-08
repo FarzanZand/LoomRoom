@@ -636,7 +636,7 @@ public partial class DungeonGenerator : MonoBehaviour
         }
     }
 
-    bool Descends=>data.multipleLevels && FloorNumber<Mathf.Max(1,data.levelCount);
+    bool Descends=>FloorNumber<data.FloorCount;
     DungeonExit MakeExit(Vector3 pos,bool entrance)
     {
         bool descending=!entrance && Descends;

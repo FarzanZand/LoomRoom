@@ -1,9 +1,9 @@
 using UnityEngine;
 using Sirenix.OdinInspector;
 
+// All serialized by integer: append only.
 public enum TableLevelKind { Town = 0, Dungeon = 1 }
-// Keep existing numeric values: level assets serialize these selections as integers.
-// How the room looks while a table level is played (seen from the dungeon through its skylights). Serialized by integer.
+// How the room looks while a table level is played (seen from the dungeon through its skylights).
 public enum RoomLighting { Normal = 0, Dim = 1, Dark = 2 }
 public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6, Darkness = 7, Standard = 8 }
 
@@ -39,29 +39,25 @@ public class TableLevelData : ScriptableObject
         [HorizontalGroup(90), LabelText("Floors"), LabelWidth(40), Min(1)] public int floors = 3;
     }
     [TabGroup(Tabs, Run), ShowIf(D), Title("Biomes", "In order from the top floor down. Each biome lasts its number of floors and its guardian waits on its last floor.", HorizontalLine = false)]
-    [ListDrawerSettings(ShowFoldout = true), OnValueChanged(nameof(CountFloors), true)]
+    [ListDrawerSettings(ShowFoldout = true)]
     public BiomeStage[] stages = new BiomeStage[0];
     [TabGroup(Tabs, Run), ShowIf(D), ShowInInspector, ReadOnly, LabelText("Floors in a run")]
-    int FloorsInRun => multipleLevels ? Mathf.Max(1, levelCount) : 1;
+    public int FloorCount
+    {
+        get
+        {
+            int total = 0;
+            if (IsDungeon && stages != null) foreach (var s in stages) if (s != null && s.biome != null) total += Mathf.Max(1, s.floors);
+            return Mathf.Max(1, total);
+        }
+    }
+    public bool MultipleFloors => FloorCount > 1;
     [TabGroup(Tabs, Run), ShowIf(D), Tooltip("Per-floor enemy scaling across the whole run.")]
     public DungeonBalance balance;
 
-    // Derived from the stages; kept serialized for the loader, HUD and run records.
-    [HideInInspector] public bool multipleLevels;
-    [HideInInspector] public int levelCount = 1;
-
-    void CountFloors()
-    {
-        int total = 0;
-        if (stages != null) foreach (var s in stages) if (s != null && s.biome != null) total += Mathf.Max(1, s.floors);
-        if (total == 0) return;
-        levelCount = total;
-        multipleLevels = total > 1;
-    }
     void OnValidate()
     {
         if (!IsDungeon) return;
-        CountFloors();
         // An authored plan sets the grid size.
         if (IsAuthored && !string.IsNullOrWhiteSpace(authoredMap))
         {
@@ -95,11 +91,11 @@ public class TableLevelData : ScriptableObject
     // ── Layout ────────────────────────────────────────────────────────
     [TabGroup(Tabs, Layout), ShowIf(D), Tooltip("Zero generates a new seed on each entry.")]
     public int fixedSeed;
-    [TabGroup(Tabs, Layout), ShowIf(D), Tooltip("The first floor's starting room opens toward the Dungeon Master, so the player starts facing him across the table (the IntroDungeon). Other layouts are skipped; with a Fixed Seed that already does this, nothing is skipped.")]
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGenerated)), Tooltip("The first floor's starting room opens toward the Dungeon Master, so the player starts facing him across the table (the IntroDungeon). Other layouts are skipped; with a Fixed Seed that already does this, nothing is skipped.")]
     public bool startFacingDungeonMaster;
-    [TabGroup(Tabs, Layout), ShowIf(D), Title("Grid (cells)", HorizontalLine = false), Range(24, 48)]
+    [TabGroup(Tabs, Layout), ShowIf(D), Title("Grid (cells)", HorizontalLine = false), Range(24, 48), DisableIf(nameof(IsAuthored)), Tooltip("An authored floor plan sets the width and depth itself.")]
     public int width = 32;
-    [TabGroup(Tabs, Layout), ShowIf(D), Range(24, 56)]
+    [TabGroup(Tabs, Layout), ShowIf(D), Range(24, 56), DisableIf(nameof(IsAuthored))]
     public int depth = 42;
     [TabGroup(Tabs, Layout), ShowIf(D), Min(1), Tooltip("World units per grid cell.")]
     public float cellSize = 2f;
@@ -127,7 +123,7 @@ public class TableLevelData : ScriptableObject
     public int loopReach = 10;
     [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Tooltip("Weighted room shapes. Authored entries use a painted Room Shape asset (Create > Table > Room Shape). Shared by every biome; a biome's shapes add to it, a room profile's replace it.")]
     public DungeonShapeChoice[] roomShapes = DefaultShapes();
-    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), AssetsOnly, Tooltip("Room template prefab the player starts in on the first floor and on the first floor of each new biome. Give its footprint one door cell: the only way out, which the player faces from the centre. Empty uses an ordinary entrance room.")]
+    [TabGroup(Tabs, Layout), ShowIf(nameof(UsesStartingRoom)), AssetsOnly, Tooltip("Room template prefab the player starts in on the first floor and on the first floor of each new biome. Give its footprint one door cell: the only way out, which the player faces from the centre. Empty uses an ordinary entrance room.")]
     public GameObject startingRoom;
 
     // ── Authored layout ───────────────────────────────────────────────
@@ -164,6 +160,7 @@ public class TableLevelData : ScriptableObject
     public string[] AuthoredRows(string map) => (map ?? "").Replace("\r", "").Split('\n');
 
     bool IsGrown => IsDungeon && layoutMode == DungeonLayoutMode.Grown;
+    bool UsesStartingRoom => IsDungeon && layoutMode != DungeonLayoutMode.Partition;
     public DungeonGrowthSettings Growth => new DungeonGrowthSettings
     {
         spacing = roomSpacing, wander = corridorWander, widePercent = wideCorridorPercent,
@@ -183,36 +180,36 @@ public class TableLevelData : ScriptableObject
     };
     [TabGroup(Tabs, Layout), ShowIf(D), Title("Doors", HorizontalLine = false), LabelText("Door Prefab"), Tooltip("Editable door prefab, one cell wide. Instantiated at selected room entrances.")]
     public GameObject doorPrefab;
-    [TabGroup(Tabs, Layout), ShowIf(D), Range(0, 100), Tooltip("Chance for each connected corridor passage to have one door. Other entrances stay open; 0 leaves every passage open.")]
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsGenerated)), Range(0, 100), Tooltip("Chance for each connected corridor passage to have one door. Other entrances stay open; 0 leaves every passage open.")]
     public float doorPercent = 65;
-    [TabGroup(Tabs, Layout), ShowIf(D), Title("Room heights", HorizontalLine = false), Range(0, 100), LabelText("Two Tiles %"), Tooltip("Percentage of whole rooms two tiles tall. The remainder after both percentages are one tile tall. Totals over 100 are normalized.")]
-    public float twoTileRoomPercent = 25;
-    [TabGroup(Tabs, Layout), ShowIf(D), Range(0, 100), LabelText("Three Tiles %"), Tooltip("Percentage of whole rooms three tiles tall. Selection is seeded; counts round to whole rooms.")]
-    public float threeTileRoomPercent;
-    [TabGroup(Tabs, Layout), ShowIf(D), Title("Corridor heights", HorizontalLine = false), Range(0, 100), LabelText("Two Tiles %"), Tooltip("Target percentage two tiles tall. Requires a direct connection to a room at least two tiles tall. Too few eligible sections reduces the count. Remaining sections are one tile tall.")]
-    public float twoTileCorridorPercent = 25;
-    [TabGroup(Tabs, Layout), ShowIf(D), Range(0, 100), LabelText("Three Tiles %"), Tooltip("Target percentage three tiles tall. Requires a direct connection to a three-tile room. Totals over 100 are normalized.")]
-    public float threeTileCorridorPercent;
-    [TabGroup(Tabs, Layout), ShowIf(D), Title("Openings (room player view)", HorizontalLine = false), Tooltip("Open a skylight in the ceiling of a seeded selection of whole rooms and corridor sections, so the room above shows through. A frame of ceiling stays round its edge.")]
-    public bool hideRoof;
-    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideRoof)), Range(0, 100), Tooltip("Percentage of whole rooms and connected corridor sections with a skylight. 100 opens every ceiling.")]
-    public float hideRoofPercent = 100;
-    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideRoof)), Range(.1f, 3f), Tooltip("Width of the ceiling frame left round a skylight, in world units. Room templates with Open Ceiling use their own.")]
-    public float skylightFrame = .9f;
-    [TabGroup(Tabs, Layout), ShowIf(D), Tooltip("Open a window in the outward-facing perimeter walls of a seeded selection. Interior walls stay solid; collision remains to keep actors on the table.")]
-    public bool hideEdges;
-    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideEdges)), Range(0, 100), Tooltip("Percentage of whole rooms and connected corridor sections whose outer walls have windows. 100 opens every exposed edge.")]
-    public float hideEdgesPercent = 100;
-    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideEdges)), Range(0f, 2f), Tooltip("Wall kept below a window, in world units.")]
-    public float windowSill = .55f;
-    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideEdges)), Range(.2f, 2f), Tooltip("Wall kept above a window, in world units.")]
-    public float windowLintel = .75f;
-    [TabGroup(Tabs, Layout), ShowIf(D), EnableIf(nameof(hideEdges)), Range(.1f, 1f), Tooltip("Wall kept at each end of a run of windows, in world units.")]
-    public float windowJamb = .45f;
-
     // ── Architecture ──────────────────────────────────────────────────
     [TabGroup(Tabs, Architecture), ShowIf(D), Min(3), Tooltip("Physical width and height of one square texture tile. 32x32 artwork repeats every 3 units by default. Independent of layout grid spacing so changing art scale does not enlarge the table footprint.")]
     public float architectureTileSize = 3f;
+    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Room heights", HorizontalLine = false), Range(0, 100), LabelText("Two Tiles %"), Tooltip("Percentage of whole rooms two tiles tall. The remainder after both percentages are one tile tall. Totals over 100 are normalized.")]
+    public float twoTileRoomPercent = 25;
+    [TabGroup(Tabs, Architecture), ShowIf(D), Range(0, 100), LabelText("Three Tiles %"), Tooltip("Percentage of whole rooms three tiles tall. Selection is seeded; counts round to whole rooms.")]
+    public float threeTileRoomPercent;
+    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Corridor heights", HorizontalLine = false), Range(0, 100), LabelText("Two Tiles %"), Tooltip("Target percentage two tiles tall. Requires a direct connection to a room at least two tiles tall. Too few eligible sections reduces the count. Remaining sections are one tile tall.")]
+    public float twoTileCorridorPercent = 25;
+    [TabGroup(Tabs, Architecture), ShowIf(D), Range(0, 100), LabelText("Three Tiles %"), Tooltip("Target percentage three tiles tall. Requires a direct connection to a three-tile room. Totals over 100 are normalized.")]
+    public float threeTileCorridorPercent;
+    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Openings (room player view)", HorizontalLine = false), Tooltip("Open a skylight in the ceiling of a seeded selection of whole rooms and corridor sections, so the room above shows through. A frame of ceiling stays round its edge.")]
+    public bool hideRoof;
+    [TabGroup(Tabs, Architecture), ShowIf(D), EnableIf(nameof(hideRoof)), Range(0, 100), Tooltip("Percentage of whole rooms and connected corridor sections with a skylight. 100 opens every ceiling.")]
+    public float hideRoofPercent = 100;
+    [TabGroup(Tabs, Architecture), ShowIf(D), EnableIf(nameof(hideRoof)), Range(.1f, 3f), Tooltip("Width of the ceiling frame left round a skylight, in world units. Room templates with Open Ceiling use their own.")]
+    public float skylightFrame = .9f;
+    [TabGroup(Tabs, Architecture), ShowIf(D), Tooltip("Open a window in the outward-facing perimeter walls of a seeded selection. Interior walls stay solid; collision remains to keep actors on the table.")]
+    public bool hideEdges;
+    [TabGroup(Tabs, Architecture), ShowIf(D), EnableIf(nameof(hideEdges)), Range(0, 100), Tooltip("Percentage of whole rooms and connected corridor sections whose outer walls have windows. 100 opens every exposed edge.")]
+    public float hideEdgesPercent = 100;
+    [TabGroup(Tabs, Architecture), ShowIf(D), EnableIf(nameof(hideEdges)), Range(0f, 2f), Tooltip("Wall kept below a window, in world units.")]
+    public float windowSill = .55f;
+    [TabGroup(Tabs, Architecture), ShowIf(D), EnableIf(nameof(hideEdges)), Range(.2f, 2f), Tooltip("Wall kept above a window, in world units.")]
+    public float windowLintel = .75f;
+    [TabGroup(Tabs, Architecture), ShowIf(D), EnableIf(nameof(hideEdges)), Range(.1f, 1f), Tooltip("Wall kept at each end of a run of windows, in world units.")]
+    public float windowJamb = .45f;
+
     [TabGroup(Tabs, Architecture), ShowIf(D), Title("Default materials", "Used where no biome, style or profile overrides them.", HorizontalLine = false)]
     public Material floorMaterial;
     [TabGroup(Tabs, Architecture), ShowIf(D), LabelText("Bottom Wall Material"), Tooltip("First wall tile, from floor to one architecture tile high. Room styles may override this.")]
@@ -248,6 +245,10 @@ public class TableLevelData : ScriptableObject
     public DungeonPropRule[] propRules = new DungeonPropRule[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Authored chest prefab with DungeonContainer, lid reference and interaction collider.")]
     public GameObject chestPrefab;
+    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Container sounds", HorizontalLine = false), LabelText("Barrel Break")]
+    public AudioClip containerBreakAudio;
+    [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Chest Open")]
+    public AudioClip chestOpenAudio;
     [TabGroup(Tabs, Rooms), ShowIf(D), Title("Breakables", HorizontalLine = false), Tooltip("Barrels, crates, pots and cobwebs. Storage and supply spots use Floor placements; cobwebs hang in ceiling corners. Shared by every biome; a biome's own entries are added.")]
     public DungeonWeightedPrefab[] destructibles = new DungeonWeightedPrefab[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Extra Per Room"), Tooltip("Extra breakables scattered per room, on top of supply spots.")]
@@ -278,10 +279,6 @@ public class TableLevelData : ScriptableObject
     public TMPro.TMP_Text damageNumberPrefab;
     [TabGroup(Tabs, Hud), ShowIf(D)]
     public TMPro.TMP_Text messagePrefab;
-    [TabGroup(Tabs, Hud), ShowIf(D), Title("Container sounds", HorizontalLine = false), LabelText("Barrel Break")]
-    public AudioClip containerBreakAudio;
-    [TabGroup(Tabs, Hud), ShowIf(D), LabelText("Chest Open")]
-    public AudioClip chestOpenAudio;
 
     // ── Queries ───────────────────────────────────────────────────────
 
@@ -343,93 +340,11 @@ public class TableLevelData : ScriptableObject
     // The biome's guardian, on the biome's last floor.
     public DungeonMilestone Milestone(int floor)
     {
-        if (floor > FloorsInRun) return null;
+        if (floor > FloorCount) return null;
         var biome = BiomeAt(floor, out int floorInBiome, out int biomeFloors);
         var guardian = biome != null ? biome.guardian : null;
         return guardian != null && guardian.enabled && guardian.boss != null && floorInBiome == biomeFloors ? guardian : null;
     }
 
     public float MerchantChance(int floor) => Biome(floor)?.merchantChance ?? 0;
-}
-
-[System.Serializable]
-public class DungeonLightingSettings
-{
-    public Color skyTint = new Color(.4f, .5f, .62f);
-    [Min(0)] public float skyExposure = .8f;
-    public Color lightColor = new Color(.78f, .85f, 1f);
-    [Min(0)] public float lightIntensity = .65f;
-    [ColorUsage(false, true)] public Color ambientSky = new Color(.85f, .88f, .94f);
-    [ColorUsage(false, true)] public Color ambientHorizon = new Color(.74f, .76f, .79f);
-    [ColorUsage(false, true)] public Color ambientGround = new Color(.5f, .52f, .56f);
-    [Tooltip("Used when fog is enabled by the scene.")]
-    public Color fogColor = new Color(.28f, .34f, .42f);
-    public LightingManager.MoodState ToState() => new LightingManager.MoodState {
-        sky = skyTint, exposure = skyExposure, light = lightColor, intensity = lightIntensity,
-        top = ambientSky, horizon = ambientHorizon, ground = ambientGround, fog = fogColor
-    };
-}
-
-[System.Flags]
-public enum DungeonRoomRoles { None = 0, Entrance = 1, Combat = 2, Treasure = 4, Rest = 8, Storage = 16, Exit = 32, Any = 63 }
-
-[System.Serializable]
-public class DungeonWeightedPrefab
-{
-    [AssetsOnly] public GameObject prefab;
-    [Min(0)] public float weight = 1;
-    public static GameObject Choose(DungeonWeightedPrefab[] choices, System.Random random, System.Func<GameObject,bool> filter = null)
-    {
-        if (choices == null) return null;
-        double total = 0;
-        foreach (var c in choices) if (c != null && c.prefab != null && c.weight > 0 && (filter == null || filter(c.prefab))) total += c.weight;
-        if (total <= 0) return null;
-        double roll = random.NextDouble() * total;
-        foreach (var c in choices)
-        {
-            if (c == null || c.prefab == null || c.weight <= 0 || (filter != null && !filter(c.prefab))) continue;
-            roll -= c.weight;
-            if (roll < 0) return c.prefab;
-        }
-        return null;
-    }
-}
-
-[System.Serializable]
-public class DungeonFeature
-{
-    [AssetsOnly, Tooltip("Fountain, altar, grave, bookshelf or lever prefab. Must fit in one cell.")]
-    public GameObject prefab;
-    [Range(0, 1)] public float chancePerRoom = .12f;
-    [Tooltip("Against Wall, Corner and Centre work as for Furnishing. Anywhere picks any free cell and faces the room centre.")]
-    public DungeonPropPlacement placement = DungeonPropPlacement.Anywhere;
-    public DungeonRoomRoles rooms = DungeonRoomRoles.Combat | DungeonRoomRoles.Treasure | DungeonRoomRoles.Rest | DungeonRoomRoles.Storage;
-    [Min(1)] public int minFloor = 1;
-    [Min(0), Tooltip("Zero means no limit.")] public int maxPerFloor = 2;
-}
-
-[System.Serializable]
-public class DungeonMilestone
-{
-    public bool enabled = true;
-    [AssetsOnly, Tooltip("Boss enemy prefab. Spawned at the arena's Boss socket, or the exit room centre.")]
-    public GameObject boss;
-    [Tooltip("Lets an ordinary enemy serve as a guardian: its health and damage are multiplied.")]
-    [Min(.1f)] public float healthMultiplier = 1, damageMultiplier = 1;
-    [AssetsOnly, Tooltip("Hand-built arena (DungeonRoomTemplate) placed in the exit room. Empty keeps the generated room.")]
-    public GameObject arena;
-    [Tooltip("Shown under the boss name on the health bar.")]
-    public string title = "Guardian";
-    [TextArea] public string introMessage = "Something guards the stairs down.";
-    public AudioClip introSting;
-    [Range(0, 1)] public float stingVolume = 1f;
-    public AudioClip bossMusic;
-    [Range(0, 1)] public float bossMusicVolume = 1f;
-    [Tooltip("The stairs stay sealed until the boss dies.")]
-    public bool sealExit = true;
-    [Tooltip("Boss reward table. Empty uses the boss prefab's own.")]
-    public LootSource bossLoot;
-    [Min(0)] public int bonusGold = 60;
-    [Min(1), Tooltip("Exit room is enlarged by at least this factor to fit the arena.")]
-    public float arenaSizeScale = 1.5f;
 }

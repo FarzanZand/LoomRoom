@@ -189,7 +189,7 @@ public class RunManager : Singleton<RunManager>
         levelName = Level != null ? Level.displayName : "the dungeon",
         killer = Killer,
         floor = Floor,
-        floors = Level != null && Level.multipleLevels ? Mathf.Max(1, Level.levelCount) : 1,
+        floors = Level != null ? Level.FloorCount : 1,
         kills = Kills,
         gold = GoldFound,
         bosses = BossesSlain,

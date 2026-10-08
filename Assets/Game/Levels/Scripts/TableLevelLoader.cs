@@ -16,7 +16,7 @@ public class TableLevelLoader : MonoBehaviour
     public int FloorNumber { get; private set; } = 1;
     int generationLevel = 1;
     public int GenerationLevel => generationLevel;
-    public bool HasNextFloor => Current!=null && Current.multipleLevels && Current.kind==TableLevelKind.Dungeon && FloorNumber<Mathf.Max(1,Current.levelCount);
+    public bool HasNextFloor => Current!=null && Current.kind==TableLevelKind.Dungeon && FloorNumber<Current.FloorCount;
     int runSeed;
     TableLevelMenu menu;
     Player player;

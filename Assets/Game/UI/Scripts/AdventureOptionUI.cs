@@ -26,7 +26,7 @@ public class AdventureOptionUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
         description.text = level.description;
         if (tagLine != null)
             tagLine.text = level.kind == TableLevelKind.Dungeon
-                ? (level.multipleLevels ? $"DUNGEON  ·  {Mathf.Max(1, level.levelCount)} FLOORS" : "DUNGEON")
+                ? (level.MultipleFloors ? $"DUNGEON  ·  {level.FloorCount} FLOORS" : "DUNGEON")
                 : "TOWN";
         if (art != null)
         {
