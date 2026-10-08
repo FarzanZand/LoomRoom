@@ -181,6 +181,8 @@ half4 Frag(Varyings input) : SV_Target
         half x = lum / (1.0 + lum);
         half offset = 0.5 + (Bayer4(cell) - 0.5) * _BandDither;
         half xq = floor(x * _LightSteps + offset) / _LightSteps;
+        // The faint outer edge of a light fades out smoothly instead of ending in a hard, flat disc.
+        if (x < 1.0 / _LightSteps) xq = x;
         xq = min(xq, 0.97);
         half lq = xq / (1.0 - xq);
         light *= lq / max(lum, 1e-4);
