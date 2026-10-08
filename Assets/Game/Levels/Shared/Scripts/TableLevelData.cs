@@ -3,6 +3,8 @@ using Sirenix.OdinInspector;
 
 public enum TableLevelKind { Town = 0, Dungeon = 1 }
 // Keep existing numeric values: level assets serialize these selections as integers.
+// How the room looks while a table level is played (seen from the dungeon through its skylights). Serialized by integer.
+public enum RoomLighting { Normal = 0, Dim = 1, Dark = 2 }
 public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6, Darkness = 7, Standard = 8 }
 
 [CreateAssetMenu(menuName = "Table/Level", fileName = "TableLevel")]
@@ -68,6 +70,8 @@ public class TableLevelData : ScriptableObject
     public bool overrideLighting;
     [TabGroup(Tabs, Look), ShowIf(nameof(ShowLightingOverride)), InlineProperty, HideLabel]
     public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();
+    [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), Tooltip("The room while this level is played. Normal: as it was when you sat down, visible from the dungeon. Dim: its lights lowered. Dark: black, with only the lamp over the table lit (the intro's look).")]
+    public RoomLighting roomLighting;
     [TabGroup(Tabs, Look), InfoBox("Dungeon lighting is set on each biome (its Look tab).", VisibleIf = nameof(HasBiomes)), Title("Music", HorizontalLine = false)]
     public AudioClip backgroundMusic;
     [TabGroup(Tabs, Look), Range(0f, 1f), LabelText("Volume"), Tooltip("BGM volume for this level: 0 is silent, 1 is full volume. Still respects the AudioManager Music and Master mixer settings. Reload the level to apply changes.")]
@@ -80,6 +84,8 @@ public class TableLevelData : ScriptableObject
     // ── Layout ────────────────────────────────────────────────────────
     [TabGroup(Tabs, Layout), ShowIf(D), Tooltip("Zero generates a new seed on each entry.")]
     public int fixedSeed;
+    [TabGroup(Tabs, Layout), ShowIf(D), Tooltip("The first floor's starting room opens toward the Dungeon Master, so the player starts facing him across the table (the IntroDungeon). Other layouts are skipped; with a Fixed Seed that already does this, nothing is skipped.")]
+    public bool startFacingDungeonMaster;
     [TabGroup(Tabs, Layout), ShowIf(D), Title("Grid (cells)", HorizontalLine = false), Range(24, 48)]
     public int width = 32;
     [TabGroup(Tabs, Layout), ShowIf(D), Range(24, 56)]
@@ -263,6 +269,7 @@ public class TableLevelData : ScriptableObject
         var state = DungeonLightingPreset(floorNumber);
         var biome = Biome(floorNumber);
         state.darkness = biome != null && biome.litThroughout ? 0f : 1f;
+        state.roomDark = roomLighting == RoomLighting.Dark ? 1f : roomLighting == RoomLighting.Dim ? .6f : 0f;
         return state;
     }
 

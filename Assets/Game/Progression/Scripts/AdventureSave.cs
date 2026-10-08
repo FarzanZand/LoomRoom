@@ -117,7 +117,7 @@ public class AdventureSave : MonoBehaviour
     }
     public void CaptureFloor()
     {
-        if (!progress.InRun) return;
+        if (!progress.InRun || IntroController.PracticeRunning) return;
         var run = RunManager.Instance;
         Saved.checkpoint = new Checkpoint { level = run.Level.name, floor = run.Floor, seed = run.Seed, classId = progress.selectedClass.id,
             characterLevel = progress.Level, lootLevel = TableManager.Instance.GetComponent<TableLevelLoader>().GenerationLevel, xp = progress.Experience, skillExperience = (float[])progress.SkillExperience.Clone(), ranks = (int[])progress.Ranks.Clone(), growth = (int[])progress.Growth.Clone(),

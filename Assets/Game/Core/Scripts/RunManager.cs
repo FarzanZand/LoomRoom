@@ -172,6 +172,8 @@ public class RunManager : Singleton<RunManager>
     void ShowRecap(bool victory)
     {
         if (recap == null) return;
+        // The intro's practice board ends back at the table, not on the recap.
+        if (!victory && IntroController.HasInstance && IntroController.Instance.TakeOverDeath()) return;
         recap.Show(Summarize(victory));
     }
 

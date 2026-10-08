@@ -10,6 +10,8 @@ public class ClassFigures : MonoBehaviour
 {
     [Tooltip("Where the figures stand on the table, in class order. Each faces the seat.")]
     public Transform[] spots = Array.Empty<Transform>();
+    [Tooltip("Where a figure set out on its own stands (the intro's practice figure). Empty: the middle of the spots.")]
+    public Transform soloSpot;
     [Tooltip("Same pewter as the memorial table.")]
     public Material figureMaterial;
     public float figureScale = 3f;
@@ -22,6 +24,8 @@ public class ClassFigures : MonoBehaviour
     public AdventureClassSelectionUI card;
     [Tooltip("The card with its hint lines: shown only while picking.")]
     public GameObject cardPanel;
+    [Tooltip("The paper card that lifts off the table while picking (holds Card). Empty: Card Panel is shown on the HUD.")]
+    public FloatingCard floatingCard;
     [Tooltip("Said once the figures are down.")]
     public DMLine prompt;
     [Tooltip("Said instead when a saved run is waiting.")]
@@ -36,7 +40,7 @@ public class ClassFigures : MonoBehaviour
 
     readonly List<ClassFigure> figures = new();
     ClassFigure highlighted, chosen, lastUnder;
-    bool choosing, cancelled;
+    bool choosing, cancelled, canCancel = true;
     AdventurerProgress progress;
 
     public bool HasFigures => spots.Length > 0;
@@ -52,6 +56,9 @@ public class ClassFigures : MonoBehaviour
         }
     }
 
+    // What to look at: the lone figure's spot or the middle of the row.
+    public Vector3 FocusPoint(bool solo) => solo && soloSpot != null ? soloSpot.position : Centre;
+
     void Awake()
     {
         ShowCard(false);
@@ -59,14 +66,19 @@ public class ClassFigures : MonoBehaviour
 
     void ShowCard(bool show)
     {
+        if (floatingCard != null) { if (show) floatingCard.Show(); else floatingCard.Hide(); }
         if (cardPanel != null) cardPanel.SetActive(show);
         if (card != null) card.gameObject.SetActive(show);
     }
 
     // Sets the figures down, waits for a choice and clears them. done gets null when cancelled.
     // savedClass: a run saved on quit, played by that figure. It is picked first and the card says so.
-    public IEnumerator Choose(Action<AdventurerClass> done, AdventurerClass savedClass = null, string savedDetail = null)
+    // only: just this figure (the intro's practice board), with promptOverride said instead of Prompt.
+    // canCancel false: Esc does nothing.
+    public IEnumerator Choose(Action<AdventurerClass> done, AdventurerClass savedClass = null, string savedDetail = null,
+        AdventurerClass only = null, DMLine promptOverride = null, bool canCancel = true)
     {
+        this.canCancel = canCancel;
         saved = savedClass; this.savedDetail = savedDetail;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         progress = player != null ? player.GetComponent<AdventurerProgress>() : null;
@@ -76,15 +88,18 @@ public class ClassFigures : MonoBehaviour
         int spot = 0;
         foreach (var c in progress.rules.classes)
         {
-            if (c == null || !c.Unlocked || c.miniature == null || spot >= spots.Length) continue;
-            figures.Add(Place(c, spots[spot++]));
+            if (c == null || (only != null ? c != only : !c.Unlocked) || c.miniature == null || spot >= spots.Length) continue;
+            // A figure on its own stands in the middle of the spots.
+            if (only != null) { figures.Add(soloSpot != null ? Place(c, soloSpot.position, soloSpot.rotation) : Place(c, Centre, spots[spots.Length / 2].rotation)); spot++; }
+            else figures.Add(Place(c, spots[spot].position, spots[spot++].rotation));
             if (UIFeedbackSettings.Shared != null) UIFeedbackSettings.Shared.Hover();
             yield return new WaitForSecondsRealtime(placeInterval);
         }
         if (figures.Count == 0) { done?.Invoke(null); yield break; }
-        DungeonMaster.Say(saved != null && resumePrompt != null ? resumePrompt : prompt);
+        DungeonMaster.Say(promptOverride != null ? promptOverride : saved != null && resumePrompt != null ? resumePrompt : prompt);
 
         Highlight(figures.Find(f => f.adventurer == (saved != null ? saved : progress.selectedClass)) ?? figures[0]);
+        if (card != null) card.Single = only != null;
         ShowCard(true);
         if (card != null) card.Refresh();
         choosing = true;
@@ -133,17 +148,17 @@ public class ClassFigures : MonoBehaviour
         highlighted = chosen = null;
     }
 
-    ClassFigure Place(AdventurerClass c, Transform at)
+    ClassFigure Place(AdventurerClass c, Vector3 position, Quaternion rotation)
     {
         var root = new GameObject(c.displayName + " figure");
         root.transform.SetParent(transform, false);
-        root.transform.SetPositionAndRotation(at.position, at.rotation);
+        root.transform.SetPositionAndRotation(position, rotation);
         var model = Instantiate(c.miniature, root.transform);
         model.transform.localPosition = Vector3.zero;
         model.transform.localRotation = Quaternion.identity;
         model.transform.localScale = Vector3.one * figureScale;
         foreach (var anim in model.GetComponentsInChildren<Animator>()) anim.enabled = false;
-        var bounds = new Bounds(at.position, Vector3.zero);
+        var bounds = new Bounds(position, Vector3.zero);
         foreach (var r in model.GetComponentsInChildren<Renderer>())
         {
             bounds.Encapsulate(r.bounds);
@@ -167,11 +182,17 @@ public class ClassFigures : MonoBehaviour
         if (figure == null || figure == highlighted) return;
         highlighted = figure;
         if (progress != null && !progress.InRun && progress.selectedClass != figure.adventurer) progress.SelectClass(figure.adventurer);
-        if (card != null && card.isActiveAndEnabled) card.Refresh();
+        // The paper card turns over to the new class; the HUD card just changes.
+        if (card != null && card.isActiveAndEnabled)
+        {
+            if (floatingCard != null && choosing) floatingCard.Flip(card.Refresh);
+            else card.Refresh();
+        }
         if (how != null)
         {
             howDefault ??= how.text;
-            how.text = saved != null && figure.adventurer == saved ? $"Click to continue your run: {savedDetail}." : saved != null ? "Click to start a new run. Your saved run is lost. Esc to step back." : howDefault;
+            how.text = saved != null && figure.adventurer == saved ? $"Click to continue your run: {savedDetail}." : saved != null ? "Click to start a new run. Your saved run is lost. Esc to step back."
+                : !canCancel ? "Click a figure to take it." : howDefault;
         }
         if (choosing && UIFeedbackSettings.Shared != null) UIFeedbackSettings.Shared.Hover();
     }
@@ -180,6 +201,8 @@ public class ClassFigures : MonoBehaviour
     {
         if (!choosing || figure == null) return;
         Highlight(figure);
+        // The card's arrows can leave the selection on a class that has no figure out.
+        if (progress != null && !progress.InRun && progress.selectedClass != figure.adventurer) progress.SelectClass(figure.adventurer);
         chosen = figure;
     }
 
@@ -193,7 +216,7 @@ public class ClassFigures : MonoBehaviour
     }
 
     void OnSubmit() { if (choosing) Take(highlighted); }
-    void OnCancel() { if (choosing) cancelled = true; }
+    void OnCancel() { if (choosing && canCancel) cancelled = true; }
 
     readonly RaycastHit[] hits = new RaycastHit[32];
 
@@ -222,6 +245,8 @@ public class ClassFigures : MonoBehaviour
             if (under != null && under != lastUnder) Highlight(under);
             lastUnder = under;
             if (under != null && InputManager.Instance.PointerClicked) Take(under);
+            // A figure on its own is taken by a click anywhere off the card.
+            else if (!overUI && figures.Count == 1 && InputManager.Instance.PointerClicked) Take(figures[0]);
         }
 
         // Highlighted figure rises a little; the rest settle. Kept off the Animator: these are props.

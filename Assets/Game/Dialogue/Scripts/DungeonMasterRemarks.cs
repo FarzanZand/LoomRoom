@@ -112,6 +112,9 @@ public class DungeonMasterRemarks : MonoBehaviour
         yield return new WaitForSeconds(greetingDelay);
         greeting = null;
         if (!RoomPlayerFree || satThisMorning) yield break;
+        // The morning after the intro has its own words.
+        var first = IntroController.HasInstance ? IntroController.Instance.TakeFirstMorning() : null;
+        if (first != null && first.Length > 0) { foreach (var line in first) Say(line); yield break; }
         Say(morning);
         if (!Flag(SatFlag)) Say(callOver);
     }
@@ -146,6 +149,8 @@ public class DungeonMasterRemarks : MonoBehaviour
     {
         if (greeting != null) { StopCoroutine(greeting); greeting = null; }
         satThisMorning = true;
+        // The intro does the talking until the room opens.
+        if (IntroController.Seated) { died = won = beatRecord = false; return; }
         if (won) Say(afterTheEnd);
         else if (died)
         {
@@ -191,7 +196,7 @@ public class DungeonMasterRemarks : MonoBehaviour
     // Once a run per line, and spaced out so the DM never chatters.
     void Remark(DMLine line)
     {
-        if (line == null || !RunOn || saidThisRun.Contains(line) || Time.time - lastRemark < remarkGap) return;
+        if (line == null || !RunOn || IntroController.PracticeRunning || saidThisRun.Contains(line) || Time.time - lastRemark < remarkGap) return;
         saidThisRun.Add(line); lastRemark = Time.time;
         DungeonMaster.Say(line.With(line.text), null, .6f);
     }
@@ -246,7 +251,7 @@ public class DungeonMasterRemarks : MonoBehaviour
     {
         // A resumed run restores its class and totals right after it starts.
         yield return null;
-        if (progress == null || progress.selectedClass == null || save == null || !RunManager.HasInstance) yield break;
+        if (progress == null || progress.selectedClass == null || save == null || !RunManager.HasInstance || IntroController.PracticeRunning) yield break;
         if (RunManager.Instance.Floor > 1 || RunManager.Instance.Seconds > 0) yield break;
         var loader = TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
         if (loader != null && loader.Resumed) yield break; // continuing, not picking

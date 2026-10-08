@@ -300,6 +300,27 @@ public class ScreenManager : Singleton<ScreenManager>
     public void FadeInOut(float fadeInDuration, float fadedDuration, float fadeOutDuration)
         => RunFade(FadeInOutRoutine(fadeInDuration, fadedDuration, fadeOutDuration));
 
+    /// Steps the fade through (alpha, seconds) pairs from where it is now, easing each one: eyes opening
+    /// and blinking. A negative alpha holds for its seconds.
+    public void FadeSteps(Vector2[] steps) => RunFade(StepsRoutine(steps));
+
+    IEnumerator StepsRoutine(Vector2[] steps)
+    {
+        float alpha = fadeFullscreenImage != null ? fadeFullscreenImage.color.a : 0f;
+        foreach (var step in steps)
+        {
+            if (step.x < 0f) { yield return new WaitForSecondsRealtime(step.y); continue; }
+            float from = alpha, elapsed = 0f;
+            while (elapsed < step.y)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                SetAlpha(Mathf.Lerp(from, step.x, Mathf.SmoothStep(0f, 1f, elapsed / step.y)));
+                yield return null;
+            }
+            SetAlpha(alpha = step.x);
+        }
+    }
+
     public void ClearFade()
     {
         if (fadeRoutine != null) StopCoroutine(fadeRoutine);

@@ -271,7 +271,12 @@ public class TableLevelLoader : MonoBehaviour
                     candidate.transform.position=new Vector3(bounds.center.x,bounds.max.y+.08f,bounds.center.z);
                     candidateDungeon=candidate.GetComponent<DungeonGenerator>();
                     if(candidateDungeon==null)candidateDungeon=candidate.AddComponent<DungeonGenerator>();
-                    try { candidateDungeon.Build(level,unchecked(seed+attempt*7907),FloorNumber); break; }
+                    try {
+                        candidateDungeon.Build(level,unchecked(seed+attempt*7907),FloorNumber);
+                        // The level wants the player to start facing the Dungeon Master: keep looking for such a layout.
+                        if(!level.startFacingDungeonMaster || FloorNumber>1 || attempt>=15 || FacesDungeonMaster(candidateDungeon)) break;
+                        candidate.SetActive(false);DestroyImmediate(candidate);candidate=null;
+                    }
                     catch(InvalidOperationException e) when (attempt<7) {
                         Debug.LogWarning($"Floor {FloorNumber} layout rejected, trying another: {e.Message}");
                         candidate.SetActive(false);DestroyImmediate(candidate);candidate=null;
@@ -303,6 +308,15 @@ public class TableLevelLoader : MonoBehaviour
         player.SetSpawnPoint(spawn,rotation);player.Look?.SetYaw(rotation.eulerAngles.y);player.SynchronizePresentation();
         Physics.SyncTransforms();
     }
+    // The starting room's way out (and so the player's first view) points across the table at the Dungeon Master.
+    bool FacesDungeonMaster(DungeonGenerator dungeon)
+    {
+        var dm = GetComponent<TableManager>()?.DM;
+        if(dm==null) return true;
+        var toDM = dm.transform.position - dungeon.SpawnPoint; toDM.y = 0;
+        var facing = dungeon.SpawnRotation * Vector3.forward; facing.y = 0;
+        return toDM.sqrMagnitude < .01f || Vector3.Angle(facing, toDM) < 45f;
+    }
     void SetTown(bool active)
     {
         if(townRoot!=null) townRoot.SetActive(active);
@@ -331,7 +345,7 @@ public class TableLevelLoader : MonoBehaviour
     // The final stair: the run summary if there is one, otherwise the adventure menu.
     public void CompleteRun()
     {
-        if(Busy) return;
+        if(Busy || (IntroController.HasInstance && IntroController.Instance.StairsReached())) return;
         if(RunManager.HasInstance && RunManager.Instance.Running && RunManager.Instance.recap!=null) { RunManager.Instance.EndRunInVictory(); return; }
         ShowSelection("Dungeon complete");
     }

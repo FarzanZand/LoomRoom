@@ -18,8 +18,16 @@ public sealed partial class LightingManager
     [Tooltip("Under a room root but not part of the room (the table's own levels).")]
     public Transform[] notRoom = Array.Empty<Transform>();
 
+    [Tooltip("The lamp over the table: lit while a level keeps the room dark (Room Lighting: Dark), on the room's rendering layer only so the miniature keeps its own darkness.")]
+    public Light tableLamp;
+
     // Rendering layer added to room renderers; the sun lights only this layer during darkness.
     public const uint RoomLayer = 8;
+
+    float lampBase = -1f, appliedRoomDark = -1f;
+    bool lampDriven;
+    // How much of the held room light is taken away now (the level's Room Lighting).
+    float RoomDark => moodActive && roomHeld ? Mathf.Clamp01(displayedMood.roomDark) : 0f;
 
     bool roomHeld;
     SphericalHarmonicsL2 heldProbe;
@@ -28,6 +36,9 @@ public sealed partial class LightingManager
     float heldExposure;
     uint heldSunLayers;
     readonly List<(Renderer renderer, LightProbeUsage usage)> roomRenderers = new();
+    // Room renderers that had no property block of their own: theirs is cleared again on release, or the
+    // held light probe in it would keep lighting them.
+    readonly HashSet<Renderer> blockless = new();
     MaterialPropertyBlock roomBlock;
 
     bool RoomSeparated => Application.isPlaying && roomRoots != null && roomRoots.Length > 0;
@@ -74,7 +85,7 @@ public sealed partial class LightingManager
 
         roomBlock ??= new MaterialPropertyBlock();
         var probe = new[] { heldProbe };
-        roomRenderers.Clear();
+        roomRenderers.Clear(); blockless.Clear();
         foreach (var root in roomRoots)
         {
             if (root == null) continue;
@@ -82,6 +93,7 @@ public sealed partial class LightingManager
             {
                 if (r == null || IsNotRoom(r.transform)) continue;
                 roomRenderers.Add((r, r.lightProbeUsage));
+                if (!r.HasPropertyBlock()) blockless.Add(r);
                 r.renderingLayerMask |= RoomLayer;
                 r.lightProbeUsage = LightProbeUsage.CustomProvided;
                 r.GetPropertyBlock(roomBlock);
@@ -97,11 +109,52 @@ public sealed partial class LightingManager
         return false;
     }
 
+    // The held room light scaled down by the level's Room Lighting, and the table lamp for a dark room.
+    void ApplyRoomDark()
+    {
+        float d = RoomDark;
+        if (roomHeld && Mathf.Abs(d - appliedRoomDark) > .001f)
+        {
+            appliedRoomDark = d;
+            var probe = new[] { heldProbe * (1f - d) };
+            foreach (var (r, _) in roomRenderers)
+            {
+                if (r == null) continue;
+                r.GetPropertyBlock(roomBlock);
+                roomBlock.CopySHCoefficientArraysFrom(probe);
+                r.SetPropertyBlock(roomBlock);
+            }
+        }
+        if (tableLamp == null) return;
+        if (lampBase < 0f) lampBase = tableLamp.intensity;
+        float lamp = Mathf.InverseLerp(.7f, 1f, d);
+        if (lamp > 0f)
+        {
+            lampDriven = true;
+            tableLamp.enabled = true;
+            tableLamp.intensity = lampBase * lamp;
+            FirstPersonLighting.SetLayers(tableLamp, RoomLayer);
+        }
+        else if (lampDriven)
+        {
+            lampDriven = false;
+            tableLamp.enabled = false;
+            tableLamp.intensity = lampBase;
+            FirstPersonLighting.SetLayers(tableLamp, uint.MaxValue);
+        }
+    }
+
     void ReleaseRoom()
     {
         roomHeld = false;
-        foreach (var (r, usage) in roomRenderers) if (r != null) r.lightProbeUsage = usage;
-        roomRenderers.Clear();
+        appliedRoomDark = -1f;
+        foreach (var (r, usage) in roomRenderers)
+        {
+            if (r == null) continue;
+            r.lightProbeUsage = usage;
+            if (blockless.Contains(r)) r.SetPropertyBlock(null);
+        }
+        roomRenderers.Clear(); blockless.Clear();
         var sun = Sun();
         if (sun != null) FirstPersonLighting.SetLayers(sun, heldSunLayers);
     }
@@ -109,7 +162,7 @@ public sealed partial class LightingManager
     // While held: the sky stays the room's.
     bool HeldSky(out Color sky, out float exposure)
     {
-        sky = heldSky; exposure = heldExposure;
+        sky = heldSky; exposure = heldExposure * (1f - RoomDark);
         return roomHeld;
     }
 
@@ -117,7 +170,7 @@ public sealed partial class LightingManager
     bool HeldSun(Light sun)
     {
         if (!roomHeld || sun == null) return false;
-        sun.intensity = heldSun;
+        sun.intensity = heldSun * (1f - RoomDark);
         sun.color = heldSunColor;
         FirstPersonLighting.SetLayers(sun, RoomLayer);
         return true;

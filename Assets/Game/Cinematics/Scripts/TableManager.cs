@@ -62,15 +62,19 @@ public class TableManager : Singleton<TableManager>, IInteractable
         if (DungeonMasterSeat.Introduced) EnterTable();
         else if (talkFirst != null && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(talkFirst);
     }
-    public void EnterTable()
+    public void EnterTable() => Play();
+
+    // level: where the figure goes (empty: Figure Level). only: set out just this figure (the intro's
+    // practice board), with prompt said instead of the figures' own line.
+    public void Play(TableLevelData level = null, AdventurerClass only = null, DMLine prompt = null)
     {
         if (loader == null || !PlayerManager.HasInstance || !CanInteract(PlayerManager.Instance.Active)) return;
-        if (GameManager.HasInstance) sitting = StartCoroutine(SitThenChoose(PlayerManager.Instance.Active));
+        if (GameManager.HasInstance) sitting = StartCoroutine(SitThenChoose(PlayerManager.Instance.Active, level, only, prompt));
         else loader.ShowSelection();
     }
 
     // Dialogue state while sitting and listening: no movement or look, HUD (and the DM's lines) visible.
-    IEnumerator SitThenChoose(Player player)
+    IEnumerator SitThenChoose(Player player, TableLevelData chosenLevel = null, AdventurerClass only = null, DMLine prompt = null)
     {
         GameManager.Instance.Push(GameState.Dialogue);
         yield return Sit(player);
@@ -91,13 +95,18 @@ public class TableManager : Singleton<TableManager>, IInteractable
         {
             // The board is swept and the figures go down where the last floor stood.
             loader.ClearTable();
-            yield return StepToFigures(player);
+            // Seated through the intro: the view only tips down to the figures.
+            if (IntroController.Seated) yield return Turn(player, figures.FocusPoint(only != null) + Vector3.up * figureAimHeight, lookSeconds);
+            else yield return StepToFigures(player);
             AdventurerClass picked = null;
-            SavedRun(out var savedClass, out var savedDetail);
-            yield return figures.Choose(c => picked = c, savedClass, savedDetail);
+            AdventurerClass savedClass = null; string savedDetail = null;
+            if (only == null) SavedRun(out savedClass, out savedDetail);
+            // Through the intro there is no standing up: Esc does nothing.
+            bool canStand = !IntroController.Seated;
+            yield return figures.Choose(c => picked = c, savedClass, savedDetail, only, prompt, canStand);
             GameManager.Instance.Pop(GameState.Dialogue);
             yield return Zoom(player, 0f, .35f);
-            var level = figureLevel != null ? figureLevel : loader.catalog != null ? System.Array.Find(loader.catalog.levels, l => l != null && l.kind == TableLevelKind.Dungeon) : null;
+            var level = chosenLevel != null ? chosenLevel : figureLevel != null ? figureLevel : loader.catalog != null ? System.Array.Find(loader.catalog.levels, l => l != null && l.kind == TableLevelKind.Dungeon) : null;
             if (picked != null && level != null)
             {
                 player.Look.HeightOverride = null;

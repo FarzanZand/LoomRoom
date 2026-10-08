@@ -41,6 +41,9 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Min(0)] float readPerWord = .3f;
 
     [Header("Mumble")]
+    [SerializeField, Tooltip("Continuous babble phrases, one per line: the clip nearest the line's length plays (Tools/dm_babble.py makes them). Empty: the syllables below.")]
+    AudioData babble;
+    [SerializeField, Min(.05f), Tooltip("Seconds of babble per word.")] float babblePerWord = .22f;
     [SerializeField, Tooltip("UI Library key played once per syllable. Make it a Data entry to pick from several syllables.")] string mumbleKey = "dmMumble";
     [SerializeField, Min(.03f), Tooltip("Seconds between syllables.")] float syllableGap = .09f;
     [SerializeField, Min(1), Tooltip("Syllables per word, capped by Max Syllables.")] float syllablesPerWord = 1.5f;
@@ -158,11 +161,34 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     float Mumble(string text)
     {
-        if (!AudioManager.HasInstance || string.IsNullOrEmpty(mumbleKey)) return .5f;
+        if (!AudioManager.HasInstance) return .5f;
         int words = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length;
+        if (babble != null && babble.clips != null && babble.clips.Length > 0) return Babble(words);
+        if (string.IsNullOrEmpty(mumbleKey)) return .5f;
         int count = Mathf.Clamp(Mathf.RoundToInt(words * syllablesPerWord), 2, maxSyllables);
         StartCoroutine(Syllables(count));
         return count * syllableGap;
+    }
+
+    AudioClip lastBabble;
+
+    // One phrase for the whole line: of the two clips nearest its length, not the one heard last.
+    float Babble(int words)
+    {
+        float target = words * babblePerWord;
+        AudioClip best = null, second = null;
+        foreach (var c in babble.clips)
+        {
+            if (c == null) continue;
+            if (best == null || Mathf.Abs(c.length - target) < Mathf.Abs(best.length - target)) { second = best; best = c; }
+            else if (second == null || Mathf.Abs(c.length - target) < Mathf.Abs(second.length - target)) second = c;
+        }
+        if (best == null) return .5f;
+        var clip = second != null && (best == lastBabble || Random.value < .35f) ? second : best;
+        lastBabble = clip;
+        float pitch = babble.pitch + (babble.pitchVariance > 0f ? Random.Range(-babble.pitchVariance, babble.pitchVariance) : 0f);
+        AudioManager.Instance.PlayUI(clip, babble.volume, pitch);
+        return clip.length / Mathf.Max(.1f, pitch);
     }
 
     IEnumerator Syllables(int count)

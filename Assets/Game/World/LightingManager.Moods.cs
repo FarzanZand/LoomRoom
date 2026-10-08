@@ -36,9 +36,12 @@ public sealed partial class LightingManager
         public Color tableTint, roomTint;
         // 1 for dungeon floors: the Lighting Manager's dungeon darkness applies. 0 for the room.
         public float darkness;
+        // While a dungeon floor is dark, how much of the room's own light is taken away: 0 keeps it, 1 is black
+        // with only the table lamp (TableLevelData.roomLighting).
+        public float roomDark;
 
         public static MoodState LerpEnvironment(MoodState a, MoodState b, float t) => new MoodState {
-            darkness = Mathf.Lerp(a.darkness, b.darkness, t),
+            darkness = Mathf.Lerp(a.darkness, b.darkness, t), roomDark = Mathf.Lerp(a.roomDark, b.roomDark, t),
             sky = Color.Lerp(a.sky, b.sky, t), exposure = Mathf.Lerp(a.exposure, b.exposure, t),
             light = Color.Lerp(a.light, b.light, t), intensity = Mathf.Lerp(a.intensity, b.intensity, t),
             top = Color.Lerp(a.top, b.top, t), horizon = Color.Lerp(a.horizon, b.horizon, t),
@@ -277,6 +280,7 @@ public sealed partial class LightingManager
             moodSkybox = new Material(baseSkybox) { name = "Lighting Manager sky preview", hideFlags = HideFlags.HideAndDontSave };
         float dark = dungeonDarkness ? Mathf.Clamp01(displayedMood.darkness) : 0f;
         HoldRoom(dark);
+        ApplyRoomDark();
         if (moodSkybox != null)
         {
             RenderSettings.skybox = moodSkybox;

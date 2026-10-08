@@ -15,11 +15,17 @@ public class AdventureClassSelectionUI : MonoBehaviour
     public TMP_Text[] skillLabels;
     public Image[] kitIcons;
     public Button previous, next;
+    // One figure only (the intro's practice figure): no arrows, pips or hidden-class hint.
+    public bool Single { get; set; }
     [Tooltip("One pip per class, filled for the shown one, dim for locked classes.")]
     public Image[] pips;
     public Color pipOn = new(.87f, .72f, .4f), pipOff = new(.35f, .3f, .25f), pipLocked = new(.18f, .16f, .14f);
+    [Tooltip("Colours written into the text: the health, mana and stamina labels, a skill's rank and its tier.")]
+    public Color healthColor = new(.85f, .34f, .23f), manaColor = new(.36f, .56f, .85f), staminaColor = new(.36f, .69f, .54f),
+        rankColor = new(.88f, .76f, .48f), tierColor = new(.55f, .51f, .45f);
 
     AdventurerProgress progress;
+    static string Hex(Color c) => ColorUtility.ToHtmlStringRGB(c);
 
     void Awake()
     {
@@ -58,7 +64,7 @@ public class AdventureClassSelectionUI : MonoBehaviour
         portrait.sprite = c.portrait; portrait.enabled = c.portrait != null;
         className.text = c.displayName;
         description.text = c.description;
-        resources.text = $"<color=#D9573B>HP</color> {c.health:0}    <color=#5B8FD9>MP</color> {c.mana:0}    <color=#5BB08A>SP</color> {c.stamina:0}";
+        resources.text = $"<color=#{Hex(healthColor)}>HP</color> {c.health:0}    <color=#{Hex(manaColor)}>MP</color> {c.mana:0}    <color=#{Hex(staminaColor)}>SP</color> {c.stamina:0}";
 
 
 
@@ -71,7 +77,7 @@ public class AdventureClassSelectionUI : MonoBehaviour
             if (!shown) continue;
             var def = progress.Definition(best[i]);
             int rank = c.StartingRank(best[i]);
-            skillLabels[i].text = $"{def?.displayName ?? best[i].ToString()}  <color=#E0C27A>{rank}</color>  <color=#8C8173>{AdventureSkills.Tier(rank)}</color>";
+            skillLabels[i].text = $"{def?.displayName ?? best[i].ToString()}  <color=#{Hex(rankColor)}>{rank}</color>  <color=#{Hex(tierColor)}>{AdventureSkills.Tier(rank)}</color>";
             if (i < skillIcons.Length) skillIcons[i].sprite = def != null ? def.icon : null;
         }
 
@@ -84,7 +90,7 @@ public class AdventureClassSelectionUI : MonoBehaviour
         }
 
         int locked = classes.Count(x => x != null && !x.Unlocked);
-        lockedHint.gameObject.SetActive(locked > 0);
+        lockedHint.gameObject.SetActive(locked > 0 && !Single);
         if (locked > 0)
         {
             var hint = classes.First(x => x != null && !x.Unlocked);
@@ -94,10 +100,11 @@ public class AdventureClassSelectionUI : MonoBehaviour
         for (int i = 0; i < pips.Length; i++)
         {
             bool exists = i < classes.Length && classes[i] != null;
-            pips[i].gameObject.SetActive(exists);
+            pips[i].gameObject.SetActive(exists && !Single);
             if (!exists) continue;
             pips[i].color = classes[i] == c ? pipOn : classes[i].Unlocked ? pipOff : pipLocked;
         }
         previous.interactable = next.interactable = !progress.InRun;
+        previous.gameObject.SetActive(!Single); next.gameObject.SetActive(!Single);
     }
 }

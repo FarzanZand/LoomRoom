@@ -13,6 +13,11 @@ public class WakeUpCutsceneController : CutsceneController
     [SerializeField] Transform startPositionRoom;
     [SerializeField] float screenFadeDuration = 2f;
     [SerializeField] float screenFadeHold     = 2f;
+    [Tooltip("The eyes opening on a full wake-up: (alpha, seconds) steps from black, eased; a negative alpha holds. Empty uses the plain fade above.")]
+    [SerializeField] Vector2[] eyesOpening =
+    {
+        new(-1f, 1.2f), new(.55f, .9f), new(.95f, .22f), new(.3f, .7f), new(.85f, .14f), new(0f, .65f),
+    };
     [Tooltip("Music library key played after a short delay.")]
     [SerializeField] string musicKey = "groundhog";
     [SerializeField] float musicDelay    = 1f;
@@ -53,7 +58,10 @@ public class WakeUpCutsceneController : CutsceneController
     protected override void OnPlay()
     {
         if (ScreenManager.HasInstance)
-            ScreenManager.Instance.FadeOut(brief ? briefFadeDuration : screenFadeDuration, brief ? briefFadeHold : screenFadeHold);
+        {
+            if (!brief && eyesOpening != null && eyesOpening.Length > 0) { ScreenManager.Instance.FadeIn(0f); ScreenManager.Instance.FadeSteps(eyesOpening); }
+            else ScreenManager.Instance.FadeOut(brief ? briefFadeDuration : screenFadeDuration, brief ? briefFadeHold : screenFadeHold);
+        }
 
         if (PlayerManager.HasInstance && startPositionRoom != null)
         {

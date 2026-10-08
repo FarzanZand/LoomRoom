@@ -100,7 +100,9 @@ public class WorldManager : Singleton<WorldManager>
         var progression = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
         bool skip = progression != null &&
             (progression.skipWakeUp || progression.startingPlayer != PlayerKind.Room);
-        if (!skip && wakeUpCutscene != null) wakeUpCutscene.Play(brief: false);
+        // The first launch opens at the table in the dark instead (IntroController).
+        bool intro = !skip && IntroController.HasInstance && IntroController.Instance.TryPlay();
+        if (!skip && !intro && wakeUpCutscene != null) wakeUpCutscene.Play(brief: false);
         ApplyPixelLook();
     }
 
