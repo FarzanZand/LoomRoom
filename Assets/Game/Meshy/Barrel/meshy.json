@@ -1,0 +1,12 @@
+{
+  "tasks": [
+    {
+      "id": "01a11d67-b450-76d8-8d0c-1a21a06b7af2",
+      "type": "text-to-3d-refine",
+      "credits": 10,
+      "prompt": "a squat wooden barrel with three iron hoops, medieval dungeon prop, simple chunky shape, closed lid",
+      "texture_prompt": "dark weathered oak staves, rusty dark iron hoops, flat hand-painted colours, no baked lighting",
+      "preview_id": "01a11d67-83f7-767f-b70c-b72da59aa365"
+    }
+  ]
+}

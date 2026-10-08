@@ -5,6 +5,7 @@ First-person 3D RPG. Unity 6000.5, URP, Cinemachine 3, Input System, Odin Inspec
 ## Tooling
 
 - **Use the Unity CLI (`unity-cli` skill) for all editor, scene, prefab and asset work. Never use Unity MCP servers (coplay-mcp, UnityMCP), not even to check editor state.**
+- **Meshy (AI models): `python Tools/meshy.py`** (text, image, retexture, remesh, rig, concept, fetch, balance; `--help` lists options). Results go to `Assets/Game/Meshy/<name>/` (FBX, GLB, textures, thumbnail, `meshy.json` with task ids for follow-ups); finished prefabs go in `Assets/Game/Meshy/Prefabs/` (for now), mesh, texture and material in `Prefabs/<Name>/`. Pixel-art props: `Tools/pixel_bake.py` (Blender: new UVs at wall density, bake) then a painter like `Tools/barrel_texture.py`; run Pixel Look > Build Materials after. The key is in `~/.meshy/api_key`, never in the repo. There is no Meshy MCP server.
 
 ## Settled decisions
 
