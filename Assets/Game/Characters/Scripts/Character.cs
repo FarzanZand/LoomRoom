@@ -87,6 +87,9 @@ public class Character : MonoBehaviour
         {
             if (CombatManager.HasInstance) CombatManager.Instance.PresentImpact(this, info);
             if (info.Source != null && info.Source != this && !info.FromEffect) info.Source.NotifyHitLanded(info);
+            // A fight is heard: nearby enemies come to look (the attacker is the sound's source).
+            if (info.Source != null && !info.FromEffect && CombatManager.HasInstance)
+                NoiseEvents.Report(transform.position, CombatManager.Instance.fightNoiseRadius, info.Source);
         }
 
         if (!info.Blocked && info.Amount > 0f && info.KnockbackForce > 0f && info.Direction != Vector3.zero)

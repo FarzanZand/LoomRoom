@@ -14,6 +14,8 @@ public class PlayerData : CharacterData
     public float sprintSpeed = 6f;
     [TabGroup(InspectorTabs, "Movement")]
     public float crouchSpeed = 1.75f;
+    [TabGroup(InspectorTabs, "Movement"), Range(.1f, 1f), Tooltip("Share of the speed kept while moving backwards. Barony backs off at half speed, so attacks can't simply be outwalked.")]
+    public float backwardSpeed = 1f;
     [TabGroup(InspectorTabs, "Movement"), Title("Jump & gravity", HorizontalLine = false)]
     public float jumpForce = 8f;
     [TabGroup(InspectorTabs, "Movement"), Tooltip("Multiplier applied to gravity while airborne. Higher values make falling faster.")]

@@ -70,6 +70,8 @@ public class PixelLookLibrary : ScriptableObject
     [FolderPath] public string outputFolder = "Assets/Game/Rendering/PixelLook/Materials";
     [TableList(AlwaysExpanded = false, ShowPaging = true, NumberOfItemsPerPage = 30)]
     public List<Entry> entries = new();
+    [Tooltip("Materials Build Materials leaves alone: they keep drawing as they are. For fine printed artwork, like the board's grid, that stripes when point-sampled.")]
+    public List<Material> excluded = new();
 
     Dictionary<Material, Entry> byOriginal;
     Dictionary<Material, Material> toPixel, toOriginal;

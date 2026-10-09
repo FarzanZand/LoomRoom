@@ -37,6 +37,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Tooltip("Also show message log lines (pickups, doors, kills). Combat damage is always left out.")] bool showEvents = true;
     [SerializeField, Min(8)] float fontSize = 30;
     [SerializeField, Range(0, 1)] float outline = .12f;
+    [SerializeField, Min(0), Tooltip("Screen pixels per em of the pixel font (PixelOperator: 16). The size snaps so each font pixel covers whole screen pixels, which keeps the letters crisp at any resolution. 0: no snapping.")]
+    float pixelGrid = 16;
     [SerializeField, Min(0), Tooltip("Seconds a line stays before fading.")] float hold = 6f;
     [SerializeField, Min(0)] float fadeOut = 1.5f;
     [SerializeField, Min(1)] int maxLines = 4;
@@ -203,9 +205,23 @@ public class DungeonMaster : Singleton<DungeonMaster>
         }
     }
 
+    float snappedFor;
+
+    // Font Size is the size wanted at the reference resolution; the nearest whole multiple of the font's
+    // pixel grid on the actual screen is used.
+    void SnapSize()
+    {
+        float scale = label.canvas != null ? label.canvas.scaleFactor : 1f;
+        if (pixelGrid <= 0 || scale <= 0 || Mathf.Approximately(scale, snappedFor)) return;
+        snappedFor = scale;
+        int multiple = Mathf.Max(1, Mathf.RoundToInt(fontSize * scale / pixelGrid));
+        label.fontSize = pixelGrid * multiple / scale;
+    }
+
     void Update()
     {
         if (label == null) return;
+        SnapSize();
         float now = Time.unscaledTime;
         lines.RemoveAll(l => now - l.shown > hold + fadeOut);
         builder.Clear();

@@ -113,6 +113,10 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Barony's armor effectiveness: armor is taken off this share of a hit, the rest always lands, so armor never makes anyone untouchable. A successful block uses the full hit (1).")]
     [Range(0f, 1f)] public float armorEffectiveness = .75f;
 
+    [Header("Spacing")]
+    [Min(0), Tooltip("No one stands closer than this to an enemy (centre to centre): the player cannot walk further in, and an enemy that is not swinging steps back out.")]
+    public float personalSpace = 1.1f;
+
     [Header("Block")]
     [Tooltip("Seconds after attacking that block is locked out. Set to just under your attack windup length.")]
     public float blockCancelWindow = 0.5f;
@@ -142,6 +146,8 @@ public class CombatManager : Singleton<CombatManager>
     [Min(0), Tooltip("Stamina spent when releasing a fully charged heavy attack. Insufficient stamina releases a light attack instead.")] public float heavyStaminaCost = 8f;
     [Tooltip("Extra recovery after a heavy hit. Does not interrupt an already committed enemy swing.")]
     [Min(0)] public float heavyStaggerDuration = .45f;
+    [Min(0), Tooltip("Seconds an enemy stands still after a light hit (Barony's flinch). Never interrupts a committed swing.")]
+    public float lightFlinchDuration = .15f;
     [Min(1)] public float heavyRecoilMultiplier = 1.6f;
     [Min(1)] public float heavyRecoilDurationMultiplier = 1.5f;
 
@@ -158,6 +164,8 @@ public class CombatManager : Singleton<CombatManager>
     [Range(10,100)] public float enemyHitFacingAngle = 60f;
     [Tooltip("Playback speed of enemy attack animations (the AttackSpeed animator parameter).")]
     [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;
+    [Min(0), Tooltip("How far the sound of a landed hit carries: enemies within this (plus their hearing) come to look, so fights draw in the next room. 0: fights are silent.")]
+    public float fightNoiseRadius = 8f;
 
     [Header("Swing feel")]
     public bool swingCameraMotionEnabled = true;

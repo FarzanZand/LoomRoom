@@ -68,6 +68,7 @@ public static class PixelLookBuilder
             AssetDatabase.StartAssetEditing();
             foreach (var original in SourceMaterials())
             {
+                if (library.excluded.Contains(original)) continue;
                 Material pixel;
                 if (!existing.TryGetValue(original, out var entry))
                 {

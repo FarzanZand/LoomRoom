@@ -46,6 +46,8 @@ public class EnemyRagdoll : MonoBehaviour
     void OnDied()
     {
         if (!CombatManager.HasInstance || !CombatManager.Instance.ragdollDeath || IsRagdolled) return;
+        // A skeleton that bursts into bones has no body left to tumble.
+        if (TryGetComponent<DeathBurst>(out var burst) && burst.enabled) return;
         if (deathAnimationInstead && character.Animator != null && character.Animator.runtimeAnimatorController != null) return;
         IsRagdolled = true;
         var anim = character.Animator;

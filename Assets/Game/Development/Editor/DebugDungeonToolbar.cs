@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Toolbars;
 
@@ -24,13 +25,13 @@ public static class DebugDungeonToolbar
         Start((DebugDungeonSession.Mode)SessionState.GetInt(RestartModeKey, 0));
     }
 
+    // Both buttons live in the one toolbar element, so the toolbar layout already showing Debug shows Dungeon too.
     [MainToolbarElement("LoomRoom/Debug", defaultDockPosition = MainToolbarDockPosition.Middle, defaultDockIndex = 1)]
-    public static MainToolbarElement Button() => new MainToolbarButton(
-        new MainToolbarContent("Debug", "Start the test arena: one open room, enemies from Debug Dungeon Settings standing just outside detection range."), StartDebug);
-
-    [MainToolbarElement("LoomRoom/Dungeon", defaultDockPosition = MainToolbarDockPosition.Middle, defaultDockIndex = 2)]
-    public static MainToolbarElement DungeonButton() => new MainToolbarButton(
-        new MainToolbarContent("Dungeon", "Generate WorldManager's Debug Dungeon and play it straight away, skipping the room."), StartDungeon);
+    public static IEnumerable<MainToolbarElement> Buttons() => new MainToolbarElement[]
+    {
+        new MainToolbarButton(new MainToolbarContent("Debug", "Start the test arena: one open room, enemies from Debug Dungeon Settings standing just outside detection range."), StartDebug),
+        new MainToolbarButton(new MainToolbarContent("Dungeon", "Generate WorldManager's Debug Dungeon and play it straight away, skipping the room."), StartDungeon),
+    };
 
     public static void StartDebug() => Start(DebugDungeonSession.Mode.Arena);
     public static void StartDungeon() => Start(DebugDungeonSession.Mode.Dungeon);

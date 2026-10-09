@@ -82,8 +82,14 @@ public sealed class TableLevelReveal : MonoBehaviour
                 pieces.Add(new Piece { renderer = renderer, position = renderer.transform.position, delay = Mathf.Clamp01(distance + stage) * .72f });
                 renderer.enabled = false;
             }
+            // Torches come on as the build reaches them. A board's single overhead light is left on, or the
+            // whole board would sit black until the end.
+            var boardLight = dungeon.GetComponent<BoardReveal>() is { } board ? board.BoardLight : null;
             foreach (var light in dungeon.GetComponentsInChildren<Light>())
-            { lights.Add((light, light.enabled, Vector3.Distance(light.transform.position, dungeon.SpawnPoint) / range * .72f)); light.enabled = false; }
+            {
+                if (light == boardLight) continue;
+                lights.Add((light, light.enabled, Vector3.Distance(light.transform.position, dungeon.SpawnPoint) / range * .72f)); light.enabled = false;
+            }
             foreach (var system in dungeon.GetComponentsInChildren<ParticleSystem>())
             {
                 // One entry per effect: nested systems follow their root.
@@ -96,7 +102,8 @@ public sealed class TableLevelReveal : MonoBehaviour
             if (settings.dustPrefab != null)
             {
                 dust = Instantiate(settings.dustPrefab, dungeon.transform.position + Vector3.up * .2f, Quaternion.identity, transform);
-                var shape = dust.shape; shape.scale = new Vector3(width, .1f, depth);
+                // The shape is turned -90 on X to emit upward, so its local Y is the floor's depth and Z is height.
+                var shape = dust.shape; shape.scale = new Vector3(width, depth, .1f);
                 dust.Play();
             }
             yield return MoveCamera(overview, overviewRotation, overviewProjection, settings.cameraTransitionSeconds);

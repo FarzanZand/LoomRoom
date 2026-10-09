@@ -20,7 +20,11 @@ public class CharacterSheet : MonoBehaviour
     [Min(.05f)] public float slideSeconds = .8f;
     [Min(.01f), Tooltip("Seconds per character as a number is pencilled in.")] public float writeSeconds = .12f;
 
-    void Awake() => gameObject.SetActive(false);
+    bool shown;
+
+    // Hidden until used. The sheet may be saved inactive, so Awake can first run as SlideIn shows it:
+    // then it must stay up.
+    void Awake() { if (!shown) gameObject.SetActive(false); }
 
     public void Clear(string cls, string blurb, string[] attributeNames)
     {
@@ -34,6 +38,7 @@ public class CharacterSheet : MonoBehaviour
     // Slid across the table, from his side to the player's.
     public IEnumerator SlideIn()
     {
+        shown = true;
         gameObject.SetActive(true);
         if (rest == null) yield break;
         var start = from != null ? from : rest;
@@ -70,11 +75,12 @@ public class CharacterSheet : MonoBehaviour
         }
     }
 
-    public void Hide() => gameObject.SetActive(false);
+    public void Hide() { shown = false; gameObject.SetActive(false); }
 
     // Back in front of the player, the character still on it.
     public void ShowAgain()
     {
+        shown = true;
         gameObject.SetActive(true);
         if (rest != null) transform.SetPositionAndRotation(rest.position, rest.rotation);
         if (stamp != null) stamp.gameObject.SetActive(false);

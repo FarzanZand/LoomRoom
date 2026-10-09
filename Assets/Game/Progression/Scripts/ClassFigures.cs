@@ -30,6 +30,8 @@ public class ClassFigures : MonoBehaviour
     public DungeonMaster.Line prompt;
     [Tooltip("Said instead when a saved run is waiting.")]
     public DungeonMaster.Line resumePrompt;
+    [Tooltip("Said instead after the character sheet, naming the class of the highest roll. {class} is its name.")]
+    public DungeonMaster.Line suggestedPrompt = new() { text = "With those numbers, I'd take the {class}. Your choice.", inPerson = true };
     [Tooltip("The card's hint line, rewritten for the saved run's figure.")]
     public TMPro.TMP_Text how;
     [Tooltip("The card's Pick button: takes the highlighted figure.")]
@@ -81,9 +83,11 @@ public class ClassFigures : MonoBehaviour
     // Sets the figures down, waits for a choice and clears them. done gets null when cancelled.
     // savedClass: a run saved on quit, played by that figure. It is picked first and the card says so.
     // only: just this figure (the intro's practice board), with promptOverride said instead of Prompt.
-    // canCancel false: Esc does nothing.
+    // canCancel false: Esc does nothing. offered: only these figures, in this order (the character sheet's
+    // two best rolls); the first is lifted and the Dungeon Master recommends it.
     public IEnumerator Choose(Action<AdventurerClass> done, AdventurerClass savedClass = null, string savedDetail = null,
-        AdventurerClass only = null, DungeonMaster.Line promptOverride = null, bool canCancel = true, bool showCard = true)
+        AdventurerClass only = null, DungeonMaster.Line promptOverride = null, bool canCancel = true, bool showCard = true,
+        IReadOnlyList<AdventurerClass> offered = null)
     {
         this.showCard = showCard;
         this.canCancel = canCancel;
@@ -93,10 +97,15 @@ public class ClassFigures : MonoBehaviour
         if (progress == null || progress.rules == null) { done?.Invoke(null); yield break; }
 
         chosen = null; cancelled = false; highlighted = null;
-        int spot = 0;
-        foreach (var c in progress.rules.classes)
+        if (only != null || saved != null) offered = null;
+        var classes = new List<AdventurerClass>();
+        foreach (var c in offered ?? progress.rules.classes)
+            if (c != null && (only != null ? c == only : c.Unlocked) && c.miniature != null && !classes.Contains(c) && classes.Count < spots.Length) classes.Add(c);
+        var suggested = offered != null && classes.Count > 0 ? classes[0] : null;
+        // Offered figures stand in the middle of the row: the ends are under the sheet and the card.
+        int spot = offered != null ? (spots.Length - classes.Count) / 2 : 0;
+        foreach (var c in classes)
         {
-            if (c == null || (only != null ? c != only : !c.Unlocked) || c.miniature == null || spot >= spots.Length) continue;
             // A figure on its own stands in the middle of the spots.
             if (only != null) { figures.Add(soloSpot != null ? Place(c, soloSpot.position, soloSpot.rotation) : Place(c, Centre, spots[spots.Length / 2].rotation)); spot++; }
             else figures.Add(Place(c, spots[spot].position, spots[spot++].rotation));
@@ -104,9 +113,10 @@ public class ClassFigures : MonoBehaviour
             yield return new WaitForSecondsRealtime(placeInterval);
         }
         if (figures.Count == 0) { done?.Invoke(null); yield break; }
-        DungeonMaster.Say(promptOverride != null && !promptOverride.IsEmpty ? promptOverride : saved != null && resumePrompt != null && !resumePrompt.IsEmpty ? resumePrompt : prompt);
+        DungeonMaster.Say(promptOverride != null && !promptOverride.IsEmpty ? promptOverride : saved != null && resumePrompt != null && !resumePrompt.IsEmpty ? resumePrompt
+            : suggested != null && suggestedPrompt != null && !suggestedPrompt.IsEmpty ? suggestedPrompt.With(suggestedPrompt.text.Replace("{class}", suggested.displayName)) : prompt);
 
-        Highlight(figures.Find(f => f.adventurer == (saved != null ? saved : progress.selectedClass)) ?? figures[0]);
+        Highlight(figures.Find(f => f.adventurer == (saved != null ? saved : suggested != null ? suggested : progress.selectedClass)) ?? figures[0]);
         if (card != null) card.Single = only != null;
         ShowCard(true);
         // Without the card there is no hint on it: say it in the feed.

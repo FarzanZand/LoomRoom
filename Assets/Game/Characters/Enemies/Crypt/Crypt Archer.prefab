@@ -75,8 +75,34 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8520137168989438645, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1167160664823106302}
   m_SourcePrefab: {fileID: 100100000, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+--- !u!1 &6526550647871116108 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8520137168989438645, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+  m_PrefabInstance: {fileID: 3219911698374971897}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1167160664823106302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6526550647871116108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 541191b30dd45d94dbcda373d6916eac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeathBurst
+  force: 2.2
+  upward: 2
+  scatter: 1.2
+  spin: 9
+  pieceMass: 0.4
+  settleSeconds: 4
 --- !u!114 &-6595733425797482603
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -173,7 +199,7 @@ MonoBehaviour:
     loseSightGracePeriod: 4
     maxSearchTime: 5
     useChaseSpeed: 1
-    chaseSpeed: 2.3
+    chaseSpeed: 3.8
     useWanderSpeed: 1
     wanderSpeed: 0.7
     acceleration: 30

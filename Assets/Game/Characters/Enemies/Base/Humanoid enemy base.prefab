@@ -111,9 +111,13 @@ MonoBehaviour:
   hasWeapon: 1
   weapon: {fileID: 0}
   grip: {fileID: 11400000, guid: acbf81d574de0af4a8b2282cd8a41dac, type: 2}
+  bowGrip: {fileID: 0}
+  arrowGrip: {fileID: 0}
   animator: {fileID: 144097435738051639}
   attachment: {fileID: 0}
   visual: {fileID: 0}
+  bowAttachment: {fileID: 0}
+  arrowAttachment: {fileID: 0}
 --- !u!114 &7439072402100927313
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -420,3 +424,29 @@ MonoBehaviour:
       damageMultiplier: 1
       knockbackForce: -1
       hitStopScale: 1
+  archer: 0
+  archery:
+    bow: {fileID: 0}
+    arrow: {fileID: 0}
+    animatorTrigger: BowShot
+    minRange: 3
+    maxRange: 14
+    cooldown: 2.2
+    aimTrackSpeed: 300
+    fallbackReleaseTime: 1.3
+    maxHeightDifference: 4
+    arrowSpeed: 22
+    spread: 2.5
+    leadTarget: 0.5
+    hit:
+      useDefaultEffects: 1
+      hitAudio: {fileID: 0}
+      swingAudio: {fileID: 0}
+      heavySwingAudio: {fileID: 0}
+      hitParticle: {fileID: 0}
+      damageMultiplier: 1
+      knockbackForce: 1.5
+      hitStopScale: 0.5
+    pullAudio: {fileID: 0}
+    fireAudio: {fileID: 0}
+  experience: 0

@@ -7026,7 +7026,8 @@ MonoBehaviour:
   killColor: {r: 1, g: 0.6, b: 0.22, a: 1}
   showEvents: 1
   fontSize: 32
-  outline: 0.12
+  outline: 0
+  pixelGrid: 16
   hold: 6
   fadeOut: 1.5
   maxLines: 6
@@ -8978,7 +8979,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 137485872}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -107585,12 +107586,19 @@ MonoBehaviour:
   sitSeconds: 1.2
   rolledAttributes:
   - STR
-  - DEX
+  - INT
   - CON
+  sheetClasses:
+  - attribute: STR
+    adventurerClass: {fileID: 11400000, guid: 720138e1d8556ba48b73655c9111a72d, type: 2}
+  - attribute: INT
+    adventurerClass: {fileID: 11400000, guid: f877338915d156f43a23123fd35c9fd5, type: 2}
+  - attribute: CON
+    adventurerClass: {fileID: 11400000, guid: 6badc009586d2324e822e70d3affa468, type: 2}
+  figuresOffered: 2
   sheetOnFirstMorning: 1
   sheetUnknownClass: Adventurer
   nightTime: {x: 2, y: 47}
-  rerollSeconds: 6
   callLines:
   - text: You're up. Good.
     voice: {fileID: 0}
@@ -107633,7 +107641,7 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
-  - text: Dexterity.
+  - text: Intelligence.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
@@ -107689,43 +107697,6 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
-  rerollOffer:
-  - text: That {stat} is a bit sad. One reroll, if you want it.
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 1
-  - text: I'll let you roll {stat} again. Once. Don't tell anyone.
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 1
-  rerollBetter:
-  - text: '{n}. See? Generosity pays.'
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 1
-  - text: '{n}. Much better.'
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 1
-  rerollWorse:
-  - text: '{n}. Worse. Rules are rules.'
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 1
-  - text: '{n}. Oh. That''s on you.'
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 1
-  rerollKept:
-  - text: Brave. Or stubborn.
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 1
-  - text: Fine. We keep it.
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 1
-  rerollHint: Click to reroll {stat}. Or wait to keep it.
   afterRolls:
   - text: Good. Now let's see who that is.
     voice: {fileID: 0}
@@ -109856,6 +109827,11 @@ MonoBehaviour:
     inPerson: 1
   resumePrompt:
     text: Where we left off.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  suggestedPrompt:
+    text: With those numbers, I'd take the {class}. Your choice.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
@@ -123320,10 +123296,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: lowResProps
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
+      propertyPath: objectPixelSize
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: pixelatorCamera
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
+      propertyPath: lowResCharacters
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
@@ -123335,9 +123319,17 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
+      propertyPath: pixelateCharacters
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: fadeFullscreenImage
       value: 
       objectReference: {fileID: 197756678}
+    - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
+      propertyPath: pixelateArchitecture
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: roomEffects.pixelate
       value: 0
@@ -123348,7 +123340,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: roomEffects.filmGrain
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1559000830571180014, guid: 40caec06f751a53498e19af580e7ca63, type: 3}
       propertyPath: tableEffects.pixelate
@@ -123958,10 +123950,6 @@ PrefabInstance:
     - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
       propertyPath: heavyKnockbackMultiplier
       value: 1.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
-      propertyPath: knockbackForceMultiplier
-      value: 0.35
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

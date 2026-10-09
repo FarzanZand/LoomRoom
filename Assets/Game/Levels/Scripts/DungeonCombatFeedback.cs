@@ -78,7 +78,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     {
         view.until=Time.time+3.5f;view.lossUntil=Time.time+.35f;
         bool special=!info.Blocked && (info.Critical || info.Backstab);
-        float scale=special && CombatManager.HasInstance ? CombatManager.Instance.critNumberScale:1;
+        float scale=numberScale*(special && CombatManager.HasInstance ? CombatManager.Instance.critNumberScale:1);
         string amount=Mathf.CeilToInt(info.Amount).ToString();
         ShowNumber(view.character.transform,Head(view.character),info.Blocked ? "BLOCK":info.Backstab ? "BACKSTAB "+amount:info.Critical ? amount+"!":amount,
             info.Blocked ? new Color(.53f,.85f,1):info.Backstab ? new Color(1,.42f,.3f):info.Critical ? new Color(1,.6f,.2f):info.Heavy ? new Color(1,.78f,.25f):new Color(1,.93f,.79f),scale);
@@ -93,11 +93,11 @@ public class DungeonCombatFeedback : MonoBehaviour
             view=new ObjectView{target=target,root=bar.Rect,fill=bar.healthFill,loss=bar.recentDamageFill};objects.Add(view);
         }
         view.until=Time.time+3f;view.lossUntil=Time.time+.35f;
-        ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f));
+        ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f),numberScale);
     }
     void ShowNumber(Transform target,Vector3 position,string text,Color color,float scale=1)
     {
-        var p=popups[popupIndex++%popups.Count];p.target=target;p.position=position;p.started=Time.time;p.until=Time.time+(scale>1 ? 1.2f:.85f);p.color=color;p.label.text=text;
+        var p=popups[popupIndex++%popups.Count];p.target=target;p.position=position;p.started=Time.time;p.until=Time.time+(scale>numberScale ? 1.2f:.85f);p.color=color;p.label.text=text;
         p.scale=scale;p.label.rectTransform.localScale=Vector3.one*scale;
     }
     void PlayerDamaged(DamageInfo info)
@@ -112,6 +112,10 @@ public class DungeonCombatFeedback : MonoBehaviour
     }
     void Result(string text,Color color,float duration){if(impact==null)return;impact.text=text;impact.color=color;impactUntil=Time.time+duration;}
     [SerializeField,Min(0),Tooltip("Enemy bars stay this far below the top of the screen (the skill popup's space).")] float barTopMargin=260;
+    [SerializeField,Min(.1f),Tooltip("Size of every damage number; criticals and backstabs are CombatManager.critNumberScale bigger again.")] float numberScale=1.6f;
+    [SerializeField,Tooltip("Barony style: one enemy bar with its name at the top of the screen, for the enemy last hit (or aimed at), instead of bars over heads.")] bool topBar=true;
+    [SerializeField,Min(0),Tooltip("Top bar: distance from the top of the screen.")] float topBarOffset=96;
+    [SerializeField,Min(.1f),Tooltip("Top bar: size against the bar over a head.")] float topBarScale=1.8f;
     void LateUpdate()
     {
         if(canvas==null || dungeon==null)return;
@@ -119,6 +123,14 @@ public class DungeonCombatFeedback : MonoBehaviour
         bool show=active && GameManager.Instance.GameplayActive;
         var camera=PlayerManager.Instance.OutputCamera;
         if(camera==null)return;
+        // Top bar: the enemy hit most recently, else the one under the crosshair.
+        EnemyView topEnemy=null;
+        if(topBar)
+        {
+            float best=0;
+            foreach(var e in enemies)if(e.character!=null && e.character.IsAlive && e.until>Time.time && e.until>best){best=e.until;topEnemy=e;}
+            if(topEnemy==null)foreach(var e in enemies)if(e.character!=null && e.character.IsAlive && Aimed(camera,e.character)){topEnemy=e;break;}
+        }
         foreach(var e in enemies)
         {
             if(e.character==null){e.root.gameObject.SetActive(false);continue;}
@@ -126,13 +138,19 @@ public class DungeonCombatFeedback : MonoBehaviour
             float distance=Vector3.Distance(camera.transform.position,head);
             // Aim assist against the body, so small creatures don't require pixel-perfect targeting.
             Vector3 body=e.character.transform.position+(head-e.character.transform.position)*.55f;
-            bool aimed=e.character.IsAlive && distance<10 && Vector3.Angle(camera.transform.forward,body-camera.transform.position)<7;
+            bool aimed=Aimed(camera,e.character);
             bool bossBar=BossBarUI.HasInstance && BossBarUI.Instance.Boss==e.character;
             // A dead enemy's bar goes with it; the kill line and the body say enough.
             bool visible=show && e.character.IsAlive && !bossBar && distance<18 && (aimed || Time.time<e.until) && HasSight(camera,e.character.transform,body);
-            e.root.gameObject.SetActive(visible && Project(camera,head+Vector3.up*.14f,e.root));
+            if(topBar)
+            {
+                bool shown=show && e==topEnemy && !bossBar;
+                e.root.gameObject.SetActive(shown);
+                if(shown){e.root.localScale=Vector3.one*topBarScale;e.root.anchoredPosition=new Vector2(0,canvas.rect.height*.5f-topBarOffset);}
+            }
+            else e.root.gameObject.SetActive(visible && Project(camera,head+Vector3.up*.14f,e.root));
             // Up close a head projects near the top edge, where the skill popup lives: keep the bar under it.
-            if(e.root.gameObject.activeSelf){var at=e.root.anchoredPosition;float top=canvas.rect.height*.5f-barTopMargin;if(at.y>top){at.y=top;e.root.anchoredPosition=at;}}
+            if(!topBar && e.root.gameObject.activeSelf){var at=e.root.anchoredPosition;float top=canvas.rect.height*.5f-barTopMargin;if(at.y>top){at.y=top;e.root.anchoredPosition=at;}}
             float health=e.character.Stats.MaxHealth>0 ? Mathf.Clamp01(e.character.Stats.CurrentHealth/e.character.Stats.MaxHealth):0;
             e.fill.rectTransform.anchorMax=new Vector2(health,1);
             if(Time.time>e.lossUntil)e.displayed=Mathf.MoveTowards(e.displayed,health,Time.deltaTime*1.6f);
@@ -159,6 +177,14 @@ public class DungeonCombatFeedback : MonoBehaviour
         if(message!=null){var color=new Color(.94f,.87f,.69f,Mathf.Clamp01((messageUntil-Time.time)/.4f));message.color=color;}
         if(impact!=null)impact.gameObject.SetActive(show && Time.time<impactUntil);
     }
+    // Under the crosshair, with aim assist against the body so small creatures don't need pixel-perfect aim.
+    bool Aimed(Camera camera,Character c)
+    {
+        if(!c.IsAlive)return false;
+        Vector3 head=Head(c),body=c.transform.position+(head-c.transform.position)*.55f;
+        return Vector3.Distance(camera.transform.position,head)<10 && Vector3.Angle(camera.transform.forward,body-camera.transform.position)<7 && HasSight(camera,c.transform,body);
+    }
+
     public bool HasSight(Camera camera,Transform target,Vector3 point)
     {
         Vector3 delta=point-camera.transform.position;

@@ -107,7 +107,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
             if (only == null) SavedRun(out savedClass, out savedDetail);
             // Through the intro there is no standing up: Esc does nothing.
             bool canStand = !IntroController.Seated;
-            yield return figures.Choose(c => picked = c, savedClass, savedDetail, only, prompt, canStand, showCard);
+            var offered = only == null ? IntroController.OfferedClasses : null;
+            yield return figures.Choose(c => picked = c, savedClass, savedDetail, only, prompt, canStand, showCard, offered);
             if (IntroController.HasInstance) IntroController.Instance.WriteClass(picked);
             if (picked == null && IntroController.HasInstance) IntroController.Instance.EndSheetAtTable();
             GameManager.Instance.Pop(GameState.Dialogue);

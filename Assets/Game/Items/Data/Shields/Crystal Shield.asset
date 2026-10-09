@@ -35,7 +35,7 @@ MonoBehaviour:
   canBeEquipped: 1
   equipSlot: 1
   heldScale: 1
-  heldPosition: {x: -0.06, y: 0.02, z: -0.2}
+  heldPosition: {x: -0.06, y: -0.099999994, z: -0.2}
   heldRotation: {x: 0, y: -90, z: 0}
   equipOnPickup: 0
   statModifiers:

@@ -2381,6 +2381,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b329f8bb369365d448845e805b787d62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AdventureSave
+  freshStartInEditor: 1
 --- !u!1 &1806632151189951013
 GameObject:
   m_ObjectHideFlags: 0
@@ -4602,7 +4603,7 @@ MonoBehaviour:
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
-    FieldOfView: 70
+    FieldOfView: 85
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000
@@ -4679,19 +4680,19 @@ MonoBehaviour:
   blendSpeed: 6
   states:
   - state: 0
-    amplitude: 0.3
+    amplitude: 0
     frequency: 0.3
   - state: 1
-    amplitude: 0.6
+    amplitude: 0.15
     frequency: 1.2
   - state: 2
-    amplitude: 1
+    amplitude: 0.3
     frequency: 2
   - state: 3
-    amplitude: 0.4
+    amplitude: 0.1
     frequency: 0.8
   - state: 4
-    amplitude: 0.2
+    amplitude: 0
     frequency: 0.5
 --- !u!1 &4556862691022459440
 GameObject:
@@ -5440,6 +5441,7 @@ MonoBehaviour:
     m_Bits: 191
   nearClip: 0.1
   farClip: 5000
+  viewModelFieldOfView: 70
 --- !u!1 &5326424931688193878
 GameObject:
   m_ObjectHideFlags: 0
@@ -9587,6 +9589,7 @@ MonoBehaviour:
   walkSpeed: 4.5
   sprintSpeed: 7.2
   crouchSpeed: 1.75
+  backwardSpeed: 0.5
   jumpForce: 8
   gravityMultiplier: 2.5
   sprintStaminaPerSecond: 6

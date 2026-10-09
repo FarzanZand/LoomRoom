@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4486656d5770a27458587aa7a245946f, type: 3}
   m_Name: Dungeon balance
   m_EditorClassIdentifier: Assembly-CSharp::DungeonBalance
-  damagePerFloor: 1
+  damagePerFloor: 2
   healthGrowthPerFloor: 0.1
   armorPerFloor: 0.2

@@ -95,6 +95,8 @@ public class BoardReveal : MonoBehaviour
     }
 
     Light boardLight;
+    // The one light over the whole board: it stays on while the table assembles the floor.
+    public Light BoardLight => boardLight;
     [Tooltip("On a board the player's carried light takes the board light's colour at this share of its strength, so the board's colour reads up close too.")]
     [Range(0, 1)] public float carriedLight = .5f;
     Light worldLight;

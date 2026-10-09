@@ -37,6 +37,22 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     public bool  InWater     { get; private set; }
     public bool  IsGrounded  => Controller != null && Controller.isGrounded;
     public float Speed       { get; private set; }
+
+    // Enemies block like Barony's monsters: walking toward one inside the personal space goes nowhere.
+    void KeepPersonalSpace()
+    {
+        float space = CombatManager.HasInstance ? CombatManager.Instance.personalSpace : 1.1f;
+        foreach (var enemy in EnemyBrain.Active)
+        {
+            if (enemy == null || enemy.State == EnemyState.Dead) continue;
+            Vector3 to = enemy.transform.position - transform.position; to.y = 0f;
+            float distance = to.magnitude;
+            if (distance >= space || distance < .01f) continue;
+            to /= distance;
+            float into = movement.x * to.x + movement.z * to.z;
+            if (into > 0f) { movement.x -= to.x * into; movement.z -= to.z * into; }
+        }
+    }
     public float AirborneTime { get; private set; }
     public MoveState State   { get; private set; }
     public Vector3   Velocity => Controller != null ? Controller.velocity : Vector3.zero;
@@ -226,8 +242,11 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         Vector3 right   = orientation.right;   right.y   = 0f; right.Normalize();
 
         float yVel = movement.y;
-        movement = (forward * moveDir.z + right * moveDir.x) * Speed;
+        // Backing away is slower (PlayerData.backwardSpeed); strafing keeps full speed.
+        float back = moveDir.z < 0f ? Mathf.Clamp(p.backwardSpeed, .1f, 1f) : 1f;
+        movement = (forward * moveDir.z * back + right * moveDir.x) * Speed;
         movement.y = yVel;
+        KeepPersonalSpace();
 
         bool grounded = Controller.isGrounded;
         if (grounded) movement.y = -2f;

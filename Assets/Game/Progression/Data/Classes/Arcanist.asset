@@ -18,14 +18,13 @@ MonoBehaviour:
   portrait: {fileID: 21300000, guid: 293f3cf007bf42a438328c01b10f6578, type: 3}
   miniature: {fileID: 4805614000556487136, guid: 5c624b2e55c5cf7469acc41b4e524e81, type: 3}
   unlockFlag: class.spellblade
-  lockedHint: Solve the puzzle in the room to unlock it.
   equipment:
   - {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
   spells:
   - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
   supplies:
   - item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
-    count: 2
+    count: 1
   - item: {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
     count: 2
   - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}

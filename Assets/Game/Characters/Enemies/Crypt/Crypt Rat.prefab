@@ -1201,7 +1201,7 @@ MonoBehaviour:
     loseSightGracePeriod: 3
     maxSearchTime: 5
     useChaseSpeed: 1
-    chaseSpeed: 3.6
+    chaseSpeed: 5.5
     useWanderSpeed: 1
     wanderSpeed: 0.8
     acceleration: 30

@@ -10,8 +10,9 @@ public enum IntroOpening { Lamp = 0, Tabletop = 1 }
 // The tabletop opening: no eyes in the dark, no waking in the chair. The player wakes in bed at night; the
 // only warm light is the desk lamp at the game table, where the Dungeon Master is waiting. They walk over
 // themselves (he calls, and nudges if they wander); sitting down, he slides a pencil character sheet
-// across and they roll dice for it. Then the practice figure, the same practice board, and afterwards the
-// figure goes on the memorial shelf with the others.
+// across and they roll dice for it, one attribute at a time. The numbers are flavour, except that at the
+// first morning's table the figures for the two highest (Sheet Classes) are the ones set out. Then the
+// practice figure, the same practice board, and afterwards the figure goes on the memorial shelf.
 public partial class IntroController
 {
     [Title("Opening", "Lamp: the original, eyes in the dark and a lamp lit by hand. Tabletop: asleep at the table, a desk lamp, a character sheet and dice.")]
@@ -30,12 +31,15 @@ public partial class IntroController
     [FoldoutGroup("Tabletop opening"), Tooltip("How much the view zooms in on the memorial shelf (degrees of field of view).")] public float memorialZoom = 26f;
     [FoldoutGroup("Tabletop opening"), Min(5), Tooltip("Seconds of wandering between nudges to sit down.")] public float nudgeSeconds = 30f;
     [FoldoutGroup("Tabletop opening"), Min(.1f), Tooltip("Seconds to settle into the chair.")] public float sitSeconds = 1.2f;
-    [FoldoutGroup("Tabletop opening"), Tooltip("The attributes rolled for, in order (three dice each).")] public string[] rolledAttributes = { "STR", "DEX", "CON" };
+    [FoldoutGroup("Tabletop opening"), Tooltip("The attributes rolled for, in order (three dice each).")] public string[] rolledAttributes = { "STR", "INT", "CON" };
+    [System.Serializable] public class SheetClass { public string attribute; public AdventurerClass adventurerClass; }
+    [FoldoutGroup("Tabletop opening"), Tooltip("The class each rolled attribute points to. After the sheet, the figures of the highest rolls come out, the highest recommended.")]
+    public SheetClass[] sheetClasses = new SheetClass[0];
+    [FoldoutGroup("Tabletop opening"), Min(1), Tooltip("How many figures come out after the sheet.")] public int figuresOffered = 2;
     [FoldoutGroup("Tabletop opening"), Tooltip("With the Lamp opening: the character sheet and dice wait for the first time the player sits at the table on the first morning, before the figures.")]
     public bool sheetOnFirstMorning = true;
     [FoldoutGroup("Tabletop opening"), Tooltip("Written as the class until a figure is picked.")] public string sheetUnknownClass = "Adventurer";
     [FoldoutGroup("Tabletop opening"), Tooltip("What the clocks show at night (hour, minute).")] public Vector2Int nightTime = new(2, 47);
-    [FoldoutGroup("Tabletop opening"), Min(1), Tooltip("Seconds the reroll offer waits for a click.")] public float rerollSeconds = 6f;
 
     [FoldoutGroup("Tabletop lines"), Tooltip("Said once the player is up, calling them to the table.")] public DungeonMaster.Line[] callLines = new DungeonMaster.Line[0];
     [FoldoutGroup("Tabletop lines"), Tooltip("Said in turn while they wander instead (the last one repeats).")] public DungeonMaster.Line[] nudgeLines = new DungeonMaster.Line[0];
@@ -47,11 +51,6 @@ public partial class IntroController
     public DungeonMaster.Line[] lowRoll = new DungeonMaster.Line[0], midRoll = new DungeonMaster.Line[0], highRoll = new DungeonMaster.Line[0];
     [FoldoutGroup("Tabletop lines"), Tooltip("When all three dice show the same face; {n} is the total. Replaces the usual remark.")]
     public DungeonMaster.Line[] tripleRoll = new DungeonMaster.Line[0];
-    [FoldoutGroup("Tabletop lines"), Tooltip("Offering one reroll of the worst stat (under 10). {stat} is its name.")] public DungeonMaster.Line[] rerollOffer = new DungeonMaster.Line[0];
-    [FoldoutGroup("Tabletop lines"), Tooltip("After the reroll: better, or worse (it stands either way). {n} is the new total.")]
-    public DungeonMaster.Line[] rerollBetter = new DungeonMaster.Line[0], rerollWorse = new DungeonMaster.Line[0];
-    [FoldoutGroup("Tabletop lines"), Tooltip("When the reroll is turned down.")] public DungeonMaster.Line[] rerollKept = new DungeonMaster.Line[0];
-    [FoldoutGroup("Tabletop lines"), TextArea(1, 2)] public string rerollHint = "Click to reroll {stat}. Or wait to keep it.";
     [FoldoutGroup("Tabletop lines"), Tooltip("When the sheet is done, before the figure.")] public DungeonMaster.Line[] afterRolls = new DungeonMaster.Line[0];
     [FoldoutGroup("Tabletop lines"), Tooltip("Back at the table after the practice death.")] public DungeonMaster.Line[] tabletopAfterPractice = new DungeonMaster.Line[0];
     [FoldoutGroup("Tabletop lines"), Tooltip("As the view turns to the memorial shelf.")] public DungeonMaster.Line[] memorialLines = new DungeonMaster.Line[0];
@@ -152,7 +151,7 @@ public partial class IntroController
         Sit();
     }
 
-    // He pushes the sheet across, the player rolls three dice per attribute, one low roll may be rerolled.
+    // He pushes the sheet across, the player rolls three dice per attribute; every roll stands.
     IEnumerator SheetAndDice(string className, string blurb)
     {
         if (sheet == null) yield break;
@@ -182,9 +181,31 @@ public partial class IntroController
             }
             ClearDice();
         }
-        yield return OfferReroll();
+        PickFigures();
         yield return SayAll(afterRolls);
     }
+
+    // The two highest rolls pick the figures that come out after the sheet, the highest first (a tie goes
+    // to the attribute rolled first).
+    void PickFigures()
+    {
+        offered.Clear();
+        var order = new List<int>();
+        for (int i = 0; i < rolledAttributes.Length && i < rolls.Length; i++) order.Add(i);
+        order.Sort((a, b) => rolls[b] != rolls[a] ? rolls[b].CompareTo(rolls[a]) : a.CompareTo(b));
+        foreach (int i in order)
+        {
+            var entry = System.Array.Find(sheetClasses, e => e != null && e.attribute == rolledAttributes[i]);
+            var cls = entry != null ? entry.adventurerClass : null;
+            if (cls == null || !cls.Unlocked || offered.Contains(cls)) continue;
+            offered.Add(cls);
+            if (offered.Count >= figuresOffered) break;
+        }
+    }
+
+    readonly List<AdventurerClass> offered = new();
+    // The figures the first morning's sheet asks for, while they are out. Null: the usual figures.
+    public static IReadOnlyList<AdventurerClass> OfferedClasses => SheetAtTable && Instance.offered.Count > 0 ? Instance.offered : null;
 
     // ── The first table of the first morning (after the Lamp opening) ──
 
@@ -286,41 +307,9 @@ public partial class IntroController
     bool rollRequested, lastTriple;
     int[] rolls = new int[3];
 
-    // The rolls are flavour: written on the sheet, never applied to the character.
+    // The rolls are flavour: written on the sheet, never applied to the character. They only choose
+    // which figures come out.
     static string SheetText(int total) => total.ToString();
-
-    // The worst roll, if under ten, may be rolled once more; the new number stands either way.
-    IEnumerator OfferReroll()
-    {
-        int worst = -1;
-        for (int i = 0; i < rolledAttributes.Length && i < rolls.Length; i++) if (rolls[i] < 10 && (worst < 0 || rolls[i] < rolls[worst])) worst = i;
-        if (worst < 0 || rerollOffer.Length == 0) yield break;
-        string stat = rolledAttributes[worst];
-        var offer = rerollOffer[Random.Range(0, rerollOffer.Length)];
-        yield return SayAll(new[] { offer.With(offer.text.Replace("{stat}", stat)) });
-        MessageLog.Post(rerollHint.Replace("{stat}", stat), MessageKind.Info);
-        bool take = false;
-        float until = Time.time + rerollSeconds;
-        yield return null;
-        while (Time.time < until && !take)
-        {
-            take = rollRequested || (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
-                || (Keyboard.current != null && (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.eKey.wasPressedThisFrame));
-            yield return null;
-        }
-        rollRequested = false;
-        if (!take) { yield return SayAll(PickOne(rerollKept)); yield break; }
-        int total = 0;
-        yield return Roll(3, t => total = t);
-        bool better = total > rolls[worst];
-        rolls[worst] = total;
-        yield return sheet.Write(worst, SheetText(total));
-        var line = PickOne(better ? rerollBetter : rerollWorse);
-        if (line.Length > 0) yield return SayAll(new[] { line[0].With(line[0].text.Replace("{n}", total.ToString())) });
-        ClearDice();
-    }
-
-    static DungeonMaster.Line[] PickOne(DungeonMaster.Line[] pool) => pool.Length == 0 ? pool : new[] { pool[Random.Range(0, pool.Length)] };
 
     // Throws the dice now, as a click would (other input, tests).
     public void RequestRoll() => rollRequested = true;

@@ -225,6 +225,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVoice
   minStepSpeed: 0.35
   reportUnseenAlerts: 1
+  idleEarshot: 8
+  stepEarshot: 12
 --- !u!114 &2761132636851895448
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -239,6 +241,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyRagdoll
   totalMass: 40
   settleSeconds: 5
+  deathAnimationInstead: 0
 --- !u!114 &4812219496838340772
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -358,7 +361,7 @@ MonoBehaviour:
     wanderSpeed: 0.7
     acceleration: 30
     preferredRangeFraction: 0.7
-    circleTarget: 1
+    circleTarget: 0
     circleSpeedFraction: 0.22
     circleSwitchInterval: {x: 0.9, y: 2}
     spacingSpeedFraction: 0.8
@@ -385,3 +388,29 @@ MonoBehaviour:
       damageMultiplier: 1
       knockbackForce: -1
       hitStopScale: 1
+  archer: 0
+  archery:
+    bow: {fileID: 0}
+    arrow: {fileID: 0}
+    animatorTrigger: BowShot
+    minRange: 3
+    maxRange: 14
+    cooldown: 2.2
+    aimTrackSpeed: 300
+    fallbackReleaseTime: 1.3
+    maxHeightDifference: 4
+    arrowSpeed: 22
+    spread: 2.5
+    leadTarget: 0.5
+    hit:
+      useDefaultEffects: 1
+      hitAudio: {fileID: 0}
+      swingAudio: {fileID: 0}
+      heavySwingAudio: {fileID: 0}
+      hitParticle: {fileID: 0}
+      damageMultiplier: 1
+      knockbackForce: 1.5
+      hitStopScale: 0.5
+    pullAudio: {fileID: 0}
+    fireAudio: {fileID: 0}
+  experience: 0

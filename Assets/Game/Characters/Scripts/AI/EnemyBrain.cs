@@ -213,6 +213,19 @@ public class EnemyBrain : MonoBehaviour
         Motor.SuppressKnockback = IsSwinging;
         attackRunner.Tick();
 
+        // Personal space: an enemy that is not swinging never stands inside its target; it steps back out.
+        if (State == EnemyState.Chase && !IsSwinging && Perception.Target != null && Tuning != null)
+        {
+            Vector3 away = transform.position - Perception.Target.transform.position; away.y = 0f;
+            if (away.magnitude < Tuning.personalSpace && away.sqrMagnitude > .0001f)
+            {
+                Motor.Strafe(away.normalized, (Profile.useChaseSpeed ? Profile.chaseSpeed : Motor.DefaultSpeed) * Profile.spacingSpeedFraction);
+                Motor.LookAt(Perception.Target.transform.position, Profile.attackFaceSpeed);
+                UpdateAnimator();
+                return;
+            }
+        }
+
         if (Time.time < recoveryUntil)
         {
             // Catch breath, but keep the eyes on the target so the next move is instant.
@@ -248,7 +261,10 @@ public class EnemyBrain : MonoBehaviour
             else            BeginRecovery(duration);
         }
         if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null)
+        {
             Character.TriggerAnimation(Character.data.hurtTrigger);
+            if (!info.Heavy && Tuning != null) BeginRecovery(Tuning.lightFlinchDuration);
+        }
 
         bool inCombat = State == EnemyState.Chase || State == EnemyState.Attack;
         if (inCombat) return;
