@@ -271,7 +271,7 @@ MonoBehaviour:
   leaf: {fileID: 2091000918867329302}
   leafMesh: {fileID: 5967142482234546828}
   halfWidth: 1
-  swingDegrees: 100
+  swingDegrees: 85
   swingSpeed: 170
   lintel: {fileID: 2728329139281905764}
   openingHeight: 2.8

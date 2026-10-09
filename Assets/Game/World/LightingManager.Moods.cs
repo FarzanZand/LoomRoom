@@ -318,6 +318,9 @@ public sealed partial class LightingManager
         RenderSettings.ambientGroundColor = ground; RenderSettings.ambientLight = horizon;
         RenderSettings.ambientIntensity = originalAmbientIntensity * level;
         RenderSettings.ambientProbe = GradientProbe(top, horizon, ground);
+        // A dark mood doesn't reflect a bright sky.
+        float lit = Mathf.Max(top.maxColorComponent, Mathf.Max(horizon.maxColorComponent, ground.maxColorComponent));
+        RenderSettings.reflectionIntensity = originalReflectionIntensity * Mathf.Clamp01(lit / fullReflectionAmbient);
         RenderSettings.fogColor = overrideFogColor ? fogColor : displayedMood.fog;
         if (darknessFog && dark > .001f)
         {

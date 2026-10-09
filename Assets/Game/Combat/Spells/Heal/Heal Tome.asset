@@ -25,7 +25,7 @@ MonoBehaviour:
   maxStackSize: 1
   value: 100
   tier: 1
-  lootWeight: 1
+  lootWeight: 0.75
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

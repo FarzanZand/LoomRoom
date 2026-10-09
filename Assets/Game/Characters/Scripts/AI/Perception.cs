@@ -71,9 +71,32 @@ public class Perception : MonoBehaviour
         if (Profile == null || !Profile.investigateNoise) return;
         if (source != null && self != null && !FactionRules.IsHostile(self.Faction, source.Faction)) return;
         float reach = radius + Profile.hearingRadius;
-        if ((position - transform.position).sqrMagnitude > reach * reach) return;
+        float distance = (position - transform.position).sqrMagnitude;
+        if (distance > reach * reach) return;
+        // Walls and closed doors muffle: what has to pass through stone carries only a little way.
+        if (Muffled(position))
+        {
+            reach *= CombatManager.HasInstance ? CombatManager.Instance.wallMuffle : .3f;
+            if (distance > reach * reach) return;
+        }
         HasStimulus      = true;
         StimulusPosition = position;
+    }
+
+    // Anything solid between the sound and these ears, other than characters.
+    bool Muffled(Vector3 position)
+    {
+        var from = transform.position + Vector3.up;
+        var to = position + Vector3.up;
+        var direction = to - from;
+        int n = Physics.RaycastNonAlloc(from, direction.normalized, sightHits, direction.magnitude, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < n; i++)
+        {
+            var hit = sightHits[i].collider;
+            if (hit.attachedRigidbody != null || hit.GetComponentInParent<Character>() != null) continue;
+            return true;
+        }
+        return false;
     }
 
     // Damage always counts as a stimulus from the attacker's position.

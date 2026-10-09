@@ -4,7 +4,7 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 
 // A biome's everyday loot. Instead of listing items, it says what kind of reward each source gives
-// (gold, gear, recovery, tomes) and which gear tiers drop here. Items are picked from the item catalog
+// (gold, gear including spell tomes, recovery) and which gear tiers drop here. Items are picked from the item catalog
 // by their tier and loot weight, so a new item joins the loot just by having a tier.
 [CreateAssetMenu(menuName = "LoomRoom/Loot Profile")]
 public class DungeonLootProfile : LootSource
@@ -15,9 +15,8 @@ public class DungeonLootProfile : LootSource
         [Range(0, 1)] public float goldChance = .5f;
         [HorizontalGroup("Gold"), Min(0)] public int goldMin = 2;
         [HorizontalGroup("Gold"), Min(0)] public int goldMax = 8;
-        [Range(0, 1), Tooltip("Chance of one piece of gear (weapon, shield or armor).")] public float gearChance;
+        [Range(0, 1), Tooltip("Chance of one piece of gear: a weapon, shield, armor, trinket or spell tome, picked by loot weight.")] public float gearChance;
         [Range(0, 1), Tooltip("Chance of one recovery item (potion or food).")] public float recoveryChance;
-        [Range(0, 1), Tooltip("Chance of one spell tome.")] public float tomeChance;
     }
 
     [Title("Gear")]
@@ -33,10 +32,10 @@ public class DungeonLootProfile : LootSource
     public float goldGrowthPerFloor = .15f;
 
     [Title("Sources")]
-    public Rule enemies = new() { goldChance = .6f, goldMin = 2, goldMax = 6, gearChance = .04f, recoveryChance = .08f, tomeChance = .01f };
+    public Rule enemies = new() { goldChance = .6f, goldMin = 2, goldMax = 6, gearChance = .04f, recoveryChance = .08f };
     public Rule breakables = new() { goldChance = .5f, goldMin = 1, goldMax = 4, gearChance = .02f, recoveryChance = .06f };
     [Tooltip("Chests, bookshelves, graves and loot placed on the floor.")]
-    public Rule chests = new() { goldChance = .6f, goldMin = 4, goldMax = 10, gearChance = .85f, recoveryChance = .7f, tomeChance = .08f };
+    public Rule chests = new() { goldChance = .6f, goldMin = 4, goldMax = 10, gearChance = .85f, recoveryChance = .7f };
 
     Rule For(DungeonLootSource source) => source == DungeonLootSource.Enemy ? enemies : source == DungeonLootSource.Barrel ? breakables : chests;
 
@@ -58,7 +57,11 @@ public class DungeonLootProfile : LootSource
         {
             int tier = RollTier(random, floor);
             if (random.NextDouble() < upgradeChance) tier++;
-            var gear = Pick(random, i => IsGear(i) && i.tier == tier) ?? Pick(random, i => IsGear(i) && i.tier >= gearTiers.x && i.tier <= gearTiers.y);
+            // Spell tomes are part of the same roll, weighted like any other piece (they have no better versions,
+            // so a tome can come up at its own tier or any above it).
+            var gear = Pick(random, i => IsGear(i) && i.tier == tier || IsTome(i) && i.tier <= tier)
+                ?? Pick(random, i => IsGear(i) && i.tier >= gearTiers.x && i.tier <= gearTiers.y || IsTome(i) && i.tier <= gearTiers.y);
+            if (gear != null && IsTome(gear)) { drops.Add(new Drop(gear, 1)); gear = null; }
             if (gear != null && random.NextDouble() < honedChance) gear = gear.Honed(random.NextDouble() < honedTwiceChance ? 2 : 1);
             if (gear != null) drops.Add(new Drop(gear, 1));
         }
@@ -66,11 +69,6 @@ public class DungeonLootProfile : LootSource
         {
             var item = Pick(random, i => i.itemType == ItemType.Consumable && i.spell == null && i.tier <= gearTiers.y);
             if (item != null) drops.Add(new Drop(item, 1));
-        }
-        if (random.NextDouble() < rule.tomeChance)
-        {
-            var tome = Pick(random, i => i.spell != null && i.tier <= gearTiers.y);
-            if (tome != null) drops.Add(new Drop(tome, 1));
         }
         return drops;
     }
@@ -88,6 +86,7 @@ public class DungeonLootProfile : LootSource
         return max;
     }
 
+    static bool IsTome(ItemData i) => i.spell != null;
     static bool IsGear(ItemData i) => i.itemType == ItemType.Weapon || i.itemType == ItemType.Shield || i.itemType == ItemType.Equipment;
 
     // Weighted pick among catalog items with a tier (tier 0 never drops at random).

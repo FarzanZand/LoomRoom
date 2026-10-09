@@ -10,6 +10,8 @@ public class PlayerData : CharacterData
 
     [TabGroup(InspectorTabs, "Movement", Order = 10), Title("Speeds (m/s)", HorizontalLine = false)]
     public float walkSpeed   = 3f;
+    [TabGroup(InspectorTabs, "Movement"), Tooltip("Off: the sprint input does nothing (Barony has no sprint).")]
+    public bool canSprint = true;
     [TabGroup(InspectorTabs, "Movement")]
     public float sprintSpeed = 6f;
     [TabGroup(InspectorTabs, "Movement")]

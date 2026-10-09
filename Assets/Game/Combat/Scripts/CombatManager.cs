@@ -166,6 +166,8 @@ public class CombatManager : Singleton<CombatManager>
     [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;
     [Min(0), Tooltip("How far the sound of a landed hit carries: enemies within this (plus their hearing) come to look, so fights draw in the next room. 0: fights are silent.")]
     public float fightNoiseRadius = 8f;
+    [Range(0, 1), Tooltip("Share of a sound's reach that carries through a wall or closed door. Low keeps enemies in other rooms from hearing fights and footsteps through stone.")]
+    public float wallMuffle = .3f;
 
     [Header("Swing feel")]
     public bool swingCameraMotionEnabled = true;

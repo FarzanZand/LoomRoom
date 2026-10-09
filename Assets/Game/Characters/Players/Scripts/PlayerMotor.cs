@@ -227,7 +227,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
             (InputManager.Instance.LeanLeftHeld || InputManager.Instance.LeanRightHeld) &&
             (player == null || player.settings == null || player.settings.enableLean);
 
-        bool sprintApplied = IsSprinting && moveDir.z > 0f && !leanBlocksSprint && !IsCrouching;
+        bool sprintApplied = p.canSprint && IsSprinting && moveDir.z > 0f && !leanBlocksSprint && !IsCrouching;
 
         Speed = p.walkSpeed;
         if (sprintApplied && player != null && player.Stats != null &&

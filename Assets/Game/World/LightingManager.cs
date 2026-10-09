@@ -77,7 +77,9 @@ public sealed partial class LightingManager : MonoBehaviour
 
     // The scene's own ambient light and fog; room brightness and tint scale these.
     [SerializeField, HideInInspector] Color originalAmbientSky, originalAmbientHorizon, originalAmbientGround, originalAmbientFlat, originalFog;
-    [SerializeField, HideInInspector] float originalAmbientIntensity = 1f;
+    [SerializeField, HideInInspector] float originalAmbientIntensity = 1f, originalReflectionIntensity = 1f;
+    [SerializeField, Min(.01f), Tooltip("Sky reflections follow the ambient light: a mood whose ambient reaches this (brightest channel) reflects the sky fully, a darker one less, black not at all. Without it a dark scene still shows the bright sky on glossy materials (Pixel Lit ignores reflections, so this matters with the Pixelator off).")]
+    float fullReflectionAmbient = .35f;
     SphericalHarmonicsL2 originalProbe;
     bool sceneApplied;
     bool fading;
@@ -179,6 +181,7 @@ public sealed partial class LightingManager : MonoBehaviour
         RenderSettings.ambientGroundColor = originalAmbientGround * color * level;
         RenderSettings.ambientLight = originalAmbientFlat * color * level;
         RenderSettings.ambientIntensity = originalAmbientIntensity * level;
+        RenderSettings.reflectionIntensity = originalReflectionIntensity * Mathf.Clamp01(level);
         var probe = originalProbe;
         for (int channel = 0; channel < 3; channel++)
             for (int coefficient = 0; coefficient < 9; coefficient++)

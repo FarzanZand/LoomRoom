@@ -53,6 +53,7 @@ public class PixelLook
 
     readonly List<Material> buffer = new();
     readonly Dictionary<Renderer, bool> isCharacter = new();
+    readonly Dictionary<Renderer, bool> isViewModel = new();
     readonly Dictionary<Material, Material> objectTwin = new();     // Pixel Lit material -> its per-object twin
     readonly Dictionary<Material, Material> twinOriginal = new();   // twin -> the game's original material
     Shader objectShader;
@@ -82,7 +83,7 @@ public class PixelLook
     {
         if (!Active || Time.unscaledTime < nextScan) return;
         nextScan = Time.unscaledTime + RescanSeconds;
-        if (isCharacter.Count > 4096) isCharacter.Clear(); // forget destroyed renderers
+        if (isCharacter.Count > 4096) { isCharacter.Clear(); isViewModel.Clear(); } // forget destroyed renderers
         SetGlobals();
         SwapAll(restoreAll: false);
     }
@@ -108,6 +109,9 @@ public class PixelLook
         if (r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer) return;
         if (!isCharacter.TryGetValue(r, out bool character))
             isCharacter[r] = character = r is SkinnedMeshRenderer || r.GetComponentInParent<Character>(true) != null;
+        // The first-person view model is drawn by ViewModelFeature, which has no low-res pass: never the twin.
+        if (!isViewModel.TryGetValue(r, out bool viewModel))
+            isViewModel[r] = viewModel = r.GetComponentInParent<ViewModel>(true) != null;
         r.GetSharedMaterials(buffer);
         bool changed = false;
         for (int i = 0; i < buffer.Count; i++)
@@ -120,7 +124,7 @@ public class PixelLook
             var wanted = original;
             bool seeThrough = entry.pixel.GetFloat(DitherAlphaId) > .5f;
             if (!restoreAll && Active && parts.Has(category) && (!seeThrough || parts.ditherTransparents))
-                wanted = parts.LowRes(category) ? TwinOf(entry) : entry.pixel;
+                wanted = parts.LowRes(category) && !viewModel ? TwinOf(entry) : entry.pixel;
             if (wanted == m) continue;
             buffer[i] = wanted;
             changed = true;
