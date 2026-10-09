@@ -109,11 +109,13 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Seconds the flash tint stays on the character's renderers.")]
     public float hitFlashDuration = 0.1f;
 
+    [Header("Armor")]
+    [Tooltip("Barony's armor effectiveness: armor is taken off this share of a hit, the rest always lands, so armor never makes anyone untouchable. A successful block uses the full hit (1).")]
+    [Range(0f, 1f)] public float armorEffectiveness = .75f;
+
     [Header("Block")]
     [Tooltip("Seconds after attacking that block is locked out. Set to just under your attack windup length.")]
     public float blockCancelWindow = 0.5f;
-    [Tooltip("Fraction of incoming damage removed when guarding frontally. 1 = full block.")]
-    [Range(0f, 1f)] public float blockDamageReduction = .5f;
     [Tooltip("Dot product threshold: a hit is frontal (blockable) when dot(facing, hitDir) is below this.")]
     [Range(-1f, 1f)] public float blockFrontalDot = -0.3f;
     [Min(0), Tooltip("Stamina spent on each successfully blocked hit.")]

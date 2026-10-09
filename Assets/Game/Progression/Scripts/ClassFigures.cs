@@ -32,6 +32,8 @@ public class ClassFigures : MonoBehaviour
     public DungeonMaster.Line resumePrompt;
     [Tooltip("The card's hint line, rewritten for the saved run's figure.")]
     public TMPro.TMP_Text how;
+    [Tooltip("The card's Pick button: takes the highlighted figure.")]
+    public UnityEngine.UI.Button pick;
     AdventurerClass saved; string savedDetail, howDefault;
     // The figure taken plays the saved run.
     public bool ResumeChosen { get; private set; }
@@ -62,6 +64,7 @@ public class ClassFigures : MonoBehaviour
     void Awake()
     {
         ShowCard(false);
+        if (pick != null) pick.onClick.AddListener(() => Take(highlighted));
     }
 
     bool showCard = true;

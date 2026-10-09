@@ -5,21 +5,30 @@ using UnityEngine;
 // Editor test sessions use the normal dungeon and combat systems, with isolated saves.
 public class DebugDungeonSession : MonoBehaviour
 {
+    public enum Mode { Arena, Dungeon }
     public const string RequestKey = "LoomRoom.DebugDungeon";
+    public const string DungeonRequestKey = "LoomRoom.DebugDungeon.Generated";
     public const string SettingsPath = "Assets/Game/Development/Debug Dungeon/Debug Dungeon Settings.asset";
+    // Both modes skip the room (no intro, wake-up or reveal) and save to loomroom-debug.json.
+    // Arena: the authored test arena with the settings' enemies. Dungeon: WorldManager.debugDungeon, generated as in a real run.
     public static bool Active { get; private set; }
+    public static Mode CurrentMode { get; private set; }
     static DebugDungeonSettings settings;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Initialize()
     {
         Active = false;
+        CurrentMode = Mode.Arena;
         settings = null;
 #if UNITY_EDITOR
-        Active = UnityEditor.SessionState.GetBool(RequestKey, false);
+        bool arena = UnityEditor.SessionState.GetBool(RequestKey, false);
+        bool dungeon = UnityEditor.SessionState.GetBool(DungeonRequestKey, false);
         UnityEditor.SessionState.SetBool(RequestKey, false);
-        if (Active) settings = UnityEditor.AssetDatabase.LoadAssetAtPath<DebugDungeonSettings>(SettingsPath);
-        if (settings == null || settings.level == null) Active = false;
+        UnityEditor.SessionState.SetBool(DungeonRequestKey, false);
+        CurrentMode = dungeon ? Mode.Dungeon : Mode.Arena;
+        if (arena || dungeon) settings = UnityEditor.AssetDatabase.LoadAssetAtPath<DebugDungeonSettings>(SettingsPath);
+        Active = dungeon || arena && settings != null && settings.level != null;
 #endif
     }
 
@@ -34,16 +43,18 @@ public class DebugDungeonSession : MonoBehaviour
         yield return null; // Let scene managers initialize first.
         var loader = FindAnyObjectByType<TableLevelLoader>();
         if (loader == null) { Debug.LogError("Debug dungeon requires the Room scene."); yield break; }
+        var level = CurrentMode == Mode.Arena ? settings.level : WorldManager.HasInstance ? WorldManager.Instance.debugDungeon : null;
+        if (level == null) { Debug.LogError("Set WorldManager's Debug Dungeon to the level the Dungeon button should play."); yield break; }
         var player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
-        if (settings.startingClass != null) player.GetComponent<AdventurerProgress>().selectedClass = settings.startingClass;
-        loader.Load(settings.level);
+        if (settings != null && settings.startingClass != null) player.GetComponent<AdventurerProgress>().selectedClass = settings.startingClass;
+        loader.Load(level);
     }
 
     // The arena brings no enemies of its own: the settings' list stands in an arc in front of the player,
     // each just outside its detection radius, and stays put until it notices them.
     public static void ConfigureEnemies(DungeonGenerator dungeon)
     {
-        if (!Active || dungeon == null) return;
+        if (!Active || CurrentMode != Mode.Arena || dungeon == null) return;
         foreach (var generated in dungeon.GetComponentsInChildren<EnemyBrain>()) { generated.gameObject.SetActive(false); Destroy(generated.gameObject); }
         var level = settings.level;
         var spawned = settings.enemies.Where(p => p != null).ToArray();

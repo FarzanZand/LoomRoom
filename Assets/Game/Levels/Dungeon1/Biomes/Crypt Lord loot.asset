@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9345c2f775f67634fb750c38879fef5a, type: 3}
   m_Name: Crypt Lord loot
   m_EditorClassIdentifier: Assembly-CSharp::DungeonLootProfile
-  gearTiers: {x: 4, y: 4}
+  gearTiers: {x: 3, y: 3}
   upgradeChance: 0
+  honedChance: 0.5
+  honedTwiceChance: 0.4
   goldGrowthPerFloor: 0
   enemies:
     goldChance: 1

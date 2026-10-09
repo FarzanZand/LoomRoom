@@ -42,6 +42,10 @@ public class WorldManager : Singleton<WorldManager>
     public HeadBobSettings headBob = new();
 
 
+    [Header("Testing")]
+    [Tooltip("The level the editor's Dungeon button generates and plays straight away, skipping the room.")]
+    public TableLevelData debugDungeon;
+
     [Header("Lighting")]
     public Light directionalLight;
     [Tooltip("Light colour used while the game starts in the room (night).")]
@@ -64,7 +68,7 @@ public class WorldManager : Singleton<WorldManager>
     void Start()
     {
         var progression = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
-        // The editor's Debug button goes straight to the test arena.
+        // The editor's Debug and Dungeon buttons go straight to the table.
         bool skip = DebugDungeonSession.Active || progression != null &&
             (progression.skipWakeUp || progression.startingPlayer != PlayerKind.Room);
         // The first launch opens at the table in the dark instead (IntroController).

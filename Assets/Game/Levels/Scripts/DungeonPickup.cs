@@ -47,7 +47,9 @@ public static class DungeonPickup
         return pickup;
     }
 
-    // Kinematic loot doesn't fall, so place it resting on whatever is below it.
+    // Kinematic loot doesn't fall, so place it resting on the floor below it. Only fixed geometry
+    // counts: a dying enemy, the player, other loot, a chest or flying debris can move or vanish
+    // and would leave the item hanging in the air.
     static void SettleOnFloor(WorldItem pickup)
     {
         var renderers = pickup.GetComponentsInChildren<Renderer>();
@@ -55,13 +57,21 @@ public static class DungeonPickup
         var bounds = renderers[0].bounds;
         foreach (var r in renderers) bounds.Encapsulate(r.bounds);
         var from = new Vector3(bounds.center.x, bounds.max.y + .5f, bounds.center.z);
-        var hits = Physics.RaycastAll(from, Vector3.down, 3f, ~0, QueryTriggerInteraction.Ignore);
+        var hits = Physics.RaycastAll(from, Vector3.down, 6f, ~0, QueryTriggerInteraction.Ignore);
         System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));
         foreach (var hit in hits)
         {
-            if (hit.transform.IsChildOf(pickup.transform)) continue;
+            if (hit.transform.IsChildOf(pickup.transform) || !IsFloor(hit.collider)) continue;
             pickup.transform.position += Vector3.up * (hit.point.y + .02f - bounds.min.y);
             return;
         }
+        if (NavMesh.SamplePosition(bounds.center, out var floor, 3f, NavMesh.AllAreas))
+            pickup.transform.position += Vector3.up * (floor.position.y + .02f - bounds.min.y);
     }
+
+    static bool IsFloor(Collider c) =>
+        c.attachedRigidbody == null && c.GetComponentInParent<Character>() == null &&
+        c.GetComponentInParent<CharacterController>() == null && c.GetComponentInParent<WorldItem>() == null &&
+        c.GetComponentInParent<CoinPickup>() == null && c.GetComponentInParent<DungeonContainer>() == null &&
+        c.GetComponentInParent<DungeonCorpse>() == null;
 }

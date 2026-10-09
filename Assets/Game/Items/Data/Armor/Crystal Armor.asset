@@ -19,7 +19,7 @@ MonoBehaviour:
   description: 
   icon: {fileID: 21300000, guid: 3db65afe59ed9324a85b11ffad4133c0, type: 3}
   tag: Crystal equipment
-  worldPrefab: {fileID: 6089372657193159330, guid: 00d88bafeb1877f4fbdc6085ce9e12b5, type: 3}
+  worldPrefab: {fileID: 4786953506127536119, guid: fb6689d5d81112644b319a70589623fa, type: 3}
   pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
   itemType: 6
   maxStackSize: 1

@@ -14,6 +14,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     [SerializeField] Image           iconImage;
     [SerializeField] Image           background;
     [SerializeField] Image           equippedHighlight;
+    [Tooltip("Shown behind the icon for honed gear (a blue background).")]
+    [SerializeField] Image           honedFill;
     [SerializeField] TextMeshProUGUI keyLabel;
     [SerializeField] TextMeshProUGUI stackLabel;
 
@@ -85,6 +87,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             iconImage.enabled = item != null && item.icon != null;
         }
         if (background != null && !useAuthoredAppearance) background.color = item != null ? filledColor : emptyColor;
+        if (honedFill != null)
+        {
+            honedFill.enabled = item != null && item.honed > 0;
+            if (honedFill.enabled) honedFill.color = UIManager.HasInstance ? UIManager.Instance.honed : UIManager.DefaultHoned;
+        }
         if (stackLabel != null)
         {
             stackLabel.text = count > 1 ? $"x{count}" : "";

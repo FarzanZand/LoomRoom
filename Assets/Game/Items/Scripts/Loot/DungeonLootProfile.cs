@@ -25,6 +25,10 @@ public class DungeonLootProfile : LootSource
     public Vector2Int gearTiers = new(1, 1);
     [Range(0, 1), Tooltip("Chance a gear drop is one tier better than rolled: an early upgrade.")]
     public float upgradeChance = .1f;
+    [Range(0, 1), Tooltip("Chance a gear drop is honed: +1 on its main stat (damage, armor, a trinket's bonus) and a blue slot. Barony's blessing.")]
+    public float honedChance = .1f;
+    [Range(0, 1), Tooltip("Chance a honed drop is +2 instead of +1.")]
+    public float honedTwiceChance = .2f;
     [Range(0, 1), Tooltip("Gold amounts grow by this fraction per floor beyond the first.")]
     public float goldGrowthPerFloor = .15f;
 
@@ -55,6 +59,7 @@ public class DungeonLootProfile : LootSource
             int tier = RollTier(random, floor);
             if (random.NextDouble() < upgradeChance) tier++;
             var gear = Pick(random, i => IsGear(i) && i.tier == tier) ?? Pick(random, i => IsGear(i) && i.tier >= gearTiers.x && i.tier <= gearTiers.y);
+            if (gear != null && random.NextDouble() < honedChance) gear = gear.Honed(random.NextDouble() < honedTwiceChance ? 2 : 1);
             if (gear != null) drops.Add(new Drop(gear, 1));
         }
         if (random.NextDouble() < rule.recoveryChance)

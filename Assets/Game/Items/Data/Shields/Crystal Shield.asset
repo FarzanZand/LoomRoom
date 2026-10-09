@@ -19,7 +19,7 @@ MonoBehaviour:
   description: 
   icon: {fileID: 21300000, guid: 6502d3800d4bd31488e5271dbd75ebae, type: 3}
   tag: Crystal equipment
-  worldPrefab: {fileID: 1116679860368534, guid: 19ad29e8f6d41e9459f7a20da317f313, type: 3}
+  worldPrefab: {fileID: 5992219025067725001, guid: 9a40259dfd700924cb47cb497b87386f, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 2
   maxStackSize: 1
@@ -35,7 +35,7 @@ MonoBehaviour:
   canBeEquipped: 1
   equipSlot: 1
   heldScale: 1
-  heldPosition: {x: 0, y: 0, z: -0.2}
+  heldPosition: {x: -0.06, y: 0.02, z: -0.2}
   heldRotation: {x: 0, y: -90, z: 0}
   equipOnPickup: 0
   statModifiers:

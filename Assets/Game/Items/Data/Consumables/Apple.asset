@@ -31,7 +31,7 @@ MonoBehaviour:
   pickupClip: {fileID: 0}
   pickupClipVolume: 1
   pickupAudioKey: 
-  directToHotbar: 0
+  directToHotbar: 1
   canBeEquipped: 0
   equipSlot: 0
   heldScale: 1

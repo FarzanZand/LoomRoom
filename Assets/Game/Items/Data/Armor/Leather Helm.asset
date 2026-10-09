@@ -17,9 +17,9 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   description: 
-  icon: {fileID: 21300000, guid: 2c335fd573e9f7e459a85634302ebfe5, type: 3}
+  icon: {fileID: 21300000, guid: e6a2ceeff4aa4b941a8602e6141e3332, type: 3}
   tag: Leather equipment
-  worldPrefab: {fileID: 8899929397343187984, guid: c385c29053d35ad4db21cb265e90b16d, type: 3}
+  worldPrefab: {fileID: 920914083463648587, guid: f1edf782952974b45abbc0a908a718fd, type: 3}
   pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
   itemType: 6
   maxStackSize: 1

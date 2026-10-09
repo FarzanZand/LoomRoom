@@ -19,7 +19,7 @@ MonoBehaviour:
   description: 
   icon: {fileID: 21300000, guid: d4f443582180b514da816abe2acf2d2a, type: 3}
   tag: Crystal equipment
-  worldPrefab: {fileID: 1520613138636738, guid: 6f3863215fb2a2742b86223d07dfc298, type: 3}
+  worldPrefab: {fileID: 3927390986999571327, guid: 554b3baa52f92544bb398e1662736d3c, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 1
   maxStackSize: 1
@@ -41,6 +41,9 @@ MonoBehaviour:
   statModifiers:
   - stat: 2
     value: 13
+    type: 0
+  - stat: 7
+    value: -0.15
     type: 0
   weapon:
     useDefaultEffects: 1

@@ -19,7 +19,7 @@ MonoBehaviour:
   description: 
   icon: {fileID: 21300000, guid: 8ff420e5a5253ce49a1924e6d20076aa, type: 3}
   tag: Trinket
-  worldPrefab: {fileID: 8899929397343187984, guid: c385c29053d35ad4db21cb265e90b16d, type: 3}
+  worldPrefab: {fileID: 5781929844940811017, guid: c26beb266aae00343ae27ecee5abbbfa, type: 3}
   pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
   itemType: 6
   maxStackSize: 1

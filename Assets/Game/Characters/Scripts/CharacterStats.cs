@@ -163,6 +163,10 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public float GetFinal(StatType stat) =>
         ResolveStat(stat, stat == StatType.Armor && blocker != null && blocker.IsGuarding);
 
+    // Armor a shield adds on a block, and only then.
+    public float BlockArmor => ResolveStat(StatType.Armor, true) - ResolveStat(StatType.Armor, false);
+    public float ArmorWithoutShield => ResolveStat(StatType.Armor, false);
+
     float ResolveStat(StatType stat, bool shieldArmor)
     {
         float flat = 0f, percentAdd = 0f, percentMul = 1f;
@@ -265,8 +269,9 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         }
 
         float armor = info.Magic ? 0 : ResolveStat(StatType.Armor, info.Blocked);
-        float actual  = Mathf.Max(0f, info.Amount - armor);
-        if(info.Blocked)actual*=1f-Mathf.Clamp01(CombatManager.HasInstance?CombatManager.Instance.blockDamageReduction:.5f);
+        // Barony: armor comes off the effective share of the hit; the rest always lands. A block uses all of it.
+        float effective = info.Blocked ? 1f : CombatManager.HasInstance ? CombatManager.Instance.armorEffectiveness : .75f;
+        float actual  = Mathf.Max(0f, effective * info.Amount - armor) + (1f - effective) * info.Amount;
         // Legendary Blocking: nothing gets through a successful block.
         if (info.Blocked && adventurer != null && adventurer.BlockAbsorbsAll) actual = 0;
         info.Amount   = actual;

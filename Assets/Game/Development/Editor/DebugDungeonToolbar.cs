@@ -5,6 +5,7 @@ using UnityEditor.Toolbars;
 public static class DebugDungeonToolbar
 {
     const string RestartKey = "LoomRoom.DebugDungeon.Restart";
+    const string RestartModeKey = "LoomRoom.DebugDungeon.RestartMode";
     static DebugDungeonToolbar()
     {
         EditorApplication.playModeStateChanged += state =>
@@ -20,18 +21,26 @@ public static class DebugDungeonToolbar
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling) return;
         EditorApplication.update -= RestartWhenReady;
-        StartDebug();
+        Start((DebugDungeonSession.Mode)SessionState.GetInt(RestartModeKey, 0));
     }
 
     [MainToolbarElement("LoomRoom/Debug", defaultDockPosition = MainToolbarDockPosition.Middle, defaultDockIndex = 1)]
     public static MainToolbarElement Button() => new MainToolbarButton(
         new MainToolbarContent("Debug", "Start the test arena: one open room, enemies from Debug Dungeon Settings standing just outside detection range."), StartDebug);
 
-    public static void StartDebug()
+    [MainToolbarElement("LoomRoom/Dungeon", defaultDockPosition = MainToolbarDockPosition.Middle, defaultDockIndex = 2)]
+    public static MainToolbarElement DungeonButton() => new MainToolbarButton(
+        new MainToolbarContent("Dungeon", "Generate WorldManager's Debug Dungeon and play it straight away, skipping the room."), StartDungeon);
+
+    public static void StartDebug() => Start(DebugDungeonSession.Mode.Arena);
+    public static void StartDungeon() => Start(DebugDungeonSession.Mode.Dungeon);
+
+    static void Start(DebugDungeonSession.Mode mode)
     {
         if (EditorApplication.isPlaying)
         {
             SessionState.SetBool(RestartKey, true);
+            SessionState.SetInt(RestartModeKey, (int)mode);
             EditorApplication.isPlaying = false;
             return;
         }
@@ -41,7 +50,7 @@ public static class DebugDungeonToolbar
             UnityEngine.Debug.LogError("Open the Room scene before starting the debug dungeon.");
             return;
         }
-        SessionState.SetBool(DebugDungeonSession.RequestKey, true);
+        SessionState.SetBool(mode == DebugDungeonSession.Mode.Dungeon ? DebugDungeonSession.DungeonRequestKey : DebugDungeonSession.RequestKey, true);
         EditorApplication.isPlaying = true;
     }
 }

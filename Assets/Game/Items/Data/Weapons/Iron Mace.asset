@@ -19,7 +19,7 @@ MonoBehaviour:
   description: 
   icon: {fileID: 21300000, guid: 0323defcc7204924787491d8a559435e, type: 3}
   tag: Iron equipment
-  worldPrefab: {fileID: 1520613138636738, guid: 6f3863215fb2a2742b86223d07dfc298, type: 3}
+  worldPrefab: {fileID: 637817129149099084, guid: d642f8e6205064f40bb6035b7378853c, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 1
   maxStackSize: 1
@@ -41,6 +41,9 @@ MonoBehaviour:
   statModifiers:
   - stat: 2
     value: 8
+    type: 0
+  - stat: 7
+    value: -0.15
     type: 0
   weapon:
     useDefaultEffects: 1

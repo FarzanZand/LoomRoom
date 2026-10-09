@@ -17,9 +17,9 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   description: Very quick, very weak.
-  icon: {fileID: 21300000, guid: d4ef04d116a6d79449188d927fb8cc6d, type: 3}
+  icon: {fileID: 21300000, guid: f75acab75c82e5b4abcf5fdab951898f, type: 3}
   tag: 
-  worldPrefab: {fileID: 1808823706470762, guid: 7c2b4de056174ed499e0881bf2d69242, type: 3}
+  worldPrefab: {fileID: 8342779809043696395, guid: 8e8a5a36471ad6c4bb463fbb3e9f5fcf, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 1
   maxStackSize: 1

@@ -131,13 +131,14 @@ public class AdventureSave : MonoBehaviour
     {
         if (checkpoint == null || checkpoint.bag == null || checkpoint.hotbar == null || checkpoint.equipped == null || checkpoint.ranks?.Length != AdventureSkills.Count || checkpoint.growth?.Length != 6 || checkpoint.floor < 1 || progress.rules == null || !progress.rules.classes.Any(x => x.id == checkpoint.classId)) return false;
         var catalog = InventoryManager.Instance.itemCatalog;
-        return checkpoint.equipped.All(id => catalog.Any(x => x != null && x.saveId == id)) && checkpoint.bag.Concat(checkpoint.hotbar).All(x => x == null || x.count <= 0 || catalog.Any(i => i != null && i.saveId == x.item));
+        return checkpoint.equipped.All(id => ItemData.FromSaveId(id, catalog) != null) && checkpoint.bag.Concat(checkpoint.hotbar).All(x => x == null || x.count <= 0 || ItemData.FromSaveId(x.item, catalog) != null);
     }
     public void Restore(Checkpoint checkpoint)
     {
         progress.selectedClass = progress.rules.classes.First(x => x.id == checkpoint.classId);
         player.Equipment.UnequipAll(); player.Bag.Clear(); player.Hotbar.Clear();
-        ItemData Item(string id) => InventoryManager.Instance.itemCatalog.Find(x => x != null && x.saveId == id);
+        // Honed gear is saved as "<saveId>+1" and comes back as the same honed copy.
+        ItemData Item(string id) => ItemData.FromSaveId(id, InventoryManager.Instance.itemCatalog);
         void Fill(Inventory inventory, Stack[] stacks) { for (int i = 0; i < stacks.Length && i < inventory.SlotCount; i++) if (stacks[i] != null && stacks[i].count > 0) inventory.Set(i, new ItemStack(Item(stacks[i].item), stacks[i].count)); }
         Fill(player.Bag, checkpoint.bag); Fill(player.Hotbar, checkpoint.hotbar);
         foreach (var id in checkpoint.equipped) player.Equipment.Equip(Item(id), false, grant: true);

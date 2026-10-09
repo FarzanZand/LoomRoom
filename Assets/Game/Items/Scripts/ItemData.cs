@@ -116,6 +116,54 @@ public class ItemData : ScriptableObject
     [BoxGroup("Consumable"), ShowIf("UsesEatAnimation")]
     public Vector3 eatMouthRotation = new Vector3(-65, 0, 0);
 
+    // ── Honed ─────────────────────────────────────────────────────────
+    // Barony's blessing, called Honed here: a +1 or +2 piece of gear. A honed item is a runtime copy of
+    // its asset with the bonus baked into its stats, shared per level, so every "Honed Iron Sword +1" is
+    // the same object and the bag, hotbar and equipment treat it like any other item. Saved as "<saveId>+1".
+
+    public const int MaxHoned = 2;
+    [System.NonSerialized] public ItemData baseItem;
+    [System.NonSerialized] public int honed;
+    public ItemData BaseItem => baseItem != null ? baseItem : this;
+    // Gear with a main stat to raise: weapons (damage), shields and armor (armor), trinkets (their bonuses).
+    public bool CanBeHoned => (itemType == ItemType.Weapon || itemType == ItemType.Shield || itemType == ItemType.Equipment) && statModifiers != null && statModifiers.Length > 0;
+
+    static readonly System.Collections.Generic.Dictionary<(ItemData, int), ItemData> honedCopies = new();
+
+    public ItemData Honed(int level)
+    {
+        var root = BaseItem;
+        level = Mathf.Clamp(level, 0, MaxHoned);
+        if (level == 0 || !root.CanBeHoned) return root;
+        if (honedCopies.TryGetValue((root, level), out var copy) && copy != null) return copy;
+        copy = Instantiate(root);
+        copy.hideFlags = HideFlags.DontSave;
+        copy.name = $"{root.name} +{level}";
+        copy.baseItem = root; copy.honed = level;
+        copy.itemName = $"Honed {root.itemName} +{level}";
+        copy.saveId = $"{root.saveId}+{level}";
+        copy.value = Mathf.RoundToInt(root.value * (1 + .5f * level));
+        bool trinket = root.equipSlot == EquipmentSlot.Trinket1 || root.equipSlot == EquipmentSlot.Trinket2;
+        foreach (var m in copy.statModifiers)
+        {
+            if (m == null || m.type != ModifierType.Flat || m.value <= 0) continue;
+            if (trinket) m.value = Mathf.Round(m.value * (1 + .5f * level));
+            else if (m.stat == (root.IsWeapon ? StatType.AttackDamage : StatType.Armor)) m.value += level;
+        }
+        honedCopies[(root, level)] = copy;
+        return copy;
+    }
+
+    // A saved id back to its item: "iron_sword" or a honed "iron_sword+1".
+    public static ItemData FromSaveId(string id, System.Collections.Generic.IEnumerable<ItemData> catalog)
+    {
+        if (string.IsNullOrEmpty(id) || catalog == null) return null;
+        int level = 0, plus = id.LastIndexOf('+');
+        if (plus > 0 && int.TryParse(id.Substring(plus + 1), out level)) id = id.Substring(0, plus);
+        foreach (var item in catalog) if (item != null && item.saveId == id) return item.Honed(level);
+        return null;
+    }
+
     // ── Queries ───────────────────────────────────────────────────────
 
     public bool IsWeapon     => itemType == ItemType.Weapon;
@@ -156,39 +204,91 @@ public class ItemData : ScriptableObject
         ItemEffectProcessor.Fire(this, EffectTrigger.OnUse, EffectContext.For(user, this));
     }
 
-    // Rich-text tooltip body shared by the in-game tooltip and the Item Database preview.
-    // The comparison with equipped gear and the hint appear only while a player exists.
-    // Short on purpose: description, one line per stat (with the change against what is worn), effects.
+    // Rich-text tooltip body shared by the in-game tooltip and the Item Database preview. Blocks, separated by a
+    // blank line: description and stats (a honed stat shows its plain value plus the honed part), effects and spell,
+    // then the change against what the player is wearing in that slot (only while a player exists).
+    public const string TextColor = "#E6E1D6", DimColor = "#9AA3AD", GoodColor = "#80CEA0", BadColor = "#E78787", EffectColor = "#A1C5DE";
+    public static string HonedTextColor => "#" + ColorUtility.ToHtmlStringRGB(Color.Lerp(UIManager.HasInstance ? UIManager.Instance.honed : UIManager.DefaultHoned, Color.white, .45f));
+
     public string BuildTooltip()
     {
+        var blocks = new System.Collections.Generic.List<string>();
         var lines = new System.Collections.Generic.List<string>();
-        if (!string.IsNullOrWhiteSpace(description))
-            lines.Add("<color=#9AA3AD>" + description.Trim() + "</color>");
-        var equipped = canBeEquipped && !IsConsumable && PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment?.Get(equipSlot) : null;
+        if (!string.IsNullOrWhiteSpace(description)) lines.Add($"<color={DimColor}>{description.Trim()}</color>");
         if (canBeEquipped && statModifiers != null)
             foreach (var modifier in statModifiers)
             {
                 if (modifier == null) continue;
-                string line = $"<color={(modifier.value < 0 ? "#E78787" : "#E6E1D6")}>{modifier.Describe()}</color>";
-                if (equipped != null && equipped != this && modifier.type == ModifierType.Flat)
-                {
-                    float delta = FlatBonus(this, modifier.stat) - FlatBonus(equipped, modifier.stat);
-                    if (Mathf.Abs(delta) > .001f) line += $"  <color={(delta > 0 ? "#80CEA0" : "#E78787")}>({delta:+0.#;-0.#})</color>";
-                }
+                string line = $"<color={(Worse(modifier.stat, modifier.value) ? BadColor : TextColor)}>{StatLine(modifier.stat, modifier.type, modifier.value, BlockOnly(modifier.stat))}</color>";
+                float plain = PlainValue(modifier);
+                if (honed > 0 && Mathf.Abs(modifier.value - plain) > .001f) line += $"  <color={HonedTextColor}>({plain:0.#} + {modifier.value - plain:0.#} honed)</color>";
                 lines.Add(line);
             }
+        Add(blocks, lines);
+
+
         if (effects != null)
             foreach (var effect in effects)
             {
                 string line = effect?.Describe();
-                if (!string.IsNullOrWhiteSpace(line)) lines.Add("<color=#A1C5DE>" + line + "</color>");
+                if (!string.IsNullOrWhiteSpace(line)) lines.Add($"<color={EffectColor}>{line}</color>");
             }
         if (spell != null)
         {
             var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
             lines.Add($"{(caster != null ? caster.Cost(spell) : spell.manaCost):0.#} mana, {(caster != null ? caster.Power(spell) : spell.power):0.#} {(spell.spell == LeftHandSpell.Heal ? "healing" : "damage")}");
         }
-        return string.Join("\n", lines);
+        Add(blocks, lines);
+
+        // Against the item worn in the same slot: every flat stat either item has.
+        var equipped = canBeEquipped && !IsConsumable && PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment?.Get(equipSlot) : null;
+        if (equipped != null && equipped != this)
+        {
+            var stats = new System.Collections.Generic.List<StatType>();
+            foreach (var data in new[] { this, equipped })
+                if (data.statModifiers != null)
+                    foreach (var m in data.statModifiers)
+                        if (m != null && m.type == ModifierType.Flat && !stats.Contains(m.stat)) stats.Add(m.stat);
+            var changes = new System.Collections.Generic.List<string>();
+            foreach (var stat in stats)
+            {
+                float delta = FlatBonus(this, stat) - FlatBonus(equipped, stat);
+                if (Mathf.Abs(delta) > .001f) changes.Add($"<color={(Worse(stat, delta) ? BadColor : GoodColor)}>{StatLine(stat, ModifierType.Flat, delta, BlockOnly(stat))}</color>");
+            }
+            lines.Add(changes.Count == 0 ? $"<color={DimColor}>Same as your {equipped.itemName}.</color>"
+                : $"<color={DimColor}>Compared to your {equipped.itemName}:</color>\n" + string.Join("\n", changes));
+            Add(blocks, lines);
+        }
+        return string.Join("\n\n", blocks);
+    }
+
+    static void Add(System.Collections.Generic.List<string> blocks, System.Collections.Generic.List<string> lines)
+    {
+        if (lines.Count > 0) blocks.Add(string.Join("\n", lines));
+        lines.Clear();
+    }
+
+    // One stat in words. Attack speed reads as slower or faster swings, not a fraction.
+    // blocking: the stat only counts on a block (a shield's armor, as in Barony).
+    public static string StatLine(StatType stat, ModifierType type, float value, bool blocking = false)
+    {
+        if (stat == StatType.AttackSpeed && type == ModifierType.Flat)
+            return $"Swings {Mathf.Abs(value) * 100:0}% {(value < 0 ? "slower" : "faster")}";
+        return new StatModifierEntry { stat = stat, type = type, value = value }.Describe() + (blocking ? " while blocking" : "");
+    }
+
+    // A shield's armor only counts when a hit is blocked (CharacterStats.TakeDamage).
+    bool BlockOnly(StatType stat) => itemType == ItemType.Shield && stat == StatType.Armor;
+
+    static bool Worse(StatType stat, float value) => value < 0;
+
+    // The value a modifier has on the plain (unhoned) item.
+    float PlainValue(StatModifierEntry modifier)
+    {
+        if (BaseItem.statModifiers != null)
+            foreach (var m in BaseItem.statModifiers)
+                if (m != null && m.stat == modifier.stat && m.type == modifier.type) return m.value;
+        return modifier.value;
     }
 
     static float FlatBonus(ItemData data, StatType stat)

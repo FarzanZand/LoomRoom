@@ -55,7 +55,6 @@ MonoBehaviour:
   preventDuplicateTomes: 1
   preventDuplicateEquipment: 0
   itemCatalog:
-  - {fileID: 11400000, guid: 91bd6bbd2bd79784da8e7bffd2b6c3dd, type: 2}
   - {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
   - {fileID: 11400000, guid: 90fcb602aa103114bba5a2c00f5127d6, type: 2}
   - {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
