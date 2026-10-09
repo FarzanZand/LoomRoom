@@ -94,11 +94,12 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
     public float FoodRemaining { get; private set; }
     public float FoodHealingPerSecond { get; private set; }
-    public void EatFood(float rate,float duration) {
+    public ItemData FoodSource { get; private set; }   // what was eaten, for the buff icon; null after a load
+    public void EatFood(float rate,float duration,ItemData source=null) {
         if(!IsAlive || rate<=0 || duration<=0)return;
-        FoodHealingPerSecond=rate;FoodRemaining=duration;
+        FoodHealingPerSecond=rate;FoodRemaining=duration;FoodSource=source;
     }
-    public void ClearFood(){FoodRemaining=0;FoodHealingPerSecond=0;}
+    public void ClearFood(){FoodRemaining=0;FoodHealingPerSecond=0;FoodSource=null;}
     void TickFood() {
         if (GameManager.HasInstance && !GameManager.Instance.SimulationActive) return;
         if(!IsAlive){ClearFood();return;}

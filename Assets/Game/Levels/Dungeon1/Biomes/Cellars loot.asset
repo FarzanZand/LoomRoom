@@ -18,17 +18,17 @@ MonoBehaviour:
   honedTwiceChance: 0.15
   goldGrowthPerFloor: 0.15
   enemies:
-    goldChance: 0.6
-    goldMin: 2
-    goldMax: 6
+    goldChance: 0.3
+    goldMin: 1
+    goldMax: 4
     gearChance: 0.4
     recoveryChance: 0.16
   breakables:
-    goldChance: 0.5
+    goldChance: 0.25
     goldMin: 1
-    goldMax: 4
+    goldMax: 2
     gearChance: 0.06
-    recoveryChance: 0.18
+    recoveryChance: 0.12
   chests:
     goldChance: 0.6
     goldMin: 4

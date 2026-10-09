@@ -107,10 +107,15 @@ MonoBehaviour:
   staples:
   - {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
   - {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
+  - {fileID: 11400000, guid: 05197bf5abf054f41987eff16771ea6e, type: 2}
+  - {fileID: 11400000, guid: c94488e517e3d7d4f9bb0817226b113b, type: 2}
+  - {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
+  - {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
   - {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
-  stapleCount: 3
+  consumableCount: 2
+  stapleCount: 2
+  gearCount: 5
   stockTable: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
-  stockRolls: 5
   priceMultiplier: 1.2
   pricePerFloor: 0.1
   buysItems: 1

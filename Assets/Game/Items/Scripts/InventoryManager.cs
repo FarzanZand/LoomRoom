@@ -18,6 +18,8 @@ public class InventoryManager : Singleton<InventoryManager>
     public AudioData defaultPickupAudio;
     [Tooltip("Pickup visual used when an item has neither a pickup visual nor a world mesh assigned.")]
     public GameObject defaultPickupVisual;
+    [Tooltip("A few twinkles on every item lying on the floor, so pickups stand out. Fitted to the item's size.")]
+    public GameObject pickupSparkle;
 
     [Header("Drop")]
     [Tooltip("Prefab with a WorldItem used when items are dropped or spawned from data.")]

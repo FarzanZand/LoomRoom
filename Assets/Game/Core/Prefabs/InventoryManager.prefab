@@ -49,6 +49,7 @@ MonoBehaviour:
   pickupSoundKey: genericPickupSound
   defaultPickupAudio: {fileID: 11400000, guid: 37de740c20bfdbe4c8e5ea4db6420ff4, type: 2}
   defaultPickupVisual: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
+  pickupSparkle: {fileID: 8773414879125593001, guid: d7f07c9f110dfac4d8492bb31f4f9bc4, type: 3}
   pickupPrefab: {fileID: 1330799697983367974, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
   dropDistance: 1.5
   dropHeight: 0.5

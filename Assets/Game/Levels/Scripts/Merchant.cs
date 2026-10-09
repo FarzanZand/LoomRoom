@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// A dungeon trader. Stock is rolled once, the first time the player talks to them: a few
-// staples plus rolls from a loot table. Prices come from ItemData.value (CurrencyManager
-// fallback), scaled by depth and this merchant's markup. Things the player sells are
-// added to the stock at the merchant's price.
+// A dungeon trader. Stock is rolled once, the first time the player talks to them: a couple of
+// consumables (from the staples and the loot table) and a few pieces of gear from the loot table,
+// each a different item. Prices come from ItemData.value (CurrencyManager fallback), scaled by
+// depth and this merchant's markup. What the player sells is not restocked.
 public class Merchant : MonoBehaviour, IInteractable
 {
     public string merchantName = "Wandering Merchant";
@@ -16,12 +16,13 @@ public class Merchant : MonoBehaviour, IInteractable
         "\"Down here? Everything's for sale. Everything.\"",
         "\"Mind the blood on the goods. It washes out. Mostly.\"",
     };
-    [Tooltip("Always stocked, e.g. food.")]
+    [Tooltip("Consumables this merchant may offer, alongside any the loot table rolls.")]
     public ItemData[] staples = new ItemData[0];
-    [Min(1)] public int stapleCount = 3;
-    [Tooltip("Rolled as Chest rewards for the rest of the stock. The generator sets this from the level when empty.")]
+    [Min(0), Tooltip("Different consumables on offer.")] public int consumableCount = 2;
+    [Min(1), Tooltip("How many of each consumable.")] public int stapleCount = 2;
+    [Min(0), Tooltip("Different pieces of gear (weapons, shields, armor, trinkets, tomes) on offer.")] public int gearCount = 5;
+    [Tooltip("Rolled as Chest rewards for the stock. The generator sets this from the level when empty.")]
     public LootSource stockTable;
-    [Min(0)] public int stockRolls = 5;
     [Range(.5f, 3f)] public float priceMultiplier = 1.2f;
     [Range(0f, .5f), Tooltip("Price increase per floor beyond the first.")]
     public float pricePerFloor = .1f;
@@ -63,12 +64,23 @@ public class Merchant : MonoBehaviour, IInteractable
         if (stocked) return;
         stocked = true;
         var rng = new System.Random(seed);
-        if (staples != null)
-            foreach (var item in staples) Add(item, stapleCount);
-        if (stockTable != null)
-            for (int i = 0; i < stockRolls; i++)
-                foreach (var drop in stockTable.RollDrops(rng, floorNumber, DungeonLootSource.Chest))
-                    Add(drop.item, drop.quantity);
+        var consumables = new List<ItemData>();
+        var gear = new List<ItemData>();
+        if (staples != null) foreach (var item in staples) if (item != null && !consumables.Contains(item)) consumables.Add(item);
+        // Roll the table until there is enough distinct gear, with a cap so a thin table can't loop forever.
+        for (int i = 0; stockTable != null && i < 60 && gear.Count < gearCount; i++)
+            foreach (var drop in stockTable.RollDrops(rng, floorNumber, DungeonLootSource.Chest))
+            {
+                var list = drop.item == null ? null : drop.item.IsConsumable ? consumables : gear;
+                if (list != null && !list.Contains(drop.item) && (list == consumables || gear.Count < gearCount)) list.Add(drop.item);
+            }
+        for (int i = 0; i < consumableCount && consumables.Count > 0; i++)
+        {
+            int pick = rng.Next(consumables.Count);
+            Add(consumables[pick], stapleCount);
+            consumables.RemoveAt(pick);
+        }
+        foreach (var item in gear) Add(item, 1);
     }
 
     void Add(ItemData item, int count)
@@ -137,7 +149,6 @@ public class Merchant : MonoBehaviour, IInteractable
         int price = SellPriceOf(item);
         container.Consume(slot);
         player.Wallet?.Add(price);
-        Add(item, 1);
         PlayTrade();
         message = $"You sell the {item.itemName} for {price} {Currency}.";
         MessageLog.Post(message, MessageKind.Loot);

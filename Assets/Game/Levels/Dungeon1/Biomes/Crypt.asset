@@ -71,7 +71,7 @@ MonoBehaviour:
     bossMusicVolume: 0.8
     sealExit: 1
     bossLoot: {fileID: 11400000, guid: eb289ad8ef9ee0a4b8687b34b29e45f7, type: 2}
-    bonusGold: 60
+    bonusGold: 30
     arenaSizeScale: 1.6
   ambience: {fileID: 0}
   ambienceVolume: 0.45

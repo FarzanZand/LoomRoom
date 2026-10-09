@@ -46,7 +46,7 @@ public class RunRecapUI : MonoBehaviour
         root.SetActive(true);
         if (title != null) { title.text = s.victory ? "VICTORY" : "YOU DIED"; title.color = s.victory ? victoryColor : deathColor; }
         if (cause != null)
-            cause.text = (string.IsNullOrEmpty(s.adventurer) ? "" : $"<color=#E8C77A>{s.adventurer}</color>\n") + (s.victory
+            cause.text = (string.IsNullOrEmpty(s.adventurer) ? "" : $"<color=#A3A3A3>{s.adventurer}</color>\n") + (s.victory
                 ? $"You conquered {s.levelName}."
                 : $"Killed by {Article(s.killer)} on floor {s.floor} of {s.levelName}.");
         if (stats != null)

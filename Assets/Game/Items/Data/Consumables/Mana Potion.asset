@@ -23,7 +23,7 @@ MonoBehaviour:
   pickupVisualPrefab: {fileID: 0}
   itemType: 4
   maxStackSize: 5
-  value: 25
+  value: 15
   tier: 1
   lootWeight: 1
   pickupAudioSource: 0

@@ -53,7 +53,7 @@ public static class ItemEffectProcessor
         switch (e.type)
         {
             case EffectType.FoodRegen:
-                target?.Stats?.EatFood(e.value,e.duration);
+                target?.Stats?.EatFood(e.value,e.duration,ctx.Item);
                 break;
 
             case EffectType.Heal:

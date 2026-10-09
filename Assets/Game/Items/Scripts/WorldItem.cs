@@ -14,6 +14,7 @@ public class WorldItem : MonoBehaviour, IInteractable
 
     bool visualSpawned;
     bool claimed;
+    GameObject sparkle;
 
     public ItemData Item  => itemData;
     public int      Count => count;
@@ -25,6 +26,25 @@ public class WorldItem : MonoBehaviour, IInteractable
     void Start()
     {
         if (worldPrefabFromData && !visualSpawned) SpawnVisual();
+        AddSparkle();
+    }
+
+    // The InventoryManager's sparkle, centred on the item and sized to it. Added once the item has
+    // settled (Start runs after DungeonPickup has scaled and placed it).
+    void AddSparkle()
+    {
+        if (sparkle != null || !InventoryManager.HasInstance || InventoryManager.Instance.pickupSparkle == null) return;
+        var renderers = GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0) return;
+        var bounds = renderers[0].bounds;
+        foreach (var r in renderers) bounds.Encapsulate(r.bounds);
+        sparkle = Instantiate(InventoryManager.Instance.pickupSparkle, bounds.center, Quaternion.identity, transform);
+        foreach (var ps in sparkle.GetComponentsInChildren<ParticleSystem>())
+        {
+            var shape = ps.shape;
+            shape.scale = Vector3.Max(bounds.size, Vector3.one * .15f);
+            shape.scale = new Vector3(shape.scale.x / sparkle.transform.lossyScale.x, shape.scale.y / sparkle.transform.lossyScale.y, shape.scale.z / sparkle.transform.lossyScale.z);
+        }
     }
 
     public void Init(ItemData data, int amount = 1)
