@@ -205,5 +205,23 @@ public partial class DungeonGenerator
             var size = Mathf.Abs(right.x) > .5f ? new Vector3(post, height, WallThickness + .06f) : new Vector3(WallThickness + .06f, height, post);
             ArchitectureBox("Arch post", centre, size, material, door.transform);
         }
+        BoardDoorTorch(door, roomCell, passageCell, right, post);
+    }
+
+    // A board has no walls for PlaceTorches, so each door gets one torch on the room side of its arch
+    // (left post as you face the door): the way on is never lost in the dark.
+    void BoardDoorTorch(DungeonDoor door, Vector2Int roomCell, Vector2Int passageCell, Vector3 right, float post)
+    {
+        var rng = new System.Random(unchecked(roomCell.x * 73856093 ^ roomCell.y * 19349663 ^ FloorNumber));
+        var entry = DungeonWallLight.Choose(WallLights, rng);
+        if (entry == null || entry.prefab == null) return;
+        var into = new Vector3(passageCell.x - roomCell.x, 0f, passageCell.y - roomCell.y).normalized;
+        var postCentre = door.transform.position - right * (data.cellSize * .5f + post * .5f);
+        var face = postCentre - into * ((WallThickness + .06f) * .5f);
+        face.y = Cell(roomCell).y + TileThickness;
+        // Under the door, so BoardReveal shows it with the door.
+        var torch = Instantiate(entry.prefab, face, Quaternion.LookRotation(-into));
+        torch.transform.SetParent(door.transform, true);
+        if (entry.Tint.HasValue) DungeonWallLight.Apply(torch, entry.Tint.Value);
     }
 }

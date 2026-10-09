@@ -75,6 +75,8 @@ MonoBehaviour:
   lootableCorpses: 0
   corpseLifetime: 0
   knockbackEnabled: 1
+  enemiesKnockedBack: 1
+  enemyKnockbackScale: 0.25
   knockbackForceMultiplier: 0.45
   knockbackDuration: 0.22
   playerKnockbackSpeedLimit: 2.5
@@ -112,7 +114,8 @@ MonoBehaviour:
   heavyKnockbackMultiplier: 1.35
   heavyStaminaCost: 8
   heavyStaggerDuration: 0.45
-  lightFlinchDuration: 0.15
+  enemyStaggerImmunity: 1.5
+  lightFlinchDuration: 0
   heavyRecoilMultiplier: 1.6
   heavyRecoilDurationMultiplier: 1.5
   enemyAttackCommitTime: 0.65
@@ -122,6 +125,7 @@ MonoBehaviour:
   enemyHitFacingAngle: 85
   enemyAttackAnimationSpeed: 1.5
   fightNoiseRadius: 8
+  wallMuffle: 0.3
   swingCameraMotionEnabled: 1
   lightSwingCameraRotation: {x: 0.3, y: 0.8, z: -0.35}
   alternateSwingCameraRotation: {x: 0.5, y: 0.8, z: -0.55}

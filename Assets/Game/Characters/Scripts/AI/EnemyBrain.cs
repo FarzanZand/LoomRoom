@@ -99,7 +99,7 @@ public class EnemyBrain : MonoBehaviour
 
     // Attacks
     EnemyAttackRunner attackRunner;
-    float recoveryUntil;
+    float recoveryUntil, staggerImmuneUntil;
     CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
     public bool CanOpenHitbox => attackRunner != null && attackRunner.CanOpenHitbox;
     public bool IsSwinging    => attackRunner != null && attackRunner.IsSwinging;
@@ -237,8 +237,6 @@ public class EnemyBrain : MonoBehaviour
             return;
         }
 
-        if (Motor.IsKnockedBack) { UpdateAnimator(); return; }
-
         if (handlers.TryGetValue(State, out var handler)) handler?.Invoke();
 
         UpdateAnimator();
@@ -253,12 +251,14 @@ public class EnemyBrain : MonoBehaviour
 
         // Flinch only when not mid-swing: a swing is never interrupted by the player's hits.
         // A heavy stagger taken mid-swing is applied when the swing ends.
-        if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null)
+        // A stagger is followed by a moment it can't be staggered again (CombatManager.enemyStaggerImmunity).
+        if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null && Time.time >= staggerImmuneUntil)
         {
             var trainee = info.Source != null ? info.Source.GetComponent<AdventurerProgress>() : null;
             float duration = Tuning.heavyStaggerDuration * (trainee != null ? trainee.StaggerMultiplier(info.Weapon) : 1);
             if (IsSwinging) attackRunner.QueueStagger(duration);
             else            BeginRecovery(duration);
+            staggerImmuneUntil = Time.time + duration + Tuning.enemyStaggerImmunity;
         }
         if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null)
         {

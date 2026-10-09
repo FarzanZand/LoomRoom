@@ -176,31 +176,31 @@ MonoBehaviour:
     template: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
     turns: 3
     height: 0
-    raised: 0
+    raised: 1
   - label: Rat den
     role: 1
     template: {fileID: 0}
     turns: 0
     height: 0
-    raised: 1
+    raised: 2
   - label: Storeroom
     role: 4
     template: {fileID: 0}
     turns: 0
     height: 0
-    raised: 2
+    raised: 3
   - label: Guard room
     role: 1
     template: {fileID: 0}
     turns: 0
     height: 0
-    raised: 1
+    raised: 2
   - label: Stair hall
     role: 5
     template: {fileID: 0}
     turns: 0
     height: 0
-    raised: 0
+    raised: 1
   authoredMarkers:
   - key: r
     prefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}

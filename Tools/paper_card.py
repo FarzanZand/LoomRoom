@@ -1,6 +1,6 @@
 """Card art for the floating class card, in the intro's three styles (IntroController.style):
 Warm (parchment, brown ink, red ribbon), Cold (slate card, bone-white ink, teal ribbon) and Dusk
-(grey parchment, slate ink, plum ribbon). Card stock, inked frame, ribbon banner, insets, divider.
+(grey parchment, slate ink, plum ribbon). Card stock, inked frame, ribbon banner, insets (with hover and pressed versions), divider.
 
 Drawn at half the card's UI size (one texel = two UI units) so it sits with the pixel UI kit.
 Run: python -I Tools/paper_card.py Assets/Game/UI/Sprites/Paper Warm|Cold|Dusk
@@ -153,6 +153,19 @@ idr.rectangle([2, 2, S - 3, S - 3], fill=P["wash"])
 ink_rect(idr, 1, 1, S - 2, S - 2, step=4, fill=INK + (220,), amp=.25)
 ink_rect(idr, 3, 3, S - 4, S - 4, step=4, fill=INK + (90,), amp=.25)
 save(ins, "Paper inset.png")
+
+# Hover and pressed: the same inset with the wash deepened, so a paper button darkens like ink soaking in.
+state = random.getstate()  # the sprites after these come out as they always have
+for name, strength in (("Paper inset hover.png", 2.6), ("Paper inset pressed.png", 4.2)):
+    var = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    vdr = ImageDraw.Draw(var)
+    w = P["wash"]
+    vdr.rectangle([2, 2, S - 3, S - 3], fill=w[:3] + (min(255, int(w[3] * strength)),))
+    random.seed(4)
+    ink_rect(vdr, 1, 1, S - 2, S - 2, step=4, fill=INK + (235,), amp=.25)
+    ink_rect(vdr, 3, 3, S - 4, S - 4, step=4, fill=INK + (120,), amp=.25)
+    save(var, name)
+random.setstate(state)
 
 # ── Divider ──────────────────────────────────────────────────────────
 DW, DH = 210, 11

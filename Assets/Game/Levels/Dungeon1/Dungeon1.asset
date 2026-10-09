@@ -323,7 +323,7 @@ MonoBehaviour:
   - trigger: 1
     room: 0
     chance: 0.08
-    oncePerRun: 0
+    oncePerRun: 1
     lines:
     - Another one.
     - And another.

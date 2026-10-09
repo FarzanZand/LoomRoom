@@ -68,6 +68,10 @@ public class CombatManager : Singleton<CombatManager>
 
     [Header("Knockback")]
     public bool knockbackEnabled = true;
+    [Tooltip("Off: the player's hits never push enemies back. Their hits on the player still do.")]
+    public bool enemiesKnockedBack = true;
+    [Min(0), Tooltip("Scales the push enemies take from the player's hits (on top of Knockback Force Multiplier). Small, so a hit jolts them without carrying them out of their attack range.")]
+    public float enemyKnockbackScale = .25f;
     [Tooltip("Scales every knockback force in the game.")]
     public float knockbackForceMultiplier = 1f;
     [Tooltip("Seconds a knocked-back NavMesh character slides before regaining control.")]
@@ -146,7 +150,9 @@ public class CombatManager : Singleton<CombatManager>
     [Min(0), Tooltip("Stamina spent when releasing a fully charged heavy attack. Insufficient stamina releases a light attack instead.")] public float heavyStaminaCost = 8f;
     [Tooltip("Extra recovery after a heavy hit. Does not interrupt an already committed enemy swing.")]
     [Min(0)] public float heavyStaggerDuration = .45f;
-    [Min(0), Tooltip("Seconds an enemy stands still after a light hit (Barony's flinch). Never interrupts a committed swing.")]
+    [Min(0), Tooltip("After a stagger, seconds the enemy can't be staggered again, so charged hits can't chain it into never attacking.")]
+    public float enemyStaggerImmunity = 1.5f;
+    [Min(0), Tooltip("Seconds an enemy stands still after a light hit. 0: the hurt reaction plays but never delays its next attack, so spamming light hits can't stunlock it.")]
     public float lightFlinchDuration = .15f;
     [Min(1)] public float heavyRecoilMultiplier = 1.6f;
     [Min(1)] public float heavyRecoilDurationMultiplier = 1.5f;

@@ -111,16 +111,23 @@ public class TableManager : Singleton<TableManager>, IInteractable
             yield return figures.Choose(c => picked = c, savedClass, savedDetail, only, prompt, canStand, showCard, offered);
             if (IntroController.HasInstance) IntroController.Instance.WriteClass(picked);
             if (picked == null && IntroController.HasInstance) IntroController.Instance.EndSheetAtTable();
-            GameManager.Instance.Pop(GameState.Dialogue);
-            yield return Zoom(player, 0f, .35f);
             var level = chosenLevel != null ? chosenLevel : figureLevel != null ? figureLevel : loader.catalog != null ? System.Array.Find(loader.catalog.levels, l => l != null && l.IsDungeon) : null;
             if (picked != null && level != null)
             {
+                // Still seated while the view eases back: the look is held until the load's cutscene takes
+                // over, so the table being built is never missed by glancing away.
+                yield return Zoom(player, 0f, .35f);
                 player.Look.HeightOverride = null;
                 if (figures.ResumeChosen) loader.ResumeAdventure();
                 else loader.Load(level);
+                GameManager.Instance.Pop(GameState.Dialogue);
             }
-            else StandUp(player);
+            else
+            {
+                GameManager.Instance.Pop(GameState.Dialogue);
+                yield return Zoom(player, 0f, .35f);
+                StandUp(player);
+            }
             sitting = null;
             yield break;
         }

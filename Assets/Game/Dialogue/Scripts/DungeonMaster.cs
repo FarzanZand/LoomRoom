@@ -7,7 +7,7 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 // The on-screen message feed, the way Barony does it: what just happened in white (kills in orange),
-// and the Dungeon Master's voice in its own colour ("You hear a voice inside your head..." and the
+// and the Dungeon Master's voice in its own colour (an optional lead-in line and the
 // quoted line, with a recorded clip or a short gibberish mumble). Lines appear whole in the lower
 // middle (or bottom left) and fade. Damage lines stay out: floating numbers show those.
 // The DM speaks through DungeonMaster.Say(...), lines typed on the components and levels that use them, a biome's entry lines, or Lua DMSay("...").
@@ -30,7 +30,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     [SerializeField] TextMeshProUGUI label;
     [SerializeField, Tooltip("Where the lines sit on screen.")] Placement placement = Placement.LowerMiddle;
-    [SerializeField, Tooltip("Shown before each new message. Empty for none.")] string prefix = "You hear a voice inside your head...";
+    [SerializeField, Tooltip("Shown before each new message. Empty for none.")] string prefix = "";
     [SerializeField, Tooltip("The Dungeon Master's lines.")] Color color = new(.45f, .85f, .95f);
     [SerializeField, Tooltip("Everything else that happens.")] Color eventColor = Color.white;
     [SerializeField] Color killColor = new(1f, .6f, .22f);

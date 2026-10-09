@@ -16,6 +16,8 @@ public class IntroLook
     [ColorUsage(false)] public Color lamp = Color.white, eyes = Color.white, boardLight = Color.white;
 
     [FoldoutGroup("Card"), PreviewField(40)] public Sprite card, banner, inset, divider;
+    [FoldoutGroup("Card"), PreviewField(40), Tooltip("The card's buttons (Pick): the inset with a deeper wash while hovered and pressed.")]
+    public Sprite insetHover, insetPressed;
     [FoldoutGroup("Card"), ColorUsage(false)] public Color ink = Color.black, inkSoft = Color.gray, name = Color.white;
     [FoldoutGroup("Card"), ColorUsage(false)] public Color health = Color.red, mana = Color.blue, stamina = Color.green, rank = Color.yellow, tier = Color.gray;
 
@@ -43,6 +45,14 @@ public class IntroLook
             else if (n == "Divider") Set(image, divider);
             else if (n == "Portrait Frame" || n.StartsWith("Slot") || n == "Previous" || n == "Next") Set(image, inset);
             else if (n == "Arrow") image.color = ink;
+        }
+        // Buttons are paper too: their inset darkens as the pointer rests on it and presses it.
+        foreach (var button in root.GetComponentsInChildren<Button>(true))
+        {
+            if (!(button.targetGraphic is Image image) || inset == null) continue;
+            Set(image, inset);
+            button.transition = Selectable.Transition.SpriteSwap;
+            button.spriteState = new SpriteState { highlightedSprite = insetHover, pressedSprite = insetPressed, selectedSprite = null, disabledSprite = null };
         }
         foreach (var text in root.GetComponentsInChildren<TMPro.TMP_Text>(true))
         {

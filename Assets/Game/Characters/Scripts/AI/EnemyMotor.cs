@@ -18,7 +18,6 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     [SerializeField] float moveTurnSpeed = 540f;
 
     public NavMeshAgent Agent { get; private set; }
-    public bool  IsKnockedBack => knockbackTimer > 0f;
     public bool  IsGrounded    { get; private set; }
     public float DefaultSpeed  { get; private set; }
     // Actual movement this frame, whether it came from a path or from Strafe().
@@ -104,7 +103,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         // Remembered even when it can't be issued yet, so the end of a knockback resumes it.
         Destination = destination;
         HasDestination = true;
-        if (!NavigationReady || IsKnockedBack) return;
+        if (!NavigationReady) return;
         Agent.speed = movementSpeed;
         Agent.isStopped = false;
         Agent.SetDestination(destination);
@@ -114,7 +113,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     public void Strafe(Vector3 worldDirection, float speed)
     {
         HasDestination = false;
-        if (!NavigationReady || IsKnockedBack) return;
+        if (!NavigationReady) return;
         worldDirection.y = 0f;
         if (worldDirection.sqrMagnitude < 0.0001f || speed <= 0f) { Stop(); return; }
         Vector3 destination = transform.position + worldDirection.normalized * Mathf.Max(0.6f, speed * 0.35f);
@@ -267,9 +266,12 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     // Set by the brain while swinging: the player's hits never push an attacking enemy around.
     public bool SuppressKnockback { get; set; }
 
+    // A knockback is only a push: the agent keeps its path and the brain keeps deciding (and attacking)
+    // while the enemy slides, so a hit jolts it without stopping it.
     public void ApplyKnockback(Vector3 direction, float force)
     {
-        if (SuppressKnockback) return;
+        if (SuppressKnockback || (CombatManager.HasInstance && !CombatManager.Instance.enemiesKnockedBack)) return;
+        if (CombatManager.HasInstance) force *= CombatManager.Instance.enemyKnockbackScale;
         if (Agent == null || !Agent.isOnNavMesh) return;
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.0001f || force <= 0.001f) return;
@@ -277,8 +279,6 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         float duration = CombatManager.HasInstance ? CombatManager.Instance.knockbackDuration : 0.25f;
         knockbackVelocity = direction.normalized * (force / Mathf.Max(duration, 0.01f));
         knockbackTimer    = duration;
-        Agent.ResetPath();
-        Agent.isStopped = true;
     }
 
     void OnDisable()
@@ -305,10 +305,5 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
             knockbackVelocity.magnitude / Mathf.Max(knockbackTimer, 0.01f) * Time.deltaTime);
         // Move() slides along the navmesh — unlike Warp, it can't pop them upward.
         if (Agent.isOnNavMesh) Agent.Move(delta);
-        if (knockbackTimer <= 0f)
-        {
-            Agent.isStopped = false;
-            if (HasDestination) MoveTo(Destination);
-        }
     }
 }
