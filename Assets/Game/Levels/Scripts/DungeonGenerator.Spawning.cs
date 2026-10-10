@@ -98,7 +98,8 @@ public partial class DungeonGenerator
                     if(prefab!=null)SpawnDestructible(prefab,t.position,t.rotation,rewards,extraRandom.Next());
                     break;
                 }
-                case DungeonSocketType.WallLight: SocketLight(socket,index); break;
+                // A board has no walls to hang them on (its doors get their own torch, BoardDoorTorch).
+                case DungeonSocketType.WallLight: if(!Board)SocketLight(socket,index); break;
                 case DungeonSocketType.Feature:
                 {
                     var prefab=socket.overridePrefab;

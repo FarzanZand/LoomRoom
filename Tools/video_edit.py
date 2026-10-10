@@ -101,7 +101,9 @@ def text_filters(items, work, index):
             f.write(t)
         a, b = item.get("at", 0.0), item.get("to", 99.0)
         fade = float(item.get("fade", .12))
-        alpha = (f"if(lt(t,{a}),0,if(lt(t,{a + fade}),(t-{a})/{fade},if(lt(t,{b - fade}),1,if(lt(t,{b}),({b}-t)/{fade},0))))"
+        # Text from the first frame is there at once; a fade-in would leave the opening frame empty.
+        fade_in = fade if float(a) > 0 else 0.0
+        alpha = (f"if(lt(t,{a}),0,if(lt(t,{a + fade_in}),(t-{a})/{max(fade_in, 1e-3)},if(lt(t,{b - fade}),1,if(lt(t,{b}),({b}-t)/{fade},0))))"
                  if fade > 0 else f"between(t,{a},{b})")
         lines = t.count("\n") + 1
         top = y - lines * size * 0.62
@@ -154,7 +156,7 @@ def render_shot(shot, i, work, default_audio):
         g2 = ("," + g) if g else ""
         region = f"crop={int(rw)}:{int(rh)}:{int(sw * x0)}:{int(sh * y0)}," if shot.get("region") else ""
         vf = (f"[0:v]setpts=(PTS-STARTPTS)/{speed},fps={FPS}{g2},split=2[a][b];"
-              f"[a]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=40:2,eq=brightness=-0.25[bg];"
+              f"[a]{region}scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=40:2,eq=brightness={shot.get('bg_darken', -0.25)}:saturation=1.1[bg];"
               f"[b]{region}scale={W * 2}:{fh * 2}:flags=lanczos,zoompan=z='{zexpr}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s={W}x{fh}:fps={FPS}[fg];"
               f"[bg][fg]overlay=0:(H-h)/2+{int(shot.get('fit_y', 0))}")
     post = []

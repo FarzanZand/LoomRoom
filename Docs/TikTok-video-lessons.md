@@ -28,3 +28,16 @@ Running notes from making LoomRoom TikToks (October 2026). Kept so a future vide
 - **Frame for the subject, not the format.** When a scene is wider than 9:16 (dice and character sheet), show the region across the width over a blurred copy instead of cropping half of it away.
 - **Footage can reveal game bugs.** Skeleton bursts snapped to another pose and hopped (scaled mesh bake, Animator still running on the death frame); fixed in the game, not hidden in the edit.
 - **Watch the tails of shots:** camera pans at the end of a take can reveal things that should stay off screen (here, the DM's face).
+
+## Round 5 additions
+- **Let the best transitions run.** The dungeon building and the view dropping into it is one moment: keep it unbroken (slowed while it builds, real time as it drops in).
+- **Fight in the real game, not a test arena.** Ugly debug rooms hurt the video; stage fights in a real generated floor, returning to the same spot each time so the room stays consistent.
+- **Spells from range read best:** cast from 7-11 m so the projectile travels across the frame before it hits.
+- **Vary the action:** movement (circling), blocking with a shield while the enemy swings, casting, and melee, each shown once.
+- **Full-frame-in-the-middle format:** works, but brighten the footage and keep the blurred background bright too, and blur the same cropped region (the blurred copy also shows what you cropped out, e.g. a face).
+
+## Round 6 additions
+- **Music from its first note** (start 0, no long fade-in): starting mid-track sounds cut.
+- **Less combat, never static.** One short fight, shot while moving; standing still and swinging reads as dull. Exploring (doors, stairs, rooms) carries a video as well as fights do.
+- **A focused story beats a sampler:** the eyes, the lamp, the board, the first room, then the big dungeon building and the dive, each once.
+- **Check fast moments at 15 fps,** not 2-5: the DM slipped into the top of the frame for 0.2 s during the dive and only showed at higher sampling.

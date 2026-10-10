@@ -15,10 +15,9 @@ MonoBehaviour:
   level: {fileID: 11400000, guid: c34217f8c5bd90843a39c1c6c0a0956c, type: 2}
   startingClass: {fileID: 11400000, guid: 720138e1d8556ba48b73655c9111a72d, type: 2}
   enemies:
-  - {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
+  - {fileID: 5230911580476637970, guid: edc24166d5d7f8f41ad99d5300158527, type: 3}
   - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
-  - {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
-  - {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
-  - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  - {fileID: 6786625474402938643, guid: 6843f9b84bf28ea469c8b258a9247393, type: 3}
+  - {fileID: 3518787458830882120, guid: ecdee48d7be8ff34ba0a7717d9a6cb18, type: 3}
   margin: 3
   retaliateOnly: 0
