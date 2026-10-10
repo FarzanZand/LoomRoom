@@ -85,7 +85,7 @@ def wrap(text, style):
 
 
 def text_filters(items, work, index):
-    out = []
+    out, placed = [], []
     for n, item in enumerate(items or []):
         style = item.get("style", "caption")
         font, size, colour, y, border = STYLES[style]
@@ -107,6 +107,16 @@ def text_filters(items, work, index):
                  if fade > 0 else f"between(t,{a},{b})")
         lines = t.count("\n") + 1
         top = y - lines * size * 0.62
+        height = lines * size * 1.24
+        # Texts on screen at the same time never cover each other: a later one moves below the earlier one.
+        if "y" not in item:
+            moved = True
+            while moved:
+                moved = False
+                for pa, pb, ptop, pbot in placed:
+                    if a < pb and pa < b and top < pbot and ptop < top + height:
+                        top, moved = pbot + size * 0.3, True
+        placed.append((a, b, top, top + height))
         out.append(
             f"drawtext=fontfile='{font}':textfile='{os.path.basename(path)}':fontsize={size}:fontcolor={colour}:"
             f"borderw={border}:bordercolor=black@0.95:line_spacing={int(size * 0.12)}:x=(w-text_w)/2:y={top:.0f}:"

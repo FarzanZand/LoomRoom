@@ -50,11 +50,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -6679048010460921364, guid: 9623e24d2e4ba7041bc5eb584c96c1fc, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.02446192
+      value: 0.02453595
+      objectReference: {fileID: 0}
+    - target: {fileID: -6679048010460921364, guid: 9623e24d2e4ba7041bc5eb584c96c1fc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.99880034
       objectReference: {fileID: 0}
     - target: {fileID: -6679048010460921364, guid: 9623e24d2e4ba7041bc5eb584c96c1fc, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.027179452
+      value: -0.027261706
+      objectReference: {fileID: 0}
+    - target: {fileID: -6679048010460921364, guid: 9623e24d2e4ba7041bc5eb584c96c1fc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.032443915
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 9623e24d2e4ba7041bc5eb584c96c1fc, type: 3}
       propertyPath: m_Name
@@ -68,6 +76,10 @@ PrefabInstance:
       propertyPath: m_ApplyRootMotion
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8111781155169087978, guid: 9623e24d2e4ba7041bc5eb584c96c1fc, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: d83504730e90c554fbf61838a1e8d514, type: 2}
     - target: {fileID: 8111781155169087978, guid: 9623e24d2e4ba7041bc5eb584c96c1fc, type: 3}
       propertyPath: m_UpdateWhenOffscreen
       value: 1

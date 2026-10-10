@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3e06d51d3a70204194d7f750172a10c, type: 3}
   m_Name: Meshy humanoid bow grip
   m_EditorClassIdentifier: Assembly-CSharp::EnemyWeaponGrip
-  position: {x: 0.037034947, y: 0.05210515, z: 0.054224268}
-  rotation: {x: 303.4955, y: 18.059748, z: 307.69623}
-  scale: 1.0030594
+  position: {x: 0.050116073, y: 0.0654624, z: 0.017836116}
+  rotation: {x: 288.34106, y: 78.021774, z: 256.5429}
+  scale: 1.0093398
