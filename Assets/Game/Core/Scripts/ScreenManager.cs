@@ -183,6 +183,9 @@ public class ScreenManager : Singleton<ScreenManager>
         tableWeight = TargetTableWeight;
         effectsInitialized = true;
         ApplyRenderingEffects();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeChanged;
+#endif
     }
 
     void Start() => ApplyPixelLook();
@@ -197,7 +200,11 @@ public class ScreenManager : Singleton<ScreenManager>
 
     void OnDisable()
     {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+#endif
         PixelLook.Set(pixelLookLibrary, false, PixelatorParts);
+        PixelLook.ReleaseTwins();
         if (!effectsInitialized) return;
         if (ambientOcclusionFeature != null) ambientOcclusionFeature.SetActive(originalAO);
         if (retroScreenFeature != null) retroScreenFeature.SetActive(originalRetro);
@@ -208,7 +215,20 @@ public class ScreenManager : Singleton<ScreenManager>
         effectsInitialized = false;
     }
 
-    // ── Rendering effects ─────────────────────────────────────────────
+    // The pipeline asset is shared and saved with the project: put its render scale back as soon
+    // as the game ends, before anything (Save Project, an editor crash) can write the Play-mode value.
+    protected override void OnApplicationQuit()
+    {
+        base.OnApplicationQuit();
+        SetPixelCamera(PixelatorCamera.Default, 0);
+    }
+
+#if UNITY_EDITOR
+    void OnPlayModeChanged(UnityEditor.PlayModeStateChange change)
+    {
+        if (change == UnityEditor.PlayModeStateChange.ExitingPlayMode) SetPixelCamera(PixelatorCamera.Default, 0);
+    }
+#endif
 
     // ── Pixelator ─────────────────────────────────────────────────────
 
@@ -309,15 +329,17 @@ public class ScreenManager : Singleton<ScreenManager>
             if (lowResCamera != null) lowResCamera.antialiasing = AntialiasingMode.None;
 
             float factor = lines > 0 ? Mathf.Max(1f, Mathf.Round(Screen.height / lines)) : 1f;
-            lowResAsset.renderScale = Mathf.Max(.1f, 1f / factor);
-            lowResAsset.upscalingFilter = UpscalingFilterSelection.Point;
+            // Written only on change: the asset is shared, and this runs every frame.
+            float scale = Mathf.Max(.1f, 1f / factor);
+            if (!Mathf.Approximately(lowResAsset.renderScale, scale)) lowResAsset.renderScale = scale;
+            if (lowResAsset.upscalingFilter != UpscalingFilterSelection.Point) lowResAsset.upscalingFilter = UpscalingFilterSelection.Point;
         }
         else
         {
             if (lowResAsset != null)
             {
-                lowResAsset.renderScale = originalRenderScale;
-                lowResAsset.upscalingFilter = originalUpscaling;
+                if (!Mathf.Approximately(lowResAsset.renderScale, originalRenderScale)) lowResAsset.renderScale = originalRenderScale;
+                if (lowResAsset.upscalingFilter != originalUpscaling) lowResAsset.upscalingFilter = originalUpscaling;
                 lowResAsset = null;
             }
             if (lowResCamera != null) lowResCamera.antialiasing = originalAntialiasing;
@@ -332,13 +354,17 @@ public class ScreenManager : Singleton<ScreenManager>
 
     // ── Fades ─────────────────────────────────────────────────────────
 
-    /// Starts invisible, waits holdDuration, then fades to fully visible over fadeDuration.
-    public void FadeIn(float fadeDuration, float holdDuration = 0f)
+    /// The screen goes black: starts clear, waits holdDuration, then fades the black overlay in over fadeDuration.
+    public void FadeToBlack(float fadeDuration, float holdDuration = 0f)
         => RunFade(FadeRoutine(0f, 1f, fadeDuration, holdDuration));
 
-    /// Starts fully visible, waits holdDuration, then fades to invisible over fadeDuration.
-    public void FadeOut(float fadeDuration, float holdDuration = 0f)
+    /// The picture comes back: starts black, waits holdDuration, then fades the overlay out over fadeDuration.
+    public void FadeFromBlack(float fadeDuration, float holdDuration = 0f)
         => RunFade(FadeRoutine(1f, 0f, fadeDuration, holdDuration));
+
+    // Older names (the overlay fading in and out); same as FadeToBlack and FadeFromBlack.
+    public void FadeIn(float fadeDuration, float holdDuration = 0f) => FadeToBlack(fadeDuration, holdDuration);
+    public void FadeOut(float fadeDuration, float holdDuration = 0f) => FadeFromBlack(fadeDuration, holdDuration);
 
     /// Fades to black over fadeInDuration, holds for fadedDuration, then fades back over fadeOutDuration.
     public void FadeInOut(float fadeInDuration, float fadedDuration, float fadeOutDuration)
@@ -363,6 +389,21 @@ public class ScreenManager : Singleton<ScreenManager>
             }
             SetAlpha(alpha = step.x);
         }
+    }
+
+    // Fades any CanvasGroup (an end card, a title over the black) to `to` in unscaled seconds, linearly.
+    // Run it on the caller: yield return ScreenManager.FadeGroup(card, 1f, 1f).
+    public static IEnumerator FadeGroup(CanvasGroup group, float to, float seconds)
+    {
+        if (group == null) yield break;
+        float from = group.alpha;
+        for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime)
+        {
+            if (group == null) yield break;
+            group.alpha = Mathf.Lerp(from, to, t / seconds);
+            yield return null;
+        }
+        if (group != null) group.alpha = to;
     }
 
     public void ClearFade()

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM babble Whisper
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 16700d4e919eccc4e86ac744fa331ccd, type: 3}
+  - {fileID: 8300000, guid: be4594dbed090e6418dacdfe9592fd02, type: 3}
+  - {fileID: 8300000, guid: ac193be4f4616c34691e693e9eeea389, type: 3}
+  - {fileID: 8300000, guid: 4a99b66fa1012694dbc1112cb1019e61, type: 3}
+  - {fileID: 8300000, guid: e7560f502a905e346b822c00dff07e5b, type: 3}
+  - {fileID: 8300000, guid: fac0d9e4c9e7a01408f676b5e905f916, type: 3}
+  - {fileID: 8300000, guid: 195acee742512414d83f07dc38a2a7b7, type: 3}
+  - {fileID: 8300000, guid: 7065506df8da5e049a8b5092d40d81b8, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.04
+  minDistance: 1
+  maxDistance: 500

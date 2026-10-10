@@ -54,6 +54,7 @@ public class NpcBrain : MonoBehaviour, IInteractable
     float     wanderTimer;
     int       waypointIndex;
     Coroutine rotateRoutine;
+    bool      simulationPaused;
 
     public string Prompt => prompt.Replace("{name}", Character != null ? Character.DisplayName : name);
     public bool CanInteract(Character who) => isActiveAndEnabled && isInteractable && Character != null && Character.IsAlive &&
@@ -79,10 +80,23 @@ public class NpcBrain : MonoBehaviour, IInteractable
     void Update()
     {
         if (!Character.IsAlive) return;
-        switch (State)
+        // Menus and cutscenes freeze the world like they do enemies; turning to face a speaker still works.
+        if (GameManager.HasInstance && !GameManager.Instance.SimulationActive)
         {
-            case NPCState.Wander: HandleWander(); break;
-            case NPCState.Patrol: HandlePatrol(); break;
+            if (!simulationPaused)
+            {
+                simulationPaused = true;
+                if (State == NPCState.Wander || State == NPCState.Patrol) Motor.Stop();
+            }
+        }
+        else
+        {
+            simulationPaused = false;
+            switch (State)
+            {
+                case NPCState.Wander: HandleWander(); break;
+                case NPCState.Patrol: HandlePatrol(); break;
+            }
         }
         UpdateFacing();
         UpdateAnimator();

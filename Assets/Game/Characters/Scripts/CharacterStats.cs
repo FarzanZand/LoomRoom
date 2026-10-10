@@ -40,6 +40,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     readonly List<StatModifier>                        modifiers  = new();
     public System.Collections.Generic.IReadOnlyList<StatModifier> Modifiers => modifiers;
     readonly List<StatType>                            changedScratch = new();
+    readonly List<float>                               oldScratch     = new();   // value of changedScratch[i] before the change
 
     IBlocker blocker;
     AdventurerProgress adventurer;   // players only: attribute-derived stats and skill rules
@@ -95,18 +96,31 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public float FoodRemaining { get; private set; }
     public float FoodHealingPerSecond { get; private set; }
     public ItemData FoodSource { get; private set; }   // what was eaten, for the buff icon; null after a load
-    public void EatFood(float rate,float duration,ItemData source=null) {
-        if(!IsAlive || rate<=0 || duration<=0)return;
-        FoodHealingPerSecond=rate;FoodRemaining=duration;FoodSource=source;
+    public void EatFood(float rate, float duration, ItemData source = null)
+    {
+        if (!IsAlive || rate <= 0 || duration <= 0) return;
+        FoodHealingPerSecond = rate;
+        FoodRemaining = duration;
+        FoodSource = source;
     }
-    public void ClearFood(){FoodRemaining=0;FoodHealingPerSecond=0;FoodSource=null;}
-    void TickFood() {
+
+    public void ClearFood()
+    {
+        FoodRemaining = 0;
+        FoodHealingPerSecond = 0;
+        FoodSource = null;
+    }
+
+    void TickFood()
+    {
         if (GameManager.HasInstance && !GameManager.Instance.SimulationActive) return;
-        if(!IsAlive){ClearFood();return;}
-        float dt=Mathf.Min(FoodRemaining,Time.deltaTime);
-        if(dt<=0)return;
-        FoodRemaining-=dt;Heal(FoodHealingPerSecond*dt);
+        if (!IsAlive) { ClearFood(); return; }
+        float dt = Mathf.Min(FoodRemaining, Time.deltaTime);
+        if (dt <= 0) return;
+        FoodRemaining -= dt;
+        Heal(FoodHealingPerSecond * dt);
     }
+
     void Update()
     {
         TickModifiers();
@@ -119,19 +133,26 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     {
         if (GameManager.HasInstance && !GameManager.Instance.SimulationActive) return;
         changedScratch.Clear();
+        oldScratch.Clear();
         for (int i = modifiers.Count - 1; i >= 0; i--)
         {
             var m = modifiers[i];
             if (m.IsPermanent) continue;
             m.Tick(Time.deltaTime);
             if (!m.IsExpired) continue;
+            RememberOld(m.Stat);
             modifiers.RemoveAt(i);
-            if (!changedScratch.Contains(m.Stat)) changedScratch.Add(m.Stat);
         }
-        // Old value is approximated by the current one plus nothing — callers that care
-        // about deltas subscribe to the pool events; StatChanged is a "refresh" signal here.
-        foreach (var s in changedScratch)
-            StatChanged?.Invoke(s, GetFinal(s), GetFinal(s));
+        // Same path as any other modifier change: pools clamp to the new max and their events fire.
+        for (int i = 0; i < changedScratch.Count; i++) OnStatChanged(changedScratch[i], oldScratch[i]);
+    }
+
+    // Records a stat's value before the first of its modifiers is removed (for StatChanged's old value).
+    void RememberOld(StatType stat)
+    {
+        if (changedScratch.Contains(stat)) return;
+        changedScratch.Add(stat);
+        oldScratch.Add(GetFinal(stat));
     }
 
     void TickMana()
@@ -225,14 +246,14 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public void RemoveAllFromSource(object source)
     {
         changedScratch.Clear();
+        oldScratch.Clear();
         for (int i = modifiers.Count - 1; i >= 0; i--)
         {
             if (!ReferenceEquals(modifiers[i].Source, source)) continue;
-            var stat = modifiers[i].Stat;
+            RememberOld(modifiers[i].Stat);
             modifiers.RemoveAt(i);
-            if (!changedScratch.Contains(stat)) changedScratch.Add(stat);
         }
-        foreach (var s in changedScratch) OnStatChanged(s, GetFinal(s));
+        for (int i = 0; i < changedScratch.Count; i++) OnStatChanged(changedScratch[i], oldScratch[i]);
     }
 
     void OnStatChanged(StatType stat, float old)
@@ -298,8 +319,6 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
     // ── Mana ───────────────────────────────────────────────────────
 
-    public bool HasMana(float amount) => !HasStat(StatType.MaxMana) || CurrentMana >= amount;
-
     // Spend mana. Returns false (and spends nothing) if there isn't enough.
     public bool TryUseMana(float amount, float regenDelay = 0.6f)
     {
@@ -309,19 +328,6 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         CurrentMana -= amount;
         manaRegenDelayTimer = Mathf.Max(manaRegenDelayTimer, regenDelay);
         if (CurrentMana <= 0.001f) CurrentMana = 0f;
-        ManaChanged?.Invoke();
-        return true;
-    }
-
-    // Continuous drain (channelled abilities): spends what it can and reports whether any was left.
-    public bool DrainMana(float perSecond, float regenDelay = 0.6f)
-    {
-        if (!HasStat(StatType.MaxMana)) return true;
-        float cost = perSecond * Time.deltaTime;
-        if (CurrentMana <= 0f) return false;
-        CurrentMana = Mathf.Max(0f, CurrentMana - cost);
-        manaRegenDelayTimer = Mathf.Max(manaRegenDelayTimer, regenDelay);
-
         ManaChanged?.Invoke();
         return true;
     }
@@ -390,6 +396,8 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         staminaRegenDelayTimer = 0;
         StaminaChanged?.Invoke();
         IsExhausted = false;
+        // The death pose flag would otherwise keep the animator in its death state.
+        if (Character != null) Character.ClearDeadFlag();
         HealthChanged?.Invoke();
         ManaChanged?.Invoke();
     }
@@ -400,18 +408,8 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         CurrentMana = Mathf.Clamp(mana, 0, MaxMana);
         CurrentStamina = Mathf.Clamp(stamina, 0, MaxStamina);
         IsExhausted = CurrentStamina <= 0;
-        HealthChanged?.Invoke(); ManaChanged?.Invoke(); StaminaChanged?.Invoke();
-    }
-
-    // Reload base values (e.g. after swapping CharacterData at runtime).
-    public void ReloadFromData()
-    {
-        LoadBase();
-        CurrentHealth  = Mathf.Min(CurrentHealth, MaxHealth);
-        CurrentMana = Mathf.Min(CurrentMana, MaxMana);
-        CurrentStamina = Mathf.Min(CurrentStamina, MaxStamina);
-        StaminaChanged?.Invoke();
         HealthChanged?.Invoke();
         ManaChanged?.Invoke();
+        StaminaChanged?.Invoke();
     }
 }

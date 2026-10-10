@@ -37,36 +37,37 @@ public class DungeonCombatFeedback : MonoBehaviour
     readonly RaycastHit[] sightHits=new RaycastHit[48];
     RectTransform canvas;
     DungeonGenerator dungeon;
-    TMP_FontAsset font;
-    TMP_Text message, impact;
-    float messageUntil, impactUntil;
+    TMP_Text impact;
+    float impactUntil;
     Player player;
     int popupIndex;
-    public int RegisteredEnemies => enemies.Count;
-    public int VisibleBars { get { int n=0;foreach(var e in enemies)if(e.root.gameObject.activeSelf)n++;return n; } }
-    public int ActiveNumbers { get {int n=0;foreach(var p in popups)if(p.until>Time.time)n++;return n;} }
 
-    public void Initialize(DungeonGenerator generator, RectTransform parent, TMP_FontAsset pixelFont)
+    // Each HUD prefab on the level (HUD tab) drives one feature; a missing one only switches that feature off.
+    public void Initialize(DungeonGenerator generator, RectTransform parent)
     {
-        dungeon=generator;canvas=parent;font=pixelFont;
+        dungeon=generator;canvas=parent;
+        var level=generator.LevelData;
+        if(level.enemyBarPrefab==null)Debug.LogWarning($"{level.name}: no Enemy Bar Prefab on the HUD tab; enemy health bars are off.",level);
+        if(level.messagePrefab==null)Debug.LogWarning($"{level.name}: no Message Prefab on the HUD tab; hit results (BLOCKED, CRITICAL...) are off.",level);
+        if(level.damageNumberPrefab==null)Debug.LogWarning($"{level.name}: no Damage Number Prefab on the HUD tab; damage numbers are off.",level);
         foreach(var c in generator.GetComponentsInChildren<Character>()) Register(c);
         Character.Spawned+=Register;
         DungeonDestructible.Hit+=ObjectHit;
-        player=PlayerManager.Instance.GetPlayer(PlayerKind.Table);
-        player.Damaged+=PlayerDamaged;player.HitLanded+=HitLanded;
-        // Pickups are narrated by the message log now (DungeonMaster's screen log).
-        // Pickup placement belongs to the authored prefab, not a hard-coded hotbar offset.
-        message=Instantiate(dungeon.LevelData.messagePrefab,canvas);
-        impact=Instantiate(dungeon.LevelData.messagePrefab,canvas);SetRect(impact.rectTransform,new Vector2(.5f,.5f),new Vector2(0,-46));
-        for(int i=0;i<24;i++)
-        {
-            var label=Instantiate(dungeon.LevelData.damageNumberPrefab,canvas);label.gameObject.SetActive(false);
-            popups.Add(new Popup{label=label});
-        }
+        player=PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if(player!=null){player.Damaged+=PlayerDamaged;player.HitLanded+=HitLanded;}
+        // The result line in the middle of the screen (BLOCKED, CRITICAL...) for the table player's own fights.
+        if(level.messagePrefab!=null){impact=Instantiate(level.messagePrefab,canvas);SetRect(impact.rectTransform,new Vector2(.5f,.5f),new Vector2(0,-46));}
+        if(level.damageNumberPrefab!=null)
+            for(int i=0;i<24;i++)
+            {
+                var label=Instantiate(level.damageNumberPrefab,canvas);label.gameObject.SetActive(false);
+                popups.Add(new Popup{label=label});
+            }
     }
     void Register(Character character)
     {
         if(character==null || character is Player || character.Stats==null || character.GetComponent<EnemyBrain>()==null || !character.transform.IsChildOf(dungeon.transform))return;
+        if(dungeon.LevelData.enemyBarPrefab==null)return;
         foreach(var e in enemies)if(e.character==character)return;
         var bar=Instantiate(dungeon.LevelData.enemyBarPrefab,canvas);
         var root=bar.Rect;bar.enemyName.text=character.DisplayName;
@@ -87,6 +88,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     {
         if(target==null || !target.transform.IsChildOf(dungeon.transform))return;
         var view=objects.Find(o=>o.target==target);
+        if(view==null && dungeon.LevelData.enemyBarPrefab==null){ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f),numberScale);return;}
         if(view==null)
         {
             var bar=Instantiate(dungeon.LevelData.enemyBarPrefab,canvas);bar.enemyName.text=target.DisplayName;
@@ -97,6 +99,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     }
     void ShowNumber(Transform target,Vector3 position,string text,Color color,float scale=1)
     {
+        if(popups.Count==0)return;
         var p=popups[popupIndex++%popups.Count];p.target=target;p.position=position;p.started=Time.time;p.until=Time.time+(scale>numberScale ? 1.2f:.85f);p.color=color;p.label.text=text;
         p.scale=scale;p.label.rectTransform.localScale=Vector3.one*scale;
     }
@@ -118,10 +121,11 @@ public class DungeonCombatFeedback : MonoBehaviour
     [SerializeField,Min(.1f),Tooltip("Top bar: size against the bar over a head.")] float topBarScale=1.8f;
     void LateUpdate()
     {
-        if(canvas==null || dungeon==null)return;
-        bool active=PlayerManager.Instance.Active==player;
-        bool show=active && GameManager.Instance.GameplayActive;
-        var camera=PlayerManager.Instance.OutputCamera;
+        if(canvas==null || dungeon==null || !PlayerManager.HasInstance)return;
+        var players=PlayerManager.Instance;
+        bool active=player!=null && players.Active==player;
+        bool show=active && GameManager.HasInstance && GameManager.Instance.GameplayActive;
+        var camera=players.OutputCamera;
         if(camera==null)return;
         // Top bar: the enemy hit most recently, else the one under the crosshair.
         EnemyView topEnemy=null;
@@ -174,7 +178,6 @@ public class DungeonCombatFeedback : MonoBehaviour
             p.label.gameObject.SetActive(visible && Project(camera,p.position+Vector3.up*((Time.time-p.started)*.65f),p.label.rectTransform));
             var color=p.color;color.a=Mathf.Clamp01((p.until-Time.time)/.25f);p.label.color=color;
         }
-        if(message!=null){var color=new Color(.94f,.87f,.69f,Mathf.Clamp01((messageUntil-Time.time)/.4f));message.color=color;}
         if(impact!=null)impact.gameObject.SetActive(show && Time.time<impactUntil);
     }
     // Under the crosshair, with aim assist against the body so small creatures don't need pixel-perfect aim.
@@ -213,9 +216,6 @@ public class DungeonCombatFeedback : MonoBehaviour
         return c.transform.position+Vector3.up*1.9f;
     }
     static void SetRect(RectTransform r,Vector2 anchor,Vector2 position){r.anchorMin=r.anchorMax=anchor;r.anchoredPosition=position;}
-    void OnDisable()
-    {
-    }
     void OnDestroy()
     {
         Character.Spawned-=Register;

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM babble Deep
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 5126273e4f0a5534cacfb08c6af4bf7f, type: 3}
+  - {fileID: 8300000, guid: 74fc5a88c463a3a41a6c034583315090, type: 3}
+  - {fileID: 8300000, guid: 0f709100d4859f84f9d231296863c30d, type: 3}
+  - {fileID: 8300000, guid: 14463c6d45ba56c4c8f812d879339c60, type: 3}
+  - {fileID: 8300000, guid: f576c7300ebc43b4d96205f4f2e0afae, type: 3}
+  - {fileID: 8300000, guid: 36052675ae0ea5a49915fff3bd55d3dc, type: 3}
+  - {fileID: 8300000, guid: a68e64fed92777c458fb1e9247819b97, type: 3}
+  - {fileID: 8300000, guid: cdd38d939ff5b944ca9348e782874bcc, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.04
+  minDistance: 1
+  maxDistance: 500

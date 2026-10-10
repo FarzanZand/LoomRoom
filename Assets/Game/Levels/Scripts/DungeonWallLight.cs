@@ -27,21 +27,8 @@ public class DungeonWallLight
         return false;
     }
 
-    public static DungeonWallLight Choose(DungeonWallLight[] lights, System.Random random)
-    {
-        if (lights == null) return null;
-        double total = 0;
-        foreach (var l in lights) if (Eligible(l)) total += l.weight;
-        if (total <= 0) return null;
-        double roll = random.NextDouble() * total;
-        foreach (var l in lights)
-        {
-            if (!Eligible(l)) continue;
-            roll -= l.weight;
-            if (roll < 0) return l;
-        }
-        return null;
-    }
+    public static DungeonWallLight Choose(DungeonWallLight[] lights, System.Random random) =>
+        WeightedPick.Choose(lights, l => Eligible(l) ? l.weight : 0, random);
 
     public static DungeonWallLight First(DungeonWallLight[] lights)
     {

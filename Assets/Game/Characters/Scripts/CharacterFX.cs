@@ -31,11 +31,25 @@ public class CharacterFX : MonoBehaviour
     protected virtual void Awake()
     {
         flashBlock = new MaterialPropertyBlock();
+        RefreshRenderers();
+    }
 
+    // Collects the renderers to flash again. Call after gear is spawned under the character
+    // (EnemyWeaponLoadout does), so weapons and bows flash with the body.
+    public void RefreshRenderers()
+    {
         if (flashRenderers != null && flashRenderers.Length > 0)
         {
             renderers = flashRenderers;
             return;
+        }
+
+        // Mid-flash: put the old renderers back before the list changes under the saved blocks.
+        if (flashRoutine != null)
+        {
+            StopCoroutine(flashRoutine);
+            flashRoutine = null;
+            RestoreBlocks();
         }
 
         var collected = new List<Renderer>();

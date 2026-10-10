@@ -29,21 +29,8 @@ public class DungeonShapeChoice
     public float weight = 1;
     bool IsAuthored => kind == DungeonShapeKind.Authored;
 
-    public static DungeonShapeChoice Choose(DungeonShapeChoice[] choices, System.Random random)
-    {
-        if (choices == null) return null;
-        double total = 0;
-        foreach (var c in choices) if (Eligible(c)) total += c.weight;
-        if (total <= 0) return null;
-        double roll = random.NextDouble() * total;
-        foreach (var c in choices)
-        {
-            if (!Eligible(c)) continue;
-            roll -= c.weight;
-            if (roll < 0) return c;
-        }
-        return null;
-    }
+    public static DungeonShapeChoice Choose(DungeonShapeChoice[] choices, System.Random random) =>
+        WeightedPick.Choose(choices, c => Eligible(c) ? c.weight : 0, random);
     static bool Eligible(DungeonShapeChoice c) => c != null && c.weight > 0 && (c.kind != DungeonShapeKind.Authored || c.shape != null);
 }
 

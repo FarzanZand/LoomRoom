@@ -1,8 +1,8 @@
 # Table level reveal
 
-Select **Systems > WorldManager > Table Level Reveal** in the Room scene. The shared settings expand directly in the Inspector. The assigned asset is `Assets/Game/Levels/Resources/TableReveal/Table assembly.asset`; dungeon data no longer owns a reveal reference. Clear the WorldManager reference to use the standard transition, or create another asset with Create > Table > Level Reveal.
+Select **Systems > WorldManager > Table Level Reveal** in the Room scene. The shared settings expand directly in the Inspector. The assigned asset is `Assets/Game/Levels/Shared/Reveal/Table assembly.asset`; dungeon data no longer owns a reveal reference. Clear the WorldManager reference to use the standard transition, or create another asset with Create > Table > Level Reveal.
 
-The actual generated floor plan is traced in steel blue. Geometry rises in spatial chunks, lights awaken, enemies appear, and the camera flies into first person without fading to black. **Use Room Player POV** keeps the room player's position and look direction while the table assembles. With it disabled, **Camera Angle** controls overview pitch (90 is straight down). Camera Transition Seconds controls the move to the overview; Approach Seconds controls entry into the dungeon. Roofs stay hidden during the overview. The sequence runs on unscaled time with gameplay simulation blocked. Space or Escape skips after generation is ready; Allow Skip can disable this. Descending to another floor retains the short fade.
+The actual generated floor plan is traced in steel blue. Geometry rises in spatial chunks, lights awaken, enemies appear, and the camera flies into first person without fading to black. **Use Room Player POV** keeps the room player's position and look direction while the table assembles. With it disabled, **Camera Angle** controls overview pitch (90 is straight down). Camera Transition Seconds controls the move to the overview; Approach Seconds controls entry into the dungeon. Floors rise first, then walls, and the ceilings rise in last and stay shown. The entrance flight comes down through the starting room's skylight; where there is none (a resumed floor), the ceiling over the spawn point is hidden for the flight and put back on arrival. The sequence runs on unscaled time with gameplay simulation blocked. Space or Escape skips after generation is ready; Allow Skip can disable this. Descending to another floor retains the short fade.
 
 ## Designer controls
 
@@ -11,7 +11,7 @@ The actual generated floor plan is traced in steel blue. Geometry rises in spati
 - Blueprint: material, colour, line width and entrance marker colour.
 - Camera: Use Room Player POV, angle, minimum height and framing margin. Overview-only fields are hidden when room POV is enabled.
 - Audio: build/settle clips and volume, played through AudioManager's SFX mixer.
-- Dust: the **Assembly dust** prefab in the same Presentation folder. Its emission area fits the dungeon; edit its particles, lifetime, colour and size directly on the prefab.
+- Dust: the **Assembly dust** prefab in `Levels/Shared/Reveal`. Its emission area fits the dungeon; edit its particles, lifetime, colour and size directly on the prefab.
 
 The renderer positions, visibility, lights, actors, camera lens and Cinemachine state are restored when playback ends or is interrupted. Navigation is generated before presentation and no new layout is generated during the animation. The existing level is replaced before the assembly starts, without a black overlay. The camera projection blends continuously between overview and first-person lenses.
 

@@ -3,11 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// Added to the table at runtime (TableManager), so nothing here is set in the Inspector: the
+// catalog comes from Resources/TableLevels, the town is the table's "Woodland Village" child and
+// the lighting is the scene's LightingManager.
 public class TableLevelLoader : MonoBehaviour
 {
-    public TableLevelCatalog catalog;
-    public GameObject townRoot;
-    public LightingManager lighting;
+    public TableLevelCatalog Catalog { get; private set; }
+    GameObject townRoot;
+    LightingManager lighting;
     public TableLevelData Current { get; private set; }
     public DungeonGenerator Dungeon { get; private set; }
     public bool Busy { get; private set; }
@@ -41,22 +44,25 @@ public class TableLevelLoader : MonoBehaviour
         Initialize();
         if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped += OnPlayerSwapped;
         yield return null;
-        if(PlayerManager.Instance.ActiveKind==PlayerKind.Table && Current==null) ShowSelection();
+        if(PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind==PlayerKind.Table && Current==null) ShowSelection();
     }
     void Initialize()
     {
         if(initialized) return;
         initialized=true;
-        if(catalog==null) catalog=Resources.Load<TableLevelCatalog>("TableLevels");
-        if(catalog==null) Debug.LogError("TableLevelLoader: no TableLevelCatalog at Resources/TableLevels; the adventure menu will be empty.", this);
-        if(townRoot==null) townRoot=transform.Find("Woodland Village")?.gameObject;
+        Catalog=Resources.Load<TableLevelCatalog>("TableLevels");
+        if(Catalog==null) Debug.LogError("TableLevelLoader: no TableLevelCatalog at Resources/TableLevels; the adventure menu will be empty.", this);
+        var village=transform.Find("Woodland Village");
+        townRoot=village!=null ? village.gameObject : null;
         if(townRoot==null) Debug.LogError("TableLevelLoader: no \"Woodland Village\" child under the table; the town cannot be shown or hidden.", this);
-        if(lighting==null) lighting=FindAnyObjectByType<LightingManager>();
+        lighting=LightingManager.Instance!=null ? LightingManager.Instance : FindAnyObjectByType<LightingManager>(); // search only if it has not enabled yet
         if(lighting==null) Debug.LogError("TableLevelLoader: no LightingManager in the scene; level moods will not be applied.", this);
-        player=PlayerManager.Instance.GetPlayer(PlayerKind.Table);
-        townPosition=player.transform.position;townRotation=player.transform.rotation;defaultRespawn=player.respawnDelay;
+        player=PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if(player!=null) { townPosition=player.transform.position;townRotation=player.transform.rotation;defaultRespawn=player.respawnDelay; }
+        else Debug.LogError("TableLevelLoader: no table player (PlayerManager missing?); levels cannot be loaded.", this);
         menu=gameObject.AddComponent<TableLevelMenu>();menu.loader=this;
-        var intro=GetComponent<TableManager>()?.tableIntroController;
+        var table=GetComponent<TableManager>();
+        var intro=table!=null ? table.tableIntroController : null;
         if(intro!=null)
         {
             intro.enabled=false;
@@ -84,7 +90,7 @@ public class TableLevelLoader : MonoBehaviour
         if(player!=null) player.Died-=OnDied;
     }
     // The miniature keeps its ceilings from both sides; skylights and windows are the way to look in.
-    void OnPlayerSwapped(Player active) => Dungeon?.ShowCeilings(true);
+    void OnPlayerSwapped(Player active) { if(Dungeon!=null) Dungeon.ShowCeilings(true); }
     public void ShowSelection(string title="Choose your adventure")
     {
         Initialize();
@@ -104,7 +110,7 @@ public class TableLevelLoader : MonoBehaviour
         var save = player.GetComponent<AdventureSave>();
         if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) { NotificationUI.Show("No compatible saved adventure"); return; }
         var checkpoint = save.Saved.checkpoint;
-        var level = Array.Find(catalog.levels, x => x != null && x.name == checkpoint.level);
+        var level = Catalog != null ? Array.Find(Catalog.levels, x => x != null && x.name == checkpoint.level) : null;
         if (level == null) return;
         pendingResume = checkpoint;
         StartCoroutine(LoadRoutine(level));
@@ -175,7 +181,8 @@ public class TableLevelLoader : MonoBehaviour
                 {
                     if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); }
                     RunManager.Instance.ReachFloor(FloorNumber);
-                    if (resume != null) player.GetComponent<AdventureSave>()?.Restore(resume);
+                    var adventureSave = player.GetComponent<AdventureSave>();
+                    if (resume != null && adventureSave != null) adventureSave.Restore(resume);
                     // The biome's line only when the surroundings change; otherwise just the depth.
                     var biome=level.Biome(FloorNumber);
                     bool newBiome=!descending || biome!=level.Biome(FloorNumber-1);
@@ -212,7 +219,8 @@ public class TableLevelLoader : MonoBehaviour
                 else if (music != AudioManager.Instance.CurrentMusic) AudioManager.Instance.CrossfadeMusic(music, level.loopMusic, level.musicFadeSeconds, musicVolume);
             }
             completed=ready;
-            if (ready && level.IsDungeon) player.GetComponent<AdventureSave>()?.CaptureFloor();
+            var floorSave = ready && level.IsDungeon ? player.GetComponent<AdventureSave>() : null;
+            if (floorSave != null) floorSave.CaptureFloor();
         }
         finally
         {
@@ -267,7 +275,7 @@ public class TableLevelLoader : MonoBehaviour
                 // A layout can fail validation (a room cut off by props). Try the next derived seed
                 // rather than failing the floor; the sequence is fixed, so runs stay reproducible.
                 for(int attempt=0;;attempt++) {
-                    candidate=level.environmentPrefab!=null ? Instantiate(level.environmentPrefab) : new GameObject(level.displayName+" — generated");
+                    candidate=level.environmentPrefab!=null ? Instantiate(level.environmentPrefab) : new GameObject(level.displayName+" (generated)");
                     candidate.transform.position=new Vector3(bounds.center.x,bounds.max.y+.08f,bounds.center.z);
                     candidateDungeon=candidate.GetComponent<DungeonGenerator>();
                     if(candidateDungeon==null)candidateDungeon=candidate.AddComponent<DungeonGenerator>();
@@ -306,13 +314,14 @@ public class TableLevelLoader : MonoBehaviour
         player.Died-=OnDied;player.Died+=OnDied;
         var controller=player.GetComponent<CharacterController>();
         controller.enabled=false;player.transform.SetPositionAndRotation(spawn,rotation);controller.enabled=true;
-        player.SetSpawnPoint(spawn,rotation);player.Look?.SetYaw(rotation.eulerAngles.y);player.SynchronizePresentation();
+        player.SetSpawnPoint(spawn,rotation);if(player.Look!=null)player.Look.SetYaw(rotation.eulerAngles.y);player.SynchronizePresentation();
         Physics.SyncTransforms();
     }
     // The starting room's way out (and so the player's first view) points across the table at the Dungeon Master.
     bool FacesDungeonMaster(DungeonGenerator dungeon)
     {
-        var dm = GetComponent<TableManager>()?.DM;
+        var table = GetComponent<TableManager>();
+        var dm = table != null ? table.DM : null;
         if(dm==null) return true;
         var toDM = dm.transform.position - dungeon.SpawnPoint; toDM.y = 0;
         var facing = dungeon.SpawnRotation * Vector3.forward; facing.y = 0;

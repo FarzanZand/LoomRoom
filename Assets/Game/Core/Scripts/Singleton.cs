@@ -5,11 +5,15 @@ using UnityEngine;
 // Managers live as prefabs under Assets/Game/Core/Prefabs and are placed in the scene.
 //
 // HasInstance only reports the cached field — use it for cheap null-safe reads in
-// hot paths. Instance does a scene lookup on first access. Outside Play mode both find the
+// hot paths. Instance does a scene lookup on first access; in Play mode a missing manager
+// is searched for and logged once, not on every access. Outside Play mode both find the
 // manager placed in the open scene, so editor tools can read and change its settings.
 public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 {
     private static T _instance;
+    // Set when a Play-mode lookup finds nothing, so a missing manager is logged and searched
+    // for once instead of on every access; cleared when an instance registers in Awake.
+    private static bool _lookupFailed;
 #if !UNITY_EDITOR
     private static bool _applicationIsQuitting;
 #endif
@@ -40,10 +44,16 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 #if UNITY_EDITOR
             // Edit mode: find the scene's manager quietly; a scene without one is normal here.
             if (!UnityEditor.EditorApplication.isPlaying)
+            {
+                _lookupFailed = false;
                 return _instance = FindAnyObjectByType<T>(FindObjectsInactive.Include);
+            }
 #endif
+            if (_lookupFailed)
+                return null;
             _instance = FindAnyObjectByType<T>(FindObjectsInactive.Include);
-            if (_instance == null)
+            _lookupFailed = _instance == null;
+            if (_lookupFailed)
                 Debug.LogError($"[Singleton] No {typeof(T).Name} in the open scene. Add it (the shared " +
                                "managers live as prefabs under Assets/Game/Core/Prefabs) — this returns null " +
                                "rather than auto-creating a blank one, which would silently run with default " +
@@ -57,6 +67,7 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 #if !UNITY_EDITOR
         _applicationIsQuitting = false;
 #endif
+        _lookupFailed = false;
         if (_instance == null)
             _instance = this as T;
         else if (_instance != this)

@@ -23,16 +23,18 @@ public class DungeonHud : MonoBehaviour
         var go=new GameObject("Explored map",typeof(RectTransform),typeof(RawImage));go.transform.SetParent(canvasRoot.transform,false);
         mapImage=go.GetComponent<RawImage>();mapImage.texture=map;mapImage.raycastTarget=false;
         var r=mapImage.rectTransform;r.anchorMin=r.anchorMax=new Vector2(1,1);r.pivot=new Vector2(1,1);r.anchoredPosition=new Vector2(-30,-24);r.sizeDelta=new Vector2(w*4,h*4);
-        gameObject.AddComponent<DungeonCombatFeedback>().Initialize(generator,canvasRoot.GetComponent<RectTransform>(),generator.LevelData.hudFont);
+        gameObject.AddComponent<DungeonCombatFeedback>().Initialize(generator,canvasRoot.GetComponent<RectTransform>());
     }
 
     void Update()
     {
         // Runtime layout and exploration arrays do not survive an editor domain reload.
         if(canvasRoot==null || dungeon==null || dungeon.Layout==null || map==null || explored==null)return;
-        bool show=PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind==PlayerKind.Table && GameManager.Instance.GameplayActive;
+        var players=PlayerManager.HasInstance ? PlayerManager.Instance : null;
+        bool show=players!=null && players.ActiveKind==PlayerKind.Table && GameManager.HasInstance && GameManager.Instance.GameplayActive;
         canvasRoot.SetActive(show);if(!show || Time.time<next)return;next=Time.time+.15f;
-        var player=PlayerManager.Instance.Active;
+        var player=players.Active;
+        if(player==null)return;
         int w=map.width,h=map.height;
         var origin=dungeon.Cell(Vector2Int.zero);float cell=(dungeon.Cell(Vector2Int.right)-origin).x;
         int px=Mathf.RoundToInt((player.transform.position.x-origin.x)/cell),py=Mathf.RoundToInt((player.transform.position.z-origin.z)/cell);

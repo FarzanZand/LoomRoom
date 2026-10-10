@@ -21,9 +21,10 @@ public class DungeonLootDrop : MonoBehaviour
         var rng = new System.Random(seed);
         var drops = new List<LootSource.Drop>();
         if (carriedItem != null && (!InventoryManager.HasInstance || InventoryManager.Instance.CanDropLoot(carriedItem))) drops.Add(new LootSource.Drop(carriedItem,1));
-        if (table != null) drops.AddRange(table.RollDrops(rng,floorNumber,DungeonLootSource.Enemy));
         // Gold rolls after items so the item results match earlier seeds.
-        int gold = bonusGold + (table != null ? table.RollGold(rng,floorNumber,DungeonLootSource.Enemy) : 0);
+        var (items, tableGold) = Roll(table, rng, floorNumber, DungeonLootSource.Enemy);
+        drops.AddRange(items);
+        int gold = bonusGold + tableGold;
         if (CombatManager.HasInstance && CombatManager.Instance.lootableCorpses)
         {
             var corpse = GetComponent<DungeonCorpse>();
@@ -32,6 +33,13 @@ public class DungeonLootDrop : MonoBehaviour
             return;
         }
         Spill(drops, gold, transform.position, transform.parent);
+    }
+    // A table's items, then its gold, from one stream (nothing from no table).
+    public static (List<LootSource.Drop> items, int gold) Roll(LootSource table, System.Random rng, int floor, DungeonLootSource source)
+    {
+        if (table == null) return (new List<LootSource.Drop>(), 0);
+        var items = table.RollDrops(rng, floor, source);
+        return (items ?? new List<LootSource.Drop>(), table.RollGold(rng, floor, source));
     }
     public static void Spill(IReadOnlyList<LootSource.Drop> drops, int gold, Vector3 position, Transform parent)
     {

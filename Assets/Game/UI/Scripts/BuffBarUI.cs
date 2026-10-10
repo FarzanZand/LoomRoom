@@ -34,6 +34,8 @@ public class BuffBarUI : MonoBehaviour
 
     readonly List<Shown> shown = new();
     readonly Dictionary<object, int> bySource = new();
+    // Whole seconds each slot's timer shows, so its text is formatted only when that changes.
+    int[] slotSeconds;
 
     void Update()
     {
@@ -46,7 +48,12 @@ public class BuffBarUI : MonoBehaviour
             if (slot.root.activeSelf != on) slot.root.SetActive(on);
             if (!on) continue;
             if (slot.icon != null) { slot.icon.sprite = shown[i].icon; slot.icon.enabled = shown[i].icon != null; }
-            if (slot.timer != null) slot.timer.text = Format(shown[i].seconds);
+            if (slot.timer != null)
+            {
+                slotSeconds ??= new int[slots.Length];
+                int seconds = Mathf.CeilToInt(shown[i].seconds);
+                if (slotSeconds[i] != seconds || slot.timer.text.Length == 0) { slotSeconds[i] = seconds; slot.timer.text = Format(seconds); }
+            }
             if (slot.frame != null) slot.frame.color = shown[i].harmful ? debuffFrame : buffFrame;
         }
     }
@@ -75,9 +82,5 @@ public class BuffBarUI : MonoBehaviour
         }
     }
 
-    static string Format(float seconds)
-    {
-        int s = Mathf.CeilToInt(seconds);
-        return s >= 60 ? $"{s / 60}:{s % 60:00}" : $"{s}s";
-    }
+    static string Format(int s) => s >= 60 ? $"{s / 60}:{s % 60:00}" : $"{s}s";
 }

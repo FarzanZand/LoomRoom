@@ -48,19 +48,8 @@ public class DungeonRoomStyle : ScriptableObject
 
     public static DungeonRoomStyle Choose(DungeonStyleChoice[] choices, System.Random random)
     {
-        double total = 0;
-        if (choices == null) return null;
-        foreach (var choice in choices)
-            if (Eligible(choice)) total += choice.weight;
-        if (total <= 0) return null;
-        double roll = random.NextDouble() * total;
-        foreach (var choice in choices)
-        {
-            if (!Eligible(choice)) continue;
-            roll -= choice.weight;
-            if (roll < 0) return choice.style;
-        }
-        return null;
+        var pick = WeightedPick.Choose(choices, c => Eligible(c) ? c.weight : 0, random);
+        return pick != null ? pick.style : null;
     }
     static bool Eligible(DungeonStyleChoice choice) => choice != null && choice.style != null
         && choice.weight > 0 && !float.IsInfinity(choice.weight) && !float.IsNaN(choice.weight);

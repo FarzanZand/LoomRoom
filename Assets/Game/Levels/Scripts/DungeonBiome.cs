@@ -94,16 +94,7 @@ public class DungeonBiome : ScriptableObject
 
     public GameObject ChooseEnemy(System.Random random, int floorInBiome)
     {
-        float total = 0;
-        foreach (var s in enemies) if (s != null && s.enemy != null && s.weight > 0 && s.fromFloor <= floorInBiome) total += s.weight;
-        if (total <= 0) return null;
-        double roll = random.NextDouble() * total;
-        foreach (var s in enemies)
-        {
-            if (s == null || s.enemy == null || s.weight <= 0 || s.fromFloor > floorInBiome) continue;
-            roll -= s.weight;
-            if (roll < 0) return s.enemy;
-        }
-        return null;
+        var pick = WeightedPick.Choose(enemies, s => s != null && s.enemy != null && s.fromFloor <= floorInBiome ? s.weight : 0, random, singleTotal: true);
+        return pick != null ? pick.enemy : null;
     }
 }

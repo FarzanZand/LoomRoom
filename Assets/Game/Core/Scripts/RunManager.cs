@@ -39,6 +39,15 @@ public class RunManager : Singleton<RunManager>
     public string Killer { get; private set; }
     public bool Ended { get; private set; }
 
+    // A killer as a phrase: "a Crypt Soldier", "an Ogre"; phrases that already read as a noun ("the dungeon",
+    // "a curse") pass through. lowerName lower-cases a bare name, for the middle of a spoken line.
+    public static string KillerWithArticle(string killer, bool lowerName = false)
+    {
+        if (string.IsNullOrEmpty(killer)) return "the dungeon";
+        if (killer.StartsWith("the ") || killer.StartsWith("a ") || killer.StartsWith("an ")) return killer;
+        return ("aeiouAEIOU".IndexOf(killer[0]) >= 0 ? "an " : "a ") + (lowerName ? killer.ToLower() : killer);
+    }
+
     public event Action RunStarted;
     public event Action<bool> RunEnded; // victory
 
@@ -232,6 +241,7 @@ public class RunManager : Singleton<RunManager>
     void OnAnyDied(Character c)
     {
         if (!Running || Ended || c == null || c is Player || c.GetComponent<EnemyBrain>() == null) return;
+        if (player == null || c.LastDamage.Source != player) return; // only the player's kills count and give XP
         Kills++;
         var progress = player != null ? player.GetComponent<AdventurerProgress>() : null;
         if (progress == null || progress.rules == null) return;

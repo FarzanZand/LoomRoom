@@ -130,6 +130,10 @@ public class ItemData : ScriptableObject
 
     static readonly System.Collections.Generic.Dictionary<(ItemData, int), ItemData> honedCopies = new();
 
+    // Enter Play Mode without a domain reload keeps statics: drop the last session's copies.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetHonedCopies() => honedCopies.Clear();
+
     public ItemData Honed(int level)
     {
         var root = BaseItem;
@@ -176,16 +180,29 @@ public class ItemData : ScriptableObject
     bool UseUsesClip => IsConsumable && useAudioSource == ItemAudioSource.AudioClip;
     bool UseUsesKey => IsConsumable && useAudioSource == ItemAudioSource.AudioManagerKey;
 
-    public bool PlayPickupOverride()
+    // The pickup sound. The item's own clip or key always wins; otherwise sharedKey (InventoryManager's shared
+    // pickup sound, null when off) or the item's AudioData, else fallback (InventoryManager's default).
+    public void PlayPickupSound(string sharedKey, AudioData fallback)
     {
-        if (!AudioManager.HasInstance || pickupAudioSource == ItemAudioSource.AudioData) return false;
-        if (PickupUsesClip && pickupClip != null)
+        if (!AudioManager.HasInstance) return;
+        if (pickupAudioSource != ItemAudioSource.AudioData && PlayItemAudio(pickupAudioSource, null, pickupClip, pickupClipVolume, pickupAudioKey)) return;
+        if (!string.IsNullOrEmpty(sharedKey)) AudioManager.Instance.PlaySFX2D(sharedKey);
+        else PlayItemAudio(ItemAudioSource.AudioData, pickupAudio != null ? pickupAudio : fallback, null, 0f, null);
+    }
+
+    // One item sound (pickup or use) as its source says, in 2D. False when that source has nothing set.
+    static bool PlayItemAudio(ItemAudioSource source, AudioData data, AudioClip clip, float clipVolume, string key)
+    {
+        if (!AudioManager.HasInstance) return false;
+        switch (source)
         {
-            AudioManager.Instance.PlaySFX2D(pickupClip, Mathf.Clamp01(pickupClipVolume));
-            return true;
+            case ItemAudioSource.AudioData:
+                return data != null && AudioManager.Instance.PlaySFXData2D(data) != null;
+            case ItemAudioSource.AudioClip:
+                return clip != null && AudioManager.Instance.PlaySFX2D(clip, Mathf.Clamp01(clipVolume)) != null;
+            case ItemAudioSource.AudioManagerKey:
+                return !string.IsNullOrWhiteSpace(key) && AudioManager.Instance.PlaySFX2D(key.Trim()) != null;
         }
-        if (PickupUsesKey && !string.IsNullOrWhiteSpace(pickupAudioKey))
-            return AudioManager.Instance.PlaySFX2D(pickupAudioKey.Trim()) != null;
         return false;
     }
 
@@ -193,12 +210,7 @@ public class ItemData : ScriptableObject
     public void Use(Character user)
     {
         if (!IsConsumable) return;
-        if (AudioManager.HasInstance)
-        {
-            if (UseUsesData && useAudio != null) AudioManager.Instance.PlaySFXData2D(useAudio);
-            else if (UseUsesClip && useClip != null) AudioManager.Instance.PlaySFX2D(useClip, Mathf.Clamp01(useClipVolume));
-            else if (UseUsesKey && !string.IsNullOrWhiteSpace(useAudioKey)) AudioManager.Instance.PlaySFX2D(useAudioKey.Trim());
-        }
+        PlayItemAudio(useAudioSource, useAudio, useClip, useClipVolume, useAudioKey);
         if (user is Player p && p.kind == PlayerKind.Table)
             MessageLog.Post(string.IsNullOrWhiteSpace(useMessage) ? $"You use the {itemName}." : useMessage.Trim(), MessageKind.Info);
         ItemEffectProcessor.Fire(this, EffectTrigger.OnUse, EffectContext.For(user, this));
@@ -240,8 +252,10 @@ public class ItemData : ScriptableObject
         }
         Add(blocks, lines);
 
-        // Against the item worn in the same slot: every flat stat either item has.
-        var equipped = canBeEquipped && !IsConsumable && PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment?.Get(equipSlot) : null;
+        // Against the item it would replace (Equipment.SlotFor: a trinket goes to a free trinket slot first, so
+        // with one free there is nothing to compare): every flat stat either item has.
+        var gear = canBeEquipped && !IsConsumable && PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
+        var equipped = gear != null && !gear.IsEquipped(this) ? gear.Get(gear.SlotFor(this)) : null;
         if (equipped != null && equipped != this)
         {
             var stats = new System.Collections.Generic.List<StatType>();
@@ -261,6 +275,39 @@ public class ItemData : ScriptableObject
         }
         return string.Join("\n\n", blocks);
     }
+
+    // What kind of thing it is, in a few words (shop rows): "Helm, +1 armor", "Weapon, +6 damage", "Heals 6 over 6s".
+    public string ShortInfo()
+    {
+        string effect = null;
+        if (effects != null)
+            foreach (var e in effects) { effect = e?.Describe(); if (!string.IsNullOrWhiteSpace(effect)) break; }
+        if (IsConsumable) return effect ?? "";
+        string kind = spell != null ? "Spell tome"
+            : itemType == ItemType.Weapon ? "Weapon"
+            : itemType == ItemType.Shield ? "Shield"
+            : itemType == ItemType.Equipment ? SlotName(equipSlot)
+            : itemType.ToString();
+        string stat = null;
+        if (statModifiers != null)
+            foreach (var m in statModifiers)
+                if (m != null) { stat = StatLine(m.stat, m.type, m.value, BlockOnly(m.stat)); break; }
+        if (spell != null) stat = $"{spell.manaCost:0.#} mana";
+        stat ??= effect;
+        return string.IsNullOrWhiteSpace(stat) ? kind : $"{kind}, {stat}";
+    }
+
+    // The one name for each equipment slot (shop rows, tooltips, the equipment panel in capitals).
+    public static string SlotName(EquipmentSlot slot) => slot switch
+    {
+        EquipmentSlot.RightHand => "Mainhand",
+        EquipmentSlot.LeftHand => "Offhand",
+        EquipmentSlot.Head => "Helm",
+        EquipmentSlot.Body => "Armor",
+        EquipmentSlot.Legs => "Leggings",
+        EquipmentSlot.Trinket1 or EquipmentSlot.Trinket2 => "Trinket",
+        _ => slot.ToString(),
+    };
 
     static void Add(System.Collections.Generic.List<string> blocks, System.Collections.Generic.List<string> lines)
     {

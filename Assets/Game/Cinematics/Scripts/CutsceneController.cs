@@ -34,6 +34,8 @@ public class CutsceneController : MonoBehaviour
     protected virtual void OnDisable()
     {
         if (director != null) director.stopped -= OnDirectorStopped;
+        // Disabled mid-cutscene: pop the Cutscene state and drop the camera as if it had ended.
+        if (IsPlaying) Finish();
     }
 
     public virtual void Play()

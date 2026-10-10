@@ -39,7 +39,7 @@ public sealed class TableLevelReveal : MonoBehaviour
     public IEnumerator Play(DungeonGenerator generated, TableLevelRevealSettings settings, System.Action beginEntry = null)
     {
         dungeon = generated;
-        output = PlayerManager.Instance.OutputCamera;
+        output = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
         if (dungeon == null || output == null || settings == null) yield break;
         IsPlaying = true;
         try
@@ -170,9 +170,9 @@ public sealed class TableLevelReveal : MonoBehaviour
                 foreach (var renderer in tablePlayer.ViewPresentation.GetComponentsInChildren<Renderer>(true))
                 { handRenderers.Add((renderer, renderer.forceRenderingOff)); renderer.forceRenderingOff = true; }
             yield return null;
-            tablePlayer.Combat?.PrepareEquippedPose();
+            if (tablePlayer.Combat != null) tablePlayer.Combat.PrepareEquippedPose();
             entryHands = tablePlayer.ViewPresentation;
-            entryHands?.FollowTransitionCamera(output, 0);
+            if (entryHands != null) entryHands.FollowTransitionCamera(output, 0);
             var targetCamera = tablePlayer.CameraRig.Camera;
             targetCamera.InternalUpdateCameraState(Vector3.up, -1);
             var target = targetCamera.State;
@@ -186,10 +186,10 @@ public sealed class TableLevelReveal : MonoBehaviour
             RestoreCeilings();
             // The loadout is ready, but belongs only to the dungeon POV. Reveal it at
             // the destination, never attached to the room camera during the flight.
-            entryHands?.FollowTransitionCamera(output, 0);
+            if (entryHands != null) entryHands.FollowTransitionCamera(output, 0);
             foreach (var entry in handRenderers) if (entry.renderer != null) entry.renderer.forceRenderingOff = entry.forcedOff;
             // Discard residual smoothing before handing control back.
-            tablePlayer.Look?.ResetInput();
+            if (tablePlayer.Look != null) tablePlayer.Look.ResetInput();
             completed = true;
         }
         finally { Restore(); }
@@ -273,7 +273,7 @@ public sealed class TableLevelReveal : MonoBehaviour
         if (settings.lineMaterial == null) return;
         blueprint = new GameObject("Dungeon blueprint"); blueprint.transform.SetParent(transform, false);
         var layout = dungeon.Layout; float half = dungeon.LevelData.cellSize * .5f;
-        var directions = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
+        var directions = DungeonLayout.Neighbours;
         // Outline the actual floor perimeter, including the routed corridors.
         for (int x = 0; x < layout.floor.GetLength(0); x++) for (int y = 0; y < layout.floor.GetLength(1); y++)
         {
@@ -303,6 +303,7 @@ public sealed class TableLevelReveal : MonoBehaviour
         line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; line.receiveShadows = false;
         if (fade) outlines.Add(line);
     }
+    // Safe to call more than once (the coroutine's finally, then OnDisable): every list is emptied.
     void Restore()
     {
         RestorePieces();
@@ -316,6 +317,7 @@ public sealed class TableLevelReveal : MonoBehaviour
         StopSound();
         if (blueprint != null) Destroy(blueprint);
         if (dust != null) Destroy(dust.gameObject);
+        blueprint = null; dust = null;
         if (captured && output != null)
         {
             output.orthographic = orthographic; output.orthographicSize = size;
@@ -328,7 +330,7 @@ public sealed class TableLevelReveal : MonoBehaviour
         if (captured && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind != PlayerKind.Table) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Table);
         RestoreCeilings();
         if (dungeon != null) dungeon.ShowCeilings(true);
-        pieces.Clear(); actors.Clear(); lights.Clear(); outlines.Clear(); captured = false; IsPlaying = false;
+        pieces.Clear(); actors.Clear(); lights.Clear(); effects.Clear(); outlines.Clear(); captured = false; IsPlaying = false;
     }
     void OnDisable() => Restore();
 }

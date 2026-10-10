@@ -20,7 +20,7 @@ public class AdventurerProgress : MonoBehaviour
     // Skill, awarded XP, previous fraction, resulting fraction, ranks gained.
     public event Action<AdventureSkill, float, float, float, int> SkillExperienceGained;
     public float SkillProgress(AdventureSkill skill) => Rank(skill) >= 100 ? 1 : SkillExperience[(int)skill] / (Definition(skill)?.ExperienceRequired(Rank(skill)) ?? 100);
-    public int[] Growth { get; private set; } = new int[6];
+    public int[] Growth { get; private set; } = new int[StatNames.Length];
     public float NextLevelXp => rules != null ? rules.levelXp + (Level - 1) * rules.levelXpGrowth : 100;
     public bool InRun => RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;
 
@@ -154,7 +154,7 @@ public class AdventurerProgress : MonoBehaviour
     {
         if (rules == null || rules.classes == null || rules.classes.Length == 0) return;
         if (selectedClass == null || !selectedClass.Unlocked) selectedClass = rules.classes[0];
-        Level = 1; Experience = 0; Growth = new int[6];
+        Level = 1; Experience = 0; Growth = new int[StatNames.Length];
         SkillExperience = new float[AdventureSkills.Count];
         Ranks = new int[AdventureSkills.Count];
         foreach (var skill in AdventureSkills.All) Ranks[(int)skill] = selectedClass.StartingRank(skill);
@@ -182,7 +182,7 @@ public class AdventurerProgress : MonoBehaviour
         float health = stats.CurrentHealth, mana = stats.CurrentMana, stamina = stats.CurrentStamina;
         stats.RemoveAllFromSource(source);
         void Add(StatType stat, float value, ModifierType kind = ModifierType.Flat) => stats.AddModifier(new StatModifier(stat, value, kind, source));
-        for (int i = 0; i < 6; i++) Add(StatType.Strength + i, (i < selectedClass.attributes.Length ? selectedClass.attributes[i] : 0) + Growth[i]);
+        for (int i = 0; i < StatNames.Length; i++) Add(StatType.Strength + i, (i < selectedClass.attributes.Length ? selectedClass.attributes[i] : 0) + Growth[i]);
         Add(StatType.MaxHealth, selectedClass.health - stats.GetBase(StatType.MaxHealth) + (Level - 1) * rules.healthPerLevel);
         Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + (Level - 1) * rules.manaPerLevel);
         // Legendary Athletics: a deeper well of stamina.
@@ -268,7 +268,7 @@ public class AdventurerProgress : MonoBehaviour
             SkillExperience[i] = Ranks[i] >= 100 || float.IsNaN(value) || float.IsInfinity(value) ? 0 : Mathf.Clamp(value, 0, (Definition((AdventureSkill)i)?.ExperienceRequired(Ranks[i]) ?? 100) - .001f);
         }
         taught.Clear();
-        Growth = growth != null && growth.Length == 6 ? growth : new int[6];
+        Growth = growth != null && growth.Length == StatNames.Length ? growth : new int[StatNames.Length];
         ApplyStats();
     }
 }

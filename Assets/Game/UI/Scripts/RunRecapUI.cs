@@ -48,7 +48,7 @@ public class RunRecapUI : MonoBehaviour
         if (cause != null)
             cause.text = (string.IsNullOrEmpty(s.adventurer) ? "" : $"<color=#A3A3A3>{s.adventurer}</color>\n") + (s.victory
                 ? $"You conquered {s.levelName}."
-                : $"Killed by {Article(s.killer)} on floor {s.floor} of {s.levelName}.");
+                : $"Killed by {RunManager.KillerWithArticle(s.killer)} on floor {s.floor} of {s.levelName}.");
         if (stats != null)
             stats.text = $"Floor reached  <b>{s.floor}</b> / {s.floors}\n" +
                          $"Enemies slain  <b>{s.kills}</b>\n" +
@@ -81,14 +81,6 @@ public class RunRecapUI : MonoBehaviour
             rect.anchoredPosition = wakes ? new Vector2(0f, returnPosition.Value.y) : returnPosition.Value;
         }
         (wakes ? returnButton : newRunButton)?.Select();
-    }
-
-    // "a Crypt Soldier", "an Ogre"; phrases that already read as a noun ("the dungeon", "a curse") pass through.
-    static string Article(string killer)
-    {
-        if (string.IsNullOrEmpty(killer)) return "the dungeon";
-        if (killer.StartsWith("the ") || killer.StartsWith("a ") || killer.StartsWith("an ")) return killer;
-        return ("aeiouAEIOU".IndexOf(killer[0]) >= 0 ? "an " : "a ") + killer;
     }
 
     public void Hide()

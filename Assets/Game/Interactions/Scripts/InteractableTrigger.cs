@@ -41,15 +41,20 @@ public class InteractableTrigger : MonoBehaviour
     WorldItem worldItem;
     Collider targetCollider;
     Renderer[] itemRenderers;
+    float nextRendererLookup;
     float readyAt;
     public WorldItem WorldItem => worldItem;
     public Bounds TargetBounds
     {
         get
         {
-            // Visuals may be spawned by WorldItem.Start after this component's Awake.
-            if (worldItem != null && (itemRenderers == null || itemRenderers.Length == 0))
+            // Visuals may be spawned by WorldItem.Start after this component's Awake: look again while there
+            // are none, a few times a second rather than on every query.
+            if (worldItem != null && (itemRenderers == null || itemRenderers.Length == 0) && Time.unscaledTime >= nextRendererLookup)
+            {
                 itemRenderers = worldItem.GetComponentsInChildren<Renderer>();
+                nextRendererLookup = Time.unscaledTime + .25f;
+            }
             bool found = false;
             Bounds result = new(transform.position, Vector3.zero);
             if (itemRenderers != null)
@@ -62,6 +67,11 @@ public class InteractableTrigger : MonoBehaviour
             return found ? result : targetCollider != null ? targetCollider.bounds : result;
         }
     }
+    // Cheap reach test before the full scoring: the trigger collider (which encloses the item) within distance
+    // of point. True when there is no enabled collider to measure.
+    public bool RoughlyWithin(Vector3 point, float distance) =>
+        targetCollider == null || !targetCollider.enabled || targetCollider.bounds.SqrDistance(point) <= distance * distance;
+
     // Hits on these never block the line of sight to this trigger: its own object, and the whole
     // character it belongs to (an NPC's body stands between the eye and its interaction sphere up close).
     public bool Owns(Transform other)

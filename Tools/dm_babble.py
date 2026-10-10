@@ -3,6 +3,10 @@
 A low, slightly hoarse old voice. Glottal pulses with jitter and breath, three time-varying
 formant resonators gliding between vowel targets, soft consonants (nasals, liquids, light plosives,
 breathy h), falling sentence pitch, short room tail. Written as 16-bit mono WAVs.
+
+Usage: python Tools/dm_babble.py <out_dir> [seed] [voice|all]
+Voices (see VOICES): old (the original), soft, whisper, deep, quick, gravel. "old" writes
+"DM babble N.wav"; the others "DM babble <Voice> N.wav".
 """
 import sys, os, wave
 import numpy as np
@@ -10,6 +14,26 @@ from scipy.signal import butter, sosfilt
 
 SR = 44100
 rng = np.random.default_rng(int(sys.argv[2]) if len(sys.argv) > 2 else 7)
+
+# Voice presets. Anything left out uses the "old" value.
+VOICES = {
+    # The original: a low, slightly hoarse old voice.
+    "old": dict(pitch=(98, 108), formant=1.0, speed=1.0, voicing=1.0, breath=.025, whisper=0.0,
+                open_q=.62, lowpass=4200, drive=1.3, peak=.8, jitter=.006, shimmer=.05, fry=0.0,
+                wobble=1.0, fall=.84, room=1.0),
+    # Quieter and rounder: a gentle murmur, fewer high harmonics, more air, no grit.
+    "soft": dict(pitch=(94, 102), open_q=.8, breath=.06, lowpass=2400, drive=.6, peak=.5, speed=1.12,
+                 shimmer=.03, wobble=.6, fall=.88),
+    # No voice at all: breath shaped by the mouth.
+    "whisper": dict(voicing=0.0, whisper=.9, breath=.0, lowpass=5500, drive=.8, peak=.45, room=.8),
+    # Lower and slower, a bigger chest.
+    "deep": dict(pitch=(72, 80), formant=.88, speed=1.15, lowpass=3400, fall=.8, room=1.2),
+    # Higher and quicker, chattering.
+    "quick": dict(pitch=(132, 148), formant=1.1, speed=.68, lowpass=5000, peak=.7, room=.5, fall=.9),
+    # Low and rough: uneven pulses, a creaky edge and more grit.
+    "gravel": dict(pitch=(84, 92), jitter=.02, shimmer=.14, fry=.35, drive=2.2, peak=.75, breath=.04),
+}
+V = dict(VOICES["old"])
 
 # Vowel formant targets (F1, F2, F3) for an older male voice, slightly lowered.
 VOWELS = {
@@ -40,10 +64,10 @@ def plan(length):
     while t < length - .18:
         c = pick(CONS_WEIGHTS)
         kind, locus, dur = CONS[c]
-        dur *= rng.uniform(.8, 1.25)
+        dur *= rng.uniform(.8, 1.25) * V["speed"]
         segs.append((kind, locus, dur, .0))
         v = pick(VOWEL_WEIGHTS)
-        vd = rng.uniform(.085, .15)
+        vd = rng.uniform(.085, .15) * V["speed"]
         word_left -= 1
         stress = 1.0 if word_left == 0 or rng.random() < .3 else .82
         if word_left == 0:
@@ -53,7 +77,7 @@ def plan(length):
         if word_left == 0:
             word_left = rng.integers(1, 4)
             # a short dip between words, not silence
-            gap = rng.uniform(.03, .07)
+            gap = rng.uniform(.03, .07) * V["speed"]
             segs.append(("gap", None, gap, 0.0)); t += gap
     return segs
 
@@ -90,7 +114,7 @@ def phrase(length, base_pitch):
         m = int(dur * SR); sl = slice(i, min(n, i + m))
         target = form if form is not None else last
         for k in range(3):
-            f[k, sl] = target[k]
+            f[k, sl] = target[k] * V["formant"]
         if kind == "vowel":
             amp[sl] = stress; voiced[sl] = 1; noise_amp[sl] = .05; accent[sl] = stress - .82; last = form
         elif kind == "nasal":
@@ -115,37 +139,39 @@ def phrase(length, base_pitch):
 
     # Pitch: falling sentence line, accents on stressed vowels, slow wobble, jitter.
     t = np.arange(n) / SR
-    decl = np.interp(t, [0, end / SR * .15, end / SR], [1.06, 1.0, .84])
-    wobble = 1 + .012 * np.sin(2 * np.pi * 4.8 * t + rng.uniform(0, 6)) + .02 * np.sin(2 * np.pi * .7 * t + rng.uniform(0, 6))
+    decl = np.interp(t, [0, end / SR * .15, end / SR], [1.06, 1.0, V["fall"]])
+    wobble = 1 + V["wobble"] * (.012 * np.sin(2 * np.pi * 4.8 * t + rng.uniform(0, 6)) + .02 * np.sin(2 * np.pi * .7 * t + rng.uniform(0, 6)))
     f0 = base_pitch * decl * wobble * (1 + .5 * accent)
-    f0 *= 1 + smooth(rng.normal(0, .006, n), 3)
+    f0 *= 1 + smooth(rng.normal(0, V["jitter"], n), 3)
     phase = np.cumsum(f0 / SR)
     # Rosenberg-like glottal pulse from the phase, softened (an old, breathy voice).
     p = phase % 1.0
-    open_q = .62
+    open_q = V["open_q"]
     pulse = np.where(p < open_q * .7, .5 * (1 - np.cos(np.pi * p / (open_q * .7))),
                      np.where(p < open_q, np.cos(.5 * np.pi * (p - open_q * .7) / (open_q * .3)), 0.0))
     glottal = np.diff(pulse, prepend=0.0) * 40
-    shimmer = 1 + smooth(rng.normal(0, .05, n), 4)
+    # Vocal fry: every other pulse weaker, which halves the heard pitch into a creak.
+    glottal *= 1 - V["fry"] * (np.floor(phase) % 2)
+    shimmer = 1 + smooth(rng.normal(0, V["shimmer"], n), 4)
     breath = rng.normal(0, 1, n)
     breath = sosfilt(butter(2, [500, 6000], "bandpass", fs=SR, output="sos"), breath)
-    source = glottal * voiced * shimmer + breath * (noise_amp + .025 * voiced)
+    source = glottal * voiced * shimmer * V["voicing"] + breath * (noise_amp + (V["breath"] + V["whisper"]) * voiced)
 
     out = np.zeros(n)
     for k, bw, g in ((0, 90, 1.0), (1, 120, .55), (2, 170, .28)):
         out += g * resonator(source, f[k], bw)
     out *= amp
     # A breathy hum under it: the chest, and a nasal low formant.
-    out += .12 * resonator(source * amp, np.full(n, 260.0), 70)
+    out += .12 * resonator(source * amp, np.full(n, 260.0 * V["formant"]), 70)
 
     out = sosfilt(butter(2, 90, "highpass", fs=SR, output="sos"), out)
-    out = sosfilt(butter(3, 4200, "lowpass", fs=SR, output="sos"), out)
+    out = sosfilt(butter(3, V["lowpass"], "lowpass", fs=SR, output="sos"), out)
     # Short wooden room: a few early reflections and a soft tail.
     tail_n = int(.32 * SR)
     ir = np.zeros(tail_n); ir[0] = 1
     for d, g in ((.011, .22), (.019, .16), (.027, .12), (.041, .09)):
-        ir[int(d * SR)] += g
-    ir += rng.normal(0, 1, tail_n) * np.exp(-np.arange(tail_n) / (SR * .07)) * .03
+        ir[int(d * SR)] += g * V["room"]
+    ir += rng.normal(0, 1, tail_n) * np.exp(-np.arange(tail_n) / (SR * .07 * V["room"])) * .03 * V["room"]
     out = np.convolve(out, ir)[:n]
     # Fade in and out, normalise, gentle saturation for warmth.
     fade_in = int(.015 * SR); fade_out = int(.12 * SR)
@@ -153,8 +179,8 @@ def phrase(length, base_pitch):
     stop = min(n, end + int(.12 * SR)); env[stop - fade_out:stop] *= np.linspace(1, 0, fade_out) ** 2; env[stop:] = 0
     out = out[:stop] * env[:stop]
     out /= np.max(np.abs(out)) + 1e-9
-    out = np.tanh(out * 1.3) / np.tanh(1.3)
-    return out * .8
+    out = np.tanh(out * V["drive"]) / np.tanh(V["drive"])
+    return out * V["peak"]
 
 
 def write(path, x):
@@ -163,11 +189,19 @@ def write(path, x):
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes(data.tobytes())
 
 
-if __name__ == "__main__":
-    out_dir = sys.argv[1]
+def generate(out_dir, voice):
+    V.clear(); V.update(VOICES["old"]); V.update(VOICES[voice])
     lengths = [.7, .9, 1.1, 1.35, 1.6, 1.9, 2.3, 2.8]
+    name = "DM babble" if voice == "old" else f"DM babble {voice.capitalize()}"
     for k, L in enumerate(lengths, 1):
-        x = phrase(L, base_pitch=rng.uniform(98, 108))
-        path = os.path.join(out_dir, f"DM babble {k}.wav")
+        x = phrase(L, base_pitch=rng.uniform(*V["pitch"]))
+        path = os.path.join(out_dir, f"{name} {k}.wav")
         write(path, x)
         print(path, round(len(x) / SR, 2))
+
+
+if __name__ == "__main__":
+    out_dir = sys.argv[1]
+    voice = sys.argv[3] if len(sys.argv) > 3 else "old"
+    for v in (VOICES if voice == "all" else [voice]):
+        generate(out_dir, v)

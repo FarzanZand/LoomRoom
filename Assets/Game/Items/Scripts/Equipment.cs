@@ -28,6 +28,7 @@ public class Equipment : MonoBehaviour
     public Character Character { get; private set; }
 
     static readonly EquipmentSlot[] AllSlots = (EquipmentSlot[])Enum.GetValues(typeof(EquipmentSlot));
+    static readonly EquipmentSlot[] HandSlots = { EquipmentSlot.RightHand, EquipmentSlot.LeftHand };
 
     readonly Dictionary<EquipmentSlot, ItemData>   items   = new();
     readonly Dictionary<EquipmentSlot, GameObject> objects = new();
@@ -52,7 +53,7 @@ public class Equipment : MonoBehaviour
         {
             // Resolve after inventory transfers finish so swaps cannot leave ghost equipment.
             // Only hands: worn items are held by Equipment itself, not the bag.
-            foreach (var slot in new[] { EquipmentSlot.RightHand, EquipmentSlot.LeftHand })
+            foreach (var slot in HandSlots)
             {
                 var item = Get(slot);
                 if (item != null && owner.Hotbar.IndexOf(item) < 0) Unequip(slot);
@@ -90,8 +91,8 @@ public class Equipment : MonoBehaviour
     public bool     Has(EquipmentSlot slot) => items.ContainsKey(slot);
     public bool     IsEquipped(ItemData item) => item != null && (Get(item.equipSlot) == item || IsTrinket(item.equipSlot) && (Get(EquipmentSlot.Trinket1) == item || Get(EquipmentSlot.Trinket2) == item));
     public static bool IsTrinket(EquipmentSlot slot) => slot == EquipmentSlot.Trinket1 || slot == EquipmentSlot.Trinket2;
-    // Trinkets fit either trinket slot: the first free one, else the first.
-    EquipmentSlot SlotFor(ItemData item)
+    // The slot Equip puts an item in. Trinkets fit either trinket slot: the first free one, else the first.
+    public EquipmentSlot SlotFor(ItemData item)
     {
         if (!IsTrinket(item.equipSlot)) return item.equipSlot;
         return !Has(EquipmentSlot.Trinket1) ? EquipmentSlot.Trinket1 : !Has(EquipmentSlot.Trinket2) ? EquipmentSlot.Trinket2 : EquipmentSlot.Trinket1;
@@ -164,6 +165,21 @@ public class Equipment : MonoBehaviour
     }
 
     public ItemData Unequip(EquipmentSlot slot) => Unequip(slot, true);
+
+    // A player taking something off by hand (the equipment panel): a worn item needs room in the bag or
+    // hotbar, otherwise it stays on and the player is told. Unequip(slot) instead drops it at the player's
+    // feet when the pack is full, which Equip relies on when swapping and consuming held items.
+    public bool TryUnequip(EquipmentSlot slot)
+    {
+        var item = Get(slot);
+        if (item == null) return false;
+        if (!IsHand(slot) && Character is Player owner && !(owner.Bag != null && owner.Bag.HasRoomFor(item)) && !(owner.Hotbar != null && owner.Hotbar.HasRoomFor(item)))
+        {
+            NotificationUI.Show("Make room in your inventory first");
+            return false;
+        }
+        return Unequip(slot) != null;
+    }
 
     // toBag: a worn item returns to the bag, or drops at the player's feet when it is full.
     ItemData Unequip(EquipmentSlot slot, bool toBag)

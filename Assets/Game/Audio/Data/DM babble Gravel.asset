@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM babble Gravel
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 8cee7e7660c96594d8d67008a41143a2, type: 3}
+  - {fileID: 8300000, guid: d691652666196394c9ba7fc6aa059257, type: 3}
+  - {fileID: 8300000, guid: 267ae989c1ea56d43b2adfd9771120cb, type: 3}
+  - {fileID: 8300000, guid: c436c18ce2d04b14198d09babc2df304, type: 3}
+  - {fileID: 8300000, guid: 76b7d2ee0dfd83c48aa3bf80e2b2ec93, type: 3}
+  - {fileID: 8300000, guid: 8a11829264a9c374eb767d5cac0646dc, type: 3}
+  - {fileID: 8300000, guid: 8a705db0cf23aab41abafe4e4ca9a49d, type: 3}
+  - {fileID: 8300000, guid: 85070bc050b43af4db6fcfa76edf9960, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.04
+  minDistance: 1
+  maxDistance: 500

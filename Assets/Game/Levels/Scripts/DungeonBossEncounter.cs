@@ -14,9 +14,6 @@ public class DungeonBossEncounter : MonoBehaviour
     DungeonExit exit;
     bool started, finished;
 
-    public Character Boss => boss;
-    public bool Started => started;
-
     public void Initialize(DungeonGenerator generator, DungeonMilestone data, Character bossCharacter, int arenaRoom, DungeonExit sealedExit)
     {
         dungeon = generator; milestone = data; boss = bossCharacter; room = arenaRoom; exit = sealedExit;
@@ -46,7 +43,7 @@ public class DungeonBossEncounter : MonoBehaviour
         var cell = dungeon.CellOf(player.transform.position);
         var layout = dungeon.Layout;
         if (!layout.InRoom(room, cell)) return;
-        foreach (var d in new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down })
+        foreach (var d in DungeonLayout.Neighbours)
         {
             var n = cell + d;
             if (layout.InBounds(n) && layout.floor[n.x, n.y] && !layout.InRoom(room, n)) return;
@@ -72,7 +69,7 @@ public class DungeonBossEncounter : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.introMessage.Trim(), MessageKind.Warning);
         MessageLog.Post($"The {boss.DisplayName} awakens!", MessageKind.Bad);
         if (NotificationUI.HasInstance) NotificationUI.Show(boss.DisplayName.ToUpperInvariant());
-        brain?.Alert();
+        if (brain != null) brain.Alert();
     }
 
     void OnBossDied()

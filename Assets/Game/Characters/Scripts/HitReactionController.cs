@@ -54,7 +54,7 @@ public class HitReactionController : MonoBehaviour
     }
     void OnDamaged(DamageInfo hit)
     {
-        bool heavy = hit.Heavy && character.GetComponent<EnemyBrain>() != null && Tuning != null;
+        bool heavy = hit.Heavy && character.IsEnemy && Tuning != null;
         if (character.IsAlive && !hit.Blocked && hit.Amount > 0)
             ReactToHit(hit.HitPoint, hit.Direction, heavy ? Tuning.heavyRecoilMultiplier : 1f,
                 heavy ? Tuning.heavyRecoilDurationMultiplier : 1f);
@@ -78,14 +78,20 @@ public class HitReactionController : MonoBehaviour
             if (axis.sqrMagnitude < .0001f) axis=Vector3.Cross(Vector3.up,direction);
             if (axis.sqrMagnitude < .0001f) axis=closest.right;
             float angle=Mathf.Clamp((Tuning != null ? Tuning.hitReactionAngle : reactionAngle)*intensity,0,45)*strength;
-            var reaction=reactions.Find(r=>r.bone==closest);
-            if (reaction==null) { reaction=new Reaction{bone=closest};reactions.Add(reaction); }
+            var reaction = Find(closest);
+            if (reaction == null) { reaction = new Reaction { bone = closest }; reactions.Add(reaction); }
             reaction.durationScale = Mathf.Max(1f, durationScale);
             reaction.target=Quaternion.RotateTowards(Quaternion.identity,Quaternion.AngleAxis(angle,axis.normalized)*reaction.target,angle);
             strength*=Mathf.Clamp01(Tuning != null ? Tuning.hitReactionParentFalloff : parentFalloff);
             closest=closest.parent;
         }
     }
+    Reaction Find(Transform bone)
+    {
+        foreach (var r in reactions) if (r.bone == bone) return r;
+        return null;
+    }
+
     static void Restore(Reaction r)
     {
         // Restore only our own last pose; never overwrite a newly evaluated Animator pose.

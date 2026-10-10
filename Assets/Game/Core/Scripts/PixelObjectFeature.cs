@@ -35,6 +35,8 @@ public class PixelObjectFeature : ScriptableRendererFeature
             composite = CoreUtils.CreateEngineMaterial(compositeShader);
         }
         pass.composite = composite;
+        // The depth seed reads cameraDepthTexture; ask URP for it so it exists without SSAO's prepass.
+        pass.ConfigureInput(ScriptableRenderPassInput.Depth);
         renderer.EnqueuePass(pass);
     }
 

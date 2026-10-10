@@ -12,8 +12,8 @@ using UnityEngine.AI;
 //   Spacing — inside attack range while the attack recharges: hold a preferred
 //             distance and circle sideways, always facing the target. Never stand and pivot.
 //   Attack  — plant, keep tracking the target during the windup, then commit. The
-//             player's hits never interrupt a swing (stuns are a separate, future thing).
-//   Recover — a short pause after the swing, still turning toward the target.
+//             player's hits never interrupt a swing; a heavy hit's stagger waits for it to end.
+//   Recover — a short pause after the swing (or a stagger), still turning toward the target.
 [RequireComponent(typeof(Character))]
 [RequireComponent(typeof(EnemyMotor))]
 [RequireComponent(typeof(Perception))]
@@ -58,7 +58,14 @@ public class EnemyBrain : MonoBehaviour
     }
 
     // The enemy's own data (stored inside its prefab). Null if the Character holds another kind.
-    public EnemyData Data => Character != null ? Character.data as EnemyData : GetComponent<Character>()?.data as EnemyData;
+    public EnemyData Data
+    {
+        get
+        {
+            var character = Character != null ? Character : GetComponent<Character>();
+            return character != null ? character.data as EnemyData : null;
+        }
+    }
 
     public EnemyBehaviourSettings Profile =>
         overrideBehaviour ? localBehaviour
@@ -100,7 +107,9 @@ public class EnemyBrain : MonoBehaviour
     // Attacks
     EnemyAttackRunner attackRunner;
     float recoveryUntil, staggerImmuneUntil;
+    bool  simulationPaused;
     CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
+    float ChaseSpeed => Profile.useChaseSpeed ? Profile.chaseSpeed : Motor.DefaultSpeed;
     public bool CanOpenHitbox => attackRunner != null && attackRunner.CanOpenHitbox;
     public bool IsSwinging    => attackRunner != null && attackRunner.IsSwinging;
     internal WeaponAnimationRelay AttackRelay => attackRelay;
@@ -139,7 +148,11 @@ public class EnemyBrain : MonoBehaviour
     }
 
     // Enabled brains, for cheap scans (stealth training, the seen indicator).
-    public static readonly System.Collections.Generic.List<EnemyBrain> Active = new();
+    public static readonly List<EnemyBrain> Active = new();
+
+    // Enter Play Mode without a domain reload keeps statics: drop last session's brains.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() => Active.Clear();
 
     void OnEnable()
     {
@@ -165,7 +178,7 @@ public class EnemyBrain : MonoBehaviour
         SetState(Profile.defaultState);
     }
 
-    // The data's melee attacks, plus the bow shot for archers.
+    // The data's melee attacks, plus the bow shot for archers (that list is built once per frame).
     internal List<EnemyAttack> Attacks
     {
         get
@@ -173,14 +186,21 @@ public class EnemyBrain : MonoBehaviour
             var data = Data;
             if (data == null) return emptyAttacks;
             if (!data.archer) return data.attacks;
-            withBow.Clear();
-            withBow.AddRange(data.attacks);
-            withBow.Add(data.archery.Shot);
+            if (withBowFrame != Time.frameCount || withBowData != data)
+            {
+                withBowFrame = Time.frameCount;
+                withBowData = data;
+                withBow.Clear();
+                withBow.AddRange(data.attacks);
+                withBow.Add(data.archery.Shot);
+            }
             return withBow;
         }
     }
     static readonly List<EnemyAttack> emptyAttacks = new();
     readonly List<EnemyAttack> withBow = new();
+    int withBowFrame = -1;
+    EnemyData withBowData;
 
     float MaxAttackRange
     {
@@ -205,27 +225,24 @@ public class EnemyBrain : MonoBehaviour
         if (State == EnemyState.Dead) return;
         if (GameManager.HasInstance && !GameManager.Instance.SimulationActive)
         {
-            CancelAttack(); Motor.Stop(); Motor.ClearLookTarget(); return;
+            // Once per pause: a swing in progress is dropped (and its cooldown starts), the enemy stands still.
+            if (!simulationPaused)
+            {
+                simulationPaused = true;
+                attackRunner?.CancelForPause();
+                Motor.Stop();
+                Motor.ClearLookTarget();
+            }
+            return;
         }
+        simulationPaused = false;
 
         Perception.Profile = Profile;
         Perception.Tick(State == EnemyState.Chase || State == EnemyState.Attack);
         Motor.SuppressKnockback = IsSwinging;
         attackRunner.Tick();
 
-        // Personal space: an enemy that is not swinging never stands inside its target; it steps back out.
-        if (State == EnemyState.Chase && !IsSwinging && Perception.Target != null && Tuning != null)
-        {
-            Vector3 away = transform.position - Perception.Target.transform.position; away.y = 0f;
-            if (away.magnitude < Tuning.personalSpace && away.sqrMagnitude > .0001f)
-            {
-                Motor.Strafe(away.normalized, (Profile.useChaseSpeed ? Profile.chaseSpeed : Motor.DefaultSpeed) * Profile.spacingSpeedFraction);
-                Motor.LookAt(Perception.Target.transform.position, Profile.attackFaceSpeed);
-                UpdateAnimator();
-                return;
-            }
-        }
-
+        // Recovering or staggered: stand still, even inside the target's personal space.
         if (Time.time < recoveryUntil)
         {
             // Catch breath, but keep the eyes on the target so the next move is instant.
@@ -235,6 +252,19 @@ public class EnemyBrain : MonoBehaviour
                 Motor.LookAt(Perception.Target.transform.position, Profile.attackFaceSpeed);
             UpdateAnimator();
             return;
+        }
+
+        // Personal space: an enemy that is not swinging never stands inside its target; it steps back out.
+        if (State == EnemyState.Chase && !IsSwinging && Perception.Target != null && Tuning != null)
+        {
+            Vector3 away = transform.position - Perception.Target.transform.position; away.y = 0f;
+            if (away.magnitude < Tuning.personalSpace && away.sqrMagnitude > .0001f)
+            {
+                Motor.Strafe(away.normalized, ChaseSpeed * Profile.spacingSpeedFraction);
+                Motor.LookAt(Perception.Target.transform.position, Profile.attackFaceSpeed);
+                UpdateAnimator();
+                return;
+            }
         }
 
         if (handlers.TryGetValue(State, out var handler)) handler?.Invoke();
@@ -254,7 +284,7 @@ public class EnemyBrain : MonoBehaviour
         // A stagger is followed by a moment it can't be staggered again (CombatManager.enemyStaggerImmunity).
         if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null && Time.time >= staggerImmuneUntil)
         {
-            var trainee = info.Source != null ? info.Source.GetComponent<AdventurerProgress>() : null;
+            var trainee = info.Source != null ? info.Source.Adventurer : null;
             float duration = Tuning.heavyStaggerDuration * (trainee != null ? trainee.StaggerMultiplier(info.Weapon) : 1);
             if (IsSwinging) attackRunner.QueueStagger(duration);
             else            BeginRecovery(duration);
@@ -418,9 +448,8 @@ public class EnemyBrain : MonoBehaviour
         {
             // Target is off the mesh (on a prop, mid-jump): walk straight at it along the mesh
             // instead of pathing to some unrelated nearest point.
-            float chaseSpeed = p.useChaseSpeed ? p.chaseSpeed : Motor.DefaultSpeed;
             Vector3 toTarget = targetPos - transform.position; toTarget.y = 0f;
-            Motor.Strafe(toTarget, chaseSpeed);
+            Motor.Strafe(toTarget, ChaseSpeed);
         }
         if (dist < MaxAttackRange * 2.5f) Motor.LookAt(targetPos, p.attackFaceSpeed);
         else Motor.ClearLookTarget();
@@ -432,7 +461,7 @@ public class EnemyBrain : MonoBehaviour
         var p = Profile;
         Motor.LookAt(targetPos, p.attackFaceSpeed);
 
-        float chaseSpeed = p.useChaseSpeed ? p.chaseSpeed : Motor.DefaultSpeed;
+        float chaseSpeed = ChaseSpeed;
         float preferred  = PreferredDistance;
         Vector3 toTarget = targetPos - transform.position; toTarget.y = 0f;
         if (toTarget.sqrMagnitude < 0.0001f) toTarget = transform.forward;
@@ -594,7 +623,7 @@ public class EnemyBrain : MonoBehaviour
     {
         var p = Application.isPlaying ? Profile
                 : overrideBehaviour ? localBehaviour
-                : Data?.Behaviour;
+                : Data != null ? Data.Behaviour : null;
         if (p == null) return;
 
         Vector3 pos = Application.isPlaying ? spawnPosition : transform.position;

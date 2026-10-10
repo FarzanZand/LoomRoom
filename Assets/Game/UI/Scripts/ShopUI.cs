@@ -24,6 +24,8 @@ public class ShopUI : Singleton<ShopUI>
     [SerializeField] GameObject gearEmpty;
     [Header("Pack")]
     [SerializeField] ShopSlotUI[] packSlots;
+    [Tooltip("Price line of a ware the player can't afford.")]
+    [SerializeField] Color tooDearColor = new(.69f, .353f, .306f);
 
     Merchant merchant;
     Player player;
@@ -43,8 +45,12 @@ public class ShopUI : Singleton<ShopUI>
         if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel;
     }
 
+    // Disabled or destroyed while open: give back the Menu state and drop the pack subscriptions.
+    void OnDisable() => Close();
+
     protected override void OnDestroy()
     {
+        Close();
         base.OnDestroy();
         if (InputManager.HasInstance) InputManager.Instance.CancelPressed -= OnCancel;
     }
@@ -169,7 +175,7 @@ public class ShopUI : Singleton<ShopUI>
         if (ware)
         {
             int price = merchant.PriceOf(item);
-            detailsPrice.text = Coins >= price ? $"Buy for {price} {merchant.Currency}" : $"<color=#B05A4E>Costs {price} {merchant.Currency}</color>";
+            detailsPrice.text = Coins >= price ? $"Buy for {price} {merchant.Currency}" : $"<color=#{ColorUtility.ToHtmlStringRGB(tooDearColor)}>Costs {price} {merchant.Currency}</color>";
         }
         else detailsPrice.text = merchant.CanSell(player, item, out string reason) ? $"Sells for {merchant.SellPriceOf(item)} {merchant.Currency}" : reason;
     }

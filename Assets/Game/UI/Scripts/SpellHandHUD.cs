@@ -11,16 +11,22 @@ public class SpellHandHUD : MonoBehaviour
     public Image chargeFill;
 
     PlayerSpellcasting spells;
+    Player spellsOwner;   // the player spells was looked up on (the room player has none)
 
     void Update()
     {
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
-        if (spells == null || spells.gameObject != (player != null ? player.gameObject : null))
+        if (player != spellsOwner)
+        {
+            spellsOwner = player;
             spells = player != null ? player.GetComponent<PlayerSpellcasting>() : null;
+        }
 
         if (chargeFill != null)
         {
-            chargeFill.transform.parent.gameObject.SetActive(spells != null && spells.Casting);
+            var bar = chargeFill.transform.parent.gameObject;
+            bool casting = spells != null && spells.Casting;
+            if (bar.activeSelf != casting) bar.SetActive(casting);
             if (spells != null) chargeFill.fillAmount = spells.ChargeProgress;
         }
         // Name and cost live in the tome's tooltip; nothing to read here.

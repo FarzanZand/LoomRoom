@@ -13,26 +13,16 @@ public class DungeonWeightedPrefab
     [Min(0)] public float weight = 1;
     public static GameObject Choose(DungeonWeightedPrefab[] choices, System.Random random, System.Func<GameObject,bool> filter = null)
     {
-        if (choices == null) return null;
-        double total = 0;
-        foreach (var c in choices) if (c != null && c.prefab != null && c.weight > 0 && (filter == null || filter(c.prefab))) total += c.weight;
-        if (total <= 0) return null;
-        double roll = random.NextDouble() * total;
-        foreach (var c in choices)
-        {
-            if (c == null || c.prefab == null || c.weight <= 0 || (filter != null && !filter(c.prefab))) continue;
-            roll -= c.weight;
-            if (roll < 0) return c.prefab;
-        }
-        return null;
+        var pick = WeightedPick.Choose(choices, c => c != null && c.prefab != null && (filter == null || filter(c.prefab)) ? c.weight : 0, random);
+        return pick != null ? pick.prefab : null;
     }
 }
 
-// A fountain, altar, grave, bookshelf or lever placed by chance in eligible rooms.
+// A fountain, altar, grave or bookshelf placed by chance in eligible rooms.
 [System.Serializable]
 public class DungeonFeature
 {
-    [AssetsOnly, Tooltip("Fountain, altar, grave, bookshelf or lever prefab. Must fit in one cell.")]
+    [AssetsOnly, Tooltip("Fountain, altar, grave or bookshelf prefab. Must fit in one cell.")]
     public GameObject prefab;
     [Range(0, 1)] public float chancePerRoom = .12f;
     [Tooltip("Against Wall, Corner and Centre work as for Furnishing. Anywhere picks any free cell and faces the room centre.")]

@@ -13,8 +13,6 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler
     [SerializeField] Image honedFill;
     [SerializeField] TMP_Text count;
     [SerializeField] Button button;
-    [SerializeField] Color emptyColor = new(.035f, .045f, .045f, .96f);
-    [SerializeField] Color filledColor = new(.09f, .11f, .105f, .98f);
 
     ItemData item;
     Action click;
@@ -29,7 +27,7 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler
         if (icon != null) { icon.sprite = filled ? data.icon : null; icon.enabled = icon.sprite != null; icon.color = available ? Color.white : new Color(1, 1, 1, .4f); }
         if (honedFill != null) honedFill.enabled = filled && data.honed > 0;
         if (count != null) count.text = filled && amount > 1 ? $"x{amount}" : "";
-        if (background != null) background.color = filled ? filledColor : emptyColor;
+        if (background != null) background.color = filled ? ItemSlotUI.DungeonFilled : ItemSlotUI.DungeonEmpty;
         if (button != null) button.interactable = filled && available;
     }
 

@@ -1,5 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -15,7 +15,7 @@ public class DeathBurst : MonoBehaviour
     [SerializeField, Min(0)] float upward = 2f;
     [Tooltip("Random spread, so the pieces scatter instead of flying off together.")]
     [SerializeField, Min(0)] float scatter = 1.2f;
-    [Tooltip("Random spin, degrees per second in radians.")]
+    [Tooltip("Random spin, radians per second.")]
     [SerializeField, Min(0)] float spin = 9f;
     [SerializeField, Min(.01f)] float pieceMass = .4f;
     [Tooltip("Seconds before the pieces freeze where they lie (saves physics time).")]
@@ -45,25 +45,26 @@ public class DeathBurst : MonoBehaviour
             SplitSkinned(smr, major, parent);
             smr.enabled = false;
         }
-        // Weapons, helmets and other rigid props come off whole.
+        // Weapons, helmets and other rigid props come off whole. World-space UI and text
+        // (health bars, labels) are not props and stay with the body.
         foreach (var mr in GetComponentsInChildren<MeshRenderer>())
         {
-            if (!mr.enabled || mr.GetComponent<MeshFilter>()?.sharedMesh == null) continue;
+            if (!mr.enabled || !mr.TryGetComponent<MeshFilter>(out var filter) || filter.sharedMesh == null) continue;
+            if (mr.GetComponentInParent<Canvas>() != null || mr.GetComponent<TMP_Text>() != null) continue;
             var t = mr.transform;
             t.SetParent(parent, true);
             foreach (var c in t.GetComponentsInChildren<Collider>()) c.enabled = false;
             var box = t.gameObject.AddComponent<BoxCollider>();
-            var bounds = mr.GetComponent<MeshFilter>().sharedMesh.bounds;
+            var bounds = filter.sharedMesh.bounds;
             box.center = bounds.center; box.size = Vector3.Max(bounds.size, Vector3.one * .03f);
             Throw(t.gameObject.AddComponent<Rigidbody>(), t.position);
         }
 
-        if (anim != null) anim.enabled = false;
-        foreach (var hr in GetComponentsInChildren<HitReactionController>()) hr.enabled = false;
+        DeathPhysics.StopPosing(this, anim);
         // The body is gone: nothing left to bump into.
         foreach (var c in GetComponents<Collider>()) if (!c.isTrigger) c.enabled = false;
-        IgnorePlayers();
-        StartCoroutine(Settle());
+        DeathPhysics.IgnorePlayers(pieces);
+        StartCoroutine(DeathPhysics.Settle(pieces, settleSeconds));
     }
 
     // Each skinned bone is grouped under the nearest of these humanoid bones; unmapped bones go with the hips.
@@ -106,7 +107,7 @@ public class DeathBurst : MonoBehaviour
         {
             if (weights.Length == 0 || bones.Length == 0) return smr.transform;
             int b = weights[vertex].boneIndex0;
-            return b >= 0 && b < groupOf.Length ? groupOf[b] ?? smr.transform : smr.transform;
+            return b >= 0 && b < groupOf.Length && groupOf[b] != null ? groupOf[b] : smr.transform;
         }
 
         // triangles per group, per submesh
@@ -162,6 +163,7 @@ public class DeathBurst : MonoBehaviour
             go.transform.SetParent(parent, false);
             go.transform.position = centre;
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<OwnedMesh>().mesh = mesh;
             var mr = go.AddComponent<MeshRenderer>();
             mr.sharedMaterials = mats.ToArray();
             mr.renderingLayerMask = smr.renderingLayerMask;
@@ -177,7 +179,7 @@ public class DeathBurst : MonoBehaviour
     {
         rb.mass = pieceMass;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
-        Vector3 dir = lastHit.Direction.sqrMagnitude > .001f ? lastHit.Direction.normalized : -transform.forward;
+        Vector3 dir = DeathPhysics.HitDirection(lastHit, transform).normalized;
         Vector3 outward = at - transform.position; outward.y = 0f;
         float heavy = lastHit.Heavy ? 1.4f : 1f;
         rb.linearVelocity = (dir * force + outward.normalized * force * .4f) * heavy + Vector3.up * upward + Random.insideUnitSphere * scatter;
@@ -185,21 +187,4 @@ public class DeathBurst : MonoBehaviour
         pieces.Add(rb);
     }
 
-    void IgnorePlayers()
-    {
-        if (!PlayerManager.HasInstance) return;
-        foreach (var context in PlayerManager.Instance.players)
-        {
-            if (context?.player == null) continue;
-            foreach (var pc in context.player.GetComponentsInChildren<Collider>(true))
-                foreach (var rb in pieces)
-                    if (rb != null && rb.TryGetComponent<Collider>(out var c)) Physics.IgnoreCollision(pc, c, true);
-        }
-    }
-
-    IEnumerator Settle()
-    {
-        yield return new WaitForSeconds(settleSeconds);
-        foreach (var rb in pieces) if (rb != null) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.isKinematic = true; }
-    }
 }

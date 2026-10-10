@@ -18,8 +18,8 @@ public partial class DungeonGenerator
 
     // ── Layout ───────────────────────────────────────────────────────
 
-    // Roles and shapes are known before placement: room 0 is the entrance and the last room,
-    // grown off the furthest room, is the exit.
+    // Roles, profiles, the merchant's room and shapes are known before placement: room 0 is the
+    // entrance and the last room, grown off the furthest room, is the exit.
     void GrowLayout(TableLevelData level, int seed)
     {
         int count = Mathf.Max(2, level.roomCount);
@@ -30,18 +30,22 @@ public partial class DungeonGenerator
         var chosen = new DungeonRoomProfile[count];
         for (int i = 0; i < count; i++) chosen[i] = ChooseProfile(roles[i]);
         if (UsesStartingRoom) chosen[0] = null;
+        // The shop's template, like any other, sets its room's shape.
+        int merchant = ChooseMerchantRoom(roles, i => RequestedTemplate(i, roles[i], chosen[i]) != null);
         var shapeRandom = new System.Random(unchecked(seed + 88667));
         var shapes = new DungeonShape[count];
-        for (int i = 0; i < count; i++) shapes[i] = ChooseShape(roles[i], chosen[i], shapeRandom, i == 0 && UsesStartingRoom ? data.startingRoom : null);
+        for (int i = 0; i < count; i++) shapes[i] = ChooseShape(roles[i], chosen[i], shapeRandom, RequestedTemplate(i, roles[i], chosen[i], merchant));
         Layout = DungeonLayout.Grow(level.width, level.depth, shapes, seed, level.Growth);
         var placed = Layout.PlacedRequests;
         Roles = new RoomRole[placed.Length];
         profiles = new DungeonRoomProfile[placed.Length];
         for (int i = 0; i < placed.Length; i++) { Roles[i] = roles[placed[i]]; profiles[i] = chosen[placed[i]]; }
+        // A shop room that did not fit leaves the floor without a merchant.
+        MerchantRoom = System.Array.IndexOf(placed, merchant);
     }
 
     // The first floor of the run and of every new biome opens in the level's Starting room.
-    bool UsesStartingRoom => data.startingRoom != null && data.layoutMode == DungeonLayoutMode.Grown
+    bool UsesStartingRoom => data.startingRoom != null && !Authored
         && (FloorNumber == 1 || data.Biome(FloorNumber) != data.Biome(FloorNumber - 1));
 
     // The starting room's only way out gets the level's door, replacing any other door on that passage.
@@ -49,7 +53,7 @@ public partial class DungeonGenerator
     {
         if (!UsesStartingRoom || data.doorPrefab == null) return;
         foreach (var cell in Layout.RoomCells(0))
-            foreach (var dir in new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down })
+            foreach (var dir in DungeonLayout.Neighbours)
             {
                 var outside = cell + dir;
                 if (!Layout.InBounds(outside) || !Layout.floor[outside.x, outside.y] || Layout.InRoom(0, outside)) continue;
@@ -60,10 +64,9 @@ public partial class DungeonGenerator
             }
     }
 
-    DungeonShape ChooseShape(RoomRole role, DungeonRoomProfile profile, System.Random rng, GameObject templateOverride = null)
+    // prefab: the room's template (RequestedTemplate), whose footprint or minimum size wins.
+    DungeonShape ChooseShape(RoomRole role, DungeonRoomProfile profile, System.Random rng, GameObject prefab)
     {
-        var prefab = templateOverride != null ? templateOverride
-            : role == RoomRole.Exit && Milestone != null && Milestone.arena != null ? Milestone.arena : profile?.roomTemplate;
         var template = prefab != null ? prefab.GetComponent<DungeonRoomTemplate>() : null;
         float scale = profile != null ? profile.sizeScale : 1;
         if (rng.NextDouble() * 100 < Mathf.Clamp(data.largeRoomPercent, 0, 30)) scale *= Mathf.Clamp(data.largeRoomScale, 1, 3);
@@ -75,7 +78,7 @@ public partial class DungeonGenerator
             return DungeonShape.Rectangle(Mathf.Max(w, template.minimumCells.x), Mathf.Max(h, template.minimumCells.y));
         }
         // A room profile's own shapes replace the rest; otherwise the level's and the biome's together.
-        var choices = FirstList(profile?.shapes, Both(data.roomShapes, Biome?.roomShapes));
+        var choices = FirstList(profile != null ? profile.shapes : null, Both(data.roomShapes, Biome != null ? Biome.roomShapes : null));
         // Stairs stand beside the centre of the entrance and exit, so those need open floor there.
         bool needsOpenCentre = role == RoomRole.Entrance || role == RoomRole.Exit;
         for (int attempt = 0; attempt < 6; attempt++)
@@ -109,24 +112,23 @@ public partial class DungeonGenerator
         }
     }
 
+    // A variant's weight for a tile: rowFilter 0 for a floor cell, 1 for a bottom wall tile, 2 for an upper one.
+    static float VariantWeight(DungeonSurfaceVariant v, int rowFilter) => v != null && v.material != null
+        && !(rowFilter == 1 && v.rows == DungeonVariantRows.UpperOnly) && !(rowFilter == 2 && v.rows == DungeonVariantRows.BottomOnly) ? v.weight : 0;
+    static readonly System.Func<DungeonSurfaceVariant, float>[] VariantWeights = { v => VariantWeight(v, 0), v => VariantWeight(v, 1), v => VariantWeight(v, 2) };
+
     // Weighted draw between the base material and the variants that suit this tile.
     static Material Pick(Material basic, float baseWeight, DungeonSurfaceVariant[] variants, float roll, int rowFilter)
     {
         if (variants == null || variants.Length == 0) return basic;
-        bool Eligible(DungeonSurfaceVariant v) => v != null && v.material != null && v.weight > 0
-            && !(rowFilter == 1 && v.rows == DungeonVariantRows.UpperOnly) && !(rowFilter == 2 && v.rows == DungeonVariantRows.BottomOnly);
-        float total = Mathf.Max(0, baseWeight);
-        foreach (var v in variants) if (Eligible(v)) total += v.weight;
+        var weight = VariantWeights[rowFilter];
+        float before = Mathf.Max(0, baseWeight);
+        float total = WeightedPick.TotalSingle(variants, weight, before);
         if (total <= 0) return basic;
-        float pick = roll * total - Mathf.Max(0, baseWeight);
+        float pick = roll * total - before;
         if (pick < 0) return basic;
-        foreach (var v in variants)
-        {
-            if (!Eligible(v)) continue;
-            pick -= v.weight;
-            if (pick < 0) return v.material;
-        }
-        return basic;
+        int index = WeightedPick.LandSingle(variants, weight, pick);
+        return index >= 0 ? variants[index].material : basic;
     }
 
     Material FloorMaterial(int region, int x, int z)
@@ -159,7 +161,7 @@ public partial class DungeonGenerator
     void PlaceTorches()
     {
         if (!DungeonWallLight.Any(WallLights)) return;
-        var torchRandom = new System.Random(unchecked(Layout.rooms.Count * 7919 + FloorNumber * 104729 + (int)(Cell(Vector2Int.zero).x * 13)));
+        var torchRandom = new System.Random(Scramble(unchecked(Layout.seed + 30011)));
         var parent = TorchParent;
         var byRegion = new Dictionary<int, List<(Vector2Int cell, Vector2Int dir)>>();
         foreach (var (cell, dir, region) in wallFaces)
@@ -212,9 +214,8 @@ public partial class DungeonGenerator
         if (profile != null && profile.overrideLight) color = profile.lightColor;
         if (template != null && template.overrideLightColor) color = template.lightColor;
         if (socket != null && socket.overrideLightColor) color = socket.lightColor;
-        var outward = new Vector3(dir.x, 0, dir.y);
         // The prefab carries its own mounting height; its origin sits on the floor at the wall face.
-        var torch = Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f - WallThickness * .5f), Quaternion.LookRotation(-outward), parent);
+        var torch = Instantiate(prefab, Cell(cell) + WallLightOffset(dir, data.cellSize), Quaternion.LookRotation(-new Vector3(dir.x, 0, dir.y)), parent);
         if (color.HasValue) DungeonWallLight.Apply(torch, color.Value);
         furnished.Add(cell);
     }
@@ -253,7 +254,7 @@ public partial class DungeonGenerator
     // Beside a doorway: decorations there would clip the door frame.
     bool NextToOpening(Vector2Int cell, int region)
     {
-        foreach (var d in new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down })
+        foreach (var d in DungeonLayout.Neighbours)
         {
             var n = cell + d;
             if (Open(n) && Layout.RegionIds[n.x, n.y] != region) return true;
@@ -309,9 +310,9 @@ public partial class DungeonGenerator
         if (profile != null && profile.propRules != null && profile.propRules.Length > 0) return (profile.propRules, null);
         if (profile != null && profile.props != null && profile.props.Length > 0) return (null, profile.props);
         // Level and biome together: furnishing rules when either has any, otherwise plain props.
-        var rules = Both(data.propRules, Biome?.propRules);
+        var rules = Both(data.propRules, Biome != null ? Biome.propRules : null);
         if (rules != null && rules.Length > 0) return (rules, null);
-        return (null, Both(data.roomPropPrefabs, Biome?.props));
+        return (null, Both(data.roomPropPrefabs, Biome != null ? Biome.props : null));
     }
 
     void PlaceRules(int index, List<Vector2Int> free, DungeonPropRule[] rules)

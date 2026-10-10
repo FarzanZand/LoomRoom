@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -10,8 +9,9 @@ public enum RoomExitMode
     LockOneDoor = 2, // the apartment door works, the other door is locked
 }
 
-// World-level helpers: the directional light, the room's exits, head bob and the opening sequence hook.
-// Cutscene logic itself lives on CutsceneController subclasses.
+// World-level settings: the room's exits, head bob, the table reveal and menu, and which opening plays
+// (intro, wake-up). The sun and moods belong to LightingManager; cutscene logic lives on
+// CutsceneController subclasses.
 public class WorldManager : Singleton<WorldManager>
 {
     [Header("Room exits")]
@@ -41,28 +41,14 @@ public class WorldManager : Singleton<WorldManager>
     [Tooltip("Camera bob while walking, running and crouch-walking. Read live by HeadBob on each player's camera.")]
     public HeadBobSettings headBob = new();
 
-
     [Header("Testing")]
     [Tooltip("The level the editor's Dungeon button generates and plays straight away, skipping the room.")]
     public TableLevelData debugDungeon;
-
-    [Header("Lighting")]
-    public Light directionalLight;
-    [Tooltip("Light colour used while the game starts in the room (night).")]
-    public Color roomStartLightColor = Color.black;
-    public float roomStartLightIntensity = 0.7f;
 
     protected override void Awake()
     {
         base.Awake();
         ApplyRoomExit();
-        if (ProgressionManager.HasInstance &&
-            ProgressionManager.Instance.startingPlayer == PlayerKind.Room &&
-            EnsureDirectionalLight())
-        {
-            directionalLight.color     = roomStartLightColor;
-            directionalLight.intensity = roomStartLightIntensity;
-        }
     }
 
     void Start()
@@ -102,69 +88,5 @@ public class WorldManager : Singleton<WorldManager>
             if (part != null) part.SetActive(roomExit == RoomExitMode.LockOneDoor);
         if (apartmentDoor != null) apartmentDoor.Locked = roomExit == RoomExitMode.LockDoors;
         if (otherDoor != null)     otherDoor.Locked = roomExit != RoomExitMode.LoopRooms;
-    }
-
-    // ── Directional light fades ───────────────────────────────────────
-
-    Coroutine lightFadeRoutine;
-    Coroutine lightColorRoutine;
-
-    bool EnsureDirectionalLight()
-    {
-        if (directionalLight != null) return true;
-        directionalLight = RenderSettings.sun;
-        if (directionalLight == null)
-            foreach (var light in FindObjectsByType<Light>())
-                if (light.type == LightType.Directional) { directionalLight = light; break; }
-        if (directionalLight == null)
-            Debug.LogWarning("WorldManager: no directional light assigned or found in scene.", this);
-        return directionalLight != null;
-    }
-
-    public void FadeDirectionalLight(float to, float duration)
-    {
-        if (!EnsureDirectionalLight()) return;
-        FadeDirectionalLight(directionalLight.intensity, to, duration);
-    }
-
-    public void FadeDirectionalLight(float from, float to, float duration)
-    {
-        if (!EnsureDirectionalLight()) return;
-        if (lightFadeRoutine != null) StopCoroutine(lightFadeRoutine);
-        lightFadeRoutine = StartCoroutine(FadeIntensity(from, to, duration));
-    }
-
-    public void FadeDirectionalLightColor(Color to, float duration)
-    {
-        if (!EnsureDirectionalLight()) return;
-        if (lightColorRoutine != null) StopCoroutine(lightColorRoutine);
-        lightColorRoutine = StartCoroutine(FadeColor(to, duration));
-    }
-
-    IEnumerator FadeIntensity(float from, float to, float duration)
-    {
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            directionalLight.intensity = Mathf.Lerp(from, to, elapsed / duration);
-            yield return null;
-        }
-        directionalLight.intensity = to;
-        lightFadeRoutine = null;
-    }
-
-    IEnumerator FadeColor(Color to, float duration)
-    {
-        Color from = directionalLight.color;
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            directionalLight.color = Color.Lerp(from, to, elapsed / duration);
-            yield return null;
-        }
-        directionalLight.color = to;
-        lightColorRoutine = null;
     }
 }

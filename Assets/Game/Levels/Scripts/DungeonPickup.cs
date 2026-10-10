@@ -33,11 +33,8 @@ public static class DungeonPickup
         pickup.Init(item,count);
         pickup.transform.SetParent(parent, true);
         // Existing pickup meshes vary in size; constrain floor loot without changing held equipment.
-        var renderers = pickup.GetComponentsInChildren<Renderer>();
-        if (renderers.Length > 0)
+        if (DungeonFeatureUtility.RendererBounds(pickup.GetComponentsInChildren<Renderer>(), out var bounds))
         {
-            var bounds = renderers[0].bounds;
-            foreach (var r in renderers) bounds.Encapsulate(r.bounds);
             float longest = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
             if (longest > .9f) pickup.transform.localScale *= .9f / longest;
         }
@@ -52,10 +49,7 @@ public static class DungeonPickup
     // and would leave the item hanging in the air.
     static void SettleOnFloor(WorldItem pickup)
     {
-        var renderers = pickup.GetComponentsInChildren<Renderer>();
-        if (renderers.Length == 0) return;
-        var bounds = renderers[0].bounds;
-        foreach (var r in renderers) bounds.Encapsulate(r.bounds);
+        if (!DungeonFeatureUtility.RendererBounds(pickup.GetComponentsInChildren<Renderer>(), out var bounds)) return;
         var from = new Vector3(bounds.center.x, bounds.max.y + .5f, bounds.center.z);
         var hits = Physics.RaycastAll(from, Vector3.down, 6f, ~0, QueryTriggerInteraction.Ignore);
         System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));

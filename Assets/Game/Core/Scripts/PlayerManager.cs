@@ -25,7 +25,6 @@ public class PlayerManager : Singleton<PlayerManager>
 
     public Player Active { get; private set; }
     public PlayerKind ActiveKind { get; private set; }
-    public bool HasActive => Active != null;
 
     public event Action<Player> PlayerSwapped;
 

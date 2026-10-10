@@ -53,9 +53,10 @@ public class PoolManager : Singleton<PoolManager>
                 tag.Source = prefab;
                 return go;
             },
-            actionOnGet: go => go.SetActive(true),
+            actionOnGet: go => { go.GetComponent<PooledObject>().InPool = false; go.SetActive(true); },
             actionOnRelease: go =>
             {
+                go.GetComponent<PooledObject>().InPool = true;
                 go.SetActive(false);
                 go.transform.SetParent(storage, false);
             },
@@ -99,7 +100,9 @@ public class PoolManager : Singleton<PoolManager>
         if (go == null) return;
         var tag = go.GetComponent<PooledObject>();
         if (tag == null || tag.Source == null || !pools.TryGetValue(tag.Source, out var pool)) { Destroy(go); return; }
-        if (!go.activeSelf) return;
+        // Inactive objects are accepted (a caller may hide one before handing it back); only one
+        // already in the pool is ignored.
+        if (tag.InPool) return;
         tag.Generation++;
         pool.Release(go);
     }

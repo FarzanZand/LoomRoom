@@ -7,8 +7,8 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 // The on-screen message feed, the way Barony does it: what just happened in white (kills in orange),
-// and the Dungeon Master's voice in its own colour (an optional lead-in line and the
-// quoted line, with a recorded clip or a short gibberish mumble). Lines appear whole in the lower
+// and the Dungeon Master's voice in its own colour (the quoted line, with a recorded clip or a
+// short gibberish mumble). Lines appear whole in the lower
 // middle (or bottom left) and fade. Damage lines stay out: floating numbers show those.
 // The DM speaks through DungeonMaster.Say(...), lines typed on the components and levels that use them, a biome's entry lines, or Lua DMSay("...").
 public class DungeonMaster : Singleton<DungeonMaster>
@@ -21,7 +21,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
         [TextArea] public string text;
         [Tooltip("Recorded voice. Empty uses the mumble if Mumble is on.")] public AudioData voice;
         [Tooltip("Barony-style gibberish when the line appears.")] public bool mumble = true;
-        [Tooltip("Said across the table in the room, so no \"voice inside your head\" prefix.")] public bool inPerson;
+        [Tooltip("Said across the table in the room: paced for reading, and the seated DM gestures.")] public bool inPerson;
 
         // The line with its text changed (a name filled in), keeping voice and delivery.
         public Line With(string newText) => new() { text = newText, voice = voice, mumble = mumble, inPerson = inPerson };
@@ -30,7 +30,6 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     [SerializeField] TextMeshProUGUI label;
     [SerializeField, Tooltip("Where the lines sit on screen.")] Placement placement = Placement.LowerMiddle;
-    [SerializeField, Tooltip("Shown before each new message. Empty for none.")] string prefix = "";
     [SerializeField, Tooltip("The Dungeon Master's lines.")] Color color = new(.45f, .85f, .95f);
     [SerializeField, Tooltip("Everything else that happens.")] Color eventColor = Color.white;
     [SerializeField] Color killColor = new(1f, .6f, .22f);
@@ -46,18 +45,19 @@ public class DungeonMaster : Singleton<DungeonMaster>
     float readBase = 1.2f;
     [SerializeField, Min(0)] float readPerWord = .3f;
 
-    [Header("Mumble")]
-    [SerializeField, Tooltip("Continuous babble phrases, one per line: the clip nearest the line's length plays (Tools/dm_babble.py makes them). Empty: the syllables below.")]
-    AudioData babble;
-    [SerializeField, Min(.05f), Tooltip("Seconds of babble per word.")] float babblePerWord = .22f;
-    [SerializeField, Tooltip("UI Library key played once per syllable. Make it a Data entry to pick from several syllables.")] string mumbleKey = "dmMumble";
-    [SerializeField, Min(.03f), Tooltip("Seconds between syllables.")] float syllableGap = .09f;
-    [SerializeField, Min(1), Tooltip("Syllables per word, capped by Max Syllables.")] float syllablesPerWord = 1.5f;
-    [SerializeField, Min(1)] int maxSyllables = 14;
-
     readonly Queue<(Line line, float delay)> queue = new();
-    readonly List<(string text, float shown, Color color)> lines = new();
+    // Oldest first. hex is the colour's RGB, worked out once when the line is added.
+    readonly List<(string text, float shown, Color color, string hex)> lines = new();
     readonly StringBuilder builder = new();
+    // The label is rebuilt only when lines were added or removed, or one is fading.
+    bool dirty, blanked;
+    static readonly string[] AlphaHex = BuildAlphaHex();
+    static string[] BuildAlphaHex()
+    {
+        var hex = new string[256];
+        for (int i = 0; i < hex.Length; i++) hex[i] = i.ToString("X2");
+        return hex;
+    }
     Coroutine running;
 
     protected override void Awake()
@@ -141,9 +141,6 @@ public class DungeonMaster : Singleton<DungeonMaster>
     // Shows the line and starts its voice or mumble. Returns the seconds of speech.
     float Speak(Line line)
     {
-        // The "voice in your head" introduction once per stretch of lines, not before each one.
-        bool stillOnScreen = lines.Exists(l => l.text == prefix);
-        if (!line.inPerson && !string.IsNullOrWhiteSpace(prefix) && !stillOnScreen) Show(prefix, color);
         Show($"\"{line.text.Trim()}\"", color);
         Spoke?.Invoke(line);
         float speaking = .5f;
@@ -160,50 +157,13 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     void Show(string text, Color tint)
     {
-        lines.Add((text, Time.unscaledTime, tint));
+        lines.Add((text, Time.unscaledTime, tint, ColorUtility.ToHtmlStringRGB(tint)));
         while (lines.Count > maxLines) lines.RemoveAt(0);
+        dirty = true;
     }
 
-    float Mumble(string text)
-    {
-        if (!AudioManager.HasInstance) return .5f;
-        int words = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length;
-        if (babble != null && babble.clips != null && babble.clips.Length > 0) return Babble(words);
-        if (string.IsNullOrEmpty(mumbleKey)) return .5f;
-        int count = Mathf.Clamp(Mathf.RoundToInt(words * syllablesPerWord), 2, maxSyllables);
-        StartCoroutine(Syllables(count));
-        return count * syllableGap;
-    }
-
-    AudioClip lastBabble;
-
-    // One phrase for the whole line: of the two clips nearest its length, not the one heard last.
-    float Babble(int words)
-    {
-        float target = words * babblePerWord;
-        AudioClip best = null, second = null;
-        foreach (var c in babble.clips)
-        {
-            if (c == null) continue;
-            if (best == null || Mathf.Abs(c.length - target) < Mathf.Abs(best.length - target)) { second = best; best = c; }
-            else if (second == null || Mathf.Abs(c.length - target) < Mathf.Abs(second.length - target)) second = c;
-        }
-        if (best == null) return .5f;
-        var clip = second != null && (best == lastBabble || Random.value < .35f) ? second : best;
-        lastBabble = clip;
-        float pitch = babble.pitch + (babble.pitchVariance > 0f ? Random.Range(-babble.pitchVariance, babble.pitchVariance) : 0f);
-        AudioManager.Instance.PlayUI(clip, babble.volume, pitch);
-        return clip.length / Mathf.Max(.1f, pitch);
-    }
-
-    IEnumerator Syllables(int count)
-    {
-        for (int i = 0; i < count; i++)
-        {
-            if (AudioManager.HasInstance && AudioManager.Instance.HasUI(mumbleKey)) AudioManager.Instance.PlayUI(mumbleKey);
-            yield return new WaitForSecondsRealtime(syllableGap * Random.Range(.8f, 1.25f));
-        }
-    }
+    // The voice is chosen on AudioManager (Dungeon Master voice).
+    static float Mumble(string text) => AudioManager.HasInstance ? AudioManager.Instance.Mumble(text) : .5f;
 
     float snappedFor;
 
@@ -223,22 +183,29 @@ public class DungeonMaster : Singleton<DungeonMaster>
         if (label == null) return;
         SnapSize();
         float now = Time.unscaledTime;
-        lines.RemoveAll(l => now - l.shown > hold + fadeOut);
-        builder.Clear();
+        while (lines.Count > 0 && now - lines[0].shown > hold + fadeOut) { lines.RemoveAt(0); dirty = true; }
         // Full-screen menus (the run recap shares this canvas) are not written over, and a conversation
         // has its own subtitles and choices in the same spot.
         if ((GameManager.HasInstance && (GameManager.Instance.State == GameState.Menu || GameManager.Instance.State == GameState.Paused))
-            || PixelCrushers.DialogueSystem.DialogueManager.isConversationActive) { label.text = ""; return; }
+            || PixelCrushers.DialogueSystem.DialogueManager.isConversationActive)
+        {
+            if (!blanked) { label.text = ""; blanked = true; }
+            return;
+        }
         // A cutscene (the descent into a table level) leaves the lines from before it behind.
         bool cutscene = GameManager.HasInstance && GameManager.Instance.State == GameState.Cutscene;
-        if (cutscene && !wasCutscene) lines.Clear();
+        if (cutscene && !wasCutscene && lines.Count > 0) { lines.Clear(); dirty = true; }
         wasCutscene = cutscene;
-        foreach (var (text, shown, tint) in lines)
+        bool fading = lines.Count > 0 && now - lines[0].shown > hold;   // the oldest line fades first
+        if (!dirty && !blanked && !fading) return;
+        dirty = blanked = false;
+        builder.Clear();
+        foreach (var (text, shown, tint, hex) in lines)
         {
             float alpha = Mathf.Clamp01(1 - (now - shown - hold) / Mathf.Max(.01f, fadeOut));
-            var c = tint; c.a *= alpha;
             if (builder.Length > 0) builder.Append('\n');
-            builder.Append("<color=#").Append(ColorUtility.ToHtmlStringRGBA(c)).Append('>').Append(text).Append("</color>");
+            builder.Append("<color=#").Append(hex).Append(AlphaHex[Mathf.RoundToInt(Mathf.Clamp01(tint.a * alpha) * 255)])
+                .Append('>').Append(text).Append("</color>");
         }
         label.text = builder.ToString();
     }
@@ -253,5 +220,5 @@ public class DungeonMaster : Singleton<DungeonMaster>
         Show(MessageLog.Format(entry), entry.kind == MessageKind.Kill ? killColor : eventColor);
     }
 
-    void OnDisable() { if (MessageLog.HasInstance) MessageLog.Instance.Posted -= OnLog; if (running != null) StopCoroutine(running); running = null; queue.Clear(); lines.Clear(); if (label != null) label.text = ""; }
+    void OnDisable() { if (MessageLog.HasInstance) MessageLog.Instance.Posted -= OnLog; if (running != null) StopCoroutine(running); running = null; queue.Clear(); lines.Clear(); dirty = true; if (label != null) label.text = ""; }
 }

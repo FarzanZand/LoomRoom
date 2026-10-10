@@ -204,7 +204,7 @@ public sealed partial class LightingManager
         if (!roomHeld || sun == null) return false;
         sun.intensity = heldSun * (1f - RoomDark);
         sun.color = heldSunColor * RoomTint;
-        FirstPersonLighting.SetLayers(sun, RoomLayer);
+        if ((uint)sun.renderingLayerMask != RoomLayer) FirstPersonLighting.SetLayers(sun, RoomLayer);
         return true;
     }
 }

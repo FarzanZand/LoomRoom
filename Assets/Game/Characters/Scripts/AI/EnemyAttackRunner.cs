@@ -46,17 +46,27 @@ public class EnemyAttackRunner
 
     public bool CanOpenHitbox => SwingLive && PastMinWindup;
 
+    static readonly int AttackTag = Animator.StringToHash("Attack");
+
     // ── Lifecycle ─────────────────────────────────────────────────────
 
     public void ResetCooldowns()
     {
         cooldowns.Clear();
-        for (int i = 0; i < Attacks.Count; i++) cooldowns.Add(0f);
+        EnsureCooldowns();
+    }
+
+    // The attack list can grow after Awake (data edited live, archer switched on): new attacks start ready.
+    void EnsureCooldowns()
+    {
+        int count = Attacks.Count;
+        while (cooldowns.Count < count) cooldowns.Add(0f);
     }
 
     // Once per frame, before the state handler.
     public void Tick()
     {
+        EnsureCooldowns();
         for (int i = 0; i < cooldowns.Count; i++) cooldowns[i] -= Time.deltaTime;
 
         if (fallbackHitPending && Time.time >= fallbackHitAt) DealFallbackHit();
@@ -79,12 +89,19 @@ public class EnemyAttackRunner
         }
     }
 
+    // A menu or cutscene interrupted the swing: it still counts as used, so the enemy
+    // can't swing again the instant play resumes.
+    public void CancelForPause()
+    {
+        if (current != null) StartCooldown(current);
+        Cancel();
+    }
+
     public void Cancel()
     {
         if (Character != null && Character.Animator != null)
             foreach (var attack in Attacks)
-                if (attack != null && Character.HasParameter(Character.Animator, attack.animatorTrigger, AnimatorControllerParameterType.Trigger))
-                    Character.Animator.ResetTrigger(attack.animatorTrigger);
+                if (attack != null) AnimatorHelper.ResetTrigger(Character.Animator, attack.animatorTrigger);
         fallbackHitPending = false; current = null; attackWasPlaying = false;
         if (brain.Loadout != null) brain.Loadout.SetArrowNocked(false);
         if (brain.AttackRelay != null) brain.AttackRelay.DisableHitbox();
@@ -122,6 +139,14 @@ public class EnemyAttackRunner
         return a != null && dist >= a.minRange && dist <= a.EffectiveMaxRange && i < cooldowns.Count && cooldowns[i] <= 0f;
     }
 
+    void StartCooldown(EnemyAttack attack)
+    {
+        EnsureCooldowns();
+        int index = Attacks.IndexOf(attack);
+        if (index >= 0 && index < cooldowns.Count)
+            cooldowns[index] = attack.cooldown * (Tuning != null ? Tuning.enemyCooldownMultiplier : 1f);
+    }
+
     public void StartAttack(EnemyAttack attack)
     {
         current = attack;
@@ -136,8 +161,7 @@ public class EnemyAttackRunner
         brain.SetState(EnemyState.Attack);
         Motor.SuppressKnockback = true;
         // Clear a flinch queued earlier this frame before it can override this swing.
-        if (Character.data != null && Character.HasParameter(Character.Animator, Character.data.hurtTrigger, AnimatorControllerParameterType.Trigger))
-            Character.Animator.ResetTrigger(Character.data.hurtTrigger);
+        if (Character.data != null) AnimatorHelper.ResetTrigger(Character.Animator, Character.data.hurtTrigger);
         Character.TriggerAnimation(attack.animatorTrigger);
 
         // A bow shot is loosed by the release clip's OnAttackHit event (or a late fallback).
@@ -198,9 +222,7 @@ public class EnemyAttackRunner
         {
             // Cooldown counts from the END of the swing, so there is always an opening
             // between attacks where the enemy spaces and circles instead of chaining swings.
-            int index = Attacks.IndexOf(current);
-            if (index >= 0 && index < cooldowns.Count)
-                cooldowns[index] = current.cooldown * (Tuning != null ? Tuning.enemyCooldownMultiplier : 1f);
+            StartCooldown(current);
 
             float recovery = Mathf.Max(RecoveryTime, pendingStagger);
             Cancel();
@@ -226,17 +248,7 @@ public class EnemyAttackRunner
         if (audio != null) AudioManager.Instance.PlaySFXData(audio, brain.transform.position + Vector3.up);
     }
 
-    public bool IsPlayingAttack()
-    {
-        var anim = Character.Animator;
-        if (anim == null || anim.runtimeAnimatorController == null) return false;
-        for (int layer = 0; layer < anim.layerCount; layer++)
-        {
-            if (anim.GetCurrentAnimatorStateInfo(layer).IsTag("Attack")) return true;
-            if (anim.IsInTransition(layer) && anim.GetNextAnimatorStateInfo(layer).IsTag("Attack")) return true;
-        }
-        return false;
-    }
+    public bool IsPlayingAttack() => AnimatorHelper.AnyLayerHasTag(Character.Animator, AttackTag);
 
     // ── Hit timing ────────────────────────────────────────────────────
 
@@ -340,19 +352,12 @@ public class EnemyAttackRunner
         return col != null ? col.bounds.center + Vector3.up * col.bounds.extents.y * .35f : target.transform.position + Vector3.up * 1.2f;
     }
 
-    // Clear shot from the bow to the target: nothing solid in between.
+    // Clear shot from the bow to the target: nothing solid in between. Other enemies in the
+    // way block the shot too: archers do not shoot their friends.
     public bool HasArrowLineOfSight(Character target)
     {
         if (target == null) return false;
         Vector3 origin = brain.transform.position + Vector3.up * 1.45f;
-        Vector3 aim = AimPoint(target);
-        Vector3 delta = aim - origin;
-        foreach (var hit in Physics.SphereCastAll(origin, .08f, delta.normalized, delta.magnitude, ~0, QueryTriggerInteraction.Ignore))
-        {
-            if (hit.transform.IsChildOf(brain.transform) || hit.transform.IsChildOf(target.transform)) continue;
-            // Other enemies in the way block the shot too: archers do not shoot their friends.
-            return false;
-        }
-        return true;
+        return LineOfSight.Clear(origin, AimPoint(target), ~0, brain.transform, target.transform, .08f);
     }
 }

@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 // Serialized by integer: append only.
 public enum IntroOpening { Lamp = 0, Tabletop = 1 }
@@ -15,7 +14,7 @@ public enum IntroOpening { Lamp = 0, Tabletop = 1 }
 // practice figure, the same practice board, and afterwards the figure goes on the memorial shelf.
 public partial class IntroController
 {
-    [Title("Opening", "Lamp: the original, eyes in the dark and a lamp lit by hand. Tabletop: asleep at the table, a desk lamp, a character sheet and dice.")]
+    [Title("Opening", "Lamp: the original, eyes in the dark and a lamp lit by hand. Tabletop: waking in bed at night, walking to the lamp-lit table, a character sheet and dice.")]
     [PropertyOrder(-10), EnumToggleButtons] public IntroOpening opening = IntroOpening.Tabletop;
 
     [FoldoutGroup("Tabletop opening")] public AudioClip lampClick;
@@ -60,10 +59,6 @@ public partial class IntroController
     bool Tabletop => opening == IntroOpening.Tabletop;
     readonly List<RollingDie> dice = new();
 
-    // Both openings work the lamp over the table.
-    Light ActiveLamp => lamp;
-    float ActiveIntensity => lampIntensity;
-
     void SetupOpening()
     {
         if (diceTray != null) diceTray.SetActive(false);
@@ -92,7 +87,7 @@ public partial class IntroController
             yield return null;
             while (wake.IsPlaying) yield return null;
         }
-        else if (ScreenManager.HasInstance) ScreenManager.Instance.FadeOut(1.5f);
+        else if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(1.5f);
         yield return new WaitForSeconds(1f);
         waitingForSeat = true;
         yield return SayAll(callLines);
@@ -122,13 +117,13 @@ public partial class IntroController
 
     IEnumerator TabletopSeated()
     {
-        GameManager.Instance.Push(GameState.Dialogue);
+        PushDialogue();
         yield return GlideIntoSeat();
         yield return SayAll(lampLines);
         yield return SheetAndDice(practiceClass != null ? practiceClass.displayName : "", practiceClass != null ? practiceClass.description : "");
-        GameManager.Instance.Pop(GameState.Dialogue);
+        PopDialogue();
         yield return WaitForTable();
-        TableManager.Instance.Play(introDungeon, practiceClass, takeIt, false);
+        PlayPractice(false);
     }
 
     // Into the chair: from wherever they stand to the seat, the view settling on the Dungeon Master.
@@ -156,6 +151,7 @@ public partial class IntroController
     {
         if (sheet == null) yield break;
         sheet.Clear(className, blurb, rolledAttributes);
+        rolls = new int[rolledAttributes.Length];
         // He pushes it across: the gesture, and the sheet leaves his hand at the reach.
         var dm = FindAnyObjectByType<DungeonMasterSeat>();
         if (dm != null) dm.Gesture(pushGesture, pushSeconds);
@@ -165,6 +161,8 @@ public partial class IntroController
         // Between the sheet and where the dice land, so both are in view.
         var sheetAt = sheet.rest != null ? sheet.rest.position : sheet.transform.position;
         yield return LookAt(diceTo != null ? Vector3.Lerp(sheetAt, diceTo.position, .45f) : sheetAt, .7f);
+        // Submit (Space, gamepad South) throws the dice too; GameManager has the UI map live while seated.
+        if (InputManager.HasInstance) { InputManager.Instance.SubmitPressed -= OnSubmit; InputManager.Instance.SubmitPressed += OnSubmit; }
         for (int i = 0; i < rolledAttributes.Length; i++)
         {
             if (i < rollLines.Length) yield return SayAll(new[] { rollLines[i] });
@@ -181,6 +179,7 @@ public partial class IntroController
             }
             ClearDice();
         }
+        if (InputManager.HasInstance) InputManager.Instance.SubmitPressed -= OnSubmit;
         PickFigures();
         yield return SayAll(afterRolls);
     }
@@ -274,12 +273,12 @@ public partial class IntroController
         if (memorialShelf != null)
         {
             float yaw = room.Look.YawTransform.eulerAngles.y, pitch = room.Look.Pitch;
-            StartCoroutine(Zoom(zoom - memorialZoom, 1.3f));
+            StartCoroutine(CameraEase.Zoom(room.CameraRig, zoom - memorialZoom, 1.3f));
             yield return LookAt(memorialShelf.position, 1.1f);
             yield return SayAll(memorialLines);
             yield return new WaitForSeconds(.8f);
-            StartCoroutine(Zoom(zoom, .9f));
-            yield return Move(eyeHeight, eyeHeight, room.Look.YawTransform.eulerAngles.y, yaw, room.Look.Pitch, pitch, .9f);
+            StartCoroutine(CameraEase.Zoom(room.CameraRig, zoom, .9f));
+            yield return CameraEase.Turn(room.Look, yaw, pitch, .9f, eyeHeight);
         }
         yield return SayAll(tabletopGoodnight);
         yield return new WaitForSeconds(.6f);
@@ -289,14 +288,6 @@ public partial class IntroController
         yield return new WaitForSeconds(nightSeconds);
     }
 
-    IEnumerator Zoom(float to, float seconds)
-    {
-        var rig = room.CameraRig; if (rig == null) yield break;
-        float from = rig.FovOffset;
-        for (float t = 0f; t < seconds; t += Time.deltaTime) { rig.FovOffset = Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, t / seconds)); yield return null; }
-        rig.FovOffset = to;
-    }
-
     IEnumerator LampClick(bool on)
     {
         if (lampClick != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(lampClick, .8f);
@@ -304,7 +295,7 @@ public partial class IntroController
         yield return new WaitForSeconds(on ? .7f : .2f);
     }
 
-    bool rollRequested, lastTriple;
+    bool rollRequested, submitted, lastTriple;
     int[] rolls = new int[3];
 
     // The rolls are flavour: written on the sheet, never applied to the character. They only choose
@@ -314,17 +305,19 @@ public partial class IntroController
     // Throws the dice now, as a click would (other input, tests).
     public void RequestRoll() => rollRequested = true;
 
-    // Waits for a click (or the Submit/Interact key); after a while the dice are thrown anyway.
+    void OnSubmit() => submitted = true;
+
+    // Waits for a click (or Submit, through OnSubmit); after a while the dice are thrown anyway.
     IEnumerator WaitForRoll(bool first)
     {
         if (first && !string.IsNullOrEmpty(rollHint)) MessageLog.Post(rollHint, MessageKind.Info);
         float until = Time.time + (first ? 20f : 8f);
         yield return null;
+        submitted = false; // Submit pressed during the line before does not count
         while (Time.time < until)
         {
-            bool clicked = (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
-                || (Keyboard.current != null && (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.eKey.wasPressedThisFrame || Keyboard.current.enterKey.wasPressedThisFrame));
-            if (clicked || rollRequested) { rollRequested = false; yield break; }
+            bool clicked = InputManager.HasInstance && InputManager.Instance.PointerClicked;
+            if (clicked || submitted || rollRequested) { rollRequested = submitted = false; yield break; }
             yield return null;
         }
     }
@@ -392,26 +385,7 @@ public partial class IntroController
         Destroy(die);
     }
 
+    // The seated view eases to a point, keeping its eye height (the seat's when none is set).
     IEnumerator LookAt(Vector3 point, float seconds)
-    {
-        var d = point - room.Look.PitchTransform.position;
-        float yaw = Quaternion.LookRotation(new Vector3(d.x, 0f, d.z)).eulerAngles.y;
-        float pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
-        float h = room.Look.HeightOverride ?? eyeHeight;
-        yield return Move(h, h, room.Look.YawTransform.eulerAngles.y, yaw, room.Look.Pitch, pitch, seconds);
-    }
-
-    // Eased head movement: height, yaw and pitch together.
-    IEnumerator Move(float h0, float h1, float y0, float y1, float p0, float p1, float seconds)
-    {
-        for (float t = 0f; t < seconds; t += Time.deltaTime)
-        {
-            float k = Mathf.SmoothStep(0f, 1f, t / seconds);
-            room.Look.HeightOverride = Mathf.Lerp(h0, h1, k);
-            room.Look.SetYaw(Mathf.LerpAngle(y0, y1, k));
-            room.Look.SetPitch(Mathf.Lerp(p0, p1, k));
-            yield return null;
-        }
-        room.Look.HeightOverride = h1; room.Look.SetYaw(y1); room.Look.SetPitch(p1);
-    }
+        => CameraEase.LookAt(room.Look, point, seconds, room.Look.HeightOverride ?? eyeHeight);
 }

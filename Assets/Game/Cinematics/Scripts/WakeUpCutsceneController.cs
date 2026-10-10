@@ -59,19 +59,14 @@ public class WakeUpCutsceneController : CutsceneController
     {
         if (ScreenManager.HasInstance)
         {
-            if (!brief && eyesOpening != null && eyesOpening.Length > 0) { ScreenManager.Instance.FadeIn(0f); ScreenManager.Instance.FadeSteps(eyesOpening); }
-            else ScreenManager.Instance.FadeOut(brief ? briefFadeDuration : screenFadeDuration, brief ? briefFadeHold : screenFadeHold);
+            if (!brief && eyesOpening != null && eyesOpening.Length > 0) { ScreenManager.Instance.FadeToBlack(0f); ScreenManager.Instance.FadeSteps(eyesOpening); }
+            else ScreenManager.Instance.FadeFromBlack(brief ? briefFadeDuration : screenFadeDuration, brief ? briefFadeHold : screenFadeHold);
         }
 
         if (PlayerManager.HasInstance && startPositionRoom != null)
         {
             var room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
-            if (room != null)
-            {
-                room.Warp(startPositionRoom.position);
-                room.transform.rotation = startPositionRoom.rotation;
-                room.Look?.SetYaw(startPositionRoom.eulerAngles.y);
-            }
+            if (room != null) room.Warp(startPositionRoom.position, startPositionRoom.rotation);
         }
 
         if (!string.IsNullOrEmpty(musicKey))

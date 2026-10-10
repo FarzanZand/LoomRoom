@@ -50,22 +50,12 @@ public class PlayerAnimation : MonoBehaviour
 
     void Apply(Animator anim, float speed, float motion, bool grounded, bool freeFall, float damping = 0.1f)
     {
-        if (anim == null || anim.runtimeAnimatorController == null) return;
-        SetFloat(anim, speedParam, speed, damping);
-        SetFloat(anim, motionSpeedParam, motion, damping);
-        SetBool(anim, groundedParam, grounded);
-        SetBool(anim, freeFallParam, freeFall);
-        if (jumpFlag)       SetBool(anim, jumpParam, true);
-        else if (grounded)  SetBool(anim, jumpParam, false);
-    }
-
-    static void SetFloat(Animator anim, string name, float value, float damping)
-    {
-        if (Character.HasParameter(anim, name, AnimatorControllerParameterType.Float)) anim.SetFloat(name, value, damping, Time.deltaTime);
-    }
-
-    static void SetBool(Animator anim, string name, bool value)
-    {
-        if (Character.HasParameter(anim, name, AnimatorControllerParameterType.Bool)) anim.SetBool(name, value);
+        if (!AnimatorHelper.Ready(anim)) return;
+        AnimatorHelper.SetFloat(anim, speedParam, speed, damping);
+        AnimatorHelper.SetFloat(anim, motionSpeedParam, motion, damping);
+        AnimatorHelper.SetBool(anim, groundedParam, grounded);
+        AnimatorHelper.SetBool(anim, freeFallParam, freeFall);
+        if (jumpFlag)       AnimatorHelper.SetBool(anim, jumpParam, true);
+        else if (grounded)  AnimatorHelper.SetBool(anim, jumpParam, false);
     }
 }

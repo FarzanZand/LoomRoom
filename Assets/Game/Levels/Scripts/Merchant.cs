@@ -12,9 +12,9 @@ public class Merchant : MonoBehaviour, IInteractable
     [TextArea(1, 2)]
     public string[] greetings =
     {
-        "\"Coin for wares, friend. The dead don't haggle, but I do.\"",
-        "\"Down here? Everything's for sale. Everything.\"",
-        "\"Mind the blood on the goods. It washes out. Mostly.\"",
+        "\"Coin for goods. Have a look.\"",
+        "\"I buy and I sell. Take your time.\"",
+        "\"Fair prices, this far down.\"",
     };
     [Tooltip("Consumables this merchant may offer, alongside any the loot table rolls.")]
     public ItemData[] staples = new ItemData[0];
@@ -126,7 +126,7 @@ public class Merchant : MonoBehaviour, IInteractable
         PlayTrade();
         message = $"You buy the {ware.item.itemName} for {ware.price} {Currency}.";
         MessageLog.Post(message, MessageKind.Loot);
-        player.GetComponent<AdventurerProgress>()?.Practise(AdventureSkill.Trading, SkillAction.Buy);
+        Practise(player, SkillAction.Buy);
         return true;
     }
 
@@ -148,12 +148,18 @@ public class Merchant : MonoBehaviour, IInteractable
         if (!CanSell(player, item, out message)) return false;
         int price = SellPriceOf(item);
         container.Consume(slot);
-        player.Wallet?.Add(price);
+        if (player.Wallet != null) player.Wallet.Add(price);
         PlayTrade();
         message = $"You sell the {item.itemName} for {price} {Currency}.";
         MessageLog.Post(message, MessageKind.Loot);
-        player.GetComponent<AdventurerProgress>()?.Practise(AdventureSkill.Trading, SkillAction.Sell);
+        Practise(player, SkillAction.Sell);
         return true;
+    }
+
+    static void Practise(Player player, SkillAction action)
+    {
+        var progress = player.GetComponent<AdventurerProgress>();
+        if (progress != null) progress.Practise(AdventureSkill.Trading, action);
     }
 
     void PlayTrade()

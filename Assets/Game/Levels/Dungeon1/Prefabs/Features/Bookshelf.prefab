@@ -144,15 +144,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonBookshelf
   lore:
-  - A brittle ledger lists the names of the interred. Many are crossed out twice.
-  - '"Do not wake the lord beneath. He does not sleep; he waits."'
-  - A child's primer. Every picture of the sun has been scratched out.
-  - Accounts of the sewer works. Page after page of men lost to the dark water.
-  - "A miner's journal ends mid-sentence: \"The tunnel sings back when we strike
-    it, and tonight\u2014\""
-  - A prayer to the Weaver, asking that the threads of the dead stay cut.
-  - Recipes for preserving meat. Some of the ingredients are not meat.
-  - A map of these halls, drawn by someone who clearly never found the way out.
+  - A ledger of the people buried here. Some names are crossed out.
+  - 'A note: "Do not wake the lord below."'
+  - A child's reading book, swollen with damp.
+  - Accounts of the sewer works. Most pages are water-stained.
+  - A miner's journal. The last entry stops halfway through a line.
+  - A prayer to the Weaver for the dead.
+  - A cookbook. Most of the recipes are for stew.
+  - A map of these halls. Half the rooms are missing from it.
   findChance: 0.35
   loot: {fileID: 0}
   searchClip: {fileID: 8300000, guid: d4b34a6bc76a7fb4f91fb502589427d2, type: 3}

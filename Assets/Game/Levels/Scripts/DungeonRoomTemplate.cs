@@ -34,7 +34,7 @@ public class DungeonRoomTemplate : MonoBehaviour
     [HideInInspector] public int width = 7, height = 7;
     // rows[0] is the south (bottom) row: see DungeonShapeGrid.
     [HideInInspector] public string[] rows;
-    [HideIf(nameof(HasFootprint)), Tooltip("Smallest room, in grid cells, this interior is built for. Smaller rooms still get it, with a warning.")]
+    [HideIf(nameof(HasFootprint)), Tooltip("Smallest room, in grid cells, this interior is built for. Grown layouts make the room at least this big when it fits; a smaller room still gets the interior, without the pieces that fall outside it.")]
     public Vector2Int minimumCells = new Vector2Int(6, 6);
 
     [Title("Architecture")]
@@ -53,8 +53,6 @@ public class DungeonRoomTemplate : MonoBehaviour
     public bool replaceGeneratedProps = true;
     [Tooltip("Spawn enemies only at Enemy sockets. Off also rolls the room's normal encounter.")]
     public bool replaceGeneratedEnemies = true;
-    [Tooltip("Keep the generator's room light. Off when the template brings its own lights.")]
-    public bool keepRoomLight = true;
 
     [Title("Lighting")]
     [Tooltip("No random wall lights in this room: only the ones placed with Wall Light sockets.")]
@@ -139,7 +137,7 @@ public class DungeonRoomTemplate : MonoBehaviour
 
     const string PreviewName = "Room preview (not saved)";
     // Same numbers as DungeonGenerator: walls sit just outside the cell edge, torches just inside.
-    const float WallThickness = .22f;
+    const float WallThickness = DungeonGenerator.WallThickness;
 
     void OnEnable() { if (!Application.isPlaying) QueuePreview(); }
     // Moving, turning or retyping a socket rebuilds the preview.
@@ -208,7 +206,7 @@ public class DungeonRoomTemplate : MonoBehaviour
         bool Floor(Vector2Int p) => shape.IsFloor(p.x, p.y);
         // A door cell opens onto the corridor outside it.
         bool Open(Vector2Int cell, Vector2Int d) => Floor(cell + d) || (shape.DoorAllowed(cell.x, cell.y) && shape[cell.x + d.x, cell.y + d.y] == DungeonShape.Empty);
-        var dirs = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
+        var dirs = DungeonLayout.Neighbours;
 
         for (int x = 0; x < shape.width; x++) for (int y = 0; y < shape.height; y++)
         {
@@ -239,15 +237,12 @@ public class DungeonRoomTemplate : MonoBehaviour
             var lp = transform.InverseTransformPoint(socket.transform.position);
             var cell = new Vector2Int(Mathf.RoundToInt(lp.x / c) + shape.center.x, Mathf.RoundToInt(lp.z / c) + shape.center.y);
             if (!Floor(cell)) continue;
-            var f = transform.InverseTransformDirection(socket.transform.forward);
-            var facing = Mathf.Abs(f.x) >= Mathf.Abs(f.z) ? new Vector2Int(f.x >= 0 ? 1 : -1, 0) : new Vector2Int(0, f.z >= 0 ? 1 : -1);
-            foreach (var d in new[] { facing, new Vector2Int(-facing.y, facing.x), new Vector2Int(facing.y, -facing.x), -facing })
+            foreach (var d in DungeonGenerator.SocketWallOrder(transform.InverseTransformDirection(socket.transform.forward)))
             {
                 if (Open(cell, d)) continue;
-                var outward = new Vector3(d.x, 0, d.y);
                 var torch = (GameObject)Instantiate(prefab, root.transform);
-                torch.transform.localPosition = Local(cell) + outward * (c * .5f - WallThickness * .5f);
-                torch.transform.localRotation = Quaternion.LookRotation(-outward);
+                torch.transform.localPosition = Local(cell) + DungeonGenerator.WallLightOffset(d, c);
+                torch.transform.localRotation = Quaternion.LookRotation(-new Vector3(d.x, 0, d.y));
                 if (tint.HasValue) DungeonWallLight.Apply(torch, tint.Value);
                 break;
             }

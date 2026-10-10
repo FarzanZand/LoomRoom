@@ -141,7 +141,6 @@ public class CombatManager : Singleton<CombatManager>
     [Min(.1f)] public float releaseSpeed = 1.25f;
     [Min(.1f)] public float heavyReleaseSpeed = .95f;
     [Min(.1f)] public float enemyHurtAnimationSpeed = 1.3f;
-    [HideInInspector] public float timedBlockWindow; // Legacy serialized field; timed parries are disabled.
 
     [Header("Charged strike")]
     [Min(.1f)] public float heavyChargeTime = .7f;
@@ -353,6 +352,10 @@ public class CombatManager : Singleton<CombatManager>
         hitStopRoutine = StartCoroutine(HitStopRoutine());
     }
 
+    // The pause menu owns Time.timeScale while it is open (it saves and restores the hit stop's value),
+    // so the stop holds still and never writes the time scale until the game is unpaused.
+    static bool Paused => GameManager.HasInstance && GameManager.Instance.State == GameState.Paused;
+
     IEnumerator HitStopRoutine()
     {
         while (true)
@@ -361,6 +364,7 @@ public class CombatManager : Singleton<CombatManager>
             float start = Time.unscaledTime, length = Mathf.Max(.001f, hitStopEndsAt - start);
             while (Time.unscaledTime < hitStopEndsAt)
             {
+                if (Paused) { hitStopEndsAt += Time.unscaledDeltaTime; start += Time.unscaledDeltaTime; yield return null; continue; }
                 Shake(1f - (Time.unscaledTime - start) / length);
                 yield return null;
             }
@@ -368,12 +372,14 @@ public class CombatManager : Singleton<CombatManager>
 
             // Ease back to full speed; a new hit during the ease drops straight back into the stop.
             bool again = false;
-            for (float t = 0f; t < hitStopRecovery; t += Time.unscaledDeltaTime)
+            for (float t = 0f; t < hitStopRecovery; )
             {
+                if (Paused) { yield return null; continue; }
                 if (Time.unscaledTime < hitStopEndsAt) { again = true; break; }
                 float k = t / hitStopRecovery;
                 Time.timeScale = Mathf.Lerp(hitStopScaleNow, 1f, k * k);
                 yield return null;
+                if (!Paused) t += Time.unscaledDeltaTime;
             }
             if (!again) break;
         }

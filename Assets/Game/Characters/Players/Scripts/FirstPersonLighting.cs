@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // Barony-style light around the player without hot spots. The world light hangs well above the
@@ -15,6 +16,7 @@ public class FirstPersonLighting : MonoBehaviour
     [SerializeField, Min(.1f)] float refreshSeconds = .5f;
 
     float nextRefresh;
+    readonly List<Renderer> renderers = new();
 
     void OnEnable() { Apply(); var eq = GetComponentInParent<Equipment>(); if (eq != null) eq.Changed += Apply; }
     void OnDisable() { var eq = GetComponentInParent<Equipment>(); if (eq != null) eq.Changed -= Apply; }
@@ -42,7 +44,8 @@ public class FirstPersonLighting : MonoBehaviour
         SetLayers(worldLight, WorldLayer);
         SetLayers(armsLight, ArmsLayer);
         SetLayers(ceilingLight, CeilingLayer);
-        foreach (var r in GetComponentsInChildren<Renderer>(true))
+        GetComponentsInChildren(true, renderers);
+        foreach (var r in renderers)
             if (r.renderingLayerMask != ArmsLayer) r.renderingLayerMask = ArmsLayer;
     }
 }

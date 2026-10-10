@@ -11,17 +11,19 @@ public class InteractUI : MonoBehaviour
 
     [SerializeField] RectTransform targetMarker;
     InteractController bound;
+    Canvas canvas;
 
     void LateUpdate()
     {
         var target = bound != null ? bound.Active : null;
         bool show = target != null && target.WorldItem != null && bound.ViewCamera != null;
         if (targetMarker == null) return;
-        targetMarker.gameObject.SetActive(show);
+        if (targetMarker.gameObject.activeSelf != show) targetMarker.gameObject.SetActive(show);
         if (!show) return;
         var bounds = target.TargetBounds;
         Vector2 min = new(float.MaxValue, float.MaxValue), max = new(float.MinValue, float.MinValue);
-        var canvas = targetMarker.GetComponentInParent<Canvas>();
+        if (canvas == null) canvas = targetMarker.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
         var uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
         var parent = (RectTransform)targetMarker.parent;
         for (int i = 0; i < 8; i++)

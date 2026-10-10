@@ -66,6 +66,8 @@ public class PixelLookLibrary : ScriptableObject
     public float tableBrightness = 1f;
 
     [Header("Materials")]
+    [Tooltip("Hidden/LoomRoom/Pixel Lit Object (Rendering/PixelLook/PixelLitObject.shader), the per-object pixelation shader. Referenced here so player builds include it.")]
+    public Shader objectShader;
     [Tooltip("Folder the generated Pixel Lit materials are written to.")]
     [FolderPath] public string outputFolder = "Assets/Game/Rendering/PixelLook/Materials";
     [TableList(AlwaysExpanded = false, ShowPaging = true, NumberOfItemsPerPage = 30)]
@@ -74,18 +76,16 @@ public class PixelLookLibrary : ScriptableObject
     public List<Material> excluded = new();
 
     Dictionary<Material, Entry> byOriginal;
-    Dictionary<Material, Material> toPixel, toOriginal;
+    Dictionary<Material, Material> toOriginal;
 
     public void Rebuild()
     {
         byOriginal = new Dictionary<Material, Entry>();
-        toPixel = new Dictionary<Material, Material>();
         toOriginal = new Dictionary<Material, Material>();
         foreach (var e in entries)
         {
             if (e.original == null || e.pixel == null) continue;
             byOriginal[e.original] = e;
-            toPixel[e.original] = e.pixel;
             toOriginal[e.pixel] = e.original;
         }
     }
@@ -96,17 +96,11 @@ public class PixelLookLibrary : ScriptableObject
         return original != null && byOriginal.TryGetValue(original, out var e) ? e : null;
     }
 
-    public Material PixelFor(Material original)
-    {
-        if (toPixel == null) Rebuild();
-        return original != null && toPixel.TryGetValue(original, out var m) ? m : null;
-    }
-
     public Material OriginalFor(Material pixel)
     {
         if (toOriginal == null) Rebuild();
         return pixel != null && toOriginal.TryGetValue(pixel, out var m) ? m : null;
     }
 
-    void OnValidate() { byOriginal = null; toPixel = toOriginal = null; }
+    void OnValidate() { byOriginal = null; toOriginal = null; }
 }

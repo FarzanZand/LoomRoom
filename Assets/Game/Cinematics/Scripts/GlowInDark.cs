@@ -18,7 +18,8 @@ public class GlowInDark : MonoBehaviour
     public float measured;
 
     static readonly int ColorId = Shader.PropertyToID("_Color");
-    readonly List<Light> lights = new();
+    const float RescanSeconds = 5f; // lights are found this often; between scans only the cached ones are read
+    readonly List<(Light light, UniversalAdditionalLightData data)> lights = new();
     MaterialPropertyBlock block;
     float level = -1f, refreshAt;
     LightingManager lighting;
@@ -31,10 +32,11 @@ public class GlowInDark : MonoBehaviour
     {
         if (Time.unscaledTime >= refreshAt)
         {
-            refreshAt = Time.unscaledTime + 1f;
+            refreshAt = Time.unscaledTime + RescanSeconds;
             lights.Clear();
-            lights.AddRange(FindObjectsByType<Light>(FindObjectsSortMode.None));
-            if (lighting == null) lighting = FindAnyObjectByType<LightingManager>();
+            foreach (var l in FindObjectsByType<Light>())
+                lights.Add((l, l.GetComponent<UniversalAdditionalLightData>()));
+            if (lighting == null) lighting = LightingManager.Instance;
         }
         measured = LightOnFace();
         float target = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(fullBelow, goneAbove, measured));
@@ -62,10 +64,9 @@ public class GlowInDark : MonoBehaviour
         var probe = lighting != null && face != null ? lighting.AmbientFor(face) : RenderSettings.ambientProbe;
         probe.Evaluate(dirs, colors);
         float total = Luma(colors[0]);
-        foreach (var l in lights)
+        foreach (var (l, data) in lights)
         {
             if (l == null || !l.isActiveAndEnabled || l.intensity <= 0f) continue;
-            var data = l.GetComponent<UniversalAdditionalLightData>();
             uint lightLayers = data != null ? data.renderingLayers : (uint)l.renderingLayerMask;
             if ((lightLayers & layers) == 0) continue;
             if (l.type == LightType.Directional)

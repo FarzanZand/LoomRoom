@@ -27,43 +27,12 @@ public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler
         item = data; click = onClick; hover = onHover;
         if (icon != null) { icon.sprite = data != null ? data.icon : null; icon.enabled = icon.sprite != null; }
         if (itemName != null) itemName.text = data != null ? data.itemName : "";
-        if (info != null) info.text = Info(data);
+        if (info != null) info.text = data != null ? data.ShortInfo() : "";
         if (count != null) count.text = amount > 1 ? $"x{amount}" : "";
         if (price != null) price.text = cost;
         if (button != null) button.interactable = available;
         if (group != null) group.alpha = available ? 1f : .5f;
     }
-
-    // What kind of thing it is, in a few words: "Helm, +1 armor", "Weapon, +6 damage", "Heals 6 over 6s".
-    public static string Info(ItemData data)
-    {
-        if (data == null) return "";
-        string effect = null;
-        if (data.effects != null)
-            foreach (var e in data.effects) { effect = e?.Describe(); if (!string.IsNullOrWhiteSpace(effect)) break; }
-        if (data.IsConsumable) return effect ?? "";
-        string kind = data.spell != null ? "Spell tome"
-            : data.itemType == ItemType.Weapon ? "Weapon"
-            : data.itemType == ItemType.Shield ? "Shield"
-            : data.itemType == ItemType.Equipment ? SlotName(data.equipSlot)
-            : data.itemType.ToString();
-        string stat = null;
-        if (data.statModifiers != null)
-            foreach (var m in data.statModifiers)
-                if (m != null) { stat = ItemData.StatLine(m.stat, m.type, m.value, data.itemType == ItemType.Shield && m.stat == StatType.Armor); break; }
-        if (data.spell != null) stat = $"{data.spell.manaCost:0.#} mana";
-        stat ??= effect;
-        return string.IsNullOrWhiteSpace(stat) ? kind : $"{kind}, {stat}";
-    }
-
-    static string SlotName(EquipmentSlot slot) => slot switch
-    {
-        EquipmentSlot.Head => "Helm",
-        EquipmentSlot.Body => "Armor",
-        EquipmentSlot.Legs => "Leggings",
-        EquipmentSlot.Trinket1 or EquipmentSlot.Trinket2 => "Trinket",
-        _ => slot.ToString(),
-    };
 
     public void Clear()
     {

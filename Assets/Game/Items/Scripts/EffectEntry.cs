@@ -83,7 +83,7 @@ public class EffectEntry
                 string label = StatModifierEntry.Label(stat);
                 return duration > 0f ? $"{v} {label} for {duration:0.#}s" : $"{v} {label}";
             }
-            case EffectType.SetFlag:        return $"Sets {flag}";
+            case EffectType.SetFlag:        return "";   // story flags are internal: never shown to the player
             case EffectType.Custom:         return customEffect != null ? customEffect.Describe(this) : "";
             default:                        return "";
         }

@@ -52,6 +52,13 @@ public class EnemyWeaponLoadout : MonoBehaviour
     void LateUpdate()
     {
         if (appliedEnabled != hasWeapon || appliedWeapon != weapon || appliedBow != WantedBow) RefreshWeapon();
+#if UNITY_EDITOR
+        // Grips are shared assets tuned live in Play mode; builds pose the sockets once, in RefreshWeapon.
+        ApplyGrips();
+#endif
+    }
+    void ApplyGrips()
+    {
         ApplyGrip(attachment, grip);
         ApplyGrip(bowAttachment, bowGrip);
         ApplyGrip(arrowAttachment, arrowGrip);
@@ -104,11 +111,17 @@ public class EnemyWeaponLoadout : MonoBehaviour
                 }
             }
             SetArrowNocked(false);
-            return;
         }
+        else if (hasWeapon && weapon != null && weapon.worldPrefab != null)
+            visual = Spawn(weapon.worldPrefab, ref attachment, HumanBodyBones.RightHand, grip, "Weapon grip - right hand", "Equipped weapon - " + weapon.itemName);
 
-        if (!hasWeapon || weapon == null || weapon.worldPrefab == null) return;
-        visual = Spawn(weapon.worldPrefab, ref attachment, HumanBodyBones.RightHand, grip, "Weapon grip - right hand", "Equipped weapon - " + weapon.itemName);
+        ApplyGrips();
+        // New gear joins the hit flash.
+        if (Application.isPlaying)
+        {
+            if (character == null) character = GetComponent<Character>();
+            if (character != null && character.FX != null) character.FX.RefreshRenderers();
+        }
     }
 
     GameObject Spawn(GameObject prefab, ref Transform socket, HumanBodyBones bone, EnemyWeaponGrip pose, string socketName, string visualName)

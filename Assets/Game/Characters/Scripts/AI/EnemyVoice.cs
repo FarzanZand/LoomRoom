@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.AI;
 
 // Idle mutters, the alert bark, pain grunts, death sounds and footsteps, all positioned
 // in 3D so the player hears what is coming before it rounds the corner. Clips and ranges
@@ -18,19 +17,22 @@ public class EnemyVoice : MonoBehaviour
 
     Character character;
     EnemyBrain brain;
-    NavMeshAgent agent;
+    EnemyMotor motor;
     CreatureAudio entry;
     float nextIdle, nextStep, nextPain;
     Vector3 lastPosition;
 
     static float lastUnseenReport = -99f;
-    static readonly RaycastHit[] sightHits = new RaycastHit[16];
+
+    // Enter Play Mode without a domain reload keeps statics.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() => lastUnseenReport = -99f;
 
     void Awake()
     {
         character = GetComponent<Character>();
         brain = GetComponent<EnemyBrain>();
-        agent = GetComponent<NavMeshAgent>();
+        motor = GetComponent<EnemyMotor>();
     }
 
     void OnEnable()
@@ -67,7 +69,8 @@ public class EnemyVoice : MonoBehaviour
         if (entry == null || !character.IsAlive) return;
         if (GameManager.HasInstance && !GameManager.Instance.SimulationActive) return;
 
-        float speed = agent != null && agent.enabled ? agent.velocity.magnitude
+        // EnemyMotor measures what actually moved (path, strafe or knockback); bodies without one are measured here.
+        float speed = motor != null ? motor.Velocity.magnitude
             : (transform.position - lastPosition).magnitude / Mathf.Max(Time.deltaTime, .0001f);
         lastPosition = transform.position;
         bool alerted = brain != null && brain.IsAlerted;
@@ -123,14 +126,7 @@ public class EnemyVoice : MonoBehaviour
         Vector3 head = transform.position + Vector3.up * 1.2f;
         Vector3 delta = head - camera.transform.position;
         if (Vector3.Dot(camera.transform.forward, delta) <= 0f) return false;
-        int count = Physics.RaycastNonAlloc(camera.transform.position, delta.normalized, sightHits, delta.magnitude, ~0, QueryTriggerInteraction.Ignore);
-        for (int i = 0; i < count; i++)
-        {
-            var t = sightHits[i].transform;
-            if (t.IsChildOf(transform)) continue;
-            if (PlayerManager.Instance.Active != null && t.IsChildOf(PlayerManager.Instance.Active.ActivationRoot.transform)) continue;
-            return false;
-        }
-        return true;
+        var player = PlayerManager.Instance.Active;
+        return LineOfSight.Clear(camera.transform.position, head, ~0, transform, player != null ? player.ActivationRoot.transform : null);
     }
 }

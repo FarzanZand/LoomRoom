@@ -44,6 +44,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 706b08c4b487ca24887293df48cfe188, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  mumbleVoice: 1
+  mumbleVoices:
+  - voice: 1
+    babble: {fileID: 11400000, guid: 94bf8cf9202811a409db3f90846034c1, type: 2}
+    perWord: 0.22
+  - voice: 2
+    babble: {fileID: 11400000, guid: 09ca7b9ee98797c4abd663c15982603f, type: 2}
+    perWord: 0.25
+  - voice: 3
+    babble: {fileID: 11400000, guid: 5ad0dfa0d2929604e9cbb03bd72b39d6, type: 2}
+    perWord: 0.22
+  - voice: 4
+    babble: {fileID: 11400000, guid: 9fd2e724c4966c648b787eeda245a690, type: 2}
+    perWord: 0.25
+  - voice: 5
+    babble: {fileID: 11400000, guid: d201d74408300e843996770149d675c9, type: 2}
+    perWord: 0.16
+  - voice: 6
+    babble: {fileID: 11400000, guid: 567382e29e15c7c40b5e2c2d72aa2b01, type: 2}
+    perWord: 0.22
+  mumbleKey: dmMumble
+  syllableGap: 0.09
+  syllablesPerWord: 1.5
+  maxSyllables: 14
+  testSentences:
+  - Roll for initiative.
+  - You hear something moving in the dark.
+  - The door is locked. Perhaps there is a key somewhere.
+  - A rat. A big one.
+  - Well played. Shall we go deeper?
+  - Take the stairs down when you are ready.
+  - That one hit hard. You should drink something.
   mixer: {fileID: 24100000, guid: 171c2312a45918546ad66f788389635e, type: 2}
   sfxPoolSize: 20
   uiPoolSize: 8

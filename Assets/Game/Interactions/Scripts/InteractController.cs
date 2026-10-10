@@ -68,10 +68,15 @@ public class InteractController : MonoBehaviour
         SetActiveTrigger(best);
     }
 
+    // Margin for the cheap reach test: an item's visuals can stick out a little past its trigger collider.
+    const float ReachSlack = 1.5f;
+
     bool Evaluate(InteractableTrigger target, out float score)
     {
         score = float.MaxValue;
-        if (target == null || !target.isActiveAndEnabled || !target.CanInteract(character) ||
+        // The distance test first: most triggers in a level are far away, and it skips the bounds and scoring.
+        if (target == null || !target.isActiveAndEnabled || !target.RoughlyWithin(rayCamera.transform.position, rayDistance + ReachSlack) ||
+            !target.CanInteract(character) ||
             target.transform.IsChildOf(transform) || (rayMask.value & (1 << target.gameObject.layer)) == 0) return false;
         Vector3 origin  = rayCamera.transform.position;
         Vector3 forward = rayCamera.transform.forward;

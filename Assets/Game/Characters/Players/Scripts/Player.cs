@@ -16,7 +16,6 @@ public class Player : Character
     [SerializeField] BodyFollower bodyPresentation;
     [SerializeField] PlayerViewPresentation viewPresentation;
     public GameObject ActivationRoot => activationRoot != null ? activationRoot : gameObject;
-    public BodyFollower BodyPresentation => bodyPresentation;
     public PlayerViewPresentation ViewPresentation => viewPresentation;
 
     public void SynchronizePresentation()
@@ -43,6 +42,7 @@ public class Player : Character
     // out and back in (the root gets SetActive toggled, which re-runs OnEnable).
     bool startingItemsApplied;
     bool respawnPending;
+    bool       hasSpawnPoint;
     Vector3    spawnPosition;
     Quaternion spawnRotation;
 
@@ -50,6 +50,7 @@ public class Player : Character
     {
         spawnPosition = position;
         spawnRotation = rotation;
+        hasSpawnPoint = true;
     }
 
     protected override void Awake()
@@ -69,14 +70,27 @@ public class Player : Character
             if (inv.role == InventoryRole.Hotbar) Hotbar = inv;
             else                                  Bag    = inv;
         }
-        if (settings == null) settings = ScriptableObject.CreateInstance<PlayerSettings>();
+        if (settings == null)
+        {
+            Debug.LogWarning($"{name}: no PlayerSettings assigned; using defaults.", this);
+            settings = ScriptableObject.CreateInstance<PlayerSettings>();
+            fallbackSettings = settings;
+        }
+    }
+
+    PlayerSettings fallbackSettings;   // created above, destroyed with the player
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        if (fallbackSettings != null) Destroy(fallbackSettings);
     }
 
     protected override void Start()
     {
         base.Start();
-        if (spawnPosition == Vector3.zero && spawnRotation == default)
-            SetSpawnPoint(transform.position, transform.rotation);
+        // Where it stands at Start, unless a level already set a spawn point.
+        if (!hasSpawnPoint) SetSpawnPoint(transform.position, transform.rotation);
         ApplyStartingItems();
     }
 
@@ -115,6 +129,14 @@ public class Player : Character
         SynchronizePresentation();
     }
 
+    // Teleports and faces the way `rotation` does: the body takes the rotation, the view its yaw.
+    public void Warp(Vector3 position, Quaternion rotation)
+    {
+        Warp(position);
+        transform.rotation = rotation;
+        Look?.SetYaw(rotation.eulerAngles.y);
+    }
+
     protected override void OnDied()
     {
         base.OnDied();
@@ -137,9 +159,7 @@ public class Player : Character
     void Respawn()
     {
         respawnPending = false;
-        Warp(spawnPosition);
-        transform.rotation = spawnRotation;
-        Look?.SetYaw(spawnRotation.eulerAngles.y);
+        Warp(spawnPosition, spawnRotation);
 
         Stats?.Revive();
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);

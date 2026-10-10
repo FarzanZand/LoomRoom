@@ -1,7 +1,7 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// A hand-painted room footprint. Reference it from a level, theme or room profile shape list
+// A hand-painted room footprint. Reference it from a level, biome or room profile shape list
 // (kind Authored), or as a Room Template's footprint so the template brings its own outline.
 // Room templates can also paint their outline in place (DungeonRoomTemplate.paintFootprint).
 //

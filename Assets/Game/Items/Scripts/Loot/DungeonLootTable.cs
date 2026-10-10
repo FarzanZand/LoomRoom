@@ -27,7 +27,7 @@ public class DungeonLootTable : LootSource
         [Tooltip("Each item can be selected only once within this pool per reward.")] public bool uniqueItems;
         public Entry[] entries = Array.Empty<Entry>();
     }
-    [Tooltip("Legacy single-pick pool. Used only when no reward pools are configured.")]
+    [Tooltip("Single-pick pool: one entry is picked when no reward pools are configured.")]
     public Entry[] entries;
     [Tooltip("Overall chance of a table reward when an enemy dies. Carried items always drop.")]
     [Range(0, 1)] public float enemyDropChance = .7f;

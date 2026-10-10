@@ -12,6 +12,12 @@ public class AudioData : ScriptableObject
     [Min(.01f)] public float minDistance = 1f;
     [Min(.01f)] public float maxDistance = 500f;
 
+    // A random pitch offset in [-variance, variance]; 0 without variance. Shared by every pitch-varied sound.
+    public static float PitchOffset(float variance) => variance > 0f ? Random.Range(-variance, variance) : 0f;
+
+    // This asset's pitch with its variance applied.
+    public float RandomPitch() => pitch + PitchOffset(pitchVariance);
+
     public AudioClip GetClip()
     {
         if (clips == null || clips.Length == 0) return null;

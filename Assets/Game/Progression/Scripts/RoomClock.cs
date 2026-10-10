@@ -22,10 +22,13 @@ public class RoomClock : MonoBehaviour, IInteractable
 
     // Shown instead while set (the intro's night), in minutes after midnight; -1 for the usual morning.
     static int nightMinutes = -1;
+    // Enter Play Mode without a domain reload keeps statics: back to the morning each session.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetNight() => nightMinutes = -1;
     public static void SetNight(int hour, int minute)
     {
         nightMinutes = hour < 0 ? -1 : hour * 60 + minute;
-        foreach (var clock in FindObjectsByType<RoomClock>(FindObjectsSortMode.None)) clock.Refresh();
+        foreach (var clock in FindObjectsByType<RoomClock>()) clock.Refresh();
     }
 
     int TotalMinutes => nightMinutes >= 0 ? nightMinutes : startHour * 60 + startMinute

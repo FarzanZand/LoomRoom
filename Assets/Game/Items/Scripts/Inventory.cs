@@ -65,18 +65,23 @@ public class Inventory : MonoBehaviour
         return n;
     }
 
-    // Adds to an existing stack first, then the first empty slot. Returns false if nothing fit.
-    public bool TryAdd(ItemData item, int count = 1)
+    // Whether TryAdd would take all of count: the container accepts the item and has the space.
+    public bool HasRoomFor(ItemData item, int count = 1)
     {
         if (!Accepts(item) || count <= 0) return false;
-
-        // Pickup callers retry in the other container on failure. Refuse atomically
-        // so a partially filled hotbar cannot duplicate the same world drop in the bag.
         long capacity = 0;
         foreach (var slot in slots)
             if (slot == null || slot.IsEmpty) capacity += Mathf.Max(1, item.maxStackSize);
             else if (slot.item == item) capacity += Mathf.Max(0, item.maxStackSize - slot.count);
-        if (capacity < count) return false;
+        return capacity >= count;
+    }
+
+    // Adds to an existing stack first, then the first empty slot. Returns false if nothing fit.
+    public bool TryAdd(ItemData item, int count = 1)
+    {
+        // Pickup callers retry in the other container on failure. Refuse atomically
+        // so a partially filled hotbar cannot duplicate the same world drop in the bag.
+        if (!HasRoomFor(item, count)) return false;
 
         int remaining = count;
         if (item.maxStackSize > 1)

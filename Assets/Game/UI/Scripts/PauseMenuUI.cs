@@ -16,6 +16,9 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField] GameObject pausePanel;
 
     bool open;
+    // The time scale when the menu opened (a hit stop may be slowing time); restored on close.
+    // CombatManager's hit stop holds still while the game is Paused, so nothing else writes it meanwhile.
+    float resumeTimeScale = 1f;
     public bool IsOpen => open;
 
     static TableLevelLoader Loader => TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
@@ -36,14 +39,17 @@ public class PauseMenuUI : MonoBehaviour
         InputManager.Instance.CancelPressed += OnCancel;
     }
 
+    // Disabled or destroyed while open: restore time and give back the Paused state.
+    void OnDisable() => Close();
+
     void OnDestroy()
     {
+        Close();
         if (InputManager.HasInstance)
         {
             InputManager.Instance.PausePressed -= Open;
             InputManager.Instance.CancelPressed -= OnCancel;
         }
-        if (open) Time.timeScale = 1f;
     }
 
     public void Open()
@@ -51,6 +57,7 @@ public class PauseMenuUI : MonoBehaviour
         if (open || root == null || !GameManager.HasInstance || GameManager.Instance.State != GameState.Explore) return;
         open = true;
         GameManager.Instance.Push(GameState.Paused);
+        resumeTimeScale = Time.timeScale;
         Time.timeScale = 0f;
         root.SetActive(true);
         settings?.Close();
@@ -70,9 +77,9 @@ public class PauseMenuUI : MonoBehaviour
     {
         if (!open) return;
         open = false;
-        settings?.Close();
+        if (settings != null) settings.Close();
         if (root != null) root.SetActive(false);
-        Time.timeScale = 1f;
+        Time.timeScale = resumeTimeScale;
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Paused);
     }
 

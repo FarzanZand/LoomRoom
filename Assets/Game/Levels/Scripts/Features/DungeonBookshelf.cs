@@ -6,14 +6,14 @@ public class DungeonBookshelf : MonoBehaviour, IInteractable
     [TextArea(1, 3)]
     public string[] lore =
     {
-        "A brittle ledger lists the names of the interred. Many are crossed out twice.",
-        "\"Do not wake the lord beneath. He does not sleep; he waits.\"",
-        "A child's primer. Every picture of the sun has been scratched out.",
-        "Accounts of the sewer works. Page after page of men lost to the dark water.",
-        "A miner's journal ends mid-sentence: \"The tunnel sings back when we strike it, and tonight—\"",
-        "A prayer to the Weaver, asking that the threads of the dead stay cut.",
-        "Recipes for preserving meat. Some of the ingredients are not meat.",
-        "A map of these halls, drawn by someone who clearly never found the way out.",
+        "A ledger of the people buried here. Some names are crossed out.",
+        "A note: \"Do not wake the lord below.\"",
+        "A child's reading book, swollen with damp.",
+        "Accounts of the sewer works. Most pages are water-stained.",
+        "A miner's journal. The last entry stops halfway through a line.",
+        "A prayer to the Weaver for the dead.",
+        "A cookbook. Most of the recipes are for stew.",
+        "A map of these halls. Half the rooms are missing from it.",
     };
     [Range(0, 1)] public float findChance = .35f;
     [Tooltip("Rolled as a Chest reward on a find. Empty uses the floor's chest table.")]
@@ -43,9 +43,8 @@ public class DungeonBookshelf : MonoBehaviour, IInteractable
             MessageLog.Post("You find nothing else of use.", MessageKind.Info);
             return;
         }
-        var items = table.RollDrops(rng, floorNumber, DungeonLootSource.Chest);
-        int gold = table.RollGold(rng, floorNumber, DungeonLootSource.Chest);
-        if ((items == null || items.Count == 0) && gold <= 0) { MessageLog.Post("You find nothing else of use.", MessageKind.Info); return; }
+        var (items, gold) = DungeonLootDrop.Roll(table, rng, floorNumber, DungeonLootSource.Chest);
+        if (items.Count == 0 && gold <= 0) { MessageLog.Post("You find nothing else of use.", MessageKind.Info); return; }
         MessageLog.Post("Something was tucked behind the books.", MessageKind.Loot);
         DungeonLootDrop.Spill(items, gold, transform.position + transform.forward * .9f, transform.parent);
     }

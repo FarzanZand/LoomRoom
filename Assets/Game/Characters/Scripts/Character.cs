@@ -26,14 +26,17 @@ public class Character : MonoBehaviour
     public string DisplayName => data != null && !string.IsNullOrEmpty(data.characterName) ? data.characterName : name;
     public bool   IsAlive     => Stats == null || Stats.IsAlive;
 
-    Faction? factionOverride;
-    public Faction Faction => factionOverride ?? (data != null ? data.faction : Faction.Neutral);
-    public event Action FactionChanged;
+    public Faction Faction => data != null ? data.faction : Faction.Neutral;
+    // Players only: attribute and skill rules (cached; hits look it up on the attacker).
+    public AdventurerProgress Adventurer { get; private set; }
+    // Has an EnemyBrain: enemies play their own hurt animation and may leave a corpse.
+    public bool IsEnemy { get; private set; }
 
     public event Action<DamageInfo> Damaged;
     public event Action<DamageInfo> HitLanded;
-    public event Action<float>      Healed;
     public event Action             Died;
+    // The latest hit taken; on AnyDied it is the killing blow (who gets the kill and its XP).
+    public DamageInfo LastDamage { get; private set; }
 
     public static event Action<Character> Spawned;
     public static event Action<Character> AnyDied;
@@ -47,11 +50,12 @@ public class Character : MonoBehaviour
         Stats     = GetComponent<CharacterStats>();
         FX        = GetComponentInChildren<CharacterFX>(true);
         Knockback = GetComponent<IKnockbackReceiver>();
+        Adventurer = GetComponent<AdventurerProgress>();
+        IsEnemy   = GetComponent<EnemyBrain>() != null;
 
         if (Stats != null)
         {
             Stats.Damaged += OnDamaged;
-            Stats.Healed  += amount => Healed?.Invoke(amount);
             Stats.Died    += OnDied;
         }
     }
@@ -70,16 +74,10 @@ public class Character : MonoBehaviour
         }
     }
 
-    public void SetFaction(Faction faction)
-    {
-        if (factionOverride == faction) return;
-        factionOverride = faction;
-        FactionChanged?.Invoke();
-    }
-
     protected virtual void OnDamaged(DamageInfo info)
     {
-        if (!info.Blocked && data != null && GetComponent<EnemyBrain>() == null)
+        LastDamage = info;
+        if (!info.Blocked && data != null && !IsEnemy)
             TriggerAnimation(data.hurtTrigger);
 
         FX?.NotifyHurtReceived(info);
@@ -115,7 +113,7 @@ public class Character : MonoBehaviour
 
         float delay = data != null ? data.deathDisableDelay : 0f;
         // Ragdolled or searchable bodies stay as long as CombatManager says (0 = the whole floor).
-        if (CombatManager.HasInstance && !(this is Player) && GetComponent<EnemyBrain>() != null
+        if (CombatManager.HasInstance && !(this is Player) && IsEnemy
             && (CombatManager.Instance.ragdollDeath || CombatManager.Instance.lootableCorpses))
             delay = CombatManager.Instance.corpseLifetime;
         if (delay > 0f) StartCoroutine(DisableAfterDeath(delay));
@@ -125,6 +123,12 @@ public class Character : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         gameObject.SetActive(false);
+    }
+
+    // Revive (CharacterStats.Revive): drop the death pose flag OnDied set.
+    public void ClearDeadFlag()
+    {
+        if (HasParameter(animator, "Dead", AnimatorControllerParameterType.Bool)) animator.SetBool("Dead", false);
     }
 
     // Called by Hitbox when this character's attack connects.

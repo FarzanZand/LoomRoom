@@ -36,7 +36,7 @@ public partial class DungeonGenerator
                 ? data.authoredRooms[i].raised : i == 0 ? 0 : rng.Next(0, Mathf.Max(0, data.boardMaxRaise) + 1);
             raise[i] = layers * data.boardLayerHeight;
         }
-        var dirs = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
+        var dirs = DungeonLayout.Neighbours;
         for (int x = 0; x < w; x++) for (int z = 0; z < d; z++)
         {
             if (!Layout.floor[x, z]) continue;
@@ -172,7 +172,7 @@ public partial class DungeonGenerator
     void BuildBoardRim()
     {
         var rim = new GameObject("Edge rim").transform; rim.SetParent(board, false);
-        var dirs = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
+        var dirs = DungeonLayout.Neighbours;
         float size = data.cellSize;
         for (int x = 0; x < data.width; x++) for (int z = 0; z < data.depth; z++)
         {

@@ -1,67 +1,64 @@
 # LoomRoom project layout
 
-Open the game with **Tools > LoomRoom > Open Game Scene**. Run **Tools > LoomRoom > Validate Scene Setup** after changing player or camera wiring.
+The only scene is `Scenes/Room.unity`. Project conventions and a fuller map of the code are in `CLAUDE.md` at the repository root; design notes are in `Docs/`.
 
-## Where to edit
+## Folders (`Assets/Game`)
 
-| Feature | Location |
+| Folder | What is in it |
 | --- | --- |
-| Room player prefab and tuning | `Players/Room` |
-| Table player prefab and tuning | `Players/Table` |
-| Player scripts, control preferences, input actions and animations | `Players/Shared` |
-| Combat timing, camera motion, recoil and default audio references | `Combat/Prefabs/CombatManager.prefab` |
-| Audio definitions / source clips | `Audio/Data` / `Audio/Library` |
-| Enemy and NPC scripts, definitions and prefabs | `Characters` |
-| Items, equipment and item effects | `Items` |
-| Apartment materials, props and lighting moods | `World` |
-| Timeline assets and cutscene scripts | `Cinematics` |
-| HUD and UI scripts | `UI` |
-| Editor tools | `Development/Editor` |
-| Game scene | `Scenes/Room.unity` |
+| `Core` | Managers (game state, input, players, progression, world, screen, runs, log, pooling, settings) and their prefabs in `Core/Prefabs` |
+| `Characters` | `Players/{Room,Table,Scripts,Input,Settings}`, `Enemies/{Base,Crypt,Town,_Archive}`, `NPCs`, `Animations`, shared character scripts |
+| `Combat` | `CombatManager.prefab`, hitboxes, spells (`Combat/Spells/<Spell>`), arrows |
+| `Items` | Item data, effects, loot tables and profiles scripts, world models, icons |
+| `Levels` | Level code (`Scripts`), `Resources/TableLevels.asset`, `Shared` (reveal, board), one folder per level: `Dungeon1`, `IntroDungeon`, `Town` |
+| `Progression` | Classes, skills, rules, save, memorial table |
+| `Interactions` | Interactables, doors, room loop portal |
+| `Dialogue` | Dialogue Database, `DialogueBridge`, the DM dialogue UI |
+| `Cinematics` | Cutscene controllers, intro assets, timelines |
+| `UI` | UI scripts, prefabs, kit sprites, fonts, themes |
+| `Rendering` | URP assets, `Desktop Renderer`, retro screen shader, Pixel Look |
+| `World` | Lighting manager, moods, apartment materials, props and prefabs |
+| `Audio` | `AudioManager`, audio data (`Audio/Data`) and source clips (`Audio/Library`) |
+| `Art` | Paintings, pixel item art, terrain layers |
+| `Meshy` | AI-generated models from `Tools/meshy.py` |
+| `Development` | Debug Dungeon session and settings, editor tools in `Development/Editor` |
+| `Scenes` | `Room.unity` |
 
-Imported packages live in `Assets/ThirdParty`. `Assets/Plugins`, `Assets/Packages`, `Assets/Synty`, `Assets/Settings`, and `Assets/Editor Default Resources` retain their package or Unity-specific locations.
+Imported packages live in `Assets/ThirdParty`, `Assets/Synty`, `Assets/Plugins`, `Assets/Packages` and `Assets/ProPixelizer`. `Assets/Settings`, `Assets/Resources` and `Assets/Editor Default Resources` keep their Unity-specific locations.
 
-## Player ownership
+## Editor menus and toolbar
 
-Both prefabs use the same structure:
+Under **Tools > LoomRoom**:
+
+- **New Enemy**, **New NPC** (also right-click a character prefab > **Create > LoomRoom > Character Variant**)
+- **Item Database**, **Sync Item Catalog**
+- **Pixel Look > Build Materials**, **Build Materials (Reset Tuning)**, **Select Library**
+- **Editor Cutaway** (hides the apartment shell in the Scene view)
+- **Fullscreen Game View** (F11), **Fullscreen On Play**
+
+The main toolbar has **Debug** (load the Debug Dungeon arena) and **Dungeon** (generate WorldManager's Debug Dungeon and play it, skipping the room). `PackageToolsMenu` moves the Animation Rigging and Jobs package menus under Tools.
+
+## Players
+
+Both player prefabs use the same structure:
 
 ```text
-RoomPlayer / TablePlayer       activation and scale wrapper
+RoomPlayer / TablePlayer       activation and scale wrapper (PlayerRig)
 ├── Controller                Player, movement, look, interaction, inventory, equipment
 │   ├── ViewRig
 │   │   ├── Yaw
 │   │   │   └── Pitch
 │   │   │       └── ViewPoint  virtual camera and aiming target
-│   │   └── FirstPersonVisuals hands/arms; follows the rendered output camera
+│   │   └── FirstPersonVisuals hands and arms; follow the rendered output camera
 │   ├── GroundProbe
 │   └── Feedback              jump and landing impulses
 └── BodyVisuals               body animator, skeleton and body follower
 ```
 
-Table's Controller also owns combat. The Room wrapper intentionally retains its 20× scale; moving gameplay components to that wrapper would change collider and camera scale behavior. Skeleton bone names and animator-relative paths are preserved.
+The Table player's Controller also owns combat. The Room wrapper keeps its 20x scale. Movement, stamina and starting kit live on each player's `PlayerData` (stored in the prefab, edited on the Character component); control preferences live on `Players/Settings/PlayerSettings.asset`. One output Camera, AudioListener and Cinemachine Brain sit under `Systems/Cameras`.
 
-`Player` owns its activation root, body follower and view presentation references. `PlayerManager` only selects the player, switches the input map and configures the shared camera. Assign body and view references on the player prefab rather than adding parallel references to PlayerManager.
+## Scene and assets
 
-Select the prefab root to use `PlayerRig`: it exposes the character tuning and control preference assets inline, plus a button to select the gameplay components on Controller.
+`Systems`, `Players`, `World`, `Characters`, `Interactables`, `UI`, `Cinematics`, `Lighting` and `Development` are the scene's organising roots. Never assume `transform.root` is a character: find the owning `Player` or `Character` instead.
 
-One output Camera, AudioListener and Cinemachine Brain live under `Systems/Cameras`. Each player retains a virtual camera and its original output channel mask and clipping/culling settings. `PlayerViewPresentation` follows the final camera pose after Cinemachine updates, keeping hands and weapon visuals aligned with charge zoom, swing motion and cutscenes without a second camera.
-
-Movement, jump and stamina values live directly on each player's CharacterData asset. User control preferences live on PlayerSettings. Shared combat feel lives on CombatManager.
-
-## Scene organization
-
-`Systems`, `Players`, `World`, `Characters`, `Interactables`, `UI`, `Cinematics`, `Lighting` and `Development` are organizational roots. Reparent with world position preserved. Never assume `transform.root` is a character: find the owning Player or Character instead.
-
-The dinner set floor remains part of the world because the dinner staging supports authored gameplay/cinematics. Imported demo scenes are excluded from Build Settings.
-
-Move assets through Unity with their `.meta` files so GUID references survive. Editor tools and the input-action wrapper importer also contain paths; update those when reorganizing their assets.
-
-## Cleanup validation
-
-The reorganization preserved all 14,483 GUIDs recorded for the main folder moves. Runtime and editor assemblies compiled successfully. Play-mode checks covered Room and Table movement through the Input System, switching both ways, first-person camera alignment, menu state, full heavy charge/release and zoom recovery, dinner-camera routing, and wake-up playback. No runtime errors were recorded during the final run.
-
-The existing Dinner Timeline has no authored duration. Its camera routing was verified directly; a complete dinner sequence still needs authored Timeline content.
-
-## Editor menus
-
-Project tools are under **Tools > LoomRoom**. Animation Rigging, Jobs/Burst, Meshy, and Synty are also grouped under Tools. PackageToolsMenu relocates Unity package commands after editor reload without modifying the package cache; Burst checkbox states follow the package settings. If upgrading Unity changes its menu registration API, the utility retains the original menus and reports a warning.
+Move assets inside Unity (or with their `.meta` files) so GUID references survive. Some editor tools contain asset paths; update those when moving their assets.

@@ -254,7 +254,10 @@ MonoBehaviour:
   boardTileThickness: 0.14
   boardLayerHeight: 0.32
   boardMaxRaise: 2
-  boardTileTaps: []
+  boardTileTaps:
+  - {fileID: 8300000, guid: 426c8cc8b2a4e1c4f8d100f1b194662f, type: 3}
+  - {fileID: 8300000, guid: fa0b67f13f850da4f9d3fb90db46a4f3, type: 3}
+  - {fileID: 8300000, guid: c137ad7632865df4f90d121edb6c5ec7, type: 3}
   architectureTileSize: 3
   twoTileRoomPercent: 25
   threeTileRoomPercent: 0

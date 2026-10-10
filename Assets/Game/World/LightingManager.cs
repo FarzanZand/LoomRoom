@@ -11,6 +11,10 @@ public sealed partial class LightingManager : MonoBehaviour
 {
     public enum Scope { TableOnly = 0, WholeScene = 1 }
 
+    // The enabled one in the scene (a plain scene object, not a Singleton): a cheap lookup for
+    // cutscenes and loaders instead of searching the scene.
+    public static LightingManager Instance { get; private set; }
+
     [Title("Lighting controls")]
     [EnumToggleButtons]
     [Tooltip("Select which controls to edit. Both sets of settings stay active when switching tabs.")]
@@ -88,6 +92,7 @@ public sealed partial class LightingManager : MonoBehaviour
 
     void OnEnable()
     {
+        Instance = this;
         EnableMoods();
         originalProbe = RenderSettings.ambientProbe;
         if (Application.isPlaying && HasSavedDefault) RestoreDefault();
@@ -97,6 +102,7 @@ public sealed partial class LightingManager : MonoBehaviour
 
     void OnDisable()
     {
+        if (Instance == this) Instance = null;
         DisableMoods();
         fading = false;
         if (sceneApplied)

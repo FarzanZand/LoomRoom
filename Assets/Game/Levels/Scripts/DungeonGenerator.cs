@@ -57,12 +57,11 @@ public partial class DungeonGenerator : MonoBehaviour
         var adjacentHeight = new int[count];
         var order = new int[count];
         for (int i = 0; i < count; i++) { CorridorHeightTiles[i] = 1; order[i] = i; }
-        var dirs = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
         for (int x = 0; x < data.width; x++) for (int z = 0; z < data.depth; z++)
         {
             int region = Layout.RegionIds[x,z];
             if (region < RoomHeightTiles.Length) continue;
-            foreach (var dir in dirs)
+            foreach (var dir in DungeonLayout.Neighbours)
             {
                 int nx = x + dir.x, nz = z + dir.y;
                 if (nx < 0 || nz < 0 || nx >= data.width || nz >= data.depth) continue;
@@ -101,19 +100,21 @@ public partial class DungeonGenerator : MonoBehaviour
         level.CopyTo(all, 0); biome.CopyTo(all, level.Length);
         return all;
     }
-    // The biome's loot answers for every source; the source only picks which of its rules applies.
-    LootSource Loot(DungeonLootSource source)=>Biome!=null ? Biome.loot : null;
-    public LootSource EnemyLootTable=>Loot(DungeonLootSource.Enemy);
+    // The biome's loot answers for every source (enemy, chest, barrel); the source passed to its
+    // rolls picks which of its rules applies.
+    LootSource FloorLoot=>Biome!=null ? Biome.loot : null;
+    public LootSource EnemyLootTable=>FloorLoot;
     public DungeonBiome Biome { get; private set; }
     public int FloorInBiome { get; private set; }=1;
     public int BiomeFloors { get; private set; }=1;
     float EncounterChance=>Biome!=null ? Biome.EncounterChance(FloorInBiome,BiomeFloors) : 0;
     int MaxEnemiesPerRoom=>Biome!=null ? Biome.maxEnemiesPerRoom : 1;
     public DungeonMilestone Milestone { get; private set; }
-    public DungeonBossEncounter BossEncounter { get; private set; }
     public int MerchantRoom { get; private set; }=-1;
-    // Placement for everything added after the original generator (templates, breakables,
-    // features, merchant). Its own stream keeps older seeds' layouts, fights and loot unchanged.
+    // Streams: random (the main one) draws roles, profiles, enemy counts and spawns, props and the
+    // loot seeds of supply spots; extraRandom draws the merchant, templates and their sockets,
+    // breakables and features, so adding those never shifted the main stream. decorRandom and
+    // propRandom (Growth) draw wall decorations, dead ends and furnishing rules.
     System.Random extraRandom;
     DungeonRoomTemplate[] templates;
     GameObject[] templateInstances;
@@ -149,9 +150,17 @@ public partial class DungeonGenerator : MonoBehaviour
         actorSockets.Clear(); featureCounts.Clear(); MerchantRoom = -1;
         BeginDressing(seed);
         System.Collections.Generic.List<(Vector2Int, Vector2Int)> authoredDoors = null;
-        if (level.layoutMode == DungeonLayoutMode.Grown) GrowLayout(level, seed);
-        else if (level.layoutMode == DungeonLayoutMode.Authored) authoredDoors = AuthoredLayout(level, seed);
-        else PartitionLayout(level, seed);
+        if (level.layoutMode == DungeonLayoutMode.Authored)
+        {
+            authoredDoors = AuthoredLayout(level, seed);
+            MerchantRoom = ChooseMerchantRoom(Roles, i => TemplatePrefab(i) != null);
+        }
+        else
+        {
+            if (level.layoutMode != DungeonLayoutMode.Grown)
+                Debug.LogWarning($"{level.name}: the {level.layoutMode} layout style is retired; generating a Grown layout. Set Layout Style to Grown on the level.", level);
+            GrowLayout(level, seed); // chooses the merchant's room too, before the room shapes
+        }
         doorways = authoredDoors != null ? (level.doorPrefab != null ? authoredDoors : new())
             : level.doorPrefab != null && level.doorPercent > 0 ? Layout.SelectDoorways(level.doorPercent) : new();
         AddStartingRoomDoor();
@@ -191,7 +200,7 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     // The content map's enemies, breakables and floor items, after navigation exists.
-    void SpawnAuthoredContent(int floorNumber)
+    void SpawnAuthoredContent()
     {
         var content = data.AuthoredRows(data.authoredContent ?? "");
         for (int row = 0; row < content.Length; row++)
@@ -209,39 +218,9 @@ public partial class DungeonGenerator : MonoBehaviour
                 if (marker.item != null) DungeonPickup.Spawn(marker.item, pos, transform, marker.count);
                 if (marker.prefab == null) continue;
                 if (marker.prefab.GetComponent<DungeonDestructible>() != null) { SpawnDestructible(marker.prefab, pos, rotation, marker.loot, random.Next()); continue; }
-                var go = Instantiate(marker.prefab, pos, rotation, transform);
-                var character = go.GetComponent<Character>();
-                if (character != null) data.balance?.Apply(character, floorNumber);
+                // Authored enemies keep their own loot drop settings.
+                SetUpEnemy(Instantiate(marker.prefab, pos, rotation, transform), null);
             }
-    }
-
-    // The original layout: one rectangular room per partition of the grid.
-    void PartitionLayout(TableLevelData level, int seed)
-    {
-        Layout = new DungeonLayout(level.width, level.depth, level.roomCount, seed, level.loopPercent);
-        Roles=new RoomRole[Layout.rooms.Count];
-        for(int i=0;i<Roles.Length;i++) {
-            float encounter=EncounterChance;
-            Roles[i]=i==0?RoomRole.Entrance:Layout.rooms[i].Contains(Layout.Exit)?RoomRole.Exit:random.NextDouble()<encounter?RoomRole.Combat:(RoomRole)random.Next(2,5);
-        }
-        profiles=new DungeonRoomProfile[Roles.Length];
-        for(int i=0;i<profiles.Length;i++)profiles[i]=ChooseProfile(Roles[i]);
-        var scales = new float[Layout.rooms.Count];
-        int exitRoom = 0;
-        for (int i=0;i<scales.Length;i++)
-        {
-            scales[i] = profiles[i] != null ? profiles[i].sizeScale : 1;
-            if (Roles[i] == RoomRole.Exit) exitRoom = i;
-        }
-        var sizeRandom = new System.Random(unchecked(seed + 49999));
-        var order = new int[scales.Length];
-        for (int i=0;i<order.Length;i++) order[i]=i;
-        for (int i=order.Length-1;i>0;i--) { int j=sizeRandom.Next(i+1); (order[i],order[j])=(order[j],order[i]); }
-        int largeCount = Mathf.RoundToInt(scales.Length*Mathf.Clamp(level.largeRoomPercent,0,30)/100f);
-        for (int i=0;i<largeCount;i++) scales[order[i]] *= Mathf.Clamp(level.largeRoomScale,1,3);
-        if (Milestone != null) scales[exitRoom] = Mathf.Max(scales[exitRoom], Mathf.Clamp(Milestone.arenaSizeScale,1,3));
-        // Rebuild routes, region ownership, reserved walkways and distances around the resized rooms.
-        Layout = new DungeonLayout(level.width, level.depth, level.roomCount, seed, level.loopPercent, scales, exitRoom);
     }
 
     void BuildArchitecture(TableLevelData level, int seed, int floorNumber, System.Diagnostics.Stopwatch watch)
@@ -254,7 +233,7 @@ public partial class DungeonGenerator : MonoBehaviour
         SelectCorridorHeights(unchecked(seed + 3571));
         RegionStyles = new DungeonRoomStyle[Layout.RegionCount];
         var styleRandom = new System.Random(unchecked(seed + 15485863));
-        var roomStyles = Both(level.roomStyles, Biome?.roomStyles); var corridorStyles = Both(level.corridorStyles, Biome?.corridorStyles);
+        var roomStyles = Both(level.roomStyles, Biome != null ? Biome.roomStyles : null); var corridorStyles = Both(level.corridorStyles, Biome != null ? Biome.corridorStyles : null);
         for (int i = 0; i < RegionStyles.Length; i++)
             RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? roomStyles : corridorStyles, styleRandom);
         for (int i=0;i<profiles.Length;i++)
@@ -271,14 +250,14 @@ public partial class DungeonGenerator : MonoBehaviour
             if (t != null && t.openCeiling) openRoofs[i] = true;
             frames[i] = t != null && t.openCeiling ? t.ceilingFrame : level.skylightFrame;
         }
-        bool RoofOpen(Vector2Int c) => OpenCell(c) && openRoofs[Layout.RegionIds[c.x, c.y]];
+        bool RoofOpen(Vector2Int c) => Open(c) && openRoofs[Layout.RegionIds[c.x, c.y]];
         SpawnRoofOpen = RoofOpen(Layout.Start);
-        bool WindowAt(Vector2Int c, Vector2Int d) => OpenCell(c) && openEdges[Layout.RegionIds[c.x, c.y]] && !OpenCell(c + d) && Layout.FacesOutside(c, d);
+        bool WindowAt(Vector2Int c, Vector2Int d) => Open(c) && openEdges[Layout.RegionIds[c.x, c.y]] && !Open(c + d) && Layout.FacesOutside(c, d);
         if (Board) { ComputeBoardElevations(seed); BeginBoard(); }
         geometry = new GameObject("Architecture").transform; geometry.SetParent(transform, false);
         ceiling = new GameObject("Ceilings").transform; ceiling.SetParent(transform, false);
         float size = level.cellSize, tile = level.architectureTileSize;
-        var dirs = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
+        var dirs = DungeonLayout.Neighbours;
         for (int x = 0; x < level.width; x++) for (int z = 0; z < level.depth; z++)
         {
             if (!Layout.floor[x,z]) continue;
@@ -294,7 +273,7 @@ public partial class DungeonGenerator : MonoBehaviour
             float CeilingInset(Vector2Int direction)
             {
                 var neighborCell = new Vector2Int(x, z) + direction;
-                return OpenCell(neighborCell) && HeightAt(neighborCell.x, neighborCell.y) > height
+                return Open(neighborCell) && HeightAt(neighborCell.x, neighborCell.y) > height
                     ? WallThickness - CeilingWallOverlap : 0;
             }
             float left = CeilingInset(Vector2Int.left), right = CeilingInset(Vector2Int.right);
@@ -343,9 +322,8 @@ public partial class DungeonGenerator : MonoBehaviour
                 }
             }
         }
-        var lighting = data.DungeonLighting(FloorNumber);
-        ChooseTemplatesAndMerchant();
-        for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(i,lighting);
+        ChooseTemplates();
+        for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(i);
         DecorateWalls();
         PlaceTorches();
         DressCorridors();
@@ -383,7 +361,7 @@ public partial class DungeonGenerator : MonoBehaviour
         MakeExit(ladderAt - Vector3.up * .12f, true).transform.rotation = SpawnRotation;
         var exitStair = MakeExit(ExitPoint, false);
         // Spawn after navigation exists. The first room is always safe. An authored map brings its own.
-        if (Authored) SpawnAuthoredContent(floorNumber);
+        if (Authored) SpawnAuthoredContent();
         else for (int i=1;i<Layout.rooms.Count;i++)
         {
             // Treasure and storage rooms always have a guard; rest rooms stay safe.
@@ -401,9 +379,7 @@ public partial class DungeonGenerator : MonoBehaviour
                 // before giving up, so a combat room never ends up empty by accident.
                 if (!NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas) && !FindRoomFloor(i,random,out hit)) continue;
                 var enemy = Instantiate(prefab,hit.position,Quaternion.Euler(0,random.Next(360),0),transform);
-                level.balance?.Apply(enemy.GetComponent<Character>(),floorNumber);
-                var drop = enemy.GetComponent<DungeonLootDrop>();
-                if(drop != null) { if(!drop.overrideLevelTable)drop.table = First(profiles[i]?.rewards, Loot(DungeonLootSource.Enemy)); drop.seed = random.Next(); drop.floorNumber=floorNumber; }
+                SetUpEnemy(enemy,random,profiles[i]!=null ? profiles[i].rewards : null);
             }
         }
         SpawnSocketActors(exitStair);
@@ -482,7 +458,7 @@ public partial class DungeonGenerator : MonoBehaviour
             {
                 int region = Layout.RegionIds[x,z];
                 if (region < Layout.rooms.Count || RegionStyles[region] != null) continue;
-                foreach (var d in new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down })
+                foreach (var d in DungeonLayout.Neighbours)
                 {
                     var n = new Vector2Int(x + d.x, z + d.y);
                     if (!Layout.InBounds(n) || !Layout.floor[n.x,n.y]) continue;
@@ -492,15 +468,12 @@ public partial class DungeonGenerator : MonoBehaviour
             }
     }
 
+    // Rolls even when no profile fits the role, so the main stream stays in step.
     DungeonRoomProfile ChooseProfile(RoomRole role)
     {
         if(data.roomProfiles==null)return null;
-        float total=0;
-        bool Eligible(DungeonRoomProfile p)=>p!=null && p.role==role && p.weight>0 && FloorNumber>=p.minFloor && (p.maxFloor<=0||FloorNumber<=p.maxFloor);
-        foreach(var profile in data.roomProfiles)if(Eligible(profile))total+=profile.weight;
-        double roll=random.NextDouble()*total;
-        foreach(var profile in data.roomProfiles)if(Eligible(profile)){roll-=profile.weight;if(roll<0)return profile;}
-        return null;
+        return WeightedPick.Choose(data.roomProfiles,p=>p!=null && p.role==role && FloorNumber>=p.minFloor && (p.maxFloor<=0||FloorNumber<=p.maxFloor) ? p.weight : 0,
+            random,drawWhenEmpty:true,singleTotal:true);
     }
 
     void MakeDoors(int seed)
@@ -529,9 +502,13 @@ public partial class DungeonGenerator : MonoBehaviour
                 // masonry when the rooms on either side have different ceiling heights.
                 top += CeilingWallOverlap;
                 const float lintelFaceInset = .005f;
-                for (float y = bottom; y < top;)
+                // One piece per wall tile row, counted in whole rows so the loop always ends.
+                float tileSize = data.architectureTileSize;
+                for (int row = Mathf.FloorToInt(bottom/tileSize); row*tileSize < top; row++)
                 {
-                    float end = Mathf.Min(top, (Mathf.Floor(y/data.architectureTileSize)+1)*data.architectureTileSize);
+                    float y = Mathf.Max(bottom, row*tileSize);
+                    float end = Mathf.Min(top, (row+1)*tileSize);
+                    if (end <= y) continue;
                     float depth = WallThickness - lintelFaceInset * 2;
                     // On a board the lintel is the arch's beam: across both posts, and part of the door.
                     float spanWidth = Board ? data.cellSize + .68f : data.cellSize;
@@ -541,7 +518,6 @@ public partial class DungeonGenerator : MonoBehaviour
                     var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(Board ? 0 : WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
                         WallMaterial(Layout.RegionIds[p.x,p.y],y), Board ? door.transform : transform);
                     Destroy(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
-                    y = end;
                 }
                 if (Board) BoardDoorFrame(gate, p, n, pos.y + top);
             }
@@ -549,14 +525,13 @@ public partial class DungeonGenerator : MonoBehaviour
         }
     }
 
-    void DecorateRoom(int index,LightingManager.MoodState lighting)
+    // Supply spots, breakables, features and props. A room with a template gets the template instead.
+    // No lights here: they come from wall torches (PlaceTorches) and the player, like Barony.
+    void DecorateRoom(int index)
     {
-        Vector3 center = Cell(Layout.RoomCenter(index));
-        var template = templates[index];
-        if (template != null && !template.keepRoomLight) { PlaceTemplate(index); return; }
-        // Light comes from wall torches (PlaceTorches) and the player, like Barony.
+        if (templates[index] != null) { PlaceTemplate(index); return; }
         var profile=profiles[index];
-        if (template != null) { PlaceTemplate(index); return; }
+        var rewards=profile!=null ? profile.rewards : null;
         // Only decorate cells outside the reserved doorway-to-centre routes.
         var available=new System.Collections.Generic.List<Vector2Int>();
         foreach(var p in Layout.RoomCells(index))if(!Layout.Reserved.Contains(p))available.Add(p);
@@ -564,12 +539,12 @@ public partial class DungeonGenerator : MonoBehaviour
         int cursor=0;
         bool Spot(out Vector3 pos) {pos=default;if(cursor>=available.Count)return false;pos=Cell(available[cursor++]);return true;}
         // An authored map places its own loot.
-        if(!Authored && Spot(out var supply))MakeContainer(supply,Roles[index]==RoomRole.Treasure,profile?.rewards,FaceCenter(supply,index));
-        if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,profile?.rewards,FaceCenter(extra,index));
+        if(!Authored && Spot(out var supply))MakeContainer(supply,Roles[index]==RoomRole.Treasure,rewards,FaceCenter(supply,index));
+        if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,rewards,FaceCenter(extra,index));
         var (rules,prefabs)=Furnishing(profile);
         if(rules!=null)
         {
-            int left=PlaceExtras(index,available,cursor,profile?.rewards);
+            int left=PlaceExtras(index,available,cursor,rewards);
             PlaceRules(index,available.GetRange(left,available.Count-left),rules);
             return;
         }
@@ -578,7 +553,7 @@ public partial class DungeonGenerator : MonoBehaviour
         int props=random.Next(min,max+1);
         // Newer placement draws from the extra stream, after the original props consumed theirs.
         int propCursor=cursor+props;
-        PlaceExtras(index,available,propCursor,profile?.rewards);
+        PlaceExtras(index,available,propCursor,rewards);
         for(int i=0;i<props && Spot(out var pos);i++) {
             if(prefabs!=null && prefabs.Length>0) {
                 var prefab=prefabs[random.Next(prefabs.Length)];
@@ -607,6 +582,8 @@ public partial class DungeonGenerator : MonoBehaviour
         return Quaternion.LookRotation(facing);
     }
 
+    // A breakable's pick and turn come from the extra stream, but its loot seed (like a chest's or a
+    // barrel's) from the main one: one main draw per supply spot, whatever stands there.
     void MakeContainer(Vector3 pos,bool chest,LootSource rewardOverride=null,Quaternion? facing=null)
     {
         if(!chest)
@@ -638,7 +615,9 @@ public partial class DungeonGenerator : MonoBehaviour
                 DestroyImmediate(band.GetComponent<Collider>());
             }
         }
-        var container=go.GetComponent<DungeonContainer>() ?? go.AddComponent<DungeonContainer>(); container.chest=chest; container.loot=rewardOverride ?? Loot(chest?DungeonLootSource.Chest:DungeonLootSource.Barrel); container.floorNumber=FloorNumber;
+        var container=go.GetComponent<DungeonContainer>();
+        if(container==null)container=go.AddComponent<DungeonContainer>();
+        container.chest=chest; container.loot=First(rewardOverride,FloorLoot); container.floorNumber=FloorNumber;
         container.seed=random.Next(); container.debrisMaterial=data.woodMaterial;
         container.openAudio=chest ? data.chestOpenAudio:data.containerBreakAudio;
         if(chest && !authoredChest)
@@ -648,624 +627,11 @@ public partial class DungeonGenerator : MonoBehaviour
         }
     }
 
-    bool Descends=>FloorNumber<data.FloorCount;
-    DungeonExit MakeExit(Vector3 pos,bool entrance)
-    {
-        bool descending=!entrance && Descends;
-        var go=new GameObject(entrance ? "Entrance stair" : descending ? "Stairs down" : "Final exit stair"); go.transform.SetParent(transform,false); go.transform.position=pos;
-        var exit=go.AddComponent<DungeonExit>(); exit.entrance=entrance;
-        var col=go.AddComponent<BoxCollider>(); col.isTrigger=true;
-        // On a board the way on is always the stone stairwell, and there is no ladder to climb in by.
-        if(descending || (Board && !entrance)){ BuildStairwell(go.transform,exit); col.center=new Vector3(0,1f,.3f); col.size=new Vector3(1.1f,1.6f,1f); }
-        else { if(!Board) BuildLadder(go.transform); col.center=new Vector3(0,1,0); col.size=new Vector3(1.2f,2,1.2f); }
-        go.AddComponent<InteractableTrigger>();
-        return exit;
-    }
-
-    // A stone stairwell: up onto a landing, then steps going down into the dark under a lintel.
-    // (The dungeon sits on the table top, so the way down is built above the floor.) Faces the
-    // open neighbouring cell; an iron portcullis closes it while the exit is sealed.
-    void BuildStairwell(Transform root, DungeonExit exit)
-    {
-        var cell=CellOf(root.position);
-        foreach(var d in new[]{Vector2Int.down,Vector2Int.left,Vector2Int.right,Vector2Int.up})
-            if(Layout.InBounds(cell+d) && Layout.floor[cell.x+d.x,cell.y+d.y]){ root.rotation=Quaternion.LookRotation(new Vector3(-d.x,0,-d.y)); break; }
-        int region=Layout.RegionIds[cell.x,cell.y];
-        var stone=FloorMaterial(region,cell.x,cell.y);
-        var walls=stone;
-        var block=new MaterialPropertyBlock();
-        GameObject Part(string name,Vector3 local,Vector3 size,Material material,float shade=1,Transform parent=null)
-        {
-            var g=Box(name,root.TransformPoint(local),size,material,parent!=null ? parent : root); g.transform.rotation=root.rotation;
-            if(shade<1){ var r=g.GetComponent<Renderer>(); r.GetPropertyBlock(block); var c=Color.white*shade; c.a=1; block.SetColor("_BaseColor",c); block.SetColor("_Color",c); r.SetPropertyBlock(block); }
-            return g;
-        }
-        // Local +z points into the stairwell; the opening faces -z.
-        const float width=1.1f, height=2.4f, wall=.28f, back=.95f;
-        // Two steps up to the landing at the mouth.
-        Part("Step",new Vector3(0,.06f,-.75f),new Vector3(width+.3f,.12f,.3f),data.trimMaterial);
-        Part("Landing",new Vector3(0,.12f,-.42f),new Vector3(width+.3f,.24f,.4f),data.trimMaterial);
-        // Inside: steps going down, darker the deeper they go, ending in black.
-        for(int i=0;i<4;i++)
-        {
-            float top=.18f-i*.055f, z=-.09f+i*.25f;
-            Part("Step down",new Vector3(0,top*.5f,z),new Vector3(width,top,.25f),stone,Mathf.Lerp(.55f,.04f,i/3f));
-        }
-        Part("Dark",new Vector3(0,height*.5f,back-.05f),new Vector3(width,height,.1f),walls,0);
-        Part("Dark roof",new Vector3(0,height-.05f,.4f),new Vector3(width,.1f,1.2f),walls,0);
-        // Stone housing.
-        foreach(float x in new[]{-1f,1f})
-        {
-            Part("Side wall",new Vector3(x*(width+wall)*.5f,height*.5f,.35f),new Vector3(wall,height,1.3f),walls);
-            Part("Side wall inner",new Vector3(x*(width*.5f-.01f),height*.5f,.45f),new Vector3(.02f,height,1f),walls,.08f);
-        }
-        Part("Back wall",new Vector3(0,height*.5f,back+wall*.5f),new Vector3(width+wall*2,height,wall),walls);
-        Part("Lintel",new Vector3(0,height+.1f,-.25f),new Vector3(width+wall*2+.12f,.22f,.3f),data.trimMaterial);
-        Part("Roof",new Vector3(0,height+.06f,.4f),new Vector3(width+wall*2+.06f,.14f,1.35f),walls);
-        // Portcullis while a guardian lives.
-        var gate=new GameObject("Portcullis"); gate.transform.SetParent(root,false);
-        for(int i=-2;i<=2;i++) Part("Bar",new Vector3(i*.22f,height*.5f,-.2f),new Vector3(.05f,height,.05f),data.metalMaterial,1,gate.transform);
-        for(int i=1;i<=3;i++) Part("Bar",new Vector3(0,i*.45f,-.2f),new Vector3(width,.05f,.05f),data.metalMaterial,1,gate.transform);
-        var bars=gate.AddComponent<BoxCollider>(); bars.center=new Vector3(0,height*.5f,-.2f); bars.size=new Vector3(width,height,.1f);
-        exit.grate=gate; gate.SetActive(exit.Sealed);
-    }
-
-    // A wooden ladder up to a hatch in the ceiling: the way in, and the way out on the last floor.
-    void BuildLadder(Transform root)
-    {
-        var cell=CellOf(root.position);
-        float height=Layout.InBounds(cell) && Layout.floor[cell.x,cell.y] ? HeightAt(cell.x,cell.y) : data.architectureTileSize;
-        var p=root.position;
-        var wood=data.woodMaterial;
-        foreach(float x in new[]{-.28f,.28f}) Box("Rail",p+new Vector3(x,height*.5f,0),new Vector3(.08f,height,.08f),wood,root);
-        for(float y=.3f;y<height-.1f;y+=.36f) Box("Rung",p+new Vector3(0,y,0),new Vector3(.52f,.05f,.06f),wood,root);
-        // Hatch: a dark square framed in wood, just under the ceiling.
-        Box("Hatch",p+Vector3.up*(height-.05f),new Vector3(1.1f,.06f,1.1f),wood,root);
-        foreach(var d in new[]{Vector3.right,Vector3.left,Vector3.forward,Vector3.back})
-            Box("Hatch frame",p+d*.6f+Vector3.up*(height-.07f),d.x!=0 ? new Vector3(.12f,.14f,1.32f) : new Vector3(1.32f,.14f,.12f),data.trimMaterial,root);
-    }
-
-    // ── Templates, breakables, features, merchant, boss ──────────────
-
-    DungeonWeightedPrefab[] Destructibles => Both(data.destructibles, Biome?.destructibles);
-    DungeonFeature[] Features => Both(data.features, Biome?.features);
-    static bool IsFloorBreakable(GameObject prefab) { var d=prefab.GetComponent<DungeonDestructible>(); return d==null || d.placement==DestructiblePlacement.Floor; }
-    static DungeonRoomRoles Mask(RoomRole role) => (DungeonRoomRoles)(1<<(int)role);
-
-    // A room profile's own enemies replace the biome's spawns for that room.
-    GameObject ChooseEnemy(int room, System.Random rng)
-    {
-        var own=profiles[room]?.enemies;
-        if(own!=null && own.Length>0) return own[rng.Next(own.Length)];
-        return Biome!=null ? Biome.ChooseEnemy(rng,FloorInBiome) : null;
-    }
-
-    // The hand-built interior for a room: the starting room, a milestone arena or the profile's template.
-    GameObject TemplatePrefab(int i) =>
-        Authored ? (data.authoredRooms!=null && i<data.authoredRooms.Length && data.authoredRooms[i]?.template!=null ? data.authoredRooms[i].template : i==0 ? data.startingRoom : null)
-        : i==0 && UsesStartingRoom ? data.startingRoom
-        : i==MerchantRoom && i!=0 && data.shopRoom!=null ? data.shopRoom
-        : Roles[i]==RoomRole.Exit && Milestone!=null && Milestone.arena!=null ? Milestone.arena : profiles[i]?.roomTemplate;
-    DungeonRoomTemplate TemplateOf(int i) { var p=TemplatePrefab(i); return p!=null ? p.GetComponent<DungeonRoomTemplate>() : null; }
-
-    void ChooseTemplatesAndMerchant()
-    {
-        templates=new DungeonRoomTemplate[Layout.rooms.Count];
-        templateInstances=new GameObject[Layout.rooms.Count];
-        ChooseMerchantRoom();
-        for(int i=0;i<templates.Length;i++)
-        {
-            var prefab=TemplatePrefab(i);
-            if(prefab==null)continue;
-            templates[i]=prefab.GetComponent<DungeonRoomTemplate>();
-            if(templates[i]==null){Debug.LogWarning($"Room template {prefab.name} has no DungeonRoomTemplate component; generating the room normally.",prefab);continue;}
-            // Smaller rooms still get the template: pieces outside the room or on walkways are removed.
-        }
-    }
-
-    // A quiet room for the merchant. With a shop room template, rooms that have no hand-built
-    // interior of their own are preferred so the shop never replaces a shrine or an arena.
-    void ChooseMerchantRoom()
-    {
-        if(data.merchantPrefab==null || extraRandom.NextDouble()>=data.MerchantChance(FloorNumber))return;
-        var candidates=new System.Collections.Generic.List<int>();
-        var plain=new System.Collections.Generic.List<int>();
-        for(int i=1;i<Roles.Length;i++)
-            if(Roles[i]==RoomRole.Rest || Roles[i]==RoomRole.Storage || Roles[i]==RoomRole.Treasure){candidates.Add(i);if(TemplatePrefab(i)==null)plain.Add(i);}
-        if(data.shopRoom!=null && plain.Count>0)candidates=plain;
-        if(candidates.Count==0)candidates.Add(0);
-        MerchantRoom=candidates[extraRandom.Next(candidates.Count)];
-    }
-
-    // Walkways inside a room: every doorway approach, and the centre cross or the routes to the centre.
-    System.Collections.Generic.HashSet<Vector2Int> Lanes(int room)
-    {
-        var lanes=new System.Collections.Generic.HashSet<Vector2Int>();
-        foreach(var p in Layout.RoomCells(room))if(Layout.Walkways.Contains(p))lanes.Add(p);
-        return lanes;
-    }
-
-    void PlaceTemplate(int index)
-    {
-        var template=templates[index];
-        // Grown rooms built from a template footprint may be turned; the interior turns with them.
-        var instance=Instantiate(template.gameObject,Cell(Layout.RoomCenter(index)),Quaternion.Euler(0,90*Layout.RoomRotation(index),0),transform);
-        instance.name=template.gameObject.name;
-        templateInstances[index]=instance;
-        var lanes=Lanes(index);
-        foreach(var piece in instance.GetComponentsInChildren<DungeonTemplatePiece>(true))
-        {
-            if(piece==null)continue;
-            var cell=CellOf(piece.transform.position);
-            // Outside a smaller room it would sit in a wall; on a walkway it would block the route.
-            if(!Layout.InRoom(index,cell) || (piece.removeIfBlocking && lanes.Contains(cell)))
-                DestroyImmediate(piece.gameObject); // navigation is baked this frame
-        }
-        var rewards=profiles[index]?.rewards;
-        foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))
-        {
-            if(!Layout.InRoom(index,CellOf(socket.transform.position)))continue;
-            if(socket.chance<1f && extraRandom.NextDouble()>=socket.chance)continue;
-            var t=socket.transform;
-            switch(socket.type)
-            {
-                case DungeonSocketType.Chest: MakeContainer(t.position,true,rewards,t.rotation); break;
-                case DungeonSocketType.Breakable:
-                {
-                    var prefab=socket.overridePrefab!=null ? socket.overridePrefab : DungeonWeightedPrefab.Choose(Destructibles,extraRandom);
-                    if(prefab!=null)SpawnDestructible(prefab,t.position,t.rotation,rewards,extraRandom.Next());
-                    break;
-                }
-                case DungeonSocketType.WallLight: SocketLight(socket,index); break;
-                case DungeonSocketType.Feature:
-                {
-                    var prefab=socket.overridePrefab;
-                    if(prefab==null){var f=PickFeature(index);prefab=f?.prefab;}
-                    if(prefab!=null)SpawnFeature(prefab,t.position,t.rotation);
-                    break;
-                }
-                default:
-                    if(!actorSockets.TryGetValue(index,out var list))actorSockets[index]=list=new();
-                    list.Add(socket);
-                    break;
-            }
-        }
-        if(!template.replaceGeneratedProps)
-        {
-            var available=new System.Collections.Generic.List<Vector2Int>();
-            foreach(var p in Layout.RoomCells(index))if(!lanes.Contains(p) && !Layout.Reserved.Contains(p))available.Add(p);
-            PlaceExtras(index,available,0,rewards);
-        }
-    }
-
-    // A template's wall light: on the wall its socket faces, or the cell's nearest other wall.
-    void SocketLight(DungeonSocket socket,int room)
-    {
-        if(socket.overridePrefab==null && !DungeonWallLight.Any(WallLights))return;
-        var cell=CellOf(socket.transform.position);
-        var f=socket.transform.forward;
-        var facing=Mathf.Abs(f.x)>=Mathf.Abs(f.z) ? new Vector2Int(f.x>=0?1:-1,0) : new Vector2Int(0,f.z>=0?1:-1);
-        var dirs=new[]{facing,new Vector2Int(-facing.y,facing.x),new Vector2Int(facing.y,-facing.x),-facing};
-        foreach(var d in dirs)
-        {
-            var n=cell+d;
-            if(Layout.InBounds(n) && Layout.floor[n.x,n.y])continue;
-            SpawnTorch(cell,d,room,TorchParent,extraRandom,socket);
-            return;
-        }
-    }
-    Transform torchParent;
-    Transform TorchParent { get { if(torchParent==null){torchParent=new GameObject("Torches").transform;torchParent.SetParent(transform,false);} return torchParent; } }
-
-    // Breakables and features in the room's free cells, starting after the ones already used.
-    // Returns the first cell left unused.
-    int PlaceExtras(int index,System.Collections.Generic.List<Vector2Int> available,int cursor,LootSource rewards)
-    {
-        if(index==MerchantRoom && cursor<available.Count)cursor++; // keep a free cell for the stall
-        var breakables=Destructibles;
-        if(breakables!=null && breakables.Length>0)
-        {
-            int min=Mathf.Clamp(data.destructiblesPerRoom.x,0,8),max=Mathf.Clamp(data.destructiblesPerRoom.y,min,8);
-            int count=extraRandom.Next(min,max+1);
-            var corners=Corners(index);
-            for(int i=0;i<count;i++)
-            {
-                var prefab=DungeonWeightedPrefab.Choose(breakables,extraRandom);
-                if(prefab==null)break;
-                var d=prefab.GetComponent<DungeonDestructible>();
-                if(d!=null && d.placement==DestructiblePlacement.Corner)
-                {
-                    if(corners.Count==0)continue;
-                    int pick=extraRandom.Next(corners.Count);var corner=corners[pick];corners.RemoveAt(pick);
-                    SpawnDestructible(prefab,corner.position,corner.rotation,null,extraRandom.Next());
-                    continue;
-                }
-                if(cursor>=available.Count)continue;
-                SpawnDestructible(prefab,Cell(available[cursor++]),Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewards,extraRandom.Next());
-            }
-        }
-        if(Roles[index]==RoomRole.Entrance || (Roles[index]==RoomRole.Exit && Milestone!=null))return cursor;
-        var feature=PickFeature(index);
-        if(feature!=null && feature.placement!=DungeonPropPlacement.Anywhere)
-        {
-            // Against a wall, in a corner or in the middle, among the cells nothing else has taken.
-            var free=available.GetRange(cursor,available.Count-cursor);
-            var open=new System.Collections.Generic.HashSet<Vector2Int>(free);
-            open.ExceptWith(furnished);
-            if(FindSpot(feature.placement,Vector2Int.one,index,free,open,out var spot,out var turn))BackToWall(SpawnFeature(feature.prefab,spot,turn),feature.placement,Vector2Int.one);
-        }
-        else if(feature!=null && cursor<available.Count)
-        {
-            var cell=available[cursor++];
-            var pos=Cell(cell);
-            var toCenter=Cell(Layout.RoomCenter(index))-pos;
-            var facing=Mathf.Abs(toCenter.x)>Mathf.Abs(toCenter.z) ? new Vector3(Mathf.Sign(toCenter.x),0,0) : new Vector3(0,0,Mathf.Sign(toCenter.z)==0?1:Mathf.Sign(toCenter.z));
-            SpawnFeature(feature.prefab,pos,Quaternion.LookRotation(facing));
-        }
-        return cursor;
-    }
-
-    DungeonFeature PickFeature(int index)
-    {
-        var features=Features;
-        if(features==null)return null;
-        var role=Mask(Roles[index]);
-        foreach(var f in features)
-        {
-            if(f==null || f.prefab==null || (f.rooms&role)==0 || FloorInBiome<f.minFloor)continue;
-            featureCounts.TryGetValue(f.prefab,out int used);
-            if(f.maxPerFloor>0 && used>=f.maxPerFloor)continue;
-            if(extraRandom.NextDouble()>=f.chancePerRoom)continue;
-            featureCounts[f.prefab]=used+1;
-            return f;
-        }
-        return null;
-    }
-
-    // Room corners at ceiling height, pulled into the corner so hanging cobwebs meet both walls
-    // and the ceiling. Corner prefabs hang down from their pivot.
-    System.Collections.Generic.List<Pose> Corners(int index)
-    {
-        var list=new System.Collections.Generic.List<Pose>();
-        float inset=data.cellSize*.5f-.03f; // walls are flush with the cell edge
-        var room=Layout.rooms[index];
-        var candidates=new System.Collections.Generic.List<(Vector2Int,int,int)>();
-        if(Layout.IsRectangular(index))
-            candidates.AddRange(new[]{(new Vector2Int(room.xMin,room.yMin),-1,-1),(new Vector2Int(room.xMax-1,room.yMin),1,-1),(new Vector2Int(room.xMin,room.yMax-1),-1,1),(new Vector2Int(room.xMax-1,room.yMax-1),1,1)});
-        else
-            // Shaped rooms: every inside corner, including those around pillars.
-            foreach(var p in Layout.RoomCells(index))
-                foreach(var (sx,sz) in new[]{(-1,-1),(1,-1),(-1,1),(1,1)})
-                    if(!Open(p+new Vector2Int(sx,0)) && !Open(p+new Vector2Int(0,sz)))candidates.Add((p,sx,sz));
-        foreach(var (cell,sx,sz) in candidates)
-        {
-            if(Layout.Reserved.Contains(cell))continue;
-            var pos=Cell(cell)+new Vector3(sx*inset,HeightAt(cell.x,cell.y)-.02f,sz*inset);
-            list.Add(new Pose(pos,Quaternion.LookRotation(new Vector3(-sx,0,-sz))));
-        }
-        return list;
-    }
-
-    DungeonDestructible SpawnDestructible(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewardOverride,int seed)
-    {
-        var go=Instantiate(prefab,pos,rotation,transform);
-        var d=go.GetComponent<DungeonDestructible>();
-        if(d==null)return null;
-        d.loot=First(rewardOverride,Loot(DungeonLootSource.Barrel));
-        d.seed=seed;d.floorNumber=FloorNumber;
-        return d;
-    }
-
-    GameObject SpawnFeature(GameObject prefab,Vector3 pos,Quaternion rotation)
-    {
-        var go=Instantiate(prefab,pos,rotation,transform);
-        int seed=extraRandom.Next();
-        var chestLoot=Loot(DungeonLootSource.Chest);
-        foreach(var grave in go.GetComponentsInChildren<DungeonGrave>()){grave.seed=seed;grave.floorNumber=FloorNumber;grave.fallbackLoot=chestLoot;}
-        foreach(var shelf in go.GetComponentsInChildren<DungeonBookshelf>()){shelf.seed=seed;shelf.floorNumber=FloorNumber;shelf.fallbackLoot=chestLoot;}
-        foreach(var altar in go.GetComponentsInChildren<DungeonAltar>())altar.floorNumber=FloorNumber;
-        return go;
-    }
-
-    Character SpawnEnemyAt(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewards)
-    {
-        if(prefab==null || !NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas))return null;
-        var enemy=Instantiate(prefab,hit.position,rotation,transform);
-        var character=enemy.GetComponent<Character>();
-        data.balance?.Apply(character,FloorNumber);
-        var drop=enemy.GetComponent<DungeonLootDrop>();
-        if(drop!=null){if(!drop.overrideLevelTable)drop.table=First(rewards,Loot(DungeonLootSource.Enemy));drop.seed=extraRandom.Next();drop.floorNumber=FloorNumber;}
-        return character;
-    }
-
-    // After navigation exists: enemies, the boss and the merchant at their sockets.
-    void SpawnSocketActors(DungeonExit exitStair)
-    {
-        Character boss=null;
-        int exitIndex=System.Array.IndexOf(Roles,RoomRole.Exit);
-        foreach(var pair in actorSockets)
-        {
-            int room=pair.Key;
-            foreach(var socket in pair.Value)
-            {
-                var t=socket.transform;
-                switch(socket.type)
-                {
-                    case DungeonSocketType.Enemy:
-                    {
-                        var prefab=socket.overridePrefab!=null ? socket.overridePrefab : ChooseEnemy(room,extraRandom);
-                        SpawnEnemyAt(prefab,t.position,t.rotation,profiles[room]?.rewards);
-                        break;
-                    }
-                    case DungeonSocketType.Boss:
-                        if(Milestone!=null && boss==null && room==exitIndex)boss=SpawnBoss(t.position,t.rotation);
-                        break;
-                    case DungeonSocketType.Merchant:
-                        if(room==MerchantRoom)SpawnMerchant(t.position,t.rotation);
-                        break;
-                }
-            }
-        }
-        if(Milestone!=null && boss==null && exitIndex>=0)
-        {
-            var c=Cell(Layout.RoomCenter(exitIndex));
-            var toExit=ExitPoint-c;toExit.y=0;
-            boss=SpawnBoss(c+(toExit.sqrMagnitude>.01f ? -toExit.normalized*data.cellSize : Vector3.zero),Quaternion.LookRotation(toExit.sqrMagnitude>.01f ? -toExit : Vector3.forward));
-        }
-        if(boss!=null)
-        {
-            BossEncounter=gameObject.AddComponent<DungeonBossEncounter>();
-            BossEncounter.Initialize(this,Milestone,boss,exitIndex,exitStair);
-        }
-        if(MerchantRoom>=0 && FindAnyMerchant()==null)
-        {
-            var lanes=Lanes(MerchantRoom);
-            var middle=Cell(Layout.RoomCenter(MerchantRoom));
-            foreach(var p in Layout.RoomCells(MerchantRoom))
-            {
-                if(lanes.Contains(p) || Layout.Reserved.Contains(p) || Blocked(Cell(p)))continue;
-                var toCenter=middle-Cell(p);
-                SpawnMerchant(Cell(p),Quaternion.LookRotation(toCenter.sqrMagnitude>.01f ? toCenter : Vector3.forward));
-                break;
-            }
-            if(FindAnyMerchant()==null)SpawnMerchant(middle+Vector3.right*data.cellSize*.5f,Quaternion.identity);
-        }
-    }
-
-    bool Blocked(Vector3 pos)=>Physics.CheckBox(pos+Vector3.up*.6f,new Vector3(.45f,.5f,.45f),Quaternion.identity,~0,QueryTriggerInteraction.Ignore);
-    Merchant FindAnyMerchant()=>GetComponentInChildren<Merchant>(true);
-    public Merchant Merchant=>FindAnyMerchant();
-
-    Character SpawnBoss(Vector3 pos,Quaternion rotation)
-    {
-        var boss=SpawnEnemyAt(Milestone.boss,pos,rotation,Milestone.bossLoot);
-        if(boss==null){Debug.LogWarning($"Milestone boss {Milestone.boss.name} could not be placed on navigation.",this);return null;}
-        var drop=boss.GetComponent<DungeonLootDrop>();
-        if(drop!=null){if(Milestone.bossLoot!=null){drop.table=Milestone.bossLoot;drop.overrideLevelTable=true;}drop.bonusGold+=Milestone.bonusGold;}
-        if(boss.Stats!=null && (Milestone.healthMultiplier!=1 || Milestone.damageMultiplier!=1))
-        {
-            boss.Stats.AddModifier(new StatModifier(StatType.MaxHealth,Milestone.healthMultiplier-1,ModifierType.PercentMultiply,Milestone));
-            boss.Stats.AddModifier(new StatModifier(StatType.AttackDamage,Milestone.damageMultiplier-1,ModifierType.PercentMultiply,Milestone));
-            boss.Stats.Heal(boss.Stats.MaxHealth);
-        }
-        return boss;
-    }
-
-    void SpawnMerchant(Vector3 pos,Quaternion rotation)
-    {
-        if(data.merchantPrefab==null || FindAnyMerchant()!=null)return;
-        if(NavMesh.SamplePosition(pos,out var hit,1.5f,NavMesh.AllAreas))pos=hit.position;
-        var go=Instantiate(data.merchantPrefab,pos,rotation,transform);
-        var merchant=go.GetComponentInChildren<Merchant>(true);
-        if(merchant==null)return;
-        if(merchant.stockTable==null)merchant.stockTable=data.merchantStock!=null ? data.merchantStock : Loot(DungeonLootSource.Chest);
-        merchant.seed=extraRandom.Next();merchant.floorNumber=FloorNumber;
-    }
-
     public void ShowCeilings(bool value) { if(ceiling!=null) ceiling.gameObject.SetActive(value); }
     public Transform Ceilings => ceiling;
     // The spawn room has a skylight: the table reveal's camera can fly in through it.
     public bool SpawnRoofOpen { get; private set; }
 
-    // ── Openings ──────────────────────────────────────────────────────
-
-    // An open ceiling cell keeps a frame of ceiling only along its sides that border closed ceiling,
-    // so neighbouring open cells join into one skylight. A trim lip runs along the frame's inner edge.
-    void Skylight(Vector2Int cell, Vector3 center, Vector3 size, float frame, Material ceilingMaterial, Material trim, System.Func<Vector2Int, bool> open)
-    {
-        float halfX = size.x * .5f, halfZ = size.z * .5f;
-        float fx = Mathf.Min(frame, halfX), fz = Mathf.Min(frame, halfZ);
-        bool l = !open(cell + Vector2Int.left), r = !open(cell + Vector2Int.right);
-        bool b = !open(cell + Vector2Int.down), f = !open(cell + Vector2Int.up);
-        const float lip = .1f, lipHeight = .14f;
-        float lipY = center.y - size.y * .5f - lipHeight * .5f + .02f;
-        void Strip(Vector3 at, Vector3 scale) => ArchitectureBox("Skylight frame", at, scale, ceilingMaterial, ceiling);
-        void Lip(Vector3 at, Vector3 scale)
-        {
-            var lipBox = Box("Skylight trim", at, scale, trim, ceiling);
-            Destroy(lipBox.GetComponent<Collider>());
-        }
-        if (l) { Strip(center + new Vector3(-halfX + fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x - halfX + fx + lip * .5f, lipY, center.z), new Vector3(lip, lipHeight, size.z)); }
-        if (r) { Strip(center + new Vector3(halfX - fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x + halfX - fx - lip * .5f, lipY, center.z), new Vector3(lip, lipHeight, size.z)); }
-        if (b) { Strip(center + new Vector3(0, 0, -halfZ + fz * .5f), new Vector3(size.x, size.y, fz)); Lip(new Vector3(center.x, lipY, center.z - halfZ + fz + lip * .5f), new Vector3(size.x, lipHeight, lip)); }
-        if (f) { Strip(center + new Vector3(0, 0, halfZ - fz * .5f), new Vector3(size.x, size.y, fz)); Lip(new Vector3(center.x, lipY, center.z + halfZ - fz - lip * .5f), new Vector3(size.x, lipHeight, lip)); }
-        // Inner corners: both sides open but the diagonal cell closed; fill the frame's corner square.
-        void Corner(Vector2Int a, Vector2Int c, float sx, float sz)
-        {
-            if (open(cell + a) && open(cell + c) && !open(cell + a + c))
-                Strip(center + new Vector3(sx * (halfX - fx * .5f), 0, sz * (halfZ - fz * .5f)), new Vector3(fx, size.y, fz));
-        }
-        Corner(Vector2Int.left, Vector2Int.down, -1, -1); Corner(Vector2Int.right, Vector2Int.down, 1, -1);
-        Corner(Vector2Int.left, Vector2Int.up, -1, 1); Corner(Vector2Int.right, Vector2Int.up, 1, 1);
-    }
-
-    // A window in an outer wall: sill and lintel along the whole cell, jambs where the run of windows
-    // ends, and a ledge on the sill. Visual only; the hidden full wall keeps the collision.
-    void Window(Vector2Int cell, Vector2Int dir, float height, Material lower, Material upper, Material trim, System.Func<Vector2Int, Vector2Int, bool> windowAt)
-    {
-        float sill = Mathf.Min(data.windowSill, height * .4f), lintel = Mathf.Min(data.windowLintel, height * .4f);
-        GameObject Piece(string name, Vector3 at, Vector3 scale, Material material)
-        {
-            var go = ArchitectureBox(name, at, scale, material, geometry);
-            Destroy(go.GetComponent<Collider>());
-            return go;
-        }
-        if (sill > .01f) { var (c, s) = WallPiece(cell, dir, 0, 0, sill, sill * .5f); Piece("Window sill wall", c, s, lower); }
-        { var (c, s) = WallPiece(cell, dir, height - lintel, 0, lintel, height - lintel * .5f); Piece("Window lintel", c, s, upper); }
-        var (ledgeCenter, ledgeScale) = WallPiece(cell, dir, sill, TrimDepth * 3, .1f, sill + .05f);
-        var ledge = Box("Window ledge", ledgeCenter, ledgeScale, trim, geometry);
-        Destroy(ledge.GetComponent<Collider>());
-        // Jambs where the neighbouring cell along the wall has no window facing the same way.
-        var end = dir.x != 0 ? Vector2Int.up : Vector2Int.right;
-        var along = new Vector3(end.x, 0, end.y);
-        float openHeight = height - sill - lintel;
-        if (openHeight <= .01f) return;
-        var (mid, scale) = WallPiece(cell, dir, sill, 0, openHeight, sill + openHeight * .5f);
-        float length = dir.x != 0 ? scale.z : scale.x;
-        float jamb = Mathf.Min(data.windowJamb, length * .45f);
-        foreach (var side in new[] { -1, 1 })
-        {
-            if (windowAt(cell + end * side, dir)) continue;
-            var at = mid + along * side * (length * .5f - jamb * .5f);
-            var jambScale = dir.x != 0 ? new Vector3(scale.x, openHeight, jamb) : new Vector3(jamb, openHeight, scale.z);
-            Piece("Window jamb", at, jambScale, lower);
-        }
-    }
-
-    // ── Wall corners ─────────────────────────────────────────────────
-    // Wall pieces sit flush with the cell edge on the room side and extend into the rock behind
-    // it; trims also stand TrimDepth proud of the wall. Each end of a piece is lengthened or
-    // shortened so neighbouring pieces meet exactly, with no overlap and no gap:
-    //   inside corner:  the north/south-facing piece runs through the corner, the east/west one
-    //                   stops at its face;
-    //   outside corner: the north/south-facing piece reaches the corner, the east/west one starts
-    //                   behind it.
-    // Diagonally touching rooms retain these box colliders, but their visible meshes are
-    // mitered by MiterDiagonalEnds so neither room exposes the other room's wall end.
-    const float WallThickness = .22f, TrimDepth = .04f;
-    const float CeilingWallOverlap = .02f;
-
-    bool OpenCell(Vector2Int p) => Layout.InBounds(p) && Layout.floor[p.x,p.y];
-
-    // Does the cell carry a wall piece facing d at height y?
-    bool WallAt(Vector2Int cell, Vector2Int d, float y)
-    {
-        if (!OpenCell(cell) || y >= HeightAt(cell.x,cell.y) - .01f) return false;
-        var n = cell + d;
-        return !OpenCell(n) || HeightAt(n.x,n.y) <= y + .01f;
-    }
-
-    float EndAdjust(Vector2Int cell, Vector2Int d, Vector2Int end, float y, float proud)
-    {
-        bool zFacing = d.y != 0;
-        bool side = WallAt(cell, end, y);
-        // Checkerboard: another room touches this one only at the corner; its wall shares this
-        // quarter of rock, so only the north/south-facing piece reaches the corner.
-        if (side && WallAt(cell + end + d, -end, y)) return zFacing ? 0 : -WallThickness;
-        if (side) return zFacing ? WallThickness : -proud;
-        if (!WallAt(cell + end, d, y) && WallAt(cell + end + d, -end, y))
-        {
-            // An opening's corner (a doorway between a room and a corridor): the room's wall keeps
-            // the corner so the corridor wall's end never shows as a strip in the room's wall.
-            bool room = IsRoomCell(cell), otherRoom = IsRoomCell(cell + end + d);
-            if (room && !otherRoom) return zFacing ? proud : 0;
-            if (!room && otherRoom) return -WallThickness;
-            return zFacing ? proud : -WallThickness;
-        }
-        return 0;
-    }
-
-    bool IsRoomCell(Vector2Int c) => Layout.InBounds(c) && Layout.floor[c.x, c.y] && Layout.RegionIds[c.x, c.y] < Layout.rooms.Count;
-
-    void MiterDiagonalEnds(GameObject piece, Vector2Int cell, Vector2Int direction, float probeY, float proud, bool tiled)
-    {
-        var along = direction.x != 0 ? Vector2Int.up : Vector2Int.right;
-        float y = probeY + .001f;
-        bool Diagonal(Vector2Int end) => WallAt(cell, end, y) && WallAt(cell + end + direction, -end, y);
-        bool back = Diagonal(-along), front = Diagonal(along);
-        if (!back && !front) return;
-
-        var filter = piece.GetComponent<MeshFilter>();
-        // Architecture meshes are shared by size and UV phase; never edit them in place.
-        var mesh = Instantiate(filter.sharedMesh);
-        mesh.name = "Mitered diagonal wall corner";
-        cornerMeshes.Add(mesh);
-        var vertices = mesh.vertices;
-        var normals = mesh.normals;
-        var uv = mesh.uv;
-        var scale = piece.transform.localScale;
-        var outward = new Vector3(direction.x, 0, direction.y);
-        var tangent = new Vector3(along.x, 0, along.y);
-        for (int i = 0; i < vertices.Length; i++)
-        {
-            bool positive = Vector3.Dot(vertices[i], tangent) > 0;
-            if (positive ? !front : !back) continue;
-            var end = positive ? along : -along;
-            float oldEnd = EndAdjust(cell, direction, end, y, proud);
-            // Inner edge reaches the room corner (including projecting trim); outer
-            // edge retreats into the rock. Opposing pieces meet on a diagonal plane.
-            float depth = (Vector3.Dot(vertices[i], outward) + .5f) * (WallThickness + proud);
-            float newEnd = proud - depth;
-            var shift = new Vector3(end.x, 0, end.y) * (newEnd - oldEnd);
-            vertices[i] += new Vector3(shift.x / scale.x, 0, shift.z / scale.z);
-            if (tiled)
-            {
-                var normal = normals[i];
-                uv[i] += (Mathf.Abs(normal.y) > .5f ? new Vector2(shift.x, shift.z)
-                    : Mathf.Abs(normal.x) > .5f ? new Vector2(shift.z, 0)
-                    : new Vector2(shift.x, 0)) / Mathf.Max(.01f, data.architectureTileSize);
-            }
-        }
-        mesh.vertices = vertices;
-        mesh.uv = uv;
-        mesh.RecalculateNormals();
-        mesh.RecalculateTangents();
-        mesh.RecalculateBounds();
-        filter.sharedMesh = mesh;
-    }
-
-    (Vector3 center, Vector3 scale) WallPiece(Vector2Int cell, Vector2Int d, float probeY, float proud, float height, float centerY)
-    {
-        var end = d.x != 0 ? Vector2Int.up : Vector2Int.right;
-        var along = new Vector3(end.x, 0, end.y);
-        var outward = new Vector3(d.x, 0, d.y);
-        float y = probeY + .001f;
-        float back = EndAdjust(cell, d, -end, y, proud), front = EndAdjust(cell, d, end, y, proud);
-        float length = data.cellSize + back + front, thickness = WallThickness + proud;
-        var center = Cell(cell) + outward * (data.cellSize * .5f + (WallThickness - proud) * .5f)
-            + along * ((front - back) * .5f) + Vector3.up * centerY;
-        return (center, d.x != 0 ? new Vector3(thickness, height, length) : new Vector3(length, height, thickness));
-    }
-    GameObject ArchitectureBox(string name, Vector3 pos, Vector3 size, Material material, Transform parent)
-    {
-        var go = Box(name, pos, size, material, parent);
-        float tile = Mathf.Max(.01f, data.architectureTileSize);
-        Vector3 relative = pos - transform.position;
-        // Repeat phases are shared across adjacent grid cells, even when grid spacing differs from tile size.
-        Vector3 phase = new Vector3(Mathf.Repeat(relative.x, tile), Mathf.Repeat(relative.y, tile), Mathf.Repeat(relative.z, tile));
-        phase = new Vector3(Mathf.Round(phase.x*10000)/10000, Mathf.Round(phase.y*10000)/10000, Mathf.Round(phase.z*10000)/10000);
-        var key = (size, phase);
-        if (!architectureMeshes.TryGetValue(key, out var mesh))
-        {
-            mesh = Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
-            mesh.name = "Square architectural tile UVs";
-            var vertices = mesh.vertices;
-            var normals = mesh.normals;
-            var uv = new Vector2[vertices.Length];
-            for (int i = 0; i < vertices.Length; i++)
-            {
-                var point = phase + Vector3.Scale(vertices[i], size);
-                var normal = normals[i];
-                uv[i] = Mathf.Abs(normal.y) > .5f ? new Vector2(point.x, point.z) / tile
-                    : Mathf.Abs(normal.x) > .5f ? new Vector2(point.z, point.y) / tile
-                    : new Vector2(point.x, point.y) / tile;
-            }
-            mesh.uv = uv;
-            architectureMeshes.Add(key, mesh);
-        }
-        go.GetComponent<MeshFilter>().sharedMesh = mesh;
-        return go;
-    }
     void OnDestroy()
     {
         foreach (var mesh in architectureMeshes.Values) if (mesh != null) Destroy(mesh);

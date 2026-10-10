@@ -16,9 +16,10 @@ public enum PixelLookCategory
 }
 
 // Swaps renderers between their original materials and the Pixel Lit copies in a PixelLookLibrary.
-// Owned and ticked by WorldManager (Pixel Look toggles); Play mode only, so scene and prefab files
+// Owned and ticked by ScreenManager (Pixelator toggles); Play mode only, so scene and prefab files
 // never change. Each category can be switched on its own. Renderers spawned later (dungeon floors,
-// enemies, loot) are picked up by a periodic rescan.
+// enemies, loot) are picked up by a periodic rescan: new renderers every RescanSeconds, every
+// renderer again every RefreshSeconds (catches materials other code swaps on existing renderers).
 public class PixelLook
 {
     [System.Serializable]
@@ -46,6 +47,7 @@ public class PixelLook
     static readonly int BrightnessId = Shader.PropertyToID("_PixelLookBrightness");
     static readonly int DitherAlphaId = Shader.PropertyToID("_DitherAlpha");
     const float RescanSeconds = .25f;
+    const float RefreshSeconds = 2f;
 
     public bool Active { get; private set; }
     public PixelatorCamera CameraMode => Active ? parts.camera : PixelatorCamera.Default;
@@ -56,9 +58,10 @@ public class PixelLook
     readonly Dictionary<Renderer, bool> isViewModel = new();
     readonly Dictionary<Material, Material> objectTwin = new();     // Pixel Lit material -> its per-object twin
     readonly Dictionary<Material, Material> twinOriginal = new();   // twin -> the game's original material
+    readonly HashSet<Renderer> swapped = new();                      // renderers already set for the current parts
     Shader objectShader;
     Parts parts;
-    float nextScan;
+    float nextScan, nextRefresh;
 
     public void Set(PixelLookLibrary library, bool on, Parts which)
     {
@@ -85,7 +88,19 @@ public class PixelLook
         nextScan = Time.unscaledTime + RescanSeconds;
         if (isCharacter.Count > 4096) { isCharacter.Clear(); isViewModel.Clear(); } // forget destroyed renderers
         SetGlobals();
-        SwapAll(restoreAll: false);
+        if (Time.unscaledTime >= nextRefresh) { SwapAll(restoreAll: false); return; }
+        // Between full refreshes only renderers that appeared since the last scan are swapped.
+        foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include))
+            if (swapped.Add(r)) Swap(r, false);
+    }
+
+    // Destroys the per-object twin materials made this run. Call once the look is off (no renderer uses them).
+    public void ReleaseTwins()
+    {
+        foreach (var twin in objectTwin.Values)
+            if (twin != null) Object.Destroy(twin);
+        objectTwin.Clear();
+        twinOriginal.Clear();
     }
 
     void SetGlobals()
@@ -100,8 +115,13 @@ public class PixelLook
 
     void SwapAll(bool restoreAll)
     {
+        swapped.Clear(); // also forgets destroyed renderers
+        nextRefresh = Time.unscaledTime + RefreshSeconds;
         foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include))
+        {
             Swap(r, restoreAll);
+            swapped.Add(r);
+        }
     }
 
     void Swap(Renderer r, bool restoreAll)
@@ -136,7 +156,8 @@ public class PixelLook
     Material TwinOf(PixelLookLibrary.Entry entry)
     {
         if (objectTwin.TryGetValue(entry.pixel, out var twin) && twin != null) return twin;
-        if (objectShader == null) objectShader = Shader.Find("Hidden/LoomRoom/Pixel Lit Object");
+        // The library references the shader so builds include it; Shader.Find is only a fallback.
+        if (objectShader == null) objectShader = Library.objectShader != null ? Library.objectShader : Shader.Find("Hidden/LoomRoom/Pixel Lit Object");
         if (objectShader == null) return entry.pixel;
         twin = new Material(entry.pixel) { shader = objectShader, name = entry.pixel.name + " (object)" };
         twin.renderQueue = entry.pixel.renderQueue;

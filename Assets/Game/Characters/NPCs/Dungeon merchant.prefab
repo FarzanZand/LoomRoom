@@ -101,9 +101,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Merchant
   merchantName: Wandering Merchant
   greetings:
-  - '"Coin for wares, friend. The dead don''t haggle, but I do."'
-  - '"Down here? Everything''s for sale. Everything."'
-  - '"Mind the blood on the goods. It washes out. Mostly."'
+  - '"Coin for goods. Have a look."'
+  - '"I buy and I sell. Take your time."'
+  - '"Fair prices, this far down."'
   staples:
   - {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
   - {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}

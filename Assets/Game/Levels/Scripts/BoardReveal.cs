@@ -46,7 +46,9 @@ public class BoardReveal : MonoBehaviour
             doors.Add((door, RegionOf(a), RegionOf(b)));
             door.Opened += OnOpened;
         }
-        // Everything else on the floor belongs to the region it stands in.
+        // Everything else on the floor belongs to the region it stands in. Roots that only group
+        // things (the architecture, the wall lights) are opened up so each piece is filed by its own
+        // position; the HUD canvas belongs to no room.
         var skip = new HashSet<Transform>();
         foreach (var r in regions) if (r != null) skip.Add(r.parent);
         foreach (var (door, _, _) in doors) skip.Add(door.transform);
@@ -54,8 +56,8 @@ public class BoardReveal : MonoBehaviour
         {
             foreach (Transform child in parent)
             {
-                if (skip.Contains(child) || child == generated.Ceilings) continue;
-                if (child.name == "Architecture") { Collect(child); continue; }
+                if (skip.Contains(child) || child == generated.Ceilings || child.GetComponent<Canvas>() != null) continue;
+                if (child.name == "Architecture" || child == generated.TorchRoot) { Collect(child); continue; }
                 int region = NearestRegion(child.position);
                 if (region < 0) continue;
                 if (!actors.TryGetValue(region, out var list)) actors[region] = list = new List<GameObject>();
@@ -102,6 +104,7 @@ public class BoardReveal : MonoBehaviour
     Light worldLight;
     Color worldColor;
     float worldIntensity;
+    float nextLightSearch;
 
     // The level's colour and strength, followed live so they can be tried out in Play mode.
     void Update()
@@ -111,11 +114,14 @@ public class BoardReveal : MonoBehaviour
         boardLight.intensity = dungeon.LevelData.boardLightIntensity;
         if (worldLight == null)
         {
+            // Searched for once a second until found, not every frame.
+            if (Time.unscaledTime < nextLightSearch) return;
+            nextLightSearch = Time.unscaledTime + 1f;
             // The table player's carried light (its FirstPersonLighting may sit on the camera rig, not under the player).
             var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
             if (player == null) return;
             var root = player.transform.parent != null ? player.transform.parent : player.transform;
-            foreach (var lights in FindObjectsByType<FirstPersonLighting>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (var lights in FindObjectsByType<FirstPersonLighting>(FindObjectsInactive.Include))
                 if (lights.worldLight != null && lights.worldLight.transform.IsChildOf(root)) { worldLight = lights.worldLight; break; }
             if (worldLight == null) return;
             worldColor = worldLight.color; worldIntensity = worldLight.intensity;
@@ -154,7 +160,7 @@ public class BoardReveal : MonoBehaviour
         var seen = new HashSet<Vector2Int> { layout.Start };
         var queue = new Queue<Vector2Int>(); queue.Enqueue(layout.Start);
         var result = new HashSet<int>();
-        var dirs = new[] { Vector2Int.right, Vector2Int.left, Vector2Int.up, Vector2Int.down };
+        var dirs = DungeonLayout.Neighbours;
         while (queue.Count > 0)
         {
             var c = queue.Dequeue();

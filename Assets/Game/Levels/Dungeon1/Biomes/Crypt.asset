@@ -67,7 +67,7 @@ MonoBehaviour:
     introMessage: Something rises from the throne.
     introSting: {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
     stingVolume: 1
-    bossMusic: {fileID: 8300000, guid: 1a5a3acb675126f4e88462bf1321974b, type: 3}
+    bossMusic: {fileID: 0}
     bossMusicVolume: 0.8
     sealExit: 1
     bossLoot: {fileID: 11400000, guid: eb289ad8ef9ee0a4b8687b34b29e45f7, type: 2}

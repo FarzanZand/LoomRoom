@@ -22,17 +22,13 @@ public class PlayerFootsteps : MonoBehaviour
     [SerializeField] float crouchInterval = 0.7f;
     [Tooltip("Minimum velocity required to play footstep sounds.")]
     [SerializeField] float velocityThreshold = 0.1f;
-    [Tooltip("Footstep interval multiplier while in water.")]
-    [SerializeField] float swimmingIntervalFactor = 2f;
     [SerializeField, Range(0f, 0.2f)] float pitchVariance = 0.05f;
 
     [Header("Surfaces")]
-    [Tooltip("Surface sound presets matched against terrain layers and ObjectLayer components.")]
+    [Tooltip("Surface sound presets matched against terrain layers.")]
     [SerializeField] SurfaceSFX[] effects;
     [Tooltip("Fallback preset when no specific surface is detected.")]
     [SerializeField] SurfaceSFX genericEffect;
-    [Tooltip("Preset used while in water.")]
-    [SerializeField] SurfaceSFX waterEffect;
 
     [Header("Jump & Land")]
     [Tooltip("Sounds played when the jump starts.")]
@@ -95,7 +91,6 @@ public class PlayerFootsteps : MonoBehaviour
             MoveState.CrouchWalk => crouchInterval,
             _                    => walkInterval,
         };
-        if (motor.InWater) interval *= swimmingIntervalFactor;
 
         if (Time.time < nextStepTime) return;
         PlayFootstep();
@@ -110,7 +105,6 @@ public class PlayerFootsteps : MonoBehaviour
             AudioManager.Instance.PlaySFX(jumpStartSounds[jumpStartIndex], feetTransform.position, 1f, 0.025f);
         }
         jumpShakingImpulseSource?.GenerateImpulse();
-        if (motor.InWater) PlayFootstep();
     }
 
     void OnLanded(float airTime)
@@ -122,7 +116,8 @@ public class PlayerFootsteps : MonoBehaviour
         landBumpingImpulseSource?.GenerateImpulseWithVelocity(jumpImpulseIntensity * magnitude * Vector3.down);
         landShakingImpulseSource?.GenerateImpulse();
 
-        var clips = ResolveSurface()?.jumpLandSounds;
+        var surface = ResolveSurface();
+        var clips = surface != null ? surface.jumpLandSounds : null;
         PlayRandom(clips, ref lastLandIndex, 1f);
         ReportNoise(sprintNoiseRadius);
     }
@@ -130,8 +125,8 @@ public class PlayerFootsteps : MonoBehaviour
     void PlayFootstep()
     {
         float volume = motor.IsCrouching ? footstepVolume * crouchVolumeReduction : footstepVolume;
-        if (motor.InWater) volume = 1f;
-        var clips = ResolveSurface()?.walkSounds;
+        var surface = ResolveSurface();
+        var clips = surface != null ? surface.walkSounds : null;
         PlayRandom(clips, ref lastFootstepIndex, volume);
         ReportNoise(motor.State == MoveState.Run ? sprintNoiseRadius : (motor.IsCrouching ? 0f : walkNoiseRadius));
     }
@@ -143,8 +138,6 @@ public class PlayerFootsteps : MonoBehaviour
 
     SurfaceSFX ResolveSurface()
     {
-        if (motor.InWater) return waterEffect != null ? waterEffect : genericEffect;
-
         if (!Physics.Raycast(feetTransform.position, Vector3.down, out RaycastHit hit, 1.2f, ~0, QueryTriggerInteraction.Ignore))
             return null;
 
@@ -158,12 +151,7 @@ public class PlayerFootsteps : MonoBehaviour
                 foreach (var layer in e.layers)
                     if (layer != null && layer.name == layerName) return e;
             }
-            return genericEffect;
         }
-
-        var objectLayer = hit.collider.GetComponent<ObjectLayer>();
-        if (objectLayer != null && objectLayer.surfaceType != null) return objectLayer.surfaceType;
-
         return genericEffect;
     }
 

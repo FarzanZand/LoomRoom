@@ -14,8 +14,9 @@ public class EquipmentSlotUI : MonoBehaviour,IPointerClickHandler,IPointerEnterH
     public Image honedFill;
     public void Refresh(){var item=player?.Equipment?.Get(slot);if(icon!=null){icon.sprite=item!=null?item.icon:null;icon.enabled=item!=null;}if(title!=null)title.text=Display(slot);
         if(honedFill!=null){honedFill.enabled=item!=null && item.honed>0;if(honedFill.enabled)honedFill.color=UIManager.HasInstance?UIManager.Instance.honed:UIManager.DefaultHoned;}}
-    public static string Display(EquipmentSlot slot)=>slot switch{EquipmentSlot.Head=>"HELM",EquipmentSlot.Body=>"ARMOR",EquipmentSlot.RightHand=>"MAINHAND",EquipmentSlot.LeftHand=>"OFFHAND",EquipmentSlot.Legs=>"PANTS",EquipmentSlot.Trinket1=>"TRINKET",EquipmentSlot.Trinket2=>"TRINKET",_=>slot.ToString().ToUpperInvariant()};
-    public void OnPointerClick(PointerEventData e){if(player==null || e.button!=PointerEventData.InputButton.Left)return;player.Equipment.Unequip(slot);if(TooltipUI.HasInstance)TooltipUI.Instance.Hide();}
+    public static string Display(EquipmentSlot slot)=>ItemData.SlotName(slot).ToUpperInvariant();
+    // A worn item needs room in the pack to come off; with none it stays on ("Make room" notice).
+    public void OnPointerClick(PointerEventData e){if(player==null || e.button!=PointerEventData.InputButton.Left)return;player.Equipment.TryUnequip(slot);if(TooltipUI.HasInstance)TooltipUI.Instance.Hide();}
     public void OnPointerEnter(PointerEventData e){var item=player?.Equipment?.Get(slot);if(item!=null && TooltipUI.HasInstance)TooltipUI.Instance.Show(item);}
     public void OnPointerExit(PointerEventData e){if(TooltipUI.HasInstance)TooltipUI.Instance.Hide();}
     public void OnDrop(PointerEventData e){

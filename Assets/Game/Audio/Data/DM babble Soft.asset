@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM babble Soft
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: fba886198ceb8764ab6dcfe2bc9f37ae, type: 3}
+  - {fileID: 8300000, guid: 004f0d926c952a44dbb772946632cdc5, type: 3}
+  - {fileID: 8300000, guid: 26b6b111fddffb04db15c6a9ca1f0121, type: 3}
+  - {fileID: 8300000, guid: 5bfc4d99b0a498b4e81fbb9516965a49, type: 3}
+  - {fileID: 8300000, guid: c5582dbf8d401a746a61fd3145d8a4a7, type: 3}
+  - {fileID: 8300000, guid: 369436bdd0427e74fa1c25b5603aef72, type: 3}
+  - {fileID: 8300000, guid: 6dea5e87e6567c341b236281dde1069e, type: 3}
+  - {fileID: 8300000, guid: f0a294b20a247a04b817eb22d5835a97, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.04
+  minDistance: 1
+  maxDistance: 500

@@ -1,7 +1,7 @@
 # Room profile architecture
 
-Dungeon Room Profile exposes Style Override (empty = normal weighted style) and Size Scale (width/depth multiplier, 1 = normal). Heights, props, characters and texture density are unchanged. Forced styles are resolved before corridor inheritance, which still respects doors.
+A Dungeon Room Profile has **Style Override** (empty uses the normal weighted style) and **Size Scale** (width and depth multiplier, 0.5 to 3, 1 = normal). Heights, props, characters and texture density are unchanged. Forced styles are applied before corridor style copying, which still stops at doors.
 
-Dungeon level data exposes Large Room Percent (default 10%) and Large Room Scale (default 1.6). These multiply the profile scale on a seeded selection of whole rooms. With 30 rooms, three are selected. Sizes round to whole grid cells, minimum 3x3. Expansion is constrained by table bounds and two-cell separation from other rooms, so selected rooms may not reach their requested size. Use fewer rooms or a larger layout grid if a large hall needs more space.
+The level's Layout tab has **Large Room Percent** (0 to 30, default 10) and **Large Room Scale** (1 to 3, default 1.6). Grown layouts roll Large Room Percent once per room; a room that hits is scaled by Large Room Scale on top of its profile's Size Scale. The exit room on a guardian floor is at least the guardian's Arena Size Scale.
 
-Profiles are selected from the initial layout roles before resizing. The exit room identity is retained across resizing, while routes, walk distances, regions and reserved paths are rebuilt; it is not guaranteed to remain the absolute farthest room after resizing. Size changes apply on regeneration. Existing profile scale defaults to 1.
+Sizes round to whole cells, at least 3 and at most half the smaller table side. A room template's footprint or a painted Room Shape keeps its own size and ignores both scales (a template without a footprint still grows to its Minimum Cells). A grown room that cannot fit is dropped with a Console warning, so use fewer rooms or a larger grid if large halls keep failing. Size changes apply on regeneration.

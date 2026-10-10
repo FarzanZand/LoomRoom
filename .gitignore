@@ -98,3 +98,10 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Local tool caches and personal settings
+Tools/__pycache__/
+*.pyc
+.claude/settings.local.json
+*.slnx
+*.dmp

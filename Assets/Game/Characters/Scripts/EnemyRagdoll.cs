@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -54,37 +53,15 @@ public class EnemyRagdoll : MonoBehaviour
         if (anim != null && anim.isHuman) BuildHumanoid(anim);
         else BuildRigid();
 
-        // Anything still posing the skeleton would fight the physics.
-        if (anim != null) anim.enabled = false;
-        foreach (var hr in GetComponentsInChildren<HitReactionController>()) hr.enabled = false;
-
-        IgnorePlayers();
+        DeathPhysics.StopPosing(this, anim);
+        DeathPhysics.IgnorePlayers(bodies);
         var cm = CombatManager.Instance;
-        Vector3 dir = lastHit.Direction.sqrMagnitude > .001f ? lastHit.Direction : -transform.forward;
+        Vector3 dir = DeathPhysics.HitDirection(lastHit, transform);
         Vector3 impulse = dir * cm.ragdollImpulse * (lastHit.Heavy ? 1.5f : 1f) + Vector3.up * cm.ragdollUpwardImpulse;
         foreach (var rb in bodies)
             rb.AddForce(impulse * (rb.mass / Mathf.Max(.01f, totalMass)) * bodies.Count * .5f, ForceMode.Impulse);
         if (bodies.Count == 1) bodies[0].AddTorque(Random.onUnitSphere * 2f, ForceMode.Impulse);
-        StartCoroutine(Settle());
-    }
-
-    IEnumerator Settle()
-    {
-        yield return new WaitForSeconds(settleSeconds);
-        foreach (var rb in bodies) if (rb != null) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.isKinematic = true; }
-    }
-
-    void IgnorePlayers()
-    {
-        if (!PlayerManager.HasInstance) return;
-        foreach (var context in PlayerManager.Instance.players)
-        {
-            if (context?.player == null) continue;
-            foreach (var pc in context.player.GetComponentsInChildren<Collider>(true))
-                foreach (var rb in bodies)
-                    foreach (var c in rb.GetComponents<Collider>())
-                        Physics.IgnoreCollision(pc, c, true);
-        }
+        StartCoroutine(DeathPhysics.Settle(bodies, settleSeconds));
     }
 
     // ── Humanoid ──────────────────────────────────────────────────────

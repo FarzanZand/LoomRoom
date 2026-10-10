@@ -3,9 +3,9 @@ using UnityEngine;
 
 public enum MoveState { Idle = 0, Walk = 1, Run = 2, CrouchWalk = 3, Airborne = 4 }
 
-// CharacterController movement: walk/sprint/crouch, jump and gravity, slope modules,
-// external knockback. Speeds come from the CharacterData's
-// movement settings multiplied by the MoveSpeed stat. Looking is PlayerLook's job.
+// CharacterController movement: walk/sprint/crouch, jump and gravity, external knockback.
+// Speeds come from the PlayerData's movement settings multiplied by the MoveSpeed stat.
+// Looking is PlayerLook's job.
 [RequireComponent(typeof(CharacterController))]
 [DefaultExecutionOrder(0)]
 public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
@@ -24,17 +24,10 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     [Tooltip("How fast received knockback velocity decays (units per second).")]
     [SerializeField] float knockbackDecay = 12f;
 
-    [Header("Optional Modules")]
-    [Tooltip("Corrects movement direction on slopes.")]
-    [SerializeField] SlopeHandler slopeHandler;
-    [Tooltip("Forces downhill sliding on slopes above its configured angle.")]
-    [SerializeField] SteepSlopeSlideModule steepSlopeSlideModule;
-
     // ── State ─────────────────────────────────────────────────────────
     public bool  IsCrouching { get; private set; }
     public bool  IsSprinting { get; private set; }
     public bool  IsMoving    { get; private set; }
-    public bool  InWater     { get; private set; }
     public bool  IsGrounded  => Controller != null && Controller.isGrounded;
     public float Speed       { get; private set; }
 
@@ -50,9 +43,14 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
             if (distance >= space || distance < .01f) continue;
             to /= distance;
             float into = movement.x * to.x + movement.z * to.z;
-            if (into > 0f) { movement.x -= to.x * into; movement.z -= to.z * into; }
+            if (into > 0f)
+            {
+                movement.x -= to.x * into;
+                movement.z -= to.z * into;
+            }
         }
     }
+
     public float AirborneTime { get; private set; }
     public MoveState State   { get; private set; }
     public Vector3   Velocity => Controller != null ? Controller.velocity : Vector3.zero;
@@ -72,6 +70,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     bool    sprintToggleRequested;
     bool    crouchToggleRequested;
     bool    wasGrounded = true;
+    bool    sprintApplied;   // this frame's speed is the sprint speed (intent, not measured velocity)
     PlayerData runtimeFallback;
     readonly Collider[] uncrouchOverlapResults = new Collider[8];
 
@@ -98,10 +97,12 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         // This actor is moved only by CharacterController.Move. The legacy body exists
         // for trigger callbacks, never for dynamic collision response.
         var body = GetComponent<Rigidbody>();
-        if(body != null) { body.isKinematic=true; body.useGravity=false; }
-        if(capsule != null) capsule.isTrigger=true;
-        if (!slopeHandler)          slopeHandler          = GetComponent<SlopeHandler>();
-        if (!steepSlopeSlideModule) steepSlopeSlideModule = GetComponent<SteepSlopeSlideModule>();
+        if (body != null)
+        {
+            body.isKinematic = true;
+            body.useGravity = false;
+        }
+        if (capsule != null) capsule.isTrigger = true;
         targetCharConHeight = normalCharConHeight;
     }
 
@@ -227,12 +228,15 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
             (InputManager.Instance.LeanLeftHeld || InputManager.Instance.LeanRightHeld) &&
             (player == null || player.settings == null || player.settings.enableLean);
 
-        bool sprintApplied = p.canSprint && IsSprinting && moveDir.z > 0f && !leanBlocksSprint && !IsCrouching;
+        sprintApplied = p.canSprint && IsSprinting && moveDir.z > 0f && !leanBlocksSprint && !IsCrouching;
 
         Speed = p.walkSpeed;
         if (sprintApplied && player != null && player.Stats != null &&
             !player.Stats.DrainStamina(p.sprintStaminaPerSecond * (adventurer != null ? adventurer.SprintCost : 1), p.staminaRegenDelay))
-        { sprintApplied = false; IsSprinting = false; }
+        {
+            sprintApplied = false;
+            IsSprinting = false;
+        }
         if (sprintApplied) Speed = p.sprintSpeed;
         if (IsCrouching)   Speed = p.crouchSpeed;
         Speed *= speedMul;
@@ -260,27 +264,11 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
 
         movement.y += Physics.gravity.y * p.gravityMultiplier * Time.deltaTime;
 
-        if (slopeHandler && grounded && slopeHandler.OnSlope(Controller, out RaycastHit hit))
-        {
-            Vector3 horizontal = Vector3.ProjectOnPlane(new Vector3(movement.x, 0f, movement.z), hit.normal);
-            movement.x = horizontal.x;
-            movement.z = horizontal.z;
-        }
-
-        bool sliding = false;
-        if (steepSlopeSlideModule)
-        {
-            sliding = steepSlopeSlideModule.TryApplySteepSlopeSlide(Controller, ref movement);
-            if (sliding) Speed = (IsCrouching ? p.crouchSpeed : p.walkSpeed) * speedMul;
-        }
-
         Vector3 totalVelocity = movement + knockbackVelocity;
-        float decay=CombatManager.HasInstance ? CombatManager.Instance.playerKnockbackDecay : knockbackDecay;
-        knockbackVelocity = Vector3.MoveTowards(knockbackVelocity, Vector3.zero, Mathf.Max(.1f,decay) * Time.deltaTime);
+        float decay = CombatManager.HasInstance ? CombatManager.Instance.playerKnockbackDecay : knockbackDecay;
+        knockbackVelocity = Vector3.MoveTowards(knockbackVelocity, Vector3.zero, Mathf.Max(.1f, decay) * Time.deltaTime);
 
         Controller.Move(totalVelocity * Time.deltaTime);
-
-
 
         // Airborne / landing bookkeeping
         grounded = Controller.isGrounded;
@@ -309,18 +297,14 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         }
     }
 
+    // From intent (input and the sprint actually applied), so knockback or a fast MoveSpeed bonus never reads as running.
     void UpdateState()
     {
-        var p = Movement;
         if (!Controller.isGrounded && AirborneTime > 0.15f) { State = MoveState.Airborne; return; }
         if (!IsMoving)               { State = MoveState.Idle; return; }
         if (IsCrouching)             { State = MoveState.CrouchWalk; return; }
-        float horizontal = new Vector3(Velocity.x, 0f, Velocity.z).magnitude;
-        State = horizontal > p.walkSpeed * 1.15f ? MoveState.Run : MoveState.Walk;
+        State = sprintApplied ? MoveState.Run : MoveState.Walk;
     }
-
-    public float NormalHeight => normalCharConHeight;
-    public void SetInWater(bool value) => InWater = value;
 
     // ── IKnockbackReceiver ────────────────────────────────────────────
 
@@ -328,8 +312,8 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     {
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.0001f || force <= 0f) return;
-        if(float.IsNaN(force) || float.IsInfinity(force))return;
-        float limit=CombatManager.HasInstance ? CombatManager.Instance.playerKnockbackSpeedLimit : 2.5f;
-        knockbackVelocity = direction.normalized * Mathf.Min(force,Mathf.Max(0,limit));
+        if (float.IsNaN(force) || float.IsInfinity(force)) return;
+        float limit = CombatManager.HasInstance ? CombatManager.Instance.playerKnockbackSpeedLimit : 2.5f;
+        knockbackVelocity = direction.normalized * Mathf.Min(force, Mathf.Max(0, limit));
     }
 }

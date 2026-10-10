@@ -30,6 +30,8 @@ public class AdventureSave : MonoBehaviour
         [Tooltip("A starting memorial: a figure from before the player remembers, with no details.")]
         public bool forgotten;
     }
+    // JsonUtility fills a new Data (and Checkpoint) from its field initialisers before reading, so a field
+    // missing from an older file keeps its default here (lootLevel 1, empty memorial and flag lists).
     [Serializable] public class Data
     {
         public const int Current = 3;   // 2: Barony skills (seven ranks, no partial training). 3: Stealth skill (eight ranks)
@@ -80,19 +82,34 @@ public class AdventureSave : MonoBehaviour
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= FlagChanged;
         if (RunManager.HasInstance) RunManager.Instance.RunEnded -= Ended;
     }
-    // False when there is no save yet.
+    // False when there is no save yet, or none could be read (the unreadable files are then kept aside).
     bool Read()
     {
+        bool unreadable = false;
         foreach (var path in new[] { FilePath, FilePath + ".bak" })
         {
             if (!File.Exists(path)) continue;
-            try { var data = JsonUtility.FromJson<Data>(File.ReadAllText(path)); if (data == null) continue;
+            try { var data = JsonUtility.FromJson<Data>(File.ReadAllText(path)); if (data == null) { unreadable = true; continue; }
                 // Older saves keep their memorials and unlocks; a run checkpoint from another format is dropped.
                 if (data.version != Data.Current) { data.checkpoint = null; data.version = Data.Current; }
                 Saved = data; return true; }
-            catch (Exception e) { Debug.LogWarning($"Could not read adventure save: {e.Message}"); }
+            catch (Exception e) { unreadable = true; Debug.LogWarning($"Could not read adventure save: {e.Message}"); }
         }
+        if (unreadable) KeepCorrupt();
         return false;
+    }
+
+    // Neither the save nor its backup could be read: move them to "<name>.corrupt-<time>" before a new save is
+    // seeded, so the next write doesn't overwrite them and they can still be looked at or recovered.
+    void KeepCorrupt()
+    {
+        string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        foreach (var path in new[] { FilePath, FilePath + ".bak" })
+        {
+            if (!File.Exists(path)) continue;
+            try { File.Move(path, $"{path}.corrupt-{stamp}"); Debug.LogWarning($"Unreadable adventure save kept as {path}.corrupt-{stamp}"); }
+            catch (Exception e) { Debug.LogError($"Could not keep the unreadable adventure save {path}: {e.Message}"); }
+        }
     }
     void FlagChanged(string key, int value) { if (!loading) Write(); }
     public void Write()
@@ -129,7 +146,7 @@ public class AdventureSave : MonoBehaviour
     }
     public bool CanRestore(Checkpoint checkpoint)
     {
-        if (checkpoint == null || checkpoint.bag == null || checkpoint.hotbar == null || checkpoint.equipped == null || checkpoint.ranks?.Length != AdventureSkills.Count || checkpoint.growth?.Length != 6 || checkpoint.floor < 1 || progress.rules == null || !progress.rules.classes.Any(x => x.id == checkpoint.classId)) return false;
+        if (checkpoint == null || checkpoint.bag == null || checkpoint.hotbar == null || checkpoint.equipped == null || checkpoint.ranks?.Length != AdventureSkills.Count || checkpoint.growth?.Length != AdventurerProgress.StatNames.Length || checkpoint.floor < 1 || progress.rules == null || !progress.rules.classes.Any(x => x.id == checkpoint.classId)) return false;
         var catalog = InventoryManager.Instance.itemCatalog;
         return checkpoint.equipped.All(id => ItemData.FromSaveId(id, catalog) != null) && checkpoint.bag.Concat(checkpoint.hotbar).All(x => x == null || x.count <= 0 || ItemData.FromSaveId(x.item, catalog) != null);
     }

@@ -1,12 +1,12 @@
 using System.Collections;
 using UnityEngine;
 
-// Table entry selects a level. The intro steps only tell TableLevelLoader what belongs to the town.
-// Using the table is its own moment: the room player, standing where they are, turns to the Dungeon
-// Master, who may speak (DungeonMasterRemarks listens to Seated); then the
-// view drops to the class figures on the table (ClassFigures) and taking one starts the dungeon. A run
-// saved on quit is its class's figure, picked first: taking it continues the run. Cancelling stands
-// the player go. Without figures the adventure menu opens instead.
+// The game table. Using it is its own moment: the room player, standing where they are, turns to the
+// Dungeon Master, who may speak (DungeonMasterRemarks listens to Seated); then the view goes to the
+// class figures on the table (ClassFigures) and taking one starts the dungeon through TableLevelLoader
+// (on this object). A run saved on quit is its class's figure, picked first: taking it continues the
+// run. Cancelling hands the view back. Without figures the adventure menu opens instead.
+// tableIntroController only lists which objects belong to the town (read by TableLevelLoader).
 public class TableManager : Singleton<TableManager>, IInteractable
 {
     public TableIntroController tableIntroController;
@@ -44,6 +44,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
     TableLevelLoader loader;
     TableLevelMenu menu;
     Coroutine sitting;
+    Player sittingPlayer;
+    bool ownsDialogue; // this pushed GameState.Dialogue and has not popped it yet
     public string Prompt => IntroController.WaitingForSeat ? "Sit down" : prompt;
     public bool CanInteract(Character who) => who is Player player && player.kind == PlayerKind.Room
         && player.IsAlive && PlayerManager.HasInstance && PlayerManager.Instance.Active == player
@@ -53,7 +55,9 @@ public class TableManager : Singleton<TableManager>, IInteractable
     protected override void Awake()
     {
         base.Awake();
-        loader = GetComponent<TableLevelLoader>() ?? gameObject.AddComponent<TableLevelLoader>();
+        // There is no authored loader: it is added here.
+        loader = GetComponent<TableLevelLoader>();
+        if (loader == null) loader = gameObject.AddComponent<TableLevelLoader>();
     }
     // Until the Dungeon Master has introduced the game, the table sends the player to him.
     public void Interact(Character who)
@@ -68,17 +72,23 @@ public class TableManager : Singleton<TableManager>, IInteractable
 
     // level: where the figure goes (empty: Figure Level). only: set out just this figure (the intro's
     // practice board), with prompt said instead of the figures' own line.
-    public void Play(TableLevelData level = null, AdventurerClass only = null, DungeonMaster.Line prompt = null, bool showCard = true)
+    // False when the table cannot be used now (busy loader, no active room player, a conversation...).
+    public bool Play(TableLevelData level = null, AdventurerClass only = null, DungeonMaster.Line prompt = null, bool showCard = true)
     {
-        if (loader == null || !PlayerManager.HasInstance || !CanInteract(PlayerManager.Instance.Active)) return;
-        if (GameManager.HasInstance) sitting = StartCoroutine(SitThenChoose(PlayerManager.Instance.Active, level, only, prompt, showCard));
+        if (loader == null || !PlayerManager.HasInstance || !CanInteract(PlayerManager.Instance.Active)) return false;
+        if (GameManager.HasInstance)
+        {
+            sittingPlayer = PlayerManager.Instance.Active;
+            sitting = StartCoroutine(SitThenChoose(sittingPlayer, level, only, prompt, showCard));
+        }
         else loader.ShowSelection();
+        return true;
     }
 
     // Dialogue state while sitting and listening: no movement or look, HUD (and the DM's lines) visible.
     IEnumerator SitThenChoose(Player player, TableLevelData chosenLevel = null, AdventurerClass only = null, DungeonMaster.Line prompt = null, bool showCard = true)
     {
-        GameManager.Instance.Push(GameState.Dialogue);
+        PushDialogue();
         yield return Sit(player);
 
         Seated?.Invoke(player);
@@ -100,7 +110,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
             // The board is swept and the figures go down where the last floor stood.
             loader.ClearTable();
             // Seated (the intro, or the chair the sheet put them in): the view only tips down to the figures.
-            if (IntroController.Seated || IntroController.SheetAtTable) yield return Turn(player, figures.FocusPoint(only != null) + Vector3.up * figureAimHeight, lookSeconds);
+            if (IntroController.Seated || IntroController.SheetAtTable) yield return CameraEase.LookAt(player.Look, figures.FocusPoint(only != null) + Vector3.up * figureAimHeight, lookSeconds);
             else yield return StepToFigures(player);
             AdventurerClass picked = null;
             AdventurerClass savedClass = null; string savedDetail = null;
@@ -111,28 +121,28 @@ public class TableManager : Singleton<TableManager>, IInteractable
             yield return figures.Choose(c => picked = c, savedClass, savedDetail, only, prompt, canStand, showCard, offered);
             if (IntroController.HasInstance) IntroController.Instance.WriteClass(picked);
             if (picked == null && IntroController.HasInstance) IntroController.Instance.EndSheetAtTable();
-            var level = chosenLevel != null ? chosenLevel : figureLevel != null ? figureLevel : loader.catalog != null ? System.Array.Find(loader.catalog.levels, l => l != null && l.IsDungeon) : null;
+            var level = chosenLevel != null ? chosenLevel : figureLevel != null ? figureLevel : loader.Catalog != null ? System.Array.Find(loader.Catalog.levels, l => l != null && l.IsDungeon) : null;
             if (picked != null && level != null)
             {
                 // Still seated while the view eases back: the look is held until the load's cutscene takes
                 // over, so the table being built is never missed by glancing away.
-                yield return Zoom(player, 0f, .35f);
+                yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false);
                 player.Look.HeightOverride = null;
                 if (figures.ResumeChosen) loader.ResumeAdventure();
                 else loader.Load(level);
-                GameManager.Instance.Pop(GameState.Dialogue);
+                PopDialogue();
             }
             else
             {
-                GameManager.Instance.Pop(GameState.Dialogue);
-                yield return Zoom(player, 0f, .35f);
+                PopDialogue();
+                yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false);
                 StandUp(player);
             }
-            sitting = null;
+            sitting = null; sittingPlayer = null;
             yield break;
         }
 
-        GameManager.Instance.Pop(GameState.Dialogue);
+        PopDialogue();
         loader.ShowSelection();
 
         // Stand up when the menu closes without a run starting (Return to room, Esc).
@@ -141,7 +151,42 @@ public class TableManager : Singleton<TableManager>, IInteractable
         yield return null;
         if (PlayerManager.Instance.Active == player && !loader.Busy) StandUp(player);
         else if (player.Look != null) player.Look.HeightOverride = null;
-        sitting = null;
+        sitting = null; sittingPlayer = null;
+    }
+
+    void PushDialogue()
+    {
+        if (ownsDialogue || !GameManager.HasInstance) return;
+        GameManager.Instance.Push(GameState.Dialogue);
+        ownsDialogue = true;
+    }
+
+    void PopDialogue()
+    {
+        if (!ownsDialogue) return;
+        ownsDialogue = false;
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+    }
+
+    // Asks the loader to bring the room back (whileDark runs under the black), retrying while a load is in
+    // progress or the run has not ended yet. Logs an error if it still refuses after maxWait seconds.
+    // started reports whether the return began.
+    public static IEnumerator ReturnToRoom(TableLevelLoader loader, System.Action whileDark, System.Action<bool> started = null, Object context = null, float maxWait = 10f)
+    {
+        float until = Time.unscaledTime + maxWait;
+        while (loader != null)
+        {
+            if (!loader.Busy)
+            {
+                loader.ReturnToRoom(whileDark);
+                // ReturnToRoom marks the loader busy as it starts; still idle means it refused.
+                if (loader.Busy) { started?.Invoke(true); yield break; }
+            }
+            if (Time.unscaledTime >= until) break;
+            yield return null;
+        }
+        Debug.LogError("[TableManager] TableLevelLoader.ReturnToRoom refused (busy, or the run has not ended); the room was not brought back.", context);
+        started?.Invoke(false);
     }
 
     // A run saved on quit: its class and where it stopped, for the figures.
@@ -160,7 +205,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
     // Up to the table edge in front of the figures, looking down at them, zooming in on the way.
     IEnumerator StepToFigures(Player player)
     {
-        if (player.Look == null || figures.spots.Length == 0 || figures.spots[0] == null) { yield return Turn(player, figures.Centre, lookSeconds); yield break; }
+        if (player.Look == null || figures.spots.Length == 0 || figures.spots[0] == null) { yield return CameraEase.LookAt(player.Look, figures.Centre, lookSeconds); yield break; }
         var facing = figures.spots[0].forward; facing.y = 0; facing.Normalize();
         // Aim at the figures' middle, not their feet.
         var centre = figures.Centre + Vector3.up * figureAimHeight;
@@ -172,43 +217,14 @@ public class TableManager : Singleton<TableManager>, IInteractable
         {
             float k = Mathf.SmoothStep(0f, 1f, t / stepSeconds);
             player.Warp(Vector3.Lerp(from, to, k));
-            var d = centre - player.Look.PitchTransform.position;
-            float yaw = Quaternion.LookRotation(new Vector3(d.x, 0f, d.z)).eulerAngles.y;
-            float pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
+            CameraEase.YawPitchTo(player.Look, centre, out float yaw, out float pitch);
             player.Look.SetYaw(Mathf.LerpAngle(fromYaw, yaw, k));
             player.Look.SetPitch(Mathf.Lerp(fromPitch, pitch, k));
             if (player.CameraRig != null) player.CameraRig.FovOffset = Mathf.Lerp(fromZoom, figureZoom, k);
             yield return null;
         }
         player.Warp(to);
-        yield return Turn(player, centre, .15f);
-    }
-
-    IEnumerator Zoom(Player player, float target, float seconds)
-    {
-        var rig = player.CameraRig; if (rig == null) yield break;
-        float from = rig.FovOffset;
-        for (float t = 0; t < seconds; t += Time.deltaTime) { rig.FovOffset = Mathf.Lerp(from, target, t / seconds); yield return null; }
-        rig.FovOffset = target;
-    }
-
-    // Turns the view to a point on the table.
-    IEnumerator Turn(Player player, Vector3 target, float seconds)
-    {
-        if (player.Look == null) yield break;
-        float fromYaw = player.Look.YawTransform.eulerAngles.y, fromPitch = player.Look.Pitch;
-        Vector3 d = target - player.Look.PitchTransform.position;
-        float yaw = Quaternion.LookRotation(new Vector3(d.x, 0f, d.z)).eulerAngles.y;
-        float pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
-        for (float t = 0; t < seconds; t += Time.deltaTime)
-        {
-            float k = Mathf.SmoothStep(0f, 1f, t / seconds);
-            player.Look.SetYaw(Mathf.LerpAngle(fromYaw, yaw, k));
-            player.Look.SetPitch(Mathf.Lerp(fromPitch, pitch, k));
-            yield return null;
-        }
-        player.Look.SetYaw(yaw);
-        player.Look.SetPitch(pitch);
+        yield return CameraEase.LookAt(player.Look, centre, .15f);
     }
 
     // The player stays standing where they are; only the view turns to the Dungeon Master.
@@ -232,14 +248,11 @@ public class TableManager : Singleton<TableManager>, IInteractable
     // Looking at the Dungeon Master's face from the seated eye.
     void Aim(Player player, out float yaw, out float pitch)
     {
-        Vector3 eye = player.Look.PitchTransform.position;
         Vector3 target = dmPlacement != null ? dmPlacement.position : transform.position;
         var animator = DM != null && DM.activeInHierarchy ? DM.GetComponent<Animator>() : null;
         var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
         if (head != null) target = head.position;
-        Vector3 d = target - eye;
-        yaw = d.sqrMagnitude < .01f ? player.Look.YawTransform.eulerAngles.y : Quaternion.LookRotation(new Vector3(d.x, 0f, d.z)).eulerAngles.y;
-        pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
+        CameraEase.YawPitchTo(player.Look, target, out yaw, out pitch);
     }
 
     // Nothing to stand up from any more: just hand the view back.
@@ -249,10 +262,13 @@ public class TableManager : Singleton<TableManager>, IInteractable
         if (player.CameraRig != null) player.CameraRig.FovOffset = 0f;
     }
 
+    // Interrupted mid-sit: pop exactly what was pushed and hand the view back.
     void OnDisable()
     {
-        if (sitting == null) return;
-        StopCoroutine(sitting); sitting = null;
-        if (GameManager.HasInstance && GameManager.Instance.State == GameState.Dialogue) GameManager.Instance.Pop(GameState.Dialogue);
+        if (sitting != null) StopCoroutine(sitting);
+        sitting = null;
+        PopDialogue();
+        if (sittingPlayer != null) StandUp(sittingPlayer);
+        sittingPlayer = null;
     }
 }

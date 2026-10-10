@@ -98,6 +98,10 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
 
     // ── Movement ──────────────────────────────────────────────────────
 
+    // Re-issuing a destination this close to the current one, with a path already running, is skipped:
+    // chasing calls MoveTo every frame and each SetDestination costs a path query.
+    const float RepathDistance = .25f;
+
     public void MoveTo(Vector3 destination)
     {
         // Remembered even when it can't be issued yet, so the end of a knockback resumes it.
@@ -106,6 +110,8 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         if (!NavigationReady) return;
         Agent.speed = movementSpeed;
         Agent.isStopped = false;
+        // Compared flat: the agent's destination is the point snapped onto the navmesh.
+        if ((Agent.hasPath || Agent.pathPending) && Perception.HorizontalDist(Agent.destination, destination) < RepathDistance) return;
         Agent.SetDestination(destination);
     }
 

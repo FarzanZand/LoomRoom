@@ -1,8 +1,9 @@
 using UnityEngine;
 
+// Footsteps on terrain: the name of the terrain layer painted strongest under a point.
 public class TerrainChecker : MonoBehaviour
 {
-    private float[] GetTextureMix(Vector3 playerPos, Terrain t)
+    public string GetDominantLayerAtPosition(Vector3 playerPos, Terrain t)
     {
         Vector3 tPos = t.transform.position;
         TerrainData terrainData = t.terrainData;
@@ -14,29 +15,18 @@ public class TerrainChecker : MonoBehaviour
         mapX = Mathf.Clamp(mapX, 0, terrainData.alphamapWidth - 1);
         mapZ = Mathf.Clamp(mapZ, 0, terrainData.alphamapHeight - 1);
 
+        // One cell; read straight from the splat data instead of copying it into a second array.
         float[,,] splatMapData = terrainData.GetAlphamaps(mapX, mapZ, 1, 1);
-
-        float[] cellMix = new float[splatMapData.GetUpperBound(2) + 1];
-        for (int i = 0; i < cellMix.Length; i++)
-        {
-            cellMix[i] = splatMapData[0, 0, i];
-        }
-        return cellMix;
-    }
-
-    public string GetDominantLayerAtPosition(Vector3 playerPos, Terrain t)
-    {
-        float[] cellMix = GetTextureMix(playerPos, t);
         float strongest = 0;
         int maxIndex = 0;
-        for (int i = 0; i < cellMix.Length; i++)
+        for (int i = 0; i <= splatMapData.GetUpperBound(2); i++)
         {
-            if (cellMix[i] > strongest)
+            if (splatMapData[0, 0, i] > strongest)
             {
                 maxIndex = i;
-                strongest = cellMix[i];
+                strongest = splatMapData[0, 0, i];
             }
         }
-        return t.terrainData.terrainLayers[maxIndex].name;
+        return terrainData.terrainLayers[maxIndex].name;
     }
 }

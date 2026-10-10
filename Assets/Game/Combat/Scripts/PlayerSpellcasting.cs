@@ -241,8 +241,11 @@ public class PlayerSpellcasting : MonoBehaviour
     {
         if (arms == null || layer < 0) return;
         // An animator that is switched off and on (player swaps) forgets its parameters; keep them true.
-        if (arms.GetBool(equippedParameter) != (shown != null)) SetBool(equippedParameter, shown != null);
-        if (shown != null && arms.GetInteger(typeParameter) != shown.animation && !casting) SetInt(typeParameter, shown.animation);
+        // Reads are guarded like the setters (Character.HasParameter caches per controller): a missing parameter logs every frame.
+        if (Character.HasParameter(arms, equippedParameter, AnimatorControllerParameterType.Bool) && arms.GetBool(equippedParameter) != (shown != null))
+            arms.SetBool(equippedParameter, shown != null);
+        if (shown != null && !casting && Character.HasParameter(arms, typeParameter, AnimatorControllerParameterType.Int) && arms.GetInteger(typeParameter) != shown.animation)
+            arms.SetInteger(typeParameter, shown.animation);
         float target = shown != null ? 1 : 0;
         float weight = Mathf.MoveTowards(arms.GetLayerWeight(layer), target, dt / Mathf.Max(.05f, switchSeconds * .6f));
         arms.SetLayerWeight(layer, weight);

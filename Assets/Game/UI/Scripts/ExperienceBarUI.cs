@@ -44,6 +44,12 @@ public class ExperienceBarUI : MonoBehaviour
 
     AdventurerProgress progress;
     float shown;
+    // The table player and its progress, looked up only when the player changes.
+    Player progressOwner;
+    AdventurerProgress ownerProgress;
+    // What the labels show now, so the strings are rebuilt only when these change.
+    int shownLevel = -1, shownXp = -1, shownNextXp = -1;
+    string shownClass;
     class Gain
     {
         public AdventureSkill skill;
@@ -60,7 +66,8 @@ public class ExperienceBarUI : MonoBehaviour
     void Update()
     {
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
-        var current = player != null ? player.GetComponent<AdventurerProgress>() : null;
+        if (player != progressOwner) { progressOwner = player; ownerProgress = player != null ? player.GetComponent<AdventurerProgress>() : null; }
+        var current = player != null ? ownerProgress : null;
         if (current != progress) Bind(current);
         bool visible = progress != null && progress.InRun && player.IsActive && progress.selectedClass != null;
         if (bar != null) bar.alpha = visible ? 1 : 0;
@@ -68,8 +75,20 @@ public class ExperienceBarUI : MonoBehaviour
         float target = progress.NextLevelXp > 0 ? Mathf.Clamp01(progress.Experience / progress.NextLevelXp) : 0;
         shown = target < shown ? target : Mathf.MoveTowards(shown, target, Time.unscaledDeltaTime * fillSpeed);
         UIBar.Set(fill, shown);
-        if (title != null) title.text = $"LVL {progress.Level}  {progress.selectedClass.displayName}";
-        if (amount != null) amount.text = $"{progress.Experience:0} / {progress.NextLevelXp:0} XP";
+        string className = progress.selectedClass.displayName;
+        if (progress.Level != shownLevel || className != shownClass)
+        {
+            shownLevel = progress.Level; shownClass = className;
+            if (title != null) title.text = $"LVL {shownLevel}  {shownClass}";
+        }
+        // Rounded as the label shows them (the "0" format rounds half away from zero).
+        int xp = (int)System.Math.Round(progress.Experience, System.MidpointRounding.AwayFromZero);
+        int next = (int)System.Math.Round(progress.NextLevelXp, System.MidpointRounding.AwayFromZero);
+        if (xp != shownXp || next != shownNextXp)
+        {
+            shownXp = xp; shownNextXp = next;
+            if (amount != null) amount.text = $"{progress.Experience:0} / {progress.NextLevelXp:0} XP";
+        }
     }
 
     void Bind(AdventurerProgress next)

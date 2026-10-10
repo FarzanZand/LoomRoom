@@ -39,8 +39,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     Color originalKeyColor, originalStackColor;
     [Header("Dungeon appearance")]
     [SerializeField] Image dungeonFrame;
-    [SerializeField] Color dungeonEmptyColor=new Color(.035f,.045f,.045f,.96f);
-    [SerializeField] Color dungeonFilledColor=new Color(.09f,.11f,.105f,.98f);
+    [SerializeField] Color dungeonEmptyColor=DungeonEmpty;
+    [SerializeField] Color dungeonFilledColor=DungeonFilled;
+    // Default dungeon cell colours, shared with the shop's pack grid (ShopSlotUI).
+    public static readonly Color DungeonEmpty=new Color(.035f,.045f,.045f,.96f);
+    public static readonly Color DungeonFilled=new Color(.09f,.11f,.105f,.98f);
     [SerializeField] Color dungeonEquippedColor=new Color(1,.72f,.22f,.32f);
     [SerializeField] Color dungeonKeyColor=new Color(.9f,.84f,.66f);
     [SerializeField] TMP_FontAsset dungeonFont;

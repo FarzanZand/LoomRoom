@@ -70,10 +70,7 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
     Bounds Bounds()
     {
         var renderers = model != null ? model.GetComponentsInChildren<Renderer>() : GetComponentsInChildren<Renderer>();
-        if (renderers.Length == 0) return new Bounds(transform.position + Vector3.up * .4f, Vector3.one * .8f);
-        var bounds = renderers[0].bounds;
-        foreach (var r in renderers) bounds.Encapsulate(r.bounds);
-        return bounds;
+        return DungeonFeatureUtility.RendererBounds(renderers, out var bounds) ? bounds : new Bounds(transform.position + Vector3.up * .4f, Vector3.one * .8f);
     }
 
     void Throw(Vector3 center, Vector3 direction, int count, float force)
@@ -113,8 +110,7 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
             if (guaranteedItem != null) DungeonPickup.Spawn(guaranteedItem, drop, transform.parent);
             if (loot != null)
             {
-                var items = loot.RollDrops(rng, floorNumber, DungeonLootSource.Barrel);
-                int gold = loot.RollGold(rng, floorNumber, DungeonLootSource.Barrel);
+                var (items, gold) = DungeonLootDrop.Roll(loot, rng, floorNumber, DungeonLootSource.Barrel);
                 DungeonLootDrop.Spill(items, gold, drop, transform.parent);
             }
         }

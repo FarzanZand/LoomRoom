@@ -161,6 +161,7 @@ public class MessageLog : Singleton<MessageLog>
     void OnAnyDied(Character c)
     {
         if (c == null || c is Player || tablePlayer == null || !tablePlayer.IsActive) return;
+        if (c.LastDamage.Source != tablePlayer) return; // enemy-on-enemy, traps and the like are not your kills
         Add($"You killed {The(c)}!", MessageKind.Kill);
     }
 

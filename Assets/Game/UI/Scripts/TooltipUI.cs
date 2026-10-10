@@ -63,6 +63,8 @@ public class TooltipUI : Singleton<TooltipUI>
         if (panel != null) panel.SetActive(false);
     }
 
+    readonly Vector3[] corners = new Vector3[4];
+
     void FollowMouse()
     {
         if (rect == null || Mouse.current == null) return;
@@ -73,7 +75,7 @@ public class TooltipUI : Singleton<TooltipUI>
         float ox = pivotX == 0f ?  16f : -16f;
         float oy = pivotY == 0f ?  16f : -16f;
         rect.position = new Vector3(mouse.x + ox, mouse.y + oy, 0f);
-        var corners=new Vector3[4];rect.GetWorldCorners(corners);
+        rect.GetWorldCorners(corners);
         float dx=corners[0].x<8?8-corners[0].x:corners[2].x>Screen.width-8?Screen.width-8-corners[2].x:0;
         float dy=corners[0].y<8?8-corners[0].y:corners[2].y>Screen.height-8?Screen.height-8-corners[2].y:0;
         rect.position+=new Vector3(dx,dy);

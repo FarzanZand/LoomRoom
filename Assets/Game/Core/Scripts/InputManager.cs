@@ -91,9 +91,10 @@ public class InputManager : Singleton<InputManager>
             else CancelPressed?.Invoke();
         };
 
-        actions.Dev.Debug1.performed += _ => { if (!RunManager.HasInstance || !RunManager.Instance.Running || RunManager.Instance.Ended) DebugSwapRequested?.Invoke(PlayerKind.Room); };
-        actions.Dev.Debug2.performed += _ => DebugSwapRequested?.Invoke(PlayerKind.Table);
-        actions.Dev.PreviewSceneMood.performed += _ => DebugMoodPreviewRequested?.Invoke();
+        // Dev keys only act in gameplay (Explore): never behind a cutscene, dialogue or menu.
+        actions.Dev.Debug1.performed += _ => { if (gameplayEnabled && (!RunManager.HasInstance || !RunManager.Instance.Running || RunManager.Instance.Ended)) DebugSwapRequested?.Invoke(PlayerKind.Room); };
+        actions.Dev.Debug2.performed += _ => { if (gameplayEnabled) DebugSwapRequested?.Invoke(PlayerKind.Table); };
+        actions.Dev.PreviewSceneMood.performed += _ => { if (gameplayEnabled) DebugMoodPreviewRequested?.Invoke(); };
     }
 
     void Bind(InputAction move, InputAction look, InputAction jump, InputAction sprint, InputAction crouch,
@@ -119,7 +120,8 @@ public class InputManager : Singleton<InputManager>
 
     void OnEnable()
     {
-        actions.Dev.Enable();
+        // The Dev map (player swap, mood preview) exists only in the Editor and development builds.
+        if (Debug.isDebugBuild) actions.Dev.Enable();
         ApplyMaps();
     }
 

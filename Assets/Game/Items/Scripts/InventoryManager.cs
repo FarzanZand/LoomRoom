@@ -77,15 +77,7 @@ public class InventoryManager : Singleton<InventoryManager>
             return false;
         }
 
-        if (playSound && AudioManager.HasInstance && !item.PlayPickupOverride())
-        {
-            if (useSharedPickupSound) AudioManager.Instance.PlaySFX2D(pickupSoundKey);
-            else
-            {
-                var audio = item.pickupAudio != null ? item.pickupAudio : defaultPickupAudio;
-                if (audio != null) AudioManager.Instance.PlaySFXData2D(audio);
-            }
-        }
+        if (playSound) item.PlayPickupSound(useSharedPickupSound ? pickupSoundKey : null, defaultPickupAudio);
 
         ItemEffectProcessor.Fire(item, EffectTrigger.OnPickup, EffectContext.For(player, item));
 
@@ -112,6 +104,21 @@ public class InventoryManager : Singleton<InventoryManager>
         }
         item.Use(player);
         container.Consume(index);
+    }
+
+    // A hotbar key: gear is taken in hand or put away again, a consumable that can't be held is used.
+    public void Activate(Player player, Inventory container, int index)
+    {
+        var item = container?.ItemAt(index);
+        if (item == null || player == null) return;
+        var eq = player.Equipment;
+        if (eq == null || !eq.CanEquip(item))
+        {
+            if (item.IsConsumable) Use(container, index);
+            return;
+        }
+        if (eq.IsEquipped(item)) eq.Unequip(item);
+        else eq.Equip(item);
     }
 
     // Use the consumable the player is currently holding in a hand.

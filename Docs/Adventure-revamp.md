@@ -1,104 +1,69 @@
-# Adventure revamp — playable prototype
+# Adventure revamp
 
-The current biome is configured for 20 floors. Existing melee, shield and movement animations remain in use. Three starting classes and one room-unlocked class share the same weapons and two spells. The room stores class unlocks and memorials, not dungeon currency or gear.
+Dungeon1 runs 20 floors: Cellars (3) then Crypt (17). Three starting classes (Warrior, Wizard, Cleric) and one class unlocked in the room (Arcanist) share the same weapons and two spells (Fireball, Heal). The room keeps class unlocks, memorials and story flags, not gold or gear.
 
 ## Playing
 
-- Choose Warrior, Wizard or Cleric at the adventure table, then enter Dungeon1.
-- There is **one hotbar**. Its numbered slots hold weapons, shields, reusable spells and consumables. Drag items and spells between slots in the inventory.
-- Select Fireball or Heal's slot to equip it in the left hand. Right click casts. Selecting the shield slot restores blocking. The right-hand weapon remains equipped. There are no separate F/G/V spell shortcuts.
-- Tab opens the paused character menu. Equipment handles inventory; Skills & Spells shows all five skills, training progress, attributes and the four milestone perks for each skill. Hover or select a skill row for details.
-- Melee and offensive magic train on hostile hits; blocking trains on blocked hostile attacks; defensive magic trains on healing damage taken from enemies. Athletics trains while exploring new ground. Air swings, healing at full health and walking repeatedly over the same patch do not give training.
-- A run ends in death or victory. Its entrance stays sealed. Resume saved floor returns to the start of the saved floor, not the exact position where play stopped.
+- Pick a class figure at the table, then the run starts in Dungeon1.
+- There is **one hotbar**. Its numbered slots hold weapons, shields, spells and consumables. Drag items and spells between slots in the inventory.
+- Select Fireball's or Heal's slot to hold it in the left hand; right click casts. Selecting the shield slot brings blocking back. The right-hand weapon stays equipped.
+- Tab opens the character menu. **Equipment** holds the inventory; **Skills & Spells** lists the eight skills (Swords, Maces, Blocking, Sorcery, Thaumaturgy, Athletics, Trading, Stealth) with their rank and current effect.
+- Skills train on use: hits and kills with a weapon, blocked hostile attacks, casting, healing real damage, sneaking, buying and selling. Air swings and healing at full health give nothing.
+- A run ends in death or victory. Resuming a saved run starts at the beginning of the saved floor.
 
 ## Designer assets
 
-| Asset or component | What to edit |
-|---|---|
-| `Assets/Game/Progression/Data/Adventure Rules.asset` | Level XP, use-training limits, attribute coefficients and growth tuning |
-| `Assets/Game/Progression/Data/Classes/` | Starting equipment, known spells, attributes, resources and skill ranks; Arcanist unlock flag |
-| `Assets/Game/Progression/Data/Skills/` | Five skill definitions, XP costs, continuous benefit and perks at 25/50/75/100 |
-| `Assets/Game/Items/Data/Adventure/` | Tiered swords, maces, shields and armor; Mana Potion; Fireball and Heal hotbar entries |
-| `Assets/Game/Items/Data/Adventure/Adventure Loot.asset` | Floor eligibility, equipment/recovery rolls and level-weight adjustments |
-| `Assets/Game/Combat/Spells/Fireball.asset`, `Heal.asset` | Mana, power, timing, radius, speed, sound and visual prefab references |
-| `Assets/Game/Combat/Spells/Prefabs/` | Placeholder held spell, projectile and impact visuals |
-| `Assets/Game/Characters/Animations/Spells/` | Left-arm ready and flick clips, layered over existing weapon animation |
-| `Assets/Game/UI/Prefabs/Progression/` | Reusable skill rows and character panel styling |
-| `Assets/Game/UI/Prefabs/Adventure/Table adventures.prefab` | Class-selection layout |
-| `Assets/Game/Levels/Dungeon1/Dungeon1.asset` | 20 floors, current biome, ten rooms per floor, final boss and loot references |
-| `Assets/Game/Progression/Room/Adventure Memorial Table.prefab` | Six recent memorial miniatures, plaques, light and three-button class puzzle |
-| TablePlayer / AdventurerProgress | Perception light and its base visibility range |
+Paths are under `Assets/Game`.
 
-The setup scripts were temporary and are removed after authoring. Importing or playing does not regenerate these assets. Keep existing item save IDs unchanged when tuning or renaming items.
+| Asset | What to edit |
+|---|---|
+| `Progression/Data/Adventure Rules.asset` | Level XP, training limits, attribute and growth tuning, starting memorials |
+| `Progression/Data/Classes/` | Warrior, Wizard, Cleric, Arcanist: starting equipment, known spells, attributes, resources, skill ranks, unlock flag |
+| `Progression/Data/Skills/` | One asset per skill: XP per action, rank cost, the rank 100 bonus |
+| `Items/Data/{Weapons,Armor,Shields,Consumables,Trinkets}` | Tiered gear, potions and food |
+| `Levels/Dungeon1/Biomes/* loot.asset` | Loot profiles: gear tier range, upgrade chance, gold and drop chances per source |
+| `Combat/Spells/Fireball/`, `Combat/Spells/Heal/` | Spell data, hotbar tome, hand and impact effects, projectile |
+| `Characters/Animations/Spells/` | Left-arm ready, charge and release clips |
+| `UI/Prefabs/Progression/` | Skill rows, the character skills panel, Skill XP Popup, Stealth Eye |
+| `Levels/Dungeon1/Dungeon1.asset` | Run (biomes and floor counts), layout, rooms, styles |
+| `Progression/Room/Adventure Memorial Table.prefab` | Memorial figures, plaques, light and the class puzzle |
+
+Keep item save IDs unchanged when tuning or renaming items.
 
 ## Gear baseline
 
-Weapons use bronze/iron/steel/crystal ATK 5/6/7/11. Shields use AC 2/3/4/5. Leather/iron/steel/crystal torso armor uses AC 2/3/4/5; helmets, gloves and boots use AC 1/2/3/4. These core values follow the [official Barony weapons](https://barony.wiki.gg/wiki/Weapons) and [armor](https://barony.wiki.gg/wiki/Armor) tables. Existing art is reused for the new tier assets.
+Tiers are 1 Leather/Bronze, 2 Iron, 3 Steel, 4 Crystal. Swords deal 5/7/9/12, maces 6/8/10/13. Shields and body armour give 2/3/4/5 armour; helms, gloves, boots and leggings 1/2/3/4. Armour works as in Barony: it comes off 75% of a physical hit and the rest always lands (`CombatManager.armorEffectiveness`).
 
-The initial overlapping floor bands are 1–6, 4–11, 9–18 and 16+. Higher character levels increase the relative weight of the stronger eligible tiers. These floor bands, stamina system, damage formula and XP pacing are LoomRoom prototype tuning, not a claim of exact Barony simulation. Condition, identification, curses and durability remain outside this version.
+Each biome's loot profile sets which tiers drop: the low tier is most common on the biome's first floor and the high tier on its last. Condition, identification, curses and durability are not in the game.
 
 ## Room and saves
 
-Reaching floor 3 records the clue: “First defend. Then burn. Finally mend.” The room's sigils become available after the run; interact with the inscription to read the clue. Press Shield, Flame, Hand to unlock Arcanist. A wrong answer resets the sequence. The miniature table shows the six most recent deaths; all memorial records remain in the save.
+Reaching floor 3 for the first time finds the clue "Shield, flame, hand." (`AdventureRoomPuzzle`). From then on the puzzle is in the room; pressing the tiles in that order unlocks Arcanist. A wrong press resets the sequence. The memorial table shows recent deaths; every memorial stays in the save.
 
-`AdventureSave` writes `loomroom-adventure.json` in Unity's persistent data directory, with a backup file. It stores floor-entry inventory, equipment, class, skills, XP, health/mana/stamina, gold, food recovery, run blessings, run totals, story flags and memorials. Resuming regenerates that floor from its seed. Death/victory removes the checkpoint. Gold and equipment do not become room rewards.
+`AdventureSave` writes `loomroom-adventure.json` in Unity's persistent data folder, with a `.bak`. A checkpoint holds the floor-entry inventory, equipment, class, skills, XP, health, mana, stamina, gold, food regeneration, run blessings and run totals; memorials and story flags are kept separately. Resuming regenerates the floor from its seed. Death or victory clears the checkpoint.
 
-## Verified
+## Classes
 
-- Unity compilation with the installed editor.
-- Warrior and Wizard initialization and derived resource totals.
-- Selection of spells and shield through the same hotbar, preserving the right-hand sword.
-- Fireball projectile collision, damage and offensive-magic training; Heal recovery, mana cost and defensive-magic training.
-- Skill advancement preserves current health while updating maximum stats.
-- Inventory pause and skill/perk display, inspected at 1280×720.
-- Save JSON round-trip including empty slots and equipped spell; resume from disk; floor transitions.
-- Layout generation for 20 floors × 3 seeds; actual final-floor generation with its boss milestone.
-- Puzzle unavailable before its gate, wrong-order rejection and correct class unlock.
-- Death records a memorial and clears the checkpoint.
+Attribute order: STR / DEX / CON / INT / PER / CHR. Health, mana and attributes follow the Barony class tables; skill ranks are LoomRoom's.
 
-## Still needs playtesting
-
-This is a playable baseline using the existing biome and enemy roster. Spell visuals and hand motion are provisional. Full-run difficulty, mana supply, skill pacing, loot frequency and merchant prices need hands-on tuning. Additional biome art and enemy packs have deliberately not been added.
-
-
-## Corrected Barony starting stats
-
-Attribute order: STR / DEX / CON / INT / PER / CHR. These are the starting baselines from the official Barony class tables.
-
-| Class | HP | MP | Attributes | Supported starting skills |
+| Class | HP | MP | Attributes | Starting skills |
 |---|---:|---:|---|---|
-| Warrior | 30 | 20 | 1 / 1 / 0 / -2 / -1 / 1 | Melee 25, Blocking 25 |
-| Wizard | 20 | 50 | 0 / -1 / 0 / 3 / 1 / -1 | Offensive 50, Defensive 15 |
-| Cleric | 30 | 30 | 0 / -1 / 1 / 0 / 1 / 0 | Melee 25, Defensive 40, Blocking 10 |
-| Arcanist | 25 | 40 | -1 / 1 / -1 / 1 / 1 / -1 | Offensive 30 |
+| Warrior | 30 | 20 | 1 / 1 / 0 / -2 / -1 / 1 | Swords 25, Maces 15, Blocking 25, Athletics 10 |
+| Wizard | 20 | 50 | 0 / -1 / 0 / 3 / 1 / -1 | Swords 5, Sorcery 50, Thaumaturgy 15 |
+| Cleric | 30 | 30 | 0 / -1 / 1 / 0 / 1 / 0 | Maces 25, Blocking 10, Thaumaturgy 40, Trading 10 |
+| Arcanist | 25 | 40 | -1 / 1 / -1 / 1 / 1 / -1 | Swords 20, Sorcery 30, Athletics 10 |
 
-Unlisted skills start at zero. Swords/Maces map to Melee; Sorcery to Offensive Magic; Thaumaturgy to Defensive Magic. Unsupported skills are not redistributed. Negative attributes remain negative, and CON/INT do not inflate starting HP/MP. The one-handed equipment, two spells, stamina, 25-point perks, attribute effects and level-growth sequence remain LoomRoom adaptations. Stable save IDs and the class unlock flag are preserved.
+Sources: [Warrior](https://barony.wiki.gg/wiki/Warrior), [Wizard](https://barony.wiki.gg/wiki/Wizard), [Cleric](https://barony.wiki.gg/wiki/Cleric), [Arcanist](https://barony.wiki.gg/wiki/Arcanist). The class assets are the source of truth; check them if this table and the game disagree.
 
-Sources: [Warrior](https://barony.wiki.gg/wiki/Warrior), [Wizard](https://barony.wiki.gg/wiki/Wizard), [Cleric](https://barony.wiki.gg/wiki/Cleric), [Arcanist](https://barony.wiki.gg/wiki/Arcanist).
+## UI and audio
 
-UI palette: edit Assets/Game/UI/Sprites/Kit/Copper Plum.mat for panel plum, border shadow, copper and highlight colors. Shared kit sprites retain their original pixel layout; the material recolors their authored shading. Tab opens the character menu during dungeon play; Skills opens skill levels and hover details. Skill tooltips show only rank and current effect. The separate skill detail and spell panels have been removed.
-
-
-
-
-
-
-Spell audio: each SpellDefinition now holds direct AudioClip references and individual 0–1 volumes for equip, charge, release, flight and impact. One-shots use AudioManager SFX; the moving flight loop uses AudioManager.PlaySFXLoop and the SFX mixer. Existing Fireball and Heal clips and volumes were migrated.
-
-
+- Kit art follows `UIManager`'s Theme colours through `UI/Sprites/Kit/Kit Palette.mat`.
+- Each `SpellDefinition` holds its own clips and volumes for equip, charge, release, flight and impact. One-shots play through AudioManager SFX; the flight loop uses `AudioManager.PlaySFXLoop`.
 
 ## Skill XP and notifications
 
-Skills earn XP from every qualifying action. Skill assets in `Assets/Game/Progression/Data/Skills/` expose XP per action, base rank XP, the high-rank cost multiplier, and the existing per-enemy rank limit. Rank benefits and the Legendary bonus at 100 are unchanged. Default cost starts at 100 XP and rises toward 200 at rank 100. Sword and mace hits grant 10 XP; kills grant 12.5 XP instead of the hit award. A Warrior starting at Swords 25 needs 125 XP for the next rank.
+Each skill asset lists the actions that train it and the XP each gives, the XP for the first rank and a cost multiplier that reaches its full value at rank 100. Overflow carries into the next rank. Partial XP is saved in floor checkpoints and reset on a new run.
 
-Overflow carries into the next rank. Partial XP is included in floor checkpoints; older compatible saves retain ranks and start with zero partial XP. A new run resets partial XP. Existing practice eligibility restrictions remain in place.
+`UI/Prefabs/Progression/Skill XP Popup.prefab` is the top-centre icon, progress ring and rank-up display. `ExperienceBarUI` (the top XP bar) sets animation, hold and fade times. Awards for the same skill merge; a rank gain fills the ring, then shows the old rank counting up to the new one.
 
-`Assets/Game/UI/Prefabs/Progression/Skill XP Popup.prefab` controls the top-center icon, progress ring, typography, colors and dimensions. ExperienceBarUI on the scene's Experience object controls animation duration, hold and fade times. Pending awards for the same skill merge; rank gains fill and reset the ring. Character XP remains under the hotbar.
-
-Verified in Unity: deterministic awards, rank overflow, partial-XP JSON round trip, legacy saves, rank 100, per-enemy caps, and rendered popup in Game view.
-
-The reusable `Assets/Game/UI/Prefabs/Progression/Stealth Eye.prefab` replaces the old stealth label. It appears just below screen center while crouching: a pale closed lid when unseen, an amber open eye when a living enemy sees the player. Standing hides it. Edit the root RectTransform for position and size, StealthIndicatorUI for colors and transition duration, and the Eye child for the lid curve, pupil radius, stroke and outline. The graphic uses native UI geometry and does not copy external game artwork.
-
-Skill rank gains now complete the XP ring and replace it with the prefab's Rank Celebration group: original compact skill icon and rank boxes, cream announcement, green new rank and subtle scale pulse. The existing skill-up sound still plays once when progression awards the rank. ExperienceBarUI exposes rank hold, reveal duration and punch amount. Pending notifications retain their earned rank so later gains do not change an earlier announcement. Ordinary XP uses only the XP Visuals group.
-
-Rank notifications reveal the centered icon first, settle it left, reveal the previous rank, then increment the number with a floating +N and a subtle pulse. ExperienceBarUI exposes icon reveal scale, settle duration, rank count duration and gain rise. The compact original styling remains the default.
+`UI/Prefabs/Progression/Stealth Eye.prefab` shows below the screen centre while crouching: a closed lid when unseen, an open amber eye when a living enemy sees the player. `StealthIndicatorUI` sets colours and timing.

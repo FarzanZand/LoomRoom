@@ -28,13 +28,16 @@ public class InventoryUI : MonoBehaviour
         transition=DOTween.Sequence().SetUpdate(true);
         if(inventoryPanel!=null)transition.Join(inventoryPanel.DOAnchorPos(opening?inventoryHome:inventoryHome+Vector2.left*(inventoryPanel.rect.width+80),duration).SetEase(ease));
         if(statsPanel!=null)transition.Join(statsPanel.DOAnchorPos(opening?statsHome:statsHome+Vector2.right*(statsPanel.rect.width+80),duration).SetEase(ease));
-        if(!opening)transition.OnComplete(FinishClose);
+        if(!opening)transition.OnComplete(HidePanel);
     }
-    void FinishClose(){
+    // The Inventory state is given back as soon as the panel starts closing, so a killed close tween
+    // (scene change, DOTween.KillAll) can never leave it pushed; the tween only hides the panel.
+    void ReleaseMenu(){
         if(ItemDragHandler.HasInstance)ItemDragHandler.Instance.End();
-        if(panel!=null)panel.SetActive(false);
         if(ownsMenu){ownsMenu=false;if(GameManager.HasInstance)GameManager.Instance.Pop(GameState.Inventory);}
     }
+    void HidePanel(){if(panel!=null)panel.SetActive(false);}
+    void FinishClose(){ReleaseMenu();HidePanel();}
 
     void Update(){if(isOpen && PlayerManager.HasInstance && (PlayerManager.Instance.Active==null || !PlayerManager.Instance.Active.IsAlive))Close();}
 
@@ -121,6 +124,7 @@ public class InventoryUI : MonoBehaviour
     {
         if (!isOpen) return;
         isOpen = false;
+        ReleaseMenu();
         var style=feedback!=null?feedback:UIFeedbackSettings.Shared;style?.Play(style.closeKey);Animate(false);
         if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
         if (ContextMenuUI.HasInstance) ContextMenuUI.Instance.Hide();

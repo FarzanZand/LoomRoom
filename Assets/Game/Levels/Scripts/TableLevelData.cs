@@ -115,7 +115,7 @@ public class TableLevelData : ScriptableObject
     public float largeRoomScale = 1.6f;
     [TabGroup(Tabs, Layout), ShowIf(nameof(IsGenerated)), Range(0, 40), Tooltip("Additional short room connections, as a percentage of room count.")]
     public float loopPercent = 15;
-    [TabGroup(Tabs, Layout), ShowIf(D), Title("Layout style", HorizontalLine = false), Tooltip("Partition: the original, one rectangular room per slice of the grid. Grown: shaped rooms packed outwards from the entrance with winding tunnels, dead ends and loops. Authored: the floor plan painted below, the same every time (the IntroDungeon).")]
+    [TabGroup(Tabs, Layout), ShowIf(D), Title("Layout style", HorizontalLine = false), Tooltip("Grown: shaped rooms packed outwards from the entrance with winding tunnels, dead ends and loops. Authored: the floor plan painted below, the same every time (the IntroDungeon). Partition is retired and builds as Grown.")]
     public DungeonLayoutMode layoutMode = DungeonLayoutMode.Grown;
     [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), MinMaxSlider(3, 16, true), Tooltip("Room width and depth range in cells, before profile and large-room scaling. Painted shapes keep their own size.")]
     public Vector2Int roomSize = new Vector2Int(4, 9);
@@ -131,7 +131,7 @@ public class TableLevelData : ScriptableObject
     public int loopReach = 10;
     [TabGroup(Tabs, Layout), ShowIf(nameof(IsGrown)), Tooltip("Weighted room shapes. Authored entries use a painted Room Shape asset (Create > Table > Room Shape). Shared by every biome; a biome's shapes add to it, a room profile's replace it.")]
     public DungeonShapeChoice[] roomShapes = DefaultShapes();
-    [TabGroup(Tabs, Layout), ShowIf(nameof(UsesStartingRoom)), AssetsOnly, Tooltip("Room template prefab the player starts in on the first floor and on the first floor of each new biome. Give its footprint one door cell: the only way out, which the player faces from the centre. Empty uses an ordinary entrance room.")]
+    [TabGroup(Tabs, Layout), ShowIf(D), AssetsOnly, Tooltip("Room template prefab the player starts in on the first floor and on the first floor of each new biome. Give its footprint one door cell: the only way out, which the player faces from the centre. Empty uses an ordinary entrance room.")]
     public GameObject startingRoom;
 
     // ── Authored layout ───────────────────────────────────────────────
@@ -169,7 +169,6 @@ public class TableLevelData : ScriptableObject
     public string[] AuthoredRows(string map) => (map ?? "").Replace("\r", "").Split('\n');
 
     bool IsGrown => IsDungeon && layoutMode == DungeonLayoutMode.Grown;
-    bool UsesStartingRoom => IsDungeon && layoutMode != DungeonLayoutMode.Partition;
     public DungeonGrowthSettings Growth => new DungeonGrowthSettings
     {
         spacing = roomSpacing, wander = corridorWander, widePercent = wideCorridorPercent,
@@ -276,7 +275,7 @@ public class TableLevelData : ScriptableObject
     public DungeonWeightedPrefab[] destructibles = new DungeonWeightedPrefab[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Extra Per Room"), Tooltip("Extra breakables scattered per room, on top of supply spots.")]
     [MinMaxSlider(0, 8, true)] public Vector2Int destructiblesPerRoom = new Vector2Int(1, 3);
-    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Features", HorizontalLine = false), Tooltip("Fountains, altars, graves, bookshelves, levers. Each has a chance per eligible room. Shared by every biome; a biome's own entries are added.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Features", HorizontalLine = false), Tooltip("Fountains, altars, graves, bookshelves. Each has a chance per eligible room. Shared by every biome; a biome's own entries are added.")]
     public DungeonFeature[] features = new DungeonFeature[0];
 
     // ── Loot & Shop ───────────────────────────────────────────────────
@@ -292,10 +291,6 @@ public class TableLevelData : ScriptableObject
     public GameObject shopRoom;
 
     // ── HUD ───────────────────────────────────────────────────────────
-    [TabGroup(Tabs, Hud), ShowIf(D)]
-    public TMPro.TMP_FontAsset hudFont;
-    [TabGroup(Tabs, Hud), ShowIf(D)]
-    public Sprite hotbarFrame;
     [TabGroup(Tabs, Hud), ShowIf(D)]
     public DungeonEnemyBar enemyBarPrefab;
     [TabGroup(Tabs, Hud), ShowIf(D)]
@@ -327,7 +322,7 @@ public class TableLevelData : ScriptableObject
             }
         biomeFloors = last != null ? Mathf.Max(1, last.floors) : 1;
         floorInBiome = biomeFloors;
-        return last?.biome;
+        return last != null ? last.biome : null;
     }
 
     // The floor's biome decides; the level's own setting only applies to dungeons without biomes.
@@ -379,5 +374,5 @@ public class TableLevelData : ScriptableObject
         return guardian != null && guardian.enabled && guardian.boss != null && floorInBiome == biomeFloors ? guardian : null;
     }
 
-    public float MerchantChance(int floor) => Biome(floor)?.merchantChance ?? 0;
+    public float MerchantChance(int floor) { var biome = Biome(floor); return biome != null ? biome.merchantChance : 0; }
 }

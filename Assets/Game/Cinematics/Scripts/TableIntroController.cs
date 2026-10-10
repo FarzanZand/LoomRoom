@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// What the old beat-timed table reveal switched on. The reveal no longer plays;
-// TableLevelLoader reads these steps to know which town objects belong to the table
-// and where the moving props end up.
+// The town on the table, as a list: each step names objects that belong to the town (shown and
+// hidden with it) and an ObjectController that is placed at its move target when the town is set up.
+// Nothing plays here; TableLevelLoader reads the list (through TableManager.tableIntroController).
 public class TableIntroController : MonoBehaviour
 {
     [Serializable]

@@ -63,9 +63,8 @@ public class DungeonGrave : MonoBehaviour, IInteractable
             if (!lootEvenIfWoken) yield break;
         }
         var table = loot != null ? loot : fallbackLoot;
-        var items = table != null ? table.RollDrops(rng, floorNumber, DungeonLootSource.Chest) : null;
-        int gold = table != null ? table.RollGold(rng, floorNumber, DungeonLootSource.Chest) : 0;
-        if ((items == null || items.Count == 0) && gold <= 0)
+        var (items, gold) = DungeonLootDrop.Roll(table, rng, floorNumber, DungeonLootSource.Chest);
+        if (items.Count == 0 && gold <= 0)
         {
             if (!woke) MessageLog.Post("You find only bones.", MessageKind.Info);
             yield break;

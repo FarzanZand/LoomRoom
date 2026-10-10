@@ -68,15 +68,7 @@ public sealed partial class DungeonLayout
 
         AddLoops();
         AddDeadEnds();
-
-        Exit = roomCenters[rooms.Count - 1];
-        distance = Distances(Start);
-        RoomDistances = new int[rooms.Count];
-        for (int i = 0; i < rooms.Count; i++) { var c = roomCenters[i]; RoomDistances[i] = distance[c.x, c.y] - 1; }
-        BuildRegions();
-        BuildWalkways(false, true);
-        foreach (var p in roomCells[0]) Reserved.Add(p);
-        foreach (var p in roomCells[rooms.Count - 1]) Reserved.Add(p);
+        Finish();
     }
 
     // ── Rooms ────────────────────────────────────────────────────────

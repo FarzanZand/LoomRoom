@@ -83,16 +83,7 @@ public class HotbarUI : MonoBehaviour
         if (item == null) return;
 
         slots[index]?.Pulse();
-
-        var eq = player.Equipment;
-        if (eq == null || !eq.CanEquip(item))
-        {
-            if (item.IsConsumable) InventoryManager.Instance.Use(bound, index);
-            return;
-        }
-
-        if (eq.IsEquipped(item)) eq.Unequip(item);
-        else eq.Equip(item);
+        if (InventoryManager.HasInstance) InventoryManager.Instance.Activate(player, bound, index);
     }
 
     void TryUseHeldConsumable()

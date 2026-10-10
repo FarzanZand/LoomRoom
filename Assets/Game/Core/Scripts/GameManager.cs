@@ -33,7 +33,6 @@ public class GameManager : Singleton<GameManager>
     // Enemies, regen and projectiles keep running while the inventory is open (Barony style).
     public bool SimulationActive => State == GameState.Explore || State == GameState.Inventory;
 
-    public event Action<GameState> StateChanged;
     public event Action<bool>      HudVisibilityChanged;
 
     void Start() => Apply();
@@ -89,6 +88,5 @@ public class GameManager : Singleton<GameManager>
 
         bool hudVisible = !(hideHudInCutscenes && s == GameState.Cutscene);
         HudVisibilityChanged?.Invoke(hudVisible);
-        StateChanged?.Invoke(s);
     }
 }

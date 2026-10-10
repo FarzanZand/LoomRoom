@@ -54,15 +54,7 @@ public class Perception : MonoBehaviour
         if (!trackingTarget && !close && Vector3.Angle(transform.forward, toTarget) > Profile.fieldOfView * 0.5f) return false;
 
         // Close awareness bypasses the view cone, never walls. Ignore both character bodies.
-        int count = Physics.RaycastNonAlloc(origin, toTarget.normalized, sightHits, dist, Profile.obstacleMask, QueryTriggerInteraction.Ignore);
-        if (count == sightHits.Length) return false;
-        for (int i = 0; i < count; i++)
-        {
-            var hit = sightHits[i].transform;
-            if (hit.IsChildOf(transform) || hit.IsChildOf(target)) continue;
-            return false;
-        }
-        return true;
+        return LineOfSight.Clear(origin, origin + toTarget, Profile.obstacleMask, transform, target);
     }
 
     void OnNoise(Vector3 position, float radius, Character source)

@@ -32,9 +32,8 @@ public class AudioClipController : MonoBehaviour
 
     void PlayData(AudioData data)
     {
-        if (data == null) return;
+        if (data == null || !AudioManager.HasInstance) return;
         var am = AudioManager.Instance;
-        if (am == null) return;
         switch (channel)
         {
             case Channel.SFX:   am.PlaySFXData(data, transform.position); break;
@@ -46,9 +45,8 @@ public class AudioClipController : MonoBehaviour
 
     void PlayClip(AudioClip clip)
     {
-        if (clip == null) return;
+        if (clip == null || !AudioManager.HasInstance) return;
         var am = AudioManager.Instance;
-        if (am == null) return;
         switch (channel)
         {
             case Channel.SFX:   am.PlaySFX(clip, transform.position, clipVolume); break;

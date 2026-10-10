@@ -1,5 +1,7 @@
 using UnityEngine;
 
+// A skylight's opaque cover: closed shows the panel and turns its daylight lights off. Set in the
+// Inspector (applied on enable and when the toggle changes, also in edit mode); nothing changes it at runtime.
 [ExecuteAlways]
 public sealed class SkylightCover : MonoBehaviour
 {
@@ -7,10 +9,11 @@ public sealed class SkylightCover : MonoBehaviour
     public bool covered;
     [SerializeField] GameObject cover;
     [SerializeField] Light[] daylight;
-    public void Configure(GameObject panel, Light[] lights) { cover = panel; daylight = lights; Apply(); }
     void OnEnable() => Apply();
-    void Update() => Apply();
-    public void SetCovered(bool value) { covered = value; Apply(); }
+#if UNITY_EDITOR
+    // SetActive is not allowed inside OnValidate itself, so apply right after it.
+    void OnValidate() => UnityEditor.EditorApplication.delayCall += () => { if (this != null) Apply(); };
+#endif
     void Apply()
     {
         if (cover && cover.activeSelf != covered) cover.SetActive(covered);

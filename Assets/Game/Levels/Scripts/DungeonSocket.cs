@@ -5,10 +5,10 @@ public enum DungeonSocketType
 {
     Enemy     = 0,   // a normal enemy from the room/floor pool (or the override prefab)
     Chest     = 1,   // the level's supply chest
-    Breakable = 2,   // a destructible from the level/theme list (or the override prefab)
+    Breakable = 2,   // a destructible from the level/biome list (or the override prefab)
     Boss      = 3,   // the milestone boss
     Merchant  = 4,   // the merchant, when this floor rolled one
-    Feature   = 5,   // a random feature from the level/theme list (or the override prefab)
+    Feature   = 5,   // a random feature from the level/biome list (or the override prefab)
     WallLight = 6,   // a wall light from the biome's (or level's) Lighting Prefabs, or the override prefab, on the wall the socket faces
 }
 

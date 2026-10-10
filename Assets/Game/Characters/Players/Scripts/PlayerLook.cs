@@ -54,6 +54,8 @@ public class PlayerLook : MonoBehaviour
         float sensitivity = (settings != null ? settings.mouseSensitivity : 1f) * UserSettings.MouseSensitivity / 5f;
         float smoothing   = settings != null ? settings.mouseSmoothing : 20f;
 
+        // The lock check is read only: it also catches the Editor's Esc and a lost window focus,
+        // which unlock the cursor without GameManager knowing.
         bool canLook = Cursor.lockState == CursorLockMode.Locked && input != null &&
             (!GameManager.HasInstance || GameManager.Instance.GameplayActive);
         Vector2 raw = canLook ? input.Look : Vector2.zero;
@@ -90,9 +92,10 @@ public class PlayerLook : MonoBehaviour
         if (lateralTorso != null) lateralTorso.localPosition = cameraHeight;
     }
 
-    // Snap the view to a world yaw (cutscenes, teleports).
+    // Drop the smoothed mouse motion so the view stops dead.
     public void ResetInput() => smoothedLook = Vector2.zero;
 
+    // Snap the view to a world yaw (cutscenes, teleports).
     public void SetYaw(float worldYaw)
     {
         ResetInput();
