@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM voice Choir
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 2b78d82ba6a9f084b90d25c19a821b29, type: 3}
+  - {fileID: 8300000, guid: 081c48fa7011da5428617b4a320a365e, type: 3}
+  - {fileID: 8300000, guid: 741a7e2171289664fb3bc798189efe72, type: 3}
+  - {fileID: 8300000, guid: 93c6b10e30de7bc439aadfa7b969fdfd, type: 3}
+  - {fileID: 8300000, guid: 352f60f1028a920458215a005f30ad2f, type: 3}
+  - {fileID: 8300000, guid: 8b73328fad94b954b976c4ca3756b0a5, type: 3}
+  - {fileID: 8300000, guid: afc42e07a9626a54ca0fd7cfc3f09de0, type: 3}
+  - {fileID: 8300000, guid: 784ab6bd03572c049a495d1688babb27, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.03
+  minDistance: 1
+  maxDistance: 500

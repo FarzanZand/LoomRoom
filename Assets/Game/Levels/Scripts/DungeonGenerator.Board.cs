@@ -19,11 +19,16 @@ public partial class DungeonGenerator
     public Transform[] BoardRegions => boardRegions;
     public IReadOnlyList<(DungeonDoor door, Vector2Int a, Vector2Int b)> BoardDoors => boardDoors;
     float TileThickness => Mathf.Max(.02f, data.boardTileThickness);
+    // Under the player's step offset (.3), so stairs climb without jumping.
+    const float MaxTreadRise = .22f;
+    // Steepest a passage's stairs may climb, under the navmesh's 45 degree slope so enemies follow.
+    const float MaxStairAngle = 38f;
 
     float BoardElevation(Vector2Int p) =>
         elevation != null && p.x >= 0 && p.y >= 0 && p.x < elevation.GetLength(0) && p.y < elevation.GetLength(1) ? elevation[p.x, p.y] : 0f;
 
-    // Room heights by layer (authored, or seeded), and stairs along each passage between two rooms.
+    // Room heights by layer (authored, or seeded), varied by Board Verticality, and stairs along each passage
+    // between two rooms.
     void ComputeBoardElevations(int seed)
     {
         int w = data.width, d = data.depth, rooms = Layout.rooms.Count;
@@ -37,13 +42,8 @@ public partial class DungeonGenerator
             raise[i] = layers * data.boardLayerHeight;
         }
         var dirs = DungeonLayout.Neighbours;
-        for (int x = 0; x < w; x++) for (int z = 0; z < d; z++)
-        {
-            if (!Layout.floor[x, z]) continue;
-            int region = Layout.RegionIds[x, z];
-            if (region < rooms) { elevation[x, z] = stairFrom[x, z] = stairTo[x, z] = raise[region]; }
-        }
-        // Each passage: walking distance from either end, so the floor climbs evenly from one room to the next.
+        // Passages: their cells and the rooms at their ends.
+        var passages = new List<(int region, List<Vector2Int> cells, List<int> ends)>();
         for (int region = rooms; region < Layout.RegionCount; region++)
         {
             var cells = new List<Vector2Int>();
@@ -54,7 +54,20 @@ public partial class DungeonGenerator
                     var c = new Vector2Int(x, z); cells.Add(c);
                     foreach (var dir in dirs) { int r = Layout.RoomAt(c + dir); if (r >= 0 && !ends.Contains(r)) ends.Add(r); }
                 }
-            if (cells.Count == 0) continue;
+            if (cells.Count > 0) passages.Add((region, cells, ends));
+        }
+        VaryHeights(raise, new System.Random(unchecked(seed + 70003)));
+        KeepStairsWalkable(raise, passages, dirs);
+
+        for (int x = 0; x < w; x++) for (int z = 0; z < d; z++)
+        {
+            if (!Layout.floor[x, z]) continue;
+            int region = Layout.RegionIds[x, z];
+            if (region < rooms) { elevation[x, z] = stairFrom[x, z] = stairTo[x, z] = raise[region]; }
+        }
+        // Each passage: walking distance from either end, so the floor climbs evenly from one room to the next.
+        foreach (var (region, cells, ends) in passages)
+        {
             if (ends.Count < 2)
             {
                 float flat = ends.Count == 1 ? raise[ends[0]] : 0f;
@@ -78,6 +91,53 @@ public partial class DungeonGenerator
                     if ((fromA.TryGetValue(n, out int dn) && dn == da + 1) || (Layout.RoomAt(n) == b && db == 0)) { stairDir[c.x, c.y] = dir; break; }
                 }
             }
+        }
+    }
+
+    // Board Verticality: the tallest room (after the start) rises to its height times the verticality; of
+    // the rest, about half keep their level, some dip lower and some climb part of the way toward the peak.
+    // Below 1 everything flattens evenly. The start room keeps its height.
+    void VaryHeights(float[] raise, System.Random rng)
+    {
+        float v = Mathf.Max(0f, data.boardVerticality);
+        if (Mathf.Approximately(v, 1f)) return;
+        int peak = -1; float top = 0f;
+        for (int i = 1; i < raise.Length; i++) if (raise[i] > top) { top = raise[i]; peak = i; }
+        if (peak < 0) return;
+        float peakHeight = top * v;
+        for (int i = 1; i < raise.Length; i++)
+        {
+            double roll = rng.NextDouble(), amount = rng.NextDouble(); // always two draws, so rooms keep their rolls
+            float b = raise[i];
+            if (i == peak) raise[i] = peakHeight;
+            else if (v < 1f) raise[i] = b * v;
+            else if (roll < .5) raise[i] = b;
+            else if (roll < .75) raise[i] = b * Mathf.Lerp(.35f, .8f, (float)amount);
+            else raise[i] = Mathf.Lerp(b, peakHeight, Mathf.Lerp(.3f, .75f, (float)amount));
+        }
+    }
+
+    // A passage can only climb so steeply (MaxStairAngle over its length): where two rooms differ by more,
+    // the lower one is lifted until the climb fits. Lifting never lowers anything, so this settles.
+    void KeepStairsWalkable(float[] raise, List<(int region, List<Vector2Int> cells, List<int> ends)> passages, Vector2Int[] dirs)
+    {
+        var limits = new List<(int a, int b, float rise)>();
+        foreach (var (region, cells, ends) in passages)
+        {
+            if (ends.Count < 2) continue;
+            int steps = 0;
+            foreach (var n in PassageDistance(region, cells, ends[0], dirs).Values) steps = Mathf.Max(steps, n + 1);
+            limits.Add((ends[0], ends[1], steps * data.cellSize * Mathf.Tan(MaxStairAngle * Mathf.Deg2Rad)));
+        }
+        for (int pass = 0; pass < 64; pass++)
+        {
+            bool changed = false;
+            foreach (var (a, b, rise) in limits)
+            {
+                if (raise[a] - raise[b] > rise + .001f) { raise[b] = raise[a] - rise; changed = true; }
+                else if (raise[b] - raise[a] > rise + .001f) { raise[a] = raise[b] - rise; changed = true; }
+            }
+            if (!changed) break;
         }
     }
 
@@ -142,8 +202,9 @@ public partial class DungeonGenerator
             }
             return;
         }
-        // Small steps: the cell split into treads along the way up.
-        const int treads = 4;
+        // Small steps: the cell split into treads along the way up, enough of them that no step is higher
+        // than MaxTreadRise (a tall climb on a very vertical board makes a steeper, longer flight).
+        int treads = Mathf.Clamp(Mathf.CeilToInt(Mathf.Abs(stairTo[x, z] - stairFrom[x, z]) / MaxTreadRise), 4, 24);
         var up = stairDir[x, z];
         var along = new Vector3(up.x, 0, up.y);
         var across = new Vector2(up.x != 0 ? size / treads : size, up.y != 0 ? size / treads : size);

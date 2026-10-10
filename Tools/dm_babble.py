@@ -4,9 +4,9 @@ A low, slightly hoarse old voice. Glottal pulses with jitter and breath, three t
 formant resonators gliding between vowel targets, soft consonants (nasals, liquids, light plosives,
 breathy h), falling sentence pitch, short room tail. Written as 16-bit mono WAVs.
 
-Usage: python Tools/dm_babble.py <out_dir> [seed] [voice|all]
-Voices (see VOICES): old (the original), soft, whisper, deep, quick, gravel. "old" writes
-"DM babble N.wav"; the others "DM babble <Voice> N.wav".
+Usage: python Tools/dm_babble.py <out_dir> [seed]
+Writes "DM babble N.wav". VOICES holds the settings (Tools/dm_voices.py borrows them for its radio voice);
+the other Dungeon Master voices are made in very different ways by Tools/dm_voices.py.
 """
 import sys, os, wave
 import numpy as np
@@ -21,17 +21,6 @@ VOICES = {
     "old": dict(pitch=(98, 108), formant=1.0, speed=1.0, voicing=1.0, breath=.025, whisper=0.0,
                 open_q=.62, lowpass=4200, drive=1.3, peak=.8, jitter=.006, shimmer=.05, fry=0.0,
                 wobble=1.0, fall=.84, room=1.0),
-    # Quieter and rounder: a gentle murmur, fewer high harmonics, more air, no grit.
-    "soft": dict(pitch=(94, 102), open_q=.8, breath=.06, lowpass=2400, drive=.6, peak=.5, speed=1.12,
-                 shimmer=.03, wobble=.6, fall=.88),
-    # No voice at all: breath shaped by the mouth.
-    "whisper": dict(voicing=0.0, whisper=.9, breath=.0, lowpass=5500, drive=.8, peak=.45, room=.8),
-    # Lower and slower, a bigger chest.
-    "deep": dict(pitch=(72, 80), formant=.88, speed=1.15, lowpass=3400, fall=.8, room=1.2),
-    # Higher and quicker, chattering.
-    "quick": dict(pitch=(132, 148), formant=1.1, speed=.68, lowpass=5000, peak=.7, room=.5, fall=.9),
-    # Low and rough: uneven pulses, a creaky edge and more grit.
-    "gravel": dict(pitch=(84, 92), jitter=.02, shimmer=.14, fry=.35, drive=2.2, peak=.75, breath=.04),
 }
 V = dict(VOICES["old"])
 

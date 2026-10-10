@@ -10,7 +10,9 @@ public enum DestructiblePlacement { Floor = 0, Corner = 1 }
 // Loot and floor come from the generator (Barrel source).
 public class DungeonDestructible : MonoBehaviour, IDamageable
 {
-    [Min(.1f), Tooltip("1 breaks in one hit.")] public float health = 1f;
+    [Min(.1f), Tooltip("1 breaks in one hit. Ignored when Hits To Break is set.")] public float health = 1f;
+    [Tooltip("Breaks after a number of hits picked at random in this range (per object, from its seed), whatever the damage. 0 uses Health.")]
+    public Vector2Int hitsToBreak = Vector2Int.zero;
     [Tooltip("Shown over its health bar. Empty uses the object name.")] public string displayName;
     [Tooltip("Floor objects fill supply spots; Corner objects (cobwebs) hang in room corners.")]
     public DestructiblePlacement placement = DestructiblePlacement.Floor;
@@ -18,7 +20,10 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
     public GameObject model;
     public AudioClip breakClip;
     [Range(0, 1)] public float breakVolume = .9f;
+    [Tooltip("A hit that doesn't break it, picked from several clips. Empty uses Hit Clip.")] public AudioData hitSound;
     [Tooltip("A hit that doesn't break it. Empty uses Break Clip, quieter.")] public AudioClip hitClip;
+    [Range(0, 2), Tooltip("Hit stop when the player strikes it, against an enemy hit (light or heavy). 0 is none.")]
+    public float hitStopScale = .7f;
     [Range(0, 1)] public float hitVolume = .6f;
     [Tooltip("Pooled pieces thrown outward when broken (small rigid bodies).")]
     public GameObject debrisPrefab;
@@ -47,17 +52,37 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
     public string DisplayName => string.IsNullOrEmpty(displayName) ? name.Replace("(Clone)", "").Trim() : displayName;
     public Vector3 Top { get { var b = Bounds(); return new Vector3(b.center.x, b.max.y, b.center.z); } }
 
+    bool HitCounted => hitsToBreak.y > 0;
+    bool started;
+
     void Awake() => maxHealth = health;
+
+    // Hits To Break is rolled on the first hit: the generator sets the seed after Awake.
+    void Begin()
+    {
+        if (started) return;
+        started = true;
+        if (!HitCounted) return;
+        int min = Mathf.Max(1, hitsToBreak.x), max = Mathf.Max(min, hitsToBreak.y);
+        health = maxHealth = new System.Random(unchecked(seed * 31 + 977)).Next(min, max + 1);
+    }
+
+    // True when the damage was counted: a hit-counted object takes one point per hit.
+    public bool CountsHits => HitCounted;
 
     public void TakeDamage(DamageInfo info)
     {
         if (broken || info.Amount <= 0f) return;
-        health -= info.Amount;
+        Begin();
+        health -= HitCounted ? 1f : info.Amount;
+        if (hitStopScale > 0f && CombatManager.HasInstance && info.Source is Player)
+            CombatManager.Instance.RequestHitStop(info.Heavy, hitStopScale);
         if (health <= 0f) { Break(info.Direction); return; }
         var center = Bounds().center;
         if (AudioManager.HasInstance)
         {
-            if (hitClip != null) AudioManager.Instance.PlaySFX(hitClip, center, hitVolume, .08f);
+            if (hitSound != null) AudioManager.Instance.PlaySFXData(hitSound, center);
+            else if (hitClip != null) AudioManager.Instance.PlaySFX(hitClip, center, hitVolume, .08f);
             else if (breakClip != null) AudioManager.Instance.PlaySFX(breakClip, center, breakVolume * .5f, 1.25f, .08f, 1, 20);
         }
         Throw(center, info.Direction, Mathf.Min(2, debrisCount), .6f);

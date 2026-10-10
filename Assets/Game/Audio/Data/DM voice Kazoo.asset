@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM voice Kazoo
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 6bd78ebe5c9af8344919703cb9807bd8, type: 3}
+  - {fileID: 8300000, guid: 955bd82cfbceb4449bb8785d4f959e18, type: 3}
+  - {fileID: 8300000, guid: 16ac7d199624db44e97da68ebc368914, type: 3}
+  - {fileID: 8300000, guid: 162cef7f8612e494c9197eee77f26f90, type: 3}
+  - {fileID: 8300000, guid: cc4a05a4e9e4b9543bc8d91230bd1df7, type: 3}
+  - {fileID: 8300000, guid: 499cc0c058855bc4ba125b6ada68a23e, type: 3}
+  - {fileID: 8300000, guid: 89601a40ccd76a041a36c8dbcb93f054, type: 3}
+  - {fileID: 8300000, guid: 7447c64d7213b26468096ae862be6b2a, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.03
+  minDistance: 1
+  maxDistance: 500

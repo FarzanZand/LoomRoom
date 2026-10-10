@@ -6,10 +6,12 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 // The Dungeon Master's mumble: Barony-style gibberish under lines that have no recorded voice.
-// Syllables plays a UI Library sound once per syllable; every other voice is a set of babble phrases
-// made by Tools/dm_babble.py (python Tools/dm_babble.py <dir> <seed> <voice>), of which the one
-// nearest the line's length plays.
-public enum MumbleVoice { Syllables = 0, Old = 1, Soft = 2, Whisper = 3, Deep = 4, Quick = 5, Gravel = 6 }
+// Syllables plays a UI Library sound once per syllable; every other voice is a set of phrases of rising
+// length (Old from Tools/dm_babble.py, the rest from Tools/dm_voices.py <dir> <seed> <voice>), of which
+// the one nearest the line's length plays.
+// 2-6 (Soft, Whisper, Deep, Quick, Gravel: pitch variants of Old) are retired. 7 onwards are made by
+// Tools/dm_voices.py, each a different way: beeps, additive chatter, kazoo, choir, growl, plucked strings, radio.
+public enum MumbleVoice { Syllables = 0, Old = 1, Blips = 7, Animalese = 8, Kazoo = 9, Choir = 10, Beast = 11, Lute = 12, Radio = 13 }
 
 [Serializable]
 public class MumbleVoiceSet

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM voice Radio
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: d8be3ecde6de19045bf03afc040ef8e1, type: 3}
+  - {fileID: 8300000, guid: 14ab0f7e32c3e784eacaa595e662a4fb, type: 3}
+  - {fileID: 8300000, guid: a2e6b46ec2111a348acf0b1c209c0d92, type: 3}
+  - {fileID: 8300000, guid: 17bd589d801f8774aae4226a5a99be25, type: 3}
+  - {fileID: 8300000, guid: b2e7514555394b548ad5ae6898ac18d8, type: 3}
+  - {fileID: 8300000, guid: d696bfe8ed1378c43a2acdd30b4e0926, type: 3}
+  - {fileID: 8300000, guid: 724696ca28bcc9a40a824557c81a015c, type: 3}
+  - {fileID: 8300000, guid: 2ac347f09f7a09544b0f226e6ab38086, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.05
+  minDistance: 1
+  maxDistance: 500

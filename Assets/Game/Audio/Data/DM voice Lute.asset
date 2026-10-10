@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM voice Lute
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 6f5008ae4d8192d4a9f152e25293f313, type: 3}
+  - {fileID: 8300000, guid: 7be48015c831e754a80707ce26962ecd, type: 3}
+  - {fileID: 8300000, guid: 3406490ead44f2b4daba34e9f395eb44, type: 3}
+  - {fileID: 8300000, guid: d91f1520d44a7704fa2268f0f037f249, type: 3}
+  - {fileID: 8300000, guid: 1bee09daa5d4d334a8d8e42e6eecad9e, type: 3}
+  - {fileID: 8300000, guid: 8a3e649887fb59f459e530d65bfa4e1b, type: 3}
+  - {fileID: 8300000, guid: bc854f31794fb4d439a798c7545df2a8, type: 3}
+  - {fileID: 8300000, guid: e115744bcf5689c4f84442649aa34324, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.03
+  minDistance: 1
+  maxDistance: 500

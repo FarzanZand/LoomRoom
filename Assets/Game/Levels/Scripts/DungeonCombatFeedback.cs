@@ -95,7 +95,8 @@ public class DungeonCombatFeedback : MonoBehaviour
             view=new ObjectView{target=target,root=bar.Rect,fill=bar.healthFill,loss=bar.recentDamageFill};objects.Add(view);
         }
         view.until=Time.time+3f;view.lossUntil=Time.time+.35f;
-        ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f),numberScale);
+        // A hit-counted breakable's bar already shows the hits left; the damage number would mislead.
+        if(!target.CountsHits)ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f),numberScale);
     }
     void ShowNumber(Transform target,Vector3 position,string text,Color color,float scale=1)
     {

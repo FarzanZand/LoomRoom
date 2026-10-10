@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM voice Blips
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 4c2f0ca149034c64c913c2c11ece9aba, type: 3}
+  - {fileID: 8300000, guid: 9a9da57f87efea14b9abde3f9a4af624, type: 3}
+  - {fileID: 8300000, guid: 66637592f84676f4188db010668bc36b, type: 3}
+  - {fileID: 8300000, guid: 4cec5f4d7034a6542ae0bc63f2aa0479, type: 3}
+  - {fileID: 8300000, guid: ff12dc7de4b370743859833b358de85c, type: 3}
+  - {fileID: 8300000, guid: dce738787ebe0974ea1e2001b776c9ca, type: 3}
+  - {fileID: 8300000, guid: 1b87b5efaca4168469458693c6df91c6, type: 3}
+  - {fileID: 8300000, guid: ec6d91e1d2b3ad243be7891306a0ec7a, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.03
+  minDistance: 1
+  maxDistance: 500

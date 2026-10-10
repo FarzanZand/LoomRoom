@@ -26,8 +26,26 @@ public static class FullscreenGameView
     [MenuItem(MenuToggle, priority = 200)]
     static void Toggle()
     {
-        if (window != null) Close();
+        if (Find() != null) Close();
         else Open();
+    }
+
+    // A script reload forgets the window this class opened, so it is found again by what makes it ours:
+    // a Game view pinned to the full screen at the top left corner.
+    static EditorWindow Find()
+    {
+        if (window != null) return window;
+        var type = typeof(Editor).Assembly.GetType("UnityEditor.GameView");
+        if (type == null) return null;
+        var screen = Screen.currentResolution;
+        float scale = EditorGUIUtility.pixelsPerPoint;
+        foreach (var o in Resources.FindObjectsOfTypeAll(type))
+        {
+            var w = (EditorWindow)o;
+            var p = w.position;
+            if (p.x <= 1 && p.y <= 1 && Mathf.Abs(p.width - screen.width / scale) < 2 && w.minSize == w.maxSize) return window = w;
+        }
+        return null;
     }
 
     [MenuItem(MenuOnPlay, priority = 201)]
@@ -52,7 +70,7 @@ public static class FullscreenGameView
 
     static void Open()
     {
-        if (window != null) return;
+        if (Find() != null) return;
         var type = typeof(Editor).Assembly.GetType("UnityEditor.GameView");
         if (type == null) { Debug.LogWarning("Fullscreen Game View: no GameView type in this Unity version."); return; }
         window = (EditorWindow)ScriptableObject.CreateInstance(type);
@@ -71,7 +89,7 @@ public static class FullscreenGameView
 
     static void Close()
     {
-        if (window == null) return;
+        if (Find() == null) return;
         window.Close();
         window = null;
     }

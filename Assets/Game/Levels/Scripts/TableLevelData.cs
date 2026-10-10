@@ -201,6 +201,8 @@ public class TableLevelData : ScriptableObject
     public float boardLayerHeight = .32f;
     [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Range(0, 3), Tooltip("Generated board levels: the most layers a room is raised.")]
     public int boardMaxRaise = 2;
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Range(0, 8), Tooltip("How vertical the board is. The tallest room rises to its layer height times this; about half the other rooms keep their level, some dip lower and some climb part of the way. 1 keeps the layers as set, below 1 flattens. Rooms that would need too steep a stair are lifted to fit.")]
+    public float boardVerticality = 1f;
     [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Tooltip("Soft taps played as tiles land when a room is revealed (Tools/board_tap.py makes them).")]
     public AudioClip[] boardTileTaps = new AudioClip[0];
 

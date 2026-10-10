@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM voice Animalese
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: ef7445c367572a541b810e9dd89f9091, type: 3}
+  - {fileID: 8300000, guid: d08812c907cb4df4fb1bed0b2b5376ee, type: 3}
+  - {fileID: 8300000, guid: 9c9bee1295479db4bb8fd4b356f52752, type: 3}
+  - {fileID: 8300000, guid: 7a5339ad19d01944db1f3a1683984fc9, type: 3}
+  - {fileID: 8300000, guid: ce8b92b4f63c3e34299ff80857b428af, type: 3}
+  - {fileID: 8300000, guid: cbfd3dddabc72cc4d84f43d6920f0ee4, type: 3}
+  - {fileID: 8300000, guid: d332c4d06637d5e48b8c956b09e32f79, type: 3}
+  - {fileID: 8300000, guid: 4ff05b136670ec54986279b5ac88bf68, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.03
+  minDistance: 1
+  maxDistance: 500

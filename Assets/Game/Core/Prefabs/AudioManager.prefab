@@ -49,21 +49,27 @@ MonoBehaviour:
   - voice: 1
     babble: {fileID: 11400000, guid: 94bf8cf9202811a409db3f90846034c1, type: 2}
     perWord: 0.22
-  - voice: 2
-    babble: {fileID: 11400000, guid: 09ca7b9ee98797c4abd663c15982603f, type: 2}
-    perWord: 0.25
-  - voice: 3
-    babble: {fileID: 11400000, guid: 5ad0dfa0d2929604e9cbb03bd72b39d6, type: 2}
-    perWord: 0.22
-  - voice: 4
-    babble: {fileID: 11400000, guid: 9fd2e724c4966c648b787eeda245a690, type: 2}
-    perWord: 0.25
-  - voice: 5
-    babble: {fileID: 11400000, guid: d201d74408300e843996770149d675c9, type: 2}
-    perWord: 0.16
-  - voice: 6
-    babble: {fileID: 11400000, guid: 567382e29e15c7c40b5e2c2d72aa2b01, type: 2}
-    perWord: 0.22
+  - voice: 7
+    babble: {fileID: 11400000, guid: 0b3ec7b1774b236438a8497cac99d4b6, type: 2}
+    perWord: 0.2
+  - voice: 8
+    babble: {fileID: 11400000, guid: 7f37f5e4907357445861232973402587, type: 2}
+    perWord: 0.2
+  - voice: 9
+    babble: {fileID: 11400000, guid: 1a71efcbd434643448233a6f6c1764a2, type: 2}
+    perWord: 0.24
+  - voice: 10
+    babble: {fileID: 11400000, guid: 31182d7f8b8a68e4fbf39deb5b54d35b, type: 2}
+    perWord: 0.32
+  - voice: 11
+    babble: {fileID: 11400000, guid: f8d81e8d5e5ddfe4d9b07634f6b09802, type: 2}
+    perWord: 0.24
+  - voice: 12
+    babble: {fileID: 11400000, guid: 5a4367badf1a53243835347499102f47, type: 2}
+    perWord: 0.24
+  - voice: 13
+    babble: {fileID: 11400000, guid: c74218ece3720a84ebd3e0347513b18c, type: 2}
+    perWord: 0.24
   mumbleKey: dmMumble
   syllableGap: 0.09
   syllablesPerWord: 1.5

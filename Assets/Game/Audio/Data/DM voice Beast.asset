@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: DM voice Beast
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: a09dda46e38e2f04fb2bd89a01ae693b, type: 3}
+  - {fileID: 8300000, guid: 56fa1afab69485e42b17f2431e0d2a26, type: 3}
+  - {fileID: 8300000, guid: 03c5f2f2e6443f045a814383e7e565d5, type: 3}
+  - {fileID: 8300000, guid: a59740950df1baa4f8ec602119881659, type: 3}
+  - {fileID: 8300000, guid: 8a276095da33f7f45bffa50ae8d4725f, type: 3}
+  - {fileID: 8300000, guid: bfb9313431d1bfb48ab5e5842c3eebb0, type: 3}
+  - {fileID: 8300000, guid: 27d2b88cd882d8641a172b2ac9ba50c6, type: 3}
+  - {fileID: 8300000, guid: f9089506c2682ac4396797edb9f3e4ba, type: 3}
+  volume: 0.55
+  pitch: 1
+  pitchVariance: 0.05
+  minDistance: 1
+  maxDistance: 500
