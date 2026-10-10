@@ -16,6 +16,18 @@ public static class ClipRecorder
     public static bool IsRecording => controller != null && controller.IsRecording();
     public static string Folder => Path.GetFullPath(Path.Combine(Application.dataPath, "Videos"));
 
+    // Game music is muted while recording (on by default) so edits can lay their own track; sound effects stay.
+    public static bool MuteMusic = true;
+
+    static void SetMusicMuted(bool muted)
+    {
+        if (!AudioManager.HasInstance) return;
+        var mixer = typeof(AudioManager).GetField("mixer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(AudioManager.Instance) as UnityEngine.Audio.AudioMixer;
+        if (mixer == null) return;
+        float linear = muted ? 0f : AudioManager.Instance.MusicVolume;
+        mixer.SetFloat(AudioManager.P_MUSIC, linear <= .0001f ? -80f : Mathf.Log10(linear) * 20f);
+    }
+
     public static string Begin(string clipName, int width = 1080, int height = 1920, float fps = 60, bool audio = true)
     {
         if (!EditorApplication.isPlaying) { Debug.LogError("[ClipRecorder] Recording needs Play mode."); return null; }
@@ -46,6 +58,7 @@ public static class ClipRecorder
         controller.PrepareRecording();
         if (!controller.StartRecording()) { Debug.LogError("[ClipRecorder] The recorder did not start."); controller = null; return null; }
         LastFile = movie.OutputFile + ".mp4";
+        if (MuteMusic) SetMusicMuted(true);
         Debug.Log($"[ClipRecorder] Recording {width}x{height} @ {fps} to {LastFile}");
         return LastFile;
     }
@@ -55,6 +68,7 @@ public static class ClipRecorder
         if (controller == null) return null;
         if (controller.IsRecording()) controller.StopRecording();
         controller = null;
+        SetMusicMuted(false);
         Debug.Log($"[ClipRecorder] Saved {LastFile}");
         return LastFile;
     }

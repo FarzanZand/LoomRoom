@@ -11,6 +11,7 @@ API key: MESHY_API_KEY env var, or the first line of ~/.meshy/api_key.
   python Tools/meshy.py remesh <model or task id> --polycount 3000 --name ChestLow
   python Tools/meshy.py rig <model or task id> --height 1.8 --name GoblinRigged
   python Tools/meshy.py concept "goblin archer, front view" --name GoblinRef
+  python Tools/meshy.py concept "a new character in this exact style" --ref style.png --name StyledRef
   python Tools/meshy.py fetch <kind> <task id> --name X     (download a finished or interrupted task)
 
 Common options: --polycount N, --quad, --smart, --pbr, --tex-res 2k|4k|8k, --geo-res standard|2k|4k,
@@ -43,6 +44,7 @@ KINDS = {
     "remesh": ("v1/remesh", "remesh"),
     "rig": ("v1/rigging", "rigging"),
     "concept": ("v1/text-to-image", "concept image"),
+    "concept-ref": ("v1/image-to-image", "concept image from references"),
 }
 
 
@@ -265,6 +267,13 @@ def cmd_rig(s, a):
 
 def cmd_concept(s, a):
     body = {"prompt": a.prompt, "ai_model": a.image_model}
+    if a.ref:
+        # Image to image: the references set the style (or the subject); the prompt says what to draw.
+        body["reference_image_urls"] = [image_input(r) for r in a.ref]
+        if a.multi_view:
+            body["generate_multi_view"] = True
+        save(wait(s, "concept-ref", create(s, "concept-ref", body)), a.name, a.out, [])
+        return
     if a.multi_view:
         body["generate_multi_view"] = True
     elif a.aspect:
@@ -348,6 +357,7 @@ def main():
     sp.add_argument("--multi-view", action="store_true")
     sp.add_argument("--pose", choices=["a-pose", "t-pose"])
     sp.add_argument("--transparent", action="store_true")
+    sp.add_argument("--ref", action="append", help="reference image (file or URL) for image to image; repeat for up to 5")
     sp.set_defaults(fn=cmd_concept)
 
     sp = common(sub.add_parser("fetch", help="download a task by id"))

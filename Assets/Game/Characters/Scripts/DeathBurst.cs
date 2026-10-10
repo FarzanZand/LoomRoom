@@ -7,12 +7,15 @@ using UnityEngine.Rendering;
 // bone each triangle follows (head, chest, hips, upper and lower arms and legs), each part becomes a small physics
 // piece thrown out from the killing blow, and held or worn props (weapon, helmet) come loose too. The pieces stay on
 // the floor, frozen once they settle. Replaces EnemyRagdoll on this character.
-[RequireComponent(typeof(Character))]
+// The burst happens at the end of the death frame, from the pose that was on screen: the Animator is frozen at once
+// (so the death trigger never plays) and the mesh is baked in a late LateUpdate, after every procedural bone tweak.
+[RequireComponent(typeof(Character)), DefaultExecutionOrder(10000)]
 public class DeathBurst : MonoBehaviour
 {
     [Tooltip("How hard the pieces fly away from the killing blow.")]
     [SerializeField, Min(0)] float force = 2.2f;
-    [SerializeField, Min(0)] float upward = 2f;
+    [Tooltip("Upward speed. Kept small: the bones should fall apart where they stood, not hop.")]
+    [SerializeField, Min(0)] float upward = .5f;
     [Tooltip("Random spread, so the pieces scatter instead of flying off together.")]
     [SerializeField, Min(0)] float scatter = 1.2f;
     [Tooltip("Random spin, radians per second.")]
@@ -31,9 +34,25 @@ public class DeathBurst : MonoBehaviour
     void OnDisable() { character.Damaged -= Remember; character.Died -= OnDied; }
     void Remember(DamageInfo info) => lastHit = info;
 
+    bool pending;
+
     void OnDied()
     {
-        if (HasBurst) return;
+        if (HasBurst || pending) return;
+        pending = true;
+        // Hold the current pose: with the Animator running, the Dead flag and death trigger would move it first.
+        if (character.Animator != null) character.Animator.enabled = false;
+    }
+
+    void LateUpdate()
+    {
+        if (!pending) return;
+        pending = false;
+        Burst();
+    }
+
+    void Burst()
+    {
         HasBurst = true;
         var anim = character.Animator;
         var major = MajorBones(anim);
@@ -86,7 +105,9 @@ public class DeathBurst : MonoBehaviour
     void SplitSkinned(SkinnedMeshRenderer smr, HashSet<Transform> major, Transform parent)
     {
         var baked = new Mesh();
-        smr.BakeMesh(baked, true);
+        // Without scale: the baked vertices are then in the renderer's unscaled space, which toWorld below expects.
+        // Baking with scale stretched the pieces (taller body, lifted arms) on characters with a scaled rig.
+        smr.BakeMesh(baked, false);
         var source = smr.sharedMesh;
         var weights = source.boneWeights;
         var bones = smr.bones;

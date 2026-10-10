@@ -130,7 +130,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DeathBurst
   force: 2.2
-  upward: 2
+  upward: 0.5
   scatter: 1.2
   spin: 9
   pieceMass: 0.4
