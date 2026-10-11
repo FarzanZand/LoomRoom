@@ -84,6 +84,9 @@ public class PixelLook
 
     public void Tick()
     {
+        // The game's materials use the pixel-lighting shader directly, so its per-world brightness and texel scale are
+        // set whether or not the Pixelator is swapping materials.
+        if (Library != null) SetGlobals();
         if (!Active || Time.unscaledTime < nextScan) return;
         nextScan = Time.unscaledTime + RescanSeconds;
         if (isCharacter.Count > 4096) { isCharacter.Clear(); isViewModel.Clear(); } // forget destroyed renderers

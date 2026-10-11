@@ -19,7 +19,7 @@ public static partial class PixelRestyle
     {
         if (m == null) return true;
         var n = m.name.ToLowerInvariant(); var sh = m.shader.name.ToLowerInvariant();
-        if (n.Contains("glass") || n.Contains("water") || n.Contains("diffuser") || n.Contains("eyes") || n.Contains("screen")) return true;
+        if (n.Contains("glass") || n.Contains("water") || n.Contains("eyes") || n.Contains("screen")) return true;
         if (sh.Contains("sprite") || sh.Contains("textmeshpro") || sh.Contains("dm eyes") || sh.Contains("unlit")) return true;
         if (m.renderQueue > 2500) return true;                                            // transparent (Synty cutout at 2450 is opaque enough)
         if (m.HasProperty("_Surface") && m.GetFloat("_Surface") > .5f) return true;
