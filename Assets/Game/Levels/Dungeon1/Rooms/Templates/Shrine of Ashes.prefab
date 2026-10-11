@@ -47,6 +47,8 @@ MonoBehaviour:
   type: 5
   chance: 1
   overridePrefab: {fileID: 1139990893470972911, guid: 69b99ad0ca2199f40ba3c9ac972343da, type: 3}
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &593884517187420463
 GameObject:
   m_ObjectHideFlags: 0
@@ -94,6 +96,8 @@ MonoBehaviour:
   type: 4
   chance: 1
   overridePrefab: {fileID: 0}
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &2492189193509850896
 GameObject:
   m_ObjectHideFlags: 0
@@ -141,6 +145,8 @@ MonoBehaviour:
   type: 2
   chance: 0.7
   overridePrefab: {fileID: 0}
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &4390077711874910255
 GameObject:
   m_ObjectHideFlags: 0
@@ -285,6 +291,8 @@ MonoBehaviour:
   type: 5
   chance: 1
   overridePrefab: {fileID: 2628686250012602643, guid: 8605074f6c2806a418b4153f5c861b1f, type: 3}
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &6464842126555326522
 GameObject:
   m_ObjectHideFlags: 0
@@ -344,10 +352,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  paintFootprint: 0
+  footprint: {fileID: 0}
+  allowRotation: 1
+  width: 7
+  height: 7
+  rows: []
   minimumCells: {x: 6, y: 6}
+  style: {fileID: 0}
+  heightTiles: 0
+  openCeiling: 0
+  ceilingFrame: 0.35
   replaceGeneratedProps: 1
   replaceGeneratedEnemies: 1
-  keepRoomLight: 1
+  replaceGeneratedTorches: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  previewLevel: {fileID: 0}
   previewCellSize: 2
 --- !u!1 &6543946378081662730
 GameObject:
@@ -493,6 +514,8 @@ MonoBehaviour:
   type: 2
   chance: 0.7
   overridePrefab: {fileID: 0}
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1001 &4378684958511550749
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -501,6 +524,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8129503558607904697}
     m_Modifications:
+    - target: {fileID: 6477297528340513122, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 0e91c0045704ecc46ac86f47572217dd, type: 2}
     - target: {fileID: 7280052242525181053, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Name
       value: SM_Bld_Pillar_01
@@ -557,6 +584,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9081240922935555496, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 412b2826088c3764982b84a95f48ef6c, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -596,6 +627,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8129503558607904697}
     m_Modifications:
+    - target: {fileID: 5246684761535434065, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: c91c38432aa0ceb40a94897d3a6c6c6f, type: 2}
+    - target: {fileID: 8010497152379173275, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 9ee67a3adc9a19c4aa12001304c95dc5, type: 2}
     - target: {fileID: 8371062267507710030, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Brazier_01
@@ -735,6 +774,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Candle_Rack_01
       objectReference: {fileID: 0}
+    - target: {fileID: 1162980485961859766, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: d9bcd0781b7350847b24cc88f346c968, type: 2}
+    - target: {fileID: 4019264613339575932, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 406bc5daec0fc8249bcc965f17e73d33, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -774,6 +821,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8129503558607904697}
     m_Modifications:
+    - target: {fileID: 6477297528340513122, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 0e91c0045704ecc46ac86f47572217dd, type: 2}
     - target: {fileID: 7280052242525181053, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Name
       value: SM_Bld_Pillar_01
@@ -830,6 +881,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9081240922935555496, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 412b2826088c3764982b84a95f48ef6c, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -925,6 +980,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6663624206578977269, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: ad90a0c0c132dc2478c99e55c1b5b547, type: 2}
+    - target: {fileID: 8907281827052748095, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: ece5e37e1ca40504581d282846b895c8, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -964,6 +1027,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8129503558607904697}
     m_Modifications:
+    - target: {fileID: 6477297528340513122, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 0e91c0045704ecc46ac86f47572217dd, type: 2}
     - target: {fileID: 7280052242525181053, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Name
       value: SM_Bld_Pillar_01
@@ -1020,6 +1087,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9081240922935555496, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 412b2826088c3764982b84a95f48ef6c, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1059,6 +1130,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8129503558607904697}
     m_Modifications:
+    - target: {fileID: 5246684761535434065, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: c91c38432aa0ceb40a94897d3a6c6c6f, type: 2}
+    - target: {fileID: 8010497152379173275, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 9ee67a3adc9a19c4aa12001304c95dc5, type: 2}
     - target: {fileID: 8371062267507710030, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Brazier_01
@@ -1142,6 +1221,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8129503558607904697}
     m_Modifications:
+    - target: {fileID: 6477297528340513122, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 0e91c0045704ecc46ac86f47572217dd, type: 2}
     - target: {fileID: 7280052242525181053, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Name
       value: SM_Bld_Pillar_01
@@ -1198,6 +1281,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9081240922935555496, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 412b2826088c3764982b84a95f48ef6c, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

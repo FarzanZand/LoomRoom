@@ -19,7 +19,7 @@ MonoBehaviour:
   description: 
   icon: {fileID: 21300000, guid: 9c4369f95bcfc1f499e141b7b68ee40a, type: 3}
   tag: 
-  worldPrefab: {fileID: 6798015009763888447, guid: 68da6e11f0050cb48a708855e9c3aee3, type: 3}
+  worldPrefab: {fileID: 6950012130812383543, guid: 1b21afa5057efec41abda064a8e59cb7, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 4
   maxStackSize: 5

@@ -222,6 +222,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2235116437806982392, guid: c08b40bbbb802c84986e9f88310d00ee, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: d3f0c63e26be90642a0b346d70e70ed6, type: 2}
+    - target: {fileID: 4098361178824101938, guid: c08b40bbbb802c84986e9f88310d00ee, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 0b6fd16d03bd6a64da584c9a2f388790, type: 2}
     m_RemovedComponents:
     - {fileID: 919379472, guid: c08b40bbbb802c84986e9f88310d00ee, type: 3}
     m_RemovedGameObjects: []
@@ -241,6 +249,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7417753757750180470}
     m_Modifications:
+    - target: {fileID: 523879653433705750, guid: fa94614456c8b1d40bd51fd3e8c9b071, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7609914dbefd6c24cb38a5ade3f70e25, type: 2}
     - target: {fileID: 1661297302736174713, guid: fa94614456c8b1d40bd51fd3e8c9b071, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.32
@@ -297,6 +309,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Env_Ground_Dirt_Small_01
       objectReference: {fileID: 0}
+    - target: {fileID: 2351378789590135260, guid: fa94614456c8b1d40bd51fd3e8c9b071, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 6de6ada4b25dab445b79c0494eea20bf, type: 2}
     m_RemovedComponents:
     - {fileID: -6248414971649902868, guid: fa94614456c8b1d40bd51fd3e8c9b071, type: 3}
     m_RemovedGameObjects: []

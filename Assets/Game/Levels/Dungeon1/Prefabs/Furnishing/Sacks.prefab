@@ -41,6 +41,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8434444396457741261}
     m_Modifications:
+    - target: {fileID: 5529905115433992077, guid: 58bff6163c1c73348851ca50eb639961, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: e0861ca9aef079d4d9bdfe7f8a14f4da, type: 2}
+    - target: {fileID: 7735737403127499591, guid: 58bff6163c1c73348851ca50eb639961, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de3b0cb43b8eb874ba0daed528fec36e, type: 2}
     - target: {fileID: 8095818870460361362, guid: 58bff6163c1c73348851ca50eb639961, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Sack_01
@@ -103,6 +111,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8434444396457741261}
     m_Modifications:
+    - target: {fileID: 5002418954051455539, guid: 721ae0c8a1ece004683a751b24c0224a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: ce0ffa8eba81068459a52376aa135bac, type: 2}
     - target: {fileID: 6135878876891771228, guid: 721ae0c8a1ece004683a751b24c0224a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.3527601
@@ -147,6 +159,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Sack_03
       objectReference: {fileID: 0}
+    - target: {fileID: 7100169733327814393, guid: 721ae0c8a1ece004683a751b24c0224a, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 87e9752f50c776b4ebac9eba0ed7b4da, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

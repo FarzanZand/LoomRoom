@@ -42,6 +42,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1567225848070217748}
     m_Modifications:
+    - target: {fileID: 378453229134187436, guid: c1f9d6122eb97354ab75784d4f6f35fb, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: be2d41e4aab7da240b18775d78e8ab39, type: 2}
     - target: {fileID: 1516488116510879939, guid: c1f9d6122eb97354ab75784d4f6f35fb, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.6
@@ -86,6 +90,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Chair_01
       objectReference: {fileID: 0}
+    - target: {fileID: 2496259168885047142, guid: c1f9d6122eb97354ab75784d4f6f35fb, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 9c54735fb0ba8f447bcdfd9b9cd62ff4, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -148,6 +156,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Table_01
       objectReference: {fileID: 0}
+    - target: {fileID: 1263974688115969730, guid: a18fff8d008f23d4ea4d65c6c32a7900, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 8870e93fb8466dd42a77843b1a927092, type: 2}
+    - target: {fileID: 3922209772361497096, guid: a18fff8d008f23d4ea4d65c6c32a7900, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 7ed4f222c26318148a0e82e8248502b0, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -166,6 +182,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1567225848070217748}
     m_Modifications:
+    - target: {fileID: 378453229134187436, guid: c1f9d6122eb97354ab75784d4f6f35fb, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: be2d41e4aab7da240b18775d78e8ab39, type: 2}
     - target: {fileID: 1516488116510879939, guid: c1f9d6122eb97354ab75784d4f6f35fb, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.6
@@ -210,6 +230,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Chair_01
       objectReference: {fileID: 0}
+    - target: {fileID: 2496259168885047142, guid: c1f9d6122eb97354ab75784d4f6f35fb, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 9c54735fb0ba8f447bcdfd9b9cd62ff4, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -100,6 +100,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Gen_Prop_Food_Bread_01
       objectReference: {fileID: 0}
+    - target: {fileID: 6098846364273463405, guid: 78f905348b6fbd6468f2ea23735f39fa, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 332a8cf40aa082f4ead52c3892e5e145, type: 2}
+    - target: {fileID: 8306752337337328807, guid: 78f905348b6fbd6468f2ea23735f39fa, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: ade61e38393269a4badb477f35e15254, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

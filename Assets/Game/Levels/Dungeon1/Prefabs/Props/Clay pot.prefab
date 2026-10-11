@@ -68,12 +68,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonDestructible
   health: 1
+  hitsToBreak: {x: 0, y: 0}
   displayName: 
   placement: 0
   model: {fileID: 7336270052869833892}
   breakClip: {fileID: 8300000, guid: 572e727401af7694b86b014fce8727f3, type: 3}
   breakVolume: 0.75
+  hitSound: {fileID: 0}
   hitClip: {fileID: 0}
+  hitStopScale: 0.7
   hitVolume: 0.6
   debrisPrefab: {fileID: 6842055400893197210, guid: 81b627037152d1241a2b0341bda4f836, type: 3}
   debrisCount: 8
@@ -150,6 +153,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 23952061547334014, guid: 2f9c8c85a9ec795439dfe6fd3e8004ee, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: eff217f1c5cb53d459fe6b33e0189012, type: 2}
+    - target: {fileID: 33035871001118608, guid: 2f9c8c85a9ec795439dfe6fd3e8004ee, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: a3784df0292659c409800a6165c1ad84, type: 2}
     m_RemovedComponents:
     - {fileID: 64654415916493778, guid: 2f9c8c85a9ec795439dfe6fd3e8004ee, type: 3}
     m_RemovedGameObjects: []

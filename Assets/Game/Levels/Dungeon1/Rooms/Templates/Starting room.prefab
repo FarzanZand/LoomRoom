@@ -166,7 +166,6 @@ MonoBehaviour:
   ceilingFrame: 0.35
   replaceGeneratedProps: 1
   replaceGeneratedEnemies: 1
-  keepRoomLight: 1
   replaceGeneratedTorches: 1
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -224,6 +223,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6663624206578977269, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: ad90a0c0c132dc2478c99e55c1b5b547, type: 2}
+    - target: {fileID: 8907281827052748095, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: ece5e37e1ca40504581d282846b895c8, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -307,6 +314,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Candle_Rack_01
       objectReference: {fileID: 0}
+    - target: {fileID: 1162980485961859766, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: d9bcd0781b7350847b24cc88f346c968, type: 2}
+    - target: {fileID: 4019264613339575932, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 406bc5daec0fc8249bcc965f17e73d33, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

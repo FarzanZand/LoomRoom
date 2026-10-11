@@ -112,6 +112,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4684225148361160712}
     m_Modifications:
+    - target: {fileID: 4996632540412357866, guid: 68da6e11f0050cb48a708855e9c3aee3, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 3f60df39afa100c4cb363e79571cca7a, type: 2}
     - target: {fileID: 6132976967314593669, guid: 68da6e11f0050cb48a708855e9c3aee3, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -156,6 +160,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Gen_Prop_Potion_01
       objectReference: {fileID: 0}
+    - target: {fileID: 7112148751560431648, guid: 68da6e11f0050cb48a708855e9c3aee3, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 6143ad70d2afcee44985c8bc35171fad, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

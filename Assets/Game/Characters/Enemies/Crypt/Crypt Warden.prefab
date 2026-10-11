@@ -51,7 +51,11 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 005f66ab100af934fb2385f4113da041, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: e9e43f7f18e02bb40a6993e7f1cf4a53, type: 2}
+      objectReference: {fileID: 2100000, guid: f6d1ec05a0713804f98492ec2b7b4d8d, type: 2}
+    - target: {fileID: -5754084199372789682, guid: 005f66ab100af934fb2385f4113da041, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 1c900e965fbdae448ad1dc90beda8c72, type: 2}
     - target: {fileID: 919132149155446097, guid: 005f66ab100af934fb2385f4113da041, type: 3}
       propertyPath: m_Name
       value: SM_Chr_Attach_Skeleton_HeavyArmor_Helmet_01
