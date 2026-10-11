@@ -30,6 +30,10 @@ public class ScreenManager : Singleton<ScreenManager>
     [FoldoutGroup("Pixel lighting"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLighting))]
     [Tooltip("The game's materials lit like pixel art (LoomRoom/Pixel Lit: light per texel, stepped into bands) instead of smooth URP lighting. No camera filter. F6 flips it in Play mode. The materials are listed on the library (Tools > LoomRoom > Pixel Look > Register Pixel Lighting Materials).")]
     public bool pixelLighting = true;
+    [FoldoutGroup("Pixel lighting"), LabelText("Pixel size"), Range(1f, 8f)]
+    [Tooltip("How many times larger every texel is drawn on pixel-lit materials: 1 = as painted, 2 = twice as large (half the resolution), any value in between. Live in and out of Play mode. Smooth lighting ignores it.")]
+    public float pixelSize = 1f;
+    static readonly int PixelSizeId = Shader.PropertyToID("_PixelLookPixelSize");
 
     [FoldoutGroup("Pixelator"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLook))]
     [Tooltip("Shadowglass-style 3D pixel art: Pixel Lit materials and a pixel camera. Off = the default look. Applies in Play mode and can be flipped live.")]
@@ -207,6 +211,7 @@ public class ScreenManager : Singleton<ScreenManager>
 
     void Update()
     {
+        Shader.SetGlobalFloat(PixelSizeId, pixelSize);
         PixelLook.Tick();
         float step = effectBlendSeconds > 0f ? Time.unscaledDeltaTime / effectBlendSeconds : 1f;
         tableWeight = Mathf.MoveTowards(tableWeight, TargetTableWeight, step);
@@ -250,8 +255,11 @@ public class ScreenManager : Singleton<ScreenManager>
     // Works in and out of Play mode; the materials are assets, so the editor shows the choice too.
     void ApplyPixelLighting()
     {
+        Shader.SetGlobalFloat(PixelSizeId, pixelSize);
         if (pixelLookLibrary != null) pixelLookLibrary.SetPixelLighting(pixelLighting);
     }
+
+    void OnValidate() => Shader.SetGlobalFloat(PixelSizeId, pixelSize);
 
     void TogglePixelLighting()
     {

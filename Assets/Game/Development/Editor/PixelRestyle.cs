@@ -307,7 +307,7 @@ public static partial class PixelRestyle
         System.IO.File.WriteAllBytes(path, tex.EncodeToPNG()); Object.DestroyImmediate(tex);
         AssetDatabase.ImportAsset(path);
         var ti = (TextureImporter)AssetImporter.GetAtPath(path);
-        ti.filterMode = FilterMode.Point; ti.mipmapEnabled = false; ti.textureCompression = TextureImporterCompression.Uncompressed; ti.maxTextureSize = 1024; ti.wrapMode = TextureWrapMode.Clamp;
+        ti.filterMode = FilterMode.Point; ti.mipmapEnabled = true; ti.mipmapFilter = TextureImporterMipFilter.BoxFilter; ti.textureCompression = TextureImporterCompression.Uncompressed; ti.maxTextureSize = 1024; ti.wrapMode = TextureWrapMode.Clamp;
         ti.SaveAndReimport();
     }
 }

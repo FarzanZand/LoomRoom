@@ -40,6 +40,10 @@ float _PixelLookRoomTexelScale;
 float _PixelLookTableTexelScale;
 // Set by PixelLook. Multiplies all light on Pixel Lit materials; 0 (never set) reads as 1.
 float _PixelLookBrightness;
+// Set by ScreenManager (Pixel lighting > Pixel size). Texels grow this many times; 0 (never set) reads as 1.
+float _PixelLookPixelSize;
+
+float PixelSize() { return max(_PixelLookPixelSize, 1.0); }
 
 float PixelHash(float2 p)
 {
@@ -60,7 +64,7 @@ float TexelDensity()
     bool room = (asuint(unity_RenderingLayer.x) & 8u) != 0;
     float scale = room ? _PixelLookRoomTexelScale : _PixelLookTableTexelScale;
     if (scale <= 0) scale = _PixelLookTexelScale > 0 ? _PixelLookTexelScale : 1.0;
-    return max(_TexelsPerUnit * scale, 0.01);
+    return max(_TexelsPerUnit * scale / PixelSize(), 0.01);
 }
 
 // Picks the two axes of the plane a surface faces most.

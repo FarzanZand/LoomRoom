@@ -128,7 +128,7 @@ public static partial class PixelRestyle
         System.IO.File.WriteAllBytes(path, tex.EncodeToPNG()); Object.DestroyImmediate(tex);
         AssetDatabase.ImportAsset(path);
         var ti = (TextureImporter)AssetImporter.GetAtPath(path);
-        ti.filterMode = FilterMode.Point; ti.mipmapEnabled = false; ti.wrapMode = TextureWrapMode.Repeat; ti.textureCompression = TextureImporterCompression.Uncompressed;
+        ti.filterMode = FilterMode.Point; ti.mipmapEnabled = true; ti.mipmapFilter = TextureImporterMipFilter.BoxFilter; ti.wrapMode = TextureWrapMode.Repeat; ti.textureCompression = TextureImporterCompression.Uncompressed;
         ti.SaveAndReimport();
     }
 
@@ -192,7 +192,7 @@ public static partial class PixelRestyle
         System.IO.File.WriteAllBytes(texPath, t2.EncodeToPNG()); Object.DestroyImmediate(t2);
         AssetDatabase.ImportAsset(texPath);
         var ti = (TextureImporter)AssetImporter.GetAtPath(texPath);
-        ti.filterMode = FilterMode.Point; ti.mipmapEnabled = false; ti.wrapMode = tex.wrapMode; ti.textureCompression = TextureImporterCompression.Uncompressed; ti.SaveAndReimport();
+        ti.filterMode = FilterMode.Point; ti.mipmapEnabled = true; ti.mipmapFilter = TextureImporterMipFilter.BoxFilter; ti.wrapMode = tex.wrapMode; ti.textureCompression = TextureImporterCompression.Uncompressed; ti.SaveAndReimport();
         string matPath = $"{dir}/{src.name}.mat";
         var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
         if (mat == null) { mat = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = src.name }; AssetDatabase.CreateAsset(mat, matPath); }

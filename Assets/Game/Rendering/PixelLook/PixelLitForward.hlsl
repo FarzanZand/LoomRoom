@@ -73,11 +73,11 @@ half4 Frag(Varyings input) : SV_Target
 
     if (_SnapMode == 1)
     {
-        float texels = _BaseTexels > 0 ? _BaseTexels : _BaseMap_TexelSize.z;
+        float texels = (_BaseTexels > 0 ? _BaseTexels : _BaseMap_TexelSize.z) / PixelSize();
         float2 snappedUv;
         litPos = SnapToUvTexel(input.positionWS, input.uv, texels, cell, snappedUv);
         litPos -= n * dot(litPos - input.positionWS, n);
-        base = SampleBaseUv(snappedUv, _BaseTexels);
+        base = SampleBaseUv(snappedUv, _BaseTexels > 0 || PixelSize() > 1 ? texels : 0);
     }
     else
     {
