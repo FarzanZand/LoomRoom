@@ -54,7 +54,7 @@ public static partial class PixelRestyle
         string matPath = $"{dir}/{src.name}.mat";
         var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
         if (mat == null) { mat = new Material(src) { name = src.name }; AssetDatabase.CreateAsset(mat, matPath); }
-        else mat.CopyPropertiesFromMaterial(src);
+        else if (mat != src) mat.CopyPropertiesFromMaterial(src);
         mat.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(texPath));
         mat.SetTextureScale("_BaseMap", Vector2.one); mat.SetTextureOffset("_BaseMap", Vector2.zero);
         mat.SetFloat("_Smoothness", Mathf.Min(mat.HasProperty("_Smoothness") ? mat.GetFloat("_Smoothness") : 0f, .15f));
