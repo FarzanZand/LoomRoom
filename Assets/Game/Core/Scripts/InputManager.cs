@@ -47,6 +47,7 @@ public class InputManager : Singleton<InputManager>
     public event Action<int> HotbarSelected;
     public event Action<PlayerKind> DebugSwapRequested;
     public event Action DebugMoodPreviewRequested;
+    public event Action DebugPixelLightingToggled;
 
     public PlayerInputActions Actions => actions;
 
@@ -95,6 +96,8 @@ public class InputManager : Singleton<InputManager>
         actions.Dev.Debug1.performed += _ => { if (gameplayEnabled && (!RunManager.HasInstance || !RunManager.Instance.Running || RunManager.Instance.Ended)) DebugSwapRequested?.Invoke(PlayerKind.Room); };
         actions.Dev.Debug2.performed += _ => { if (gameplayEnabled) DebugSwapRequested?.Invoke(PlayerKind.Table); };
         actions.Dev.PreviewSceneMood.performed += _ => { if (gameplayEnabled) DebugMoodPreviewRequested?.Invoke(); };
+        // Look comparison, so it works anywhere, cutscenes included.
+        actions.Dev.TogglePixelLighting.performed += _ => DebugPixelLightingToggled?.Invoke();
     }
 
     void Bind(InputAction move, InputAction look, InputAction jump, InputAction sprint, InputAction crouch,

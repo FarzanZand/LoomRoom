@@ -1183,6 +1183,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "TogglePixelLighting",
+                    "type": "Button",
+                    "id": "83d793a5-c256-4e07-8307-183a5a036ae7",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -1216,6 +1225,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "PreviewSceneMood",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6a828260-c65b-4331-9d30-b7a4a7d206df",
+                    "path": "<Keyboard>/f6",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TogglePixelLighting",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

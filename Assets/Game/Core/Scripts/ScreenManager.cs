@@ -27,6 +27,10 @@ public class ScreenManager : Singleton<ScreenManager>
     public int UserPixelLines { get; private set; } = -1;
     const string PixelLinesPref = "pixel_lines";
 
+    [FoldoutGroup("Pixel lighting"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLighting))]
+    [Tooltip("The game's materials lit like pixel art (LoomRoom/Pixel Lit: light per texel, stepped into bands) instead of smooth URP lighting. No camera filter. F6 flips it in Play mode. The materials are listed on the library (Tools > LoomRoom > Pixel Look > Register Pixel Lighting Materials).")]
+    public bool pixelLighting = true;
+
     [FoldoutGroup("Pixelator"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLook))]
     [Tooltip("Shadowglass-style 3D pixel art: Pixel Lit materials and a pixel camera. Off = the default look. Applies in Play mode and can be flipped live.")]
     public bool pixelLook;
@@ -188,7 +192,18 @@ public class ScreenManager : Singleton<ScreenManager>
 #endif
     }
 
-    void Start() => ApplyPixelLook();
+    void Start()
+    {
+        ApplyPixelLighting();
+        ApplyPixelLook();
+        if (InputManager.HasInstance) InputManager.Instance.DebugPixelLightingToggled += TogglePixelLighting;
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        if (InputManager.HasInstance) InputManager.Instance.DebugPixelLightingToggled -= TogglePixelLighting;
+    }
 
     void Update()
     {
@@ -229,6 +244,21 @@ public class ScreenManager : Singleton<ScreenManager>
         if (change == UnityEditor.PlayModeStateChange.ExitingPlayMode) SetPixelCamera(PixelatorCamera.Default, 0);
     }
 #endif
+
+    // ── Pixel lighting ────────────────────────────────────────────────
+
+    // Works in and out of Play mode; the materials are assets, so the editor shows the choice too.
+    void ApplyPixelLighting()
+    {
+        if (pixelLookLibrary != null) pixelLookLibrary.SetPixelLighting(pixelLighting);
+    }
+
+    void TogglePixelLighting()
+    {
+        pixelLighting = !pixelLighting;
+        ApplyPixelLighting();
+        AnnouncementUI.Show(pixelLighting ? "Pixel lighting" : "Smooth lighting", "F6");
+    }
 
     // ── Pixelator ─────────────────────────────────────────────────────
 

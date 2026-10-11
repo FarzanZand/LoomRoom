@@ -2,40 +2,50 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-// Makes the pixel lighting (LoomRoom/Pixel Lit: light evaluated per texture texel and stepped into bands) the
-// project's own material shader, so every object has it all the time, with no Pixelator swap or camera filter.
-// Converts the game's opaque lit materials (Assets/Game) in place; glass, water, glows, text, UI and special shaders
-// are left alone, and so are store assets (Synty and other packs).
+// Pixel lighting (LoomRoom/Pixel Lit: light evaluated per texture texel and stepped into bands) for the game's own
+// materials, with no Pixelator swap or camera filter. Register sets each material's Pixel Lit values once and lists it
+// on the Pixel Look library with its own shader, so ScreenManager > Pixel lighting (F6 in Play mode) can flip it
+// between the two in place. Covers the game's opaque lit materials (Assets/Game); glass, water, glows, text, UI and
+// special shaders are left alone, and so are store assets (Synty and other packs). Run it again after adding materials.
 public static class PixelLitConvert
 {
     const string PixelLit = "LoomRoom/Pixel Lit";
+    const string LibraryPath = "Assets/Game/Rendering/PixelLook/Pixel Look Library.asset";
     static readonly string[] Convertible = { "Universal Render Pipeline/Lit", "Universal Render Pipeline/Simple Lit", "Synty/Generic_Basic", "Universal Render Pipeline/Baked Lit" };
 
-    [MenuItem("Tools/LoomRoom/Pixel Look/Convert Materials To Pixel Lighting")]
-    public static void ConvertAllMenu()
-    {
-        var (done, skipped) = ConvertAll();
-        Debug.Log($"[PixelLitConvert] {done} materials now use pixel lighting; {skipped} left as they are.");
-    }
+    [MenuItem("Tools/LoomRoom/Pixel Look/Register Pixel Lighting Materials")]
+    public static void RegisterMenu() => Debug.Log("[PixelLitConvert] " + Register());
 
-    public static (int done, int skipped) ConvertAll()
+    public static string Register()
     {
-        int done = 0, skipped = 0;
+        var lib = AssetDatabase.LoadAssetAtPath<PixelLookLibrary>(LibraryPath);
+        if (lib == null) return "no library at " + LibraryPath;
+        lib.pixelLitShader = Shader.Find(PixelLit);
+        var known = new HashSet<Material>(); foreach (var e in lib.lighting) if (e.material != null) known.Add(e.material);
+        lib.lighting.RemoveAll(e => e.material == null);
+        // Library copies (the Pixelator's own pairs) and excluded materials keep their own shader.
+        var skip = new HashSet<Material>(lib.excluded); foreach (var e in lib.entries) if (e.pixel != null) skip.Add(e.pixel);
+        int added = 0, skipped = 0;
         foreach (var g in AssetDatabase.FindAssets("t:Material", new[] { "Assets/Game" }))
         {
             var path = AssetDatabase.GUIDToAssetPath(g);
             if (path.StartsWith("Assets/Game/Rendering/PixelLook/") || path.Contains("/UI/")) continue;
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (m == null) continue;
-            if (Convert(m)) done++; else skipped++;
+            if (m == null || known.Contains(m) || skip.Contains(m)) continue;
+            var original = m.shader; int queue = m.rawRenderQueue;
+            if (!Convert(m)) { skipped++; continue; }
+            lib.lighting.Add(new PixelLookLibrary.LitEntry { material = m, original = original, originalQueue = queue, pixelQueue = m.rawRenderQueue });
+            m.shader = original; m.renderQueue = queue; EditorUtility.SetDirty(m);
+            added++;
         }
+        EditorUtility.SetDirty(lib);
         AssetDatabase.SaveAssets();
-        return (done, skipped);
+        return $"{added} materials added ({lib.lighting.Count} listed), {skipped} left as they are.";
     }
 
     public static bool Convert(Material m)
     {
-        if (m.shader.name == PixelLit) return true;
+        if (m.shader.name == PixelLit) return false;
         if (System.Array.IndexOf(Convertible, m.shader.name) < 0) return false;
         var n = m.name.ToLowerInvariant();
         if (n.Contains("glass") || n.Contains("water") || n.Contains("eyes") || n.Contains("screen") || n.Contains("glow")) return false;

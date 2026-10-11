@@ -1269,6 +1269,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""TogglePixelLighting"",
+                    ""type"": ""Button"",
+                    ""id"": ""83d793a5-c256-4e07-8307-183a5a036ae7"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -1302,6 +1311,17 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""PreviewSceneMood"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6a828260-c65b-4331-9d30-b7a4a7d206df"",
+                    ""path"": ""<Keyboard>/f6"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""TogglePixelLighting"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1357,6 +1377,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Dev_Debug1 = m_Dev.FindAction("Debug1", throwIfNotFound: true);
         m_Dev_Debug2 = m_Dev.FindAction("Debug2", throwIfNotFound: true);
         m_Dev_PreviewSceneMood = m_Dev.FindAction("PreviewSceneMood", throwIfNotFound: true);
+        m_Dev_TogglePixelLighting = m_Dev.FindAction("TogglePixelLighting", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -2094,6 +2115,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Dev_Debug1;
     private readonly InputAction m_Dev_Debug2;
     private readonly InputAction m_Dev_PreviewSceneMood;
+    private readonly InputAction m_Dev_TogglePixelLighting;
     /// <summary>
     /// Provides access to input actions defined in input action map "Dev".
     /// </summary>
@@ -2117,6 +2139,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Dev/PreviewSceneMood".
         /// </summary>
         public InputAction @PreviewSceneMood => m_Wrapper.m_Dev_PreviewSceneMood;
+        /// <summary>
+        /// Provides access to the underlying input action "Dev/TogglePixelLighting".
+        /// </summary>
+        public InputAction @TogglePixelLighting => m_Wrapper.m_Dev_TogglePixelLighting;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -2152,6 +2178,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @PreviewSceneMood.started += instance.OnPreviewSceneMood;
             @PreviewSceneMood.performed += instance.OnPreviewSceneMood;
             @PreviewSceneMood.canceled += instance.OnPreviewSceneMood;
+            @TogglePixelLighting.started += instance.OnTogglePixelLighting;
+            @TogglePixelLighting.performed += instance.OnTogglePixelLighting;
+            @TogglePixelLighting.canceled += instance.OnTogglePixelLighting;
         }
 
         /// <summary>
@@ -2172,6 +2201,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @PreviewSceneMood.started -= instance.OnPreviewSceneMood;
             @PreviewSceneMood.performed -= instance.OnPreviewSceneMood;
             @PreviewSceneMood.canceled -= instance.OnPreviewSceneMood;
+            @TogglePixelLighting.started -= instance.OnTogglePixelLighting;
+            @TogglePixelLighting.performed -= instance.OnTogglePixelLighting;
+            @TogglePixelLighting.canceled -= instance.OnTogglePixelLighting;
         }
 
         /// <summary>
@@ -2509,5 +2541,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPreviewSceneMood(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "TogglePixelLighting" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnTogglePixelLighting(InputAction.CallbackContext context);
     }
 }

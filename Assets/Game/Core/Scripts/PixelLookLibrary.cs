@@ -103,4 +103,34 @@ public class PixelLookLibrary : ScriptableObject
     }
 
     void OnValidate() { byOriginal = null; toOriginal = null; }
+
+    // ── Pixel lighting ───────────────────────────────────────────────
+    // The game's own materials switched between their own shader and LoomRoom/Pixel Lit in place (ScreenManager >
+    // Pixel lighting, F6 in Play mode). Filled by Tools > LoomRoom > Pixel Look > Register Pixel Lighting Materials.
+
+    [System.Serializable]
+    public class LitEntry
+    {
+        public Material material;
+        public Shader original;
+        public int originalQueue = -1;
+        public int pixelQueue = -1;
+    }
+
+    [FoldoutGroup("Pixel lighting"), Tooltip("LoomRoom/Pixel Lit.")]
+    public Shader pixelLitShader;
+    [FoldoutGroup("Pixel lighting"), TableList(AlwaysExpanded = false, ShowPaging = true, NumberOfItemsPerPage = 30)]
+    public List<LitEntry> lighting = new();
+
+    public void SetPixelLighting(bool on)
+    {
+        if (pixelLitShader == null) return;
+        foreach (var e in lighting)
+        {
+            if (e.material == null || e.original == null) continue;
+            var shader = on ? pixelLitShader : e.original;
+            if (e.material.shader != shader) e.material.shader = shader;
+            e.material.renderQueue = on ? e.pixelQueue : e.originalQueue;
+        }
+    }
 }
