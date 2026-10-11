@@ -115,10 +115,23 @@ public class PixelLookLibrary : ScriptableObject
         public Shader original;
         public int originalQueue = -1;
         public int pixelQueue = -1;
+        [Tooltip("Texels per world unit the material shows in game (measured), and the texels across its texture it is drawn with (0 = all of them).")]
+        public float texelsPerUnit;
+        public float baseTexels;
     }
 
     [FoldoutGroup("Pixel lighting"), Tooltip("LoomRoom/Pixel Lit.")]
     public Shader pixelLitShader;
+    [FoldoutGroup("Pixel lighting/Texel size"), Tooltip("Texels per world unit everything in the dungeons and town is drawn at (the dungeon walls' own density). Finer textures are drawn coarser to match; coarser ones stay as they are. Applied by Tools > LoomRoom > Pixel Look > Even Out Texel Sizes.")]
+    public float tableTexelsPerUnit = 10.7f;
+    [FoldoutGroup("Pixel lighting/Texel size"), Tooltip("Same for the room, which is built about 22 units to the metre (the apartment walls' density).")]
+    public float roomTexelsPerUnit = 1.8f;
+    [FoldoutGroup("Pixel lighting/Texel size"), Range(1f, 8f), Tooltip("Characters (enemies, NPCs, the DM, miniatures) get this many times the world's density, so faces stay readable. 1 = same as the walls.")]
+    public float characterDetail = 4f;
+    [FoldoutGroup("Pixel lighting/Texel size"), Range(1f, 8f), Tooltip("The Table player's own arms and every item (mostly seen in the hand, close up). 1 = same as the walls.")]
+    public float firstPersonDetail = 4f;
+    [FoldoutGroup("Pixel lighting/Texel size"), Tooltip("Surfaces that keep all their texels, like the walls: the big table's top, seen close up all through the intro and the figures.")]
+    public List<Material> keepTexels = new();
     [FoldoutGroup("Pixel lighting"), TableList(AlwaysExpanded = false, ShowPaging = true, NumberOfItemsPerPage = 30)]
     public List<LitEntry> lighting = new();
 

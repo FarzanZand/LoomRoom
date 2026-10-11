@@ -43,6 +43,76 @@ public static class PixelLitConvert
         return $"{added} materials added ({lib.lighting.Count} listed), {skipped} left as they are.";
     }
 
+    // Pixels the same size across a world: each registered material is drawn with as many texels across its texture
+    // (_BaseTexels) as give its world's density (the library's Texel size settings) where it is used, measured on every
+    // renderer in the scene and in the game's prefabs. Only ever coarser, never sharper than the texture; materials
+    // used nowhere it can see (the dungeon walls, built at run time) and non-square textures keep all their texels.
+    [MenuItem("Tools/LoomRoom/Pixel Look/Even Out Texel Sizes")]
+    public static void EvenOutMenu() => Debug.Log("[PixelLitConvert] " + EvenOut());
+
+    public static string EvenOut()
+    {
+        var lib = AssetDatabase.LoadAssetAtPath<PixelLookLibrary>(LibraryPath);
+        if (lib == null) return "no library at " + LibraryPath;
+        var entries = new Dictionary<Material, PixelLookLibrary.LitEntry>();
+        foreach (var e in lib.lighting) if (e.material != null) entries[e.material] = e;
+        var need = new Dictionary<Material, float>(); var density = new Dictionary<Material, List<float>>();
+
+        void Measure(Renderer r, bool room)
+        {
+            var player = r.GetComponentInParent<Player>(true);
+            // Items are mostly seen in the hand, close up, so they count as first person wherever they lie.
+            bool firstPerson = (player != null && player.kind == PlayerKind.Table) || r.GetComponentInParent<WorldItem>(true) != null || AssetDatabase.GetAssetPath(r.gameObject).StartsWith("Assets/Game/Items/Prefabs/");
+            bool character = !firstPerson && (r is SkinnedMeshRenderer || r.GetComponentInParent<Character>(true) != null);
+            float target = (room ? lib.roomTexelsPerUnit : lib.tableTexelsPerUnit) * (firstPerson ? lib.firstPersonDetail : character ? lib.characterDetail : 1f);
+            foreach (var m in new HashSet<Material>(r.sharedMaterials))
+            {
+                if (m == null || !entries.ContainsKey(m)) continue;
+                var tex = m.GetTexture("_BaseMap"); if (tex == null) continue;
+                float d = PixelRestyle.TexelsPerUnit(r, m); if (d <= 0) continue;
+                if (!density.TryGetValue(m, out var list)) density[m] = list = new List<float>();
+                list.Add(d);
+                float texels = tex.width * target / d;
+                need[m] = need.TryGetValue(m, out var n) ? Mathf.Max(n, texels) : texels;
+            }
+        }
+
+        var roots = LightingManager.Instance != null ? LightingManager.Instance.roomRoots : new Transform[0];
+        foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (EditorUtility.IsPersistent(r)) continue;
+            bool room = false; foreach (var root in roots) if (root != null && r.transform.IsChildOf(root)) { room = true; break; }
+            Measure(r, room);
+        }
+        foreach (var g in AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Game" }))
+        {
+            var go = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g));
+            if (go != null) foreach (var r in go.GetComponentsInChildren<Renderer>(true)) Measure(r, false);
+        }
+
+        int coarser = 0, kept = 0, nonSquare = 0;
+        foreach (var (m, e) in entries)
+        {
+            var tex = m.GetTexture("_BaseMap");
+            float texels = 0;
+            if (lib.keepTexels.Contains(m)) { }
+            else if (tex != null && tex.width != tex.height) nonSquare++;
+            else if (tex != null && need.TryGetValue(m, out var n) && n < tex.width * .9f) texels = Mathf.Max(MinTexels, Mathf.Round(n));
+            e.texelsPerUnit = density.TryGetValue(m, out var list) ? Median(list) : 0;
+            e.baseTexels = texels;
+            if (m.GetFloat("_BaseTexels") != texels) { m.SetFloat("_BaseTexels", texels); EditorUtility.SetDirty(m); }
+            if (texels > 0) coarser++; else kept++;
+        }
+        EditorUtility.SetDirty(lib);
+        AssetDatabase.SaveAssets();
+        return $"{coarser} materials drawn coarser to match their world, {kept} keep all their texels ({nonSquare} non-square).";
+    }
+
+    // Tiny props keep at least this many texels across their texture, so their parts keep their own colours.
+    const float MinTexels = 8f;
+
+    static float Median(List<float> v) { v.Sort(); return v[v.Count / 2]; }
+
     public static bool Convert(Material m)
     {
         if (m.shader.name == PixelLit) return false;

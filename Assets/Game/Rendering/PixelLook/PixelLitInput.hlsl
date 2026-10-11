@@ -105,11 +105,13 @@ float3 SnapToUvTexel(float3 positionWS, float2 uv, float texels, out float2 cell
     return positionWS + a * ddx(positionWS) + b * ddy(positionWS);
 }
 
-half4 SampleBaseUv(float2 uv, float texels)
+half4 SampleBaseUv(float2 uv)
 {
-    // Point sample at the mip that matches the target texel count, never sharper than the screen allows.
+    // Point sample at the mip that matches the texel count, never sharper than the screen allows. A material drawn
+    // coarser than its texture (_BaseTexels, set by Even Out Texel Sizes) averages only a quarter of each block, as
+    // its texture is a patchwork of UV islands that full averaging would mix; Pixel size averages whole texels.
     float size = _BaseMap_TexelSize.z;
-    float fixedLod = texels > 0 ? max(0.0, log2(size / texels)) : 0.0;
+    float fixedLod = (_BaseTexels > 0 ? max(0.0, log2(size / _BaseTexels) - 2.0) : 0.0) + log2(PixelSize());
     float2 dx = ddx(uv) * _BaseMap_TexelSize.zw, dy = ddy(uv) * _BaseMap_TexelSize.zw;
     float screenLod = 0.5 * log2(max(dot(dx, dx), dot(dy, dy)));
     return SAMPLE_TEXTURE2D_LOD(_BaseMap, sampler_PointRepeat, uv, max(fixedLod, screenLod));
