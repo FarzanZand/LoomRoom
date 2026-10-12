@@ -8469,6 +8469,7 @@ MonoBehaviour:
   worldLight: {fileID: 1259709410926309357}
   armsLight: {fileID: 6392667437929328189}
   ceilingLight: {fileID: 2306511181029770107}
+  shadowLight: {fileID: 0}
   refreshSeconds: 0.5
 --- !u!1 &8124628928943053665
 GameObject:
@@ -9626,9 +9627,9 @@ MonoBehaviour:
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 0
-  walkSpeed: 4.5
+  walkSpeed: 3.6
   canSprint: 0
-  sprintSpeed: 7.2
+  sprintSpeed: 6
   crouchSpeed: 1.75
   backwardSpeed: 0.8
   jumpForce: 8

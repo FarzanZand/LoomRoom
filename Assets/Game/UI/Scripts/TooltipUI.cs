@@ -34,10 +34,10 @@ public class TooltipUI : Singleton<TooltipUI>
     public void Show(ItemData item)
     {
         if (panel == null || item == null) return;
-        // Honed gear's name in the honed blue; gear names its slot and tier ("HELM, TIER 1").
+        // Honed gear's name in the honed blue; the type line says what it is and gear its tier ("ONE-HANDED SWORD  ·  TIER 1").
         string title = item.honed > 0 ? $"<color={ItemData.HonedTextColor}>{item.itemName}</color>" : item.itemName;
-        string kind = item.IsConsumable ? "CONSUMABLE" : item.canBeEquipped ? EquipmentSlotUI.Display(item.equipSlot) : item.itemType.ToString().ToUpperInvariant();
-        if (item.canBeEquipped && !item.IsConsumable && item.tier > 0) kind += $", TIER {item.tier}";
+        string kind = item.TypeLine().ToUpperInvariant();
+        if (item.canBeEquipped && !item.IsConsumable && item.tier > 0) kind += $"  ·  TIER {item.tier}";
         ShowText(title, kind, item.BuildTooltip());
     }
 

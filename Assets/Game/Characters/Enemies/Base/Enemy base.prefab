@@ -242,6 +242,8 @@ MonoBehaviour:
   totalMass: 40
   settleSeconds: 5
   deathAnimationInstead: 0
+  deathClipWhileThrown: 1
+  throwScale: 1
 --- !u!114 &4812219496838340772
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -331,6 +333,12 @@ MonoBehaviour:
     walkStepInterval: 0.28
     runStepInterval: 0.17
     painCooldown: 0.6
+  gore:
+    kind: 1
+    color: {r: 0.4, g: 0.03, b: 0.025, a: 1}
+    amount: 1
+    burstOnDeath: 0
+    killSound: {fileID: 0}
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8

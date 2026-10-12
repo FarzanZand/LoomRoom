@@ -28,11 +28,27 @@ public static class DungeonPickup
         }
     }
     // From the source to where it settled, in an arc, one item after another.
+    // It leaves upright and tips over onto the floor on the way down.
     static void PopOut(Transform item, Vector3 from, int order)
     {
         Vector3 landing = item.position;
+        Quaternion lying = item.rotation;
         item.position = from;
+        item.rotation = Quaternion.Euler(0f, lying.eulerAngles.y, 0f);
         item.DOJump(landing, .7f + .15f * (order % 3), 1, .55f).SetDelay(.08f * order).SetEase(Ease.Linear).SetLink(item.gameObject);
+        item.DORotateQuaternion(lying, .5f).SetDelay(.08f * order + .05f).SetEase(Ease.InQuad).SetLink(item.gameObject);
+    }
+
+    // Kinematic loot never falls, so it is put down as it would land: anything taller than it is wide (a sword, a
+    // mace, a shield on its rim) lies on its side, and every item gets a random heading.
+    static void LayFlat(WorldItem pickup)
+    {
+        var t = pickup.transform;
+        float yaw = Random.Range(0f, 360f);
+        t.rotation = Quaternion.Euler(0f, yaw, 0f);
+        if (!DungeonFeatureUtility.RendererBounds(pickup.GetComponentsInChildren<Renderer>(), out var upright)) return;
+        if (upright.size.y > Mathf.Max(upright.size.x, upright.size.z) * 1.15f)
+            t.rotation = Quaternion.Euler(0f, yaw, 0f) * Quaternion.Euler(90f, 0f, Random.Range(-20f, 20f));
     }
 
     public static WorldItem Spawn(ItemData item, Vector3 position, Transform parent, int count=1)
@@ -51,6 +67,7 @@ public static class DungeonPickup
         }
         var body = pickup.GetComponent<Rigidbody>();
         if (body != null) { body.isKinematic = true; body.useGravity = false; }
+        LayFlat(pickup);
         SettleOnFloor(pickup);
         return pickup;
     }

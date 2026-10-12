@@ -13,6 +13,8 @@ public class FirstPersonLighting : MonoBehaviour
     [Tooltip("The light that shows the dungeon around the player.")] public Light worldLight;
     [Tooltip("Soft light for arms and held items only.")] public Light armsLight;
     [Tooltip("Sits below the floor and lights ceilings only (the world light is above them). Follows the world light's range.")] public Light ceilingLight;
+    [Tooltip("Heathen's key light: held off to the side of the view (a lantern in the off hand), it lights enemies from one side and throws their shadows across the floor. The world light above stays as a soft fill.")]
+    public Light shadowLight;
     [SerializeField, Min(.1f)] float refreshSeconds = .5f;
 
     float nextRefresh;
@@ -25,6 +27,7 @@ public class FirstPersonLighting : MonoBehaviour
     void Update()
     {
         if (ceilingLight != null && worldLight != null) { ceilingLight.range = worldLight.range; ceilingLight.enabled = worldLight.enabled; }
+        if (shadowLight != null && worldLight != null) shadowLight.enabled = worldLight.enabled;
         if (Time.unscaledTime >= nextRefresh) Apply();
     }
 
@@ -44,6 +47,7 @@ public class FirstPersonLighting : MonoBehaviour
         SetLayers(worldLight, WorldLayer);
         SetLayers(armsLight, ArmsLayer);
         SetLayers(ceilingLight, CeilingLayer);
+        SetLayers(shadowLight, WorldLayer);
         GetComponentsInChildren(true, renderers);
         foreach (var r in renderers)
             if (r.renderingLayerMask != ArmsLayer) r.renderingLayerMask = ArmsLayer;

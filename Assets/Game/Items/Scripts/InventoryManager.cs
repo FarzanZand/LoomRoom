@@ -24,12 +24,12 @@ public class InventoryManager : Singleton<InventoryManager>
     [Tooltip("A pillar of light over loot lying on the floor, coloured by what it is (LootBeam).")]
     public bool lootBeams = true;
     public Material beamMaterial;
-    [Min(.1f)] public float beamHeight = 1.6f;
-    [Min(.01f)] public float beamWidth = .13f;
-    public Color beamNormal = new(.95f, .9f, .78f, .55f);
+    [Min(.1f)] public float beamHeight = 1.1f;
+    [Min(.01f)] public float beamWidth = .07f;
+    public Color beamNormal = new(.95f, .9f, .78f, .24f);
     [Tooltip("Used when the UIManager is missing; otherwise Honed items take UIManager.honed.")]
-    public Color beamHoned = new(.45f, .7f, 1f, .6f);
-    public Color beamConsumable = new(.35f, 1f, .4f, .55f);
+    public Color beamHoned = new(.45f, .7f, 1f, .3f);
+    public Color beamConsumable = new(.5f, .9f, .5f, .2f);
 
     [Header("Drop")]
     [Tooltip("Prefab with a WorldItem used when items are dropped or spawned from data.")]

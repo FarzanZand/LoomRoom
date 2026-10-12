@@ -12,7 +12,7 @@ public static class DiabloInventoryLayout
 {
     const string Art = "Assets/Game/UI/Sprites/Diablo";
     const float Cell = 64f, Gap = 4f, Unit = 56f, UnitGap = 4f;
-    static readonly Color Gold = new(.86f, .7f, .38f), Bone = new(.84f, .8f, .7f), Dim = new(.6f, .56f, .5f);
+    static readonly Color Gold = new(.86f, .7f, .38f), Bone = new(.84f, .84f, .82f), Dim = new(.6f, .6f, .62f);   // grey panels, gold titles (the user's call)
 
     static void Record(Object o) { if (o != null && PrefabUtility.IsPartOfPrefabInstance(o)) PrefabUtility.RecordPrefabInstancePropertyModifications(o); }
 
@@ -56,12 +56,47 @@ public static class DiabloInventoryLayout
         return t;
     }
 
+    // The item whose icon gives each slot its empty outline.
+    static readonly Dictionary<EquipmentSlot, string> SilhouetteIcons = new()
+    {
+        { EquipmentSlot.RightHand, "Iron Sword" }, { EquipmentSlot.LeftHand, "Iron Shield" }, { EquipmentSlot.Head, "Iron Helm" },
+        { EquipmentSlot.Body, "Iron Armor" }, { EquipmentSlot.Legs, "Iron Leggings" }, { EquipmentSlot.Gloves, "Iron Gloves" },
+        { EquipmentSlot.Boots, "Iron Boots" }, { EquipmentSlot.Trinket1, "Copper ring" }, { EquipmentSlot.Trinket2, "Copper ring" },
+    };
+    static readonly Color SilhouetteColor = new(.82f, .82f, .86f, .1f);
+
+    // A flat white shape from the icon's alpha (the Image's colour dims it), saved to UI/Sprites/Diablo/Silhouettes the
+    // first time; an existing file is kept as it is.
+    static Sprite Silhouette(EquipmentSlot slot)
+    {
+        if (!SilhouetteIcons.TryGetValue(slot, out var name)) return null;
+        // Drawn once from the icon; after that the file is the art (edit it by hand), never overwritten here.
+        string existing = $"{Art}/Silhouettes/{name}.png";
+        if (System.IO.File.Exists(existing)) return AssetDatabase.LoadAssetAtPath<Sprite>(existing);
+        string source = $"Assets/Game/Items/Icons/Generated/{name}.png";
+        if (!System.IO.File.Exists(source)) return null;
+        var icon = new Texture2D(2, 2); icon.LoadImage(System.IO.File.ReadAllBytes(source));
+        var px = icon.GetPixels32();
+        for (int i = 0; i < px.Length; i++) px[i] = px[i].a > 100 ? new Color32(255, 255, 255, 255) : new Color32(255, 255, 255, 0);
+        var shape = new Texture2D(icon.width, icon.height, TextureFormat.RGBA32, false); shape.SetPixels32(px); shape.Apply();
+        string folder = $"{Art}/Silhouettes", path = $"{folder}/{name}.png";
+        System.IO.Directory.CreateDirectory(folder);
+        System.IO.File.WriteAllBytes(path, shape.EncodeToPNG());
+        Object.DestroyImmediate(icon); Object.DestroyImmediate(shape);
+        AssetDatabase.ImportAsset(path);
+        var ti = (TextureImporter)AssetImporter.GetAtPath(path);
+        ti.textureType = TextureImporterType.Sprite; ti.spriteImportMode = SpriteImportMode.Single; ti.alphaIsTransparency = true;
+        ti.filterMode = FilterMode.Point; ti.mipmapEnabled = false; ti.textureCompression = TextureImporterCompression.Uncompressed; ti.npotScale = TextureImporterNPOTScale.None;
+        ti.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
     [MenuItem("Tools/LoomRoom/UI/Diablo Inventory Layout")]
     public static string Run()
     {
         var log = new System.Text.StringBuilder();
         // Plain on purpose (the user found the ornate frames and gold slots too busy).
-        var frame = Sprite("Plain frame", 8); var socket = Sprite("Plain slot", 4); var slotFrame = socket;
+        var frame = Sprite("Plain frame grey", 8); var socket = Sprite("Plain slot grey", 4); var slotFrame = socket;
         var title = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PIXEARG_ SDF.asset");
         var body = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
 
@@ -84,27 +119,34 @@ public static class DiabloInventoryLayout
         const float dollH = 492f;
         Place(doll, new Vector2(.5f, 1f), new Vector2(0f, -78f - dollH * .5f), new Vector2(W - 80f, dollH));
         float S(int n) => n * Unit + (n - 1) * UnitGap;
-        float side = S(2) + 12f;                       // centre of the side columns
+        // Diablo II's arrangement: helm on top; weapon, body armour and shield in a row with their bottoms level; under
+        // them one row of gloves, ring, leggings (D2's belt), ring, boots. The side columns stand far enough out to
+        // leave room for the rings.
+        const float Ring = 64f;
+        float side = S(2) * .5f + 12f + Ring + 12f + S(2) * .5f;   // centre of the side columns
+        float ringX = S(2) * .5f + 12f + Ring * .5f;
         float top = dollH * .5f;                       // doll's top edge (relative to its centre)
         float armorTop = top - S(2) - 12f;
+        float bottomRow = armorTop - S(3) - 12f;       // top of the gloves, rings, leggings and boots row
+        float weaponTop = armorTop + (S(4) - S(3));    // tall slots end level with the armour
         var places = new Dictionary<string, (int w, int h, float x, float yTop)>
         {
             { "HELM",      (2, 2, 0f, top) },
-            { "TRINKET 1", (1, 1, S(2) * .5f + 12f + Unit * .5f, top - (S(2) - Unit) * .5f) },
-            { "TRINKET 2", (1, 1, -(S(2) * .5f + 12f + Unit * .5f), top - (S(2) - Unit) * .5f) },
             { "ARMOR",     (2, 3, 0f, armorTop) },
-            { "PANTS",     (2, 2, 0f, armorTop - S(3) - 12f) },
-            { "MAINHAND",  (2, 4, -side, armorTop) },
-            { "OFFHAND",   (2, 4, side, armorTop) },
-            { "GLOVES",    (2, 2, -side, armorTop - S(4) - 12f) },
-            { "BOOTS",     (2, 2, side, armorTop - S(4) - 12f) },
+            { "MAINHAND",  (2, 4, -side, weaponTop) },
+            { "OFFHAND",   (2, 4, side, weaponTop) },
+            { "GLOVES",    (2, 2, -side, bottomRow) },
+            { "TRINKET 2", (1, 1, -ringX, bottomRow - (S(2) - Ring) * .5f) },
+            { "PANTS",     (2, 2, 0f, bottomRow) },
+            { "TRINKET 1", (1, 1, ringX, bottomRow - (S(2) - Ring) * .5f) },
+            { "BOOTS",     (2, 2, side, bottomRow) },
         };
         foreach (var pair in places)
         {
             var slot = stats.Find(pair.Key) ?? doll.Find(pair.Key);
             if (slot == null) { log.AppendLine("no slot " + pair.Key); continue; }
             slot.SetParent(doll, false);
-            var size = new Vector2(S(pair.Value.w), S(pair.Value.h));
+            var size = pair.Key.StartsWith("TRINKET") ? new Vector2(Ring, Ring) : new Vector2(S(pair.Value.w), S(pair.Value.h));
             Place(slot, new Vector2(.5f, .5f), new Vector2(pair.Value.x, pair.Value.yTop - size.y * .5f), size);
             Skin(slot.GetComponent<Image>(), slotFrame);
             if (slot.TryGetComponent<UIColor>(out var tint)) { tint.enabled = false; Record(tint); }
@@ -121,6 +163,20 @@ public static class DiabloInventoryLayout
                         child.gameObject.SetActive(false); break;
                 }
                 Record(child); Record(child.gameObject);
+            }
+            // A dim outline of what goes in the slot while it is empty, cut from that kind of item's icon.
+            var slotUi = slot.GetComponent<EquipmentSlotUI>();
+            var shape = slotUi != null ? Silhouette(slotUi.slot) : null;
+            if (slotUi != null && shape != null)
+            {
+                var image = slot.Find("Silhouette")?.GetComponent<Image>();
+                if (image == null) { image = new GameObject("Silhouette", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>(); image.transform.SetParent(slot, false); }
+                var icon = slot.Find("Item icon");
+                image.transform.SetSiblingIndex(icon != null ? icon.GetSiblingIndex() : 0);
+                image.sprite = shape; image.preserveAspect = true; image.raycastTarget = false; image.color = SilhouetteColor; image.material = null;
+                Place(image.transform, new Vector2(.5f, .5f), Vector2.zero, size - Vector2.one * 22f);
+                Record(image); Record(image.gameObject);
+                slotUi.silhouette = image; EditorUtility.SetDirty(slotUi); Record(slotUi);
             }
         }
         log.AppendLine("doll laid out");
@@ -143,7 +199,7 @@ public static class DiabloInventoryLayout
         var hint = inv.Find("InventoryHint");
         if (hint != null)
         {
-            var t = hint.GetComponent<TMP_Text>(); t.text = "Drag to move   Right-click for actions   Tab to close"; t.color = Dim; t.alignment = TextAlignmentOptions.Center; t.font = body; t.fontSize = 18; Record(t);
+            var t = hint.GetComponent<TMP_Text>(); t.text = "Drag to move   Right-click for actions   Drag out to drop   Tab to close"; t.color = Dim; t.alignment = TextAlignmentOptions.Center; t.font = body; t.fontSize = 18; Record(t);
             Place(hint, new Vector2(.5f, 0f), new Vector2(0f, 44f), new Vector2(W - 80f, 24f));
         }
         log.AppendLine("bag laid out");
@@ -170,14 +226,46 @@ public static class DiabloInventoryLayout
         Row("Mana", 24, Bone, body, 56f);
         Row("Damage", 24, Bone, body, 40f);
         Row("Armor", 24, Bone, body, 56f);
-        var attributes = Label(stats, "Attributes", "", 22, Bone, new Vector2(0f, y - 90f), new Vector2(420f, 200f), TextAlignmentOptions.TopLeft, body);
-        attributes.textWrappingMode = TextWrappingModes.Normal; attributes.lineSpacing = 6f; panelUi.attributes = attributes; y -= 220f;
+        // The skills (the game has no STR/DEX to spend): icon, name and rank, hover for what each does.
+        var attributes = stats.Find("Attributes"); if (attributes != null) { attributes.gameObject.SetActive(false); Record(attributes.gameObject); }
+        panelUi.attributes = null;
+        Label(stats, "Skills title", "SKILLS", 22, Gold, new Vector2(0f, y - 4f), new Vector2(420f, 30f), TextAlignmentOptions.Left, title);
+        y -= 40f;
+        var list = stats.Find("Skills");
+        if (list == null) { list = new GameObject("Skills", typeof(RectTransform)).transform; list.SetParent(stats, false); }
+        const float rowH = 34f;
+        Place(list, new Vector2(.5f, 1f), new Vector2(0f, y - rowH * AdventureSkills.Count * .5f), new Vector2(420f, rowH * AdventureSkills.Count));
+        var rows = new List<AdventureSkillRowUI>();
+        for (int i = 0; i < AdventureSkills.Count; i++)
+        {
+            var skill = AdventureSkills.All[i];
+            var row = list.Find(skill.ToString());
+            if (row == null) { row = new GameObject(skill.ToString(), typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(AdventureSkillRowUI)).transform; row.SetParent(list, false); }
+            Place(row, new Vector2(.5f, 1f), new Vector2(0f, -rowH * (i + .5f)), new Vector2(420f, rowH - 2f));
+            var hit = row.GetComponent<Image>(); hit.color = new Color(1f, 1f, 1f, 0f); hit.raycastTarget = true; Record(hit);
+            var rowUi = row.GetComponent<AdventureSkillRowUI>(); rowUi.skill = skill;
+            var icon = row.Find("Icon")?.GetComponent<Image>();
+            if (icon == null) { icon = new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>(); icon.transform.SetParent(row, false); }
+            icon.raycastTarget = false; icon.preserveAspect = true;
+            var r = (RectTransform)icon.transform; r.anchorMin = r.anchorMax = r.pivot = new Vector2(0f, .5f); r.anchoredPosition = Vector2.zero; r.sizeDelta = new Vector2(28f, 28f); Record(r);
+            rowUi.icon = icon;
+            rowUi.label = Label(row, "Name", skill.ToString(), 22, Bone, Vector2.zero, new Vector2(300f, rowH), TextAlignmentOptions.Left, body);
+            var lr = (RectTransform)rowUi.label.transform; lr.anchorMin = lr.anchorMax = lr.pivot = new Vector2(0f, .5f); lr.anchoredPosition = new Vector2(40f, 0f); Record(lr);
+            rowUi.rank = Label(row, "Rank", "0", 22, Bone, Vector2.zero, new Vector2(80f, rowH), TextAlignmentOptions.Right, body);
+            var rr = (RectTransform)rowUi.rank.transform; rr.anchorMin = rr.anchorMax = rr.pivot = new Vector2(1f, .5f); rr.anchoredPosition = Vector2.zero; Record(rr);
+            EditorUtility.SetDirty(rowUi); Record(rowUi);
+            rows.Add(rowUi);
+        }
+        panelUi.skills = rows.ToArray();
+        y -= rowH * AdventureSkills.Count + 16f;
         EditorUtility.SetDirty(panelUi);
         Row("Food regeneration", 22, Dim, body, 60f);
         var controls = stats.Find("Controls");
-        if (controls != null) { Place(controls, new Vector2(.5f, 0f), new Vector2(0f, 44f), new Vector2(420f, 24f)); var t = controls.GetComponent<TMP_Text>(); t.text = "Click a worn item to take it off"; t.color = Dim; t.alignment = TextAlignmentOptions.Center; Record(t); }
+        if (controls != null) { Place(controls, new Vector2(.5f, 0f), new Vector2(0f, 44f), new Vector2(420f, 24f)); var t = controls.GetComponent<TMP_Text>(); t.text = "Click or drag gear to take it off"; t.color = Dim; t.alignment = TextAlignmentOptions.Center; Record(t); }
         var titleText = stats.Find("Title")?.GetComponent<TMP_Text>(); if (titleText != null) { titleText.text = "CHARACTER"; titleText.alignment = TextAlignmentOptions.Center; Record(titleText); }
         log.AppendLine("character panel laid out");
+
+        // The item tooltip keeps its original look for now (the user's call); TooltipUI is not touched here.
 
         // The hotbar keeps its own style (user's call): never touched here.
         EditorUtility.SetDirty(ui);

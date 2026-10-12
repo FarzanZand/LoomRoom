@@ -203,7 +203,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
                 Inventory.Move(container, index, owner.Hotbar, empty);
             }));
         }
-        else if (container.role == InventoryRole.Hotbar && owner.Bag != null)
+        else if (container.role == InventoryRole.Hotbar && owner.Bag != null && !HeldSlot(eq, container, index).HasValue)
         {
             options.Add(("Move to Bag", () =>
             {
@@ -219,9 +219,9 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             options.Add(("Drop", () =>
             {
                 if (!Unchanged() || !InventoryManager.HasInstance) return;
-                bool lastOne = eq != null && eq.IsEquipped(item) && container.TotalCount(item) <= 1;
+                // The copy in hand stays in hand (put it away first); spare copies drop freely.
+                if (HeldSlot(eq, container, index).HasValue && container.CountAt(index) <= 1) { Refuse(PutAwayFirst); return; }
                 if (InventoryManager.Instance.DropFromPlayer(item, owner) == null) return;
-                if (lastOne) eq.Unequip(item);
                 container.Consume(index);
             }));
         }
@@ -243,34 +243,123 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void OnDrag(PointerEventData e) { }
 
-    public void OnEndDrag(PointerEventData e)
+    public void OnEndDrag(PointerEventData e) => EndDrag(e);
+
+    // Released with nothing caught it: over the world (no UI under the pointer) the item is dropped on the floor.
+    public static void EndDrag(PointerEventData e)
     {
-        if (ItemDragHandler.HasInstance) ItemDragHandler.Instance.End();
+        if (!ItemDragHandler.HasInstance) return;
+        var drag = ItemDragHandler.Instance;
+        if (drag.IsDragging && e.pointerCurrentRaycast.gameObject == null) DropToFloor(drag);
+        drag.End();
+    }
+
+    static void DropToFloor(ItemDragHandler drag)
+    {
+        var item = drag.Item;
+        var owner = drag.SourceContainer != null ? drag.SourceContainer.GetComponentInParent<Player>() : InventoryManager.HasInstance ? InventoryManager.Instance.ActivePlayer : null;
+        if (item == null || owner == null || !InventoryManager.HasInstance || item.itemType == ItemType.Key) return;
+        var eq = owner.Equipment;
+        if (drag.WornSlot.HasValue)
+        {
+            if (eq == null || eq.Get(drag.WornSlot.Value) != item) return;
+            eq.UnequipToFloor(drag.WornSlot.Value);
+            return;
+        }
+        var container = drag.SourceContainer;
+        if (container == null || container.ItemAt(drag.SourceIndex) != item) return;
+        if (HeldSlot(eq, container, drag.SourceIndex).HasValue) { Refuse(PutAwayFirst); return; }
+        int count = container.CountAt(drag.SourceIndex);
+        for (int i = 0; i < count; i++)
+            if (InventoryManager.Instance.DropFromPlayer(item, owner) != null) container.Consume(drag.SourceIndex);
+    }
+
+    // Number keys don't work while the inventory is open, so the doll is the way.
+    const string PutAwayFirst = "Put it away first: click it under Equipment";
+
+    // The hand holding the item in this slot: only the hotbar slot the held item sits in counts, never a spare copy
+    // of the same item elsewhere in the hotbar or bag.
+    public static EquipmentSlot? HeldSlot(Equipment eq, Inventory container, int index)
+    {
+        if (eq == null || container == null || container.role != InventoryRole.Hotbar || index < 0) return null;
+        var item = container.ItemAt(index);
+        if (item == null) return null;
+        if (eq.Get(EquipmentSlot.RightHand) == item && eq.HeldIndex(EquipmentSlot.RightHand) == index) return EquipmentSlot.RightHand;
+        if (eq.Get(EquipmentSlot.LeftHand) == item && eq.HeldIndex(EquipmentSlot.LeftHand) == index) return EquipmentSlot.LeftHand;
+        return null;
+    }
+
+    static void Refuse(string reason)
+    {
+        var s = UIFeedbackSettings.Shared; s?.Play(s.invalidKey);
+        if (!string.IsNullOrEmpty(reason)) NotificationUI.Show(reason);
+    }
+
+    // The slot the dragged item's top-left would take when dropped on cell `index` of `dst`.
+    static int TargetFor(ItemDragHandler drag, Inventory dst, int index)
+    {
+        if (!dst.IsGrid) return index;
+        var grab = drag.SourceContainer == dst ? drag.GrabOffset : Vector2Int.zero;
+        var size = dst.SizeOf(drag.Item);
+        var cell = dst.CellOf(index) - grab;
+        cell.x = Mathf.Clamp(cell.x, 0, dst.GridWidth - size.x);
+        cell.y = Mathf.Clamp(cell.y, 0, dst.GridHeight - size.y);
+        return cell.y * dst.GridWidth + cell.x;
+    }
+
+    // Held items stay in the hotbar: one leaves it only by swapping places with another item for the same
+    // hand, which is then taken in hand instead (Equipment). Worn items come off the doll onto a free spot
+    // or swap with an item for the same slot.
+    public static bool Allowed(ItemDragHandler drag, Inventory dst, int to, out string reason)
+    {
+        reason = null;
+        var item = drag.Item;
+        var owner = dst != null ? dst.GetComponentInParent<Player>() : null;
+        var eq = owner != null ? owner.Equipment : null;
+        if (item == null || dst == null || eq == null) return true;
+        var src = drag.SourceContainer;
+        int ignore = src == dst ? drag.SourceIndex : -1;
+        if (drag.WornSlot.HasValue)
+        {
+            if (!dst.Accepts(item)) return false;
+            var hit = dst.Overlaps(item, to);
+            return hit.Count == 0 ? dst.Fits(item, to) : hit.Count == 1 && eq.Fits(dst.ItemAt(hit[0]), drag.WornSlot.Value);
+        }
+        if (src == null || src == dst) return true;
+        if (HeldSlot(eq, src, drag.SourceIndex) is EquipmentSlot hand)
+        {
+            // Only a swap for another item of the same hand; a stack of the same thing would merge it out of the hotbar.
+            var hit = dst.Overlaps(item, to, ignore);
+            if (hit.Count == 1 && dst.ItemAt(hit[0]) != item && eq.Fits(dst.ItemAt(hit[0]), hand)) return true;
+            reason = PutAwayFirst;
+            return false;
+        }
+        if (HeldSlot(eq, dst, to) is EquipmentSlot held && (!eq.Fits(item, held) || item == dst.ItemAt(to)))
+        {
+            reason = "That one is in your hand";
+            return false;
+        }
+        return true;
     }
 
     public void OnDrop(PointerEventData e)
     {
         if (!ItemDragHandler.HasInstance || !ItemDragHandler.Instance.IsDragging) return;
-        var src = ItemDragHandler.Instance.Source;
+        var drag = ItemDragHandler.Instance;
         // Equipment reconciles ownership after the transfer; hands require a hotbar slot.
-        if (src != null && Container != null)
+        if (drag.Item != null && Container != null)
         {
-            int to = Index;
-            if (Container.IsGrid)
+            int to = TargetFor(drag, Container, Index);
+            if (!Allowed(drag, Container, to, out string reason)) Refuse(reason);
+            else if (drag.WornSlot.HasValue)
             {
-                // The top-left lands where the grabbed cell would put it.
-                var item = src.Container.ItemAt(ItemDragHandler.Instance.SourceIndex);
-                var grab = src.Container == Container ? ItemDragHandler.Instance.GrabOffset : Vector2Int.zero;
-                var size = Container.SizeOf(item);
-                var cell = Container.CellOf(Index) - grab;
-                cell.x = Mathf.Clamp(cell.x, 0, Container.GridWidth - size.x);
-                cell.y = Mathf.Clamp(cell.y, 0, Container.GridHeight - size.y);
-                to = cell.y * Container.GridWidth + cell.x;
+                var eq = Owner != null ? Owner.Equipment : null;
+                if (eq == null || !eq.UnequipInto(drag.WornSlot.Value, Container, to)) Refuse(null);
             }
-            if (!(src.Container == Container && ItemDragHandler.Instance.SourceIndex == to) &&
-                !Inventory.Move(src.Container, ItemDragHandler.Instance.SourceIndex, Container, to))
-            { var s = UIFeedbackSettings.Shared; s?.Play(s.invalidKey); }
+            else if (drag.SourceContainer != null && !(drag.SourceContainer == Container && drag.SourceIndex == to) &&
+                     !Inventory.Move(drag.SourceContainer, drag.SourceIndex, Container, to))
+                Refuse(null);
         }
-        ItemDragHandler.Instance.End();
+        drag.End();
     }
 }

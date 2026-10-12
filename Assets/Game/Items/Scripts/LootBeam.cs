@@ -15,6 +15,8 @@ public class LootBeam : MonoBehaviour
     public Vector3 Base { get; private set; }
     public float Height { get; private set; }
     LineRenderer core, glow;
+    LineRenderer[] lines;
+    float glowWidth;
     Renderer body;
     float phase;
 
@@ -33,7 +35,9 @@ public class LootBeam : MonoBehaviour
         Base = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
         Height = config.beamHeight;
         glow = Line("Beam glow", config.beamMaterial, config.beamWidth, Color);
-        core = Line("Beam core", config.beamMaterial, config.beamWidth * .3f, Color.Lerp(Color, Color.white, .6f));
+        core = Line("Beam core", config.beamMaterial, config.beamWidth * .3f, Color.Lerp(Color, Color.white, .35f));
+        glowWidth = config.beamWidth;
+        lines = new[] { glow, core };
         phase = Random.value * 6f;
         foreach (var r in item.GetComponentsInChildren<Renderer>()) if (!(r is LineRenderer) && !(r is ParticleSystemRenderer)) { body = r; break; }
     }
@@ -64,16 +68,18 @@ public class LootBeam : MonoBehaviour
     void OnEnable() => Active.Add(this);
     void OnDisable() => Active.Remove(this);
 
-    // A slow breath, and the beam follows the item if it moves (a chest's pop-out).
+    // Every beam is the same height above its item; it breathes a little in width, and follows the item if it
+    // moves (a chest's pop-out).
     void Update()
     {
         if (glow == null) return;
         if (body != null) Base = new Vector3(body.bounds.center.x, body.bounds.min.y, body.bounds.center.z);
-        float pulse = .8f + .2f * Mathf.Sin(Time.time * 2.4f + phase);
-        foreach (var line in new[] { glow, core })
+        float pulse = .9f + .1f * Mathf.Sin(Time.time * 2.4f + phase);
+        glow.widthMultiplier = glowWidth * pulse;
+        foreach (var line in lines)
         {
             line.SetPosition(0, Base);
-            line.SetPosition(1, Base + Vector3.up * Height * pulse);
+            line.SetPosition(1, Base + Vector3.up * Height);
         }
     }
 }

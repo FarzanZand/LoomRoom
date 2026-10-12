@@ -11,7 +11,9 @@ public static partial class PixelRestyle
     public static float Dirt;
     // Texels per world unit for every item AND creature: the pixel size of the approved creature concepts (one painted
     // pixel ~6 px of a 1024 image across a ~1 m rat), Docs/Pixel-texture-style.md. Textures are sized exactly to it.
-    public const float ItemTexelsPerUnit = 150f;
+    // The house pixel size (Docs/Pixel-texture-style.md): 128 texels per world unit since 2026-10-12 (was 150; art baked
+    // before then keeps 150 until it is baked again).
+    public const float ItemTexelsPerUnit = 128f;
     const string StartingSword = "Assets/Game/Items/Data/Weapons/Bronze Sword.asset";
     const string StartingSwordModel = "Assets/Synty/PolygonDarkFantasy/Prefabs/Weapons/SM_Wep_Sword_03.prefab";
 

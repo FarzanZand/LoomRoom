@@ -13,6 +13,8 @@ public class ItemGridUI : MonoBehaviour
     [SerializeField] List<ItemSlotUI> cells = new();
     [SerializeField] Color fitsTint = new(.2f, .55f, .25f, .9f);
     [SerializeField] Color blockedTint = new(.6f, .16f, .14f, .9f);
+    [Tooltip("Every cell of the item under the pointer (not while dragging).")]
+    [SerializeField] Color hoverTint = new(.95f, .85f, .55f, 1f);
     [SerializeField, Min(0)] float iconPadding = 6f;
 
     Inventory bag;
@@ -99,34 +101,53 @@ public class ItemGridUI : MonoBehaviour
         icon.sizeDelta = tall ? new Vector2(side, side) : area;
     }
 
-    // The footprint under the pointer while an item is dragged.
+    // The footprint under the pointer while an item is dragged; otherwise every cell of the item under the pointer.
     void Update()
     {
         foreach (var cell in tinted) if (cell != null) { cell.PreviewTint = null; cell.Refresh(); }
         tinted.Clear();
-        if (bag == null || !bag.IsGrid || !ItemDragHandler.HasInstance || !ItemDragHandler.Instance.IsDragging || Mouse.current == null) return;
-        var drag = ItemDragHandler.Instance;
-        var item = drag.Source != null && drag.Source.Container != null ? drag.Source.Container.ItemAt(drag.SourceIndex) : null;
-        if (item == null) return;
+        if (bag == null || !bag.IsGrid || Mouse.current == null) return;
         Vector2 pointer = Mouse.current.position.ReadValue();
         int hovered = -1;
         for (int i = 0; i < cells.Count; i++)
             if (cells[i] != null && RectTransformUtility.RectangleContainsScreenPoint((RectTransform)cells[i].transform, pointer, null)) { hovered = i; break; }
         if (hovered < 0) return;
+        if (!ItemDragHandler.HasInstance || !ItemDragHandler.Instance.IsDragging) { HoverFootprint(hovered); return; }
+        var drag = ItemDragHandler.Instance;
+        var item = drag.Item;
+        if (item == null) return;
         var size = bag.SizeOf(item);
-        var grab = drag.Source.Container == bag ? drag.GrabOffset : Vector2Int.zero;
+        var grab = drag.SourceContainer == bag ? drag.GrabOffset : Vector2Int.zero;
         var at = bag.CellOf(hovered) - grab;
         at.x = Mathf.Clamp(at.x, 0, bag.GridWidth - size.x);
         at.y = Mathf.Clamp(at.y, 0, bag.GridHeight - size.y);
         int anchor = at.y * bag.GridWidth + at.x;
-        var hits = bag.Overlaps(item, anchor, drag.Source.Container == bag ? drag.SourceIndex : -1);
-        bool ok = hits.Count <= 1;
+        var hits = bag.Overlaps(item, anchor, drag.SourceContainer == bag ? drag.SourceIndex : -1);
+        bool ok = hits.Count <= 1 && ItemSlotUI.Allowed(drag, bag, anchor, out _);
         for (int x = 0; x < size.x; x++)
             for (int y = 0; y < size.y; y++)
             {
                 int index = (at.y + y) * bag.GridWidth + at.x + x;
                 if (index >= cells.Count || cells[index] == null) continue;
                 cells[index].PreviewTint = ok ? fitsTint : blockedTint;
+                cells[index].Refresh();
+                tinted.Add(cells[index]);
+            }
+    }
+
+    void HoverFootprint(int hovered)
+    {
+        int anchor = cells[hovered].Anchor;
+        var stack = anchor >= 0 ? bag[anchor] : null;
+        if (stack == null || stack.IsEmpty) return;
+        var size = bag.SizeOf(stack.item);
+        var at = bag.CellOf(anchor);
+        for (int x = 0; x < size.x; x++)
+            for (int y = 0; y < size.y; y++)
+            {
+                int index = (at.y + y) * bag.GridWidth + at.x + x;
+                if (index >= cells.Count || cells[index] == null) continue;
+                cells[index].PreviewTint = hoverTint;
                 cells[index].Refresh();
                 tinted.Add(cells[index]);
             }

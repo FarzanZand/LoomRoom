@@ -4,7 +4,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 // One row of the skill sheet: icon, rank and name, coloured by tier. Hover or focus shows the
-// skill's details in the sheet; click pins it.
+// skill's details in the sheet; click pins it. Without an owner sheet (the character panel next to the
+// inventory) hovering shows the skill's tooltip itself.
 public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
 {
     public AdventureSkill skill;
@@ -19,11 +20,36 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
     public void OnDeselect(BaseEventData data) => Hide();
     void OnDisable() => Hide();
     void Hide() { if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
-    public void OnPointerEnter(PointerEventData data) => owner?.Inspect(skill, false);
-    public void OnSelect(BaseEventData data) => owner?.Inspect(skill, false);
+    public void OnPointerEnter(PointerEventData data) => Inspect();
+    public void OnSelect(BaseEventData data) => Inspect();
+    AdventurerProgress progress;
+    void Inspect()
+    {
+        if (owner != null) { owner.Inspect(skill, false); return; }
+        if (progress != null) ShowTooltip(progress, skill);
+    }
+
+    // What the skill does for each point and what it gives now (how it is trained is left for the player to find out).
+    public static void ShowTooltip(AdventurerProgress progress, AdventureSkill skill)
+    {
+        if (progress == null || !TooltipUI.HasInstance) return;
+        var def = progress.Definition(skill);
+        if (def == null) return;
+        int rank = progress.Rank(skill);
+        var text = new System.Text.StringBuilder();
+        if (!string.IsNullOrEmpty(def.bonusText) && def.bonusAt100 > 0)
+        {
+            text.Append(string.Format(def.bonusText, (def.bonusAt100).ToString("0.##"))).Append(" per point").AppendLine();
+            float now = progress.Bonus(skill) * 100;
+            text.Append("Now: ").Append(now < .05f ? "none" : string.Format(def.bonusText, now.ToString("0.#")));
+        }
+        else text.Append(def.description);
+        TooltipUI.Instance.ShowText(def.displayName, $"{AdventureSkills.Tier(rank).ToUpperInvariant()}  {rank} / 100", text.ToString());
+    }
 
     public void Refresh(AdventurerProgress character, AdventureSkill shown)
     {
+        progress = character;
         var def = character.Definition(skill);
         int value = character.Rank(skill);
         if (icon != null) { icon.sprite = def != null ? def.icon : null; icon.enabled = icon.sprite != null; }

@@ -246,28 +246,42 @@ public class ItemData : ScriptableObject
         ItemEffectProcessor.Fire(this, EffectTrigger.OnUse, EffectContext.For(user, this));
     }
 
-    // Rich-text tooltip body shared by the in-game tooltip and the Item Database preview. Blocks, separated by a
-    // blank line: description and stats (a honed stat shows its plain value plus the honed part), effects and spell,
-    // then the change against what the player is wearing in that slot (only while a player exists).
+    // Rich-text tooltip body shared by the in-game tooltip and the Item Database preview, Diablo's order: the main
+    // number big (a weapon's damage and how fast it swings, a shield's block armor, worn armor), the other stats (a
+    // honed stat shows its plain value plus the honed part), effects and spell, the change against what the player
+    // is wearing in that slot (only while a player exists), then the description as flavour and the price.
     public const string TextColor = "#E6E1D6", DimColor = "#9AA3AD", GoodColor = "#80CEA0", BadColor = "#E78787", EffectColor = "#A1C5DE";
+    public const string FlavourColor = "#B8A27A";
     public static string HonedTextColor => "#" + ColorUtility.ToHtmlStringRGB(Color.Lerp(UIManager.HasInstance ? UIManager.Instance.honed : UIManager.DefaultHoned, Color.white, .45f));
 
     public string BuildTooltip()
     {
         var blocks = new System.Collections.Generic.List<string>();
         var lines = new System.Collections.Generic.List<string>();
-        if (!string.IsNullOrWhiteSpace(description)) lines.Add($"<color={DimColor}>{description.Trim()}</color>");
+        StatType? main = IsWeapon ? StatType.AttackDamage : (itemType == ItemType.Shield || itemType == ItemType.Equipment) && canBeEquipped ? StatType.Armor : null;
+        float mainValue = main.HasValue ? FlatBonus(this, main.Value) : 0f;
+        bool showMain = main.HasValue && mainValue > 0f;
+        if (showMain)
+        {
+            string label = main == StatType.AttackDamage ? "Damage" : itemType == ItemType.Shield ? "Armor when blocking" : "Armor";
+            string honedPart = "";
+            float plain = FlatBonus(BaseItem, main.Value);
+            if (honed > 0 && Mathf.Abs(mainValue - plain) > .001f) honedPart = $"  <color={HonedTextColor}>(+{mainValue - plain:0.#} honed)</color>";
+            lines.Add($"<size=140%><color={TextColor}>{mainValue:0.#}</color></size>  <color={DimColor}>{label}</color>{honedPart}");
+            if (IsWeapon) lines.Add($"<color={DimColor}>{SwingSpeedWord(FlatBonus(this, StatType.AttackSpeed))} swings</color>");
+        }
         if (canBeEquipped && statModifiers != null)
             foreach (var modifier in statModifiers)
             {
                 if (modifier == null) continue;
+                if (showMain && modifier.stat == main.Value && modifier.type == ModifierType.Flat) continue;
+                if (IsWeapon && modifier.stat == StatType.AttackSpeed && modifier.type == ModifierType.Flat) continue;
                 string line = $"<color={(Worse(modifier.stat, modifier.value) ? BadColor : TextColor)}>{StatLine(modifier.stat, modifier.type, modifier.value, BlockOnly(modifier.stat))}</color>";
                 float plain = PlainValue(modifier);
                 if (honed > 0 && Mathf.Abs(modifier.value - plain) > .001f) line += $"  <color={HonedTextColor}>({plain:0.#} + {modifier.value - plain:0.#} honed)</color>";
                 lines.Add(line);
             }
         Add(blocks, lines);
-
 
         if (effects != null)
             foreach (var effect in effects)
@@ -299,11 +313,49 @@ public class ItemData : ScriptableObject
                 float delta = FlatBonus(this, stat) - FlatBonus(equipped, stat);
                 if (Mathf.Abs(delta) > .001f) changes.Add($"<color={(Worse(stat, delta) ? BadColor : GoodColor)}>{StatLine(stat, ModifierType.Flat, delta, BlockOnly(stat))}</color>");
             }
-            lines.Add(changes.Count == 0 ? $"<color={DimColor}>Same as your {equipped.itemName}.</color>"
-                : $"<color={DimColor}>Compared to your {equipped.itemName}:</color>\n" + string.Join("\n", changes));
+            lines.Add(changes.Count == 0 ? $"<color={DimColor}>Same as your {equipped.itemName}</color>"
+                : $"<color={DimColor}>Against your {equipped.itemName}:</color>\n" + string.Join("\n", changes));
             Add(blocks, lines);
         }
+        else if (gear != null && gear.IsEquipped(this)) { lines.Add($"<color={DimColor}>Equipped</color>"); Add(blocks, lines); }
+
+        if (!string.IsNullOrWhiteSpace(description)) { lines.Add($"<color={FlavourColor}><i>{description.Trim()}</i></color>"); Add(blocks, lines); }
+        if (value > 0 && itemType != ItemType.Key) { lines.Add($"<color={DimColor}>Worth {value} gold</color>"); Add(blocks, lines); }
         return string.Join("\n\n", blocks);
+    }
+
+    // How fast a weapon swings, from its AttackSpeed bonus.
+    public static string SwingSpeedWord(float attackSpeed) =>
+        attackSpeed <= -.25f ? "Very slow" : attackSpeed < -.05f ? "Slow" : attackSpeed >= .3f ? "Very fast" : attackSpeed > .05f ? "Fast" : "Normal";
+
+    // The kind of thing it is (the tooltip's type line): "One-handed sword", "Body armour", "Ring", "Potion".
+    public string TypeLine()
+    {
+        bool Named(string word) => itemName != null && itemName.IndexOf(word, System.StringComparison.OrdinalIgnoreCase) >= 0;
+        if (spell != null) return "Spell tome";
+        switch (itemType)
+        {
+            case ItemType.Weapon:
+                if (Named("knife")) return "Knife";
+                return weaponCategory == WeaponCategory.Mace ? "One-handed mace" : "One-handed sword";
+            case ItemType.Shield: return "Shield";
+            case ItemType.Consumable: return Named("potion") || Named("tonic") || Named("elixir") ? "Potion" : AnimationOnUse == ItemUseAnimation.Eat ? "Food" : "Consumable";
+            case ItemType.Key: return "Key";
+            case ItemType.Tool: return "Tool";
+            case ItemType.Equipment:
+                if (!canBeEquipped) return "Item";
+                if (Equipment.IsTrinket(equipSlot)) return Named("ring") || Named("band") ? "Ring" : Named("amulet") || Named("pendant") ? "Amulet" : Named("charm") ? "Charm" : "Trinket";
+                return equipSlot switch
+                {
+                    EquipmentSlot.Body => "Body armour",
+                    EquipmentSlot.Head => "Helm",
+                    EquipmentSlot.Gloves => "Gloves",
+                    EquipmentSlot.Boots => "Boots",
+                    EquipmentSlot.Legs => "Leggings",
+                    _ => SlotName(equipSlot),
+                };
+            default: return "Item";
+        }
     }
 
     // What kind of thing it is, in a few words (shop rows): "Helm, +1 armor", "Weapon, +6 damage", "Heals 6 over 6s".

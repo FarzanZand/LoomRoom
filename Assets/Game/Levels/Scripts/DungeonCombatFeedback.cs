@@ -84,7 +84,7 @@ public class DungeonCombatFeedback : MonoBehaviour
         string amount=Mathf.CeilToInt(info.Amount).ToString();
         // Heathen: the number appears where the blade struck; criticals say so above a bigger number that grows in.
         Vector3 at=info.HitPoint!=Vector3.zero && !info.Blocked ? info.HitPoint:Head(view.character);
-        ShowNumber(view.character.transform,at,info.Blocked ? "BLOCK":info.Backstab ? "BACKSTAB!\n"+amount:info.Critical ? "CRITICAL!\n"+amount:amount,
+        ShowNumber(view.character.transform,at,info.Blocked ? "BLOCK":info.Backstab ? "<size=55%>BACKSTAB!</size>\n"+amount:info.Critical ? "<size=55%>CRITICAL!</size>\n"+amount:amount,
             info.Blocked ? new Color(.53f,.85f,1):info.Backstab ? new Color(1,.42f,.3f):info.Critical ? new Color(1,.6f,.2f):info.Heavy ? new Color(1,.85f,.45f):Color.white,scale,special);
     }
     void ObjectHit(DungeonDestructible target,DamageInfo info)
@@ -104,7 +104,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     void ShowNumber(Transform target,Vector3 position,string text,Color color,float scale=1,bool punch=false)
     {
         if(popups.Count==0)return;
-        var p=popups[popupIndex++%popups.Count];p.target=target;p.position=position;p.started=Time.time;p.until=Time.time+(punch ? 1.3f:numberLifetime);p.color=color;p.label.text=text;
+        var p=popups[popupIndex++%popups.Count];p.target=target;p.position=position;p.started=Time.time;p.until=Time.time+(punch ? 1.3f:numberLifetime);p.color=color;p.label.text=text;p.label.textWrappingMode=TMPro.TextWrappingModes.NoWrap;
         p.scale=scale;p.punch=punch;p.label.rectTransform.localScale=Vector3.one*scale;
     }
     void PlayerDamaged(DamageInfo info)

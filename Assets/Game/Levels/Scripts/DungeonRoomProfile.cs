@@ -1,12 +1,18 @@
 using UnityEngine;
 
+// A variation for one kind of room. The generator gives every room a role (Combat, Treasure, Rest,
+// Storage...) and then picks one of the level's Room Profiles with that role, by weight, to change
+// how that room is built and filled. A room whose role has no profile is generated normally.
 [CreateAssetMenu(menuName="Table/Room profile",fileName="Room profile")]
 public class DungeonRoomProfile : ScriptableObject
 {
+    [Sirenix.OdinInspector.InfoBox("A variation for one kind of room. Every generated room gets a role; the generator then picks one of the level's Room Profiles (Rooms tab) with that role, by weight, and builds the room with its settings. Every field left empty keeps the level's and biome's normal choice.")]
+    [Tooltip("Which rooms this profile can be used for.")]
     public DungeonGenerator.RoomRole role=DungeonGenerator.RoomRole.Combat;
-    [Min(0)] public float weight=1;
-    [Min(1)] public int minFloor=1;
-    [Tooltip("Zero permits all later floors.")] [Min(0)] public int maxFloor;
+    [Min(0), Tooltip("Chance against the level's other profiles with the same role (2 is picked twice as often as 1). With only one profile for a role, every room of that role uses it.")]
+    public float weight=1;
+    [Min(1), Tooltip("First floor this profile can appear on.")] public int minFloor=1;
+    [Tooltip("Last floor this profile can appear on. Zero permits all later floors.")] [Min(0)] public int maxFloor;
     [Header("Room architecture")]
     [Sirenix.OdinInspector.InlineEditor, Tooltip("Force this room style. Empty keeps normal weighted level style selection.")]
     public DungeonRoomStyle styleOverride;

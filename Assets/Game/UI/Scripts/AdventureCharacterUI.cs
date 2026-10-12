@@ -33,19 +33,7 @@ public class AdventureCharacterUI : MonoBehaviour
 
     void OnDisable() { if (progress != null) progress.Changed -= Refresh; }
 
-    public void Inspect(AdventureSkill skill, bool pin)
-    {
-        if (progress == null || !TooltipUI.HasInstance) return;
-        var def = progress.Definition(skill);
-        if (def == null) return;
-        int rank = progress.Rank(skill);
-        float bonus = progress.Bonus(skill) * 100;
-        var effect = bonus < .5f || string.IsNullOrEmpty(def.bonusText) ? def.description : string.Format(def.bonusText, bonus.ToString("0"));
-        var trained = new System.Collections.Generic.List<string>();
-        foreach (var p in def.practice) if (p != null && !string.IsNullOrEmpty(p.text)) trained.Add(p.text.ToLowerInvariant());
-        if (trained.Count > 0) effect += $"\n<color=#8C8173>Trained by {string.Join(" or ", trained)}.</color>";
-        TooltipUI.Instance.ShowText(def.displayName, $"{AdventureSkills.Tier(rank)} ({rank})", effect);
-    }
+    public void Inspect(AdventureSkill skill, bool pin) => AdventureSkillRowUI.ShowTooltip(progress, skill);
     public void Refresh()
     {
         if (progress == null || progress.selectedClass == null || progress.rules == null) return;

@@ -12,6 +12,8 @@ public class AdventureMenuTabs : MonoBehaviour
     public Sprite openSprite;
     public GameObject skillsUnderline, equipmentUnderline;
     public float skillsTabVerticalOffset = -140;
+    [Tooltip("Off: only the Equipment page (the skills are listed on its character panel); the tab buttons are hidden.")]
+    public bool skillsTab;
     Vector2 skillsPosition, equipmentPosition;
 
     Sprite closedSprite;
@@ -29,12 +31,15 @@ public class AdventureMenuTabs : MonoBehaviour
 
     void Show(bool skills)
     {
+        if (!skillsTab) skills = false;
+        skillsButton.gameObject.SetActive(skillsTab);
+        equipmentButton.gameObject.SetActive(skillsTab);
         var offset = skills ? Vector2.up * skillsTabVerticalOffset : Vector2.zero;
         ((RectTransform)skillsButton.transform).anchoredPosition = skillsPosition + offset;
         ((RectTransform)equipmentButton.transform).anchoredPosition = equipmentPosition + offset;
         progressionPanel.SetActive(skills);
         if (skillsUnderline != null) skillsUnderline.SetActive(skills);
-        if (equipmentUnderline != null) equipmentUnderline.SetActive(!skills);
+        if (equipmentUnderline != null) equipmentUnderline.SetActive(!skills && skillsTab);
         foreach (var panel in equipmentPanels) if (panel != null) panel.SetActive(!skills);
         if (openSprite == null) return;
         if (skillsButton.image != null) skillsButton.image.sprite = skills ? openSprite : closedSprite;

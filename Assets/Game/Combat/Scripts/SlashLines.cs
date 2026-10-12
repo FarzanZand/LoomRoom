@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Heathen's slash: a few thin white streaks along the arc the blade just cut, only while the hitbox is open
-// and for a couple of frames after. Sits next to the player's Hitbox; the blade is the hitbox's capsule.
+// Heathen's slash: a pale band swept by the blade (the ribbon, from mid-blade to the tip over the last tenth of a
+// second, brightest at the tip and fading with age) plus a few thin white streaks along the arc, only while the
+// hitbox is open and for a moment after. Sits next to the player's Hitbox; the blade is the hitbox's capsule.
 [RequireComponent(typeof(Hitbox))]
 public class SlashLines : MonoBehaviour
 {
@@ -16,12 +17,24 @@ public class SlashLines : MonoBehaviour
     [Tooltip("Seconds the streaks stay after the hitbox closes.")]
     [SerializeField, Min(0)] float linger = .07f;
     [SerializeField] Color color = new(1f, 1f, 1f, .9f);
+    [Header("Ribbon")]
+    [SerializeField, Tooltip("Off: the user found the smooth band weird next to the pixel art (it hid the blade). Kept for a pixel-art version.")] bool ribbon = false;
+    [Tooltip("Where the band runs along the blade, from the grip (0) to the tip (1).")]
+    [SerializeField] Vector2 ribbonSpan = new(.2f, 1.05f);
+    [Tooltip("Seconds of the arc the band covers.")]
+    [SerializeField, Min(.01f)] float ribbonTrail = .17f;
+    [SerializeField] Color ribbonColor = new(1f, .97f, .9f, .55f);
 
     Hitbox hitbox;
     CapsuleCollider blade;
     LineRenderer[] lines;
     readonly List<(float time, Vector3 grip, Vector3 tip)> samples = new();
     float lastActive = -10f;
+    Mesh ribbonMesh;
+    MeshRenderer ribbonRenderer;
+    readonly List<Vector3> ribbonVerts = new();
+    readonly List<Color> ribbonColors = new();
+    readonly List<int> ribbonTris = new();
 
     void Awake()
     {
@@ -49,6 +62,51 @@ public class SlashLines : MonoBehaviour
             line.enabled = false;
             lines[i] = line;
         }
+        if (ribbon)
+        {
+            var go = new GameObject("Slash ribbon", typeof(MeshFilter), typeof(MeshRenderer)) { layer = gameObject.layer };
+            go.transform.SetParent(transform, false);
+            ribbonMesh = new Mesh { name = "Slash ribbon" }; ribbonMesh.MarkDynamic();
+            go.GetComponent<MeshFilter>().sharedMesh = ribbonMesh;
+            ribbonRenderer = go.GetComponent<MeshRenderer>();
+            ribbonRenderer.sharedMaterial = material;
+            ribbonRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            ribbonRenderer.receiveShadows = false;
+            ribbonRenderer.enabled = false;
+        }
+    }
+
+    // The band: two rows of vertices per sample, in world space (the ribbon object stays at the origin of its parent,
+    // so vertices are put into its local space).
+    void DrawRibbon()
+    {
+        if (ribbonRenderer == null) return;
+        ribbonVerts.Clear(); ribbonColors.Clear(); ribbonTris.Clear();
+        var t = ribbonRenderer.transform;
+        float now = Time.time;
+        for (int k = 0; k < samples.Count; k++)
+        {
+            float age = now - samples[k].time;
+            if (age > ribbonTrail + linger) continue;
+            float fade = 1f - Mathf.Clamp01(age / ribbonTrail);
+            var tip = ribbonColor; tip.a *= fade;
+            var root = ribbonColor; root.a = 0f;
+            ribbonVerts.Add(t.InverseTransformPoint(Vector3.LerpUnclamped(samples[k].grip, samples[k].tip, ribbonSpan.x)));
+            ribbonVerts.Add(t.InverseTransformPoint(Vector3.LerpUnclamped(samples[k].grip, samples[k].tip, ribbonSpan.y)));
+            ribbonColors.Add(root); ribbonColors.Add(tip);
+        }
+        int rows = ribbonVerts.Count / 2;
+        for (int k = 0; k + 1 < rows; k++)
+        {
+            int a = k * 2;
+            ribbonTris.Add(a); ribbonTris.Add(a + 1); ribbonTris.Add(a + 3);
+            ribbonTris.Add(a); ribbonTris.Add(a + 3); ribbonTris.Add(a + 2);   // the material draws both faces
+        }
+        ribbonMesh.Clear();
+        if (rows < 2) { ribbonRenderer.enabled = false; return; }
+        ribbonMesh.SetVertices(ribbonVerts); ribbonMesh.SetColors(ribbonColors); ribbonMesh.SetTriangles(ribbonTris, 0);
+        ribbonMesh.RecalculateBounds();
+        ribbonRenderer.enabled = true;
     }
 
     void LateUpdate()
@@ -64,26 +122,35 @@ public class SlashLines : MonoBehaviour
             Vector3 a = t.TransformPoint(blade.center - axis * blade.height * .5f), b = t.TransformPoint(blade.center + axis * blade.height * .5f);
             samples.Add((Time.time, a, b));
         }
-        samples.RemoveAll(s => Time.time - s.time > trail + linger);
+        samples.RemoveAll(s => Time.time - s.time > Mathf.Max(trail, ribbon ? ribbonTrail : 0f) + linger);
         if (!show || samples.Count < 2)
         {
             foreach (var l in lines) l.enabled = false;
+            if (ribbonRenderer != null) ribbonRenderer.enabled = false;
             if (!show) samples.Clear();
             return;
         }
+        DrawRibbon();
+        // The streaks cover only the newest part of the arc.
+        int first = samples.FindIndex(s => Time.time - s.time <= trail + linger);
+        if (first < 0) first = samples.Count;
+        int count = samples.Count - first;
         for (int i = 0; i < lines.Length; i++)
         {
             float f = Mathf.Lerp(bladeSpan.x, bladeSpan.y, lines.Length == 1 ? 1f : (float)i / (lines.Length - 1));
             var line = lines[i];
-            line.positionCount = samples.Count;
-            for (int k = 0; k < samples.Count; k++) line.SetPosition(k, Vector3.Lerp(samples[k].grip, samples[k].tip, f));
-            line.enabled = true;
+            line.positionCount = count;
+            for (int k = 0; k < count; k++) line.SetPosition(k, Vector3.Lerp(samples[first + k].grip, samples[first + k].tip, f));
+            line.enabled = count >= 2;
         }
     }
+
+    void OnDestroy() { if (ribbonMesh != null) Destroy(ribbonMesh); }
 
     void OnDisable()
     {
         samples.Clear();
         if (lines != null) foreach (var l in lines) if (l != null) l.enabled = false;
+        if (ribbonRenderer != null) ribbonRenderer.enabled = false;
     }
 }

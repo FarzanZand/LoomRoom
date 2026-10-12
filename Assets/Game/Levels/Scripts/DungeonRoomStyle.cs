@@ -18,22 +18,26 @@ public class DungeonRoomStyle : ScriptableObject
     [HideIf(nameof(hideTrims)), Tooltip("Cornice and footing. Empty inherits the level trim material.")]
     public Material trim;
 
-    [Title("Wall variety", "Each wall tile draws its material: the wall material above with Base Weight, or one of these with its own weight.", HorizontalLine = false)]
-    [Min(0), LabelText("Base Weight"), Tooltip("Weight of Bottom Wall / Upper Wall in the draw. 10 against two variants of weight 1 keeps the base on about 5 of 6 tiles.")]
+    // Odin titles don't wrap their subtitle, so a long one widens the whole inspector: keep them short, details in tooltips.
+    [Title("Wall variety", "Weighted per wall tile", HorizontalLine = false)]
+    [Min(0), LabelText("Base Weight"), Tooltip("Each wall tile draws its material: Bottom Wall / Upper Wall with this weight, or one of the variants with its own. 10 against two variants of weight 1 keeps the base on about 5 of 6 tiles.")]
     public float wallBaseWeight = 10;
+    [Tooltip("Other wall materials drawn now and then, each with its weight.")]
     public DungeonSurfaceVariant[] wallVariants = new DungeonSurfaceVariant[0];
-    [Title("Floor variety", "Each floor cell draws its material the same way.", HorizontalLine = false)]
-    [Min(0), LabelText("Base Weight")]
+    [Title("Floor variety", "Weighted per floor cell", HorizontalLine = false)]
+    [Min(0), LabelText("Base Weight"), Tooltip("Each floor cell draws its material the same way as the walls.")]
     public float floorBaseWeight = 10;
+    [Tooltip("Other floor materials drawn now and then, each with its weight.")]
     public DungeonSurfaceVariant[] floorVariants = new DungeonSurfaceVariant[0];
 
-    [Title("Wall decorations", "Optional props hung on walls: sconces, banners, chains. Authored facing +Z out of the wall, pivot on the wall face at floor level.", HorizontalLine = false)]
+    [Title("Wall decorations", "Sconces, banners, chains", HorizontalLine = false)]
+    [Tooltip("Optional props hung on walls. Authored facing +Z out of the wall, pivot on the wall face at floor level.")]
     public DungeonWeightedPrefab[] wallDecor = new DungeonWeightedPrefab[0];
     [Range(0, 5), Tooltip("Decorations per 10 wall faces in rooms and corridors using this style.")]
     public float wallDecorPerTenFaces = 1f;
 
-    [Title("Corridor dressing", "Repeated across straight corridor sections: support beams, arches, drains.", HorizontalLine = false)]
-    [AssetsOnly, Tooltip("Authored for one cell, facing +Z along the corridor, pivot on the floor at the cell centre.")]
+    [Title("Corridor dressing", "Beams, arches, drains", HorizontalLine = false)]
+    [AssetsOnly, Tooltip("Repeated across straight corridor sections. Authored for one cell, facing +Z along the corridor, pivot on the floor at the cell centre.")]
     public GameObject corridorDressing;
     [ShowIf(nameof(corridorDressing)), Range(2, 8), Tooltip("Cells between repeats.")]
     public int dressingSpacing = 3;

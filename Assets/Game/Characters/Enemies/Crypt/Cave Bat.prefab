@@ -1,0 +1,414 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &6409293388325984614
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 793589426629338012}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: m_Name
+      value: Model
+      objectReference: {fileID: 0}
+    - target: {fileID: 1628392564088363914, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: a3b7de2c1e8399f4891194b1c8997a01, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+--- !u!4 &6879489350670974605 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 0911479fb4c47b14aa4e0cd4589da891, type: 3}
+  m_PrefabInstance: {fileID: 6409293388325984614}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8812340347978013859
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 587038408130642009, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_Height
+      value: 0.95
+      objectReference: {fileID: 0}
+    - target: {fileID: 587038408130642009, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_Radius
+      value: 0.28
+      objectReference: {fileID: 0}
+    - target: {fileID: 587038408130642009, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_Center.y
+      value: 1.22
+      objectReference: {fileID: 0}
+    - target: {fileID: 587038408130642009, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_Direction
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2761132636851895448, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: totalMass
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 2761132636851895448, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: throwScale
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 2761132636851895448, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: deathAnimationInstead
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3042351543931888501, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_Height
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3042351543931888501, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_Radius
+      value: 0.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 3993846465245561278, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: data
+      value: 
+      objectReference: {fileID: 5009403915139806102}
+    - target: {fileID: 3993846465245561278, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: animator
+      value: 
+      objectReference: {fileID: 3619849931756855245}
+    - target: {fileID: 4812219496838340772, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: knockbackForce
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_Name
+      value: Cave Bat
+      objectReference: {fileID: 0}
+    - target: {fileID: 5296647447943385737, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: table
+      value: 
+      objectReference: {fileID: 11400000, guid: 66571cd5f3da142419416c5d36ed7fc5, type: 2}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6879489350670974605}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3619849931756855245}
+    - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8400261407720454715}
+  m_SourcePrefab: {fileID: 100100000, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+--- !u!4 &793589426629338012 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8163018122768236351, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+  m_PrefabInstance: {fileID: 8812340347978013859}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &3616844111263754080 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+  m_PrefabInstance: {fileID: 8812340347978013859}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &3619849931756855245
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3616844111263754080}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1bf411bc18ad3ed44a25523ad145e4a8, type: 2}
+  m_CullingMode: 1
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &8400261407720454715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3616844111263754080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60c3ce1d335e09d48abfa80177755aa2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitReactionController
+  animator: {fileID: 0}
+  reactionAngle: 20
+  damping: 9
+  influenceDepth: 2
+  parentFalloff: 0.35
+  attackSpeed: 60
+--- !u!114 &5009403915139806102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fe21949aa936544fa1740287c279a2a, type: 3}
+  m_Name: Cave Bat
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  portrait: {fileID: 0}
+  characterName: Cave Bat
+  faction: 2
+  description: A bat with a wingspan like a man's arms. It hunts by sound in the
+    dark.
+  stats:
+  - stat: 6
+    baseValue: 1.15
+    min: 0
+    max: 0
+  - stat: 7
+    baseValue: 1.1
+    min: 0
+    max: 0
+  - stat: 0
+    baseValue: 13
+    min: 0
+    max: 0
+  - stat: 2
+    baseValue: 3
+    min: 0
+    max: 0
+  - stat: 1
+    baseValue: 0
+    min: 0
+    max: 0
+  audio:
+    idle:
+    - {fileID: 8300000, guid: 0a6cf2b696cef86479692dd9b133d0f8, type: 3}
+    - {fileID: 8300000, guid: 9a2d865fd37a7f74bb71e9c834b1cf2f, type: 3}
+    - {fileID: 8300000, guid: c59659b408648eb47973bc92c811060e, type: 3}
+    - {fileID: 8300000, guid: 33990c79b943d55449570ebc9446fa7f, type: 3}
+    alert:
+    - {fileID: 8300000, guid: 31de1cccf148f0747b9a3d3353af3fd5, type: 3}
+    pain:
+    - {fileID: 8300000, guid: 1fb51b981956d7543a9899449b265042, type: 3}
+    - {fileID: 8300000, guid: b716211feea6460478ec3add51400d9d, type: 3}
+    - {fileID: 8300000, guid: dfb30afbfd26c0e4694cf5c9501ca820, type: 3}
+    death:
+    - {fileID: 8300000, guid: b3a7ef36f35dc8e4ca2899d1cedaf6d6, type: 3}
+    - {fileID: 8300000, guid: 52c7918ab56e47e41bbf76c5587a9eb7, type: 3}
+    - {fileID: 8300000, guid: 3eca4d3e22fd2b14a93350f477661844, type: 3}
+    footsteps:
+    - {fileID: 8300000, guid: af940a0d51d125e42abeae1d05ea8906, type: 3}
+    - {fileID: 8300000, guid: 54a7f74e8234f154e8b330a586084d44, type: 3}
+    - {fileID: 8300000, guid: 4be8d3d4e28a1224589ea502780c4707, type: 3}
+    - {fileID: 8300000, guid: 56ace94963be63c418fc11aa8ea2bf31, type: 3}
+    - {fileID: 8300000, guid: ade593964bab65e4d8c5b20c475348d3, type: 3}
+    impact:
+    - {fileID: 8300000, guid: 1fb51b981956d7543a9899449b265042, type: 3}
+    voiceVolume: 0.7
+    footstepVolume: 0.45
+    impactVolume: 0.45
+    pitch: 2.4
+    pitchVariance: 0.08
+    minDistance: 2
+    maxDistance: 20
+    idleInterval: {x: 4, y: 10}
+    walkStepInterval: 0.28
+    runStepInterval: 0.17
+    painCooldown: 0.6
+  gore:
+    kind: 1
+    color: {r: 0.3, g: 0.02, b: 0.03, a: 1}
+    amount: 0.8
+    burstOnDeath: 0
+    killSound: {fileID: 11400000, guid: af7970142445f654dbc7a19e80a9a3b5, type: 2}
+  hurtTrigger: Hurt
+  deathTrigger: Death
+  deathDisableDelay: 8
+  behaviour: {fileID: 0}
+  behaviourSettings:
+    defaultState: 0
+    aggressionMode: 0
+    wanderRadius: 3
+    minWanderDistance: 2
+    minIdleTime: 2
+    maxIdleTime: 6
+    wanderZoneRadius: 4
+    detectionRadius: 12
+    fieldOfView: 200
+    eyeHeight: 1.2
+    closeDetectionRadius: 2.5
+    obstacleMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    investigateNoise: 1
+    hearingRadius: 9
+    investigateTime: 4
+    loseSightGracePeriod: 3
+    maxSearchTime: 5
+    useChaseSpeed: 1
+    chaseSpeed: 6.2
+    useWanderSpeed: 1
+    wanderSpeed: 1.6
+    acceleration: 30
+    preferredRangeFraction: 0.7
+    circleTarget: 1
+    circleSpeedFraction: 0.22
+    circleSwitchInterval: {x: 0.9, y: 2}
+    spacingSpeedFraction: 0.8
+    passiveAngularSpeed: 360
+    chaseAngularSpeed: 720
+    attackFaceSpeed: 900
+    windupTrackSpeed: 240
+  attacks:
+  - name: Bite
+    weight: 1
+    animatorTrigger: Attack
+    minRange: 0
+    maxRange: 1.5
+    cooldown: 1.3
+    facingAngle: 45
+    hitboxIndex: 0
+    fallbackHitDelay: 0.45
+    hit:
+      useDefaultEffects: 1
+      hitAudio: {fileID: 0}
+      swingAudio: {fileID: 0}
+      heavySwingAudio: {fileID: 0}
+      hitParticle: {fileID: 0}
+      damageMultiplier: 1
+      knockbackForce: -1
+      hitStopScale: 1
+  archer: 0
+  archery:
+    bow: {fileID: 0}
+    arrow: {fileID: 0}
+    animatorTrigger: BowShot
+    minRange: 3
+    maxRange: 14
+    cooldown: 2.2
+    aimTrackSpeed: 300
+    fallbackReleaseTime: 1.3
+    maxHeightDifference: 4
+    arrowSpeed: 22
+    spread: 2.5
+    leadTarget: 0.5
+    hit:
+      useDefaultEffects: 1
+      hitAudio: {fileID: 0}
+      swingAudio: {fileID: 0}
+      heavySwingAudio: {fileID: 0}
+      hitParticle: {fileID: 0}
+      damageMultiplier: 1
+      knockbackForce: 1.5
+      hitStopScale: 0.5
+    pullAudio: {fileID: 0}
+    fireAudio: {fileID: 0}
+  experience: 12

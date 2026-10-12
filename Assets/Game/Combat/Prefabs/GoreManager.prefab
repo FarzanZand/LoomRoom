@@ -49,13 +49,13 @@ MonoBehaviour:
   dropsPerHit: 45
   dropsPerKill: 110
   splashBlobs: 7
-  splashSize: {x: 0.12, y: 0.28}
+  splashSize: {x: 0.05, y: 0.14}
   sprayLifetime: 2.5
   strongHitMultiplier: 1.6
   stainMaterial: {fileID: 2100000, guid: 945db09c5ef15bf4cb5551efce10cc0e, type: 2}
-  stainSize: {x: 0.12, y: 0.34}
+  stainSize: {x: 0.07, y: 0.22}
   maxStains: 260
-  stainChance: 0.55
+  stainChance: 0.35
   chunkMaterial: {fileID: 2100000, guid: 5456cf11cadd53c46913692cf937aee3, type: 2}
   chunksPerBurst: 7
   maxChunks: 80

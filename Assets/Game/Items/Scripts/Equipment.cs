@@ -34,6 +34,8 @@ public class Equipment : MonoBehaviour
     readonly Dictionary<EquipmentSlot, GameObject> objects = new();
     readonly Dictionary<EquipmentSlot, object>     sources = new();
     readonly HeldItemEating eating = new();
+    // The hotbar slot each held item was last seen in.
+    readonly Dictionary<EquipmentSlot, int> heldAt = new();
 
     public bool IsUsingItem => eating.IsPlaying;
 
@@ -52,11 +54,19 @@ public class Equipment : MonoBehaviour
         if (Character is Player owner)
         {
             // Resolve after inventory transfers finish so swaps cannot leave ghost equipment.
-            // Only hands: worn items are held by Equipment itself, not the bag.
+            // Only hands: worn items are held by Equipment itself, not the bag. A held item swapped out of
+            // the hotbar for another one of the same hand (another weapon, another shield) hands over to it.
             foreach (var slot in HandSlots)
             {
                 var item = Get(slot);
-                if (item != null && owner.Hotbar.IndexOf(item) < 0) Unequip(slot);
+                if (item == null) continue;
+                bool known = heldAt.TryGetValue(slot, out int was);
+                if (known && owner.Hotbar.ItemAt(was) == item) continue;   // still in its slot (a spare copy elsewhere is not the held one)
+                int at = owner.Hotbar.IndexOf(item);
+                if (at >= 0) { heldAt[slot] = at; continue; }               // moved along the hotbar
+                var replacement = known ? owner.Hotbar.ItemAt(was) : null;
+                Unequip(slot);
+                if (replacement != null && Fits(replacement, slot) && !IsEquipped(replacement)) { Equip(replacement); heldAt[slot] = was; }
             }
         }
         eating.Tick();
@@ -120,17 +130,19 @@ public class Equipment : MonoBehaviour
         if (IsHand(item.equipSlot) && IsEquipped(item)) return true;
 
         var slot = into.HasValue && Fits(item, into.Value) ? into.Value : SlotFor(item);
+        int wasAt=-1;   // a worn item taken from the bag: the one it replaces goes back to its place
         if(Character is Player owner && !(grant && !IsHand(slot)))
         {
             if(owner.Bag.IndexOf(item)<0 && owner.Hotbar.IndexOf(item)<0)return false;
-            if(!IsHand(slot) && !owner.Bag.RemoveOne(item) && !owner.Hotbar.RemoveOne(item))return false;
+            if(!IsHand(slot)){wasAt=owner.Bag.IndexOf(item);if(!owner.Bag.RemoveOne(item)){wasAt=-1;if(!owner.Hotbar.RemoveOne(item))return false;}}
         }
         if(Character is Player p && (slot==EquipmentSlot.RightHand || slot==EquipmentSlot.LeftHand) && p.Hotbar.IndexOf(item)<0) {
             int from=p.Bag.IndexOf(item);int destination=Get(slot)!=null?p.Hotbar.IndexOf(Get(slot)):-1;
             if(destination<0)destination=p.Hotbar.FirstEmpty();
             if(from<0 || destination<0 || !Inventory.Move(p.Bag,from,p.Hotbar,destination)){NotificationUI.Show("Make room in the hotbar to equip a hand item");return false;}
         }
-        Unequip(slot);   // a worn item goes back into the bag
+        Unequip(slot, true, wasAt);   // a worn item goes back into the bag
+        if(Character is Player held && IsHand(slot))heldAt[slot]=held.Hotbar.IndexOf(item);
 
         var anchor = GetAnchor(slot);
         if (anchor != null && item.worldPrefab != null)
@@ -181,18 +193,60 @@ public class Equipment : MonoBehaviour
         return Unequip(slot) != null;
     }
 
-    // toBag: a worn item returns to the bag, or drops at the player's feet when it is full.
-    ItemData Unequip(EquipmentSlot slot, bool toBag)
+    // The hotbar slot the item in this hand sits in (-1 when the hand is empty or it isn't a player). Spare copies of
+    // the same item elsewhere in the hotbar or bag are not held.
+    public int HeldIndex(EquipmentSlot slot)
+    {
+        var item = Get(slot);
+        if (item == null || Character is not Player owner) return -1;
+        if (heldAt.TryGetValue(slot, out int at) && owner.Hotbar.ItemAt(at) == item) return at;
+        return owner.Hotbar.IndexOf(item);
+    }
+
+    // A worn item dragged off the doll into the world: it comes off and lands at the player's feet. If it can't be
+    // dropped it goes into the pack instead, so it is never lost.
+    public bool UnequipToFloor(EquipmentSlot slot)
+    {
+        var item = Get(slot);
+        if (item == null || IsHand(slot) || Character is not Player owner || !InventoryManager.HasInstance) return false;
+        Unequip(slot, false);
+        if (InventoryManager.Instance.DropFromPlayer(item, owner) != null) return true;
+        if (!owner.Bag.TryAdd(item) && !owner.Hotbar.TryAdd(item)) Equip(item, false, grant: true, into: slot);
+        return false;
+    }
+
+    // A worn item dragged off the doll onto a bag cell: it goes there, or swaps with the one item there
+    // when that one fits this slot. Hand items live in the hotbar and are moved there instead.
+    public bool UnequipInto(EquipmentSlot slot, Inventory container, int index)
+    {
+        var item = Get(slot);
+        if (item == null || container == null || IsHand(slot) || !container.Accepts(item)) return false;
+        var hit = container.Overlaps(item, index);
+        if (hit.Count == 1 && Fits(container.ItemAt(hit[0]), slot)) return Equip(container.ItemAt(hit[0]), into: slot);
+        if (hit.Count > 0 || !container.Fits(item, index)) return false;
+        Unequip(slot, false);
+        container.Set(index, new ItemStack(item));
+        return true;
+    }
+
+    // toBag: a worn item returns to the bag (at returnAt when it fits there), or drops at the player's feet
+    // when it is full.
+    ItemData Unequip(EquipmentSlot slot, bool toBag, int returnAt = -1)
     {
         EnsureInitialized();
         if (!items.TryGetValue(slot, out var item)) return null;
-        if (toBag && !IsHand(slot) && Character is Player owner && !owner.Bag.TryAdd(item) && !owner.Hotbar.TryAdd(item) && InventoryManager.HasInstance)
-            InventoryManager.Instance.DropFromPlayer(item, owner);
+        if (toBag && !IsHand(slot) && Character is Player owner)
+        {
+            if (returnAt >= 0 && owner.Bag.Accepts(item) && owner.Bag.Fits(item, returnAt)) owner.Bag.Set(returnAt, new ItemStack(item));
+            else if (!owner.Bag.TryAdd(item) && !owner.Hotbar.TryAdd(item) && InventoryManager.HasInstance)
+                InventoryManager.Instance.DropFromPlayer(item, owner);
+        }
         if (item == eating.Item) eating.Clear();
 
         if (objects.TryGetValue(slot, out var obj) && obj != null) Destroy(obj);
         objects.Remove(slot);
         items.Remove(slot);
+        heldAt.Remove(slot);
 
         if (Character.Stats != null)
             Character.Stats.RemoveAllFromSource(sources[slot]);

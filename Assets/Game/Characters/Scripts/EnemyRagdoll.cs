@@ -14,6 +14,10 @@ public class EnemyRagdoll : MonoBehaviour
     [SerializeField, Min(.5f)] float settleSeconds = 5f;
     [Tooltip("Play the authored death animation instead of tumbling. For non-humanoid bodies that one rigid box fits badly (long animals like the rat).")]
     [SerializeField] bool deathAnimationInstead;
+    [Tooltip("Non-humanoid bodies: keep the animator playing the death clip while the body is thrown, so it curls up and rolls over instead of freezing in the pose it died in.")]
+    [SerializeField] bool deathClipWhileThrown = true;
+    [Tooltip("How far this body is thrown against CombatManager's ragdoll impulse (small creatures slide far as one rigid body).")]
+    [SerializeField, Range(0f, 2f)] float throwScale = 1f;
 
     Character character;
     DamageInfo lastHit;
@@ -53,16 +57,26 @@ public class EnemyRagdoll : MonoBehaviour
         if (anim != null && anim.isHuman) BuildHumanoid(anim);
         else BuildRigid();
 
-        DeathPhysics.StopPosing(this, anim);
+        bool thrownWithClip = deathClipWhileThrown && anim != null && !anim.isHuman && anim.runtimeAnimatorController != null;
+        if (thrownWithClip) foreach (var hr in GetComponentsInChildren<HitReactionController>()) hr.enabled = false;
+        else DeathPhysics.StopPosing(this, anim);
         DeathPhysics.IgnorePlayers(bodies);
         var cm = CombatManager.Instance;
         Vector3 dir = DeathPhysics.HitDirection(lastHit, transform);
         // The whole body leaves the ground together, thrown metres along the killing blow (Heathen).
-        Vector3 launch = dir * cm.ragdollImpulse * (lastHit.Heavy || lastHit.Critical ? 1.4f : 1f) + Vector3.up * cm.ragdollUpwardImpulse;
+        Vector3 launch = (dir * cm.ragdollImpulse * (lastHit.Heavy || lastHit.Critical ? 1.4f : 1f) + Vector3.up * cm.ragdollUpwardImpulse) * throwScale;
         foreach (var rb in bodies)
             rb.linearVelocity = launch + Random.insideUnitSphere * .4f;
         if (bodies.Count == 1) bodies[0].AddTorque(Random.onUnitSphere * 2f, ForceMode.Impulse);
         StartCoroutine(DeathPhysics.Settle(bodies, settleSeconds));
+        // The death clip has long finished by the time the body settles: the corpse needn't animate any more.
+        if (thrownWithClip) StartCoroutine(StopAnimating(anim, settleSeconds));
+    }
+
+    static System.Collections.IEnumerator StopAnimating(Animator anim, float after)
+    {
+        yield return new WaitForSeconds(after);
+        if (anim != null) anim.enabled = false;
     }
 
     // ── Humanoid ──────────────────────────────────────────────────────
