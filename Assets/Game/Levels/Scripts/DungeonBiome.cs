@@ -32,7 +32,7 @@ public class DungeonBiome : ScriptableObject
 
     // Same numbers as DungeonMoodLighting (a preset of that name in Resources/DungeonLighting), plus Custom.
     public enum Lighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6, Darkness = 7, Standard = 8, Custom = 100 }
-    [TabGroup(Look), Title("Lighting"), Tooltip("The lighting in this biome: a preset, or Custom to set every value below.")]
+    [TabGroup(Look), Title("Lighting"), Tooltip("The lighting in this biome: a preset, or Custom to set every value below. On dark floors the Lighting Manager holds the ambient down (Dungeon darkness), so the torches give most of the light.")]
     public Lighting lighting = Lighting.Darkness;
     [TabGroup(Look), Tooltip("Skip the Lighting Manager's dungeon darkness here: the preset's ambient light reaches everywhere, so unlit places stay visible.")]
     public bool litThroughout;
@@ -41,6 +41,14 @@ public class DungeonBiome : ScriptableObject
     public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();
     [TabGroup(Look), Tooltip("Wall torches and other wall lights in this biome, weighted, each with an optional colour. Empty uses the level's.")]
     public DungeonWallLight[] lightingPrefabs = new DungeonWallLight[0];
+    [TabGroup(Look), Tooltip("Give every torch in this biome one colour. A torch entry's own Override Color, a room profile, a room template or a socket still sets its own.")]
+    public bool overrideTorchColor;
+    [TabGroup(Look), ShowIf(nameof(overrideTorchColor)), ColorUsage(false)]
+    public Color torchColor = new Color(1f, .6f, .3f);
+    [TabGroup(Look), Range(0f, 3f), Tooltip("Brightness of every torch in this biome. 1 is as the torch prefab is made.")]
+    public float torchBrightness = 1f;
+    // The colour a torch gets when nothing more specific sets one (null keeps the prefab's own).
+    public Color? TorchColor => overrideTorchColor ? torchColor : null;
 
     [Serializable]
     public class Spawn

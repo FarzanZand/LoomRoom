@@ -243,7 +243,7 @@ public class DungeonRoomTemplate : MonoBehaviour
                 var torch = (GameObject)Instantiate(prefab, root.transform);
                 torch.transform.localPosition = Local(cell) + DungeonGenerator.WallLightOffset(d, c);
                 torch.transform.localRotation = Quaternion.LookRotation(-new Vector3(d.x, 0, d.y));
-                if (tint.HasValue) DungeonWallLight.Apply(torch, tint.Value);
+                DungeonWallLight.Apply(torch, tint);
                 break;
             }
         }

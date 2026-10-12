@@ -22,7 +22,7 @@ MonoBehaviour:
   props: []
   propRules: []
   destructibles: []
-  lighting: 8
+  lighting: 1
   litThroughout: 0
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
@@ -37,7 +37,10 @@ MonoBehaviour:
   - prefab: {fileID: 3904118440429741045, guid: 91efdc5ce7c631c43a3188387ca652aa, type: 3}
     weight: 1
     overrideColor: 1
-    color: {r: 1, g: 0.72852325, b: 0.5235849, a: 1}
+    color: {r: 1, g: 0.8950959, b: 0.8160377, a: 1}
+  overrideTorchColor: 0
+  torchColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  torchBrightness: 1
   enemies:
   - enemy: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
     weight: 1.5

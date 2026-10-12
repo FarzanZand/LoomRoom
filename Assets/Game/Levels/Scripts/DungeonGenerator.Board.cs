@@ -283,6 +283,6 @@ public partial class DungeonGenerator
         // Under the door, so BoardReveal shows it with the door.
         var torch = Instantiate(entry.prefab, face, Quaternion.LookRotation(-into));
         torch.transform.SetParent(door.transform, true);
-        if (entry.Tint.HasValue) DungeonWallLight.Apply(torch, entry.Tint.Value);
+        DungeonWallLight.Apply(torch, entry.Tint ?? (Biome != null ? Biome.TorchColor : null), TorchBrightness);
     }
 }

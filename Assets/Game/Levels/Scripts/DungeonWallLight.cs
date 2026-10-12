@@ -36,12 +36,15 @@ public class DungeonWallLight
         return null;
     }
 
-    // Recolour a placed light; flickering torches keep flickering around the new colour.
-    public static void Apply(GameObject light, Color color)
+    // Recolour (null keeps the prefab's colour) and brighten a placed light; flickering torches keep
+    // flickering around the new values.
+    public static void Apply(GameObject light, Color? color, float brightness = 1f)
     {
+        if (!color.HasValue && brightness == 1f) return;
         foreach (var l in light.GetComponentsInChildren<Light>(true))
         {
-            l.color = color;
+            if (color.HasValue) l.color = color.Value;
+            l.intensity *= brightness;
             var flicker = l.GetComponent<TorchFlicker>();
             if (flicker != null && flicker.isActiveAndEnabled) flicker.Rebase();
         }

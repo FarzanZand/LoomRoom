@@ -19,10 +19,12 @@ public class TableLevelData : ScriptableObject
     // Dungeons and board-game dungeons: everything a run needs.
     public bool IsDungeon => kind != TableLevelKind.Town;
     public bool IsBoard => kind == TableLevelKind.Boardgame;
-    bool ShowLightingOverride => ShowLevelLighting && overrideLighting;
-    // With biomes, each biome sets its own lighting; the level's is only for biome-less dungeons.
+    // With biomes, each biome sets its own lighting and torches; the level's lighting is only for biome-less dungeons.
+    // Board levels lie under the room's own light instead (Room Lighting and Room Tint).
     bool HasBiomes => IsDungeon && stages != null && System.Array.Exists(stages, s => s != null && s.biome != null);
-    bool ShowLevelLighting => IsDungeon && !HasBiomes;
+    bool ShowLevelLighting => IsDungeon && !IsBoard && !HasBiomes;
+    bool ShowLightingPreset => ShowLevelLighting && !overrideLighting;
+    bool ShowLightingOverride => ShowLevelLighting && overrideLighting;
 
     // ── Identity ──────────────────────────────────────────────────────
     [Title("Level")]
@@ -71,23 +73,24 @@ public class TableLevelData : ScriptableObject
     }
 
     // ── Look & Sound ──────────────────────────────────────────────────
-    [TabGroup(Tabs, Look), Tooltip("Town lighting. Dungeons use it as the fallback when a lighting preset is missing.")]
+    [TabGroup(Tabs, Look), HideIf(nameof(IsDungeon)), Tooltip("The town's lighting.")]
     public SceneMood mood;
-    [TabGroup(Tabs, Look), ShowIf(nameof(ShowLevelLighting)), HideIf(nameof(overrideLighting)), LabelText("Dungeon Lighting")]
+    [TabGroup(Tabs, Look), ShowIf(nameof(ShowLightingPreset)), Title("Table", HorizontalLine = false), LabelText("Table Lighting")]
+    [Tooltip("Sky, sun and ambient colour on every floor. On dark floors the Lighting Manager holds the ambient down (Dungeon darkness), so the torches give most of the light.")]
     [UnityEngine.Serialization.FormerlySerializedAs("moodLightning")]
     public DungeonMoodLighting moodLighting = DungeonMoodLighting.AmberCrypt;
     [TabGroup(Tabs, Look), ShowIf(nameof(ShowLevelLighting)), Tooltip("Use the settings below instead of the selected lighting style.")]
     public bool overrideLighting;
     [TabGroup(Tabs, Look), ShowIf(nameof(ShowLightingOverride)), InlineProperty, HideLabel]
     public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();
-    [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), Tooltip("The room while this level is played. Normal: as it was when you sat down, visible from the dungeon. Dim: its lights lowered. Dark: black, with only the lamp over the table lit (the intro's look).")]
+    [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), InfoBox("Table lighting and torches are set on each biome (its Look tab).", VisibleIf = nameof(HasBiomes)), Title("Room", HorizontalLine = false), Tooltip("The room while this level is played. Normal: as it was when you sat down, visible from the dungeon. Dim: its lights lowered. Dark: black, with only the lamp over the table lit (the intro's look).")]
     public RoomLighting roomLighting;
     [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), Tooltip("The colour the room's light takes while this level is played: dark yellow, cold blue ... White leaves it as it is.")]
     [ColorUsage(false)] public Color roomTint = Color.white;
     [TabGroup(Tabs, Look), ShowIf(nameof(IsBoard)), Tooltip("The light hung over a board level, like a lamp over a gaming table: it lights every room.")]
     [ColorUsage(false)] public Color boardLightColor = new Color(1f, .86f, .68f);
     [TabGroup(Tabs, Look), ShowIf(nameof(IsBoard)), Min(0)] public float boardLightIntensity = 2600f;
-    [TabGroup(Tabs, Look), InfoBox("Dungeon lighting is set on each biome (its Look tab).", VisibleIf = nameof(HasBiomes)), Title("Music", HorizontalLine = false)]
+    [TabGroup(Tabs, Look), Title("Music", HorizontalLine = false)]
     public AudioClip backgroundMusic;
     [TabGroup(Tabs, Look), Range(0f, 1f), LabelText("Volume"), Tooltip("BGM volume for this level: 0 is silent, 1 is full volume. Still respects the AudioManager Music and Master mixer settings. Reload the level to apply changes.")]
     public float backgroundMusicVolume = 1f;

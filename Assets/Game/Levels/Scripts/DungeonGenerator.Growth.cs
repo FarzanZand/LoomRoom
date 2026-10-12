@@ -156,6 +156,7 @@ public partial class DungeonGenerator
 
     // Wall torches: a few per lit room, spread apart, and the odd one along corridors.
     // The floor's biome lights, or the level's when the biome lists none.
+    float TorchBrightness => Biome != null ? Biome.torchBrightness : 1f;
     DungeonWallLight[] WallLights => Biome != null && DungeonWallLight.Any(Biome.lightingPrefabs) ? Biome.lightingPrefabs : data.lightingPrefabs;
 
     void PlaceTorches()
@@ -202,13 +203,13 @@ public partial class DungeonGenerator
         }
     }
 
-    // Colour, most specific first: the socket, the room template, the room profile, the light entry.
+    // Colour, most specific first: the socket, the room template, the room profile, the light entry, the biome's torch colour.
     void SpawnTorch(Vector2Int cell, Vector2Int dir, int room, Transform parent, System.Random rng, DungeonSocket socket = null)
     {
         var entry = socket != null && socket.overridePrefab != null ? null : DungeonWallLight.Choose(WallLights, rng);
         var prefab = entry != null ? entry.prefab : socket != null ? socket.overridePrefab : null;
         if (prefab == null) return;
-        Color? color = entry?.Tint;
+        Color? color = entry?.Tint ?? (Biome != null ? Biome.TorchColor : null);
         var profile = room >= 0 ? profiles[room] : null;
         var template = room >= 0 ? templates[room] : null;
         if (profile != null && profile.overrideLight) color = profile.lightColor;
@@ -216,7 +217,7 @@ public partial class DungeonGenerator
         if (socket != null && socket.overrideLightColor) color = socket.lightColor;
         // The prefab carries its own mounting height; its origin sits on the floor at the wall face.
         var torch = Instantiate(prefab, Cell(cell) + WallLightOffset(dir, data.cellSize), Quaternion.LookRotation(-new Vector3(dir.x, 0, dir.y)), parent);
-        if (color.HasValue) DungeonWallLight.Apply(torch, color.Value);
+        DungeonWallLight.Apply(torch, color, TorchBrightness);
         furnished.Add(cell);
     }
 
