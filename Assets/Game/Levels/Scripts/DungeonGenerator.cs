@@ -137,8 +137,11 @@ public partial class DungeonGenerator : MonoBehaviour
         return (int)(h&0x7fffffff);
     }
 
-    public void Build(TableLevelData level, int seed, int floorNumber=1)
+    // lastTry: the loader has no other seed left to try, so a floor that fails its navigation check is still played
+    // (the failure is logged as an error to fix) rather than the level failing to load.
+    public void Build(TableLevelData level, int seed, int floorNumber=1, bool lastTry=false)
     {
+        acceptUnreachable = lastTry;
         var watch=System.Diagnostics.Stopwatch.StartNew();
         FloorNumber=floorNumber;
         data = level; random = new System.Random(seed);
@@ -587,14 +590,25 @@ public partial class DungeonGenerator : MonoBehaviour
         }
     }
 
+    bool acceptUnreachable;
     void ValidateNavigation()
+    {
+        try { CheckNavigation(); }
+        catch (InvalidOperationException e) when (acceptUnreachable) { Debug.LogError($"{data.name} floor {FloorNumber}: {e.Message} Played anyway (no seeds left to try).", this); }
+    }
+
+    void CheckNavigation()
     {
         if(!NavMesh.SamplePosition(Cell(Layout.Start),out var start,1f,NavMesh.AllAreas))throw new InvalidOperationException("No navigation at dungeon entrance.");
         var path=new NavMeshPath();
+        bool Reaches(Vector2Int cell)=>NavMesh.SamplePosition(Cell(cell),out var target,1f,NavMesh.AllAreas)
+            && NavMesh.CalculatePath(start.position,target.position,NavMesh.AllAreas,path) && path.status==NavMeshPathStatus.PathComplete;
         for(int i=0;i<Layout.rooms.Count;i++) {
-            if(!NavMesh.SamplePosition(Cell(Layout.RoomCenter(i)),out var target,1f,NavMesh.AllAreas) ||
-                !NavMesh.CalculatePath(start.position,target.position,NavMesh.AllAreas,path) || path.status!=NavMeshPathStatus.PathComplete)
-                throw new InvalidOperationException($"Furnished dungeon has an unreachable room. Seed {Layout.seed}; room {i} at {Layout.rooms[i]}. Check prop collider sizes.");
+            // The centre first; a prop standing on it (a chest, a statue) doesn't make the room unreachable.
+            if(Reaches(Layout.RoomCenter(i)))continue;
+            bool any=false;
+            foreach(var cell in Layout.RoomCells(i))if(Reaches(cell)){any=true;break;}
+            if(!any)throw new InvalidOperationException($"Furnished dungeon has an unreachable room. Seed {Layout.seed}; room {i} at {Layout.rooms[i]}. Check prop collider sizes.");
         }
     }
 

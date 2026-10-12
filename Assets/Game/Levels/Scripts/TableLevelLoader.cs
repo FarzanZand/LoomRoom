@@ -280,7 +280,7 @@ public class TableLevelLoader : MonoBehaviour
                     candidateDungeon=candidate.GetComponent<DungeonGenerator>();
                     if(candidateDungeon==null)candidateDungeon=candidate.AddComponent<DungeonGenerator>();
                     try {
-                        candidateDungeon.Build(level,unchecked(seed+attempt*7907),FloorNumber);
+                        candidateDungeon.Build(level,unchecked(seed+attempt*7907),FloorNumber,attempt>=7);
                         // The level wants the player to start facing the Dungeon Master: keep looking for such a layout.
                         if(!level.startFacingDungeonMaster || level.layoutMode==DungeonLayoutMode.Authored || FloorNumber>1 || attempt>=15 || FacesDungeonMaster(candidateDungeon)) break;
                         candidate.SetActive(false);DestroyImmediate(candidate);candidate=null;

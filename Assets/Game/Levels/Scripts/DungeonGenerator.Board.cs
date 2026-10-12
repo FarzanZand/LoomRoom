@@ -119,15 +119,33 @@ public partial class DungeonGenerator
 
     // A passage can only climb so steeply (MaxStairAngle over its length): where two rooms differ by more,
     // the lower one is lifted until the climb fits. Lifting never lowers anything, so this settles.
+    // Stairs only run between a passage's first two rooms, so every other way between rooms is kept level: all the
+    // rooms a passage touches when it touches more than two, and rooms that open straight into each other.
     void KeepStairsWalkable(float[] raise, List<(int region, List<Vector2Int> cells, List<int> ends)> passages, Vector2Int[] dirs)
     {
         var limits = new List<(int a, int b, float rise)>();
         foreach (var (region, cells, ends) in passages)
         {
             if (ends.Count < 2) continue;
+            if (ends.Count > 2)
+            {
+                for (int i = 1; i < ends.Count; i++) limits.Add((ends[0], ends[i], 0f));
+                continue;
+            }
             int steps = 0;
             foreach (var n in PassageDistance(region, cells, ends[0], dirs).Values) steps = Mathf.Max(steps, n + 1);
             limits.Add((ends[0], ends[1], steps * data.cellSize * Mathf.Tan(MaxStairAngle * Mathf.Deg2Rad)));
+        }
+        int rooms = raise.Length;
+        for (int x = 0; x < data.width; x++) for (int z = 0; z < data.depth; z++)
+        {
+            int a = Layout.RoomAt(new Vector2Int(x, z));
+            if (a < 0) continue;
+            foreach (var dir in dirs)
+            {
+                int b = Layout.RoomAt(new Vector2Int(x, z) + dir);
+                if (b >= 0 && b != a && b < rooms) limits.Add((a, b, 0f));
+            }
         }
         for (int pass = 0; pass < 64; pass++)
         {

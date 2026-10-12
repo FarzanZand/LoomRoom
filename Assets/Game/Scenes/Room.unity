@@ -174969,6 +174969,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
+      propertyPath: bladeBlood
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5374361774144751901, guid: 45662cf5d79004d46aff4e53a3a42857, type: 3}
       propertyPath: heavyStaminaCost
       value: 11
       objectReference: {fileID: 0}
