@@ -114,6 +114,7 @@ public partial class DungeonGenerator
         foreach(var block in instance.GetComponentsInChildren<DungeonKitBlock>(true))
             if(block!=null)block.Build(RegionStyles!=null && index<RegionStyles.Length ? RegionStyles[index] : null,data,HeightAt(centre.x,centre.y),Cell(centre).y);
         var rewards=profiles[index]!=null ? profiles[index].rewards : null;
+        StockPlacedLoot(instance,rewards);
         foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))
         {
             if(!Layout.InRoom(index,CellOf(socket.transform.position)))continue;
@@ -161,6 +162,25 @@ public partial class DungeonGenerator
             PlaceExtras(index,available,0,rewards);
         }
     }
+
+    // Chests and breakables placed by hand in a template have no loot of their own: they get the room's or the floor's,
+    // and a seed from where they stand (no random draws, so the floor's other seeds stay as they were). One that has
+    // its own loot set keeps it.
+    void StockPlacedLoot(GameObject instance,LootSource rewards)
+    {
+        foreach(var chest in instance.GetComponentsInChildren<DungeonContainer>(true))
+        {
+            if(chest.loot==null)chest.loot=First(rewards,FloorLoot);
+            chest.seed=PlacedSeed(chest.transform.position);chest.floorNumber=FloorNumber;
+            if(chest.openAudio==null)chest.openAudio=chest.chest ? data.chestOpenAudio : data.containerBreakAudio;
+        }
+        foreach(var breakable in instance.GetComponentsInChildren<DungeonDestructible>(true))
+        {
+            if(breakable.loot==null)breakable.loot=First(rewards,FloorLoot);
+            breakable.seed=PlacedSeed(breakable.transform.position);breakable.floorNumber=FloorNumber;
+        }
+    }
+    int PlacedSeed(Vector3 p)=>unchecked(Mathf.RoundToInt(p.x*100f)*73856093 ^ Mathf.RoundToInt(p.z*100f)*19349663 ^ FloorNumber*83492791 ^ Layout.rooms.Count*2654435);
 
     // A template's wall light: on the wall its socket faces, or the cell's nearest other wall.
     void SocketLight(DungeonSocket socket,int room)
