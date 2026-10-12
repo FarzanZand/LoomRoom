@@ -182,6 +182,7 @@ MonoBehaviour:
   boardTileThickness: 0.14
   boardLayerHeight: 0.32
   boardMaxRaise: 2
+  boardVerticality: 1
   boardTileTaps: []
   architectureTileSize: 3
   twoTileRoomPercent: 25
@@ -214,9 +215,7 @@ MonoBehaviour:
     weight: 1
   roomProfiles:
   - {fileID: 11400000, guid: c20ef9685e373554c8072e3be2d59f9c, type: 2}
-  roomPropPrefabs:
-  - {fileID: 908437102851283026, guid: fc59090b5bd382b40b3a0e216ac50468, type: 3}
-  - {fileID: 2626260366801120047, guid: 78690a233ec5c00458ed652ef3191e79, type: 3}
+  roomPropPrefabs: []
   lightingPrefabs:
   - prefab: {fileID: 3904118440429741045, guid: 91efdc5ce7c631c43a3188387ca652aa, type: 3}
     weight: 1
@@ -332,8 +331,6 @@ MonoBehaviour:
   merchantPrefab: {fileID: 6335521276860554555, guid: 0b9bfb4bda23a524ba9567e96ba16304, type: 3}
   merchantStock: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
   shopRoom: {fileID: 729654494956090050, guid: 20a0a3a67173c774abd0169ec0deff6e, type: 3}
-  hudFont: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
-  hotbarFrame: {fileID: 21300000, guid: 8eae82d5f061d8f49b31dcf5f503d8ef, type: 3}
   enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
   damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
   messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}
