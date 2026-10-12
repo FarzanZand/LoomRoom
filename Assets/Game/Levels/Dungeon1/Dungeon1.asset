@@ -221,6 +221,13 @@ MonoBehaviour:
     chance: 0.6
     rooms: 12
   chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+  chestTiers:
+  - prefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+    weight: 6
+  - prefab: {fileID: 1158012699065434100, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
+    weight: 3
+  - prefab: {fileID: 6682190492535852451, guid: a3f935b8a5116744c81458439dead315, type: 3}
+    weight: 1
   containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
   chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
   destructibles:

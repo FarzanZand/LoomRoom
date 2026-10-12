@@ -272,6 +272,8 @@ public class TableLevelData : ScriptableObject
     public DungeonPropRule[] propRules = new DungeonPropRule[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Authored chest prefab with DungeonContainer, lid reference and interaction collider.")]
     public GameObject chestPrefab;
+    [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Chest tiers picked by weight (wood, iron, gold: each prefab's DungeonContainer says what it gives). Empty uses Chest Prefab.")]
+    public DungeonWeightedPrefab[] chestTiers = new DungeonWeightedPrefab[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), Title("Container sounds", HorizontalLine = false), LabelText("Barrel Break")]
     public AudioClip containerBreakAudio;
     [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Chest Open")]

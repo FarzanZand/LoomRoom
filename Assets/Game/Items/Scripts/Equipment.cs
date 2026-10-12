@@ -98,6 +98,8 @@ public class Equipment : MonoBehaviour
     }
 
     public ItemData Get(EquipmentSlot slot) => items.TryGetValue(slot, out var i) ? i : null;
+    // The model shown in that slot (the weapon in the hand), or null.
+    public GameObject HeldObject(EquipmentSlot slot) => objects.TryGetValue(slot, out var o) ? o : null;
     public bool     Has(EquipmentSlot slot) => items.ContainsKey(slot);
     public bool     IsEquipped(ItemData item) => item != null && (Get(item.equipSlot) == item || IsTrinket(item.equipSlot) && (Get(EquipmentSlot.Trinket1) == item || Get(EquipmentSlot.Trinket2) == item));
     public static bool IsTrinket(EquipmentSlot slot) => slot == EquipmentSlot.Trinket1 || slot == EquipmentSlot.Trinket2;

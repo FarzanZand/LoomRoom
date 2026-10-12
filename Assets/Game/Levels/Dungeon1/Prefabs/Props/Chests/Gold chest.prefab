@@ -1,0 +1,119 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &2478631866586878269
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 123071065681831367, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 3c35af820db904c44bb6c28037c9db62, type: 2}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.16
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.16
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.16
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4209209579859066109, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5748939632798846952, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: chestName
+      value: gold chest
+      objectReference: {fileID: 0}
+    - target: {fileID: 5748939632798846952, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: extraRolls
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5748939632798846952, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: stingAudio
+      value: 
+      objectReference: {fileID: 8300000, guid: cf22f0d228131e94ba1d8fd2160a3f7b, type: 3}
+    - target: {fileID: 5748939632798846952, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: glowColor.b
+      value: 0.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 5748939632798846952, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: glowColor.g
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5748939632798846952, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: stingVolume
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 5748939632798846952, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: glowIntensity
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 5748939632798846952, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: rareRollFloors
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7690200571401574686, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: b9090cd1913aa9843b6ed10f266cb44a, type: 2}
+    - target: {fileID: 7691663962061265330, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 1a1848da94025444880e4d03af7b16db, type: 2}
+    - target: {fileID: 7691697855832774236, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 472566810b410fd4e9877028a9094800, type: 2}
+    - target: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+      propertyPath: m_Name
+      value: Gold chest
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}

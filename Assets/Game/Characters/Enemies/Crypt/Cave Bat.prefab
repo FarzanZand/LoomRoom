@@ -199,6 +199,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8400261407720454715}
+    - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 664559625250098189}
   m_SourcePrefab: {fileID: 100100000, guid: f995d780264f1174092cc7345fc6832f, type: 3}
 --- !u!4 &793589426629338012 stripped
 Transform:
@@ -250,6 +253,25 @@ MonoBehaviour:
   influenceDepth: 2
   parentFalloff: 0.35
   attackSpeed: 60
+--- !u!114 &664559625250098189
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3616844111263754080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 817d907acfc5ceb43b68531cff5a91bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlyingEnemy
+  designHeight: 1.2
+  cruiseHeight: 2.2
+  diveHeight: 1.2
+  bob: 0.18
+  retreatSeconds: {x: 0.9, y: 1.6}
+  retreatSpeed: 0.9
+  climbSpeed: 2.4
 --- !u!114 &5009403915139806102
 MonoBehaviour:
   m_ObjectHideFlags: 0

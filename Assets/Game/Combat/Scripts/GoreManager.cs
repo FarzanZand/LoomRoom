@@ -153,6 +153,14 @@ public class GoreManager : Singleton<GoreManager>
     }
 
     // One quad per cell of the 2 x 2 splat atlas, facing +Z.
+    // The stain material and its four splat shapes, for other blood (BladeBlood).
+    public Material StainMaterial => stainMaterial;
+    public Mesh StainMesh(int index)
+    {
+        if (stainMeshes == null || stainMeshes.Length == 0) stainMeshes = BuildStainMeshes();
+        return stainMeshes[Mathf.Abs(index) % stainMeshes.Length];
+    }
+
     static Mesh[] BuildStainMeshes()
     {
         var meshes = new Mesh[4];

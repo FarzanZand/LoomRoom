@@ -12,11 +12,23 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     public AudioClip openAudio;
     [Range(0,1)] public float openVolume = 1f;
     public Transform lid;
+    [Tooltip("The lid's opening, an editable clip (legacy, curves under the chest's root: the lid swings up with a small bounce). Without one the lid turns to Lid Open Rotation in code.")]
+    public AnimationClip lidClip;
     public Vector3 lidOpenRotation = new Vector3(-105,0,0);
     [Min(.05f)] public float lidOpenSeconds = .45f;
+    [Header("Tier")]
+    [Tooltip("What the prompt calls it: \"Open <name>\".")]
+    public string chestName = "supply chest";
+    [Tooltip("A short sting over the creak as it opens (wood, iron and gold chests each have their own).")]
+    public AudioClip stingAudio;
+    [Range(0,1)] public float stingVolume = .7f;
+    [Min(0), Tooltip("Extra item rolls (an iron chest: 1).")]
+    public int extraRolls;
+    [Min(0), Tooltip("Floors deeper a bonus roll comes from (a gold chest: one item as if from 3 floors down). 0 = none.")]
+    public int rareRollFloors;
     bool opened;
     float health = 10;
-    public string Prompt => chest ? "Open supply chest" : "Break supply barrel";
+    public string Prompt => chest ? $"Open {chestName}" : "Break supply barrel";
     public bool CanInteract(Character who) => !opened && who is Player;
     public void Interact(Character who) { if (chest && CanInteract(who)) Open(); }
     public void TakeDamage(DamageInfo info)
@@ -55,12 +67,35 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         var (drops,gold)=DungeonLootDrop.Roll(loot,rng,floorNumber,source);
         // A chest is never empty: reroll the items a few times, then fall back to a little gold.
         for(int i=0;chest && drops.Count==0 && guaranteedItem==null && loot!=null && i<4;i++) drops=loot.RollDrops(rng,floorNumber,source);
+        // Better chests: more rolls, and one roll from deeper floors (its best item only).
+        if(chest && loot!=null)
+        {
+            for(int i=0;i<extraRolls;i++) drops.AddRange(loot.RollDrops(rng,floorNumber,source));
+            if(rareRollFloors>0)
+            {
+                var rare=loot.RollDrops(rng,floorNumber+rareRollFloors,source);
+                for(int i=0;rare.Count==0 && i<4;i++) rare=loot.RollDrops(rng,floorNumber+rareRollFloors,source);
+                if(rare.Count>0){ rare.Sort((a,b)=>(b.item!=null?b.item.tier:0).CompareTo(a.item!=null?a.item.tier:0)); drops.Add(rare[0]); }
+            }
+        }
         if(chest && drops.Count==0 && guaranteedItem==null && gold<=0) gold=3+rng.Next(0,3)+floorNumber*2;
         // A chest glows gold as it opens and its loot jumps out (Heathen).
         var mouth=transform.position+Vector3.up*.55f;
         DungeonLootDrop.Spill(drops,gold,dropPosition,transform.parent,chest ? mouth : (Vector3?)null);
         if(chest)Glow(mouth);
-        if(chest && lid!=null){lid.DOLocalRotate(lidOpenRotation,lidOpenSeconds).SetEase(Ease.OutCubic).SetLink(gameObject);return;}
+        if(chest && stingAudio!=null && AudioManager.HasInstance) DOVirtual.DelayedCall(.12f,()=>AudioManager.Instance.PlaySFX(stingAudio,transform.position,stingVolume,.02f)).SetLink(gameObject);
+        if(chest && lid!=null)
+        {
+            if(lidClip!=null)
+            {
+                var player=GetComponent<Animation>(); if(player==null)player=gameObject.AddComponent<Animation>();
+                player.playAutomatically=false;
+                if(player.GetClip(lidClip.name)==null)player.AddClip(lidClip,lidClip.name);
+                player.Play(lidClip.name);
+            }
+            else lid.DOLocalRotate(lidOpenRotation,lidOpenSeconds).SetEase(Ease.OutCubic).SetLink(gameObject);
+            return;
+        }
         for (int i = 0; i < 6; i++)
         {
             var bit = GameObject.CreatePrimitive(PrimitiveType.Cube);

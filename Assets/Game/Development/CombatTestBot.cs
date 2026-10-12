@@ -17,6 +17,7 @@ using UnityEngine;
 //   spam <n> <gap>          n taps, gap seconds apart
 //   counter                 attack as soon as the enemy starts a swing
 //   wait <s>                capture <s> <name>  frames to Temp/CombatTest/<name> (runs alongside)
+//   chest <metres> [wood|iron|gold]   place a chest in front of the player; open  opens it
 //   god [off]               keep the player at full health
 //   cm <field> <value>      set a CombatManager field
 //   freeze / unfreeze       the enemy's brain off/on      heal  full health for player and enemy
@@ -66,7 +67,7 @@ public class CombatTestBot : MonoBehaviour
                     case "face": Face(); break;
                     case "goto": GoTo(parts.Length > 1 ? parts[1] : "enemy", F(2, 3f)); break;
                     case "open": OpenChest(); break;
-                    case "chest": SpawnChest(F(1, 2.2f)); break;
+                    case "chest": SpawnChest(F(1, 2.2f), parts.Length > 2 ? parts[2] : "wood"); break;
                     case "god": god = parts.Length < 2 || parts[1] != "off"; break;
                     case "track": tracking = parts.Length < 2 || parts[1] != "off"; break;
                     case "pitch": if (player.Look != null) player.Look.SetPitch(F(1, 0f)); break;
@@ -202,10 +203,11 @@ public class CombatTestBot : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    // chest <metres>: a supply chest from the level's props, set down in front of the player (needs a dungeon).
-    void SpawnChest(float distance)
+    // chest <metres> [wood|iron|gold]: a chest from the level's props, set down in front of the player (needs a dungeon).
+    void SpawnChest(float distance, string tier)
     {
-        var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Levels/Dungeon1/Prefabs/Props/Supply chest.prefab");
+        var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(tier == "iron" ? "Assets/Game/Levels/Dungeon1/Prefabs/Props/Chests/Iron chest.prefab"
+            : tier == "gold" ? "Assets/Game/Levels/Dungeon1/Prefabs/Props/Chests/Gold chest.prefab" : "Assets/Game/Levels/Dungeon1/Prefabs/Props/Supply chest.prefab");
         var dungeon = FindAnyObjectByType<DungeonGenerator>();
         if (prefab == null || dungeon == null) { Log("no chest prefab or dungeon"); return; }
         Vector3 forward = player.Look != null ? player.Look.YawTransform.forward : player.transform.forward; forward.y = 0f; forward.Normalize();

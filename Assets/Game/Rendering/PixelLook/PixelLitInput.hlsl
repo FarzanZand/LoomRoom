@@ -40,6 +40,15 @@ float _PixelLookRoomTexelScale;
 float _PixelLookTableTexelScale;
 // Set by PixelLook. Multiplies all light on Pixel Lit materials; 0 (never set) reads as 1.
 float _PixelLookBrightness;
+
+// Set by LightingManager on dungeon floors (Heathen's light radius): ambient fades from full inside xyz's radius w to
+// _LoomLightRadiusEdge.y over _LoomLightRadiusEdge.x metres; lamps and torches are direct light and keep lighting
+// their surroundings. w = 0 turns it off. Set by ScreenManager (colour split): ambient times _LoomShadowTint.rgb and
+// direct light times _LoomLampTint.rgb, each by its a. Room surfaces (rendering layer Room, value 8) are never touched.
+float4 _LoomLightRadius;
+float4 _LoomLightRadiusEdge;
+float4 _LoomShadowTint;
+float4 _LoomLampTint;
 // Set by ScreenManager (Pixel lighting > Pixel size). Texels grow this many times; 0 (never set) reads as 1.
 float _PixelLookPixelSize;
 

@@ -113,6 +113,8 @@ public class EnemyBrain : MonoBehaviour
     public bool CanOpenHitbox => attackRunner != null && attackRunner.CanOpenHitbox;
     public bool IsSwinging    => attackRunner != null && attackRunner.IsSwinging;
     // When the current swing's blow lands (Time.time), or -1 while unknown or not swinging.
+    // Returns true while it is steering the enemy itself (this frame the brain doesn't move it).
+    public System.Func<bool> MovementOverride { get; set; }
     public float SwingHitAt   => attackRunner != null && attackRunner.IsSwinging ? attackRunner.HitAt : -1f;
     internal WeaponAnimationRelay AttackRelay => attackRelay;
 
@@ -243,6 +245,9 @@ public class EnemyBrain : MonoBehaviour
         Perception.Tick(State == EnemyState.Chase || State == EnemyState.Attack);
         Motor.SuppressKnockback = IsSwinging;
         attackRunner.Tick();
+
+        // Another component steering for a moment (FlyingEnemy pulling back after a dive): it moves, the brain waits.
+        if (MovementOverride != null && !IsSwinging && MovementOverride()) { UpdateAnimator(); return; }
 
         // Recovering or staggered: stand still, even inside the target's personal space.
         if (Time.time < recoveryUntil)

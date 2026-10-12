@@ -148,6 +148,7 @@ public sealed partial class LightingManager : MonoBehaviour
         UpdateMoodBlend();
         UpdateReveal();
         Apply();
+        ApplyLightRadius();
 #if UNITY_EDITOR
         if ((fading || moodBlending) && !Application.isPlaying)
         {

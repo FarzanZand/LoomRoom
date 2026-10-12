@@ -13,6 +13,14 @@ public class CombatManager : Singleton<CombatManager>
     [Min(1f), Tooltip("Thickness multiplier for melee hit queries; also widens fallback enemy hit arcs.")]
     public float meleeWidthMultiplier = 1.25f;
 
+    [Header("Blood on the blade")]
+    [Tooltip("The player's weapon gets spattered with what it cuts (BladeBlood on the table player), and the stains slowly dry and fade.")]
+    public bool bladeBlood = true;
+    [Min(1f), Tooltip("Seconds a stain on the blade takes to fade away.")]
+    public float bladeBloodFadeSeconds = 45f;
+    [Range(1, 40), Tooltip("Most stains on one weapon at a time.")]
+    public int bladeBloodMax = 18;
+
     [Header("Hit Stop")]
     [Tooltip("Off: hits pass straight through, Heathen style. On: the game slows for a moment on each hit.")]
     public bool hitStopEnabled = false;

@@ -592,8 +592,9 @@ public partial class DungeonGenerator : MonoBehaviour
             var breakable=DungeonWeightedPrefab.Choose(Destructibles,extraRandom,IsFloorBreakable);
             if(breakable!=null){SpawnDestructible(breakable,pos,Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewardOverride,random.Next());return;}
         }
-        bool authoredChest=chest && data.chestPrefab!=null;
-        var go=authoredChest ? Instantiate(data.chestPrefab,transform) : new GameObject(chest ? "Supply chest" : "Breakable barrel"); go.transform.SetParent(transform,false); go.transform.position=pos;
+        var chestPrefab=chest ? DungeonWeightedPrefab.Choose(data.chestTiers,extraRandom) ?? data.chestPrefab : null;
+        bool authoredChest=chest && chestPrefab!=null;
+        var go=authoredChest ? Instantiate(chestPrefab,transform) : new GameObject(chest ? "Supply chest" : "Breakable barrel"); go.transform.SetParent(transform,false); go.transform.position=pos;
         if(chest && facing.HasValue)go.transform.rotation=facing.Value;
         if(chest && !authoredChest)
         {

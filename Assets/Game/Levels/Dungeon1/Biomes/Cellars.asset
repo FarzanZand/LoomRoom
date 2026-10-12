@@ -24,6 +24,9 @@ MonoBehaviour:
   destructibles: []
   lighting: 1
   litThroughout: 0
+  lightRadius: 0
+  shadowTint: {r: 0.55, g: 0.85, b: 1, a: 1}
+  lampTint: {r: 1.06, g: 0.97, b: 0.86, a: 1}
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
     skyExposure: 0.8

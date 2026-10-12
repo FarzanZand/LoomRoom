@@ -217,6 +217,17 @@ half4 Frag(Varyings input) : SV_Target
         half lq = xq / (1.0 - xq);
         light *= lq / max(lum, 1e-4);
     }
+    if ((meshLayers & 8u) == 0u)
+    {
+        if (_LoomLightRadius.w > 0)
+        {
+            float far = distance(litPos, _LoomLightRadius.xyz);
+            half inside = 1.0 - smoothstep(_LoomLightRadius.w, _LoomLightRadius.w + max(0.01, _LoomLightRadiusEdge.x), far);
+            ambient *= lerp((half)_LoomLightRadiusEdge.y, 1.0h, inside);
+        }
+        ambient *= lerp(half3(1, 1, 1), (half3)_LoomShadowTint.rgb, (half)_LoomShadowTint.a);
+        light *= lerp(half3(1, 1, 1), (half3)_LoomLampTint.rgb, (half)_LoomLampTint.a);
+    }
     light += ambient;
     // Darker areas lean towards the shade tint.
     half shadeAmount = saturate(1.0 - max(light.r, max(light.g, light.b)));

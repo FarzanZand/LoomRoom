@@ -36,6 +36,12 @@ public class DungeonBiome : ScriptableObject
     public Lighting lighting = Lighting.Darkness;
     [TabGroup(Look), Tooltip("Skip the Lighting Manager's dungeon darkness here: the preset's ambient light reaches everywhere, so unlit places stay visible.")]
     public bool litThroughout;
+    [TabGroup(Look), Min(0f), Tooltip("Metres of full ambient light around the player here (LightingManager's light radius); 0 uses the manager's.")]
+    public float lightRadius;
+    [TabGroup(Look), Tooltip("Colour split (ScreenManager): shadows and ambient lean to this (cool).")]
+    public Color shadowTint = new(.55f, .85f, 1f);
+    [TabGroup(Look), Tooltip("Colour split (ScreenManager): lamps, torches and the player's light lean to this (warm).")]
+    public Color lampTint = new(1.06f, .97f, .86f);
     bool CustomLighting => lighting == Lighting.Custom;
     [TabGroup(Look), ShowIf(nameof(CustomLighting)), InlineProperty, HideLabel]
     public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();
