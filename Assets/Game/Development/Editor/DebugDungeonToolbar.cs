@@ -30,10 +30,39 @@ public static class DebugDungeonToolbar
     public static IEnumerable<MainToolbarElement> Buttons() => new MainToolbarElement[]
     {
         new MainToolbarButton(new MainToolbarContent("Debug", "Start the test arena: one open room, enemies from Debug Dungeon Settings standing just outside detection range."), StartDebug),
-        new MainToolbarButton(new MainToolbarContent("Dungeon", "Generate WorldManager's Debug Dungeon and play it straight away, skipping the room."), StartDungeon),
+        new MainToolbarButton(new MainToolbarContent("Dungeon", "Generate the level picked in the dropdown next to it and play it straight away, skipping the room."), StartDungeon),
+        new MainToolbarDropdown(new MainToolbarContent(DungeonLabel(), "The level the Dungeon button plays (WorldManager's Debug Dungeons)."), ShowDungeonMenu),
         new MainToolbarButton(new MainToolbarContent("Room", "Start in the room as the room player on an ordinary morning: no intro, wake-up or character sheet. Uses the normal save."), StartRoom),
         new MainToolbarToggle(new MainToolbarContent("Fullscreen", "Play in a borderless Game view covering the whole monitor (F11 toggles it by hand)."), FullscreenGameView.OnPlay, FullscreenGameView.SetOnPlay),
     };
+
+    static string DungeonLabel()
+    {
+        var level = DebugDungeonSession.SelectedDungeon;
+        return level == null ? "(none)" : level.name;
+    }
+
+    static void ShowDungeonMenu(UnityEngine.Rect rect)
+    {
+        var menu = new UnityEditor.GenericMenu();
+        var selected = DebugDungeonSession.SelectedDungeon;
+        foreach (var level in DebugDungeonSession.DebugDungeons)
+        {
+            if (level == null) continue;
+            var picked = level;
+            menu.AddItem(new UnityEngine.GUIContent(level.name), level == selected, () =>
+            {
+                EditorPrefs.SetString(DebugDungeonSession.SelectedDungeonKey, AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(picked)));
+                MainToolbar.Refresh("LoomRoom/Debug");
+            });
+        }
+        if (menu.GetItemCount() > 0) menu.AddSeparator("");
+        menu.AddItem(new UnityEngine.GUIContent("Edit list (WorldManager)"), false, () =>
+        {
+            if (WorldManager.HasInstance) { Selection.activeObject = WorldManager.Instance; EditorGUIUtility.PingObject(WorldManager.Instance); }
+        });
+        menu.DropDown(rect);
+    }
 
     public static void StartDebug() => Start(DebugDungeonSession.Mode.Arena);
     public static void StartDungeon() => Start(DebugDungeonSession.Mode.Dungeon);

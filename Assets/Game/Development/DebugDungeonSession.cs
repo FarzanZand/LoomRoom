@@ -11,7 +11,7 @@ public class DebugDungeonSession : MonoBehaviour
     public const string RoomRequestKey = "LoomRoom.DebugDungeon.Room";
     public const string SettingsPath = "Assets/Game/Development/Debug Dungeon/Debug Dungeon Settings.asset";
     // Both dungeon modes skip the room (no intro, wake-up or reveal) and save to loomroom-debug.json.
-    // Arena: the authored test arena with the settings' enemies. Dungeon: WorldManager.debugDungeon, generated as in a real run.
+    // Arena: the authored test arena with the settings' enemies. Dungeon: the level picked in the toolbar's dropdown (SelectedDungeon), generated as in a real run.
     public static bool Active { get; private set; }
     public static Mode CurrentMode { get; private set; }
     // The Room button: an ordinary morning in the room with the normal save, nothing played first (ProgressionManager applies it).
@@ -50,11 +50,35 @@ public class DebugDungeonSession : MonoBehaviour
         yield return null; // Let scene managers initialize first.
         var loader = FindAnyObjectByType<TableLevelLoader>();
         if (loader == null) { Debug.LogError("Debug dungeon requires the Room scene."); yield break; }
-        var level = CurrentMode == Mode.Arena ? settings.level : WorldManager.HasInstance ? WorldManager.Instance.debugDungeon : null;
-        if (level == null) { Debug.LogError("Set WorldManager's Debug Dungeon to the level the Dungeon button should play."); yield break; }
+        var level = CurrentMode == Mode.Arena ? settings.level : SelectedDungeon;
+        if (level == null) { Debug.LogError("Add the levels the Dungeon button should play to WorldManager's Debug Dungeons."); yield break; }
         var player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         if (settings != null && settings.startingClass != null) player.GetComponent<AdventurerProgress>().selectedClass = settings.startingClass;
         loader.Load(level);
+    }
+
+    // The level the Dungeon button plays: the one picked in the toolbar's dropdown (remembered per user), else the first
+    // of WorldManager's Debug Dungeons.
+    public const string SelectedDungeonKey = "LoomRoom.DebugDungeon.Selected";
+    public static TableLevelData[] DebugDungeons => WorldManager.HasInstance && WorldManager.Instance.debugDungeons != null ? WorldManager.Instance.debugDungeons : new TableLevelData[0];
+    public static TableLevelData SelectedDungeon
+    {
+        get
+        {
+            TableLevelData first = null;
+#if UNITY_EDITOR
+            string picked = UnityEditor.EditorPrefs.GetString(SelectedDungeonKey, "");
+#endif
+            foreach (var level in DebugDungeons)
+            {
+                if (level == null) continue;
+                if (first == null) first = level;
+#if UNITY_EDITOR
+                if (UnityEditor.AssetDatabase.AssetPathToGUID(UnityEditor.AssetDatabase.GetAssetPath(level)) == picked) return level;
+#endif
+            }
+            return first;
+        }
     }
 
     // Chests to the player's right, 3.5 m out and 2 m apart, facing the player, with the arena biome's loot.

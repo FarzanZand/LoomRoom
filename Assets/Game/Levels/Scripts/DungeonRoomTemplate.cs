@@ -19,6 +19,9 @@ using UnityEngine;
 // level's Starting Room. Grown layouts build the room in its footprint, with this prefab's
 // pivot on the footprint's centre cell. The room may be turned in quarter turns (never
 // mirrored); the prefab turns with it.
+// What happens in a hand-built combat room. Serialized by value: append only.
+public enum DungeonRoomEvent { Rolled = 0, None = 1, Ambush = 2, SleepingPack = 3 }
+
 [ExecuteAlways]
 public class DungeonRoomTemplate : MonoBehaviour
 {
@@ -47,12 +50,37 @@ public class DungeonRoomTemplate : MonoBehaviour
     public bool openCeiling;
     [ShowIf(nameof(openCeiling)), Range(.1f, 2f), Tooltip("Width of the ceiling frame left round the skylight, in world units.")]
     public float ceilingFrame = .35f;
+    [ShowIf(nameof(openCeiling)), Min(0), Tooltip("Open only the cells at most this many steps from the room's centre cell (a moonlit court's opening). 0 opens the whole room.")]
+    public int skylightRadius;
 
     [Title("Contents")]
     [Tooltip("Skip the generator's random props, supply container and features in this room.")]
     public bool replaceGeneratedProps = true;
     [Tooltip("Spawn enemies only at Enemy sockets. Off also rolls the room's normal encounter.")]
     public bool replaceGeneratedEnemies = true;
+    [Tooltip("Combat rooms: Rolled lets the floor roll an ambush or a sleeping pack like any room; Ambush and Sleeping Pack make it one (when the level allows it); None never.")]
+    public DungeonRoomEvent roomEvent;
+
+    // The room features this room is built around (a chasm, a sunken court, an archers' ledge, its light, a shrine):
+    // a floor whose features switch one of them off leaves the room out.
+    public DungeonRoomFeatureMask Requires()
+    {
+        var mask = DungeonRoomFeatureMask.None;
+        foreach (var cut in GetComponentsInChildren<DungeonFloorCut>(true)) mask |= (DungeonRoomFeatureMask)(1 << (int)cut.Feature);
+        foreach (var socket in GetComponentsInChildren<DungeonSocket>(true)) if (socket.archer) mask |= DungeonRoomFeatureMask.ArcherLedge;
+        if (GetComponentInChildren<DungeonShrine>(true) != null) mask |= DungeonRoomFeatureMask.ShrineBargain;
+        foreach (var plate in GetComponentsInChildren<DungeonSpikeTrap>(true)) if (plate.springOnStep) { mask |= DungeonRoomFeatureMask.TrappedTreasure; break; }
+        var mood = GetComponent<DungeonRoomMood>();
+        if (mood != null && mood.kind != DungeonRoomLight.Normal)
+            mask |= mood.kind switch
+            {
+                DungeonRoomLight.Dark => DungeonRoomFeatureMask.Dark,
+                DungeonRoomLight.Candlelit => DungeonRoomFeatureMask.Candlelit,
+                DungeonRoomLight.Moonlit => DungeonRoomFeatureMask.Moonlit,
+                _ => DungeonRoomFeatureMask.Eerie,
+            };
+        return mask;
+    }
 
     [Title("Lighting")]
     [Tooltip("No random wall lights in this room: only the ones placed with Wall Light sockets.")]

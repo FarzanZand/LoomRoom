@@ -10,7 +10,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "LoomRoom/Dungeon Biome", fileName = "Biome")]
 public class DungeonBiome : ScriptableObject
 {
-    const string Look = "Look", Life = "Population", Loot = "Rewards", Boss = "Guardian", Sound = "Audio";
+    const string Look = "Look", RoomsTab = "Rooms", Life = "Population", Loot = "Rewards", Boss = "Guardian", Sound = "Audio";
 
     [TabGroup(Look), InfoBox("Lists in this biome are added to the level's, which every biome shares. Put things all biomes use on the level; put what makes this biome different here.")]
     [TabGroup(Look)] public string displayName = "The Crypt";
@@ -36,6 +36,8 @@ public class DungeonBiome : ScriptableObject
     public Lighting lighting = Lighting.Darkness;
     [TabGroup(Look), Tooltip("Skip the Lighting Manager's dungeon darkness here: the preset's ambient light reaches everywhere, so unlit places stay visible.")]
     public bool litThroughout;
+    [TabGroup(Look), Tooltip("Board-game levels: light the board with this biome's lighting above instead of the room's own light (the level's Room Lighting), so each biome of a board level can look different.")]
+    public bool lightBoard;
     [System.Serializable]
     public class RoomTemplateChoice
     {
@@ -43,11 +45,18 @@ public class DungeonBiome : ScriptableObject
         [Min(0)] public float weight = 1;
         [Tooltip("The kinds of room it may become.")] public DungeonRoomRoles rooms = DungeonRoomRoles.Combat | DungeonRoomRoles.Treasure | DungeonRoomRoles.Rest | DungeonRoomRoles.Storage;
         [Min(1), Tooltip("First floor of this biome it can appear on.")] public int fromFloor = 1;
+        [Min(0), Tooltip("Most copies of this room on one floor (0: no limit).")] public int maxPerFloor = 2;
     }
-    [TabGroup(Look), Tooltip("Hand-built rooms (chunks) this biome's floors are made of: each room of a suitable kind is built from one of these by chance (Template Chance), the rest are generated. A room profile's own template comes first.")]
+    [TabGroup(RoomsTab), Tooltip("Hand-built rooms (chunks) this biome's floors are made of: each room of a suitable kind is built from one of these by chance (Template Chance), the rest are generated. A room profile's own template comes first.")]
     public RoomTemplateChoice[] roomTemplates = new RoomTemplateChoice[0];
-    [TabGroup(Look), Range(0f, 1f), Tooltip("Share of the rooms that get a hand-built room from the list above (when one suits them).")]
+    [TabGroup(RoomsTab), Range(0f, 1f), Tooltip("Share of the rooms that get a hand-built room from the list above (when one suits them).")]
     public float templateChance = .7f;
+    [TabGroup(RoomsTab), Tooltip("Use the room features below on this biome's floors instead of the level's (TableLevelData > Rooms > Room Features).")]
+    public bool overrideDungeonSettings;
+    [TabGroup(RoomsTab), ShowIf(nameof(overrideDungeonSettings)), InlineProperty, HideLabel]
+    public DungeonRoomFeatures roomFeatures = new();
+    // The room features of this biome's floors: its own when it overrides the level's.
+    public DungeonRoomFeatures RoomFeatures(TableLevelData level) => overrideDungeonSettings || level == null ? roomFeatures : level.roomFeatures;
     [TabGroup(Look), Min(0f), Tooltip("Metres of full ambient light around the player here (LightingManager's light radius); 0 uses the manager's.")]
     public float lightRadius;
     [TabGroup(Look), Tooltip("Colour split (ScreenManager): shadows and ambient lean to this (cool).")]

@@ -2,9 +2,17 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// The Pixel Look: every world material paired with a LoomRoom/Pixel Lit copy, plus the camera
-// settings used while the look is on. ScreenManager.pixelLook switches between the two; the
-// original materials are never modified. Build and refresh the pairs with Tools > LoomRoom > Pixel Look.
+// Which kind of thing a material is drawn on (Build Materials sorts the pairs by it).
+public enum PixelLookCategory
+{
+    Architecture = 0, // walls, floors, ceilings, dungeon tiles
+    Prop         = 1, // furniture, decor, loot, anything else
+    Character    = 2, // decided per renderer: anything under a Character or skinned
+}
+
+// Pixel lighting: the game's materials listed with their own shader, switched in place to LoomRoom/Pixel Lit
+// (ScreenManager > Pixel lighting), with each world's texel size and brightness. Also the older material pairs (a
+// Pixel Lit copy per material, Tools > LoomRoom > Pixel Look > Build Materials).
 [CreateAssetMenu(menuName = "LoomRoom/Pixel Look Library")]
 public class PixelLookLibrary : ScriptableObject
 {
@@ -13,45 +21,9 @@ public class PixelLookLibrary : ScriptableObject
     {
         public Material original;
         public Material pixel;
-        [Tooltip("Which Pixel Look toggle switches this material. Renderers under a Character or skinned are always Character.")]
+        [Tooltip("What kind of thing the material is drawn on.")]
         public PixelLookCategory category = PixelLookCategory.Prop;
     }
-
-    [FoldoutGroup("Low Res camera"), LabelText("Room effects")]
-    [Tooltip("Room player's screen effects with the Low Res camera. Pixel Lines here is a real render resolution, not a filter.")]
-    public ScreenEffectSettings roomEffects = new()
-    {
-        ambientOcclusion = false,
-        pixelate = true, pixelLines = 270,
-        colorBanding = false, colorLevels = 48, dither = 1f,
-        vignette = true, vignetteIntensity = .3f, vignetteSmoothness = .5f, vignetteColor = Color.black,
-        colorGrading = true, contrast = 12f, saturation = 5f, colorFilter = Color.white, postExposure = .35f,
-    };
-    [FoldoutGroup("Low Res camera"), LabelText("Table effects"), Tooltip("Table player's screen effects with the Low Res camera.")]
-    public ScreenEffectSettings tableEffects = new()
-    {
-        ambientOcclusion = false,
-        pixelate = true, pixelLines = 270,
-        colorBanding = true, colorLevels = 48, dither = 1f,
-        vignette = true, vignetteIntensity = .3f, vignetteSmoothness = .5f, vignetteColor = Color.black,
-        colorGrading = true, contrast = 12f, saturation = 5f, colorFilter = Color.white, postExposure = 0f,
-    };
-
-    [FoldoutGroup("Clean camera"), LabelText("Room effects")]
-    [Tooltip("Room player's screen effects with the Clean camera: native resolution, no anti-aliasing. Pixelate here is the old block filter.")]
-    public ScreenEffectSettings cleanRoomEffects = new()
-    {
-        ambientOcclusion = false,
-        vignette = true, vignetteIntensity = .3f, vignetteSmoothness = .5f, vignetteColor = Color.black,
-        colorGrading = true, contrast = 10f, saturation = 0f, colorFilter = Color.white, postExposure = .3f,
-    };
-    [FoldoutGroup("Clean camera"), LabelText("Table effects"), Tooltip("Table player's screen effects with the Clean camera.")]
-    public ScreenEffectSettings cleanTableEffects = new()
-    {
-        ambientOcclusion = false,
-        vignette = true, vignetteIntensity = .3f, vignetteSmoothness = .5f, vignetteColor = Color.black,
-        colorGrading = true, contrast = 10f, saturation = 0f, colorFilter = Color.white, postExposure = 0f,
-    };
 
     [Header("Texels")]
     [Tooltip("Pixel Lit materials give texels per metre at dungeon scale (1 unit = 1 m). The room is built about 22 units to the metre, so its world units get this many metres each. Lower = chunkier texels.")]
@@ -60,7 +32,7 @@ public class PixelLookLibrary : ScriptableObject
     public float tableTexelScale = 1f;
 
     [Header("Brightness")]
-    [Range(.1f, 3f), Tooltip("Multiplies all light on Pixel Lit materials while the Room player is active, on every camera mode. 1 = as lit; 1.2 = 20% lighter. Live in Play mode.")]
+    [Range(.1f, 3f), Tooltip("Multiplies all light on Pixel Lit materials while the Room player is active. 1 = as lit; 1.2 = 20% lighter. Live in Play mode.")]
     public float roomBrightness = 1.2f;
     [Range(.1f, 3f), Tooltip("Same for the Table player (dungeons and town).")]
     public float tableBrightness = 1f;

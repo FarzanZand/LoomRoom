@@ -42,8 +42,18 @@ public class WorldManager : Singleton<WorldManager>
     public HeadBobSettings headBob = new();
 
     [Header("Testing")]
-    [Tooltip("The level the editor's Dungeon button generates and plays straight away, skipping the room.")]
-    public TableLevelData debugDungeon;
+    [Tooltip("Levels the editor toolbar's dungeon dropdown offers. The Dungeon button generates the one picked there and plays it straight away, skipping the room.")]
+    public TableLevelData[] debugDungeons = new TableLevelData[0];
+    // The list's first entry before it was a list; moved into the list when the scene is next validated.
+    [SerializeField, HideInInspector] TableLevelData debugDungeon;
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        if (debugDungeon == null) return;
+        if (debugDungeons == null || debugDungeons.Length == 0) debugDungeons = new[] { debugDungeon };
+        debugDungeon = null;
+    }
+#endif
 
     protected override void Awake()
     {

@@ -20,6 +20,9 @@ public class DungeonSocket : MonoBehaviour
     [Range(0, 1)] public float chance = 1f;
     [AssetsOnly, Tooltip("Spawn this instead of the pool's pick.")]
     public GameObject overridePrefab;
+    bool IsEnemy => type == DungeonSocketType.Enemy;
+    [ShowIf(nameof(IsEnemy)), Tooltip("An archer from the biome's enemies (a ledge or gallery). Rooms with one are left out when the level switches Archer Ledges off.")]
+    public bool archer;
     bool IsLight => type == DungeonSocketType.WallLight;
     bool ShowLightColor => IsLight && overrideLightColor;
     [ShowIf(nameof(IsLight)), Tooltip("Recolour this light, over the room's and the biome's colours.")]

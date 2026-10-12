@@ -208,6 +208,8 @@ public class TableLevelData : ScriptableObject
     public float boardVerticality = 1f;
     [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Tooltip("Soft taps played as tiles land when a room is revealed (Tools/board_tap.py makes them).")]
     public AudioClip[] boardTileTaps = new AudioClip[0];
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Tooltip("Show the whole board from the start, like a walled dungeon, instead of dealing in the rooms behind each door as it opens.")]
+    public bool boardRevealAll;
 
     // ── Architecture ──────────────────────────────────────────────────
     [TabGroup(Tabs, Architecture), ShowIf(D), Min(3), Tooltip("Physical width and height of one square texture tile. 32x32 artwork repeats every 3 units by default. Independent of layout grid spacing so changing art scale does not enlarge the table footprint.")]
@@ -237,26 +239,29 @@ public class TableLevelData : ScriptableObject
     [TabGroup(Tabs, Architecture), ShowIf(D), EnableIf(nameof(hideEdges)), Range(.1f, 1f), Tooltip("Wall kept at each end of a run of windows, in world units.")]
     public float windowJamb = .45f;
 
-    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Default materials", "Used where no biome, style or profile overrides them.", HorizontalLine = false)]
-    public Material floorMaterial;
-    [TabGroup(Tabs, Architecture), ShowIf(D), LabelText("Bottom Wall Material"), Tooltip("First wall tile, from floor to one architecture tile high. Room styles may override this.")]
-    public Material wallMaterial;
-    [TabGroup(Tabs, Architecture), ShowIf(D), Tooltip("Wall tiles above the first. Empty uses Bottom Wall Material. Room styles may override this.")]
-    public Material upperWallMaterial;
-    [TabGroup(Tabs, Architecture), ShowIf(D)]
-    public Material trimMaterial, ceilingMaterial;
-    [TabGroup(Tabs, Architecture), ShowIf(D), Tooltip("Procedural chests and barrels only.")]
-    public Material woodMaterial, metalMaterial;
-    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Styles", "Shared by every biome. A biome's own styles are added to these.", HorizontalLine = false), Tooltip("Weighted styles selected once per whole room. Empty or disabled entries use the level materials.")]
+    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Default style", HorizontalLine = false), LabelText("Style"), InlineEditor(InlineEditorObjectFieldModes.Foldout)]
+    [Tooltip("The fallback. Rooms and corridors no style is picked for use this style; other styles take any material they leave empty from it. Its Wood and Metal make the exit hatch and gate.")]
+    public DungeonRoomStyle defaultStyle;
+    // The default style's materials (null without one).
+    public Material floorMaterial => defaultStyle != null ? defaultStyle.floor : null;
+    public Material wallMaterial => defaultStyle != null ? defaultStyle.bottomWall : null;
+    public Material upperWallMaterial => defaultStyle != null ? defaultStyle.upperWall : null;
+    public Material trimMaterial => defaultStyle != null ? defaultStyle.trim : null;
+    public Material ceilingMaterial => defaultStyle != null ? defaultStyle.ceiling : null;
+    public Material woodMaterial => defaultStyle != null ? defaultStyle.wood : null;
+    public Material metalMaterial => defaultStyle != null ? defaultStyle.metal : null;
+    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Styles", "Shared by every biome. A biome's own styles are added to these.", HorizontalLine = false), Tooltip("Weighted styles selected once per whole room. Empty or disabled entries use the Default Style.")]
     public DungeonStyleChoice[] roomStyles = new DungeonStyleChoice[0];
-    [TabGroup(Tabs, Architecture), ShowIf(D), Tooltip("Copy a connected room's complete style without crossing a planned doorway. Search through open corridors if needed. If no room is reachable without crossing a door, use level defaults. Selection is seeded; opening doors does not change styles.")]
+    [TabGroup(Tabs, Architecture), ShowIf(D), Tooltip("Copy a connected room's complete style without crossing a planned doorway. Search through open corridors if needed. If no room is reachable without crossing a door, use the Default Style. Selection is seeded; opening doors does not change styles.")]
     public bool corridorsCopyConnectedRoomStyle;
-    [TabGroup(Tabs, Architecture), ShowIf(D), HideIf(nameof(corridorsCopyConnectedRoomStyle)), Tooltip("Weighted styles selected once per whole corridor section. Expand Style to edit its materials. Empty uses the level materials.")]
+    [TabGroup(Tabs, Architecture), ShowIf(D), HideIf(nameof(corridorsCopyConnectedRoomStyle)), Tooltip("Weighted styles selected once per whole corridor section. Expand Style to edit its materials. Empty uses the Default Style.")]
     public DungeonStyleChoice[] corridorStyles = new DungeonStyleChoice[0];
 
     // ── Rooms ─────────────────────────────────────────────────────────
-    [TabGroup(Tabs, Rooms), ShowIf(D), InfoBox("Everything here is shared by every biome. A biome adds its own props, furnishing, breakables and features on top; a room profile replaces them for its rooms."), Tooltip("Weighted variations for each room role, with optional enemies, rewards, props, lighting and a hand-built Room Template.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), InfoBox("Everything here is shared by every biome. A biome adds its own props, furnishing, breakables and features on top. Hand-built rooms are picked from each biome's Room Templates.")]
+    [ShowIf(nameof(HasRoomProfiles)), Tooltip("Old: weighted variations per room role. Hand-built rooms now come from each biome's Room Templates; only shown while a level still lists one.")]
     public DungeonRoomProfile[] roomProfiles;
+    bool HasRoomProfiles => roomProfiles != null && roomProfiles.Length > 0;
     [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Props"), Tooltip("Designer-authored decorations. Must fit inside one cell and leave walkways clear. Shared by every biome; a biome's props add to them, a room profile's replace them.")]
     public GameObject[] roomPropPrefabs;
     [TabGroup(Tabs, Rooms), ShowIf(D), Title("Torches", "The only lights in the dungeon besides the player's own.", HorizontalLine = false), LabelText("Lighting Prefabs")]
@@ -276,6 +281,20 @@ public class TableLevelData : ScriptableObject
     public DungeonWeightedPrefab[] chestTiers = new DungeonWeightedPrefab[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Hand-built rooms use the kit's painted models (pillars, arches, rubble, railings) where a piece has one. Off: every kit piece is built of plain blocks in the room's own stone.")]
     public bool kitModels = true;
+    [TabGroup(Tabs, Rooms), ShowIf(D), Min(0f), Tooltip("Metres of solid stone under a walled dungeon's floor: the floor stands this far above the table, and pits and sunken courts are cut into it (deeper than this they would show the table). 0 lays the floor straight on the table. Board levels ignore it.")]
+    public float floorBase = 4.5f;
+    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Room features", "Room events, heights and room light on every floor. A biome can replace them (its Rooms tab: Override Dungeon Settings).", HorizontalLine = false), InlineProperty, HideLabel]
+    public DungeonRoomFeatures roomFeatures = new();
+    [TabGroup(Tabs, Rooms), ShowIf(D), Title("Room event pieces", HorizontalLine = false), AssetsOnly, Tooltip("The shrine set in quiet rooms (DungeonShrine).")]
+    public GameObject shrinePrefab;
+    [TabGroup(Tabs, Rooms), ShowIf(D), AssetsOnly, Tooltip("A spike plate (DungeonSpikeTrap), laid around trapped chests.")]
+    public GameObject spikeTrapPrefab;
+    [TabGroup(Tabs, Rooms), ShowIf(D), AssetsOnly, Tooltip("An ambush gate: its first child is the bars, raised to local y 0 and lowered under the floor.")]
+    public GameObject ambushGatePrefab;
+    [TabGroup(Tabs, Rooms), ShowIf(D), AssetsOnly, Tooltip("The puff an ambusher (and the reward chest) comes out of.")]
+    public GameObject ambushSpawnPuff;
+    [TabGroup(Tabs, Rooms), ShowIf(D)] public AudioClip ambushSlamAudio, ambushLiftAudio, ambushSpawnAudio;
+    [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Now and then from a sleeping enemy.")] public AudioClip sleepAudio;
     [TabGroup(Tabs, Rooms), ShowIf(D), Title("Container sounds", HorizontalLine = false), LabelText("Barrel Break")]
     public AudioClip containerBreakAudio;
     [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Chest Open")]
@@ -350,6 +369,9 @@ public class TableLevelData : ScriptableObject
 
     // A board lies under the room's own light: the room as it is now, with this level's Room Lighting and tint.
     public LightingManager.MoodState BoardLighting(LightingManager lighting) => lighting.RoomLook(roomLighting, roomTint);
+    // The light a board floor gets: the room's own light, or its biome's lighting when the biome asks (lightBoard).
+    public LightingManager.MoodState BoardLighting(LightingManager lighting, int floorNumber) =>
+        Biome(floorNumber) is { lightBoard: true } ? DungeonLighting(floorNumber) : BoardLighting(lighting);
 
     LightingManager.MoodState DungeonLightingPreset(int floorNumber)
     {

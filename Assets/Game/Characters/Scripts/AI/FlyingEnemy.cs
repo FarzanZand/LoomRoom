@@ -15,18 +15,23 @@ public class FlyingEnemy : MonoBehaviour
     [SerializeField, Range(.2f, 1.5f), Tooltip("Speed while pulling back, against its chase speed.")] float retreatSpeed = .9f;
     [SerializeField, Tooltip("Metres per second the height changes (diving is twice as fast).")] float climbSpeed = 2.4f;
 
+    // Asleep (a sleeping pack) it hangs upside down this high, under the ceiling; set by EnemySleep.
+    public float RoostHeight { get; set; } = 2.6f;
+
     EnemyBrain brain;
     Character character;
     Transform model;
     CapsuleCollider body;
     float colliderOffset, height, retreatUntil, side = 1f, phase;
     bool wasSwinging;
+    Quaternion modelRotation = Quaternion.identity;
 
     void Awake()
     {
         brain = GetComponent<EnemyBrain>();
         character = GetComponent<Character>();
         model = transform.Find("Model");
+        if (model != null) modelRotation = model.localRotation;
         body = GetComponent<CapsuleCollider>();
         if (body != null) colliderOffset = body.center.y - designHeight;
         height = cruiseHeight;
@@ -79,10 +84,18 @@ public class FlyingEnemy : MonoBehaviour
         if (wasSwinging && !swinging) PullBack();
         wasSwinging = swinging;
 
-        float wanted = swinging ? diveHeight : cruiseHeight + Mathf.Sin(Time.time * 1.7f + phase) * bob;
+        bool roosting = brain.Asleep;
+        float wanted = roosting ? RoostHeight : swinging ? diveHeight : cruiseHeight + Mathf.Sin(Time.time * 1.7f + phase) * bob;
         float rate = swinging ? climbSpeed * 2f : climbSpeed;
         height = Mathf.MoveTowards(height, wanted, rate * Time.deltaTime);
-        if (model != null) { var p = model.localPosition; p.y = height - designHeight; model.localPosition = p; }
+        if (roosting) height = wanted;
+        if (model != null)
+        {
+            var p = model.localPosition; p.y = height - designHeight; model.localPosition = p;
+            // Hanging by its feet while it sleeps: turned over about its long axis (the hover's height is at its middle).
+            var to = roosting ? modelRotation * Quaternion.Euler(0f, 0f, 180f) : modelRotation;
+            model.localRotation = Quaternion.RotateTowards(model.localRotation, to, 540f * Time.deltaTime);
+        }
         if (body != null) { var c = body.center; c.y = height + colliderOffset; body.center = c; }
     }
 }

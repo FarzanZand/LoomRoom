@@ -159,8 +159,22 @@ public static partial class PixelRestyle
         var existing = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
         if (existing != null) { EditorUtility.CopySerialized(mesh, existing); Object.DestroyImmediate(mesh); mesh = existing; }
         else AssetDatabase.CreateAsset(mesh, meshPath);
+        MarkReadable(mesh);
         AssetDatabase.SaveAssets();
         return (mesh, material);
+    }
+
+    // Restyled meshes stay readable (Synty's sources aren't): mesh colliders on props feed the NavMesh built when a floor
+    // is generated, which in a build can only read readable meshes.
+    public static void MarkReadable(Mesh mesh)
+    {
+        if (mesh == null || mesh.isReadable) return;
+        var so = new SerializedObject(mesh);
+        var p = so.FindProperty("m_IsReadable");
+        if (p == null) return;
+        p.boolValue = true;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(mesh);
     }
 
     // Whether a restyle mesh was made from this source: same bind poses (skinned) or the same bounds (static).

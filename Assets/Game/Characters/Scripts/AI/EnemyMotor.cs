@@ -271,6 +271,9 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
 
     // Set by the brain while swinging: the player's hits never push an attacking enemy around.
     public bool SuppressKnockback { get; set; }
+    // Sliding from a hit right now (a pit edge reads it to tip the enemy over).
+    public bool IsKnockedBack => knockbackTimer > 0f;
+    public Vector3 KnockbackVelocity => knockbackVelocity;
 
     // A knockback is only a push: the agent keeps its path and the brain keeps deciding (and attacking)
     // while the enemy slides, so a hit jolts it without stopping it.

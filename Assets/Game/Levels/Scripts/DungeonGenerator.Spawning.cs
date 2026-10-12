@@ -40,12 +40,21 @@ public partial class DungeonGenerator
         var rng = new System.Random(unchecked(seed + 130363));
         data.BiomeAt(FloorNumber, out int floorInBiome, out _);
         var used = new System.Collections.Generic.Dictionary<GameObject, int>();
+        // Rooms built around a feature this floor switches off (a chasm, a shrine, candlelight) are left out.
+        var features = RoomFeatures;
+        var allowed = new System.Collections.Generic.Dictionary<GameObject, bool>();
+        bool Allowed(GameObject t)
+        {
+            if (!allowed.TryGetValue(t, out bool ok)) { var tpl = t.GetComponent<DungeonRoomTemplate>(); allowed[t] = ok = tpl == null || features.AllowsAll(tpl.Requires()); }
+            return ok;
+        }
         for (int i = 0; i < roles.Length; i++)
         {
             double roll = rng.NextDouble();
             if ((i == 0 && UsesStartingRoom) || (chosen[i] != null && chosen[i].roomTemplate != null) || roll >= Biome.templateChance) continue;
             var role = Mask(roles[i]);
-            var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor
+            var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor && Allowed(c.template)
+                && (c.maxPerFloor <= 0 || !used.TryGetValue(c.template, out var had) || had < c.maxPerFloor)
                 ? c.weight / (1f + 2f * (used.TryGetValue(c.template, out var n) ? n : 0)) : 0, rng);
             if (pick == null) continue;
             pool[i] = pick.template;
@@ -109,6 +118,13 @@ public partial class DungeonGenerator
             if(!Layout.InRoom(index,cell) || (piece.removeIfBlocking && lanes.Contains(cell)))
                 DestroyImmediate(piece.gameObject); // navigation is baked this frame
         }
+        // Pits and sunken courts take their floor out first.
+        BuildCuts(instance,index);
+        // The floor's damage and prices on the room's own traps, shrines and pits (DungeonRoomFeatures).
+        var features=RoomFeatures;
+        foreach(var plate in instance.GetComponentsInChildren<DungeonSpikeTrap>(true))plate.playerDamage=features.spikeDamage;
+        foreach(var shrine in instance.GetComponentsInChildren<DungeonShrine>(true))shrine.bloodPrice=features.shrinePrice;
+        foreach(var cut in instance.GetComponentsInChildren<DungeonFloorCut>(true))cut.fallDamage=features.pitFallDamage;
         // Kit blocks (pillars, platforms, steps, niches) become boxes of this room's own stone, before the NavMesh bake.
         var centre=Layout.RoomCenter(index);
         foreach(var piece in instance.GetComponentsInChildren<DungeonKitPiece>(true))
@@ -117,6 +133,17 @@ public partial class DungeonGenerator
             if(block!=null)block.Build(RegionStyles!=null && index<RegionStyles.Length ? RegionStyles[index] : null,data,HeightAt(centre.x,centre.y),Cell(centre).y);
         var rewards=profiles[index]!=null ? profiles[index].rewards : null;
         StockPlacedLoot(instance,rewards);
+        // A chest set down by hand with its own trap stays trapped (while the floor allows traps); others may be trapped.
+        foreach(var chest in instance.GetComponentsInChildren<DungeonContainer>(true))
+        {
+            var own=chest.GetComponent<DungeonChestTrap>();
+            if(own!=null && own.traps.Count>0)
+            {
+                if(!RoomFeatures.trappedTreasure){foreach(var plate in own.traps)if(plate!=null)DestroyImmediate(plate.gameObject);own.traps.Clear();}
+                continue;
+            }
+            MaybeTrap(chest);
+        }
         foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))
         {
             if(!Layout.InRoom(index,CellOf(socket.transform.position)))continue;
@@ -124,7 +151,7 @@ public partial class DungeonGenerator
             var t=socket.transform;
             switch(socket.type)
             {
-                case DungeonSocketType.Chest: MakeContainer(t.position,true,rewards,t.rotation); break;
+                case DungeonSocketType.Chest: MaybeTrap(MakeContainer(t.position,true,rewards,t.rotation)); break;
                 case DungeonSocketType.Breakable:
                 {
                     var prefab=socket.overridePrefab!=null ? socket.overridePrefab : DungeonWeightedPrefab.Choose(Destructibles,extraRandom);
@@ -159,6 +186,7 @@ public partial class DungeonGenerator
                 taken.Add(CellOf(new Vector3(b.max.x-.05f,0,b.max.z-.05f)));
             }
             foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))if(socket!=null)taken.Add(CellOf(socket.transform.position));
+            taken.UnionWith(cutCells);
             var available=new System.Collections.Generic.List<Vector2Int>();
             foreach(var p in Layout.RoomCells(index))if(!lanes.Contains(p) && !Layout.Reserved.Contains(p) && !taken.Contains(p))available.Add(p);
             PlaceExtras(index,available,0,rewards);
@@ -345,7 +373,11 @@ public partial class DungeonGenerator
     public Character SpawnAmbusher(GameObject prefab,Vector3 pos,Quaternion rotation)
     {
         if(!NavMesh.SamplePosition(pos,out var hit,2f,NavMesh.AllAreas))return null;
-        return SetUpEnemy(Instantiate(prefab,hit.position,rotation,transform),new System.Random(unchecked((int)(pos.x*73856093)^(int)(pos.z*19349663))));
+        var go=Instantiate(prefab,hit.position,rotation,transform);
+        // Mid-floor the NavMesh may be re-carving (an ambush's gates coming down): put the agent on it if it missed.
+        var agent=go.GetComponent<NavMeshAgent>();
+        if(agent!=null && agent.enabled && !agent.isOnNavMesh)agent.Warp(hit.position);
+        return SetUpEnemy(go,new System.Random(unchecked((int)(pos.x*73856093)^(int)(pos.z*19349663))));
     }
 
     Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null)
@@ -372,8 +404,15 @@ public partial class DungeonGenerator
                 {
                     case DungeonSocketType.Enemy:
                     {
-                        var prefab=socket.overridePrefab!=null ? socket.overridePrefab : ChooseEnemy(room,extraRandom);
-                        SpawnEnemyAt(prefab,t.position,t.rotation,profiles[room]!=null ? profiles[room].rewards : null);
+                        var prefab=socket.overridePrefab!=null ? socket.overridePrefab : socket.archer ? ChooseArcher(room,extraRandom) : ChooseEnemy(room,extraRandom);
+                        // An ambush room starts empty: its sockets are where the waves come from.
+                        if(EventOf(room)==RoomEvent.Ambush)
+                        {
+                            if(!ambushPoints.TryGetValue(room,out var points))ambushPoints[room]=points=new();
+                            points.Add(t.position);
+                            break;
+                        }
+                        JoinPack(room,SpawnEnemyAt(prefab,t.position,t.rotation,profiles[room]!=null ? profiles[room].rewards : null));
                         break;
                     }
                     case DungeonSocketType.Boss:

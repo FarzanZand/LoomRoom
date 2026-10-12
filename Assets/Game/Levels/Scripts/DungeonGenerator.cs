@@ -142,13 +142,15 @@ public partial class DungeonGenerator : MonoBehaviour
         var watch=System.Diagnostics.Stopwatch.StartNew();
         FloorNumber=floorNumber;
         data = level; random = new System.Random(seed);
+        // A walled floor stands on its stone base (TableLevelData.floorBase), so holes cut into it never show the table.
+        if (level.floorBase > 0f && level.kind != TableLevelKind.Boardgame) transform.position += Vector3.up * level.floorBase;
         // Hashed: System.Random's first values follow evenly spaced seeds almost linearly, so floor
         // seeds (runSeed + floor * step) made the merchant roll march in lockstep through a run.
         extraRandom = new System.Random(Scramble(unchecked(seed + 60013)));
         Biome = level.BiomeAt(floorNumber, out int floorInBiome, out int biomeFloors);
         FloorInBiome = floorInBiome; BiomeFloors = biomeFloors;
         Milestone = level.Milestone(floorNumber);
-        actorSockets.Clear(); featureCounts.Clear(); MerchantRoom = -1;
+        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); MerchantRoom = -1;
         BeginDressing(seed);
         System.Collections.Generic.List<(Vector2Int, Vector2Int)> authoredDoors = null;
         if (level.layoutMode == DungeonLayoutMode.Authored)
@@ -241,6 +243,7 @@ public partial class DungeonGenerator : MonoBehaviour
             if (profiles[i] != null && profiles[i].styleOverride != null) RegionStyles[i] = profiles[i].styleOverride;
         for (int i=0;i<profiles.Length;i++) { var t = TemplateOf(i); if (t != null && t.style != null) RegionStyles[i] = t.style; }
         if (level.corridorsCopyConnectedRoomStyle) CopyConnectedRoomStyles(seed);
+        for (int i = 0; i < RegionStyles.Length; i++) if (RegionStyles[i] == null) RegionStyles[i] = level.defaultStyle;
         var openRoofs = Layout.SelectOpenRegions(level.hideRoof ? level.hideRoofPercent : 0, 173);
         var openEdges = Layout.SelectOpenRegions(level.hideEdges ? level.hideEdgesPercent : 0, 419);
         // A room template can open its own ceiling (the starting room's way in), with its own frame.
@@ -251,7 +254,16 @@ public partial class DungeonGenerator : MonoBehaviour
             if (t != null && t.openCeiling) openRoofs[i] = true;
             frames[i] = t != null && t.openCeiling ? t.ceilingFrame : level.skylightFrame;
         }
-        bool RoofOpen(Vector2Int c) => Open(c) && openRoofs[Layout.RegionIds[c.x, c.y]];
+        // A template's skylight radius keeps the ceiling over the cells further from its centre.
+        bool InSkylight(Vector2Int c)
+        {
+            int r = Layout.RegionIds[c.x, c.y];
+            var t = r < Layout.rooms.Count ? TemplateOf(r) : null;
+            if (t == null || !t.openCeiling || t.skylightRadius <= 0) return true;
+            var d = c - Layout.RoomCenter(r);
+            return Mathf.Abs(d.x) <= t.skylightRadius && Mathf.Abs(d.y) <= t.skylightRadius;
+        }
+        bool RoofOpen(Vector2Int c) => Open(c) && openRoofs[Layout.RegionIds[c.x, c.y]] && InSkylight(c);
         SpawnRoofOpen = RoofOpen(Layout.Start);
         bool WindowAt(Vector2Int c, Vector2Int d) => Open(c) && openEdges[Layout.RegionIds[c.x, c.y]] && !Open(c + d) && Layout.FacesOutside(c, d);
         if (Board) { ComputeBoardElevations(seed); BeginBoard(); }
@@ -267,7 +279,8 @@ public partial class DungeonGenerator : MonoBehaviour
             var style = RegionStyles[room];
             float height = HeightAt(x,z);
             var pos = Cell(new Vector2Int(x,z));
-            ArchitectureBox("Flagstone", pos - Vector3.up*.12f, new Vector3(size,.24f,size), FloorMaterial(room, x, z), geometry);
+            float slab = .24f + data.floorBase;   // down through the floor's stone base
+            ArchitectureBox("Flagstone", pos - Vector3.up*slab*.5f, new Vector3(size,slab,size), FloorMaterial(room, x, z), geometry);
             // A taller neighbor's upper wall occupies a strip inside this cell. End the
             // ceiling just inside that wall's back. Ending exactly on the back face
             // makes the ceiling's vertical edge coplanar with the upper masonry.
@@ -282,7 +295,7 @@ public partial class DungeonGenerator : MonoBehaviour
             var roofCenter = pos + new Vector3((left-right)*.5f, height+.12f, (back-front)*.5f);
             var roofSize = new Vector3(size-left-right, .24f, size-back-front);
             var ceilingMaterial = DungeonRoomStyle.Resolve(style != null ? style.ceiling : null, level.ceilingMaterial);
-            if (!openRoofs[room]) ArchitectureBox("Ceiling", roofCenter, roofSize, ceilingMaterial, ceiling);
+            if (!RoofOpen(new Vector2Int(x, z))) ArchitectureBox("Ceiling", roofCenter, roofSize, ceilingMaterial, ceiling);
             else Skylight(new Vector2Int(x, z), roofCenter, roofSize, frames[room], ceilingMaterial,
                 DungeonRoomStyle.Resolve(style != null ? style.trim : null, level.trimMaterial), RoofOpen);
             foreach (var dir in dirs)
@@ -324,9 +337,11 @@ public partial class DungeonGenerator : MonoBehaviour
             }
         }
         ChooseTemplates();
+        ChooseRoomEvents();
         for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(i);
         DecorateWalls();
         PlaceTorches();
+        ApplyRoomLights();
         DressCorridors();
         StockDeadEnds();
         if (Board) BuildBoardRim();
@@ -371,6 +386,7 @@ public partial class DungeonGenerator : MonoBehaviour
             int count=guarded ? 1 : random.Next(MinEnemiesPerRoom,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
             if(templates[i]!=null && templates[i].replaceGeneratedEnemies)count=0;
             if(i==MerchantRoom)count=0;
+            if(EventOf(i)==RoomEvent.Ambush)count=0;
             for(int j=0;j<count;j++)
             {
                 var prefab = ChooseEnemy(i, random);
@@ -380,10 +396,11 @@ public partial class DungeonGenerator : MonoBehaviour
                 // before giving up, so a combat room never ends up empty by accident.
                 if (!NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas) && !FindRoomFloor(i,random,out hit)) continue;
                 var enemy = Instantiate(prefab,hit.position,Quaternion.Euler(0,random.Next(360),0),transform);
-                SetUpEnemy(enemy,random,profiles[i]!=null ? profiles[i].rewards : null);
+                JoinPack(i,SetUpEnemy(enemy,random,profiles[i]!=null ? profiles[i].rewards : null));
             }
         }
         SpawnSocketActors(exitStair);
+        FinishRoomEvents();
         gameObject.AddComponent<DungeonAmbience>().Initialize(Biome);
         gameObject.AddComponent<DungeonHud>().Initialize(this);
         if (Board) gameObject.AddComponent<BoardReveal>().Initialize(this);
@@ -537,10 +554,17 @@ public partial class DungeonGenerator : MonoBehaviour
         var available=new System.Collections.Generic.List<Vector2Int>();
         foreach(var p in Layout.RoomCells(index))if(!Layout.Reserved.Contains(p))available.Add(p);
         for(int i=available.Count-1;i>0;i--){int j=random.Next(i+1);(available[i],available[j])=(available[j],available[i]);}
+        PlaceShrine(index,available);
         int cursor=0;
         bool Spot(out Vector3 pos) {pos=default;if(cursor>=available.Count)return false;pos=Cell(available[cursor++]);return true;}
         // An authored map places its own loot.
-        if(!Authored && Spot(out var supply))MakeContainer(supply,Roles[index]==RoomRole.Treasure,rewards,FaceCenter(supply,index));
+        if(!Authored && Spot(out var supply))
+            // A trapped chest's spike plates take the cells around it: later props keep off them.
+            foreach(var plate in MaybeTrap(MakeContainer(supply,Roles[index]==RoomRole.Treasure,rewards,FaceCenter(supply,index))))
+            {
+                int at=available.IndexOf(plate);
+                if(at>=cursor)available.RemoveAt(at);
+            }
         if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,rewards,FaceCenter(extra,index));
         var (rules,prefabs)=Furnishing(profile);
         if(rules!=null)
@@ -585,12 +609,12 @@ public partial class DungeonGenerator : MonoBehaviour
 
     // A breakable's pick and turn come from the extra stream, but its loot seed (like a chest's or a
     // barrel's) from the main one: one main draw per supply spot, whatever stands there.
-    void MakeContainer(Vector3 pos,bool chest,LootSource rewardOverride=null,Quaternion? facing=null)
+    DungeonContainer MakeContainer(Vector3 pos,bool chest,LootSource rewardOverride=null,Quaternion? facing=null)
     {
         if(!chest)
         {
             var breakable=DungeonWeightedPrefab.Choose(Destructibles,extraRandom,IsFloorBreakable);
-            if(breakable!=null){SpawnDestructible(breakable,pos,Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewardOverride,random.Next());return;}
+            if(breakable!=null){SpawnDestructible(breakable,pos,Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewardOverride,random.Next());return null;}
         }
         var chestPrefab=chest ? DungeonWeightedPrefab.Choose(data.chestTiers,extraRandom) ?? data.chestPrefab : null;
         bool authoredChest=chest && chestPrefab!=null;
@@ -627,6 +651,7 @@ public partial class DungeonGenerator : MonoBehaviour
             var col=go.AddComponent<BoxCollider>(); col.center=Vector3.up*.5f; col.size=new Vector3(1.4f,1,.9f);
             go.AddComponent<InteractableTrigger>();
         }
+        return container;
     }
 
     public void ShowCeilings(bool value) { if(ceiling!=null) ceiling.gameObject.SetActive(value); }

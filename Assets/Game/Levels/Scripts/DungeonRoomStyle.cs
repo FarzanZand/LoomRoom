@@ -5,18 +5,22 @@ using Sirenix.OdinInspector;
 [CreateAssetMenu(menuName = "Table/Room Style", fileName = "Room Style")]
 public class DungeonRoomStyle : ScriptableObject
 {
-    [Tooltip("First vertical tile. Empty inherits the level wall material.")]
+    [Tooltip("First vertical tile. Empty inherits the level's Default Style.")]
     public Material bottomWall;
-    [Tooltip("All tiles above the first. Empty inherits the level wall material.")]
+    [Tooltip("All tiles above the first. Empty inherits the level's Default Style (its Upper Wall, or else its Bottom Wall).")]
     public Material upperWall;
-    [Tooltip("Empty inherits the level floor material.")]
+    [Tooltip("Empty inherits the level's Default Style.")]
     public Material floor;
-    [Tooltip("Empty inherits the level ceiling material.")]
+    [Tooltip("Empty inherits the level's Default Style.")]
     public Material ceiling;
     [Tooltip("Do not generate cornices or footings in rooms or corridors using this style. Reload the dungeon to apply.")]
     public bool hideTrims;
-    [HideIf(nameof(hideTrims)), Tooltip("Cornice and footing. Empty inherits the level trim material.")]
+    [HideIf(nameof(hideTrims)), Tooltip("Cornice and footing. Empty inherits the level's Default Style.")]
     public Material trim;
+    [Tooltip("Only read from a level's Default Style: exit hatch, procedural chests and barrels, board tile edges without their own material.")]
+    public Material wood;
+    [Tooltip("Only read from a level's Default Style: exit gate bars, procedural chest latches and barrel bands.")]
+    public Material metal;
 
     // Odin titles don't wrap their subtitle, so a long one widens the whole inspector: keep them short, details in tooltips.
     [Title("Wall variety", "Weighted per wall tile", HorizontalLine = false)]

@@ -22,7 +22,7 @@ MonoBehaviour:
   props: []
   propRules: []
   destructibles: []
-  lighting: 8
+  lighting: 100
   litThroughout: 0
   roomTemplates: []
   templateChance: 0.7
@@ -32,7 +32,7 @@ MonoBehaviour:
   lightingSettings:
     skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
     skyExposure: 0.8
-    lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
+    lightColor: {r: 1, g: 1, b: 1, a: 1}
     lightIntensity: 0.65
     ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
     ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}

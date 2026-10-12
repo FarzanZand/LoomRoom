@@ -7,8 +7,8 @@ using UnityEngine.Rendering.Universal;
 // Per-object pixelation for the Pixelator (on Rendering/Desktop Renderer.asset). Objects whose
 // material uses Hidden/LoomRoom/Pixel Lit Object (colour pass tagged LoomPixelObject, skipped by the
 // normal render) are drawn into a buffer 1/PixelSize of the camera, then pasted back point-sampled
-// with that buffer's depth, so characters and props look low-res inside a full-res scene. Switched by
-// PixelLook; does nothing while Enabled is false.
+// with that buffer's depth, so characters and props look low-res inside a full-res scene. It was switched
+// by the Pixelator, which is removed: nothing turns it on now and it does nothing while Enabled is false.
 public class PixelObjectFeature : ScriptableRendererFeature
 {
     public static bool Enabled;

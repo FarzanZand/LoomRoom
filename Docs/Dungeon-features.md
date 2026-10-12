@@ -16,7 +16,7 @@ Templates: `Starting room` (the level's `startingRoom`), `Merchant shop` (the le
 - `DungeonRoomTemplate` on the root: footprint (a Room Shape asset or painted in place), minimum size, style, height, **Open Ceiling**, whether it replaces random props and enemies, and lighting (**Replace Generated Torches**, **Override Light Color**).
 - Children with `DungeonTemplatePiece` are removed if they would block a walkway or fall outside a smaller room.
 - `DungeonSocket` children place things. Types: Enemy, Chest, Breakable, Boss, Merchant, Feature, Wall Light. Each has a chance and an optional override prefab. A Wall Light socket sits on a floor cell by a wall and points at it; it snaps to the wall face and uses the biome's (or level's) lighting prefabs unless it has its own prefab or colour.
-- **Shrine of Ashes** is the example: altar, fountain, pillars, braziers, pots and a merchant spot. It is used by `Rooms/Profiles/Shrine.asset` (Rest role, weight 0.6), the only room profile Dungeon1 has.
+- **Shrine of Ashes** is the example: altar, fountain, pillars, braziers, pots and a merchant spot. It is in Cellars' and Crypt's Room Templates (`Rooms/Templates/Chunks`) for quiet rooms, weight 1.
 
 ## Breakables and features
 
@@ -59,7 +59,7 @@ Templates: `Starting room` (the level's `startingRoom`), `Merchant shop` (the le
 - `RunManager` tracks kills, gold, time, floor, seed, bosses and the killer. It runs the death moment (slow motion, and ScreenManager's **Death Effects** drain the colour) and the recap (`Run recap`), which is also used for victory. The recap offers "Wake up".
 - `MessageLog` owns the history and colours and narrates combat and pickups. Items can set a **Use Message**.
 - `Esc` opens the `Pause menu` on either player (time stops). **Adventures** (Table only) opens the adventure menu. Settings cover volume, sensitivity, FOV, pixelation and key rebinding. Rebinds apply to the Room and Table maps together and persist in PlayerPrefs.
-- Pixelation: `ScreenManager` has the **Retro pixel grid** (Pixelation Enabled, Strength) and the separate **Pixelator** for the 3D pixel-art look (see CLAUDE.md).
+- Pixelation: the pixels are painted into the textures (see `Docs/Pixel-texture-style.md`). `ScreenManager` also has **Pixel lighting** (light stepped per texel, Pixel size) and the full-screen **Retro pixel grid** (Pixelation Enabled, Strength; currently off on both players, colour banding still used in the room).
 
 ## Pooling
 
@@ -68,3 +68,17 @@ Templates: `Starting room` (the level's `startingRoom`), `Merchant shop` (the le
 ## Not included
 
 Item identification (the altar blesses; Barony's identify needs unknown items first).
+
+## Room events, heights and room light
+
+Switches and chances live on the level (`Dungeon1.asset`, Rooms tab, Room Features); a biome can replace them with its own (biome Rooms tab, Override Dungeon Settings). All are on by default.
+
+- **Ambush**: a combat room starts empty. Walk well in and iron gates slam across the ways out; two waves come out of the dust at the room's Enemy sockets. Clear them and the gates lift and a chest is left. A chunk can ask for it (Room Event: Ambush), others roll it (Ambush Chance).
+- **Sleeping pack**: the room's enemies lie asleep (bats hang from the ceiling). Crouch to get close; a walking step nearby, a fight, a chest or a hit wakes them one after another. The first blow on a sleeper is a backstab.
+- **Trapped treasure**: spike plates around a chest. Opening it clicks, the plates rattle, and a moment later spikes come up through them. Put an iron chest with a `DungeonChestTrap` and plates in a chunk for a sure trap (the Treasure vault does).
+- **Shrine bargain**: a blood shrine in some quiet rooms (and the Chapel). It takes a third of your health and hones what you hold.
+- **Pits** (`DungeonFloorCut`, Pit): holes in a chunk's floor. A fall hurts and puts you back at the edge; an enemy knocked back at the edge goes over. **Sunken floors** (Sunken) are walkable lower courts; add step blocks inside them.
+- **Archer ledges**: an Enemy socket with Archer ticked takes an archer from the biome.
+- **Room light** (`DungeonRoomMood` on a chunk): Dark, Candlelit, Moonlit (with Open Ceiling and a Skylight Radius, and the Moonlight prefab at the centre), Eerie (green).
+
+A chunk built around a feature that is switched off (a chasm, the shrine, its light) is left out of the floor; one that only uses it on the side (a sleeping pack, a trapped chest) is built without it.

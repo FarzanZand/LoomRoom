@@ -12,94 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d167fcc6aa2d2f43b042c60f873f606, type: 3}
   m_Name: Pixel Look Library
   m_EditorClassIdentifier: Assembly-CSharp::PixelLookLibrary
-  roomEffects:
-    ambientOcclusion: 0
-    filmGrain: 0
-    grainType: 0
-    filmGrainIntensity: 0.2
-    filmGrainResponse: 0.8
-    pixelate: 1
-    pixelLines: 270
-    colorBanding: 0
-    colorLevels: 28
-    dither: 0.6
-    vignette: 1
-    vignetteIntensity: 0.3
-    vignetteSmoothness: 0.5
-    vignetteColor: {r: 0, g: 0, b: 0, a: 1}
-    chromaticAberration: 0
-    chromaticAberrationIntensity: 0.15
-    colorGrading: 1
-    contrast: 12
-    saturation: 5
-    colorFilter: {r: 1, g: 1, b: 1, a: 1}
-    postExposure: 0
-  tableEffects:
-    ambientOcclusion: 0
-    filmGrain: 0
-    grainType: 0
-    filmGrainIntensity: 0.2
-    filmGrainResponse: 0.8
-    pixelate: 1
-    pixelLines: 270
-    colorBanding: 1
-    colorLevels: 28
-    dither: 0.6
-    vignette: 1
-    vignetteIntensity: 0.3
-    vignetteSmoothness: 0.5
-    vignetteColor: {r: 0, g: 0, b: 0, a: 1}
-    chromaticAberration: 0
-    chromaticAberrationIntensity: 0.15
-    colorGrading: 1
-    contrast: 12
-    saturation: 5
-    colorFilter: {r: 1, g: 1, b: 1, a: 1}
-    postExposure: 0
-  cleanRoomEffects:
-    ambientOcclusion: 0
-    filmGrain: 0
-    grainType: 0
-    filmGrainIntensity: 0.2
-    filmGrainResponse: 0.8
-    pixelate: 0
-    pixelLines: 320
-    colorBanding: 0
-    colorLevels: 24
-    dither: 1
-    vignette: 1
-    vignetteIntensity: 0.3
-    vignetteSmoothness: 0.5
-    vignetteColor: {r: 0, g: 0, b: 0, a: 1}
-    chromaticAberration: 0
-    chromaticAberrationIntensity: 0.15
-    colorGrading: 1
-    contrast: 10
-    saturation: 0
-    colorFilter: {r: 1, g: 1, b: 1, a: 1}
-    postExposure: 0.3
-  cleanTableEffects:
-    ambientOcclusion: 0
-    filmGrain: 0
-    grainType: 0
-    filmGrainIntensity: 0.2
-    filmGrainResponse: 0.8
-    pixelate: 0
-    pixelLines: 320
-    colorBanding: 0
-    colorLevels: 24
-    dither: 1
-    vignette: 1
-    vignetteIntensity: 0.3
-    vignetteSmoothness: 0.5
-    vignetteColor: {r: 0, g: 0, b: 0, a: 1}
-    chromaticAberration: 0
-    chromaticAberrationIntensity: 0.15
-    colorGrading: 1
-    contrast: 10
-    saturation: 0
-    colorFilter: {r: 1, g: 1, b: 1, a: 1}
-    postExposure: 0
   roomTexelScale: 0.045
   tableTexelScale: 1
   roomBrightness: 1.5
@@ -2823,7 +2735,7 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 36.467384
+    texelsPerUnit: 36.46739
     baseTexels: 27
   - material: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
@@ -2835,13 +2747,13 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 64.64969
+    texelsPerUnit: 64.649734
     baseTexels: 11
   - material: {fileID: 2100000, guid: 5f3ebab1179da304aa8bcf2c4268681c, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 40.31622
+    texelsPerUnit: 35.555565
     baseTexels: 0
   - material: {fileID: 2100000, guid: 5e6cc04b80c34931b36027d60aff947c, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
@@ -3321,7 +3233,7 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 116.274155
+    texelsPerUnit: 116.27416
     baseTexels: 0
   - material: {fileID: 2100000, guid: 642797de8e691a440b3bd0244feb6218, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
@@ -3369,7 +3281,7 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 127.749596
+    texelsPerUnit: 127.7496
     baseTexels: 0
   - material: {fileID: 2100000, guid: 4231ccfd5051f7b4ea07553e51b76a58, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
@@ -3399,19 +3311,19 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 127.839775
+    texelsPerUnit: 127.8398
     baseTexels: 0
   - material: {fileID: 2100000, guid: c1428a68180e9b7428eafd841fffb160, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 128.75099
+    texelsPerUnit: 128.75102
     baseTexels: 0
   - material: {fileID: 2100000, guid: cb0056c4af02626449da45351e2d2b37, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 127.86562
+    texelsPerUnit: 127.86564
     baseTexels: 0
   - material: {fileID: 2100000, guid: 1a04fc66e5c572644969a668206bba24, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
@@ -3453,7 +3365,7 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 127.92538
+    texelsPerUnit: 127.92539
     baseTexels: 0
   - material: {fileID: 2100000, guid: feb4f2ec7c499da4189d69f6f32db13e, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
@@ -3471,7 +3383,7 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 139.3056
+    texelsPerUnit: 139.30559
     baseTexels: 0
   - material: {fileID: 2100000, guid: 9a806e1f12e9e5847b814a9d91b81698, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
@@ -3484,4 +3396,106 @@ MonoBehaviour:
     originalQueue: -1
     pixelQueue: -1
     texelsPerUnit: 128.0631
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: d2faeba3a7ebf9d41a65ae21f3deb510, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 128.05383
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: c405ce2ec6b465c4284abbe2e19b8a14, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 127.95871
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 4735b483827d9b54686498a047c2205c, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 128.04036
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 5c42156a5a5a0a343b830a8750684863, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 127.92499
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: f91bef8a473730f4fb5fe8b8d7a22697, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 128.11513
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: eff75cea60475d9448a4812da42e5d43, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 233.325
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 4d8528f90edefa24ca67501e5dcb5f8a, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 128.05875
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 4bf24e273151e994ca08997a1e8e76fa, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 127.99049
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 400269bbf51720149aae6a2f68445297, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 128.13248
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 2369f27273b933a4c9cbf33e4d13d1c8, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 127.92345
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 90781e0ba064f84449f525b61e812412, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: f85d8bcfe43eac44c8915c22cd5f77c9, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: a8a459f4a6956a843be40e1fc095178d, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: d49199d4eb6cba8428abb81b0ba112aa, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: c92552922b4a688459ac34fcc95bd2d7, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 2dc408c9863cb3e4db0cd38ccae26ed3, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 106d86c979fd7b74dbd74d0725b2e2ac, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
     baseTexels: 0

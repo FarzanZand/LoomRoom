@@ -196,6 +196,8 @@ public partial class DungeonGenerator
                 if (!always && torchRandom.NextDouble() >= data.litRoomChance) continue;
                 count = torchRandom.Next(data.torchesPerRoom.x, data.torchesPerRoom.y + 1);
                 if (always) count = Mathf.Max(1, count);
+                // A dark room (DungeonRoomFeatures) has none; its rolls are still taken so other rooms keep theirs.
+                if (LightOf(region) == DungeonRoomLight.Dark) count = 0;
             }
             else
             {

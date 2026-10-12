@@ -5,8 +5,8 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
-// Whole-screen presentation: per-player rendering effects, the retro pixel grid, the Pixelator (the 3D
-// pixel-art look) and the black fade overlay. Scene lighting and moods belong to LightingManager.
+// Whole-screen presentation: per-player rendering effects, the retro pixel grid, pixel lighting, the colour split and
+// the black fade overlay. Scene lighting and moods belong to LightingManager.
 public class ScreenManager : Singleton<ScreenManager>
 {
     public Image fadeFullscreenImage;
@@ -35,40 +35,13 @@ public class ScreenManager : Singleton<ScreenManager>
     public float pixelSize = 1f;
     static readonly int PixelSizeId = Shader.PropertyToID("_PixelLookPixelSize");
 
-    [FoldoutGroup("Pixelator"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLook))]
-    [Tooltip("Shadowglass-style 3D pixel art: Pixel Lit materials and a pixel camera. Off = the default look. Applies in Play mode and can be flipped live.")]
-    public bool pixelLook;
-    [FoldoutGroup("Pixelator"), LabelText("Camera"), OnValueChanged(nameof(ApplyPixelLook))]
-    [Tooltip("Default = the Rendering effects above. Clean = native resolution, crisp, the library's clean effects (for when the walls keep their own pixel textures). Low Res = real low-res render, the library's low-res effects.")]
-    public PixelatorCamera pixelatorCamera = PixelatorCamera.LowRes;
-    [FoldoutGroup("Pixelator"), LabelText("Architecture"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Walls, floors, ceilings and dungeon tiles.")]
-    public bool pixelateArchitecture = true;
-    [FoldoutGroup("Pixelator"), LabelText("Props"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Furniture, decor, loot and everything else.")]
-    public bool pixelateProps = true;
-    [FoldoutGroup("Pixelator"), LabelText("Characters"), OnValueChanged(nameof(ApplyPixelLook)), Tooltip("Players' arms and held items, enemies, NPCs.")]
-    public bool pixelateCharacters = true;
-    [FoldoutGroup("Pixelator"), LabelText("Object Pixel Size"), Range(1, 8), OnValueChanged(nameof(ApplyPixelLook))]
-    [Tooltip("Per-object pixelation: characters and props drawn at 1/N resolution inside a full-res scene. 1 = off. Not used with the Low Res camera (everything is already low-res).")]
-    public int objectPixelSize = 4;
-    [FoldoutGroup("Pixelator"), LabelText("Low-res Characters"), OnValueChanged(nameof(ApplyPixelLook))]
-    public bool lowResCharacters = true;
-    [FoldoutGroup("Pixelator"), LabelText("Low-res Props"), OnValueChanged(nameof(ApplyPixelLook))]
-    public bool lowResProps;
-    [FoldoutGroup("Pixelator"), LabelText("Dither Transparents"), OnValueChanged(nameof(ApplyPixelLook))]
-    [Tooltip("See-through materials (slime jelly, glassy things) as a pixel screen-door dither. Off = they keep their original smooth transparency.")]
-    public bool ditherTransparents;
-    [FoldoutGroup("Pixelator"), LabelText("Library"), InlineEditor, OnValueChanged(nameof(ApplyPixelLook))]
-    [Tooltip("Material pairs, texel scales and the camera effects per mode (Tools > LoomRoom > Pixel Look).")]
+    [FoldoutGroup("Pixel lighting"), LabelText("Library"), InlineEditor, OnValueChanged(nameof(ApplyPixelLighting))]
+    [Tooltip("The pixel-lit materials, their texel sizes and the brightness per world (Tools > LoomRoom > Pixel Look).")]
     public PixelLookLibrary pixelLookLibrary;
-
-    PixelLook.Parts PixelatorParts => new()
-    {
-        camera = pixelatorCamera, architecture = pixelateArchitecture, props = pixelateProps, characters = pixelateCharacters,
-        objectPixelSize = objectPixelSize, lowResCharacters = lowResCharacters, lowResProps = lowResProps,
-        ditherTransparents = ditherTransparents,
-    };
-
-    public PixelLook PixelLook { get; } = new();
+    static readonly int TexelScaleId = Shader.PropertyToID("_PixelLookTexelScale");
+    static readonly int RoomTexelScaleId = Shader.PropertyToID("_PixelLookRoomTexelScale");
+    static readonly int TableTexelScaleId = Shader.PropertyToID("_PixelLookTableTexelScale");
+    static readonly int BrightnessId = Shader.PropertyToID("_PixelLookBrightness");
 
     [Tooltip("Blended on top while the player dies: colour drains, the edges darken.")]
     public ScreenEffectSettings deathEffects = new()
@@ -92,13 +65,6 @@ public class ScreenManager : Singleton<ScreenManager>
     static readonly int StrengthId    = Shader.PropertyToID("_RetroStrength");
 
     bool originalAO, originalRetro, effectsInitialized;
-
-    // Pixel Look camera: real low-res rendering through the pipeline asset, restored when it ends.
-    UniversalRenderPipelineAsset lowResAsset;
-    float originalRenderScale;
-    UpscalingFilterSelection originalUpscaling;
-    UniversalAdditionalCameraData lowResCamera;
-    AntialiasingMode originalAntialiasing;
     EffectLayer roomLayer, tableLayer, deathLayer;
     float deathWeight;
     float tableWeight; // 0 = room effects, 1 = table effects
@@ -191,15 +157,11 @@ public class ScreenManager : Singleton<ScreenManager>
         tableWeight = TargetTableWeight;
         effectsInitialized = true;
         ApplyRenderingEffects();
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeChanged;
-#endif
     }
 
     void Start()
     {
         ApplyPixelLighting();
-        ApplyPixelLook();
         if (InputManager.HasInstance) InputManager.Instance.DebugPixelLightingToggled += TogglePixelLighting;
     }
 
@@ -222,6 +184,7 @@ public class ScreenManager : Singleton<ScreenManager>
         float amount = colourSplit && biome != null ? colourSplitStrength : 0f;
         var shadow = biome != null ? biome.shadowTint : Color.white;
         var lamp = biome != null ? biome.lampTint : Color.white;
+        if (biome != null) DungeonRoomMood.Tints(ref shadow, ref lamp);
         Shader.SetGlobalVector(ShadowTintId, new Vector4(shadow.r, shadow.g, shadow.b, amount));
         Shader.SetGlobalVector(LampTintId, new Vector4(lamp.r, lamp.g, lamp.b, amount));
     }
@@ -229,8 +192,7 @@ public class ScreenManager : Singleton<ScreenManager>
     void Update()
     {
         ApplyColourSplit();
-        Shader.SetGlobalFloat(PixelSizeId, pixelSize);
-        PixelLook.Tick();
+        SetPixelLightingGlobals();
         float step = effectBlendSeconds > 0f ? Time.unscaledDeltaTime / effectBlendSeconds : 1f;
         tableWeight = Mathf.MoveTowards(tableWeight, TargetTableWeight, step);
         ApplyRenderingEffects();
@@ -238,46 +200,39 @@ public class ScreenManager : Singleton<ScreenManager>
 
     void OnDisable()
     {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeChanged;
-#endif
-        PixelLook.Set(pixelLookLibrary, false, PixelatorParts);
-        PixelLook.ReleaseTwins();
         if (!effectsInitialized) return;
         if (ambientOcclusionFeature != null) ambientOcclusionFeature.SetActive(originalAO);
         if (retroScreenFeature != null) retroScreenFeature.SetActive(originalRetro);
-        SetPixelCamera(PixelatorCamera.Default, 0);
         roomLayer.Destroy();
         tableLayer.Destroy();
         deathLayer.Destroy();
         effectsInitialized = false;
     }
 
-    // The pipeline asset is shared and saved with the project: put its render scale back as soon
-    // as the game ends, before anything (Save Project, an editor crash) can write the Play-mode value.
-    protected override void OnApplicationQuit()
-    {
-        base.OnApplicationQuit();
-        SetPixelCamera(PixelatorCamera.Default, 0);
-    }
-
-#if UNITY_EDITOR
-    void OnPlayModeChanged(UnityEditor.PlayModeStateChange change)
-    {
-        if (change == UnityEditor.PlayModeStateChange.ExitingPlayMode) SetPixelCamera(PixelatorCamera.Default, 0);
-    }
-#endif
 
     // ── Pixel lighting ────────────────────────────────────────────────
 
     // Works in and out of Play mode; the materials are assets, so the editor shows the choice too.
     void ApplyPixelLighting()
     {
-        Shader.SetGlobalFloat(PixelSizeId, pixelSize);
+        SetPixelLightingGlobals();
         if (pixelLookLibrary != null) pixelLookLibrary.SetPixelLighting(pixelLighting);
     }
 
-    void OnValidate() => Shader.SetGlobalFloat(PixelSizeId, pixelSize);
+    void OnValidate() => SetPixelLightingGlobals();
+
+    // What the Pixel Lit shader reads: pixel size, texel scale per world and brightness for the active player's world.
+    void SetPixelLightingGlobals()
+    {
+        Shader.SetGlobalFloat(PixelSizeId, pixelSize);
+        if (pixelLookLibrary == null) return;
+        bool table = Application.isPlaying && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
+        Shader.SetGlobalFloat(TexelScaleId, table ? pixelLookLibrary.tableTexelScale : pixelLookLibrary.roomTexelScale);
+        // Per world, so the room seen from the table (skylights, windows) keeps its own texels.
+        Shader.SetGlobalFloat(RoomTexelScaleId, pixelLookLibrary.roomTexelScale);
+        Shader.SetGlobalFloat(TableTexelScaleId, pixelLookLibrary.tableTexelScale);
+        Shader.SetGlobalFloat(BrightnessId, table ? pixelLookLibrary.tableBrightness : pixelLookLibrary.roomBrightness);
+    }
 
     void TogglePixelLighting()
     {
@@ -286,27 +241,7 @@ public class ScreenManager : Singleton<ScreenManager>
         AnnouncementUI.Show(pixelLighting ? "Pixel lighting" : "Smooth lighting", "F6");
     }
 
-    // ── Pixelator ─────────────────────────────────────────────────────
-
-    // Play mode only; can be flipped live from the inspector.
-    void ApplyPixelLook()
-    {
-        if (Application.isPlaying && isActiveAndEnabled) PixelLook.Set(pixelLookLibrary, pixelLook, PixelatorParts);
-    }
-
-    PixelatorCamera PixelCamera => PixelLook.CameraMode;
-    ScreenEffectSettings RoomFx => PixelCamera switch
-    {
-        PixelatorCamera.LowRes => PixelLook.Library.roomEffects,
-        PixelatorCamera.Clean => PixelLook.Library.cleanRoomEffects,
-        _ => roomEffects,
-    };
-    ScreenEffectSettings TableFx => PixelCamera switch
-    {
-        PixelatorCamera.LowRes => PixelLook.Library.tableEffects,
-        PixelatorCamera.Clean => PixelLook.Library.cleanTableEffects,
-        _ => tableEffects,
-    };
+    // ── Rendering effects ─────────────────────────────────────────────
 
     float TargetTableWeight =>
         PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table ? 1f : 0f;
@@ -315,8 +250,8 @@ public class ScreenManager : Singleton<ScreenManager>
     {
         if (!effectsInitialized) return;
         float t = Mathf.SmoothStep(0f, 1f, tableWeight);
-        var room = RoomFx;
-        var table = TableFx;
+        var room = roomEffects;
+        var table = tableEffects;
         roomLayer.Apply(room, 1f - t);
         tableLayer.Apply(table, t);
         deathLayer.Apply(deathEffects, deathWeight);
@@ -328,12 +263,7 @@ public class ScreenManager : Singleton<ScreenManager>
         var retro = tableRetro > roomRetro ? table : room;
         float strength = roomRetro + tableRetro;
         SetFeature(retroScreenFeature, strength > .001f);
-        // The Low Res camera renders at the pixel resolution itself, so the pass only bands colours.
-        // Clean renders at native resolution without anti-aliasing.
-        var mode = PixelCamera;
-        bool lowRes = mode == PixelatorCamera.LowRes;
-        SetPixelCamera(mode, lowRes ? PixelLinesFor(t < .5f ? room : table) : 0);
-        Shader.SetGlobalFloat(PixelLinesId, lowRes ? 0 : PixelLinesFor(retro));
+        Shader.SetGlobalFloat(PixelLinesId, PixelLinesFor(retro));
         Shader.SetGlobalFloat(ColorLevelsId, retro.colorBanding ? retro.colorLevels : 0);
         Shader.SetGlobalFloat(DitherId, retro.dither);
         Shader.SetGlobalFloat(StrengthId, strength);
@@ -365,44 +295,6 @@ public class ScreenManager : Singleton<ScreenManager>
         ApplyRenderingEffects();
     }
 
-    // Low Res renders the camera at about `lines` vertical pixels (an integer fraction of the
-    // screen) and scales up with nearest-neighbour; Clean renders at native size. Both turn off
-    // anti-aliasing. Default puts back the pipeline's and camera's own settings.
-    void SetPixelCamera(PixelatorCamera mode, float lines)
-    {
-        if (mode != PixelatorCamera.Default)
-        {
-            if (lowResAsset == null)
-            {
-                lowResAsset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
-                if (lowResAsset == null) return;
-                originalRenderScale = lowResAsset.renderScale;
-                originalUpscaling = lowResAsset.upscalingFilter;
-            }
-            var cam = Camera.main;
-            if (lowResCamera == null && cam != null && cam.TryGetComponent(out lowResCamera))
-                originalAntialiasing = lowResCamera.antialiasing;
-            if (lowResCamera != null) lowResCamera.antialiasing = AntialiasingMode.None;
-
-            float factor = lines > 0 ? Mathf.Max(1f, Mathf.Round(Screen.height / lines)) : 1f;
-            // Written only on change: the asset is shared, and this runs every frame.
-            float scale = Mathf.Max(.1f, 1f / factor);
-            if (!Mathf.Approximately(lowResAsset.renderScale, scale)) lowResAsset.renderScale = scale;
-            if (lowResAsset.upscalingFilter != UpscalingFilterSelection.Point) lowResAsset.upscalingFilter = UpscalingFilterSelection.Point;
-        }
-        else
-        {
-            if (lowResAsset != null)
-            {
-                if (!Mathf.Approximately(lowResAsset.renderScale, originalRenderScale)) lowResAsset.renderScale = originalRenderScale;
-                if (lowResAsset.upscalingFilter != originalUpscaling) lowResAsset.upscalingFilter = originalUpscaling;
-                lowResAsset = null;
-            }
-            if (lowResCamera != null) lowResCamera.antialiasing = originalAntialiasing;
-            lowResCamera = null;
-        }
-    }
-
     static void SetFeature(ScriptableRendererFeature feature, bool on)
     {
         if (feature != null && feature.isActive != on) feature.SetActive(on);
@@ -417,10 +309,6 @@ public class ScreenManager : Singleton<ScreenManager>
     /// The picture comes back: starts black, waits holdDuration, then fades the overlay out over fadeDuration.
     public void FadeFromBlack(float fadeDuration, float holdDuration = 0f)
         => RunFade(FadeRoutine(1f, 0f, fadeDuration, holdDuration));
-
-    // Older names (the overlay fading in and out); same as FadeToBlack and FadeFromBlack.
-    public void FadeIn(float fadeDuration, float holdDuration = 0f) => FadeToBlack(fadeDuration, holdDuration);
-    public void FadeOut(float fadeDuration, float holdDuration = 0f) => FadeFromBlack(fadeDuration, holdDuration);
 
     /// Fades to black over fadeInDuration, holds for fadedDuration, then fades back over fadeOutDuration.
     public void FadeInOut(float fadeInDuration, float fadedDuration, float fadeOutDuration)

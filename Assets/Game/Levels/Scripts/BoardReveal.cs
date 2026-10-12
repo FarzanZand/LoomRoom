@@ -68,6 +68,8 @@ public class BoardReveal : MonoBehaviour
 
         HangBoardLight();
         foreach (var region in Reachable()) shown.Add(region);
+        // Reveal All (the level's option): every room is on the table from the start, as on a walled dungeon.
+        if (generated.LevelData.boardRevealAll) for (int i = 0; i < regions.Length; i++) shown.Add(i);
         for (int i = 0; i < regions.Length; i++)
         {
             bool on = shown.Contains(i);
@@ -91,12 +93,32 @@ public class BoardReveal : MonoBehaviour
         light.innerSpotAngle = light.spotAngle * .55f;
         light.range = boardLightHeight * 2.2f;
         light.intensity = data.boardLightIntensity;
-        light.color = data.boardLightColor;
+        light.color = BoardLightColor;
         light.shadows = LightShadows.Soft;
         FirstPersonLighting.SetLayers(light, uint.MaxValue);
     }
 
     Light boardLight;
+    // The level's board light colour, or, when this floor's biome lights the board (DungeonBiome.lightBoard), that
+    // colour tinted by the biome lighting's light, so each biome of a board level reads in its own colour.
+    Color BoardLightColor
+    {
+        get
+        {
+            var data = dungeon.LevelData;
+            if (cachedFloor != dungeon.FloorNumber)
+            {
+                cachedFloor = dungeon.FloorNumber; biomeLight = null;
+                var biome = data.Biome(cachedFloor);
+                if (biome != null && biome.lightBoard) biomeLight = data.DungeonLighting(cachedFloor).light;   // loads a preset: once per floor
+            }
+            if (!biomeLight.HasValue) return data.boardLightColor;
+            var c = biomeLight.Value * data.boardLightColor;
+            return c / Mathf.Max(.01f, Mathf.Max(c.r, Mathf.Max(c.g, c.b)));
+        }
+    }
+    int cachedFloor = -1;
+    Color? biomeLight;
     // The one light over the whole board: it stays on while the table assembles the floor.
     public Light BoardLight => boardLight;
     [Tooltip("On a board the player's carried light takes the board light's colour at this share of its strength, so the board's colour reads up close too.")]
@@ -110,7 +132,7 @@ public class BoardReveal : MonoBehaviour
     void Update()
     {
         if (boardLight == null || dungeon == null) return;
-        boardLight.color = dungeon.LevelData.boardLightColor;
+        boardLight.color = BoardLightColor;
         boardLight.intensity = dungeon.LevelData.boardLightIntensity;
         if (worldLight == null)
         {
@@ -126,7 +148,7 @@ public class BoardReveal : MonoBehaviour
             if (worldLight == null) return;
             worldColor = worldLight.color; worldIntensity = worldLight.intensity;
         }
-        worldLight.color = dungeon.LevelData.boardLightColor;
+        worldLight.color = BoardLightColor;
         worldLight.intensity = worldIntensity * carriedLight;
     }
 

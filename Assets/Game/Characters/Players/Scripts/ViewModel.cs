@@ -5,7 +5,6 @@ using UnityEngine;
 // hands later) goes on the ViewModel layer, which ViewModelFeature draws after the world so walls never
 // cut into it. Objects with an active collider (the weapon's hitbox) keep their layer, so physics is
 // unchanged; held items' own colliders are switched off by Equipment, so those items move too.
-// The Pixelator leaves view model renderers at full resolution (PixelLook).
 [DisallowMultipleComponent]
 public class ViewModel : MonoBehaviour
 {

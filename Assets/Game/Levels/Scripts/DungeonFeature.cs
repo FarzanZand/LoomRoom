@@ -3,7 +3,8 @@ using Sirenix.OdinInspector;
 
 // Which room roles something may go in. Serialized by value: append only.
 [System.Flags]
-public enum DungeonRoomRoles { None = 0, Entrance = 1, Combat = 2, Treasure = 4, Rest = 8, Storage = 16, Exit = 32, Any = 63 }
+// Rest is a quiet room: no enemies, a supply barrel, maybe the merchant.
+public enum DungeonRoomRoles { None = 0, Entrance = 1, Combat = 2, Treasure = 4, [InspectorName("Quiet")] Rest = 8, Storage = 16, Exit = 32, Any = 63 }
 
 // A prefab with a weight, for weighted picks (breakables, wall lights).
 [System.Serializable]

@@ -262,6 +262,23 @@ public class Equipment : MonoBehaviour
         return item;
     }
 
+    // Swaps the item in a slot for another that fits it (a shrine honing it): a held item keeps its hotbar slot, a
+    // worn one stays worn. Nothing goes to the bag.
+    public bool Replace(EquipmentSlot slot, ItemData with)
+    {
+        if (Get(slot) == null || with == null || !Fits(with, slot)) return false;
+        if (IsHand(slot) && Character is Player p)
+        {
+            int at = HeldIndex(slot);
+            if (at < 0) return false;
+            p.Hotbar.Set(at, new ItemStack(with));
+            Unequip(slot, false);
+            return Equip(with, false);
+        }
+        Unequip(slot, false);
+        return Equip(with, false, grant: true, into: slot);
+    }
+
     public bool Unequip(ItemData item)
     {
         foreach (var pair in items)

@@ -19,7 +19,9 @@ public static class FullscreenGameView
         EditorApplication.playModeStateChanged += state =>
         {
             if (state == PlayModeStateChange.EnteredPlayMode && EditorPrefs.GetBool(OnPlayKey, false)) Open();
-            else if (state == PlayModeStateChange.ExitingPlayMode) Close();
+            // Closed once this round of play mode callbacks is over: the window is a Game view too, and Unity's own
+            // Game view callback for it still runs after this one (closing it here threw MissingReferenceException).
+            else if (state == PlayModeStateChange.ExitingPlayMode) EditorApplication.delayCall += Close;
         };
     }
 

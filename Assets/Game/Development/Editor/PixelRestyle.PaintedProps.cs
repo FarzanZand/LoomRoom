@@ -279,7 +279,7 @@ public static partial class PixelRestyle
             var ti = (TextureImporter)AssetImporter.GetAtPath(texPath);
             ti.filterMode = FilterMode.Point; ti.wrapModeU = TextureWrapMode.Clamp; ti.wrapModeV = TextureWrapMode.Repeat; ti.npotScale = TextureImporterNPOTScale.None;
             ti.textureCompression = TextureImporterCompression.Uncompressed; ti.mipmapEnabled = true; ti.mipmapFilter = TextureImporterMipFilter.BoxFilter; ti.SaveAndReimport();
-            string meshPath = $"{dir}/{partName}.asset"; AssetDatabase.DeleteAsset(meshPath); AssetDatabase.CreateAsset(mesh, meshPath);
+            string meshPath = $"{dir}/{partName}.asset"; AssetDatabase.DeleteAsset(meshPath); AssetDatabase.CreateAsset(mesh, meshPath); MarkReadable(mesh);
             string matPath = $"{dir}/{partName}.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(matPath);
             if (material == null) { material = new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(material, matPath); }

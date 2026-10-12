@@ -24,7 +24,7 @@ Ceilings are built in the table reveal (after the walls) and stay visible, from 
 
 ## Rooms and floors
 
-`Assets/Game/Levels/Dungeon1/Rooms` holds `Profiles` (room profiles), `Shapes` (painted room shapes) and `Templates` (hand-built rooms). Dungeon1 has one profile, `Shrine` (Rest role, using the Shrine of Ashes template). A profile can force a style, scale its room, give it a template or shapes, and replace props, enemies and rewards for its rooms. Several profiles for the same role, with weights and floor ranges, add variety. A room without a matching profile uses the level and biome settings.
+`Assets/Game/Levels/Dungeon1/Rooms` holds `Kit` (building blocks: pillars, arches, niches, platforms, rubble, galleries), `Shapes` (painted room shapes) and `Templates` (hand-built rooms). The rooms directly in `Templates` have a fixed job (starting room, merchant shop, Crypt Lord arena); the ones in `Templates/Chunks` are picked by each biome from its Room Templates list (template, weight, which kinds of room, first floor; Template Chance is the share of rooms that get one). The Shrine of Ashes is a chunk for quiet rooms. Room kinds: Combat (enemies), Treasure (guarded, a chest), Storage (guarded, extra barrel), Quiet (`Rest` in code: no enemies, a barrel, maybe the merchant), Entrance and Exit. Room profiles are retired: no level uses one.
 
 The entrance is safe; the exit is guarded. The biome's Encounter Chance sets the chance of combat in other rooms; the rest become treasure, rest or storage rooms. Min and Max Enemies Per Room set encounter size (Dungeon1's biomes: 2-5 per combat room; guarded treasure and storage rooms get one). Props live in `Dungeon1/Prefabs/Props`; keep their collider footprint inside one cell.
 

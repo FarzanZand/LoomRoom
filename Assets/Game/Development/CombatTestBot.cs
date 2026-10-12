@@ -19,6 +19,8 @@ using UnityEngine;
 //   wait <s>                capture <s> <name>  frames to Temp/CombatTest/<name> (runs alongside)
 //   chest <metres> [wood|iron|gold]   place a chest in front of the player; open  opens it
 //   god [off]               keep the player at full health
+//   fight <s> <metres> [block 0-1]  fight like a plain player (block: share of enemy swings it reacts to; 1 = every one) for up to s seconds: walk at the nearest enemy within <metres>,
+//                           block when one swings close by, swing otherwise; logs kills, hits taken and health
 //   cm <field> <value>      set a CombatManager field
 //   freeze / unfreeze       the enemy's brain off/on      heal  full health for player and enemy
 public class CombatTestBot : MonoBehaviour
@@ -93,6 +95,7 @@ public class CombatTestBot : MonoBehaviour
                     case "unfreeze": SetBrain(true); break;
                     case "heal": Heal(player); Heal(enemy); break;
                     case "cm": SetTuning(parts[1], parts[2]); break;
+                    case "fight": yield return Fight(F(1, 40f), F(2, 14f), F(3, 1f)); break;
                 }
             }
         }
@@ -105,6 +108,55 @@ public class CombatTestBot : MonoBehaviour
             Running = false;
             Log("done");
         }
+    }
+
+    // A plain fighter: the nearest living enemy in reach is the target; the bot walks at it, keeps it in view, raises the
+    // shield while an enemy close by is swinging, and swings whenever it can.
+    IEnumerator Fight(float seconds, float reach, float blockSkill)
+    {
+        var reacted = new System.Collections.Generic.Dictionary<EnemyBrain, bool>();
+        float hp0 = player.Stats.CurrentHealth, until = Time.time + seconds;
+        int kills = 0, hits = 0;
+        System.Action<DamageInfo> taken = i => { if (!i.Blocked && i.Amount > 0f) hits++; };
+        player.Damaged += taken;
+        var known = new System.Collections.Generic.HashSet<Character>();
+        float nextSwing = 0f;
+        while (Time.time < until && player.IsAlive)
+        {
+            Character nearest = null; float best = reach;
+            foreach (var b in EnemyBrain.Active)
+            {
+                if (b == null || !b.Character.IsAlive) continue;
+                float d = Vector3.Distance(b.transform.position, player.transform.position);
+                if (d < best) { best = d; nearest = b.Character; }
+            }
+            foreach (var k in new System.Collections.Generic.List<Character>(known)) if (k == null || !k.IsAlive) { known.Remove(k); kills++; }
+            if (nearest == null) break;
+            known.Add(nearest);
+            enemy = nearest; Face();
+            bool threat = false;
+            foreach (var b in EnemyBrain.Active)
+            {
+                if (b == null || !b.Character.IsAlive) continue;
+                if (!b.IsSwinging) { reacted.Remove(b); continue; }
+                if (Vector3.Distance(b.transform.position, player.transform.position) >= 2.8f) continue;
+                // Each swing is either seen in time or not.
+                if (!reacted.TryGetValue(b, out bool seen)) reacted[b] = seen = Random.value < blockSkill;
+                if (seen) threat = true;
+            }
+            Block(threat);
+            if (best > 1.9f && player.Motor != null && player.Motor.Controller != null)
+            {
+                var to = nearest.transform.position - player.transform.position; to.y = 0f;
+                player.Motor.Controller.Move(to.normalized * 3.6f * Time.deltaTime + Vector3.down * .5f * Time.deltaTime);
+            }
+            else if (!threat && Time.time >= nextSwing) { Press(true); yield return new WaitForSeconds(.05f); Press(false); nextSwing = Time.time + .55f; }
+            yield return null;
+        }
+        Block(false);
+        player.Damaged -= taken;
+        foreach (var k in known) if (k == null || !k.IsAlive) kills++;
+        Log($"fight: {kills} killed, {hits} hits taken, health {hp0:0} -> {player.Stats.CurrentHealth:0} of {player.Stats.MaxHealth:0}, {(player.IsAlive ? "alive" : "DIED")}, {seconds - Mathf.Max(0f, until - Time.time):0.0} s");
     }
 
     // ── Enemy ─────────────────────────────────────────────────────────

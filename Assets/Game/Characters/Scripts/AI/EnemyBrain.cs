@@ -48,6 +48,35 @@ public class EnemyBrain : MonoBehaviour
     // Chasing or attacking: it knows where the player is. Anything else can be backstabbed.
     public bool IsAlerted => State == EnemyState.Chase || State == EnemyState.Attack;
 
+    // Lying asleep (a sleeping pack, EnemySleep): it neither sees nor moves until woken, and every hit on it is a
+    // backstab. The HumanoidController lies down (its Asleep bool); other rigs just slow their idle.
+    public bool Asleep { get; private set; }
+    public void Sleep()
+    {
+        if (State == EnemyState.Dead || !Character.IsAlive) return;
+        Asleep = true;
+        Motor.Stop();
+        SetSleepAnimation(true);
+    }
+
+    // Up and fighting: it stands still for riseSeconds (getting up), then hunts whoever woke it.
+    public void Wake(float riseSeconds)
+    {
+        if (!Asleep) return;
+        Asleep = false;
+        SetSleepAnimation(false);
+        BeginRecovery(riseSeconds);
+        Alert();
+    }
+
+    void SetSleepAnimation(bool asleep)
+    {
+        var anim = Character.Animator;
+        if (anim == null || anim.runtimeAnimatorController == null) return;
+        if (Character.HasParameter(anim, "Asleep", AnimatorControllerParameterType.Bool)) anim.SetBool("Asleep", asleep);
+        else anim.speed = asleep ? .2f : 1f;
+    }
+
     // Force the enemy to hunt the target now (a boss waking, a grave's occupant rising).
     public void Alert()
     {
@@ -241,6 +270,8 @@ public class EnemyBrain : MonoBehaviour
         }
         simulationPaused = false;
 
+        if (Asleep) { Motor.Stop(); UpdateAnimator(); return; }
+
         Perception.Profile = Profile;
         Perception.Tick(State == EnemyState.Chase || State == EnemyState.Attack);
         Motor.SuppressKnockback = IsSwinging;
@@ -284,6 +315,7 @@ public class EnemyBrain : MonoBehaviour
     void OnDamaged(DamageInfo info)
     {
         if (State == EnemyState.Dead || !Character.IsAlive) return;
+        if (Asleep) Wake(.6f);
         if (info.Source != null) { wasProvoked = true; Perception.NotifyAttackedFrom(info.Source.transform.position); }
 
         // Flinch only when not mid-swing: a swing is never interrupted by the player's hits, unless

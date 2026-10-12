@@ -53,10 +53,14 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
             .Append(DOTween.To(()=>light.intensity,v=>light.intensity=v,0f,2.2f)).OnComplete(()=>Destroy(go)).SetLink(go);
     }
 
+    // A chest or barrel opening (a trapped chest springs its spikes).
+    public event System.Action<DungeonContainer> Opened;
+
     void Open()
     {
         if (opened) return;
         opened = true;
+        Opened?.Invoke(this);
         if(AudioManager.HasInstance && openAudio!=null) AudioManager.Instance.PlaySFX(openAudio,transform.position,openVolume,.06f);
         NoiseEvents.Report(transform.position,7);
         var rng = new System.Random(seed);

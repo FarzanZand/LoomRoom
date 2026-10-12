@@ -144,7 +144,7 @@ public class TableLevelLoader : MonoBehaviour
             if (useReveal) ScreenManager.Instance.ClearFade();
             else if (!DebugDungeonSession.Active)
             {
-                ScreenManager.Instance.FadeIn(.45f); faded=true;
+                ScreenManager.Instance.FadeToBlack(.45f); faded=true;
                 yield return new WaitForSecondsRealtime(.5f);
             }
             bool ready=false;
@@ -203,12 +203,12 @@ public class TableLevelLoader : MonoBehaviour
                 reveal = gameObject.AddComponent<TableLevelReveal>();
                 yield return RunGuarded(reveal.Play(Dungeon, revealSettings, () =>
                 {
-                    if (lighting != null) lighting.BlendToMood(level.IsBoard ? level.BoardLighting(lighting) : level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
+                    if (lighting != null) lighting.BlendToMood(level.IsBoard ? level.BoardLighting(lighting, FloorNumber) : level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
                 }));
             }
             if (faded)
             {
-                ScreenManager.Instance.FadeOut(.6f); faded=false;
+                ScreenManager.Instance.FadeFromBlack(.6f); faded=false;
                 yield return new WaitForSecondsRealtime(.65f);
             }
             if (ready && AudioManager.HasInstance)
@@ -225,7 +225,7 @@ public class TableLevelLoader : MonoBehaviour
         finally
         {
             if (reveal != null) Destroy(reveal);
-            if (faded && ScreenManager.HasInstance) ScreenManager.Instance.FadeOut(.6f);
+            if (faded && ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.6f);
             if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
             Busy=false;
             if(!completed) ShowSelection("Could not load that level");
@@ -303,7 +303,7 @@ public class TableLevelLoader : MonoBehaviour
         SetTown(level.kind==TableLevelKind.Town);
         Current=level;
         if(lighting!=null && !deferPlayerSwitch) {
-            if(level.IsBoard) lighting.BlendToMood(level.BoardLighting(lighting),0);
+            if(level.IsBoard) lighting.BlendToMood(level.BoardLighting(lighting,FloorNumber),0);
             else if(level.IsDungeon) lighting.BlendToMood(level.DungeonLighting(FloorNumber),0);
             else if(level.mood!=null) lighting.BlendToMood(level.mood,0);
             else lighting.RestoreDefault();
@@ -386,16 +386,16 @@ public class TableLevelLoader : MonoBehaviour
         bool fade=ScreenManager.HasInstance;
         try
         {
-            if(fade) { ScreenManager.Instance.FadeIn(.45f); yield return new WaitForSecondsRealtime(.5f); }
+            if(fade) { ScreenManager.Instance.FadeToBlack(.45f); yield return new WaitForSecondsRealtime(.5f); }
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
             RestoreRoom(.6f);
             yield return null;
             if(whileDark!=null) { fade=false; whileDark(); }
-            if(fade) { ScreenManager.Instance.FadeOut(.6f); fade=false; yield return new WaitForSecondsRealtime(.65f); }
+            if(fade) { ScreenManager.Instance.FadeFromBlack(.6f); fade=false; yield return new WaitForSecondsRealtime(.65f); }
         }
         finally
         {
-            if(fade && ScreenManager.HasInstance) ScreenManager.Instance.FadeOut(.6f);
+            if(fade && ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.6f);
             if(GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
             Busy=false;
         }

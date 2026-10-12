@@ -169,13 +169,33 @@ public class EnemyRagdoll : MonoBehaviour
 
     void BuildRigid()
     {
-        var renderers = GetComponentsInChildren<Renderer>();
-        var bounds = renderers.Length > 0 ? renderers[0].bounds : new Bounds(transform.position + Vector3.up * .3f, Vector3.one * .6f);
-        foreach (var r in renderers) bounds.Encapsulate(r.bounds);
+        // The box fits the body as it is posed now (the skinned mesh baked), in the root's space. A skinned renderer's
+        // own bounds are loose (a rat's reached 0.24 m below its feet), and a box that big held dead bodies up in the air.
+        bool any = false; var bounds = new Bounds(Vector3.up * .3f, Vector3.one * .6f);
+        var toRoot = transform.worldToLocalMatrix; var baked = new Mesh();
+        foreach (var r in GetComponentsInChildren<Renderer>())
+        {
+            Mesh mesh = null; Matrix4x4 m;
+            if (r is SkinnedMeshRenderer sk && sk.sharedMesh != null)
+            {
+                sk.BakeMesh(baked, true); mesh = baked;
+                m = toRoot * Matrix4x4.TRS(sk.transform.position, sk.transform.rotation, Vector3.one);
+            }
+            else if (r is MeshRenderer && r.TryGetComponent<MeshFilter>(out var mf) && mf.sharedMesh != null && mf.sharedMesh.isReadable)
+            {
+                mesh = mf.sharedMesh; m = toRoot * r.transform.localToWorldMatrix;
+            }
+            else continue;
+            foreach (var v in mesh.vertices)
+            {
+                var p = m.MultiplyPoint3x4(v);
+                if (!any) { bounds = new Bounds(p, Vector3.zero); any = true; } else bounds.Encapsulate(p);
+            }
+        }
+        Destroy(baked);
         var box = gameObject.AddComponent<BoxCollider>();
-        box.center = transform.InverseTransformPoint(bounds.center);
-        var s = transform.lossyScale;
-        box.size = new Vector3(bounds.size.x / Mathf.Max(.0001f, s.x), bounds.size.y / Mathf.Max(.0001f, s.y), bounds.size.z / Mathf.Max(.0001f, s.z)) * .9f;
+        box.center = bounds.center;
+        box.size = bounds.size * .9f;
         var rb = GetComponent<Rigidbody>();
         if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
         rb.isKinematic = false;
