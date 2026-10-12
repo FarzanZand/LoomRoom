@@ -44,6 +44,8 @@ public class Hitbox : MonoBehaviour
     Vector3 previousPosition;
     Quaternion previousRotation;
     Vector3 queryCenter;
+    Vector3 segmentA, segmentB;    // the blade's line in the current sweep step (capsule colliders)
+    Vector3 lastStepCenter, sweepDirection;
     bool heavy;
 
     public void SetProfile(HitProfile p) => profile = p ?? HitProfile.Default;
@@ -84,6 +86,7 @@ public class Hitbox : MonoBehaviour
         Active = true;
         heavy=owner is Player p && p.Combat != null && p.Combat.HeavySwing;
         if(weaponCollider != null) { previousPosition=weaponCollider.transform.position; previousRotation=weaponCollider.transform.rotation; }
+        lastStepCenter = Vector3.zero; sweepDirection = Vector3.zero;
     }
 
     public void DisableHitbox()
@@ -111,6 +114,9 @@ public class Hitbox : MonoBehaviour
             var rotation=Quaternion.Slerp(previousRotation,t.rotation,f);
             var matrix=Matrix4x4.TRS(Vector3.Lerp(previousPosition,t.position,f),rotation,t.lossyScale);
             int count=Overlap(matrix,rotation);
+            // The blade's travel between sweep steps: where blood and kills go.
+            if (lastStepCenter != Vector3.zero && (queryCenter - lastStepCenter).sqrMagnitude > 1e-6f) sweepDirection = (queryCenter - lastStepCenter).normalized;
+            lastStepCenter = queryCenter;
             for(int i=0;i<count;i++) ProcessHit(overlapBuffer[i]);
             float reach = CombatManager.HasInstance ? Mathf.Max(1, CombatManager.Instance.meleeReachMultiplier) : 1f;
             var extension = queryCenter - owner.transform.position; extension.y = 0;
@@ -136,12 +142,15 @@ public class Hitbox : MonoBehaviour
                 float radius=cap.radius*largest*width;
                 float extent=Mathf.Max(0,cap.height*scale[cap.direction]*reach*.5f-radius);
                 Vector3 axis=rotation*localAxis*extent;
+                segmentA=queryCenter+axis; segmentB=queryCenter-axis;
                 return Physics.OverlapCapsuleNonAlloc(queryCenter+axis,queryCenter-axis,radius,overlapBuffer,hitMask,QueryTriggerInteraction.Ignore);
             case SphereCollider sphere:
                 queryCenter=matrix.MultiplyPoint3x4(sphere.center);
+                segmentA=segmentB=queryCenter;
                 return Physics.OverlapSphereNonAlloc(queryCenter,sphere.radius*largest*width,overlapBuffer,hitMask,QueryTriggerInteraction.Ignore);
             case BoxCollider box:
                 queryCenter=matrix.MultiplyPoint3x4(box.center);
+                segmentA=segmentB=queryCenter;
                 var dimensions = Vector3.Scale(box.size, scale);
                 int lengthAxis = dimensions.x > dimensions.y ? (dimensions.x > dimensions.z ? 0 : 2) : (dimensions.y > dimensions.z ? 1 : 2);
                 dimensions *= width;
@@ -165,7 +174,11 @@ public class Hitbox : MonoBehaviour
             if (owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction)) return;
         }
 
-        Vector3 contact = other.ClosestPoint(queryCenter);
+        // Where the blade meets the body: the point on the blade's line nearest the body, then the body's surface there.
+        Vector3 bodyCenter = other.bounds.center;
+        Vector3 along = segmentB - segmentA;
+        float k = along.sqrMagnitude > 1e-6f ? Mathf.Clamp01(Vector3.Dot(bodyCenter - segmentA, along) / along.sqrMagnitude) : 0f;
+        Vector3 contact = other.ClosestPoint(segmentA + along * k);
 
         Vector3 attackerPos = owner != null ? owner.transform.position : transform.position;
         Vector3 targetPos   = target != null ? target.transform.position : other.transform.position;
@@ -193,6 +206,7 @@ public class Hitbox : MonoBehaviour
             Weapon         = weapon,
             HitPoint       = contact,
             Direction      = dir,
+            SwingDirection = sweepDirection,
             KnockbackForce = force,
             Heavy          = heavy,
         };

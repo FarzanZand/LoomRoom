@@ -25,11 +25,24 @@ public static partial class PixelRestyle
         mesh.SetUVs(7, tag);
         float area = 0; var sv = src.vertices; var st = src.triangles;
         for (int i = 0; i < st.Length; i += 3) area += Vector3.Cross(sv[st[i + 1]] - sv[st[i]], sv[st[i + 2]] - sv[st[i]]).magnitude * .5f;
-        int W = Mathf.NextPowerOfTwo(Mathf.Clamp(Mathf.CeilToInt(Mathf.Sqrt(area / .5f) * texelsPerUnit), 64, 512));
+        // A first guess; the real size comes from the UVs below. The pack margin is fixed so a re-bake keeps the layout.
+        int W = Mathf.Clamp(Mathf.CeilToInt(Mathf.Sqrt(area / .5f) * texelsPerUnit), 32, 2048);
         var up = new UnwrapParam(); UnwrapParam.SetDefaults(out up);
-        up.packMargin = 2f / W; up.hardAngle = 70; up.angleError = .08f; up.areaError = .15f;
+        up.packMargin = 1f / 128f; up.hardAngle = 70; up.angleError = .08f; up.areaError = .15f;
         Unwrapping.GenerateSecondaryUVSet(mesh, up);
         var newUv = new List<Vector2>(); mesh.GetUVs(1, newUv);
+        // Exactly texelsPerUnit texels per mesh unit, whatever share of the square the unwrap used: every model gets
+        // the same pixel size (no power-of-two rounding or size cap, which made pixels up to twice as big on some props).
+        if (newUv.Count == mesh.vertexCount)
+        {
+            float uvArea = 0f; var tri = mesh.triangles;
+            for (int i = 0; i < tri.Length; i += 3)
+            {
+                Vector2 a0 = newUv[tri[i]], a1 = newUv[tri[i + 1]], a2 = newUv[tri[i + 2]];
+                uvArea += Mathf.Abs((a1.x - a0.x) * (a2.y - a0.y) - (a2.x - a0.x) * (a1.y - a0.y)) * .5f;
+            }
+            if (uvArea > 1e-6f) W = Mathf.Clamp(Mathf.RoundToInt(texelsPerUnit * Mathf.Sqrt(area / uvArea)), 16, 4096);
+        }
         var tags = new List<Vector4>(); mesh.GetUVs(7, tags);
         if (newUv.Count != mesh.vertexCount || tags.Count != mesh.vertexCount)
         {
@@ -102,7 +115,9 @@ public static partial class PixelRestyle
                         float k1 = Mathf.Lerp(Mathf.Clamp01(w1), 1f / 3f, .12f), k2 = Mathf.Lerp(Mathf.Clamp01(w2), 1f / 3f, .12f), k3 = Mathf.Lerp(Mathf.Clamp01(w3), 1f / 3f, .12f);
                         float ks = k1 + k2 + k3; texelC = Sample(pal, (o0 * k1 + o1 * k2 + o2 * k3) / ks) * tint;
                     }
-                    col[idx] = Shade(texelC, kind, p, n, ao, size);
+                    // A painted restyle takes its colour from the painting; only the creases darken a little.
+                    if (PaintSource != null) { var painted = PaintSource(p, n); col[idx] = Color.Lerp(painted * .45f, painted, .5f + .5f * Mathf.Clamp01(ao)); col[idx].a = 1f; }
+                    else col[idx] = Shade(texelC, kind, p, n, ao, size);
                     emi[idx] = emC; cov[idx] = true;
                 }
             }
@@ -207,8 +222,32 @@ public static partial class PixelRestyle
         }
         // Dirt settles in the creases: darker and a little brown where little light gets in.
         var dirt = new Color(.16f, .12f, .09f);
+        if (Dirt > 0f)
+        {
+            // The dirty pixel style (Docs/Pixel-texture-style.md): blotchy stains, grime caked in the creases,
+            // chipped bright edges, harder per-texel speckle, more rust on iron.
+            float stain = Mathf.Clamp01((Fbm(p * 9f * s * 3f + new Vector3(31f, 7f, 3f), 3) - .52f) * 4f);
+            baseC = Color.Lerp(baseC, baseC * new Color(.55f, .47f, .36f), stain * .65f * Dirt);
+            if (kind == Kind.Metal)
+            {
+                float rust = Mathf.Clamp01((Fbm(p * 18f, 3) - .5f) * 5f);
+                baseC = Color.Lerp(baseC, new Color(.4f, .22f, .11f), rust * .55f * Dirt);
+            }
+            m += fine * .35f * Dirt + mottle * .25f * Dirt;
+            grime = Mathf.Pow(grime, 1f + 1.2f * Dirt);
+            dirt = Color.Lerp(dirt, new Color(.09f, .07f, .05f), Dirt);
+        }
         var c = baseC * Mathf.Clamp(m, .45f, 1.5f);
         c = Color.Lerp(dirt, c, .3f + .7f * grime);
+        if (Dirt > 0f)
+        {
+            // Raised edges catch the wear: a few lighter texels where the surface is open and the noise says chipped.
+            float chip = Mathf.Clamp01((Fbm(p * 40f + new Vector3(3f, 11f, 5f), 2) - .62f) * 6f) * Mathf.Clamp01((ao - .8f) * 5f);
+            c = Color.Lerp(c, c * 1.45f + new Color(.06f, .05f, .04f), chip * .7f * Dirt);
+            // Stepped colour, like hand-placed pixels rather than a smooth ramp.
+            float steps = Mathf.Lerp(256f, 18f, Dirt);
+            c.r = Mathf.Round(c.r * steps) / steps; c.g = Mathf.Round(c.g * steps) / steps; c.b = Mathf.Round(c.b * steps) / steps;
+        }
         c.r = Mathf.Clamp01(c.r); c.g = Mathf.Clamp01(c.g); c.b = Mathf.Clamp01(c.b); c.a = 1f;
         return c;
     }
@@ -307,7 +346,7 @@ public static partial class PixelRestyle
         System.IO.File.WriteAllBytes(path, tex.EncodeToPNG()); Object.DestroyImmediate(tex);
         AssetDatabase.ImportAsset(path);
         var ti = (TextureImporter)AssetImporter.GetAtPath(path);
-        ti.filterMode = FilterMode.Point; ti.mipmapEnabled = true; ti.mipmapFilter = TextureImporterMipFilter.BoxFilter; ti.textureCompression = TextureImporterCompression.Uncompressed; ti.maxTextureSize = 1024; ti.wrapMode = TextureWrapMode.Clamp;
+        ti.filterMode = FilterMode.Point; ti.mipmapEnabled = true; ti.mipmapFilter = TextureImporterMipFilter.BoxFilter; ti.textureCompression = TextureImporterCompression.Uncompressed; ti.maxTextureSize = 4096; ti.wrapMode = TextureWrapMode.Clamp; ti.npotScale = TextureImporterNPOTScale.None; // exact sizes: every model the same pixel size
         ti.SaveAndReimport();
     }
 }

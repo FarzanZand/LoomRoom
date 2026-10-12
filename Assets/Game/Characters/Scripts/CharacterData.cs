@@ -28,6 +28,9 @@ public class CharacterData : ScriptableObject
     [TabGroup(InspectorTabs, "Presentation", Order = 30), TabGroup("CharacterTabs/Presentation/Details", "Audio"), ShowIf(nameof(HasCreatureAudio)), InlineProperty, HideLabel]
     public CreatureAudio audio = new();
 
+    [TabGroup(InspectorTabs, "Presentation"), TabGroup("CharacterTabs/Presentation/Details", "Gore"), InlineProperty, HideLabel]
+    public GoreProfile gore = new();
+
     [TabGroup(InspectorTabs, "Presentation"), TabGroup("CharacterTabs/Presentation/Details", "Animation"), Tooltip("Animator trigger fired when hurt. Leave empty to skip.")]
     public string hurtTrigger = "Hurt";
     [TabGroup("CharacterTabs/Presentation/Details", "Animation"), Tooltip("Animator trigger fired on death. Leave empty to skip.")]

@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5846213400522183897
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7863845029634512957}
+  - component: {fileID: 470993604028052539}
+  m_Layer: 0
+  m_Name: GoreManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7863845029634512957
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5846213400522183897}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &470993604028052539
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5846213400522183897}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef71213e94dbcdc42adbdb8e4ce4b651, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GoreManager
+  sprayPrefab: {fileID: 3162900948460334361, guid: bf598ccea7612ed42bf05d1be3b85ff9, type: 3}
+  dustPrefab: {fileID: 3451278282699352265, guid: 5029244db6ce24747b468482f7c1d562, type: 3}
+  dropsPerHit: 45
+  dropsPerKill: 110
+  splashBlobs: 7
+  splashSize: {x: 0.12, y: 0.28}
+  sprayLifetime: 2.5
+  strongHitMultiplier: 1.6
+  stainMaterial: {fileID: 2100000, guid: 945db09c5ef15bf4cb5551efce10cc0e, type: 2}
+  stainSize: {x: 0.12, y: 0.34}
+  maxStains: 260
+  stainChance: 0.55
+  chunkMaterial: {fileID: 2100000, guid: 5456cf11cadd53c46913692cf937aee3, type: 2}
+  chunksPerBurst: 7
+  maxChunks: 80

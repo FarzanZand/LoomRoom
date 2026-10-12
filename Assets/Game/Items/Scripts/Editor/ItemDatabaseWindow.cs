@@ -74,6 +74,8 @@ public class ItemDatabaseWindow : EditorWindow
             if (GUILayout.Button("Organize shown", EditorStyles.toolbarButton, GUILayout.Width(115))) Organize();
             if (GUILayout.Button(new GUIContent("Sync runtime catalog", "Add all active items to InventoryManager's name lookup catalog. Save the scene afterwards."), EditorStyles.toolbarButton, GUILayout.Width(145)))
                 ShowNotification(new GUIContent($"Catalog updated: {ItemDatabaseAuthoring.SyncCatalog()} items. Save the scene."));
+            if (GUILayout.Button(new GUIContent("Generate icons", "Render the bag icons of the shown items from their models (custom icons are kept). Settings: Items/Icons/Item Icon Settings."), EditorStyles.toolbarButton, GUILayout.Width(100)))
+                GenerateIcons(Visible().ToList());
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Authoring guide", EditorStyles.toolbarButton)) EditorUtility.OpenWithDefaultApp(Path.GetFullPath("Docs/Item-database.md"));
         }
@@ -142,6 +144,8 @@ public class ItemDatabaseWindow : EditorWindow
             if (GUILayout.Button("Locate asset", EditorStyles.toolbarButton)) { Selection.activeObject = selected; EditorGUIUtility.PingObject(selected); }
             if (GUILayout.Button("Duplicate", EditorStyles.toolbarButton)) { Select(ItemDatabaseAuthoring.Duplicate(selected)); ItemDatabaseAuthoring.SyncCatalog(); Rebuild(); }
             if (GUILayout.Button("Move to type folder", EditorStyles.toolbarButton)) { ItemDatabaseAuthoring.Move(selected, ItemDatabaseAuthoring.Destination(selected)); Rebuild(); }
+            using (new EditorGUI.DisabledScope(selected.iconSource != null && selected.iconSource.custom))
+                if (GUILayout.Button(new GUIContent("Generate icon", "Render this item's bag icon from its model."), EditorStyles.toolbarButton)) GenerateIcons(new List<ItemData> { selected });
             bool archived = ItemDatabaseAuthoring.IsArchived(selected);
             if (GUILayout.Button(archived ? "Restore" : "Archive", EditorStyles.toolbarButton))
             {
@@ -170,6 +174,15 @@ public class ItemDatabaseWindow : EditorWindow
         EditorGUI.BeginChangeCheck(); inspector.OnInspectorGUI();
         if (EditorGUI.EndChangeCheck()) { EditorUtility.SetDirty(selected); issues[selected] = ItemDatabaseAuthoring.Issues(selected, items); }
         EditorGUILayout.EndScrollView();
+    }
+    void GenerateIcons(List<ItemData> chosen)
+    {
+        var problems = new List<string>();
+        int made = ItemIconRenderer.GenerateAll(chosen, problems);
+        Rebuild();
+        if (problems.Count > 0)
+            EditorUtility.DisplayDialog("Generate icons", $"{made} icon(s) made. No icon for:\n\n" + string.Join("\n", problems.Take(20)) + (problems.Count > 20 ? $"\n...and {problems.Count - 20} more." : ""), "OK");
+        else ShowNotification(new GUIContent($"{made} icon(s) made"));
     }
     void NewItemMenu()
     {

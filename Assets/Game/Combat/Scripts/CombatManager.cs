@@ -14,7 +14,8 @@ public class CombatManager : Singleton<CombatManager>
     public float meleeWidthMultiplier = 1.25f;
 
     [Header("Hit Stop")]
-    public bool hitStopEnabled = true;
+    [Tooltip("Off: hits pass straight through, Heathen style. On: the game slows for a moment on each hit.")]
+    public bool hitStopEnabled = false;
     [FormerlySerializedAs("hitStopDuration"), Min(0), Tooltip("Seconds the game slows when a light attack lands.")]
     public float lightHitStopDuration = 0.06f;
     [FormerlySerializedAs("hitStopTimeScale"), Range(0f, 0.5f)]
@@ -58,9 +59,10 @@ public class CombatManager : Singleton<CombatManager>
     [Header("Death")]
     [Tooltip("Enemies collapse as physics ragdolls. Off plays the death animation instead.")]
     public bool ragdollDeath = true;
-    [Tooltip("Impulse applied along the killing blow's direction.")]
-    [Min(0)] public float ragdollImpulse = 4.5f;
-    [Min(0)] public float ragdollUpwardImpulse = 1.5f;
+    [Tooltip("Speed (m/s) a body is thrown along the killing blow and the swing. Heavy hits and criticals x1.4.")]
+    [Min(0)] public float ragdollImpulse = 5.5f;
+    [Tooltip("Upward speed (m/s) of a thrown body.")]
+    [Min(0)] public float ragdollUpwardImpulse = 3f;
     [Tooltip("Enemy loot stays on the corpse until the player searches it. Off scatters it on death.")]
     public bool lootableCorpses = true;
     [Tooltip("Seconds before a corpse is removed. 0 keeps corpses for the whole floor.")]
@@ -134,7 +136,20 @@ public class CombatManager : Singleton<CombatManager>
     [Header("Attack responsiveness")]
     [Range(.5f,2f)] public float playerAttackSpeed = 1.12f;
     [Min(0)] public float attackInputBuffer = .22f;
-    [Range(1,16)] public int weaponSweepSteps = 6;
+    [Range(1,16), Tooltip("Samples per frame along the weapon's path, so a fast strike can't skip past an enemy.")] public int weaponSweepSteps = 12;
+    [Min(0), Tooltip("Shortest time between the starts of two light swings, at attack speed 1 (Heathen about 0.6 s). A faster weapon shortens it.")]
+    public float swingInterval = .6f;
+    [Tooltip("Attacking while the shield is up lowers it for the swing and raises it again afterwards if block is still held.")]
+    public bool attackFromBlock = true;
+
+    [Header("Swing set")]
+    [Tooltip("On: the original light swings (Attack_Swing_A/B). Off: the Heathen swings (FirstPersonPlayer/Heathen): " +
+        "a visible windup, a strike in a few frames and a held follow-through, alternating forehand and backhand.")]
+    public bool simpleSwings = false;
+    [Tooltip("Camera turn (pitch, yaw, roll in degrees) at the peak of a Heathen forehand; the backhand mirrors yaw and roll.")]
+    public Vector3 heathenSwingCameraRotation = new Vector3(.4f, -1.2f, .6f);
+    [Tooltip("Heathen swing camera motion over the release clip: peaks with the strike, eases off through the follow-through.")]
+    public AnimationCurve heathenSwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.12f, 1f), new Keyframe(.6f, .35f), new Keyframe(1f, 0f));
 
     [Header("Animation pacing")]
     [Min(.1f)] public float windupSpeed = 1.2f;
@@ -152,7 +167,13 @@ public class CombatManager : Singleton<CombatManager>
     [Min(0), Tooltip("After a stagger, seconds the enemy can't be staggered again, so charged hits can't chain it into never attacking.")]
     public float enemyStaggerImmunity = 1.5f;
     [Min(0), Tooltip("Seconds an enemy stands still after a light hit. 0: the hurt reaction plays but never delays its next attack, so spamming light hits can't stunlock it.")]
-    public float lightFlinchDuration = .15f;
+    public float lightFlinchDuration = .25f;
+
+    [Header("Interrupts")]
+    [Tooltip("A hit early in an enemy's windup cancels that attack. After an interrupt the enemy's next attack can't be interrupted, so it can't be stunlocked.")]
+    public bool hitsInterruptWindup = false;
+    [Min(0), Tooltip("Seconds from the start of an enemy's swing during which a hit interrupts it.")]
+    public float interruptWindow = .45f;
     [Min(1)] public float heavyRecoilMultiplier = 1.6f;
     [Min(1)] public float heavyRecoilDurationMultiplier = 1.5f;
 
@@ -220,7 +241,10 @@ public class CombatManager : Singleton<CombatManager>
     [Range(0,6)] public float hurtCameraKick = 2f;
     [Range(0,4)] public float blockCameraKick = .8f;
     [Range(0,1)] public float hurtScreenAlpha = .22f;
-    [Min(.05f)] public float hurtScreenDuration = .28f;
+    [Min(.05f), Tooltip("Seconds the hurt screen takes to fade out.")]
+    public float hurtScreenDuration = .28f;
+    [Min(0), Tooltip("Seconds the hurt screen stays at full strength before it fades.")]
+    public float hurtScreenHold = .1f;
     public Color hurtScreenColor = new(.8f,.12f,.1f,1);
     public Color blockScreenColor = new(.55f,.7f,.8f,1);
     public AudioData blockAudio;
@@ -238,15 +262,20 @@ public class CombatManager : Singleton<CombatManager>
     public bool HasMeleeLineOfSight(Character source,Transform victim,Vector3 contact)
     {
         if(source==null)return true;
-        Vector3 origin=source.transform.position+Vector3.up*.9f;
+        // The player's eye, so a stab at something on the floor isn't blocked by the floor; others from the chest.
+        Vector3 origin=source is Player p && p.CameraRig!=null && p.CameraRig.Camera!=null
+            ? p.CameraRig.Camera.transform.position : source.transform.position+Vector3.up*.9f;
         Vector3 delta=contact-origin;
         if(delta.sqrMagnitude<.001f)return true;
-        int count=Physics.RaycastNonAlloc(origin,delta.normalized,obstructionHits,delta.magnitude,~0,QueryTriggerInteraction.Ignore);
+        int count=Physics.RaycastNonAlloc(origin,delta.normalized,obstructionHits,delta.magnitude,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
         if(count==obstructionHits.Length)return false;
         for(int i=0;i<count;i++)
         {
             var t=obstructionHits[i].transform;
             if(t.IsChildOf(source.transform) || (victim!=null && t.IsChildOf(victim)))continue;
+            // Loose debris on the floor (splinters, gore, a knocked-off helmet) never stops a blow.
+            // (anything with a rigidbody, settled or not, that isn't a character).
+            if(obstructionHits[i].rigidbody!=null && obstructionHits[i].collider.GetComponentInParent<Character>()==null)continue;
             return false;
         }
         return true;

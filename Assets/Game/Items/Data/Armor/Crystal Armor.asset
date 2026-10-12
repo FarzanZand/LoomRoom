@@ -17,12 +17,19 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   description: 
-  icon: {fileID: 21300000, guid: 3db65afe59ed9324a85b11ffad4133c0, type: 3}
+  icon: {fileID: 21300000, guid: ef4cfa40f928e1a4c9a6647517cf7b57, type: 3}
+  iconSource:
+    custom: 0
+    model: {fileID: 0}
+    outfit: 
+    turn: {x: 0, y: 0, z: 0}
+    flip: 0
   tag: Crystal equipment
   worldPrefab: {fileID: 4786953506127536119, guid: fb6689d5d81112644b319a70589623fa, type: 3}
   pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
   itemType: 6
   maxStackSize: 1
+  gridSize: {x: 0, y: 0}
   value: 1200
   tier: 4
   lootWeight: 1

@@ -13,6 +13,7 @@ public struct DamageInfo
     public Character Target;          // the victim, set by CharacterStats.TakeDamage (null for props)
     public Vector3   HitPoint;
     public Vector3   Direction;       // attacker -> victim, horizontal, normalised
+    public Vector3   SwingDirection;  // the weapon's travel at the contact (zero if unknown): blood, gore and kills fly this way
     public float     KnockbackForce;  // already scaled by CombatManager
     public bool      Parried;
     public bool      Magic;           // spell damage bypasses physical armor and shield blocking

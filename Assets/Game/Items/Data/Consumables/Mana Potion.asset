@@ -17,12 +17,19 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   description: 
-  icon: {fileID: 21300000, guid: 317e4c8472e0ae94ab18c9776bde801b, type: 3}
+  icon: {fileID: 21300000, guid: 86a811fc670c4b04a9b09fc03ba31c50, type: 3}
+  iconSource:
+    custom: 0
+    model: {fileID: 0}
+    outfit: 
+    turn: {x: 0, y: 0, z: 0}
+    flip: 0
   tag: 
   worldPrefab: {fileID: 6950012130812383543, guid: 1b21afa5057efec41abda064a8e59cb7, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 4
   maxStackSize: 5
+  gridSize: {x: 0, y: 0}
   value: 15
   tier: 1
   lootWeight: 1

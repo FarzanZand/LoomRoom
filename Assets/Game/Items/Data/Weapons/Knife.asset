@@ -17,12 +17,19 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   description: Quick but weak.
-  icon: {fileID: 21300000, guid: 5449b57ca45cf944ead643ae052ce657, type: 3}
+  icon: {fileID: 21300000, guid: ebf0b89d586809f4ab6b1dd2367d4a69, type: 3}
+  iconSource:
+    custom: 0
+    model: {fileID: 0}
+    outfit: 
+    turn: {x: 0, y: 0, z: 0}
+    flip: 0
   tag: 
   worldPrefab: {fileID: 423651013477711314, guid: 57e71cf69c8e167429637d10639197bd, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 1
   maxStackSize: 1
+  gridSize: {x: 0, y: 0}
   value: 15
   tier: 1
   lootWeight: 1

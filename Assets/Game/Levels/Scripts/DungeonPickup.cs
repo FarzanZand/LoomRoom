@@ -1,10 +1,12 @@
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
 
 public static class DungeonPickup
 {
-    public static void SpawnDrops(IReadOnlyList<LootSource.Drop> drops, Vector3 origin, Transform parent)
+    // popFrom: the items jump out of there (a chest's mouth) and land where they would lie.
+    public static void SpawnDrops(IReadOnlyList<LootSource.Drop> drops, Vector3 origin, Transform parent, Vector3? popFrom = null)
     {
         int index=0;
         foreach(var drop in drops) {
@@ -20,10 +22,19 @@ public static class DungeonPickup
                     if(!NavMesh.Raycast(anchor.position,desired,out var edge,NavMesh.AllAreas))target=desired;
                     else target=Vector3.Lerp(anchor.position,edge.position,.7f);
                 }
-                Spawn(drop.item,target,parent,count);remaining-=count;
+                var item=Spawn(drop.item,target,parent,count);remaining-=count;
+                if(item!=null && popFrom.HasValue) PopOut(item.transform,popFrom.Value,index);
             }
         }
     }
+    // From the source to where it settled, in an arc, one item after another.
+    static void PopOut(Transform item, Vector3 from, int order)
+    {
+        Vector3 landing = item.position;
+        item.position = from;
+        item.DOJump(landing, .7f + .15f * (order % 3), 1, .55f).SetDelay(.08f * order).SetEase(Ease.Linear).SetLink(item.gameObject);
+    }
+
     public static WorldItem Spawn(ItemData item, Vector3 position, Transform parent, int count=1)
     {
         if (item == null || !InventoryManager.HasInstance) return null;

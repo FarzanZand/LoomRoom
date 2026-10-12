@@ -17,12 +17,19 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   description: 
-  icon: {fileID: 21300000, guid: ced073ca4cedbff46b5d9ae41fd0984e, type: 3}
+  icon: {fileID: 21300000, guid: 1c88d2989288b7343b3805283bc01d2c, type: 3}
+  iconSource:
+    custom: 0
+    model: {fileID: 0}
+    outfit: 
+    turn: {x: 0, y: 0, z: 0}
+    flip: 0
   tag: Food
   worldPrefab: {fileID: 4551608015778351118, guid: f233f8621482b8b4aa6a5ac3ff68417b, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 4
   maxStackSize: 5
+  gridSize: {x: 0, y: 0}
   value: 5
   tier: 1
   lootWeight: 1

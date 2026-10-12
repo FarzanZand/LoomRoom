@@ -17,12 +17,19 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   description: 
-  icon: {fileID: 21300000, guid: ec7b7d4cc6d4650439a53f6736f3a8b8, type: 3}
+  icon: {fileID: 21300000, guid: fd5a3c56722c2b64f888629c58a446ac, type: 3}
+  iconSource:
+    custom: 0
+    model: {fileID: 0}
+    outfit: 
+    turn: {x: 0, y: 0, z: 0}
+    flip: 0
   tag: Steel equipment
   worldPrefab: {fileID: 6378982992463746668, guid: 5571bb21ce9cb6740b48002f56172908, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 1
   maxStackSize: 1
+  gridSize: {x: 0, y: 0}
   value: 120
   tier: 3
   lootWeight: 1

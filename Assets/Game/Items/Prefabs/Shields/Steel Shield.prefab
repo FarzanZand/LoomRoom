@@ -67,11 +67,11 @@ PrefabInstance:
     - target: {fileID: 23367258007567386, guid: bae653b83f13cb34181154cde714a39c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: a9bf7e4af5112fa40baf917cdde04e6b, type: 2}
+      objectReference: {fileID: 2100000, guid: 387c69d4aec209b4eaee477a812f289b, type: 2}
     - target: {fileID: 33228936144870654, guid: bae653b83f13cb34181154cde714a39c, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: 7b581292e84a22e499413700ff76ee0e, type: 2}
+      objectReference: {fileID: 4300000, guid: 3f29957343cbb6c45b73356ef77ae456, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

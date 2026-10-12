@@ -20,6 +20,18 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3833653289189256600, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: force
+      value: 4.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3833653289189256600, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: upward
+      value: 1.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3833653289189256600, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+      propertyPath: scatter
+      value: 1.4
+      objectReference: {fileID: 0}
     - target: {fileID: 4248296152171435791, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -169,6 +181,12 @@ MonoBehaviour:
     walkStepInterval: 0.55
     runStepInterval: 0.34
     painCooldown: 0.6
+  gore:
+    kind: 3
+    color: {r: 0.86, g: 0.82, b: 0.7, a: 1}
+    amount: 1
+    burstOnDeath: 0
+    killSound: {fileID: 11400000, guid: b56fdf616de73c24fafa0d20de2d326b, type: 2}
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 0

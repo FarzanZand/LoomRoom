@@ -58,6 +58,9 @@ MonoBehaviour:
   lid: {fileID: 7702271532999670340}
   lidOpenRotation: {x: -105, y: 0, z: 0}
   lidOpenSeconds: 0.45
+  openBurst: {fileID: 1853940223105671221, guid: 7d65638211ca8fb48a39c0f62fd1b991, type: 3}
+  glowColor: {r: 1, g: 0.78, b: 0.38, a: 1}
+  glowIntensity: 6
 --- !u!65 &7083369768758815654
 BoxCollider:
   m_ObjectHideFlags: 0

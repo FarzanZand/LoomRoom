@@ -26,7 +26,7 @@ Ceilings are built in the table reveal (after the walls) and stay visible, from 
 
 `Assets/Game/Levels/Dungeon1/Rooms` holds `Profiles` (room profiles), `Shapes` (painted room shapes) and `Templates` (hand-built rooms). Dungeon1 has one profile, `Shrine` (Rest role, using the Shrine of Ashes template). A profile can force a style, scale its room, give it a template or shapes, and replace props, enemies and rewards for its rooms. Several profiles for the same role, with weights and floor ranges, add variety. A room without a matching profile uses the level and biome settings.
 
-The entrance is safe; the exit is guarded. The biome's Encounter Chance sets the chance of combat in other rooms; the rest become treasure, rest or storage rooms. Max Enemies Per Room sets encounter size. Props live in `Dungeon1/Prefabs/Props`; keep their collider footprint inside one cell.
+The entrance is safe; the exit is guarded. The biome's Encounter Chance sets the chance of combat in other rooms; the rest become treasure, rest or storage rooms. Min and Max Enemies Per Room set encounter size (Dungeon1's biomes: 2-5 per combat room; guarded treasure and storage rooms get one). Props live in `Dungeon1/Prefabs/Props`; keep their collider footprint inside one cell.
 
 Descending keeps health, equipment and inventory. Starting equipment is given on a new run only. Generation failure restores the previous environment and floor number; the run is not lost.
 
@@ -37,7 +37,7 @@ A level's **Run** tab lists its **Biomes** in order with a floor count each; the
 **Level or biome?** The level holds what every biome shares; a biome holds what makes it different. Lists (styles, room shapes, props, furnishing, breakables, features) combine: the level's plus the biome's. Single settings (lighting, music) change only when the biome sets one. A room profile's own lists replace both for its rooms.
 
 - **Look**: extra room and corridor styles, room shapes, props and furnishing rules, breakables, wall lights and optional lighting.
-- **Population**: enemies with a weight and a **From floor** (counted from the biome's first floor), an encounter chance that ramps from the biome's first floor to its last, max enemies per room, and features (their Min Floor also counts from the biome's first floor).
+- **Population**: enemies with a weight and a **From floor** (counted from the biome's first floor), an encounter chance that ramps from the biome's first floor to its last, min and max enemies per room, and features (their Min Floor also counts from the biome's first floor).
 - **Rewards**: the biome's **Loot** (a loot profile) and merchant chance.
 - **Guardian**: waits in the exit room of the biome's last floor and seals the stairs until killed. Health and damage multipliers let an ordinary enemy serve as a guardian.
 - **Audio**: ambience, distant one-shots, music.

@@ -30,7 +30,17 @@ public class HitReactionController : MonoBehaviour
     {
         character = GetComponentInParent<Character>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
-        if (animator == null || !animator.isHuman) return;
+        if (animator == null) return;
+        // Creatures without a humanoid rig (rats, slimes) recoil as a whole: the model tips away from the blow.
+        if (!animator.isHuman)
+        {
+            // The first child under the Animator that carries no Character or AI: the visible model.
+            Transform model = null;
+            foreach (Transform child in animator.transform)
+                if (child.GetComponentInChildren<Renderer>() != null && child.GetComponent<Character>() == null) { model = child; break; }
+            if (model != null && model != animator.transform && model.GetComponent<Character>() == null) bones.Add(model);
+            return;
+        }
         // Exclude hips/root, fingers and helper transforms so recoil cannot propel or twist the actor.
         foreach (var id in new[]{HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest,
             HumanBodyBones.Neck, HumanBodyBones.Head, HumanBodyBones.LeftShoulder, HumanBodyBones.RightShoulder,

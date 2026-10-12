@@ -34,7 +34,7 @@ public class AdventureSave : MonoBehaviour
     // missing from an older file keeps its default here (lootLevel 1, empty memorial and flag lists).
     [Serializable] public class Data
     {
-        public const int Current = 3;   // 2: Barony skills (seven ranks, no partial training). 3: Stealth skill (eight ranks)
+        public const int Current = 4;   // 2: Barony skills (seven ranks, no partial training). 3: Stealth skill (eight ranks). 4: Diablo bag grid (items stored at their top-left cell)
         public int version = Current;
         public Checkpoint checkpoint;
         public List<Memorial> memorials = new();

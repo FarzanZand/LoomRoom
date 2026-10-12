@@ -20,7 +20,8 @@ Templates: `Starting room` (the level's `startingRoom`), `Merchant shop` (the le
 
 ## Breakables and features
 
-- `Levels/Dungeon1/Prefabs/Props`: Breakable barrel, Breakable crate, Clay pot, Cobweb (`DungeonDestructible`). Cobwebs use **Corner** placement. The level's **Destructibles** list is weighted; **Destructibles Per Room** adds extras. Supply spots that are not chests use a floor breakable. Debris and puffs in `Props/Effects` are pooled.
+- `Levels/Dungeon1/Prefabs/Props`: Breakable barrel, Breakable crate, Clay pot, Cobweb (`DungeonDestructible`). Cobwebs use **Corner** placement. The level's **Destructibles** list is weighted; **Destructibles Per Room** adds extras (Dungeon1: 1-3). Supply spots that are not chests use a floor breakable. Debris stays on the floor until the next floor (`debrisStays`; it freezes once settled, at most 220 pieces); puffs in `Props/Effects` are pooled. A barrel or crate can hide a Crypt Rat that comes out alerted when it breaks (`ambushPrefab`, `ambushChance` 0.12). Board levels skip corner breakables (cobwebs).
+- Supply chests glow gold as they open (`openBurst` sparks and a fading light, `glowColor`, `glowIntensity`) and throw their loot out in arcs from the mouth (`DungeonLootDrop.Spill` with `popFrom`). Loot lying on a dungeon floor gets a `LootBeam`, and `LootLabelsUI` names the items within 4.5 m.
 - `Levels/Dungeon1/Prefabs/Features`:
   - **Fountain**: sips roll weighted outcomes.
   - **Altar**: pay gold for a blessing. The price grows with depth.
@@ -40,11 +41,11 @@ Templates: `Starting room` (the level's `startingRoom`), `Merchant shop` (the le
 
 - `CombatManager`:
   - Critical hits and backstabs: chance, multipliers, hit-stop, sounds (`Audio/Data/CombatCritical`, `CombatBackstab`) and number size. A backstab hits an unaware enemy, or one facing away.
-  - **Death**: `ragdollDeath` (on), impulse, `lootableCorpses` (off on the prefab: loot scatters where the enemy dies), `corpseLifetime` (0 keeps bodies for the floor).
+  - **Death**: `ragdollDeath` (on), `ragdollImpulse` and `ragdollUpwardImpulse` (speeds in m/s: kills are thrown along the blow and the swing), `lootableCorpses` (off on the prefab: loot scatters where the enemy dies), `corpseLifetime` (0 keeps bodies for the floor).
 - How an enemy dies: `EnemyRagdoll` sits on `Enemy base`, so every enemy collapses as a ragdoll when `ragdollDeath` is on. Crypt Archer, Crypt Soldier and Crypt Warden (and so the Crypt Lord) also carry `DeathBurst`, which takes over: the body bursts into its own bones.
 - **Enemies are one prefab each** (`Characters/Enemies/Crypt/*.prefab`), variants of `Characters/Enemies/Base`:
   - `Enemy base`: every enemy component (brain, perception, motor, stats, loot, voice, ragdoll, and `EnemyFX`: knockback force their hits deal, 3 by default; Crypt Rat and Green Slime override it to 1.5).
-  - `Humanoid enemy base` (a variant of it): adds the Synty skeleton rig, weapon loadout, door use and `HitReactionController` (struck bones recoil). Each humanoid switches on its own body mesh and helmet.
+  - `Humanoid enemy base` (a variant of it): adds the Synty skeleton rig, weapon loadout, door use, `HitReactionController` (struck bones recoil), `EnemySwingTrail` (a streak on the weapon as the blow lands) and `HelmetPop` (head hits can knock the helmet off). Crypt Rat and Green Slime carry their own `HitReactionController` (the whole model tips). Each enemy's blood is on its data (`CharacterData.gore`, see `CombatFeel.md`). Each humanoid switches on its own body mesh and helmet.
   - Crypt Archer, Crypt Soldier and Crypt Warden are variants of the humanoid base; the Crypt Lord is a variant of the Warden; Crypt Rat and Green Slime are variants of `Enemy base` with their own bodies.
   - `Town/Village Brute`: the Town level's enemy (The Village), a variant of the humanoid base.
 - Each enemy's `EnemyData` is stored **inside its prefab**, shown on the Character component: Stats, Enemy (behaviour, attacks), Audio, Animation.

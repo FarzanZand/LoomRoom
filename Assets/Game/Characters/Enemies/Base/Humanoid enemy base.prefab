@@ -72,6 +72,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7439072402100927313}
+    - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4888773851005198630}
+    - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8171441150937039104}
   m_SourcePrefab: {fileID: 100100000, guid: f995d780264f1174092cc7345fc6832f, type: 3}
 --- !u!4 &5696880301978830409 stripped
 Transform:
@@ -136,6 +142,44 @@ MonoBehaviour:
   influenceDepth: 3
   parentFalloff: 0.45
   attackSpeed: 20
+--- !u!114 &4888773851005198630
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8520137168989438645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4060f376fe590341af6f78396b0f360, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySwingTrail
+  material: {fileID: 2100000, guid: 417040358c9fb8e458dabdb42f308d6d, type: 2}
+  color: {r: 1, g: 0.93, b: 0.62, a: 0.85}
+  width: 0.05
+  trailTime: 0.09
+  window: {x: 0.16, y: 0.06}
+--- !u!114 &8171441150937039104
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8520137168989438645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9823383e59eb884489e258644883969, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HelmetPop
+  chance: 0.3
+  headRadius: 0.3
+  armorLost: 1
+  helmetNames:
+  - Helmet
+  - Helm
+  - Hood
+  - Hat
+  - Mask
 --- !u!1001 &7334206519696827011
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -467,6 +511,12 @@ MonoBehaviour:
     walkStepInterval: 0.55
     runStepInterval: 0.34
     painCooldown: 0.6
+  gore:
+    kind: 1
+    color: {r: 0.42, g: 0.03, b: 0.03, a: 1}
+    amount: 1
+    burstOnDeath: 0
+    killSound: {fileID: 0}
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8

@@ -17,12 +17,19 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   description: 
-  icon: {fileID: 21300000, guid: 8dbae255d08cbbb48b95bc3a3a57794a, type: 3}
+  icon: {fileID: 21300000, guid: 109d6a7be964e8c4491dcb701731578b, type: 3}
+  iconSource:
+    custom: 0
+    model: {fileID: 0}
+    outfit: 
+    turn: {x: 0, y: 0, z: 0}
+    flip: 0
   tag: Trinket
   worldPrefab: {fileID: 3120213149088727679, guid: 800d58633adaf834c93a06ec3a2089f6, type: 3}
   pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
   itemType: 6
   maxStackSize: 1
+  gridSize: {x: 0, y: 0}
   value: 45
   tier: 2
   lootWeight: 1

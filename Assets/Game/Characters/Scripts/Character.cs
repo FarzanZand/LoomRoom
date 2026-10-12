@@ -84,6 +84,7 @@ public class Character : MonoBehaviour
         if (info.Amount > 0f || info.Blocked)
         {
             if (CombatManager.HasInstance) CombatManager.Instance.PresentImpact(this, info);
+            if (GoreManager.HasInstance) GoreManager.Instance.Hit(this, info);
             if (info.Source != null && info.Source != this && !info.FromEffect) info.Source.NotifyHitLanded(info);
             // A fight is heard: nearby enemies come to look (the attacker is the sound's source).
             if (info.Source != null && !info.FromEffect && CombatManager.HasInstance)
@@ -108,6 +109,7 @@ public class Character : MonoBehaviour
                 animator.SetBool("Dead", true);
         }
         if (data != null) TriggerAnimation(data.deathTrigger);
+        if (GoreManager.HasInstance) GoreManager.Instance.Kill(this, LastDamage);
         Died?.Invoke();
         AnyDied?.Invoke(this);
 

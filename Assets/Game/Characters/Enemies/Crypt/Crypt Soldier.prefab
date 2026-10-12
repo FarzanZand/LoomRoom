@@ -129,9 +129,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 541191b30dd45d94dbcda373d6916eac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DeathBurst
-  force: 2.2
-  upward: 0.5
-  scatter: 1.2
+  force: 4.5
+  upward: 1.8
+  scatter: 1.4
   spin: 9
   pieceMass: 0.4
   settleSeconds: 4
@@ -170,7 +170,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 2
-    baseValue: 8
+    baseValue: 6
     min: 0
     max: 0
   - stat: 1
@@ -211,6 +211,12 @@ MonoBehaviour:
     walkStepInterval: 0.55
     runStepInterval: 0.34
     painCooldown: 0.6
+  gore:
+    kind: 3
+    color: {r: 0.86, g: 0.82, b: 0.7, a: 1}
+    amount: 1
+    burstOnDeath: 0
+    killSound: {fileID: 11400000, guid: b56fdf616de73c24fafa0d20de2d326b, type: 2}
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8

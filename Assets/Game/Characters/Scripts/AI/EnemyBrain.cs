@@ -112,6 +112,8 @@ public class EnemyBrain : MonoBehaviour
     float ChaseSpeed => Profile.useChaseSpeed ? Profile.chaseSpeed : Motor.DefaultSpeed;
     public bool CanOpenHitbox => attackRunner != null && attackRunner.CanOpenHitbox;
     public bool IsSwinging    => attackRunner != null && attackRunner.IsSwinging;
+    // When the current swing's blow lands (Time.time), or -1 while unknown or not swinging.
+    public float SwingHitAt   => attackRunner != null && attackRunner.IsSwinging ? attackRunner.HitAt : -1f;
     internal WeaponAnimationRelay AttackRelay => attackRelay;
 
     // Stand still (a flinch, a stagger, the pause after a swing); only ever extends.
@@ -279,8 +281,11 @@ public class EnemyBrain : MonoBehaviour
         if (State == EnemyState.Dead || !Character.IsAlive) return;
         if (info.Source != null) { wasProvoked = true; Perception.NotifyAttackedFrom(info.Source.transform.position); }
 
-        // Flinch only when not mid-swing: a swing is never interrupted by the player's hits.
+        // Flinch only when not mid-swing: a swing is never interrupted by the player's hits, unless
+        // CombatManager.hitsInterruptWindup is on and the hit lands early in the windup.
         // A heavy stagger taken mid-swing is applied when the swing ends.
+        if (IsSwinging && !info.Blocked && info.Amount > 0f && attackRunner.TryInterrupt())
+            SetState(EnemyState.Chase);
         // A stagger is followed by a moment it can't be staggered again (CombatManager.enemyStaggerImmunity).
         if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null && Time.time >= staggerImmuneUntil)
         {

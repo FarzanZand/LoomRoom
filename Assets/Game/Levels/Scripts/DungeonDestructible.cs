@@ -32,8 +32,14 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
     [Min(.1f)] public float debrisLifetime = 3f;
     [Tooltip("Pooled one-shot effect (dust, splinters, web wisps).")]
     public GameObject breakEffect;
+    [Tooltip("Debris stays on the floor until the next floor (Heathen). Off: pooled pieces vanish after Debris Lifetime.")]
+    public bool debrisStays = true;
     [Tooltip("Rolls rewards when broken.")]
     public bool dropsLoot = true;
+    [Tooltip("Something that was hiding inside (a rat in a crate). Empty: nothing.")]
+    public GameObject ambushPrefab;
+    [Range(0, 1), Tooltip("Chance the hiding creature comes out when this breaks (from the object's seed).")]
+    public float ambushChance;
     [Tooltip("Noise radius when broken; enemies within it investigate.")]
     [Min(0)] public float noiseRadius = 6f;
 
@@ -103,7 +109,8 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
         if (debrisPrefab == null) return;
         for (int i = 0; i < count; i++)
         {
-            var piece = PoolManager.SpawnOrInstantiate(debrisPrefab, center + Random.insideUnitSphere * .2f, Random.rotation, debrisLifetime);
+            var piece = debrisStays ? Stay(Instantiate(debrisPrefab, center + Random.insideUnitSphere * .2f, Random.rotation, transform.parent))
+                : PoolManager.SpawnOrInstantiate(debrisPrefab, center + Random.insideUnitSphere * .2f, Random.rotation, debrisLifetime);
             var rb = piece != null ? piece.GetComponent<Rigidbody>() : null;
             if (rb == null) continue;
             rb.linearVelocity = Vector3.zero;
@@ -112,6 +119,17 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
             rb.AddForce(push, ForceMode.Impulse);
             rb.AddTorque(Random.insideUnitSphere * debrisForce * force, ForceMode.Impulse);
         }
+    }
+
+    // Debris kept for the floor: it settles, then freezes (saves physics time). The oldest go past the cap.
+    static readonly System.Collections.Generic.Queue<GameObject> kept = new();
+    const int MaxKeptDebris = 220;
+    GameObject Stay(GameObject piece)
+    {
+        while (kept.Count >= MaxKeptDebris) { var old = kept.Dequeue(); if (old != null) Destroy(old); }
+        kept.Enqueue(piece);
+        if (piece.TryGetComponent<Rigidbody>(out var rb)) DOVirtual.DelayedCall(4f, () => { if (rb != null) rb.isKinematic = true; }, false);
+        return piece;
     }
 
     public void Break(Vector3 direction = default)
@@ -138,6 +156,16 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
                 var (items, gold) = DungeonLootDrop.Roll(loot, rng, floorNumber, DungeonLootSource.Barrel);
                 DungeonLootDrop.Spill(items, gold, drop, transform.parent);
             }
+        }
+        // Whatever was hiding inside bursts out, already angry.
+        if (ambushPrefab != null && ambushChance > 0f && new System.Random(unchecked(seed * 17 + 5)).NextDouble() < ambushChance)
+        {
+            var rotation = Quaternion.LookRotation(direction.sqrMagnitude > .001f ? -direction : transform.forward);
+            var dungeon = GetComponentInParent<DungeonGenerator>();
+            var spawned = dungeon != null ? dungeon.SpawnAmbusher(ambushPrefab, transform.position, rotation) : null;
+            var creature = spawned != null ? spawned.gameObject : Instantiate(ambushPrefab, transform.position, rotation, transform.parent);
+            // After its first frame, so its own Start doesn't put it back to idle.
+            if (creature.TryGetComponent<EnemyBrain>(out var brain)) DOVirtual.DelayedCall(.1f, () => { if (brain != null) brain.Alert(); }, false);
         }
         Destroy(gameObject, .1f);
     }

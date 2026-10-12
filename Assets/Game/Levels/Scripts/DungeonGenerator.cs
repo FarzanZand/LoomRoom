@@ -109,6 +109,7 @@ public partial class DungeonGenerator : MonoBehaviour
     public int BiomeFloors { get; private set; }=1;
     float EncounterChance=>Biome!=null ? Biome.EncounterChance(FloorInBiome,BiomeFloors) : 0;
     int MaxEnemiesPerRoom=>Biome!=null ? Biome.maxEnemiesPerRoom : 1;
+    int MinEnemiesPerRoom=>Biome!=null ? Mathf.Clamp(Biome.minEnemiesPerRoom,1,MaxEnemiesPerRoom) : 1;
     public DungeonMilestone Milestone { get; private set; }
     public int MerchantRoom { get; private set; }=-1;
     // Streams: random (the main one) draws roles, profiles, enemy counts and spawns, props and the
@@ -367,7 +368,7 @@ public partial class DungeonGenerator : MonoBehaviour
             // Treasure and storage rooms always have a guard; rest rooms stay safe.
             bool guarded=Roles[i]==RoomRole.Treasure || Roles[i]==RoomRole.Storage;
             if(Roles[i]!=RoomRole.Combat && Roles[i]!=RoomRole.Exit && !guarded)continue;
-            int count=guarded ? 1 : random.Next(1,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
+            int count=guarded ? 1 : random.Next(MinEnemiesPerRoom,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
             if(templates[i]!=null && templates[i].replaceGeneratedEnemies)count=0;
             if(i==MerchantRoom)count=0;
             for(int j=0;j<count;j++)

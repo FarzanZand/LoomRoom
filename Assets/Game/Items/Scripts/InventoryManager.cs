@@ -20,6 +20,16 @@ public class InventoryManager : Singleton<InventoryManager>
     public GameObject defaultPickupVisual;
     [Tooltip("A few twinkles on every item lying on the floor, so pickups stand out. Fitted to the item's size.")]
     public GameObject pickupSparkle;
+    [Header("Loot beams")]
+    [Tooltip("A pillar of light over loot lying on the floor, coloured by what it is (LootBeam).")]
+    public bool lootBeams = true;
+    public Material beamMaterial;
+    [Min(.1f)] public float beamHeight = 1.6f;
+    [Min(.01f)] public float beamWidth = .13f;
+    public Color beamNormal = new(.95f, .9f, .78f, .55f);
+    [Tooltip("Used when the UIManager is missing; otherwise Honed items take UIManager.honed.")]
+    public Color beamHoned = new(.45f, .7f, 1f, .6f);
+    public Color beamConsumable = new(.35f, 1f, .4f, .55f);
 
     [Header("Drop")]
     [Tooltip("Prefab with a WorldItem used when items are dropped or spawned from data.")]

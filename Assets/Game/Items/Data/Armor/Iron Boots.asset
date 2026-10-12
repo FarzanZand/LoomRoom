@@ -17,12 +17,19 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   description: 
-  icon: {fileID: 21300000, guid: 38f4e1a097b7e64449cecca289240cb0, type: 3}
+  icon: {fileID: 21300000, guid: 903eced873e5c544fafecf97fca6f4d6, type: 3}
+  iconSource:
+    custom: 0
+    model: {fileID: 0}
+    outfit: 
+    turn: {x: 0, y: 0, z: 0}
+    flip: 0
   tag: Iron equipment
   worldPrefab: {fileID: 4755564757874122133, guid: 3a649471129c7054aac5572f992c3bc9, type: 3}
   pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
   itemType: 6
   maxStackSize: 1
+  gridSize: {x: 0, y: 0}
   value: 35
   tier: 2
   lootWeight: 1

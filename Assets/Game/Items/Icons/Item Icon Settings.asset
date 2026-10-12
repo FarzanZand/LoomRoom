@@ -1,0 +1,90 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94ecc51d5f7429747bb239e27678e442, type: 3}
+  m_Name: Item Icon Settings
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::ItemIconSettings
+  cellPixels: 88
+  supersample: 4
+  alphaCut: 0.45
+  margin: 2
+  drawOutline: 0
+  outline: {r: 0.07, g: 0.05, b: 0.04, a: 1}
+  softEdges: 1
+  sampling: 0
+  sharpen: 0
+  keyAngles: {x: 17, y: 17, z: 0}
+  keyColor: {r: 1, g: 0.95, b: 0.85, a: 1}
+  keyIntensity: 1.1
+  fillAngles: {x: -10, y: -25, z: 0}
+  fillColor: {r: 0.7, g: 0.8, b: 1, a: 1}
+  fillIntensity: 0.35
+  outfits:
+  - name: Hunter
+    prefab: {fileID: 4376708952660885327, guid: 7472f1051c156254781f50ed411e09f1, type: 3}
+    renderer: SM_Chr_Hunter_Male_01
+    mesh: {fileID: 4300000, guid: 030fc97978eeaa74bbb58e7b421d8364, type: 2}
+    material: {fileID: 2100000, guid: 67abfe5f9ad2ce24d9d2d47c68b36eb0, type: 2}
+  - name: Rider
+    prefab: {fileID: 1741276027538082, guid: 767b276e5b6e4b14bbcd51b5a6e78ca8, type: 3}
+    renderer: SM_Chr_Rider_01
+    mesh: {fileID: 4300000, guid: 529cee83fce3aa64684954d759148148, type: 2}
+    material: {fileID: 2100000, guid: 074f00e5b000b3e4d9ed16880f967f19, type: 2}
+  - name: Soldier
+    prefab: {fileID: 1741276027538082, guid: 767b276e5b6e4b14bbcd51b5a6e78ca8, type: 3}
+    renderer: SM_Chr_Soldier_Male_01
+    mesh: {fileID: 4300000, guid: 51108cb5a7c47c0489d6473ef339d8f2, type: 2}
+    material: {fileID: 2100000, guid: 47c7ecd28a0e26043ba04a05eeb0c93f, type: 2}
+  - name: Soldier (female)
+    prefab: {fileID: 1741276027538082, guid: 767b276e5b6e4b14bbcd51b5a6e78ca8, type: 3}
+    renderer: SM_Chr_Soldier_Female_01
+    mesh: {fileID: 4300000, guid: 409e874346db87a408a07b53bc35790a, type: 2}
+    material: {fileID: 2100000, guid: 1ac7802eed14d734fac265152761ba50, type: 2}
+  - name: Prince
+    prefab: {fileID: 1741276027538082, guid: 767b276e5b6e4b14bbcd51b5a6e78ca8, type: 3}
+    renderer: SM_Chr_Prince_01
+    mesh: {fileID: 4300000, guid: c5f697d0a9b10594db9c5321068e8cff, type: 2}
+    material: {fileID: 2100000, guid: de66e533ade9feb4dbeaa91ba0375fde, type: 2}
+  - name: King
+    prefab: {fileID: 1741276027538082, guid: 767b276e5b6e4b14bbcd51b5a6e78ca8, type: 3}
+    renderer: SM_Chr_King_01
+    mesh: {fileID: 4300000, guid: f6292ae134fc40c49b5381d7609e33b8, type: 2}
+    material: {fileID: 2100000, guid: 908dcff29a6b2a44184a677d954513e6, type: 2}
+  - name: Dark Lord
+    prefab: {fileID: 4376708952660885327, guid: 7472f1051c156254781f50ed411e09f1, type: 3}
+    renderer: SM_Chr_DarkLord_Male_01
+    mesh: {fileID: 4300000, guid: f9922b954a5fe9c4c8b0b6ca36be2d92, type: 2}
+    material: {fileID: 2100000, guid: 99eb3290ea3a4954192b1de37fe9c983, type: 2}
+  tiers:
+  - tier: 1
+    outfit: Hunter
+    helmPrefab: {fileID: 0}
+    helmMesh: {fileID: 4300000, guid: 0b970cef7bd7d7748965419525cb0851, type: 2}
+    helmMaterial: {fileID: 2100000, guid: 0f4ca6e95c442c34885df21c3595df83, type: 2}
+    tint: {r: 1, g: 1, b: 1, a: 1}
+  - tier: 2
+    outfit: Soldier
+    helmPrefab: {fileID: 0}
+    helmMesh: {fileID: 4300000, guid: a0b76986f4939954ca02088ed4c6a5bd, type: 2}
+    helmMaterial: {fileID: 2100000, guid: 657a71ecbdc0b9a4b976a65b23b224de, type: 2}
+    tint: {r: 1, g: 1, b: 1, a: 1}
+  - tier: 3
+    outfit: Dark Lord
+    helmPrefab: {fileID: 0}
+    helmMesh: {fileID: 4300000, guid: 1c900e965fbdae448ad1dc90beda8c72, type: 2}
+    helmMaterial: {fileID: 2100000, guid: f6d1ec05a0713804f98492ec2b7b4d8d, type: 2}
+    tint: {r: 1, g: 1, b: 1, a: 1}
+  - tier: 4
+    outfit: King
+    helmPrefab: {fileID: 0}
+    helmMesh: {fileID: 4300000, guid: 1c900e965fbdae448ad1dc90beda8c72, type: 2}
+    helmMaterial: {fileID: 2100000, guid: f6d1ec05a0713804f98492ec2b7b4d8d, type: 2}
+    tint: {r: 0.8, g: 0.95, b: 1.15, a: 1}

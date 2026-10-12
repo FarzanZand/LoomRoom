@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: Kill flesh
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: dba2ff8b2d2e1e04281bc033a6be8f11, type: 3}
+  - {fileID: 8300000, guid: b0568d12c9d730b4c9c1ef5d25e87ddf, type: 3}
+  volume: 0.65
+  pitch: 1
+  pitchVariance: 0.08
+  minDistance: 2
+  maxDistance: 30

@@ -32,6 +32,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField] string heavyReleaseSpeedParam = "HeavyReleaseSpeed";
     [SerializeField] string heavyStrikeParam       = "HeavyStrike";
     [SerializeField] string attackSpeedParam       = "AttackSpeed";
+    [SerializeField] string simpleSwingsParam      = "SimpleSwings";
+    [SerializeField] string swingSpeedParam        = "SwingSpeed";
 
     [Header("Charge feel")]
     [Tooltip("0..1 charge toward a heavy strike, for the animator.")]
@@ -63,7 +65,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         }
     }
     bool IsReleasing => AnyLayerReleasing();
+    // With CombatManager.attackFromBlock the shield is lowered for the whole swing and comes back up after it.
+    static bool AttackFromBlock => CombatManager.HasInstance && CombatManager.Instance.attackFromBlock;
     public bool IsGuarding => player != null && player.IsActive && ShieldHeld &&
+        !(AttackFromBlock && IsAttacking) &&
         (!GameManager.HasInstance || GameManager.Instance.GameplayActive) &&
         InputManager.HasInstance && InputManager.Instance.SecondaryHeld && Time.time >= blockLockUntil &&
         (player.Stats == null || !player.Stats.HasStat(StatType.MaxStamina) || (!player.Stats.IsExhausted && player.Stats.CurrentStamina > 0));
@@ -96,6 +101,9 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     bool attacking;
     public bool HeavySwing { get; private set; }
 
+    float SwingInterval => !CombatManager.HasInstance ? 0f : CombatManager.Instance.swingInterval /
+        Mathf.Max(.1f, player.Stats != null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f);
+
     // Stamina pause after blocking, guarding or a heavy swing: the player's own setting.
     float StaminaRegenDelay => player.PlayerData != null ? player.PlayerData.staminaRegenDelay : 1f;
 
@@ -121,16 +129,18 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     int queuedPresses;   // presses not yet turned into a windup, capped so spam can't bank swings
     void OnAttackStarted()
     {
+        if (AttackFromBlock) blockLockUntil = Time.time + (CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f);
         queuedPresses = Mathf.Max(0, queuedPresses - 1);
         windingUp = true;
         // Cleared here, not on press: a press during a heavy release must not turn its hit light.
         HeavySwing = false;
         // Alternate the light swing per actual swing; a pause restarts the sequence.
-        swingIndex = Time.time - lastSwingAt <= swingSequenceReset ? (swingIndex + 1) % 2 : 0;
+        swingIndex = NextSwingIndex;
         lastSwingAt = Time.time;
         AnimatorHelper.SetInteger(armsAnimator, swingIndexParam, swingIndex);
     }
     void OnSwingStarted() { windingUp = false; }
+    int NextSwingIndex => Time.time - lastSwingAt <= swingSequenceReset ? (swingIndex + 1) % 2 : 0;
 
     void OnEnable()
     {
@@ -176,15 +186,16 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     void OnPrimaryPressed()
     {
         if (!player.IsActive || (spells != null && spells.Busy)) return;
-        if (InputManager.Instance.SecondaryHeld) return;
+        if (InputManager.Instance.SecondaryHeld && !AttackFromBlock) return;
         pressedAt = Time.time;
         charging = true;
         chargeAnnounced = false;
         releasingHeavyZoom = false;
         queuedPresses = Mathf.Min(queuedPresses + 1, 2);
-        attackBufferedUntil = Time.time + (CombatManager.HasInstance ? CombatManager.Instance.attackInputBuffer : .22f);
-        float window = CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f;
-        blockLockUntil = Time.time + window;
+        // A press stays valid at least until the swing interval lets the next swing start, so a tap is never eaten.
+        attackBufferedUntil = Mathf.Max(Time.time + (CombatManager.HasInstance ? CombatManager.Instance.attackInputBuffer : .22f), lastSwingAt + SwingInterval + .05f);
+        // Without attack-from-block a press locks the shield out at once; with it, only a swing that starts does (OnAttackStarted).
+        if (!AttackFromBlock) blockLockUntil = Time.time + (CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f);
     }
 
     void OnPrimaryReleased()
@@ -223,6 +234,9 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             AnimatorHelper.SetFloat(armsAnimator, releaseSpeedParam, tuning.releaseSpeed * attackSpeed * release);
             AnimatorHelper.SetFloat(armsAnimator, heavyReleaseSpeedParam, tuning.heavyReleaseSpeed * attackSpeed * heavy);
             AnimatorHelper.SetBool(armsAnimator, heavyStrikeParam, HeavySwing);
+            AnimatorHelper.SetBool(armsAnimator, simpleSwingsParam, tuning.simpleSwings);
+            // The Heathen clips carry their own timing: only the attack speed stat scales them.
+            AnimatorHelper.SetFloat(armsAnimator, swingSpeedParam, player.Stats != null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f);
             UpdateCharge(tuning);
         }
 
@@ -233,7 +247,15 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (!attackingNow && Time.time >= attackBufferedUntil) queuedPresses = 0;
         if (!gameplay) queuedPresses = 0;
         bool buffered = gameplay && (spells == null || !spells.Busy) && queuedPresses > 0 && !windingUp;
-        AnimatorHelper.SetBool(armsAnimator, attackHeldParam, (primary || buffered) && WeaponHeld && !secondary);
+        // A new swing can't start sooner than swingInterval after the last one began (Heathen's rhythm).
+        // Only the start is held back: a windup in progress keeps reading the button for the charge.
+        bool startingSwing = !attackingNow || IsReleasing;
+        bool intervalReady = !startingSwing || Time.time - lastSwingAt >= SwingInterval;
+        // The animator picks the windup (forehand or backhand) from SwingIndex as the swing starts, so it
+        // holds the next swing's index before then; AttackBegin confirms it.
+        if (startingSwing && !windingUp) AnimatorHelper.SetInteger(armsAnimator, swingIndexParam, NextSwingIndex);
+        AnimatorHelper.SetBool(armsAnimator, attackHeldParam,
+            (primary || buffered) && WeaponHeld && (!secondary || AttackFromBlock) && intervalReady);
         if (secondary && !blockLocked && ShieldHeld && player.Stats != null &&
             player.Stats.HasStat(StatType.MaxStamina) && (player.Stats.IsExhausted || player.Stats.CurrentStamina <= 0))
             player.Stats.ReportInsufficientStamina();
@@ -381,6 +403,13 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         var rotation = heavy ? tuning.heavySwingCameraRotation
             : alternate ? tuning.alternateSwingCameraRotation : tuning.lightSwingCameraRotation;
         var curve = heavy ? tuning.heavySwingCameraCurve : tuning.swingCameraCurve;
+        if (!heavy && !tuning.simpleSwings)
+        {
+            // Heathen forehand turns the view with the blade (right to left); the backhand mirrors it.
+            rotation = tuning.heathenSwingCameraRotation;
+            if (alternate) rotation = new Vector3(rotation.x, -rotation.y, -rotation.z);
+            curve = tuning.heathenSwingCameraCurve;
+        }
         return rotation * (curve != null ? curve.Evaluate(Mathf.Clamp01(state.normalizedTime)) : 0f);
     }
 

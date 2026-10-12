@@ -74,15 +74,16 @@ public class PlayerFX : CharacterFX
         {
             if (hurtFlashRoutine != null) StopCoroutine(hurtFlashRoutine);
             Color color = hurtFlashColor;
-            float peak = hurtFlashPeakAlpha, duration = hurtFlashDuration;
+            float peak = hurtFlashPeakAlpha, duration = hurtFlashDuration, hold = 0f;
             if(CombatManager.HasInstance)
             {
                 var tuning=CombatManager.Instance;
                 color=info.Blocked ? tuning.blockScreenColor : tuning.hurtScreenColor;
                 peak=tuning.hurtScreenAlpha*(info.Blocked ? .45f : 1f);
                 duration=tuning.hurtScreenDuration;
+                hold=info.Blocked ? 0f : tuning.hurtScreenHold;
             }
-            hurtFlashRoutine = StartCoroutine(HurtFlashRoutine(color, peak, duration));
+            hurtFlashRoutine = StartCoroutine(HurtFlashRoutine(color, peak, hold, duration));
         }
     }
 
@@ -91,7 +92,15 @@ public class PlayerFX : CharacterFX
         if(player==null || !player.IsActive || player.CameraRig==null || player.CameraRig.Camera==null)return;
         // Camera shake is handled by Cinemachine impulses; character motion stays in clips.
         var impulse=info.Source==player ? onHitImpulse : onHurtImpulse;
-        if(impulse!=null) impulse.GenerateImpulseWithForce(amount);
+        if(impulse==null) return;
+        // A hit taken jolts the view away from where it came from (plus the source's own push), so you feel the side.
+        if(impulse==onHurtImpulse && !info.Blocked && info.Direction.sqrMagnitude>.001f)
+        {
+            float size=impulse.DefaultVelocity.magnitude*amount;
+            Vector3 dir=(impulse.DefaultVelocity.normalized+info.Direction.normalized*1.5f).normalized;
+            impulse.GenerateImpulseWithVelocity(dir*size);
+        }
+        else impulse.GenerateImpulseWithForce(amount);
     }
     protected override void OnDisable()
     {
@@ -101,9 +110,10 @@ public class PlayerFX : CharacterFX
         if(hurtFlashImage!=null) SetFlashAlpha(hurtFlashColor, 0f);
     }
 
-    IEnumerator HurtFlashRoutine(Color color, float peak, float duration)
+    IEnumerator HurtFlashRoutine(Color color, float peak, float hold, float duration)
     {
         SetFlashAlpha(color, peak);
+        if (hold > 0f) yield return new WaitForSecondsRealtime(hold);
         float elapsed = 0f;
         while (elapsed < duration)
         {

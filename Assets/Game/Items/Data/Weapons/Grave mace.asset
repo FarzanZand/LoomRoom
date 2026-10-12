@@ -17,12 +17,19 @@ MonoBehaviour:
   weaponCategory: 1
   spell: {fileID: 0}
   description: Heavy and slow.
-  icon: {fileID: 21300000, guid: c015fefb771fba541878c1a033605a84, type: 3}
+  icon: {fileID: 21300000, guid: 4ffe1ea518222744aa47f292f4e917e2, type: 3}
+  iconSource:
+    custom: 0
+    model: {fileID: 0}
+    outfit: 
+    turn: {x: 0, y: 0, z: 0}
+    flip: 0
   tag: 
   worldPrefab: {fileID: 2787779918877999178, guid: 88ffa9dc79b347648a92a2fa1ce07c7a, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 1
   maxStackSize: 1
+  gridSize: {x: 0, y: 0}
   value: 150
   tier: 2
   lootWeight: 1

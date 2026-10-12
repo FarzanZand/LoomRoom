@@ -136,7 +136,9 @@ public class ShopUI : Singleton<ShopUI>
     void Map(Inventory container)
     {
         if (container == null) return;
-        for (int i = 0; i < container.SlotCount; i++) packMap.Add((container, i));
+        // A Diablo bag lists its items (at their top-left cells), not every cell.
+        for (int i = 0; i < container.SlotCount; i++)
+            if (!container.IsGrid || container.ItemAt(i) != null) packMap.Add((container, i));
     }
 
     void Buy(int index)

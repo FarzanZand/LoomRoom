@@ -55,7 +55,8 @@ MonoBehaviour:
     weight: 1
     fromFloor: 1
   encounterChance: {x: 0.9, y: 0.95}
-  maxEnemiesPerRoom: 3
+  minEnemiesPerRoom: 2
+  maxEnemiesPerRoom: 5
   features: []
   loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
   merchantChance: 0.5

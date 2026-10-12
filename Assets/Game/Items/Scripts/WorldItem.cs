@@ -27,6 +27,19 @@ public class WorldItem : MonoBehaviour, IInteractable
     {
         if (worldPrefabFromData && !visualSpawned) SpawnVisual();
         AddSparkle();
+        AddBeam();
+    }
+
+    // Floor loot in a dungeon gets a pillar of light (LootBeam) once it has settled.
+    void AddBeam()
+    {
+        if (!InventoryManager.HasInstance || !InventoryManager.Instance.lootBeams || InventoryManager.Instance.beamMaterial == null || GetComponent<LootBeam>() != null) return;
+        if (GetComponentInParent<DungeonGenerator>() == null) return;
+        var renderers = GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0) return;
+        var bounds = renderers[0].bounds;
+        foreach (var r in renderers) if (!(r is ParticleSystemRenderer)) bounds.Encapsulate(r.bounds);
+        gameObject.AddComponent<LootBeam>().Init(this, bounds, InventoryManager.Instance);
     }
 
     // The InventoryManager's sparkle, centred on the item and sized to it. Added once the item has

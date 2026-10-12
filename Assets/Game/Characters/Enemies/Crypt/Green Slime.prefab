@@ -413,7 +413,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2761132636851895448, guid: f995d780264f1174092cc7345fc6832f, type: 3}
       propertyPath: deathAnimationInstead
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3042351543931888501, guid: f995d780264f1174092cc7345fc6832f, type: 3}
       propertyPath: m_Height
@@ -493,6 +493,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3389272895043074841}
+    - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5573716794965202628}
   m_SourcePrefab: {fileID: 100100000, guid: f995d780264f1174092cc7345fc6832f, type: 3}
 --- !u!4 &4297314465923531 stripped
 Transform:
@@ -526,6 +529,24 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &5573716794965202628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4124661246665639223}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60c3ce1d335e09d48abfa80177755aa2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitReactionController
+  animator: {fileID: 0}
+  reactionAngle: 20
+  damping: 9
+  influenceDepth: 2
+  parentFalloff: 0.35
+  attackSpeed: 60
 --- !u!114 &-916602278050912216
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -599,6 +620,12 @@ MonoBehaviour:
     walkStepInterval: 0.7
     runStepInterval: 0.44
     painCooldown: 0.6
+  gore:
+    kind: 2
+    color: {r: 0.42, g: 0.95, b: 0.25, a: 1}
+    amount: 1.3
+    burstOnDeath: 1
+    killSound: {fileID: 11400000, guid: 8b0c588cb69a55746a1151cd9e131432, type: 2}
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8

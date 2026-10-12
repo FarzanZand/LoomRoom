@@ -13,6 +13,9 @@ public class EnemyAttackRunner
     float   attackStartedAt;
     bool    attackWasPlaying;
     bool    swingAudioPlayed;
+    // When the blow will land (Time.time), read from the attack clip's hit event once it plays; -1 until known.
+    public float HitAt { get; private set; } = -1f;
+    const float WhooshLead = .14f;   // the whoosh comes just before the hit
     Vector3 committedForward;
     bool    directionCommitted;
     bool    fallbackHitPending;
@@ -113,6 +116,19 @@ public class EnemyAttackRunner
     // A stagger taken mid-swing waits for the swing to finish: committed swings are never interrupted.
     public void QueueStagger(float seconds) => pendingStagger = Mathf.Max(pendingStagger, seconds);
 
+    // CombatManager.hitsInterruptWindup: a hit early in the windup cancels the swing (it still counts as used).
+    // The swing after an interrupt can't be interrupted, so steady hits never stunlock an enemy.
+    bool currentUninterruptible, nextUninterruptible;
+    public bool TryInterrupt()
+    {
+        if (current == null || currentUninterruptible || Tuning == null || !Tuning.hitsInterruptWindup) return false;
+        if (Time.time - attackStartedAt > Tuning.interruptWindow) return false;
+        StartCooldown(current);
+        Cancel();
+        nextUninterruptible = true;
+        return true;
+    }
+
     // ── Picking and starting ──────────────────────────────────────────
 
     public EnemyAttack PickAttack(float dist)
@@ -151,10 +167,13 @@ public class EnemyAttackRunner
     {
         current = attack;
         attackStartedAt = Time.time;
+        currentUninterruptible = nextUninterruptible;
+        nextUninterruptible = false;
         committedForward = brain.transform.forward;
         directionCommitted = false;
         attackWasPlaying = false;
         swingAudioPlayed = false;
+        HitAt = -1f;
         var hitbox = brain.AttackRelay != null ? brain.AttackRelay.GetHitbox(attack.hitboxIndex) : null;
         if (hitbox != null) hitbox.SetProfile(attack.hit);
 
@@ -208,11 +227,13 @@ public class EnemyAttackRunner
         {
             Motor.LookAt(target.transform.position, brain.Profile.windupTrackSpeed);
         }
-        else
-        {
-            CommitDirection();
-            if (!swingAudioPlayed) { swingAudioPlayed = true; PlaySwingAudio(); }
-        }
+        else CommitDirection();
+
+        // The whoosh plays just before the blow lands (it used to play at the commit, after early hits).
+        if (HitAt < 0f && !current.IsBowShot) HitAt = EstimateHit();
+        if (!swingAudioPlayed && !current.IsBowShot && HitAt > 0f && Time.time >= HitAt - WhooshLead) { swingAudioPlayed = true; PlaySwingAudio(); }
+        // A clip without a hit event: the whoosh at the commit, as before.
+        if (!swingAudioPlayed && !current.IsBowShot && HitAt < 0f && directionCommitted && attackWasPlaying) { swingAudioPlayed = true; PlaySwingAudio(); }
 
         if (IsPlayingAttack()) { attackWasPlaying = true; return; }
 
@@ -249,6 +270,32 @@ public class EnemyAttackRunner
     }
 
     public bool IsPlayingAttack() => AnimatorHelper.AnyLayerHasTag(Character.Animator, AttackTag);
+
+    // The hit event's time in the attack clip now playing, as a moment in game time (never before the minimum windup).
+    float EstimateHit()
+    {
+        if (current.fallbackHitDelay >= 0f && (brain.AttackRelay == null || brain.AttackRelay.GetHitbox(current.hitboxIndex) == null))
+            return attackStartedAt + Mathf.Max(current.fallbackHitDelay, MinWindup);
+        var anim = Character.Animator;
+        if (anim == null) return -1f;
+        for (int layer = 0; layer < anim.layerCount; layer++)
+        {
+            var state = anim.GetCurrentAnimatorStateInfo(layer);
+            if (!state.IsTag("Attack")) continue;
+            foreach (var info in anim.GetCurrentAnimatorClipInfo(layer))
+            {
+                if (info.clip == null) continue;
+                foreach (var e in info.clip.events)
+                    if (e.functionName == "OnAttackHit" || e.functionName == "EnableHitbox")
+                    {
+                        float speed = Mathf.Max(.01f, Mathf.Abs(state.speed * state.speedMultiplier));
+                        float remaining = (e.time - state.normalizedTime * info.clip.length) / speed;
+                        return Mathf.Max(Time.time + remaining, attackStartedAt + MinWindup);
+                    }
+            }
+        }
+        return -1f;
+    }
 
     // ── Hit timing ────────────────────────────────────────────────────
 

@@ -189,6 +189,12 @@ MonoBehaviour:
     walkStepInterval: 0.55
     runStepInterval: 0.34
     painCooldown: 0.6
+  gore:
+    kind: 1
+    color: {r: 0.72, g: 0.05, b: 0.04, a: 1}
+    amount: 1
+    burstOnDeath: 0
+    killSound: {fileID: 11400000, guid: af7970142445f654dbc7a19e80a9a3b5, type: 2}
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 20

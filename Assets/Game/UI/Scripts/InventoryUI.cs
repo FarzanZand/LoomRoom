@@ -15,10 +15,14 @@ public class InventoryUI : MonoBehaviour
     public bool IsOpen=>isOpen;
     public RectTransform inventoryPanel,statsPanel;
     public EquipmentPanelUI equipmentPanel;
+    [Tooltip("Draws grid items across their cells (Diablo bag).")]
+    public ItemGridUI itemGrid;
     public UIFeedbackSettings feedback;
     Sequence transition;
     Vector2 inventoryHome,statsHome;
     void Awake(){if(inventoryPanel!=null)inventoryHome=inventoryPanel.anchoredPosition;if(statsPanel!=null)statsHome=statsPanel.anchoredPosition;}
+    // Off screen toward the side the panel is anchored to.
+    static Vector2 Away(RectTransform panel)=>(panel.anchorMin.x>.5f?Vector2.right:Vector2.left)*(panel.rect.width+80);
     void Animate(bool opening){
         transition?.Kill();
         if(inventoryPanel==null && statsPanel==null){if(!opening)FinishClose();return;}
@@ -26,8 +30,8 @@ public class InventoryUI : MonoBehaviour
         float duration=settings!=null?settings.panelDuration:.22f;
         var ease=settings!=null?settings.panelEase:Ease.OutCubic;
         transition=DOTween.Sequence().SetUpdate(true);
-        if(inventoryPanel!=null)transition.Join(inventoryPanel.DOAnchorPos(opening?inventoryHome:inventoryHome+Vector2.left*(inventoryPanel.rect.width+80),duration).SetEase(ease));
-        if(statsPanel!=null)transition.Join(statsPanel.DOAnchorPos(opening?statsHome:statsHome+Vector2.right*(statsPanel.rect.width+80),duration).SetEase(ease));
+        if(inventoryPanel!=null)transition.Join(inventoryPanel.DOAnchorPos(opening?inventoryHome:inventoryHome+Away(inventoryPanel),duration).SetEase(ease));
+        if(statsPanel!=null)transition.Join(statsPanel.DOAnchorPos(opening?statsHome:statsHome+Away(statsPanel),duration).SetEase(ease));
         if(!opening)transition.OnComplete(HidePanel);
     }
     // The Inventory state is given back as soon as the panel starts closing, so a killed close tween
@@ -90,6 +94,7 @@ public class InventoryUI : MonoBehaviour
 
         for (int i = 0; i < slots.Count; i++)
             if (slots[i] != null) slots[i].Bind(bound, i);
+        itemGrid?.Bind(bound);
         Refresh();
     }
 
@@ -105,8 +110,8 @@ public class InventoryUI : MonoBehaviour
         if (GameManager.HasInstance && !GameManager.Instance.GameplayActive && GameManager.Instance.State!=GameState.Inventory) return;
         if(!ownsMenu){
             ownsMenu=true;
-            if(inventoryPanel!=null)inventoryPanel.anchoredPosition=inventoryHome+Vector2.left*(inventoryPanel.rect.width+80);
-            if(statsPanel!=null)statsPanel.anchoredPosition=statsHome+Vector2.right*(statsPanel.rect.width+80);
+            if(inventoryPanel!=null)inventoryPanel.anchoredPosition=inventoryHome+Away(inventoryPanel);
+            if(statsPanel!=null)statsPanel.anchoredPosition=statsHome+Away(statsPanel);
             if(GameManager.HasInstance)GameManager.Instance.Push(GameState.Inventory);
         }
         isOpen = true;
@@ -135,6 +140,7 @@ public class InventoryUI : MonoBehaviour
     {
         bool dungeon=PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind==PlayerKind.Table;
         foreach (var s in slots) if (s != null){s.SetDungeonStyle(dungeon,null,null);s.Refresh();}
+        itemGrid?.Refresh();
         equipmentPanel?.Refresh();
     }
 }

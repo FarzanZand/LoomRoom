@@ -29,6 +29,7 @@ public class DungeonCombatFeedback : MonoBehaviour
         public Transform target;
         public Vector3 position;
         public float started, until, scale=1;
+        public bool punch;   // criticals and backstabs grow in
         public Color color;
     }
     readonly List<EnemyView> enemies=new();
@@ -81,8 +82,10 @@ public class DungeonCombatFeedback : MonoBehaviour
         bool special=!info.Blocked && (info.Critical || info.Backstab);
         float scale=numberScale*(special && CombatManager.HasInstance ? CombatManager.Instance.critNumberScale:1);
         string amount=Mathf.CeilToInt(info.Amount).ToString();
-        ShowNumber(view.character.transform,Head(view.character),info.Blocked ? "BLOCK":info.Backstab ? "BACKSTAB "+amount:info.Critical ? amount+"!":amount,
-            info.Blocked ? new Color(.53f,.85f,1):info.Backstab ? new Color(1,.42f,.3f):info.Critical ? new Color(1,.6f,.2f):info.Heavy ? new Color(1,.78f,.25f):new Color(1,.93f,.79f),scale);
+        // Heathen: the number appears where the blade struck; criticals say so above a bigger number that grows in.
+        Vector3 at=info.HitPoint!=Vector3.zero && !info.Blocked ? info.HitPoint:Head(view.character);
+        ShowNumber(view.character.transform,at,info.Blocked ? "BLOCK":info.Backstab ? "BACKSTAB!\n"+amount:info.Critical ? "CRITICAL!\n"+amount:amount,
+            info.Blocked ? new Color(.53f,.85f,1):info.Backstab ? new Color(1,.42f,.3f):info.Critical ? new Color(1,.6f,.2f):info.Heavy ? new Color(1,.85f,.45f):Color.white,scale,special);
     }
     void ObjectHit(DungeonDestructible target,DamageInfo info)
     {
@@ -98,11 +101,11 @@ public class DungeonCombatFeedback : MonoBehaviour
         // A hit-counted breakable's bar already shows the hits left; the damage number would mislead.
         if(!target.CountsHits)ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f),numberScale);
     }
-    void ShowNumber(Transform target,Vector3 position,string text,Color color,float scale=1)
+    void ShowNumber(Transform target,Vector3 position,string text,Color color,float scale=1,bool punch=false)
     {
         if(popups.Count==0)return;
-        var p=popups[popupIndex++%popups.Count];p.target=target;p.position=position;p.started=Time.time;p.until=Time.time+(scale>numberScale ? 1.2f:.85f);p.color=color;p.label.text=text;
-        p.scale=scale;p.label.rectTransform.localScale=Vector3.one*scale;
+        var p=popups[popupIndex++%popups.Count];p.target=target;p.position=position;p.started=Time.time;p.until=Time.time+(punch ? 1.3f:numberLifetime);p.color=color;p.label.text=text;
+        p.scale=scale;p.punch=punch;p.label.rectTransform.localScale=Vector3.one*scale;
     }
     void PlayerDamaged(DamageInfo info)
     {
@@ -114,9 +117,12 @@ public class DungeonCombatFeedback : MonoBehaviour
         if(!info.Blocked && info.Amount>0)Result(info.Backstab ? "BACKSTAB":info.Critical ? "CRITICAL":info.Heavy ? "HEAVY HIT":"×",
             info.Backstab || info.Critical ? new Color(1,.5f,.25f):info.Heavy ? new Color(1,.8f,.3f):Color.white,info.Backstab || info.Critical ? .5f:.22f);
     }
-    void Result(string text,Color color,float duration){if(impact==null)return;impact.text=text;impact.color=color;impactUntil=Time.time+duration;}
+    void Result(string text,Color color,float duration){if(impact==null || !resultLine)return;impact.text=text;impact.color=color;impactUntil=Time.time+duration;}
     [SerializeField,Min(0),Tooltip("Enemy bars stay this far below the top of the screen (the skill popup's space).")] float barTopMargin=260;
     [SerializeField,Min(.1f),Tooltip("Size of every damage number; criticals and backstabs are CombatManager.critNumberScale bigger again.")] float numberScale=1.6f;
+    [SerializeField,Min(0),Tooltip("Metres per second a damage number drifts up from where the hit landed.")] float numberRise=.3f;
+    [SerializeField,Min(.1f),Tooltip("Seconds an ordinary damage number stays (criticals 1.3).")] float numberLifetime=.9f;
+    [SerializeField,Tooltip("The line in the middle of the screen for each hit (×, CRITICAL, BLOCKED, −n). Heathen has none.")] bool resultLine=false;
     [SerializeField,Tooltip("Barony style: one enemy bar with its name at the top of the screen, for the enemy last hit (or aimed at), instead of bars over heads.")] bool topBar=true;
     [SerializeField,Min(0),Tooltip("Top bar: distance from the top of the screen.")] float topBarOffset=96;
     [SerializeField,Min(.1f),Tooltip("Top bar: size against the bar over a head.")] float topBarScale=1.8f;
@@ -176,7 +182,9 @@ public class DungeonCombatFeedback : MonoBehaviour
         foreach(var p in popups)
         {
             bool visible=show && Time.time<p.until && p.target!=null && HasSight(camera,p.target,p.position);
-            p.label.gameObject.SetActive(visible && Project(camera,p.position+Vector3.up*((Time.time-p.started)*.65f),p.label.rectTransform));
+            p.label.gameObject.SetActive(visible && Project(camera,p.position+Vector3.up*((Time.time-p.started)*numberRise),p.label.rectTransform));
+            // A critical grows from small to full over .3 s, overshooting a little.
+            if(p.punch){float t=Mathf.Clamp01((Time.time-p.started)/.3f);float grow=t<.75f ? Mathf.Lerp(.45f,1.12f,t/.75f):Mathf.Lerp(1.12f,1f,(t-.75f)/.25f);p.label.rectTransform.localScale=Vector3.one*p.scale*grow;}
             var color=p.color;color.a=Mathf.Clamp01((p.until-Time.time)/.25f);p.label.color=color;
         }
         if(impact!=null)impact.gameObject.SetActive(show && Time.time<impactUntil);

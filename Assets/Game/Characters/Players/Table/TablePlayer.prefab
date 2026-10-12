@@ -2222,8 +2222,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inventory
   role: 0
-  slotCount: 24
+  slotCount: 40
   allowedTypes: -1
+  gridWidth: 10
 --- !u!114 &4625242001680547483
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2239,6 +2240,7 @@ MonoBehaviour:
   role: 1
   slotCount: 6
   allowedTypes: 158
+  gridWidth: 0
 --- !u!114 &5153306241458268471
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2286,6 +2288,8 @@ MonoBehaviour:
   heavyReleaseSpeedParam: HeavyReleaseSpeed
   heavyStrikeParam: HeavyStrike
   attackSpeedParam: AttackSpeed
+  simpleSwingsParam: SimpleSwings
+  swingSpeedParam: SwingSpeed
   chargeParam: Charge
   holdSpeedParam: HoldSpeed
   chargeLayer: ChargeAdditive
@@ -4272,6 +4276,7 @@ GameObject:
   - component: {fileID: 7028161561772755724}
   - component: {fileID: 1453603038478907138}
   - component: {fileID: 3087612782590341386}
+  - component: {fileID: 8472811840062185772}
   m_Layer: 7
   m_Name: WeaponCollider
   m_TagString: Untagged
@@ -4334,6 +4339,25 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   hitboxIndex: 0
+--- !u!114 &8472811840062185772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4198344174805983839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4766e852a5de2b044984389c1a24e3d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SlashLines
+  material: {fileID: 2100000, guid: 417040358c9fb8e458dabdb42f308d6d, type: 2}
+  lineCount: 4
+  bladeSpan: {x: 0.45, y: 1}
+  width: 0.012
+  trail: 0.045
+  linger: 0.07
+  color: {r: 1, g: 1, b: 1, a: 0.9}
 --- !u!1 &4255397459456748911
 GameObject:
   m_ObjectHideFlags: 0
@@ -9593,6 +9617,12 @@ MonoBehaviour:
     walkStepInterval: 0.55
     runStepInterval: 0.34
     painCooldown: 0.6
+  gore:
+    kind: 1
+    color: {r: 0.42, g: 0.03, b: 0.03, a: 1}
+    amount: 1
+    burstOnDeath: 0
+    killSound: {fileID: 0}
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 0
@@ -9600,7 +9630,7 @@ MonoBehaviour:
   canSprint: 0
   sprintSpeed: 7.2
   crouchSpeed: 1.75
-  backwardSpeed: 0.5
+  backwardSpeed: 0.8
   jumpForce: 8
   gravityMultiplier: 2.5
   sprintStaminaPerSecond: 6

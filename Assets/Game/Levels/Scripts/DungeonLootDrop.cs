@@ -41,9 +41,9 @@ public class DungeonLootDrop : MonoBehaviour
         var items = table.RollDrops(rng, floor, source);
         return (items ?? new List<LootSource.Drop>(), table.RollGold(rng, floor, source));
     }
-    public static void Spill(IReadOnlyList<LootSource.Drop> drops, int gold, Vector3 position, Transform parent)
+    public static void Spill(IReadOnlyList<LootSource.Drop> drops, int gold, Vector3 position, Transform parent, Vector3? popFrom = null)
     {
-        if (drops != null && drops.Count > 0) DungeonPickup.SpawnDrops(drops, position, parent);
+        if (drops != null && drops.Count > 0) DungeonPickup.SpawnDrops(drops, position, parent, popFrom);
         if (gold > 0 && CurrencyManager.HasInstance) CurrencyManager.Instance.SpawnCoins(gold, position, parent);
     }
 }

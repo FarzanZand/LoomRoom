@@ -95,7 +95,8 @@ public partial class DungeonGenerator
                 case DungeonSocketType.Breakable:
                 {
                     var prefab=socket.overridePrefab!=null ? socket.overridePrefab : DungeonWeightedPrefab.Choose(Destructibles,extraRandom);
-                    if(prefab!=null)SpawnDestructible(prefab,t.position,t.rotation,rewards,extraRandom.Next());
+                    // A board has no walls or ceiling for corner pieces (cobwebs) to hang from.
+                    if(prefab!=null && (!Board || IsFloorBreakable(prefab)))SpawnDestructible(prefab,t.position,t.rotation,rewards,extraRandom.Next());
                     break;
                 }
                 // A board has no walls to hang them on (its doors get their own torch, BoardDoorTorch).
@@ -158,7 +159,8 @@ public partial class DungeonGenerator
         {
             int min=Mathf.Clamp(data.destructiblesPerRoom.x,0,8),max=Mathf.Clamp(data.destructiblesPerRoom.y,min,8);
             int count=extraRandom.Next(min,max+1);
-            var corners=Corners(index);
+            // A board has no walls or ceiling for corner pieces (cobwebs) to hang from.
+            var corners=Board ? new System.Collections.Generic.List<Pose>() : Corners(index);
             for(int i=0;i<count;i++)
             {
                 var prefab=DungeonWeightedPrefab.Choose(breakables,extraRandom);
@@ -264,6 +266,14 @@ public partial class DungeonGenerator
 
     // Floor scaling for every enemy the generator places. With a loot stream, also the room's rewards
     // (or the floor's loot) and a seed on its loot drop.
+    // A creature that comes out of something mid-floor (a crate's rat): floor scaling, loot and the NavMesh, like any
+    // generated enemy. Uses its own random so the level's draw order never shifts.
+    public Character SpawnAmbusher(GameObject prefab,Vector3 pos,Quaternion rotation)
+    {
+        if(!NavMesh.SamplePosition(pos,out var hit,2f,NavMesh.AllAreas))return null;
+        return SetUpEnemy(Instantiate(prefab,hit.position,rotation,transform),new System.Random(unchecked((int)(pos.x*73856093)^(int)(pos.z*19349663))));
+    }
+
     Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null)
     {
         var character=enemy.GetComponent<Character>();

@@ -35,7 +35,10 @@ public static class ItemDatabaseAuthoring
         item.itemName = Path.GetFileNameWithoutExtension(path); item.itemType = type;
         item.canBeEquipped = type == ItemType.Weapon || type == ItemType.Shield || type == ItemType.Equipment;
         item.equipSlot = type == ItemType.Shield ? EquipmentSlot.LeftHand : type == ItemType.Equipment ? EquipmentSlot.Head : EquipmentSlot.RightHand;
-        AssetDatabase.CreateAsset(item, path); Save(); return item;
+        AssetDatabase.CreateAsset(item, path); Save();
+        // Worn gear gets its tier's look straight away; other kinds once they have a model (OnValidate).
+        ItemIconRenderer.Generate(item);
+        return item;
     }
     public static ItemData Duplicate(ItemData source)
     {
@@ -46,7 +49,9 @@ public static class ItemDatabaseAuthoring
         var names = new HashSet<string>(All().Where(i => i != copy).Select(i => i.itemName), StringComparer.OrdinalIgnoreCase);
         string name = source.itemName + " copy"; int suffix = 2;
         while (names.Contains(name)) name = source.itemName + " copy " + suffix++;
-        copy.itemName = name; EditorUtility.SetDirty(copy); Save(); return copy;
+        copy.itemName = name; EditorUtility.SetDirty(copy); Save();
+        if (ItemIconRenderer.IsGenerated(copy.icon)) ItemIconRenderer.Generate(copy); // its own icon file, not the source's
+        return copy;
     }
     public static string Destination(ItemData item) => Folder(item.itemType) + "/" + Path.GetFileName(AssetDatabase.GetAssetPath(item));
     public static void Move(ItemData item, string destination)

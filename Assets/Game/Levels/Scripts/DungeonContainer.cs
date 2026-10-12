@@ -25,6 +25,22 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         health -= info.Amount;
         if (health <= 0) Open();
     }
+    [Tooltip("Burst of gold sparks from the chest as it opens (optional).")]
+    public GameObject openBurst;
+    public Color glowColor = new Color(1f,.78f,.38f);
+    [Min(0)] public float glowIntensity = 6f;
+
+    // Light spills out of the open chest, then fades.
+    void Glow(Vector3 at)
+    {
+        if(openBurst!=null)PoolManager.SpawnOrInstantiate(openBurst,at,Quaternion.identity,2f);
+        if(glowIntensity<=0)return;
+        var go=new GameObject("Chest glow");go.transform.SetParent(transform,false);go.transform.position=at;
+        var light=go.AddComponent<Light>();light.type=LightType.Point;light.color=glowColor;light.range=3.5f;light.intensity=0;
+        DOTween.Sequence().Append(DOTween.To(()=>light.intensity,v=>light.intensity=v,glowIntensity,.25f))
+            .Append(DOTween.To(()=>light.intensity,v=>light.intensity=v,0f,2.2f)).OnComplete(()=>Destroy(go)).SetLink(go);
+    }
+
     void Open()
     {
         if (opened) return;
@@ -40,7 +56,10 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         // A chest is never empty: reroll the items a few times, then fall back to a little gold.
         for(int i=0;chest && drops.Count==0 && guaranteedItem==null && loot!=null && i<4;i++) drops=loot.RollDrops(rng,floorNumber,source);
         if(chest && drops.Count==0 && guaranteedItem==null && gold<=0) gold=3+rng.Next(0,3)+floorNumber*2;
-        DungeonLootDrop.Spill(drops,gold,dropPosition,transform.parent);
+        // A chest glows gold as it opens and its loot jumps out (Heathen).
+        var mouth=transform.position+Vector3.up*.55f;
+        DungeonLootDrop.Spill(drops,gold,dropPosition,transform.parent,chest ? mouth : (Vector3?)null);
+        if(chest)Glow(mouth);
         if(chest && lid!=null){lid.DOLocalRotate(lidOpenRotation,lidOpenSeconds).SetEase(Ease.OutCubic).SetLink(gameObject);return;}
         for (int i = 0; i < 6; i++)
         {

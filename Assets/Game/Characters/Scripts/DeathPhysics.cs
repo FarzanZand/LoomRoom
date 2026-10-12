@@ -15,8 +15,13 @@ public static class DeathPhysics
     }
 
     // The killing blow's direction (not normalised), or backwards when the hit had none.
-    public static Vector3 HitDirection(DamageInfo lastHit, Transform body) =>
-        lastHit.Direction.sqrMagnitude > .001f ? lastHit.Direction : -body.forward;
+    // Away from the attacker, carried along the blade's swing (Heathen: kills fly the way they were cut).
+    public static Vector3 HitDirection(DamageInfo lastHit, Transform body)
+    {
+        Vector3 away = lastHit.Direction.sqrMagnitude > .001f ? lastHit.Direction : -body.forward;
+        Vector3 swing = lastHit.SwingDirection; swing.y = 0f;
+        return (away + swing * .7f).normalized;
+    }
 
     public static void IgnorePlayers(List<Rigidbody> bodies)
     {
@@ -32,6 +37,15 @@ public static class DeathPhysics
             foreach (var pc in context.player.GetComponentsInChildren<Collider>(true))
                 foreach (var c in pieces)
                     Physics.IgnoreCollision(pc, c, true);
+        }
+        // Bodies fall through the living to the floor: a pack fight never ends with a corpse resting on
+        // an enemy's head at eye height.
+        foreach (var brain in EnemyBrain.Active)
+        {
+            if (brain == null || brain.Character == null || !brain.Character.IsAlive) continue;
+            foreach (var ec in brain.GetComponents<Collider>())
+                foreach (var c in pieces)
+                    Physics.IgnoreCollision(ec, c, true);
         }
     }
 

@@ -15,7 +15,11 @@ public class ItemData : ScriptableObject
     public WeaponCategory weaponCategory;
     [Tooltip("Makes this item a spell tome: held in the left hand, it casts this spell.")] public SpellDefinition spell;
     [TextArea] public string description;
+    [HorizontalGroup("IconRow")]
+    [Tooltip("Bag icon, sized to the item's footprint. Generated from the item's model (Icon Source) unless custom.")]
     public Sprite icon;
+    [Tooltip("How the icon is generated from the item's model; Custom keeps an icon you assign yourself.")]
+    public ItemIconSource iconSource = new();
     [Tooltip("Free-form label for grouping in the Item Database window.")]
     public string tag;
 
@@ -28,6 +32,32 @@ public class ItemData : ScriptableObject
     public ItemType itemType = ItemType.Generic;
 
     [Min(1)] public int maxStackSize = 1;
+
+    [Tooltip("Cells it takes in the bag grid (Diablo style), width x height. 0 x 0 picks by kind: swords and maces 1x3, " +
+        "knives 1x2, shields 2x2, body armour 2x3, helm, gloves, boots and leggings 2x2, the rest 1x1.")]
+    public Vector2Int gridSize;
+    public Vector2Int GridSize
+    {
+        get
+        {
+            if (gridSize.x > 0 && gridSize.y > 0) return gridSize;
+            switch (itemType)
+            {
+                case ItemType.Weapon: return itemName != null && itemName.IndexOf("Knife", System.StringComparison.OrdinalIgnoreCase) >= 0 ? new Vector2Int(1, 2) : new Vector2Int(1, 3);
+                case ItemType.Shield: return new Vector2Int(2, 2);
+                case ItemType.Tool: return new Vector2Int(1, 2);
+                case ItemType.Equipment:
+                    if (!canBeEquipped) return Vector2Int.one;
+                    return equipSlot switch
+                    {
+                        EquipmentSlot.Body => new Vector2Int(2, 3),
+                        EquipmentSlot.Head or EquipmentSlot.Gloves or EquipmentSlot.Boots or EquipmentSlot.Legs => new Vector2Int(2, 2),
+                        _ => Vector2Int.one,
+                    };
+                default: return Vector2Int.one;
+            }
+        }
+    }
 
     [Tooltip("Price in gold at a merchant. Selling pays CurrencyManager's sell fraction of this. Zero uses the manager's fallback price.")]
     [Min(0)] public int value;
@@ -351,7 +381,25 @@ public class ItemData : ScriptableObject
     {
         if (itemType == ItemType.Weapon || itemType == ItemType.Shield) canBeEquipped = true;
         if (maxStackSize < 1) maxStackSize = 1;
+#if UNITY_EDITOR
+        EditorValidated?.Invoke(this);
+#endif
     }
+
+    // ── Editor: generate the bag icon (ItemIconRenderer) ──────────────
+
+    [HorizontalGroup("IconRow", Width = 100)]
+    [Button("Generate icon"), DisableIf("@iconSource != null && iconSource.custom")]
+    void GenerateIcon()
+    {
+#if UNITY_EDITOR
+        EditorIconRequested?.Invoke(this);
+#endif
+    }
+#if UNITY_EDITOR
+    // Set by ItemIconRenderer: the button above, and OnValidate so a generated icon follows its model.
+    public static System.Action<ItemData> EditorIconRequested, EditorValidated;
+#endif
 
     // ── Editor: generate a world pickup prefab variant ────────────────
 

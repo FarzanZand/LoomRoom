@@ -12,7 +12,10 @@ public class EquipmentSlotUI : MonoBehaviour,IPointerClickHandler,IPointerEnterH
     public void Bind(Player owner){player=owner;Refresh();}
     [Tooltip("Shown behind the icon when the worn item is honed.")]
     public Image honedFill;
-    public void Refresh(){var item=player?.Equipment?.Get(slot);if(icon!=null){icon.sprite=item!=null?item.icon:null;icon.enabled=item!=null;}if(title!=null)title.text=Display(slot);
+    public void Refresh(){var item=player?.Equipment?.Get(slot);if(icon!=null){icon.sprite=item!=null?item.icon:null;icon.enabled=item!=null;
+        // A long weapon stands upright in a tall slot (Diablo); everything else fills the slot.
+        var area=((RectTransform)transform).rect.size-Vector2.one*12f;
+        ItemGridUI.UprightIcon(icon.rectTransform,area,item!=null && item.GridSize.x==1 && area.y>area.x*1.5f ? new Vector2Int(1,item.GridSize.y) : Vector2Int.one);}if(title!=null)title.text=Display(slot);
         if(honedFill!=null){honedFill.enabled=item!=null && item.honed>0;if(honedFill.enabled)honedFill.color=UIManager.HasInstance?UIManager.Instance.honed:UIManager.DefaultHoned;}}
     public static string Display(EquipmentSlot slot)=>ItemData.SlotName(slot).ToUpperInvariant();
     // A worn item needs room in the pack to come off; with none it stays on ("Make room" notice).

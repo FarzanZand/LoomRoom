@@ -57,9 +57,10 @@ public class EnemyRagdoll : MonoBehaviour
         DeathPhysics.IgnorePlayers(bodies);
         var cm = CombatManager.Instance;
         Vector3 dir = DeathPhysics.HitDirection(lastHit, transform);
-        Vector3 impulse = dir * cm.ragdollImpulse * (lastHit.Heavy ? 1.5f : 1f) + Vector3.up * cm.ragdollUpwardImpulse;
+        // The whole body leaves the ground together, thrown metres along the killing blow (Heathen).
+        Vector3 launch = dir * cm.ragdollImpulse * (lastHit.Heavy || lastHit.Critical ? 1.4f : 1f) + Vector3.up * cm.ragdollUpwardImpulse;
         foreach (var rb in bodies)
-            rb.AddForce(impulse * (rb.mass / Mathf.Max(.01f, totalMass)) * bodies.Count * .5f, ForceMode.Impulse);
+            rb.linearVelocity = launch + Random.insideUnitSphere * .4f;
         if (bodies.Count == 1) bodies[0].AddTorque(Random.onUnitSphere * 2f, ForceMode.Impulse);
         StartCoroutine(DeathPhysics.Settle(bodies, settleSeconds));
     }

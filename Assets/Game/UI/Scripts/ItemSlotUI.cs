@@ -25,10 +25,18 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     [SerializeField] bool useAuthoredAppearance;
     [SerializeField] Color frameColor = new Color(.5f,.57f,.55f);
     [SerializeField] Color equippedFrameColor = new Color(1,.83f,.35f);
+    [Tooltip("Authored appearance: tint of a cell an item covers (Diablo's blue-grey).")]
+    [SerializeField] Color occupiedTint = new Color(.62f,.7f,.9f);
 
     public Inventory Container { get; private set; }
     public int       Index     { get; private set; }
-    public ItemData  Item      => Container != null ? Container.ItemAt(Index) : null;
+    // In a Diablo grid every cell an item covers answers for it: its anchor (top-left) holds the stack.
+    public int       Anchor    => Container == null ? -1 : Container.IsGrid ? Container.OwnerAt(Index) : Index;
+    public ItemData  Item      => Container != null && Anchor >= 0 ? Container.ItemAt(Anchor) : null;
+    // A grid draws its items across their cells (ItemGridUI); the cell itself only shows that it is taken.
+    bool GridCell => Container != null && Container.IsGrid;
+    // Set by ItemGridUI while an item is dragged over the grid: where it would go (green) or not (red).
+    public Color? PreviewTint { get; set; }
 
     Player Owner => Container != null ? Container.GetComponentInParent<Player>() : null;
 
@@ -82,17 +90,20 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void Refresh()
     {
         var item  = Item;
-        int count = Container != null ? Container.CountAt(Index) : 0;
+        int count = Container != null && Anchor >= 0 ? Container.CountAt(Anchor) : 0;
+        if (GridCell) count = 0;
 
         if (iconImage != null)
         {
             iconImage.sprite  = item != null ? item.icon : null;
-            iconImage.enabled = item != null && item.icon != null;
+            iconImage.enabled = item != null && item.icon != null && !GridCell;
         }
-        if (background != null && !useAuthoredAppearance) background.color = item != null ? filledColor : emptyColor;
+        if (background != null && !useAuthoredAppearance) background.color = PreviewTint ?? (item != null ? filledColor : emptyColor);
+        // Authored cells (the Diablo bag) keep their sprite; taken cells and the drag footprint only tint it.
+        else if (background != null && GridCell) background.color = PreviewTint ?? (item != null ? occupiedTint : Color.white);
         if (honedFill != null)
         {
-            honedFill.enabled = item != null && item.honed > 0;
+            honedFill.enabled = item != null && item.honed > 0 && !GridCell;
             if (honedFill.enabled) honedFill.color = UIManager.HasInstance ? UIManager.Instance.honed : UIManager.DefaultHoned;
         }
         if (stackLabel != null)
@@ -103,7 +114,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (equippedHighlight != null)
         {
             var eq = Owner != null ? Owner.Equipment : null;
-            equippedHighlight.gameObject.SetActive(item != null && eq != null && eq.IsEquipped(item));
+            equippedHighlight.gameObject.SetActive(item != null && eq != null && eq.IsEquipped(item) && !GridCell);
         }
         if(!useAuthoredAppearance && dungeonStyled && dungeonFrame!=null)
         {
@@ -155,7 +166,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             if (!InventoryManager.HasInstance) return;
             if (item.canBeEquipped && eq != null && eq.Get(item.equipSlot) == item)
                 InventoryManager.Instance.UseHeld(owner, item.equipSlot);
-            else InventoryManager.Instance.Use(Container, Index);
+            else InventoryManager.Instance.Use(Container, Anchor);
         }
         else if (eq != null && eq.CanEquip(item) && !eq.IsEquipped(item)) eq.Equip(item);
     }
@@ -169,7 +180,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         var options = new List<(string, System.Action)>();
         var eq = owner.Equipment;
         var container = Container;
-        int index = Index;
+        int index = Anchor;
         // The slot may change while the menu is open; act only if it still holds this item.
         bool Unchanged() => container[index]?.item == item;
 
@@ -197,7 +208,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             options.Add(("Move to Bag", () =>
             {
                 if (!Unchanged()) return;
-                int empty = owner.Bag.FirstEmpty();
+                int empty = owner.Bag.FindSpot(item);
                 if (empty < 0) { NotificationUI.Show("Inventory full"); return; }
                 Inventory.Move(container, index, owner.Bag, empty);
             }));
@@ -223,7 +234,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void OnBeginDrag(PointerEventData e)
     {
         if (Item == null || !ItemDragHandler.HasInstance) return;
-        ItemDragHandler.Instance.Begin(this, GetComponent<RectTransform>().rect.size);
+        // A grid item is held where it was grabbed: the cell under the pointer keeps the same place within it.
+        var cell = GetComponent<RectTransform>().rect.size;
+        var size = Container.SizeOf(Item);
+        var grab = Container.IsGrid ? Container.CellOf(Index) - Container.CellOf(Anchor) : Vector2Int.zero;
+        ItemDragHandler.Instance.Begin(this, new Vector2(cell.x * size.x, cell.y * size.y), Anchor, grab);
     }
 
     public void OnDrag(PointerEventData e) { }
@@ -238,8 +253,24 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (!ItemDragHandler.HasInstance || !ItemDragHandler.Instance.IsDragging) return;
         var src = ItemDragHandler.Instance.Source;
         // Equipment reconciles ownership after the transfer; hands require a hotbar slot.
-        if (src != null && src != this && Container != null)
-            Inventory.Move(src.Container, src.Index, Container, Index);
+        if (src != null && Container != null)
+        {
+            int to = Index;
+            if (Container.IsGrid)
+            {
+                // The top-left lands where the grabbed cell would put it.
+                var item = src.Container.ItemAt(ItemDragHandler.Instance.SourceIndex);
+                var grab = src.Container == Container ? ItemDragHandler.Instance.GrabOffset : Vector2Int.zero;
+                var size = Container.SizeOf(item);
+                var cell = Container.CellOf(Index) - grab;
+                cell.x = Mathf.Clamp(cell.x, 0, Container.GridWidth - size.x);
+                cell.y = Mathf.Clamp(cell.y, 0, Container.GridHeight - size.y);
+                to = cell.y * Container.GridWidth + cell.x;
+            }
+            if (!(src.Container == Container && ItemDragHandler.Instance.SourceIndex == to) &&
+                !Inventory.Move(src.Container, ItemDragHandler.Instance.SourceIndex, Container, to))
+            { var s = UIFeedbackSettings.Shared; s?.Play(s.invalidKey); }
+        }
         ItemDragHandler.Instance.End();
     }
 }

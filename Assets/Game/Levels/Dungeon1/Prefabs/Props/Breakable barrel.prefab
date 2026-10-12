@@ -83,7 +83,10 @@ MonoBehaviour:
   debrisForce: 2.2
   debrisLifetime: 3
   breakEffect: {fileID: 7742265850632592593, guid: 2878e923afe61984b95532101d7ab02e, type: 3}
+  debrisStays: 1
   dropsLoot: 1
+  ambushPrefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
+  ambushChance: 0.12
   noiseRadius: 6
   loot: {fileID: 0}
   seed: 0
