@@ -146,7 +146,7 @@ public static class DungeonChunkKit
             rows[y] = new string(row);
         }
         t.paintFootprint = true; t.width = c.w; t.height = c.h; t.rows = rows; t.allowRotation = true;
-        t.heightTiles = c.heightTiles; t.replaceGeneratedProps = false; t.replaceGeneratedEnemies = false; t.replaceGeneratedTorches = false;
+        t.heightTiles = c.heightTiles; t.replaceGeneratedProps = false; t.replaceGeneratedEnemies = true; t.replaceGeneratedTorches = false;   // the pack is the hand-placed Enemy sockets
         var prefab = PrefabUtility.SaveAsPrefabAsset(c.root.gameObject, $"{ChunkFolder}/{c.name}.prefab");
         UnityEngine.Object.DestroyImmediate(c.root.gameObject);
         return prefab;
@@ -198,7 +198,7 @@ public static class DungeonChunkKit
         c = Begin("Raised altar", 9, 9, 2, new Vector2Int(4, 0));
         WallPiece(c, "Platform", 4, 8, South);
         Socket(c, DungeonSocketType.Feature, c.Cell(4, 8) + new Vector3(0f, .75f, -.2f), 1f, 180f, altar);
-        Socket(c, DungeonSocketType.Chest, c.Cell(3, 8) + new Vector3(-.4f, .75f, -.2f), .35f, 180f);
+        Socket(c, DungeonSocketType.Chest, c.Cell(4, 8) + new Vector3(-1.4f, .75f, -.2f), .35f, 180f);   // on the dais, beside the altar
         Socket(c, DungeonSocketType.Feature, c.Cell(2, 7), 1f, 0f, brazier); Socket(c, DungeonSocketType.Feature, c.Cell(6, 7), 1f, 0f, brazier);
         foreach (var (x, y) in new[] { (2, 2), (6, 2), (2, 6), (6, 6) }) Piece(c, "Pillar", c.Cell(x, y));
         Socket(c, DungeonSocketType.Enemy, c.Cell(3, 5), .8f); Socket(c, DungeonSocketType.Enemy, c.Cell(5, 5), .8f); Socket(c, DungeonSocketType.Enemy, c.Cell(4, 6), .6f);
@@ -220,7 +220,7 @@ public static class DungeonChunkKit
         Socket(c, DungeonSocketType.Feature, c.Cell(3, 4), 1f, 0f, brazier); Socket(c, DungeonSocketType.Feature, c.Cell(5, 4), 1f, 0f, brazier);
         Socket(c, DungeonSocketType.Enemy, c.Cell(3, 3), .8f); Socket(c, DungeonSocketType.Enemy, c.Cell(5, 5), .8f); Socket(c, DungeonSocketType.Enemy, c.Cell(6, 4), .5f);
         Socket(c, DungeonSocketType.Breakable, c.Cell(7, 1), .6f); Socket(c, DungeonSocketType.Breakable, c.Cell(1, 7), .6f);
-        Light(c, 8, 4, East); Light(c, 4, 8, North);
+        Light(c, 8, 4, East); Light(c, 3, 8, North);
         made.Add(Save(c));
 
         // A tall hall with raised walkways along the far wall (archers up there), pillars in the floor.

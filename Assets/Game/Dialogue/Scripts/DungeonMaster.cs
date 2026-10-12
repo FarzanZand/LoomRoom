@@ -216,7 +216,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     void OnLog(MessageLog.Entry entry)
     {
-        if (!showEvents || entry.kind == MessageKind.Combat || entry.kind == MessageKind.Loot && PickupFeedUI.Active) return;   // pickups have their own list
+        if (!showEvents || entry.kind == MessageKind.Combat || entry.kind == MessageKind.Pickup && PickupFeedUI.Active) return;   // pickups have their own list
         Show(MessageLog.Format(entry), entry.kind == MessageKind.Kill ? killColor : eventColor);
     }
 

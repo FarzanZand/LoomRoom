@@ -109,7 +109,7 @@ public static class HeathenInventorySetup
         }
         foreach (var graphic in view.GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
         view.gameObject.SetActive(false);
-        var gridUi = items.GetComponent<ItemGridUI>() ?? items.gameObject.AddComponent<ItemGridUI>();
+        var gridUi = items.GetComponent<ItemGridUI>(); if (gridUi == null) gridUi = items.gameObject.AddComponent<ItemGridUI>();
         var gso = new SerializedObject(gridUi);
         gso.FindProperty("template").objectReferenceValue = view;
         var cells = gso.FindProperty("cells");

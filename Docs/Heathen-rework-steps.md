@@ -82,7 +82,7 @@ Each is a value or a small code switch on `CombatManager`, the enemy bases or `P
 | 6.1 | Done: `CharacterData.gore` (`GoreManager`) | Blood colour per creature (on its data) and a coloured spray on every hit | Hit each type | Colours? Rec: soldiers red, slimes green, skeletons bone dust, rats dark red. |
 | 6.2 | Done: bigger spray; slimes burst into chunks | Kill burst: a bigger spray and a few chunks | Kill each type | How gory? Chunks, or spray only? |
 | 6.3 | Done: cap 260 | Splats that stay on floor, walls and pillars for the whole floor (needs shader work in Pixel Lit) | Fight in a room, walk back later | Keep them for the whole floor? Rec: yes, with a cap of about 200. |
-| 6.4 | Not started | The blade gets stained with what it hit, slowly fading | Fight, look at the weapon | Fade over time, or only when you leave the floor? |
+| 6.4 | Done: `BladeBlood`, `CombatManager.bladeBlood` (stains dry and fade over 45 s) | The blade gets stained with what it hit, slowly fading | Fight, look at the weapon | Fade over time, or only when you leave the floor? |
 | 6.5 | Skipped | Lens splatter on screen | | Skip unless you want it? Rec: skip. |
 
 ## 7. Enemies and balance
@@ -92,7 +92,7 @@ Each is a value or a small code switch on `CombatManager`, the enemy bases or `P
 | 7.1 | Partly: Crypt Warden health 36 to 21 | Normal enemies die in 1-3 light hits | Fight every type | Raise weapon damage (recommended, works better with our armour rule) or lower enemy health? |
 | 7.2 | Partly: Crypt Soldier damage 8 to 6, Crypt Warden 11 to 8 | Enemy damage per hit retuned so groups aren't lethal; floor scaling retuned | Play floors 1-3 | |
 | 7.3 | Done: `minEnemiesPerRoom`, Cellars and Crypt 2-5 per combat room | Groups of 3-5 mixed enemies per fight | Play a floor | How many per room? Rec: 2-5 by room size. |
-| 7.4 | Not started (concept only: cave bat) | A flying enemy (bat): flies off the NavMesh, dives in, retreats | Fight it | Approve concept images first. A bat, or something else? |
+| 7.4 | Done: Cave Bat with `FlyingEnemy` (cruises at 2.2 m, dives to bite, pulls back) | A flying enemy (bat): flies off the NavMesh, dives in, retreats | Fight it | Approve concept images first. A bat, or something else? |
 | 7.5 | Not started | A small floor crawler (spider), killed with the downward stab | Fight it | Approve concepts. Spider, or rats as they are? |
 | 7.6 | Not started | Weak enemies attack more often (shorter cooldowns) | Fight a group | |
 
@@ -100,9 +100,9 @@ Each is a value or a small code switch on `CombatManager`, the enemy bases or `P
 
 | # | Status | Change | Test | Questions |
 |---|---|---|---|---|
-| 8.1 | Not started | Light radius: ambient fades to black with distance from the player; torches and other lamps still light their surroundings; the apartment above the table is not affected. Replaces today's flat ambient cap | Walk a generated floor | Radius? Rec: about 5 m with a soft 2 m edge. |
-| 8.2 | Not started | The radius changes per biome, and a held torch or lantern widens it | Swap biomes, hold a torch | Do we want a held light item? |
-| 8.3 | Not started | Colour split: cool teal ambient, warm orange lamps, per biome | Walk both biomes | How strong? Rec: moderate, compare with Heathen frames. |
+| 8.1 | Done: `LightingManager` light radius (6.5 m + 2.5 m edge, floor 0.3) | Light radius: ambient fades to black with distance from the player; torches and other lamps still light their surroundings; the apartment above the table is not affected. Replaces today's flat ambient cap | Walk a generated floor | Radius? Rec: about 5 m with a soft 2 m edge. |
+| 8.2 | Partly: per-biome radius (`DungeonBiome.lightRadius`); no held torch item | The radius changes per biome, and a held torch or lantern widens it | Swap biomes, hold a torch | Do we want a held light item? |
+| 8.3 | Done: `ScreenManager.colourSplit`, per-biome shadow and lamp tints | Colour split: cool teal ambient, warm orange lamps, per biome | Walk both biomes | How strong? Rec: moderate, compare with Heathen frames. |
 | 8.4 | Not started | Light shafts with dust under windows (after 9.x windows exist) | Stand in a window room | |
 
 ## 9. Dungeon architecture
@@ -113,33 +113,33 @@ Quick tests on the current generator first (9.1-9.3), then the move to hand-made
 |---|---|---|---|---|
 | 9.1 | Not started | New floor textures: irregular flagstones with dark grout, plus 2-3 floor colours per biome using the existing variant system | Walk a floor | Approve texture images first. |
 | 9.2 | Not started | Wall textures with block relief (deep joints) at the same density | Walk a floor | Approve images. |
-| 9.3 | Not started | Taller rooms and wider corridors (more 6 m rooms, some 9 m; more 4 m corridors) | Walk a floor | How tall? Rec: half the rooms 6 m, 10% at 9 m. |
-| 9.4 | Not started | Keep kit concepts: pillars, arches, door frames, vaults, stairs, platforms, stained glass, niches, fireplace | Images only | Approve each piece's concept. |
+| 9.3 | Done: Dungeon1 50% 2-tile and 10% 3-tile rooms, 45% wide corridors | Taller rooms and wider corridors (more 6 m rooms, some 9 m; more 4 m corridors) | Walk a floor | How tall? Rec: half the rooms 6 m, 10% at 9 m. |
+| 9.4 | Partly: kit made of `DungeonKitBlock`s (pillar, broken pillar, arch, niche, platform, galleries, rubble), no concept art | Keep kit concepts: pillars, arches, door frames, vaults, stairs, platforms, stained glass, niches, fireplace | Images only | Approve each piece's concept. |
 | 9.5 | Not started | Kit pieces: Synty DarkFantasy restyled (walls, archways, windows, stairs, pillars, railings), Blender for the rest | Look at each piece in a test room | OK with that split? |
-| 9.6 | Not started | Chunk format: a room prefab with door sockets, levels, light and prop sockets (grows out of `DungeonRoomTemplate`); one chunk built by hand and played through the Authored layout | Play the single chunk | |
-| 9.7 | Not started | The Chunks layout style: chunks joined at their doors by a per-level graph | Generate several seeds | Replace Grown for Dungeon1 completely? Rec: yes. |
+| 9.6 | Done: room templates with painted footprints are the chunks; `New Room Template` menu | Chunk format: a room prefab with door sockets, levels, light and prop sockets (grows out of `DungeonRoomTemplate`); one chunk built by hand and played through the Authored layout | Play the single chunk | |
+| 9.7 | Partly: chunks join the Grown layout through per-biome pools (`DungeonBiome.roomTemplates`, 70% of rooms) | The Chunks layout style: chunks joined at their doors by a per-level graph | Generate several seeds | Replace Grown for Dungeon1 completely? Rec: yes. |
 | 9.8 | Not started | Table reveal, minimap and NavMesh made chunk-aware | Generate a floor and watch the reveal | How should chunks appear on the table: dealt in one by one like the board levels? Rec: yes. |
-| 9.9 | Not started | More chunks per biome, variation sockets, Cellars and Crypt with their own pools | Generate many seeds | How many chunks before it stops feeling repetitive? Rec: start at 8 per biome. |
+| 9.9 | Partly: six chunks shared by Cellars and Crypt with their own weights | More chunks per biome, variation sockets, Cellars and Crypt with their own pools | Generate many seeds | How many chunks before it stops feeling repetitive? Rec: start at 8 per biome. |
 
 ## 10. Props and breakables
 
 | # | Status | Change | Test | Questions |
 |---|---|---|---|---|
 | 10.1 | Done: `debrisStays` (cap 220) | Breakable debris (planks, hoops, shards) stays for the whole floor | Smash barrels, walk back | |
-| 10.2 | Not started | Prop groups: barrels with candles on top, crates with sacks, shelves with pots | Walk a floor | |
-| 10.3 | Not started | Barrels and crates about 1.2x larger and warmer | Compare screenshots | |
-| 10.4 | Partly: 1-3 extra per room, not in groups | More breakables, placed in groups | Walk a floor | How many per room? Rec: 2-6. |
-| 10.5 | Not started | Cheap pick-up loot standing on the floor (candelabra, goblet) | Pick some up | New items worth gold only? Rec: yes. |
+| 10.2 | Done: `Prefabs/Groups` (barrel with candles, barrels huddled, crates and sacks, shelf with pots) | Prop groups: barrels with candles on top, crates with sacks, shelves with pots | Walk a floor | |
+| 10.3 | Done: barrels 1.2x and warmer, crates 1.1x | Barrels and crates about 1.2x larger and warmer | Compare screenshots | |
+| 10.4 | Done: groups hold breakables with loot (`SeedGroup`) | More breakables, placed in groups | Walk a floor | How many per room? Rec: 2-6. |
+| 10.5 | Done: `Floor valuables` (skull, candle, bottle; worth gold) | Cheap pick-up loot standing on the floor (candelabra, goblet) | Pick some up | New items worth gold only? Rec: yes. |
 
 ## 11. Chests and loot
 
 | # | Status | Change | Test | Questions |
 |---|---|---|---|---|
-| 11.1 | Not started (coins were already picked up on touch) | Gold collected on touch, shown in the pickup feed | Walk over gold | |
+| 11.1 | Done: collected on touch, `PickupFeedUI` on the right edge | Gold collected on touch, shown in the pickup feed | Walk over gold | |
 | 11.2 | Done: `LootBeam` (colours by kind: normal, Honed, consumable), `LootLabelsUI` within 4.5 m | Items on the floor: a light beam coloured by tier (gold for Honed) and a floating name label when near | Drop items | Beam colours per tier? Labels always, or only near (about 4 m)? Rec: only near. |
-| 11.3 | Partly: gold glow and spark burst; the lid still turns in code, no sound sting | Chest opening: the lid swings up (editable clip), gold glow inside, light burst, sound sting | Open a chest | |
+| 11.3 | Done: lid clip `Chest lid open.anim`, glow, stings per tier | Chest opening: the lid swings up (editable clip), gold glow inside, light burst, sound sting | Open a chest | |
 | 11.4 | Done: `DungeonPickup.PopOut` | Loot pops out in arcs and lands around the chest | Open a chest | |
-| 11.5 | Not started | Chest tiers: wood, iron, gold trim, each with its own size and loot roll | Find all three | What each tier gives? Rec: wood = today's chest, iron +1 item, gold one rare item. |
+| 11.5 | Done: wood, iron (+1 roll), gold (+1 roll, one item from 3 floors deeper) | Chest tiers: wood, iron, gold trim, each with its own size and loot roll | Find all three | What each tier gives? Rec: wood = today's chest, iron +1 item, gold one rare item. |
 
 ## 12. HUD
 
@@ -154,7 +154,7 @@ Quick tests on the current generator first (9.1-9.3), then the move to hand-made
 | # | Status | Change | Test | Questions |
 |---|---|---|---|---|
 | 13.1 | Not started | Stat sheet: STR, DEX, CON, INT shown, and every stat's tooltip breaks it down (base, items, skills) | Open the inventory | Which stats to show? |
-| 13.2 | Not started | Item tooltips: type line ("Two-Handed Mace"), attack speed in words, Shift to compare, Ctrl+click to drop | Hover items | Compare only with Shift (Heathen) or always (ours)? |
+| 13.2 | Partly: type line, damage and swing speed up front, comparison; no Shift-compare or Ctrl+click | Item tooltips: type line ("Two-Handed Mace"), attack speed in words, Shift to compare, Ctrl+click to drop | Hover items | Compare only with Shift (Heathen) or always (ours)? |
 | 13.3 | Not started | Attribute points: +N per level to spend, instead of the automatic class growth | Level up | Replace Barony's automatic growth? How many points per level? Skills stay use-based? |
 | 13.4 | Not started | Each item becomes its own instance (needed for 13.5 and 13.8); the save format changes | Save and load a run | OK that old checkpoints are dropped (memorials and flags stay)? |
 | 13.5 | Not started | Durability, and repair at the merchant | Fight until gear wears | Does broken gear break for good or stop working until repaired? |

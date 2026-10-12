@@ -96,7 +96,7 @@ public static class HeathenCombatSetup
         {
             foreach (var hitbox in root.GetComponentsInChildren<Hitbox>(true))
             {
-                var lines = hitbox.GetComponent<SlashLines>() ?? hitbox.gameObject.AddComponent<SlashLines>();
+                var lines = hitbox.GetComponent<SlashLines>(); if (lines == null) lines = hitbox.gameObject.AddComponent<SlashLines>();
                 var so = new SerializedObject(lines); so.FindProperty("material").objectReferenceValue = line; so.FindProperty("trail").floatValue = .045f; so.ApplyModifiedPropertiesWithoutUndo();
                 log.AppendLine("slash lines on " + hitbox.name);
             }
@@ -105,7 +105,7 @@ public static class HeathenCombatSetup
         // Enemies: swing trails and helmets on the humanoid base, recoil on the creatures without it.
         Edit("Assets/Game/Characters/Enemies/Base/Humanoid enemy base.prefab", root =>
         {
-            var trail = root.GetComponent<EnemySwingTrail>() ?? root.AddComponent<EnemySwingTrail>();
+            var trail = root.GetComponent<EnemySwingTrail>(); if (trail == null) trail = root.AddComponent<EnemySwingTrail>();
             var so = new SerializedObject(trail); so.FindProperty("material").objectReferenceValue = line; so.ApplyModifiedPropertiesWithoutUndo();
             if (root.GetComponent<HelmetPop>() == null) root.AddComponent<HelmetPop>();
         });

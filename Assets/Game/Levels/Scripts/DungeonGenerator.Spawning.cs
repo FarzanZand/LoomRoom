@@ -146,8 +146,18 @@ public partial class DungeonGenerator
         }
         if(!template.replaceGeneratedProps)
         {
+            // Cells the room's own pieces stand on (kit blocks, sockets) are taken: extras go elsewhere.
+            var taken=new System.Collections.Generic.HashSet<Vector2Int>();
+            foreach(var block in instance.GetComponentsInChildren<DungeonKitBlock>(true))
+            {
+                if(block==null || !block.solid || !block.TryGetComponent<BoxCollider>(out var box))continue;
+                var b=box.bounds;
+                for(float x=b.min.x+.05f;x<=b.max.x;x+=data.cellSize*.5f)for(float z=b.min.z+.05f;z<=b.max.z;z+=data.cellSize*.5f)taken.Add(CellOf(new Vector3(x,0,z)));
+                taken.Add(CellOf(new Vector3(b.max.x-.05f,0,b.max.z-.05f)));
+            }
+            foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))if(socket!=null)taken.Add(CellOf(socket.transform.position));
             var available=new System.Collections.Generic.List<Vector2Int>();
-            foreach(var p in Layout.RoomCells(index))if(!lanes.Contains(p) && !Layout.Reserved.Contains(p))available.Add(p);
+            foreach(var p in Layout.RoomCells(index))if(!lanes.Contains(p) && !Layout.Reserved.Contains(p) && !taken.Contains(p))available.Add(p);
             PlaceExtras(index,available,0,rewards);
         }
     }

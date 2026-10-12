@@ -17,6 +17,45 @@ public sealed partial class LightingManager
     [ShowIf(nameof(lightRadius)), Range(0f, 1f), Tooltip("Share of the ambient left beyond the edge (0 = black where no lamp reaches).")]
     public float lightRadiusFloor = .3f;
 
+    [Title("Lamp shadows")]
+    [Min(0), Tooltip("Only this many of the floor's lamps (torches, braziers, candles) nearest the player cast shadows; the rest light without them. A shadowed point light draws the scene six times.")]
+    public int shadowedLamps = 4;
+    [Min(.05f)] public float shadowBudgetSeconds = .3f;
+    readonly System.Collections.Generic.Dictionary<Light, LightShadows> lampShadows = new();
+    readonly System.Collections.Generic.List<Light> lamps = new(), found = new(), stale = new();
+    static Vector3 sortEye;
+    static readonly System.Comparison<Light> ByDistance = (a, b) => (a.transform.position - sortEye).sqrMagnitude.CompareTo((b.transform.position - sortEye).sqrMagnitude);
+    DungeonGenerator lampsOf;
+    float nextShadowBudget;
+
+    // The floor's own lamps keep their authored shadows only while they are among the nearest few.
+    void ApplyShadowBudget(Vector3 eye)
+    {
+        if (Time.unscaledTime < nextShadowBudget) return;
+        nextShadowBudget = Time.unscaledTime + shadowBudgetSeconds;
+        var loader = TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+        var dungeon = loader != null ? loader.Dungeon : null;
+        if (dungeon != lampsOf)
+        {
+            foreach (var pair in lampShadows) if (pair.Key != null) pair.Key.shadows = pair.Value;
+            lampShadows.Clear(); lampsOf = dungeon;
+        }
+        if (dungeon == null) return;
+        lamps.Clear();
+        found.Clear();
+        dungeon.GetComponentsInChildren(found);
+        foreach (var l in found)
+        {
+            if (!lampShadows.ContainsKey(l)) lampShadows[l] = l.shadows;
+            if (lampShadows[l] != LightShadows.None) lamps.Add(l);
+        }
+        // Lights destroyed since (a broken candle barrel, a spent spell) drop out.
+        if (lampShadows.Count > found.Count + 32) { stale.Clear(); foreach (var key in lampShadows.Keys) if (key == null) stale.Add(key); foreach (var key in stale) lampShadows.Remove(key); }
+        sortEye = eye;
+        lamps.Sort(ByDistance);
+        for (int i = 0; i < lamps.Count; i++) lamps[i].shadows = i < shadowedLamps ? lampShadows[lamps[i]] : LightShadows.None;
+    }
+
     static readonly int LightRadiusId = Shader.PropertyToID("_LoomLightRadius");
     static readonly int LightRadiusEdgeId = Shader.PropertyToID("_LoomLightRadiusEdge");
 
@@ -26,6 +65,7 @@ public sealed partial class LightingManager
         var biome = CurrentBiome();
         if (biome != null && biome.litThroughout) dark = 0f;
         var cam = Camera.main;
+        if (cam != null && Application.isPlaying) ApplyShadowBudget(cam.transform.position);
         if (!lightRadius || dark <= 0f || cam == null || !Application.isPlaying)
         {
             Shader.SetGlobalVector(LightRadiusId, Vector4.zero);

@@ -76,7 +76,7 @@ public class CurrencyManager : Singleton<CurrencyManager>
         if (wallet == null || amount <= 0) return;
         wallet.Add(amount);
         if (AudioManager.HasInstance && pickupClip != null) AudioManager.Instance.PlaySFX2D(pickupClip, pickupVolume, .05f);
-        MessageLog.Post($"You pick up {amount} {currencyName}.", MessageKind.Loot);
+        MessageLog.Post($"You pick up {amount} {currencyName}.", MessageKind.Pickup);
         GoldCollected?.Invoke(player, amount);
     }
 }

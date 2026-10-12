@@ -12,6 +12,7 @@ public enum MessageKind
     Warning = 5,
     Lore    = 6,
     Kill    = 7,
+    Pickup  = 8,   // picking things up (shown by PickupFeedUI when it is on screen)
 }
 
 // The Barony-style text feed. Owns the history and the colours; MessageLogUI only
@@ -37,6 +38,7 @@ public class MessageLog : Singleton<MessageLog>
         new KindColor { kind = MessageKind.Info,    color = new Color(.86f, .82f, .72f) },
         new KindColor { kind = MessageKind.Combat,  color = new Color(.95f, .93f, .88f) },
         new KindColor { kind = MessageKind.Loot,    color = new Color(1f, .85f, .4f) },
+        new KindColor { kind = MessageKind.Pickup,  color = new Color(1f, .85f, .4f) },
         new KindColor { kind = MessageKind.Good,    color = new Color(.55f, .9f, .6f) },
         new KindColor { kind = MessageKind.Bad,     color = new Color(1f, .45f, .38f) },
         new KindColor { kind = MessageKind.Warning, color = new Color(1f, .68f, .3f) },
@@ -168,6 +170,6 @@ public class MessageLog : Singleton<MessageLog>
     void OnPickedUp(ItemData item, Player who, int count)
     {
         if (item == null || who == null || who.kind != PlayerKind.Table) return;
-        Add(count > 1 ? $"You pick up {count} {item.itemName}." : $"You pick up {item.itemName}.", MessageKind.Loot);
+        Add(count > 1 ? $"You pick up {count} {item.itemName}." : $"You pick up {item.itemName}.", MessageKind.Pickup);
     }
 }

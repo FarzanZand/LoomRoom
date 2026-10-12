@@ -23,6 +23,9 @@ public class DungeonKitBlock : MonoBehaviour
     [Tooltip("Walkable and blocking (a platform, a step, a pillar). Off for trims high up.")]
     public bool solid = true;
 
+    Mesh built;   // made per floor build, freed with the floor
+    void OnDestroy() { if (built != null) Destroy(built); }
+
     // Built by DungeonGenerator.PlaceTemplate: roomHeight is the room's (metres), floorY its floor's world height.
     public void Build(DungeonRoomStyle style, TableLevelData level, float roomHeight, float floorY)
     {
@@ -34,7 +37,8 @@ public class DungeonKitBlock : MonoBehaviour
         var mesh = BoxMesh(transform, centre, s, tile);
         var filter = GetComponent<MeshFilter>(); if (filter == null) filter = gameObject.AddComponent<MeshFilter>();
         var renderer = GetComponent<MeshRenderer>(); if (renderer == null) renderer = gameObject.AddComponent<MeshRenderer>();
-        filter.sharedMesh = mesh;
+        if (built != null) Destroy(built);
+        filter.sharedMesh = built = mesh;
         renderer.sharedMaterials = new[] { Material(style, level, sides), Material(style, level, top) };
         if (solid)
         {
