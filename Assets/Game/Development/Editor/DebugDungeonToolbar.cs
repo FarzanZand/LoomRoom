@@ -25,17 +25,19 @@ public static class DebugDungeonToolbar
         Start((DebugDungeonSession.Mode)SessionState.GetInt(RestartModeKey, 0));
     }
 
-    // Both buttons live in the one toolbar element, so the toolbar layout already showing Debug shows Dungeon too.
+    // All the buttons live in the one toolbar element, so the toolbar layout already showing Debug shows the others too.
     [MainToolbarElement("LoomRoom/Debug", defaultDockPosition = MainToolbarDockPosition.Middle, defaultDockIndex = 1)]
     public static IEnumerable<MainToolbarElement> Buttons() => new MainToolbarElement[]
     {
         new MainToolbarButton(new MainToolbarContent("Debug", "Start the test arena: one open room, enemies from Debug Dungeon Settings standing just outside detection range."), StartDebug),
         new MainToolbarButton(new MainToolbarContent("Dungeon", "Generate WorldManager's Debug Dungeon and play it straight away, skipping the room."), StartDungeon),
+        new MainToolbarButton(new MainToolbarContent("Room", "Start in the room as the room player on an ordinary morning: no intro, wake-up or character sheet. Uses the normal save."), StartRoom),
         new MainToolbarToggle(new MainToolbarContent("Fullscreen", "Play in a borderless Game view covering the whole monitor (F11 toggles it by hand)."), FullscreenGameView.OnPlay, FullscreenGameView.SetOnPlay),
     };
 
     public static void StartDebug() => Start(DebugDungeonSession.Mode.Arena);
     public static void StartDungeon() => Start(DebugDungeonSession.Mode.Dungeon);
+    public static void StartRoom() => Start(DebugDungeonSession.Mode.Room);
 
     static void Start(DebugDungeonSession.Mode mode)
     {
@@ -49,10 +51,15 @@ public static class DebugDungeonToolbar
         if (EditorApplication.isCompiling || EditorApplication.isPlayingOrWillChangePlaymode) return;
         if (UnityEngine.Object.FindAnyObjectByType<TableManager>(UnityEngine.FindObjectsInactive.Include) == null)
         {
-            UnityEngine.Debug.LogError("Open the Room scene before starting the debug dungeon.");
+            UnityEngine.Debug.LogError("Open the Room scene before using the Debug, Dungeon or Room buttons.");
             return;
         }
-        SessionState.SetBool(mode == DebugDungeonSession.Mode.Dungeon ? DebugDungeonSession.DungeonRequestKey : DebugDungeonSession.RequestKey, true);
+        SessionState.SetBool(mode switch
+        {
+            DebugDungeonSession.Mode.Dungeon => DebugDungeonSession.DungeonRequestKey,
+            DebugDungeonSession.Mode.Room => DebugDungeonSession.RoomRequestKey,
+            _ => DebugDungeonSession.RequestKey,
+        }, true);
         EditorApplication.isPlaying = true;
     }
 }

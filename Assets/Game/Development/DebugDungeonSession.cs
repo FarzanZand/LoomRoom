@@ -5,27 +5,34 @@ using UnityEngine;
 // Editor test sessions use the normal dungeon and combat systems, with isolated saves.
 public class DebugDungeonSession : MonoBehaviour
 {
-    public enum Mode { Arena, Dungeon }
+    public enum Mode { Arena, Dungeon, Room }
     public const string RequestKey = "LoomRoom.DebugDungeon";
     public const string DungeonRequestKey = "LoomRoom.DebugDungeon.Generated";
+    public const string RoomRequestKey = "LoomRoom.DebugDungeon.Room";
     public const string SettingsPath = "Assets/Game/Development/Debug Dungeon/Debug Dungeon Settings.asset";
-    // Both modes skip the room (no intro, wake-up or reveal) and save to loomroom-debug.json.
+    // Both dungeon modes skip the room (no intro, wake-up or reveal) and save to loomroom-debug.json.
     // Arena: the authored test arena with the settings' enemies. Dungeon: WorldManager.debugDungeon, generated as in a real run.
     public static bool Active { get; private set; }
     public static Mode CurrentMode { get; private set; }
+    // The Room button: an ordinary morning in the room with the normal save, nothing played first (ProgressionManager applies it).
+    public static bool RoomStart { get; private set; }
     static DebugDungeonSettings settings;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Initialize()
     {
         Active = false;
+        RoomStart = false;
         CurrentMode = Mode.Arena;
         settings = null;
 #if UNITY_EDITOR
         bool arena = UnityEditor.SessionState.GetBool(RequestKey, false);
         bool dungeon = UnityEditor.SessionState.GetBool(DungeonRequestKey, false);
+        RoomStart = UnityEditor.SessionState.GetBool(RoomRequestKey, false);
         UnityEditor.SessionState.SetBool(RequestKey, false);
         UnityEditor.SessionState.SetBool(DungeonRequestKey, false);
+        UnityEditor.SessionState.SetBool(RoomRequestKey, false);
+        if (RoomStart) { CurrentMode = Mode.Room; return; }
         CurrentMode = dungeon ? Mode.Dungeon : Mode.Arena;
         if (arena || dungeon) settings = UnityEditor.AssetDatabase.LoadAssetAtPath<DebugDungeonSettings>(SettingsPath);
         Active = dungeon || arena && settings != null && settings.level != null;

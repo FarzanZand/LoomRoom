@@ -52,6 +52,13 @@ public class ProgressionManager : Singleton<ProgressionManager>
     protected override void Awake()
     {
         base.Awake();
+        // The editor's Room button: the room player on an ordinary morning, no intro, wake-up or character sheet.
+        if (DebugDungeonSession.RoomStart)
+        {
+            startingPlayer = PlayerKind.Room;
+            skipWakeUp = true;
+            if (startAt == ProgressionStart.NewGame) startAt = ProgressionStart.AfterCharacterSheet;
+        }
         foreach (var f in initialFlags)
             if (!string.IsNullOrEmpty(f.key)) flags[f.key] = f.value;
         if (Application.isEditor) FastForward(startAt);
