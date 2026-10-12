@@ -94,6 +94,22 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
 
 ## Review before calling it done
 
+- **Every built model, from every side, up close.** Render `PixelRestyle.RenderPropTurntable(prefab, "Temp/Paint/turn/<Name>.png")`
+  (eight sides, two high three-quarter views, straight down and from below, each zoomed to the model) and then crop and
+  enlarge the views to at least 4 screen pixels per texel before judging: at the size a whole sheet is shown, streaks
+  don't show. One three-quarter preview of a row of props is not a review (2026-10-12: I passed 12 props from one
+  front-right angle at about 2 screen pixels per texel and the user found streaked sides on the grave and a blurred side
+  panel on the altar at once).
+- On each face look for: **stretched texels or streaks** (a face painted from a view it is nearly edge-on to: bevels,
+  narrow sides, faces under overhangs); **flat or blurred blocks** much bigger than a texel (a side too narrow on the sheet
+  to get painted detail); background grey or the painter's black outline on edges; wrong material (a top painted as stone
+  where it is earth); seams where two views meet; unpainted bottoms that can be seen in game.
+- Check the review image is new (its file time is after the build) before judging it: an editor call can fail
+  quietly and leave the last render in place.
+- Five-view sheet projection (`PixelRestyle.PaintedProps.cs`) only suits blocky props made of large faces (barrels,
+  crates, chests, pots, fountains). On organic or intricate models (the gargoyle, carved table legs, chairs, books on
+  shelves) every view covers only a sliver of each surface, and the result is camouflage-like noise, black outline
+  flecks and smears. Don't use it for those; say so and ask how to proceed.
 - Look at every asset at full size, side by side with the reference creatures and with the old version.
 - Then in game: hold it, drop it, fight with it (`Development/CombatTestBot.cs`: `capture` frame sheets).
 - Show the user stills; never say "good" from small contact sheets. If the user says it isn't up to the creatures, redo it

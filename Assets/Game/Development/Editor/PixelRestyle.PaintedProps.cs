@@ -39,6 +39,8 @@ public static partial class PixelRestyle
         {
             var mf = r.GetComponent<MeshFilter>(); if (mf == null || mf.sharedMesh == null) continue;
             if (System.Array.TrueForAll(r.sharedMaterials, SkipSurface)) continue;
+            // Unity's built-in meshes (a quad lining a chest lid, added by hand) are not Synty parts: leave them alone.
+            if (!AssetDatabase.GetAssetPath(mf.sharedMesh).StartsWith("Assets/")) continue;
             parts.Add(r);
             var m = root.transform.worldToLocalMatrix * r.transform.localToWorldMatrix; var mb = mf.sharedMesh.bounds;
             for (int i = 0; i < 8; i++)
@@ -48,6 +50,27 @@ public static partial class PixelRestyle
             }
         }
         return parts;
+    }
+
+    // The Synty model a prop part was made from: the mesh with Synty's own UVs and its flat-colour materials. A part made
+    // from a changed copy (the tall crate) finds the materials by its name without the last word, and keeps its own mesh.
+    static bool SyntySource(string baseName, out Mesh mesh, out Material[] mats)
+    {
+        mesh = null; mats = null;
+        for (string name = baseName; ; )
+        {
+            foreach (var g in AssetDatabase.FindAssets(name + " t:Prefab", new[] { "Assets/Synty" }))
+            {
+                var synty = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g));
+                if (synty == null || synty.name != name) continue;
+                var smf = synty.GetComponentInChildren<MeshFilter>(true); var smr = smf != null ? smf.GetComponent<MeshRenderer>() : null;
+                if (smf == null || smr == null) continue;
+                mats = smr.sharedMaterials; if (name == baseName) mesh = smf.sharedMesh;
+                return true;
+            }
+            int cut = name.LastIndexOf(' '); if (cut <= 0) return false;
+            name = name.Substring(0, cut);
+        }
     }
 
     // Half the side of every view's square: one scale for all five, so a texel is the same size in each.
@@ -71,15 +94,10 @@ public static partial class PixelRestyle
         {
             var mf = r.GetComponent<MeshFilter>();
             string baseName = mf.sharedMesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
-            foreach (var g in AssetDatabase.FindAssets(baseName + " t:Prefab", new[] { "Assets/Synty" }))
-            {
-                var synty = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g));
-                if (synty == null || synty.name != baseName) continue;
-                var smf = synty.GetComponentInChildren<MeshFilter>(true); var smr = smf != null ? smf.GetComponent<MeshRenderer>() : null;
-                if (smf == null || smr == null) continue;
-                mf.sharedMesh = smf.sharedMesh; r.sharedMaterials = smr.sharedMaterials;
-                break;
-            }
+            if (!SyntySource(baseName, out var syntyMesh, out var syntyMats)) continue;
+            if (syntyMesh != null) mf.sharedMesh = syntyMesh;
+            else if (AssetDatabase.LoadAssetAtPath<Mesh>($"{Root}/Props/{baseName}/{baseName}.asset") is { } own) mf.sharedMesh = own;
+            r.sharedMaterials = syntyMats;
         }
         var camGo = new GameObject("cam"); camGo.transform.SetParent(root.transform, false);
         var cam = camGo.AddComponent<Camera>(); cam.orthographic = true; cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = PaintBackground;
@@ -132,10 +150,10 @@ public static partial class PixelRestyle
             refBox[v] = CellObjectBox(reference, SheetCellRect(v, reference.width, reference.height));
             paintBox[v] = CellObjectBox(painted, SheetCellRect(v, painted.width, painted.height));
         }
-        Object.DestroyImmediate(reference);
         // Where the painting's outline is a little inside the model's, a sample would land on the grey background:
         // every background pixel points at its nearest painted pixel instead.
         var nearest = NearestPainted(painted);
+        Object.DestroyImmediate(reference);
 
         var root = PrefabUtility.LoadPrefabContents(propPrefabPath);
         // Occlusion probe: every part as a collider, far from the scene, so a face hidden from a view (behind the lid,
@@ -173,15 +191,17 @@ public static partial class PixelRestyle
                 return painted.GetPixel(k % painted.width, k / painted.width);
             }
 
-            // A part used more than once (a table's chairs) is painted once, where it first stands, and shared.
+            // A part used more than once (a table's chairs) is painted once, where it first stands, and shared. Names are
+            // read first: rebuilding the first chair replaces the mesh the second one still points at.
+            var baseNames = new Dictionary<MeshRenderer, string>();
+            foreach (var r in parts) baseNames[r] = r.GetComponent<MeshFilter>().sharedMesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
             var done = new Dictionary<string, (Mesh mesh, Material material)>();
             foreach (var r in parts)
             {
                 var mf = r.GetComponent<MeshFilter>(); var m = toProp[r];
-                string doneKey = mf.sharedMesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
-                if (done.TryGetValue(doneKey, out var shared)) { mf.sharedMesh = shared.mesh; r.sharedMaterials = new[] { shared.material }; continue; }
+                string baseName = baseNames[r];
+                if (done.TryGetValue(baseName, out var shared)) { mf.sharedMesh = shared.mesh; r.sharedMaterials = new[] { shared.material }; continue; }
                 // Always from the plain restyle (a re-run must not start from the last painting's mesh and UVs).
-                string baseName = mf.sharedMesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
                 var src = AssetDatabase.LoadAssetAtPath<Mesh>($"{Root}/Props/{baseName}/{baseName}.asset") ?? mf.sharedMesh;
                 var srcMats = AssetDatabase.LoadAssetAtPath<Material>($"{Root}/Props/{baseName}/{baseName}.mat") is { } plain ? new[] { plain } : r.sharedMaterials;
                 string partName = baseName + " painted";
@@ -195,7 +215,9 @@ public static partial class PixelRestyle
                     {
                         float dot = Vector3.Dot(pn, PropViews[v].from);
                         if (dot > fallbackDot) { fallbackDot = dot; fallback = v; }
-                        if (dot <= .05f || dot <= bestDot) continue;
+                        // A view that sees the face nearly edge-on smears one painted pixel across it (streaks under an
+                        // overhang): better the view it faces, even if another part hides it there.
+                        if (dot <= .35f || dot <= bestDot) continue;
                         var start = probe.transform.position + pp + pn * .004f;
                         if (Physics.Raycast(start, PropViews[v].from, 20f, mask, QueryTriggerInteraction.Collide)) continue;
                         best = v; bestDot = dot;
@@ -218,7 +240,7 @@ public static partial class PixelRestyle
                 }
                 PaintSource = null;
                 if (built.mesh == null) { results.Add($"{src.name} failed"); continue; }
-                done[doneKey] = built;
+                done[baseName] = built;
                 results.Add($"{partName} {measured:0}/m");
             }
             PrefabUtility.SaveAsPrefabAsset(root, propPrefabPath);
@@ -269,6 +291,53 @@ public static partial class PixelRestyle
             return $"{name}: {tw}x{th} section, {tw / widthWorld:0.#} across x {ItemTexelsPerUnit} along texels per metre, repeats every {tileWorld:0.##} m";
         }
         finally { PrefabUtility.UnloadPrefabContents(root); }
+    }
+
+    // The review render for one prop: zoomed to fill each cell, from eight sides at eye height, three-quarter angles from
+    // above, straight down and from low down, so every face (sides, back, base, top, undersides of overhangs) is seen up
+    // close. Point filtering keeps each texel a crisp block a few screen pixels wide, so streaks and smears show.
+    public static string RenderPropTurntable(string prefabPath, string outFile, int cell = 512)
+    {
+        bool asyncShaders = ShaderUtil.allowAsyncCompilation; ShaderUtil.allowAsyncCompilation = false;
+        var root = new GameObject("prop turntable") { hideFlags = HideFlags.DontSave };
+        root.transform.position = new Vector3(0, -980, 0);
+        var copy = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath), root.transform);
+        copy.transform.localPosition = Vector3.zero;
+        foreach (var l in copy.GetComponentsInChildren<Light>(true)) l.enabled = false;
+        foreach (var ps in copy.GetComponentsInChildren<ParticleSystemRenderer>(true)) ps.enabled = false;
+        PropParts(copy, out var b);
+        var centre = copy.transform.TransformPoint(b.center); float radius = b.extents.magnitude;
+        var camGo = new GameObject("cam"); camGo.transform.SetParent(root.transform, false);
+        var cam = camGo.AddComponent<Camera>(); cam.orthographic = true; cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(.18f, .17f, .16f);
+        cam.nearClipPlane = .01f; cam.farClipPlane = radius * 6 + 10; cam.aspect = 1f; cam.orthographicSize = radius * 1.02f;
+        var light = new GameObject("light").AddComponent<Light>(); light.transform.SetParent(root.transform, false);
+        light.type = LightType.Directional; light.intensity = 1.1f;
+        var fill = new GameObject("fill").AddComponent<Light>(); fill.transform.SetParent(root.transform, false);
+        fill.type = LightType.Directional; fill.intensity = .45f;
+        var views = new List<(float pitch, float yaw)>();
+        for (int i = 0; i < 8; i++) views.Add((8f, i * 45f));
+        views.Add((35f, 35f)); views.Add((35f, 215f)); views.Add((89f, 0f)); views.Add((-25f, 135f));
+        int cols = 4, rows = (views.Count + cols - 1) / cols;
+        var rt = new RenderTexture(cell, cell, 24); cam.targetTexture = rt;
+        var sheet = new Texture2D(cell * cols, cell * rows, TextureFormat.RGB24, false);
+        var px = new Texture2D(cell, cell, TextureFormat.RGB24, false);
+        for (int i = 0; i < views.Count; i++)
+        {
+            var dir = Quaternion.Euler(views[i].pitch, views[i].yaw, 0) * Vector3.forward;
+            camGo.transform.position = centre - dir * (radius * 3 + 2); camGo.transform.rotation = Quaternion.LookRotation(dir);
+            // Key light over the camera's shoulder, fill from the other side: every face is lit, none blown out.
+            light.transform.rotation = Quaternion.LookRotation(dir + camGo.transform.up * -.6f + camGo.transform.right * .5f);
+            fill.transform.rotation = Quaternion.LookRotation(dir + camGo.transform.up * .3f - camGo.transform.right * .8f);
+            cam.Render();
+            RenderTexture.active = rt; px.ReadPixels(new Rect(0, 0, cell, cell), 0, 0); px.Apply();
+            sheet.SetPixels((i % cols) * cell, (rows - 1 - i / cols) * cell, cell, cell, px.GetPixels());
+        }
+        sheet.Apply();
+        Directory.CreateDirectory(Path.GetDirectoryName(outFile));
+        File.WriteAllBytes(outFile, sheet.EncodeToPNG());
+        RenderTexture.active = null; Object.DestroyImmediate(rt); Object.DestroyImmediate(px); Object.DestroyImmediate(sheet); Object.DestroyImmediate(root);
+        ShaderUtil.allowAsyncCompilation = asyncShaders;
+        return outFile;
     }
 
     // A review image: each prop as it is now, seen from the front-right and above, all at one world scale, side by side.
