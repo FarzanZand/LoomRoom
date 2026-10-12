@@ -233,7 +233,11 @@ public class CombatTestBot : MonoBehaviour
     {
         if (tracking && Running && enemy != null && enemy.IsAlive) Face();
         if (god && player != null && player.IsAlive) Heal(player);
+        // The shield's state changes, timed like the swings.
+        var combat = player != null ? player.GetComponent<PlayerCombat>() : null;
+        if (Running && combat != null && combat.IsGuarding != loggedGuard) { loggedGuard = combat.IsGuarding; Log(loggedGuard ? "guard up" : "guard down"); }
     }
+    bool loggedGuard;
 
     void SetBrain(bool on) { if (enemy != null && enemy.TryGetComponent<EnemyBrain>(out var b)) b.enabled = on; }
     // cm <field> <value>: set a CombatManager field for this play session.

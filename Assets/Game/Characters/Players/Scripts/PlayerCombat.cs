@@ -67,8 +67,48 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     bool IsReleasing => AnyLayerReleasing();
     // With CombatManager.attackFromBlock the shield is lowered for the whole swing and comes back up after it.
     static bool AttackFromBlock => CombatManager.HasInstance && CombatManager.Instance.attackFromBlock;
+    static bool BlockCutsRecovery => CombatManager.HasInstance && CombatManager.Instance.blockCutsRecovery;
+    static bool BlockCancelsWindup => CombatManager.HasInstance && CombatManager.Instance.blockCancelsWindup;
+
+    // A swing has three parts: windup (until the blade swings), strike (until its hitbox closes) and recovery. The
+    // shield is kept down through the windup and the strike; once the hitbox has closed, block raises it at once.
+    // A block press during the windup cancels the swing (BlockCancelsWindup).
+    Hitbox weaponHitbox;
+    bool strikeOpened, strikeClosed;   // this swing's hitbox has opened / opened and closed again
+    bool secondaryWasHeld;
+    float guardRaisedAt = -10f;
+    bool wasGuarding;
+    bool InRecovery => strikeClosed;
+    bool Committed => IsAttacking && !InRecovery && !cancelling;
+    bool cancelling;   // a cancelled windup blending out: already harmless, the shield may rise
+    [SerializeField] string attackCancelParam = "AttackCancel";
+
+    void TrackStrike()
+    {
+        if (weaponHitbox == null) weaponHitbox = GetComponentInChildren<Hitbox>(true);
+        if (weaponHitbox == null) { strikeClosed = IsReleasing; return; }   // no hitbox: the release counts as recovery
+        if (weaponHitbox.Active) strikeOpened = true;
+        else if (strikeOpened) strikeClosed = true;
+        // A release whose hitbox never opens (a miss in empty air still opens it; a cancelled clip doesn't) ends as recovery.
+        if (!IsAttacking) { strikeOpened = false; strikeClosed = false; cancelling = false; }
+    }
+
+    // Block pressed while winding up: the swing is dropped before it can hit.
+    void CancelWindup()
+    {
+        AnimatorHelper.SetTrigger(armsAnimator, attackCancelParam);
+        AnimatorHelper.SetBool(armsAnimator, attackHeldParam, false);
+        queuedPresses = 0; charging = false; HeavySwing = false; windingUp = false;
+        attackBufferedUntil = -1f; blockLockUntil = -1f;
+        heldThroughCancel = true;
+        cancelling = true;
+        cancelSetAt = Time.time;
+    }
+    float cancelSetAt = -10f;
+    bool heldThroughCancel;   // the attack button still down from the cancelled swing: it starts nothing until pressed anew
     public bool IsGuarding => player != null && player.IsActive && ShieldHeld &&
-        !(AttackFromBlock && IsAttacking) &&
+        !(BlockCutsRecovery ? Committed : AttackFromBlock && IsAttacking) &&
+        (!CombatManager.HasInstance || Time.time - guardRaisedAt >= CombatManager.Instance.blockRaiseDelay) &&
         (!GameManager.HasInstance || GameManager.Instance.GameplayActive) &&
         InputManager.HasInstance && InputManager.Instance.SecondaryHeld && Time.time >= blockLockUntil &&
         (player.Stats == null || !player.Stats.HasStat(StatType.MaxStamina) || (!player.Stats.IsExhausted && player.Stats.CurrentStamina > 0));
@@ -129,7 +169,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     int queuedPresses;   // presses not yet turned into a windup, capped so spam can't bank swings
     void OnAttackStarted()
     {
-        if (AttackFromBlock) blockLockUntil = Time.time + (CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f);
+        if (AttackFromBlock && !BlockCutsRecovery) blockLockUntil = Time.time + (CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f);
+        strikeOpened = strikeClosed = false;
         queuedPresses = Mathf.Max(0, queuedPresses - 1);
         windingUp = true;
         // Cleared here, not on press: a press during a heavy release must not turn its hit light.
@@ -187,6 +228,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     {
         if (!player.IsActive || (spells != null && spells.Busy)) return;
         if (InputManager.Instance.SecondaryHeld && !AttackFromBlock) return;
+        heldThroughCancel = false;
         pressedAt = Time.time;
         charging = true;
         chargeAnnounced = false;
@@ -195,7 +237,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         // A press stays valid at least until the swing interval lets the next swing start, so a tap is never eaten.
         attackBufferedUntil = Mathf.Max(Time.time + (CombatManager.HasInstance ? CombatManager.Instance.attackInputBuffer : .22f), lastSwingAt + SwingInterval + .05f);
         // Without attack-from-block a press locks the shield out at once; with it, only a swing that starts does (OnAttackStarted).
-        if (!AttackFromBlock) blockLockUntil = Time.time + (CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f);
+        if (!AttackFromBlock && !BlockCutsRecovery) blockLockUntil = Time.time + (CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f);
     }
 
     void OnPrimaryReleased()
@@ -240,6 +282,13 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             UpdateCharge(tuning);
         }
 
+        TrackStrike();
+        // An unconsumed cancel (the swing moved on that same frame) must not cancel the next windup.
+        if (cancelSetAt > 0f && Time.time - cancelSetAt > .1f) { AnimatorHelper.ResetTrigger(armsAnimator, attackCancelParam); cancelSetAt = -10f; }
+        // Block pressed (not held from before) while the swing is still winding up: cancel it.
+        bool blockPressed = secondary && !secondaryWasHeld;
+        secondaryWasHeld = secondary;
+        if (blockPressed && BlockCancelsWindup && ShieldHeld && IsAttacking && !IsReleasing) CancelWindup();
         bool attackingNow = IsAttacking;
         if (!attackingNow) windingUp = false;
         // A queued press stays valid while a swing is in progress (it chains at the recovery's cancel point);
@@ -254,11 +303,15 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         // The animator picks the windup (forehand or backhand) from SwingIndex as the swing starts, so it
         // holds the next swing's index before then; AttackBegin confirms it.
         if (startingSwing && !windingUp) AnimatorHelper.SetInteger(armsAnimator, swingIndexParam, NextSwingIndex);
+        if (!primary) heldThroughCancel = false;
         AnimatorHelper.SetBool(armsAnimator, attackHeldParam,
-            (primary || buffered) && WeaponHeld && (!secondary || AttackFromBlock) && intervalReady);
+            !heldThroughCancel && (primary || buffered) && WeaponHeld && (!secondary || AttackFromBlock) && intervalReady);
         if (secondary && !blockLocked && ShieldHeld && player.Stats != null &&
             player.Stats.HasStat(StatType.MaxStamina) && (player.Stats.IsExhausted || player.Stats.CurrentStamina <= 0))
             player.Stats.ReportInsufficientStamina();
+        bool raising = secondary && ShieldHeld && !(BlockCutsRecovery ? Committed : AttackFromBlock && IsAttacking);
+        if (raising && !wasGuarding) guardRaisedAt = Time.time;
+        wasGuarding = raising;
         bool guarding = IsGuarding;
         if (guarding && player.Stats != null)
             guarding = player.Stats.DrainStamina(CombatManager.HasInstance ? CombatManager.Instance.shieldStaminaPerSecond : 2f, StaminaRegenDelay);
