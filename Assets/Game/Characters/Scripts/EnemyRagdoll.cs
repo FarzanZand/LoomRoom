@@ -12,7 +12,7 @@ public class EnemyRagdoll : MonoBehaviour
     [SerializeField, Min(.1f)] float totalMass = 40f;
     [Tooltip("Seconds after death before the bodies freeze in place (saves physics time).")]
     [SerializeField, Min(.5f)] float settleSeconds = 5f;
-    [Tooltip("Play the authored death animation instead of tumbling. For non-humanoid bodies that one rigid box fits badly (long animals like the rat).")]
+    [Tooltip("Play the authored death animation instead of tumbling. For non-humanoid bodies that one rigid box fits badly: long animals like the rat, and flyers like the bat, whose clip falls to the floor (a thrown box built around the body in the air turns that fall sideways or upward).")]
     [SerializeField] bool deathAnimationInstead;
     [Tooltip("Non-humanoid bodies: keep the animator playing the death clip while the body is thrown, so it curls up and rolls over instead of freezing in the pose it died in.")]
     [SerializeField] bool deathClipWhileThrown = true;

@@ -19,9 +19,21 @@ MonoBehaviour:
   hideTrims: 0
   trim: {fileID: 2100000, guid: 47460e11011b81b459a50f38b0dae52f, type: 2}
   wallBaseWeight: 10
-  wallVariants: []
+  wallVariants:
+  - material: {fileID: 2100000, guid: 8e778862b3b9482469faee71c78fef01, type: 2}
+    weight: 1
+    rows: 0
+  - material: {fileID: 2100000, guid: 13bbdbfd959a556479bf555d20c50979, type: 2}
+    weight: 1
+    rows: 0
   floorBaseWeight: 10
-  floorVariants: []
+  floorVariants:
+  - material: {fileID: 2100000, guid: 06e1f782049a590439fec5b1b285fca2, type: 2}
+    weight: 1
+    rows: 0
+  - material: {fileID: 2100000, guid: 05c4bf7ef75bc104498136a4e3451676, type: 2}
+    weight: 1
+    rows: 0
   wallDecor: []
   wallDecorPerTenFaces: 0.5
   corridorDressing: {fileID: 0}

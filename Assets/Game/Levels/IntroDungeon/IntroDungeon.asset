@@ -280,9 +280,9 @@ MonoBehaviour:
   woodMaterial: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
   metalMaterial: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
   roomStyles:
-  - style: {fileID: 11400000, guid: effd0936d8ae44fbaf28bf7c3494ed2a, type: 2}
+  - style: {fileID: 11400000, guid: 5e6a07315aa79734498dcba82c591e34, type: 2}
     weight: 2
-  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
+  - style: {fileID: 11400000, guid: b70b907d7c9124648b6e11dfdb34ca5f, type: 2}
     weight: 3
   corridorsCopyConnectedRoomStyle: 1
   corridorStyles:

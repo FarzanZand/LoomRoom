@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48e1a08511ae4bb89e9a2ba01ad45eb5, type: 3}
+  m_Name: Church2
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomStyle
+  bottomWall: {fileID: 2100000, guid: f68d3ceee467ce944972560c9f9cde0a, type: 2}
+  upperWall: {fileID: 2100000, guid: 73ab79852a18e0149b931e7b98d7e0ef, type: 2}
+  floor: {fileID: 2100000, guid: 4e32c00f43765a74fa0f27168d280b05, type: 2}
+  ceiling: {fileID: 2100000, guid: 0da15b179f510b8409f542a779f36b8b, type: 2}
+  hideTrims: 0
+  trim: {fileID: 2100000, guid: 0569b841857a8d74e9c4f3569e5eb170, type: 2}
+  wallBaseWeight: 10
+  wallVariants:
+  - material: {fileID: 2100000, guid: 76158435391e4a24e9b2a648d81ce2bd, type: 2}
+    weight: 1
+    rows: 1
+  - material: {fileID: 2100000, guid: 43949cfc2d2cd174885ab1558f65ece6, type: 2}
+    weight: 0.5
+    rows: 1
+  - material: {fileID: 2100000, guid: a032d7ed1839b0847996170b0c2f1913, type: 2}
+    weight: 1
+    rows: 2
+  - material: {fileID: 2100000, guid: 531868dea9e676c43974d05e4c815e70, type: 2}
+    weight: 1.5
+    rows: 2
+  floorBaseWeight: 10
+  floorVariants:
+  - material: {fileID: 2100000, guid: bb2936a6cd2183c478e05d0b513f4484, type: 2}
+    weight: 1.5
+    rows: 0
+  - material: {fileID: 2100000, guid: e1da279fc6c928d46a03cb4877578c76, type: 2}
+    weight: 0.6
+    rows: 0
+  wallDecor: []
+  wallDecorPerTenFaces: 0.5
+  corridorDressing: {fileID: 0}
+  dressingSpacing: 3
+  stretchDressingToCeiling: 1

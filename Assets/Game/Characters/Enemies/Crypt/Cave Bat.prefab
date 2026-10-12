@@ -100,7 +100,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2761132636851895448, guid: f995d780264f1174092cc7345fc6832f, type: 3}
       propertyPath: deathAnimationInstead
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3042351543931888501, guid: f995d780264f1174092cc7345fc6832f, type: 3}
       propertyPath: m_Height

@@ -17,9 +17,9 @@ The only scene is `Scenes/Room.unity`. Project conventions and a fuller map of t
 | `Cinematics` | Cutscene controllers, intro assets, timelines |
 | `UI` | UI scripts, prefabs, kit sprites, fonts, themes |
 | `Rendering` | URP assets, `Desktop Renderer`, retro screen shader, Pixel Look |
-| `World` | Lighting manager, moods, apartment materials, props and prefabs |
+| `World` | Lighting manager, moods, prefabs; `World/Art` holds hand-made room art (apartment source materials, paintings, one folder per new thing) |
 | `Audio` | `AudioManager`, audio data (`Audio/Data`) and source clips (`Audio/Library`) |
-| `Art` | Paintings, pixel item art, terrain layers |
+| `Art` | Pixel item art, terrain layers, generated pixel restyles (`Art/Synty Pixel`, not edited by hand) |
 | `Meshy` | AI-generated models from `Tools/meshy.py` |
 | `Development` | Debug Dungeon session and settings, editor tools in `Development/Editor` |
 | `Scenes` | `Room.unity` |
