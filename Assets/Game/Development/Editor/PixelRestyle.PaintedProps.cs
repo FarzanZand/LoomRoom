@@ -31,13 +31,14 @@ public static partial class PixelRestyle
                            Mathf.RoundToInt(SheetCell * sx), Mathf.RoundToInt(SheetCell * sy));
     }
 
-    // The prop's visible parts (no particles) and its bounds in prop space.
+    // The prop's paintable parts (no particles; water, glass and glows stay as they are) and their bounds in prop space.
     static List<MeshRenderer> PropParts(GameObject root, out Bounds bounds)
     {
         var parts = new List<MeshRenderer>(); bounds = default; bool any = false;
         foreach (var r in root.GetComponentsInChildren<MeshRenderer>(true))
         {
             var mf = r.GetComponent<MeshFilter>(); if (mf == null || mf.sharedMesh == null) continue;
+            if (System.Array.TrueForAll(r.sharedMaterials, SkipSurface)) continue;
             parts.Add(r);
             var m = root.transform.worldToLocalMatrix * r.transform.localToWorldMatrix; var mb = mf.sharedMesh.bounds;
             for (int i = 0; i < 8; i++)
@@ -63,6 +64,8 @@ public static partial class PixelRestyle
         foreach (var ps in copy.GetComponentsInChildren<ParticleSystemRenderer>(true)) ps.enabled = false;
         foreach (var l in copy.GetComponentsInChildren<Light>(true)) l.enabled = false;
         var parts = PropParts(copy, out var b);
+        // Only the painted parts are shown (the fountain's water would hide its basin from the painter).
+        foreach (var r in copy.GetComponentsInChildren<Renderer>(true)) if (!(r is MeshRenderer mr && parts.Contains(mr))) r.enabled = false;
         // Rendered in Synty's own flat colours: an earlier restyle's coarse texels would be copied by the painter as big squares.
         foreach (var r in parts)
         {
@@ -170,9 +173,13 @@ public static partial class PixelRestyle
                 return painted.GetPixel(k % painted.width, k / painted.width);
             }
 
+            // A part used more than once (a table's chairs) is painted once, where it first stands, and shared.
+            var done = new Dictionary<string, (Mesh mesh, Material material)>();
             foreach (var r in parts)
             {
                 var mf = r.GetComponent<MeshFilter>(); var m = toProp[r];
+                string doneKey = mf.sharedMesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
+                if (done.TryGetValue(doneKey, out var shared)) { mf.sharedMesh = shared.mesh; r.sharedMaterials = new[] { shared.material }; continue; }
                 // Always from the plain restyle (a re-run must not start from the last painting's mesh and UVs).
                 string baseName = mf.sharedMesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
                 var src = AssetDatabase.LoadAssetAtPath<Mesh>($"{Root}/Props/{baseName}/{baseName}.asset") ?? mf.sharedMesh;
@@ -211,6 +218,7 @@ public static partial class PixelRestyle
                 }
                 PaintSource = null;
                 if (built.mesh == null) { results.Add($"{src.name} failed"); continue; }
+                done[doneKey] = built;
                 results.Add($"{partName} {measured:0}/m");
             }
             PrefabUtility.SaveAsPrefabAsset(root, propPrefabPath);
@@ -222,9 +230,52 @@ public static partial class PixelRestyle
         return $"{name}: " + string.Join(", ", results) + $" (target {ItemTexelsPerUnit:0})";
     }
 
+    // Long flat props (rugs, runners): no single painting reaches ItemTexelsPerUnit along their length, so one painted
+    // section that repeats is laid on from above. The texture is the section across the prop's width (its x) at
+    // ItemTexelsPerUnit, and repeats along its length (z).
+    public static string BuildTiledTopProp(string propPrefabPath, string tilePng, string name)
+    {
+        var root = PrefabUtility.LoadPrefabContents(propPrefabPath);
+        try
+        {
+            var mf = root.GetComponentInChildren<MeshFilter>(true); var r = mf.GetComponent<MeshRenderer>();
+            string baseName = mf.sharedMesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
+            var src = AssetDatabase.LoadAssetAtPath<Mesh>($"{Root}/Props/{baseName}/{baseName}.asset") ?? mf.sharedMesh;
+            string dir = $"{Root}/Props/{baseName}", partName = baseName + " painted";
+            var tile = new Texture2D(2, 2); tile.LoadImage(File.ReadAllBytes(tilePng));
+            var scale = mf.transform.lossyScale; var b = src.bounds;
+            // The section spans the width; its length in the world follows from the pixel size.
+            int tw = tile.width, th = tile.height;
+            float tileWorld = th / ItemTexelsPerUnit, widthWorld = b.size.x * scale.x;
+            var mesh = Object.Instantiate(src); mesh.name = partName;
+            var v = mesh.vertices; var uv = new Vector2[v.Length];
+            for (int i = 0; i < v.Length; i++) uv[i] = new Vector2((v[i].x - b.min.x) / b.size.x, (v[i].z - b.min.z) * scale.z / tileWorld);
+            mesh.uv = uv; mesh.subMeshCount = 1; mesh.SetTriangles(src.triangles, 0);
+            string texPath = $"{dir}/{partName}.png";
+            File.WriteAllBytes(texPath, tile.EncodeToPNG()); Object.DestroyImmediate(tile);
+            AssetDatabase.ImportAsset(texPath);
+            var ti = (TextureImporter)AssetImporter.GetAtPath(texPath);
+            ti.filterMode = FilterMode.Point; ti.wrapModeU = TextureWrapMode.Clamp; ti.wrapModeV = TextureWrapMode.Repeat; ti.npotScale = TextureImporterNPOTScale.None;
+            ti.textureCompression = TextureImporterCompression.Uncompressed; ti.mipmapEnabled = true; ti.mipmapFilter = TextureImporterMipFilter.BoxFilter; ti.SaveAndReimport();
+            string meshPath = $"{dir}/{partName}.asset"; AssetDatabase.DeleteAsset(meshPath); AssetDatabase.CreateAsset(mesh, meshPath);
+            string matPath = $"{dir}/{partName}.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+            if (material == null) { material = new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(material, matPath); }
+            material.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(texPath)); material.SetColor("_BaseColor", Color.white); material.SetFloat("_Smoothness", 0f);
+            EditorUtility.SetDirty(material);
+            mf.sharedMesh = mesh; r.sharedMaterials = new[] { material };
+            PrefabUtility.SaveAsPrefabAsset(root, propPrefabPath);
+            AssetDatabase.SaveAssets();
+            return $"{name}: {tw}x{th} section, {tw / widthWorld:0.#} across x {ItemTexelsPerUnit} along texels per metre, repeats every {tileWorld:0.##} m";
+        }
+        finally { PrefabUtility.UnloadPrefabContents(root); }
+    }
+
     // A review image: each prop as it is now, seen from the front-right and above, all at one world scale, side by side.
     public static string RenderPropPreview(string[] prefabPaths, string outFile, float metresPerCell = 1.4f, int cell = 640)
     {
+        // New materials would draw as Unity's cyan placeholder while their shaders compile in the background.
+        bool asyncShaders = ShaderUtil.allowAsyncCompilation; ShaderUtil.allowAsyncCompilation = false;
         var root = new GameObject("prop preview") { hideFlags = HideFlags.DontSave };
         root.transform.position = new Vector3(0, -950, 0);
         var camGo = new GameObject("cam"); camGo.transform.SetParent(root.transform, false);
@@ -253,6 +304,7 @@ public static partial class PixelRestyle
         Directory.CreateDirectory(Path.GetDirectoryName(outFile));
         File.WriteAllBytes(outFile, sheet.EncodeToPNG());
         RenderTexture.active = null; Object.DestroyImmediate(rt); Object.DestroyImmediate(px); Object.DestroyImmediate(sheet); Object.DestroyImmediate(root);
+        ShaderUtil.allowAsyncCompilation = asyncShaders;
         return outFile;
     }
 

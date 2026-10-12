@@ -141,11 +141,11 @@ PrefabInstance:
     - target: {fileID: 5246684761535434065, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: c91c38432aa0ceb40a94897d3a6c6c6f, type: 2}
+      objectReference: {fileID: 4300000, guid: f9bbb263b6c7e594e98259e8f2e5a168, type: 2}
     - target: {fileID: 8010497152379173275, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 9ee67a3adc9a19c4aa12001304c95dc5, type: 2}
+      objectReference: {fileID: 2100000, guid: 98f8d18d4a42fa84fa3bcdebb113c385, type: 2}
     - target: {fileID: 8371062267507710030, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Brazier_01

@@ -170,11 +170,11 @@ PrefabInstance:
     - target: {fileID: 5129588298696591612, guid: 62f975f4e03376d4fbc66fe6de81f725, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: a3da3e1fe204fc04888a84b14f1610db, type: 2}
+      objectReference: {fileID: 4300000, guid: e536e1fdff322c244af244a37a1e6a7e, type: 2}
     - target: {fileID: 6974670821585288246, guid: 62f975f4e03376d4fbc66fe6de81f725, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: d0b517346cffa8d44b9b6f37aef9ba5b, type: 2}
+      objectReference: {fileID: 2100000, guid: 4231ccfd5051f7b4ea07553e51b76a58, type: 2}
     - target: {fileID: 8106530954870294361, guid: 62f975f4e03376d4fbc66fe6de81f725, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.8
@@ -253,7 +253,7 @@ PrefabInstance:
     - target: {fileID: 5253628202435137378, guid: 639a4ea1a366a12418f822e13828ac05, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 78c4b4a676f50d341990a1bd280f1772, type: 2}
+      objectReference: {fileID: 2100000, guid: 07e0f054dd941aa46af27a028d0a2236, type: 2}
     - target: {fileID: 6046187450805612215, guid: 639a4ea1a366a12418f822e13828ac05, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Bookshelf_01_Insert_01
@@ -313,7 +313,7 @@ PrefabInstance:
     - target: {fileID: 8001863314970655656, guid: 639a4ea1a366a12418f822e13828ac05, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: 498f27b797f2c6848b87686ee61ceca4, type: 2}
+      objectReference: {fileID: 4300000, guid: 0094257ba37c64f4a96971589fd00b19, type: 2}
     m_RemovedComponents:
     - {fileID: 1497331867, guid: 639a4ea1a366a12418f822e13828ac05, type: 3}
     m_RemovedGameObjects: []
