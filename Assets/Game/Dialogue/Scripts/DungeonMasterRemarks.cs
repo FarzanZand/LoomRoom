@@ -266,7 +266,7 @@ public class DungeonMasterRemarks : MonoBehaviour
     void OnRunEnded(bool victory)
     {
         if (DungeonMaster.HasInstance) DungeonMaster.Instance.Silence();
-        if (!victory) died = true;
+        if (!victory) { died = true; satThisMorning = false; idleTime = 0f; nudged = false; }
         beatRecord = RunManager.HasInstance && recordAtRunStart >= 1 && RunManager.Instance.Floor > recordAtRunStart;
     }
 

@@ -39,7 +39,8 @@ public partial class DungeonGenerator
         var f = RoomFeatures;
         var rng = new System.Random(Scramble(unchecked(seed0 + 271829)));
         int ambushes = 0, sleepers = 0;
-        bool AmbushLeft() => f.maxAmbushes <= 0 || ambushes < f.maxAmbushes;
+        // One ambush a floor at most (older assets saved 2, or 0 for no limit: both read as one).
+        bool AmbushLeft() => ambushes < 1;
         bool SleepLeft() => f.maxSleepingPacks <= 0 || sleepers < f.maxSleepingPacks;
         bool Special(int i) => i == 0 || i == MerchantRoom || (Roles[i] == RoomRole.Exit && Milestone != null);
         // Rooms built for an event take their places under the caps first; the rest roll for what is left.

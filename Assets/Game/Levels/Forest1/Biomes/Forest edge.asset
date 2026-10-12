@@ -114,7 +114,7 @@ MonoBehaviour:
     rooms: 6
     fromFloor: 1
     maxPerFloor: 2
-  templateChance: 1
+  templateChance: 0.45
   overrideDungeonSettings: 0
   roomFeatures:
     shrineBargains: 1
@@ -122,7 +122,7 @@ MonoBehaviour:
     shrinePrice: 0.35
     ambushes: 1
     ambushChance: 0.12
-    maxAmbushes: 2
+    maxAmbushes: 1
     trappedTreasure: 1
     trapChance: 0.3
     spikeDamage: 0.2

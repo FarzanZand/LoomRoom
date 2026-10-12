@@ -184,6 +184,7 @@ MonoBehaviour:
   boardMaxRaise: 2
   boardVerticality: 1
   boardTileTaps: []
+  boardRevealAll: 0
   architectureTileSize: 3
   twoTileRoomPercent: 25
   threeTileRoomPercent: 0
@@ -288,13 +289,18 @@ MonoBehaviour:
   roomFeatures:
     shrineBargains: 1
     shrineChance: 0.35
+    shrinePrice: 0.35
     ambushes: 1
     ambushChance: 0.12
+    maxAmbushes: 1
     trappedTreasure: 1
     trapChance: 0.3
+    spikeDamage: 0.2
     sleepingPacks: 1
     sleepChance: 0.2
+    maxSleepingPacks: 3
     pits: 1
+    pitFallDamage: 0.25
     sunkenFloors: 1
     archerLedges: 1
     darkRooms: 1

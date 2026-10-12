@@ -265,11 +265,13 @@ MonoBehaviour:
     shrinePrice: 0.35
     ambushes: 1
     ambushChance: 0.08
+    maxAmbushes: 1
     trappedTreasure: 1
     trapChance: 0.3
     spikeDamage: 0.2
     sleepingPacks: 1
     sleepChance: 0.1
+    maxSleepingPacks: 3
     pits: 1
     pitFallDamage: 0.25
     sunkenFloors: 1

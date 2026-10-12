@@ -23,16 +23,7 @@ MonoBehaviour:
   wallBaseWeight: 10
   wallVariants: []
   floorBaseWeight: 10
-  floorVariants:
-  - material: {fileID: 2100000, guid: 6765110f8f6f9bd4a96b1afc77bc0af5, type: 2}
-    weight: 10
-    rows: 0
-  - material: {fileID: 2100000, guid: e87237ec3ffd7494ca491de82e39ba32, type: 2}
-    weight: 10
-    rows: 0
-  - material: {fileID: 2100000, guid: 92ccdc3f178213043a232af7a1aaa15d, type: 2}
-    weight: 10
-    rows: 0
+  floorVariants: []
   wallDecor: []
   wallDecorPerTenFaces: 1
   corridorDressing: {fileID: 0}

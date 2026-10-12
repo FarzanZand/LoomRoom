@@ -24,8 +24,33 @@ MonoBehaviour:
   destructibles: []
   lighting: 8
   litThroughout: 1
+  lightBoard: 0
   roomTemplates: []
   templateChance: 0.7
+  overrideDungeonSettings: 0
+  roomFeatures:
+    shrineBargains: 1
+    shrineChance: 0.35
+    shrinePrice: 0.35
+    ambushes: 1
+    ambushChance: 0.08
+    maxAmbushes: 1
+    trappedTreasure: 1
+    trapChance: 0.3
+    spikeDamage: 0.2
+    sleepingPacks: 1
+    sleepChance: 0.1
+    maxSleepingPacks: 3
+    pits: 1
+    pitFallDamage: 0.25
+    sunkenFloors: 1
+    archerLedges: 1
+    darkRooms: 1
+    darkChance: 0.08
+    candlelitRooms: 1
+    moonlitRooms: 1
+    eerieRooms: 1
+    eerieChance: 0.06
   lightRadius: 0
   shadowTint: {r: 0.55, g: 0.85, b: 1, a: 1}
   lampTint: {r: 1.06, g: 0.97, b: 0.86, a: 1}

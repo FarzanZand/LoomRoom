@@ -210,6 +210,12 @@ public class TableLevelData : ScriptableObject
     public AudioClip[] boardTileTaps = new AudioClip[0];
     [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Tooltip("Show the whole board from the start, like a walled dungeon, instead of dealing in the rooms behind each door as it opens.")]
     public bool boardRevealAll;
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), AssetsOnly, Tooltip("Board doors stand between two of these (trees, for a forest) instead of a stone arch with a beam. Empty builds the arch.")]
+    public GameObject[] boardDoorPosts = new GameObject[0];
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), AssetsOnly, Tooltip("Cells a room's shape leaves out inside it (between the columns of a pillar hall, the middle of a ring) become low mounds with one of these on top, instead of holes in the board. Empty leaves the holes.")]
+    public GameObject[] boardMoundProps = new GameObject[0];
+    [TabGroup(Tabs, Architecture), Tooltip("Furnish the rim of the entrance and exit rooms too (their middles stay clear). Off keeps both rooms bare.")]
+    public bool furnishEntranceRims;
 
     // ── Architecture ──────────────────────────────────────────────────
     [TabGroup(Tabs, Architecture), ShowIf(D), Min(3), Tooltip("Physical width and height of one square texture tile. 32x32 artwork repeats every 3 units by default. Independent of layout grid spacing so changing art scale does not enlarge the table footprint.")]

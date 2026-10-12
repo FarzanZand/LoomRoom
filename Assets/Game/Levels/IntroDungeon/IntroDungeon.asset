@@ -259,6 +259,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 426c8cc8b2a4e1c4f8d100f1b194662f, type: 3}
   - {fileID: 8300000, guid: fa0b67f13f850da4f9d3fb90db46a4f3, type: 3}
   - {fileID: 8300000, guid: c137ad7632865df4f90d121edb6c5ec7, type: 3}
+  boardRevealAll: 0
   architectureTileSize: 3
   twoTileRoomPercent: 25
   threeTileRoomPercent: 0
@@ -363,13 +364,18 @@ MonoBehaviour:
   roomFeatures:
     shrineBargains: 1
     shrineChance: 0.35
+    shrinePrice: 0.35
     ambushes: 1
     ambushChance: 0.12
+    maxAmbushes: 1
     trappedTreasure: 1
     trapChance: 0.3
+    spikeDamage: 0.2
     sleepingPacks: 1
     sleepChance: 0.2
+    maxSleepingPacks: 3
     pits: 1
+    pitFallDamage: 0.25
     sunkenFloors: 1
     archerLedges: 1
     darkRooms: 1

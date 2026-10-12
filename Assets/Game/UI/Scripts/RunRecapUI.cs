@@ -21,7 +21,8 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField] Color deathColor = new Color(.85f, .22f, .18f);
     [SerializeField] Color victoryColor = new Color(1f, .8f, .35f);
     [SerializeField, Tooltip("Every run ends by waking in bed: the only button is Wake up.")] bool wakeInBed = true;
-    [SerializeField, Tooltip("The return button's label when waking in bed.")] string wakeLabel = "Wake up";
+    [SerializeField, Tooltip("The return button's label after a win (the ending, waking in bed).")] string wakeLabel = "Wake up";
+    [SerializeField, Tooltip("The return button's label after a death (back in the room, standing by the table).")] string standLabel = "Stand up";
 
     bool open, wakes, won;
     string returnLabel;
@@ -72,7 +73,7 @@ public class RunRecapUI : MonoBehaviour
         if (label != null)
         {
             returnLabel ??= label.text;
-            label.text = wakes ? wakeLabel : returnLabel;
+            label.text = wakes ? (won ? wakeLabel : standLabel) : returnLabel;
         }
         // Alone, it takes the middle slot.
         if (returnButton != null && returnButton.transform is RectTransform rect)
@@ -108,13 +109,13 @@ public class RunRecapUI : MonoBehaviour
         Loader?.ShowSelection("Choose your adventure");
     }
 
-    // A death wakes the player in bed, briefly; a win plays the ending.
+    // A win plays the ending (a new morning); a death puts the player back in the room, standing by the table,
+    // with no wake-up.
     static void WakeUp(bool victory)
     {
         var world = WorldManager.Instance;
         if (victory && world.ending != null) { world.ending.Play(); return; }
-        if (Loader != null) Loader.ReturnToRoom(() => world.wakeUpCutscene.Play(true));
-        else world.wakeUpCutscene.Play(true);
+        Loader?.ReturnToRoom();
     }
 
     void ReturnToRoom()

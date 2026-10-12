@@ -69,7 +69,8 @@ public class WorldManager : Singleton<WorldManager>
             (progression.skipWakeUp || progression.startingPlayer != PlayerKind.Room);
         // The first launch opens at the table in the dark instead (IntroController).
         bool intro = !skip && IntroController.HasInstance && IntroController.Instance.TryPlay();
-        if (!skip && !intro && wakeUpCutscene != null) wakeUpCutscene.Play(brief: false);
+        // The wake-up only follows the intro and a won table level: starting the game, the player is already up.
+        if (!skip && !intro && wakeUpCutscene != null) wakeUpCutscene.StandUp();
     }
 
     [Button]

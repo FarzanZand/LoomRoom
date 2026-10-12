@@ -347,7 +347,7 @@ public partial class DungeonGenerator : MonoBehaviour
         ApplyRoomLights();
         DressCorridors();
         StockDeadEnds();
-        if (Board) BuildBoardRim();
+        if (Board) { BuildBoardMounds(); BuildBoardRim(); }
         // Board tiles stay separate: they are laid out one by one as rooms are revealed.
         var batching=gameObject.AddComponent<DungeonStaticGeometry>();
         if (!Board) batching.Combine(geometry,data.cellSize*8);
@@ -531,7 +531,8 @@ public partial class DungeonGenerator : MonoBehaviour
                     float end = Mathf.Min(top, (row+1)*tileSize);
                     if (end <= y) continue;
                     float depth = WallThickness - lintelFaceInset * 2;
-                    // On a board the lintel is the arch's beam: across both posts, and part of the door.
+                    // On a board the lintel is the arch's beam: across both posts, and part of the door (none between post props).
+                    if (Board && BoardPostProps) continue;
                     float spanWidth = Board ? data.cellSize + .68f : data.cellSize;
                     if (Board) depth = WallThickness + .06f;
                     var span = dir.x != 0 ? new Vector3(depth,end-y,spanWidth) : new Vector3(spanWidth,end-y,depth);
@@ -555,7 +556,10 @@ public partial class DungeonGenerator : MonoBehaviour
         var rewards=profile!=null ? profile.rewards : null;
         // Only decorate cells outside the reserved doorway-to-centre routes.
         var available=new System.Collections.Generic.List<Vector2Int>();
-        foreach(var p in Layout.RoomCells(index))if(!Layout.Reserved.Contains(p))available.Add(p);
+        // The entrance and exit rooms are kept clear, except their rims when the level asks (trees round a glade).
+        bool rim=data.furnishEntranceRims && (index==0 || index==Layout.rooms.Count-1);
+        bool Rim(Vector2Int p){if(Layout.Walkways.Contains(p))return false;foreach(var d in DungeonLayout.Neighbours)if(!Layout.InRoom(index,p+d))return true;return false;}
+        foreach(var p in Layout.RoomCells(index))if(!Layout.Reserved.Contains(p) || rim && Rim(p))available.Add(p);
         for(int i=available.Count-1;i>0;i--){int j=random.Next(i+1);(available[i],available[j])=(available[j],available[i]);}
         PlaceShrine(index,available);
         int cursor=0;

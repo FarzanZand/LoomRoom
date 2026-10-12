@@ -3,7 +3,8 @@ using UnityEngine;
 
 // The opening: screen fades from black while the wake-up timeline plays and a short
 // music sting runs underneath. The room player is placed at the start marker first.
-// After a death the run recap plays it again, brief: the player wakes in bed for the next run.
+// It plays after the intro and after each won table level (the ending), never after a death (the player is back in
+// the room, standing by the table) or when the game is started (StandUp: standing by the bed).
 // In the Room scene, this rig and its start marker are children of the bed so
 // designers can move or rotate the bed without retiming the local Timeline animation.
 public class WakeUpCutsceneController : CutsceneController
@@ -74,6 +75,17 @@ public class WakeUpCutsceneController : CutsceneController
             if (music != null) StopCoroutine(music);
             music = StartCoroutine(MusicRoutine(brief ? 0f : musicDelay, brief ? briefMusicDuration : musicDuration));
         }
+    }
+
+    // Starting the game: no wake-up, the player stands where it would have left them, and the screen fades in.
+    public void StandUp()
+    {
+        if (PlayerManager.HasInstance && startPositionRoom != null)
+        {
+            var room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
+            if (room != null) room.Warp(startPositionRoom.position, startPositionRoom.rotation);
+        }
+        if (ScreenManager.HasInstance) { ScreenManager.Instance.FadeToBlack(0f); ScreenManager.Instance.FadeFromBlack(briefFadeDuration, briefFadeHold); }
     }
 
     Coroutine music;

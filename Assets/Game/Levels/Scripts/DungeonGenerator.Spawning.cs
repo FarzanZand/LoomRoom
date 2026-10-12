@@ -99,7 +99,25 @@ public partial class DungeonGenerator
     {
         var lanes=new System.Collections.Generic.HashSet<Vector2Int>();
         foreach(var p in Layout.RoomCells(room))if(Layout.Walkways.Contains(p))lanes.Add(p);
+        // Every actual opening too, and the cell inside it: nothing is ever set down in a way in or out (a turned
+        // template's openings need not be where the walkways were drawn).
+        lanes.UnionWith(Openings(room));
         return lanes;
+    }
+
+    // The room's cells at a way in or out, and the cell just inside each.
+    System.Collections.Generic.HashSet<Vector2Int> Openings(int room)
+    {
+        var cells=new System.Collections.Generic.HashSet<Vector2Int>();
+        foreach(var p in Layout.RoomCells(room))
+            foreach(var d in DungeonLayout.Neighbours)
+            {
+                var n=p+d;
+                if(!Layout.InBounds(n) || !Layout.floor[n.x,n.y] || Layout.InRoom(room,n))continue;
+                cells.Add(p);
+                if(Layout.InRoom(room,p-d))cells.Add(p-d);
+            }
+        return cells;
     }
 
     void PlaceTemplate(int index)
@@ -144,9 +162,12 @@ public partial class DungeonGenerator
             }
             MaybeTrap(chest);
         }
+        var openings=Openings(index);
         foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))
         {
             if(!Layout.InRoom(index,CellOf(socket.transform.position)))continue;
+            // Things that stand in the way never go in an opening (the room may have been turned).
+            if((socket.type==DungeonSocketType.Breakable || socket.type==DungeonSocketType.Feature || socket.type==DungeonSocketType.Chest) && openings.Contains(CellOf(socket.transform.position)))continue;
             if(socket.chance<1f && extraRandom.NextDouble()>=socket.chance)continue;
             var t=socket.transform;
             switch(socket.type)
@@ -189,7 +210,10 @@ public partial class DungeonGenerator
             taken.UnionWith(cutCells);
             var available=new System.Collections.Generic.List<Vector2Int>();
             foreach(var p in Layout.RoomCells(index))if(!lanes.Contains(p) && !Layout.Reserved.Contains(p) && !taken.Contains(p))available.Add(p);
-            PlaceExtras(index,available,0,rewards);
+            int left=PlaceExtras(index,available,0,rewards);
+            // Furnished like a generated room as well (the level's and biome's prop rules), around the room's own pieces.
+            var (rules,_)=Furnishing(profiles[index]);
+            if(template.addFurnishing && rules!=null && left<available.Count)PlaceRules(index,available.GetRange(left,available.Count-left),rules);
         }
     }
 
