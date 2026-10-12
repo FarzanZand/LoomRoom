@@ -11,4 +11,6 @@ public class DebugDungeonSettings : ScriptableObject
     public float margin = 3f;
     [Tooltip("Enemies only fight back once hit.")]
     public bool retaliateOnly;
+    [Tooltip("Chests set down a few metres to the player's right, one beside the other (wood, iron, gold), each with the biome's loot.")]
+    public GameObject[] chests = new GameObject[0];
 }

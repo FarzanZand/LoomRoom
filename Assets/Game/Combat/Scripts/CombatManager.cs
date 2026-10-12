@@ -149,8 +149,8 @@ public class CombatManager : Singleton<CombatManager>
     public float swingInterval = .6f;
     [Tooltip("Attacking while the shield is up lowers it for the swing and raises it again afterwards if block is still held.")]
     public bool attackFromBlock = true;
-    [Tooltip("Pressing block during a windup (before the blade can hit) cancels the swing: no damage, the shield comes up at once. The next swing still waits for Swing Interval.")]
-    public bool blockCancelsWindup = true;
+    [Tooltip("Pressing block during a windup (before the blade can hit) cancels the swing: no damage, the shield comes up at once. The next swing still waits for Swing Interval. Off (the user found it odd): a swing once started always strikes.")]
+    public bool blockCancelsWindup = false;
     [Tooltip("The shield is locked out only while the blade can hit (the swing's strike, until its hitbox closes); in the recovery after it, block raises the shield at once. Off: block waits for the whole swing to play out (Block Cancel Window applies).")]
     public bool blockCutsRecovery = true;
     [Min(0f), Tooltip("Seconds after the shield comes up before it stops hits (0 = at once). Raise it if swing-block-swing feels too safe.")]

@@ -57,6 +57,29 @@ public class DebugDungeonSession : MonoBehaviour
         loader.Load(level);
     }
 
+    // Chests to the player's right, 3.5 m out and 2 m apart, facing the player, with the arena biome's loot.
+    static void PlaceChests(DungeonGenerator dungeon)
+    {
+        if (settings.chests == null) return;
+        var right = dungeon.SpawnRotation * Vector3.right;
+        var forward = dungeon.SpawnRotation * Vector3.forward;
+        int i = 0;
+        foreach (var prefab in settings.chests)
+        {
+            if (prefab == null) continue;
+            var pos = dungeon.SpawnPoint + right * 3.5f + forward * (i++ * 2f - 1f);
+            if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) pos = hit.position;
+            var look = dungeon.SpawnPoint - pos; look.y = 0f;
+            var go = Instantiate(prefab, pos, look.sqrMagnitude > .01f ? Quaternion.LookRotation(look) : Quaternion.identity, dungeon.transform);
+            if (go.TryGetComponent<DungeonContainer>(out var chest))
+            {
+                chest.loot = dungeon.Biome != null && dungeon.Biome.loot != null ? dungeon.Biome.loot : chest.loot;
+                chest.seed = Random.Range(0, 99999);
+                chest.floorNumber = 1;
+            }
+        }
+    }
+
     // The arena brings no enemies of its own: the settings' list stands in an arc in front of the player,
     // each just outside its detection radius, and stays put until it notices them.
     public static void ConfigureEnemies(DungeonGenerator dungeon)
@@ -64,6 +87,7 @@ public class DebugDungeonSession : MonoBehaviour
         if (!Active || CurrentMode != Mode.Arena || dungeon == null) return;
         foreach (var generated in dungeon.GetComponentsInChildren<EnemyBrain>()) { generated.gameObject.SetActive(false); Destroy(generated.gameObject); }
         var level = settings.level;
+        PlaceChests(dungeon);
         var spawned = settings.enemies.Where(p => p != null).ToArray();
         for (int i = 0; i < spawned.Length; i++)
         {
