@@ -36,6 +36,18 @@ public class DungeonBiome : ScriptableObject
     public Lighting lighting = Lighting.Darkness;
     [TabGroup(Look), Tooltip("Skip the Lighting Manager's dungeon darkness here: the preset's ambient light reaches everywhere, so unlit places stay visible.")]
     public bool litThroughout;
+    [System.Serializable]
+    public class RoomTemplateChoice
+    {
+        [AssetsOnly, Tooltip("A DungeonRoomTemplate prefab: a hand-built room (footprint, kit blocks, props, sockets).")] public GameObject template;
+        [Min(0)] public float weight = 1;
+        [Tooltip("The kinds of room it may become.")] public DungeonRoomRoles rooms = DungeonRoomRoles.Combat | DungeonRoomRoles.Treasure | DungeonRoomRoles.Rest | DungeonRoomRoles.Storage;
+        [Min(1), Tooltip("First floor of this biome it can appear on.")] public int fromFloor = 1;
+    }
+    [TabGroup(Look), Tooltip("Hand-built rooms (chunks) this biome's floors are made of: each room of a suitable kind is built from one of these by chance (Template Chance), the rest are generated. A room profile's own template comes first.")]
+    public RoomTemplateChoice[] roomTemplates = new RoomTemplateChoice[0];
+    [TabGroup(Look), Range(0f, 1f), Tooltip("Share of the rooms that get a hand-built room from the list above (when one suits them).")]
+    public float templateChance = .7f;
     [TabGroup(Look), Min(0f), Tooltip("Metres of full ambient light around the player here (LightingManager's light radius); 0 uses the manager's.")]
     public float lightRadius;
     [TabGroup(Look), Tooltip("Colour split (ScreenManager): shadows and ambient lean to this (cool).")]

@@ -9,10 +9,12 @@ public partial class DungeonGenerator
     readonly HashSet<Vector2Int> furnished = new();
     readonly List<(Vector2Int cell, Vector2Int dir, int region)> wallFaces = new();
 
+    int seed0;   // the floor's seed (furnishing groups derive their loot seeds from it)
     void BeginDressing(int seed)
     {
         decorRandom = new System.Random(unchecked(seed + 71993));
         propRandom = new System.Random(unchecked(seed + 104729));
+        seed0 = seed;
         furnished.Clear(); wallFaces.Clear();
     }
 
@@ -30,6 +32,7 @@ public partial class DungeonGenerator
         var chosen = new DungeonRoomProfile[count];
         for (int i = 0; i < count; i++) chosen[i] = ChooseProfile(roles[i]);
         if (UsesStartingRoom) chosen[0] = null;
+        pooledTemplates = PoolTemplates(roles, chosen, seed);
         // The shop's template, like any other, sets its room's shape.
         int merchant = ChooseMerchantRoom(roles, i => RequestedTemplate(i, roles[i], chosen[i]) != null);
         var shapeRandom = new System.Random(unchecked(seed + 88667));
@@ -39,7 +42,16 @@ public partial class DungeonGenerator
         var placed = Layout.PlacedRequests;
         Roles = new RoomRole[placed.Length];
         profiles = new DungeonRoomProfile[placed.Length];
-        for (int i = 0; i < placed.Length; i++) { Roles[i] = roles[placed[i]]; profiles[i] = chosen[placed[i]]; }
+        var requestedPool = pooledTemplates;
+        pooledTemplates = new GameObject[placed.Length];
+        for (int i = 0; i < placed.Length; i++) { Roles[i] = roles[placed[i]]; profiles[i] = chosen[placed[i]]; pooledTemplates[i] = requestedPool[placed[i]]; }
+        // A chunk whose footprint didn't fit was grown as a small fallback rectangle: most of its pieces would fall
+        // outside, so that room is generated normally instead.
+        for (int i = 0; i < placed.Length; i++)
+        {
+            var chunk = pooledTemplates[i] != null ? pooledTemplates[i].GetComponent<DungeonRoomTemplate>() : null;
+            if (chunk != null && chunk.HasFootprint && Layout.RoomCells(i).Count < chunk.Footprint().FloorCount * .9f) pooledTemplates[i] = null;
+        }
         // A shop room that did not fit leaves the floor without a merchant.
         MerchantRoom = System.Array.IndexOf(placed, merchant);
     }
@@ -338,7 +350,10 @@ public partial class DungeonGenerator
     {
         var size = new Vector2Int(Mathf.Clamp(rule.footprint.x, 1, 6), Mathf.Clamp(rule.footprint.y, 1, 6));
         if (!FindSpot(rule.placement, size, index, order, open, out var pos, out var rotation)) return false;
-        BackToWall(Instantiate(rule.prefab, pos, rotation, geometry), rule.placement, size);
+        var placed = Instantiate(rule.prefab, pos, rotation, geometry);
+        BackToWall(placed, rule.placement, size);
+        // Furnishing groups may hold breakables (a barrel under candles, pots on a shelf): give them loot.
+        if (placed.GetComponentInChildren<DungeonDestructible>(true) != null) SeedGroup(placed, unchecked(pos.GetHashCode() ^ seed0));
         return true;
     }
 

@@ -56,7 +56,7 @@ MonoBehaviour:
   roomSize: {x: 4, y: 9}
   roomSpacing: {x: 1, y: 4}
   corridorWander: 1.2
-  wideCorridorPercent: 15
+  wideCorridorPercent: 45
   deadEndPercent: 0
   loopReach: 10
   roomShapes:
@@ -117,8 +117,8 @@ MonoBehaviour:
   boardVerticality: 1
   boardTileTaps: []
   architectureTileSize: 3
-  twoTileRoomPercent: 25
-  threeTileRoomPercent: 0
+  twoTileRoomPercent: 50
+  threeTileRoomPercent: 10
   twoTileCorridorPercent: 25
   threeTileCorridorPercent: 0
   hideRoof: 0
@@ -220,6 +220,41 @@ MonoBehaviour:
     perRoom: {x: 0, y: 1}
     chance: 0.6
     rooms: 12
+  - prefab: {fileID: 5540278932594032461, guid: fc6050be241323644b0744e98500cf7b, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.12
+    perRoom: {x: 0, y: 1}
+    chance: 0.75
+    rooms: 62
+  - prefab: {fileID: 2113968441419437940, guid: aae2612e755c7b84785af26f99f13371, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.1
+    perRoom: {x: 0, y: 1}
+    chance: 0.6
+    rooms: 62
+  - prefab: {fileID: 2352924571811807020, guid: d0fa88bd7fcec5748b6b898e12548863, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.12
+    perRoom: {x: 0, y: 2}
+    chance: 0.7
+    rooms: 62
+  - prefab: {fileID: 2574115604199139414, guid: bb4c4de738f0b6f45b03009387a5aed3, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.1
+    perRoom: {x: 0, y: 1}
+    chance: 0.6
+    rooms: 62
+  - prefab: {fileID: 7031266832873680660, guid: 1f667104e11df4e4bac6a5b04aabcccb, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.2
+    perRoom: {x: 0, y: 2}
+    chance: 1
+    rooms: 62
   chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
   chestTiers:
   - prefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}

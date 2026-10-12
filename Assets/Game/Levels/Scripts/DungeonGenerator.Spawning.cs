@@ -26,7 +26,33 @@ public partial class DungeonGenerator
         i==0 && UsesStartingRoom ? data.startingRoom
         : i==merchantRoom && i!=0 && data.shopRoom!=null ? data.shopRoom
         : role==RoomRole.Exit && Milestone!=null && Milestone.arena!=null ? Milestone.arena
-        : profile!=null ? profile.roomTemplate : null;
+        : profile!=null && profile.roomTemplate!=null ? profile.roomTemplate
+        : pooledTemplates!=null && i<pooledTemplates.Length ? pooledTemplates[i] : null;
+
+    // Hand-built rooms from the biome's pool (DungeonBiome.roomTemplates), one roll per room on its own stream so the
+    // rest of the floor keeps its seed. Indexed like the requested rooms while the layout grows, then like the placed ones.
+    GameObject[] pooledTemplates;
+    GameObject[] PoolTemplates(RoomRole[] roles, DungeonRoomProfile[] chosen, int seed)
+    {
+        var pool = new GameObject[roles.Length];
+        var choices = Biome != null ? Biome.roomTemplates : null;
+        if (Authored || choices == null || choices.Length == 0) return pool;
+        var rng = new System.Random(unchecked(seed + 130363));
+        data.BiomeAt(FloorNumber, out int floorInBiome, out _);
+        var used = new System.Collections.Generic.Dictionary<GameObject, int>();
+        for (int i = 0; i < roles.Length; i++)
+        {
+            double roll = rng.NextDouble();
+            if ((i == 0 && UsesStartingRoom) || (chosen[i] != null && chosen[i].roomTemplate != null) || roll >= Biome.templateChance) continue;
+            var role = Mask(roles[i]);
+            var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor
+                ? c.weight / (1f + 2f * (used.TryGetValue(c.template, out var n) ? n : 0)) : 0, rng);
+            if (pick == null) continue;
+            pool[i] = pick.template;
+            used[pick.template] = (used.TryGetValue(pick.template, out var k) ? k : 0) + 1;
+        }
+        return pool;
+    }
     DungeonRoomTemplate TemplateOf(int i) { var p=TemplatePrefab(i); return p!=null ? p.GetComponent<DungeonRoomTemplate>() : null; }
 
     void ChooseTemplates()
@@ -83,6 +109,10 @@ public partial class DungeonGenerator
             if(!Layout.InRoom(index,cell) || (piece.removeIfBlocking && lanes.Contains(cell)))
                 DestroyImmediate(piece.gameObject); // navigation is baked this frame
         }
+        // Kit blocks (pillars, platforms, steps, niches) become boxes of this room's own stone, before the NavMesh bake.
+        var centre=Layout.RoomCenter(index);
+        foreach(var block in instance.GetComponentsInChildren<DungeonKitBlock>(true))
+            if(block!=null)block.Build(RegionStyles!=null && index<RegionStyles.Length ? RegionStyles[index] : null,data,HeightAt(centre.x,centre.y),Cell(centre).y);
         var rewards=profiles[index]!=null ? profiles[index].rewards : null;
         foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))
         {
@@ -241,10 +271,22 @@ public partial class DungeonGenerator
     {
         var go=Instantiate(prefab,pos,rotation,transform);
         var d=go.GetComponent<DungeonDestructible>();
-        if(d==null)return null;
+        if(d==null){SeedGroup(go,seed,rewardOverride);return go.GetComponentInChildren<DungeonDestructible>();}
         d.loot=First(rewardOverride,FloorLoot);
         d.seed=seed;d.floorNumber=FloorNumber;
         return d;
+    }
+
+    // A group (barrels stacked, a crate with sacks) holds several breakables: each gets the floor's loot and its own
+    // seed made from the group's, so no extra random draws are taken and the floor's other seeds stay as they were.
+    void SeedGroup(GameObject group,int seed,LootSource rewardOverride=null)
+    {
+        int i=0;
+        foreach(var part in group.GetComponentsInChildren<DungeonDestructible>(true))
+        {
+            part.loot=First(rewardOverride,FloorLoot);
+            part.seed=unchecked(seed*31+(++i)*7919);part.floorNumber=FloorNumber;
+        }
     }
 
     GameObject SpawnFeature(GameObject prefab,Vector3 pos,Quaternion rotation)

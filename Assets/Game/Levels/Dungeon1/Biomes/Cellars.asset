@@ -24,6 +24,32 @@ MonoBehaviour:
   destructibles: []
   lighting: 1
   litThroughout: 0
+  roomTemplates:
+  - template: {fileID: 4217182298497846190, guid: 3203dca7f2718fb438980165eab522be, type: 3}
+    weight: 1
+    rooms: 30
+    fromFloor: 1
+  - template: {fileID: 8951085660305356992, guid: 9c2825a95696a574f8f302711dc26a8e, type: 3}
+    weight: 0.5
+    rooms: 14
+    fromFloor: 1
+  - template: {fileID: 6676260040558798032, guid: 47e444dde38716e4a9f741151b6d8930, type: 3}
+    weight: 0.6
+    rooms: 30
+    fromFloor: 1
+  - template: {fileID: 7553172351964380955, guid: 0bbcebe8d5a00f948a82fcdf30c93c85, type: 3}
+    weight: 0.8
+    rooms: 30
+    fromFloor: 1
+  - template: {fileID: 1256399746032716740, guid: 3a22cdc7b9f1ded47b0b131c2b38af07, type: 3}
+    weight: 0.6
+    rooms: 30
+    fromFloor: 1
+  - template: {fileID: 8800103287198937241, guid: 9437424686d998440a9c4904f49cbb94, type: 3}
+    weight: 1
+    rooms: 30
+    fromFloor: 1
+  templateChance: 0.7
   lightRadius: 0
   shadowTint: {r: 0.55, g: 0.85, b: 1, a: 1}
   lampTint: {r: 1.06, g: 0.97, b: 0.86, a: 1}

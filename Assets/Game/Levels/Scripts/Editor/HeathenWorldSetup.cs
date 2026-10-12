@@ -184,7 +184,7 @@ public static class HeathenWorldSetup
         if (feed == null) { feed = new GameObject("Pickup feed", typeof(RectTransform)).GetComponent<RectTransform>(); feed.SetParent(canvas, false); }
         feed.anchorMin = feed.anchorMax = new Vector2(1f, .5f); feed.pivot = new Vector2(1f, .5f);
         feed.anchoredPosition = new Vector2(-28f, -40f); feed.sizeDelta = new Vector2(380f, 300f);
-        var layout = feed.GetComponent<VerticalLayoutGroup>() ?? feed.gameObject.AddComponent<VerticalLayoutGroup>();
+        var layout = feed.GetComponent<VerticalLayoutGroup>(); if (layout == null) layout = feed.gameObject.AddComponent<VerticalLayoutGroup>();
         layout.childAlignment = TextAnchor.LowerRight; layout.spacing = 4f; layout.childControlWidth = false; layout.childControlHeight = false; layout.childForceExpandWidth = false; layout.childForceExpandHeight = false;
         var row = feed.Find("Row") as RectTransform;
         if (row == null) { row = new GameObject("Row", typeof(RectTransform)).GetComponent<RectTransform>(); row.SetParent(feed, false); }
@@ -203,7 +203,7 @@ public static class HeathenWorldSetup
         label.fontSharedMaterial = label.font.material;
         var shadow = label.GetComponent<Shadow>(); if (shadow != null) Object.DestroyImmediate(shadow);
         row.gameObject.SetActive(false);
-        var ui = feed.GetComponent<PickupFeedUI>() ?? feed.gameObject.AddComponent<PickupFeedUI>();
+        var ui = feed.GetComponent<PickupFeedUI>(); if (ui == null) ui = feed.gameObject.AddComponent<PickupFeedUI>();
         var so = new SerializedObject(ui);
         so.FindProperty("rows").objectReferenceValue = feed;
         so.FindProperty("template").objectReferenceValue = row;
@@ -219,13 +219,16 @@ public static class HeathenWorldSetup
     {
         var lighting = Object.FindAnyObjectByType<FirstPersonLighting>(FindObjectsInactive.Include);
         if (lighting == null) return;
-        if (lighting.shadowLight != null) { lighting.shadowLight.range = 10f; EditorUtility.SetDirty(lighting.shadowLight); }
-        if (lighting.worldLight != null) { lighting.worldLight.range = 11f; EditorUtility.SetDirty(lighting.worldLight); }
+        if (lighting.shadowLight != null) { lighting.shadowLight.range = 12f; EditorUtility.SetDirty(lighting.shadowLight); }
+        if (lighting.worldLight != null) { lighting.worldLight.range = 13f; EditorUtility.SetDirty(lighting.worldLight); }
+        // Dark but readable: silhouettes hold past the radius (Heathen's rooms are dark, never black).
+        var manager = Object.FindAnyObjectByType<LightingManager>(FindObjectsInactive.Include);
+        if (manager != null) { manager.lightRadiusMetres = 6.5f; manager.lightRadiusFloor = .3f; manager.darkAmbient = .16f; EditorUtility.SetDirty(manager); }
         foreach (var g in AssetDatabase.FindAssets("t:DungeonBiome"))
         {
             var b = AssetDatabase.LoadAssetAtPath<DungeonBiome>(AssetDatabase.GUIDToAssetPath(g));
             b.shadowTint = new Color(.55f, .85f, 1f); b.lampTint = new Color(1.06f, .97f, .86f); EditorUtility.SetDirty(b);
         }
-        log.AppendLine("player light reach 10/11 m, biome tints set");
+        log.AppendLine("player light reach 12/13 m, light radius 6.5 m (floor 0.3), dark ambient 0.16, biome tints set");
     }
 }

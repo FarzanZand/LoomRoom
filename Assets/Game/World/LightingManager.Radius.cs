@@ -11,11 +11,11 @@ public sealed partial class LightingManager
     [Tooltip("Ambient light fades out with distance from the player on dungeon floors (while the dungeon darkness applies).")]
     public bool lightRadius = true;
     [ShowIf(nameof(lightRadius)), Min(.5f), Tooltip("Metres around the player with full ambient light (a biome's Light Radius replaces it).")]
-    public float lightRadiusMetres = 5f;
+    public float lightRadiusMetres = 6.5f;
     [ShowIf(nameof(lightRadius)), Min(.1f), Tooltip("Metres over which the ambient fades past the radius.")]
     public float lightRadiusEdge = 2.5f;
     [ShowIf(nameof(lightRadius)), Range(0f, 1f), Tooltip("Share of the ambient left beyond the edge (0 = black where no lamp reaches).")]
-    public float lightRadiusFloor = .05f;
+    public float lightRadiusFloor = .3f;
 
     static readonly int LightRadiusId = Shader.PropertyToID("_LoomLightRadius");
     static readonly int LightRadiusEdgeId = Shader.PropertyToID("_LoomLightRadiusEdge");
