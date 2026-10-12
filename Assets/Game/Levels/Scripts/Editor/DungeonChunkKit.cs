@@ -3,25 +3,39 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-// Hand-built rooms ("chunks", Heathen's way of building a floor) and the kit they are made of. The kit pieces are
-// DungeonKitBlocks, so every pillar, arch, niche, platform and gallery is built of the room's own stone when the floor
-// is generated. Writes the kit to Levels/Dungeon1/Rooms/Kit, the chunks to Rooms/Templates/Chunks, and puts the chunks
-// in Cellars' and Crypt's room pools (DungeonBiome.roomTemplates). Safe to run again (it rebuilds them).
+// Hand-built rooms ("chunks", Heathen's way of building a floor) and the kit they are made of. Kit pieces are
+// DungeonKitBlocks (built of the room's own stone when the floor is generated); the pillar, broken pillar, arch and
+// gallery railing also carry a painted model (Rooms/Kit/Models, Synty Dark Fantasy pieces through the painted-prop
+// pipeline) that the level uses instead of those blocks while TableLevelData.kitModels is on (DungeonKitPiece).
+// Writes the kit to Levels/Dungeon1/Rooms/Kit, the chunks to Rooms/Templates/Chunks, and adds the chunks to Cellars' and
+// Crypt's room pools (DungeonBiome.roomTemplates). Only what doesn't exist yet is made: a kit piece or room you have
+// edited is never overwritten, and pool entries you changed or added stay (Build Kit and Chunks (Overwrite) rebuilds
+// everything of mine from scratch).
 //
-// To make a room by hand: Tools > LoomRoom > Dungeon > New Room Template (DungeonRoomTemplateTools), paint the
-// footprint in its inspector, drag kit pieces and sockets in, and add it to a biome's Room Templates.
+// To make a room by hand: Tools > LoomRoom > Dungeon > New Room Template, paint the footprint in its inspector, drag
+// kit pieces and sockets in, and add it to a biome's Room Templates.
 public static class DungeonChunkKit
 {
     const string Rooms = "Assets/Game/Levels/Dungeon1/Rooms";
     const string KitFolder = Rooms + "/Kit";
+    const string ModelFolder = KitFolder + "/Models";
     const string ChunkFolder = Rooms + "/Templates/Chunks";
+    const string Synty = "Assets/Synty/PolygonDarkFantasy/Prefabs";
     const float C = 2f;   // Dungeon1's cell size
     static readonly Dictionary<string, GameObject> kit = new();
+    static bool overwrite;
 
     [MenuItem("Tools/LoomRoom/Dungeon/Build Kit and Chunks")]
-    public static string Run()
+    public static string Run() => Run(false);
+
+    [MenuItem("Tools/LoomRoom/Dungeon/Build Kit and Chunks (Overwrite)")]
+    public static string RunOverwrite() => Run(true);
+
+    public static string Run(bool replaceExisting)
     {
+        overwrite = replaceExisting;
         if (!AssetDatabase.IsValidFolder(KitFolder)) AssetDatabase.CreateFolder(Rooms, "Kit");
+        if (!AssetDatabase.IsValidFolder(ModelFolder)) AssetDatabase.CreateFolder(KitFolder, "Models");
         if (!AssetDatabase.IsValidFolder(ChunkFolder)) AssetDatabase.CreateFolder(Rooms + "/Templates", "Chunks");
         BuildKit();
         var chunks = BuildChunks();
@@ -31,6 +45,22 @@ public static class DungeonChunkKit
         Pool("Assets/Game/Levels/Dungeon1/Biomes/Crypt.asset", chunks, new Dictionary<string, float> { { "Crypt niches", 1.2f }, { "Raised altar", .9f }, { "Pillared hall", 1f }, { "Gate hall", .9f }, { "Gallery hall", .8f }, { "Ruined chamber", .6f } });
         AssetDatabase.SaveAssets();
         return log.ToString();
+    }
+
+    // Shows every kit block's shape in the editor (prefab thumbnails, Prefab Mode): for prefabs made before previews existed.
+    [MenuItem("Tools/LoomRoom/Dungeon/Refresh Kit Previews")]
+    public static string RefreshPreviews()
+    {
+        int n = 0;
+        foreach (var g in AssetDatabase.FindAssets("t:Prefab", new[] { Rooms }))
+        {
+            string path = AssetDatabase.GUIDToAssetPath(g);
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponentInChildren<DungeonKitBlock>(true) == null) continue;
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try { foreach (var b in root.GetComponentsInChildren<DungeonKitBlock>(true)) b.UpdatePreview(); PrefabUtility.SaveAsPrefabAsset(root, path); n++; }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+        return $"previews refreshed in {n} prefabs";
     }
 
     // ── Kit ─────────────────────────────────────────────────────────
@@ -44,15 +74,50 @@ public static class DungeonChunkKit
         return b;
     }
 
+    static Transform Group(Transform parent, string name) { var g = new GameObject(name).transform; g.SetParent(parent, false); return g; }
+
     static GameObject Kit(string name, bool removeIfBlocking, Action<Transform> build)
     {
+        string path = $"{KitFolder}/{name}.prefab";
+        var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (existing != null && !overwrite) { kit[name] = existing; return existing; }
         var root = new GameObject(name);
         root.AddComponent<DungeonTemplatePiece>().removeIfBlocking = removeIfBlocking;
         build(root.transform);
-        var prefab = PrefabUtility.SaveAsPrefabAsset(root, $"{KitFolder}/{name}.prefab");
+        foreach (var b in root.GetComponentsInChildren<DungeonKitBlock>(true)) b.UpdatePreview();
+        var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
         UnityEngine.Object.DestroyImmediate(root);
         kit[name] = prefab;
         return prefab;
+    }
+
+    // A painted model for a piece: Synty's model copied as plain objects (meshes, its materials, mesh colliders) into
+    // Rooms/Kit/Models, where the painted-prop pipeline paints it. Never overwritten: its painting stays.
+    static GameObject Model(string name, string syntyPrefab)
+    {
+        string path = $"{ModelFolder}/{name}.prefab";
+        var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (existing != null) return existing;
+        var source = AssetDatabase.LoadAssetAtPath<GameObject>($"{Synty}/{syntyPrefab}.prefab");
+        var copy = (GameObject)UnityEngine.Object.Instantiate(source);
+        copy.name = name;
+        foreach (var mf in copy.GetComponentsInChildren<MeshFilter>(true))
+            if (mf.GetComponent<Collider>() == null) mf.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
+        var prefab = PrefabUtility.SaveAsPrefabAsset(copy, path);
+        UnityEngine.Object.DestroyImmediate(copy);
+        return prefab;
+    }
+
+    // The model under a piece, and the block groups it replaces.
+    static DungeonKitPiece UseModel(Transform piece, GameObject model, Vector3 pos, Vector3 euler, Vector3 scale, bool toCeiling, params Transform[] replaces)
+    {
+        var go = (GameObject)PrefabUtility.InstantiatePrefab(model, piece);
+        go.name = "Model";
+        go.transform.localPosition = pos; go.transform.localEulerAngles = euler; go.transform.localScale = scale;
+        var p = piece.gameObject.AddComponent<DungeonKitPiece>();
+        p.model = go; p.modelToCeiling = toCeiling; p.modelHeight = 3f * scale.y;
+        p.replaces = Array.ConvertAll(replaces, t => t.gameObject);
+        return p;
     }
 
     const DungeonKitBlock.Surface Wall = DungeonKitBlock.Surface.Wall, Trim = DungeonKitBlock.Surface.Trim, Floor = DungeonKitBlock.Surface.Floor, Upper = DungeonKitBlock.Surface.UpperWall;
@@ -61,26 +126,41 @@ public static class DungeonChunkKit
     static void BuildKit()
     {
         kit.Clear();
+        var pillar = Model("Kit pillar", "Building/SM_Bld_Pillar_02");
+        var arch = Model("Kit arch", "Building/SM_Bld_Wall_Archway_01");
+        var railing = Model("Kit railing", "Building/SM_Bld_Railing_01");
+
         Kit("Pillar", true, t =>
         {
-            Block(t, "Base", Vector3.zero, new Vector3(1f, .3f, 1f), Trim, Trim);
-            var shaft = Block(t, "Shaft", new Vector3(0f, .3f, 0f), new Vector3(.64f, 2.2f, .64f), Wall, Trim); shaft.toCeiling = true; shaft.ceilingGap = .45f;
-            var cap = Block(t, "Capital", Vector3.zero, new Vector3(.95f, .45f, .95f), Trim, Trim); cap.fromCeiling = true; cap.solid = false;
+            var g = Group(t, "Blocks");
+            Block(g, "Base", Vector3.zero, new Vector3(1f, .3f, 1f), Trim, Trim);
+            var shaft = Block(g, "Shaft", new Vector3(0f, .3f, 0f), new Vector3(.64f, 2.2f, .64f), Wall, Trim); shaft.toCeiling = true; shaft.ceilingGap = .45f;
+            var cap = Block(g, "Capital", Vector3.zero, new Vector3(.95f, .45f, .95f), Trim, Trim); cap.fromCeiling = true; cap.solid = false;
+            UseModel(t, pillar, Vector3.zero, Vector3.zero, new Vector3(.85f, 1f, .85f), true, g);
         });
         Kit("Broken pillar", true, t =>
         {
-            Block(t, "Base", Vector3.zero, new Vector3(1f, .3f, 1f), Trim, Trim);
-            Block(t, "Stump", new Vector3(0f, .3f, 0f), new Vector3(.64f, 1.25f, .64f), Wall, Wall, new Vector3(0f, 12f, 0f));
-            Block(t, "Fallen drum", new Vector3(.7f, 0f, -.55f), new Vector3(.64f, .5f, .9f), Wall, Wall, new Vector3(0f, 34f, 6f));
+            var g = Group(t, "Blocks");
+            Block(g, "Base", Vector3.zero, new Vector3(1f, .3f, 1f), Trim, Trim);
+            Block(g, "Stump", new Vector3(0f, .3f, 0f), new Vector3(.64f, 1.25f, .64f), Wall, Wall, new Vector3(0f, 12f, 0f));
+            Block(g, "Fallen drum", new Vector3(.7f, 0f, -.55f), new Vector3(.64f, .5f, .9f), Wall, Wall, new Vector3(0f, 34f, 6f));
+            // The pillar sunk into the floor: a short broken stump (its texels keep their size).
+            var holder = Group(t, "Model");
+            var stump = (GameObject)PrefabUtility.InstantiatePrefab(pillar, holder);
+            stump.transform.localPosition = new Vector3(0f, -1.55f, 0f); stump.transform.localEulerAngles = new Vector3(0f, 12f, 0f); stump.transform.localScale = new Vector3(.85f, 1f, .85f);
+            var p = t.gameObject.AddComponent<DungeonKitPiece>(); p.model = holder.gameObject; p.replaces = new[] { g.gameObject };
         });
         Kit("Arch", false, t =>
         {
+            var g = Group(t, "Blocks");
             foreach (float x in new[] { -1.35f, 1.35f })
             {
-                Block(t, "Base", new Vector3(x, 0f, 0f), new Vector3(.85f, .3f, .85f), Trim, Trim);
-                Block(t, "Post", new Vector3(x, .3f, 0f), new Vector3(.6f, 2.3f, .6f), Wall, Trim);
+                Block(g, "Base", new Vector3(x, 0f, 0f), new Vector3(.85f, .3f, .85f), Trim, Trim);
+                Block(g, "Post", new Vector3(x, .3f, 0f), new Vector3(.6f, 2.3f, .6f), Wall, Trim);
             }
-            var lintel = Block(t, "Lintel", new Vector3(0f, 2.6f, 0f), new Vector3(3.5f, .4f, .75f), Trim, Trim); lintel.solid = false;
+            var lintel = Block(g, "Lintel", new Vector3(0f, 2.6f, 0f), new Vector3(3.5f, .4f, .75f), Trim, Trim); lintel.solid = false;
+            // Synty's archway runs from x = -2.5 to 0: centred on the piece.
+            UseModel(t, arch, new Vector3(1.25f, 0f, 0f), Vector3.zero, Vector3.one, false, g);
         });
         Kit("Niche", true, t =>
         {
@@ -102,19 +182,31 @@ public static class DungeonChunkKit
                 Block(t, "Walkway", new Vector3(0f, 0f, -.9f), new Vector3(6f, 1.25f, 1.8f), Wall, Floor);
                 for (int i = 0; i < 4; i++)
                     Block(t, "Step " + (i + 1), new Vector3(stairSide * 2.3f, 0f, -1.8f - .225f - .45f * i), new Vector3(1.4f, 1.25f - .25f * (i + 1), .45f), Trim, Floor);
+                var g = Group(t, "Railing blocks");
                 for (float x = -2.8f; x <= 2.81f; x += 1.4f)
-                    if (x * stairSide < 1.5f) Block(t, "Post", new Vector3(x, 1.25f, -1.7f), new Vector3(.18f, .85f, .18f), Trim, Trim);
-                var rail = Block(t, "Rail", new Vector3(-stairSide * .8f, 2.1f, -1.7f), new Vector3(4.4f, .14f, .16f), Trim, Trim);
+                    if (x * stairSide < 1.5f) Block(g, "Post", new Vector3(x, 1.25f, -1.7f), new Vector3(.18f, .85f, .18f), Trim, Trim);
+                Block(g, "Rail", new Vector3(-stairSide * .8f, 2.1f, -1.7f), new Vector3(4.4f, .14f, .16f), Trim, Trim);
+                // Two lengths of Synty railing (each runs 2.5 m towards -x from its pivot) along the walkway's edge, short of the stairs.
+                var holder = Group(t, "Model");
+                float near = stairSide > 0 ? 1.4f : 2.9f, far = stairSide > 0 ? -.4f : 1.1f;
+                foreach (float x in new[] { near, far })
+                {
+                    var r = (GameObject)PrefabUtility.InstantiatePrefab(railing, holder);
+                    r.transform.localPosition = new Vector3(x, 1.25f, -1.7f);
+                }
+                var p = t.gameObject.AddComponent<DungeonKitPiece>();
+                p.model = holder.gameObject; p.replaces = new[] { g.gameObject };
             });
         }
         Gallery("Gallery (stairs right)", 1f);
         Gallery("Gallery (stairs left)", -1f);
         Kit("Rubble", true, t =>
         {
-            Block(t, "Slab", new Vector3(0f, 0f, 0f), new Vector3(1.1f, .4f, .8f), Wall, Wall, new Vector3(0f, 25f, 8f));
-            Block(t, "Block", new Vector3(.55f, 0f, .45f), new Vector3(.6f, .5f, .55f), Wall, Wall, new Vector3(4f, 61f, 0f));
-            Block(t, "Chip", new Vector3(-.6f, 0f, .35f), new Vector3(.4f, .3f, .35f), Trim, Trim, new Vector3(0f, -18f, 10f));
-            Block(t, "Shard", new Vector3(.2f, 0f, -.6f), new Vector3(.5f, .22f, .4f), Wall, Wall, new Vector3(-6f, 77f, 0f));
+            var g = Group(t, "Blocks");
+            Block(g, "Slab", new Vector3(0f, 0f, 0f), new Vector3(1.1f, .4f, .8f), Wall, Wall, new Vector3(0f, 25f, 8f));
+            Block(g, "Block", new Vector3(.55f, 0f, .45f), new Vector3(.6f, .5f, .55f), Wall, Wall, new Vector3(4f, 61f, 0f));
+            Block(g, "Chip", new Vector3(-.6f, 0f, .35f), new Vector3(.4f, .3f, .35f), Trim, Trim, new Vector3(0f, -18f, 10f));
+            Block(g, "Shard", new Vector3(.2f, 0f, -.6f), new Vector3(.5f, .22f, .4f), Wall, Wall, new Vector3(-6f, 77f, 0f));
         });
     }
 
@@ -137,6 +229,9 @@ public static class DungeonChunkKit
 
     static GameObject Save(Chunk c)
     {
+        string path = $"{ChunkFolder}/{c.name}.prefab";
+        var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (existing != null && !overwrite) { UnityEngine.Object.DestroyImmediate(c.root.gameObject); return existing; }
         var t = c.root.gameObject.AddComponent<DungeonRoomTemplate>();
         var rows = new string[c.h];
         for (int y = 0; y < c.h; y++)
@@ -147,7 +242,8 @@ public static class DungeonChunkKit
         }
         t.paintFootprint = true; t.width = c.w; t.height = c.h; t.rows = rows; t.allowRotation = true;
         t.heightTiles = c.heightTiles; t.replaceGeneratedProps = false; t.replaceGeneratedEnemies = true; t.replaceGeneratedTorches = false;   // the pack is the hand-placed Enemy sockets
-        var prefab = PrefabUtility.SaveAsPrefabAsset(c.root.gameObject, $"{ChunkFolder}/{c.name}.prefab");
+        foreach (var b in c.root.GetComponentsInChildren<DungeonKitBlock>(true)) b.UpdatePreview();
+        var prefab = PrefabUtility.SaveAsPrefabAsset(c.root.gameObject, path);
         UnityEngine.Object.DestroyImmediate(c.root.gameObject);
         return prefab;
     }
@@ -267,16 +363,19 @@ public static class DungeonChunkKit
         Selection.activeObject = prefab;
     }
 
+    // Adds my chunks the biome doesn't list yet; entries already there (and their weights) stay as they are.
     static void Pool(string biomePath, List<GameObject> chunks, Dictionary<string, float> weights)
     {
         var biome = AssetDatabase.LoadAssetAtPath<DungeonBiome>(biomePath);
         if (biome == null) return;
-        var list = new List<DungeonBiome.RoomTemplateChoice>();
+        var list = new List<DungeonBiome.RoomTemplateChoice>(biome.roomTemplates ?? new DungeonBiome.RoomTemplateChoice[0]);
         foreach (var chunk in chunks)
+        {
+            if (list.Exists(e => e != null && e.template == chunk)) continue;
             list.Add(new DungeonBiome.RoomTemplateChoice { template = chunk, weight = weights.TryGetValue(chunk.name, out var w) ? w : 1f,
                 rooms = chunk.name == "Raised altar" ? DungeonRoomRoles.Combat | DungeonRoomRoles.Treasure | DungeonRoomRoles.Rest : DungeonRoomRoles.Combat | DungeonRoomRoles.Treasure | DungeonRoomRoles.Rest | DungeonRoomRoles.Storage });
+        }
         biome.roomTemplates = list.ToArray();
-        biome.templateChance = .7f;
         EditorUtility.SetDirty(biome);
     }
 }

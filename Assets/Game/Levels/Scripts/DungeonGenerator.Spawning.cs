@@ -111,6 +111,8 @@ public partial class DungeonGenerator
         }
         // Kit blocks (pillars, platforms, steps, niches) become boxes of this room's own stone, before the NavMesh bake.
         var centre=Layout.RoomCenter(index);
+        foreach(var piece in instance.GetComponentsInChildren<DungeonKitPiece>(true))
+            if(piece!=null)piece.Choose(data.kitModels,HeightAt(centre.x,centre.y));
         foreach(var block in instance.GetComponentsInChildren<DungeonKitBlock>(true))
             if(block!=null)block.Build(RegionStyles!=null && index<RegionStyles.Length ? RegionStyles[index] : null,data,HeightAt(centre.x,centre.y),Cell(centre).y);
         var rewards=profiles[index]!=null ? profiles[index].rewards : null;

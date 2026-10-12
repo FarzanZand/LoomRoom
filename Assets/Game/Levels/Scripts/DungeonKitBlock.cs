@@ -4,7 +4,8 @@ using UnityEngine;
 // galleries). Put blocks inside a DungeonRoomTemplate (or a kit prefab placed in one) and size them; when the room is
 // built the block becomes a box with the room style's materials (sides: its wall or trim, top: its floor), textured
 // like the walls (one texture repeat per architecture tile, in world metres, so neighbouring blocks and the walls
-// line up), with a collider the NavMesh walks on. In Prefab Mode it shows as a coloured box.
+// line up), with a collider the NavMesh walks on. In the editor it shows its shape in the level's default stone (an
+// EditorOnly "Kit preview" child, so prefab thumbnails show it too); the preview is removed when the room is built.
 public class DungeonKitBlock : MonoBehaviour
 {
     public enum Surface { Wall = 0, Trim = 1, Floor = 2, UpperWall = 3, Ceiling = 4 }
@@ -29,6 +30,8 @@ public class DungeonKitBlock : MonoBehaviour
     // Built by DungeonGenerator.PlaceTemplate: roomHeight is the room's (metres), floorY its floor's world height.
     public void Build(DungeonRoomStyle style, TableLevelData level, float roomHeight, float floorY)
     {
+        var preview = transform.Find(PreviewName);
+        if (preview != null) DestroyImmediate(preview.gameObject);
         var s = size;
         if (fromCeiling) { var p = transform.position; p.y = floorY + roomHeight - ceilingGap - (standsOnPosition ? s.y : s.y * .5f); transform.position = p; }
         else if (toCeiling) s.y = Mathf.Max(.1f, roomHeight - ceilingGap - (standsOnPosition ? transform.position.y - floorY : 0f));
@@ -46,6 +49,70 @@ public class DungeonKitBlock : MonoBehaviour
             box.center = centre; box.size = s;
         }
     }
+
+    public const string PreviewName = "Kit preview";
+
+#if UNITY_EDITOR
+    // ── Editor preview ──────────────────────────────────────────────
+
+    const string PreviewMeshPath = "Assets/Game/Levels/Dungeon1/Rooms/Kit/Kit preview cube.asset";
+    const string PreviewLevelPath = "Assets/Game/Levels/Dungeon1/Dungeon1.asset";
+
+    void OnValidate()
+    {
+        if (Application.isPlaying || UnityEditor.PrefabUtility.IsPartOfPrefabAsset(this)) return;
+        UnityEditor.EditorApplication.delayCall += () => { if (this != null && !Application.isPlaying) UpdatePreview(); };
+    }
+
+    // The block's shape as it would be in a room of the template's height, in the level's default materials. A block a
+    // piece's model stands in for shows no preview (the model shows instead).
+    public void UpdatePreview()
+    {
+        var existing = transform.Find(PreviewName);
+        var piece = GetComponentInParent<DungeonKitPiece>(true);
+        if (piece != null && piece.model != null && piece.Replaces(transform))
+        {
+            if (existing != null) DestroyImmediate(existing.gameObject);
+            return;
+        }
+        var level = UnityEditor.AssetDatabase.LoadAssetAtPath<TableLevelData>(PreviewLevelPath);
+        var mesh = PreviewMesh();
+        if (level == null || mesh == null) return;
+        var template = GetComponentInParent<DungeonRoomTemplate>(true);
+        float tile = Mathf.Max(.01f, level.architectureTileSize);
+        float roomHeight = tile * Mathf.Max(1, template != null ? template.heightTiles : 1);
+        float floorY = template != null ? template.transform.position.y : transform.root.position.y;
+        var s = size; float lift = 0f;
+        if (fromCeiling) lift = floorY + roomHeight - ceilingGap - (standsOnPosition ? s.y : s.y * .5f) - transform.position.y;
+        else if (toCeiling) s.y = Mathf.Max(.1f, roomHeight - ceilingGap - (standsOnPosition ? transform.position.y - floorY : 0f));
+        var go = existing != null ? existing.gameObject : new GameObject(PreviewName, typeof(MeshFilter), typeof(MeshRenderer));
+        go.tag = "EditorOnly";
+        go.transform.SetParent(transform, false);
+        go.transform.localRotation = Quaternion.identity;
+        go.transform.localScale = new Vector3(s.x / Mathf.Max(.0001f, 1f), s.y, s.z);
+        go.transform.localPosition = (standsOnPosition ? Vector3.up * s.y * .5f : Vector3.zero) + Vector3.up * lift;
+        go.GetComponent<MeshFilter>().sharedMesh = mesh;
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterials = new[] { Material(null, level, sides), Material(null, level, top) };
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+
+    // A unit cube with the block's two submeshes (sides, top and bottom), saved once next to the kit.
+    static Mesh PreviewMesh()
+    {
+        var mesh = UnityEditor.AssetDatabase.LoadAssetAtPath<Mesh>(PreviewMeshPath);
+        if (mesh != null) return mesh;
+        var holder = new GameObject("tmp") { hideFlags = HideFlags.HideAndDontSave };
+        mesh = BoxMesh(holder.transform, Vector3.zero, Vector3.one, 1f);
+        DestroyImmediate(holder);
+        // Per face 0..1, not world tiles: the cube is scaled per block.
+        var uv = new Vector2[mesh.vertexCount];
+        for (int i = 0; i < uv.Length; i += 4) { uv[i] = new Vector2(0, 0); uv[i + 1] = new Vector2(1, 0); uv[i + 2] = new Vector2(1, 1); uv[i + 3] = new Vector2(0, 1); }
+        mesh.uv = uv; mesh.name = "Kit preview cube";
+        UnityEditor.AssetDatabase.CreateAsset(mesh, PreviewMeshPath);
+        return mesh;
+    }
+#endif
 
     static Material Material(DungeonRoomStyle style, TableLevelData level, Surface surface) => surface switch
     {
@@ -93,13 +160,11 @@ public class DungeonKitBlock : MonoBehaviour
         return mesh;
     }
 
-    // Prefab Mode: the box in its surface's colour (sides), so a room can be laid out before it is ever generated.
-    void OnDrawGizmos()
+    // Selected: its authored size as a wire box (the preview shows the shape).
+    void OnDrawGizmosSelected()
     {
-        var c = sides switch { Surface.Trim => new Color(.75f, .65f, .45f), Surface.Floor => new Color(.5f, .55f, .6f), _ => new Color(.62f, .62f, .66f) };
         Gizmos.matrix = transform.localToWorldMatrix;
         var s = size; var centre = standsOnPosition ? Vector3.up * s.y * .5f : Vector3.zero;
-        Gizmos.color = new Color(c.r, c.g, c.b, .55f); Gizmos.DrawCube(centre, s);
-        Gizmos.color = c; Gizmos.DrawWireCube(centre, s);
+        Gizmos.color = new Color(1f, .8f, .3f); Gizmos.DrawWireCube(centre, s);
     }
 }

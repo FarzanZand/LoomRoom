@@ -274,6 +274,8 @@ public class TableLevelData : ScriptableObject
     public GameObject chestPrefab;
     [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Chest tiers picked by weight (wood, iron, gold: each prefab's DungeonContainer says what it gives). Empty uses Chest Prefab.")]
     public DungeonWeightedPrefab[] chestTiers = new DungeonWeightedPrefab[0];
+    [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Hand-built rooms use the kit's painted models (pillars, arches, rubble, railings) where a piece has one. Off: every kit piece is built of plain blocks in the room's own stone.")]
+    public bool kitModels = true;
     [TabGroup(Tabs, Rooms), ShowIf(D), Title("Container sounds", HorizontalLine = false), LabelText("Barrel Break")]
     public AudioClip containerBreakAudio;
     [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Chest Open")]
