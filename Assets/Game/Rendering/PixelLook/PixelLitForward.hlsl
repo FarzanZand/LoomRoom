@@ -22,6 +22,7 @@ struct Varyings
     float3 positionOS : TEXCOORD3;
     float3 normalOS : TEXCOORD4;
     half fogFactor : TEXCOORD5;
+    float3 positionRWS : TEXCOORD6;    // camera-relative world position, for precise texel snapping
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
 };
@@ -35,6 +36,7 @@ Varyings Vert(Attributes input)
     VertexPositionInputs pos = GetVertexPositionInputs(input.positionOS.xyz);
     o.positionCS = pos.positionCS;
     o.positionWS = pos.positionWS;
+    o.positionRWS = pos.positionWS - _WorldSpaceCameraPos;
     o.normalWS = TransformObjectToWorldNormal(input.normalOS);
     o.uv = TRANSFORM_TEX(input.uv, _BaseMap);
     o.positionOS = input.positionOS.xyz;
@@ -59,6 +61,24 @@ half3 Gloss(Light light, float3 n, float3 v)
 
 float4 _PixelObjectTargetSize; // xy size, zw 1/size (set by PixelObjectFeature)
 
+// The screen UV of a world point, made the way this pixel's own UV is made: clip space to pixel coordinates as the
+// rasterizer maps them (y flipped where UVs start at the top), then the same normalisation as the pixel's.
+float2 TexelCentreScreenUv(float3 positionWS, float2 pixelUv)
+{
+    float4 c = TransformWorldToHClip(positionWS);
+    if (c.w <= 1e-5) return pixelUv;
+    float2 p = c.xy / c.w * 0.5 + 0.5;
+    #if UNITY_UV_STARTS_AT_TOP
+        p.y = 1.0 - p.y;
+    #endif
+    // Kept just inside the screen: a UV of exactly 1 indexes one Forward+ tile past the end and loses its lights.
+    #if defined(PIXEL_OBJECT_PASS)
+        return clamp(p, 1e-5, 0.99999);
+    #else
+        return clamp(GetNormalizedScreenSpaceUV(float4(p * _ScaledScreenParams.xy, 0, 1)), 1e-5, 0.99999);
+    #endif
+}
+
 half4 Frag(Varyings input) : SV_Target
 {
     UNITY_SETUP_INSTANCE_ID(input);
@@ -73,11 +93,13 @@ half4 Frag(Varyings input) : SV_Target
 
     if (_SnapMode == 1)
     {
-        float texels = (_BaseTexels > 0 ? _BaseTexels : _BaseMap_TexelSize.z) / PixelSize();
+        // Texels per axis keep the texture's shape (a 20x30 door keeps all 30 rows); _BaseTexels counts the width.
+        float2 texels = (_BaseTexels > 0 ? _BaseTexels * float2(1.0, _BaseMap_TexelSize.w * _BaseMap_TexelSize.x) : _BaseMap_TexelSize.zw) / PixelSize();
         float2 snappedUv;
-        litPos = SnapToUvTexel(input.positionWS, input.uv, texels, cell, snappedUv);
-        litPos -= n * dot(litPos - input.positionWS, n);
-        base = SampleBaseUv(snappedUv);
+        float3 litRel = SnapToUvTexel(input.positionRWS, input.uv, texels, cell, snappedUv);
+        litRel -= n * dot(litRel - input.positionRWS, n);
+        litPos = litRel + _WorldSpaceCameraPos;
+        base = SampleBaseUv(snappedUv, input.uv);
     }
     else
     {
@@ -102,7 +124,11 @@ half4 Frag(Varyings input) : SV_Target
             {
                 float seed;
                 float2 duv = PlanarCoords(p * density, gridN, seed) * _DetailMap_TexelSize.xy;
-                detail = SAMPLE_TEXTURE2D_GRAD(_DetailMap, sampler_PointRepeat, duv, ddx(duv), ddy(duv)).r;
+                // Gradients from the smooth position on this pixel's own plane: ddx(duv) mixed two projections
+                // where the plane switches inside a pixel quad, a band of the wrong mip along that contour.
+                float2 gx = PlanarCoords(ddx(p) * density, gridN, seed) * _DetailMap_TexelSize.xy;
+                float2 gy = PlanarCoords(ddy(p) * density, gridN, seed) * _DetailMap_TexelSize.xy;
+                detail = SAMPLE_TEXTURE2D_GRAD(_DetailMap, sampler_PointRepeat, duv, gx, gy).r;
             }
         }
     }
@@ -136,6 +162,10 @@ half4 Frag(Varyings input) : SV_Target
         indirectAO = ao.indirectAmbientOcclusion;
         directAO = ao.directAmbientOcclusion;
     #endif
+
+    // Lights are looked up (Forward+ clusters) where the texel centre is on screen, not at this pixel: on a big
+    // block the centre can be far from the pixel, in another cluster tile. SSAO above keeps the pixel's own spot.
+    inputData.normalizedScreenSpaceUV = TexelCentreScreenUv(litPos, inputData.normalizedScreenSpaceUV);
 
     half3 ambient = SampleSH(n) * _AmbientStrength * indirectAO;
     half3 light = 0;

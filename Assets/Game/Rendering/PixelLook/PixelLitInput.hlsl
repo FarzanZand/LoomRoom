@@ -90,31 +90,43 @@ float3 SnapToGrid(float3 p, float3 n, float density, out float2 cell, out float 
     return c;
 }
 
-// Moves a world position to the centre of the base map texel it shows, using screen derivatives.
-float3 SnapToUvTexel(float3 positionWS, float2 uv, float texels, out float2 cell, out float2 snappedUv)
+// Moves a position to the centre of the base map texel it shows, using screen derivatives. texels is per axis, so
+// a non-square texture keeps every row. Pass a camera-relative position: far from the origin a world position has
+// too little float precision, and the extrapolation turned that into speckle inside whole texels.
+float3 SnapToUvTexel(float3 position, float2 uv, float2 texels, out float2 cell, out float2 snappedUv)
 {
     float2 t = uv * texels;
     cell = floor(t);
     snappedUv = (cell + 0.5) / texels;
     float2 duv = snappedUv - uv;
     float2 dx = ddx(uv), dy = ddy(uv);
+    float3 dpx = ddx(position), dpy = ddy(position);
     float det = dx.x * dy.y - dx.y * dy.x;
-    if (abs(det) < 1e-12) return positionWS;
-    float a = clamp((duv.x * dy.y - duv.y * dy.x) / det, -64.0, 64.0);
-    float b = clamp((dx.x * duv.y - dx.y * duv.x) / det, -64.0, 64.0);
-    return positionWS + a * ddx(positionWS) + b * ddy(positionWS);
+    // Collapsed or nearly edge-on UVs (det tiny next to the UV steps themselves, at any texel size) keep the pixel's
+    // own position; anything else may reach a texel centre many screen pixels away (big wall blocks).
+    if (abs(det) <= 1e-4 * (abs(dx.x * dy.y) + abs(dx.y * dy.x)) + 1e-20) return position;
+    float a = clamp((duv.x * dy.y - duv.y * dy.x) / det, -4096.0, 4096.0);
+    float b = clamp((dx.x * duv.y - dx.y * duv.x) / det, -4096.0, 4096.0);
+    return position + a * dpx + b * dpy;
 }
 
-half4 SampleBaseUv(float2 uv)
+half4 SampleBaseUv(float2 uv, float2 lodUv)
 {
     // Point sample at the mip that matches the texel count, never sharper than the screen allows. A material drawn
     // coarser than its texture (_BaseTexels, set by Even Out Texel Sizes) averages only a quarter of each block, as
     // its texture is a patchwork of UV islands that full averaging would mix; Pixel size averages whole texels.
+    // The screen mip comes from lodUv, the smooth UV: the snapped uv jumps a whole texel wherever a 2x2 pixel quad
+    // straddles a texel edge, and its derivative there picked a blurrier mip, a thin light line along those edges.
     float size = _BaseMap_TexelSize.z;
     float fixedLod = (_BaseTexels > 0 ? max(0.0, log2(size / _BaseTexels) - 2.0) : 0.0) + log2(PixelSize());
-    float2 dx = ddx(uv) * _BaseMap_TexelSize.zw, dy = ddy(uv) * _BaseMap_TexelSize.zw;
+    float2 dx = ddx(lodUv) * _BaseMap_TexelSize.zw, dy = ddy(lodUv) * _BaseMap_TexelSize.zw;
     float screenLod = 0.5 * log2(max(dot(dx, dx), dot(dy, dy)));
-    return SAMPLE_TEXTURE2D_LOD(_BaseMap, sampler_PointRepeat, uv, max(fixedLod, screenLod));
+    // The sample point is fixed per block, so the screen only takes over once a whole block is smaller than a
+    // pixel; until then an Even Out material keeps its quarter-block average at every distance.
+    // Ramped over the level after that, so there is no ring where the screen takes over.
+    float blockLod = log2(size * PixelSize() / (_BaseTexels > 0 ? _BaseTexels : size));
+    float lod = lerp(fixedLod, max(screenLod, fixedLod), saturate(screenLod - blockLod));
+    return SAMPLE_TEXTURE2D_LOD(_BaseMap, sampler_PointRepeat, uv, lod);
 }
 
 half AlphaOf(float2 uv)
