@@ -103,7 +103,7 @@ PrefabInstance:
     - target: {fileID: 5202734927575814615, guid: 0d4fb2d818837d841b82ce1d9f11472b, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 333507e084658134b8317ba5ea053e7b, type: 2}
+      objectReference: {fileID: 2100000, guid: 6c3dc7349f3603c41bf5eec8937b57d2, type: 2}
     - target: {fileID: 5995187935144783874, guid: 0d4fb2d818837d841b82ce1d9f11472b, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Barrel_01
@@ -163,7 +163,7 @@ PrefabInstance:
     - target: {fileID: 8058950259511682333, guid: 0d4fb2d818837d841b82ce1d9f11472b, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: 9794ddd2cf6c02c42993ba1ef3ee16d1, type: 2}
+      objectReference: {fileID: 4300000, guid: aed689126806caf43a72f402392efae2, type: 2}
     m_RemovedComponents:
     - {fileID: 1617840160, guid: 0d4fb2d818837d841b82ce1d9f11472b, type: 3}
     m_RemovedGameObjects: []

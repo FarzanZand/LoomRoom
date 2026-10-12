@@ -41,14 +41,26 @@ public class DungeonBiome : ScriptableObject
     public DungeonLightingSettings lightingSettings = new DungeonLightingSettings();
     [TabGroup(Look), Tooltip("Wall torches and other wall lights in this biome, weighted, each with an optional colour. Empty uses the level's.")]
     public DungeonWallLight[] lightingPrefabs = new DungeonWallLight[0];
-    [TabGroup(Look), Tooltip("Give every torch in this biome one colour. A torch entry's own Override Color, a room profile, a room template or a socket still sets its own.")]
+    // The biome-wide fallback: hidden while every torch in the list sets its own colour (it would change nothing).
+    [TabGroup(Look), HideIf(nameof(EveryTorchColoured)), LabelText("Default Torch Colour"),
+     Tooltip("Colour for torches that nothing more specific colours: list entries without their own Override Color, the level's torches when this list is empty, room template sockets without a colour. A socket, room template, room profile or entry colour wins.")]
     public bool overrideTorchColor;
-    [TabGroup(Look), ShowIf(nameof(overrideTorchColor)), ColorUsage(false)]
+    [TabGroup(Look), ShowIf("@overrideTorchColor && !EveryTorchColoured"), ColorUsage(false), LabelText("Colour")]
     public Color torchColor = new Color(1f, .6f, .3f);
+    bool EveryTorchColoured
+    {
+        get
+        {
+            bool any = false;
+            if (lightingPrefabs != null) foreach (var l in lightingPrefabs) if (l != null && l.prefab != null) { if (!l.overrideColor) return false; any = true; }
+            return any;
+        }
+    }
     [TabGroup(Look), Range(0f, 3f), Tooltip("Brightness of every torch in this biome. 1 is as the torch prefab is made.")]
     public float torchBrightness = 1f;
-    // The colour a torch gets when nothing more specific sets one (null keeps the prefab's own).
-    public Color? TorchColor => overrideTorchColor ? torchColor : null;
+    // The colour a torch gets when nothing more specific sets one (null keeps the prefab's own). Off while hidden, so the
+    // inspector never hides a colour that still applies (it would only reach socket prefabs then).
+    public Color? TorchColor => overrideTorchColor && !EveryTorchColoured ? torchColor : null;
 
     [Serializable]
     public class Spawn

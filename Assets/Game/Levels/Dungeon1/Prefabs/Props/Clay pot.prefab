@@ -83,7 +83,10 @@ MonoBehaviour:
   debrisForce: 2.2
   debrisLifetime: 3
   breakEffect: {fileID: 7742265850632592593, guid: 2878e923afe61984b95532101d7ab02e, type: 3}
+  debrisStays: 1
   dropsLoot: 1
+  ambushPrefab: {fileID: 0}
+  ambushChance: 0
   noiseRadius: 6
   loot: {fileID: 0}
   seed: 0
@@ -156,11 +159,11 @@ PrefabInstance:
     - target: {fileID: 23952061547334014, guid: 2f9c8c85a9ec795439dfe6fd3e8004ee, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: eff217f1c5cb53d459fe6b33e0189012, type: 2}
+      objectReference: {fileID: 2100000, guid: 40d28ebf9e1b5ed479bf69bdf80cd5e4, type: 2}
     - target: {fileID: 33035871001118608, guid: 2f9c8c85a9ec795439dfe6fd3e8004ee, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: a3784df0292659c409800a6165c1ad84, type: 2}
+      objectReference: {fileID: 4300000, guid: 9632f09fc2875904b8e92200b55320a9, type: 2}
     m_RemovedComponents:
     - {fileID: 64654415916493778, guid: 2f9c8c85a9ec795439dfe6fd3e8004ee, type: 3}
     m_RemovedGameObjects: []

@@ -84,6 +84,14 @@ Flat props (swords, knives, maces, shields, planks, signs) are painted straight 
   pixel squares. Dungeon walls and floors stay 10.7; the apartment room 1.8.
 - After any new art run `Tools > LoomRoom > Pixel Look > Even Out Texel Sizes`.
 
+## Review every generated image before using it
+
+Open and look at **every single image** Meshy (or any tool) makes, at full size, before it goes into the next step
+(user, 2026-10-12). Look for: views moved, merged or rearranged; silhouettes or proportions changed; blocks or patterns
+copied from the reference instead of repainted (the old restyle's big square texels on the first torch); text, captions,
+extra objects; colours or materials that are wrong for the thing; one view that doesn't match the others. Fix by hand what
+can be fixed (crop, re-lay, colour match), regenerate what can't, and only then project or build.
+
 ## Review before calling it done
 
 - Look at every asset at full size, side by side with the reference creatures and with the old version.

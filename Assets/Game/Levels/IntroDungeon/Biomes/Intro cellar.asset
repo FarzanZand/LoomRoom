@@ -37,7 +37,10 @@ MonoBehaviour:
   - prefab: {fileID: 3904118440429741045, guid: 91efdc5ce7c631c43a3188387ca652aa, type: 3}
     weight: 1
     overrideColor: 1
-    color: {r: 1, g: 0.72852325, b: 0.5235849, a: 1}
+    color: {r: 1, g: 0.9380054, b: 0.8915094, a: 1}
+  overrideTorchColor: 0
+  torchColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  torchBrightness: 1
   enemies:
   - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
     weight: 2
@@ -46,6 +49,7 @@ MonoBehaviour:
     weight: 1
     fromFloor: 1
   encounterChance: {x: 1, y: 1}
+  minEnemiesPerRoom: 1
   maxEnemiesPerRoom: 1
   features: []
   loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}

@@ -72,7 +72,9 @@ public static class PixelLitConvert
                 float d = PixelRestyle.TexelsPerUnit(r, m); if (d <= 0) continue;
                 if (!density.TryGetValue(m, out var list)) density[m] = list = new List<float>();
                 list.Add(d);
-                float texels = tex.width * target / d;
+                // Painted props are drawn at the same pixel size as creatures and items (PixelRestyle.ItemTexelsPerUnit).
+                bool paintedProp = !room && !firstPerson && !character && AssetDatabase.GetAssetPath(m).StartsWith(PixelRestyle.Root + "/Props/") && m.name.EndsWith(" painted");
+                float texels = tex.width * (paintedProp ? lib.tableTexelsPerUnit * lib.characterDetail : target) / d;
                 need[m] = need.TryGetValue(m, out var n) ? Mathf.Max(n, texels) : texels;
             }
         }

@@ -103,11 +103,11 @@ PrefabInstance:
     - target: {fileID: 1002704160007462493, guid: f8b22dd8017abb1488f3654bb07934f0, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: 60fa35af9b6e54d458f9e832eccb80c5, type: 2}
+      objectReference: {fileID: 4300000, guid: 3dc9dff49a3f09042ad9d37673ea5705, type: 2}
     - target: {fileID: 3030541392651610775, guid: f8b22dd8017abb1488f3654bb07934f0, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 9460ec06fd145ec409296f64a9129e91, type: 2}
+      objectReference: {fileID: 2100000, guid: 5826213b6f1121542966b9056497689b, type: 2}
     - target: {fileID: 3534860782186679106, guid: f8b22dd8017abb1488f3654bb07934f0, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Crate_02
