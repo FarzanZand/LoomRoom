@@ -7,7 +7,7 @@ using UnityEngine.UI;
 // Lays the inventory screen out like Diablo II: the character's stats framed on the left, and on the right one tall
 // framed panel with the equipment paper doll on top and the bag grid below. The frames, cell sockets and slot frames
 // are painted pixel art (UI/Sprites/Diablo, loomroom-art pipeline), drawn at 2 canvas units per art pixel.
-// Run after Set Up Diablo Inventory (which makes the 40 cells). Safe to run again.
+// Lays out the 40 bag cells already in the scene. Safe to run again.
 public static class DiabloInventoryLayout
 {
     const string Art = "Assets/Game/UI/Sprites/Diablo";

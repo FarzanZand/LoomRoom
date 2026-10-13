@@ -208,6 +208,17 @@ public partial class DungeonGenerator
             }
             foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))if(socket!=null)taken.Add(CellOf(socket.transform.position));
             taken.UnionWith(cutCells);
+            // A walkway between two holes (a ravine's bridge) and the cells at its ends stay clear: one tree on it cuts
+            // the room in two.
+            foreach(var p in Layout.RoomCells(index))
+            {
+                if(cutCells.Contains(p))continue;
+                bool between=cutCells.Contains(p+Vector2Int.left) && cutCells.Contains(p+Vector2Int.right)
+                    || cutCells.Contains(p+Vector2Int.up) && cutCells.Contains(p+Vector2Int.down);
+                if(!between)continue;
+                taken.Add(p);
+                foreach(var d in DungeonLayout.Neighbours)taken.Add(p+d);
+            }
             var available=new System.Collections.Generic.List<Vector2Int>();
             foreach(var p in Layout.RoomCells(index))if(!lanes.Contains(p) && !Layout.Reserved.Contains(p) && !taken.Contains(p))available.Add(p);
             int left=PlaceExtras(index,available,0,rewards);
@@ -234,7 +245,7 @@ public partial class DungeonGenerator
             breakable.seed=PlacedSeed(breakable.transform.position);breakable.floorNumber=FloorNumber;
         }
     }
-    int PlacedSeed(Vector3 p)=>unchecked(Mathf.RoundToInt(p.x*100f)*73856093 ^ Mathf.RoundToInt(p.z*100f)*19349663 ^ FloorNumber*83492791 ^ Layout.rooms.Count*2654435);
+    public int PlacedSeed(Vector3 p)=>unchecked(Mathf.RoundToInt(p.x*100f)*73856093 ^ Mathf.RoundToInt(p.z*100f)*19349663 ^ FloorNumber*83492791 ^ Layout.rooms.Count*2654435);
 
     // A template's wall light: on the wall its socket faces, or the cell's nearest other wall.
     void SocketLight(DungeonSocket socket,int room)
@@ -267,6 +278,7 @@ public partial class DungeonGenerator
     // Returns the first cell left unused.
     int PlaceExtras(int index,System.Collections.Generic.List<Vector2Int> available,int cursor,LootSource rewards)
     {
+        cursor=Mathf.Min(cursor,available.Count);   // a room full of props has no cells left
         if(index==MerchantRoom && cursor<available.Count)cursor++; // keep a free cell for the stall
         var breakables=Destructibles;
         if(breakables!=null && breakables.Length>0)
@@ -394,6 +406,7 @@ public partial class DungeonGenerator
     // (or the floor's loot) and a seed on its loot drop.
     // A creature that comes out of something mid-floor (a crate's rat): floor scaling, loot and the NavMesh, like any
     // generated enemy. Uses its own random so the level's draw order never shifts.
+    int ambushersSpawned;
     public Character SpawnAmbusher(GameObject prefab,Vector3 pos,Quaternion rotation)
     {
         if(!NavMesh.SamplePosition(pos,out var hit,2f,NavMesh.AllAreas))return null;
@@ -401,7 +414,9 @@ public partial class DungeonGenerator
         // Mid-floor the NavMesh may be re-carving (an ambush's gates coming down): put the agent on it if it missed.
         var agent=go.GetComponent<NavMeshAgent>();
         if(agent!=null && agent.enabled && !agent.isOnNavMesh)agent.Warp(hit.position);
-        return SetUpEnemy(go,new System.Random(unchecked((int)(pos.x*73856093)^(int)(pos.z*19349663))));
+        // Each one rolls its own loot: from the floor's seed, its place and how many came before (the old float-to-int
+        // hash overflowed at the table's position, so every ambusher rolled the same).
+        return SetUpEnemy(go,new System.Random(Scramble(unchecked(PlacedSeed(pos)^seed0*31^++ambushersSpawned*486187739))));
     }
 
     Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null)

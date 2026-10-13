@@ -136,7 +136,9 @@ public class Merchant : MonoBehaviour, IInteractable
         if (!buysItems) { reason = $"The {merchantName} isn't buying."; return false; }
         if (item == null) return false;
         int owned = (player.Bag != null ? player.Bag.TotalCount(item) : 0) + (player.Hotbar != null ? player.Hotbar.TotalCount(item) : 0);
-        if (player.Equipment != null && player.Equipment.IsEquipped(item) && owned <= 1) { reason = "Unequip it first."; return false; }
+        // A held item stays in the hotbar, so its last copy there is the one in hand; worn items leave the bag, so
+        // any copy still in it is a spare.
+        if (player.Equipment != null && Equipment.IsHand(item.equipSlot) && player.Equipment.IsEquipped(item) && owned <= 1) { reason = "Unequip it first."; return false; }
         return true;
     }
 

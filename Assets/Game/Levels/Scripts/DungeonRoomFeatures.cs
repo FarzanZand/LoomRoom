@@ -19,7 +19,7 @@ public class DungeonRoomFeatures
     public bool ambushes = true;
     [ShowIf(nameof(ambushes)), Range(0f, 1f), Indent, Tooltip("Chance a combat room becomes an ambush (rooms built for one always are).")]
     public float ambushChance = .08f;
-    [ShowIf(nameof(ambushes)), Range(0, 1), Indent, Tooltip("Most ambushes on one floor, rooms built for one included: one at most, so a floor has one or none.")]
+    [ShowIf(nameof(ambushes)), Range(0, 1), Indent, Tooltip("Most ambushes on one floor, rooms built for one included: 1 (a floor has one or none) or 0 (none).")]
     public int maxAmbushes = 1;
     [ToggleLeft, Tooltip("A chest on a pressure plate: opening it brings spikes up through the floor around it.")]
     public bool trappedTreasure = true;

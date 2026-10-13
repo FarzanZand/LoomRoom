@@ -147,7 +147,7 @@ public class GoreManager : Singleton<GoreManager>
         {
             var dungeon = FindAnyObjectByType<DungeonGenerator>();
             levelRoot = dungeon != null ? dungeon.transform : null;
-            if (levelRoot != null) { stains.Clear(); chunks.Clear(); }
+            if (levelRoot != null) { stains.Clear(); chunks.Clear(); settling.Clear(); }
         }
         return levelRoot;
     }
@@ -220,9 +220,10 @@ public class GoreManager : Singleton<GoreManager>
     }
 
     // Chunks freeze where they lie (saves physics time) and stay for the floor.
-    static IEnumerator Settle(Rigidbody rb)
+    IEnumerator Settle(Rigidbody rb)
     {
         yield return new WaitForSeconds(3f);
         if (rb != null) rb.isKinematic = true;
+        settling.Remove(rb);
     }
 }

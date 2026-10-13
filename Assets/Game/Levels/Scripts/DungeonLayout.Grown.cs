@@ -371,7 +371,7 @@ public sealed partial class DungeonLayout
             if (cells.Count < 3) continue;
             int owner = nextCorridor++;
             foreach (var c in cells) Dig(c, owner);
-            DeadEnds.Add((cells[^1], dir));
+            DeadEnds.Add((cells[^1], cells[^1] - cells[^2]));   // the last step taken, not the last direction tried
             spurs--;
         }
     }

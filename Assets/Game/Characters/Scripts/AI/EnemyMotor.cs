@@ -123,11 +123,13 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         worldDirection.y = 0f;
         if (worldDirection.sqrMagnitude < 0.0001f || speed <= 0f) { Stop(); return; }
         Vector3 destination = transform.position + worldDirection.normalized * Mathf.Max(0.6f, speed * 0.35f);
-        if (Agent.Raycast(destination, out var edge)) destination = edge.position;
         Agent.speed = speed;
         Agent.stoppingDistance = 0f;
         Agent.autoBraking = false;
         Agent.isStopped = false;
+        // Called every frame while strafing: keep the running path until the wanted point has moved off it.
+        if (Agent.hasPath && !Agent.pathPending && Agent.remainingDistance > .2f && Perception.HorizontalDist(Agent.destination, destination) < RepathDistance) return;
+        if (Agent.Raycast(destination, out var edge)) destination = edge.position;
         Agent.SetDestination(destination);
     }
 

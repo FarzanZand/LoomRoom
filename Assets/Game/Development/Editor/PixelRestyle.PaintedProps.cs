@@ -389,14 +389,18 @@ public static partial class PixelRestyle
             var p = px[i];
             nearest[i] = Mathf.Abs(p.r - bg.r) + Mathf.Abs(p.g - bg.g) + Mathf.Abs(p.b - bg.b) < .12f ? -1 : i;
         }
-        // The painter draws a dark outline round each view; faces near a view's edge would pick it up (black stave
-        // tips, striped hoop edges). Peel dark pixels off the outside, a few layers deep, so they count as background.
-        for (int pass = 0; pass < 4; pass++)
+        // The painter draws a dark outline round each view, and the edge blends into the background through a ring of
+        // plain grey pixels; faces near a view's edge would pick them up (black stave tips, grey bands round a grip).
+        // Peel dark and plain grey pixels off the outside so they count as background: the outline is often a whole
+        // painted pixel thick (8-10 image pixels; 4 layers left black notches along a shield's top), the grey ring is thin.
+        for (int pass = 0; pass < 12; pass++)
         {
             var peel = new List<int>();
             for (int i = 0; i < px.Length; i++)
             {
-                if (nearest[i] < 0 || px[i].grayscale > .16f) continue;
+                var c = px[i];
+                bool grey = Mathf.Max(c.r, Mathf.Max(c.g, c.b)) - Mathf.Min(c.r, Mathf.Min(c.g, c.b)) < .05f;
+                if (nearest[i] < 0 || c.grayscale > .16f && !(grey && pass < 4)) continue;
                 int x = i % w, y = i / w;
                 if ((x > 0 && nearest[i - 1] < 0) || (x < w - 1 && nearest[i + 1] < 0) || (y > 0 && nearest[i - w] < 0) || (y < h - 1 && nearest[i + w] < 0)) peel.Add(i);
             }

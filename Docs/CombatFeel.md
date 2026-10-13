@@ -50,7 +50,7 @@ Enemy attacks, hurt and death use `Assets/Game/Characters/Animations/HumanoidCon
 - Damage numbers appear where the blade struck, white, in `PIXEARG_`, drifting up slowly. Criticals and backstabs show "CRITICAL!" or "BACKSTAB!" above a bigger number that grows in over 0.3 s. The centre-screen result line is off (`DungeonCombatFeedback.resultLine`).
 - Getting hit: the screen goes deep red (`hurtScreenAlpha` 0.6), holds for `hurtScreenHold` (0.1 s) and fades over `hurtScreenDuration` (0.4 s); the camera jolts away from the side the hit came from (`PlayerFX`).
 - `CrosshairUI`: a small dot while the table player fights, a shield icon while blocking.
-- `Tools > LoomRoom > Combat > Set Up Heathen Impact` (`Combat/Scripts/Editor/HeathenCombatSetup.cs`) builds and wires all of the above (gore art, GoreManager, contact flash, slash lines, swing trails, helmets, recoil on rats and slimes, kill sounds, each enemy's blood). It is safe to run again.
+- All of the above (gore art, GoreManager, contact flash, slash lines, swing trails, helmets, recoil on rats and slimes, kill sounds, each enemy's blood) was wired once by `Set Up Heathen Impact`, retired on 2026-10-13 (running it again reset hand-tuned blood); tune the prefabs and assets directly.
 
 ## CombatManager controls
 

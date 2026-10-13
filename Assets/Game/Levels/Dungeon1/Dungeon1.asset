@@ -39,7 +39,7 @@ MonoBehaviour:
   roomTint: {r: 1, g: 1, b: 1, a: 1}
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
-  backgroundMusic: {fileID: 8300000, guid: ef4f5eea8a3e11d4ba749bcb52683db8, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: 9b6676d6e31306043b7c187ddb5cd29c, type: 3}
   backgroundMusicVolume: 0.3
   loopMusic: 1
   musicFadeSeconds: 1.5
@@ -111,12 +111,16 @@ MonoBehaviour:
   doorPercent: 65
   boardEdgeMaterial: {fileID: 0}
   boardGridMaterial: {fileID: 0}
+  boardPitMaterial: {fileID: 0}
   boardTileThickness: 0.14
   boardLayerHeight: 0.32
   boardMaxRaise: 2
   boardVerticality: 1
   boardTileTaps: []
   boardRevealAll: 0
+  boardDoorPosts: []
+  boardMoundProps: []
+  furnishEntranceRims: 0
   architectureTileSize: 3
   twoTileRoomPercent: 50
   threeTileRoomPercent: 10

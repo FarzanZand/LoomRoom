@@ -23,9 +23,24 @@ public class ItemGridUI : MonoBehaviour
 
     public void Bind(Inventory inventory) { bag = inventory; Refresh(); }
 
+    // The grid lights up every cell of the item under the pointer itself: a cell's own button tint would darken the
+    // one cell under the pointer on top of that (and keep the last clicked cell dim).
+    // It also grows the item as one piece (Pop), so a cell's own grow-on-hover (UIInteractionFeedback) is switched off.
+    void Awake()
+    {
+        foreach (var cell in cells)
+        {
+            if (cell == null) continue;
+            if (cell.TryGetComponent<Selectable>(out var button)) button.transition = Selectable.Transition.None;
+            if (cell.TryGetComponent<UIInteractionFeedback>(out var feedback)) feedback.enabled = false;
+        }
+    }
+
     public void Refresh()
     {
         if (template == null) return;
+        EndPop(true);   // the cells and pictures are about to be laid out again
+        viewAt.Clear();
         template.gameObject.SetActive(false);
         // The cells must be where the layout puts them before items are laid over them.
         if (cells.Count > 0 && cells[0] != null && cells[0].transform.parent is RectTransform cellGrid) LayoutRebuilder.ForceRebuildLayoutImmediate(cellGrid);
@@ -35,7 +50,9 @@ public class ItemGridUI : MonoBehaviour
             {
                 var stack = bag[i];
                 if (stack == null || stack.IsEmpty) continue;
-                Place(View(used++), stack, i);
+                var view = View(used++);
+                Place(view, stack, i);
+                viewAt[i] = view;
             }
         for (int i = used; i < views.Count; i++) views[i].gameObject.SetActive(false);
     }
@@ -106,13 +123,15 @@ public class ItemGridUI : MonoBehaviour
     {
         foreach (var cell in tinted) if (cell != null) { cell.PreviewTint = null; cell.Refresh(); }
         tinted.Clear();
-        if (bag == null || !bag.IsGrid || Mouse.current == null) return;
+        if (bag == null || !bag.IsGrid || Mouse.current == null) { Pop(-1, false); return; }
         Vector2 pointer = Mouse.current.position.ReadValue();
         int hovered = -1;
         for (int i = 0; i < cells.Count; i++)
             if (cells[i] != null && RectTransformUtility.RectangleContainsScreenPoint((RectTransform)cells[i].transform, pointer, null)) { hovered = i; break; }
+        bool dragging = ItemDragHandler.HasInstance && ItemDragHandler.Instance.IsDragging;
+        Pop(hovered, dragging);
         if (hovered < 0) return;
-        if (!ItemDragHandler.HasInstance || !ItemDragHandler.Instance.IsDragging) { HoverFootprint(hovered); return; }
+        if (!dragging) { HoverFootprint(hovered); return; }
         var drag = ItemDragHandler.Instance;
         var item = drag.Item;
         if (item == null) return;
@@ -139,7 +158,14 @@ public class ItemGridUI : MonoBehaviour
     {
         int anchor = cells[hovered].Anchor;
         var stack = anchor >= 0 ? bag[anchor] : null;
-        if (stack == null || stack.IsEmpty) return;
+        if (stack == null || stack.IsEmpty)
+        {
+            // An empty cell lights up on its own.
+            cells[hovered].PreviewTint = hoverTint;
+            cells[hovered].Refresh();
+            tinted.Add(cells[hovered]);
+            return;
+        }
         var size = bag.SizeOf(stack.item);
         var at = bag.CellOf(anchor);
         for (int x = 0; x < size.x; x++)
@@ -152,4 +178,124 @@ public class ItemGridUI : MonoBehaviour
                 tinted.Add(cells[index]);
             }
     }
+
+    // ── Hover pop ─────────────────────────────────────────────────────
+    // The item under the pointer grows as one piece: all its cells and its picture, about the middle of its footprint
+    // (an empty cell on its own), and settles back when the pointer leaves.
+
+    sealed class PopGroup
+    {
+        public readonly List<(Transform part, Vector3 position, Vector3 scale)> parts = new();
+        public Transform space;   // the cells' parent, which the middle is kept in
+        public Vector3 middle;
+        public float amount = 1f;
+        public int key;
+    }
+
+    readonly Dictionary<int, RectTransform> viewAt = new();   // anchor cell -> the item's picture
+    readonly List<PopGroup> settling = new();
+    PopGroup popped;
+    int popKey = int.MinValue;
+
+    void Pop(int hovered, bool dragging)
+    {
+        int key = int.MinValue;
+        if (hovered >= 0 && !dragging)
+        {
+            int anchor = cells[hovered].Anchor;
+            var stack = anchor >= 0 ? bag[anchor] : null;
+            key = stack != null && !stack.IsEmpty ? anchor : -1 - hovered;
+        }
+        if (key != popKey)
+        {
+            EndPop(false);
+            popKey = key;
+            if (key != int.MinValue)
+            {
+                // Back over one still settling: it grows again from where it is.
+                popped = settling.Find(g => g.key == key);
+                if (popped != null) settling.Remove(popped);
+                else popped = Group(key, hovered);
+            }
+        }
+        var settings = UIFeedbackSettings.Shared;
+        float duration = settings != null ? settings.hoverDuration : .1f;
+        float step = Time.unscaledDeltaTime / Mathf.Max(.01f, duration);
+        if (popped != null)
+        {
+            bool pressed = Mouse.current != null && (Mouse.current.leftButton.isPressed || Mouse.current.rightButton.isPressed);
+            float target = settings != null ? (pressed ? settings.pressScale : settings.hoverScale) : 1.035f;
+            popped.amount = Mathf.MoveTowards(popped.amount, target, step * Mathf.Max(.02f, Mathf.Abs(target - 1f)));
+            Apply(popped);
+        }
+        for (int i = settling.Count - 1; i >= 0; i--)
+        {
+            var g = settling[i];
+            g.amount = Mathf.MoveTowards(g.amount, 1f, step * Mathf.Max(.02f, Mathf.Abs(g.amount - 1f) + .02f));
+            Apply(g);
+            if (Mathf.Approximately(g.amount, 1f)) settling.RemoveAt(i);
+        }
+    }
+
+    PopGroup Group(int key, int hovered)
+    {
+        var group = new PopGroup { key = key };
+        int first, last;
+        if (key >= 0)
+        {
+            var size = bag.SizeOf(bag[key].item);
+            var at = bag.CellOf(key);
+            first = key; last = Mathf.Min(cells.Count - 1, (at.y + size.y - 1) * bag.GridWidth + at.x + size.x - 1);
+            for (int x = 0; x < size.x; x++)
+                for (int y = 0; y < size.y; y++)
+                {
+                    int index = (at.y + y) * bag.GridWidth + at.x + x;
+                    if (index < cells.Count && cells[index] != null) group.parts.Add((cells[index].transform, cells[index].transform.localPosition, cells[index].transform.localScale));
+                }
+            if (viewAt.TryGetValue(key, out var view) && view != null) group.parts.Add((view, view.localPosition, view.localScale));
+        }
+        else
+        {
+            first = last = hovered;
+            group.parts.Add((cells[hovered].transform, cells[hovered].transform.localPosition, cells[hovered].transform.localScale));
+        }
+        // A part still settling from another item (the bag changed under the pointer) is put back first, so its resting
+        // place is what is remembered.
+        for (int i = settling.Count - 1; i >= 0; i--)
+            if (settling[i].parts.Exists(a => group.parts.Exists(b => b.part == a.part)))
+            {
+                settling[i].amount = 1f; Apply(settling[i]); settling.RemoveAt(i);
+                for (int k = 0; k < group.parts.Count; k++) { var t = group.parts[k].part; group.parts[k] = (t, t.localPosition, t.localScale); }
+            }
+        group.space = cells[first].transform.parent;
+        group.middle = (cells[first].transform.localPosition + cells[last].transform.localPosition) * .5f;
+        var settings = UIFeedbackSettings.Shared; settings?.Hover();
+        return group;
+    }
+
+    static void Apply(PopGroup g)
+    {
+        if (g.space == null) return;
+        var middle = g.space.TransformPoint(g.middle);
+        foreach (var (part, position, scale) in g.parts)
+        {
+            if (part == null || part.parent == null) continue;
+            var local = part.parent.InverseTransformPoint(middle);
+            part.localScale = scale * g.amount;
+            part.localPosition = local + (position - local) * g.amount;
+        }
+    }
+
+    void EndPop(bool instant)
+    {
+        if (popped != null)
+        {
+            if (instant) { popped.amount = 1f; Apply(popped); }
+            else settling.Add(popped);
+        }
+        popped = null; popKey = int.MinValue;
+        if (instant) { foreach (var g in settling) { g.amount = 1f; Apply(g); } settling.Clear(); }
+    }
+
+    void OnDisable() => EndPop(true);
 }

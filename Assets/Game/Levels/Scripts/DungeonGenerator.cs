@@ -367,7 +367,7 @@ public partial class DungeonGenerator : MonoBehaviour
         float closest=float.MaxValue;
         foreach(var cell in Layout.RoomCells(0))foreach(var direction in dirs) {
             var outside=cell+direction;
-            if(Layout.InRoom(0,outside) || !Layout.floor[outside.x,outside.y])continue;
+            if(Layout.InRoom(0,outside) || !Open(outside))continue;
             var delta=Cell(outside)-Cell(Layout.Start); delta.y=0;
             if(delta.sqrMagnitude<closest){closest=delta.sqrMagnitude;SpawnRotation=Quaternion.LookRotation(delta);}
         }

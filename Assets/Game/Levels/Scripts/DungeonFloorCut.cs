@@ -32,13 +32,14 @@ public class DungeonFloorCut : MonoBehaviour
 
     DungeonGenerator dungeon;
     System.Collections.Generic.HashSet<Vector2Int> holes;
-    float floorY;
+    float floorY, fallDrop = 1.2f;
     Vector3 lastSafe;
     bool haveSafe;
 
-    public void Initialize(DungeonGenerator generator, System.Collections.Generic.HashSet<Vector2Int> cutCells, float roomFloorY)
+    // fallDrop: how far below the floor counts as fallen in (a board's pit is only as deep as the tiles are high).
+    public void Initialize(DungeonGenerator generator, System.Collections.Generic.HashSet<Vector2Int> cutCells, float roomFloorY, float fallDrop = 1.2f)
     {
-        dungeon = generator; holes = cutCells; floorY = roomFloorY;
+        dungeon = generator; holes = cutCells; floorY = roomFloorY; this.fallDrop = fallDrop;
         enabled = kind == Kind.Pit;
     }
 
@@ -53,7 +54,7 @@ public class DungeonFloorCut : MonoBehaviour
             var p = player.transform.position;
             bool over = Over(p);
             if (!over && player.Motor != null && player.Motor.IsGrounded && Mathf.Abs(p.y - floorY) < .6f) { lastSafe = p; haveSafe = true; }
-            if (over && p.y < floorY - 1.2f) Fall(player);
+            if (over && p.y < floorY - fallDrop) Fall(player);
         }
         // An enemy knocked back towards the edge goes down: its path keeps it about its own width from the drop, so the
         // edge is looked for a little further on than its body reaches.

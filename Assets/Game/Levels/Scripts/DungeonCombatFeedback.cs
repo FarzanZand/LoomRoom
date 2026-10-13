@@ -145,21 +145,24 @@ public class DungeonCombatFeedback : MonoBehaviour
         foreach(var e in enemies)
         {
             if(e.character==null){e.root.gameObject.SetActive(false);continue;}
-            Vector3 head=Head(e.character);
-            float distance=Vector3.Distance(camera.transform.position,head);
-            // Aim assist against the body, so small creatures don't require pixel-perfect targeting.
-            Vector3 body=e.character.transform.position+(head-e.character.transform.position)*.55f;
-            bool aimed=Aimed(camera,e.character);
             bool bossBar=BossBarUI.HasInstance && BossBarUI.Instance.Boss==e.character;
-            // A dead enemy's bar goes with it; the kill line and the body say enough.
-            bool visible=show && e.character.IsAlive && !bossBar && distance<18 && (aimed || Time.time<e.until) && HasSight(camera,e.character.transform,body);
             if(topBar)
             {
                 bool shown=show && e==topEnemy && !bossBar;
                 e.root.gameObject.SetActive(shown);
                 if(shown){e.root.localScale=Vector3.one*topBarScale;e.root.anchoredPosition=new Vector2(0,canvas.rect.height*.5f-topBarOffset);}
             }
-            else e.root.gameObject.SetActive(visible && Project(camera,head+Vector3.up*.14f,e.root));
+            else
+            {
+                // Bars over heads: only for the living (the kill line and the body say enough), close, aimed at or
+                // just hit, and in sight. The sight rays run last, only for bars that could show.
+                Vector3 head=Head(e.character);
+                bool candidate=show && e.character.IsAlive && !bossBar && Vector3.Distance(camera.transform.position,head)<18;
+                // Aim assist against the body, so small creatures don't require pixel-perfect targeting.
+                Vector3 body=e.character.transform.position+(head-e.character.transform.position)*.55f;
+                bool visible=candidate && (Time.time<e.until || Aimed(camera,e.character)) && HasSight(camera,e.character.transform,body);
+                e.root.gameObject.SetActive(visible && Project(camera,head+Vector3.up*.14f,e.root));
+            }
             // Up close a head projects near the top edge, where the skill popup lives: keep the bar under it.
             if(!topBar && e.root.gameObject.activeSelf){var at=e.root.anchoredPosition;float top=canvas.rect.height*.5f-barTopMargin;if(at.y>top){at.y=top;e.root.anchoredPosition=at;}}
             float health=e.character.Stats.MaxHealth>0 ? Mathf.Clamp01(e.character.Stats.CurrentHealth/e.character.Stats.MaxHealth):0;

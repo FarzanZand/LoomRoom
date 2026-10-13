@@ -15,14 +15,23 @@ public partial class DungeonGenerator
         foreach (var cut in instance.GetComponentsInChildren<DungeonFloorCut>(true))
         {
             if (cut == null) continue;
-            // A board's floor is printed tiles on the table: nothing to cut into, so the room is built without its hole.
-            if (Board) { DestroyImmediate(cut); continue; }
+            // A board's floor is printed tiles on the table. A pit takes its tiles away down to the table; a sunken floor
+            // is left out (every tile edge on a board must meet its neighbour's height), so the room keeps its floor there.
+            if (Board && cut.kind != DungeonFloorCut.Kind.Pit) { DestroyImmediate(cut); continue; }
             var cells = new HashSet<Vector2Int>();
             foreach (var p in cut.CellCentres(data.cellSize)) { var c = CellOf(p); if (Layout.InRoom(index, c)) cells.Add(c); }
             if (cells.Count == 0) { DestroyImmediate(cut.gameObject); continue; }
             cutCells.UnionWith(cells);
             float floorY = Cell(Layout.RoomCenter(index)).y;
-            if (Board) { BoardCut(cut, cells); cut.Initialize(this, cells, floorY); continue; }
+            if (Board)
+            {
+                BoardPit(cells);
+                // The walking surface is the tiles' top, and the drop is only down to the table: a fall counts once the
+                // player is halfway down it.
+                float top = floorY + TileThickness;
+                cut.Initialize(this, cells, top, Mathf.Min(1.2f, top - transform.position.y) * .5f);
+                continue;
+            }
             // The floor tiles in the cut.
             for (int i = geometry.childCount - 1; i >= 0; i--)
             {
@@ -58,21 +67,23 @@ public partial class DungeonGenerator
         }
     }
 
-    // On a board the cut works on the printed tiles: a pit takes them away (the table shows through, like the board's
-    // other holes); a sunken floor sets them down a layer where the room stands high enough (on the table there is no lower).
-    void BoardCut(DungeonFloorCut cut, HashSet<Vector2Int> cells)
+    // A pit on a board: its printed tiles are taken away and a dark card lies on the table in the hole, which no path
+    // crosses. It belongs to the room's region, so it is dealt in with the room.
+    void BoardPit(HashSet<Vector2Int> cells)
     {
+        var material = data.boardPitMaterial != null ? data.boardPitMaterial : data.boardEdgeMaterial;
         foreach (var c in cells)
         {
             int region = Layout.RegionIds[c.x, c.y];
-            var tile = region >= 0 && region < boardRegions.Length && boardRegions[region] != null ? boardRegions[region].Find($"Tile {c.x},{c.y}") : null;
-            if (tile == null) continue;
-            if (cut.kind == DungeonFloorCut.Kind.Pit) { DestroyImmediate(tile.gameObject); continue; }
-            float lower = elevation[c.x, c.y] - data.boardLayerHeight;
-            if (lower < -.01f) continue;
-            DestroyImmediate(tile.gameObject);
-            elevation[c.x, c.y] = Mathf.Max(0f, lower);
-            BuildBoardCell(c.x, c.y);
+            var root = region >= 0 && region < boardRegions.Length ? boardRegions[region] : null;
+            if (root == null) continue;
+            var tile = root.Find($"Tile {c.x},{c.y}");
+            if (tile != null) DestroyImmediate(tile.gameObject);
+            var centre = Cell(c); centre.y = transform.position.y;
+            var bottom = ArchitectureBox("Pit floor", centre + Vector3.up * .01f, new Vector3(data.cellSize, .02f, data.cellSize), material, root);
+            bottom.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            var modifier = bottom.AddComponent<NavMeshModifier>();
+            modifier.overrideArea = true; modifier.area = 1;
         }
     }
 }

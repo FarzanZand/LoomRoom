@@ -122,7 +122,10 @@ public class SlashLines : MonoBehaviour
             Vector3 a = t.TransformPoint(blade.center - axis * blade.height * .5f), b = t.TransformPoint(blade.center + axis * blade.height * .5f);
             samples.Add((Time.time, a, b));
         }
-        samples.RemoveAll(s => Time.time - s.time > Mathf.Max(trail, ribbon ? ribbonTrail : 0f) + linger);
+        float keep = Mathf.Max(trail, ribbon ? ribbonTrail : 0f) + linger;
+        int stale = 0;   // oldest first: drop them from the front, without a delegate every frame
+        while (stale < samples.Count && Time.time - samples[stale].time > keep) stale++;
+        if (stale > 0) samples.RemoveRange(0, stale);
         if (!show || samples.Count < 2)
         {
             foreach (var l in lines) l.enabled = false;

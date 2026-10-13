@@ -50,7 +50,9 @@ public sealed partial class LightingManager
 
     bool roomHeld;
     SphericalHarmonicsL2 heldProbe;
-    float heldSun;
+    float heldSun, heldRoomAmbient = 1f, appliedRoomAmbient = -1f;
+    // The held room light with Room Ambient changed since it was held.
+    float RoomAmbientNow => roomAmbient / heldRoomAmbient;
     Color heldSunColor, heldSky;
     float heldExposure;
     uint heldSunLayers;
@@ -93,6 +95,7 @@ public sealed partial class LightingManager
     {
         roomHeld = true;
         heldProbe = RenderSettings.ambientProbe;
+        heldRoomAmbient = Mathf.Max(.001f, roomAmbient);
         var sun = Sun();
         heldSun = sun != null ? sun.intensity : 0f;
         heldSunColor = sun != null ? sun.color : Color.white;
@@ -132,7 +135,7 @@ public sealed partial class LightingManager
     // renderers while a dungeon floor is dark, otherwise the scene's.
     public SphericalHarmonicsL2 AmbientFor(Renderer r)
     {
-        if (roomHeld && r != null && r.lightProbeUsage == LightProbeUsage.CustomProvided) return heldProbe * (1f - RoomDark);
+        if (roomHeld && r != null && r.lightProbeUsage == LightProbeUsage.CustomProvided) return heldProbe * ((1f - RoomDark) * RoomAmbientNow);
         return RenderSettings.ambientProbe;
     }
 
@@ -140,10 +143,10 @@ public sealed partial class LightingManager
     void ApplyRoomDark()
     {
         float d = RoomDark;
-        if (roomHeld && (Mathf.Abs(d - appliedRoomDark) > .001f || RoomTint != appliedTint))
+        if (roomHeld && (Mathf.Abs(d - appliedRoomDark) > .001f || RoomTint != appliedTint || Mathf.Abs(roomAmbient - appliedRoomAmbient) > .001f))
         {
-            appliedRoomDark = d; appliedTint = RoomTint;
-            var tinted = heldProbe * (1f - d);
+            appliedRoomDark = d; appliedTint = RoomTint; appliedRoomAmbient = roomAmbient;
+            var tinted = heldProbe * ((1f - d) * RoomAmbientNow);
             var tint = RoomTint;
             for (int channel = 0; channel < 3; channel++)
                 for (int coefficient = 0; coefficient < 9; coefficient++) tinted[channel, coefficient] *= tint[channel];
@@ -179,7 +182,7 @@ public sealed partial class LightingManager
     void ReleaseRoom()
     {
         roomHeld = false;
-        appliedRoomDark = -1f;
+        appliedRoomDark = -1f; appliedRoomAmbient = -1f;
         foreach (var (r, usage) in roomRenderers)
         {
             if (r == null) continue;

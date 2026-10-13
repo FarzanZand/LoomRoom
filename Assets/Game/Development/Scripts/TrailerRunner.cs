@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -32,6 +33,7 @@ public class TrailerRunner : MonoBehaviour
     // UI/Canvas children that stay visible in clean frames.
     public readonly HashSet<string> keep = new() { "Run recap", "Figure card", "Announcement" };
     readonly List<CanvasGroup> hidden = new();
+    readonly List<Canvas> hiddenCanvases = new();
 
     void LateUpdate()
     {
@@ -45,13 +47,17 @@ public class TrailerRunner : MonoBehaviour
                 if (g == null) g = child.gameObject.AddComponent<CanvasGroup>();
                 if (g.alpha != 0) { g.alpha = 0; if (!hidden.Contains(g)) hidden.Add(g); }
             }
-        foreach (var hud in FindObjectsByType<DungeonHud>(FindObjectsSortMode.None))
-            foreach (var c in hud.GetComponentsInChildren<Canvas>(true)) c.enabled = false;
+        foreach (var hud in FindObjectsByType<DungeonHud>())
+            foreach (var c in hud.GetComponentsInChildren<Canvas>(true))
+                if (c.enabled) { c.enabled = false; hiddenCanvases.Add(c); }
     }
 
     void Restore()
     {
         foreach (var g in hidden) if (g != null) g.alpha = 1;
         hidden.Clear();
+        foreach (var c in hiddenCanvases) if (c != null) c.enabled = true;
+        hiddenCanvases.Clear();
     }
 }
+#endif

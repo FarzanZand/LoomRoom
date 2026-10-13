@@ -113,6 +113,7 @@ MonoBehaviour:
   doorPercent: 65
   boardEdgeMaterial: {fileID: 2100000, guid: b9c4c0e160db0d6449dad9e7fafa73d9, type: 2}
   boardGridMaterial: {fileID: 0}
+  boardPitMaterial: {fileID: 2100000, guid: 5053cbb8979684f40966c88c0034318a, type: 2}
   boardTileThickness: 0.14
   boardLayerHeight: 0.32
   boardMaxRaise: 2

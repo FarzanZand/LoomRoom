@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -15,6 +16,10 @@ public class RoomEventTest : MonoBehaviour
     public static string Report => log.ToString();
     public static bool Running { get; private set; }
     const string Folder = "Temp/RoomTest";
+
+    // Statics outlive Play mode (domain reload is off): a test stopped with Play must not block the next one.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() => Running = false;
 
     public static void Run()
     {
@@ -50,6 +55,7 @@ public class RoomEventTest : MonoBehaviour
 
     void Finish()
     {
+        if (player != null) { player.Stats.RemoveAllFromSource(this); player.Stats.Heal(99999); }
         System.IO.File.WriteAllText($"{Folder}/report.txt", log.ToString());
         Running = false;
         Destroy(gameObject);
@@ -205,3 +211,4 @@ public class RoomEventTest : MonoBehaviour
         yield return Shot("ambush_done");
     }
 }
+#endif

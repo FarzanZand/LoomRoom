@@ -103,13 +103,18 @@ public static partial class ItemIconRenderer
     // ── Generating ────────────────────────────────────────────────────
 
     // Renders the item's icon and assigns it. Returns null, or why there is no icon. Custom icons are kept.
-    public static string Generate(ItemData item) { using var session = new Session(); return Generate(item, session); }
+    public static string Generate(ItemData item)
+    {
+        if (Settings == null) return "No icon settings at " + ItemIconSettings.Path + ".";
+        using var session = new Session(); return Generate(item, session);
+    }
 
     // Several items in one preview scene; shows a progress bar. Returns how many icons were made.
     public static int GenerateAll(IEnumerable<ItemData> items, List<string> problems = null)
     {
         var list = items.Where(i => i != null && !Archived(i) && !(i.iconSource != null && i.iconSource.custom)).ToList();
         int made = 0;
+        if (Settings == null) { problems?.Add("No icon settings at " + ItemIconSettings.Path + "."); return 0; }
         using var session = new Session();
         try
         {

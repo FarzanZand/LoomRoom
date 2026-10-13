@@ -38,6 +38,14 @@ public sealed partial class LightingManager : MonoBehaviour
     [ShowIf("@controlScope == Scope.WholeScene && overrideFogColor")]
     public Color fogColor = Color.gray;
 
+    [Title("Ambient light")]
+    [Range(0f, 4f), OnValueChanged(nameof(Apply))]
+    [Tooltip("Multiplies the room's ambient light (the light in unlit corners), in every mood: higher makes the room's dark less dark. 1 = as the moods have it. While no dungeon floor is dark (the intro, board levels) this is the whole scene's ambient.")]
+    public float roomAmbient = 1f;
+    [Range(0f, 4f), OnValueChanged(nameof(Apply))]
+    [Tooltip("Multiplies the ambient light on dark dungeon floors, after Dark Ambient caps it: higher makes the dungeon's dark less dark (places no torch or carried light reaches). 1 = as is.")]
+    public float dungeonAmbient = 1f;
+
     [Title("Table hand-raise reveal")]
     [Range(0f, 8f)] public float startingBrightness = 1f;
     [Range(0f, 8f)] public float revealedBrightness = 3f;
@@ -92,6 +100,8 @@ public sealed partial class LightingManager : MonoBehaviour
 
     void OnEnable()
     {
+        // The table lamp's own brightness, before the intro (which shares the lamp) turns it down.
+        if (lampBase < 0f && tableLamp != null) lampBase = tableLamp.intensity;
         Instance = this;
         EnableMoods();
         originalProbe = RenderSettings.ambientProbe;
@@ -166,7 +176,7 @@ public sealed partial class LightingManager : MonoBehaviour
         ApplyGroup(sources, brightness * (roomHeld ? 1f : roomLevel), tint * (roomHeld ? Color.white : RoomTint));
         ApplyGroup(sceneSources, sceneBrightness * roomLevel, sceneTint * RoomTint);
         if (moodActive) ApplyMood();
-        else { HoldRoom(0f); ApplyAmbient(sceneBrightness * ambientMultiplier, sceneTint, overrideFogColor); RestoreSceneFog(); }
+        else { HoldRoom(0f); ApplyAmbient(sceneBrightness * ambientMultiplier * roomAmbient, sceneTint, overrideFogColor); RestoreSceneFog(); }
         sceneApplied = true;
     }
 

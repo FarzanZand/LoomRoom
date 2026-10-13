@@ -52,8 +52,24 @@ public class FlyingEnemy : MonoBehaviour
         character.Died -= OnDied;
     }
 
-    // The body falls as it is (the death clip and the throw take it from here).
-    void OnDied() => enabled = false;
+    // The body drops from wherever it flew to the model's own height (the death clip was made there) and rights itself
+    // if it was roosting; the death clip and the throw take it from there.
+    bool falling;
+    float fallSpeed;
+    void OnDied() { falling = true; fallSpeed = 0f; brain.MovementOverride = null; }
+
+    void Fall()
+    {
+        fallSpeed += 9.81f * Time.deltaTime;
+        height = Mathf.MoveTowards(height, designHeight, fallSpeed * Time.deltaTime);
+        if (model != null)
+        {
+            var p = model.localPosition; p.y = height - designHeight; model.localPosition = p;
+            model.localRotation = Quaternion.RotateTowards(model.localRotation, modelRotation, 720f * Time.deltaTime);
+            if (Mathf.Approximately(height, designHeight) && Quaternion.Angle(model.localRotation, modelRotation) < .5f) enabled = false;
+        }
+        else enabled = false;
+    }
 
     void OnDamaged(DamageInfo info) { if (character.IsAlive) PullBack(); }
 
@@ -79,7 +95,8 @@ public class FlyingEnemy : MonoBehaviour
 
     void LateUpdate()
     {
-        if (!character.IsAlive) return;   // also before it is set up
+        if (falling) { Fall(); return; }
+        if (!character.IsAlive) return;   // before it is set up
         bool swinging = brain.IsSwinging;
         if (wasSwinging && !swinging) PullBack();
         wasSwinging = swinging;

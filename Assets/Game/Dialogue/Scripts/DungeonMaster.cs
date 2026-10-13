@@ -121,8 +121,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
         {
             var (line, delay) = queue.Dequeue();
             if (delay > 0) yield return new WaitForSecondsRealtime(delay);
-            // The label sits on the HUD canvas, which cutscenes hide: hold the line until it can be read.
-            while (GameManager.HasInstance && GameManager.Instance.State == GameState.Cutscene) yield return null;
+            // The label sits on the HUD canvas, which cutscenes and the pause menu hide: hold the line until it can be read.
+            while (GameManager.HasInstance && GameManager.Instance.State is GameState.Cutscene or GameState.Paused) yield return null;
             float speaking = Speak(line);
             float pause = speaking + .6f;
             if (line.inPerson) pause = Mathf.Max(pause, readBase + readPerWord * line.text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length);

@@ -127,7 +127,7 @@ public class DungeonMasterRemarks : MonoBehaviour
     void WatchRooms()
     {
         if (!RunOn || tablePlayer == null || !TableManager.HasInstance) return;
-        var dungeon = TableManager.Instance.GetComponent<TableLevelLoader>()?.Dungeon;
+        var dungeon = TableManager.Loader?.Dungeon;
         if (dungeon == null || dungeon.Layout == null) return;
         int room = dungeon.Layout.RoomAt(dungeon.CellOf(tablePlayer.transform.position));
         if (room == lastRoom || room < 0) return;
@@ -276,7 +276,7 @@ public class DungeonMasterRemarks : MonoBehaviour
         yield return null;
         if (progress == null || progress.selectedClass == null || save == null || !RunManager.HasInstance || IntroController.PracticeRunning) yield break;
         if (RunManager.Instance.Floor > 1 || RunManager.Instance.Seconds > 0) yield break;
-        var loader = TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+        var loader = TableManager.Loader;
         if (loader != null && loader.Resumed) yield break; // continuing, not picking
         var memorials = save.Saved.memorials;
         int count = memorials.Count(m => m.classId == progress.selectedClass.id);

@@ -114,11 +114,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (equippedHighlight != null)
         {
             var eq = Owner != null ? Owner.Equipment : null;
-            equippedHighlight.gameObject.SetActive(item != null && eq != null && eq.IsEquipped(item) && !GridCell);
+            equippedHighlight.gameObject.SetActive(item != null && !GridCell && HeldSlot(eq, Container, Index).HasValue);
         }
         if(!useAuthoredAppearance && dungeonStyled && dungeonFrame!=null)
         {
-            bool equipped=item!=null && Owner?.Equipment!=null && Owner.Equipment.IsEquipped(item);
+            bool equipped=item!=null && HeldSlot(Owner?.Equipment, Container, Index).HasValue;
             dungeonFrame.color=equipped ? equippedFrameColor:frameColor;
         }
     }
@@ -149,7 +149,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void OnPointerClick(PointerEventData e)
     {
         if (Item == null) return;
-        if (e.button == PointerEventData.InputButton.Right) ShowContextMenu();
+        if (e.button == PointerEventData.InputButton.Right) { if (!ToggleEquip()) ShowContextMenu(); }
         else if (e.button == PointerEventData.InputButton.Left && !e.dragging && e.clickCount == 2)
             ActivateItem();
     }
@@ -168,7 +168,23 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
                 InventoryManager.Instance.UseHeld(owner, item.equipSlot);
             else InventoryManager.Instance.Use(Container, Anchor);
         }
-        else if (eq != null && eq.CanEquip(item) && !eq.IsEquipped(item)) eq.Equip(item);
+        else if (eq != null && eq.CanEquip(item) && !HeldSlot(eq, Container, Anchor).HasValue) eq.Equip(item);
+    }
+
+    // Right-click on gear: puts it on (a worn item from the bag replaces what is worn), or takes it off when this copy
+    // is the one in hand. False for anything that can't be equipped, which gets the actions menu instead.
+    bool ToggleEquip()
+    {
+        var item = Item;
+        var owner = Owner;
+        var eq = owner != null ? owner.Equipment : null;
+        if (item == null || eq == null || !owner.IsAlive || !item.canBeEquipped || item.IsConsumable) return false;
+        if (ContextMenuUI.HasInstance) ContextMenuUI.Instance.Hide();
+        if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
+        var held = HeldSlot(eq, Container, Anchor);
+        if (held.HasValue) eq.TryUnequip(held.Value);
+        else if (!eq.CanEquip(item) || !eq.Equip(item)) Refuse(null);
+        return true;
     }
 
     void ShowContextMenu()
@@ -186,8 +202,10 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
         if (eq != null && eq.CanEquip(item))
         {
-            if (eq.IsEquipped(item)) options.Add(("Unequip", () => { if (Unchanged()) eq.Unequip(item); }));
-            else                     options.Add(("Equip",   () => { if (Unchanged()) eq.Equip(item); }));
+            // Only the copy in hand is equipped; a worn item has left the bag, so any copy here is a spare.
+            var held = HeldSlot(eq, container, index);
+            if (held.HasValue) options.Add(("Unequip", () => { if (Unchanged()) eq.TryUnequip(held.Value); }));
+            else               options.Add(("Equip",   () => { if (Unchanged()) eq.Equip(item); }));
         }
 
         if (item.IsConsumable && !item.canBeEquipped)

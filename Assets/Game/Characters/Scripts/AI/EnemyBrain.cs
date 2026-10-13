@@ -344,13 +344,22 @@ public class EnemyBrain : MonoBehaviour
         if (Profile.aggressionMode == AggressionMode.AggressiveWhenHit && Perception.Target != null)
             EnterCombat();
         else if (Profile.aggressionMode != AggressionMode.Passive)
-            StartInvestigate(Perception.StimulusPosition);
+            // A hit with no attacker (spikes, a fall) has nothing to follow: look where it hurt, not at an old noise.
+            StartInvestigate(info.Source != null && Perception.HasStimulus ? Perception.StimulusPosition : info.HitPoint != Vector3.zero ? info.HitPoint : transform.position);
     }
 
     void CancelAttack() => attackRunner?.Cancel();
 
     void OnDied()
     {
+        // Killed in its sleep (the first blow was enough): no more snoring, and a slowed rig plays its death at speed.
+        // A humanoid keeps its Asleep pose; the ragdoll takes it from there.
+        if (Asleep)
+        {
+            Asleep = false;
+            var anim = Character.Animator;
+            if (anim != null && anim.runtimeAnimatorController != null && !Character.HasParameter(anim, "Asleep", AnimatorControllerParameterType.Bool)) anim.speed = 1f;
+        }
         CancelAttack();
         Motor.Stop();
         Motor.ClearLookTarget();
@@ -358,7 +367,12 @@ public class EnemyBrain : MonoBehaviour
         SetHoldingBow(false);
         if (Motor.Agent != null) Motor.Agent.enabled = false;
         foreach (var col in GetComponents<Collider>()) col.enabled = false;
+        // Bodies stay for the floor: they stop listening at once, and stop moving once a knockback has played out.
+        if (Perception != null) Perception.enabled = false;
+        Invoke(nameof(StillBody), 1f);
     }
+
+    void StillBody() { if (Motor != null && !Character.IsAlive) Motor.enabled = false; }
 
     // ── Passive states ────────────────────────────────────────────────
 

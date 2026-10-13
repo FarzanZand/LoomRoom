@@ -119,7 +119,7 @@ public static class TrailerShots
     {
         var p = Player;
         if (p == null) return null;
-        return UnityEngine.Object.FindObjectsByType<EnemyBrain>(FindObjectsSortMode.None)
+        return UnityEngine.Object.FindObjectsByType<EnemyBrain>()
             .Where(e => e != null && e.isActiveAndEnabled && e.GetComponent<Character>() is Character c && c.Stats != null && c.Stats.IsAlive)
             .OrderBy(e => (e.transform.position - p.transform.position).sqrMagnitude)
             .FirstOrDefault(e => (e.transform.position - p.transform.position).magnitude <= maxDistance);

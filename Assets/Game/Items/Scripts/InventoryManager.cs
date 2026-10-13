@@ -92,7 +92,7 @@ public class InventoryManager : Singleton<InventoryManager>
         ItemEffectProcessor.Fire(item, EffectTrigger.OnPickup, EffectContext.For(player, item));
 
         if (allowEquipOnPickup && item.equipOnPickup && player.Equipment != null &&
-            player.Equipment.CanEquip(item) && !player.Equipment.Has(item.equipSlot) && !(Equipment.IsTrinket(item.equipSlot) && player.Equipment.Has(EquipmentSlot.Trinket2)))
+            player.Equipment.CanEquip(item) && !player.Equipment.Has(player.Equipment.SlotFor(item)))   // a trinket takes whichever trinket slot is free
             player.Equipment.Equip(item, playSound);
 
         if (announcePickup) ItemPickedUp?.Invoke(item, player, count);
@@ -178,7 +178,7 @@ public class InventoryManager : Singleton<InventoryManager>
         Vector3 forward = player.Look != null ? player.Look.YawTransform.forward : t.forward;
         var pos = t.position + forward * dropDistance + Vector3.up * dropHeight;
         var pickup = Spawn(item, pos);
-        var level = TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+        var level = TableManager.Loader;
         if (pickup != null && player.kind == PlayerKind.Table && level != null && level.Dungeon != null)
             pickup.transform.SetParent(level.Dungeon.transform, true);
         return pickup;

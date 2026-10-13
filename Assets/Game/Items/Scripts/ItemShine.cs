@@ -3,6 +3,7 @@ using UnityEngine;
 // Authored on the model prefab; uses per-renderer properties without material instances.
 public class ItemShine : MonoBehaviour
 {
+    static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
     public Renderer[] surfaces;
     public Transform glint;
     Vector3 glintScale;
@@ -20,7 +21,7 @@ public class ItemShine : MonoBehaviour
         {
             if (surface == null) continue;
             surface.GetPropertyBlock(properties);
-            properties.SetColor("_EmissionColor", shineColor * (strength * pulse));
+            properties.SetColor(EmissionColorId, shineColor * (strength * pulse));
             surface.SetPropertyBlock(properties);
         }
     }

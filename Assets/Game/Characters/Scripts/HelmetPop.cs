@@ -59,7 +59,7 @@ public class HelmetPop : MonoBehaviour
         Vector3 away = info.Direction.sqrMagnitude > .001f ? info.Direction : -transform.forward;
         rb.linearVelocity = away * 2.5f + info.SwingDirection * 1.5f + Vector3.up * 3.2f;
         rb.angularVelocity = Random.insideUnitSphere * 14f;
-        foreach (var p in FindObjectsByType<Player>(FindObjectsSortMode.None))
+        foreach (var p in FindObjectsByType<Player>())
             foreach (var c in p.GetComponentsInChildren<Collider>()) Physics.IgnoreCollision(box, c);
     }
 

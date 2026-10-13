@@ -140,7 +140,8 @@ public class DeathBurst : MonoBehaviour
             {
                 var g = GroupFor(tris[i]);
                 if (!groups.TryGetValue(g, out var lists)) groups[g] = lists = new List<int>[source.subMeshCount];
-                (lists[sub] ??= new List<int>()).AddRange(new[] { tris[i], tris[i + 1], tris[i + 2] });
+                var list = lists[sub] ??= new List<int>();
+                list.Add(tris[i]); list.Add(tris[i + 1]); list.Add(tris[i + 2]);
             }
         }
 

@@ -92,15 +92,15 @@ public static class PixelLookBuilder
         finally { AssetDatabase.StopAssetEditing(); }
 
         library.entries = existing.Values.OrderBy(e => e.category).ThenBy(e => e.pixel.name).ToList();
-        library.Rebuild();
         EditorUtility.SetDirty(library);
         AssetDatabase.SaveAssets();
 
         if (ScreenManager.HasInstance && ScreenManager.Instance.pixelLookLibrary == null)
         {
-            Undo.RecordObject(WorldManager.Instance, "Assign Pixel Look Library");
+            Undo.RecordObject(ScreenManager.Instance, "Assign Pixel Look Library");
             ScreenManager.Instance.pixelLookLibrary = library;
-            EditorUtility.SetDirty(WorldManager.Instance);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(ScreenManager.Instance);
+            EditorUtility.SetDirty(ScreenManager.Instance);
         }
         string report = $"Pixel Look: {created} created, {updated} kept, {library.entries.Count} pairs.";
         Debug.Log(report, library);

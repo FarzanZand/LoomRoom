@@ -64,6 +64,15 @@ Flat props (swords, knives, maces, shields, planks, signs) are painted straight 
    regenerate if the painter moved or reshaped it.
 3. **Project**: `PixelRestyle.BuildPainted("<ItemData path>", "<Synty prefab path>", "<Name>")` projects the paintings onto
    fresh UVs at the fixed item density and swaps the item's prefab to the result (`Art/Synty Pixel/{Weapons,Shields}/`).
+   What the projection does about the painting's edges (all three were missing on the first weapon batch, 2026-10-12, and
+   the user found them on the Bronze Shield and Bronze Mace in hand, 2026-10-13):
+   - **Background remap** (`NearestPainted`): a sample that lands outside the painted silhouette takes the nearest painted
+     pixel, never the grey background (grey bands round grips and rims).
+   - **Edge peel**: the painter's dark outline (up to 12 pixels deep, it is often a whole painted pixel thick) and its thin
+     plain-grey fringe count as background, or rims pick up black notches and grey specks.
+   - **Edge-on faces unfold**: a face nearly edge-on to the view (a shield's rim, a blade's or shaft's sides) samples further
+     inward the deeper it lies, so it shows the painted band just inside the outline instead of one pixel streaked across.
+   Any change to this code means rebuilding **every** item made with it (`Temp/Paint/list.txt`) and reviewing them all again.
 4. Rounder props (barrels, pots, chests) need more views; until that exists, paint the side view and project around the axis.
 
 ## Pixel size: identical across everything (128 texels per metre)
@@ -105,7 +114,17 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
   to get painted detail); background grey or the painter's black outline on edges; wrong material (a top painted as stone
   where it is earth); seams where two views meet; unpainted bottoms that can be seen in game.
 - Check the review image is new (its file time is after the build) before judging it: an editor call can fail
-  quietly and leave the last render in place.
+  quietly and leave the last render in place. The same goes for builds: read `Temp/Paint/build.log` for a line per item
+  with the time of this run (a locked texture file fails one item and the old one stays).
+- **These rules cover weapons, shields and items too, not only props.** The first weapon and shield batch was judged
+  only from a whole-row preview and in-hand views, where the rims are a few screen pixels: streaked rims, black outline
+  notches and grey bands all passed and the user found them in game. Turntable every item; look hardest at the
+  **edge-on view** (third column of the turntable) and the three-quarter views, where rims, blade sides and the sides of
+  a shaft face the camera.
+- Compare each texture with its painting: a colour on the model that the painting doesn't have (plain grey, black,
+  pinkish grey) came from the background or the outline, not the painter.
+- When a review turns up a pipeline defect, fix the pipeline, then rebuild and re-review everything that pipeline made,
+  not only the item that was reported.
 - Five-view sheet projection (`PixelRestyle.PaintedProps.cs`) only suits blocky props made of large faces (barrels,
   crates, chests, pots, fountains). On organic or intricate models (the gargoyle, carved table legs, chairs, books on
   shelves) every view covers only a sliver of each surface, and the result is camouflage-like noise, black outline

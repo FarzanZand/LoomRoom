@@ -47,34 +47,6 @@ public class PixelLookLibrary : ScriptableObject
     [Tooltip("Materials Build Materials leaves alone: they keep drawing as they are. For fine printed artwork, like the board's grid, that stripes when point-sampled.")]
     public List<Material> excluded = new();
 
-    Dictionary<Material, Entry> byOriginal;
-    Dictionary<Material, Material> toOriginal;
-
-    public void Rebuild()
-    {
-        byOriginal = new Dictionary<Material, Entry>();
-        toOriginal = new Dictionary<Material, Material>();
-        foreach (var e in entries)
-        {
-            if (e.original == null || e.pixel == null) continue;
-            byOriginal[e.original] = e;
-            toOriginal[e.pixel] = e.original;
-        }
-    }
-
-    public Entry EntryFor(Material original)
-    {
-        if (byOriginal == null) Rebuild();
-        return original != null && byOriginal.TryGetValue(original, out var e) ? e : null;
-    }
-
-    public Material OriginalFor(Material pixel)
-    {
-        if (toOriginal == null) Rebuild();
-        return pixel != null && toOriginal.TryGetValue(pixel, out var m) ? m : null;
-    }
-
-    void OnValidate() { byOriginal = null; toOriginal = null; }
 
     // ── Pixel lighting ───────────────────────────────────────────────
     // The game's own materials switched between their own shader and LoomRoom/Pixel Lit in place (ScreenManager >

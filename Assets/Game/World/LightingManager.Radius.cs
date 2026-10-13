@@ -16,6 +16,11 @@ public sealed partial class LightingManager
     public float lightRadiusEdge = 2.5f;
     [ShowIf(nameof(lightRadius)), Range(0f, 1f), Tooltip("Share of the ambient left beyond the edge (0 = black where no lamp reaches).")]
     public float lightRadiusFloor = .3f;
+    [ShowIf(nameof(lightRadius)), Tooltip("The table player's own lights (the fill over the head and the key light) also fade out by the radius plus its edge, so the dark starts where the radius says (Heathen's circle of light). Off, they reach as far as they are set to (about 12 m) and the radius only takes the faint ambient out of the far dark.")]
+    public bool radiusDimsPlayerLights = true;
+
+    // How far the table player's carried lights may reach across the floor now (metres; 0 = as authored).
+    public static float CarriedLightReach { get; private set; }
 
     [Title("Lamp shadows")]
     [Min(0), Tooltip("Only this many of the floor's lamps (torches, braziers, candles) nearest the player cast shadows; the rest light without them. A shadowed point light draws the scene six times.")]
@@ -31,10 +36,11 @@ public sealed partial class LightingManager
     // The floor's own lamps keep their authored shadows only while they are among the nearest few.
     void ApplyShadowBudget(Vector3 eye)
     {
-        if (Time.unscaledTime < nextShadowBudget) return;
-        nextShadowBudget = Time.unscaledTime + shadowBudgetSeconds;
-        var loader = TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+        var loader = TableManager.Loader;
         var dungeon = loader != null ? loader.Dungeon : null;
+        // A new floor is budgeted at once, before its first frame draws every lamp's shadows.
+        if (dungeon == lampsOf && Time.unscaledTime < nextShadowBudget) return;
+        nextShadowBudget = Time.unscaledTime + shadowBudgetSeconds;
         if (dungeon != lampsOf)
         {
             foreach (var pair in lampShadows) if (pair.Key != null) pair.Key.shadows = pair.Value;
@@ -43,7 +49,8 @@ public sealed partial class LightingManager
         if (dungeon == null) return;
         lamps.Clear();
         found.Clear();
-        dungeon.GetComponentsInChildren(found);
+        // Lamps in rooms not dealt in yet count too, so they light up already within the budget.
+        dungeon.GetComponentsInChildren(true, found);
         foreach (var l in found)
         {
             if (!lampShadows.ContainsKey(l)) lampShadows[l] = l.shadows;
@@ -69,6 +76,7 @@ public sealed partial class LightingManager
         if (!lightRadius || dark <= 0f || cam == null || !Application.isPlaying)
         {
             Shader.SetGlobalVector(LightRadiusId, Vector4.zero);
+            CarriedLightReach = 0f;
             return;
         }
         float radius = biome != null && biome.lightRadius > 0f ? biome.lightRadius : lightRadiusMetres;
@@ -80,12 +88,14 @@ public sealed partial class LightingManager
         Shader.SetGlobalVector(LightRadiusId, new Vector4(centre.x, centre.y, centre.z, radius));
         // Partway into the darkness (a mood blending in) the floor rises towards full ambient.
         Shader.SetGlobalVector(LightRadiusEdgeId, new Vector4(edge, Mathf.Lerp(1f, floor, dark), 0f, 0f));
+        // Partway into the darkness the carried lights reach out further, back to their own range.
+        CarriedLightReach = radiusDimsPlayerLights ? (radius + edge) / Mathf.Max(.05f, dark) : 0f;
     }
 
     // The biome of the dungeon floor being played, if any.
     public static DungeonBiome CurrentBiome()
     {
-        var loader = TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+        var loader = TableManager.Loader;
         var dungeon = loader != null ? loader.Dungeon : null;
         return dungeon != null ? dungeon.Biome : null;
     }

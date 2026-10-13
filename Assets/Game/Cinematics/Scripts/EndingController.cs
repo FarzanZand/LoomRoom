@@ -45,10 +45,13 @@ public class EndingController : MonoBehaviour
     // From the victory recap.
     public void Play()
     {
-        var loader = TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+        var loader = TableManager.Loader;
         if (loader != null) StartCoroutine(TableManager.ReturnToRoom(loader, Begin, context: this));
         else Begin();
     }
+
+
+    RoomExitMode exitBefore = RoomExitMode.LoopRooms;   // the room's way out before the ending, given back after
 
     void Begin()
     {
@@ -59,6 +62,7 @@ public class EndingController : MonoBehaviour
         if (lighting != null) { night = lighting.Capture(); if (mood != null) lighting.BlendToMood(mood, 0f); }
         if (WorldManager.HasInstance)
         {
+            exitBefore = WorldManager.Instance.roomExit;
             WorldManager.Instance.SetRoomExit(RoomExitMode.LockOneDoor);
             if (WorldManager.Instance.apartmentDoor != null) WorldManager.Instance.apartmentDoor.SetOpen(true);
             if (WorldManager.Instance.wakeUpCutscene != null) WorldManager.Instance.wakeUpCutscene.Play(false);
@@ -97,7 +101,7 @@ public class EndingController : MonoBehaviour
         if (WorldManager.HasInstance)
         {
             if (WorldManager.Instance.apartmentDoor != null) WorldManager.Instance.apartmentDoor.SetOpen(false);
-            WorldManager.Instance.SetRoomExit(RoomExitMode.LoopRooms);
+            WorldManager.Instance.SetRoomExit(exitBefore);
         }
         if (lighting != null) lighting.Restore(night, 0f);
         if (dungeonMaster != null) dungeonMaster.SetActive(true);

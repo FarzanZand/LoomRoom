@@ -49,7 +49,7 @@ public class ItemIconSettings : ScriptableObject
     public Color outline = new(.07f, .05f, .04f, 1f);
     [Tooltip("Edge pixels keep their coverage as transparency (smooth edges) instead of being cut hard at Alpha Cut.")]
     public bool softEdges = true;
-    public enum Sampling { Dominant, Average }
+    public enum Sampling { Dominant = 0, Average = 1 }
     [Tooltip("Dominant: each pixel takes the colour most of its block shares, so texels stay crisp. Average: the block's mean, softer.")]
     public Sampling sampling = Sampling.Dominant;
     [Tooltip("Pushes each pixel away from its neighbours' average: crisper edges between colours.")]

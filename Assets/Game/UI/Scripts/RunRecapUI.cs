@@ -29,7 +29,7 @@ public class RunRecapUI : MonoBehaviour
     Vector2? returnPosition;
     Tween fade;
 
-    static TableLevelLoader Loader => TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+    static TableLevelLoader Loader => TableManager.Loader;
 
     void Awake()
     {

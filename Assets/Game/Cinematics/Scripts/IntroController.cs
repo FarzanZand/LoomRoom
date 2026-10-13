@@ -160,7 +160,7 @@ public partial class IntroController : Singleton<IntroController>
         if (save != null) save.Initialize();
         // Played once: a game that got as far as the practice death starts with the mornings.
         if (room == null || Flag(RoomOpenFlag) || Flag(IntroFlag)) return false;
-        loader = TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+        loader = TableManager.Loader;
         if (loader == null || introDungeon == null) return false;
 
         running = true;

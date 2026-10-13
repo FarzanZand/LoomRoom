@@ -33,6 +33,16 @@ public static class PixelLitConvert
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (m == null || known.Contains(m) || skip.Contains(m)) continue;
             var original = m.shader; int queue = m.rawRenderQueue;
+            // Made straight on Pixel Lit (the room styles, painted props): the smooth side is URP Lit, which reads the
+            // same base map, colour, alpha clip and emission. Without an entry they stayed banded with pixel lighting off.
+            if (m.shader.name == PixelLit)
+            {
+                if (m.renderQueue > 2500) { skipped++; continue; }
+                AddSmoothSide(m);
+                lib.lighting.Add(new PixelLookLibrary.LitEntry { material = m, original = Shader.Find(SmoothLit), originalQueue = queue, pixelQueue = queue });
+                added++;
+                continue;
+            }
             if (!Convert(m)) { skipped++; continue; }
             lib.lighting.Add(new PixelLookLibrary.LitEntry { material = m, original = original, originalQueue = queue, pixelQueue = m.rawRenderQueue });
             m.shader = original; m.renderQueue = queue; EditorUtility.SetDirty(m);
@@ -80,7 +90,7 @@ public static class PixelLitConvert
         }
 
         var roots = LightingManager.Instance != null ? LightingManager.Instance.roomRoots : new Transform[0];
-        foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include))
         {
             if (EditorUtility.IsPersistent(r)) continue;
             bool room = false; foreach (var root in roots) if (root != null && r.transform.IsChildOf(root)) { room = true; break; }
@@ -114,6 +124,20 @@ public static class PixelLitConvert
     const float MinTexels = 8f;
 
     static float Median(List<float> v) { v.Sort(); return v[v.Count / 2]; }
+
+    const string SmoothLit = "Universal Render Pipeline/Lit";
+
+    // What URP Lit needs on a Pixel Lit material to draw it the same way, smooth: matte, and its emission switched on.
+    static void AddSmoothSide(Material m)
+    {
+        Undo.RecordObject(m, "Pixel lighting");
+        m.SetFloat("_Smoothness", 0f); m.SetFloat("_Metallic", 0f);
+        bool clip = m.HasProperty("_AlphaClip") && m.GetFloat("_AlphaClip") > .5f;
+        if (clip) m.EnableKeyword("_ALPHATEST_ON");
+        var emission = m.HasProperty("_EmissionColor") ? m.GetColor("_EmissionColor") : Color.black;
+        if (emission.maxColorComponent > 0f) m.EnableKeyword("_EMISSION");
+        EditorUtility.SetDirty(m);
+    }
 
     public static bool Convert(Material m)
     {

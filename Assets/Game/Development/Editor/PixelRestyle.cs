@@ -66,7 +66,7 @@ public static partial class PixelRestyle
         Physics.SyncTransforms();
         int SW = W * Super; var col = new Color[SW * SW]; var emi = new Color[SW * SW]; var cov = new bool[SW * SW]; bool anyEmission = false;
         var rng = new System.Random(src.name.GetHashCode());
-        var dirs = new Vector3[AoRays]; for (int i = 0; i < AoRays; i++) dirs[i] = Random.onUnitSphere;
+        var dirs = new Vector3[AoRays];
         for (int i = 0; i < AoRays; i++) { float u = (float)rng.NextDouble(), v = (float)rng.NextDouble(); float th = 2 * Mathf.PI * u, ph = Mathf.Acos(2 * v - 1); dirs[i] = new Vector3(Mathf.Sin(ph) * Mathf.Cos(th), Mathf.Cos(ph), Mathf.Sin(ph) * Mathf.Sin(th)); }
         float aoDist = Mathf.Clamp(size * .08f, .015f, .3f);
 
@@ -123,6 +123,7 @@ public static partial class PixelRestyle
             }
         }
         Object.DestroyImmediate(probe); Object.DestroyImmediate(colMesh);
+        foreach (var copy in palettes.Values) Object.DestroyImmediate(copy);   // readable copies of the source atlases
 
         // Down to the final size (each texel the average of its Super x Super area), then pad the islands.
         var outC = new Color[W * W]; var outE = new Color[W * W]; var outCov = new bool[W * W];
@@ -177,13 +178,6 @@ public static partial class PixelRestyle
         EditorUtility.SetDirty(mesh);
     }
 
-    // Whether a restyle mesh was made from this source: same bind poses (skinned) or the same bounds (static).
-    static bool SameSource(Mesh built, Mesh src)
-    {
-        if (src.bindposes.Length > 0) return built.bindposes.Length == src.bindposes.Length && built.boneWeights.Length > 0 && (built.bounds.size - src.bounds.size).magnitude < src.bounds.size.magnitude * .05f;
-        return (built.bounds.size - src.bounds.size).magnitude < src.bounds.size.magnitude * .05f;
-    }
-
     // ── Shading ───────────────────────────────────────────────────────────
 
     static float AmbientOcclusion(Vector3 p, Vector3 n, Vector3[] dirs, float dist)
@@ -236,32 +230,8 @@ public static partial class PixelRestyle
         }
         // Dirt settles in the creases: darker and a little brown where little light gets in.
         var dirt = new Color(.16f, .12f, .09f);
-        if (Dirt > 0f)
-        {
-            // The dirty pixel style (Docs/Pixel-texture-style.md): blotchy stains, grime caked in the creases,
-            // chipped bright edges, harder per-texel speckle, more rust on iron.
-            float stain = Mathf.Clamp01((Fbm(p * 9f * s * 3f + new Vector3(31f, 7f, 3f), 3) - .52f) * 4f);
-            baseC = Color.Lerp(baseC, baseC * new Color(.55f, .47f, .36f), stain * .65f * Dirt);
-            if (kind == Kind.Metal)
-            {
-                float rust = Mathf.Clamp01((Fbm(p * 18f, 3) - .5f) * 5f);
-                baseC = Color.Lerp(baseC, new Color(.4f, .22f, .11f), rust * .55f * Dirt);
-            }
-            m += fine * .35f * Dirt + mottle * .25f * Dirt;
-            grime = Mathf.Pow(grime, 1f + 1.2f * Dirt);
-            dirt = Color.Lerp(dirt, new Color(.09f, .07f, .05f), Dirt);
-        }
         var c = baseC * Mathf.Clamp(m, .45f, 1.5f);
         c = Color.Lerp(dirt, c, .3f + .7f * grime);
-        if (Dirt > 0f)
-        {
-            // Raised edges catch the wear: a few lighter texels where the surface is open and the noise says chipped.
-            float chip = Mathf.Clamp01((Fbm(p * 40f + new Vector3(3f, 11f, 5f), 2) - .62f) * 6f) * Mathf.Clamp01((ao - .8f) * 5f);
-            c = Color.Lerp(c, c * 1.45f + new Color(.06f, .05f, .04f), chip * .7f * Dirt);
-            // Stepped colour, like hand-placed pixels rather than a smooth ramp.
-            float steps = Mathf.Lerp(256f, 18f, Dirt);
-            c.r = Mathf.Round(c.r * steps) / steps; c.g = Mathf.Round(c.g * steps) / steps; c.b = Mathf.Round(c.b * steps) / steps;
-        }
         c.r = Mathf.Clamp01(c.r); c.g = Mathf.Clamp01(c.g); c.b = Mathf.Clamp01(c.b); c.a = 1f;
         return c;
     }

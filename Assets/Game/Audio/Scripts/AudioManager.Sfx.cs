@@ -100,6 +100,8 @@ public partial class AudioManager
     AudioSource Play(List<AudioSource> pool, AudioClip clip, float volume, float pitch, Vector3? position)
     {
         if (clip == null) return null;
+        // UI sounds (the DM's voice, menu clicks) always play; sound effects are limited per clip.
+        if (pool == sfxPool && TooMany(pool, clip)) return null;
         var src = ClaimSource(pool);
         if (position.HasValue) src.transform.position = position.Value;
         src.clip         = clip;

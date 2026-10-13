@@ -65,15 +65,20 @@ for z in (.35, 1.4, 2.42):
         for k in range(7):
             x = -W / 2 + .12 + k * (W - .24) / 6
             box(bm, x, side * (T / 2 + strap_t + .008), z, .035, .016, .035)
-# Ring pulls: a plate and a square ring, both faces.
+# Ring pulls: a plate and a square ring hanging on it, both faces, on the outermost plank at the free edge (inside the
+# plank, clear of the gaps either side). The FBX export flips x, and the door's hinge in Unity is at leaf x = -1, so the
+# pulls are at Blender x = -.855 (Unity x = +.855, the middle of the plank from .69 to 1.02). Their faces are mapped by
+# hand to patches painted at 128 texels per metre in the iron texture's free corner (see the 2026-10-13 door fix); a
+# re-export needs that mapping again.
+hx, hz, k = -.855, 1.15, 1.5          # k: the pulls were made 50% bigger
 for side in (-1, 1):
-    y = side * (T / 2 + .01)
-    box(bm, .62, y, 1.15, .12, .02, .12)
-    r, th = .09, .022
-    yy = side * (T / 2 + .035)
-    box(bm, .62, yy, 1.15 - r, r * 2, th, th)
-    box(bm, .62 - r, yy, 1.15 - r / 2, th, th, r)
-    box(bm, .62 + r, yy, 1.15 - r / 2, th, th, r)
+    y = side * (T / 2 + .01 * k)
+    box(bm, hx, y, hz, .12 * k, .02 * k, .12 * k)
+    r, half, th = .09 * k, .045 * k, .022 * k     # the ring is narrower than the plate, so its sides hang from it
+    yy = side * (T / 2 + .035 * k)
+    box(bm, hx, yy, hz - r, (half + th / 2) * 2, th, th)
+    box(bm, hx - half, yy, hz - r / 2, th, th, r)
+    box(bm, hx + half, yy, hz - r / 2, th, th, r)
 iron = obj("Door iron", bm, material("Door iron", (.17, .17, .18)))
 
 bpy.ops.object.select_all(action="DESELECT")

@@ -183,13 +183,13 @@ MonoBehaviour:
   torchBrightness: 1
   enemies:
   - enemy: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
-    weight: 1.5
+    weight: 3
     fromFloor: 1
   - enemy: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
-    weight: 0.8
+    weight: 1
     fromFloor: 1
   - enemy: {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
-    weight: 1
+    weight: 2
     fromFloor: 1
   - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
     weight: 1
@@ -198,10 +198,10 @@ MonoBehaviour:
     weight: 1
     fromFloor: 1
   - enemy: {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
-    weight: 1.2
+    weight: 1
     fromFloor: 1
   - enemy: {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
-    weight: 0.8
+    weight: 2
     fromFloor: 1
   encounterChance: {x: 0.75, y: 0.8}
   minEnemiesPerRoom: 2

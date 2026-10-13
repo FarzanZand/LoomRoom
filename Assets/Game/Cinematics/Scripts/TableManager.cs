@@ -42,6 +42,16 @@ public class TableManager : Singleton<TableManager>, IInteractable
         || (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking);
 
     TableLevelLoader loader;
+    /// <summary>The table's level loader, or null when there is no table.</summary>
+    public static TableLevelLoader Loader
+    {
+        get
+        {
+            if (!HasInstance) return null;
+            var found = Instance.loader != null ? Instance.loader : Instance.GetComponent<TableLevelLoader>();
+            return found != null ? found : null;   // a real null, so ?. is safe
+        }
+    }
     TableLevelMenu menu;
     Coroutine sitting;
     Player sittingPlayer;

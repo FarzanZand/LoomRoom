@@ -12,7 +12,8 @@ public class DungeonStaticGeometry : MonoBehaviour
         foreach(var filter in root.GetComponentsInChildren<MeshFilter>()) {
             var renderer=filter.GetComponent<MeshRenderer>();
             if(renderer==null || !renderer.enabled || filter.sharedMesh==null || !filter.sharedMesh.isReadable || filter.sharedMesh.subMeshCount!=1 || renderer.sharedMaterials.Length!=1 || renderer.sharedMaterial==null)continue;
-            if(filter.GetComponentInParent<Animator>()!=null || filter.GetComponentInParent<Rigidbody>()!=null || filter.GetComponentInParent<DungeonContainer>()!=null)continue;
+            if(filter.GetComponentInParent<Animator>()!=null || filter.GetComponentInParent<Rigidbody>()!=null || filter.GetComponentInParent<DungeonContainer>()!=null
+               || filter.GetComponentInParent<DungeonDestructible>()!=null)continue;   // a merged breakable would stay drawn once broken
             var p=root.InverseTransformPoint(filter.transform.position);
             var key=(renderer.sharedMaterial,Mathf.FloorToInt(p.x/chunkSize),Mathf.FloorToInt(p.z/chunkSize));
             if(!groups.TryGetValue(key,out var list)){list=new List<MeshFilter>();groups.Add(key,list);}list.Add(filter);

@@ -44,8 +44,15 @@ public partial class AudioManager : Singleton<AudioManager>
     [SerializeField] private AudioMixer mixer;
 
     [Header("Pool")]
-    [SerializeField, Min(4)]  private int sfxPoolSize = 20;
+    [SerializeField, Min(4), Tooltip("Sound effects that can play at once. A fight easily has 20 going (footsteps, whooshes, hits, gore, voices); past this the quietest one is cut. Keep it and the UI pool under Project Settings > Audio > Real Voice Count with room for music, ambience and loops.")]
+    private int sfxPoolSize = 48;
     [SerializeField, Min(2)]  private int uiPoolSize  = 8;
+    [SerializeField, Min(1), Tooltip("Copies of one clip that can play at once (five footsteps or whooshes in a frame would fill the pool).")]
+    private int maxSameClip = 3;
+    [SerializeField, Min(0f), Tooltip("A clip that started this recently (seconds) isn't started again: the copies would only stack into one louder sound.")]
+    private float sameClipGap = .05f;
+    [SerializeField, Tooltip("Editor and development builds: log a warning when a playing sound is cut to make room.")]
+    private bool logCutSounds = true;
     [Header("Default spatial SFX range")]
     [SerializeField, Min(.01f), Tooltip("Full volume within this distance. Keeps nearby interactions audible.")]
     float sfxMinDistance = 3.5f;
@@ -239,16 +246,55 @@ public partial class AudioManager : Singleton<AudioManager>
         foreach (var s in pool)
             if (!s.isPlaying) return ResetAttenuation(s);
 
+        // All busy: cut the one heard least (quiet or far away, distant footsteps first), so hits and kills play out.
+        var listener = Listener();
         AudioSource steal = pool[0];
-        float lowestRemaining = float.MaxValue;
+        float lowest = float.MaxValue;
         foreach (var s in pool)
         {
             if (s.clip == null) return ResetAttenuation(s);
-            float remaining = s.clip.length - s.time;
-            if (remaining < lowestRemaining) { lowestRemaining = remaining; steal = s; }
+            float heard = Audibility(s, listener);
+            if (heard < lowest) { lowest = heard; steal = s; }
+        }
+        if (logCutSounds && Debug.isDebugBuild && Time.unscaledTime >= nextCutLog)
+        {
+            nextCutLog = Time.unscaledTime + 1f;
+            Debug.LogWarning($"[AudioManager] All {pool.Count} sources busy: cut '{steal.clip.name}' ({steal.time:0.00} of {steal.clip.length:0.00} s) to make room.");
         }
         steal.Stop();
         return ResetAttenuation(steal);
+    }
+
+    float nextCutLog;
+    AudioListener listenerCache;
+
+    AudioListener Listener()
+    {
+        if (listenerCache == null || !listenerCache.isActiveAndEnabled) listenerCache = FindAnyObjectByType<AudioListener>();
+        return listenerCache;
+    }
+
+    // Roughly how loud a playing source is at the listener (its volume through a logarithmic rolloff).
+    static float Audibility(AudioSource s, AudioListener listener)
+    {
+        float volume = s.volume;
+        if (s.spatialBlend < .5f || listener == null) return volume;
+        float d = Vector3.Distance(s.transform.position, listener.transform.position);
+        if (d >= s.maxDistance) return 0f;
+        return d <= s.minDistance ? volume : volume * s.minDistance / d;
+    }
+
+    // Leaves out a clip that already plays maxSameClip times, or started within sameClipGap.
+    readonly Dictionary<AudioClip, float> clipStarted = new();
+
+    bool TooMany(List<AudioSource> pool, AudioClip clip)
+    {
+        if (clipStarted.TryGetValue(clip, out float at) && Time.unscaledTime - at < sameClipGap) return true;
+        int playing = 0;
+        foreach (var s in pool) if (s.isPlaying && s.clip == clip && ++playing >= maxSameClip) return true;
+        clipStarted[clip] = Time.unscaledTime;
+        if (clipStarted.Count > 256) clipStarted.Clear();
+        return false;
     }
 
     // Pooled room-scale effects must not change the attenuation of the next miniature effect.

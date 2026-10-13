@@ -314,9 +314,12 @@ public sealed partial class LightingManager
             float scale = Mathf.Lerp(1f, darkAmbient / peak, dark);
             top *= scale; horizon *= scale; ground *= scale;
         }
+        // The user's ambient controls: the room's outside darkness, the dungeon's in it.
+        float boost = Mathf.Lerp(roomAmbient, dungeonAmbient, dark);
+        top *= boost; horizon *= boost; ground *= boost;
         RenderSettings.ambientSkyColor = top; RenderSettings.ambientEquatorColor = horizon;
         RenderSettings.ambientGroundColor = ground; RenderSettings.ambientLight = horizon;
-        RenderSettings.ambientIntensity = originalAmbientIntensity * level;
+        RenderSettings.ambientIntensity = originalAmbientIntensity * level * boost;
         RenderSettings.ambientProbe = GradientProbe(top, horizon, ground);
         // A dark mood doesn't reflect a bright sky.
         float lit = Mathf.Max(top.maxColorComponent, Mathf.Max(horizon.maxColorComponent, ground.maxColorComponent));

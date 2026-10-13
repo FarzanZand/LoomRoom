@@ -323,6 +323,7 @@ MonoBehaviour:
   ceilingFrame: 0.3
   skylightRadius: 0
   replaceGeneratedProps: 0
+  addFurnishing: 0
   replaceGeneratedEnemies: 1
   roomEvent: 3
   replaceGeneratedTorches: 0

@@ -36,6 +36,10 @@ public class CombatTestBot : MonoBehaviour
     static bool god;   // the player is healed every frame (stays on between scripts)
     float startedAt;
 
+    // Statics outlive Play mode (domain reload is off): god mode must not carry over to the next session.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() { god = false; Running = false; instance = null; log.Clear(); }
+
     public static void Run(string script)
     {
         if (instance == null) instance = new GameObject("Combat test bot").AddComponent<CombatTestBot>();
@@ -69,7 +73,9 @@ public class CombatTestBot : MonoBehaviour
                     case "face": Face(); break;
                     case "goto": GoTo(parts.Length > 1 ? parts[1] : "enemy", F(2, 3f)); break;
                     case "open": OpenChest(); break;
+#if UNITY_EDITOR
                     case "chest": SpawnChest(F(1, 2.2f), parts.Length > 2 ? parts[2] : "wood"); break;
+#endif
                     case "god": god = parts.Length < 2 || parts[1] != "off"; break;
                     case "track": tracking = parts.Length < 2 || parts[1] != "off"; break;
                     case "pitch": if (player.Look != null) player.Look.SetPitch(F(1, 0f)); break;
@@ -232,8 +238,8 @@ public class CombatTestBot : MonoBehaviour
         Component best = null; float bestD = float.MaxValue;
         System.Collections.Generic.IEnumerable<Component> pool = what switch
         {
-            "chest" => System.Linq.Enumerable.Where(FindObjectsByType<DungeonContainer>(FindObjectsSortMode.None), c => c.chest),
-            "breakable" => FindObjectsByType<DungeonDestructible>(FindObjectsSortMode.None),
+            "chest" => System.Linq.Enumerable.Where(FindObjectsByType<DungeonContainer>(), c => c.chest),
+            "breakable" => FindObjectsByType<DungeonDestructible>(),
             _ => System.Linq.Enumerable.Where(EnemyBrain.Active, b => b != null && b.Character.IsAlive),
         };
         foreach (var c in pool)

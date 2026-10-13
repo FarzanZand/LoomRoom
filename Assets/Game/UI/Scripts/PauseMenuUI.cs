@@ -21,7 +21,7 @@ public class PauseMenuUI : MonoBehaviour
     float resumeTimeScale = 1f;
     public bool IsOpen => open;
 
-    static TableLevelLoader Loader => TableManager.HasInstance ? TableManager.Instance.GetComponent<TableLevelLoader>() : null;
+    static TableLevelLoader Loader => TableManager.Loader;
 
     void Awake()
     {

@@ -83,8 +83,11 @@ MonoBehaviour:
   - Take the stairs down when you are ready.
   - That one hit hard. You should drink something.
   mixer: {fileID: 24100000, guid: 171c2312a45918546ad66f788389635e, type: 2}
-  sfxPoolSize: 20
+  sfxPoolSize: 48
   uiPoolSize: 8
+  maxSameClip: 3
+  sameClipGap: 0.05
+  logCutSounds: 1
   sfxMinDistance: 3.5
   sfxMaxDistance: 40
   defaultMasterVolume: 1

@@ -159,8 +159,10 @@ public class ScreenManager : Singleton<ScreenManager>
         ApplyRenderingEffects();
     }
 
+    bool pixelLightingAtStart;
     void Start()
     {
+        pixelLightingAtStart = pixelLighting;
         ApplyPixelLighting();
         if (InputManager.HasInstance) InputManager.Instance.DebugPixelLightingToggled += TogglePixelLighting;
     }
@@ -169,6 +171,8 @@ public class ScreenManager : Singleton<ScreenManager>
     {
         base.OnDestroy();
         if (InputManager.HasInstance) InputManager.Instance.DebugPixelLightingToggled -= TogglePixelLighting;
+        // F6 switches the material assets themselves: put them back as the scene has it when Play ends.
+        if (Application.isPlaying && pixelLighting != pixelLightingAtStart && pixelLookLibrary != null) pixelLookLibrary.SetPixelLighting(pixelLightingAtStart);
     }
 
     [Header("Colour split")]

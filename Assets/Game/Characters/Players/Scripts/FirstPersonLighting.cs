@@ -19,26 +19,59 @@ public class FirstPersonLighting : MonoBehaviour
     [SerializeField, Min(0f)] float shadowLightWallMargin = .3f;
     [SerializeField, Min(.1f)] float refreshSeconds = .5f;
 
-    float nextRefresh;
+    float nextRefresh, worldRange, shadowRange, worldLimited = -1f, shadowLimited = -1f;
+    const float EyeHeight = 1.6f;
     Vector3 shadowLightOffset;   // where it is authored, in its parent's space
     bool shadowLightPlaced;
     readonly RaycastHit[] wallHits = new RaycastHit[8];
     readonly List<Renderer> renderers = new();
 
-    void Awake() { if (shadowLight != null) shadowLightOffset = shadowLight.transform.localPosition; }
+    Equipment equipment;   // on the player's Controller child, not above this
+    void Awake()
+    {
+        if (shadowLight != null) shadowLightOffset = shadowLight.transform.localPosition;
+        equipment = GetComponentInParent<Equipment>();
+        if (equipment == null) equipment = GetComponentInChildren<Equipment>(true);
+    }
 
-    void OnEnable() { shadowLightPlaced = false; Apply(); var eq = GetComponentInParent<Equipment>(); if (eq != null) eq.Changed += Apply; }
-    void OnDisable() { var eq = GetComponentInParent<Equipment>(); if (eq != null) eq.Changed -= Apply; }
+    void OnEnable() { shadowLightPlaced = false; Apply(); if (equipment != null) equipment.Changed += Apply; }
+    void OnDisable() { if (equipment != null) equipment.Changed -= Apply; }
 
     // Spell hands and effects spawn under the rig at any time, so recheck now and then.
     void Update()
     {
-        if (ceilingLight != null && worldLight != null) { ceilingLight.range = worldLight.range; ceilingLight.enabled = worldLight.enabled; }
+        if (ceilingLight != null && worldLight != null) ceilingLight.enabled = worldLight.enabled;
         if (shadowLight != null && worldLight != null) shadowLight.enabled = worldLight.enabled;
         if (Time.unscaledTime >= nextRefresh) Apply();
     }
 
-    void LateUpdate() => PlaceShadowLight();
+    void LateUpdate()
+    {
+        LimitReach();
+        if (ceilingLight != null && worldLight != null) ceilingLight.range = worldLight.range;
+        PlaceShadowLight();
+    }
+
+    // On a dark dungeon floor the light radius (LightingManager > Light radius) sets how far across the floor the
+    // carried lights reach: each one's range is cut so it fades out that far from the player, wherever it hangs.
+    void LimitReach()
+    {
+        float reach = LightingManager.CarriedLightReach;
+        float floorY = (armsLight != null && armsLight.transform.parent != null ? armsLight.transform.parent.position.y : transform.position.y + EyeHeight) - EyeHeight;
+        // The range it would have without the limit: its own, or whatever set it this frame (the world light is also
+        // the Perception light, AdventurerProgress widens it every frame).
+        void Limit(Light light, ref float own, ref float limited)
+        {
+            if (light == null) return;
+            if (!Mathf.Approximately(light.range, limited)) own = light.range;
+            if (own <= 0f) return;
+            float height = Mathf.Max(0f, light.transform.position.y - floorY);
+            light.range = reach <= 0f ? own : Mathf.Min(own, Mathf.Sqrt(reach * reach + height * height));
+            limited = light.range;
+        }
+        Limit(worldLight, ref worldRange, ref worldLimited);
+        Limit(shadowLight, ref shadowRange, ref shadowLimited);
+    }
 
     // From the eyes toward the authored spot; a wall in between brings the light in front of it.
     // It moves in quickly and eases back out, so it never flickers between the two.

@@ -39,8 +39,8 @@ public partial class DungeonGenerator
         var f = RoomFeatures;
         var rng = new System.Random(Scramble(unchecked(seed0 + 271829)));
         int ambushes = 0, sleepers = 0;
-        // One ambush a floor at most (older assets saved 2, or 0 for no limit: both read as one).
-        bool AmbushLeft() => ambushes < 1;
+        // One ambush a floor at most; 0 allows none.
+        bool AmbushLeft() => ambushes < Mathf.Min(f.maxAmbushes, 1);
         bool SleepLeft() => f.maxSleepingPacks <= 0 || sleepers < f.maxSleepingPacks;
         bool Special(int i) => i == 0 || i == MerchantRoom || (Roles[i] == RoomRole.Exit && Milestone != null);
         // Rooms built for an event take their places under the caps first; the rest roll for what is left.
@@ -49,7 +49,7 @@ public partial class DungeonGenerator
             {
                 var t = templates[i];
                 if (t == null || Special(i) || Roles[i] != RoomRole.Combat) continue;
-                if (t.roomEvent == DungeonRoomEvent.Ambush && f.ambushes && AmbushLeft()) { roomEvents[i] = RoomEvent.Ambush; ambushes++; }
+                if (t.roomEvent == DungeonRoomEvent.Ambush && f.ambushes && data.ambushGatePrefab != null && AmbushLeft()) { roomEvents[i] = RoomEvent.Ambush; ambushes++; }
                 else if (t.roomEvent == DungeonRoomEvent.SleepingPack && f.sleepingPacks && SleepLeft()) { roomEvents[i] = RoomEvent.SleepingPack; sleepers++; }
             }
         for (int i = 0; i < n; i++)

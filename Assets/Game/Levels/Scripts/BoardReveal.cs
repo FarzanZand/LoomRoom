@@ -197,13 +197,16 @@ public class BoardReveal : MonoBehaviour
         return result;
     }
 
+    readonly HashSet<DungeonDoor> popping = new();
+
     void OnOpened(DungeonDoor door)
     {
         var origin = door.transform.position;
         foreach (var region in Reachable())
             if (shown.Add(region)) StartCoroutine(Reveal(region, origin));
         foreach (var (d, a, b) in doors)
-            if (d != null && !d.gameObject.activeSelf && (shown.Contains(a) || shown.Contains(b))) StartCoroutine(Pop(d.gameObject, .35f));
+            if (d != null && !d.gameObject.activeSelf && (shown.Contains(a) || shown.Contains(b)) && popping.Add(d))
+                StartCoroutine(Pop(d.gameObject, .35f));   // once: a second Pop would read the shrunk scale
     }
 
     // Tiles fall into place outward from the door; what stands on them follows.

@@ -85,7 +85,7 @@ public class EnemyVoice : MonoBehaviour
 
         if (!alerted && Time.time >= nextIdle)
         {
-            if (heard <= idleEarshot * idleEarshot) Play(entry.idle, entry.voiceVolume * .8f);
+            if (heard <= idleEarshot * idleEarshot && !(brain != null && brain.Asleep)) Play(entry.idle, entry.voiceVolume * .8f);   // sleepers snore instead
             ScheduleIdle();
         }
     }

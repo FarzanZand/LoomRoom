@@ -27,6 +27,13 @@ public class UIColor : MonoBehaviour
         Apply();
     }
 
+    // UIManager may wake after this does: hook up then.
+    void Start()
+    {
+        if (manager != null || !UIManager.HasInstance) return;
+        manager = UIManager.Instance; manager.Changed += Apply; Apply();
+    }
+
     void OnDisable()
     {
         if (manager != null) manager.Changed -= Apply;

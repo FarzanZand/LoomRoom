@@ -198,6 +198,8 @@ public class TableLevelData : ScriptableObject
     public Material boardEdgeMaterial;
     [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Tooltip("Printed grid over each tile (transparent).")]
     public Material boardGridMaterial;
+    [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Tooltip("The bottom of a pit on the board (a template's Pit floor cut): the tiles there are taken away down to the table and this dark card lies in the hole. Empty uses the edge material.")]
+    public Material boardPitMaterial;
     [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Range(.05f, .4f), Tooltip("Thickness of a tile (world units).")]
     public float boardTileThickness = .14f;
     [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Range(.1f, 1f), Tooltip("Height of one layer a room can be raised by (world units).")]

@@ -100,19 +100,40 @@ public static partial class PixelRestyle
         RectInt bBox = fBox, bRef = fRef;
         Texture2D back = null;
         if (File.Exists($"{PaintFolder}/{name} back painted.png")) back = Load("back", out bBox, out bRef);
+        // Where the painting's outline falls a little inside the model's (its rim, the sides of a shaft), a sample would
+        // land on the grey background: each background pixel points at its nearest painted pixel instead.
+        var frontNearest = NearestPainted(front); var backNearest = back != null ? NearestPainted(back) : null;
         int size = front.width;
         float half = Mathf.Max(b.extents[(axis + 1) % 3], b.extents[(axis + 2) % 3]) * 1.04f;
         Color Paint(Vector3 p, Vector3 n)
         {
-            bool fromBack = n[axis] < 0f && back != null;
+            // Edge-on faces (a shield's rim, the sides of a blade or shaft) take the view whose surface is nearer.
+            bool edge = Mathf.Abs(n[axis]) < .5f;
+            bool backSide = edge ? p[axis] < b.center[axis] : n[axis] < 0f;
+            bool fromBack = backSide && back != null;
             var tex = fromBack ? back : front; var box = fromBack ? bBox : fBox; var rbox = fromBack ? bRef : fRef;
             // Where the point is in the reference render (pixels), then the same place in the painting's box.
             int a = (axis + 1) % 3, c = (axis + 2) % 3; if (b.size[a] > b.size[c]) (a, c) = (c, a);
             float rx = (p[a] - b.center[a]) / (half * 2f) * size + size * .5f, ry = (p[c] - b.center[c]) / (half * 2f) * size + size * .5f;
-            if (n[axis] < 0f) rx = size - rx;
+            if (edge)
+            {
+                // Seen straight on, an edge-on face is one line of the painting, and every texel across its depth would
+                // repeat the same pixel (long streaks round a rim). Unfold it instead: the deeper the point lies from
+                // the painted surface, the further inward from the outline it samples, so the rim shows the painted
+                // band just inside the edge at the same pixel size.
+                var inPlane = new Vector2(n[a], n[c]);
+                if (inPlane.sqrMagnitude > 1e-6f)
+                {
+                    float depth = backSide ? p[axis] - b.min[axis] : b.max[axis] - p[axis];
+                    var step = inPlane.normalized * (depth / (half * 2f) * size);
+                    rx -= step.x; ry -= step.y;
+                }
+            }
+            if (backSide) rx = size - rx;
             float u = Mathf.InverseLerp(rbox.xMin, rbox.xMax, rx), v = Mathf.InverseLerp(rbox.yMin, rbox.yMax, ry);
             int x = Mathf.Clamp(Mathf.RoundToInt(box.xMin + u * box.width), 0, tex.width - 1), y = Mathf.Clamp(Mathf.RoundToInt(box.yMin + v * box.height), 0, tex.height - 1);
-            return tex.GetPixel(x, y);
+            int k = (fromBack ? backNearest : frontNearest)[y * tex.width + x];
+            return tex.GetPixel(k % tex.width, k / tex.width);
         }
         var go = item.worldPrefab; string prefabPath = AssetDatabase.GetAssetPath(go);
         var root = PrefabUtility.LoadPrefabContents(prefabPath);

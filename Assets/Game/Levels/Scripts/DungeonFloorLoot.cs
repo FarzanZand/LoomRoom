@@ -15,17 +15,18 @@ public class DungeonFloorLoot : MonoBehaviour
 
     void Start()
     {
-        if (Random.value < chance && items != null && items.Length > 0)
+        // Seeded from the floor and the spot, so a floor played again (a resumed checkpoint) lays the same loot.
+        var generator = GetComponentInParent<DungeonGenerator>();
+        var random = new System.Random(generator != null ? generator.PlacedSeed(transform.position) : transform.position.GetHashCode());
+        if (random.NextDouble() < chance && items != null && items.Length > 0)
         {
-            int n = Random.Range(count.x, Mathf.Max(count.x, count.y) + 1);
+            int n = random.Next(count.x, Mathf.Max(count.x, count.y) + 1);
             for (int i = 0; i < n; i++)
             {
-                float total = 0; foreach (var c in items) if (c != null && c.item != null) total += c.weight;
-                float pick = Random.value * total; ItemData item = null;
-                foreach (var c in items) { if (c == null || c.item == null) continue; pick -= c.weight; if (pick <= 0) { item = c.item; break; } }
-                if (item == null) continue;
-                var offset = Random.insideUnitCircle * scatter;
-                DungeonPickup.Spawn(item, transform.position + new Vector3(offset.x, 0f, offset.y), transform.parent);
+                var choice = WeightedPick.Choose(items, c => c != null && c.item != null ? c.weight : 0f, random);
+                if (choice == null) continue;
+                float angle = (float)random.NextDouble() * Mathf.PI * 2f, reach = Mathf.Sqrt((float)random.NextDouble()) * scatter;
+                DungeonPickup.Spawn(choice.item, transform.position + new Vector3(Mathf.Cos(angle) * reach, 0f, Mathf.Sin(angle) * reach), transform.parent);
             }
         }
         Destroy(gameObject);

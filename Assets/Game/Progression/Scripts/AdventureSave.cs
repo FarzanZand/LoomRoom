@@ -92,19 +92,21 @@ public class AdventureSave : MonoBehaviour
             try { var data = JsonUtility.FromJson<Data>(File.ReadAllText(path)); if (data == null) { unreadable = true; continue; }
                 // Older saves keep their memorials and unlocks; a run checkpoint from another format is dropped.
                 if (data.version != Data.Current) { data.checkpoint = null; data.version = Data.Current; }
+                // Read from the backup: set the broken save aside, or the next write would move it over the good backup.
+                if (unreadable) KeepCorrupt(FilePath);
                 Saved = data; return true; }
             catch (Exception e) { unreadable = true; Debug.LogWarning($"Could not read adventure save: {e.Message}"); }
         }
-        if (unreadable) KeepCorrupt();
+        if (unreadable) KeepCorrupt(FilePath, FilePath + ".bak");
         return false;
     }
 
-    // Neither the save nor its backup could be read: move them to "<name>.corrupt-<time>" before a new save is
-    // seeded, so the next write doesn't overwrite them and they can still be looked at or recovered.
-    void KeepCorrupt()
+    // An unreadable save (or its backup too): move it to "<name>.corrupt-<time>" so the next write doesn't overwrite
+    // it and it can still be looked at or recovered.
+    void KeepCorrupt(params string[] paths)
     {
         string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-        foreach (var path in new[] { FilePath, FilePath + ".bak" })
+        foreach (var path in paths)
         {
             if (!File.Exists(path)) continue;
             try { File.Move(path, $"{path}.corrupt-{stamp}"); Debug.LogWarning($"Unreadable adventure save kept as {path}.corrupt-{stamp}"); }
@@ -137,7 +139,7 @@ public class AdventureSave : MonoBehaviour
         if (!progress.InRun || IntroController.PracticeRunning) return;
         var run = RunManager.Instance;
         Saved.checkpoint = new Checkpoint { level = run.Level.name, floor = run.Floor, seed = run.Seed, classId = progress.selectedClass.id,
-            characterLevel = progress.Level, lootLevel = TableManager.Instance.GetComponent<TableLevelLoader>().GenerationLevel, xp = progress.Experience, skillExperience = (float[])progress.SkillExperience.Clone(), ranks = (int[])progress.Ranks.Clone(), growth = (int[])progress.Growth.Clone(),
+            characterLevel = progress.Level, lootLevel = TableManager.Loader.GenerationLevel, xp = progress.Experience, skillExperience = (float[])progress.SkillExperience.Clone(), ranks = (int[])progress.Ranks.Clone(), growth = (int[])progress.Growth.Clone(),
             health = player.Stats.CurrentHealth, mana = player.Stats.CurrentMana, stamina = player.Stats.CurrentStamina, gold = player.Wallet.Gold,
             bag = Capture(player.Bag), hotbar = Capture(player.Hotbar), equipped = player.Equipment.EquippedItems.Select(x => x.saveId).ToArray(), leftHand = GetComponent<PlayerSpellcasting>().Equipped,
             blessings = player.Stats.Modifiers.Where(m => ReferenceEquals(m.Source, RunManager.BlessingSource)).Select(m => new Blessing { stat=m.Stat, type=m.Type, value=m.Value, duration=m.Duration }).ToArray(),
@@ -146,13 +148,13 @@ public class AdventureSave : MonoBehaviour
     }
     public bool CanRestore(Checkpoint checkpoint)
     {
-        if (checkpoint == null || checkpoint.bag == null || checkpoint.hotbar == null || checkpoint.equipped == null || checkpoint.ranks?.Length != AdventureSkills.Count || checkpoint.growth?.Length != AdventurerProgress.StatNames.Length || checkpoint.floor < 1 || progress.rules == null || !progress.rules.classes.Any(x => x.id == checkpoint.classId)) return false;
+        if (checkpoint == null || checkpoint.bag == null || checkpoint.hotbar == null || checkpoint.equipped == null || checkpoint.ranks?.Length != AdventureSkills.Count || checkpoint.growth?.Length != AdventurerProgress.StatNames.Length || checkpoint.floor < 1 || progress.rules == null || !progress.rules.classes.Any(x => x != null && x.id == checkpoint.classId)) return false;
         var catalog = InventoryManager.Instance.itemCatalog;
         return checkpoint.equipped.All(id => ItemData.FromSaveId(id, catalog) != null) && checkpoint.bag.Concat(checkpoint.hotbar).All(x => x == null || x.count <= 0 || ItemData.FromSaveId(x.item, catalog) != null);
     }
     public void Restore(Checkpoint checkpoint)
     {
-        progress.selectedClass = progress.rules.classes.First(x => x.id == checkpoint.classId);
+        progress.selectedClass = progress.rules.classes.First(x => x != null && x.id == checkpoint.classId);
         player.Equipment.UnequipAll(); player.Bag.Clear(); player.Hotbar.Clear();
         // Honed gear is saved as "<saveId>+1" and comes back as the same honed copy.
         ItemData Item(string id) => ItemData.FromSaveId(id, InventoryManager.Instance.itemCatalog);
