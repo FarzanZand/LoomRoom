@@ -267,6 +267,7 @@ public class EnemyAttackRunner
         var hit = current.hit;
         AudioData audio = hit.useDefaultEffects ? (Tuning != null ? Tuning.defaultSwingAudio : null) : hit.swingAudio;
         if (audio != null) AudioManager.Instance.PlaySFXData(audio, brain.transform.position + Vector3.up);
+        CoopWorld.EnemySwung(Character, brain.Attacks.IndexOf(current));
     }
 
     public bool IsPlayingAttack() => AnimatorHelper.AnyLayerHasTag(Character.Animator, AttackTag);
@@ -391,6 +392,7 @@ public class EnemyAttackRunner
         float damage = (Character.Stats != null ? Character.Stats.GetFinal(StatType.AttackDamage) : 0f) * bow.hit.damageMultiplier;
         var arrow = Object.Instantiate(bow.arrow, origin, Quaternion.LookRotation(dir));
         arrow.Launch(Character, dir, bow.arrowSpeed, damage, bow.hit);
+        CoopWorld.ArrowLoosed(Character, origin, dir);
     }
 
     static Vector3 AimPoint(Character target)

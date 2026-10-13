@@ -19,11 +19,15 @@ public static class CoopWorld
     static readonly List<DungeonContainer> containers = new();
     static readonly List<DungeonDestructible> destructibles = new();
     static readonly List<DungeonDoor> doors = new();
+    static readonly List<DungeonSpikeTrap> spikes = new();
+    static readonly List<DungeonAmbush> ambushes = new();
     static readonly Dictionary<int, GameObject> loot = new();
     static readonly Dictionary<GameObject, int> lootKeys = new();
     static readonly HashSet<Character> networkSpawned = new();
     static readonly Dictionary<RuntimeAnimatorController, (int[] floats, int[] bools)> parameters = new();
     static int lootScope = -1, lootCounter, dropCounter;
+    // Mid-floor spawns take the host's health once their own Start has filled their pools.
+    static readonly Dictionary<Character, float> pendingHealth = new();
     static float nextSnapshot;
     static bool hooked;
 
@@ -53,8 +57,8 @@ public static class CoopWorld
     public static void Clear()
     {
         Floor = null; FloorKey = 0;
-        enemies.Clear(); enemyIds.Clear(); containers.Clear(); destructibles.Clear(); doors.Clear();
-        loot.Clear(); lootKeys.Clear(); networkSpawned.Clear();
+        enemies.Clear(); enemyIds.Clear(); containers.Clear(); destructibles.Clear(); doors.Clear(); spikes.Clear(); ambushes.Clear();
+        loot.Clear(); lootKeys.Clear(); networkSpawned.Clear(); pendingHealth.Clear();
         lootScope = -1; lootCounter = 0; dropCounter = 0;
     }
 
@@ -71,6 +75,8 @@ public static class CoopWorld
         destructibles.AddRange(generator.GetComponentsInChildren<DungeonDestructible>(true));
         doors.AddRange(generator.GetComponentsInChildren<DungeonDoor>(true));
         foreach (var door in doors) door.Opened += OnDoorOpened;
+        spikes.AddRange(generator.GetComponentsInChildren<DungeonSpikeTrap>(true));
+        ambushes.AddRange(generator.GetComponentsInChildren<DungeonAmbush>(true));
         foreach (var chest in containers) chest.Opened += OnContainerOpened;
         int index = 0;
         foreach (var item in generator.GetComponentsInChildren<WorldItem>(true)) Tag(item.gameObject, (GeneratedScope + index++) * 64);
@@ -216,7 +222,9 @@ public static class CoopWorld
         if (info.Source != null && info.Source.IsEnemy) return true;
         if (target.IsEnemy)
         {
-            if (TryEnemyId(target, out var id))
+            // Only this player's own blows go to the host; spikes, falls and the like hurt enemies on the host already.
+            bool mine = info.Source is Player p && p.kind == PlayerKind.Table;
+            if (mine && TryEnemyId(target, out var id))
             {
                 var strike = NetDamage.From(info);
                 strike.enemy = id;
@@ -354,6 +362,7 @@ public static class CoopWorld
 
     static void OnCharacterSpawned(Character c)
     {
+        if (c != null && pendingHealth.TryGetValue(c, out var health)) { pendingHealth.Remove(c); if (c.Stats != null && health > 0) c.Stats.SetNetworkHealth(health); }
         if (!Coop.Running || Floor == null || c == null || !c.IsEnemy || enemyIds.ContainsKey(c) || !c.transform.IsChildOf(Floor.transform)) return;
         if (Coop.IsGuest)
         {
@@ -369,6 +378,7 @@ public static class CoopWorld
         {
             floorKey = FloorKey, id = enemyIds[c], prefab = prefab, position = c.transform.position, yaw = c.transform.eulerAngles.y,
             lootSeed = drop != null ? drop.seed : 0,
+            health = c.Stats != null ? c.Stats.CurrentHealth : 0, maxHealth = c.Stats != null ? c.Stats.MaxHealth : 0,
         });
     }
 
@@ -382,6 +392,11 @@ public static class CoopWorld
         if (c == null) { Object.Destroy(go); return; }
         networkSpawned.Add(c);
         Floor.SetUpNetworkEnemy(go, spawn.lootSeed);
+        // The host's own changes to it (a buffed killer): the same health here.
+        // A multiplier on top of everything else, so the result is exactly the host's.
+        if (c.Stats != null && spawn.maxHealth > 0 && c.Stats.MaxHealth > 0 && Mathf.Abs(c.Stats.MaxHealth - spawn.maxHealth) > .01f)
+            c.Stats.AddModifier(new StatModifier(StatType.MaxHealth, spawn.maxHealth / c.Stats.MaxHealth - 1f, ModifierType.PercentMultiply, Coop.PartySource));
+        pendingHealth[c] = spawn.health;
         while (enemies.Count < spawn.id) enemies.Add(null);
         if (enemies.Count == spawn.id) { enemies.Add(c); enemyIds[c] = spawn.id; }
         else { enemies[spawn.id] = c; enemyIds[c] = spawn.id; }
@@ -456,6 +471,43 @@ public static class CoopWorld
         if (id >= 0) Send(new CoopEvent { kind = CoopEventKind.ContainerOpened, id = id });
     }
 
+    // A chest made mid-floor (an ambush's reward), made the same way on every machine: the next id.
+    public static void AddContainer(DungeonContainer chest)
+    {
+        if (!Coop.Running || chest == null || containers.Contains(chest)) return;
+        containers.Add(chest);
+        chest.Opened += OnContainerOpened;
+    }
+
+    public static void SpikeSprung(DungeonSpikeTrap trap)
+    {
+        if (Applying || !Coop.Running) return;
+        int id = spikes.IndexOf(trap);
+        if (id >= 0) Send(new CoopEvent { kind = CoopEventKind.SpikeSprung, id = id });
+    }
+
+    // Host: an ambush sprang (at someone's position) or was cleared.
+    public static void Ambush(DungeonAmbush ambush, bool cleared, Vector3 at)
+    {
+        if (!Coop.IsHost) return;
+        int id = ambushes.IndexOf(ambush);
+        if (id >= 0) Send(new CoopEvent { kind = cleared ? CoopEventKind.AmbushCleared : CoopEventKind.AmbushSprung, id = id, position = at });
+    }
+
+    // Host: an enemy's whoosh (its attack's swing sound) for the guests, whose puppets never swing for real.
+    public static void EnemySwung(Character enemy, int attack)
+    {
+        if (!Coop.IsHost || !TryEnemyId(enemy, out var id)) return;
+        Send(new CoopEvent { kind = CoopEventKind.EnemySwing, id = id, amount = attack });
+    }
+
+    // Host: an archer's arrow; guests loose a harmless copy along the same line (the host's hits it).
+    public static void ArrowLoosed(Character enemy, Vector3 origin, Vector3 direction)
+    {
+        if (!Coop.IsHost || !TryEnemyId(enemy, out var id)) return;
+        Send(new CoopEvent { kind = CoopEventKind.ArrowLoosed, id = id, position = origin, direction = direction });
+    }
+
     public static void Broken(DungeonDestructible breakable, Vector3 direction)
     {
         if (Applying || !Coop.Running) return;
@@ -504,6 +556,34 @@ public static class CoopWorld
             case CoopEventKind.DoorOpened:
                 if (e.id >= 0 && e.id < doors.Count && doors[e.id] != null && !doors[e.id].IsOpen) doors[e.id].Open(e.position);
                 break;
+            case CoopEventKind.SpikeSprung:
+                if (e.id >= 0 && e.id < spikes.Count && spikes[e.id] != null) spikes[e.id].Spring();
+                break;
+            case CoopEventKind.AmbushSprung:
+                if (e.id >= 0 && e.id < ambushes.Count && ambushes[e.id] != null) ambushes[e.id].SprungOnHost();
+                break;
+            case CoopEventKind.AmbushCleared:
+                if (e.id >= 0 && e.id < ambushes.Count && ambushes[e.id] != null) ambushes[e.id].ClearedOnHost();
+                break;
+            case CoopEventKind.EnemySwing:
+            {
+                var enemy = Enemy(e.id);
+                if (enemy == null || !AudioManager.HasInstance || !(enemy.data is EnemyData data)) break;
+                var hit = e.amount >= 0 && e.amount < data.attacks.Count ? data.attacks[e.amount].hit : null;
+                AudioData audio = hit == null || hit.useDefaultEffects ? (CombatManager.HasInstance ? CombatManager.Instance.defaultSwingAudio : null) : hit.swingAudio;
+                if (audio != null) AudioManager.Instance.PlaySFXData(audio, enemy.transform.position + Vector3.up);
+                break;
+            }
+            case CoopEventKind.ArrowLoosed:
+            {
+                var enemy = Enemy(e.id);
+                var bow = enemy != null && enemy.data is EnemyData { archer: true } data ? data.archery : null;
+                if (bow == null || bow.arrow == null || e.direction.sqrMagnitude < .0001f) break;
+                if (bow.fireAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(bow.fireAudio, e.position);
+                var arrow = Object.Instantiate(bow.arrow, e.position, Quaternion.LookRotation(e.direction));
+                arrow.Launch(enemy, e.direction, bow.arrowSpeed, 0f, bow.hit);
+                break;
+            }
             case CoopEventKind.PickupTaken:
                 if (loot.TryGetValue(e.id, out var piece) && piece != null) Object.Destroy(piece);
                 loot.Remove(e.id);

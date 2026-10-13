@@ -62,7 +62,7 @@ public class EnemyBrain : MonoBehaviour
     // Up and fighting: it stands still for riseSeconds (getting up), then hunts whoever woke it.
     public void Wake(float riseSeconds)
     {
-        if (!Asleep) return;
+        if (!Asleep || NetworkPuppet) return;
         Asleep = false;
         SetSleepAnimation(false);
         BeginRecovery(riseSeconds);
@@ -80,7 +80,7 @@ public class EnemyBrain : MonoBehaviour
     // Force the enemy to hunt the target now (a boss waking, a grave's occupant rising).
     public void Alert()
     {
-        if (State == EnemyState.Dead || !Character.IsAlive) return;
+        if (State == EnemyState.Dead || !Character.IsAlive || NetworkPuppet) return;
         wasProvoked = true;
         Perception.Tick(true);
         if (Perception.Target != null) EnterCombat();

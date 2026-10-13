@@ -59,6 +59,8 @@ public class ProgressionManager : Singleton<ProgressionManager>
             skipWakeUp = true;
             if (startAt == ProgressionStart.NewGame) startAt = ProgressionStart.AfterCharacterSheet;
         }
+        // The toolbar's Co-op New Game starts from the very beginning, whatever the scene says.
+        if (CoopEditorTesting.NewGame) startAt = ProgressionStart.NewGame;
         foreach (var f in initialFlags)
             if (!string.IsNullOrEmpty(f.key)) flags[f.key] = f.value;
         if (Application.isEditor) FastForward(startAt);

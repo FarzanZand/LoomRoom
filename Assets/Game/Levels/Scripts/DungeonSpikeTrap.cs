@@ -34,7 +34,12 @@ public class DungeonSpikeTrap : MonoBehaviour
         spikes.localPosition = raised + Vector3.down * hiddenDepth;
     }
 
-    public void Spring() { if (!busy && isActiveAndEnabled) StartCoroutine(Run()); }
+    public void Spring()
+    {
+        if (busy || !isActiveAndEnabled) return;
+        CoopWorld.SpikeSprung(this);   // co-op: it springs for everyone
+        StartCoroutine(Run());
+    }
 
     void Update()
     {

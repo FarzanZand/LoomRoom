@@ -55,6 +55,11 @@ MonoBehaviour:
   hideCeilingsWhenDead: 1
   cutawayTiles: 1
   spectatorZoom: -38
+  spectatorEyeHeight: 2.05
+  spectatorFollow: 2.5
+  spectatorLightRadius: 2.2
+  spectatorLightBoost: 4
+  spectatorSlide: 60
   reviveOnNextFloor: 1
   enemyHealthPerPlayer: 0.5
   extraEnemiesPerPlayer: 1
@@ -69,6 +74,7 @@ MonoBehaviour:
   bodyController: {fileID: 9100000, guid: f0e56ac3d91670048a307651e1f0d9ca, type: 2}
   weaponGrip: {fileID: 11400000, guid: acbf81d574de0af4a8b2282cd8a41dac, type: 2}
   shieldGrip: {fileID: 11400000, guid: df4bce2846fddb649a1bb3724bffc749, type: 2}
+  shieldBlockRotation: {x: 0, y: -90, z: 90}
   roomScale: 20
   enemyPrefabs:
   - {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
@@ -80,5 +86,9 @@ MonoBehaviour:
   - {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
   - {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
   - {fileID: 5746219887415064482, guid: ae52da96cec3d1d4db895d43de610fd3, type: 3}
+  partnerLightColor: {r: 1, g: 0.78, b: 0.5, a: 1}
+  partnerLightIntensity: 1.6
+  partnerLightRange: 4
   snapshotRate: 15
   autoStartInEditor: 1
+  spectatorEdgeGap: 14

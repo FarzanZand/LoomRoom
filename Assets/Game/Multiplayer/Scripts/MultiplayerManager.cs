@@ -42,6 +42,10 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     [Min(0)] public float spectatorFollow = 2.5f;
     [Tooltip("The dungeon's light radius around the watched teammate, against a player's own.")]
     [Min(.1f)] public float spectatorLightRadius = 2.2f;
+    [Tooltip("The watched teammate's carried light, this many times brighter and wider for a dead player watching.")]
+    [Min(1)] public float spectatorLightBoost = 4f;
+    [Tooltip("A dead player walks along the table's west side to stay level with the teammate it watches (room units a second; 0: stays put).")]
+    [Min(0)] public float spectatorSlide = 60f;
     [Tooltip("Dead players come back on the next floor.")]
     public bool reviveOnNextFloor = true;
 
@@ -69,6 +73,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     [Tooltip("Animator for every body (the Humanoid controller: locomotion, attack, cast, hurt, death).")]
     public RuntimeAnimatorController bodyController;
     public EnemyWeaponGrip weaponGrip, shieldGrip;
+    [Tooltip("The shield's turn on the left hand while blocking (the arm is raised, its face to the front); at rest it hangs as Shield Grip says.")]
+    public Vector3 shieldBlockRotation = new Vector3(0, -90, 90);
     [Tooltip("The room is built about this many units to the metre (the room player's scale).")]
     public float roomScale = 20f;
     [Tooltip("Enemies that can appear mid-floor (a crate's rat, ambush waves): every enemy prefab. Tools > LoomRoom > Multiplayer > Set Up fills it.")]
@@ -178,6 +184,13 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 #endif
 
     // ── Session ───────────────────────────────────────────────────────
+
+    // The co-op screen changed a rule: the guests get the new set.
+    public void RulesChanged()
+    {
+        SyncRules();
+        if (Connected && IsHost) CoopMessages.ToGuests(CoopMessages.Rules, rules);
+    }
 
     void SyncRules() => rules = new CoopRules { sharedLoot = sharedLoot, hostAdventurer = hostAdventurer, partyProgression = partyProgression, cutaway = hideCeilingsWhenDead, cutawayTiles = cutawayTiles };
 
@@ -298,6 +311,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         CoopMessages.Register<FlagSet>(CoopMessages.Flags, (s, m) => ApplyHostFlags(m));
         CoopMessages.Register<CoopRules>(CoopMessages.Rules, (s, m) => rules = m);
         CoopMessages.Register<CoopInt>(CoopMessages.Countdown, (s, m) => ShowCountdown(m.a));
+        CoopMessages.Register<CoopInt>(CoopMessages.IntroBegin, (s, m) => { if (!network.IsServer && IntroController.HasInstance) IntroController.Instance.PlayShared(); });
+        CoopMessages.Register<CoopInt>(CoopMessages.Finale, (s, m) => { if (!network.IsServer && IntroController.HasInstance) IntroController.Instance.RemoteFinale(m.a != 0); });
         CoopMessages.Register<CoopInt>(CoopMessages.FloorHash, (s, m) =>
         {
             if (!network.IsServer) return;
@@ -559,8 +574,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     IEnumerator BeginRun(RunStart start)
     {
         var loader = TableManager.Loader;
-        if (loader == null || loader.Catalog == null) yield break;
-        var level = System.Array.Find(loader.Catalog.levels, l => l != null && l.name == start.level.ToString());
+        if (loader == null) yield break;
+        var level = ResolveLevel(start.level.ToString());
         if (level == null) { Debug.LogError($"[Coop] No level {start.level} in the catalog."); yield break; }
         while (loader.Busy) yield return null;
         PartySize = Mathf.Max(1, start.partySize);
@@ -574,6 +589,57 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (IsHost) runFloor = start.floor;
     }
 
+    // ── A new game ────────────────────────────────────────────────────
+
+    // The intro is about to start on a new game (IntroController): play alone, host (the intro starts for everyone
+    // once Begin is pressed) or join someone's. Returns when it is decided; the intro then plays here or not at all
+    // (a guest plays the host's when it starts, PlayShared).
+    public IEnumerator NewGameLobby()
+    {
+#if UNITY_EDITOR
+        // The toolbar's Co-op New Game: this editor hosts and begins once the virtual players are in.
+        if (autoStartInEditor && CoopEditorTesting.NewGame && CoopEditorTesting.IsMainEditor)
+        {
+            if (!Connected) Host();
+            float until = Time.unscaledTime + 180f;
+            while (Time.unscaledTime < until && (!Connected || network.ConnectedClientsIds.Count < 1 + CoopEditorTesting.ExpectedGuests)) yield return null;
+            yield return new WaitForSecondsRealtime(1f);
+            BeginSharedIntro();
+            yield break;
+        }
+        if (CoopEditorTesting.Requested) yield break;
+#endif
+        var menu = CoopMenuUI.Instance;
+        if (menu == null) yield break;
+        menu.Open(CoopMenuUI.Mode.NewGame);
+        while (menu.IsOpen) yield return null;
+        if (menu.Began && Connected && IsHost) BeginSharedIntro();
+    }
+
+    // Host: everyone who has joined plays the intro now, from their own seat.
+    void BeginSharedIntro()
+    {
+        if (!Connected || !IsHost) return;
+        IntroShared = true;
+        CoopMessages.ToGuests(CoopMessages.IntroBegin, new CoopInt());
+    }
+
+    // The intro is being played together (the host started it with guests in).
+    public bool IntroShared { get; private set; }
+
+    // Host: the practice board's end, for everyone (IntroController).
+    public void SendFinale(bool fromStairs) { if (Connected && IsHost) CoopMessages.ToGuests(CoopMessages.Finale, new CoopInt { a = fromStairs ? 1 : 0 }); }
+
+    // A level by its asset name: the catalog's, or the intro's practice board.
+    public static TableLevelData ResolveLevel(string name)
+    {
+        var loader = TableManager.Loader;
+        var level = loader != null && loader.Catalog != null ? System.Array.Find(loader.Catalog.levels, l => l != null && l.name == name) : null;
+        if (level == null && IntroController.HasInstance && IntroController.Instance.introDungeon != null && IntroController.Instance.introDungeon.name == name) level = IntroController.Instance.introDungeon;
+        if (level == null && WorldManager.HasInstance && WorldManager.Instance.debugDungeons != null) level = System.Array.Find(WorldManager.Instance.debugDungeons, l => l != null && l.name == name);
+        return level;
+    }
+
     public void ReachedStairs()
     {
         if (!Connected || !LocalInRun) return;
@@ -584,6 +650,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     public void PlayerAtExit(int slot)
     {
         if (!IsHost || !runActive) return;
+        // The practice board has no way down: the stairs bring its end.
+        if (IntroController.PracticeRunning && IntroController.HasInstance) { IntroController.Instance.StairsReached(); return; }
         atExit.Add(slot);
         if (countdownEnds < 0f)
         {
@@ -711,9 +779,13 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (pick != null) NotificationUI.Show($"Watching {pick.DisplayName}");
     }
 
+    [Tooltip("How far from the table's edge a watching player stands (room units).")]
+    public float spectatorEdgeGap = 14f;
+
     void StopSpectating()
     {
         if (!Spectating) return;
+        foreach (var p in players) if (p != null && !p.IsOwner) p.Avatar.LightBoost = 1f;
         Spectating = false;
         SetCutaway(false);
         if (InputManager.HasInstance) InputManager.Instance.PrimaryPressed -= WatchNext;
@@ -739,6 +811,19 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (target != null && !target.Current.alive) { WatchNext(); target = watched >= 0 ? PlayerInSlot(watched) : null; }
         LightingManager.RadiusCentre = target != null && inRoom ? target.transform.position + Vector3.up * 1.6f : (Vector3?)null;
         LightingManager.RadiusScale = spectatorLightRadius;
+        foreach (var p in players) if (p != null && !p.IsOwner) p.Avatar.LightBoost = p == target && inRoom ? spectatorLightBoost : 1f;
+        // Along the table's west side (the players' side), level with the one being watched.
+        if (room != null && target != null && spectatorSlide > 0 && TableManager.HasInstance && GameManager.HasInstance && GameManager.Instance.GameplayActive)
+        {
+            var table = TableManager.Instance.GetComponent<BoxCollider>();
+            if (table != null)
+            {
+                var b = table.bounds;
+                var want = new Vector3(b.min.x - spectatorEdgeGap, room.transform.position.y, Mathf.Clamp(target.transform.position.z, b.min.z + 6f, b.max.z - 6f));
+                var now = room.transform.position;
+                if ((want - now).sqrMagnitude > 4f) room.Warp(Vector3.MoveTowards(now, want, spectatorSlide * Time.unscaledDeltaTime));
+            }
+        }
         if (room != null && room.Look != null && target != null && spectatorFollow > 0 && GameManager.HasInstance && GameManager.Instance.GameplayActive)
         {
             CameraEase.YawPitchTo(room.Look, target.transform.position + Vector3.up, out float yaw, out float pitch);

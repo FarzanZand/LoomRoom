@@ -36,19 +36,31 @@ public class DungeonBossEncounter : MonoBehaviour
     void Update()
     {
         if (started || finished || dungeon == null || dungeon.Layout == null || boss == null) return;
+        // Co-op: anyone of the party stepping in starts it (a guest's starts when the host's boss wakes, OnBossState).
+        if (Coop.Running)
+        {
+            if (Coop.IsGuest) return;
+            foreach (var c in CoopWorld.Party()) if (Inside(c.transform.position)) { Begin(); return; }
+            return;
+        }
         if (!PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind != PlayerKind.Table) return;
         var player = PlayerManager.Instance.Active;
         if (player == null || !player.IsAlive) return;
-        // Inside the arena, one cell in from the doorway so the sting lands as you step in.
-        var cell = dungeon.CellOf(player.transform.position);
+        if (Inside(player.transform.position)) Begin();
+    }
+
+    // Inside the arena, one cell in from the doorway so the sting lands as you step in.
+    bool Inside(Vector3 position)
+    {
+        var cell = dungeon.CellOf(position);
         var layout = dungeon.Layout;
-        if (!layout.InRoom(room, cell)) return;
+        if (!layout.InRoom(room, cell)) return false;
         foreach (var d in DungeonLayout.Neighbours)
         {
             var n = cell + d;
-            if (layout.InBounds(n) && layout.floor[n.x, n.y] && !layout.InRoom(room, n)) return;
+            if (layout.InBounds(n) && layout.floor[n.x, n.y] && !layout.InRoom(room, n)) return false;
         }
-        Begin();
+        return true;
     }
 
     void OnBossState(EnemyState previous, EnemyState next)

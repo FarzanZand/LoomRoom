@@ -27,7 +27,8 @@ public partial class IntroController
         while (loader.Busy) yield return null;
         yield return new WaitForSeconds(firstStepDelay);
         Vector3 last = table.transform.position;
-        if (finaleRoom >= 0) StartCoroutine(WatchFinaleRoom());
+        // Co-op: the host's practice decides when it ends (RemoteFinale); its lessons are each player's own.
+        if (finaleRoom >= 0 && !Coop.IsGuest) StartCoroutine(WatchFinaleRoom());
         foreach (var step in steps)
         {
             if (step == null || Met(step)) continue;
@@ -53,6 +54,7 @@ public partial class IntroController
             }
             if (Met(step) && step.doneLine != null) yield return SayAll(new[] { step.doneLine });
         }
+        if (Coop.IsGuest) yield break;
         yield return Finale();
     }
 
@@ -71,14 +73,33 @@ public partial class IntroController
     {
         while (PracticeRunning && !finale)
         {
-            if (PlayerRoom() == finaleRoom) { fromStairs = true; if (teaching != null) StopCoroutine(teaching); StartCoroutine(Finale()); yield break; }
+            if (PlayerRoom() == finaleRoom || PartyInRoom(finaleRoom)) { fromStairs = true; if (teaching != null) StopCoroutine(teaching); StartCoroutine(Finale()); yield break; }
             yield return null;
         }
+    }
+
+    // Co-op: anyone of the party in that room.
+    bool PartyInRoom(int roomIndex)
+    {
+        var dungeon = loader != null ? loader.Dungeon : null;
+        if (!Coop.Running || dungeon == null || dungeon.Layout == null) return false;
+        foreach (var c in CoopWorld.Party()) if (dungeon.Layout.RoomAt(dungeon.CellOf(c.transform.position)) == roomIndex) return true;
+        return false;
+    }
+
+    // Co-op guests: the host's practice reached its end.
+    public void RemoteFinale(bool stairs)
+    {
+        if (!running || !PracticeRunning || finale) return;
+        fromStairs = stairs;
+        StopAllCoroutines();
+        StartCoroutine(Finale());
     }
 
     IEnumerator Finale()
     {
         finale = true; endedByFinale = true;
+        if (Coop.IsHost && MultiplayerManager.HasInstance) MultiplayerManager.Instance.SendFinale(fromStairs);
         yield return SayAll(new[] { enough });
         yield return new WaitForSeconds(.6f);
         yield return SayAll(new[] { killerComing });
@@ -139,7 +160,8 @@ public partial class IntroController
 
     Character SpawnKiller()
     {
-        if (killer == null || loader.Dungeon == null) return null;
+        // Co-op: the host's killer comes for everyone (guests get it as one of the host's enemies).
+        if (killer == null || loader.Dungeon == null || Coop.IsGuest) return null;
         // Up the stairs, when the player has come to them: out of the stairwell's mouth, not inside its stone
         // housing (a board's exit is a solid stairwell, and the exit point is its middle).
         if (fromStairs && StairsMouth(out var stairs))

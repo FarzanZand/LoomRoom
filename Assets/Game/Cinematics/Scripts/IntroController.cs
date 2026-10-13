@@ -89,6 +89,10 @@ public partial class IntroController : Singleton<IntroController>
     [Min(0), Tooltip("Seconds of black before the first morning.")] public float nightSeconds = 2f;
     [Tooltip("Said once the player is up on the first morning, instead of the usual greeting.")] public DungeonMaster.Line[] firstMorning = new DungeonMaster.Line[0];
 
+    [Header("Co-op")]
+    [Tooltip("Co-op: the other players' seats, beside the first along the table (world units between seats).")]
+    public float coopSeatSpacing = 22f;
+
     [Header("Testing")]
     [Tooltip("Editor only: start with the wake-up as before.")]
     public bool skipInEditor;
@@ -151,7 +155,7 @@ public partial class IntroController : Singleton<IntroController>
     // Called by WorldManager on the first frame. False: the normal wake-up plays.
     public bool TryPlay()
     {
-        if (Application.isEditor && skipInEditor) return false;
+        if (Application.isEditor && skipInEditor && !CoopEditorTesting.NewGame) return false;
         if (!PlayerManager.HasInstance || seat == null) return false;
         room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
         table = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
@@ -167,8 +171,52 @@ public partial class IntroController : Singleton<IntroController>
         // Called from WorldManager.Start, after every OnEnable: the Lighting Manager has registered.
         if (lighting == null) lighting = LightingManager.Instance;
         if (RunManager.HasInstance) { RunManager.Instance.RunStarted -= OnRunStarted; RunManager.Instance.RunStarted += OnRunStarted; }
-        StartCoroutine(Tabletop ? TabletopNight() : Opening());
+        StartCoroutine(NewGame());
         return true;
+    }
+
+    // A new game first asks whether to play alone, host or join (MultiplayerManager.NewGameLobby), in the dark.
+    // Joining someone else's game: their intro is played instead, when they start it (PlayShared).
+    IEnumerator NewGame()
+    {
+        if (MultiplayerManager.HasInstance)
+        {
+            if (ScreenManager.HasInstance) ScreenManager.Instance.FadeToBlack(0f);
+            yield return MultiplayerManager.Instance.NewGameLobby();
+            if (Coop.IsGuest) { LeaveForCoop(); yield break; }
+        }
+        yield return Tabletop ? TabletopNight() : Opening();
+    }
+
+    // Co-op guests: the host started the intro for everyone. It plays here from this player's own seat, the same
+    // way, whatever this player's own save says (the host's game decides).
+    public void PlayShared()
+    {
+        if (!PlayerManager.HasInstance || seat == null || introDungeon == null) return;
+        StopAllCoroutines();
+        room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
+        table = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
+        loader = TableManager.Loader;
+        if (room == null || loader == null) return;
+        if (PlayerManager.Instance.ActiveKind != PlayerKind.Room) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
+        running = true;
+        if (lighting == null) lighting = LightingManager.Instance;
+        if (RunManager.HasInstance) { RunManager.Instance.RunStarted -= OnRunStarted; RunManager.Instance.RunStarted += OnRunStarted; }
+        StartCoroutine(Tabletop ? TabletopNight() : Opening());
+    }
+
+    // Joined someone else's game at the start of a new one: this intro stops; the room is as on any morning.
+    void LeaveForCoop()
+    {
+        running = false;
+        PopDialogue();
+        if (lighting != null) lighting.lampHeld = false;
+        if (lighting != null && roomLight.HasValue) lighting.Restore(roomLight.Value, 0f);
+        roomLight = null;
+        if (room != null && room.Look != null) room.Look.HeightOverride = null;
+        if (room != null && room.CameraRig != null) room.CameraRig.FovOffset = 0f;
+        if (WorldManager.HasInstance && WorldManager.Instance.wakeUpCutscene != null) WorldManager.Instance.wakeUpCutscene.StandUp();
+        if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.8f);
     }
 
     // ── At the table ──────────────────────────────────────────────────
@@ -300,7 +348,8 @@ public partial class IntroController : Singleton<IntroController>
     {
         if (room == null) return;
         if (room.CameraRig != null) room.CameraRig.FovOffset = zoom;
-        room.Warp(seat.position, Quaternion.Euler(0f, seat.eulerAngles.y, 0f));
+        var at = SeatPosition;
+        room.Warp(at, Quaternion.Euler(0f, seat.eulerAngles.y, 0f));
         if (room.Look == null) return;
         room.Look.HeightOverride = eyeHeight;
         // Level with the Dungeon Master: the seat's own pitch if he cannot be found.
@@ -310,11 +359,24 @@ public partial class IntroController : Singleton<IntroController>
         var head = dm != null && dm.isHuman ? dm.GetBoneTransform(HumanBodyBones.Head) : null;
         if (head != null)
         {
-            var eye = seat.position + Vector3.up * (room.Look.PitchTransform.position.y - room.transform.position.y);
+            var eye = at + Vector3.up * (room.Look.PitchTransform.position.y - room.transform.position.y);
             CameraEase.YawPitchTo(eye, head.position + Vector3.down * aimBelowHead, out float yaw, out pitch, seat.eulerAngles.y);
             room.Look.SetYaw(yaw);
         }
         room.Look.SetPitch(pitch);
+    }
+
+    // This player's chair: the seat, or in co-op one of the chairs beside it along the table.
+    Vector3 SeatPosition
+    {
+        get
+        {
+            if (!Coop.Running) return seat.position;
+            int slot = Coop.LocalSlot;
+            float side = slot == 0 ? 0 : (slot % 2 == 1 ? 1 : -1) * ((slot + 1) / 2);
+            var along = seat.right; along.y = 0f;
+            return seat.position + along.normalized * side * coopSeatSpacing;
+        }
     }
 
     IEnumerator LampOn()

@@ -10,6 +10,8 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField] Button settingsButton;
     [SerializeField] Button adventuresButton;
     [SerializeField] Button quitButton;
+    [Tooltip("Opens the co-op screen (CoopMenuUI): host, join, leave.")]
+    [SerializeField] Button coopButton;
     Vector2? quitHome;
     [SerializeField] SettingsUI settings;
     [Tooltip("Hidden while settings are open so the two panels never overlap.")]
@@ -30,6 +32,14 @@ public class PauseMenuUI : MonoBehaviour
         settingsButton?.onClick.AddListener(OpenSettings);
         adventuresButton?.onClick.AddListener(Adventures);
         quitButton?.onClick.AddListener(Quit);
+        coopButton?.onClick.AddListener(OpenCoop);
+    }
+
+    // The co-op screen in place of the pause menu.
+    void OpenCoop()
+    {
+        Close();
+        if (CoopMenuUI.Instance != null) CoopMenuUI.Instance.Open(CoopMenuUI.Mode.Pause);
     }
 
     void Start()

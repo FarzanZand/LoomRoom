@@ -10,7 +10,11 @@ using Object = UnityEngine.Object;
 // Multiplayer Play Mode's player API is internal, so it is reached by name.
 public static class CoopTesting
 {
-    public static void Start()
+    // Co-op New Game: a fresh save on this editor, which hosts; the intro starts once Player 2 is in.
+    public static void StartNewGame() => Begin(true);
+    public static void Start() => Begin(false);
+
+    static void Begin(bool newGame)
     {
         if (EditorApplication.isPlaying) { EditorApplication.isPlaying = false; return; }
         if (EditorApplication.isCompiling || EditorApplication.isPlayingOrWillChangePlaymode) return;
@@ -21,7 +25,9 @@ public static class CoopTesting
         }
         if (!ActivatePlayers(1)) return;
         SessionState.SetBool(CoopEditorTesting.RequestKey, true);
-        SessionState.SetBool(DebugDungeonSession.RoomRequestKey, true);
+        SessionState.SetBool(CoopEditorTesting.NewGameKey, newGame);
+        SessionState.SetInt(CoopEditorTesting.GuestsKey, 1);
+        if (!newGame) SessionState.SetBool(DebugDungeonSession.RoomRequestKey, true);
         EditorApplication.isPlaying = true;
     }
 

@@ -30,6 +30,8 @@ public class CoopAvatar : MonoBehaviour
         AttackSpeed = Animator.StringToHash("AttackSpeed"), HurtSpeed = Animator.StringToHash("HurtSpeed"), Dead = Animator.StringToHash("Dead");
 
     public Animator Animator => animator;
+    // A dead player watching this one sees its light brighter and wider (MultiplayerManager.spectatorLightBoost).
+    public float LightBoost { get; set; } = 1f;
 
     public void Bind(CoopPlayer owner)
     {
@@ -94,6 +96,14 @@ public class CoopAvatar : MonoBehaviour
         }
         if (s.place == CoopPlace.Table) UpdateHeld(s.right.ToString(), s.left.ToString());
         UpdateLight(s);
+        // The shield turns to face the front as it comes up.
+        if (leftVisual != null && MultiplayerManager.Instance.shieldGrip != null)
+        {
+            var socket = leftVisual.transform.parent;
+            var rest = Quaternion.Euler(MultiplayerManager.Instance.shieldGrip.rotation);
+            var up = Quaternion.Euler(MultiplayerManager.Instance.shieldBlockRotation);
+            socket.localRotation = Quaternion.Slerp(socket.localRotation, s.blocking ? up : rest, 1f - Mathf.Exp(-14f * dt));
+        }
     }
 
     // A teammate on the table carries a small light of their own, so they can be seen in the dark.
@@ -112,8 +122,8 @@ public class CoopAvatar : MonoBehaviour
         if (carried == null) return;
         carried.enabled = on;
         carried.color = manager.partnerLightColor;
-        carried.intensity = manager.partnerLightIntensity;
-        carried.range = manager.partnerLightRange;
+        carried.intensity = manager.partnerLightIntensity * LightBoost;
+        carried.range = manager.partnerLightRange * Mathf.Sqrt(LightBoost) * (LightBoost > 1f ? 1.5f : 1f);
     }
 
     // A new body when the player changes world or class.

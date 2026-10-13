@@ -37,13 +37,54 @@ public class DungeonAmbush : MonoBehaviour
     void Update()
     {
         if (phase != Phase.Waiting || dungeon == null || dungeon.Layout == null) return;
+        // Co-op: the host's ambush springs for anyone of the party; a guest's only shows what the host's does.
+        if (Coop.IsGuest) return;
+        if (Coop.Running)
+        {
+            foreach (var c in CoopWorld.Party()) if (WellInside(c.transform.position)) { Spring(c); return; }
+            return;
+        }
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         if (player == null || !player.isActiveAndEnabled || !player.IsAlive) return;
-        var p = player.transform.position;
-        if (dungeon.Layout.RoomAt(dungeon.CellOf(p)) != room) return;
-        foreach (var d in doorways) { var flat = d - p; flat.y = 0f; if (flat.sqrMagnitude < triggerDepth * triggerDepth) return; }
+        if (WellInside(player.transform.position)) Spring(player);
+    }
+
+    bool WellInside(Vector3 p)
+    {
+        if (dungeon.Layout.RoomAt(dungeon.CellOf(p)) != room) return false;
+        foreach (var d in doorways) { var flat = d - p; flat.y = 0f; if (flat.sqrMagnitude < triggerDepth * triggerDepth) return false; }
+        return true;
+    }
+
+    void Spring(Character who)
+    {
         phase = Phase.Fighting;
-        StartCoroutine(Fight(player));
+        CoopWorld.Ambush(this, false, who.transform.position);
+        StartCoroutine(Fight(who));
+    }
+
+    // Co-op guests: the host's ambush sprang; its waves come as the host's enemies.
+    public void SprungOnHost()
+    {
+        if (phase != Phase.Waiting) return;
+        phase = Phase.Fighting;
+        foreach (var g in gates) if (g != null) { Raise(g); Play(slamAudio, g.position); }
+        MessageLog.Post("Iron gates slam down across the ways out.", MessageKind.Warning);
+    }
+
+    // Co-op guests: the host's ambush is beaten: the gates lift and the same reward chest is left.
+    public void ClearedOnHost()
+    {
+        if (phase == Phase.Done) return;
+        Finish();
+    }
+
+    void Finish()
+    {
+        phase = Phase.Done;
+        foreach (var g in gates) if (g != null) { Lower(g, false); Play(liftAudio, g.position, .7f); }
+        CoopWorld.AddContainer(dungeon.SpawnRewardChest(chestAt, chestFacing, chestSeed));
+        MessageLog.Post("The gates grind up. Something was left behind.", MessageKind.Good);
     }
 
     void Play(AudioClip clip, Vector3 at, float volume = .9f) { if (clip != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(clip, at, volume, .04f); }
@@ -73,7 +114,7 @@ public class DungeonAmbush : MonoBehaviour
         t.localPosition = to;
     }
 
-    IEnumerator Fight(Player player)
+    IEnumerator Fight(Character player)
     {
         foreach (var g in gates) if (g != null) { Raise(g); Play(slamAudio, g.position); }
         MessageLog.Post("Iron gates slam down across the ways out.", MessageKind.Warning);
@@ -86,19 +127,20 @@ public class DungeonAmbush : MonoBehaviour
             {
                 alive.RemoveAll(c => c == null || !c.IsAlive);
                 if (alive.Count == 0) break;
-                if (!player.IsAlive) yield break;
+                // Co-op: the fight goes on while anyone of the party is alive.
+                if (Coop.Running ? !AnyoneAlive() : !player.IsAlive) yield break;
                 yield return new WaitForSeconds(.25f);
             }
             yield return new WaitForSeconds(1f);
         }
-        phase = Phase.Done;
-        foreach (var g in gates) if (g != null) { Lower(g, false); Play(liftAudio, g.position, .7f); }
-        dungeon.SpawnRewardChest(chestAt, chestFacing, chestSeed);
-        MessageLog.Post("The gates grind up. Something was left behind.", MessageKind.Good);
+        Finish();
+        CoopWorld.Ambush(this, true, chestAt);
     }
 
+    static bool AnyoneAlive() { foreach (var c in CoopWorld.Party()) return true; return false; }
+
     // Each enemy of the wave at a spawn point on the far side of the room from the player, a moment apart.
-    IEnumerator Spawn(List<GameObject> wave, Player player)
+    IEnumerator Spawn(List<GameObject> wave, Character player)
     {
         var points = new List<Vector3>(spawnPoints);
         var from = player.transform.position;

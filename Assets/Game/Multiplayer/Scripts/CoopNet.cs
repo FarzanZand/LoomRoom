@@ -102,6 +102,11 @@ public enum CoopEventKind : byte
     CoinsTaken = 4,
     ItemDropped = 5,
     AtExit = 6,
+    SpikeSprung = 7,
+    AmbushSprung = 8,
+    AmbushCleared = 9,
+    EnemySwing = 10,
+    ArrowLoosed = 11,
 }
 
 public struct CoopEvent : INetworkSerializable
@@ -159,11 +164,13 @@ public struct EnemySpawn : INetworkSerializable
     public Vector3 position;
     public float yaw;
     public int lootSeed;
+    public float health, maxHealth;  // as the host made it (the intro's killer is much tougher than its prefab)
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref floorKey); s.SerializeValue(ref id); s.SerializeValue(ref prefab);
         s.SerializeValue(ref position); s.SerializeValue(ref yaw); s.SerializeValue(ref lootSeed);
+        s.SerializeValue(ref health); s.SerializeValue(ref maxHealth);
     }
 }
 

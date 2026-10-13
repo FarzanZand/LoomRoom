@@ -62,7 +62,7 @@ public static class CoopSetup
         grip = ScriptableObject.CreateInstance<EnemyWeaponGrip>();
         // On the back of the left forearm, face out.
         grip.position = new Vector3(-.05f, .02f, -.08f);
-        grip.rotation = new Vector3(0, -90, 90);
+        grip.rotation = new Vector3(90, -90, 0);
         grip.scale = 1;
         AssetDatabase.CreateAsset(grip, ShieldGripPath);
         return grip;
@@ -106,7 +106,8 @@ public static class CoopSetup
                 ?? AssetDatabase.FindAssets("t:Material", new[] { dir }).Select(g => AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault();
             if (pixelMesh != null) smr.sharedMesh = pixelMesh;
             if (pixelMaterial != null) smr.sharedMaterial = pixelMaterial;
-            if (pixelMesh == null || pixelMaterial == null) Debug.LogWarning($"[Coop] {character}: no pixel restyle for {mesh} in {dir}; kept Synty's.");
+            // A part without a restyle (a cape) would stand out against the pixel look: it is left off.
+            if (pixelMesh == null || pixelMaterial == null) { smr.gameObject.SetActive(false); Debug.LogWarning($"[Coop] {character}: no pixel restyle for {mesh} in {dir}; that part is switched off (restyle it with the art pipeline to show it)."); }
             smr.updateWhenOffscreen = true;
         }
         foreach (var c in instance.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
@@ -171,7 +172,7 @@ public static class CoopSetup
             text.alignment = TextAlignmentOptions.Center;
             text.color = new Color(1f, .93f, .78f);
             text.rectTransform.sizeDelta = new Vector2(6, 1);
-            var font = AssetDatabase.FindAssets("PixelOperator SDF t:TMP_FontAsset").Select(g => AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault();
+            var font = AssetDatabase.FindAssets("PixelOperator t:TMP_FontAsset").Select(g => AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault(f => f != null && f.name == "PixelOperator");
             if (font != null) text.font = font;
             label = text.transform;   // TextMeshPro swapped the Transform for a RectTransform
         }
@@ -254,6 +255,7 @@ public static class CoopSetup
         }
         manager.network = network;
         PrefabUtility.RecordPrefabInstancePropertyModifications(manager);
+        CoopMenuBuilder.Build();
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
     }
