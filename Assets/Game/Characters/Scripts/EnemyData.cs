@@ -25,6 +25,13 @@ public class EnemyData : CharacterData
     [TabGroup("CharacterTabs/Combat/Details", "Archery"), ShowIf(nameof(archer)), InlineProperty, HideLabel]
     public EnemyArchery archery = new();
 
+    [TabGroup("CharacterTabs/Combat/Details", "Spells")]
+    [Tooltip("Casts spells from range (raising a hand, then throwing), keeping its distance. Humanoids share the cast animation. Melee attacks are still used up close.")]
+    public bool caster;
+    [TabGroup("CharacterTabs/Combat/Details", "Spells"), ShowIf(nameof(caster))]
+    [ListDrawerSettings(ShowFoldout = false, ListElementLabelName = "Label")]
+    public List<EnemySpell> spells = new();
+
     [TabGroup(InspectorTabs, "Stats"), Title("Rewards")]
     [Tooltip("Character experience for killing this enemy. Zero derives it from maximum health, so tougher enemies are worth more.")]
     [Min(0)] public float experience;

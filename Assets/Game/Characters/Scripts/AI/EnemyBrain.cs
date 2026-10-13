@@ -221,21 +221,23 @@ public class EnemyBrain : MonoBehaviour
         SetState(Profile.defaultState);
     }
 
-    // The data's melee attacks, plus the bow shot for archers (that list is built once per frame).
+    // The data's melee attacks, plus the bow shot for archers and the spells for casters (that list is built once per frame).
     internal List<EnemyAttack> Attacks
     {
         get
         {
             var data = Data;
             if (data == null) return emptyAttacks;
-            if (!data.archer) return data.attacks;
+            bool casts = data.caster && data.spells != null && data.spells.Count > 0;
+            if (!data.archer && !casts) return data.attacks;
             if (withBowFrame != Time.frameCount || withBowData != data)
             {
                 withBowFrame = Time.frameCount;
                 withBowData = data;
                 withBow.Clear();
                 withBow.AddRange(data.attacks);
-                withBow.Add(data.archery.Shot);
+                if (data.archer) withBow.Add(data.archery.Shot);
+                if (casts) foreach (var s in data.spells) if (s != null && s.spell != null) withBow.Add(s.Attack);
             }
             return withBow;
         }
@@ -489,8 +491,8 @@ public class EnemyBrain : MonoBehaviour
         {
             Motor.LookAt(targetPos, p.attackFaceSpeed);
             float height = Mathf.Abs(targetPos.y - transform.position.y);
-            bool clear = attack.IsBowShot
-                ? height <= attack.bowShot.maxHeightDifference && attackRunner.HasArrowLineOfSight(target)
+            bool clear = attack.IsRanged
+                ? height <= (attack.IsBowShot ? attack.bowShot.maxHeightDifference : attack.spellCast.maxHeightDifference) && attackRunner.HasArrowLineOfSight(target)
                 : height <= 1f && (Tuning == null || Tuning.HasMeleeLineOfSight(Character, target, targetPos + Vector3.up * 0.9f));
             if (Motor.IsFacing(targetPos, attack.facingAngle) && clear)
                 attackRunner.StartAttack(attack);

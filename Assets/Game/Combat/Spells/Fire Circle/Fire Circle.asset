@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5d9f0b6401f5914fae2a37cd8cf619f, type: 3}
+  m_Name: Fire Circle
+  m_EditorClassIdentifier: Assembly-CSharp::SpellDefinition
+  spell: 1
+  displayName: Fire Circle
+  description: Marks the ground. A moment later it bursts into flame.
+  icon: {fileID: 21300000, guid: 8b3a24607a8a42347b64de5d5cf286d7, type: 3}
+  manaCost: 18
+  power: 22
+  castSeconds: 0.6
+  recoverySeconds: 0.35
+  castMoveSpeed: 0.6
+  projectile: {fileID: 0}
+  radius: 1.5
+  speed: 16
+  lifetime: 4
+  groundArea: 1
+  areaRadius: 2
+  areaDelay: 1.2
+  showMarker: 1
+  areaMarker: {fileID: 7630272188558388642, guid: 554384ebcf157b14993c6b63aaecef45, type: 3}
+  markerRadius: 2
+  areaRange: 14
+  heldVisual: {fileID: 5233650602891333819, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
+  impact: {fileID: 5379192030900856960, guid: 20483a084721b6d4ea2bbb7ffe4d4955, type: 3}
+  animation: 1
+  chargeClipSeconds: 0.6
+  equipSound: {fileID: 8300000, guid: ecdb0127810c63e47b877aed9e1b44f0, type: 3}
+  equipVolume: 0.28
+  chargeSound: {fileID: 8300000, guid: d6361d5a30811a946aad6835c2d24cd3, type: 3}
+  chargeVolume: 0.45
+  releaseSound: {fileID: 8300000, guid: f9a748cb16d0cd4448c7a136dee97131, type: 3}
+  releaseVolume: 0.65
+  flightSound: {fileID: 8300000, guid: 762d023a571ffaf4aa61782dfce7fd45, type: 3}
+  flightVolume: 0.55
+  impactSound: {fileID: 8300000, guid: 35ac4ff00d47b9e45ad51e59cafe785d, type: 3}
+  impactVolume: 0.9

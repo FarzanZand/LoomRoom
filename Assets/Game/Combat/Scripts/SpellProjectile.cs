@@ -12,14 +12,15 @@ public class SpellProjectile : MonoBehaviour
     [Tooltip("The impact is placed this far off the surface, so it isn't half inside the wall.")]
     [Min(0)] public float surfaceOffset = .15f;
 
-    Player owner;
+    Character owner;
     SpellDefinition spell;
     AdventurerProgress progress;
     SpellVisual visual;
     float power, age;
     bool done;
 
-    public void Launch(Player source, SpellDefinition definition, float damage, AdventurerProgress skills)
+    // source: whoever cast it (the player, or an enemy caster). skills: the player's progress, null for enemies.
+    public void Launch(Character source, SpellDefinition definition, float damage, AdventurerProgress skills)
     {
         owner = source; spell = definition; power = damage; progress = skills;
         visual = GetComponent<SpellVisual>();
@@ -56,27 +57,7 @@ public class SpellProjectile : MonoBehaviour
     {
         done = true;
         var centre = point + normal * surfaceOffset;
-        float radius = spell.radius;
-        var seen = new HashSet<Object>();
-        bool struck = false;
-        foreach (var col in Physics.OverlapSphere(centre, radius, collisionMask, QueryTriggerInteraction.Ignore))
-        {
-            var target = col.GetComponentInParent<Character>();
-            if (target != null)
-            {
-                if (target == owner || !target.IsAlive || !seen.Add(target)) continue;
-                if (owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction)) continue;
-                var aim = col.bounds.center;
-                if (Blocked(centre, aim, target.transform)) continue;
-                target.Stats.TakeDamage(new DamageInfo { Amount = power, Source = owner, Magic = true, HitPoint = aim, Direction = Flat(aim - centre) });
-                struck = true;
-                continue;
-            }
-            // Crates, barrels and doors take the blast like any other hit.
-            var damageable = col.GetComponentInParent<IDamageable>();
-            if (damageable is Component c && seen.Add(c) && !Blocked(centre, col.bounds.center, c.transform))
-                damageable.TakeDamage(new DamageInfo { Amount = power, Source = owner, Magic = true, HitPoint = col.bounds.center, Direction = Flat(col.bounds.center - centre) });
-        }
+        bool struck = Blast(owner, centre, spell.radius, power, collisionMask);
         // One practice roll per cast that hurt an enemy, however many it caught.
         if (struck) progress?.Practise(spell.Skill, SkillAction.Cast);
         if (spell.impact != null) Instantiate(spell.impact, centre, Quaternion.LookRotation(normal));
@@ -84,10 +65,36 @@ public class SpellProjectile : MonoBehaviour
         GetComponent<SpellVisual>().Stop();
     }
 
+    // A blast of magic damage: every character hostile to the caster within radius, once each, unless a wall is in the
+    // way; crates, barrels and doors take it like any other hit. True if it hurt a character. Shared with GroundAreaSpell.
+    public static bool Blast(Character owner, Vector3 centre, float radius, float power, LayerMask mask)
+    {
+        var seen = new HashSet<Object>();
+        bool struck = false;
+        foreach (var col in Physics.OverlapSphere(centre, radius, mask, QueryTriggerInteraction.Ignore))
+        {
+            var target = col.GetComponentInParent<Character>();
+            if (target != null)
+            {
+                if (target == owner || !target.IsAlive || !seen.Add(target)) continue;
+                if (owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction)) continue;
+                var aim = col.bounds.center;
+                if (Blocked(centre, aim, target.transform, mask)) continue;
+                target.Stats.TakeDamage(new DamageInfo { Amount = power, Source = owner, Magic = true, HitPoint = aim, Direction = Flat(aim - centre) });
+                struck = true;
+                continue;
+            }
+            var damageable = col.GetComponentInParent<IDamageable>();
+            if (damageable is Component c && seen.Add(c) && !Blocked(centre, col.bounds.center, c.transform, mask))
+                damageable.TakeDamage(new DamageInfo { Amount = power, Source = owner, Magic = true, HitPoint = col.bounds.center, Direction = Flat(col.bounds.center - centre) });
+        }
+        return struck;
+    }
+
     void Fizzle() { done = true; GetComponent<SpellVisual>().Stop(); }
 
-    bool Blocked(Vector3 from, Vector3 to, Transform target) =>
-        Physics.Linecast(from, to, out var cover, collisionMask, QueryTriggerInteraction.Ignore) && !cover.transform.IsChildOf(target);
+    static bool Blocked(Vector3 from, Vector3 to, Transform target, LayerMask mask) =>
+        Physics.Linecast(from, to, out var cover, mask, QueryTriggerInteraction.Ignore) && !cover.transform.IsChildOf(target);
 
     static Vector3 Flat(Vector3 v) { v.y = 0; return v.sqrMagnitude > .0001f ? v.normalized : Vector3.forward; }
 }

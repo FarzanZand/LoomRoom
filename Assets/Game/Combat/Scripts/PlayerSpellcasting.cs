@@ -162,6 +162,7 @@ public class PlayerSpellcasting : MonoBehaviour
             if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation, player.transform);
             if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
         }
+        else if (spell.groundArea) CastOnGround(spell);
         else if (spell.projectile != null) Launch(spell);
         Changed?.Invoke();
     }
@@ -183,6 +184,20 @@ public class PlayerSpellcasting : MonoBehaviour
         projectile.Launch(player, spell, Power(spell), progress);
 
         // The flame leaves the hand and relights once the throw has recovered.
+        if (held != null) { held.Stop(); held = null; }
+        relightAt = Time.time + spell.recoverySeconds + .1f;
+    }
+
+    // Ground spells land where the crosshair meets the floor (within Area Range), or at the end of the range.
+    void CastOnGround(SpellDefinition spell)
+    {
+        var view = player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : transform;
+        var point = view.position + view.forward * spell.areaRange;
+        var hits = Physics.RaycastAll(view.position, view.forward, spell.areaRange, ~0, QueryTriggerInteraction.Ignore);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        foreach (var hit in hits)
+            if (!hit.transform.IsChildOf(player.transform)) { point = hit.point; break; }
+        GroundAreaSpell.Cast(player, spell, Power(spell), GroundAreaSpell.GroundBelow(point), progress);
         if (held != null) { held.Stop(); held = null; }
         relightAt = Time.time + spell.recoverySeconds + .1f;
     }

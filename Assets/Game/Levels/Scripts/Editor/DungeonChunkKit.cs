@@ -315,7 +315,13 @@ public static class DungeonChunkKit
         return go.transform;
     }
 
-    static void Chain(Chunk c, float x, float y) => Prop(c, "Furnishing/Hanging chain", c.Cell(x, y) + Vector3.up * (c.Ceiling - .03f));
+    // A chain hanging from the ceiling (3 m long). Over walkable floor in a one-tile room, length shortens it so it
+    // ends above head height; over a pit it may hang its full length.
+    static void Chain(Chunk c, float x, float y, float length = 1f)
+    {
+        var chain = Prop(c, "Furnishing/Hanging chain", c.Cell(x, y) + Vector3.up * (c.Ceiling - .03f));
+        if (length < 1f) chain.localScale = new Vector3(chain.localScale.x, chain.localScale.y * length, chain.localScale.z);
+    }
 
     // A hole in the floor over cells x0..x1, y0..y1.
     static DungeonFloorCut Cut(Chunk c, DungeonFloorCut.Kind kind, int x0, int y0, int x1, int y1, float depth)
@@ -359,7 +365,7 @@ public static class DungeonChunkKit
         made.Add(Save(c));
 
         // 2. A candlelit chapel of the dead: a raised dais with an altar, candle racks either side, pillars down the nave.
-        c = Begin("Raised altar", 9, 9, 2, new Vector2Int(4, 0));
+        c = Begin("Raised altar", 9, 9, 1, new Vector2Int(4, 0));
         c.rooms = Combat | Treasure; c.mood = DungeonRoomLight.Candlelit; c.cellars = .6f; c.crypt = 1f;
         WallPiece(c, "Platform", 4, 8, South);
         Socket(c, DungeonSocketType.Feature, c.Cell(4, 8) + new Vector3(0f, .75f, -.2f), 1f, 180f, altar);
@@ -423,7 +429,7 @@ public static class DungeonChunkKit
         made.Add(Save(c));
 
         // 7. A chasm across the hall, one narrow way over it. Archers wait on the far side; a blow near the edge throws an enemy down.
-        c = Begin("Chasm bridge", 9, 7, 2, new Vector2Int(4, 0), new Vector2Int(4, 6), new Vector2Int(0, 1), new Vector2Int(8, 5));
+        c = Begin("Chasm bridge", 9, 7, 1, new Vector2Int(4, 0), new Vector2Int(4, 6), new Vector2Int(0, 1), new Vector2Int(8, 5));
         c.rooms = Combat; c.cellars = .9f; c.crypt = .9f; c.maxPerFloor = 1;
         Cut(c, DungeonFloorCut.Kind.Pit, 0, 3, 3, 4, 4f); Cut(c, DungeonFloorCut.Kind.Pit, 5, 3, 8, 4, 4f);
         Chain(c, 1.6f, 3.4f); Chain(c, 6.6f, 3.7f); Chain(c, 7.4f, 3.2f);
@@ -434,7 +440,7 @@ public static class DungeonChunkKit
         made.Add(Save(c));
 
         // 8. A sunken court open to the sky: moonlight falls into the middle, pillars stand on the rim.
-        c = Begin("Sunken court", 9, 9, 2, new Vector2Int(4, 0), new Vector2Int(4, 8), new Vector2Int(0, 4), new Vector2Int(8, 4));
+        c = Begin("Sunken court", 9, 9, 1, new Vector2Int(4, 0), new Vector2Int(4, 8), new Vector2Int(0, 4), new Vector2Int(8, 4));
         c.rooms = Combat | Quiet; c.mood = DungeonRoomLight.Moonlit; c.openCeiling = true; c.skylightRadius = 1; c.cellars = .8f; c.crypt = .8f;
         const float sunk = .9f;
         Cut(c, DungeonFloorCut.Kind.Sunken, 2, 2, 6, 6, sunk);
@@ -465,7 +471,7 @@ public static class DungeonChunkKit
         made.Add(Save(c));
 
         // 10. An ossuary in green light: skulls in every niche and heaped on the floor, and a pack asleep among the bones.
-        c = Begin("Ossuary", 7, 9, 2, new Vector2Int(3, 0), new Vector2Int(3, 8));
+        c = Begin("Ossuary", 7, 9, 1, new Vector2Int(3, 0), new Vector2Int(3, 8));
         c.rooms = Combat; c.mood = DungeonRoomLight.Eerie; c.roomEvent = DungeonRoomEvent.SleepingPack; c.cellars = .4f; c.crypt = 1.2f; c.maxPerFloor = 1;
         foreach (var (x, into) in new[] { (0, East), (6, West) })
             foreach (int y in new[] { 1, 2, 3, 5, 6, 7 })
@@ -476,7 +482,7 @@ public static class DungeonChunkKit
         foreach (var (x, y, yaw) in new[] { (1f, 4f, 10f), (5f, 4.3f, 200f), (2f, 7.5f, 90f), (4.6f, 1.2f, 300f) }) Prop(c, "Furnishing/Skull pile", c.Cell(x, y), yaw, true, .9f);
         Prop(c, "Furnishing/Bone heap", c.Cell(2, 2), 45f); Prop(c, "Furnishing/Bone pile", c.Cell(4, 6), 120f);
         Socket(c, DungeonSocketType.Enemy, c.Cell(2, 3), .8f); Socket(c, DungeonSocketType.Enemy, c.Cell(4, 5), .8f); Socket(c, DungeonSocketType.Enemy, c.Cell(2, 6), .6f); Socket(c, DungeonSocketType.Enemy, c.Cell(4, 2), .5f);
-        Chain(c, 3f, 2.5f); Chain(c, 3f, 6f);
+        Chain(c, 3f, 2.5f, .4f); Chain(c, 3f, 6f, .4f);
         Light(c, 3, 8, North); Light(c, 3, 0, South);
         made.Add(Save(c));
 
@@ -540,7 +546,7 @@ public static class DungeonChunkKit
         made.Add(Save(c));
 
         // 16. A stair that fell in: a hole in one corner where the steps went down, rubble round it, a chain over the drop.
-        c = Begin("Collapsed stair", 5, 5, 2, new Vector2Int(2, 0), new Vector2Int(0, 2));
+        c = Begin("Collapsed stair", 5, 5, 1, new Vector2Int(2, 0), new Vector2Int(0, 2));
         c.rooms = Combat; c.cellars = 1f; c.crypt = 1f;
         Cut(c, DungeonFloorCut.Kind.Pit, 3, 3, 4, 4, 4f);
         Chain(c, 3.6f, 3.4f);

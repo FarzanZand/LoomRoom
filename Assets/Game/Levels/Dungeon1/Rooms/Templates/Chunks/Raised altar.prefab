@@ -430,11 +430,12 @@ MonoBehaviour:
   - '#########'
   minimumCells: {x: 6, y: 6}
   style: {fileID: 0}
-  heightTiles: 2
+  heightTiles: 1
   openCeiling: 0
   ceilingFrame: 0.3
   skylightRadius: 0
   replaceGeneratedProps: 0
+  addFurnishing: 0
   replaceGeneratedEnemies: 1
   roomEvent: 0
   replaceGeneratedTorches: 0

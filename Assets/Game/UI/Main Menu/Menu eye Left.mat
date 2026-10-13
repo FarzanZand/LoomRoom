@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Menu eye Left
+  m_Shader: {fileID: 4800000, guid: 5f69596e1d7ee4646823a68bbcbdf438, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _GlowSize: 0.15
+    - _InnerHeight: 0.34
+    - _Intensity: 1
+    - _Mirror: -1
+    - _OuterBottom: 0.72
+    - _Softness: 0.018
+    - _Taper: 0.5
+    - _Tilt: -0
+    m_Colors:
+    - _Core: {r: 1.6, g: 1.12, b: 0.32, a: 1}
+    - _Glow: {r: 0.8, g: 0.33, b: 0.07, a: 1}
+    - _Rim: {r: 1.5, g: 0.6, b: 0.06, a: 1}
+    - _Slit: {r: 0.55, g: 0.27, b: 0, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

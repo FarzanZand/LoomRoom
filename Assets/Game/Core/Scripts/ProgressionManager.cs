@@ -40,6 +40,13 @@ public class ProgressionManager : Singleton<ProgressionManager>
 
     public event Action<string, int> FlagChanged;
 
+    // The main menu's Skip intro (MainMenuUI): the next game scene starts as an ordinary morning, with the intro and
+    // the character sheet done (the flags After Character Sheet sets). The flags go into the save with the next write.
+    public static bool SkipIntroRequested;
+    // This launch skipped the intro: AdventureSave writes the flags at once, so a quit before anything else is saved
+    // doesn't bring the intro back.
+    public bool IntroSkipped { get; private set; }
+
     public const string TableEnteredFlag = "tableEntered";
 
     // Kept as a property so existing scripts read naturally.
@@ -62,6 +69,7 @@ public class ProgressionManager : Singleton<ProgressionManager>
         foreach (var f in initialFlags)
             if (!string.IsNullOrEmpty(f.key)) flags[f.key] = f.value;
         if (Application.isEditor) FastForward(startAt);
+        if (SkipIntroRequested) { SkipIntroRequested = false; IntroSkipped = true; FastForward(ProgressionStart.AfterCharacterSheet); }
     }
 
     void FastForward(ProgressionStart point)
