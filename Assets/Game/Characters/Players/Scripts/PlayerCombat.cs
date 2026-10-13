@@ -65,6 +65,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         }
     }
     bool IsReleasing => AnyLayerReleasing();
+    // Which release the arms play: 0 none, 1 light, 2 the alternate light, 3 heavy (a co-op teammate's body mirrors it).
+    public int ReleaseShown =>
+        AnimatorHelper.AnyLayerHasTag(armsAnimator, heavyReleaseHash) ? 3 : AnimatorHelper.AnyLayerHasTag(armsAnimator, alternateReleaseHash) ? 2
+        : AnimatorHelper.AnyLayerHasTag(armsAnimator, releaseHash) ? 1 : 0;
     // With CombatManager.attackFromBlock the shield is lowered for the whole swing and comes back up after it.
     static bool AttackFromBlock => CombatManager.HasInstance && CombatManager.Instance.attackFromBlock;
     static bool BlockCutsRecovery => CombatManager.HasInstance && CombatManager.Instance.blockCutsRecovery;

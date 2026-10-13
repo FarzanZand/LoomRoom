@@ -28,8 +28,8 @@ public class CoopAvatar : MonoBehaviour
     Light carried;
 
     static readonly int MoveX = Animator.StringToHash("MoveX"), MoveZ = Animator.StringToHash("MoveZ"), Speed = Animator.StringToHash("Speed"),
-        MotionSpeed = Animator.StringToHash("MotionSpeed"), Grounded = Animator.StringToHash("Grounded"), HoldingBow = Animator.StringToHash("HoldingBow"),
-        AttackSpeed = Animator.StringToHash("AttackSpeed"), HurtSpeed = Animator.StringToHash("HurtSpeed"), Dead = Animator.StringToHash("Dead");
+        MotionSpeed = Animator.StringToHash("MotionSpeed"), Grounded = Animator.StringToHash("Grounded"), Crouch = Animator.StringToHash("Crouch"),
+        Charge = Animator.StringToHash("Charge"), Armed = Animator.StringToHash("Armed"), Block = Animator.StringToHash("Block"), HurtSpeed = Animator.StringToHash("HurtSpeed"), Dead = Animator.StringToHash("Dead");
 
     public Animator Animator => animator;
     // A dead player watching this one sees its light brighter and wider (MultiplayerManager.spectatorLightBoost).
@@ -90,10 +90,14 @@ public class CoopAvatar : MonoBehaviour
         animator.SetFloat(MoveZ, local.z, .08f, dt);
         animator.SetFloat(Speed, local.magnitude, .08f, dt);
         animator.SetFloat(MotionSpeed, local.magnitude > .1f ? 1f : 0f);
-        animator.SetBool(Grounded, true);
-        animator.SetFloat(AttackSpeed, 1.35f);
+        // What the player does, as they do it (the body's own controller, Build Body Animations).
+        bool onTable = s.place == CoopPlace.Table;
+        animator.SetBool(Grounded, !s.airborne);
+        animator.SetBool(Crouch, s.crouching);
+        animator.SetBool(Armed, onTable && s.alive);
+        animator.SetBool(Charge, onTable && s.charging);
+        animator.SetBool(Block, onTable && s.blocking);
         animator.SetFloat(HurtSpeed, 1.3f);
-        animator.SetBool(HoldingBow, s.place == CoopPlace.Table && s.blocking);
 
         // In a chair (the intro): the seated pose, and up again after.
         if (s.seated != shownSeated && animator != null)
@@ -116,7 +120,7 @@ public class CoopAvatar : MonoBehaviour
         {
             var socket = leftVisual.transform.parent;
             var rest = Quaternion.Euler(MultiplayerManager.Instance.shieldGrip.rotation);
-            var up = Quaternion.Euler(MultiplayerManager.Instance.shieldBlockRotation);
+            var up = rest * Quaternion.Euler(MultiplayerManager.Instance.shieldBlockTurn);
             socket.localRotation = Quaternion.Slerp(socket.localRotation, s.blocking ? up : rest, 1f - Mathf.Exp(-14f * dt));
         }
     }
@@ -203,17 +207,21 @@ public class CoopAvatar : MonoBehaviour
         var socket = new GameObject($"Grip - {bone}").transform;
         socket.SetParent(hand, false);
         if (grip != null) { socket.SetLocalPositionAndRotation(grip.position, Quaternion.Euler(grip.rotation)); socket.localScale = Vector3.one * Mathf.Max(.01f, grip.scale); }
+        // On the socket as in first person (the grips are the first-person hand sockets): the item's own grip offset.
         visual = Instantiate(item.worldPrefab, socket, false);
-        visual.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+        visual.transform.SetLocalPositionAndRotation(item.heldPosition, Quaternion.Euler(item.heldRotation));
+        visual.transform.localScale *= Mathf.Max(.01f, item.heldScale);
         foreach (var c in visual.GetComponentsInChildren<Collider>(true)) c.enabled = false;
         foreach (var b in visual.GetComponentsInChildren<Rigidbody>(true)) { b.isKinematic = true; b.detectCollisions = false; }
         foreach (var m in visual.GetComponentsInChildren<MonoBehaviour>(true)) m.enabled = false;
     }
 
-    // The swing and its whoosh (the held weapon's own, or the game's default).
-    public void Swing(bool heavy)
+    // A swing as the first-person release starts (1 light, 2 the alternate light, 3 heavy) and its whoosh (the held
+    // weapon's own, or the game's default).
+    public void Swing(byte kind)
     {
-        if (animator != null) animator.SetTrigger("Attack");
+        bool heavy = kind == 3;
+        if (animator != null) animator.SetTrigger(heavy ? "SwingHeavy" : kind == 2 ? "SwingB" : "SwingA");
         if (!AudioManager.HasInstance || player == null) return;
         var weapon = Coop.Item(player.Current.right.ToString());
         var profile = weapon != null ? weapon.weapon : null;
@@ -222,6 +230,14 @@ public class CoopAvatar : MonoBehaviour
             : heavy && profile.heavySwingAudio != null ? profile.heavySwingAudio : profile.swingAudio;
         if (audio != null) AudioManager.Instance.PlaySFXData(audio, transform.position + Vector3.up * 1.2f * builtScale);
     }
+    // The shield bash, with its sound where the body is.
+    public void Bash()
+    {
+        if (animator != null) animator.SetTrigger("Bash");
+        var audio = CombatManager.HasInstance ? CombatManager.Instance.shieldBashAudio : null;
+        if (audio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(audio, transform.position + Vector3.up * 1.2f * builtScale);
+    }
+
     public void Cast() { if (animator != null) animator.SetTrigger("CastSpell"); }
     public void Hurt() { if (animator != null && player != null && player.Current.alive) animator.SetTrigger("Hurt"); }
 }

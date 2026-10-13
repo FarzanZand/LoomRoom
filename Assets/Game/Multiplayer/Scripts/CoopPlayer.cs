@@ -20,7 +20,8 @@ public class CoopPlayer : NetworkBehaviour
     // Down on the table and alive: enemies on this machine can see and hit it (never the local player's own).
     public bool Hunted => !IsOwner && State.Value.place == CoopPlace.Table && State.Value.alive && State.Value.inRun;
 
-    bool wasAttacking, wasCasting;
+    int shownRelease;
+    bool wasCasting, wasBashing;
     Player watchedTable;
     Unity.Netcode.Components.NetworkTransform motion;
 
@@ -103,9 +104,11 @@ public class CoopPlayer : NetworkBehaviour
         s.crouching = active != null && active.Motor != null && active.Motor.IsCrouching;
         s.seated = s.place == CoopPlace.Room && IntroController.Seated;
         bool onTable = s.place == CoopPlace.Table && table != null;
-        // A shield bash shows as the shield held up while the body dashes forward.
         var bash = onTable ? table.GetComponent<ShieldBash>() : null;
-        s.blocking = onTable && ((table.Combat != null && table.Combat.IsGuarding) || (bash != null && bash.Busy));
+        s.blocking = onTable && table.Combat != null && table.Combat.IsGuarding;
+        int release = onTable && table.Combat != null ? table.Combat.ReleaseShown : 0;
+        s.charging = onTable && table.Combat != null && table.Combat.IsAttacking && release == 0;
+        s.airborne = active != null && active.Motor != null && !active.Motor.IsGrounded && active.Motor.AirborneTime > .15f;
         s.health = table != null && table.Stats != null && table.Stats.MaxHealth > 0 ? (byte)Mathf.Clamp(Mathf.CeilToInt(table.Stats.CurrentHealth / table.Stats.MaxHealth * 255f), 0, 255) : (byte)0;
         var progress = table != null ? table.GetComponent<AdventurerProgress>() : null;
         s.classId = new FixedString32Bytes(progress != null && progress.selectedClass != null ? progress.selectedClass.id : "");
@@ -113,17 +116,20 @@ public class CoopPlayer : NetworkBehaviour
         s.left = new FixedString64Bytes(onTable && table.Equipment != null ? Coop.SaveId(table.Equipment.Get(EquipmentSlot.LeftHand)) : "");
         if (!s.Equals(State.Value)) State.Value = s;
 
-        // One-shot moments the others see: a swing, a spell.
-        bool attacking = onTable && table.Combat != null && table.Combat.IsAttacking;
-        if (attacking && !wasAttacking) SwingRpc(table.Combat.HeavySwing);
-        wasAttacking = attacking;
+        // One-shot moments the others see, as the arms play them: a swing as its release starts, a bash, a spell.
+        if (release != shownRelease && release != 0) SwingRpc((byte)release);
+        shownRelease = release;
+        bool bashing = bash != null && bash.Busy;
+        if (bashing && !wasBashing) BashRpc();
+        wasBashing = bashing;
         var spells = onTable ? table.GetComponent<PlayerSpellcasting>() : null;
         bool casting = spells != null && spells.Casting;
         if (casting && !wasCasting) CastRpc();
         wasCasting = casting;
     }
 
-    [Rpc(SendTo.NotOwner)] void SwingRpc(bool heavy) => Avatar.Swing(heavy);
+    [Rpc(SendTo.NotOwner)] void SwingRpc(byte kind) => Avatar.Swing(kind);
+    [Rpc(SendTo.NotOwner)] void BashRpc() => Avatar.Bash();
     [Rpc(SendTo.NotOwner)] void CastRpc() => Avatar.Cast();
     // Hurt: the others see the flinch and the blood.
     [Rpc(SendTo.NotOwner)]

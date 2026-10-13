@@ -21,6 +21,7 @@ public static class CoopSetup
     const string ManagerPrefabPath = PrefabsDir + "/Multiplayer Manager.prefab";
     const string PrefabListPath = PrefabsDir + "/Network Prefabs.asset";
     const string ShieldGripPath = "Assets/Game/Characters/Resources/Synty humanoid shield grip.asset";
+    const string WeaponGripPath = "Assets/Game/Multiplayer/Bodies/Coop weapon grip.asset";
 
     // Class id -> the Synty character its body is made from.
     static readonly (string classId, string character)[] ClassBodies =
@@ -55,16 +56,38 @@ public static class CoopSetup
 
     // ── Assets ────────────────────────────────────────────────────────
 
-    static EnemyWeaponGrip ShieldGrip()
+    // The grips again from the table player's sockets, on the manager prefab and the scene's manager.
+    [MenuItem("Tools/LoomRoom/Multiplayer/Refresh Body Grips")]
+    public static void RefreshGrips()
     {
-        var grip = AssetDatabase.LoadAssetAtPath<EnemyWeaponGrip>(ShieldGripPath);
-        if (grip != null) return grip;
-        grip = ScriptableObject.CreateInstance<EnemyWeaponGrip>();
-        // On the back of the left forearm, face out.
-        grip.position = new Vector3(-.05f, .02f, -.08f);
-        grip.rotation = new Vector3(90, -90, 0);
-        grip.scale = 1;
-        AssetDatabase.CreateAsset(grip, ShieldGripPath);
+        var weapon = FirstPersonGrip(WeaponGripPath, "RightHand_Socket");
+        var shield = ShieldGrip();
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Multiplayer/Prefabs/Multiplayer Manager.prefab");
+        foreach (var m in new[] { prefab != null ? prefab.GetComponent<MultiplayerManager>() : null, Object.FindAnyObjectByType<MultiplayerManager>(FindObjectsInactive.Include) })
+        {
+            if (m == null) continue;
+            m.weaponGrip = weapon; m.shieldGrip = shield; m.shieldBlockTurn = Vector3.zero;
+            EditorUtility.SetDirty(m);
+        }
+        AssetDatabase.SaveAssets();
+        Debug.Log($"[Coop] Grips from the first-person sockets: weapon {weapon.position} {weapon.rotation}, shield {shield.position} {shield.rotation}");
+    }
+
+    static EnemyWeaponGrip ShieldGrip() => FirstPersonGrip(ShieldGripPath, "LeftHand_Socket");
+
+    // A teammate's grip is the table player's own hand socket (the arms and the bodies are the same Synty skeleton),
+    // so a held item sits on the body as it does in first person (with its held position and rotation on top).
+    static EnemyWeaponGrip FirstPersonGrip(string path, string socketName)
+    {
+        var grip = AssetDatabase.LoadAssetAtPath<EnemyWeaponGrip>(path);
+        if (grip == null) { grip = ScriptableObject.CreateInstance<EnemyWeaponGrip>(); AssetDatabase.CreateAsset(grip, path); }
+        var table = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Characters/Players/Table/TablePlayer.prefab");
+        var socket = table != null ? table.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == socketName) : null;
+        if (socket == null) { Debug.LogWarning($"[Coop] The table player has no {socketName}; the grip keeps its values."); return grip; }
+        grip.position = socket.localPosition;
+        grip.rotation = socket.localEulerAngles;
+        grip.scale = 1f;
+        EditorUtility.SetDirty(grip);
         return grip;
     }
 
@@ -202,7 +225,7 @@ public static class CoopSetup
         var manager = go.GetComponent<MultiplayerManager>();
         if (manager == null) manager = go.AddComponent<MultiplayerManager>();
         manager.bodyController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Game/Characters/Animations/HumanoidController.controller");
-        manager.weaponGrip = Resources.Load<EnemyWeaponGrip>("Synty humanoid weapon grip");
+        manager.weaponGrip = FirstPersonGrip(WeaponGripPath, "RightHand_Socket");
         manager.shieldGrip = shieldGrip;
         if (roomBody != null && (manager.roomBodies == null || manager.roomBodies.All(b => b == null))) manager.roomBodies = new[] { roomBody };
         if (manager.defaultTableBody == null && bodies.TryGetValue("fighter", out var fighter)) manager.defaultTableBody = fighter;

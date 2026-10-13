@@ -77,8 +77,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     [Tooltip("Animator for every body (the Humanoid controller: locomotion, attack, cast, hurt, death).")]
     public RuntimeAnimatorController bodyController;
     public EnemyWeaponGrip weaponGrip, shieldGrip;
-    [Tooltip("The shield's turn on the left hand while blocking (the arm is raised, its face to the front); at rest it hangs as Shield Grip says.")]
-    public Vector3 shieldBlockRotation = new Vector3(0, -90, 90);
+    [Tooltip("An extra turn of the shield while blocking, on top of Shield Grip (the block pose raises the arm; zero keeps the grip).")]
+    public Vector3 shieldBlockTurn = Vector3.zero;
     [Tooltip("The room is built about this many units to the metre (the room player's scale).")]
     public float roomScale = 20f;
     [Tooltip("Enemies that can appear mid-floor (a crate's rat, ambush waves): every enemy prefab. Tools > LoomRoom > Multiplayer > Set Up fills it.")]

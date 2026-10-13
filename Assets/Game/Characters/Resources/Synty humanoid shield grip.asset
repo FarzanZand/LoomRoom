@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3e06d51d3a70204194d7f750172a10c, type: 3}
   m_Name: Synty humanoid shield grip
   m_EditorClassIdentifier: Assembly-CSharp::EnemyWeaponGrip
-  position: {x: -0.05, y: 0.02, z: -0.08}
-  rotation: {x: 90, y: -90, z: 0}
+  position: {x: -0.078, y: -0.03, z: 0}
+  rotation: {x: 15.000004, y: 270, z: 270}
   scale: 1

@@ -17,6 +17,7 @@ using UnityEngine;
 //   spam <n> <gap>          n taps, gap seconds apart
 //   counter                 attack as soon as the enemy starts a swing
 //   wait <s>                capture <s> <name>  frames to Temp/CombatTest/<name> (runs alongside)
+//   rec <s> <name>          real-time frames named by milliseconds (two co-op players side by side)
 //   chest <metres> [wood|iron|gold]   place a chest in front of the player; open  opens it
 //   god [off]               keep the player at full health
 //   fight <s> <metres> [block 0-1]  fight like a plain player (block: share of enemy swings it reacts to; 1 = every one) for up to s seconds: walk at the nearest enemy within <metres>,
@@ -97,6 +98,7 @@ public class CombatTestBot : MonoBehaviour
                         Press(true); yield return new WaitForSeconds(.05f); Press(false);
                         break;
                     case "capture": StartCoroutine(Capture(F(1, 2f), parts.Length > 2 ? parts[2] : "take")); break;
+                    case "rec": StartCoroutine(Record(F(1, 2f), parts.Length > 2 ? parts[2] : "take")); break;
                     case "freeze": SetBrain(false); break;
                     case "unfreeze": SetBrain(true); break;
                     case "heal": Heal(player); Heal(enemy); break;
@@ -347,6 +349,33 @@ public class CombatTestBot : MonoBehaviour
         }
         Time.captureFramerate = previous;
         Log($"captured {frames} frames to {dir}");
+    }
+
+    // Real time, no fixed frame rate (for comparing what two co-op players see): frames named by milliseconds since
+    // the start, as JPGs at half size, as fast as the game runs.
+    IEnumerator Record(float seconds, string name)
+    {
+        string dir = System.IO.Path.Combine("Temp", "CombatTest", name);
+        if (System.IO.Directory.Exists(dir)) System.IO.Directory.Delete(dir, true);
+        System.IO.Directory.CreateDirectory(dir);
+        float start = Time.realtimeSinceStartup;
+        int frames = 0;
+        while (Time.realtimeSinceStartup - start < seconds)
+        {
+            yield return new WaitForEndOfFrame();
+            var shot = ScreenCapture.CaptureScreenshotAsTexture();
+            var small = new RenderTexture(shot.width / 2, shot.height / 2, 0);
+            Graphics.Blit(shot, small);
+            var half = new Texture2D(small.width, small.height, TextureFormat.RGB24, false);
+            var was = RenderTexture.active; RenderTexture.active = small;
+            half.ReadPixels(new Rect(0, 0, small.width, small.height), 0, 0); half.Apply();
+            RenderTexture.active = was;
+            int ms = Mathf.RoundToInt((Time.realtimeSinceStartup - start) * 1000f);
+            System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, $"{ms:000000}.jpg"), half.EncodeToJPG(85));
+            Destroy(shot); Destroy(half); small.Release(); Destroy(small);
+            frames++;
+        }
+        Log($"recorded {frames} frames in {seconds} s to {dir}");
     }
 
     void OnDestroy() { if (instance == this) instance = null; Time.captureFramerate = 0; }
