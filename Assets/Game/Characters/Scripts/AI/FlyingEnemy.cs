@@ -17,6 +17,9 @@ public class FlyingEnemy : MonoBehaviour
 
     // Asleep (a sleeping pack) it hangs upside down this high, under the ceiling; set by EnemySleep.
     public float RoostHeight { get; set; } = 2.6f;
+    // Co-op: the height it flies at now (sent to guests), and on a guest the host's height to follow.
+    public float Height => height;
+    public float? NetworkHeight { get; set; }
 
     EnemyBrain brain;
     Character character;
@@ -104,6 +107,7 @@ public class FlyingEnemy : MonoBehaviour
         bool roosting = brain.Asleep;
         float wanted = roosting ? RoostHeight : swinging ? diveHeight : cruiseHeight + Mathf.Sin(Time.time * 1.7f + phase) * bob;
         float rate = swinging ? climbSpeed * 2f : climbSpeed;
+        if (NetworkHeight.HasValue && !roosting) { wanted = NetworkHeight.Value; rate = climbSpeed * 4f; }
         height = Mathf.MoveTowards(height, wanted, rate * Time.deltaTime);
         if (roosting) height = wanted;
         if (model != null)

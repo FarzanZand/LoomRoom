@@ -1,0 +1,118 @@
+using Unity.Collections;
+using Unity.Netcode;
+using UnityEngine;
+
+// One player in a co-op session (the NetworkManager's player prefab). Its owner moves it onto the body they play
+// (the room player or the table player) and writes its state. Everywhere else it is that player: a body to look at
+// (CoopAvatar) and a stand-in Character enemies hunt and hit; their blows go to the owner, who blocks or takes them.
+[RequireComponent(typeof(CoopAvatar))]
+public class CoopPlayer : NetworkBehaviour
+{
+    public readonly NetworkVariable<byte> Slot = new(Coop.NoSlot);
+    public readonly NetworkVariable<FixedString64Bytes> PlayerName = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public readonly NetworkVariable<CoopPlayerState> State = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    public Character Proxy { get; private set; }
+    public CoopAvatar Avatar { get; private set; }
+    public string DisplayName => string.IsNullOrEmpty(PlayerName.Value.ToString()) ? $"Player {Slot.Value + 1}" : PlayerName.Value.ToString();
+    public CoopPlayerState Current => State.Value;
+    public int SlotIndex => Slot.Value == Coop.NoSlot ? -1 : Slot.Value;
+    // Down on the table and alive: enemies on this machine can see and hit it (never the local player's own).
+    public bool Hunted => !IsOwner && State.Value.place == CoopPlace.Table && State.Value.alive && State.Value.inRun;
+
+    bool wasAttacking, wasCasting;
+    Player watchedTable;
+
+    void Awake()
+    {
+        Proxy = GetComponent<Character>();
+        Avatar = GetComponent<CoopAvatar>();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (!MultiplayerManager.HasInstance) return;
+        var manager = MultiplayerManager.Instance;
+        if (IsServer && Slot.Value == Coop.NoSlot) Slot.Value = manager.FreeSlot(OwnerClientId);
+        if (IsOwner) PlayerName.Value = new FixedString64Bytes(manager.LocalName);
+        manager.Register(this);
+        Avatar.Bind(this);
+        if (IsOwner) Watch(PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        Watch(null);
+        if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Unregister(this);
+        Avatar.Unbind();
+    }
+
+    void Watch(Player table)
+    {
+        if (watchedTable != null) watchedTable.Damaged -= OnLocalDamaged;
+        watchedTable = table;
+        if (watchedTable != null) watchedTable.Damaged += OnLocalDamaged;
+    }
+
+    void OnLocalDamaged(DamageInfo info)
+    {
+        if (info.Amount > 0 && !info.Blocked) HurtRpc();
+    }
+
+    void LateUpdate()
+    {
+        if (!IsSpawned) return;
+        if (IsOwner) WriteOwnState();
+        else if (Proxy != null && Proxy.Stats != null)
+        {
+            var s = State.Value;
+            Proxy.Stats.SetNetworkHealth(s.alive ? Mathf.Max(1f, s.health / 255f * Proxy.Stats.MaxHealth) : 0f);
+        }
+    }
+
+    // The owner: follow the body being played and describe it.
+    void WriteOwnState()
+    {
+        if (!PlayerManager.HasInstance || !MultiplayerManager.HasInstance) return;
+        var players = PlayerManager.Instance;
+        var active = players.Active;
+        var table = players.GetPlayer(PlayerKind.Table);
+        if (active != null)
+        {
+            float yaw = active.Look != null ? active.Look.YawTransform.eulerAngles.y : active.transform.eulerAngles.y;
+            transform.SetPositionAndRotation(active.transform.position, Quaternion.Euler(0f, yaw, 0f));
+        }
+        var manager = MultiplayerManager.Instance;
+        var s = State.Value;
+        s.place = players.ActiveKind == PlayerKind.Table ? CoopPlace.Table : CoopPlace.Room;
+        s.alive = table != null && table.IsAlive;
+        s.inRun = manager.LocalInRun;
+        s.atTable = manager.LocalAtTable;
+        s.ready = manager.LocalReady;
+        s.crouching = active != null && active.Motor != null && active.Motor.IsCrouching;
+        bool onTable = s.place == CoopPlace.Table && table != null;
+        s.blocking = onTable && table.Combat != null && table.Combat.IsGuarding;
+        s.health = table != null && table.Stats != null && table.Stats.MaxHealth > 0 ? (byte)Mathf.Clamp(Mathf.CeilToInt(table.Stats.CurrentHealth / table.Stats.MaxHealth * 255f), 0, 255) : (byte)0;
+        var progress = table != null ? table.GetComponent<AdventurerProgress>() : null;
+        s.classId = new FixedString32Bytes(progress != null && progress.selectedClass != null ? progress.selectedClass.id : "");
+        s.right = new FixedString64Bytes(onTable && table.Equipment != null ? Coop.SaveId(table.Equipment.Get(EquipmentSlot.RightHand)) : "");
+        s.left = new FixedString64Bytes(onTable && table.Equipment != null ? Coop.SaveId(table.Equipment.Get(EquipmentSlot.LeftHand)) : "");
+        if (!s.Equals(State.Value)) State.Value = s;
+
+        // One-shot moments the others see: a swing, a spell.
+        bool attacking = onTable && table.Combat != null && table.Combat.IsAttacking;
+        if (attacking && !wasAttacking) SwingRpc(table.Combat.HeavySwing);
+        wasAttacking = attacking;
+        var spells = onTable ? table.GetComponent<PlayerSpellcasting>() : null;
+        bool casting = spells != null && spells.Casting;
+        if (casting && !wasCasting) CastRpc();
+        wasCasting = casting;
+    }
+
+    [Rpc(SendTo.NotOwner)] void SwingRpc(bool heavy) => Avatar.Swing(heavy);
+    [Rpc(SendTo.NotOwner)] void CastRpc() => Avatar.Cast();
+    [Rpc(SendTo.NotOwner)] void HurtRpc() => Avatar.Hurt();
+
+    // Host -> owner: an enemy's blow reached this player's stand-in on the host.
+    [Rpc(SendTo.Owner)] public void HitRpc(NetDamage hit) => CoopWorld.ReceiveEnemyHit(hit);
+}

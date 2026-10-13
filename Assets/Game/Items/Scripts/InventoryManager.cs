@@ -180,7 +180,10 @@ public class InventoryManager : Singleton<InventoryManager>
         var pickup = Spawn(item, pos);
         var level = TableManager.Loader;
         if (pickup != null && player.kind == PlayerKind.Table && level != null && level.Dungeon != null)
+        {
             pickup.transform.SetParent(level.Dungeon.transform, true);
+            CoopWorld.Dropped(pickup, pickup.Count);
+        }
         return pickup;
     }
 

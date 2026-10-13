@@ -56,6 +56,9 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     // A chest or barrel opening (a trapped chest springs its spikes).
     public event System.Action<DungeonContainer> Opened;
 
+    // Co-op: another player opened it.
+    public void OpenFromNetwork() => Open();
+
     void Open()
     {
         if (opened) return;
@@ -63,9 +66,10 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         Opened?.Invoke(this);
         if(AudioManager.HasInstance && openAudio!=null) AudioManager.Instance.PlaySFX(openAudio,transform.position,openVolume,.06f);
         NoiseEvents.Report(transform.position,7);
-        var rng = new System.Random(seed);
+        var rng = new System.Random(CoopWorld.LootSeed(seed));
         if(!chest || lid==null)foreach(var collider in GetComponentsInChildren<Collider>())collider.enabled=false;
         var dropPosition=transform.position+(chest && lid!=null ? transform.forward*.9f : Vector3.zero);
+        CoopWorld.BeginLoot(this);
         if(guaranteedItem!=null)DungeonPickup.Spawn(guaranteedItem,dropPosition,transform.parent);
         var source=chest ? DungeonLootSource.Chest:DungeonLootSource.Barrel;
         var (drops,gold)=DungeonLootDrop.Roll(loot,rng,floorNumber,source);
@@ -86,6 +90,7 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         // A chest glows gold as it opens and its loot jumps out (Heathen).
         var mouth=transform.position+Vector3.up*.55f;
         DungeonLootDrop.Spill(drops,gold,dropPosition,transform.parent,chest ? mouth : (Vector3?)null);
+        CoopWorld.EndLoot();
         if(chest)Glow(mouth);
         if(chest && stingAudio!=null && AudioManager.HasInstance) DOVirtual.DelayedCall(.12f,()=>AudioManager.Instance.PlaySFX(stingAudio,transform.position,stingVolume,.02f)).SetLink(gameObject);
         if(chest && lid!=null)

@@ -47,6 +47,13 @@ float _PixelLookBrightness;
 // direct light times _LoomLampTint.rgb, each by its a. Room surfaces (rendering layer Room, value 8) are never touched.
 float4 _LoomLightRadius;
 float4 _LoomLightRadiusEdge;
+// Set by MultiplayerManager: a dead co-op player watching from the room sees the dungeon cut away above height x
+// (y = 1: on), so the others can be seen. Room surfaces (rendering layer Room, value 8) are never cut.
+float4 _LoomCutaway;
+void LoomCutaway(float3 positionWS)
+{
+    if (_LoomCutaway.y > 0 && positionWS.y > _LoomCutaway.x && (GetMeshRenderingLayer() & 8u) == 0u) discard;
+}
 float4 _LoomShadowTint;
 float4 _LoomLampTint;
 // Set by ScreenManager (Pixel lighting > Pixel size). Texels grow this many times; 0 (never set) reads as 1.

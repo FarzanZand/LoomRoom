@@ -60,6 +60,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
     public bool CanInteract(Character who) => who is Player player && player.kind == PlayerKind.Room
         && player.IsAlive && PlayerManager.HasInstance && PlayerManager.Instance.Active == player
         && (loader == null || !loader.Busy) && sitting == null
+        && !(Coop.Running && MultiplayerManager.Instance.LocalInRun)
         && !PixelCrushers.DialogueSystem.DialogueManager.isConversationActive
         && !(WorldManager.HasInstance && WorldManager.Instance.ending != null && WorldManager.Instance.ending.Running);
     protected override void Awake()
@@ -99,6 +100,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
     IEnumerator SitThenChoose(Player player, TableLevelData chosenLevel = null, AdventurerClass only = null, DungeonMaster.Line prompt = null, bool showCard = true)
     {
         PushDialogue();
+        if (Coop.Running) MultiplayerManager.Instance.SatDown();
         yield return Sit(player);
 
         Seated?.Invoke(player);
@@ -124,7 +126,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
             else yield return StepToFigures(player);
             AdventurerClass picked = null;
             AdventurerClass savedClass = null; string savedDetail = null;
-            if (only == null) SavedRun(out savedClass, out savedDetail);
+            if (only == null && !Coop.Running) SavedRun(out savedClass, out savedDetail);
             // Through the intro there is no standing up: Esc does nothing.
             bool canStand = !IntroController.Seated;
             var offered = only == null ? IntroController.OfferedClasses : null;
@@ -138,7 +140,21 @@ public class TableManager : Singleton<TableManager>, IInteractable
                 // over, so the table being built is never missed by glancing away.
                 yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false);
                 player.Look.HeightOverride = null;
-                if (figures.ResumeChosen) loader.ResumeAdventure();
+                if (Coop.Running)
+                {
+                    // Co-op: wait seated for the others; the host starts the run for everyone.
+                    bool started = false;
+                    yield return MultiplayerManager.Instance.WaitAtTable(picked, level, player, s => started = s);
+                    if (!started)
+                    {
+                        PopDialogue();
+                        StandUp(player);
+                        MultiplayerManager.Instance.StoodUp();
+                        sitting = null; sittingPlayer = null;
+                        yield break;
+                    }
+                }
+                else if (figures.ResumeChosen) loader.ResumeAdventure();
                 else loader.Load(level);
                 PopDialogue();
             }
@@ -147,6 +163,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
                 PopDialogue();
                 yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false);
                 StandUp(player);
+                if (Coop.Running) MultiplayerManager.Instance.StoodUp();
             }
             sitting = null; sittingPlayer = null;
             yield break;
@@ -220,6 +237,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
         // Aim at the figures' middle, not their feet.
         var centre = figures.Centre + Vector3.up * figureAimHeight;
         var to = new Vector3(centre.x, player.transform.position.y, centre.z) + facing * figureViewDistance;
+        // Co-op: side by side with the others.
+        if (Coop.Running) to += MultiplayerManager.Instance.FigureOffset(facing);
         var from = player.transform.position;
         float fromYaw = player.Look.YawTransform.eulerAngles.y, fromPitch = player.Look.Pitch;
         float fromZoom = player.CameraRig != null ? player.CameraRig.FovOffset : 0f;

@@ -18,6 +18,7 @@ MonoBehaviour:
   portrait: {fileID: 21300000, guid: 5ed52b5d2b92c7e4db8676ed0e6bb005, type: 3}
   miniature: {fileID: 7150585330265139970, guid: 5de9132990a12fe4c95693101094544e, type: 3}
   unlockFlag: 
+  coopBody: {fileID: 272089454752684668, guid: 13bff3fd77a1aca428e375024d5a3a2b, type: 3}
   equipment:
   - {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
   spells:

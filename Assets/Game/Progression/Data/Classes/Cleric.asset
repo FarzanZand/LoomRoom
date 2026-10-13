@@ -18,6 +18,7 @@ MonoBehaviour:
   portrait: {fileID: 21300000, guid: 1d817ca439b2c534baddb60371f4aec0, type: 3}
   miniature: {fileID: 9058385677225207783, guid: 631d397a04272644e86d53db57b46ad0, type: 3}
   unlockFlag: 
+  coopBody: {fileID: 8098569556554502697, guid: b283a808e5101b248af3c30aa32237f8, type: 3}
   equipment:
   - {fileID: 11400000, guid: b1a6850fe492d4643b2c79564b88c087, type: 2}
   - {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}

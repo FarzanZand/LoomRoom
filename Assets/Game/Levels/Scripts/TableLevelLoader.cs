@@ -21,6 +21,9 @@ public class TableLevelLoader : MonoBehaviour
     public int GenerationLevel => generationLevel;
     public bool HasNextFloor => Current!=null && Current.IsDungeon && FloorNumber<Current.FloorCount;
     int runSeed;
+    public int RunSeed => runSeed;
+    // Co-op: the run, floor and loot level the host sent (MultiplayerManager), used by the next load.
+    RunStart? coopStart;
     TableLevelMenu menu;
     Player player;
     Vector3 townPosition;
@@ -115,6 +118,15 @@ public class TableLevelLoader : MonoBehaviour
         pendingResume = checkpoint;
         StartCoroutine(LoadRoutine(level));
     }
+    // Co-op: the host's run, from its seed: a first floor, a deeper one (dead players come back), or the current one
+    // for a player who sat down late.
+    public void CoopLoad(TableLevelData level, RunStart start)
+    {
+        if(Busy || level==null) return;
+        Initialize();
+        coopStart=start;
+        StartCoroutine(LoadRoutine(level,start.descend));
+    }
     public void Descend()
     {
         if(Busy || !HasNextFloor || player==null || !player.IsAlive)return;
@@ -126,7 +138,10 @@ public class TableLevelLoader : MonoBehaviour
         // Loading from the room: the table player may never have been active yet.
         PlayerManager.Instance.EnsureInitialized(PlayerKind.Table);
         int previousFloor=FloorNumber, previousSeed=runSeed;
-        if(descending) FloorNumber++;
+        var coop=coopStart; coopStart=null;
+        bool coopRevive=coop.HasValue && descending && !player.IsAlive;
+        if(coop.HasValue) { FloorNumber=Mathf.Max(1,coop.Value.floor); runSeed=coop.Value.seed; }
+        else if(descending) FloorNumber++;
         else { FloorNumber=1;runSeed=level.fixedSeed!=0 ? level.fixedSeed : UnityEngine.Random.Range(1,int.MaxValue); }
         var resume = pendingResume; pendingResume = null;
         if (!descending) Resumed = resume != null;
@@ -150,7 +165,7 @@ public class TableLevelLoader : MonoBehaviour
             bool ready=false;
             try {
                 LootSource.BiomeProgress = floor => { level.BiomeAt(floor, out int at, out int count); return count <= 1 ? 1 : (at - 1f) / (count - 1); };
-                LootSource.GenerationLevel = resume != null ? Mathf.Max(1, resume.lootLevel) : descending ? player.GetComponent<AdventurerProgress>().Level : 1;
+                LootSource.GenerationLevel = coop.HasValue ? Mathf.Max(1, coop.Value.generationLevel) : resume != null ? Mathf.Max(1, resume.lootLevel) : descending ? player.GetComponent<AdventurerProgress>().Level : 1;
                 generationLevel = LootSource.GenerationLevel.Value;
                 Prepare(level, useReveal);
                 DebugDungeonSession.ConfigureEnemies(Dungeon);
@@ -175,7 +190,7 @@ public class TableLevelLoader : MonoBehaviour
                     }
                 }
                 else if(level.kind==TableLevelKind.Town) RestoreTownInventory();
-                if(!descending) player.Stats.Revive();
+                if(!descending || coopRevive) player.Stats.Revive();
                 if(ProgressionManager.HasInstance) ProgressionManager.Instance.tableEntered=true;
                 if(level.IsDungeon && RunManager.HasInstance)
                 {
@@ -302,6 +317,12 @@ public class TableLevelLoader : MonoBehaviour
         if(previousEnvironment!=null){previousEnvironment.SetActive(false);Destroy(previousEnvironment);}
         SetTown(level.kind==TableLevelKind.Town);
         Current=level;
+        if(level.IsDungeon) CoopWorld.FloorBuilt(Dungeon,CoopWorld.KeyFor(runSeed,FloorNumber));
+        // Co-op: each player starts beside the others.
+        if(Coop.Running && level.IsDungeon) {
+            var beside=spawn+MultiplayerManager.Instance.SpawnOffset(rotation);
+            if(UnityEngine.AI.NavMesh.SamplePosition(beside,out var hit,1f,UnityEngine.AI.NavMesh.AllAreas)) spawn=hit.position+Vector3.up*.12f;
+        }
         if(lighting!=null && !deferPlayerSwitch) {
             if(level.IsBoard) lighting.BlendToMood(level.BoardLighting(lighting,FloorNumber),0);
             else if(level.IsDungeon) lighting.BlendToMood(level.DungeonLighting(FloorNumber),0);
@@ -349,6 +370,8 @@ public class TableLevelLoader : MonoBehaviour
     void OnDied()
     {
         if(Current==null || !Current.IsDungeon) return;
+        // Co-op: the run goes on while anyone is alive; the host ends it for everyone.
+        if(Coop.Running && MultiplayerManager.Instance.LocalInRun) { MultiplayerManager.Instance.LocalDied(); return; }
         if(RunManager.HasInstance && RunManager.Instance.PlayDeath()) return;
         StartCoroutine(DeathMenu());
     }

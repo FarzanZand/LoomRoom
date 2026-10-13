@@ -31,6 +31,8 @@ public class AdventurerClass : ScriptableObject
     [AssetsOnly] public GameObject miniature;
     [Tooltip("Empty = available from the start. Otherwise the progression flag that unlocks it.")]
     public string unlockFlag;
+    [Tooltip("Co-op: the body the other players see you in on the table (a humanoid Synty character with its pixel restyle). Empty: MultiplayerManager's default body.")]
+    [AssetsOnly, PreviewField(64)] public GameObject coopBody;
 
     [Title("Starting kit")]
     public ItemData[] equipment = Array.Empty<ItemData>();

@@ -67,6 +67,7 @@ public class CurrencyManager : Singleton<CurrencyManager>
         go.transform.position = position;
         var pickup = go.AddComponent<CoinPickup>();
         pickup.Init(amount);
+        CoopWorld.Spawned(go);
         return pickup;
     }
 

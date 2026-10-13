@@ -18,7 +18,7 @@ public class DungeonLootDrop : MonoBehaviour
     {
         if (dropped) return;
         dropped = true;
-        var rng = new System.Random(seed);
+        var rng = new System.Random(CoopWorld.LootSeed(seed));
         var drops = new List<LootSource.Drop>();
         if (carriedItem != null && (!InventoryManager.HasInstance || InventoryManager.Instance.CanDropLoot(carriedItem))) drops.Add(new LootSource.Drop(carriedItem,1));
         // Gold rolls after items so the item results match earlier seeds.
@@ -32,7 +32,9 @@ public class DungeonLootDrop : MonoBehaviour
             corpse.Fill(drops, gold);
             return;
         }
+        CoopWorld.BeginLoot(character);
         Spill(drops, gold, transform.position, transform.parent);
+        CoopWorld.EndLoot();
     }
     // A table's items, then its gold, from one stream (nothing from no table).
     public static (List<LootSource.Drop> items, int gold) Roll(LootSource table, System.Random rng, int floor, DungeonLootSource source)

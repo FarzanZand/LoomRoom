@@ -243,13 +243,25 @@ public class RunManager : Singleton<RunManager>
         if (!Running || Ended || c == null || c is Player || c.GetComponent<EnemyBrain>() == null) return;
         if (player == null || c.LastDamage.Source != player) return; // only the player's kills count and give XP
         Kills++;
+        GainKillExperience(c, 1f);
+    }
+
+    // Co-op: another player's kill gives this player a share of its XP.
+    public void AwardPartyKill(Character c)
+    {
+        if (!Running || Ended || c == null || c.GetComponent<EnemyBrain>() == null) return;
+        GainKillExperience(c, MultiplayerManager.HasInstance ? MultiplayerManager.Instance.partyKillExperience : .5f);
+    }
+
+    void GainKillExperience(Character c, float share)
+    {
         var progress = player != null ? player.GetComponent<AdventurerProgress>() : null;
         if (progress == null || progress.rules == null) return;
         // Tougher enemies are worth more: an authored value, or one scaled from maximum health.
         var data = c.GetComponent<EnemyBrain>().Data;
         float xp = data != null && data.experience > 0 ? data.experience
                  : progress.rules.xpPerEnemy * Mathf.Clamp(c.Stats != null ? c.Stats.MaxHealth / 20f : 1f, .5f, 6f);
-        progress.GainExperience(xp * (1 + (Floor - 1) * .12f));
+        progress.GainExperience(xp * share * (1 + (Floor - 1) * .12f));
     }
 }
 

@@ -9,6 +9,8 @@ public partial class DungeonGenerator : MonoBehaviour
     public Vector3 SpawnPoint { get; private set; }
     public Quaternion SpawnRotation { get; private set; }=Quaternion.identity;
     public Vector3 ExitPoint { get; private set; }
+    // The floor's walking height where the players start (co-op's cutaway measures walls from it).
+    public float FloorHeight => SpawnPoint.y - .12f;
     public NavMeshSurface Surface { get; private set; }
     NavMeshData navMeshData;
     TableLevelData data;
@@ -387,6 +389,8 @@ public partial class DungeonGenerator : MonoBehaviour
             bool guarded=Roles[i]==RoomRole.Treasure || Roles[i]==RoomRole.Storage;
             if(Roles[i]!=RoomRole.Combat && Roles[i]!=RoomRole.Exit && !guarded)continue;
             int count=guarded ? 1 : random.Next(MinEnemiesPerRoom,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
+            // Co-op: bigger packs for a bigger party (added after the draw, so the room rolls the same).
+            if(!guarded)count=Mathf.Min(8,count+Coop.ExtraEnemies);
             if(templates[i]!=null && templates[i].replaceGeneratedEnemies)count=0;
             if(i==MerchantRoom)count=0;
             if(EventOf(i)==RoomEvent.Ambush)count=0;

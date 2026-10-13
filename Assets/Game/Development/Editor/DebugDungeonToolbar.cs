@@ -33,6 +33,7 @@ public static class DebugDungeonToolbar
         new MainToolbarButton(new MainToolbarContent("Dungeon", "Generate the level picked in the dropdown next to it and play it straight away, skipping the room."), StartDungeon),
         new MainToolbarDropdown(new MainToolbarContent(DungeonLabel(), "The level the Dungeon button plays (WorldManager's Debug Dungeons)."), ShowDungeonMenu),
         new MainToolbarButton(new MainToolbarContent("Room", "Start in the room as the room player on an ordinary morning: no intro, wake-up or character sheet. Uses the normal save."), StartRoom),
+        new MainToolbarButton(new MainToolbarContent("Co-op", "Test co-op on this computer: Multiplayer Play Mode's Player 2 is started, this editor hosts and Player 2 joins, both in the room (no intro). More players: Window > Multiplayer > Multiplayer Play Mode."), CoopTesting.Start),
         new MainToolbarToggle(new MainToolbarContent("Fullscreen", "Play in a borderless Game view covering the whole monitor (F11 toggles it by hand)."), FullscreenGameView.OnPlay, FullscreenGameView.SetOnPlay),
     };
 

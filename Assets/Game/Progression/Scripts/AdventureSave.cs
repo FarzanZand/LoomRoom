@@ -116,7 +116,9 @@ public class AdventureSave : MonoBehaviour
     void FlagChanged(string key, int value) { if (!loading) Write(); }
     public void Write()
     {
-        if (!UsesFile) { Changed?.Invoke(); return; }
+        // Playing in someone else's co-op game: this player's save is left as it was (MultiplayerManager.partyProgression
+        // adds what was earned when the game ends).
+        if (!UsesFile || (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave)) { Changed?.Invoke(); return; }
         if (ProgressionManager.HasInstance) Saved.flags = ProgressionManager.Instance.AllFlags.Select(x => new ProgressionManager.FlagEntry { key = x.Key, value = x.Value }).ToList();
         try
         {
@@ -137,6 +139,7 @@ public class AdventureSave : MonoBehaviour
     public void CaptureFloor()
     {
         if (!progress.InRun || IntroController.PracticeRunning) return;
+        if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave) return;
         var run = RunManager.Instance;
         Saved.checkpoint = new Checkpoint { level = run.Level.name, floor = run.Floor, seed = run.Seed, classId = progress.selectedClass.id,
             characterLevel = progress.Level, lootLevel = TableManager.Loader.GenerationLevel, xp = progress.Experience, skillExperience = (float[])progress.SkillExperience.Clone(), ranks = (int[])progress.Ranks.Clone(), growth = (int[])progress.Growth.Clone(),
@@ -175,6 +178,7 @@ public class AdventureSave : MonoBehaviour
     }
     void Ended(bool victory)
     {
+        if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave) return;
         if (!victory) Saved.memorials.Add(new Memorial { id = Guid.NewGuid().ToString("N"), classId = progress.selectedClass.id, className = progress.selectedClass.displayName, killer = RunManager.Instance.Killer, floor = RunManager.Instance.Floor, level = progress.Level, skills = (int[])progress.Ranks.Clone() });
         Saved.checkpoint = null; Write();
     }

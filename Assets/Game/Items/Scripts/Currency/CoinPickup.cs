@@ -36,6 +36,7 @@ public class CoinPickup : MonoBehaviour, IInteractable
     {
         if (!CanInteract(who)) return;
         collected = true;
+        CoopWorld.CoinsTaken(this, amount);
         if (CurrencyManager.HasInstance) CurrencyManager.Instance.Collect((Player)who, amount, transform.position);
         else who.GetComponent<Wallet>().Add(amount);
         Destroy(gameObject);

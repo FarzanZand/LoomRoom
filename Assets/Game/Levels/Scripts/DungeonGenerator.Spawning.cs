@@ -423,8 +423,20 @@ public partial class DungeonGenerator
     {
         var character=enemy.GetComponent<Character>();
         if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber);
+        // Co-op: tougher for a bigger party.
+        if(character!=null && character.Stats!=null && Coop.PartySize>1)
+            character.Stats.AddModifier(new StatModifier(StatType.MaxHealth,(Coop.PartySize-1)*MultiplayerManager.Instance.enemyHealthPerPlayer,ModifierType.PercentAdd,Coop.PartySource));
         var drop=lootRandom!=null ? enemy.GetComponent<DungeonLootDrop>() : null;
         if(drop!=null){if(!drop.overrideLevelTable)drop.table=First(rewards,FloorLoot);drop.seed=lootRandom.Next();drop.floorNumber=FloorNumber;}
+        return character;
+    }
+
+    // Co-op guests: an enemy the host made mid-floor, set up the same way (its floor scaling and its loot seed).
+    public Character SetUpNetworkEnemy(GameObject enemy,int lootSeed)
+    {
+        var character=SetUpEnemy(enemy,null);
+        var drop=enemy.GetComponent<DungeonLootDrop>();
+        if(drop!=null){if(!drop.overrideLevelTable)drop.table=FloorLoot;drop.seed=lootSeed;drop.floorNumber=FloorNumber;}
         return character;
     }
 

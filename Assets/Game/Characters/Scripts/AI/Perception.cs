@@ -30,8 +30,12 @@ public class Perception : MonoBehaviour
         if (TargetVisible) LastKnownTargetPosition = Target.transform.position;
     }
 
+    // Co-op (CoopWorld): picks among every player on the table, given this enemy and its current target.
+    public static System.Func<Character, Character, Character> ChooseTarget;
+
     Character ResolveTarget()
     {
+        if (ChooseTarget != null) return ChooseTarget(self, Target);
         if (!PlayerManager.HasInstance) return null;
         var player = PlayerManager.Instance.Active;
         if (player == null || !player.IsAlive) return null;

@@ -58,7 +58,8 @@ public class PauseMenuUI : MonoBehaviour
         open = true;
         GameManager.Instance.Push(GameState.Paused);
         resumeTimeScale = Time.timeScale;
-        Time.timeScale = 0f;
+        // In co-op the game goes on for the others: the menu opens over it.
+        if (!Coop.Running) Time.timeScale = 0f;
         root.SetActive(true);
         settings?.Close();
         if (pausePanel != null) pausePanel.SetActive(true);
@@ -79,7 +80,7 @@ public class PauseMenuUI : MonoBehaviour
         open = false;
         if (settings != null) settings.Close();
         if (root != null) root.SetActive(false);
-        Time.timeScale = resumeTimeScale;
+        if (!Coop.Running) Time.timeScale = resumeTimeScale;
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Paused);
     }
 

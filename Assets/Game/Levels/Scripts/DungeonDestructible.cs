@@ -136,6 +136,7 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
     {
         if (broken) return;
         broken = true;
+        CoopWorld.Broken(this, direction);
         Vector3 center = Bounds().center;
         if (AudioManager.HasInstance && breakClip != null) AudioManager.Instance.PlaySFX(breakClip, center, breakVolume, .08f);
         if (noiseRadius > 0f) NoiseEvents.Report(center, noiseRadius);
@@ -148,14 +149,16 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
 
         if (dropsLoot)
         {
-            var rng = new System.Random(seed);
+            var rng = new System.Random(CoopWorld.LootSeed(seed));
             var drop = transform.position;
+            CoopWorld.BeginLoot(this);
             if (guaranteedItem != null) DungeonPickup.Spawn(guaranteedItem, drop, transform.parent);
             if (loot != null)
             {
                 var (items, gold) = DungeonLootDrop.Roll(loot, rng, floorNumber, DungeonLootSource.Barrel);
                 DungeonLootDrop.Spill(items, gold, drop, transform.parent);
             }
+            CoopWorld.EndLoot();
         }
         // Whatever was hiding inside bursts out, already angry.
         if (ambushPrefab != null && ambushChance > 0f && new System.Random(unchecked(seed * 17 + 5)).NextDouble() < ambushChance)

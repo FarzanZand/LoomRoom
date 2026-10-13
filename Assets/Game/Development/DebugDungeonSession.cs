@@ -32,6 +32,8 @@ public class DebugDungeonSession : MonoBehaviour
         UnityEditor.SessionState.SetBool(RequestKey, false);
         UnityEditor.SessionState.SetBool(DungeonRequestKey, false);
         UnityEditor.SessionState.SetBool(RoomRequestKey, false);
+        // Co-op tests (the Co-op button, Multiplayer Play Mode's virtual players) start in the room like Room does.
+        if (CoopEditorTesting.Requested) RoomStart = true;
         if (RoomStart) { CurrentMode = Mode.Room; return; }
         CurrentMode = dungeon ? Mode.Dungeon : Mode.Arena;
         if (arena || dungeon) settings = UnityEditor.AssetDatabase.LoadAssetAtPath<DebugDungeonSettings>(SettingsPath);

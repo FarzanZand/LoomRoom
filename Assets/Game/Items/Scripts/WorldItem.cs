@@ -87,6 +87,7 @@ public class WorldItem : MonoBehaviour, IInteractable
         if (InventoryManager.Instance.Pickup(itemData, player, count))
         {
             claimed = true;
+            CoopWorld.PickedUp(this);
             Destroy(gameObject);
         }
     }

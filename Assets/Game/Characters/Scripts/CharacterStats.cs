@@ -279,9 +279,14 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
     // ── Damage ────────────────────────────────────────────────────────
 
+    // Co-op (CoopWorld): asked before any hit lands. True means the network handles it (a guest's blow on a puppet
+    // goes to the host; a blow on another player's stand-in goes to that player) and nothing happens here.
+    public static Func<CharacterStats, DamageInfo, bool> NetworkIntercept;
+
     public void TakeDamage(DamageInfo info)
     {
         if (!IsAlive) return;
+        if (NetworkIntercept != null && NetworkIntercept(this, info)) return;
         info.Target = Character;
 
         if (!info.Magic && blocker != null && blocker.TryBlock(ref info))
@@ -303,6 +308,26 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         Damaged?.Invoke(info);
 
         if (!IsAlive) Died?.Invoke();
+    }
+
+    // Co-op guests: the host's result of a hit on a puppet enemy, played here as if it had been taken here.
+    public void ApplyNetworkDamage(DamageInfo info, float healthAfter)
+    {
+        if (!IsAlive) return;
+        info.Target = Character;
+        CurrentHealth = Mathf.Clamp(healthAfter, 0f, MaxHealth);
+        HealthChanged?.Invoke();
+        Damaged?.Invoke(info);
+        if (!IsAlive) Died?.Invoke();
+    }
+
+    // Co-op: another player's stand-in shows the health its owner reports.
+    public void SetNetworkHealth(float health)
+    {
+        float now = Mathf.Clamp(health, 0f, MaxHealth);
+        if (Mathf.Approximately(now, CurrentHealth)) return;
+        CurrentHealth = now;
+        HealthChanged?.Invoke();
     }
 
     // ── Healing ───────────────────────────────────────────────────────

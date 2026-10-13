@@ -69,6 +69,7 @@ public static class DungeonPickup
         if (body != null) { body.isKinematic = true; body.useGravity = false; }
         LayFlat(pickup);
         SettleOnFloor(pickup);
+        CoopWorld.Spawned(pickup.gameObject);
         return pickup;
     }
 

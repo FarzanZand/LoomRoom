@@ -83,6 +83,7 @@ half4 Frag(Varyings input) : SV_Target
 {
     UNITY_SETUP_INSTANCE_ID(input);
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+    LoomCutaway(input.positionWS);
 
     float3 n = normalize(input.normalWS);
     float3 litPos = input.positionWS;

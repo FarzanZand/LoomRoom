@@ -253,10 +253,29 @@ public class EnemyBrain : MonoBehaviour
         return false;
     }
 
-    void Update()
+    // Co-op guests: the host runs this enemy; here it only shows what the host's snapshots say (CoopEnemyPuppet).
+    public bool NetworkPuppet { get; set; }
+
+    // The host's state and sleep for a puppet, without anything a change here would start (voices still hear it).
+    public void ApplyNetworkState(EnemyState state, bool asleep)
     {
         if (State == EnemyState.Dead) return;
-        if (GameManager.HasInstance && !GameManager.Instance.SimulationActive)
+        if (Asleep != asleep) { Asleep = asleep; SetSleepAnimation(asleep); }
+        if (state != State && state != EnemyState.Dead)
+        {
+            var previous = State;
+            State = state;
+            StateChanged?.Invoke(previous, state);
+        }
+    }
+
+    // In co-op the world keeps going while one player has a menu open; only a load (Cutscene) holds it.
+    bool SimulationPaused => GameManager.HasInstance && (Coop.Running ? GameManager.Instance.State == GameState.Cutscene : !GameManager.Instance.SimulationActive);
+
+    void Update()
+    {
+        if (State == EnemyState.Dead || NetworkPuppet) return;
+        if (SimulationPaused)
         {
             // Once per pause: a swing in progress is dropped (and its cooldown starts), the enemy stands still.
             if (!simulationPaused)
@@ -315,6 +334,12 @@ public class EnemyBrain : MonoBehaviour
     void OnDamaged(DamageInfo info)
     {
         if (State == EnemyState.Dead || !Character.IsAlive) return;
+        // A puppet only flinches; what it does about the hit is the host's.
+        if (NetworkPuppet)
+        {
+            if (!info.Blocked && info.Amount > 0f && Character.data != null) Character.TriggerAnimation(Character.data.hurtTrigger);
+            return;
+        }
         if (Asleep) Wake(.6f);
         if (info.Source != null) { wasProvoked = true; Perception.NotifyAttackedFrom(info.Source.transform.position); }
 

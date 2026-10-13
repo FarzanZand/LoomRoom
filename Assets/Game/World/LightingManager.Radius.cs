@@ -63,6 +63,11 @@ public sealed partial class LightingManager
         for (int i = 0; i < lamps.Count; i++) lamps[i].shadows = i < shadowedLamps ? lampShadows[lamps[i]] : LightShadows.None;
     }
 
+    // Co-op: a dead player watching from the room has the light around the teammate it watches, wider
+    // (MultiplayerManager). Null: around the camera.
+    public static Vector3? RadiusCentre;
+    public static float RadiusScale = 1f;
+
     static readonly int LightRadiusId = Shader.PropertyToID("_LoomLightRadius");
     static readonly int LightRadiusEdgeId = Shader.PropertyToID("_LoomLightRadiusEdge");
 
@@ -80,7 +85,8 @@ public sealed partial class LightingManager
             return;
         }
         float radius = biome != null && biome.lightRadius > 0f ? biome.lightRadius : lightRadiusMetres;
-        var centre = cam.transform.position;
+        var centre = RadiusCentre ?? cam.transform.position;
+        if (RadiusCentre.HasValue) radius *= Mathf.Max(.1f, RadiusScale);
         // The room the player is in may pull the light in (a dark room) or open it out (DungeonRoomMood).
         float edge = lightRadiusEdge, floor = lightRadiusFloor;
         DungeonRoomMood.Tick(centre, Time.deltaTime);

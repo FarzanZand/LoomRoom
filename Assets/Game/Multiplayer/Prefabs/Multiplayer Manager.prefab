@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3842661898060820475
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4565706205233177022}
+  - component: {fileID: 6144246977250084214}
+  m_Layer: 0
+  m_Name: Multiplayer Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4565706205233177022
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3842661898060820475}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6144246977250084214
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3842661898060820475}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11037c184f9cfea4eb415c66b183f8ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MultiplayerManager
+  network: {fileID: 0}
+  address: 127.0.0.1
+  port: 7777
+  maxPlayers: 4
+  playerName: 
+  sharedLoot: 1
+  hostAdventurer: 1
+  partyProgression: 0
+  hideCeilingsWhenDead: 1
+  cutawayTiles: 1
+  spectatorZoom: -38
+  reviveOnNextFloor: 1
+  enemyHealthPerPlayer: 0.5
+  extraEnemiesPerPlayer: 1
+  partyKillExperience: 0.5
+  descendCountdown: 10
+  stairsRadius: 5
+  figureSpacing: 16
+  spawnSpacing: 0.9
+  roomBodies:
+  - {fileID: 2407261899975651315, guid: a1e0947a4012f434cbb44ff57342643e, type: 3}
+  defaultTableBody: {fileID: 8511015406522375087, guid: c1aaf49909ca80a428813247dfb674c5, type: 3}
+  bodyController: {fileID: 9100000, guid: f0e56ac3d91670048a307651e1f0d9ca, type: 2}
+  weaponGrip: {fileID: 11400000, guid: acbf81d574de0af4a8b2282cd8a41dac, type: 2}
+  shieldGrip: {fileID: 11400000, guid: df4bce2846fddb649a1bb3724bffc749, type: 2}
+  roomScale: 20
+  enemyPrefabs:
+  - {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
+  - {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
+  - {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
+  - {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
+  - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  - {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
+  - {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
+  - {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
+  - {fileID: 5746219887415064482, guid: ae52da96cec3d1d4db895d43de610fd3, type: 3}
+  snapshotRate: 15
+  autoStartInEditor: 1
