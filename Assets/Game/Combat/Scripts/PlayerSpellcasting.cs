@@ -131,6 +131,7 @@ public class PlayerSpellcasting : MonoBehaviour
         var spell = Selected;
         if (spell == null || Busy || !player.IsActive || !player.IsAlive) return;
         if (!GameManager.HasInstance || !GameManager.Instance.GameplayActive || player.Combat.IsAttacking) return;
+        if (player.Equipment != null && player.Equipment.IsUsingItem) return;   // eating or drinking
         if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { Refuse("Health is full"); return; }
         if (player.Stats.CurrentMana < Cost(spell)) { Refuse("Not enough mana"); return; }
 
@@ -159,7 +160,8 @@ public class PlayerSpellcasting : MonoBehaviour
             float before = player.Stats.CurrentHealth;
             player.Stats.Heal(Power(spell));
             progress?.PractiseHeal(player.Stats.CurrentHealth - before);
-            if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation, player.transform);
+            // Left where the player stands: parented under the player its particles never started.
+            if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation);
             if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
         }
         else if (spell.groundArea) CastOnGround(spell);

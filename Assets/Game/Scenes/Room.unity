@@ -125844,6 +125844,7 @@ GameObject:
   - component: {fileID: 794788863}
   - component: {fileID: 794788864}
   - component: {fileID: 794788865}
+  - component: {fileID: 794788866}
   m_Layer: 0
   m_Name: TableManager
   m_TagString: Untagged
@@ -125998,6 +125999,22 @@ MonoBehaviour:
   m_IgnoreFromBuild: 0
   m_ApplyToChildren: 1
   m_AffectedAgents: f2652fae
+--- !u!114 &794788866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 794788855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b830eecb22b85d5499a70e7d82ff8b87, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TableCut
+  pieces:
+  - {fileID: 794788858}
+  - {fileID: 1373666660}
+  tableCollider: {fileID: 794788863}
 --- !u!1 &796718242
 GameObject:
   m_ObjectHideFlags: 0
@@ -307652,12 +307669,13 @@ MonoBehaviour:
     room: 1
     amount: 1
     line:
-      text: Something scratches behind the pillars. A rat. A big one, I've decided.
+      text: Two rats, asleep in the straw. Hit one before it wakes. It won't see
+        it coming.
       voice: {fileID: 0}
       mumble: 1
       inPerson: 0
     doneLine:
-      text: It didn't like that.
+      text: That woke the other one.
       voice: {fileID: 0}
       mumble: 1
       inPerson: 0
@@ -307666,14 +307684,14 @@ MonoBehaviour:
     giveUpAfter: 0
   - goal: 2
     room: -1
-    amount: 1
+    amount: 2
     line:
-      text: Finish it. It won't hold a grudge.
+      text: 
       voice: {fileID: 0}
       mumble: 1
       inPerson: 0
     doneLine:
-      text: One rat fewer. The other rats will hear about this.
+      text: Two rats fewer. The others will hear about this.
       voice: {fileID: 0}
       mumble: 1
       inPerson: 0
@@ -307684,7 +307702,8 @@ MonoBehaviour:
     room: 2
     amount: 1
     line:
-      text: A storeroom. Whoever lived here left in a hurry. Help yourself.
+      text: A storeroom. Whoever lived here left in a hurry. Break what you like,
+        and open the chest.
       voice: {fileID: 0}
       mumble: 1
       inPerson: 0
@@ -307694,16 +307713,15 @@ MonoBehaviour:
       voice: {fileID: 0}
       mumble: 1
       inPerson: 0
-    hint: Pick things up with {Interact}. Barrels and crates break. Your bag is on
-      {Inventory}.
+    hint: Open the chest and pick things up with {Interact}. Barrels and crates break.
+      Your bag is on {Inventory}.
     hintDelay: 8
     giveUpAfter: 60
   - goal: 4
     room: 3
     amount: 0.6
     line:
-      text: Something wet is sitting in the next room. A slime. It jumps, so raise
-        your shield.
+      text: A slime. It jumps at you, so raise your shield.
       voice: {fileID: 0}
       mumble: 1
       inPerson: 0
@@ -307717,20 +307735,36 @@ MonoBehaviour:
     giveUpAfter: 45
   - goal: 2
     room: -1
-    amount: 2
+    amount: 3
     line:
       text: 
       voice: {fileID: 0}
       mumble: 1
       inPerson: 0
     doneLine:
-      text: Messy. Wipe your boots.
+      text: Messy. Wipe your boots. The ladder out is in the next room.
       voice: {fileID: 0}
       mumble: 1
       inPerson: 0
     hint: 
     hintDelay: 99
     giveUpAfter: 90
+  - goal: 5
+    room: -1
+    amount: 40
+    line:
+      text: 
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    doneLine:
+      text: 
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    hint: 
+    hintDelay: 99
+    giveUpAfter: 0
   idleLine:
     text: I can wait. I have all night.
     voice: {fileID: 0}
@@ -307749,7 +307783,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   killerComing:
-    text: Do you hear that? Something is coming up the stairs.
+    text: Do you hear that? Something is coming down the ladder.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

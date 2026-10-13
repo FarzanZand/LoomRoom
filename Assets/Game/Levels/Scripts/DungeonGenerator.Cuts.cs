@@ -5,10 +5,15 @@ using Unity.AI.Navigation;
 // Holes in a hand-built room's floor (DungeonFloorCut): pits and sunken courts. Built in PlaceTemplate, before the
 // architecture is combined and the NavMesh is baked: the floor tiles in the cut go, the sides are lined with the room's
 // wall stone down to the bottom, and the bottom gets the room's floor (a pit's is never walked: enemies keep out).
+// A walled floor lies on the table, so the hole goes down into the table: TableCut opens the table under each cell
+// (TableHoles; the reveal opens them as the rooms are built), and a hole is never deeper than the table is solid there.
 public partial class DungeonGenerator
 {
     // Cells taken by cuts, per room (furnishing keeps off them).
     readonly HashSet<Vector2Int> cutCells = new();
+    // The table under each cut cell (TableCut), open while this floor is on the table.
+    readonly List<TableCut.Hole> tableHoles = new();
+    public List<TableCut.Hole> TableHoles => tableHoles;
 
     void BuildCuts(GameObject instance, int index)
     {
@@ -38,7 +43,10 @@ public partial class DungeonGenerator
                 var t = geometry.GetChild(i);
                 if (t.name == "Flagstone" && cells.Contains(CellOf(t.position))) DestroyImmediate(t.gameObject);
             }
-            float size = data.cellSize, depth = Mathf.Min(cut.depth, Mathf.Max(.2f, data.floorBase - .1f));
+            float size = data.cellSize, depth = cut.depth;
+            // The bottom slab and a little wood must stay under the hole, or it would show through the table.
+            foreach (var c in cells) depth = Mathf.Min(depth, TableCut.SolidDepth(CellRect(c), floorY) - .24f - .1f);
+            depth = Mathf.Max(.2f, depth);
             var parent = new GameObject(cut.kind == DungeonFloorCut.Kind.Pit ? "Pit" : "Sunken floor").transform;
             parent.SetParent(geometry, false);
             foreach (var c in cells)
@@ -63,8 +71,16 @@ public partial class DungeonGenerator
                     modifier.overrideArea = true; modifier.area = 1;
                 }
             }
+            foreach (var c in cells) tableHoles.Add(new TableCut.Hole { area = CellRect(c) });
+            TableCut.Set(this, tableHoles);
             cut.Initialize(this, cells, floorY);
         }
+    }
+
+    Rect CellRect(Vector2Int c)
+    {
+        var centre = Cell(c); float half = data.cellSize * .5f;
+        return Rect.MinMaxRect(centre.x - half, centre.z - half, centre.x + half, centre.z + half);
     }
 
     // A pit on a board: its printed tiles are taken away and a dark card lies on the table in the hole, which no path

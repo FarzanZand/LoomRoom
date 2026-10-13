@@ -25,6 +25,8 @@ public class SpellVisual : MonoBehaviour
     [Header("Lifetime")]
     [Tooltip("Zero keeps the effect alive until Stop is called.")]
     [Min(0)] public float autoDestroySeconds;
+    [Tooltip("Held effects: once stopped (the spell put away or thrown), what is still alive is gone after this many seconds. Zero lets every particle live out its lifetime.")]
+    [Min(0)] public float stopLinger;
     public CinemachineImpulseSource impulse;
     [Min(0)] public float impulseForce = 1f;
     public AudioSource loop;
@@ -86,6 +88,7 @@ public class SpellVisual : MonoBehaviour
             ps.Stop(false, ParticleSystemStopBehavior.StopEmitting);
             longest = Mathf.Max(longest, ps.main.startLifetime.constantMax);
         }
+        if (stopLinger > 0) longest = Mathf.Min(longest, stopLinger);
         Destroy(gameObject, longest + .1f);
     }
 

@@ -29,9 +29,9 @@ Material:
     - _Density: 1.5
     - _DepthFade: 1.2
     - _Seed: 5
-    - _Softness: 0.35
-    - _Swirl: 2.2
-    - _Threshold: 0.4
+    - _Softness: 0.8
+    - _Swirl: 1.3
+    - _Threshold: 0.36
     - _TopFade: 0.9
     m_Colors:
     - _Color: {r: 0.378, g: 0.46799996, b: 0.46799996, a: 0.3}

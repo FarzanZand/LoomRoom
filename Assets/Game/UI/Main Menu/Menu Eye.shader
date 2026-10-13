@@ -17,6 +17,7 @@ Shader "LoomRoom/Menu Eye"
         _GlowSize ("Glow reach", Range(.01, 1)) = .14
         _Intensity ("Intensity", Float) = 1
         _Mirror ("Mirror (1 or -1)", Float) = 1
+        _DepthPull ("Depth pull toward the camera (units)", Float) = 1.5
     }
     SubShader
     {
@@ -34,7 +35,7 @@ Shader "LoomRoom/Menu Eye"
             CBUFFER_START(UnityPerMaterial)
                 half4 _Core, _Rim, _Glow;
                 float4 _Slit;
-                float _Tilt, _InnerHeight, _OuterBottom, _Softness, _GlowSize, _Intensity, _Mirror;
+                float _Tilt, _InnerHeight, _OuterBottom, _Softness, _GlowSize, _Intensity, _Mirror, _DepthPull;
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
@@ -48,6 +49,10 @@ Shader "LoomRoom/Menu Eye"
                 float3 scale = float3(length(UNITY_MATRIX_M._m00_m10_m20), length(UNITY_MATRIX_M._m01_m11_m21), 1);
                 centre.xy += v.positionOS.xy * scale.xy;
                 o.positionCS = TransformWViewToHClip(centre);
+                // Depth-tested as if a little closer to the camera, so the face and hood round the eye don't hide it,
+                // while it stays drawn where it is (it sits on the eye from every side).
+                float4 pulled = TransformWViewToHClip(centre + float3(0, 0, _DepthPull));
+                o.positionCS.z = pulled.z / pulled.w * o.positionCS.w;
                 o.uv = v.uv * 2 - 1;
                 return o;
             }

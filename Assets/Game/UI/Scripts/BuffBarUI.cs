@@ -50,7 +50,7 @@ public class BuffBarUI : MonoBehaviour
             if (slot.icon != null) { slot.icon.sprite = shown[i].icon; slot.icon.enabled = shown[i].icon != null; }
             if (slot.timer != null)
             {
-                slotSeconds ??= new int[slots.Length];
+                if (slotSeconds == null || slotSeconds.Length != slots.Length) slotSeconds = new int[slots.Length];
                 int seconds = Mathf.CeilToInt(shown[i].seconds);
                 if (slotSeconds[i] != seconds || slot.timer.text.Length == 0) { slotSeconds[i] = seconds; slot.timer.text = Format(seconds); }
             }

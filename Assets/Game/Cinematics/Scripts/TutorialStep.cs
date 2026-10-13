@@ -6,7 +6,7 @@ public enum TutorialGoal { Walk = 0, Hit = 1, Kill = 2, PickUp = 3, Guard = 4, W
 
 // One thing the Dungeon Master teaches on the practice board: his line, a control hint for the feed,
 // and what the player has to do before the next step. A goal already met (the player ran ahead) is
-// skipped without a word.
+// skipped without a word, except that a step with no line of its own (a follow-up) still says its done line.
 [Serializable]
 public class TutorialStep
 {

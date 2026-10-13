@@ -230,6 +230,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     {
         if (!player.IsActive || (spells != null && spells.Busy)) return;
         if (bash != null && bash.Busy) return;
+        // Eating or drinking (Equipment.IsUsingItem): no swing, no shield bash until it is done.
+        if (player.Equipment != null && player.Equipment.IsUsingItem) return;
         // Block held: a ready shield bash takes the press; the button then starts nothing until pressed again.
         if (InputManager.Instance.SecondaryHeld && bash != null && !IsAttacking && bash.TryStart())
         {
@@ -270,7 +272,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (!AnimatorHelper.Ready(armsAnimator)) return;
 
         bool gameplay = !GameManager.HasInstance || GameManager.Instance.GameplayActive;
-        bool primary   = gameplay && (spells == null || !spells.Busy) && InputManager.HasInstance && InputManager.Instance.PrimaryHeld;
+        bool primary   = gameplay && (spells == null || !spells.Busy) && (player.Equipment == null || !player.Equipment.IsUsingItem) && InputManager.HasInstance && InputManager.Instance.PrimaryHeld;
         bool secondary = gameplay && InputManager.HasInstance && InputManager.Instance.SecondaryHeld;
         bool blockLocked = Time.time < blockLockUntil;
         if (CombatManager.HasInstance)

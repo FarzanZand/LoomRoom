@@ -92,8 +92,6 @@ public partial class DungeonGenerator : MonoBehaviour
         var watch=System.Diagnostics.Stopwatch.StartNew();
         FloorNumber=floorNumber;
         data = level; random = new System.Random(seed);
-        // A walled floor stands on its stone base (TableLevelData.floorBase), so holes cut into it never show the table.
-        if (level.floorBase > 0f && level.kind != TableLevelKind.Boardgame) transform.position += Vector3.up * level.floorBase;
         // Hashed: System.Random's first values follow evenly spaced seeds almost linearly, so floor
         // seeds (runSeed + floor * step) made the merchant roll march in lockstep through a run.
         extraRandom = new System.Random(Scramble(unchecked(seed + 60013)));
@@ -232,8 +230,7 @@ public partial class DungeonGenerator : MonoBehaviour
             var style = RegionStyles[room];
             float height = HeightAt(x,z);
             var pos = Cell(new Vector2Int(x,z));
-            float slab = .24f + data.floorBase;   // down through the floor's stone base
-            ArchitectureBox("Flagstone", pos - Vector3.up*slab*.5f, new Vector3(size,slab,size), FloorMaterial(room, x, z), geometry);
+            ArchitectureBox("Flagstone", pos - Vector3.up*.12f, new Vector3(size,.24f,size), FloorMaterial(room, x, z), geometry);
             // A taller neighbor's upper wall occupies a strip inside this cell. End the
             // ceiling just inside that wall's back. Ending exactly on the back face
             // makes the ceiling's vertical edge coplanar with the upper masonry.
@@ -627,8 +624,13 @@ public partial class DungeonGenerator : MonoBehaviour
     // The spawn room has a skylight: the table reveal's camera can fly in through it.
     public bool SpawnRoofOpen { get; private set; }
 
+    // Holes go into the table under this floor's pits while it is on the table (TableCut).
+    void OnEnable() { if (tableHoles.Count > 0) TableCut.Set(this, tableHoles); }
+    void OnDisable() => TableCut.Remove(this);
+
     void OnDestroy()
     {
+        TableCut.Remove(this);
         foreach (var mesh in architectureMeshes.Values) if (mesh != null) Destroy(mesh);
         architectureMeshes.Clear();
         foreach (var mesh in cornerMeshes) if (mesh != null) Destroy(mesh);

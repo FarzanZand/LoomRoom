@@ -192,6 +192,7 @@ MonoBehaviour:
   chargeRateBoost: 1.5
   chargeLightBoost: 1.2
   autoDestroySeconds: 0
+  stopLinger: 0
   impulse: {fileID: 0}
   impulseForce: 1
   loop: {fileID: 9025879732723647199}
@@ -210,7 +211,7 @@ MonoBehaviour:
   collisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  collisionRadius: 0.12
+  collisionRadius: 0.3
   surfaceOffset: 0.15
 --- !u!82 &9025879732723647199
 AudioSource:

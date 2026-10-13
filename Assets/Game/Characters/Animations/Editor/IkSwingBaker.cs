@@ -13,7 +13,7 @@ using UnityEngine;
 //
 // Shape: a windup you can see (0.16 s), a strike that crosses the screen in about 3 frames,
 // the arm held out in the follow-through, then home to idle.
-public static class IkSwingBaker
+public static partial class IkSwingBaker
 {
     const string Folder = "Assets/Game/Characters/Animations/FirstPersonPlayer/IK swings";
     const string Controller = "Assets/Game/Characters/Animations/FirstPersonTable.controller";
@@ -189,10 +189,10 @@ public static class IkSwingBaker
 
     // ── Clips ─────────────────────────────────────────────────────────
 
-    static AnimationClip Write(Rig rig, string name, List<(float time, Dictionary<Transform, Quaternion> pose)> frames, bool loop, AnimationEvent[] events)
+    static AnimationClip Write(Rig rig, string name, List<(float time, Dictionary<Transform, Quaternion> pose)> frames, bool loop, AnimationEvent[] events, string folder = Folder)
     {
-        if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder(Path.GetDirectoryName(Folder).Replace('\\', '/'), Path.GetFileName(Folder));
-        string path = $"{Folder}/{name}.anim";
+        if (!AssetDatabase.IsValidFolder(folder)) AssetDatabase.CreateFolder(Path.GetDirectoryName(folder).Replace('\\', '/'), Path.GetFileName(folder));
+        string path = $"{folder}/{name}.anim";
         var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
         if (clip == null) { clip = new AnimationClip(); AssetDatabase.CreateAsset(clip, path); }
         clip.ClearCurves();
@@ -380,7 +380,12 @@ public static class IkSwingBaker
 
     // Renders the baked clips from the player's eye into PNG strips in Temp/IkSwings, to check the poses.
     [MenuItem("Tools/LoomRoom/Combat/Preview IK Swings")]
-    public static void Preview()
+    public static void Preview() => RenderSheets(new[] { "Attack_Windup_H1", "Attack_Release_H1", "Attack_Windup_H2", "Attack_Release_H2" }, Folder,
+        AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Game/Items/Data/Weapons/Bronze Sword.asset"), "Temp/IkSwings");
+
+    // Renders clips from the player's eye into PNG strips (8 frames a row) with an item in the right hand, placed as
+    // Equipment places it. step: every how many frames (at 60 fps) one is drawn.
+    public static void RenderSheets(string[] names, string folder, ItemData item, string output, int step = 1)
     {
         var rig = BuildRig();
         var camGo = new GameObject("Preview camera") { hideFlags = HideFlags.DontSave };
@@ -395,13 +400,11 @@ public static class IkSwingBaker
             lightGo.transform.SetParent(rig.root.transform, false);
             lightGo.transform.localRotation = Quaternion.Euler(40f, -30f, 0f);
             var light = lightGo.AddComponent<Light>(); light.type = LightType.Directional; light.intensity = 1.2f;
-            // The sword in hand, placed as Equipment places it.
-            var sword = AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Game/Items/Data/Weapons/Bronze Sword.asset");
-            if (sword != null && sword.worldPrefab != null)
+            if (item != null && item.worldPrefab != null)
             {
-                var obj = (GameObject)PrefabUtility.InstantiatePrefab(sword.worldPrefab, rig.socket);
-                obj.transform.SetLocalPositionAndRotation(sword.heldPosition, Quaternion.Euler(sword.heldRotation));
-                obj.transform.localScale *= Mathf.Max(.01f, sword.heldScale);
+                var obj = (GameObject)PrefabUtility.InstantiatePrefab(item.worldPrefab, rig.socket);
+                obj.transform.SetLocalPositionAndRotation(item.heldPosition, Quaternion.Euler(item.heldRotation));
+                obj.transform.localScale *= Mathf.Max(.01f, item.heldScale);
                 foreach (var t in obj.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = rig.arms.layer;
             }
             // Skinning does not refresh between manual renders in edit mode: draw a baked copy of each skinned mesh.
@@ -417,14 +420,14 @@ public static class IkSwingBaker
                 baked.Add((smr, mesh, copy.transform));
             }
             var rt = new RenderTexture(320, 180, 24); cam.targetTexture = rt;
-            Directory.CreateDirectory("Temp/IkSwings");
-            foreach (var name in new[] { "Attack_Windup_H1", "Attack_Release_H1", "Attack_Windup_H2", "Attack_Release_H2" })
+            Directory.CreateDirectory(output);
+            foreach (var name in names)
             {
-                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{Folder}/{name}.anim");
+                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{folder}/{name}.anim");
                 if (clip == null) continue;
-                int count = Mathf.RoundToInt(clip.length * Fps) + 1, step = 1;
+                int count = Mathf.RoundToInt(clip.length * Fps) + 1;
                 var frames = new List<Texture2D>();
-                for (int i = 0; i < count; i += step)
+                for (int i = 0; i < count; i += Mathf.Max(1, step))
                 {
                     clip.SampleAnimation(rig.arms, i / Fps);
                     foreach (var (source, mesh, copy) in baked)
@@ -448,7 +451,7 @@ public static class IkSwingBaker
                     Object.DestroyImmediate(frames[i]);
                 }
                 sheet.Apply();
-                File.WriteAllBytes($"Temp/IkSwings/{name}.png", sheet.EncodeToPNG());
+                File.WriteAllBytes($"{output}/{name}.png", sheet.EncodeToPNG());
                 Object.DestroyImmediate(sheet);
             }
             Object.DestroyImmediate(rt);

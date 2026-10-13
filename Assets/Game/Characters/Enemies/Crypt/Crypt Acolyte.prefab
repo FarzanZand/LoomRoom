@@ -177,7 +177,7 @@ MonoBehaviour:
     wanderSpeed: 0.7
     acceleration: 30
     preferredRangeFraction: 0.7
-    circleTarget: 1
+    circleTarget: 0
     circleSpeedFraction: 0.22
     circleSwitchInterval: {x: 0.9, y: 2}
     spacingSpeedFraction: 0.8

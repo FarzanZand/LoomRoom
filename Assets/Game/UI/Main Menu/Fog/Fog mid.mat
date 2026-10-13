@@ -29,12 +29,12 @@ Material:
     - _Density: 1.5
     - _DepthFade: 1.2
     - _Seed: 2
-    - _Softness: 0.35
-    - _Swirl: 2.2
-    - _Threshold: 0.4
+    - _Softness: 0.8
+    - _Swirl: 1.3
+    - _Threshold: 0.36
     - _TopFade: 0.7
     m_Colors:
-    - _Color: {r: 0.42, g: 0.52, b: 0.52, a: 0.16}
+    - _Color: {r: 0.42, g: 0.52, b: 0.52, a: 0.12}
     - _Drift: {r: -0.015, g: 0.003, b: 0, a: 0}
     - _EdgeFade: {r: 0.18, g: 0.12, b: 0, a: 0}
     - _Scale: {r: 3.5, g: 1.2, b: 0, a: 0}

@@ -1,5 +1,105 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1626613914798397109
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7534054954567486250}
+  - component: {fileID: 7274144880364992431}
+  m_Layer: 0
+  m_Name: Torch south wall
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7534054954567486250
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1626613914798397109}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: -0.00000004371139}
+  m_LocalPosition: {x: 4, y: 0, z: -4}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1653800415145126703}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7274144880364992431
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1626613914798397109}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 6
+  chance: 1
+  overridePrefab: {fileID: 0}
+  archer: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+--- !u!1 &6966637714150526988
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4431809785517025977}
+  - component: {fileID: 8802876270958620269}
+  m_Layer: 0
+  m_Name: Torch west wall
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4431809785517025977
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6966637714150526988}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: -0.7071068}
+  m_LocalPosition: {x: -6, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1653800415145126703}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8802876270958620269
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6966637714150526988}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 6
+  chance: 1
+  overridePrefab: {fileID: 0}
+  archer: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &8982110632713967090
 GameObject:
   m_ObjectHideFlags: 0
@@ -31,7 +131,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 6546167201072876973}
   - {fileID: 8389978462367340236}
   - {fileID: 6741817813224541203}
   - {fileID: 9039104048247498051}
@@ -40,6 +139,9 @@ Transform:
   - {fileID: 5097154769847126912}
   - {fileID: 3882218889651955618}
   - {fileID: 7640067912050909902}
+  - {fileID: 4431809785517025977}
+  - {fileID: 7534054954567486250}
+  - {fileID: 5559393214599468992}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7530827325523035178
@@ -95,68 +197,6 @@ MonoBehaviour:
   kind: 2
   dungeon: {fileID: 0}
   room: -1
---- !u!1001 &1044436620915200570
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 1653800415145126703}
-    m_Modifications:
-    - target: {fileID: 1158012699065434100, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_Name
-      value: Iron chest
-      objectReference: {fileID: 0}
-    - target: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 3.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: -0.00000004371139
-      objectReference: {fileID: 0}
-    - target: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
---- !u!4 &6546167201072876973 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6099630847668543383, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}
-  m_PrefabInstance: {fileID: 1044436620915200570}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1119432848472264849
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -778,4 +818,66 @@ MonoBehaviour:
 Transform:
   m_CorrespondingSourceObject: {fileID: 3212120979326466500, guid: 1f667104e11df4e4bac6a5b04aabcccb, type: 3}
   m_PrefabInstance: {fileID: 5086048640409197322}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &6136486473309846016
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1653800415145126703}
+    m_Modifications:
+    - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 3.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.00000004371139
+      objectReference: {fileID: 0}
+    - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6682190492535852451, guid: a3f935b8a5116744c81458439dead315, type: 3}
+      propertyPath: m_Name
+      value: Gold chest
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: a3f935b8a5116744c81458439dead315, type: 3}
+--- !u!4 &5559393214599468992 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
+  m_PrefabInstance: {fileID: 6136486473309846016}
   m_PrefabAsset: {fileID: 0}

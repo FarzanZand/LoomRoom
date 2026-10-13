@@ -251,8 +251,26 @@ public static partial class ItemIconRenderer
             camera.nearClipPlane = .01f; camera.farClipPlane = 100f;
             var s = Settings;
             Light(s.keyAngles, s.keyColor, s.keyIntensity); Light(s.fillAngles, s.fillColor, s.fillIntensity);
+            // Pixel lighting switches materials to LoomRoom/Pixel Lit in place (in Play mode, or left on in the editor);
+            // that shader has nothing to draw with in a preview scene and every icon came out flat cyan. Icons are drawn
+            // with the materials' own shaders, and pixel lighting is put back afterwards.
+            var library = AssetDatabase.LoadAssetAtPath<PixelLookLibrary>("Assets/Game/Rendering/PixelLook/Pixel Look Library.asset");
+            if (library != null && library.pixelLitShader != null)
+                foreach (var e in library.lighting)
+                    if (e.material != null && e.original != null && e.material.shader == library.pixelLitShader)
+                    {
+                        pixelLit.Add((e.material, e.material.renderQueue));
+                        e.material.shader = e.original; e.material.renderQueue = e.originalQueue;
+                    }
+            pixelShader = library != null ? library.pixelLitShader : null;
         }
-        public void Dispose() => EditorSceneManager.ClosePreviewScene(scene);
+        readonly List<(Material material, int queue)> pixelLit = new();
+        readonly Shader pixelShader;
+        public void Dispose()
+        {
+            EditorSceneManager.ClosePreviewScene(scene);
+            foreach (var (material, queue) in pixelLit) if (material != null) { material.shader = pixelShader; material.renderQueue = queue; }
+        }
 
         public GameObject Make(string name) { var g = new GameObject(name); SceneManager.MoveGameObjectToScene(g, scene); return g; }
         void Light(Vector3 angles, Color color, float intensity)

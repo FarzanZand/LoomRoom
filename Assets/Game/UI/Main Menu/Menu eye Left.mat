@@ -25,6 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _DepthPull: 1.6
     - _GlowSize: 0.15
     - _InnerHeight: 0.34
     - _Intensity: 1
