@@ -344,7 +344,14 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     {
         network.NetworkConfig.ConnectionApproval = true;
         network.NetworkConfig.EnableSceneManagement = false;
+        network.NetworkConfig.ConnectionData = System.Text.Encoding.UTF8.GetBytes(BuildId);
+        joinedOnce = false;
+        joinedAt = float.PositiveInfinity;   // nobody is announced until this player is in
     }
+
+    // Which build this is: games from different builds can't play together (an editor plays with anything).
+    static string BuildId => Application.isEditor ? "editor" : Application.buildGUID;
+    bool joinedOnce;   // this connection got as far as joining (a refusal or a timeout never does)
 
     // This computer's address on the local network, for others to join by (hosting without Relay).
     public static string LocalAddress()
@@ -370,9 +377,11 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     {
         int count = network.ConnectedClientsIds.Count;
         bool host = request.ClientNetworkId == NetworkManager.ServerClientId;
-        response.Approved = host || count < maxPlayers;
+        string theirs = request.Payload != null ? System.Text.Encoding.UTF8.GetString(request.Payload) : "";
+        bool sameBuild = host || BuildId == "editor" || theirs == "editor" || theirs == BuildId;
+        response.Approved = host || (count < maxPlayers && sameBuild);
         response.CreatePlayerObject = response.Approved;
-        if (!response.Approved) response.Reason = "The game is full";
+        if (!response.Approved) response.Reason = !sameBuild ? "The host has a different build of the game. Play the same build." : "The game is full";
     }
 
     void OnStarted() { RegisterMessages(); CoopWorld.Hook(); SessionChanged?.Invoke(); }
@@ -383,7 +392,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         {
             RegisterMessages();
             CoopWorld.Hook();
-            if (!network.IsServer) NotificationUI.Show("Joined the game");
+            joinedOnce = true;
+            joinedAt = Time.unscaledTime;
+            if (!network.IsServer) StartCoroutine(Joined());
         }
         if (network.IsServer && client != NetworkManager.ServerClientId)
         {
@@ -391,7 +402,6 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             CoopMessages.ToClient(CoopMessages.Rules, client, rules);
             CoopMessages.ToClient(CoopMessages.Flags, client, HostFlags());
             CoopWorld.SendRoom(client);
-            NotificationUI.Show("A player joined");
         }
         SessionChanged?.Invoke();
     }
@@ -402,11 +412,11 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         // The guest lost the host (or was refused).
         if (!network.IsServer && (client == network.LocalClientId || client == NetworkManager.ServerClientId))
         {
-            string reason = !string.IsNullOrEmpty(network.DisconnectReason) ? network.DisconnectReason : "The host left the game";
+            string reason = !string.IsNullOrEmpty(network.DisconnectReason) ? network.DisconnectReason
+                : joinedOnce ? "The host left the game" : "Could not join. Check the code or address, and that the host is still in the game.";
             Ended(true, reason);
             return;
         }
-        if (network.IsServer) NotificationUI.Show("A player left");
         SessionChanged?.Invoke();
     }
 
@@ -467,11 +477,36 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     {
         if (!players.Contains(player)) players.Add(player);
         if (player.IsOwner) LocalPlayer = player;
+        // Someone new (not the players already there when this one joined): by name, once it has come through.
+        if (!player.IsOwner && Time.unscaledTime - joinedAt > 2f) StartCoroutine(Announce(player));
         SessionChanged?.Invoke();
+    }
+
+    float joinedAt = -100f;
+
+    // A guest is in: whose game, and what to do if a run is already on.
+    IEnumerator Joined()
+    {
+        float until = Time.unscaledTime + 3f;
+        CoopPlayer host = null;
+        while (Time.unscaledTime < until && Connected && ((host = PlayerInSlot(0)) == null || host.PlayerName.Value.Length == 0)) yield return null;
+        if (!Connected) yield break;
+        string whose = host != null ? $"Joined {host.DisplayName}'s game" : "Joined the game";
+        NotificationUI.Show(host != null && host.Current.inRun ? whose + ". Sit down at the table to join the run." : whose);
+    }
+
+    IEnumerator Announce(CoopPlayer player)
+    {
+        float until = Time.unscaledTime + 2f;
+        while (player != null && Time.unscaledTime < until && player.PlayerName.Value.Length == 0) yield return null;
+        if (player != null && Connected) NotificationUI.Show($"{player.DisplayName} joined");
     }
 
     public void Unregister(CoopPlayer player)
     {
+        // Another player leaving a game that goes on (the host's leaving ends it here, with its own message).
+        if (!player.IsOwner && Connected && !network.ShutdownInProgress && player.OwnerClientId != NetworkManager.ServerClientId && players.Contains(player))
+            NotificationUI.Show($"{player.DisplayName} left");
         players.Remove(player);
         if (LocalPlayer == player) LocalPlayer = null;
         SessionChanged?.Invoke();

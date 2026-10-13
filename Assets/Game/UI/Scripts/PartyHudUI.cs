@@ -17,15 +17,27 @@ public class PartyHudUI : MonoBehaviour
     }
 
     [SerializeField] List<Row> rows = new();
+    [Tooltip("The host's join code, above the rows while there is room for more players and no run is on.")]
+    [SerializeField] TMP_Text joinCode;
 
     readonly List<CoopPlayer> others = new();
 
     void LateUpdate()
     {
         others.Clear();
-        if (Coop.Running)
+        // Seated at the table in the intro the class card takes this corner (its practice board shows the rows again).
+        bool seatedInRoom = IntroController.Seated && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Room;
+        if (Coop.Running && !seatedInRoom)
             foreach (var p in MultiplayerManager.Instance.Players) if (p != null && !p.IsOwner) others.Add(p);
         others.Sort((a, b) => a.SlotIndex.CompareTo(b.SlotIndex));
+        if (joinCode != null)
+        {
+            var manager = MultiplayerManager.HasInstance ? MultiplayerManager.Instance : null;
+            bool show = Coop.IsHost && manager != null && !string.IsNullOrEmpty(manager.JoinCode) && !manager.LocalInRun && !IntroController.Seated
+                && manager.Players.Count < manager.maxPlayers;
+            if (joinCode.gameObject.activeSelf != show) joinCode.gameObject.SetActive(show);
+            if (show) joinCode.text = $"Join code: {manager.JoinCode}";
+        }
         for (int i = 0; i < rows.Count; i++)
         {
             var row = rows[i];

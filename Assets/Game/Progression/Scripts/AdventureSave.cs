@@ -49,10 +49,27 @@ public class AdventureSave : MonoBehaviour
     public event Action Changed;
     Player player; AdventurerProgress progress;
     const string AdventureFile = "loomroom-adventure.json", DebugFile = "loomroom-debug.json";
-    string FilePath => Path.Combine(Application.persistentDataPath, DebugDungeonSession.Active ? DebugFile : AdventureFile);
+    string FilePath => Path.Combine(Folder, DebugDungeonSession.Active ? DebugFile : AdventureFile);
+
+    // Where saves go: the game's own folder, or another one given with -savedir <folder> (two copies on one computer,
+    // each with its own save).
+    public static string Folder
+    {
+        get
+        {
+            if (folder != null) return folder;
+            folder = Application.persistentDataPath;
+            var args = Environment.GetCommandLineArgs();
+            for (int i = 0; i + 1 < args.Length; i++)
+                if (args[i].Equals("-savedir", StringComparison.OrdinalIgnoreCase)) { folder = args[i + 1]; customFolder = true; }
+            return folder;
+        }
+    }
+    static string folder;
+    static bool customFolder;
 
     // Whether a game has been saved (the main menu offers Continue).
-    public static bool SaveExists { get { MigrateOldSaves(); return File.Exists(Path.Combine(Application.persistentDataPath, AdventureFile)); } }
+    public static bool SaveExists { get { MigrateOldSaves(); return File.Exists(Path.Combine(Folder, AdventureFile)); } }
 
     // The game was called LoomRoom until 2026-10-13; the save folder follows the product name, so saves from before the
     // rename sit in the old folder beside the new one. Brought over once, while the new folder has none.
@@ -60,6 +77,7 @@ public class AdventureSave : MonoBehaviour
     {
         try
         {
+            if (Folder != null && customFolder) return;
             var current = Application.persistentDataPath;
             var old = Path.Combine(Path.GetDirectoryName(current) ?? "", "LoomRoom");
             if (!Directory.Exists(old) || string.Equals(Path.GetFullPath(old), Path.GetFullPath(current), StringComparison.OrdinalIgnoreCase)) return;
@@ -146,7 +164,7 @@ public class AdventureSave : MonoBehaviour
         if (ProgressionManager.HasInstance) Saved.flags = ProgressionManager.Instance.AllFlags.Select(x => new ProgressionManager.FlagEntry { key = x.Key, value = x.Value }).ToList();
         try
         {
-            Directory.CreateDirectory(Application.persistentDataPath);
+            Directory.CreateDirectory(Folder);
             File.WriteAllText(FilePath + ".tmp", JsonUtility.ToJson(Saved, true));
             if (File.Exists(FilePath)) File.Replace(FilePath + ".tmp", FilePath, FilePath + ".bak");
             else File.Move(FilePath + ".tmp", FilePath);

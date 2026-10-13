@@ -115,7 +115,8 @@ public static class CoopMenuBuilder
     // The other players' rows at the top left, made from the HUD's own health bar.
     static void PartyHud(Transform canvas)
     {
-        if (Object.FindAnyObjectByType<PartyHudUI>(FindObjectsInactive.Include) != null) return;
+        var existing = Object.FindAnyObjectByType<PartyHudUI>(FindObjectsInactive.Include);
+        if (existing != null) { JoinCodeLabel(existing); return; }
         var vitals = canvas.Find("PlayerVitals");
         var health = vitals != null ? vitals.Find("Health") : null;
         if (health == null) { Debug.LogWarning("[Coop] No Canvas/PlayerVitals/Health to make the party rows from."); return; }
@@ -152,6 +153,28 @@ public static class CoopMenuBuilder
             bar.SetActive(false);
         }
         so.ApplyModifiedPropertiesWithoutUndo();
+        JoinCodeLabel(ui);
+    }
+
+    // The host's join code, a line above the rows (from the first row's name label).
+    static void JoinCodeLabel(PartyHudUI ui)
+    {
+        var so = new SerializedObject(ui);
+        var field = so.FindProperty("joinCode");
+        if (field.objectReferenceValue is TMP_Text placed) { ((RectTransform)placed.transform).anchoredPosition = new Vector2(0, 24); return; }
+        var template = ui.GetComponentsInChildren<TMP_Text>(true).FirstOrDefault(t => t.name == "Name");
+        if (template == null) return;
+        var go = Object.Instantiate(template.gameObject, ui.transform);
+        go.name = "Join code";
+        var rt = (RectTransform)go.transform;
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0, 1);
+        rt.anchoredPosition = new Vector2(0, 24); rt.sizeDelta = new Vector2(320, 24);
+        var text = go.GetComponent<TMP_Text>();
+        text.text = "Join code:"; text.fontSize = 18; text.alignment = TextAlignmentOptions.Left;
+        go.SetActive(false);
+        field.objectReferenceValue = text;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(ui);
     }
 
     static RectTransform Copy(Transform template, Transform parent, string name, Vector2 at, Vector2? size = null)

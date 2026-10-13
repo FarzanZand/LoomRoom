@@ -31,7 +31,9 @@ public class CoopMenuUI : MonoBehaviour
         Instance = this;
         if (root != null) root.SetActive(false);
         Wire(hostButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Host(); });
-        Wire(joinButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Join(address != null ? address.text : ""); });
+        Wire(joinButton, Join);
+        // Enter in the code box joins.
+        if (address != null) address.onSubmit.AddListener(_ => { if (!Coop.Running) Join(); });
         Wire(leaveButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Leave(); });
         Wire(beginButton, Begin);
         Wire(aloneButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Leave(); Began = true; Close(); });
@@ -45,6 +47,8 @@ public class CoopMenuUI : MonoBehaviour
         Wire(hostAdventurerButton, () => Toggle(ref MultiplayerManager.Instance.hostAdventurer));
         Wire(partyProgressionButton, () => Toggle(ref MultiplayerManager.Instance.partyProgression));
     }
+
+    void Join() { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Join(address != null ? address.text : ""); }
 
     void Start() { if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel; }
 
@@ -114,6 +118,10 @@ public class CoopMenuUI : MonoBehaviour
             var text = new System.Text.StringBuilder();
             if (manager != null && running)
                 foreach (var p in manager.Players) if (p != null) text.AppendLine(p.DisplayName + (p.IsOwner ? " (you)" : ""));
+            // The host alone so far: what to do next.
+            if (manager != null && running && host && manager.Players.Count <= 1)
+                text.Append(!string.IsNullOrEmpty(manager.JoinCode) ? "\nSend the code to your friends." : "\nOthers on your network join with your address.")
+                    .Append(Current == Mode.NewGame ? "\nBegin when everyone is in." : "");
             playerList.text = text.ToString();
         }
         bool starting = manager != null && manager.Starting;
@@ -124,7 +132,8 @@ public class CoopMenuUI : MonoBehaviour
         Show(beginButton, Current == Mode.NewGame && host);
         Show(aloneButton, Current == Mode.NewGame);
         Show(closeButton, Current == Mode.Pause);
-        bool rules = manager != null && (!running || host);
+        // The rules are the host's: shown once this player hosts.
+        bool rules = manager != null && running && host;
         Rule(sharedLootButton, rules, "Loot", manager != null && manager.sharedLoot ? "shared" : "each their own");
         Rule(hostAdventurerButton, rules, "Adventurer", manager != null && manager.hostAdventurer ? "the host's" : "each their own");
         Rule(partyProgressionButton, rules, "Progress saved", manager != null && manager.partyProgression ? "for everyone" : "for the host");
