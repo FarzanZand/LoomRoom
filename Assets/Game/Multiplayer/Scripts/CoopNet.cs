@@ -108,6 +108,7 @@ public enum CoopEventKind : byte
     EnemySwing = 10,
     ArrowLoosed = 11,
     EnemyGone = 12,
+    RoomDoor = 13,      // a door in the apartment (not a floor's)
 }
 
 public struct CoopEvent : INetworkSerializable

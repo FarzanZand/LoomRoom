@@ -571,11 +571,56 @@ public static class CoopWorld
         else CoopMessages.ToHost(CoopMessages.Event, e);
     }
 
+    // ── The apartment ─────────────────────────────────────────────────
+
+    static List<HingedDoor> roomDoors;
+
+    // The room's doors, in the same order everywhere (the scene is the same): by their place in the hierarchy.
+    static List<HingedDoor> RoomDoors()
+    {
+        if (roomDoors != null && !roomDoors.Exists(d => d == null)) return roomDoors;
+        roomDoors = new List<HingedDoor>(Object.FindObjectsByType<HingedDoor>(FindObjectsInactive.Include, FindObjectsSortMode.None));
+        roomDoors.Sort((a, b) => string.CompareOrdinal(PathOf(a.transform), PathOf(b.transform)));
+        return roomDoors;
+    }
+
+    static string PathOf(Transform t) => t.parent == null ? t.name + t.GetSiblingIndex() : PathOf(t.parent) + "/" + t.name + t.GetSiblingIndex();
+
+    public static void RoomDoorChanged(HingedDoor door, bool open)
+    {
+        if (!Coop.Running || Applying) return;
+        int id = RoomDoors().IndexOf(door);
+        if (id < 0) return;
+        var e = new CoopEvent { kind = CoopEventKind.RoomDoor, id = id, amount = open ? 1 : 0, slot = (byte)Coop.LocalSlot };
+        if (Coop.IsHost) CoopMessages.ToGuests(CoopMessages.Event, e); else CoopMessages.ToHost(CoopMessages.Event, e);
+    }
+
+    // Host: a new player gets the apartment's doors as they are.
+    public static void SendRoom(ulong client)
+    {
+        if (!Coop.IsHost) return;
+        var doors = RoomDoors();
+        for (int i = 0; i < doors.Count; i++)
+            if (doors[i] != null) CoopMessages.ToClient(CoopMessages.Event, client, new CoopEvent { kind = CoopEventKind.RoomDoor, id = i, amount = doors[i].IsOpen ? 1 : 0 });
+    }
+
     public static void ReceiveEvent(ulong sender, CoopEvent e)
     {
         // The host passes a guest's event on to the other guests before playing it itself.
-        if (Coop.IsHost && sender != NetworkManager.ServerClientId) { CoopMessages.ToGuests(CoopMessages.Event, e, NetworkDelivery.ReliableSequenced, sender); Record(e); }
+        if (Coop.IsHost && sender != NetworkManager.ServerClientId && e.kind != CoopEventKind.RoomDoor) { CoopMessages.ToGuests(CoopMessages.Event, e, NetworkDelivery.ReliableSequenced, sender); Record(e); }
         if (e.kind == CoopEventKind.AtExit) { if (Coop.IsHost) MultiplayerManager.Instance.PlayerAtExit(e.slot); return; }
+        if (e.kind == CoopEventKind.RoomDoor)
+        {
+            if (Coop.IsHost && sender != NetworkManager.ServerClientId) CoopMessages.ToGuests(CoopMessages.Event, e, NetworkDelivery.ReliableSequenced, sender);
+            var doors = RoomDoors();
+            if (e.id >= 0 && e.id < doors.Count && doors[e.id] != null && doors[e.id].IsOpen != (e.amount != 0))
+            {
+                Applying = true;
+                try { doors[e.id].SetOpen(e.amount != 0); }
+                finally { Applying = false; }
+            }
+            return;
+        }
         if (e.floorKey != FloorKey || Floor == null) return;
         // A guest still revealing its floor (the reveal switches things on as it builds) plays it once it is done.
         if (Coop.IsGuest && TableManager.Loader != null && TableManager.Loader.Busy) { waiting.Add(e); return; }

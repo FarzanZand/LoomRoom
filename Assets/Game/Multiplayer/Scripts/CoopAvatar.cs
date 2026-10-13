@@ -195,7 +195,18 @@ public class CoopAvatar : MonoBehaviour
         foreach (var m in visual.GetComponentsInChildren<MonoBehaviour>(true)) m.enabled = false;
     }
 
-    public void Swing(bool heavy) { if (animator != null) animator.SetTrigger("Attack"); }
+    // The swing and its whoosh (the held weapon's own, or the game's default).
+    public void Swing(bool heavy)
+    {
+        if (animator != null) animator.SetTrigger("Attack");
+        if (!AudioManager.HasInstance || player == null) return;
+        var weapon = Coop.Item(player.Current.right.ToString());
+        var profile = weapon != null ? weapon.weapon : null;
+        AudioData audio = profile == null || profile.useDefaultEffects
+            ? (CombatManager.HasInstance ? (heavy ? CombatManager.Instance.defaultHeavySwingAudio ?? CombatManager.Instance.defaultSwingAudio : CombatManager.Instance.defaultSwingAudio) : null)
+            : heavy && profile.heavySwingAudio != null ? profile.heavySwingAudio : profile.swingAudio;
+        if (audio != null) AudioManager.Instance.PlaySFXData(audio, transform.position + Vector3.up * 1.2f * builtScale);
+    }
     public void Cast() { if (animator != null) animator.SetTrigger("CastSpell"); }
     public void Hurt() { if (animator != null && player != null && player.Current.alive) animator.SetTrigger("Hurt"); }
 }

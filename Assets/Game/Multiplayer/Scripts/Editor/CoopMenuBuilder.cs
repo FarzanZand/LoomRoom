@@ -188,7 +188,7 @@ public static class CoopMenuBuilder
             t.textWrappingMode = TextWrappingModes.NoWrap;
             return t;
         }
-        var placeholder = Text("Placeholder", "Host's address", .45f);
+        var placeholder = Text("Placeholder", "Join code or address", .45f);
         var text = Text("Text", "", 1f);
 
         var field = go.AddComponent<TMP_InputField>();

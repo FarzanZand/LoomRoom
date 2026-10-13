@@ -20,6 +20,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     [Range(2, 4)] public int maxPlayers = 4;
     [Tooltip("Shown over this player's head. Empty: \"Player 1\", \"Player 2\"...")]
     public string playerName = "";
+    [Tooltip("Host online through Unity Relay: the others join with a short code, no ports to open. Off, or when Relay can't be reached: they join with this computer's address (port above).")]
+    public bool online = true;
 
     [Title("Rules", "The host's apply to everyone")]
     [Tooltip("On: the party shares one lot of loot, taken once, and gold anyone picks up goes to everyone. Off: each player sees and rolls their own loot.")]
@@ -99,6 +101,11 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     // The main menu's Co-op button: the game opens with the co-op screen (a new game asks before its intro).
     public static bool CoopFromMenu;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => CoopFromMenu = false;
+
+    // The host's Relay join code (null when hosting by address, or not hosting).
+    public string JoinCode { get; private set; }
+    // Hosting or joining through Relay is under way.
+    public bool Starting { get; private set; }
 
     public bool Connected => network != null && network.IsListening && (network.IsServer || network.IsConnectedClient);
     public bool IsHost => network != null && network.IsServer;
@@ -241,25 +248,92 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     public bool Host()
     {
-        if (network == null || network.IsListening) return false;
+        if (network == null || network.IsListening || Starting) return false;
         SyncRules();
+        bool relay = online;
+#if UNITY_EDITOR
+        if (CoopEditorTesting.Requested) relay = false;   // the one-computer test stays on this computer
+#endif
+        if (relay) { StartCoroutine(HostOnline()); return true; }
+        return HostByAddress();
+    }
+
+    bool HostByAddress()
+    {
+        JoinCode = null;
         Transport(address);
-        network.NetworkConfig.ConnectionApproval = true;
-        network.NetworkConfig.EnableSceneManagement = false;
+        Configure();
         bool ok = network.StartHost();
         if (!ok) NotificationUI.Show("Could not start a game");
         return ok;
     }
 
-    public bool Join(string host)
+    IEnumerator HostOnline()
     {
-        if (network == null || network.IsListening) return false;
-        Transport(host);
-        network.NetworkConfig.ConnectionApproval = true;
-        network.NetworkConfig.EnableSceneManagement = false;
+        Starting = true;
+        var task = CoopRelay.Host(network.GetComponent<UnityTransport>(), maxPlayers - 1);
+        while (!task.IsCompleted) yield return null;
+        Starting = false;
+        if (task.IsFaulted || task.IsCanceled)
+        {
+            Debug.LogWarning($"[Coop] Relay hosting failed, hosting by address instead: {task.Exception?.GetBaseException().Message}");
+            NotificationUI.Show("Online hosting is not available: others join with your address");
+            HostByAddress();
+            yield break;
+        }
+        JoinCode = task.Result;
+        Configure();
+        if (!network.StartHost()) { JoinCode = null; NotificationUI.Show("Could not start a game"); yield break; }
+        GUIUtility.systemCopyBuffer = JoinCode;
+        NotificationUI.Show($"Join code {JoinCode} (copied)");
+    }
+
+    // A join code (Relay) or an address.
+    public bool Join(string target)
+    {
+        if (network == null || network.IsListening || Starting) return false;
+        if (CoopRelay.LooksLikeCode(target)) { StartCoroutine(JoinOnline(target)); return true; }
+        JoinCode = null;
+        Transport(target);
+        Configure();
         bool ok = network.StartClient();
         if (!ok) NotificationUI.Show("Could not join");
         return ok;
+    }
+
+    IEnumerator JoinOnline(string code)
+    {
+        Starting = true;
+        NotificationUI.Show("Joining...");
+        var task = CoopRelay.Join(network.GetComponent<UnityTransport>(), code);
+        while (!task.IsCompleted) yield return null;
+        Starting = false;
+        if (task.IsFaulted || task.IsCanceled)
+        {
+            Debug.LogWarning($"[Coop] Relay join failed: {task.Exception?.GetBaseException().Message}");
+            NotificationUI.Show("No game with that code");
+            yield break;
+        }
+        Configure();
+        if (!network.StartClient()) NotificationUI.Show("Could not join");
+    }
+
+    void Configure()
+    {
+        network.NetworkConfig.ConnectionApproval = true;
+        network.NetworkConfig.EnableSceneManagement = false;
+    }
+
+    // This computer's address on the local network, for others to join by (hosting without Relay).
+    public static string LocalAddress()
+    {
+        try
+        {
+            foreach (var ip in System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName()).AddressList)
+                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !System.Net.IPAddress.IsLoopback(ip)) return ip.ToString();
+        }
+        catch { }
+        return "127.0.0.1";
     }
 
     public void Leave()
@@ -294,6 +368,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             SyncRules();
             CoopMessages.ToClient(CoopMessages.Rules, client, rules);
             CoopMessages.ToClient(CoopMessages.Flags, client, HostFlags());
+            CoopWorld.SendRoom(client);
             NotificationUI.Show("A player joined");
         }
         SessionChanged?.Invoke();
@@ -324,7 +399,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (spectating) StopSpectating();
         LocalAtTable = LocalReady = LocalInRun = Spectating = false;
         runActive = false; countdownEnds = -1f; atExit.Clear(); runEndSent = false;
-        players.Clear(); LocalPlayer = null; PartySize = 1;
+        players.Clear(); LocalPlayer = null; PartySize = 1; JoinCode = null;
         if (wasGuest) RestoreOwnFlags();
         // The host keeps its own dungeon and plays on alone; a guest (or a host who was watching, dead) goes back to the room.
         bool playOn = !wasGuest && !spectating && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table

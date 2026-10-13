@@ -59,6 +59,7 @@ public class HingedDoor : MonoBehaviour, IInteractable
         targetOpen=open;
         lastInteractor=who;
         moving=true;
+        CoopWorld.RoomDoorChanged(this,open);   // co-op: the others' door swings too
         if(open) openingEffect?.Execute(new InteractionContext { Who=who, Trigger=interactionTrigger });
     }
 

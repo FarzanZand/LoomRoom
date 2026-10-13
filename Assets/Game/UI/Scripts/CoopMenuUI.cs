@@ -37,7 +37,6 @@ public class CoopMenuUI : MonoBehaviour
         Wire(sharedLootButton, () => Toggle(ref MultiplayerManager.Instance.sharedLoot));
         Wire(hostAdventurerButton, () => Toggle(ref MultiplayerManager.Instance.hostAdventurer));
         Wire(partyProgressionButton, () => Toggle(ref MultiplayerManager.Instance.partyProgression));
-        if (address != null && MultiplayerManager.HasInstance) address.text = MultiplayerManager.Instance.address;
     }
 
     void Start() { if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel; }
@@ -96,8 +95,9 @@ public class CoopMenuUI : MonoBehaviour
         var manager = MultiplayerManager.HasInstance ? MultiplayerManager.Instance : null;
         if (title != null) title.text = Current == Mode.NewGame ? "NEW GAME" : "CO-OP";
         if (status != null)
-            status.text = !running ? (Current == Mode.NewGame ? "Play alone, host a game for friends, or join one." : "Not in a game.")
-                : host ? $"Hosting on port {manager.port}. Others join with your address."
+            status.text = manager != null && manager.Starting ? "Connecting..."
+                : !running ? (Current == Mode.NewGame ? "Play alone, host a game for friends, or join one with its code." : "Not in a game. Join with a code or an address.")
+                : host ? (!string.IsNullOrEmpty(manager.JoinCode) ? $"Join code: {manager.JoinCode}  (copied)" : $"Others join with {MultiplayerManager.LocalAddress()}, port {manager.port}.")
                 : "In someone else's game.";
         if (playerList != null)
         {
@@ -106,9 +106,10 @@ public class CoopMenuUI : MonoBehaviour
                 foreach (var p in manager.Players) if (p != null) text.AppendLine(p.DisplayName + (p.IsOwner ? " (you)" : ""));
             playerList.text = text.ToString();
         }
-        Show(hostButton, !running);
-        Show(joinButton, !running);
-        if (address != null) address.gameObject.SetActive(!running);
+        bool starting = manager != null && manager.Starting;
+        Show(hostButton, !running && !starting);
+        Show(joinButton, !running && !starting);
+        if (address != null) address.gameObject.SetActive(!running && !starting);
         Show(leaveButton, running && Current == Mode.Pause);
         Show(beginButton, Current == Mode.NewGame && host);
         Show(aloneButton, Current == Mode.NewGame);

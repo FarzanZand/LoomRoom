@@ -102,6 +102,8 @@ public class TableLevelLoader : MonoBehaviour
     public void Load(TableLevelData level)
     {
         if(Busy || level==null) return;
+        // Co-op: the table is played together; a run starts from the figures (CoopLoad), never from a menu here.
+        if(Coop.Running) { NotificationUI.Show("In co-op, sit down at the table to play"); return; }
         Initialize(); StartCoroutine(LoadRoutine(level));
     }
     AdventureSave.Checkpoint pendingResume;
@@ -110,6 +112,7 @@ public class TableLevelLoader : MonoBehaviour
     public void ResumeAdventure()
     {
         Initialize();
+        if (Coop.Running) { NotificationUI.Show("In co-op, sit down at the table to play"); return; }
         var save = player.GetComponent<AdventureSave>();
         if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) { NotificationUI.Show("No compatible saved adventure"); return; }
         var checkpoint = save.Saved.checkpoint;
