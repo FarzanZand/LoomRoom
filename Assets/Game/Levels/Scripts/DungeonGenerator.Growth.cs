@@ -193,9 +193,9 @@ public partial class DungeonGenerator
             if (room)
             {
                 bool always = Roles[region] == RoomRole.Entrance || Roles[region] == RoomRole.Exit;
-                if (!always && torchRandom.NextDouble() >= data.litRoomChance) continue;
-                count = torchRandom.Next(data.torchesPerRoom.x, data.torchesPerRoom.y + 1);
-                if (always) count = Mathf.Max(1, count);
+                bool full = always || torchRandom.NextDouble() < data.litRoomChance;
+                count = Mathf.Max(1, torchRandom.Next(data.torchesPerRoom.x, data.torchesPerRoom.y + 1));
+                if (!full) count = 1;
                 // A dark room (DungeonRoomFeatures) has none; its rolls are still taken so other rooms keep theirs.
                 if (LightOf(region) == DungeonRoomLight.Dark) count = 0;
             }
@@ -214,6 +214,35 @@ public partial class DungeonGenerator
                 placed.Add(cell);
                 SpawnTorch(cell, dir, room ? region : -1, parent, torchRandom);
             }
+        }
+        LightUnlitRooms(torchRandom, parent);
+    }
+
+    // Every room but a dark one has at least one light: a template that replaces the generated torches without
+    // lighting itself, or a room whose walls were all furnished or beside openings, gets one on any wall it has.
+    void LightUnlitRooms(System.Random rng, Transform parent)
+    {
+        if (Board) return;
+        var lit = new HashSet<int>();
+        foreach (var l in GetComponentsInChildren<Light>(true))
+        {
+            if (l.intensity <= 0) continue; // a chest's glow, dark until it opens
+            int r = Layout.RoomAt(CellOf(l.transform.position));
+            if (r >= 0) lit.Add(r);
+        }
+        for (int room = 0; room < Layout.rooms.Count; room++)
+        {
+            if (lit.Contains(room) || LightOf(room) == DungeonRoomLight.Dark) continue;
+            (Vector2Int cell, Vector2Int dir)? best = null;
+            int bestScore = -1;
+            foreach (var (cell, dir, region) in wallFaces)
+            {
+                if (region != room) continue;
+                int score = (NextToOpening(cell, region) ? 0 : 2) + (furnished.Contains(cell) ? 0 : 1);
+                if (score > bestScore || (score == bestScore && rng.Next(3) == 0)) { best = (cell, dir); bestScore = score; }
+                if (bestScore == 3 && rng.Next(4) == 0) break;
+            }
+            if (best.HasValue) SpawnTorch(best.Value.cell, best.Value.dir, room, parent, rng);
         }
     }
 

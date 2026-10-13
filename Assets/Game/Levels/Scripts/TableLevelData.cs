@@ -273,9 +273,9 @@ public class TableLevelData : ScriptableObject
     [TabGroup(Tabs, Rooms), ShowIf(D), Title("Torches", "The only lights in the dungeon besides the player's own.", HorizontalLine = false), LabelText("Lighting Prefabs")]
     [Tooltip("Wall torches and other wall lights, weighted, each with an optional colour. The fallback for biomes whose own list is empty.")]
     public DungeonWallLight[] lightingPrefabs = new DungeonWallLight[0];
-    [TabGroup(Tabs, Rooms), ShowIf(D), MinMaxSlider(0, 4, true), Tooltip("Torches in a lit room.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), MinMaxSlider(1, 4, true), Tooltip("Torches in a room that rolls its full count (at least one).")]
     public Vector2Int torchesPerRoom = new Vector2Int(1, 2);
-    [TabGroup(Tabs, Rooms), ShowIf(D), Range(0, 1), Tooltip("Chance a room has torches. The entrance and exit always do.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), Range(0, 1), LabelText("Full Torch Chance"), Tooltip("Chance a room gets its Torches Per Room; the others get one. The entrance and exit always get the full count. Every room but a dark one has at least one light.")]
     public float litRoomChance = .75f;
     [TabGroup(Tabs, Rooms), ShowIf(D), Range(0, 1), Tooltip("Chance of a torch on each stretch of corridor wall (about every 8 cells).")]
     public float corridorTorchChance = .3f;
