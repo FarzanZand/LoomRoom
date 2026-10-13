@@ -316,7 +316,7 @@ public class ScreenManager : Singleton<ScreenManager>
 
     IEnumerator StepsRoutine(Vector2[] steps)
     {
-        float alpha = fadeFullscreenImage != null ? fadeFullscreenImage.color.a : 0f;
+        float alpha = FadeAlpha;
         foreach (var step in steps)
         {
             if (step.x < 0f) { yield return new WaitForSecondsRealtime(step.y); continue; }
@@ -345,6 +345,9 @@ public class ScreenManager : Singleton<ScreenManager>
         }
         if (group != null) group.alpha = to;
     }
+
+    // How black the screen is now: 0 clear, 1 fully black.
+    public float FadeAlpha => fadeFullscreenImage != null ? fadeFullscreenImage.color.a : 0f;
 
     public void ClearFade()
     {

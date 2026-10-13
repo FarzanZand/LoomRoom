@@ -94,6 +94,9 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
         bool stand = active != null && active.kind == PlayerKind.Table;
         if (stand == standing) return;
         standing = stand;
+        // Under a black screen nobody sees him move: he is simply back in his chair when it clears,
+        // instead of still sitting down as the picture comes back.
+        if (!stand && ScreenManager.HasInstance && ScreenManager.Instance.FadeAlpha > .99f) { Sit(); return; }
         if (stand) animator.CrossFadeInFixedTime(standState, postureBlend, 0);
         else
         {

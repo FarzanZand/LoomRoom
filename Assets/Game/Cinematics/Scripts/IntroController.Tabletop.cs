@@ -24,6 +24,8 @@ public partial class IntroController
     [FoldoutGroup("Tabletop opening"), Min(0)] public float pushSeconds = 1.4f;
     [FoldoutGroup("Tabletop opening"), Tooltip("A die (RollingDie) thrown three at a time.")] public RollingDie diePrefab;
     [FoldoutGroup("Tabletop opening"), Tooltip("Where the dice leave the player's hand, and where they are thrown toward.")] public Transform diceFrom, diceTo;
+    [FoldoutGroup("Tabletop opening"), Tooltip("How fast the dice leave the hand (units per second, picked between the two). Sets how far they roll: 11-15 stops them by the sheet, about 1 m from the player's seat.")]
+    public Vector2 throwSpeed = new Vector2(11f, 15f);
     [FoldoutGroup("Tabletop opening"), Tooltip("Solid only while dice roll: the table top and a low rim round it.")] public GameObject diceTray;
     [FoldoutGroup("Tabletop opening"), Tooltip("Played as dice land.")] public AudioClip[] diceSounds = new AudioClip[0];
     [FoldoutGroup("Tabletop opening"), Tooltip("Where the view turns when the figure goes on the memorial shelf.")] public Transform memorialShelf;
@@ -127,23 +129,29 @@ public partial class IntroController
     }
 
     // Into the chair: from wherever they stand to the seat, the view settling on the Dungeon Master.
+    // Position, eye height, zoom and aim all ease together and end exactly where the aim was taken,
+    // so nothing snaps at either end.
     IEnumerator GlideIntoSeat()
     {
         var startPos = room.transform.position;
         float y0 = room.Look.YawTransform.eulerAngles.y, p0 = room.Look.Pitch, h0 = room.Look.HeightOverride ?? 1f;
-        Sit();
-        float y1 = room.Look.YawTransform.eulerAngles.y, p1 = room.Look.Pitch;
-        var endPos = room.transform.position;
+        float z0 = room.CameraRig != null ? room.CameraRig.FovOffset : 0f;
+        SeatedView(out float y1, out float p1);
         for (float t = 0f; t < sitSeconds; t += Time.deltaTime)
         {
             float k = Mathf.SmoothStep(0f, 1f, t / sitSeconds);
-            room.Warp(Vector3.Lerp(startPos, endPos, k));
+            room.Warp(Vector3.Lerp(startPos, seat.position, k));
             room.Look.HeightOverride = Mathf.Lerp(h0, eyeHeight, k);
+            if (room.CameraRig != null) room.CameraRig.FovOffset = Mathf.Lerp(z0, zoom, k);
             room.Look.SetYaw(Mathf.LerpAngle(y0, y1, k));
             room.Look.SetPitch(Mathf.Lerp(p0, p1, k));
             yield return null;
         }
-        Sit();
+        room.Warp(seat.position, Quaternion.Euler(0f, seat.eulerAngles.y, 0f));
+        room.Look.HeightOverride = eyeHeight;
+        if (room.CameraRig != null) room.CameraRig.FovOffset = zoom;
+        room.Look.SetYaw(y1);
+        room.Look.SetPitch(p1);
     }
 
     // He pushes the sheet across, the player rolls three dice per attribute; every roll stands.
@@ -332,7 +340,7 @@ public partial class IntroController
         for (int i = 0; i < count; i++)
         {
             var die = Instantiate(diePrefab, diceFrom.position + side * ((i - (count - 1) * .5f) * 1.3f) + Vector3.up * (i * .2f), Random.rotation);
-            die.Throw(toward * Random.Range(24f, 30f) + side * Random.Range(-3f, 3f) + Vector3.up * Random.Range(5f, 9f),
+            die.Throw(toward * Random.Range(throwSpeed.x, throwSpeed.y) + side * Random.Range(-3f, 3f) + Vector3.up * Random.Range(5f, 9f),
                 Random.insideUnitSphere * Random.Range(28f, 42f));
             dice.Add(die);
         }

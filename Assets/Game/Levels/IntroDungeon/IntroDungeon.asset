@@ -16,7 +16,7 @@ MonoBehaviour:
   description: The Dungeon Master's small board for learning the game. Played once,
     at the start of a new game.
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
-  kind: 2
+  kind: 1
   environmentPrefab: {fileID: 0}
   stages:
   - biome: {fileID: 11400000, guid: 6cdedb18b0a27e040b83d9876f0ad625, type: 2}
@@ -173,8 +173,8 @@ MonoBehaviour:
   authoredRooms:
   - label: Landing
     role: 0
-    template: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
-    turns: 3
+    template: {fileID: 8445936427449202897, guid: 959a91c787b75994bac62e73222d0542, type: 3}
+    turns: 1
     height: 0
     raised: 1
   - label: Rat den
@@ -251,6 +251,7 @@ MonoBehaviour:
   doorPercent: 65
   boardEdgeMaterial: {fileID: 2100000, guid: b9c4c0e160db0d6449dad9e7fafa73d9, type: 2}
   boardGridMaterial: {fileID: 2100000, guid: acc03c58dc02a3f41a0780fa30b8e880, type: 2}
+  boardPitMaterial: {fileID: 0}
   boardTileThickness: 0.14
   boardLayerHeight: 0.32
   boardMaxRaise: 2
@@ -260,6 +261,9 @@ MonoBehaviour:
   - {fileID: 8300000, guid: fa0b67f13f850da4f9d3fb90db46a4f3, type: 3}
   - {fileID: 8300000, guid: c137ad7632865df4f90d121edb6c5ec7, type: 3}
   boardRevealAll: 0
+  boardDoorPosts: []
+  boardMoundProps: []
+  furnishEntranceRims: 0
   architectureTileSize: 3
   twoTileRoomPercent: 25
   threeTileRoomPercent: 0
@@ -290,9 +294,9 @@ MonoBehaviour:
     weight: 1
     overrideColor: 0
     color: {r: 1, g: 0.6, b: 0.3, a: 1}
-  torchesPerRoom: {x: 1, y: 2}
-  litRoomChance: 0.7
-  corridorTorchChance: 0.3
+  torchesPerRoom: {x: 2, y: 3}
+  litRoomChance: 1
+  corridorTorchChance: 0.7
   propRules:
   - prefab: {fileID: 1026660711950778362, guid: 337fb5179aa668747b05b0ca7fa0d18b, type: 3}
     placement: 0

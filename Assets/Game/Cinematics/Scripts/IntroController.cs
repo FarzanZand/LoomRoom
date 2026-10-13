@@ -303,18 +303,26 @@ public partial class IntroController : Singleton<IntroController>
         room.Warp(seat.position, Quaternion.Euler(0f, seat.eulerAngles.y, 0f));
         if (room.Look == null) return;
         room.Look.HeightOverride = eyeHeight;
-        // Level with the Dungeon Master: the seat's own pitch if he cannot be found.
-        float pitch = seat.eulerAngles.x;
+        SeatedView(out float yaw, out float pitch);
+        room.Look.SetYaw(yaw);
+        room.Look.SetPitch(pitch);
+    }
+
+    // The view from the seat at the seated eye height, even while the camera is still on its way down:
+    // level with the Dungeon Master, or the seat's own direction if he cannot be found.
+    void SeatedView(out float yaw, out float pitch)
+    {
+        yaw = seat.eulerAngles.y;
+        pitch = seat.eulerAngles.x;
         pitch = pitch > 180f ? 360f - pitch : -pitch;
         var dm = TableManager.HasInstance && TableManager.Instance.DM != null ? TableManager.Instance.DM.GetComponent<Animator>() : null;
         var head = dm != null && dm.isHuman ? dm.GetBoneTransform(HumanBodyBones.Head) : null;
-        if (head != null)
-        {
-            var eye = seat.position + Vector3.up * (room.Look.PitchTransform.position.y - room.transform.position.y);
-            CameraEase.YawPitchTo(eye, head.position + Vector3.down * aimBelowHead, out float yaw, out pitch, seat.eulerAngles.y);
-            room.Look.SetYaw(yaw);
-        }
-        room.Look.SetPitch(pitch);
+        if (head == null || room == null || room.Look == null) return;
+        // PlayerLook eases the camera's local height toward the override: measure from where it will settle.
+        var torso = room.Look.YawTransform;
+        float settle = torso != room.Look.transform && torso.parent != null ?torso.parent.TransformVector(0f, eyeHeight - torso.localPosition.y, 0f).y : 0f;
+        var eye = seat.position + Vector3.up * (room.Look.PitchTransform.position.y - room.transform.position.y + settle);
+        CameraEase.YawPitchTo(eye, head.position + Vector3.down * aimBelowHead, out yaw, out pitch, seat.eulerAngles.y);
     }
 
     IEnumerator LampOn()
