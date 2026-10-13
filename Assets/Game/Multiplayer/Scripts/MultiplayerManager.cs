@@ -151,6 +151,27 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 #if UNITY_EDITOR
         if (autoStartInEditor && CoopEditorTesting.Requested) StartCoroutine(AutoStart());
 #endif
+        CommandLine();
+    }
+
+    // A build started with -host, or -join <address> (and -name <name>, -port <port>) goes straight into co-op.
+    void CommandLine()
+    {
+        var args = System.Environment.GetCommandLineArgs();
+        string join = null; bool host = false;
+        for (int i = 0; i < args.Length; i++)
+        {
+            string next = i + 1 < args.Length ? args[i + 1] : null;
+            switch (args[i].ToLowerInvariant())
+            {
+                case "-host": host = true; break;
+                case "-join": join = next ?? address; break;
+                case "-name": if (next != null) playerName = next; break;
+                case "-port": if (next != null && ushort.TryParse(next, out var p)) port = p; break;
+            }
+        }
+        if (host) Host();
+        else if (join != null) { address = join; Join(join); }
     }
 
     void OnDestroy()
@@ -203,8 +224,6 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     public bool Host()
     {
         if (network == null || network.IsListening) return false;
-        if (ProgressionManager.HasInstance && !ProgressionManager.Instance.HasFlag(IntroController.IntroFlag) && !Application.isEditor)
-        { NotificationUI.Show("Play the beginning first"); return false; }
         SyncRules();
         Transport(address);
         network.NetworkConfig.ConnectionApproval = true;
@@ -283,12 +302,16 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         CoopMessages.UnregisterAll(); messagesRegistered = false;
         CoopWorld.Unhook();
         SetCutaway(false);
-        bool inRun = LocalInRun;
+        bool inRun = LocalInRun, spectating = Spectating;
+        if (spectating) StopSpectating();
         LocalAtTable = LocalReady = LocalInRun = Spectating = false;
         runActive = false; countdownEnds = -1f; atExit.Clear(); runEndSent = false;
         players.Clear(); LocalPlayer = null; PartySize = 1;
         if (wasGuest) RestoreOwnFlags();
-        if (inRun && RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended)
+        // The host keeps its own dungeon and plays on alone; a guest (or a host who was watching, dead) goes back to the room.
+        bool playOn = !wasGuest && !spectating && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table
+            && PlayerManager.Instance.Active != null && PlayerManager.Instance.Active.IsAlive;
+        if (inRun && !playOn && RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended)
         {
             RunManager.Instance.Abandon();
             var loader = TableManager.Loader;
@@ -319,6 +342,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             if (m.a == HostFloorHash.key && m.b != HostFloorHash.hash) Debug.LogWarning($"[Coop] Client {s} built floor {m.a} differently (hash {m.b:X8}, host {HostFloorHash.hash:X8}).");
             else if (m.a == HostFloorHash.key) Debug.Log($"[Coop] Client {s} built the same floor ({m.b:X8}).");
         });
+        // A guest finished loading a floor (its reveal included): bring it up to date with what already happened there.
+        CoopMessages.Register<CoopInt>(CoopMessages.Ready, (s, m) => { if (network.IsServer) CoopWorld.CatchUp(s, m.a); });
     }
 
     // ── Players ───────────────────────────────────────────────────────
@@ -587,6 +612,12 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         atExit.Clear(); countdownEnds = -1f;
         loader.CoopLoad(level, start);
         if (IsHost) runFloor = start.floor;
+        else
+        {
+            yield return null;
+            while (loader.Busy) yield return null;
+            CoopMessages.ToHost(CoopMessages.Ready, new CoopInt { a = CoopWorld.FloorKey });
+        }
     }
 
     // ── A new game ────────────────────────────────────────────────────

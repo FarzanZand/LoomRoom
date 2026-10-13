@@ -135,6 +135,7 @@ public static class CoopMenuBuilder
             var trail = bar.transform.Find("Trail"); if (trail != null) Object.DestroyImmediate(trail.gameObject);
             var label = bar.transform.Find("HEALTH").GetComponent<TMP_Text>();
             label.gameObject.name = "Name"; label.text = $"Player {i + 2}";
+            label.gameObject.SetActive(true);   // the health bar's own label is hidden
             if (bodyFont != null) label.font = bodyFont;
             label.fontSize = 18;
             var value = bar.transform.Find("Value").GetComponent<TMP_Text>();

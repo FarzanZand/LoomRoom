@@ -26,6 +26,9 @@ public static class CoopWorld
     static readonly HashSet<Character> networkSpawned = new();
     static readonly Dictionary<RuntimeAnimatorController, (int[] floats, int[] bools)> parameters = new();
     static int lootScope = -1, lootCounter, dropCounter;
+    // Host: what happened to this floor so far, for a player who joins it late (CatchUp).
+    static readonly List<CoopEvent> history = new();
+    static readonly List<EnemySpawn> spawnHistory = new();
     // Mid-floor spawns take the host's health once their own Start has filled their pools.
     static readonly Dictionary<Character, float> pendingHealth = new();
     static float nextSnapshot;
@@ -58,7 +61,7 @@ public static class CoopWorld
     {
         Floor = null; FloorKey = 0;
         enemies.Clear(); enemyIds.Clear(); containers.Clear(); destructibles.Clear(); doors.Clear(); spikes.Clear(); ambushes.Clear();
-        loot.Clear(); lootKeys.Clear(); networkSpawned.Clear(); pendingHealth.Clear();
+        loot.Clear(); lootKeys.Clear(); networkSpawned.Clear(); pendingHealth.Clear(); history.Clear(); spawnHistory.Clear(); waiting.Clear();
         lootScope = -1; lootCounter = 0; dropCounter = 0;
     }
 
@@ -287,6 +290,11 @@ public static class CoopWorld
 
     public static void Tick()
     {
+        if (Coop.IsGuest && waiting.Count > 0 && TableManager.Loader != null && !TableManager.Loader.Busy)
+        {
+            var events = waiting.ToArray(); waiting.Clear();
+            foreach (var e in events) if (e.floorKey == FloorKey) Play(e);
+        }
         if (!Coop.IsHost || Floor == null || enemies.Count == 0) return;
         if (Time.unscaledTime < nextSnapshot) return;
         nextSnapshot = Time.unscaledTime + 1f / Mathf.Max(1f, MultiplayerManager.Instance.snapshotRate);
@@ -374,12 +382,14 @@ public static class CoopWorld
         if (prefab < 0) { Debug.LogWarning($"[Coop] {c.name} appeared mid-floor but is not in MultiplayerManager's enemy prefabs; guests won't see it.", c); return; }
         AddEnemy(c);
         var drop = c.GetComponent<DungeonLootDrop>();
-        CoopMessages.ToGuests(CoopMessages.Spawn, new EnemySpawn
+        var spawn = new EnemySpawn
         {
             floorKey = FloorKey, id = enemyIds[c], prefab = prefab, position = c.transform.position, yaw = c.transform.eulerAngles.y,
             lootSeed = drop != null ? drop.seed : 0,
             health = c.Stats != null ? c.Stats.CurrentHealth : 0, maxHealth = c.Stats != null ? c.Stats.MaxHealth : 0,
-        });
+        };
+        spawnHistory.Add(spawn);
+        CoopMessages.ToGuests(CoopMessages.Spawn, spawn);
     }
 
     public static void ReceiveSpawn(ulong sender, EnemySpawn spawn)
@@ -523,10 +533,40 @@ public static class CoopWorld
         if (id >= 0) Send(new CoopEvent { kind = CoopEventKind.DoorOpened, id = id, position = from });
     }
 
+    // Host: the lasting changes, in order (not sounds, arrows or spikes that come and go).
+    static void Record(CoopEvent e)
+    {
+        if (!Coop.IsHost || e.floorKey != FloorKey) return;
+        switch (e.kind)
+        {
+            case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: return;
+        }
+        history.Add(e);
+    }
+
+    // Host: a player has built this floor (its hash came in). One who joined late is brought up to date: what was
+    // made mid-floor, what was opened, broken and taken, and which enemies are gone.
+    public static void CatchUp(ulong client, int floorKey)
+    {
+        if (!Coop.IsHost || floorKey != FloorKey || Floor == null) return;
+        foreach (var spawn in spawnHistory) CoopMessages.ToClient(CoopMessages.Spawn, client, spawn);
+        foreach (var e in history)
+        {
+            var past = e;
+            // Gold picked up before they came is not theirs.
+            if (past.kind == CoopEventKind.CoinsTaken) past.amount = 0;
+            CoopMessages.ToClient(CoopMessages.Event, client, past);
+        }
+        for (int i = 0; i < enemies.Count; i++)
+            if (enemies[i] == null || !enemies[i].IsAlive)
+                CoopMessages.ToClient(CoopMessages.Event, client, new CoopEvent { kind = CoopEventKind.EnemyGone, id = i, floorKey = FloorKey, slot = (byte)Coop.LocalSlot });
+    }
+
     public static void Send(CoopEvent e)
     {
         e.slot = (byte)Coop.LocalSlot;
         e.floorKey = FloorKey;
+        Record(e);
         if (Coop.IsHost) CoopMessages.ToGuests(CoopMessages.Event, e);
         else CoopMessages.ToHost(CoopMessages.Event, e);
     }
@@ -534,9 +574,18 @@ public static class CoopWorld
     public static void ReceiveEvent(ulong sender, CoopEvent e)
     {
         // The host passes a guest's event on to the other guests before playing it itself.
-        if (Coop.IsHost && sender != NetworkManager.ServerClientId) CoopMessages.ToGuests(CoopMessages.Event, e, NetworkDelivery.ReliableSequenced, sender);
+        if (Coop.IsHost && sender != NetworkManager.ServerClientId) { CoopMessages.ToGuests(CoopMessages.Event, e, NetworkDelivery.ReliableSequenced, sender); Record(e); }
         if (e.kind == CoopEventKind.AtExit) { if (Coop.IsHost) MultiplayerManager.Instance.PlayerAtExit(e.slot); return; }
         if (e.floorKey != FloorKey || Floor == null) return;
+        // A guest still revealing its floor (the reveal switches things on as it builds) plays it once it is done.
+        if (Coop.IsGuest && TableManager.Loader != null && TableManager.Loader.Busy) { waiting.Add(e); return; }
+        Play(e);
+    }
+
+    static readonly List<CoopEvent> waiting = new();
+
+    static void Play(CoopEvent e)
+    {
         Applying = true;
         try { Apply(e); }
         catch (System.Exception ex) { Debug.LogException(ex); }
@@ -556,6 +605,13 @@ public static class CoopWorld
             case CoopEventKind.DoorOpened:
                 if (e.id >= 0 && e.id < doors.Count && doors[e.id] != null && !doors[e.id].IsOpen) doors[e.id].Open(e.position);
                 break;
+            case CoopEventKind.EnemyGone:
+            {
+                // Killed before this player joined: no body, no loot, it is simply not there.
+                var enemy = Enemy(e.id);
+                if (enemy != null) enemy.gameObject.SetActive(false);
+                break;
+            }
             case CoopEventKind.SpikeSprung:
                 if (e.id >= 0 && e.id < spikes.Count && spikes[e.id] != null) spikes[e.id].Spring();
                 break;

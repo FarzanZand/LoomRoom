@@ -11,10 +11,12 @@ using Object = UnityEngine.Object;
 public static class CoopTesting
 {
     // Co-op New Game: a fresh save on this editor, which hosts; the intro starts once Player 2 is in.
-    public static void StartNewGame() => Begin(true);
-    public static void Start() => Begin(false);
+    public static void StartNewGame() => Begin(true, 1);
+    public static void Start() => Begin(false, 1);
+    // More virtual players (up to 3: Player 2, 3 and 4).
+    public static void StartWith(int guests, bool newGame) => Begin(newGame, Mathf.Clamp(guests, 1, 3));
 
-    static void Begin(bool newGame)
+    static void Begin(bool newGame, int guests)
     {
         if (EditorApplication.isPlaying) { EditorApplication.isPlaying = false; return; }
         if (EditorApplication.isCompiling || EditorApplication.isPlayingOrWillChangePlaymode) return;
@@ -23,10 +25,10 @@ public static class CoopTesting
             Debug.LogError("No MultiplayerManager in the open scene: run Tools > LoomRoom > Multiplayer > Set Up Co-op first.");
             return;
         }
-        if (!ActivatePlayers(1)) return;
+        if (!ActivatePlayers(guests)) return;
         SessionState.SetBool(CoopEditorTesting.RequestKey, true);
         SessionState.SetBool(CoopEditorTesting.NewGameKey, newGame);
-        SessionState.SetInt(CoopEditorTesting.GuestsKey, 1);
+        SessionState.SetInt(CoopEditorTesting.GuestsKey, guests);
         if (!newGame) SessionState.SetBool(DebugDungeonSession.RoomRequestKey, true);
         EditorApplication.isPlaying = true;
     }

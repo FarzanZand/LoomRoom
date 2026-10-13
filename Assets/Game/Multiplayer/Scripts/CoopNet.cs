@@ -107,6 +107,7 @@ public enum CoopEventKind : byte
     AmbushCleared = 9,
     EnemySwing = 10,
     ArrowLoosed = 11,
+    EnemyGone = 12,
 }
 
 public struct CoopEvent : INetworkSerializable
