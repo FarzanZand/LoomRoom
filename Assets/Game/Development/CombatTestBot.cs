@@ -17,7 +17,7 @@ using UnityEngine;
 //   spam <n> <gap>          n taps, gap seconds apart
 //   counter                 attack as soon as the enemy starts a swing
 //   wait <s>                capture <s> <name>  frames to Temp/CombatTest/<name> (runs alongside)
-//   rec <s> <name>          real-time frames named by milliseconds (two co-op players side by side)
+//   rec <s> <name>          real-time frames named by the wall clock's milliseconds (two co-op players side by side)
 //   chest <metres> [wood|iron|gold]   place a chest in front of the player; open  opens it
 //   god [off]               keep the player at full health
 //   fight <s> <metres> [block 0-1]  fight like a plain player (block: share of enemy swings it reacts to; 1 = every one) for up to s seconds: walk at the nearest enemy within <metres>,
@@ -370,8 +370,9 @@ public class CombatTestBot : MonoBehaviour
             var was = RenderTexture.active; RenderTexture.active = small;
             half.ReadPixels(new Rect(0, 0, small.width, small.height), 0, 0); half.Apply();
             RenderTexture.active = was;
-            int ms = Mathf.RoundToInt((Time.realtimeSinceStartup - start) * 1000f);
-            System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, $"{ms:000000}.jpg"), half.EncodeToJPG(85));
+            // Named by the wall clock (ms of the day), so two players' recordings on one computer line up.
+            long ms = (long)System.DateTime.Now.TimeOfDay.TotalMilliseconds;
+            System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, $"{ms:00000000}.jpg"), half.EncodeToJPG(85));
             Destroy(shot); Destroy(half); small.Release(); Destroy(small);
             frames++;
         }

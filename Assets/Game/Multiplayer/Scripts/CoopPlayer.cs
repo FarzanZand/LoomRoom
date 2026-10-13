@@ -117,7 +117,11 @@ public class CoopPlayer : NetworkBehaviour
         if (!s.Equals(State.Value)) State.Value = s;
 
         // One-shot moments the others see, as the arms play them: a swing as its release starts, a bash, a spell.
-        if (release != shownRelease && release != 0) SwingRpc((byte)release);
+        if (release != shownRelease && release != 0)
+        {
+            SwingRpc((byte)release);
+            if (CoopTiming) Debug.Log($"[Coop timing] release {release} sent at {System.DateTime.Now.TimeOfDay.TotalMilliseconds:0}");
+        }
         shownRelease = release;
         bool bashing = bash != null && bash.Busy;
         if (bashing && !wasBashing) BashRpc();
@@ -128,7 +132,15 @@ public class CoopPlayer : NetworkBehaviour
         wasCasting = casting;
     }
 
-    [Rpc(SendTo.NotOwner)] void SwingRpc(byte kind) => Avatar.Swing(kind);
+    // Development: log when a swing is sent and shown, on the wall clock (two editors on one computer compare them).
+    public static bool CoopTiming;
+
+    [Rpc(SendTo.NotOwner)]
+    void SwingRpc(byte kind)
+    {
+        if (CoopTiming) Debug.Log($"[Coop timing] release {kind} shown at {System.DateTime.Now.TimeOfDay.TotalMilliseconds:0}");
+        Avatar.Swing(kind);
+    }
     [Rpc(SendTo.NotOwner)] void BashRpc() => Avatar.Bash();
     [Rpc(SendTo.NotOwner)] void CastRpc() => Avatar.Cast();
     // Hurt: the others see the flinch and the blood.
