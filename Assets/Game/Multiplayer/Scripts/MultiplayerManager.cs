@@ -34,8 +34,10 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     public bool hideCeilingsWhenDead = true;
     [Tooltip("Walls above this many tiles are not drawn for a dead player either (0: whole walls).")]
     [Min(0)] public float cutawayTiles = 1;
-    [Tooltip("Field of view change while a dead player holds the right mouse button (negative zooms in).")]
-    public float spectatorZoom = -38f;
+    [Tooltip("Field of view change while a dead player watches (negative zooms in)...")]
+    public float spectatorWatchZoom = -40f;
+    [Tooltip("...and while it holds the right mouse button.")]
+    public float spectatorZoom = -62f;
     [Tooltip("A dead player's eye height over the room floor while watching (the room player's own units; standing is about 1.6): leaning over the table.")]
     public float spectatorEyeHeight = 2.05f;
     [Tooltip("How quickly a dead player's view turns to follow the teammate it watches (0: free look only). Left click watches the next one.")]
@@ -834,7 +836,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         var room = inRoom ? PlayerManager.Instance.Active : null;
         if (room != null && room.CameraRig != null && InputManager.HasInstance)
         {
-            float want = InputManager.Instance.SecondaryHeld && GameManager.HasInstance && GameManager.Instance.GameplayActive ? spectatorZoom : 0f;
+            float want = InputManager.Instance.SecondaryHeld && GameManager.HasInstance && GameManager.Instance.GameplayActive ? spectatorZoom : spectatorWatchZoom;
             room.CameraRig.FovOffset = Mathf.Lerp(room.CameraRig.FovOffset, want, 1f - Mathf.Exp(-8f * Time.unscaledDeltaTime));
         }
         // The view keeps turning to the teammate being watched (the one followed dies: the next).
