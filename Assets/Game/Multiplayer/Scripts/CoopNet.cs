@@ -43,6 +43,7 @@ public struct NetDamage : INetworkSerializable
     public byte flags;
     public sbyte attack;          // the enemy's attack (its hit profile), -1 unknown
     public float health;          // host -> guests: the enemy's health after the hit
+    public float stun;            // guest -> host: seconds the blow stuns the enemy (a shield bash)
     public FixedString64Bytes weapon;
 
     const byte Heavy = 1, Critical = 2, Backstab = 4, Magic = 8, Blocked = 16, Parried = 32, FromEffect = 64, DiedFlag = 128;
@@ -87,7 +88,7 @@ public struct NetDamage : INetworkSerializable
         s.SerializeValue(ref enemy); s.SerializeValue(ref slot); s.SerializeValue(ref amount);
         s.SerializeValue(ref hitPoint); s.SerializeValue(ref direction); s.SerializeValue(ref swing);
         s.SerializeValue(ref knockback); s.SerializeValue(ref flags); s.SerializeValue(ref attack);
-        s.SerializeValue(ref health); s.SerializeValue(ref weapon);
+        s.SerializeValue(ref health); s.SerializeValue(ref stun); s.SerializeValue(ref weapon);
     }
 }
 

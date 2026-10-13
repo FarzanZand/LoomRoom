@@ -93,6 +93,7 @@ public class ShieldBash : MonoBehaviour
     void BeginDash()
     {
         phase = Phase.Dash;
+        phaseEnds = Time.time + .05f;   // the stall check waits this long for the dash to start moving
         lastPosition = transform.position;
         Streaks(true);
     }
@@ -102,7 +103,10 @@ public class ShieldBash : MonoBehaviour
         // Measured, not assumed: a wall or a ledge stops the dash short.
         var moved = transform.position - lastPosition; moved.y = 0f;
         float step = t.shieldBashSpeed * Time.deltaTime;
-        if (travelled > .3f && moved.magnitude < step * .25f) { EndDash(t); return; }
+        // The first frame has not moved yet (the velocity is set below); after that a dash that can't move (into a wall
+        // from a standstill) ends too, and none runs longer than its distance takes.
+        if ((travelled > .3f || Time.time > phaseEnds) && moved.magnitude < step * .25f) { EndDash(t); return; }
+        if (Time.time > phaseEnds + t.shieldBashDistance / Mathf.Max(.1f, t.shieldBashSpeed) + .2f) { EndDash(t); return; }
         travelled += moved.magnitude;
         lastPosition = transform.position;
 

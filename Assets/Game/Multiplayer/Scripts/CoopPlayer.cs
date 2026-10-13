@@ -103,7 +103,9 @@ public class CoopPlayer : NetworkBehaviour
         s.crouching = active != null && active.Motor != null && active.Motor.IsCrouching;
         s.seated = s.place == CoopPlace.Room && IntroController.Seated;
         bool onTable = s.place == CoopPlace.Table && table != null;
-        s.blocking = onTable && table.Combat != null && table.Combat.IsGuarding;
+        // A shield bash shows as the shield held up while the body dashes forward.
+        var bash = onTable ? table.GetComponent<ShieldBash>() : null;
+        s.blocking = onTable && ((table.Combat != null && table.Combat.IsGuarding) || (bash != null && bash.Busy));
         s.health = table != null && table.Stats != null && table.Stats.MaxHealth > 0 ? (byte)Mathf.Clamp(Mathf.CeilToInt(table.Stats.CurrentHealth / table.Stats.MaxHealth * 255f), 0, 255) : (byte)0;
         var progress = table != null ? table.GetComponent<AdventurerProgress>() : null;
         s.classId = new FixedString32Bytes(progress != null && progress.selectedClass != null ? progress.selectedClass.id : "");

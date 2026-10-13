@@ -155,6 +155,8 @@ public class EnemyBrain : MonoBehaviour
     public void Stun(float seconds)
     {
         if (State == EnemyState.Dead || seconds <= 0f) return;
+        // Co-op guest: the host stuns the real enemy; the stun rides along with the strike that follows.
+        if (NetworkPuppet) { PendingNetworkStun = Mathf.Max(PendingNetworkStun, seconds); return; }
         if (IsSwinging) { attackRunner.CancelForPause(); SetState(EnemyState.Chase); }
         BeginRecovery(seconds);
         staggerImmuneUntil = Mathf.Max(staggerImmuneUntil, Time.time + seconds + (Tuning != null ? Tuning.enemyStaggerImmunity : 0f));
@@ -265,6 +267,7 @@ public class EnemyBrain : MonoBehaviour
 
     // Co-op guests: the host runs this enemy; here it only shows what the host's snapshots say (CoopEnemyPuppet).
     public bool NetworkPuppet { get; set; }
+    public float PendingNetworkStun { get; set; }
 
     // The host's state and sleep for a puppet, without anything a change here would start (voices still hear it).
     public void ApplyNetworkState(EnemyState state, bool asleep)

@@ -232,6 +232,8 @@ public static class CoopWorld
                 var strike = NetDamage.From(info);
                 strike.enemy = id;
                 strike.slot = (byte)Coop.LocalSlot;
+                var brain = target.GetComponent<EnemyBrain>();
+                if (brain != null) { strike.stun = brain.PendingNetworkStun; brain.PendingNetworkStun = 0f; }
                 CoopMessages.ToHost(CoopMessages.Strike, strike);
             }
             return true;
@@ -246,6 +248,8 @@ public static class CoopWorld
         var enemy = Enemy(strike.enemy);
         if (enemy == null || enemy.Stats == null || !enemy.IsAlive) return;
         var info = strike.ToInfo(CharacterOf(strike.slot));
+        // Stunned first, as on the striker's machine, so the hurt reaction plays.
+        if (strike.stun > 0f && enemy.TryGetComponent<EnemyBrain>(out var brain)) brain.Stun(strike.stun);
         enemy.Stats.TakeDamage(info);
     }
 
