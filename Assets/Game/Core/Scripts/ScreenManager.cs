@@ -38,10 +38,6 @@ public class ScreenManager : Singleton<ScreenManager>
     [FoldoutGroup("Pixel lighting"), LabelText("Library"), InlineEditor, OnValueChanged(nameof(ApplyPixelLighting))]
     [Tooltip("The pixel-lit materials, their texel sizes and the brightness per world (Tools > LoomRoom > Pixel Look).")]
     public PixelLookLibrary pixelLookLibrary;
-    static readonly int TexelScaleId = Shader.PropertyToID("_PixelLookTexelScale");
-    static readonly int RoomTexelScaleId = Shader.PropertyToID("_PixelLookRoomTexelScale");
-    static readonly int TableTexelScaleId = Shader.PropertyToID("_PixelLookTableTexelScale");
-    static readonly int BrightnessId = Shader.PropertyToID("_PixelLookBrightness");
 
     [Tooltip("Blended on top while the player dies: colour drains, the edges darken.")]
     public ScreenEffectSettings deathEffects = new()
@@ -225,17 +221,13 @@ public class ScreenManager : Singleton<ScreenManager>
 
     void OnValidate() => SetPixelLightingGlobals();
 
-    // What the Pixel Lit shader reads: pixel size, texel scale per world and brightness for the active player's world.
+    // What the Pixel Lit shader reads (PixelLookLibrary.ApplyGlobals), for the active player's world.
     void SetPixelLightingGlobals()
     {
         Shader.SetGlobalFloat(PixelSizeId, pixelSize);
         if (pixelLookLibrary == null) return;
         bool table = Application.isPlaying && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
-        Shader.SetGlobalFloat(TexelScaleId, table ? pixelLookLibrary.tableTexelScale : pixelLookLibrary.roomTexelScale);
-        // Per world, so the room seen from the table (skylights, windows) keeps its own texels.
-        Shader.SetGlobalFloat(RoomTexelScaleId, pixelLookLibrary.roomTexelScale);
-        Shader.SetGlobalFloat(TableTexelScaleId, pixelLookLibrary.tableTexelScale);
-        Shader.SetGlobalFloat(BrightnessId, table ? pixelLookLibrary.tableBrightness : pixelLookLibrary.roomBrightness);
+        pixelLookLibrary.ApplyGlobals(table, pixelSize);
     }
 
     void TogglePixelLighting()

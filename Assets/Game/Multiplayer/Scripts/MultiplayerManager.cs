@@ -96,6 +96,10 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     // ── State ─────────────────────────────────────────────────────────
 
+    // The main menu's Co-op button: the game opens with the co-op screen (a new game asks before its intro).
+    public static bool CoopFromMenu;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => CoopFromMenu = false;
+
     public bool Connected => network != null && network.IsListening && (network.IsServer || network.IsConnectedClient);
     public bool IsHost => network != null && network.IsServer;
     public int LocalSlot => LocalPlayer != null ? Mathf.Max(0, LocalPlayer.SlotIndex) : 0;
@@ -154,6 +158,18 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (autoStartInEditor && CoopEditorTesting.Requested) StartCoroutine(AutoStart());
 #endif
         CommandLine();
+        if (CoopFromMenu) StartCoroutine(OpenFromMenu());
+    }
+
+    // An existing game from the menu's Co-op button: once the player is up in the room, the co-op screen.
+    // (A new game asks in the dark before its intro instead, NewGameLobby.)
+    IEnumerator OpenFromMenu()
+    {
+        yield return new WaitForSecondsRealtime(1.5f);
+        if (IntroController.Seated) yield break;
+        CoopFromMenu = false;
+        while (GameManager.HasInstance && GameManager.Instance.State != GameState.Explore) yield return null;
+        if (CoopMenuUI.Instance != null && !CoopMenuUI.Instance.IsOpen) CoopMenuUI.Instance.Open(CoopMenuUI.Mode.Pause);
     }
 
     // A build started with -host, or -join <address> (and -name <name>, -port <port>) goes straight into co-op.
@@ -642,6 +658,10 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         }
         if (CoopEditorTesting.Requested) yield break;
 #endif
+        // A plain new game goes straight to its intro; the choice is only for one started from the menu's Co-op
+        // button (or a build started with -host or -join).
+        if (!CoopFromMenu && !Connected && !(network != null && network.IsListening)) yield break;
+        CoopFromMenu = false;
         var menu = CoopMenuUI.Instance;
         if (menu == null) yield break;
         menu.Open(CoopMenuUI.Mode.NewGame);

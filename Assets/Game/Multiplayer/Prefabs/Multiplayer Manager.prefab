@@ -54,6 +54,7 @@ MonoBehaviour:
   partyProgression: 0
   hideCeilingsWhenDead: 1
   cutawayTiles: 1
+  spectatorWatchZoom: -40
   spectatorZoom: -38
   spectatorEyeHeight: 2.05
   spectatorFollow: 2.5
