@@ -95,9 +95,11 @@ public struct FlagSet : INetworkSerializable
 {
     public string[] keys;
     public int[] values;
+    public bool changes;   // only these keys changed (the rest stays as it is)
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
+        s.SerializeValue(ref changes);
         int count = keys != null ? keys.Length : 0;
         s.SerializeValue(ref count);
         if (s.IsReader) { keys = new string[count]; values = new int[count]; }

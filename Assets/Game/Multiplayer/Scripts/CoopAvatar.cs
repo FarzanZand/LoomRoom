@@ -23,6 +23,8 @@ public class CoopAvatar : MonoBehaviour
     Vector3 lastPosition;
     Vector3 velocity;
     bool shownDead, shownSeated;
+    Vector3 lastSolid;
+    float solidAfter;
     Light carried;
 
     static readonly int MoveX = Animator.StringToHash("MoveX"), MoveZ = Animator.StringToHash("MoveZ"), Speed = Animator.StringToHash("Speed"),
@@ -63,10 +65,16 @@ public class CoopAvatar : MonoBehaviour
             var cam = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
             if (cam != null) nameLabel.transform.rotation = Quaternion.LookRotation(nameLabel.transform.position - cam.transform.position);
         }
+        // A jump (room to table, a new floor): the body is not solid for a moment, so it never lands inside
+        // someone and shoves them through a floor.
+        // Only a body on the table is solid (enemies strike it, players bump it); a room-sized one never is, as its
+        // place and position can arrive a moment apart and a giant capsule over the board would shove players through it.
+        if ((transform.position - lastSolid).sqrMagnitude > 16f) solidAfter = Time.time + 1.5f;
+        lastSolid = transform.position;
         if (body != null)
         {
-            body.height = 1.8f * builtScale; body.radius = .35f * builtScale; body.center = Vector3.up * .9f * builtScale;
-            body.enabled = s.place == CoopPlace.Room || s.alive;
+            body.height = 1.8f; body.radius = .35f; body.center = Vector3.up * .9f;
+            body.enabled = s.place == CoopPlace.Table && builtPlace == CoopPlace.Table && s.alive && Time.time >= solidAfter;
         }
         if (animator == null) return;
 

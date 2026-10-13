@@ -553,14 +553,16 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             for (int i = 0; i < set.keys.Length; i++)
                 if (rules.hostAdventurer || set.keys[i].StartsWith("story.") || set.keys[i] == ProgressionManager.TableEnteredFlag || set.keys[i] == DungeonMasterRemarks.SatFlag)
                     progression.SetFlag(set.keys[i], set.values[i]);
-            if (rules.hostAdventurer) foreach (var pair in ownFlags) if (System.Array.IndexOf(set.keys, pair.Key) < 0) progression.SetFlag(pair.Key, 0);
+            if (rules.hostAdventurer && !set.changes) foreach (var pair in ownFlags) if (System.Array.IndexOf(set.keys, pair.Key) < 0) progression.SetFlag(pair.Key, 0);
         }
         finally { applyingHostFlags = false; }
     }
 
     void OnFlagChanged(string key, int value)
     {
-        if (applyingHostFlags || network == null || !network.IsListening || network.IsServer) return;
+        if (applyingHostFlags || network == null || !network.IsListening) return;
+        // The host's unlocks and story reach the guests at once (playing the host's adventurer).
+        if (network.IsServer) { if (rules.hostAdventurer) CoopMessages.ToGuests(CoopMessages.Flags, new FlagSet { keys = new[] { key }, values = new[] { value }, changes = true }); return; }
         earnedFlags[key] = value;
     }
 
@@ -570,10 +572,17 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (ownFlags == null || !ProgressionManager.HasInstance) { earnedFlags.Clear(); return; }
         var progression = ProgressionManager.Instance;
         bool keep = rules.partyProgression;
+        var earned = new Dictionary<string, int>(earnedFlags);
         var now = new List<string>(progression.AllFlags.Keys);
-        foreach (var key in now) if (!ownFlags.ContainsKey(key)) progression.SetFlag(key, 0);
-        foreach (var pair in ownFlags) progression.SetFlag(pair.Key, pair.Value);
-        if (keep) foreach (var pair in earnedFlags) if (pair.Value > progression.GetFlag(pair.Key)) progression.SetFlag(pair.Key, pair.Value);
+        // These changes are the restore itself, not something earned (the connection may still be closing).
+        applyingHostFlags = true;
+        try
+        {
+            foreach (var key in now) if (!ownFlags.ContainsKey(key)) progression.SetFlag(key, 0);
+            foreach (var pair in ownFlags) progression.SetFlag(pair.Key, pair.Value);
+            if (keep) foreach (var pair in earned) if (pair.Value > progression.GetFlag(pair.Key)) progression.SetFlag(pair.Key, pair.Value);
+        }
+        finally { applyingHostFlags = false; }
         ownFlags = null; earnedFlags.Clear();
     }
 
