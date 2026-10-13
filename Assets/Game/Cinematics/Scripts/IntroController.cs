@@ -181,7 +181,7 @@ public partial class IntroController : Singleton<IntroController>
     {
         if (MultiplayerManager.HasInstance)
         {
-            if (ScreenManager.HasInstance) ScreenManager.Instance.FadeToBlack(0f);
+            // The choice is made over the room as it stands (the screen fade would hide it); the intro darkens it after.
             yield return MultiplayerManager.Instance.NewGameLobby();
             if (Coop.IsGuest) { LeaveForCoop(); yield break; }
         }

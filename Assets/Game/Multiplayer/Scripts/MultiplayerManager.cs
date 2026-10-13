@@ -144,13 +144,25 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     float roomYaw;
     TableLevelData pendingLevel;
 
+    const string NameKey = "coop_name";
+
+    // This player's name, kept between games (the co-op screen's name box).
+    public void SetName(string name)
+    {
+        playerName = string.IsNullOrWhiteSpace(name) ? "" : name.Trim();
+        PlayerPrefs.SetString(NameKey, playerName);
+        if (LocalPlayer != null) LocalPlayer.Rename(LocalName);
+    }
+
     protected override void Awake()
     {
         base.Awake();
+        if (string.IsNullOrWhiteSpace(playerName)) playerName = PlayerPrefs.GetString(NameKey, "");
         // Every co-op window keeps playing while another one has the focus.
         Application.runInBackground = true;
         if (network == null) network = FindAnyObjectByType<NetworkManager>();
         SyncRules();
+        CommandLine();
     }
 
     void Start()
@@ -164,7 +176,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 #if UNITY_EDITOR
         if (autoStartInEditor && CoopEditorTesting.Requested) StartCoroutine(AutoStart());
 #endif
-        CommandLine();
+        if (commandHost) Host();
+        else if (commandJoin != null) Join(commandJoin);
         if (CoopFromMenu) StartCoroutine(OpenFromMenu());
     }
 
@@ -179,7 +192,13 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (CoopMenuUI.Instance != null && !CoopMenuUI.Instance.IsOpen) CoopMenuUI.Instance.Open(CoopMenuUI.Mode.Pause);
     }
 
-    // A build started with -host, or -join <address> (and -name <name>, -port <port>) goes straight into co-op.
+    // A build started with -host (-lan: by address), or -join <code or address> (and -name <name>, -port <port>)
+    // goes straight into co-op. Read in Awake, so a new game's intro knows to wait for the connection.
+    bool commandHost;
+    string commandJoin;
+    int autoBegin;   // -autobegin <players>: the host begins a new game by itself once that many are in
+    public bool CommandLineCoop => commandHost || commandJoin != null;
+
     void CommandLine()
     {
         var args = System.Environment.GetCommandLineArgs();
@@ -190,13 +209,15 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             switch (args[i].ToLowerInvariant())
             {
                 case "-host": host = true; break;
+                case "-lan": online = false; break;
+                case "-autobegin": if (next != null && int.TryParse(next, out var n)) autoBegin = n; break;
                 case "-join": join = next ?? address; break;
                 case "-name": if (next != null) playerName = next; break;
                 case "-port": if (next != null && ushort.TryParse(next, out var p)) port = p; break;
             }
         }
-        if (host) Host();
-        else if (join != null) { address = join; Join(join); }
+        commandHost = host;
+        commandJoin = join;
     }
 
     void OnDestroy()
@@ -286,6 +307,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (!network.StartHost()) { JoinCode = null; NotificationUI.Show("Could not start a game"); yield break; }
         GUIUtility.systemCopyBuffer = JoinCode;
         NotificationUI.Show($"Join code {JoinCode} (copied)");
+        Debug.Log($"[Coop] Hosting online. Join code {JoinCode}");
     }
 
     // A join code (Relay) or an address.
@@ -735,12 +757,18 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 #endif
         // A plain new game goes straight to its intro; the choice is only for one started from the menu's Co-op
         // button (or a build started with -host or -join).
-        if (!CoopFromMenu && !Connected && !(network != null && network.IsListening)) yield break;
+        if (!CoopFromMenu && !CommandLineCoop && !Connected && !Starting && !(network != null && network.IsListening)) yield break;
         CoopFromMenu = false;
+        // A connection on its way (Relay takes a moment): the screen waits for it, then shows who is in.
+        yield return null;
         var menu = CoopMenuUI.Instance;
         if (menu == null) yield break;
         menu.Open(CoopMenuUI.Mode.NewGame);
-        while (menu.IsOpen) yield return null;
+        while (menu.IsOpen)
+        {
+            if (autoBegin > 0 && Connected && IsHost && players.Count >= autoBegin) { menu.Begin(); break; }
+            yield return null;
+        }
         if (menu.Began && Connected && IsHost) BeginSharedIntro();
     }
 
@@ -969,7 +997,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (on && dungeon != null)
         {
             dungeon.ShowCeilings(false);
-            float top = rules.cutawayTiles > 0 ? dungeon.FloorHeight + rules.cutawayTiles * dungeon.LevelData.architectureTileSize : 1e6f;
+            float tile = dungeon.LevelData.architectureTileSize > .1f ? dungeon.LevelData.architectureTileSize : 3f;
+            float top = rules.cutawayTiles > 0 ? dungeon.FloorHeight + rules.cutawayTiles * tile : 1e6f;
             Shader.SetGlobalVector(CutawayId, new Vector4(top, rules.cutawayTiles > 0 ? 1 : 0, 0, 0));
             cutawayOn = true;
             return;

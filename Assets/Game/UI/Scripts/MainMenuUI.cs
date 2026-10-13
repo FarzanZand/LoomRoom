@@ -64,6 +64,9 @@ public class MainMenuUI : MonoBehaviour
         if (quitButton != null) quitButton.onClick.AddListener(Quit);
         if (coopButton != null) coopButton.onClick.AddListener(PlayCoop);
         if (fade != null) StartCoroutine(Fade(1f, 0f, null));
+        // Started with -host or -join (co-op from the command line): straight into the game.
+        foreach (var arg in System.Environment.GetCommandLineArgs())
+            if (arg.ToLowerInvariant() == "-host" || arg.ToLowerInvariant() == "-join") { leaving = true; SceneManager.LoadScene(gameScene); break; }
     }
 
     void Update()

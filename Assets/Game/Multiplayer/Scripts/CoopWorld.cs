@@ -699,10 +699,9 @@ public static class CoopWorld
             case CoopEventKind.ItemDropped:
                 var item = Coop.Item(e.item.ToString());
                 if (item == null || !InventoryManager.HasInstance) break;
-                var dropped = InventoryManager.Instance.Spawn(item, e.position);
+                // Put down as floor loot is, resting on the floor below where it was let go (it is not thrown here).
+                var dropped = DungeonPickup.Spawn(item, e.position, Floor.transform, Mathf.Max(1, e.amount));
                 if (dropped == null) break;
-                dropped.Init(item, Mathf.Max(1, e.amount));
-                dropped.transform.SetParent(Floor.transform, true);
                 Tag(dropped.gameObject, e.id);
                 break;
         }

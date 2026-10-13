@@ -22,11 +22,13 @@ public class CoopPlayer : NetworkBehaviour
 
     bool wasAttacking, wasCasting;
     Player watchedTable;
+    Unity.Netcode.Components.NetworkTransform motion;
 
     void Awake()
     {
         Proxy = GetComponent<Character>();
         Avatar = GetComponent<CoopAvatar>();
+        motion = GetComponent<Unity.Netcode.Components.NetworkTransform>();
     }
 
     public override void OnNetworkSpawn()
@@ -56,7 +58,13 @@ public class CoopPlayer : NetworkBehaviour
 
     void OnLocalDamaged(DamageInfo info)
     {
-        if (info.Amount > 0 && !info.Blocked) HurtRpc();
+        if (info.Amount > 0 && !info.Blocked) HurtRpc(info.HitPoint, info.Direction, info.SwingDirection);
+    }
+
+    // Rename while playing (the co-op screen's name box).
+    public void Rename(string name)
+    {
+        if (IsOwner && IsSpawned) PlayerName.Value = new FixedString64Bytes(name ?? "");
     }
 
     void LateUpdate()
@@ -80,7 +88,10 @@ public class CoopPlayer : NetworkBehaviour
         if (active != null)
         {
             float yaw = active.Look != null ? active.Look.YawTransform.eulerAngles.y : active.transform.eulerAngles.y;
-            transform.SetPositionAndRotation(active.transform.position, Quaternion.Euler(0f, yaw, 0f));
+            var to = active.transform.position;
+            // A jump (between the room and the table, a new floor, a warp) is a teleport, not a slide across the world.
+            if (motion != null && (to - transform.position).sqrMagnitude > 36f) motion.Teleport(to, Quaternion.Euler(0f, yaw, 0f), transform.localScale);
+            else transform.SetPositionAndRotation(to, Quaternion.Euler(0f, yaw, 0f));
         }
         var manager = MultiplayerManager.Instance;
         var s = State.Value;
@@ -90,6 +101,7 @@ public class CoopPlayer : NetworkBehaviour
         s.atTable = manager.LocalAtTable;
         s.ready = manager.LocalReady;
         s.crouching = active != null && active.Motor != null && active.Motor.IsCrouching;
+        s.seated = s.place == CoopPlace.Room && IntroController.Seated;
         bool onTable = s.place == CoopPlace.Table && table != null;
         s.blocking = onTable && table.Combat != null && table.Combat.IsGuarding;
         s.health = table != null && table.Stats != null && table.Stats.MaxHealth > 0 ? (byte)Mathf.Clamp(Mathf.CeilToInt(table.Stats.CurrentHealth / table.Stats.MaxHealth * 255f), 0, 255) : (byte)0;
@@ -111,7 +123,14 @@ public class CoopPlayer : NetworkBehaviour
 
     [Rpc(SendTo.NotOwner)] void SwingRpc(bool heavy) => Avatar.Swing(heavy);
     [Rpc(SendTo.NotOwner)] void CastRpc() => Avatar.Cast();
-    [Rpc(SendTo.NotOwner)] void HurtRpc() => Avatar.Hurt();
+    // Hurt: the others see the flinch and the blood.
+    [Rpc(SendTo.NotOwner)]
+    void HurtRpc(Vector3 point, Vector3 direction, Vector3 swing)
+    {
+        Avatar.Hurt();
+        if (GoreManager.HasInstance && Proxy != null && State.Value.place == CoopPlace.Table)
+            GoreManager.Instance.Hit(Proxy, new DamageInfo { Amount = 1f, HitPoint = point != Vector3.zero ? point : transform.position + Vector3.up * 1.2f, Direction = direction, SwingDirection = swing, Target = Proxy });
+    }
 
     // Host -> owner: an enemy's blow reached this player's stand-in on the host.
     [Rpc(SendTo.Owner)] public void HitRpc(NetDamage hit) => CoopWorld.ReceiveEnemyHit(hit);

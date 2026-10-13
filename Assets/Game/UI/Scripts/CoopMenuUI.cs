@@ -13,6 +13,8 @@ public class CoopMenuUI : MonoBehaviour
     [SerializeField] GameObject root;
     [SerializeField] TMP_Text title, status, playerList;
     [SerializeField] TMP_InputField address;
+    [Tooltip("This player's name over their head (kept).")]
+    [SerializeField] TMP_InputField playerName;
     [SerializeField] Button hostButton, joinButton, leaveButton, beginButton, aloneButton, closeButton;
     [SerializeField] Button sharedLootButton, hostAdventurerButton, partyProgressionButton;
 
@@ -31,9 +33,14 @@ public class CoopMenuUI : MonoBehaviour
         Wire(hostButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Host(); });
         Wire(joinButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Join(address != null ? address.text : ""); });
         Wire(leaveButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Leave(); });
-        Wire(beginButton, () => { Began = true; Close(); });
+        Wire(beginButton, Begin);
         Wire(aloneButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Leave(); Began = true; Close(); });
         Wire(closeButton, Close);
+        if (playerName != null)
+        {
+            if (MultiplayerManager.HasInstance) playerName.text = MultiplayerManager.Instance.playerName;
+            playerName.onEndEdit.AddListener(n => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.SetName(n); });
+        }
         Wire(sharedLootButton, () => Toggle(ref MultiplayerManager.Instance.sharedLoot));
         Wire(hostAdventurerButton, () => Toggle(ref MultiplayerManager.Instance.hostAdventurer));
         Wire(partyProgressionButton, () => Toggle(ref MultiplayerManager.Instance.partyProgression));
@@ -48,7 +55,7 @@ public class CoopMenuUI : MonoBehaviour
         Unpush();
     }
 
-    void OnCancel() { if (IsOpen && Current == Mode.Pause && (address == null || !address.isFocused)) Close(); }
+    void OnCancel() { if (IsOpen && Current == Mode.Pause && (address == null || !address.isFocused) && (playerName == null || !playerName.isFocused)) Close(); }
 
     static void Wire(Button button, UnityEngine.Events.UnityAction action) { if (button != null) button.onClick.AddListener(action); }
 
@@ -58,6 +65,9 @@ public class CoopMenuUI : MonoBehaviour
         rule = !rule;
         MultiplayerManager.Instance.RulesChanged();
     }
+
+    // The host's Begin: everyone who has joined plays the new game's intro.
+    public void Begin() { Began = true; Close(); }
 
     public void Open(Mode mode)
     {

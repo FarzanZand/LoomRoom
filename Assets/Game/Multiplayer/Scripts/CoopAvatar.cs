@@ -22,7 +22,7 @@ public class CoopAvatar : MonoBehaviour
     GameObject rightVisual, leftVisual;
     Vector3 lastPosition;
     Vector3 velocity;
-    bool shownDead;
+    bool shownDead, shownSeated;
     Light carried;
 
     static readonly int MoveX = Animator.StringToHash("MoveX"), MoveZ = Animator.StringToHash("MoveZ"), Speed = Animator.StringToHash("Speed"),
@@ -87,6 +87,13 @@ public class CoopAvatar : MonoBehaviour
         animator.SetFloat(HurtSpeed, 1.3f);
         animator.SetBool(HoldingBow, s.place == CoopPlace.Table && s.blocking);
 
+        // In a chair (the intro): the seated pose, and up again after.
+        if (s.seated != shownSeated && animator != null)
+        {
+            shownSeated = s.seated;
+            animator.SetTrigger(s.seated ? "Sit" : "Stand");
+        }
+
         bool dead = s.place == CoopPlace.Table && s.inRun && !s.alive;
         if (dead != shownDead)
         {
@@ -136,7 +143,7 @@ public class CoopAvatar : MonoBehaviour
         // Leaving the table dead: the body stays where it fell, for the floor.
         if (model != null && builtPlace == CoopPlace.Table && s.place == CoopPlace.Room && shownDead) LeaveCorpse();
         else if (model != null) Destroy(model);
-        model = null; animator = null; rightVisual = leftVisual = null; heldRight = heldLeft = null; shownDead = false;
+        model = null; animator = null; rightVisual = leftVisual = null; heldRight = heldLeft = null; shownDead = false; shownSeated = false;
 
         var manager = MultiplayerManager.Instance;
         var prefab = s.place == CoopPlace.Room ? manager.RoomBody(player.SlotIndex) : manager.TableBody(cls);

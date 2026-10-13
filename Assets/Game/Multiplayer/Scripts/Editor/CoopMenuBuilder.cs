@@ -39,10 +39,14 @@ public static class CoopMenuBuilder
         var hint = panel.Find("Hint");
         var status = Copy(hint, box.transform, "Status", new Vector2(0, 250), new Vector2(560, 56));
         status.GetComponent<TMP_Text>().textWrappingMode = TextWrappingModes.Normal;
-        var players = Copy(hint, box.transform, "Players", new Vector2(0, 150), new Vector2(560, 110));
+        var players = Copy(hint, box.transform, "Players", new Vector2(0, 115), new Vector2(560, 110));
         players.GetComponent<TMP_Text>().textWrappingMode = TextWrappingModes.Normal;
 
         var address = AddressField(box.transform, hint.GetComponent<TMP_Text>(), new Vector2(0, 60));
+        var playerName = AddressField(box.transform, hint.GetComponent<TMP_Text>(), new Vector2(0, 200));
+        playerName.name = "Name";
+        playerName.placeholder.GetComponent<TMP_Text>().text = "Your name";
+        playerName.characterLimit = 20;
 
         Button MakeButton(string name, string label, Vector2 at, float width = 320)
         {
@@ -70,7 +74,7 @@ public static class CoopMenuBuilder
         void Set(string field, Object value) => so.FindProperty(field).objectReferenceValue = value;
         Set("root", root);
         Set("title", title.GetComponent<TMP_Text>()); Set("status", status.GetComponent<TMP_Text>()); Set("playerList", players.GetComponent<TMP_Text>());
-        Set("address", address);
+        Set("address", address); Set("playerName", playerName);
         Set("hostButton", host); Set("joinButton", join); Set("leaveButton", leave); Set("beginButton", begin);
         Set("aloneButton", alone); Set("closeButton", close);
         Set("sharedLootButton", loot); Set("hostAdventurerButton", adventurer); Set("partyProgressionButton", progress);

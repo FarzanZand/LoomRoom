@@ -49,6 +49,7 @@ MonoBehaviour:
   port: 7777
   maxPlayers: 4
   playerName: 
+  online: 1
   sharedLoot: 1
   hostAdventurer: 1
   partyProgression: 0

@@ -13,6 +13,7 @@ public struct CoopPlayerState : INetworkSerializable, System.IEquatable<CoopPlay
     public bool ready;          // picked a figure and waits for the run
     public bool inRun;          // part of the run on the table now
     public bool blocking, crouching;
+    public bool seated;         // in a chair at the table (the intro)
     public byte health;         // 0-255 of the table player's maximum
     public FixedString32Bytes classId;
     public FixedString64Bytes right, left;   // held items (save ids)
@@ -20,12 +21,12 @@ public struct CoopPlayerState : INetworkSerializable, System.IEquatable<CoopPlay
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref place); s.SerializeValue(ref alive); s.SerializeValue(ref atTable); s.SerializeValue(ref ready);
-        s.SerializeValue(ref inRun); s.SerializeValue(ref blocking); s.SerializeValue(ref crouching); s.SerializeValue(ref health);
+        s.SerializeValue(ref inRun); s.SerializeValue(ref blocking); s.SerializeValue(ref crouching); s.SerializeValue(ref seated); s.SerializeValue(ref health);
         s.SerializeValue(ref classId); s.SerializeValue(ref right); s.SerializeValue(ref left);
     }
 
     public bool Equals(CoopPlayerState o) =>
         place == o.place && alive == o.alive && atTable == o.atTable && ready == o.ready && inRun == o.inRun &&
-        blocking == o.blocking && crouching == o.crouching && health == o.health &&
+        blocking == o.blocking && crouching == o.crouching && seated == o.seated && health == o.health &&
         classId.Equals(o.classId) && right.Equals(o.right) && left.Equals(o.left);
 }
