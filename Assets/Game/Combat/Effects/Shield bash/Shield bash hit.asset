@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: Shield bash hit
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 35331942828691540adde75648e2f309, type: 3}
+  - {fileID: 8300000, guid: 719784268925fba4aa3e82211b27452d, type: 3}
+  - {fileID: 8300000, guid: ad9f965de2066934daee02290037d0cb, type: 3}
+  - {fileID: 8300000, guid: 5bcf820222aea784292dc983070c52d7, type: 3}
+  - {fileID: 8300000, guid: d39119f6eccc24340a225b3b3cf786da, type: 3}
+  volume: 1
+  pitch: 0.9
+  pitchVariance: 0.06
+  minDistance: 1
+  maxDistance: 500

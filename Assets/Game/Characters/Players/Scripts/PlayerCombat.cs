@@ -106,7 +106,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     }
     float cancelSetAt = -10f;
     bool heldThroughCancel;   // the attack button still down from the cancelled swing: it starts nothing until pressed anew
-    public bool IsGuarding => player != null && player.IsActive && ShieldHeld &&
+    public bool IsGuarding => player != null && player.IsActive && ShieldHeld && (bash == null || !bash.Busy) &&
         !(BlockCutsRecovery ? Committed : AttackFromBlock && IsAttacking) &&
         (!CombatManager.HasInstance || Time.time - guardRaisedAt >= CombatManager.Instance.blockRaiseDelay) &&
         (!GameManager.HasInstance || GameManager.Instance.GameplayActive) &&
@@ -127,6 +127,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     Player player;
     PlayerSpellcasting spells;
     AdventurerProgress progress;
+    ShieldBash bash;   // block held + attack, when it is ready (CombatManager > Shield bash)
     float blockLockUntil = -1f;
     float attackBufferedUntil = -1f;
     float pressedAt;
@@ -154,6 +155,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         player = GetComponent<Player>();
         spells = GetComponent<PlayerSpellcasting>();
         progress = GetComponent<AdventurerProgress>();
+        bash = GetComponent<ShieldBash>();
         relay = GetComponentInChildren<WeaponAnimationRelay>(true);
         if (armsAnimator == null && relay != null) armsAnimator = relay.GetComponent<Animator>();
         attackHash           = AnimatorHelper.TagHash(attackTag);
@@ -227,6 +229,13 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     void OnPrimaryPressed()
     {
         if (!player.IsActive || (spells != null && spells.Busy)) return;
+        if (bash != null && bash.Busy) return;
+        // Block held: a ready shield bash takes the press; the button then starts nothing until pressed again.
+        if (InputManager.Instance.SecondaryHeld && bash != null && !IsAttacking && bash.TryStart())
+        {
+            heldThroughCancel = true; queuedPresses = 0; charging = false; attackBufferedUntil = -1f;
+            return;
+        }
         if (InputManager.Instance.SecondaryHeld && !AttackFromBlock) return;
         heldThroughCancel = false;
         pressedAt = Time.time;
@@ -277,7 +286,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             AnimatorHelper.SetFloat(armsAnimator, heavyReleaseSpeedParam, tuning.heavyReleaseSpeed * attackSpeed * heavy);
             AnimatorHelper.SetBool(armsAnimator, heavyStrikeParam, HeavySwing);
             AnimatorHelper.SetBool(armsAnimator, simpleSwingsParam, tuning.simpleSwings);
-            // The Heathen clips carry their own timing: only the attack speed stat scales them.
+            // The IK swing clips carry their own timing: only the attack speed stat scales them.
             AnimatorHelper.SetFloat(armsAnimator, swingSpeedParam, player.Stats != null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f);
             UpdateCharge(tuning);
         }
@@ -296,7 +305,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (!attackingNow && Time.time >= attackBufferedUntil) queuedPresses = 0;
         if (!gameplay) queuedPresses = 0;
         bool buffered = gameplay && (spells == null || !spells.Busy) && queuedPresses > 0 && !windingUp;
-        // A new swing can't start sooner than swingInterval after the last one began (Heathen's rhythm).
+        // A new swing can't start sooner than swingInterval after the last one began.
         // Only the start is held back: a windup in progress keeps reading the button for the charge.
         bool startingSwing = !attackingNow || IsReleasing;
         bool intervalReady = !startingSwing || Time.time - lastSwingAt >= SwingInterval;
@@ -305,7 +314,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (startingSwing && !windingUp) AnimatorHelper.SetInteger(armsAnimator, swingIndexParam, NextSwingIndex);
         if (!primary) heldThroughCancel = false;
         AnimatorHelper.SetBool(armsAnimator, attackHeldParam,
-            !heldThroughCancel && (primary || buffered) && WeaponHeld && (!secondary || AttackFromBlock) && intervalReady);
+            !heldThroughCancel && (primary || buffered) && WeaponHeld && (!secondary || AttackFromBlock) && intervalReady && (bash == null || !bash.Busy));
         if (secondary && !blockLocked && ShieldHeld && player.Stats != null &&
             player.Stats.HasStat(StatType.MaxStamina) && (player.Stats.IsExhausted || player.Stats.CurrentStamina <= 0))
             player.Stats.ReportInsufficientStamina();
@@ -458,10 +467,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         var curve = heavy ? tuning.heavySwingCameraCurve : tuning.swingCameraCurve;
         if (!heavy && !tuning.simpleSwings)
         {
-            // Heathen forehand turns the view with the blade (right to left); the backhand mirrors it.
-            rotation = tuning.heathenSwingCameraRotation;
+            // The IK forehand turns the view with the blade (right to left); the backhand mirrors it.
+            rotation = tuning.ikSwingCameraRotation;
             if (alternate) rotation = new Vector3(rotation.x, -rotation.y, -rotation.z);
-            curve = tuning.heathenSwingCameraCurve;
+            curve = tuning.ikSwingCameraCurve;
         }
         return rotation * (curve != null ? curve.Evaluate(Mathf.Clamp01(state.normalizedTime)) : 0f);
     }

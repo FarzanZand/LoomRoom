@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Heathen's bloodied blade: every cut that lands spatters the held weapon with the victim's blood (its
+// The bloodied blade: every cut that lands spatters the held weapon with the victim's blood (its
 // CharacterData.gore, not bone dust), on the striking part of the blade (the far two thirds, away from the grip);
 // each stain dries darker and shrinks away over CombatManager.bladeBloodFadeSeconds. Uses GoreManager's stain art.
 // On the table player; off with CombatManager.bladeBlood.

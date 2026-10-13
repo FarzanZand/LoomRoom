@@ -150,6 +150,16 @@ public class EnemyBrain : MonoBehaviour
     // Stand still (a flinch, a stagger, the pause after a swing); only ever extends.
     internal void BeginRecovery(float seconds) => recoveryUntil = Mathf.Max(recoveryUntil, Time.time + seconds);
 
+    // A shield bash: the swing in progress is dropped (it still counts as used) and the enemy stands stunned, then
+    // can't be staggered again for CombatManager.enemyStaggerImmunity.
+    public void Stun(float seconds)
+    {
+        if (State == EnemyState.Dead || seconds <= 0f) return;
+        if (IsSwinging) { attackRunner.CancelForPause(); SetState(EnemyState.Chase); }
+        BeginRecovery(seconds);
+        staggerImmuneUntil = Mathf.Max(staggerImmuneUntil, Time.time + seconds + (Tuning != null ? Tuning.enemyStaggerImmunity : 0f));
+    }
+
     // ── Lifecycle ─────────────────────────────────────────────────────
 
     void Awake() => Initialize();

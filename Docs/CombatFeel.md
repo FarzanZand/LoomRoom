@@ -2,13 +2,13 @@
 
 Tap primary attack for a light strike; consecutive taps alternate between the two light swings (`SwingIndex`). Hold for at least `heavyChargeTime` (0.7 seconds by default), then release for a heavy strike if stamina is available; without enough stamina the release is a light strike. Secondary holds the shield. There is no timed block or parry: a raised shield blocks frontal hits for a stamina cost (see `Stamina-and-blocking.md`).
 
-The pace follows Heathen (`Heathen-combat-rework.md`, steps in `Heathen-rework-steps.md`):
+The pace follows the combat rework (`Combat-rework.md`, steps in `Rework-steps.md`):
 
 - A click still strikes straight from the windup, but a new light swing can't start sooner than `swingInterval` (0.6 s) after the last one began, divided by the AttackSpeed stat. Only the start is held back; a windup in progress keeps reading the button for the charge.
 - No hit stop: `hitStopEnabled` and `hitStopOnPlayerHurt` are off, so the blade passes straight through.
 - `attackFromBlock` (on): clicking with the shield up lowers it for the swing, and it comes back up afterwards if block is still held. While the swing plays the player is not guarding.
 - The table player walks backwards at 0.8 of normal speed (`PlayerData.backwardSpeed` on `TablePlayer.prefab`).
-- Light swings use the original clips (`simpleSwings` on). The Heathen swing set (below) was rejected and stays off.
+- Light swings use the original clips (`simpleSwings` on). The IK swing set (below) was rejected and stays off.
 
 ## Animation editing
 
@@ -26,7 +26,7 @@ All four attack tags count as attacking. The tag names are fields on `PlayerComb
 
 Windup draws the hand up and slightly back. Release contains the cutting stroke, follow-through, and return to idle. The held pose has a small looping motion. Core motion is stored in clips; the runtime feeds Animator parameters and processes clip hitbox events (`AttackBegin`, `EnableHitbox`, `DisableHitbox`, `PlaySwingAudio`). Edit poses and hitbox event positions in the Animation window.
 
-**Heathen swing set (rejected, kept for later).** `FirstPersonPlayer/Heathen` holds forehand and backhand windup, hold and release clips baked by `Characters/Animations/Editor/HeathenSwingBaker.cs` (two-bone IK along a blade path written in the file; rebaking overwrites the clips). The controller picks them when the `SimpleSwings` parameter is false (`CombatManager.simpleSwings` off); they run at `SwingSpeed` (the AttackSpeed stat only) and turn the camera with the blade (`heathenSwingCameraRotation`, `heathenSwingCameraCurve`; the backhand mirrors yaw and roll). The user did not like them; `simpleSwings` stays on until they are revisited.
+**IK swing set (rejected, kept for later).** `FirstPersonPlayer/IK swings` holds forehand and backhand windup, hold and release clips baked by `Characters/Animations/Editor/IkSwingBaker.cs` (two-bone IK along a blade path written in the file; rebaking overwrites the clips). The controller picks them when the `SimpleSwings` parameter is false (`CombatManager.simpleSwings` off); they run at `SwingSpeed` (the AttackSpeed stat only) and turn the camera with the blade (`ikSwingCameraRotation`, `ikSwingCameraCurve`; the backhand mirrors yaw and roll). The user did not like them; `simpleSwings` stays on until they are revisited.
 
 Enemy attacks, hurt and death use `Assets/Game/Characters/Animations/HumanoidController.controller`; enemy attack states are tagged `Attack`.
 
@@ -50,7 +50,7 @@ Enemy attacks, hurt and death use `Assets/Game/Characters/Animations/HumanoidCon
 - Damage numbers appear where the blade struck, white, in `PIXEARG_`, drifting up slowly. Criticals and backstabs show "CRITICAL!" or "BACKSTAB!" above a bigger number that grows in over 0.3 s. The centre-screen result line is off (`DungeonCombatFeedback.resultLine`).
 - Getting hit: the screen goes deep red (`hurtScreenAlpha` 0.6), holds for `hurtScreenHold` (0.1 s) and fades over `hurtScreenDuration` (0.4 s); the camera jolts away from the side the hit came from (`PlayerFX`).
 - `CrosshairUI`: a small dot while the table player fights, a shield icon while blocking.
-- All of the above (gore art, GoreManager, contact flash, slash lines, swing trails, helmets, recoil on rats and slimes, kill sounds, each enemy's blood) was wired once by `Set Up Heathen Impact`, retired on 2026-10-13 (running it again reset hand-tuned blood); tune the prefabs and assets directly.
+- All of the above (gore art, GoreManager, contact flash, slash lines, swing trails, helmets, recoil on rats and slimes, kill sounds, each enemy's blood) was wired once by the impact setup tool, retired on 2026-10-13 (running it again reset hand-tuned blood); tune the prefabs and assets directly.
 
 ## CombatManager controls
 
@@ -58,7 +58,7 @@ Defaults below are the values on `Combat/Prefabs/CombatManager.prefab`.
 
 - `playerAttackSpeed` (1.12), `windupSpeed` (1.45), `releaseSpeed` (1.25), `heavyReleaseSpeed` (0.95): Animator playback timing, multiplied by the character AttackSpeed stat.
 - `swingInterval` (0.6): shortest time between the starts of two light swings. `attackInputBuffer` (0.4): how long a click is remembered.
-- `attackFromBlock` (on), `simpleSwings` (on), `heathenSwingCameraRotation`, `heathenSwingCameraCurve`: see above.
+- `attackFromBlock` (on), `simpleSwings` (on), `ikSwingCameraRotation`, `ikSwingCameraCurve`: see above.
 - `weaponSweepSteps` (12): samples per frame along the weapon's path.
 - `heavyChargeTime`, `heavyDamageMultiplier`, `heavyStaminaCost`: charge threshold, damage, and stamina.
 - `blockStaminaCost`, `shieldStaminaPerSecond`, `blockFrontalDot`: shield cost and which hits count as frontal. Blocking does not cancel the enemy attack.

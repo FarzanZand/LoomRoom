@@ -101,7 +101,7 @@ public class DungeonBiome : ScriptableObject
     public Spawn[] enemies = new Spawn[0];
     [TabGroup(Life), MinMaxSlider(0, 1, true), Tooltip("Share of rooms with enemies: on the biome's first floor (left) ramping to its last floor (right).")]
     public Vector2 encounterChance = new(.4f, .6f);
-    [TabGroup(Life), Range(1, 6), Tooltip("Fewest enemies in a room that has any (Heathen-style packs: 2 or more).")] public int minEnemiesPerRoom = 1;
+    [TabGroup(Life), Range(1, 6), Tooltip("Fewest enemies in a room that has any (packs: 2 or more).")] public int minEnemiesPerRoom = 1;
     [TabGroup(Life), Range(1, 6)] public int maxEnemiesPerRoom = 2;
     [TabGroup(Life), Tooltip("Added to the level's features in this biome. Min Floor counts from the biome's first floor (for the level's features too).")]
     public DungeonFeature[] features = new DungeonFeature[0];

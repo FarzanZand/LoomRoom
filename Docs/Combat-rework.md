@@ -1,10 +1,10 @@
-# Heathen combat rework (plan)
+# Combat rework (plan)
 
-Goal: table combat that feels like Heathen (gameplay overview trailer, youtu.be/gULKsVIPNlk from 0:39), everything except the shield bash. Measured by stepping the trailer frame by frame (30 fps, 480p) and comparing with our code and serialized values (CombatManager prefab, Room.unity overrides, TablePlayer and enemy prefabs). Nothing is changed yet.
+Goal: table combat that feels like the reference (a reference gameplay trailer), everything except the shield bash. Measured by stepping the trailer frame by frame (30 fps, 480p) and comparing with our code and serialized values (CombatManager prefab, Room.unity overrides, TablePlayer and enemy prefabs). Nothing is changed yet.
 
 ## What we measured
 
-| | Heathen | Ours now |
+| | The reference | Ours now |
 |---|---|---|
 | Hit to next hit (spamming) | about 0.6 s | about 0.43 s (0.36 s plus hit stop) |
 | Click to contact | about 0.2-0.25 s | about 0.29 s |
@@ -33,12 +33,12 @@ Goal: table combat that feels like Heathen (gameplay overview trailer, youtu.be/
 
 These go against settled rules in CLAUDE.md and memory, so they need a yes before work starts:
 
-1. **Barony pace** becomes Heathen pace (slower cadence, faster strike). The CLAUDE.md combat row and `Docs/CombatFeel.md` get rewritten.
+1. **Barony pace** becomes the reference pace (slower cadence, faster strike). The CLAUDE.md combat row and `Docs/CombatFeel.md` get rewritten.
 2. **No stunlock rule** (light hits never flinch, never interrupt a swing) becomes "every hit flinches, a hit early in a windup interrupts it, at most once per enemy attack".
 3. **Hit stop** goes away (or down to one frame on kills only).
 4. **"Less is more" VFX** gives way to gore: blood, decals, bursts.
-5. **The charged heavy** has no Heathen equivalent. Recommendation: keep it, since it costs stamina and is optional, but strip its hit stop and charge zoom down to match. Alternative: remove it and its tension layer.
-6. **Art style**: keep the pixel look and take Heathen's colours and lighting, or drop the pixel look (still open from the first comparison). Blood decals and the blade stain must be made for whichever wins.
+5. **The charged heavy** has no the reference equivalent. Recommendation: keep it, since it costs stamina and is optional, but strip its hit stop and charge zoom down to match. Alternative: remove it and its tension layer.
+6. **Art style**: keep the pixel look and take the reference's colours and lighting, or drop the pixel look (still open from the first comparison). Blood decals and the blade stain must be made for whichever wins.
 7. **Inventory**: Diablo-style rework (Phase 9) or keep ours. It's the largest piece and independent of the combat feel.
 
 ## Phase 1: tuning only (no new art, playable in an hour)
@@ -53,7 +53,7 @@ A quick test of the direction before any clip work. All values on `CombatManager
 - Hurt screen: `hurtScreenAlpha` 0.22 to about 0.6, `hurtScreenDuration` 0.28 to about 0.45, deeper red.
 - Enemy health: roughly halve Soldier (24 to 14) and Warden (36 to 20), so most kills take 2-3 hits. Or raise weapon damage instead (cleaner with our flat armour rule); see Phase 6.
 
-Play the Debug Dungeon, record, cut a frame sheet at 0.033 s like the Heathen sheets and compare.
+Play the Debug Dungeon, record, cut a frame sheet at 0.033 s like the reference sheets and compare.
 
 ## Phase 2: swing animations (hand-authored clips)
 
@@ -64,7 +64,7 @@ Clips stay `.anim` assets you can edit (`Characters/Animations/FirstPersonPlayer
 - **Downward stab**, picked instead of the cycle when the camera looks down past about -35 deg, for rats and other floor enemies.
 - Controller: `Attack_Release_C`, `Attack_Release_D`, `Attack_Release_Down`. To avoid touching every tag check, all lights keep the `AttackRelease` tag (B keeps `AttackReleaseAlt`), or `AnimatorHelper` gets one "any light release" check. The Release to Windup exit time moves from 0.36 to the start of the follow-through.
 - Hitbox events: `EnableHitbox` / `DisableHitbox` span only the strike frames (about 0.04-0.05 s).
-- `SwingCameraMotion`: one rotation per swing (array instead of light/alternate), small, following the swing direction (Heathen's camera barely moves on a hit).
+- `SwingCameraMotion`: one rotation per swing (array instead of light/alternate), small, following the swing direction (the reference's camera barely moves on a hit).
 - Shield (LeftArm): bigger and more central in the view while raised; block raise fast enough to come back right after a follow-through.
 - Enemy clips: the humanoid attack (2.27 s clip, hit at 0.54 s after speed) gets a clear overhead raise of about 0.3 s before the hit.
 
@@ -81,14 +81,14 @@ Clips stay `.anim` assets you can edit (`Characters/Animations/FirstPersonPlayer
 
 - **Contact flash**: replace `HitBurst` (cream puff) with a 1-2 frame bright white-orange flash billboard at the hit point.
 - **Slash lines**: during the strike frames, draw 3-5 thin white lines along the blade's recent positions (from the sweep samples), gone after 2 frames.
-- **Body flash**: Heathen shows none on the body; drop the whole-body `CharacterFX` flash or cut it to one frame (CLAUDE.md names it as the single hit flash, so update that line).
+- **Body flash**: the reference shows none on the body; drop the whole-body `CharacterFX` flash or cut it to one frame (CLAUDE.md names it as the single hit flash, so update that line).
 - **Damage numbers**: spawn at the hit point, not the head; white, our title font (`PIXEARG_ SDF`), slower rise. Crits get a "CRITICAL!" line above and a scale punch (small to big over 0.3 s). Drop the centre-screen result line.
 - **Flinch and interrupt**: every unblocked hit plays a short hurt reaction (head snaps, half step back). A hit in the first part of a windup (before `enemyAttackCommitTime`) cancels it, at most once per enemy attack, so packs can still hit you. Heavy stagger and its immunity stay.
 - **Bone recoil**: `HitReactionController` angle 20 to about 35, and moved onto the Enemy base so rats, slimes and new creatures get it too.
 - **Armour pops**: a head hit may knock off helmets and other loose props (the attachments DeathBurst already detaches whole), as physics props that stay on the floor.
 - **Kill launch**: the killing blow throws the body along the swing direction, metres not centimetres. Humanoids: ragdoll with a much bigger impulse (about 10-14 plus 4 up), or the skeleton bone burst at about 3-4x its force. Rat and slime stop playing a death clip and get the ragdoll or a gore burst.
 - **Audio**: swing whoosh at the start of the strike; a wet slash layer on contact over the existing `Blood_Impact` clips; a crunch on kills.
-- No camera kick on landed hits (Heathen has almost none; ours is already off because `PlayerFX.onHitImpulse` is empty).
+- No camera kick on landed hits (the reference has almost none; ours is already off because `PlayerFX.onHitImpulse` is empty).
 
 ## Phase 5: blood and gore
 
@@ -98,7 +98,7 @@ Clips stay `.anim` assets you can edit (`Characters/Animations/FirstPersonPlayer
 - **Blade stain**: each held weapon gets a stain amount and colour on its material instance (a property on Pixel Lit with a mask), raised by each hit, slowly fading.
 - **Corpses** already stay for the floor (`corpseLifetime` 0); keep.
 - **Breakables**: debris stops being pooled away after 3 s; pieces settle, turn kinematic and stay for the floor (with a cap).
-- Lens splatter: skip unless we confirm Heathen has it.
+- Lens splatter: skip unless we confirm the reference has it.
 
 ## Phase 6: enemies and encounters
 
@@ -117,7 +117,7 @@ Clips stay `.anim` assets you can edit (`Characters/Animations/FirstPersonPlayer
 - **Crosshair**: a dot; a small shield icon while blocking.
 - Backpedal: `backward` x0.5 to about 0.8 so kiting backwards works like in the trailer.
 
-## Phase 8: HUD and loot feedback (optional, Heathen-style)
+## Phase 8: HUD and loot feedback (optional, reference-style)
 
 - Pickup list on the right edge ("+20 Experience Points", "20 Gold", item names with icons), stacking and fading. The DM feed keeps the DM's lines.
 - Level-up banner ("LEVEL 2" with what you gained) and floor title card when entering a floor.
@@ -125,12 +125,12 @@ Clips stay `.anim` assets you can edit (`Characters/Animations/FirstPersonPlayer
 
 ## Phase 9: inventory (separate project)
 
-What Heathen has that we don't, and what it costs here:
+What the reference has that we don't, and what it costs here:
 
 - **Multi-cell grid** (boots 1x2, spears 1x3): `Inventory` becomes a grid with a footprint per item (`ItemData.size`), placement and overlap rules, and new slot UI.
 - **Per-instance items**: durability, identified or not, and later affixes need data on `ItemStack` (it was made a class for this). `Equipment` and the hand-in-hotbar link compare `ItemData` references today, so they must match instances instead. Save: the checkpoint gets per-instance fields (plain key and value), and `AdventureSave.Data.Current` bumps from 3.
 - **Two weapon sets (I / II)** with a swap key; a **belt row** for potions and scrolls feeding the hotbar.
-- **3D character preview** in the inventory, wearing your gear. The table player is arms only, so this needs a full-body player model. That same body would show your legs when you look down, as in Heathen.
+- **3D character preview** in the inventory, wearing your gear. The table player is arms only, so this needs a full-body player model. That same body would show your legs when you look down, as in the reference.
 - **Stat sheet** with per-stat tooltips (base, items, skills); `CharacterStats.Modifiers` already has the sources. STR/DEX/CON/INT exist but are not shown anywhere today.
 - **Attribute points** (+5 per level, spent with + buttons) would replace the automatic class growth on level-up; skills can stay use-based (Barony) or become points.
 - **Item tooltips**: type line ("Two-Handed Mace"), attack speed in words, durability, requirements in red when unmet, Shift to compare (ours always compares), Ctrl+click to drop.
@@ -146,4 +146,4 @@ What Heathen has that we don't, and what it costs here:
 6. Phase 7, then 8.
 7. Phase 9 only if you decide to.
 
-After each phase: update CLAUDE.md (combat row, hit feel line, Barony pace) and `Docs/CombatFeel.md`; play the Debug Dungeon; record a take and compare at 0.033 s per frame against the Heathen sheets.
+After each phase: update CLAUDE.md (combat row, hit feel line, Barony pace) and `Docs/CombatFeel.md`; play the Debug Dungeon; record a take and compare at 0.033 s per frame against the reference sheets.

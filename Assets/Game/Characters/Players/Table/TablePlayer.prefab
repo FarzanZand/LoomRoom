@@ -1878,6 +1878,7 @@ GameObject:
   - component: {fileID: 324389227773858431}
   - component: {fileID: 1246289324833527587}
   - component: {fileID: 3000882379713468094}
+  - component: {fileID: 4454084778094905453}
   m_Layer: 6
   m_Name: Controller
   m_TagString: Player
@@ -2296,6 +2297,7 @@ MonoBehaviour:
   chargeSmoothing: 10
   swingIndexParam: SwingIndex
   swingSequenceReset: 1.2
+  attackCancelParam: AttackCancel
 --- !u!114 &6359001954766408055
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2382,6 +2384,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AdventureSave
   freshStartInEditor: 1
+--- !u!114 &4454084778094905453
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1704639430885474574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd340d48684eece45b85001991898bb0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShieldBash
+  bashTrigger: ShieldBash
 --- !u!1 &1806632151189951013
 GameObject:
   m_ObjectHideFlags: 0
@@ -4358,6 +4373,10 @@ MonoBehaviour:
   trail: 0.045
   linger: 0.07
   color: {r: 1, g: 1, b: 1, a: 0.9}
+  ribbon: 0
+  ribbonSpan: {x: 0.2, y: 1.05}
+  ribbonTrail: 0.17
+  ribbonColor: {r: 1, g: 0.97, b: 0.9, a: 0.55}
 --- !u!1 &4255397459456748911
 GameObject:
   m_ObjectHideFlags: 0
@@ -8470,6 +8489,7 @@ MonoBehaviour:
   armsLight: {fileID: 6392667437929328189}
   ceilingLight: {fileID: 2306511181029770107}
   shadowLight: {fileID: 0}
+  shadowLightWallMargin: 0.3
   refreshSeconds: 0.5
 --- !u!1 &8124628928943053665
 GameObject:

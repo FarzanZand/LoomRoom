@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-// Hand-built rooms ("chunks", Heathen's way of building a floor) and the kit they are made of. Kit pieces are
+// Hand-built rooms ("chunks") and the kit they are made of. Kit pieces are
 // DungeonKitBlocks (built of the room's own stone when the floor is generated); the pillar, broken pillar, arch and
 // gallery railing also carry a painted model (Rooms/Kit/Models, Synty Dark Fantasy pieces through the painted-prop
 // pipeline) that the level uses instead of those blocks while TableLevelData.kitModels is on (DungeonKitPiece).

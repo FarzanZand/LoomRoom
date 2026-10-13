@@ -32,7 +32,7 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
     [Min(.1f)] public float debrisLifetime = 3f;
     [Tooltip("Pooled one-shot effect (dust, splinters, web wisps).")]
     public GameObject breakEffect;
-    [Tooltip("Debris stays on the floor until the next floor (Heathen). Off: pooled pieces vanish after Debris Lifetime.")]
+    [Tooltip("Debris stays on the floor until the next floor. Off: pooled pieces vanish after Debris Lifetime.")]
     public bool debrisStays = true;
     [Tooltip("Rolls rewards when broken.")]
     public bool dropsLoot = true;

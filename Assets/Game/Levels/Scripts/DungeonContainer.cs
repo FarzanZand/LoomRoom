@@ -87,7 +87,7 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
             }
         }
         if(chest && drops.Count==0 && guaranteedItem==null && gold<=0) gold=3+rng.Next(0,3)+floorNumber*2;
-        // A chest glows gold as it opens and its loot jumps out (Heathen).
+        // A chest glows gold as it opens and its loot jumps out.
         var mouth=transform.position+Vector3.up*.55f;
         DungeonLootDrop.Spill(drops,gold,dropPosition,transform.parent,chest ? mouth : (Vector3?)null);
         CoopWorld.EndLoot();

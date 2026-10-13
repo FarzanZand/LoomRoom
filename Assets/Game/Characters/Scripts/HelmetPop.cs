@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Heathen: a blow to the head can knock the helmet off. The worn helmet (a skinned attachment whose name says
+// A blow to the head can knock the helmet off. The worn helmet (a skinned attachment whose name says
 // so) is baked into a loose physics prop that flies off and stays on the floor; the enemy loses its armour bonus.
 // On the humanoid enemy base.
 [RequireComponent(typeof(Character))]

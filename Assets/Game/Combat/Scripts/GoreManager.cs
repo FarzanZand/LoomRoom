@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Heathen-style blood. Every hit that lands sprays the victim's own blood (CharacterData.gore) from where the
+// Blood. Every hit that lands sprays the victim's own blood (CharacterData.gore) from where the
 // blade met it, along the swing; drops that reach a floor, wall or pillar leave a stain that stays for the whole
 // floor. Kills spray more, and soft creatures (gore.burstOnDeath) burst into chunks. Skeletons spill bone dust
 // and chips, never stains. Lives under Systems; CombatManager's contact flash is separate.
@@ -15,7 +15,7 @@ public class GoreManager : Singleton<GoreManager>
     [SerializeField] ParticleSystem dustPrefab;
     [SerializeField, Min(0)] int dropsPerHit = 45;
     [SerializeField, Min(0)] int dropsPerKill = 110;
-    [Tooltip("Big blobs that burst from the cut for a few frames (Heathen's splash), per hit.")]
+    [Tooltip("Big blobs that burst from the cut for a few frames, per hit.")]
     [SerializeField, Min(0)] int splashBlobs = 7;
     [SerializeField] Vector2 splashSize = new(.12f, .28f);
     [SerializeField, Min(0)] float sprayLifetime = 2.5f;
@@ -68,7 +68,7 @@ public class GoreManager : Singleton<GoreManager>
         if (gore.burstOnDeath) Burst(victim, gore, center, dir);
     }
 
-    // Along the swing, out of the body, a little up: the way Heathen's sprays leave the cut.
+    // Along the swing, out of the body, a little up: the way sprays leave a cut.
     static Vector3 SprayDirection(DamageInfo info, Character victim)
     {
         Vector3 away = info.Direction.sqrMagnitude > .001f ? info.Direction : -victim.transform.forward;

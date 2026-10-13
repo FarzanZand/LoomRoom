@@ -172,7 +172,7 @@ public class ScreenManager : Singleton<ScreenManager>
     }
 
     [Header("Colour split")]
-    [Tooltip("Heathen's colours on dungeon floors: shadows and ambient lean cool (teal), lamps and torches warm (orange). The tints are the biome's (DungeonBiome Look tab: Shadow Tint, Lamp Tint). Room surfaces are never tinted.")]
+    [Tooltip("Two-tone colours on dungeon floors: shadows and ambient lean cool (teal), lamps and torches warm (orange). The tints are the biome's (DungeonBiome Look tab: Shadow Tint, Lamp Tint). Room surfaces are never tinted.")]
     public bool colourSplit = true;
     [Range(0f, 1f), Tooltip("How far the light leans to the biome's tints.")]
     public float colourSplitStrength = .7f;

@@ -7,8 +7,10 @@ using UnityEngine.Rendering;
 // optionally the table/room light groups. The source skybox material is never modified.
 public sealed partial class LightingManager
 {
+    [TabGroup("Tabs", "Moods")]
     [Title("Scene moods"), InlineEditor]
     public SceneMood moodPreset;
+    [TabGroup("Tabs", "Moods")]
     [Min(0f)] public float moodBlendDuration = 3f;
     [SerializeField, HideInInspector] LightingDefault savedDefault;
     [SerializeField, HideInInspector] bool hasSavedDefault;
@@ -123,6 +125,7 @@ public sealed partial class LightingManager
 
     // ── Moods ─────────────────────────────────────────────────────────
 
+    [TabGroup("Tabs", "Moods")]
     [Button("Toggle Mood (F5)")]
     public void ToggleMood()
     {
@@ -133,10 +136,12 @@ public sealed partial class LightingManager
         keyboardMoodPreview = true;
     }
 
-    [Button("Preview Mood"), HorizontalGroup("Mood actions")]
+    [TabGroup("Tabs", "Moods")]
+    [Button("Preview Mood"), HorizontalGroup("Tabs/Moods/Mood actions")]
     public void PreviewMood() => BlendToMood(moodPreset, 0f);
 
-    [Button("Blend to Mood"), HorizontalGroup("Mood actions")]
+    [TabGroup("Tabs", "Moods")]
+    [Button("Blend to Mood"), HorizontalGroup("Tabs/Moods/Mood actions")]
     public void BlendSelectedMood() => BlendToMood(moodPreset, moodBlendDuration);
 
     public void BlendToMood(SceneMood preset, float duration = 3f)
@@ -203,7 +208,8 @@ public sealed partial class LightingManager
                                                  tableTint = snapshot.groupsBefore.tableTint, roomTint = snapshot.groupsBefore.roomTint };
     }
 
-    [Button("Save Current as Default"), HorizontalGroup("Default actions")]
+    [TabGroup("Tabs", "Moods")]
+    [Button("Save Current as Default"), HorizontalGroup("Tabs/Moods/Default actions")]
     public void SaveCurrentAsDefault()
     {
 #if UNITY_EDITOR
@@ -220,7 +226,8 @@ public sealed partial class LightingManager
 #endif
     }
 
-    [Button("Restore Default"), HorizontalGroup("Default actions")]
+    [TabGroup("Tabs", "Moods")]
+    [Button("Restore Default"), HorizontalGroup("Tabs/Moods/Default actions")]
     public void RestoreDefault()
     {
         keyboardMoodPreview = false;
