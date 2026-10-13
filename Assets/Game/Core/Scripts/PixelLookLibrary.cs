@@ -79,6 +79,24 @@ public class PixelLookLibrary : ScriptableObject
     [FoldoutGroup("Pixel lighting"), TableList(AlwaysExpanded = false, ShowPaging = true, NumberOfItemsPerPage = 30)]
     public List<LitEntry> lighting = new();
 
+    static readonly int PixelSizeId = Shader.PropertyToID("_PixelLookPixelSize");
+    static readonly int TexelScaleId = Shader.PropertyToID("_PixelLookTexelScale");
+    static readonly int RoomTexelScaleId = Shader.PropertyToID("_PixelLookRoomTexelScale");
+    static readonly int TableTexelScaleId = Shader.PropertyToID("_PixelLookTableTexelScale");
+    static readonly int BrightnessId = Shader.PropertyToID("_PixelLookBrightness");
+
+    // What the Pixel Lit shader reads: pixel size, texel scale per world and brightness for the world being looked at
+    // (table: the dungeons and town; otherwise the room). ScreenManager sets it every frame; the main menu once.
+    public void ApplyGlobals(bool table, float pixelSize)
+    {
+        Shader.SetGlobalFloat(PixelSizeId, pixelSize);
+        Shader.SetGlobalFloat(TexelScaleId, table ? tableTexelScale : roomTexelScale);
+        // Per world, so the room seen from the table (skylights, windows) keeps its own texels.
+        Shader.SetGlobalFloat(RoomTexelScaleId, roomTexelScale);
+        Shader.SetGlobalFloat(TableTexelScaleId, tableTexelScale);
+        Shader.SetGlobalFloat(BrightnessId, table ? tableBrightness : roomBrightness);
+    }
+
     public void SetPixelLighting(bool on)
     {
         if (pixelLitShader == null) return;

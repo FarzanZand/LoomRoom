@@ -48,7 +48,30 @@ public class AdventureSave : MonoBehaviour
     public bool HasCheckpoint => Saved.checkpoint != null;
     public event Action Changed;
     Player player; AdventurerProgress progress;
-    string FilePath => Path.Combine(Application.persistentDataPath, DebugDungeonSession.Active ? "loomroom-debug.json" : "loomroom-adventure.json");
+    const string AdventureFile = "loomroom-adventure.json", DebugFile = "loomroom-debug.json";
+    string FilePath => Path.Combine(Application.persistentDataPath, DebugDungeonSession.Active ? DebugFile : AdventureFile);
+
+    // Whether a game has been saved (the main menu offers Continue).
+    public static bool SaveExists { get { MigrateOldSaves(); return File.Exists(Path.Combine(Application.persistentDataPath, AdventureFile)); } }
+
+    // The game was called LoomRoom until 2026-10-13; the save folder follows the product name, so saves from before the
+    // rename sit in the old folder beside the new one. Brought over once, while the new folder has none.
+    static void MigrateOldSaves()
+    {
+        try
+        {
+            var current = Application.persistentDataPath;
+            var old = Path.Combine(Path.GetDirectoryName(current) ?? "", "LoomRoom");
+            if (!Directory.Exists(old) || string.Equals(Path.GetFullPath(old), Path.GetFullPath(current), StringComparison.OrdinalIgnoreCase)) return;
+            Directory.CreateDirectory(current);
+            foreach (var name in new[] { AdventureFile, AdventureFile + ".bak", DebugFile, DebugFile + ".bak" })
+            {
+                string from = Path.Combine(old, name), to = Path.Combine(current, name);
+                if (File.Exists(from) && !File.Exists(to)) File.Copy(from, to);
+            }
+        }
+        catch (Exception e) { Debug.LogWarning($"Could not bring over saves from before the rename: {e.Message}"); }
+    }
     bool loading, initialized;
     void Start() => Initialize();
     public void Initialize()
@@ -56,6 +79,7 @@ public class AdventureSave : MonoBehaviour
         if (initialized) return;
         initialized = true;
         player = GetComponent<Player>(); progress = GetComponent<AdventurerProgress>();
+        if (UsesFile) MigrateOldSaves();
         bool existed = UsesFile && Read();
         Saved.memorials ??= new(); Saved.flags ??= new();
         if (ProgressionManager.HasInstance)

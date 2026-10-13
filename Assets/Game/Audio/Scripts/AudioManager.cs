@@ -86,8 +86,8 @@ public partial class AudioManager : Singleton<AudioManager>
     public const string P_UI     = "UIVolume";
 
     // ── PlayerPrefs keys ───────────────────────────────────────────────────────
-    const string K_MASTER = "vol_master";
-    const string K_MUSIC  = "vol_music";
+    public const string K_MASTER = "vol_master";   // public: the main menu reads them (it has no AudioManager)
+    public const string K_MUSIC  = "vol_music";
     const string K_SFX    = "vol_sfx";
     const string K_UI     = "vol_ui";
 
