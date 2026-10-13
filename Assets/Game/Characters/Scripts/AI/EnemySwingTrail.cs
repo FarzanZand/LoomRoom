@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Heathen's enemy swing: a short bright streak follows the weapon's head through the blow, so a hit
+// The enemy's swing: a short bright streak follows the weapon's head through the blow, so a hit
 // you take reads as a swing you could have seen. On the humanoid enemy base; uses the held weapon
 // from EnemyWeaponLoadout and the swing's hit time from EnemyBrain.
 [RequireComponent(typeof(EnemyBrain))]

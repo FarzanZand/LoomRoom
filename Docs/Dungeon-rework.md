@@ -1,8 +1,8 @@
-# Heathen dungeon rework (plan)
+# Dungeon rework (plan)
 
-Goal: dungeon floors that look like Heathen's keep (gameplay overview trailer, youtu.be/gULKsVIPNlk). Based on trailer frames, two facts about how Heathen is made (from you: hand-composed 3D chunks stitched by a node graph, and a light radius around the player with darkness outside it) and a map of our generator (Dungeon1 values). Companion to `Heathen-combat-rework.md`. Nothing is changed yet.
+Goal: dungeon floors that look like the reference's keep (a reference gameplay trailer). Based on trailer frames, two facts about how the reference is made (from you: hand-composed 3D chunks stitched by a node graph, and a light radius around the player with darkness outside it) and a map of our generator (Dungeon1 values). Companion to `Combat-rework.md`. Nothing is changed yet.
 
-## What Heathen's keep looks like
+## What the reference's keep looks like
 
 **Architecture**
 - Tall rooms, often two or three storeys, with barrel-vaulted ceilings over corridors and halls.
@@ -48,7 +48,7 @@ Assets we already have: Synty PolygonDarkFantasy has a modular building kit (wal
 
 ### 1. Generator: from boxes to hand-made chunks
 
-This is the main change, and your note about Heathen confirms it: the look comes from hand-composed pieces, not from a generator that builds walls.
+This is the main change, and your note about the reference confirms it: the look comes from hand-composed pieces, not from a generator that builds walls.
 
 - **New layout style `Chunks`** (appended to the layout enum; Grown and Authored stay, so IntroDungeon and older levels keep working).
 - **A chunk is a prefab of one room or corridor piece**, built by hand: floor, walls, ceiling, pillars, stairs, platforms, windows, its lights, prop sockets, enemy spawn points and loot spots. It grows out of `DungeonRoomTemplate`: footprint on the 2 m cell grid (for the minimap, spawning and overlap checks), plus **door sockets** on its edges (position, width, which level).
@@ -79,7 +79,7 @@ Source: Synty DarkFantasy for walls, archways, windows, stairs, pillars and rail
 ### 3. Lighting: the light radius
 
 - **Player light radius in the shader**: `PixelLitForward.hlsl` (both Pixel Lit shaders, identical properties) multiplies ambient light by a falloff from the player's position. A global position, radius and softness are set each frame. Inside the radius you see the room's ambient; outside it everything is black.
-- **Lamps are not faded**: torches, windows, candles and braziers still light their surroundings, so you see lit pools far off in the dark, as in Heathen. This replaces today's flat ambient cap (`darkAmbient` 0.11) and keeps the black distance fog off (fog would also hide distant torches).
+- **Lamps are not faded**: torches, windows, candles and braziers still light their surroundings, so you see lit pools far off in the dark, as in the reference. This replaces today's flat ambient cap (`darkAmbient` 0.11) and keeps the black distance fog off (fog would also hide distant torches).
 - **The room above the table is not affected**: the shader skips rendering layer 8 (Room), as the darkness does today.
 - **Radius per biome and per item**: a torch or lantern in hand could widen it; darker biomes shrink it.
 - **Light shafts**: a god-ray card plus slow dust particles under each window (additive, pixel-dithered), and window light pools on the floor.
@@ -89,7 +89,7 @@ Source: Synty DarkFantasy for walls, archways, windows, stairs, pillars and rail
 ### 4. Props
 
 - **Prop groups**: prefabs of 3-5 props arranged together (barrels with candles on top, crates with a sack, a shelf with pots), placed through chunk sockets or a new group rule in `DungeonPropRule`.
-- **Scale and colour**: barrels and crates about 1.2x larger and warmer; review the restyled Synty props against the Heathen frames.
+- **Scale and colour**: barrels and crates about 1.2x larger and warmer; review the restyled Synty props against the reference frames.
 - **Built-in furniture**: wall shelving and racks filled with items, niches with candles, a coffin under a window, all part of the chunks.
 - **Breakables**: more per room (in groups), debris stays for the floor (planks and hoops; also in the combat plan).
 - **Floor props you can pick up** (candelabra, goblet) as cheap loot.
@@ -111,11 +111,11 @@ Source: Synty DarkFantasy for walls, archways, windows, stairs, pillars and rail
 5. **Reveal, minimap and NavMesh** support for chunks.
 6. More chunks per biome; prop groups; light shafts.
 
-After each step: play the Debug Dungeon and a generated Dungeon1 floor, take screenshots at the same spots, and compare them with the Heathen frames.
+After each step: play the Debug Dungeon and a generated Dungeon1 floor, take screenshots at the same spots, and compare them with the reference frames.
 
 ## Decisions to make first
 
 1. **Chunks replace Grown for Dungeon1** (Grown stays in the code for other levels), or chunks only for some rooms inside a Grown layout. Recommendation: full chunks, since that is where the look comes from.
-2. **Art direction**: the kit keeps the pixel look (my assumption above), or follows Heathen's painted look.
+2. **Art direction**: the kit keeps the pixel look (my assumption above), or follows the reference's painted look.
 3. **Light radius size**: small and Diablo-tight (about 4-5 m), or larger.
 4. **Where kit pieces come from**: Synty restyled where it fits, Blender for the rest (recommended), or all custom.

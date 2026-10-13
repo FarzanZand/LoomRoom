@@ -1,7 +1,7 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// Heathen's light radius on dungeon floors: ambient light is full around the player and fades to almost nothing past
+// The light radius on dungeon floors: ambient light is full around the player and fades to almost nothing past
 // a radius, so the dark reads as dark and lamps, torches and braziers (direct light) still show their surroundings far
 // off. Drawn by the Pixel Lit shaders (_LoomLightRadius); room surfaces are never darkened. A biome can widen or
 // narrow it (DungeonBiome.lightRadius).
@@ -21,7 +21,7 @@ public sealed partial class LightingManager
     [ShowIf(nameof(lightRadius)), Range(0f, 1f), Tooltip("Share of the ambient left beyond the edge (0 = black where no lamp reaches).")]
     public float lightRadiusFloor = .3f;
     [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
-    [ShowIf(nameof(lightRadius)), Tooltip("The table player's own lights (the fill over the head and the key light) also fade out by the radius plus its edge, so the dark starts where the radius says (Heathen's circle of light). Off, they reach as far as they are set to (about 12 m) and the radius only takes the faint ambient out of the far dark.")]
+    [ShowIf(nameof(lightRadius)), Tooltip("The table player's own lights (the fill over the head and the key light) also fade out by the radius plus its edge, so the dark starts where the radius says (a circle of light). Off, they reach as far as they are set to (about 12 m) and the radius only takes the faint ambient out of the far dark.")]
     public bool radiusDimsPlayerLights = true;
 
     // How far the table player's carried lights may reach across the floor now (metres; 0 = as authored).

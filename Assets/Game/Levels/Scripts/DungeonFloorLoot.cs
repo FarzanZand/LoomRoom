@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Cheap loot lying about (Heathen's goblets and candlesticks): placed like any furnishing, it lays one or two of its
+// Cheap loot lying about (goblets and candlesticks): placed like any furnishing, it lays one or two of its
 // items on the floor where it stands when the floor starts (floor loot with beams and labels), then goes away. Worth
 // a few coins at a merchant.
 public class DungeonFloorLoot : MonoBehaviour

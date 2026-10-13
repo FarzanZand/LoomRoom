@@ -19,7 +19,7 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
     [Range(1,16), Tooltip("Samples per frame along the weapon's path, so a fast strike can't skip past an enemy.")] public int weaponSweepSteps = 12;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
-    [Min(0), Tooltip("Shortest time between the starts of two light swings, at attack speed 1 (Heathen about 0.6 s). A faster weapon shortens it.")]
+    [Min(0), Tooltip("Shortest time between the starts of two light swings, at attack speed 1 (about 0.6 s). A faster weapon shortens it.")]
     public float swingInterval = .6f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
     [Tooltip("Attacking while the shield is up lowers it for the swing and raises it again afterwards if block is still held.")]
@@ -44,15 +44,15 @@ public class CombatManager : Singleton<CombatManager>
 
     // ── Player: Swing set ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
-    [Tooltip("On: the original light swings (Attack_Swing_A/B). Off: the Heathen swings (FirstPersonPlayer/Heathen): " +
+    [Tooltip("On: the original light swings (Attack_Swing_A/B). Off: the IK swings (FirstPersonPlayer/IK swings): " +
         "a visible windup, a strike in a few frames and a held follow-through, alternating forehand and backhand.")]
     public bool simpleSwings = false;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
-    [Tooltip("Camera turn (pitch, yaw, roll in degrees) at the peak of a Heathen forehand; the backhand mirrors yaw and roll.")]
-    public Vector3 heathenSwingCameraRotation = new Vector3(.4f, -1.2f, .6f);
+    [Tooltip("Camera turn (pitch, yaw, roll in degrees) at the peak of an IK forehand; the backhand mirrors yaw and roll.")]
+    public Vector3 ikSwingCameraRotation = new Vector3(.4f, -1.2f, .6f);
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
-    [Tooltip("Heathen swing camera motion over the release clip: peaks with the strike, eases off through the follow-through.")]
-    public AnimationCurve heathenSwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.12f, 1f), new Keyframe(.6f, .35f), new Keyframe(1f, 0f));
+    [Tooltip("IK swing camera motion over the release clip: peaks with the strike, eases off through the follow-through.")]
+    public AnimationCurve ikSwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.12f, 1f), new Keyframe(.6f, .35f), new Keyframe(1f, 0f));
 
     // ── Player: Swing camera ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
@@ -150,7 +150,7 @@ public class CombatManager : Singleton<CombatManager>
 
     // ── Player: Shield bash ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Tooltip("Holding block and pressing attack bashes forward with the shield (Heathen's Holy Diver): a fast dash that stops at the first enemy in the way, hits it and stuns it. Needs a shield in hand. While it cools down, block and attack swings as usual.")]
+    [Tooltip("Holding block and pressing attack bashes forward with the shield: a fast dash that stops at the first enemy in the way, hits it and stuns it. Needs a shield in hand. While it cools down, block and attack swings as usual.")]
     public bool enableShieldBash = true;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
     [Min(0f), Tooltip("Seconds before the bash can be used again.")]
@@ -174,13 +174,13 @@ public class CombatManager : Singleton<CombatManager>
     [Min(0f), Tooltip("Damage of the hit before armour: Holy damage, like a spell it ignores the enemy's armour.")]
     public float shieldBashDamage = 6f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(0f), Tooltip("Extra damage per point of the player's own armour (Holy Diver's damage scales with armour).")]
+    [Min(0f), Tooltip("Extra damage per point of the player's own armour.")]
     public float shieldBashDamagePerArmor = 1.5f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
     [Min(0f), Tooltip("Seconds the struck enemy stands stunned (its swing is cancelled). Its usual stagger immunity follows.")]
     public float shieldBashStun = 1f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(0f), Tooltip("Push on the struck enemy. Small: Heathen leaves it standing in front of you for the follow-up.")]
+    [Min(0f), Tooltip("Push on the struck enemy. Small: it stays standing in front of you for the follow-up.")]
     public float shieldBashKnockback = 1.5f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
     [Min(0f), Tooltip("Stamina the bash costs.")]
@@ -345,7 +345,7 @@ public class CombatManager : Singleton<CombatManager>
 
     // ── Hits: Hit stop ──
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit stop")]
-    [Tooltip("Off: hits pass straight through, Heathen style. On: the game slows for a moment on each hit.")]
+    [Tooltip("Off: hits pass straight through. On: the game slows for a moment on each hit.")]
     public bool hitStopEnabled = false;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit stop")]
     [FormerlySerializedAs("hitStopDuration"), Min(0), Tooltip("Seconds the game slows when a light attack lands.")]

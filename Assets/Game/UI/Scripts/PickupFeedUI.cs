@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Heathen's pickup list on the right edge: each item or pile of gold the table player picks up gets a row (icon and
+// The pickup list on the right edge: each item or pile of gold the table player picks up gets a row (icon and
 // name, "+12 gold"), newest at the bottom; the same thing picked up again within a moment adds to its row; rows fade
 // after a few seconds. While it is on screen the DM feed leaves pickups out (DungeonMaster). The row is authored in
 // the scene (template, inactive) and cloned per pickup, like ContextMenuUI's buttons.

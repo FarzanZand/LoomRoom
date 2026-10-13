@@ -13,7 +13,7 @@ public class FirstPersonLighting : MonoBehaviour
     [Tooltip("The light that shows the dungeon around the player.")] public Light worldLight;
     [Tooltip("Soft light for arms and held items only.")] public Light armsLight;
     [Tooltip("Sits below the floor and lights ceilings only (the world light is above them). Follows the world light's range.")] public Light ceilingLight;
-    [Tooltip("Heathen's key light: held off to the side of the view (a lantern in the off hand), it lights enemies from one side and throws their shadows across the floor. The world light above stays as a soft fill.")]
+    [Tooltip("The key light: held off to the side of the view (a lantern in the off hand), it lights enemies from one side and throws their shadows across the floor. The world light above stays as a soft fill.")]
     public Light shadowLight;
     [Tooltip("The key light stays this far on the player's side of a wall between the eyes and its place (in a corridor its spot is often inside the wall, which would leave the corridor dark).")]
     [SerializeField, Min(0f)] float shadowLightWallMargin = .3f;

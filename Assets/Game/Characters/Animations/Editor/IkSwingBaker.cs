@@ -4,18 +4,18 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-// Bakes the Heathen-style light swings (CombatManager.simpleSwings off) into ordinary .anim clips in
-// Characters/Animations/FirstPersonPlayer/Heathen, then wires them into FirstPersonTable.controller.
+// Bakes the IK light swings (CombatManager.simpleSwings off) into ordinary .anim clips in
+// Characters/Animations/FirstPersonPlayer/IK swings, then wires them into FirstPersonTable.controller.
 // The poses come from a blade path written below in camera space (x right, y up, z forward, metres,
 // before the view-model widening): the right arm is solved toward each key with two-bone IK, every
 // frame is keyed, and the result is a clip you can open and edit like any other. Rebaking overwrites
 // the clips, so edit the keys below (or stop rebaking once a clip has been edited by hand).
 //
-// Shape (Heathen): a windup you can see (0.16 s), a strike that crosses the screen in about 3 frames,
+// Shape: a windup you can see (0.16 s), a strike that crosses the screen in about 3 frames,
 // the arm held out in the follow-through, then home to idle.
-public static class HeathenSwingBaker
+public static class IkSwingBaker
 {
-    const string Folder = "Assets/Game/Characters/Animations/FirstPersonPlayer/Heathen";
+    const string Folder = "Assets/Game/Characters/Animations/FirstPersonPlayer/IK swings";
     const string Controller = "Assets/Game/Characters/Animations/FirstPersonTable.controller";
     const string TablePlayer = "Assets/Game/Characters/Players/Table/TablePlayer.prefab";
     const string IdleClip = "Assets/Game/Characters/Animations/FirstPersonPlayer/Idle.anim";
@@ -254,7 +254,7 @@ public static class HeathenSwingBaker
             false, new[] { Event("PlaySwingAudio", 0f), Event("EnableHitbox", swing.hitOpen), Event("DisableHitbox", swing.hitClose) });
     }
 
-    [MenuItem("Tools/LoomRoom/Combat/Bake Heathen Swings")]
+    [MenuItem("Tools/LoomRoom/Combat/Bake IK Swings")]
     public static void Bake()
     {
         var rig = BuildRig();
@@ -263,17 +263,17 @@ public static class HeathenSwingBaker
             BakeSwing(rig, Forehand);
             BakeSwing(rig, Backhand);
             AssetDatabase.SaveAssets();
-            Debug.Log($"Heathen swings baked to {Folder}");
+            Debug.Log($"IK swings baked to {Folder}");
         }
         finally { rig.Destroy(); }
     }
 
     // ── Controller ────────────────────────────────────────────────────
 
-    // Adds the Heathen states to the RightArm layer beside the original swings. The animator's SimpleSwings
+    // Adds the IK swing states to the RightArm layer beside the original swings. The animator's SimpleSwings
     // bool (set from CombatManager.simpleSwings) picks which set a new swing uses; SwingIndex picks H1 or H2.
-    // Safe to run again: the Heathen states are rebuilt, the original ones only gain a SimpleSwings condition.
-    [MenuItem("Tools/LoomRoom/Combat/Wire Heathen Swings")]
+    // Safe to run again: the IK swing states are rebuilt, the original ones only gain a SimpleSwings condition.
+    [MenuItem("Tools/LoomRoom/Combat/Wire IK Swings")]
     public static void Wire()
     {
         var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(Controller);
@@ -316,7 +316,7 @@ public static class HeathenSwingBaker
         }
         EditorUtility.SetDirty(ctrl);
         AssetDatabase.SaveAssets();
-        Debug.Log("Heathen swings wired into FirstPersonTable.controller (RightArm layer)");
+        Debug.Log("IK swings wired into FirstPersonTable.controller (RightArm layer)");
     }
 
     static void Param(AnimatorController ctrl, string name, AnimatorControllerParameterType type, float value = 0f)
@@ -378,8 +378,8 @@ public static class HeathenSwingBaker
 
     // ── Previews ──────────────────────────────────────────────────────
 
-    // Renders the baked clips from the player's eye into PNG strips in Temp/HeathenSwings, to check the poses.
-    [MenuItem("Tools/LoomRoom/Combat/Preview Heathen Swings")]
+    // Renders the baked clips from the player's eye into PNG strips in Temp/IkSwings, to check the poses.
+    [MenuItem("Tools/LoomRoom/Combat/Preview IK Swings")]
     public static void Preview()
     {
         var rig = BuildRig();
@@ -417,7 +417,7 @@ public static class HeathenSwingBaker
                 baked.Add((smr, mesh, copy.transform));
             }
             var rt = new RenderTexture(320, 180, 24); cam.targetTexture = rt;
-            Directory.CreateDirectory("Temp/HeathenSwings");
+            Directory.CreateDirectory("Temp/IkSwings");
             foreach (var name in new[] { "Attack_Windup_H1", "Attack_Release_H1", "Attack_Windup_H2", "Attack_Release_H2" })
             {
                 var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{Folder}/{name}.anim");
@@ -448,7 +448,7 @@ public static class HeathenSwingBaker
                     Object.DestroyImmediate(frames[i]);
                 }
                 sheet.Apply();
-                File.WriteAllBytes($"Temp/HeathenSwings/{name}.png", sheet.EncodeToPNG());
+                File.WriteAllBytes($"Temp/IkSwings/{name}.png", sheet.EncodeToPNG());
                 Object.DestroyImmediate(sheet);
             }
             Object.DestroyImmediate(rt);

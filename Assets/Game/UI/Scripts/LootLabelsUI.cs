@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-// The name of loot lying close by, floating over it in the beam's colour (Heathen: "Greaves" over the boots).
+// The name of loot lying close by, floating over it in the beam's colour ("Greaves" over the boots).
 // The label is authored in the scene (template, inactive); this clones it per nearby item and places it.
 public class LootLabelsUI : MonoBehaviour
 {

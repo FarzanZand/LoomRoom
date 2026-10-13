@@ -15,7 +15,7 @@ public static class DeathPhysics
     }
 
     // The killing blow's direction (not normalised), or backwards when the hit had none.
-    // Away from the attacker, carried along the blade's swing (Heathen: kills fly the way they were cut).
+    // Away from the attacker, carried along the blade's swing (kills fly the way they were cut).
     public static Vector3 HitDirection(DamageInfo lastHit, Transform body)
     {
         Vector3 away = lastHit.Direction.sqrMagnitude > .001f ? lastHit.Direction : -body.forward;

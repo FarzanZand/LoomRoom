@@ -286,7 +286,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             AnimatorHelper.SetFloat(armsAnimator, heavyReleaseSpeedParam, tuning.heavyReleaseSpeed * attackSpeed * heavy);
             AnimatorHelper.SetBool(armsAnimator, heavyStrikeParam, HeavySwing);
             AnimatorHelper.SetBool(armsAnimator, simpleSwingsParam, tuning.simpleSwings);
-            // The Heathen clips carry their own timing: only the attack speed stat scales them.
+            // The IK swing clips carry their own timing: only the attack speed stat scales them.
             AnimatorHelper.SetFloat(armsAnimator, swingSpeedParam, player.Stats != null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f);
             UpdateCharge(tuning);
         }
@@ -305,7 +305,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (!attackingNow && Time.time >= attackBufferedUntil) queuedPresses = 0;
         if (!gameplay) queuedPresses = 0;
         bool buffered = gameplay && (spells == null || !spells.Busy) && queuedPresses > 0 && !windingUp;
-        // A new swing can't start sooner than swingInterval after the last one began (Heathen's rhythm).
+        // A new swing can't start sooner than swingInterval after the last one began.
         // Only the start is held back: a windup in progress keeps reading the button for the charge.
         bool startingSwing = !attackingNow || IsReleasing;
         bool intervalReady = !startingSwing || Time.time - lastSwingAt >= SwingInterval;
@@ -467,10 +467,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         var curve = heavy ? tuning.heavySwingCameraCurve : tuning.swingCameraCurve;
         if (!heavy && !tuning.simpleSwings)
         {
-            // Heathen forehand turns the view with the blade (right to left); the backhand mirrors it.
-            rotation = tuning.heathenSwingCameraRotation;
+            // The IK forehand turns the view with the blade (right to left); the backhand mirrors it.
+            rotation = tuning.ikSwingCameraRotation;
             if (alternate) rotation = new Vector3(rotation.x, -rotation.y, -rotation.z);
-            curve = tuning.heathenSwingCameraCurve;
+            curve = tuning.ikSwingCameraCurve;
         }
         return rotation * (curve != null ? curve.Evaluate(Mathf.Clamp01(state.normalizedTime)) : 0f);
     }

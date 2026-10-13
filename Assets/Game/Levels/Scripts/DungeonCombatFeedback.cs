@@ -82,7 +82,7 @@ public class DungeonCombatFeedback : MonoBehaviour
         bool special=!info.Blocked && (info.Critical || info.Backstab);
         float scale=numberScale*(special && CombatManager.HasInstance ? CombatManager.Instance.critNumberScale:1);
         string amount=Mathf.CeilToInt(info.Amount).ToString();
-        // Heathen: the number appears where the blade struck; criticals say so above a bigger number that grows in.
+        // The number appears where the blade struck; criticals say so above a bigger number that grows in.
         Vector3 at=info.HitPoint!=Vector3.zero && !info.Blocked ? info.HitPoint:Head(view.character);
         ShowNumber(view.character.transform,at,info.Blocked ? "BLOCK":info.Backstab ? "<size=55%>BACKSTAB!</size>\n"+amount:info.Critical ? "<size=55%>CRITICAL!</size>\n"+amount:amount,
             info.Blocked ? new Color(.53f,.85f,1):info.Backstab ? new Color(1,.42f,.3f):info.Critical ? new Color(1,.6f,.2f):info.Heavy ? new Color(1,.85f,.45f):Color.white,scale,special);
@@ -122,7 +122,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     [SerializeField,Min(.1f),Tooltip("Size of every damage number; criticals and backstabs are CombatManager.critNumberScale bigger again.")] float numberScale=1.6f;
     [SerializeField,Min(0),Tooltip("Metres per second a damage number drifts up from where the hit landed.")] float numberRise=.3f;
     [SerializeField,Min(.1f),Tooltip("Seconds an ordinary damage number stays (criticals 1.3).")] float numberLifetime=.9f;
-    [SerializeField,Tooltip("The line in the middle of the screen for each hit (×, CRITICAL, BLOCKED, −n). Heathen has none.")] bool resultLine=false;
+    [SerializeField,Tooltip("The line in the middle of the screen for each hit (×, CRITICAL, BLOCKED, −n). Off by default.")] bool resultLine=false;
     [SerializeField,Tooltip("Barony style: one enemy bar with its name at the top of the screen, for the enemy last hit (or aimed at), instead of bars over heads.")] bool topBar=true;
     [SerializeField,Min(0),Tooltip("Top bar: distance from the top of the screen.")] float topBarOffset=96;
     [SerializeField,Min(.1f),Tooltip("Top bar: size against the bar over a head.")] float topBarScale=1.8f;

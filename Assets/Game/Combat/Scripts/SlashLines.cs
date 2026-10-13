@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Heathen's slash: a pale band swept by the blade (the ribbon, from mid-blade to the tip over the last tenth of a
+// The slash: a pale band swept by the blade (the ribbon, from mid-blade to the tip over the last tenth of a
 // second, brightest at the tip and fading with age) plus a few thin white streaks along the arc, only while the
 // hitbox is open and for a moment after. Sits next to the player's Hitbox; the blade is the hitbox's capsule.
 [RequireComponent(typeof(Hitbox))]

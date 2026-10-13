@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Heathen's Holy Diver (CombatManager > Player > Shield bash): with the shield up, attack thrusts it forward and the
+// The shield bash (CombatManager > Player > Shield bash): with the shield up, attack thrusts it forward and the
 // player dashes ahead until the first enemy in the way, hits it with Holy damage (more for more armour) and stuns it.
 // One use per cooldown; while it cools down, block and attack swing as usual (PlayerCombat asks TryStart first).
 // The arms play Shield_Bash on the LeftArm layer (trigger ShieldBash, state tag ShieldBash), the shield glows and gold

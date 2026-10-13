@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Heathen's flyers: the enemy cruises above head height, out of reach of a level swing, drops to its bite height
+// Flyers: the enemy cruises above head height, out of reach of a level swing, drops to its bite height
 // while it attacks, and after the bite (or when it is hit) pulls back away from its target for a moment before it
 // comes in again. Its path still follows the floor's NavMesh; only the model and collider leave the ground. The
 // model's authored hover (its animation) is at designHeight; this moves the "Model" child to the wanted height.

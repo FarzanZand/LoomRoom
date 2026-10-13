@@ -1,6 +1,6 @@
-# Heathen rework: steps
+# Rework: steps
 
-Every change from `Heathen-combat-rework.md` and `Heathen-dungeon-rework.md`, cut into steps that can be built and tested on their own. Each step lists what changes, how to test it, and the questions to answer before it starts. **Rec** is my recommendation if you just want to say "go".
+Every change from `Combat-rework.md` and `Dungeon-rework.md`, cut into steps that can be built and tested on their own. Each step lists what changes, how to test it, and the questions to answer before it starts. **Rec** is my recommendation if you just want to say "go".
 
 Test bed for everything unless noted: the Debug Dungeon (toolbar **Debug**), then a generated Dungeon1 floor (toolbar **Dungeon**). Each step that lands updates CLAUDE.md and the matching doc, so a rule we change (Barony pace, no stunlock, "less is more") is rewritten when its step lands, not before.
 
@@ -10,8 +10,8 @@ Most of categories 1 and 3-6 is in (1.3 is built but off by default), plus 7.3, 
 
 ## Before anything
 
-- **Q0.1 Art direction.** Keep the pixel look and take Heathen's colours, lighting and gore in that style, or move to Heathen's smooth painted look? Rec: keep pixel. This decides how steps 6, 8, 9 and 11 are drawn.
-- **Q0.2 How you want to test.** I build a step, play it, record and compare frame sheets with the Heathen frames, then hand it to you to play before the next step. Or you prefer several small steps per round? Rec: one step per round for categories 1-5, two or three per round after.
+- **Q0.1 Art direction.** Keep the pixel look and take the reference's colours, lighting and gore in that style, or move to the reference's smooth painted look? Rec: keep pixel. This decides how steps 6, 8, 9 and 11 are drawn.
+- **Q0.2 How you want to test.** I build a step, play it, record and compare frame sheets with the reference frames, then hand it to you to play before the next step. Or you prefer several small steps per round? Rec: one step per round for categories 1-5, two or three per round after.
 
 ---
 
@@ -26,7 +26,7 @@ Each is a value or a small code switch on `CombatManager`, the enemy bases or `P
 | 1.3 | Built, off by default: `hitsInterruptWindup`, `interruptWindow` 0.45 s; the attack after an interrupt can't be interrupted | A hit early in an enemy's windup cancels that attack, at most once per attack | Hit a soldier right as it raises its weapon | Allow interrupts at all? How early counts (first half of the windup)? Rec: yes, first half, once per attack. |
 | 1.4 | Done: `enemyKnockbackScale` 0.25 to 1.4 | Bigger push per hit, about 0.3-0.4 m (today about 0.06 m), still none while the enemy swings | Hit a soldier three times in a row | Distance? Rec: 0.35 m. |
 | 1.5 | Done: 0.75 | Fights up close: `personalSpace` 1.1 to about 0.75 | Let a soldier walk into you | OK to let enemies press that close? |
-| 1.6 | Done: `swingInterval` 0.6 s between swing starts | Cadence about 0.6 s per hit, by timing only (new clips come in step 2) | Spam-click a soldier | Match Heathen's 0.6 s, or keep our 0.43 s pace? Rec: try 0.6 s; you'll know in a minute of play. |
+| 1.6 | Done: `swingInterval` 0.6 s between swing starts | Cadence about 0.6 s per hit, by timing only (new clips come in step 2) | Spam-click a soldier | Match the reference's 0.6 s, or keep our 0.43 s pace? Rec: try 0.6 s; you'll know in a minute of play. |
 | 1.7 | Done: `hurtScreenAlpha` 0.6, `hurtScreenHold` 0.1, fade 0.4; the camera jolts away from the hit | Getting hit: deep red on all edges, held 0.1 s, faded over 0.4 s; camera jolt with a slight roll toward the hit | Let a soldier hit you | How strong? Rec: about 3x today's alpha. |
 | 1.8 | Done: `attackFromBlock` on | Attack from block: clicking while blocking drops the shield, swings, raises it again if block is still held | Hold block, click | Re-raise automatically, yes or no? Rec: yes. |
 | 1.9 | Done: `backwardSpeed` 0.8 | Walking backwards at 0.8 speed (today 0.5) | Back away from a soldier while swinging | OK? |
@@ -36,13 +36,13 @@ Each is a value or a small code switch on `CombatManager`, the enemy bases or `P
 
 | # | Status | Change | Test | Questions |
 |---|---|---|---|---|
-| 2.1 | Rejected, to revisit: baked as a forehand and backhand set (`FirstPersonPlayer/Heathen`, `HeathenSwingBaker`); the user didn't like them, `simpleSwings` stays on (original clips) | Re-time swing A to Heathen's shape: windup you can see (about 0.18 s), strike in 2-3 frames, follow-through held about 0.3 s. Hitbox only on the strike frames | Swing at air and at a soldier, compare frame sheets | I do A first and you approve it before B, C, D copy the timing? Rec: yes. |
+| 2.1 | Rejected, to revisit: baked as a forehand and backhand set (`FirstPersonPlayer/IK swings`, `IkSwingBaker`); the user didn't like them, `simpleSwings` stays on (original clips) | Re-time swing A to the reference's shape: windup you can see (about 0.18 s), strike in 2-3 frames, follow-through held about 0.3 s. Hitbox only on the strike frames | Swing at air and at a soldier, compare frame sheets | I do A first and you approve it before B, C, D copy the timing? Rec: yes. |
 | 2.2 | Rejected with 2.1 | Swing B re-timed the same way (the rising thrust from bottom right) | As above | |
 | 2.3 | Rejected with 2.1 | Swings C and D (flat right to left, flat left to right), four in a cycle | Spam-click and watch the cycle | Order? Rec: overhead, rising, flat right-left, flat left-right. |
 | 2.4 | Not started | Downward stab when looking down past about 35 degrees | Stab a rat on the floor | Threshold angle? |
 | 2.5 | Not started (kept as is, without hit stop) | Charged heavy | Hold and release | Keep as is, keep without hit stop and with less zoom, or remove? Rec: keep, toned down. |
 | 2.6 | Not started | Shield raised bigger and more central | Hold block | How much of the screen? Rec: about a third, lower left. |
-| 2.7 | Rejected with 2.1 (`heathenSwingCameraRotation` only plays with the Heathen swings) | Swing camera motion per swing, small, following the swing direction | Swing | |
+| 2.7 | Rejected with 2.1 (`ikSwingCameraRotation` only plays with the IK swings) | Swing camera motion per swing, small, following the swing direction | Swing | |
 
 ## 3. Hit registration (needed by step 2, no questions except 3.2)
 
@@ -102,7 +102,7 @@ Each is a value or a small code switch on `CombatManager`, the enemy bases or `P
 |---|---|---|---|---|
 | 8.1 | Done: `LightingManager` light radius (6.5 m + 2.5 m edge, floor 0.3) | Light radius: ambient fades to black with distance from the player; torches and other lamps still light their surroundings; the apartment above the table is not affected. Replaces today's flat ambient cap | Walk a generated floor | Radius? Rec: about 5 m with a soft 2 m edge. |
 | 8.2 | Partly: per-biome radius (`DungeonBiome.lightRadius`); no held torch item | The radius changes per biome, and a held torch or lantern widens it | Swap biomes, hold a torch | Do we want a held light item? |
-| 8.3 | Done: `ScreenManager.colourSplit`, per-biome shadow and lamp tints | Colour split: cool teal ambient, warm orange lamps, per biome | Walk both biomes | How strong? Rec: moderate, compare with Heathen frames. |
+| 8.3 | Done: `ScreenManager.colourSplit`, per-biome shadow and lamp tints | Colour split: cool teal ambient, warm orange lamps, per biome | Walk both biomes | How strong? Rec: moderate, compare with the reference frames. |
 | 8.4 | Not started | Light shafts with dust under windows (after 9.x windows exist) | Stand in a window room | |
 
 ## 9. Dungeon architecture
@@ -154,11 +154,11 @@ Quick tests on the current generator first (9.1-9.3), then the move to hand-made
 | # | Status | Change | Test | Questions |
 |---|---|---|---|---|
 | 13.1 | Not started | Stat sheet: STR, DEX, CON, INT shown, and every stat's tooltip breaks it down (base, items, skills) | Open the inventory | Which stats to show? |
-| 13.2 | Partly: type line, damage and swing speed up front, comparison; no Shift-compare or Ctrl+click | Item tooltips: type line ("Two-Handed Mace"), attack speed in words, Shift to compare, Ctrl+click to drop | Hover items | Compare only with Shift (Heathen) or always (ours)? |
+| 13.2 | Partly: type line, damage and swing speed up front, comparison; no Shift-compare or Ctrl+click | Item tooltips: type line ("Two-Handed Mace"), attack speed in words, Shift to compare, Ctrl+click to drop | Hover items | Compare only with Shift  or always (ours)? |
 | 13.3 | Not started | Attribute points: +N per level to spend, instead of the automatic class growth | Level up | Replace Barony's automatic growth? How many points per level? Skills stay use-based? |
 | 13.4 | Not started | Each item becomes its own instance (needed for 13.5 and 13.8); the save format changes | Save and load a run | OK that old checkpoints are dropped (memorials and flags stay)? |
 | 13.5 | Not started | Durability, and repair at the merchant | Fight until gear wears | Does broken gear break for good or stop working until repaired? |
-| 13.6 | Done: 10 x 4 grid, paper doll (`HeathenInventorySetup`) | A grid bag where items take several cells | Fill the bag | Grid size? Rec: 10x4. |
+| 13.6 | Done: 10 x 4 grid, paper doll (the inventory setup tool) | A grid bag where items take several cells | Fill the bag | Grid size? Rec: 10x4. |
 | 13.7 | Not started | Two weapon sets (I and II) with a swap key, and a belt row for potions and scrolls | Swap sets in a fight | Key for the swap? |
 | 13.8 | Not started | Unidentified magic items and Identify scrolls | Find and identify one | Want this system at all? |
 | 13.9 | Not started | A full-body player model: shown in the inventory wearing your gear, and your legs show when you look down | Look down; open the inventory | Where does the model come from (Synty character restyled, Meshy, Blender)? |
