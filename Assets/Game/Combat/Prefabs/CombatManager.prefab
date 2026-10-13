@@ -44,66 +44,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 178482e117d362148abfe274c101dcd7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatManager
-  meleeReachMultiplier: 1.2
-  meleeWidthMultiplier: 1.25
-  bladeBlood: 1
-  bladeBloodFadeSeconds: 45
-  bladeBloodMax: 18
-  hitStopEnabled: 0
-  lightHitStopDuration: 0.045
-  lightHitStopTimeScale: 0.12
-  heavyHitStopDuration: 0.11
-  heavyHitStopTimeScale: 0.02
-  hitStopRecovery: 0.06
-  hitStopShake: 0.035
-  hitStopOnPlayerHurt: 0
-  criticalHitsEnabled: 1
-  critChance: 0.08
-  critMultiplier: 1.75
-  critHitStopScale: 2.5
-  critAudio: {fileID: 11400000, guid: c6a2858c4e28f704bad62aba7cdb9f3d, type: 2}
-  backstabsEnabled: 1
-  backstabMultiplier: 2.5
-  backstabBehindDot: 0.35
-  backstabAlertFromBehind: 1
-  backstabHitStopScale: 3
-  backstabAudio: {fileID: 11400000, guid: fd765cee151cf714891777d45a481eea, type: 2}
-  critNumberScale: 2
-  unseenCloseScale: 0.6
-  sneakCloseScale: 0.2
-  sneakSightScale: 0.6
-  ragdollDeath: 1
-  ragdollImpulse: 5.5
-  ragdollUpwardImpulse: 3
-  lootableCorpses: 0
-  corpseLifetime: 0
-  knockbackEnabled: 1
-  enemiesKnockedBack: 1
-  enemyKnockbackScale: 1.4
-  knockbackForceMultiplier: 0.45
-  knockbackDuration: 0.22
-  playerKnockbackSpeedLimit: 2.5
-  playerKnockbackDecay: 12
-  hitParticlePrefabs:
-  - {fileID: 6471780803784122185, guid: 2a2c4fd85c07b3c4890ea6604664a1ef, type: 3}
-  defaultHitAudio: {fileID: 11400000, guid: 6d42536549be02a4aa8e2bafd38cbe4b, type: 2}
-  defaultSwingAudio: {fileID: 11400000, guid: bf3a7f0b55bbe1f41b4cdd4a60307c3a, type: 2}
-  defaultHeavySwingAudio: {fileID: 11400000, guid: c192a2166bf24c72ba47e39a165f0a0c, type: 2}
-  hitReactionEnabled: 1
-  hitReactionAngle: 35
-  hitReactionAttackSpeed: 60
-  hitReactionDamping: 9
-  hitReactionInfluenceDepth: 2
-  hitReactionParentFalloff: 0.35
-  hitFlashEnabled: 1
-  hitFlashColor: {r: 2.4, g: 1.9, b: 1.45, a: 1}
-  hitFlashDuration: 0.1
-  armorEffectiveness: 0.75
-  personalSpace: 0.75
-  blockCancelWindow: 0.18
-  blockFrontalDot: -0.3
-  blockStaminaCost: 6
-  shieldStaminaPerSecond: 2
   playerAttackSpeed: 1.12
   attackInputBuffer: 0.4
   weaponSweepSteps: 12
@@ -112,6 +52,10 @@ MonoBehaviour:
   blockCancelsWindup: 0
   blockCutsRecovery: 1
   blockRaiseDelay: 0
+  windupSpeed: 1.45
+  releaseSpeed: 1.25
+  heavyReleaseSpeed: 0.95
+  enemyHurtAnimationSpeed: 1.3
   simpleSwings: 1
   heathenSwingCameraRotation: {x: 0.4, y: -1.2, z: 0.6}
   heathenSwingCameraCurve:
@@ -156,29 +100,6 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  windupSpeed: 1.45
-  releaseSpeed: 1.25
-  heavyReleaseSpeed: 0.95
-  enemyHurtAnimationSpeed: 1.3
-  heavyChargeTime: 0.7
-  heavyDamageMultiplier: 1.65
-  heavyKnockbackMultiplier: 1.35
-  heavyStaminaCost: 8
-  heavyStaggerDuration: 0.45
-  enemyStaggerImmunity: 1.5
-  lightFlinchDuration: 0.25
-  hitsInterruptWindup: 0
-  interruptWindow: 0.45
-  heavyRecoilMultiplier: 1.6
-  heavyRecoilDurationMultiplier: 1.5
-  enemyAttackCommitTime: 0.65
-  enemyRecoveryTime: 0.18
-  enemyCooldownMultiplier: 1
-  enemyMinimumWindup: 0.3
-  enemyHitFacingAngle: 85
-  enemyAttackAnimationSpeed: 1.5
-  fightNoiseRadius: 8
-  wallMuffle: 0.3
   swingCameraMotionEnabled: 1
   lightSwingCameraRotation: {x: 0.3, y: 0.8, z: -0.35}
   alternateSwingCameraRotation: {x: 0.5, y: 0.8, z: -0.55}
@@ -335,6 +256,13 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   heavyImpactShudder: 0.7
+  heavyChargeTime: 0.7
+  heavyDamageMultiplier: 1.65
+  heavyKnockbackMultiplier: 1.35
+  heavyStaminaCost: 8
+  heavyStaggerDuration: 0.45
+  enemyStaggerImmunity: 1.5
+  lightFlinchDuration: 0.25
   chargeCameraDelay: 0.2
   heavyZoomReturnStart: 0.18
   heavyZoomReturnEnd: 0.58
@@ -345,6 +273,26 @@ MonoBehaviour:
   chargeShake: 0.45
   chargeReadyKick: 0.3
   chargeReadyAudio: {fileID: 0}
+  blockCancelWindow: 0.18
+  blockFrontalDot: -0.3
+  blockStaminaCost: 6
+  shieldStaminaPerSecond: 2
+  enableShieldBash: 1
+  shieldBashCooldown: 5
+  shieldBashSpeed: 15
+  shieldBashDistance: 6
+  shieldBashWindup: 0.06
+  shieldBashRecovery: 0.3
+  shieldBashAngle: 35
+  shieldBashDamage: 6
+  shieldBashDamagePerArmor: 1.5
+  shieldBashStun: 1
+  shieldBashKnockback: 1.5
+  shieldBashStaminaCost: 10
+  shieldBashGlow: {r: 1.8, g: 1.55, b: 1.05, a: 1}
+  shieldBashStreaks: {fileID: 7664258301829467767, guid: 114de097bd831cb42b791f59ed3bd225, type: 3}
+  shieldBashAudio: {fileID: 11400000, guid: af790c5f7f8ac244b9f1730ba5b5cbcf, type: 2}
+  shieldBashHitAudio: {fileID: 11400000, guid: 18b9b7795bb3b9f429495a68707556f6, type: 2}
   landedCameraKick: 0.65
   hurtCameraKick: 2
   blockCameraKick: 0.8
@@ -358,3 +306,71 @@ MonoBehaviour:
   blockParticlePrefab: {fileID: 8478314277763355861, guid: 420ad5fb586b1ff4092ea3e609068854, type: 3}
   impactParticleLifetime: 2
   blockHitStopScale: 0.65
+  playerKnockbackSpeedLimit: 2.5
+  playerKnockbackDecay: 12
+  enemyAttackCommitTime: 0.65
+  enemyRecoveryTime: 0.18
+  enemyCooldownMultiplier: 1
+  enemyMinimumWindup: 0.3
+  enemyHitFacingAngle: 85
+  enemyAttackAnimationSpeed: 1.5
+  fightNoiseRadius: 8
+  wallMuffle: 0.3
+  hitsInterruptWindup: 0
+  interruptWindow: 0.45
+  heavyRecoilMultiplier: 1.6
+  heavyRecoilDurationMultiplier: 1.5
+  unseenCloseScale: 0.6
+  sneakCloseScale: 0.2
+  sneakSightScale: 0.6
+  personalSpace: 0.75
+  knockbackEnabled: 1
+  enemiesKnockedBack: 1
+  enemyKnockbackScale: 1.4
+  knockbackForceMultiplier: 0.45
+  knockbackDuration: 0.22
+  meleeReachMultiplier: 1.2
+  meleeWidthMultiplier: 1.25
+  criticalHitsEnabled: 1
+  critChance: 0.08
+  critMultiplier: 1.75
+  critHitStopScale: 2.5
+  critAudio: {fileID: 11400000, guid: c6a2858c4e28f704bad62aba7cdb9f3d, type: 2}
+  backstabsEnabled: 1
+  backstabMultiplier: 2.5
+  backstabBehindDot: 0.35
+  backstabAlertFromBehind: 1
+  backstabHitStopScale: 3
+  backstabAudio: {fileID: 11400000, guid: fd765cee151cf714891777d45a481eea, type: 2}
+  critNumberScale: 2
+  armorEffectiveness: 0.75
+  hitStopEnabled: 0
+  lightHitStopDuration: 0.045
+  lightHitStopTimeScale: 0.12
+  heavyHitStopDuration: 0.11
+  heavyHitStopTimeScale: 0.02
+  hitStopRecovery: 0.06
+  hitStopShake: 0.035
+  hitStopOnPlayerHurt: 0
+  hitReactionEnabled: 1
+  hitReactionAngle: 35
+  hitReactionAttackSpeed: 60
+  hitReactionDamping: 9
+  hitReactionInfluenceDepth: 2
+  hitReactionParentFalloff: 0.35
+  hitFlashEnabled: 1
+  hitFlashColor: {r: 2.4, g: 1.9, b: 1.45, a: 1}
+  hitFlashDuration: 0.1
+  hitParticlePrefabs:
+  - {fileID: 6471780803784122185, guid: 2a2c4fd85c07b3c4890ea6604664a1ef, type: 3}
+  defaultHitAudio: {fileID: 11400000, guid: 6d42536549be02a4aa8e2bafd38cbe4b, type: 2}
+  defaultSwingAudio: {fileID: 11400000, guid: bf3a7f0b55bbe1f41b4cdd4a60307c3a, type: 2}
+  defaultHeavySwingAudio: {fileID: 11400000, guid: c192a2166bf24c72ba47e39a165f0a0c, type: 2}
+  bladeBlood: 1
+  bladeBloodFadeSeconds: 45
+  bladeBloodMax: 18
+  ragdollDeath: 1
+  ragdollImpulse: 5.5
+  ragdollUpwardImpulse: 3
+  lootableCorpses: 0
+  corpseLifetime: 0

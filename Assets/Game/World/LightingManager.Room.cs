@@ -12,12 +12,15 @@ using UnityEngine.Rendering;
 // The global ambient is the dungeon's. Released when the darkness ends.
 public sealed partial class LightingManager
 {
+    [TabGroup("Tabs", "Room"), PropertyOrder(10)]
     [Title("Room during dungeon darkness")]
     [Tooltip("Renderers under these keep the room's own light while a dungeon floor is dark.")]
     public Transform[] roomRoots = Array.Empty<Transform>();
+    [TabGroup("Tabs", "Room"), PropertyOrder(10)]
     [Tooltip("Under a room root but not part of the room (the table's own levels).")]
     public Transform[] notRoom = Array.Empty<Transform>();
 
+    [TabGroup("Tabs", "Room"), PropertyOrder(10)]
     [Tooltip("The lamp over the table: lit while the room is dark (Room Lighting: Dark). Over a dungeon floor it lights only the room's rendering layer, so the miniature keeps its own darkness. Its colour is the lamp's own.")]
     public Light tableLamp;
     // Something else is working the lamp (the intro lights and puts it out itself): leave it alone.

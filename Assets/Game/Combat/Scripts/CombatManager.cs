@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -7,265 +8,438 @@ using UnityEngine.Serialization;
 // exactly one entry point and a hit can never freeze the game twice.
 public class CombatManager : Singleton<CombatManager>
 {
-    [Header("Melee hit tolerance")]
-    [Min(1f), Tooltip("Reach multiplier for player/enemy melee queries and enemy attack selection.")]
-    public float meleeReachMultiplier = 1.2f;
-    [Min(1f), Tooltip("Thickness multiplier for melee hit queries; also widens fallback enemy hit arcs.")]
-    public float meleeWidthMultiplier = 1.25f;
+    // Inspector: tabs (Player, Enemies, Hits, Death) of foldouts. Field names are what the prefab and scene save;
+    // grouping them never changes a value.
 
-    [Header("Blood on the blade")]
-    [Tooltip("The player's weapon gets spattered with what it cuts (BladeBlood on the table player), and the stains slowly dry and fade.")]
-    public bool bladeBlood = true;
-    [Min(1f), Tooltip("Seconds a stain on the blade takes to fade away.")]
-    public float bladeBloodFadeSeconds = 45f;
-    [Range(1, 40), Tooltip("Most stains on one weapon at a time.")]
-    public int bladeBloodMax = 18;
-
-    [Header("Hit Stop")]
-    [Tooltip("Off: hits pass straight through, Heathen style. On: the game slows for a moment on each hit.")]
-    public bool hitStopEnabled = false;
-    [FormerlySerializedAs("hitStopDuration"), Min(0), Tooltip("Seconds the game slows when a light attack lands.")]
-    public float lightHitStopDuration = 0.06f;
-    [FormerlySerializedAs("hitStopTimeScale"), Range(0f, 0.5f)]
-    [Tooltip("Time scale during a light hit stop. A hair above zero keeps animations creeping, which reads better than a hard freeze.")]
-    public float lightHitStopTimeScale = 0.05f;
-    [Min(0), Tooltip("Seconds the game slows when a heavy (charged) attack lands.")]
-    public float heavyHitStopDuration = 0.11f;
-    [Range(0f, 0.5f), Tooltip("Time scale during a heavy hit stop.")]
-    public float heavyHitStopTimeScale = 0.02f;
-    [Min(0), Tooltip("Seconds time takes to ramp back to full speed after the stop, instead of snapping. Softens the release.")]
-    public float hitStopRecovery = 0.06f;
-    [Min(0), Tooltip("How far the struck character's model shakes during the stop, in metres at its own scale. Heavy hits shake twice as far.")]
-    public float hitStopShake = 0.035f;
-    [Tooltip("Also hit-stop when an enemy lands a hit on the player.")]
-    public bool hitStopOnPlayerHurt = false;
-
-    [Header("Critical hits and backstabs (player attacks)")]
-    public bool criticalHitsEnabled = true;
-    [Range(0f, 1f)] public float critChance = .08f;
-    [Min(1f)] public float critMultiplier = 1.75f;
-    [Min(1f), Tooltip("Hit stop length multiplier for a critical hit.")]
-    public float critHitStopScale = 2.5f;
-    public AudioData critAudio;
-    [Tooltip("Hitting an enemy that is not chasing or attacking, or one facing away, is a backstab.")]
-    public bool backstabsEnabled = true;
-    [Min(1f)] public float backstabMultiplier = 2.5f;
-    [Range(-1f, 1f), Tooltip("A hit counts as from behind when dot(victim forward, attack direction) is above this.")]
-    public float backstabBehindDot = .35f;
-    [Tooltip("Also backstab alert enemies when struck from behind. Off: only unaware enemies.")]
-    public bool backstabAlertFromBehind = true;
-    [Min(1f)] public float backstabHitStopScale = 3f;
-    public AudioData backstabAudio;
-    [Min(1f), Tooltip("Size multiplier of the damage number for critical hits and backstabs.")]
-    public float critNumberScale = 1.6f;
-
-    [Header("Stealth")]
-    [SerializeField, Range(0, 1), Tooltip("How close the player can get behind an enemy before it notices, as a share of its close radius.")] float unseenCloseScale = .6f;
-    [SerializeField, Range(0, 1), Tooltip("The same while sneaking.")] float sneakCloseScale = .2f;
-    [SerializeField, Range(0, 1), Tooltip("Enemy sight range while the player sneaks, as a share of normal.")] float sneakSightScale = .6f;
-
-    [Header("Death")]
-    [Tooltip("Enemies collapse as physics ragdolls. Off plays the death animation instead.")]
-    public bool ragdollDeath = true;
-    [Tooltip("Speed (m/s) a body is thrown along the killing blow and the swing. Heavy hits and criticals x1.4.")]
-    [Min(0)] public float ragdollImpulse = 5.5f;
-    [Tooltip("Upward speed (m/s) of a thrown body.")]
-    [Min(0)] public float ragdollUpwardImpulse = 3f;
-    [Tooltip("Enemy loot stays on the corpse until the player searches it. Off scatters it on death.")]
-    public bool lootableCorpses = true;
-    [Tooltip("Seconds before a corpse is removed. 0 keeps corpses for the whole floor.")]
-    [Min(0)] public float corpseLifetime = 0f;
-
-    [Header("Knockback")]
-    public bool knockbackEnabled = true;
-    [Tooltip("Off: the player's hits never push enemies back. Their hits on the player still do.")]
-    public bool enemiesKnockedBack = true;
-    [Min(0), Tooltip("Scales the push enemies take from the player's hits (on top of Knockback Force Multiplier). Small, so a hit jolts them without carrying them out of their attack range.")]
-    public float enemyKnockbackScale = .25f;
-    [Tooltip("Scales every knockback force in the game.")]
-    public float knockbackForceMultiplier = 1f;
-    [Tooltip("Seconds a knocked-back NavMesh character slides before regaining control.")]
-    public float knockbackDuration = 0.25f;
-
-    [Header("Player knockback safety")]
-    [Tooltip("Maximum horizontal knockback speed, in world units per second. Never changes vertical velocity.")]
-    [Min(0)] public float playerKnockbackSpeedLimit = 2.5f;
-    [Tooltip("How quickly player knockback loses speed. A 2.5 speed kick at 12 decay travels about 0.26 units.")]
-    [Min(.1f)] public float playerKnockbackDecay = 12f;
-
-    [Header("Default Hit Effects")]
-    [Tooltip("Pool of hit particle prefabs. One is chosen at random when the weapon uses default effects.")]
-    public List<GameObject> hitParticlePrefabs = new();
-    [Tooltip("Hit audio used when the weapon uses default effects.")]
-    public AudioData defaultHitAudio;
-    [Tooltip("Swing audio used when the weapon uses default effects.")]
-    public AudioData defaultSwingAudio;
-    [Tooltip("Heavy swing audio used by weapons with default effects.")]
-    public AudioData defaultHeavySwingAudio;
-
-    [Header("Hit Reaction")]
-    public bool hitReactionEnabled = true;
-    [Tooltip("Peak rotation angle (degrees) applied to the bone closest to the hit.")]
-    public float hitReactionAngle = 20f;
-    [Tooltip("How quickly the bones move into the reaction pose. Lower = smoother snap-in.")]
-    public float hitReactionAttackSpeed = 20f;
-    [Tooltip("How quickly the offset decays back to the animated pose.")]
-    public float hitReactionDamping = 8f;
-    [Tooltip("How many parent bones above the hit bone also receive an offset.")]
-    public int hitReactionInfluenceDepth = 3;
-    [Tooltip("Fraction of strength passed to each successive parent bone.")]
-    [Range(0f, 1f)] public float hitReactionParentFalloff = 0.45f;
-
-    [Header("Hit Flash")]
-    public bool hitFlashEnabled = true;
-    [ColorUsage(false, true), Tooltip("Tint every character flashes when hit. Values above 1 glow.")]
-    public Color hitFlashColor = new Color(2.4f, 1.9f, 1.45f);
-    [Tooltip("Seconds the flash tint stays on the character's renderers.")]
-    public float hitFlashDuration = 0.1f;
-
-    [Header("Armor")]
-    [Tooltip("Barony's armor effectiveness: armor is taken off this share of a hit, the rest always lands, so armor never makes anyone untouchable. A successful block uses the full hit (1).")]
-    [Range(0f, 1f)] public float armorEffectiveness = .75f;
-
-    [Header("Spacing")]
-    [Min(0), Tooltip("No one stands closer than this to an enemy (centre to centre): the player cannot walk further in, and an enemy that is not swinging steps back out.")]
-    public float personalSpace = 1.1f;
-
-    [Header("Block")]
-    [Tooltip("Seconds after attacking that block is locked out. Set to just under your attack windup length.")]
-    public float blockCancelWindow = 0.5f;
-    [Tooltip("Dot product threshold: a hit is frontal (blockable) when dot(facing, hitDir) is below this.")]
-    [Range(-1f, 1f)] public float blockFrontalDot = -0.3f;
-    [Min(0), Tooltip("Stamina spent on each successfully blocked hit.")]
-    public float blockStaminaCost = 6f;
-    [Min(0), Tooltip("Stamina drained each second while holding the shield up.")]
-    public float shieldStaminaPerSecond = 2f;
-
-    [Header("Attack responsiveness")]
+    // ── Player: Attacks ──
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
     [Range(.5f,2f)] public float playerAttackSpeed = 1.12f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
     [Min(0)] public float attackInputBuffer = .22f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
     [Range(1,16), Tooltip("Samples per frame along the weapon's path, so a fast strike can't skip past an enemy.")] public int weaponSweepSteps = 12;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
     [Min(0), Tooltip("Shortest time between the starts of two light swings, at attack speed 1 (Heathen about 0.6 s). A faster weapon shortens it.")]
     public float swingInterval = .6f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
     [Tooltip("Attacking while the shield is up lowers it for the swing and raises it again afterwards if block is still held.")]
     public bool attackFromBlock = true;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
     [Tooltip("Pressing block during a windup (before the blade can hit) cancels the swing: no damage, the shield comes up at once. The next swing still waits for Swing Interval. Off (the user found it odd): a swing once started always strikes.")]
     public bool blockCancelsWindup = false;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
     [Tooltip("The shield is locked out only while the blade can hit (the swing's strike, until its hitbox closes); in the recovery after it, block raises the shield at once. Off: block waits for the whole swing to play out (Block Cancel Window applies).")]
     public bool blockCutsRecovery = true;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
     [Min(0f), Tooltip("Seconds after the shield comes up before it stops hits (0 = at once). Raise it if swing-block-swing feels too safe.")]
     public float blockRaiseDelay = 0f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
+    [Min(.1f)] public float windupSpeed = 1.2f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
+    [Min(.1f)] public float releaseSpeed = 1.25f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
+    [Min(.1f)] public float heavyReleaseSpeed = .95f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
+    [Min(.1f)] public float enemyHurtAnimationSpeed = 1.3f;
 
-    [Header("Swing set")]
+    // ── Player: Swing set ──
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
     [Tooltip("On: the original light swings (Attack_Swing_A/B). Off: the Heathen swings (FirstPersonPlayer/Heathen): " +
         "a visible windup, a strike in a few frames and a held follow-through, alternating forehand and backhand.")]
     public bool simpleSwings = false;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
     [Tooltip("Camera turn (pitch, yaw, roll in degrees) at the peak of a Heathen forehand; the backhand mirrors yaw and roll.")]
     public Vector3 heathenSwingCameraRotation = new Vector3(.4f, -1.2f, .6f);
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
     [Tooltip("Heathen swing camera motion over the release clip: peaks with the strike, eases off through the follow-through.")]
     public AnimationCurve heathenSwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.12f, 1f), new Keyframe(.6f, .35f), new Keyframe(1f, 0f));
 
-    [Header("Animation pacing")]
-    [Min(.1f)] public float windupSpeed = 1.2f;
-    [Min(.1f)] public float releaseSpeed = 1.25f;
-    [Min(.1f)] public float heavyReleaseSpeed = .95f;
-    [Min(.1f)] public float enemyHurtAnimationSpeed = 1.3f;
-
-    [Header("Charged strike")]
-    [Min(.1f)] public float heavyChargeTime = .7f;
-    [Min(1)] public float heavyDamageMultiplier = 1.65f;
-    [Min(1)] public float heavyKnockbackMultiplier = 1.35f;
-    [Min(0), Tooltip("Stamina spent when releasing a fully charged heavy attack. Insufficient stamina releases a light attack instead.")] public float heavyStaminaCost = 8f;
-    [Tooltip("Extra recovery after a heavy hit. Does not interrupt an already committed enemy swing.")]
-    [Min(0)] public float heavyStaggerDuration = .45f;
-    [Min(0), Tooltip("After a stagger, seconds the enemy can't be staggered again, so charged hits can't chain it into never attacking.")]
-    public float enemyStaggerImmunity = 1.5f;
-    [Min(0), Tooltip("Seconds an enemy stands still after a light hit. 0: the hurt reaction plays but never delays its next attack, so spamming light hits can't stunlock it.")]
-    public float lightFlinchDuration = .25f;
-
-    [Header("Interrupts")]
-    [Tooltip("A hit early in an enemy's windup cancels that attack. After an interrupt the enemy's next attack can't be interrupted, so it can't be stunlocked.")]
-    public bool hitsInterruptWindup = false;
-    [Min(0), Tooltip("Seconds from the start of an enemy's swing during which a hit interrupts it.")]
-    public float interruptWindow = .45f;
-    [Min(1)] public float heavyRecoilMultiplier = 1.6f;
-    [Min(1)] public float heavyRecoilDurationMultiplier = 1.5f;
-
-    [Header("Enemy rhythm")]
-    [Tooltip("Seconds after the swing starts during which the enemy still turns to track the target (windupTrackSpeed). After this the swing direction is committed.")]
-    [Min(.1f)] public float enemyAttackCommitTime = .4f;
-    [Tooltip("Seconds the enemy stands after a swing before it moves again.")]
-    [Min(0)] public float enemyRecoveryTime = .18f;
-    [Tooltip("Multiplier on every enemy attack cooldown.")]
-    [Min(.1f)] public float enemyCooldownMultiplier = 1f;
-    [Tooltip("The hit can never land sooner than this after the swing starts, even if the clip's event is earlier.")]
-    [Min(0)] public float enemyMinimumWindup = .3f;
-    [Tooltip("Max angle between where the enemy committed to swing and the target for the hit to land.")]
-    [Range(10,100)] public float enemyHitFacingAngle = 60f;
-    [Tooltip("Playback speed of enemy attack animations (the AttackSpeed animator parameter).")]
-    [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;
-    [Min(0), Tooltip("How far the sound of a landed hit carries: enemies within this (plus their hearing) come to look, so fights draw in the next room. 0: fights are silent.")]
-    public float fightNoiseRadius = 8f;
-    [Range(0, 1), Tooltip("Share of a sound's reach that carries through a wall or closed door. Low keeps enemies in other rooms from hearing fights and footsteps through stone.")]
-    public float wallMuffle = .3f;
-
-    [Header("Swing feel")]
+    // ── Player: Swing camera ──
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     public bool swingCameraMotionEnabled = true;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     [Tooltip("Local pitch, yaw and roll in degrees for each authored swing.")]
     public Vector3 lightSwingCameraRotation = new Vector3(.3f, .8f, -.35f);
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     public Vector3 alternateSwingCameraRotation = new Vector3(.5f, .8f, -.55f);
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     public Vector3 heavySwingCameraRotation = new Vector3(2f, .4f, -.65f);
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     [Tooltip("Camera motion over normalized release animation time, returning to zero at the end.")]
     public AnimationCurve swingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.28f, 1f), new Keyframe(1f, 0f));
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     [Tooltip("Heavy release: anticipation, strike, then a slower recovery.")]
     public AnimationCurve heavySwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f),
         new Keyframe(.18f, -.03f), new Keyframe(.4f, 1f), new Keyframe(.47f, 1f), new Keyframe(1f, 0f));
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     [Tooltip("How quickly camera motion follows the animation and returns to neutral.")]
     [Min(1)] public float swingCameraBlendSpeed = 18f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     [Tooltip("Speed multiplier over the light release by normalized clip time: fast in, slower follow-through.")]
     public AnimationCurve releaseSpeedCurve = new AnimationCurve(new Keyframe(0f, 1.3f), new Keyframe(.45f, 1.15f), new Keyframe(1f, .7f));
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     [Tooltip("Speed multiplier over the heavy release. The heavy swing clip already carries its coil / strike / hang / recovery timing, so keep this near 1.")]
     public AnimationCurve heavyReleaseSpeedCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(.4f, 1.1f), new Keyframe(1f, .9f));
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     [Tooltip("Tension-layer spike when a heavy hit lands, read as the arm shuddering from the impact.")]
     [Range(0,1)] public float heavyImpactShudder = .7f;
 
-    [Header("Charge feel")]
+    // ── Player: Charged strike ──
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charged strike")]
+    [Min(.1f)] public float heavyChargeTime = .7f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charged strike")]
+    [Min(1)] public float heavyDamageMultiplier = 1.65f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charged strike")]
+    [Min(1)] public float heavyKnockbackMultiplier = 1.35f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charged strike")]
+    [Min(0), Tooltip("Stamina spent when releasing a fully charged heavy attack. Insufficient stamina releases a light attack instead.")] public float heavyStaminaCost = 8f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charged strike")]
+    [Tooltip("Extra recovery after a heavy hit. Does not interrupt an already committed enemy swing.")]
+    [Min(0)] public float heavyStaggerDuration = .45f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charged strike")]
+    [Min(0), Tooltip("After a stagger, seconds the enemy can't be staggered again, so charged hits can't chain it into never attacking.")]
+    public float enemyStaggerImmunity = 1.5f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charged strike")]
+    [Min(0), Tooltip("Seconds an enemy stands still after a light hit. 0: the hurt reaction plays but never delays its next attack, so spamming light hits can't stunlock it.")]
+    public float lightFlinchDuration = .25f;
+
+    // ── Player: Charge feel ──
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charge feel")]
     [Tooltip("Seconds an attack must be held before charge zoom and shake begin. Capped below the full-charge time.")]
     [Min(0f)] public float chargeCameraDelay = .2f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charge feel")]
     [Tooltip("Normalized heavy release time when charge zoom starts returning. Matches the end of anticipation.")]
     [Range(0f, .95f)] public float heavyZoomReturnStart = .18f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charge feel")]
     [Tooltip("Normalized heavy release time when charge zoom reaches normal. Scales with attack animation speed.")]
     [Range(.01f, 1f)] public float heavyZoomReturnEnd = .58f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charge feel")]
     [Tooltip("Zoom smoothing time for a cancelled charge or light release, in seconds.")]
     [Min(.01f)] public float chargeZoomReturnSmoothing = .12f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charge feel")]
     [Tooltip("Hold-loop speed at full charge: the arm settles into tension instead of breathing normally.")]
     [Range(.05f,1f)] public float holdSpeedAtFullCharge = .3f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charge feel")]
     [Tooltip("Weight of the ChargeAdditive layer at full charge (arm pulled further back, trembling).")]
     [Range(0,1)] public float chargeTension = 1f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charge feel")]
     [Tooltip("Field-of-view narrowing at full charge, in degrees.")]
     [Range(0,15)] public float chargeFovPull = 4f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charge feel")]
     [Tooltip("Extra camera noise amplitude at full charge.")]
     [Range(0,3)] public float chargeShake = .45f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charge feel")]
     [Tooltip("Camera kick the moment the charge completes.")]
     [Range(0,2)] public float chargeReadyKick = .3f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Charge feel")]
     public AudioData chargeReadyAudio;
 
-    [Header("Player impact feedback")]
+    // ── Player: Block ──
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
+    [Tooltip("Seconds after attacking that block is locked out. Set to just under your attack windup length.")]
+    public float blockCancelWindow = 0.5f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
+    [Tooltip("Dot product threshold: a hit is frontal (blockable) when dot(facing, hitDir) is below this.")]
+    [Range(-1f, 1f)] public float blockFrontalDot = -0.3f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
+    [Min(0), Tooltip("Stamina spent on each successfully blocked hit.")]
+    public float blockStaminaCost = 6f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
+    [Min(0), Tooltip("Stamina drained each second while holding the shield up.")]
+    public float shieldStaminaPerSecond = 2f;
+
+    // ── Player: Shield bash ──
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Tooltip("Holding block and pressing attack bashes forward with the shield (Heathen's Holy Diver): a fast dash that stops at the first enemy in the way, hits it and stuns it. Needs a shield in hand. While it cools down, block and attack swings as usual.")]
+    public bool enableShieldBash = true;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Min(0f), Tooltip("Seconds before the bash can be used again.")]
+    public float shieldBashCooldown = 5f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Min(.5f), Tooltip("Dash speed in metres per second.")]
+    public float shieldBashSpeed = 15f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Min(.5f), Tooltip("Longest dash in metres, when nothing is in the way.")]
+    public float shieldBashDistance = 6f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Min(0f), Tooltip("Seconds the dash waits after the press before it moves (the shield coming forward).")]
+    public float shieldBashWindup = .06f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Min(0f), Tooltip("Seconds after the hit (or the end of the dash) before you can attack or block again.")]
+    public float shieldBashRecovery = .3f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Range(0f, 90f), Tooltip("How far off straight ahead (degrees) an enemy can be and still be hit by the dash.")]
+    public float shieldBashAngle = 35f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Min(0f), Tooltip("Damage of the hit before armour: Holy damage, like a spell it ignores the enemy's armour.")]
+    public float shieldBashDamage = 6f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Min(0f), Tooltip("Extra damage per point of the player's own armour (Holy Diver's damage scales with armour).")]
+    public float shieldBashDamagePerArmor = 1.5f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Min(0f), Tooltip("Seconds the struck enemy stands stunned (its swing is cancelled). Its usual stagger immunity follows.")]
+    public float shieldBashStun = 1f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Min(0f), Tooltip("Push on the struck enemy. Small: Heathen leaves it standing in front of you for the follow-up.")]
+    public float shieldBashKnockback = 1.5f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Min(0f), Tooltip("Stamina the bash costs.")]
+    public float shieldBashStaminaCost = 10f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [ColorUsage(false, true), Tooltip("The shield's glow during the dash (HDR: above 1 glows).")]
+    public Color shieldBashGlow = new(1.8f, 1.55f, 1.05f);
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Tooltip("Gold streaks that rush past during the dash, made for it (Combat/Effects/Shield bash streaks).")]
+    public GameObject shieldBashStreaks;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    public AudioData shieldBashAudio;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    public AudioData shieldBashHitAudio;
+
+    // ── Player: Getting hit ──
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     [Range(0,4)] public float landedCameraKick = .65f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     [Range(0,6)] public float hurtCameraKick = 2f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     [Range(0,4)] public float blockCameraKick = .8f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     [Range(0,1)] public float hurtScreenAlpha = .22f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     [Min(.05f), Tooltip("Seconds the hurt screen takes to fade out.")]
     public float hurtScreenDuration = .28f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     [Min(0), Tooltip("Seconds the hurt screen stays at full strength before it fades.")]
     public float hurtScreenHold = .1f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     public Color hurtScreenColor = new(.8f,.12f,.1f,1);
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     public Color blockScreenColor = new(.55f,.7f,.8f,1);
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     public AudioData blockAudio;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     public AudioData playerHurtAudio;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     public GameObject blockParticlePrefab;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     [Min(.1f)] public float impactParticleLifetime = 2f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     [Min(0)] public float blockHitStopScale = .65f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
+    [Tooltip("Maximum horizontal knockback speed, in world units per second. Never changes vertical velocity.")]
+    [Min(0)] public float playerKnockbackSpeedLimit = 2.5f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
+    [Tooltip("How quickly player knockback loses speed. A 2.5 speed kick at 12 decay travels about 0.26 units.")]
+    [Min(.1f)] public float playerKnockbackDecay = 12f;
+
+    // ── Enemies: Attack rhythm ──
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("Seconds after the swing starts during which the enemy still turns to track the target (windupTrackSpeed). After this the swing direction is committed.")]
+    [Min(.1f)] public float enemyAttackCommitTime = .4f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("Seconds the enemy stands after a swing before it moves again.")]
+    [Min(0)] public float enemyRecoveryTime = .18f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("Multiplier on every enemy attack cooldown.")]
+    [Min(.1f)] public float enemyCooldownMultiplier = 1f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("The hit can never land sooner than this after the swing starts, even if the clip's event is earlier.")]
+    [Min(0)] public float enemyMinimumWindup = .3f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("Max angle between where the enemy committed to swing and the target for the hit to land.")]
+    [Range(10,100)] public float enemyHitFacingAngle = 60f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("Playback speed of enemy attack animations (the AttackSpeed animator parameter).")]
+    [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Min(0), Tooltip("How far the sound of a landed hit carries: enemies within this (plus their hearing) come to look, so fights draw in the next room. 0: fights are silent.")]
+    public float fightNoiseRadius = 8f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Range(0, 1), Tooltip("Share of a sound's reach that carries through a wall or closed door. Low keeps enemies in other rooms from hearing fights and footsteps through stone.")]
+    public float wallMuffle = .3f;
+
+    // ── Enemies: Interrupts ──
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Interrupts")]
+    [Tooltip("A hit early in an enemy's windup cancels that attack. After an interrupt the enemy's next attack can't be interrupted, so it can't be stunlocked.")]
+    public bool hitsInterruptWindup = false;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Interrupts")]
+    [Min(0), Tooltip("Seconds from the start of an enemy's swing during which a hit interrupts it.")]
+    public float interruptWindow = .45f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Interrupts")]
+    [Min(1)] public float heavyRecoilMultiplier = 1.6f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Interrupts")]
+    [Min(1)] public float heavyRecoilDurationMultiplier = 1.5f;
+
+    // ── Enemies: Stealth ──
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Stealth")]
+    [SerializeField, Range(0, 1), Tooltip("How close the player can get behind an enemy before it notices, as a share of its close radius.")] float unseenCloseScale = .6f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Stealth")]
+    [SerializeField, Range(0, 1), Tooltip("The same while sneaking.")] float sneakCloseScale = .2f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Stealth")]
+    [SerializeField, Range(0, 1), Tooltip("Enemy sight range while the player sneaks, as a share of normal.")] float sneakSightScale = .6f;
+
+    // ── Enemies: Spacing ──
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Spacing")]
+    [Min(0), Tooltip("No one stands closer than this to an enemy (centre to centre): the player cannot walk further in, and an enemy that is not swinging steps back out.")]
+    public float personalSpace = 1.1f;
+
+    // ── Enemies: Knockback ──
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Knockback")]
+    public bool knockbackEnabled = true;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Knockback")]
+    [Tooltip("Off: the player's hits never push enemies back. Their hits on the player still do.")]
+    public bool enemiesKnockedBack = true;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Knockback")]
+    [Min(0), Tooltip("Scales the push enemies take from the player's hits (on top of Knockback Force Multiplier). Small, so a hit jolts them without carrying them out of their attack range.")]
+    public float enemyKnockbackScale = .25f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Knockback")]
+    [Tooltip("Scales every knockback force in the game.")]
+    public float knockbackForceMultiplier = 1f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Knockback")]
+    [Tooltip("Seconds a knocked-back NavMesh character slides before regaining control.")]
+    public float knockbackDuration = 0.25f;
+
+    // ── Hits: Reach ──
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
+    [Min(1f), Tooltip("Reach multiplier for player/enemy melee queries and enemy attack selection.")]
+    public float meleeReachMultiplier = 1.2f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
+    [Min(1f), Tooltip("Thickness multiplier for melee hit queries; also widens fallback enemy hit arcs.")]
+    public float meleeWidthMultiplier = 1.25f;
+
+    // ── Hits: Critical hits and backstabs ──
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    public bool criticalHitsEnabled = true;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Range(0f, 1f)] public float critChance = .08f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Min(1f)] public float critMultiplier = 1.75f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Min(1f), Tooltip("Hit stop length multiplier for a critical hit.")]
+    public float critHitStopScale = 2.5f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    public AudioData critAudio;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Tooltip("Hitting an enemy that is not chasing or attacking, or one facing away, is a backstab.")]
+    public bool backstabsEnabled = true;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Min(1f)] public float backstabMultiplier = 2.5f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Range(-1f, 1f), Tooltip("A hit counts as from behind when dot(victim forward, attack direction) is above this.")]
+    public float backstabBehindDot = .35f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Tooltip("Also backstab alert enemies when struck from behind. Off: only unaware enemies.")]
+    public bool backstabAlertFromBehind = true;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Min(1f)] public float backstabHitStopScale = 3f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    public AudioData backstabAudio;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Min(1f), Tooltip("Size multiplier of the damage number for critical hits and backstabs.")]
+    public float critNumberScale = 1.6f;
+
+    // ── Hits: Armor ──
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Armor")]
+    [Tooltip("Barony's armor effectiveness: armor is taken off this share of a hit, the rest always lands, so armor never makes anyone untouchable. A successful block uses the full hit (1).")]
+    [Range(0f, 1f)] public float armorEffectiveness = .75f;
+
+    // ── Hits: Hit stop ──
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit stop")]
+    [Tooltip("Off: hits pass straight through, Heathen style. On: the game slows for a moment on each hit.")]
+    public bool hitStopEnabled = false;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit stop")]
+    [FormerlySerializedAs("hitStopDuration"), Min(0), Tooltip("Seconds the game slows when a light attack lands.")]
+    public float lightHitStopDuration = 0.06f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit stop")]
+    [FormerlySerializedAs("hitStopTimeScale"), Range(0f, 0.5f)]
+    [Tooltip("Time scale during a light hit stop. A hair above zero keeps animations creeping, which reads better than a hard freeze.")]
+    public float lightHitStopTimeScale = 0.05f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit stop")]
+    [Min(0), Tooltip("Seconds the game slows when a heavy (charged) attack lands.")]
+    public float heavyHitStopDuration = 0.11f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit stop")]
+    [Range(0f, 0.5f), Tooltip("Time scale during a heavy hit stop.")]
+    public float heavyHitStopTimeScale = 0.02f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit stop")]
+    [Min(0), Tooltip("Seconds time takes to ramp back to full speed after the stop, instead of snapping. Softens the release.")]
+    public float hitStopRecovery = 0.06f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit stop")]
+    [Min(0), Tooltip("How far the struck character's model shakes during the stop, in metres at its own scale. Heavy hits shake twice as far.")]
+    public float hitStopShake = 0.035f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit stop")]
+    [Tooltip("Also hit-stop when an enemy lands a hit on the player.")]
+    public bool hitStopOnPlayerHurt = false;
+
+    // ── Hits: Hit reaction ──
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit reaction")]
+    public bool hitReactionEnabled = true;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit reaction")]
+    [Tooltip("Peak rotation angle (degrees) applied to the bone closest to the hit.")]
+    public float hitReactionAngle = 20f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit reaction")]
+    [Tooltip("How quickly the bones move into the reaction pose. Lower = smoother snap-in.")]
+    public float hitReactionAttackSpeed = 20f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit reaction")]
+    [Tooltip("How quickly the offset decays back to the animated pose.")]
+    public float hitReactionDamping = 8f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit reaction")]
+    [Tooltip("How many parent bones above the hit bone also receive an offset.")]
+    public int hitReactionInfluenceDepth = 3;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit reaction")]
+    [Tooltip("Fraction of strength passed to each successive parent bone.")]
+    [Range(0f, 1f)] public float hitReactionParentFalloff = 0.45f;
+
+    // ── Hits: Hit flash ──
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit flash")]
+    public bool hitFlashEnabled = true;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit flash")]
+    [ColorUsage(false, true), Tooltip("Tint every character flashes when hit. Values above 1 glow.")]
+    public Color hitFlashColor = new Color(2.4f, 1.9f, 1.45f);
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit flash")]
+    [Tooltip("Seconds the flash tint stays on the character's renderers.")]
+    public float hitFlashDuration = 0.1f;
+
+    // ── Hits: Hit effects ──
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit effects")]
+    [Tooltip("Pool of hit particle prefabs. One is chosen at random when the weapon uses default effects.")]
+    public List<GameObject> hitParticlePrefabs = new();
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit effects")]
+    [Tooltip("Hit audio used when the weapon uses default effects.")]
+    public AudioData defaultHitAudio;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit effects")]
+    [Tooltip("Swing audio used when the weapon uses default effects.")]
+    public AudioData defaultSwingAudio;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit effects")]
+    [Tooltip("Heavy swing audio used by weapons with default effects.")]
+    public AudioData defaultHeavySwingAudio;
+
+    // ── Hits: Blood on the blade ──
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Blood on the blade")]
+    [Tooltip("The player's weapon gets spattered with what it cuts (BladeBlood on the table player), and the stains slowly dry and fade.")]
+    public bool bladeBlood = true;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Blood on the blade")]
+    [Min(1f), Tooltip("Seconds a stain on the blade takes to fade away.")]
+    public float bladeBloodFadeSeconds = 45f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Blood on the blade")]
+    [Range(1, 40), Tooltip("Most stains on one weapon at a time.")]
+    public int bladeBloodMax = 18;
+
+    // ── Death: Death ──
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Death")]
+    [Tooltip("Enemies collapse as physics ragdolls. Off plays the death animation instead.")]
+    public bool ragdollDeath = true;
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Death")]
+    [Tooltip("Speed (m/s) a body is thrown along the killing blow and the swing. Heavy hits and criticals x1.4.")]
+    [Min(0)] public float ragdollImpulse = 5.5f;
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Death")]
+    [Tooltip("Upward speed (m/s) of a thrown body.")]
+    [Min(0)] public float ragdollUpwardImpulse = 3f;
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Death")]
+    [Tooltip("Enemy loot stays on the corpse until the player searches it. Off scatters it on death.")]
+    public bool lootableCorpses = true;
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Death")]
+    [Tooltip("Seconds before a corpse is removed. 0 keeps corpses for the whole floor.")]
+    [Min(0)] public float corpseLifetime = 0f;
 
     readonly RaycastHit[] obstructionHits = new RaycastHit[64];
     public bool HasMeleeLineOfSight(Character source,Character victim,Vector3 contact) =>

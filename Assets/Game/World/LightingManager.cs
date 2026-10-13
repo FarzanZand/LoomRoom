@@ -15,62 +15,83 @@ public sealed partial class LightingManager : MonoBehaviour
     // cutscenes and loaders instead of searching the scene.
     public static LightingManager Instance { get; private set; }
 
+    [TabGroup("Tabs", "Room")]
     [Title("Lighting controls")]
     [EnumToggleButtons]
     [Tooltip("Select which controls to edit. Both sets of settings stay active when switching tabs.")]
     public Scope controlScope;
+    [TabGroup("Tabs", "Room")]
     [ShowIf("@controlScope == Scope.TableOnly"), LabelText("Table Brightness")]
     [Range(0f, 8f), OnValueChanged(nameof(Apply))]
     [Tooltip("Live brightness. 1 is the original skylight; 0 is off. Works in edit and Play mode.")]
     public float brightness = 1f;
+    [TabGroup("Tabs", "Room")]
     [ShowIf("@controlScope == Scope.TableOnly"), LabelText("Table Tint")]
     [OnValueChanged(nameof(Apply))]
     public Color tint = Color.white;
+    [TabGroup("Tabs", "Room")]
     [ShowIf("@controlScope == Scope.WholeScene"), Range(0f, 8f), OnValueChanged(nameof(Apply))]
     [Tooltip("Brightness of the room lights and environment. Does not change the table's dedicated lights.")]
     public float sceneBrightness = 1f;
+    [TabGroup("Tabs", "Room")]
     [ShowIf("@controlScope == Scope.WholeScene"), OnValueChanged(nameof(Apply))]
     public Color sceneTint = Color.white;
+    [TabGroup("Tabs", "Room")]
     [ShowIf("@controlScope == Scope.WholeScene")]
     [Range(0f, 4f)] public float ambientMultiplier = 1f;
+    [TabGroup("Tabs", "Room")]
     [ShowIf("@controlScope == Scope.WholeScene")]
     public bool overrideFogColor;
+    [TabGroup("Tabs", "Room")]
     [ShowIf("@controlScope == Scope.WholeScene && overrideFogColor")]
     public Color fogColor = Color.gray;
 
+    [TabGroup("Tabs", "Room")]
     [Title("Ambient light")]
     [Range(0f, 4f), OnValueChanged(nameof(Apply))]
     [Tooltip("Multiplies the room's ambient light (the light in unlit corners), in every mood: higher makes the room's dark less dark. 1 = as the moods have it. While no dungeon floor is dark (the intro, board levels) this is the whole scene's ambient.")]
     public float roomAmbient = 1f;
+    [TabGroup("Tabs", "Dungeon"), Title("Ambient light")]
     [Range(0f, 4f), OnValueChanged(nameof(Apply))]
     [Tooltip("Multiplies the ambient light on dark dungeon floors, after Dark Ambient caps it: higher makes the dungeon's dark less dark (places no torch or carried light reaches). 1 = as is.")]
     public float dungeonAmbient = 1f;
 
+    [TabGroup("Tabs", "Table reveal")]
     [Title("Table hand-raise reveal")]
     [Range(0f, 8f)] public float startingBrightness = 1f;
+    [TabGroup("Tabs", "Table reveal")]
     [Range(0f, 8f)] public float revealedBrightness = 3f;
+    [TabGroup("Tabs", "Table reveal")]
     [Min(0f), Tooltip("Seconds after the ReachOut trigger before the light starts changing.")]
     public float revealDelay = 0.75f;
+    [TabGroup("Tabs", "Table reveal")]
     [Min(0f), Tooltip("Seconds to reach the revealed brightness after ReachOut starts.")]
     public float fadeDuration = 6f;
 
+    [TabGroup("Tabs", "Dungeon")]
     [Title("Dungeon darkness")]
     [OnValueChanged(nameof(Apply))]
     [Tooltip("Dungeons are dark away from light sources whatever their lighting preset: ambient light and the sun are held down, so only torches and the player's own light show the way. A biome can opt out with Lit Throughout.")]
     public bool dungeonDarkness = true;
+    [TabGroup("Tabs", "Dungeon")]
     [ShowIf(nameof(dungeonDarkness)), Range(0f, 1f), OnValueChanged(nameof(Apply))]
     [Tooltip("Brightest the preset's ambient colours may be in a dungeon: how visible unlit places are. 0.11 matches the Darkness preset; 0 is pitch black.")]
     public float darkAmbient = .11f;
+    [TabGroup("Tabs", "Dungeon")]
     [ShowIf(nameof(dungeonDarkness)), Range(0f, 1f), OnValueChanged(nameof(Apply))]
     [Tooltip("Strongest the directional (sun) light may be in a dungeon. 0.02 matches the Darkness preset.")]
     public float darkSunIntensity = .02f;
+    [TabGroup("Tabs", "Dungeon")]
     [ShowIf(nameof(dungeonDarkness)), OnValueChanged(nameof(Apply))]
     [Tooltip("Also fade distant things into a fog colour, even where a light reaches them.")]
     public bool darknessFog;
+    [TabGroup("Tabs", "Dungeon")]
     [ShowIf("@dungeonDarkness && darknessFog"), OnValueChanged(nameof(Apply))]
     public Color darknessFogColor = Color.black;
+    [TabGroup("Tabs", "Dungeon")]
     [ShowIf("@dungeonDarkness && darknessFog"), Min(0f), OnValueChanged(nameof(Apply)), Tooltip("Metres from the camera where the fog starts.")]
     public float darknessFogStart = 6f;
+    [TabGroup("Tabs", "Dungeon")]
     [ShowIf("@dungeonDarkness && darknessFog"), Min(0f), OnValueChanged(nameof(Apply)), Tooltip("Metres from the camera where everything is fog.")]
     public float darknessFogEnd = 24f;
 
@@ -82,14 +103,17 @@ public sealed partial class LightingManager : MonoBehaviour
         public Color baseColor = Color.white;
     }
 
-    [FoldoutGroup("Light references"), Tooltip("Table group: the authored table and skylight lights.")]
+    [TabGroup("Tabs", "References"), Title("Light groups")]
+    [Tooltip("Table group: the authored table and skylight lights.")]
     public Source[] sources;
-    [FoldoutGroup("Light references"), Tooltip("Room group: general room lights and the directional light. Keep a light in only one group.")]
+    [TabGroup("Tabs", "References")]
+    [Tooltip("Room group: general room lights and the directional light. Keep a light in only one group.")]
     public Source[] sceneSources;
 
     // The scene's own ambient light and fog; room brightness and tint scale these.
     [SerializeField, HideInInspector] Color originalAmbientSky, originalAmbientHorizon, originalAmbientGround, originalAmbientFlat, originalFog;
     [SerializeField, HideInInspector] float originalAmbientIntensity = 1f, originalReflectionIntensity = 1f;
+    [TabGroup("Tabs", "Room"), Title("Reflections")]
     [SerializeField, Min(.01f), Tooltip("Sky reflections follow the ambient light: a mood whose ambient reaches this (brightest channel) reflects the sky fully, a darker one less, black not at all. Without it a dark scene still shows the bright sky on glossy materials (Pixel Lit ignores reflections, so this matters with the Pixelator off).")]
     float fullReflectionAmbient = .35f;
     SphericalHarmonicsL2 originalProbe;
@@ -127,12 +151,15 @@ public sealed partial class LightingManager : MonoBehaviour
 
     // ── Reveal ────────────────────────────────────────────────────────
 
-    [Button("Show Before"), HorizontalGroup("Preview")]
+    [TabGroup("Tabs", "Table reveal")]
+    [Button("Show Before"), HorizontalGroup("Tabs/Table reveal/Preview")]
     public void ShowBefore() { fading = false; brightness = startingBrightness; Apply(); }
 
-    [Button("Show After"), HorizontalGroup("Preview")]
+    [TabGroup("Tabs", "Table reveal")]
+    [Button("Show After"), HorizontalGroup("Tabs/Table reveal/Preview")]
     public void ShowAfter() { fading = false; brightness = revealedBrightness; Apply(); }
 
+    [TabGroup("Tabs", "Table reveal")]
     [Button("Preview / Play Reveal", ButtonSizes.Large)]
     public void PlayReveal()
     {

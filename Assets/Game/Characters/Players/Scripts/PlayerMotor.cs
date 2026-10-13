@@ -51,6 +51,11 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         }
     }
 
+    // A dash (the shield bash) replaces walking while it is set: horizontal velocity from its owner, no personal space
+    // (the dash stops at the enemy itself). Zero = walk as usual.
+    public Vector3 DashVelocity { get; set; }
+    public bool Dashing => DashVelocity.sqrMagnitude > .01f;
+
     public float AirborneTime { get; private set; }
     public MoveState State   { get; private set; }
     public Vector3   Velocity => Controller != null ? Controller.velocity : Vector3.zero;
@@ -123,6 +128,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         input.SprintPressed -= OnSprintPressed;
         input.CrouchPressed -= OnCrouchPressed;
         knockbackVelocity = Vector3.zero;
+        DashVelocity = Vector3.zero;
     }
 
     void OnJump()          { if (IsControllable) jumpQueued = true; }
@@ -250,7 +256,8 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         float back = moveDir.z < 0f ? Mathf.Clamp(p.backwardSpeed, .1f, 1f) : 1f;
         movement = (forward * moveDir.z * back + right * moveDir.x) * Speed;
         movement.y = yVel;
-        KeepPersonalSpace();
+        if (Dashing) { movement.x = DashVelocity.x; movement.z = DashVelocity.z; }
+        else KeepPersonalSpace();
 
         bool grounded = Controller.isGrounded;
         if (grounded) movement.y = -2f;

@@ -7,24 +7,31 @@ using UnityEngine;
 // narrow it (DungeonBiome.lightRadius).
 public sealed partial class LightingManager
 {
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
     [Title("Light radius")]
     [Tooltip("Ambient light fades out with distance from the player on dungeon floors (while the dungeon darkness applies).")]
     public bool lightRadius = true;
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
     [ShowIf(nameof(lightRadius)), Min(.5f), Tooltip("Metres around the player with full ambient light (a biome's Light Radius replaces it).")]
     public float lightRadiusMetres = 6.5f;
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
     [ShowIf(nameof(lightRadius)), Min(.1f), Tooltip("Metres over which the ambient fades past the radius.")]
     public float lightRadiusEdge = 2.5f;
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
     [ShowIf(nameof(lightRadius)), Range(0f, 1f), Tooltip("Share of the ambient left beyond the edge (0 = black where no lamp reaches).")]
     public float lightRadiusFloor = .3f;
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
     [ShowIf(nameof(lightRadius)), Tooltip("The table player's own lights (the fill over the head and the key light) also fade out by the radius plus its edge, so the dark starts where the radius says (Heathen's circle of light). Off, they reach as far as they are set to (about 12 m) and the radius only takes the faint ambient out of the far dark.")]
     public bool radiusDimsPlayerLights = true;
 
     // How far the table player's carried lights may reach across the floor now (metres; 0 = as authored).
     public static float CarriedLightReach { get; private set; }
 
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
     [Title("Lamp shadows")]
     [Min(0), Tooltip("Only this many of the floor's lamps (torches, braziers, candles) nearest the player cast shadows; the rest light without them. A shadowed point light draws the scene six times.")]
     public int shadowedLamps = 4;
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
     [Min(.05f)] public float shadowBudgetSeconds = .3f;
     readonly System.Collections.Generic.Dictionary<Light, LightShadows> lampShadows = new();
     readonly System.Collections.Generic.List<Light> lamps = new(), found = new(), stale = new();
