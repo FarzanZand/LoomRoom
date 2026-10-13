@@ -400,11 +400,12 @@ MonoBehaviour:
   - '###+###'
   minimumCells: {x: 6, y: 6}
   style: {fileID: 0}
-  heightTiles: 2
+  heightTiles: 1
   openCeiling: 0
   ceilingFrame: 0.3
   skylightRadius: 0
   replaceGeneratedProps: 0
+  addFurnishing: 0
   replaceGeneratedEnemies: 1
   roomEvent: 3
   replaceGeneratedTorches: 0
@@ -1392,12 +1393,16 @@ PrefabInstance:
     m_TransformParent: {fileID: 2487054348357729300}
     m_Modifications:
     - target: {fileID: 1462924617496966095, guid: 02b8ded7480c3d84c9092174bb1da78d, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1462924617496966095, guid: 02b8ded7480c3d84c9092174bb1da78d, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1462924617496966095, guid: 02b8ded7480c3d84c9092174bb1da78d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 5.97
+      value: 2.9699998
       objectReference: {fileID: 0}
     - target: {fileID: 1462924617496966095, guid: 02b8ded7480c3d84c9092174bb1da78d, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2110,12 +2115,16 @@ PrefabInstance:
     m_TransformParent: {fileID: 2487054348357729300}
     m_Modifications:
     - target: {fileID: 1462924617496966095, guid: 02b8ded7480c3d84c9092174bb1da78d, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1462924617496966095, guid: 02b8ded7480c3d84c9092174bb1da78d, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1462924617496966095, guid: 02b8ded7480c3d84c9092174bb1da78d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 5.97
+      value: 2.9699998
       objectReference: {fileID: 0}
     - target: {fileID: 1462924617496966095, guid: 02b8ded7480c3d84c9092174bb1da78d, type: 3}
       propertyPath: m_LocalPosition.z

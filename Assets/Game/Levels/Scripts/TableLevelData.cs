@@ -222,14 +222,6 @@ public class TableLevelData : ScriptableObject
     // ── Architecture ──────────────────────────────────────────────────
     [TabGroup(Tabs, Architecture), ShowIf(D), Min(3), Tooltip("Physical width and height of one square texture tile. 32x32 artwork repeats every 3 units by default. Independent of layout grid spacing so changing art scale does not enlarge the table footprint.")]
     public float architectureTileSize = 3f;
-    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Room heights", HorizontalLine = false), Range(0, 100), LabelText("Two Tiles %"), Tooltip("Percentage of whole rooms two tiles tall. The remainder after both percentages are one tile tall. Totals over 100 are normalized.")]
-    public float twoTileRoomPercent = 25;
-    [TabGroup(Tabs, Architecture), ShowIf(D), Range(0, 100), LabelText("Three Tiles %"), Tooltip("Percentage of whole rooms three tiles tall. Selection is seeded; counts round to whole rooms.")]
-    public float threeTileRoomPercent;
-    [TabGroup(Tabs, Architecture), ShowIf(D), Title("Corridor heights", HorizontalLine = false), Range(0, 100), LabelText("Two Tiles %"), Tooltip("Target percentage two tiles tall. Requires a direct connection to a room at least two tiles tall. Too few eligible sections reduces the count. Remaining sections are one tile tall.")]
-    public float twoTileCorridorPercent = 25;
-    [TabGroup(Tabs, Architecture), ShowIf(D), Range(0, 100), LabelText("Three Tiles %"), Tooltip("Target percentage three tiles tall. Requires a direct connection to a three-tile room. Totals over 100 are normalized.")]
-    public float threeTileCorridorPercent;
     [TabGroup(Tabs, Architecture), ShowIf(D), Title("Openings (room player view)", HorizontalLine = false), Tooltip("Open a skylight in the ceiling of a seeded selection of whole rooms and corridor sections, so the room above shows through. A frame of ceiling stays round its edge.")]
     public bool hideRoof;
     [TabGroup(Tabs, Architecture), ShowIf(D), EnableIf(nameof(hideRoof)), Range(0, 100), Tooltip("Percentage of whole rooms and connected corridor sections with a skylight. 100 opens every ceiling.")]

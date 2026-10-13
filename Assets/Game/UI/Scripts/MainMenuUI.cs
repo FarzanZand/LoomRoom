@@ -6,13 +6,15 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 // The main menu (Scenes/Main Menu, the first scene of a build): the table in the dark from the player's seat, the
-// Dungeon Master waiting behind it with his eyes lit, the title, and Continue (New game) / Quit. Play fades to black and
+// Dungeon Master waiting behind it with his eyes lit, the title, and Continue (New game) / Skip intro / Quit. Play fades to black and
 // loads the game's scene. The set, buttons, title and fade are authored in the scene; this binds them. The menu scene
 // has no managers, so this sets the Pixel Lit shader's globals, frees the cursor and reads the music volume itself.
 public class MainMenuUI : MonoBehaviour
 {
     [SerializeField] Button playButton;
     [SerializeField] TMP_Text playLabel;
+    [Tooltip("Plays like New game / Continue, but straight to the room: the intro and the character sheet count as done.")]
+    [SerializeField] Button skipIntroButton;
     [SerializeField] Button quitButton;
     [Tooltip("Co-op: the game opens with the co-op screen (host or join; a new game asks before its intro).")]
     [SerializeField] Button coopButton;
@@ -61,6 +63,7 @@ public class MainMenuUI : MonoBehaviour
         }
         if (playLabel != null) playLabel.text = AdventureSave.SaveExists ? "Continue" : "New game";
         if (playButton != null) { playButton.onClick.AddListener(Play); playButton.Select(); }
+        if (skipIntroButton != null) skipIntroButton.onClick.AddListener(SkipIntro);
         if (quitButton != null) quitButton.onClick.AddListener(Quit);
         if (coopButton != null) coopButton.onClick.AddListener(PlayCoop);
         if (fade != null) StartCoroutine(Fade(1f, 0f, null));
@@ -90,6 +93,13 @@ public class MainMenuUI : MonoBehaviour
     {
         if (leaving) return;
         MultiplayerManager.CoopFromMenu = true;
+        Play();
+    }
+
+    void SkipIntro()
+    {
+        if (leaving) return;
+        ProgressionManager.SkipIntroRequested = true;
         Play();
     }
 

@@ -35,59 +35,6 @@ public partial class DungeonGenerator : MonoBehaviour
     float HeightAt(int x, int z) => data.architectureTileSize * (Layout.RegionIds[x,z] < RoomHeightTiles.Length
         ? RoomHeightTiles[Layout.RegionIds[x,z]] : CorridorHeightTiles[Layout.RegionIds[x,z] - RoomHeightTiles.Length]);
 
-    public static int[] SelectRoomHeights(int count, int seed, float twoPercent, float threePercent)
-    {
-        var heights = new int[count];
-        var order = new int[count];
-        for (int i = 0; i < count; i++) { heights[i] = 1; order[i] = i; }
-        var rng = new System.Random(unchecked(seed + 7919));
-        for (int i = count - 1; i > 0; i--) { int j = rng.Next(i + 1); (order[i], order[j]) = (order[j], order[i]); }
-        float two = Mathf.Clamp(twoPercent, 0, 100), three = Mathf.Clamp(threePercent, 0, 100);
-        float total = Mathf.Max(100, two + three);
-        int threes = Mathf.RoundToInt(count * three / total);
-        int twos = Mathf.Min(count - threes, Mathf.RoundToInt(count * two / total));
-        for (int i = 0; i < threes; i++) heights[order[i]] = 3;
-        for (int i = threes; i < threes + twos; i++) heights[order[i]] = 2;
-        return heights;
-    }
-
-    void SelectCorridorHeights(int seed)
-    {
-        int count = Layout.CorridorCount;
-        var requested = SelectRoomHeights(count, seed, data.twoTileCorridorPercent, data.threeTileCorridorPercent);
-        CorridorHeightTiles = new int[count];
-        var adjacentHeight = new int[count];
-        var order = new int[count];
-        for (int i = 0; i < count; i++) { CorridorHeightTiles[i] = 1; order[i] = i; }
-        for (int x = 0; x < data.width; x++) for (int z = 0; z < data.depth; z++)
-        {
-            int region = Layout.RegionIds[x,z];
-            if (region < RoomHeightTiles.Length) continue;
-            foreach (var dir in DungeonLayout.Neighbours)
-            {
-                int nx = x + dir.x, nz = z + dir.y;
-                if (nx < 0 || nz < 0 || nx >= data.width || nz >= data.depth) continue;
-                int neighbor = Layout.RegionIds[nx,nz];
-                if (neighbor >= 0 && neighbor < RoomHeightTiles.Length)
-                    adjacentHeight[region - RoomHeightTiles.Length] = Mathf.Max(adjacentHeight[region - RoomHeightTiles.Length], RoomHeightTiles[neighbor]);
-            }
-        }
-        var rng = new System.Random(seed);
-        for (int i = count - 1; i > 0; i--) { int j = rng.Next(i + 1); (order[i], order[j]) = (order[j], order[i]); }
-        // Allocate tallest first, and never create a tall section without a direct tall-room entrance.
-        for (int height = 3; height >= 2; height--)
-        {
-            int remaining = 0;
-            foreach (int value in requested) if (value == height) remaining++;
-            foreach (int index in order)
-            {
-                if (remaining == 0) break;
-                if (CorridorHeightTiles[index] != 1 || adjacentHeight[index] < height) continue;
-                CorridorHeightTiles[index] = height;
-                remaining--;
-            }
-        }
-    }
     DungeonRoomProfile[] profiles;
     public double GenerationMilliseconds { get; private set; }
     // Room profile > biome > level. Unity's null check, not ??: empty references can be non-null wrappers.
@@ -233,12 +180,15 @@ public partial class DungeonGenerator : MonoBehaviour
 
     void BuildArchitecture(TableLevelData level, int seed, int floorNumber, System.Diagnostics.Stopwatch watch)
     {
-        RoomHeightTiles = SelectRoomHeights(Layout.rooms.Count, seed, level.twoTileRoomPercent, level.threeTileRoomPercent);
-        for (int i = 0; i < RoomHeightTiles.Length; i++) { var t = TemplateOf(i); if (t != null && t.heightTiles > 0) RoomHeightTiles[i] = t.heightTiles; }
+        // Rooms are one tile high: only a template that asks for more is taller (for effect), never a generated room.
+        RoomHeightTiles = new int[Layout.rooms.Count];
+        for (int i = 0; i < RoomHeightTiles.Length; i++) { var t = TemplateOf(i); RoomHeightTiles[i] = t != null ? Mathf.Max(1, t.heightTiles) : 1; }
         if (Authored && level.authoredRooms != null)
             for (int i = 0; i < RoomHeightTiles.Length && i < level.authoredRooms.Length; i++)
                 if (level.authoredRooms[i] != null && level.authoredRooms[i].height > 0) RoomHeightTiles[i] = level.authoredRooms[i].height;
-        SelectCorridorHeights(unchecked(seed + 3571));
+        // Corridors are always one tile high.
+        CorridorHeightTiles = new int[Layout.CorridorCount];
+        for (int i = 0; i < CorridorHeightTiles.Length; i++) CorridorHeightTiles[i] = 1;
         RegionStyles = new DungeonRoomStyle[Layout.RegionCount];
         var styleRandom = new System.Random(unchecked(seed + 15485863));
         var roomStyles = Both(level.roomStyles, Biome != null ? Biome.roomStyles : null); var corridorStyles = Both(level.corridorStyles, Biome != null ? Biome.corridorStyles : null);

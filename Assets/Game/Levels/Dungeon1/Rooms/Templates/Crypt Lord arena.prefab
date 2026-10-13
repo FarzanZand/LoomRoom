@@ -241,6 +241,7 @@ MonoBehaviour:
   type: 0
   chance: 0.5
   overridePrefab: {fileID: 0}
+  archer: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &2275175101673650287
@@ -290,6 +291,7 @@ MonoBehaviour:
   type: 0
   chance: 0.5
   overridePrefab: {fileID: 0}
+  archer: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &2595768016994287474
@@ -339,6 +341,7 @@ MonoBehaviour:
   type: 2
   chance: 0.8
   overridePrefab: {fileID: 0}
+  archer: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &3959014872587702559
@@ -485,6 +488,7 @@ MonoBehaviour:
   type: 1
   chance: 1
   overridePrefab: {fileID: 0}
+  archer: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &6094011178556838177
@@ -561,11 +565,14 @@ MonoBehaviour:
   rows: []
   minimumCells: {x: 8, y: 8}
   style: {fileID: 0}
-  heightTiles: 0
+  heightTiles: 2
   openCeiling: 0
   ceilingFrame: 0.35
+  skylightRadius: 0
   replaceGeneratedProps: 1
+  addFurnishing: 0
   replaceGeneratedEnemies: 1
+  roomEvent: 0
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -618,6 +625,7 @@ MonoBehaviour:
   type: 3
   chance: 1
   overridePrefab: {fileID: 0}
+  archer: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1001 &1174088559287559802

@@ -43,7 +43,7 @@ public class DungeonRoomTemplate : MonoBehaviour
     [Title("Architecture")]
     [Tooltip("Walls, floor and ceiling for this room. Empty keeps the profile's or the level's choice.")]
     public DungeonRoomStyle style;
-    [Range(0, 3), Tooltip("Room height in wall tiles. 0 lets the generator choose.")]
+    [Range(0, 3), Tooltip("Room height in wall tiles. Rooms and corridors are one tile high; set 2 or 3 only for a room that is tall for effect (a gallery, a chapel). 0 = 1.")]
     public int heightTiles;
 
     [Tooltip("A very large skylight over the whole room: only a thin frame of ceiling stays, so the room above shows through. The starting room uses it for the way in.")]
