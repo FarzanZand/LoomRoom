@@ -29,7 +29,9 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     bool opened;
     float health = 10;
     public string Prompt => chest ? $"Open {chestName}" : "Break supply barrel";
-    public bool CanInteract(Character who) => !opened && who is Player;
+    // The table player only: the room player's reach (room-sized) covers the whole table, so a watcher in the room
+    // would otherwise open chests down there.
+    public bool CanInteract(Character who) => !opened && DungeonFeatureUtility.TablePlayer(who) != null;
     public void Interact(Character who) { if (chest && CanInteract(who)) Open(); }
     public void TakeDamage(DamageInfo info)
     {

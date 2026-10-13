@@ -1031,6 +1031,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     {
         if (!Spectating) return;
         foreach (var p in players) if (p != null && !p.IsOwner) p.Avatar.LightBoost = 1f;
+        watchSide = -1;
         Spectating = false;
         SetCutaway(false);
         if (InputManager.HasInstance) InputManager.Instance.PrimaryPressed -= WatchNext;
@@ -1057,16 +1058,20 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         LightingManager.RadiusCentre = target != null && inRoom ? target.transform.position + Vector3.up * 1.6f : (Vector3?)null;
         LightingManager.RadiusScale = spectatorLightRadius;
         foreach (var p in players) if (p != null && !p.IsOwner) p.Avatar.LightBoost = p == target && inRoom ? spectatorLightBoost : 1f;
-        // Along the table's west side (the players' side), level with the one being watched.
+        // Round the table to the side nearest the one being watched, level with them, so the view always looks down
+        // on them (from the far side of the table it would be nearly flat).
         if (room != null && target != null && spectatorSlide > 0 && TableManager.HasInstance && GameManager.HasInstance && GameManager.Instance.GameplayActive)
         {
             var table = TableManager.Instance.GetComponent<BoxCollider>();
             if (table != null)
             {
-                var b = table.bounds;
-                var want = new Vector3(b.min.x - spectatorEdgeGap, room.transform.position.y, Mathf.Clamp(target.transform.position.z, b.min.z + 6f, b.max.z - 6f));
+                int side = watchSide;
+                var want = WatchSpot(room, table.bounds, target.transform.position);
                 var now = room.transform.position;
-                if ((want - now).sqrMagnitude > 4f) room.Warp(Vector3.MoveTowards(now, want, spectatorSlide * Time.unscaledDeltaTime));
+                // A new side is a cut (sliding across would go through the table, whose collider pushes the body back);
+                // along a side the view slides.
+                if (side != watchSide) room.Warp(want);
+                else if ((want - now).sqrMagnitude > 4f) room.Warp(Vector3.MoveTowards(now, want, spectatorSlide * Time.unscaledDeltaTime));
             }
         }
         if (room != null && room.Look != null && target != null && spectatorFollow > 0 && GameManager.HasInstance && GameManager.Instance.GameplayActive)
@@ -1076,6 +1081,36 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             room.Look.SetYaw(Mathf.LerpAngle(room.Look.YawTransform.eulerAngles.y, yaw, k));
             room.Look.SetPitch(Mathf.Lerp(room.Look.Pitch, pitch, k));
         }
+    }
+
+    int watchSide = -1;
+
+    // The spot beside the table nearest the teammate: on one of its four sides, the edge gap out, level with them,
+    // where the eye is clear of walls and furniture. Keeps its side until another is clearly nearer.
+    Vector3 WatchSpot(Player room, Bounds b, Vector3 target)
+    {
+        float y = room.transform.position.y;
+        float eyeUp = room.Look != null ? room.Look.PitchTransform.position.y - y : 0f;
+        Vector3 Spot(int side) => side switch
+        {
+            0 => new Vector3(b.min.x - spectatorEdgeGap, y, Mathf.Clamp(target.z, b.min.z + 6f, b.max.z - 6f)),
+            1 => new Vector3(b.max.x + spectatorEdgeGap, y, Mathf.Clamp(target.z, b.min.z + 6f, b.max.z - 6f)),
+            2 => new Vector3(Mathf.Clamp(target.x, b.min.x + 6f, b.max.x - 6f), y, b.min.z - spectatorEdgeGap),
+            _ => new Vector3(Mathf.Clamp(target.x, b.min.x + 6f, b.max.x - 6f), y, b.max.z + spectatorEdgeGap),
+        };
+        int mask = ~(1 << room.gameObject.layer);
+        bool Clear(Vector3 at) => !Physics.CheckSphere(at + Vector3.up * eyeUp, 4f, mask, QueryTriggerInteraction.Ignore);
+        float Flat(Vector3 a) { a -= target; a.y = 0; return a.magnitude; }
+        int best = watchSide; float bestD = watchSide >= 0 && Clear(Spot(watchSide)) ? Flat(Spot(watchSide)) * .8f : float.MaxValue;
+        for (int side = 0; side < 4; side++)
+        {
+            if (side == watchSide) continue;
+            var at = Spot(side);
+            float d = Flat(at);
+            if (d < bestD && Clear(at)) { bestD = d; best = side; }
+        }
+        watchSide = best >= 0 ? best : 0;
+        return Spot(watchSide);
     }
 
     static readonly int CutawayId = Shader.PropertyToID("_LoomCutaway");

@@ -103,7 +103,7 @@ public class PlaytestBot : MonoBehaviour
 
         if (loader.FloorNumber != lastFloor)
         {
-            lastFloor = loader.FloorNumber; floorStartedAt = Time.time; visited.Clear(); unreachable.Clear(); lastRoom = -2;
+            lastFloor = loader.FloorNumber; floorStartedAt = Time.time; visited.Clear(); unreachable.Clear(); doorsTried.Clear(); doorGoal = null; lastRoom = -2;
             Write($"FLOOR {lastFloor}: {RoomCount(loader.Dungeon.Layout)} rooms, {EnemyBrain.Active.Count} enemies");
             player.Damaged -= OnHurt; player.Damaged += OnHurt;
         }
@@ -128,7 +128,7 @@ public class PlaytestBot : MonoBehaviour
     // The layout's rooms (corridors are the regions after them).
     static int RoomCount(DungeonLayout layout) => layout.RegionCount - layout.CorridorCount;
 
-    float nextSync;
+    float nextSync, nextStairsPress;
     bool spellGiven;
 
     // What both players should agree on, every five seconds (co-op logs from two machines are compared line by line).
@@ -150,6 +150,8 @@ public class PlaytestBot : MonoBehaviour
         tome = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(Spell);
 #endif
         if (tome == null || player.Equipment == null) { Write($"no spell tome at {Spell}"); return; }
+        // A hand item is held from the hotbar.
+        if (player.Hotbar.IndexOf(tome) < 0 && !player.Hotbar.TryAdd(tome)) { Write("no hotbar room for the tome"); return; }
         bool ok = player.Equipment.Equip(tome, false, true);
         Write($"SPELL tome {tome.name} in hand: {ok}");
     }
@@ -288,6 +290,8 @@ public class PlaytestBot : MonoBehaviour
 
     void Explore(DungeonGenerator dungeon, TableLevelLoader loader)
     {
+        // On the way to a door: only that, until it is open or given up.
+        if (doorGoal != null && !doorGoal.IsOpen) { doing = $"to door {doorGoal.name}"; GoToDoor(); return; }
         var layout = dungeon.Layout;
         bool seenAll = visited.Count + unreachable.Count >= RoomCount(layout);
         bool tooLong = Time.time - floorStartedAt > 240f;
@@ -300,6 +304,14 @@ public class PlaytestBot : MonoBehaviour
                 string what = "to the stairs";
                 if (doing != what) Write($"{what} ({(seenAll ? "every room seen" : "floor taking too long")}, {Vector3.Distance(exit.transform.position, player.transform.position):0} m)");
                 doing = what; goalName = exit.name;
+                // Close enough for its prompt: look at it and press interact, as a player does.
+                if (Vector3.Distance(Flat(exit.transform.position), Flat(player.transform.position)) < 2.2f)
+                {
+                    SetMove(Vector2.zero);
+                    Aim(exit.transform.position);
+                    if (Time.time > nextStairsPress) { nextStairsPress = Time.time + 1f; Interact(); Write("STAIRS pressed interact"); }
+                    return;
+                }
                 if (!Walk(exit.transform.position, true)) DoorOrJump();
                 return;
             }
@@ -328,9 +340,12 @@ public class PlaytestBot : MonoBehaviour
         if (Time.time > nextPath || goal != to)
         {
             goal = to; nextPath = Time.time + .5f;
-            NavMesh.SamplePosition(player.transform.position, out var from, 2f, NavMesh.AllAreas);
-            NavMesh.SamplePosition(to, out var dest, 3f, NavMesh.AllAreas);
-            if (!NavMesh.CalculatePath(from.position, dest.hit ? dest.position : to, NavMesh.AllAreas, path)) path.ClearCorners();
+            // Off the NavMesh for a moment (mid-jump, on a chest): keep the last path.
+            if (NavMesh.SamplePosition(player.transform.position, out var from, 2f, NavMesh.AllAreas))
+            {
+                NavMesh.SamplePosition(to, out var dest, 3f, NavMesh.AllAreas);
+                if (!NavMesh.CalculatePath(from.position, dest.hit ? dest.position : to, NavMesh.AllAreas, path)) path.ClearCorners();
+            }
             corner = 1;
         }
         var corners = path.corners;
@@ -358,28 +373,60 @@ public class PlaytestBot : MonoBehaviour
 
     // A closed door close in front: open it; else hop. At most every second and a half (a door takes a moment).
     float nextUnstick;
+    // The way on is shut: walk to the nearest closed door it can reach (a closed door cuts the NavMesh, so its path
+    // ends short of the room behind) and open it, as a player would; else hop.
+    DungeonDoor doorGoal;
+    readonly HashSet<DungeonDoor> doorsTried = new();
     bool DoorOrJump()
     {
+        if (doorGoal != null && !doorGoal.IsOpen) return GoToDoor();
+        doorGoal = null;
         if (Time.time < nextUnstick) return true;
         nextUnstick = Time.time + 1.5f;
-        DungeonDoor door = null; float bestD = 3.5f;
+        float bestD = 30f;
         foreach (var d in Object.FindObjectsByType<DungeonDoor>())
         {
-            if (d == null || d.IsOpen) continue;
+            if (d == null || d.IsOpen || doorsTried.Contains(d)) continue;
             float dist = Vector3.Distance(d.transform.position, player.transform.position);
-            if (dist < bestD) { bestD = dist; door = d; }
+            if (dist < bestD && Mathf.Abs(d.transform.position.y - player.transform.position.y) < 2f) { bestD = dist; doorGoal = d; }
         }
-        if (door != null)
-        {
-            Aim(door.transform.position + Vector3.up);
-            SetMove(Vector2.zero);
-            Interact();
-            doors++;
-            Write($"DOOR {door.name} {(door.IsOpen ? "opened" : "did not open")}");
-            return true;
-        }
+        if (doorGoal != null) { Write($"to door {doorGoal.name} ({bestD:0.0} m)"); doorGoalAt = Time.time; return GoToDoor(); }
         Event("jumpQueued", typeof(PlayerMotor), player.Motor);
         return false;
+    }
+
+    float doorGoalAt;
+
+    bool GoToDoor()
+    {
+        var door = doorGoal;
+        if (Time.time - doorGoalAt > 15f) { Write($"door {door.name} not reached"); doorsTried.Add(door); doorGoal = null; return false; }
+        float d = Vector3.Distance(Flat(door.transform.position), Flat(player.transform.position));
+        if (d > 2f)
+        {
+            // Path to the door's near side (the door itself cuts the mesh).
+            if (Time.time > nextPath || goal != door.transform.position)
+            {
+                goal = door.transform.position; nextPath = Time.time + .5f;
+                if (NavMesh.SamplePosition(player.transform.position, out var from, 2f, NavMesh.AllAreas) && NavMesh.SamplePosition(door.transform.position, out var near, 3f, NavMesh.AllAreas))
+                    NavMesh.CalculatePath(from.position, near.position, NavMesh.AllAreas, path);
+                corner = 1;
+            }
+            var corners = path.corners;
+            var next = corners.Length > 1 ? corners[Mathf.Min(corner, corners.Length - 1)] : door.transform.position;
+            if (corners.Length > 1 && Vector3.Distance(Flat(next), Flat(player.transform.position)) < .6f && corner < corners.Length - 1) corner++;
+            AimFlat(corners.Length > 1 && Vector3.Distance(Flat(corners[^1]), Flat(player.transform.position)) > .8f ? next : door.transform.position);
+            SetMove(new Vector2(0, 1));
+            return true;
+        }
+        SetMove(Vector2.zero);
+        Aim(door.transform.position + Vector3.up);
+        Interact();
+        doors++;
+        Write($"DOOR {door.name} {(door.IsOpen ? "opened" : "pressed, still shut")}");
+        if (door.IsOpen && unreachable.Count > 0) { Write($"retrying {unreachable.Count} rooms given up"); unreachable.Clear(); }
+        if (!door.IsOpen) { doorsTried.Add(door); doorGoal = null; }
+        return true;
     }
 
     // ── Input, the way the devices give it ────────────────────────────

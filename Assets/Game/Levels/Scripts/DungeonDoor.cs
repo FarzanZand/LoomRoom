@@ -37,7 +37,8 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
     // The moment it starts to open (board-game levels lay out what lies behind it).
     public event System.Action<DungeonDoor> Opened;
     public string Prompt=>open ? "Door open" : "Open dungeon door";
-    public bool CanInteract(Character who)=>!open && who!=null && who.IsAlive && (who is Player || HasAccess(who));
+    // The table player (not the room player, whose room-sized reach covers the table) or an enemy that may use it.
+    public bool CanInteract(Character who)=>!open && who!=null && who.IsAlive && (DungeonFeatureUtility.TablePlayer(who)!=null || HasAccess(who));
     static bool HasAccess(Character who) { var access=who.GetComponent<DungeonDoorAccess>(); return access!=null && access.isActiveAndEnabled; }
     Quaternion closedRotation, swingTarget;
     void Awake(){closedPosition=leaf.localPosition;closedRotation=leaf.localRotation;swingTarget=closedRotation*Quaternion.Euler(0,swingDegrees,0);}

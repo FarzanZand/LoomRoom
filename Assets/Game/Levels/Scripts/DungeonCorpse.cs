@@ -13,7 +13,7 @@ public class DungeonCorpse : MonoBehaviour, IInteractable
     InteractableTrigger trigger;
 
     public string Prompt => "Search the " + (character != null ? character.DisplayName : "body");
-    public bool CanInteract(Character who) => filled && !searched && who is Player;
+    public bool CanInteract(Character who) => filled && !searched && DungeonFeatureUtility.TablePlayer(who) != null;
 
     public void Fill(IReadOnlyList<LootSource.Drop> loot, int coins)
     {
