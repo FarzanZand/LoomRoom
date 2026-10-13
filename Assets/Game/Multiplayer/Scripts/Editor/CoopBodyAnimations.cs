@@ -68,6 +68,10 @@ public static class CoopBodyAnimations
             clips["BlockRaise"] = Bake("Block_Raise", "Coop Block Raise", Side.Left, false);
             clips["Block"] = Bake("BlockIdle", "Coop Block", Side.Left, true);
             clips["Bash"] = Bake("Shield_Bash", "Coop Shield Bash", Side.Left, false);
+            clips["RestRight"] = RestPose(animator, idle, "Coop Rest (right)", Side.Right, overwrite);
+            clips["RestLeft"] = RestPose(animator, idle, "Coop Rest (left)", Side.Left, overwrite);
+            clips["RestRightMoving"] = RestPose(animator, idle, "Coop Rest moving (right)", Side.Right, overwrite, GuardMoving);
+            clips["RestLeftMoving"] = RestPose(animator, idle, "Coop Rest moving (left)", Side.Left, overwrite, GuardMoving);
             clips["CrouchIdle"] = CrouchIdle(animator, idle, overwrite);
             clips["CrouchWalk"] = CrouchWalk(walk, overwrite);
         }
@@ -138,6 +142,50 @@ public static class CoopBodyAnimations
         return clip;
     }
 
+    // Armed and doing nothing: a low guard (the first-person idle spreads the arms wide, which reads oddly from
+    // outside): the sword held up in front, angled out, the shield across the front of the body. Offsets from the
+    // third-person idle; the legs walk, run and crouch under it.
+    static readonly (string muscle, float offset)[] Guard =
+    {
+        ("Right Arm Front-Back", -.25f), ("Right Forearm Stretch", -.45f), ("Right Forearm Twist In-Out", .3f),
+        ("Left Arm Front-Back", -.3f), ("Left Forearm Stretch", -.6f), ("Left Arm Down-Up", .1f),
+    };
+
+    // Walking and running lean the chest forward; the arms come back a little so the guard reads the same.
+    static readonly (string muscle, float offset)[] GuardMoving =
+    {
+        ("Right Arm Front-Back", .05f), ("Right Forearm Stretch", -.85f), ("Right Forearm Twist In-Out", .2f),
+        ("Left Arm Front-Back", -.05f), ("Left Forearm Stretch", -.9f), ("Left Arm Down-Up", .15f),
+    };
+
+    static AnimationClip RestPose(Animator animator, AnimationClip idle, string name, Side side, bool overwrite) => RestPose(animator, idle, name, side, overwrite, Guard);
+
+    static AnimationClip RestPose(Animator animator, AnimationClip idle, string name, Side side, bool overwrite, (string muscle, float offset)[] guard)
+    {
+        string path = $"{Folder}/{name}.anim";
+        var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+        if (existing != null && !overwrite) return existing;
+        var handler = new HumanPoseHandler(animator.avatar, animator.transform);
+        var pose = new HumanPose();
+        idle.SampleAnimation(animator.gameObject, 0f);
+        handler.GetHumanPose(ref pose);
+        handler.Dispose();
+        foreach (var (muscle, offset) in guard) { int i = System.Array.IndexOf(HumanTrait.MuscleName, muscle); if (i >= 0) pose.muscles[i] += offset; }
+        var clip = existing != null ? existing : new AnimationClip();
+        clip.ClearCurves();
+        for (int i = 0; i < HumanTrait.MuscleCount; i++)
+        {
+            if (!Keeps(HumanTrait.MuscleName[i], side)) continue;
+            AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve("", typeof(Animator), HumanTrait.MuscleName[i]), AnimationCurve.Constant(0f, 1f, pose.muscles[i]));
+        }
+        var settings = AnimationUtility.GetAnimationClipSettings(clip);
+        settings.loopTime = true;
+        AnimationUtility.SetAnimationClipSettings(clip, settings);
+        if (existing == null) AssetDatabase.CreateAsset(clip, path);
+        else EditorUtility.SetDirty(clip);
+        return clip;
+    }
+
     static bool Keeps(string muscle, Side side)
     {
         bool right = muscle.StartsWith("Right Shoulder") || muscle.StartsWith("Right Arm") || muscle.StartsWith("Right Forearm") || muscle.StartsWith("Right Hand") || muscle.StartsWith("RightHand.");
@@ -201,10 +249,10 @@ public static class CoopBodyAnimations
         var source = AssetDatabase.LoadAssetAtPath<AnimatorController>(Source);
         if (AssetDatabase.LoadAssetAtPath<Object>(ControllerPath) != null) AssetDatabase.DeleteAsset(ControllerPath);
         var c = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
-        foreach (var p in new[] { "MoveX", "MoveZ", "Speed", "MotionSpeed", "HurtSpeed" }) c.AddParameter(p, AnimatorControllerParameterType.Float);
+        foreach (var p in new[] { "MoveX", "MoveZ", "Speed", "MotionSpeed", "HurtSpeed", "LocoSpeed" }) c.AddParameter(p, AnimatorControllerParameterType.Float);
         foreach (var p in new[] { "Grounded", "Crouch", "Armed", "Charge", "Block", "Dead" }) c.AddParameter(p, AnimatorControllerParameterType.Bool);
         foreach (var p in new[] { "SwingA", "SwingB", "SwingHeavy", "Bash", "CastSpell", "Hurt", "Death", "Sit", "Stand" }) c.AddParameter(p, AnimatorControllerParameterType.Trigger);
-        c.parameters = c.parameters.Select(p => { if (p.name == "Grounded") p.defaultBool = true; if (p.name == "HurtSpeed" || p.name == "MotionSpeed") p.defaultFloat = 1f; return p; }).ToArray();
+        c.parameters = c.parameters.Select(p => { if (p.name == "Grounded") p.defaultBool = true; if (p.name == "HurtSpeed" || p.name == "MotionSpeed" || p.name == "LocoSpeed") p.defaultFloat = 1f; return p; }).ToArray();
 
         // Base layer: walking (the enemies' own blend), crouching, the jump, sitting and death.
         var sm = c.layers[0].stateMachine;
@@ -218,6 +266,8 @@ public static class CoopBodyAnimations
         }
         var walk = Copy("IdleWalkRunBT", new Vector3(300, 0));
         walk.name = "Locomotion";
+        // Players move faster than the clips step (CoopAvatar sets LocoSpeed so the feet keep up).
+        walk.speedParameter = "LocoSpeed"; walk.speedParameterActive = true;
         sm.defaultState = walk;
 
         var crouch = sm.AddState("Crouch", new Vector3(300, 120));
@@ -226,6 +276,7 @@ public static class CoopBodyAnimations
         crouchTree.AddChild(clips["CrouchIdle"], 0f);
         crouchTree.AddChild(clips["CrouchWalk"], 1.2f);
         crouch.motion = crouchTree;
+        crouch.speedParameter = "LocoSpeed"; crouch.speedParameterActive = true;
         Transition(walk, crouch, .15f, ("Crouch", true));
         Transition(crouch, walk, .15f, ("Crouch", false));
 
@@ -261,12 +312,18 @@ public static class CoopBodyAnimations
         var heavy = State(right, "Swing Heavy", clips["Heavy"], new Vector3(650, 240));
         var hurt = State(right, "Hurt", clips["Hurt"], new Vector3(650, 120));
         hurt.speedParameter = "HurtSpeed"; hurt.speedParameterActive = true;
-        Transition(rEmpty, rReady, .2f, ("Armed", true));
-        Transition(rReady, rEmpty, .2f, ("Armed", false));
-        Transition(rReady, windup, .06f, ("Charge", true));
+        // Armed: the low guard (Rest); in the room the arms are the walk's own (Empty). The first-person idle (Ready)
+        // reads as arms spread wide from outside and is kept only for hand edits.
+        var rRest = State(right, "Rest", RestTree(c, "Rest (right)", clips["RestRight"], clips["RestRightMoving"]), new Vector3(550, 0));
+        Transition(rEmpty, rRest, .2f, ("Armed", true));
+        Transition(rRest, rEmpty, .2f, ("Armed", false));
+        Transition(rRest, windup, .08f, ("Charge", true));
+        Transition(rEmpty, windup, .08f, ("Charge", true));
         var held = windup.AddTransition(hold); held.hasExitTime = true; held.exitTime = 1f; held.duration = .05f;
-        Transition(windup, rReady, .1f, ("Charge", false));
-        Transition(hold, rReady, .1f, ("Charge", false));
+        Transition(windup, rRest, .12f, ("Charge", false), ("Armed", true));
+        Transition(windup, rEmpty, .12f, ("Charge", false));
+        Transition(hold, rRest, .12f, ("Charge", false), ("Armed", true));
+        Transition(hold, rEmpty, .12f, ("Charge", false));
         // Every release starts at once, from wherever the arm is, even over the last one.
         Any(right, heavy, "SwingHeavy", .03f, true);
         Any(right, swingA, "SwingA", .03f, true);
@@ -275,8 +332,8 @@ public static class CoopBodyAnimations
         foreach (var st in new[] { swingA, swingB, heavy, hurt })
         {
             Done(st, windup, ("Charge", true));
-            Done(st, rReady, ("Armed", true));
-            Done(st, rEmpty);
+            Back(st, rRest, ("Armed", true));
+            Back(st, rEmpty);
         }
 
         var left = ArmLayer(c, "Left arm", Mask("Coop left arm", Side.Left));
@@ -287,21 +344,35 @@ public static class CoopBodyAnimations
         var block = State(left, "Block", clips["Block"], new Vector3(0, 240));
         var bash = State(left, "Shield Bash", clips["Bash"], new Vector3(300, 240));
         var cast = State(left, "Cast", AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Game/Characters/Animations/ThirdPerson/Gestures/CastSpell.anim"), new Vector3(600, 240));
-        Transition(lEmpty, lReady, .2f, ("Armed", true));
-        Transition(lReady, lEmpty, .2f, ("Armed", false));
-        Transition(lReady, raise, .04f, ("Block", true));
+        var lRest = State(left, "Rest", RestTree(c, "Rest (left)", clips["RestLeft"], clips["RestLeftMoving"]), new Vector3(550, 0));
+        Transition(lEmpty, lRest, .2f, ("Armed", true));
+        Transition(lRest, lEmpty, .2f, ("Armed", false));
+        Transition(lRest, raise, .05f, ("Block", true));
+        Transition(lEmpty, raise, .05f, ("Block", true));
         var raised = raise.AddTransition(block); raised.hasExitTime = true; raised.exitTime = 1f; raised.duration = .03f;
-        Transition(raise, lReady, .1f, ("Block", false));
-        Transition(block, lReady, .12f, ("Block", false));
+        Transition(raise, lRest, .12f, ("Block", false), ("Armed", true));
+        Transition(raise, lEmpty, .12f, ("Block", false));
+        Transition(block, lRest, .15f, ("Block", false), ("Armed", true));
+        Transition(block, lEmpty, .15f, ("Block", false));
         Any(left, bash, "Bash", .03f, true);
         Any(left, cast, "CastSpell", .08f, false);
         foreach (var st in new[] { bash, cast })
         {
             Done(st, block, ("Block", true));
-            Done(st, lReady, ("Armed", true));
-            Done(st, lEmpty);
+            Back(st, lRest, ("Armed", true));
+            Back(st, lEmpty);
         }
         EditorUtility.SetDirty(c);
+    }
+
+    // Standing guard to moving guard by speed (Speed is metres a second on foot).
+    static BlendTree RestTree(AnimatorController c, string name, Motion still, Motion moving)
+    {
+        var tree = new BlendTree { name = name, blendType = BlendTreeType.Simple1D, blendParameter = "Speed", useAutomaticThresholds = false, hideFlags = HideFlags.HideInHierarchy };
+        AssetDatabase.AddObjectToAsset(tree, c);
+        tree.AddChild(still, 0f);
+        tree.AddChild(moving, 3f);
+        return tree;
     }
 
     static AnimatorStateMachine ArmLayer(AnimatorController c, string name, AvatarMask mask)
@@ -338,6 +409,15 @@ public static class CoopBodyAnimations
     {
         var t = from.AddTransition(to);
         t.hasExitTime = true; t.exitTime = .95f; t.duration = .08f;
+        foreach (var (param, value) in when) t.AddCondition(value ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, param);
+    }
+
+    // Out of a one-shot into the resting arms before its last fifth (the first-person clips end in the first-person
+    // idle, which should not show), blended over that fifth.
+    static void Back(AnimatorState from, AnimatorState to, params (string param, bool value)[] when)
+    {
+        var t = from.AddTransition(to);
+        t.hasExitTime = true; t.exitTime = .8f; t.duration = .2f; t.hasFixedDuration = false;
         foreach (var (param, value) in when) t.AddCondition(value ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, param);
     }
 

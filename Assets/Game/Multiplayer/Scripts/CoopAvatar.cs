@@ -29,9 +29,11 @@ public class CoopAvatar : MonoBehaviour
 
     static readonly int MoveX = Animator.StringToHash("MoveX"), MoveZ = Animator.StringToHash("MoveZ"), Speed = Animator.StringToHash("Speed"),
         MotionSpeed = Animator.StringToHash("MotionSpeed"), Grounded = Animator.StringToHash("Grounded"), Crouch = Animator.StringToHash("Crouch"),
-        Charge = Animator.StringToHash("Charge"), Armed = Animator.StringToHash("Armed"), Block = Animator.StringToHash("Block"), HurtSpeed = Animator.StringToHash("HurtSpeed"), Dead = Animator.StringToHash("Dead");
+        Charge = Animator.StringToHash("Charge"), Armed = Animator.StringToHash("Armed"), LocoSpeed = Animator.StringToHash("LocoSpeed"), Block = Animator.StringToHash("Block"), HurtSpeed = Animator.StringToHash("HurtSpeed"), Dead = Animator.StringToHash("Dead");
 
     public Animator Animator => animator;
+    // How fast the locomotion clips step, in metres a second (measured from the foot's travel).
+    const float WalkClip = 1.8f, RunClip = 2.9f, CrouchClip = .8f;
     // A dead player watching this one sees its light brighter and wider (MultiplayerManager.spectatorLightBoost).
     public float LightBoost { get; set; } = 1f;
 
@@ -86,9 +88,17 @@ public class CoopAvatar : MonoBehaviour
         velocity = Vector3.Lerp(velocity, moved, 1f - Mathf.Exp(-12f * dt));
         var flat = velocity; flat.y = 0;
         var local = transform.InverseTransformDirection(flat) / builtScale;
-        animator.SetFloat(MoveX, local.x, .08f, dt);
-        animator.SetFloat(MoveZ, local.z, .08f, dt);
-        animator.SetFloat(Speed, local.magnitude, .08f, dt);
+        // The clips step at their own pace (walk about 1.8 m/s, run 2.9, crouched walk 0.8; players walk 3.6, sprint 6
+        // and sneak 1.75): blend by speed up to the run, then play faster so the feet keep up (to a limit).
+        float speed = local.magnitude;
+        float blend = speed <= WalkClip ? .9f * speed / WalkClip : speed <= RunClip ? Mathf.Lerp(.9f, 2.6f, (speed - WalkClip) / (RunClip - WalkClip)) : 2.6f;
+        var dir = speed > .01f ? local / speed : Vector3.zero;
+        bool crouched = s.crouching;
+        float pace = crouched ? Mathf.Max(1f, speed / CrouchClip) : Mathf.Max(1f, speed / RunClip);
+        animator.SetFloat(MoveX, dir.x * blend, .08f, dt);
+        animator.SetFloat(MoveZ, dir.z * blend, .08f, dt);
+        animator.SetFloat(Speed, crouched ? Mathf.Min(1.2f, 1.2f * speed / CrouchClip) : speed, .08f, dt);
+        animator.SetFloat(LocoSpeed, Mathf.Min(2.2f, pace), .15f, dt);
         animator.SetFloat(MotionSpeed, local.magnitude > .1f ? 1f : 0f);
         // What the player does, as they do it (the body's own controller, Build Body Animations).
         bool onTable = s.place == CoopPlace.Table;

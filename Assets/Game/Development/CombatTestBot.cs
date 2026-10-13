@@ -364,16 +364,17 @@ public class CombatTestBot : MonoBehaviour
         {
             yield return new WaitForEndOfFrame();
             var shot = ScreenCapture.CaptureScreenshotAsTexture();
-            var small = new RenderTexture(shot.width / 2, shot.height / 2, 0);
+            var was = RenderTexture.active;   // before the Blit, which leaves its target active
+            var small = RenderTexture.GetTemporary(shot.width / 2, shot.height / 2, 0);
             Graphics.Blit(shot, small);
             var half = new Texture2D(small.width, small.height, TextureFormat.RGB24, false);
-            var was = RenderTexture.active; RenderTexture.active = small;
+            RenderTexture.active = small;
             half.ReadPixels(new Rect(0, 0, small.width, small.height), 0, 0); half.Apply();
             RenderTexture.active = was;
             // Named by the wall clock (ms of the day), so two players' recordings on one computer line up.
             long ms = (long)System.DateTime.Now.TimeOfDay.TotalMilliseconds;
             System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, $"{ms:00000000}.jpg"), half.EncodeToJPG(85));
-            Destroy(shot); Destroy(half); small.Release(); Destroy(small);
+            Destroy(shot); Destroy(half); RenderTexture.ReleaseTemporary(small);
             frames++;
         }
         Log($"recorded {frames} frames in {seconds} s to {dir}");
