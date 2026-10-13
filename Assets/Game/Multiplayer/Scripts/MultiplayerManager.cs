@@ -104,8 +104,14 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     // The host's Relay join code (null when hosting by address, or not hosting).
     public string JoinCode { get; private set; }
+    // Why the last try to host or join failed (the co-op screen shows it until the next try).
+    public string LastError { get; private set; }
+
+    void Fail(string message) { LastError = message; NotificationUI.Show(message); }
     // Hosting or joining through Relay is under way.
     public bool Starting { get; private set; }
+    // Reaching the host: the code is being looked up, or the connection is being made.
+    public bool Connecting => Starting || (network != null && network.IsListening && !network.IsServer && !network.IsConnectedClient);
 
     public bool Connected => network != null && network.IsListening && (network.IsServer || network.IsConnectedClient);
     public bool IsHost => network != null && network.IsServer;
@@ -270,6 +276,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     public bool Host()
     {
         if (network == null || network.IsListening || Starting) return false;
+        LastError = null;
         SyncRules();
         bool relay = online;
 #if UNITY_EDITOR
@@ -285,7 +292,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         Transport(address);
         Configure();
         bool ok = network.StartHost();
-        if (!ok) NotificationUI.Show("Could not start a game");
+        if (!ok) Fail("Could not start a game. Is another copy of the game hosting on this computer?");
         return ok;
     }
 
@@ -304,7 +311,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         }
         JoinCode = task.Result;
         Configure();
-        if (!network.StartHost()) { JoinCode = null; NotificationUI.Show("Could not start a game"); yield break; }
+        if (!network.StartHost()) { JoinCode = null; Fail("Could not start a game."); yield break; }
         GUIUtility.systemCopyBuffer = JoinCode;
         NotificationUI.Show($"Join code {JoinCode} (copied)");
         Debug.Log($"[Coop] Hosting online. Join code {JoinCode}");
@@ -313,13 +320,25 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     // A join code (Relay) or an address.
     public bool Join(string target)
     {
+        joinRetries = 0;
+        return JoinTarget(target);
+    }
+
+    string lastTarget;
+    int joinRetries;
+
+    bool JoinTarget(string target)
+    {
         if (network == null || network.IsListening || Starting) return false;
+        LastError = null;
+        lastTarget = target;
+        if (string.IsNullOrWhiteSpace(target)) { Fail("Type the host's join code first."); return false; }
         if (CoopRelay.LooksLikeCode(target)) { StartCoroutine(JoinOnline(target)); return true; }
         JoinCode = null;
         Transport(target);
         Configure();
         bool ok = network.StartClient();
-        if (!ok) NotificationUI.Show("Could not join");
+        if (!ok) Fail("Could not join that address.");
         return ok;
     }
 
@@ -333,11 +352,25 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (task.IsFaulted || task.IsCanceled)
         {
             Debug.LogWarning($"[Coop] Relay join failed: {task.Exception?.GetBaseException().Message}");
-            NotificationUI.Show("No game with that code");
+            var relay = task.Exception?.GetBaseException() as Unity.Services.Relay.RelayServiceException;
+            bool badCode = relay != null && (relay.Reason == Unity.Services.Relay.RelayExceptionReason.JoinCodeNotFound
+                || relay.Reason == Unity.Services.Relay.RelayExceptionReason.InvalidRequest || relay.Reason == Unity.Services.Relay.RelayExceptionReason.InvalidArgument
+                || relay.Reason == Unity.Services.Relay.RelayExceptionReason.AllocationNotFound);
+            Fail(badCode ? "No game with that code. Check it with the host." : "Could not reach the online service. Check your internet connection.");
             yield break;
         }
         Configure();
-        if (!network.StartClient()) NotificationUI.Show("Could not join");
+        if (!network.StartClient()) Fail("Could not join.");
+    }
+
+    IEnumerator RetryJoin()
+    {
+        Debug.Log("[Coop] The connection timed out; trying once more.");
+        Starting = true;   // the screen keeps saying Connecting
+        while (network.IsListening || network.ShutdownInProgress) yield return null;
+        yield return new WaitForSecondsRealtime(.5f);
+        Starting = false;
+        JoinTarget(lastTarget);
     }
 
     void Configure()
@@ -393,6 +426,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             RegisterMessages();
             CoopWorld.Hook();
             joinedOnce = true;
+            LastError = null;
             joinedAt = Time.unscaledTime;
             if (!network.IsServer) StartCoroutine(Joined());
         }
@@ -412,8 +446,19 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         // The guest lost the host (or was refused).
         if (!network.IsServer && (client == network.LocalClientId || client == NetworkManager.ServerClientId))
         {
-            string reason = !string.IsNullOrEmpty(network.DisconnectReason) ? network.DisconnectReason
+            // A refusal carries the host's own reason; the transport's own messages are not for players.
+            string given = network.DisconnectReason;
+            bool fromHost = !string.IsNullOrEmpty(given) && !given.StartsWith("[");
+            // The first connection to a code sometimes times out: try it once more before giving up.
+            if (!joinedOnce && !fromHost && joinRetries < 1 && CoopRelay.LooksLikeCode(lastTarget))
+            {
+                joinRetries++;
+                StartCoroutine(RetryJoin());
+                return;
+            }
+            string reason = fromHost ? given
                 : joinedOnce ? "The host left the game" : "Could not join. Check the code or address, and that the host is still in the game.";
+            if (!joinedOnce) LastError = reason;
             Ended(true, reason);
             return;
         }

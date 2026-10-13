@@ -1,22 +1,44 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// The co-op screen (authored in the scene under the HUD canvas; Tools > LoomRoom > Multiplayer > Set Up Co-op builds it).
-// From the pause menu's Co-op button: host a game, join one by address, leave, and the host's rules. At the start of
-// a new game (IntroController asks MultiplayerManager.NewGameLobby): play alone, host (Begin starts the intro for
-// everyone who has joined) or join someone's game.
+// The co-op screen (authored in the scene under the HUD canvas; Tools > LoomRoom > Multiplayer > Rebuild Co-op Screen
+// builds it). Three pages: Start (your name, host a game, or join one with its code), Your game (the host: the join
+// code, who is in, the rules) and someone else's game (a guest: who is in, the host's rules). Opened from the pause
+// menu's Co-op button, or at the start of a new game (IntroController asks MultiplayerManager.NewGameLobby): there the
+// host's Begin starts the intro for everyone who has joined, and Play alone starts it alone.
 public class CoopMenuUI : MonoBehaviour
 {
     public enum Mode { Pause, NewGame }
 
     [SerializeField] GameObject root;
-    [SerializeField] TMP_Text title, status, playerList;
-    [SerializeField] TMP_InputField address;
+    [SerializeField] TMP_Text title, status;
+    [Tooltip("The status line's colour for something that went wrong (a bad code, a refusal).")]
+    [SerializeField] Color errorColor = new Color(.92f, .45f, .4f);
+
+    [Header("Start page")]
+    [SerializeField] GameObject startPage;
     [Tooltip("This player's name over their head (kept).")]
     [SerializeField] TMP_InputField playerName;
-    [SerializeField] Button hostButton, joinButton, leaveButton, beginButton, aloneButton, closeButton;
+    [SerializeField] TMP_InputField address;
+    [SerializeField] Button hostButton, joinButton;
+
+    [Header("Game page (host and guests)")]
+    [SerializeField] GameObject gamePage;
+    [Tooltip("The join code with its caption and Copy button: the host's only.")]
+    [SerializeField] GameObject codeGroup;
+    [SerializeField] TMP_Text codeCaption, codeText, playersHeader, playerList;
+    [SerializeField] Button copyButton;
+    [SerializeField] GameObject hostRules;
     [SerializeField] Button sharedLootButton, hostAdventurerButton, partyProgressionButton;
+    [Tooltip("A guest's view of the host's rules.")]
+    [SerializeField] TMP_Text guestRules;
+
+    [Header("Bottom row")]
+    [SerializeField] Button beginButton;
+    [SerializeField] Button aloneButton, leaveButton, closeButton;
+    [SerializeField] float bottomY = -300f, bottomSpread = 145f;
 
     public static CoopMenuUI Instance { get; private set; }
     public bool IsOpen => root != null && root.activeSelf;
@@ -24,12 +46,17 @@ public class CoopMenuUI : MonoBehaviour
     // A new game's choice: true once the host pressed Begin (or the player chose to play alone).
     public bool Began { get; private set; }
 
+    enum Page { None, Start, Host, Guest }
+    Page shown;
     bool pushed;
+    Color statusColor;
+    float copiedUntil;
 
     void Awake()
     {
         Instance = this;
         if (root != null) root.SetActive(false);
+        if (status != null) statusColor = status.color;
         Wire(hostButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Host(); });
         Wire(joinButton, Join);
         // Enter in the code box joins.
@@ -38,6 +65,7 @@ public class CoopMenuUI : MonoBehaviour
         Wire(beginButton, Begin);
         Wire(aloneButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Leave(); Began = true; Close(); });
         Wire(closeButton, Close);
+        Wire(copyButton, Copy);
         if (playerName != null)
         {
             if (MultiplayerManager.HasInstance) playerName.text = MultiplayerManager.Instance.playerName;
@@ -48,8 +76,6 @@ public class CoopMenuUI : MonoBehaviour
         Wire(partyProgressionButton, () => Toggle(ref MultiplayerManager.Instance.partyProgression));
     }
 
-    void Join() { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Join(address != null ? address.text : ""); }
-
     void Start() { if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel; }
 
     void OnDestroy()
@@ -59,9 +85,26 @@ public class CoopMenuUI : MonoBehaviour
         Unpush();
     }
 
-    void OnCancel() { if (IsOpen && Current == Mode.Pause && (address == null || !address.isFocused) && (playerName == null || !playerName.isFocused)) Close(); }
+    void OnCancel() { if (IsOpen && Current == Mode.Pause && !Typing) Close(); }
+
+    bool Typing => (address != null && address.isFocused) || (playerName != null && playerName.isFocused);
 
     static void Wire(Button button, UnityEngine.Events.UnityAction action) { if (button != null) button.onClick.AddListener(action); }
+
+    void Join()
+    {
+        if (!MultiplayerManager.HasInstance) return;
+        if (playerName != null) MultiplayerManager.Instance.SetName(playerName.text);
+        MultiplayerManager.Instance.Join(address != null ? address.text : "");
+    }
+
+    void Copy()
+    {
+        var manager = MultiplayerManager.HasInstance ? MultiplayerManager.Instance : null;
+        if (manager == null) return;
+        GUIUtility.systemCopyBuffer = !string.IsNullOrEmpty(manager.JoinCode) ? manager.JoinCode : MultiplayerManager.LocalAddress();
+        copiedUntil = Time.unscaledTime + 2f;
+    }
 
     void Toggle(ref bool rule)
     {
@@ -76,8 +119,9 @@ public class CoopMenuUI : MonoBehaviour
     public void Open(Mode mode)
     {
         if (root == null) return;
-        Current = mode; Began = false;
+        Current = mode; Began = false; shown = Page.None;
         root.SetActive(true);
+        if (playerName != null && MultiplayerManager.HasInstance) playerName.text = MultiplayerManager.Instance.playerName;
         if (!pushed && GameManager.HasInstance) { GameManager.Instance.Push(GameState.Menu); pushed = true; }
         Refresh();
     }
@@ -105,47 +149,92 @@ public class CoopMenuUI : MonoBehaviour
 
     void Refresh()
     {
-        bool running = Coop.Running, host = Coop.IsHost;
         var manager = MultiplayerManager.HasInstance ? MultiplayerManager.Instance : null;
-        if (title != null) title.text = Current == Mode.NewGame ? "NEW GAME" : "CO-OP";
+        if (manager == null) return;
+        bool running = Coop.Running, host = Coop.IsHost, starting = manager.Connecting;
+        var page = !running ? Page.Start : host ? Page.Host : Page.Guest;
+        bool newGame = Current == Mode.NewGame;
+        var hostPlayer = manager.PlayerInSlot(0);
+        string hostName = hostPlayer != null ? hostPlayer.DisplayName : "the host";
+
+        if (startPage != null) startPage.SetActive(page == Page.Start);
+        if (gamePage != null) gamePage.SetActive(page != Page.Start);
+        if (title != null) title.text = page == Page.Host ? "YOUR GAME" : page == Page.Guest ? $"{hostName.ToUpperInvariant()}'S GAME" : newGame ? "NEW GAME" : "CO-OP";
+
+        // The status line: what went wrong, what is happening, or what to do.
+        bool error = page == Page.Start && !starting && !string.IsNullOrEmpty(manager.LastError);
         if (status != null)
-            status.text = manager != null && manager.Starting ? "Connecting..."
-                : !running ? (Current == Mode.NewGame ? "Play alone, host a game for friends, or join one with its code." : "Not in a game. Join with a code or an address.")
-                : host ? (!string.IsNullOrEmpty(manager.JoinCode) ? $"Join code: {manager.JoinCode}  (copied)" : $"Others join with {MultiplayerManager.LocalAddress()}, port {manager.port}.")
-                : "In someone else's game.";
-        if (playerList != null)
         {
-            var text = new System.Text.StringBuilder();
-            if (manager != null && running)
-                foreach (var p in manager.Players) if (p != null) text.AppendLine(p.DisplayName + (p.IsOwner ? " (you)" : ""));
-            // The host alone so far: what to do next.
-            if (manager != null && running && host && manager.Players.Count <= 1)
-                text.Append(!string.IsNullOrEmpty(manager.JoinCode) ? "\nSend the code to your friends." : "\nOthers on your network join with your address.")
-                    .Append(Current == Mode.NewGame ? "\nBegin when everyone is in." : "");
-            playerList.text = text.ToString();
+            status.color = error ? errorColor : statusColor;
+            status.text = error ? manager.LastError
+                : starting ? "Connecting..."
+                : page == Page.Start ? (newGame ? "Start the new game alone, or play it with friends." : "Play this game with friends, or join theirs.")
+                : page == Page.Host ? (manager.Players.Count <= 1 ? "Send the code to your friends." : newGame ? "Press Begin when everyone is in." : "Sit down at the table together to start a run.")
+                : $"You are in {hostName}'s game. The host decides the rules.";
         }
-        bool starting = manager != null && manager.Starting;
-        Show(hostButton, !running && !starting);
-        Show(joinButton, !running && !starting);
-        if (address != null) address.gameObject.SetActive(!running && !starting);
-        Show(leaveButton, running && Current == Mode.Pause);
-        Show(beginButton, Current == Mode.NewGame && host);
-        Show(aloneButton, Current == Mode.NewGame);
-        Show(closeButton, Current == Mode.Pause);
-        // The rules are the host's: shown once this player hosts.
-        bool rules = manager != null && running && host;
-        Rule(sharedLootButton, rules, "Loot", manager != null && manager.sharedLoot ? "shared" : "each their own");
-        Rule(hostAdventurerButton, rules, "Adventurer", manager != null && manager.hostAdventurer ? "the host's" : "each their own");
-        Rule(partyProgressionButton, rules, "Progress saved", manager != null && manager.partyProgression ? "for everyone" : "for the host");
+        if (hostButton != null) hostButton.interactable = !starting;
+        if (joinButton != null) joinButton.interactable = !starting;
+
+        if (page != Page.Start)
+        {
+            if (codeGroup != null) codeGroup.SetActive(page == Page.Host);
+            bool relay = !string.IsNullOrEmpty(manager.JoinCode);
+            if (codeCaption != null) codeCaption.text = relay ? "JOIN CODE" : "YOUR ADDRESS (SAME NETWORK)";
+            if (codeText != null) codeText.text = relay ? manager.JoinCode : MultiplayerManager.LocalAddress();
+            if (copyButton != null) SetLabel(copyButton, Time.unscaledTime < copiedUntil ? "Copied" : "Copy");
+            if (playersHeader != null) playersHeader.text = $"PLAYERS  {manager.Players.Count}/{manager.maxPlayers}";
+            if (playerList != null)
+            {
+                var text = new System.Text.StringBuilder();
+                foreach (var p in manager.Players)
+                    if (p != null) text.AppendLine(p.DisplayName + (p.IsOwner ? " (you)" : p.SlotIndex == 0 ? " (host)" : ""));
+                playerList.text = text.ToString();
+            }
+            if (hostRules != null) hostRules.SetActive(page == Page.Host);
+            if (guestRules != null)
+            {
+                guestRules.gameObject.SetActive(page == Page.Guest);
+                if (page == Page.Guest) guestRules.text = $"{LootRule(manager)}\n{AdventurerRule(manager)}\n{ProgressRule(manager)}";
+            }
+            SetLabel(sharedLootButton, LootRule(manager));
+            SetLabel(hostAdventurerButton, AdventurerRule(manager));
+            SetLabel(partyProgressionButton, ProgressRule(manager));
+        }
+
+        // The bottom row: one centred button, or two side by side.
+        Button left, right = null;
+        if (page == Page.Start) left = newGame ? aloneButton : closeButton;
+        else if (page == Page.Host) { left = newGame ? beginButton : closeButton; right = newGame ? aloneButton : leaveButton; }
+        else { left = closeButton; right = leaveButton; }
+        foreach (var b in new[] { beginButton, aloneButton, leaveButton, closeButton })
+            if (b != null) b.gameObject.SetActive(b == left || b == right);
+        Place(left, right != null ? -bottomSpread : 0f);
+        Place(right, bottomSpread);
+        SetLabel(leaveButton, page == Page.Host ? "Stop hosting" : "Leave the game");
+
+        // A new page: the keyboard and gamepad start on its main button.
+        if (page != shown)
+        {
+            shown = page;
+            var first = page == Page.Start ? hostButton : page == Page.Host ? (newGame ? beginButton : copyButton) : closeButton;
+            if (first != null && EventSystem.current != null) EventSystem.current.SetSelectedGameObject(first.gameObject);
+        }
     }
 
-    static void Show(Button button, bool on) { if (button != null) button.gameObject.SetActive(on); }
-
-    static void Rule(Button button, bool on, string name, string value)
+    void Place(Button button, float x)
     {
         if (button == null) return;
-        button.gameObject.SetActive(on);
-        var label = button.GetComponentInChildren<TMP_Text>();
-        if (label != null) label.text = $"{name}: {value}";
+        ((RectTransform)button.transform).anchoredPosition = new Vector2(x, bottomY);
+    }
+
+    static string LootRule(MultiplayerManager m) => m.Rules.sharedLoot ? "Loot: shared by everyone" : "Loot: everyone finds their own";
+    static string AdventurerRule(MultiplayerManager m) => m.Rules.hostAdventurer ? "Classes: everyone uses the host's" : "Classes: everyone brings their own";
+    static string ProgressRule(MultiplayerManager m) => m.Rules.partyProgression ? "Progress saved: for everyone" : "Progress saved: for the host only";
+
+    static void SetLabel(Button button, string text)
+    {
+        if (button == null) return;
+        var label = button.GetComponentInChildren<TMP_Text>(true);
+        if (label != null && label.text != text) label.text = text;
     }
 }

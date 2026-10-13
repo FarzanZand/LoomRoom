@@ -20,13 +20,26 @@ public static class CoopMenuBuilder
         PauseButton(pause, panel, resume);
         PartyHud(pause.transform.parent);
         if (Object.FindAnyObjectByType<CoopMenuUI>(FindObjectsInactive.Include) != null) return;
+        Screen(pause, screen, panel, resume);
+    }
 
+    [MenuItem("Tools/LoomRoom/Multiplayer/Rebuild Co-op Screen")]
+    public static void Rebuild()
+    {
+        var old = Object.FindAnyObjectByType<CoopMenuUI>(FindObjectsInactive.Include);
+        if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
+        Build();
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+    }
+
+    // The co-op screen: the pause screen's backing and panel with three pages (start, the host's game, a guest's view).
+    static void Screen(PauseMenuUI pause, Transform screen, Transform panel, Transform resume)
+    {
         var menu = new GameObject("Co-op menu", typeof(RectTransform));
         menu.transform.SetParent(pause.transform.parent, false);
         Stretch((RectTransform)menu.transform);
         var ui = menu.AddComponent<CoopMenuUI>();
 
-        // The dim full-screen backing and the panel, as the pause screen has them.
         var root = Object.Instantiate(screen.gameObject, menu.transform);
         root.name = "Co-op screen";
         for (int i = root.transform.childCount - 1; i >= 0; i--) Object.DestroyImmediate(root.transform.GetChild(i).gameObject);
@@ -35,22 +48,27 @@ public static class CoopMenuBuilder
         for (int i = box.transform.childCount - 1; i >= 0; i--) Object.DestroyImmediate(box.transform.GetChild(i).gameObject);
         ((RectTransform)box.transform).sizeDelta = new Vector2(620, 720);
 
-        var title = Copy(panel.Find("Title"), box.transform, "Title", new Vector2(0, 310));
         var hint = panel.Find("Hint");
-        var status = Copy(hint, box.transform, "Status", new Vector2(0, 250), new Vector2(560, 56));
-        status.GetComponent<TMP_Text>().textWrappingMode = TextWrappingModes.Normal;
-        var players = Copy(hint, box.transform, "Players", new Vector2(0, 115), new Vector2(560, 110));
-        players.GetComponent<TMP_Text>().textWrappingMode = TextWrappingModes.Normal;
-
-        var address = AddressField(box.transform, hint.GetComponent<TMP_Text>(), new Vector2(0, 60));
-        var playerName = AddressField(box.transform, hint.GetComponent<TMP_Text>(), new Vector2(0, 200));
-        playerName.name = "Name";
-        playerName.placeholder.GetComponent<TMP_Text>().text = "Your name";
-        playerName.characterLimit = 20;
-
-        Button MakeButton(string name, string label, Vector2 at, float width = 320)
+        var hintText = hint.GetComponent<TMP_Text>();
+        var gold = new Color(.91f, .78f, .48f);
+        Transform Group(string name, Transform parent)
         {
-            var b = Object.Instantiate(resume.gameObject, box.transform);
+            var g = new GameObject(name, typeof(RectTransform));
+            g.transform.SetParent(parent, false);
+            Stretch((RectTransform)g.transform);
+            return g.transform;
+        }
+        TMP_Text Line(string name, Transform parent, string text, float y, float height = 30, float size = 0, Color? color = null)
+        {
+            var t = Copy(hint, parent, name, new Vector2(0, y), new Vector2(560, height)).GetComponent<TMP_Text>();
+            t.text = text; t.textWrappingMode = TextWrappingModes.Normal; t.alignment = TextAlignmentOptions.Center;
+            if (size > 0) t.fontSize = size;
+            if (color.HasValue) t.color = color.Value;
+            return t;
+        }
+        Button MakeButton(string name, Transform parent, string label, Vector2 at, float width = 320)
+        {
+            var b = Object.Instantiate(resume.gameObject, parent);
             b.name = name;
             var rt = (RectTransform)b.transform;
             rt.anchoredPosition = at; rt.sizeDelta = new Vector2(width, rt.sizeDelta.y);
@@ -60,26 +78,63 @@ public static class CoopMenuBuilder
             button.onClick = new Button.ButtonClickedEvent();
             return button;
         }
-        var host = MakeButton("Host", "Host a game", new Vector2(-145, -10), 270);
-        var join = MakeButton("Join", "Join", new Vector2(145, -10), 270);
-        var begin = MakeButton("Begin", "Begin", new Vector2(-145, -10), 270);
-        var alone = MakeButton("Alone", "Play alone", new Vector2(0, -290), 300);
-        var leave = MakeButton("Leave", "Leave the game", new Vector2(145, -10), 270);
-        var close = MakeButton("Close", "Back", new Vector2(0, -290), 300);
-        var loot = MakeButton("Loot rule", "Loot", new Vector2(0, -85), 560);
-        var adventurer = MakeButton("Adventurer rule", "Adventurer", new Vector2(0, -150), 560);
-        var progress = MakeButton("Progress rule", "Progress", new Vector2(0, -215), 560);
+
+        var title = Copy(panel.Find("Title"), box.transform, "Title", new Vector2(0, 310)).GetComponent<TMP_Text>();
+        var status = Line("Status", box.transform, "", 255, 56);
+
+        // Start: name, host, or join with a code.
+        var start = Group("Start page", box.transform);
+        Line("Name caption", start, "YOUR NAME", 200, 26, 18);
+        var playerName = AddressField(start, hintText, new Vector2(0, 166));
+        playerName.name = "Name";
+        playerName.placeholder.GetComponent<TMP_Text>().text = "Your name, over your head";
+        playerName.characterLimit = 20;
+        var host = MakeButton("Host", start, "Host a game", new Vector2(0, 85), 400);
+        Line("Host caption", start, "Friends join you with a code.", 44, 26, 18);
+        Line("Or", start, "OR JOIN A FRIEND", -15, 26, 18);
+        var address = AddressField(start, hintText, new Vector2(-85, -62));
+        ((RectTransform)address.transform).sizeDelta = new Vector2(330, 52);
+        address.placeholder.GetComponent<TMP_Text>().text = "Their join code";
+        address.characterLimit = 64;
+        var join = MakeButton("Join", start, "Join", new Vector2(175, -62), 160);
+        Line("Join caption", start, "On the same network, their address works too.", -110, 26, 16);
+
+        // A game: the host's code, who is in, the rules.
+        var game = Group("Game page", box.transform);
+        var code = Group("Code", game);
+        var codeCaption = Line("Code caption", code, "JOIN CODE", 205, 26, 18);
+        var codeText = Copy(panel.Find("Title"), code, "Code", new Vector2(0, 165), new Vector2(560, 56)).GetComponent<TMP_Text>();
+        codeText.text = "ABC123"; codeText.color = gold; codeText.fontSize = 48;
+        var copy = MakeButton("Copy", code, "Copy", new Vector2(0, 108), 200);
+        var playersHeader = Line("Players caption", game, "PLAYERS", 60, 26, 18);
+        var players = Line("Players", game, "", 5, 84);
+        var rules = Group("Rules", game);
+        Line("Rules caption", rules, "RULES (CLICK TO CHANGE)", -50, 26, 18);
+        var loot = MakeButton("Loot rule", rules, "Loot", new Vector2(0, -95), 560);
+        var adventurer = MakeButton("Adventurer rule", rules, "Classes", new Vector2(0, -157), 560);
+        var progress = MakeButton("Progress rule", rules, "Progress", new Vector2(0, -219), 560);
+        var guestRules = Line("Guest rules", game, "", -150, 140);
+        guestRules.lineSpacing = 20;
+
+        // The bottom row (CoopMenuUI places them).
+        var begin = MakeButton("Begin", box.transform, "Begin", new Vector2(-145, -300), 270);
+        var alone = MakeButton("Alone", box.transform, "Play alone", new Vector2(145, -300), 270);
+        var leave = MakeButton("Leave", box.transform, "Leave the game", new Vector2(145, -300), 270);
+        var close = MakeButton("Close", box.transform, "Back", new Vector2(-145, -300), 270);
 
         var so = new SerializedObject(ui);
         void Set(string field, Object value) => so.FindProperty(field).objectReferenceValue = value;
-        Set("root", root);
-        Set("title", title.GetComponent<TMP_Text>()); Set("status", status.GetComponent<TMP_Text>()); Set("playerList", players.GetComponent<TMP_Text>());
-        Set("address", address); Set("playerName", playerName);
-        Set("hostButton", host); Set("joinButton", join); Set("leaveButton", leave); Set("beginButton", begin);
-        Set("aloneButton", alone); Set("closeButton", close);
-        Set("sharedLootButton", loot); Set("hostAdventurerButton", adventurer); Set("partyProgressionButton", progress);
+        Set("root", root); Set("title", title); Set("status", status);
+        Set("startPage", start.gameObject); Set("playerName", playerName); Set("address", address);
+        Set("hostButton", host); Set("joinButton", join);
+        Set("gamePage", game.gameObject); Set("codeGroup", code.gameObject); Set("codeCaption", codeCaption); Set("codeText", codeText);
+        Set("playersHeader", playersHeader); Set("playerList", players); Set("copyButton", copy);
+        Set("hostRules", rules.gameObject); Set("sharedLootButton", loot); Set("hostAdventurerButton", adventurer); Set("partyProgressionButton", progress);
+        Set("guestRules", guestRules);
+        Set("beginButton", begin); Set("aloneButton", alone); Set("leaveButton", leave); Set("closeButton", close);
         so.ApplyModifiedPropertiesWithoutUndo();
         root.SetActive(false);
+        Undo.RegisterCreatedObjectUndo(menu, "Co-op screen");
     }
 
     // A Co-op button under Settings; the buttons below move down to make room.
