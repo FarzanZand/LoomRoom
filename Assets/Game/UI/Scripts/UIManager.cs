@@ -92,6 +92,28 @@ public class UIManager : Singleton<UIManager>
     public static readonly Color DefaultHoned = new(.16f, .3f, .62f);
     [PropertyOrder(2), Tooltip("Slot background, loot beam and name of Rare items (spell tomes). Not part of the theme.")] public Color rare = DefaultRare;
     public static readonly Color DefaultRare = new(.34f, .19f, .07f);
+    [PropertyOrder(2), Tooltip("Slot fill and border of Plain gear and consumables: a faint white (names stay white).")] public Color plain = DefaultPlain;
+    public static readonly Color DefaultPlain = new(.9f, .88f, .84f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Fine gear (1-2 rolled properties).")] public Color fine = DefaultFine;
+    public static readonly Color DefaultFine = new(.09f, .42f, .29f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Masterwork gear (3-4 rolled properties).")] public Color masterwork = DefaultMasterwork;
+    public static readonly Color DefaultMasterwork = new(.52f, .34f, .06f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Relics (hand-made items).")] public Color relic = DefaultRelic;
+    public static readonly Color DefaultRelic = new(.58f, .17f, .06f);
+
+    // A rarity's colour, from the UIManager when there is one (Plain: the faint fill).
+    public static Color RarityColor(ItemRarity rarity)
+    {
+        var ui = HasInstance ? Instance : null;
+        return rarity switch
+        {
+            ItemRarity.Rare => ui != null ? ui.rare : DefaultRare,
+            ItemRarity.Fine => ui != null ? ui.fine : DefaultFine,
+            ItemRarity.Masterwork => ui != null ? ui.masterwork : DefaultMasterwork,
+            ItemRarity.Relic => ui != null ? ui.relic : DefaultRelic,
+            _ => ui != null ? ui.plain : DefaultPlain,
+        };
+    }
 
     public event Action Changed;
 

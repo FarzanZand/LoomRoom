@@ -17,6 +17,24 @@ public class TooltipUI : Singleton<TooltipUI>
     [SerializeField] TextMeshProUGUI compareTypeText;
     [SerializeField] TextMeshProUGUI compareDescriptionText;
     [SerializeField, Min(0f)] float compareGap = 8f;
+    [Header("Compact: icon slot, rarity line, compare bars")]
+    [SerializeField, Tooltip("The item's icon in the header.")] Image icon;
+    [SerializeField, Tooltip("The icon's slot; its colour is the rarity border.")] Image iconSlot;
+    [SerializeField, Tooltip("The line under the header, in the rarity colour.")] Image rarityLine;
+    [SerializeField, Tooltip("The bars' parent: off for tooltips without them, so they leave no gap.")] GameObject compareBars;
+    [SerializeField, Tooltip("The main number (damage, armour) against what is worn.")] CompareBar mainBar = new();
+    [SerializeField, Tooltip("A weapon's swing speed against the held weapon's.")] CompareBar speedBar = new();
+    [SerializeField, Tooltip("Under the bars: what grey stands for (\"Grey: your Iron Sword\").")] TextMeshProUGUI compareNote;
+    [SerializeField] Color lineDefault = new(.3f, .3f, .33f);
+
+    // One compare bar: grey up to what is worn, green for what this adds, red for what it would lose.
+    [System.Serializable]
+    public class CompareBar
+    {
+        public GameObject root;
+        public TextMeshProUGUI label, value;
+        public Image worn, gain, loss;
+    }
 
     RectTransform rect, compareRect;
     CanvasGroup visibility, compareVisibility;
@@ -47,19 +65,93 @@ public class TooltipUI : Singleton<TooltipUI>
     public void Show(ItemData item)
     {
         if (panel == null || item == null) return;
-        ShowText(Title(item), Kind(item), item.BuildTooltip());
+        bool bars = mainBar.root != null && item.TryMainStat(out _, out _, out _);
+        ShowText(Title(item), Kind(item), item.BuildTooltip(!bars));
+        ShowHeader(item);
+        if (compareBars != null) compareBars.SetActive(bars);
+        if (bars) ShowBars(item);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+        FollowMouse();
         var equipped = item.Replaces();
         if (equipped != null && comparePanel != null) ShowCompare(equipped);
     }
 
-    // Honed gear's name in the honed blue; the type line says what it is and gear its tier ("ONE-HANDED SWORD  ·  TIER 1").
+    // The name in its rarity colour (Plain stays white); the type line says the rarity and what it is ("FINE  ·  HELM").
     static string Title(ItemData item) => item.HasRarityColour ? $"<color={item.RarityTextColour}>{item.itemName}</color>" : item.itemName;
 
     static string Kind(ItemData item)
     {
         string kind = item.TypeLine().ToUpperInvariant();
-        if (item.canBeEquipped && !item.IsConsumable && item.tier > 0) kind += $"  ·  TIER {item.tier}";
-        return kind;
+        return item.IsGear ? $"{item.RarityName.ToUpperInvariant()}  ·  {kind}" : kind;
+    }
+
+    void ShowHeader(ItemData item)
+    {
+        Color colour = item.HasSlotFill ? Color.Lerp(item.RarityColour, Color.white, item.HasRarityColour ? .25f : .1f) : lineDefault;
+        if (icon != null) { icon.sprite = item.icon; icon.enabled = item.icon != null; icon.preserveAspect = true; }
+        if (iconSlot != null) { iconSlot.gameObject.SetActive(item.icon != null); iconSlot.color = colour; }
+        if (rarityLine != null) rarityLine.color = colour;
+    }
+
+    // The main number against what the player wears in that slot, and a weapon's swing speed against the held one's.
+    void ShowBars(ItemData item)
+    {
+        item.TryMainStat(out string label, out float value, out string text);
+        var equipped = item.Replaces();
+        var gear = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
+        bool wearing = gear != null && gear.IsEquipped(item);
+        float worn = wearing ? value : equipped != null && equipped.TryMainStat(out _, out float w, out _) ? w : 0f;
+        float scale = Mathf.Max(value, worn, item.IsWeapon || item.itemType == ItemType.Shield ? 16f : item.equipSlot == EquipmentSlot.Body ? 6f : 5f) * 1.1f;
+        Fill(mainBar, label == "Armor when blocking" ? "Block" : label, value / scale, worn / scale, text, value - worn);
+
+        bool speed = item.IsWeapon && speedBar.root != null;
+        if (speedBar.root != null) speedBar.root.SetActive(speed);
+        if (speed)
+        {
+            float mine = item.SwingSpeed, theirs = wearing ? mine : equipped != null ? equipped.SwingSpeed : 0f;
+            // -0.5 (very slow) to +0.5 (very fast) across the bar.
+            Fill(speedBar, "Speed", Mathf.Clamp01(mine + .5f), Mathf.Clamp01(theirs + .5f), ItemData.SwingSpeedWord(mine).ToLowerInvariant(), (mine - theirs) * 100f, "%");
+        }
+        if (compareNote != null)
+        {
+            compareNote.gameObject.SetActive(true);
+            compareNote.text = wearing ? "Equipped" : equipped != null ? $"Grey: your {equipped.itemName}" : "Nothing worn there";
+        }
+    }
+
+    static void Fill(CompareBar bar, string label, float mine, float worn, string text, float delta, string unit = "")
+    {
+        if (bar.root == null) return;
+        bar.root.SetActive(true);
+        mine = Mathf.Clamp01(mine); worn = Mathf.Clamp01(worn);
+        float low = Mathf.Min(mine, worn), high = Mathf.Max(mine, worn);
+        Span(bar.worn, 0f, low);
+        Span(bar.gain, low, mine > worn ? high : low);
+        Span(bar.loss, low, mine < worn ? high : low);
+        if (bar.label != null) bar.label.text = label;
+        string change = Mathf.Abs(delta) < .01f ? $"<color={ItemData.DimColor}>same</color>"
+            : $"<color={(delta > 0 ? ItemData.GoodColor : ItemData.BadColor)}>{(delta > 0 ? "+" : "")}{delta:0.#}{unit}</color>";
+        if (bar.value != null) bar.value.text = $"{text}  {change}";
+    }
+
+    static void Span(Image image, float from, float to)
+    {
+        if (image == null) return;
+        image.enabled = to - from > .001f;
+        var r = image.rectTransform;
+        r.anchorMin = new Vector2(from, 0f); r.anchorMax = new Vector2(to, 1f);
+        r.offsetMin = r.offsetMax = Vector2.zero;
+    }
+
+    // Plain text tooltips (skills, buffs) have no item header or bars.
+    void HideItemParts()
+    {
+        if (compareBars != null) compareBars.SetActive(false);
+        if (iconSlot != null) iconSlot.gameObject.SetActive(false);
+        if (rarityLine != null) rarityLine.color = lineDefault;
+        if (mainBar.root != null) mainBar.root.SetActive(false);
+        if (speedBar.root != null) speedBar.root.SetActive(false);
+        if (compareNote != null) compareNote.gameObject.SetActive(false);
     }
 
     void ShowCompare(ItemData equipped)
@@ -80,6 +172,7 @@ public class TooltipUI : Singleton<TooltipUI>
     {
         if (panel == null) return;
         HideCompare();
+        HideItemParts();
         if (nameText != null) nameText.text = title;
         if (typeText != null) typeText.text = subtitle;
         if (descriptionText != null) descriptionText.text = description;

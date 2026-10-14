@@ -75,6 +75,9 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     [Tooltip("World units he stands back from the table's edge while he leans on it (his forearms reach the top).")]
     [Min(0)] public float leanBack = 6f;
 
+    // He has reached the spot a boss fight brought him to (or there is none).
+    public bool Arrived => !focusAt.HasValue || (new Vector2(body.position.x - focusAt.Value.x, body.position.z - focusAt.Value.z)).sqrMagnitude < .05f;
+
     public void Focus(Vector3 standAt, Vector3 face)
     {
         focusAt = standAt; faceAt = face;

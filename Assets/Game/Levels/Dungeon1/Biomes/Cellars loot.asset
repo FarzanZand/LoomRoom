@@ -12,22 +12,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9345c2f775f67634fb750c38879fef5a, type: 3}
   m_Name: Cellars loot
   m_EditorClassIdentifier: Assembly-CSharp::DungeonLootProfile
+  followFloorTiers: 1
   gearTiers: {x: 1, y: 1}
   upgradeChance: 0.12
   honedChance: 0.08
   honedTwiceChance: 0.15
+  fineChance: 0.3
+  masterworkChance: 0.1
   goldGrowthPerFloor: 0.15
   enemies:
     goldChance: 0.3
     goldMin: 1
     goldMax: 4
-    gearChance: 0.4
+    gearChance: 0.6
     recoveryChance: 0.16
   breakables:
     goldChance: 0.25
     goldMin: 1
     goldMax: 2
-    gearChance: 0.06
+    gearChance: 0.089999996
     recoveryChance: 0.12
   chests:
     goldChance: 0.6

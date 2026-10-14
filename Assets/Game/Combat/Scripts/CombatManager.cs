@@ -323,6 +323,9 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Hitting an enemy that is not chasing or attacking, or one facing away, is a backstab.")]
     public bool backstabsEnabled = true;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Tooltip("The spell gear with \"chance on hit to cast Fire Circle\" casts under the target (its own power).")]
+    public SpellDefinition fireCircleOnHit;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
     [Min(1f)] public float backstabMultiplier = 2.5f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
     [Range(-1f, 1f), Tooltip("A hit counts as from behind when dot(victim forward, attack direction) is above this.")]
@@ -495,17 +498,32 @@ public class CombatManager : Singleton<CombatManager>
             if ((!brain.IsAlerted && !brain.Wary) || (backstabAlertFromBehind && behind))
             {
                 info.Backstab = true;
-                info.Amount *= backstabMultiplier;
+                info.Amount *= backstabMultiplier * (1f + GearStat(info.Source, StatType.BackstabDamage));
                 // Legendary Stealth doubles backstabs.
                 if (info.Source != null && info.Source.TryGetComponent<AdventurerProgress>(out var progress) && progress.InRun && progress.Rank(AdventureSkill.Stealth) >= 100) info.Amount *= 2;
                 return;
             }
         }
-        if (criticalHitsEnabled && Random.value < critChance)
+        if (criticalHitsEnabled && Random.value < critChance + GearStat(info.Source, StatType.CriticalChance))
         {
             info.Critical = true;
             info.Amount *= critMultiplier;
         }
+    }
+
+    // A gear stat of the attacker (critical chance, backstab damage...), 0 without one.
+    static float GearStat(Character who, StatType stat) => who != null && who.Stats != null ? Mathf.Max(0f, who.Stats.GetFinal(stat)) : 0f;
+
+    float lastGearProc = -10f;
+
+    // After a player's melee hit lands: gear that casts on hit (FireCircleOnHit), at most once a second.
+    public void GearOnHit(Character attacker, Character target)
+    {
+        if (attacker == null || target == null || fireCircleOnHit == null || Time.time < lastGearProc + 1f) return;
+        float chance = GearStat(attacker, StatType.FireCircleOnHit);
+        if (chance <= 0f || Random.value >= chance) return;
+        lastGearProc = Time.time;
+        GroundAreaSpell.Cast(attacker, fireCircleOnHit, fireCircleOnHit.power, GroundAreaSpell.GroundBelow(target.transform.position), null);
     }
 
     public void PresentImpact(Character victim, DamageInfo info)

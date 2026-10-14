@@ -21,7 +21,9 @@ MonoBehaviour:
   stages:
   - biome: {fileID: 11400000, guid: 6cdedb18b0a27e040b83d9876f0ad625, type: 2}
     floors: 1
-  balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
+    boss: 1
+  balance: {fileID: 11400000, guid: 3e63dea2b23d7494aa25af43ad1ca3ff, type: 2}
+  gearByFloor: []
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   moodLighting: 8
   overrideLighting: 0
@@ -36,6 +38,7 @@ MonoBehaviour:
     fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   roomLighting: 2
   roomTint: {r: 1, g: 1, b: 1, a: 1}
+  minimumAmbient: 0.07
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
   backgroundMusic: {fileID: 0}
@@ -356,7 +359,6 @@ MonoBehaviour:
   chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
   chestTiers: []
   kitModels: 1
-  floorBase: 4.5
   roomFeatures:
     shrineBargains: 1
     shrineChance: 0.35

@@ -4013,7 +4013,7 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 6.396547
+    texelsPerUnit: 6.3965435
     baseTexels: 0
   - material: {fileID: 2100000, guid: 1188ed90507669745bba944057e704a6, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
@@ -4163,13 +4163,13 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 6.3967133
+    texelsPerUnit: 6.3967104
     baseTexels: 0
   - material: {fileID: 2100000, guid: ae5b2507048bdb843a51e9abc7af5ca6, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 6.3932543
+    texelsPerUnit: 6.393249
     baseTexels: 0
   - material: {fileID: 2100000, guid: f36539a35f4fc7c47bef92881d0f6de5, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
@@ -4247,7 +4247,7 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 6.3999906
+    texelsPerUnit: 6.399991
     baseTexels: 0
   - material: {fileID: 2100000, guid: 3b55e810f660a884788d831da95d8e2e, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
@@ -4277,8 +4277,8 @@ MonoBehaviour:
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
     pixelQueue: -1
-    texelsPerUnit: 0
-    baseTexels: 0
+    texelsPerUnit: 181.79086
+    baseTexels: 105
   - material: {fileID: -6478536213147159724, guid: 2d67f0562a3e39b4387a60fd1312cdcb, type: 3}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     originalQueue: -1
@@ -4290,4 +4290,28 @@ MonoBehaviour:
     originalQueue: -1
     pixelQueue: -1
     texelsPerUnit: 0
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 878f100e525e7d84e888639dd828e990, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 6.206244
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 349139ab0a1e3c2439039af0d9ce7c62, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 5.804427
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 0d00da197ffab0c4797ae23d29742198, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 6.2883925
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 492c98d491d6eb445a0bb5358a70cee0, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 5.773408
     baseTexels: 0

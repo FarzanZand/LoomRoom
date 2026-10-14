@@ -170,6 +170,6 @@ public class MessageLog : Singleton<MessageLog>
     void OnPickedUp(ItemData item, Player who, int count)
     {
         if (item == null || who == null || who.kind != PlayerKind.Table) return;
-        Add(count > 1 ? $"You pick up {count} {item.itemName}." : $"You pick up {item.itemName}.", MessageKind.Pickup);
+        Add(count > 1 ? $"You pick up {count} {item.DisplayName}." : $"You pick up {item.DisplayName}.", MessageKind.Pickup);
     }
 }

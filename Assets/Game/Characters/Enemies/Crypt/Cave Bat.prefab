@@ -289,6 +289,7 @@ MonoBehaviour:
   faction: 2
   description: A bat with a wingspan like a man's arms. It hunts by sound in the
     dark.
+  creatureKind: 2
   stats:
   - stat: 6
     baseValue: 1.15
@@ -433,4 +434,8 @@ MonoBehaviour:
       hitStopScale: 0.5
     pullAudio: {fileID: 0}
     fireAudio: {fileID: 0}
+  caster: 0
+  spells: []
+  closesIn: 0
+  spellGap: 4
   experience: 12

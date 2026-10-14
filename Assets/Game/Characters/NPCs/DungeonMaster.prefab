@@ -632,7 +632,8 @@ MonoBehaviour:
   aimKeepAway: 9
   beamLean: 0
   blend: 0.35
-  grip: 0.97
+  grip: 1.04
+  dropHeight: 0.25
   carryHeight: 7
   carryLight: 40
 --- !u!114 &8118707400026791631
@@ -770,6 +771,7 @@ MonoBehaviour:
   characterName: Dungeon Master
   faction: 0
   description: 
+  creatureKind: 0
   stats:
   - stat: 0
     baseValue: 100

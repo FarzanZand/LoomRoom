@@ -1,0 +1,1 @@
+const u='https://heyglitch.notion.site/Backbone-944f9e9ce4e54e8bba5ca459fdde14df';const h=await (await fetch(u)).text(); console.log(h.includes('Backbone'), [...h.matchAll(/https?:[^" ]+/g)].map(m=>m[0]).filter(x=>x.toLowerCase().includes('notion')||x.includes('.pdf')).slice(-20).join('\n'));

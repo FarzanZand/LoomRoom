@@ -30,6 +30,10 @@ public class DungeonLootProfile : LootSource
     public float honedChance = .1f;
     [Range(0, 1), Tooltip("Chance a honed drop is +2 instead of +1.")]
     public float honedTwiceChance = .2f;
+    [Range(0, 1), Tooltip("Chance a gear drop is Fine (1-2 rolled properties) when the level has no gear-by-floor row.")]
+    public float fineChance = .3f;
+    [Range(0, 1), Tooltip("Chance a gear drop is Masterwork (3-4 rolled properties) when the level has no gear-by-floor row.")]
+    public float masterworkChance = .1f;
     [Range(0, 1), Tooltip("Gold amounts grow by this fraction per floor beyond the first.")]
     public float goldGrowthPerFloor = .15f;
 
@@ -68,6 +72,7 @@ public class DungeonLootProfile : LootSource
             if (gear != null && IsTome(gear)) { drops.Add(new Drop(gear, 1)); gear = null; }
             float honed = row != null ? row.honedChance : honedChance, twice = row != null ? row.honedTwiceChance : honedTwiceChance;
             if (gear != null && random.NextDouble() < honed) gear = gear.Honed(random.NextDouble() < twice ? 2 : 1);
+            if (gear != null) gear = RollRarity(gear, random, floor, row != null ? row.fineChance : fineChance, row != null ? row.masterworkChance : masterworkChance);
             if (gear != null) drops.Add(new Drop(gear, 1));
         }
         if (random.NextDouble() < rule.recoveryChance)
@@ -91,6 +96,18 @@ public class DungeonLootProfile : LootSource
         double roll = random.NextDouble() * total;
         for (int t = 0; t < weights.Length; t++) if ((roll -= weights[t]) < 0) return min + t;
         return max;
+    }
+
+    // Plain gear comes out Masterwork or Fine by chance, with properties rolled for the floor (Relics are hand-made and stay as they are).
+    public static ItemData RollRarity(ItemData gear, System.Random random, int floor, float fine, float masterwork)
+    {
+        var table = ItemPropertyTable.Current;
+        if (gear == null || table == null || !gear.IsGear || gear.rarity != ItemRarity.Plain) return gear;
+        double roll = random.NextDouble();
+        var rarity = roll < masterwork ? ItemRarity.Masterwork : roll < masterwork + fine ? ItemRarity.Fine : ItemRarity.Plain;
+        if (rarity == ItemRarity.Plain) return gear;
+        var properties = table.Roll(gear, rarity, Mathf.Max(1, floor), random);
+        return properties.Length > 0 ? gear.Rolled(rarity, properties) : gear;
     }
 
     static bool IsTome(ItemData i) => i.spell != null;

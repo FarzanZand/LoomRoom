@@ -19,7 +19,7 @@ public class AdventurerProgress : MonoBehaviour
     public float[] SkillExperience { get; private set; } = new float[AdventureSkills.Count];
     // Skill, awarded XP, previous fraction, resulting fraction, ranks gained.
     public event Action<AdventureSkill, float, float, float, int> SkillExperienceGained;
-    public float SkillProgress(AdventureSkill skill) => Rank(skill) >= 100 ? 1 : SkillExperience[(int)skill] / (Definition(skill)?.ExperienceRequired(Rank(skill)) ?? 100);
+    public float SkillProgress(AdventureSkill skill) => Ranks[(int)skill] >= 100 ? 1 : SkillExperience[(int)skill] / (Definition(skill)?.ExperienceRequired(Ranks[(int)skill]) ?? 100);
     public int[] Growth { get; private set; } = new int[StatNames.Length];
     public float NextLevelXp => rules != null ? rules.levelXp + (Level - 1) * rules.levelXpGrowth : 100;
     public bool InRun => RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;
@@ -42,10 +42,16 @@ public class AdventurerProgress : MonoBehaviour
 
     // ── Reading skills ─────────────────────────────────────────────────────────
     public AdventureSkillData Definition(AdventureSkill skill) => rules != null && rules.skills != null ? Array.Find(rules.skills, x => x != null && x.skill == skill) : null;
-    public int Rank(AdventureSkill skill) => Ranks[(int)skill];
-    public bool Legendary(AdventureSkill skill) => Ranks[(int)skill] >= 100;
+    // The rank with the gear's skill bonus (+3 Swords on gloves); gear stops at 99, only training reaches Legendary (100).
+    public int Rank(AdventureSkill skill) => Ranks[(int)skill] >= 100 ? 100 : Mathf.Min(99, Ranks[(int)skill] + GearRanks(skill));
+    public bool Legendary(AdventureSkill skill) => Rank(skill) >= 100;
     // The continuous bonus at the current rank (0.25 = +25%).
-    public float Bonus(AdventureSkill skill) => Ranks[(int)skill] * .01f * (Definition(skill)?.bonusAt100 ?? 0);
+    public float Bonus(AdventureSkill skill) => Rank(skill) * .01f * (Definition(skill)?.bonusAt100 ?? 0);
+    int GearRanks(AdventureSkill skill)
+    {
+        StatType? stat = skill switch { AdventureSkill.Swords => StatType.SwordsSkill, AdventureSkill.Maces => StatType.MacesSkill, AdventureSkill.Blocking => StatType.BlockingSkill, _ => null };
+        return stat.HasValue && player != null && player.Stats != null ? Mathf.Max(0, Mathf.RoundToInt(player.Stats.GetFinal(stat.Value))) : 0;
+    }
 
     float Attribute(StatType stat) => player != null && player.Stats != null ? player.Stats.GetFinal(stat) : 0;
 

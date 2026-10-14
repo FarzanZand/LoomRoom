@@ -17,6 +17,8 @@ MonoBehaviour:
   upgradeChance: 0
   honedChance: 0.5
   honedTwiceChance: 0.4
+  fineChance: 0.3
+  masterworkChance: 0.1
   goldGrowthPerFloor: 0
   enemies:
     goldChance: 1
@@ -28,11 +30,11 @@ MonoBehaviour:
     goldChance: 0.5
     goldMin: 1
     goldMax: 4
-    gearChance: 0.02
+    gearChance: 0.03
     recoveryChance: 0.06
   chests:
     goldChance: 0.6
     goldMin: 4
     goldMax: 10
-    gearChance: 0.85
+    gearChance: 1
     recoveryChance: 0.7

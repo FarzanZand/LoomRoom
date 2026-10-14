@@ -12,26 +12,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9345c2f775f67634fb750c38879fef5a, type: 3}
   m_Name: Crypt loot
   m_EditorClassIdentifier: Assembly-CSharp::DungeonLootProfile
+  followFloorTiers: 1
   gearTiers: {x: 1, y: 2}
   upgradeChance: 0.1
   honedChance: 0.12
   honedTwiceChance: 0.2
+  fineChance: 0.3
+  masterworkChance: 0.1
   goldGrowthPerFloor: 0.15
   enemies:
     goldChance: 0.3
     goldMin: 1
     goldMax: 4
-    gearChance: 0.3
+    gearChance: 0.45000002
     recoveryChance: 0.16
   breakables:
     goldChance: 0.25
     goldMin: 1
     goldMax: 2
-    gearChance: 0.06
+    gearChance: 0.089999996
     recoveryChance: 0.12
   chests:
     goldChance: 0.6
     goldMin: 4
     goldMax: 10
-    gearChance: 0.85
+    gearChance: 1
     recoveryChance: 0.7

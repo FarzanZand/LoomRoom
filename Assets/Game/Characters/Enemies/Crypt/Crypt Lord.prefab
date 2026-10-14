@@ -129,6 +129,7 @@ MonoBehaviour:
   characterName: Crypt Lord
   faction: 2
   description: Crowned in rust, enthroned on bones. It remembers being a king.
+  creatureKind: 0
   stats:
   - stat: 6
     baseValue: 1
@@ -217,7 +218,7 @@ MonoBehaviour:
     wanderSpeed: 0.7
     acceleration: 30
     preferredRangeFraction: 0.7
-    circleTarget: 1
+    circleTarget: 0
     circleSpeedFraction: 0.3
     circleSwitchInterval: {x: 0.9, y: 2}
     spacingSpeedFraction: 0.8
@@ -279,7 +280,7 @@ MonoBehaviour:
     cooldown: 4.9
     animatorTrigger: CastSpell
     releaseTime: 1.35
-    aimTrackSpeed: 240
+    aimTrackSpeed: 0
     maxHeightDifference: 4
     damageMultiplier: 0.42000002
     spread: 2
@@ -304,7 +305,7 @@ MonoBehaviour:
     cooldown: 9.8
     animatorTrigger: CastSpell
     releaseTime: 1.35
-    aimTrackSpeed: 240
+    aimTrackSpeed: 0
     maxHeightDifference: 4
     damageMultiplier: 0.6
     spread: 2
@@ -329,7 +330,7 @@ MonoBehaviour:
     cooldown: 14
     animatorTrigger: CastSpell
     releaseTime: 1.35
-    aimTrackSpeed: 240
+    aimTrackSpeed: 0
     maxHeightDifference: 4
     damageMultiplier: 0.42000002
     spread: 2
@@ -347,4 +348,5 @@ MonoBehaviour:
       scale: 1.1
       homing: 0
   closesIn: 1
+  spellGap: 4
   experience: 0

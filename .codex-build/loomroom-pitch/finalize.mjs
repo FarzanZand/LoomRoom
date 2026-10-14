@@ -1,0 +1,16 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const SKILL_DIR='C:/Users/Farza/.codex/plugins/cache/openai-primary-runtime/presentations/26.1013.11914/skills/presentations';
+const workspaceDir='C:/Game projects/LoomRoom';
+const candidatePath='C:/Game projects/LoomRoom/.codex-build/loomroom-pitch/LoomRoom_Publisher_Pitch.draft.pptx';
+const finalPath='C:/Game projects/LoomRoom/pitch-output/LoomRoom_Publisher_Pitch.pptx';
+const RUNTIME_PYTHON='C:/Users/Farza/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe';
+const expectedSlideSizeEmu='12192000,6858000';
+const requirements={explicitTotalSlideCount:12,requiredNativeTableOwnerSlides:[],requiredNativeChartOwnerSlides:[]};
+const fontPolicy={basis:'design',families:['Arial']};
+const { finalizePresentation }=await import(pathToFileURL(path.join(SKILL_DIR,'container_tools/artifact_tool_utils.mjs')).href);
+const stagingDir=path.join(workspaceDir,'.codex-build/loomroom-pitch/finalizer');
+await fs.mkdir(stagingDir,{recursive:true});
+const result=await finalizePresentation({...requirements,workspaceDir,candidatePath,finalPath,pythonExecutable:RUNTIME_PYTHON,integrityValidatorPath:path.join(SKILL_DIR,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(SKILL_DIR,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu',expectedSlideSizeEmu,'--validate-bullet-geometry','--validate-heading-fit'],requiredNativeTableOwnerSlides:[],fontPolicy,verifyArtifactToolImport:true,receiptPath:path.join(stagingDir,'LoomRoom_Publisher_Pitch.validation.json')});
+console.log(JSON.stringify(result));

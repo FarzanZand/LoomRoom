@@ -103,8 +103,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         else if (background != null && GridCell) background.color = PreviewTint ?? (item != null ? occupiedTint : Color.white);
         if (honedFill != null)
         {
-            honedFill.enabled = item != null && item.HasRarityColour && !GridCell;
-            if (honedFill.enabled) honedFill.color = item.RarityColour;
+            ItemData.ShowSlotFill(honedFill, item, !GridCell);
         }
         if (stackLabel != null)
         {

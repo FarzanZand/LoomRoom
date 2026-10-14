@@ -1,0 +1,1 @@
+import {readFile} from 'node:fs/promises';import {Presentation} from '@oai/artifact-tool';const p=Presentation.create({slideSize:{width:300,height:300}});const s=p.slides.add();const b=new Uint8Array(await readFile('C:/Game projects/LoomRoom/.codex-build/loomroom-pitch/../loomroom-pitch/../../../../../../'));

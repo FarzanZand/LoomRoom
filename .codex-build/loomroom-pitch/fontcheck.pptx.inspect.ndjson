@@ -1,0 +1,11 @@
+{"kind":"deck","id":"pr/xggu76","name":"Deck"}
+{"kind":"layout","id":"ly/za5obq1g","editable":false,"name":"Master","type":"master"}
+{"kind":"layout","id":"ly/wvqt0ja1","editable":false,"name":"Title Slide","type":"title","placeholders":[{"name":"title","type":"title"},{"name":"subtitle","type":"subtitle"}]}
+{"kind":"layout","id":"ly/jah07e1k","editable":false,"name":"Section Header","type":"sectionHeader","placeholders":[{"name":"title","type":"title"}]}
+{"kind":"layout","id":"ly/pc3y14ba","editable":false,"name":"Title and Body","type":"tx","placeholders":[{"name":"title","type":"title"},{"name":"body","type":"body"}]}
+{"kind":"layout","id":"ly/583exsz2","editable":false,"name":"Title and Two Column","type":"twoColTx","placeholders":[{"name":"title","type":"title"},{"name":"Left column","type":"body"},{"name":"Right column","type":"body"}]}
+{"kind":"layout","id":"ly/7a9wruxk","editable":false,"name":"Title and One Column","type":"tx","placeholders":[{"name":"title","type":"title"},{"name":"body","type":"body"}]}
+{"kind":"layout","id":"ly/zq5g7i90","editable":false,"name":"Blank","type":"blank"}
+{"kind":"slide","id":"sl/cp0peo","slideIndex":0,"layout":{"id":"ly/zq5g7i90","name":"Blank"},"title":"HELLO","textShapes":1,"backgroundColor":"rgba(255,255,255,1)"}
+{"kind":"textbox","id":"sh/3yhsrixw","slideIndex":0,"position":{"left":10,"top":10,"width":500,"height":100},"text":"HELLO","geometry":"rect","style":{"fontSize":42,"typeface":"Arial","color":"#FFFFFF","alignment":"left"}}
+{"kind":"notes","id":"nt/cp0peo","slideIndex":0,"text":""}

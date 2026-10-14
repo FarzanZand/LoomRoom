@@ -24,6 +24,10 @@ public class LootFloorTiers
     public float honedChance = .1f;
     [Range(0, 1), Tooltip("Chance a honed drop is +2 instead of +1.")]
     public float honedTwiceChance = .2f;
+    [Range(0, 1), Tooltip("Chance a gear drop is Fine: 1-2 rolled properties (ItemPropertyTable).")]
+    public float fineChance = .3f;
+    [Range(0, 1), Tooltip("Chance a gear drop is Masterwork: 3-4 rolled properties. Rolled before Fine.")]
+    public float masterworkChance = .1f;
 
     public string Label
     {

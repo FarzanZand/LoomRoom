@@ -76,6 +76,8 @@ public class CurrencyManager : Singleton<CurrencyManager>
     {
         var wallet = WalletOf(player);
         if (wallet == null || amount <= 0) return;
+        // Gear that finds more gold (GoldFind).
+        if (player != null && player.Stats != null) amount = Mathf.RoundToInt(amount * (1f + Mathf.Max(0f, player.Stats.GetFinal(StatType.GoldFind))));
         wallet.Add(amount);
         if (AudioManager.HasInstance && pickupClip != null) AudioManager.Instance.PlaySFX2D(pickupClip, pickupVolume, .05f);
         MessageLog.Post($"You pick up {amount} {currencyName}.", MessageKind.Pickup);

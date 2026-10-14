@@ -65,7 +65,8 @@ public class PlayerSpellcasting : MonoBehaviour
 
     // ── Rules ──────────────────────────────────────────────────────────────────
     public float Cost(SpellDefinition spell) => spell == null ? 0 : Mathf.Max(1, spell.manaCost);
-    public float Power(SpellDefinition spell) => spell == null ? 0 : spell.power * (progress != null ? progress.SpellPower(spell.Skill) : 1);
+    public float Power(SpellDefinition spell) => spell == null ? 0 : spell.power * (progress != null ? progress.SpellPower(spell.Skill) : 1)
+        * (1f + (player != null && player.Stats != null ? Mathf.Max(0f, player.Stats.GetFinal(StatType.SpellDamage)) : 0f));
     public float CastTime(SpellDefinition spell) => spell == null ? 0 : Mathf.Max(.1f, spell.castSeconds * (progress != null ? progress.SpellCastTime(spell.Skill) : 1));
 
     // ── Equipping ──────────────────────────────────────────────────────────────

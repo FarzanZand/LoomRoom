@@ -34,6 +34,8 @@ MonoBehaviour:
     upgradeChance: 0
     honedChance: 0.08
     honedTwiceChance: 0.2
+    fineChance: 0.3
+    masterworkChance: 0.1
   - fromFloor: 2
     tier1: 50
     tier2: 50
@@ -42,6 +44,8 @@ MonoBehaviour:
     upgradeChance: 0
     honedChance: 0.08
     honedTwiceChance: 0.2
+    fineChance: 0.3
+    masterworkChance: 0.1
   - fromFloor: 3
     tier1: 25
     tier2: 75
@@ -50,6 +54,8 @@ MonoBehaviour:
     upgradeChance: 0
     honedChance: 0.08
     honedTwiceChance: 0.2
+    fineChance: 0.3
+    masterworkChance: 0.1
   - fromFloor: 4
     tier1: 0
     tier2: 100
@@ -58,6 +64,8 @@ MonoBehaviour:
     upgradeChance: 0
     honedChance: 0.12
     honedTwiceChance: 0.2
+    fineChance: 0.3
+    masterworkChance: 0.1
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   moodLighting: 8
   overrideLighting: 0

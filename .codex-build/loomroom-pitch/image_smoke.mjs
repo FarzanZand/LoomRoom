@@ -1,0 +1,5 @@
+import { readFile,writeFile,mkdir } from 'node:fs/promises';import {Presentation,PresentationFile} from '@oai/artifact-tool';
+const p=Presentation.create({slideSize:{width:640,height:360}});let s=p.slides.add();let bytes=new Uint8Array(await readFile('C:/Users/Farza/.codex/visualizations/2026/10/14/01a13aea-258e-7271-b19d-85150f9ea877/loomroom-research/dmhead.png'));
+for (const cfg of [{blob:bytes,contentType:'image/png',position:{left:20,top:20,width:300,height:300},fit:'contain'},{path:'C:/Users/Farza/.codex/visualizations/2026/10/14/01a13aea-258e-7271-b19d-85150f9ea877/loomroom-research/dmhead.png',position:{left:330,top:20,width:300,height:300},fit:'contain'}]) s.images.add(cfg);
+const png=await p.export({slide:s,format:'png'});await writeFile('C:/Game projects/LoomRoom/.codex-build/loomroom-pitch/image-smoke.png',new Uint8Array(await png.arrayBuffer()));
+const pptx=await PresentationFile.exportPptx(p);await pptx.save('C:/Game projects/LoomRoom/.codex-build/loomroom-pitch/image-smoke.pptx');

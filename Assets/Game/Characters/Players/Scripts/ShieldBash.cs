@@ -150,7 +150,7 @@ public class ShieldBash : MonoBehaviour
         var col = target.GetComponent<Collider>();
         var info = new DamageInfo
         {
-            Amount = t.shieldBashDamage + Mathf.Max(0f, armor) * t.shieldBashDamagePerArmor,
+            Amount = t.shieldBashDamage + Mathf.Max(0f, armor) * t.shieldBashDamagePerArmor + (player.Stats != null ? Mathf.Max(0f, player.Stats.GetFinal(StatType.ShieldBashDamage)) : 0f),
             Source = player,
             Weapon = player.Equipment != null ? player.Equipment.Get(EquipmentSlot.LeftHand) : null,
             HitPoint = col != null ? col.ClosestPoint(transform.position + Vector3.up * (chest.y - transform.position.y)) : chest,

@@ -29,7 +29,10 @@ public class InventoryManager : Singleton<InventoryManager>
     public Color beamNormal = new(.95f, .9f, .78f, .24f);
     [Tooltip("Used when the UIManager is missing; otherwise Honed items take UIManager.honed.")]
     public Color beamHoned = new(.45f, .7f, 1f, .3f);
-    public Color beamConsumable = new(.5f, .9f, .5f, .2f);
+
+    [Header("Rarity")]
+    [Tooltip("The properties Fine and Masterwork gear can roll, their slots and their values by floor (Items/Data/Item Properties).")]
+    public ItemPropertyTable itemProperties;
 
     [Header("Drop")]
     [Tooltip("Prefab with a WorldItem used when items are dropped or spawned from data.")]
@@ -51,11 +54,12 @@ public class InventoryManager : Singleton<InventoryManager>
         if (!filtered) return true;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         if (player == null) return true;
-        if (player.Bag != null && player.Bag.TotalCount(item) > 0) return false;
-        if (player.Hotbar != null && player.Hotbar.TotalCount(item) > 0) return false;
+        // Any variant (Honed, Fine, Masterwork) of the item counts as owning it.
+        bool Owns(Inventory inventory) { if (inventory == null) return false; for (int i = 0; i < inventory.SlotCount; i++) { var stack = inventory[i]; if (stack != null && !stack.IsEmpty && stack.item.BaseItem == item.BaseItem) return true; } return false; }
+        if (Owns(player.Bag) || Owns(player.Hotbar)) return false;
         if (player.Equipment != null)
             foreach (EquipmentSlot slot in System.Enum.GetValues(typeof(EquipmentSlot)))
-                if (player.Equipment.Get(slot) == item) return false;
+                if (player.Equipment.Get(slot) != null && player.Equipment.Get(slot).BaseItem == item.BaseItem) return false;
         return true;
     }
 

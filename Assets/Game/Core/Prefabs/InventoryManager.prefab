@@ -57,6 +57,7 @@ MonoBehaviour:
   beamNormal: {r: 0.95, g: 0.9, b: 0.78, a: 0.3}
   beamHoned: {r: 0.45, g: 0.7, b: 1, a: 0.38}
   beamConsumable: {r: 0.35, g: 1, b: 0.4, a: 0.3}
+  itemProperties: {fileID: 11400000, guid: d744132bf8bd57b4e9d2c6af998b75fd, type: 2}
   pickupPrefab: {fileID: 1330799697983367974, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
   dropDistance: 1.5
   dropHeight: 0.5
@@ -102,10 +103,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1ba720940abfc634789e033fabe50259, type: 2}
   - {fileID: 11400000, guid: 88b9084b9e04dfb4091fe6bdaf6cc7ab, type: 2}
   - {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
-  - {fileID: 11400000, guid: 335b553d1e77a534ba228f8cc0fa27c1, type: 2}
   - {fileID: 11400000, guid: e4e9de3d3ed801b44bcef84d0ed5ccc8, type: 2}
   - {fileID: 11400000, guid: c94488e517e3d7d4f9bb0817226b113b, type: 2}
-  - {fileID: 11400000, guid: 4c4a17a16a14b5a49bd9466ac8e9b724, type: 2}
   - {fileID: 11400000, guid: a8ed3e954e4716c4fb913da5c61cd4df, type: 2}
   - {fileID: 11400000, guid: 9c7bf754f4464bf448c68e619455c04e, type: 2}
   - {fileID: 11400000, guid: f3e174e2d59fe0246986e9033e6d7dcd, type: 2}

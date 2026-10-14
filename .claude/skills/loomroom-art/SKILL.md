@@ -197,6 +197,26 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
 - Moving parts (clock hands) stay separate objects with their own plain material; the dial is drawn by hand, marks on
   the face, not the frame.
 
+**Dungeon wood and metal props: structure from geometry (2026-10-14; "they look like AI")**
+- `PixelRestyle.BakeStructureBuffers` + `Tools/prop_structure.py`: every texel's colour comes from the model, not
+  from the painting's blotches. Flat faces = planks/bands; materials from Synty's own swatch colours (grey = metal);
+  a 5-shade ramp per material with the painting's hues; light top edges, dark bottom edges, grain along each plank,
+  rivets and sparse rust on metal, a solid darker band at the very base. Originals in `Temp/Paint/Dungeon/backup`.
+- Ramps only from visible, lit texels (the painter's black undersides dragged ramps to black). Accents (moss, nails)
+  only when the painting has a real patch of them: 31 near-black "green" texels became black moss on the crate.
+  Clumped dirt reads as a checker on thin legs: wear bands must be solid.
+- Not for stone or organic props (tombs, altars, statues, bones, sacks): those are still open.
+
+**Meshy models (the bed)**
+- A Meshy model's texture atlas is cut into hundreds of small patches at different sizes and angles. Never try to
+  fix or repaint it per texel (recolouring, plaid drawn into the atlas, colour classing): every attempt left flecks,
+  bands and broken patterns. Instead give each material its own UVs: classify triangles (by the painting's colour,
+  then by mesh pieces and neighbours, never trusting single triangles), box-project each triangle along the world
+  axis it faces at the room's density, and draw each material with a small hand-made tile (`BedCloth.cs`: plaid,
+  linen, cotton, walnut with grain turned along each wood piece's long side). Equal pixels everywhere, patterns
+  continuous across faces.
+- Check the result from every side close up (bed ring render plus in-game capture) before saying it is done.
+
 **Room surfaces**
 - Wall/ceiling paint from the concept's own wall (crop it as the reference). Scatter the painting's marks (flakes,
   cracks) over a large tile instead of repeating one painting every 2 m. Take the painting's broad light drift out.

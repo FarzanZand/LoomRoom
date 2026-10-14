@@ -266,6 +266,7 @@ MonoBehaviour:
   characterName: Urn Crawler
   faction: 2
   description: Something living in a burial urn, walking it around on long legs.
+  creatureKind: 2
   stats:
   - stat: 6
     baseValue: 0.9
@@ -410,4 +411,8 @@ MonoBehaviour:
       hitStopScale: 0.5
     pullAudio: {fileID: 0}
     fireAudio: {fileID: 0}
+  caster: 0
+  spells: []
+  closesIn: 0
+  spellGap: 4
   experience: 14

@@ -50,6 +50,12 @@ MonoBehaviour:
   - stat: 1
     value: 2
     type: 0
+  - stat: 23
+    value: 0.1
+    type: 0
+  - stat: 0
+    value: 5
+    type: 0
   weapon:
     useDefaultEffects: 1
     hitAudio: {fileID: 0}
@@ -59,6 +65,7 @@ MonoBehaviour:
     damageMultiplier: 1
     knockbackForce: -1
     hitStopScale: 1
+  damageSpread: 0
   effects: []
   useAudioSource: 0
   useAudio: {fileID: 0}

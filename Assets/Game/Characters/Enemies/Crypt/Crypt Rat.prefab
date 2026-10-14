@@ -266,6 +266,7 @@ MonoBehaviour:
   characterName: Crypt Rat
   faction: 2
   description: A rat the size of a dog. It lives on what the crypt leaves behind.
+  creatureKind: 2
   stats:
   - stat: 6
     baseValue: 1
@@ -410,4 +411,8 @@ MonoBehaviour:
       hitStopScale: 0.5
     pullAudio: {fileID: 0}
     fireAudio: {fileID: 0}
+  caster: 0
+  spells: []
+  closesIn: 0
+  spellGap: 4
   experience: 8

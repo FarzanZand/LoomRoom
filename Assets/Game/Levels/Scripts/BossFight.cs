@@ -75,6 +75,12 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Volley"), Min(1), Tooltip("Volley events: metres from the player, toward the DM, where his fireballs hang before they fly.")]
     public float volleyDistance = 7f;
 
+    // ── Phase two ─────────────────────────────────────────────────────
+    [TabGroup(Tabs, "Phase two"), Range(0, 1), Tooltip("When the boss's health falls to this share the fight's second phase begins: the stage's fires turn and the moonlight goes red (the stage's BossStageLights), the DM says the line and the stage shakes. 0: no second phase.")]
+    public float phaseTwoHealth = .5f;
+    [TabGroup(Tabs, "Phase two")] public DungeonMaster.Line phaseTwoLine = new() { text = "Now he's angry." };
+    [TabGroup(Tabs, "Phase two"), Min(0)] public float phaseTwoShake = 1.2f;
+
     // ── Events ────────────────────────────────────────────────────────
     [TabGroup(Tabs, "Events"), Tooltip("What happens during the fight, in any order. Times count from the moment the boss wakes.")]
     [ListDrawerSettings(ShowFoldout = false, ListElementLabelName = "Label")]

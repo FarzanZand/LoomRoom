@@ -87,6 +87,9 @@ public sealed partial class LightingManager
             return;
         }
         float radius = biome != null && biome.lightRadius > 0f ? biome.lightRadius : lightRadiusMetres;
+        // Gear that lights the way (LightRadius on the table player).
+        var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if (table != null && table.Stats != null) radius += Mathf.Max(0f, table.Stats.GetFinal(StatType.LightRadius));
         var centre = cam.transform.position;
         // The room the player is in may pull the light in (a dark room) or open it out (DungeonRoomMood).
         float edge = lightRadiusEdge, floor = lightRadiusFloor;

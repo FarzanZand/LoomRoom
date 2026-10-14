@@ -86,6 +86,9 @@ public static partial class PixelRestyle
             Color etint = mat != null && mat.HasProperty("_EmissionColor") ? mat.GetColor("_EmissionColor") : Color.black;
             if (mat != null && mat.HasProperty("_Emission_Color")) etint = mat.GetColor("_Emission_Color");
             bool emissive = emap != null && etint.maxColorComponent > .01f || (mat != null && mat.IsKeywordEnabled("_EMISSION") && etint.maxColorComponent > .01f);
+            // Synty's shaders have their own switch: with it off the emission map is never drawn (it still points at the
+            // atlas's emissive sheet, which baked stray glowing patches onto the DM's faces).
+            if (mat != null && mat.HasProperty("_Enable_Emission") && mat.GetFloat("_Enable_Emission") < .5f) emissive = false;
             var t = mesh.GetTriangles(sub);
             for (int f = 0; f < t.Length; f += 3)
             {
