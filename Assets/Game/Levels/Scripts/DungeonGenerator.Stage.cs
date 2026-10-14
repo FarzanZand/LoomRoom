@@ -22,7 +22,7 @@ public partial class DungeonGenerator
         return dm != null ? dm.position : transform.position + Vector3.right * 1000f;
     }
 
-    // Where the exit room (the stage) goes: against the edge of the grid facing the Dungeon Master, centred on him.
+    // Where the exit room (the stage) goes: edgeGap cells in from the edge of the grid facing the Dungeon Master, centred on him.
     Vector2Int? StageOrigin(DungeonShape shape)
     {
         if (StageTemplate == null) return null;
@@ -31,9 +31,10 @@ public partial class DungeonGenerator
         var local = DungeonMasterPosition() - transform.position;
         float cx = local.x / data.cellSize + width * .5f, cz = local.z / data.cellSize + depth * .5f;
         float dx = (cx - width * .5f) / width, dz = (cz - depth * .5f) / depth;
+        int gx = Mathf.Clamp(StageTemplate.edgeGap, 0, Mathf.Max(0, width - 2 - s.width)), gz = Mathf.Clamp(StageTemplate.edgeGap, 0, Mathf.Max(0, depth - 2 - s.height));
         if (Mathf.Abs(dx) >= Mathf.Abs(dz))
-            return new Vector2Int(dx >= 0 ? width - 1 - s.width : 1, Mathf.Clamp(Mathf.RoundToInt(cz - s.height * .5f), 1, depth - 1 - s.height));
-        return new Vector2Int(Mathf.Clamp(Mathf.RoundToInt(cx - s.width * .5f), 1, width - 1 - s.width), dz >= 0 ? depth - 1 - s.height : 1);
+            return new Vector2Int(dx >= 0 ? width - 1 - s.width - gx : 1 + gx, Mathf.Clamp(Mathf.RoundToInt(cz - s.height * .5f), 1, depth - 1 - s.height));
+        return new Vector2Int(Mathf.Clamp(Mathf.RoundToInt(cx - s.width * .5f), 1, width - 1 - s.width), dz >= 0 ? depth - 1 - s.height - gz : 1 + gz);
     }
 
     // The exit room when its template is a stage (in a grown or an authored layout), else -1.

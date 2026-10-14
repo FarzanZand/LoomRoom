@@ -627,10 +627,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98a9323c8c647e747829aaea72709e62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonMasterHand
-  reachLean: 28
+  reachLean: 8
   aimReach: 0.5
   aimKeepAway: 9
-  beamLean: 10
+  beamLean: 0
   blend: 0.35
   grip: 0.97
   carryHeight: 7

@@ -40,7 +40,7 @@ public static class SpellPackEffects
         var arts = new[]
         {
             new Art { prefab = "Fireball/Fireball Hand.prefab", effect = "Prefabs/Projectiles/Casting/Casting_Fire_LWRP.prefab", scale = .11f, charge = true, linger = .35f, remove = new[] { "Flame" }, drop = new[] { "Expansive Wave" } },
-            new Art { prefab = "Fireball/Fireball Projectile.prefab", parent = "Art", effect = "Prefabs/Projectiles/Projectiles/Projectile_Fire_LWRP.prefab", scale = .45f, remove = new[] { "Art/Core", "Art/Flame Tail", "Art/Embers" } },
+            new Art { prefab = "Fireball/Fireball Projectile.prefab", parent = "Art", effect = "Prefabs/Projectiles/Projectiles/Projectile_Fire_LWRP.prefab", scale = .45f, remove = new[] { "Art/Core", "Art/Flame Tail", "Art/Embers" }, drop = new[] { "Expansive Wave" } },
             new Art { prefab = "Fireball/Fireball Impact.prefab", effect = "Prefabs/Projectiles/Explosion/Explosion _Fire_4_LWRP.prefab", scale = .8f, once = true, life = .45f, maxScreen = .08f, lives = new[] { ("Effect", .45f) }, remove = new[] { "Flash", "Flames", "Sparks", "Puff" }, drop = new[] { "Fireballs(Low Quality)" } },
             // Area Radius 2: the ground wave spreads about 4 m across, the burst stands a little over head height.
             new Art { prefab = "Fire Circle/Fire Circle Eruption.prefab", effect = "Prefabs/Spells/Spell_Fire_5_LWRP.prefab", scale = 1f, once = true, life = .7f, maxScreen = .07f, sizes = new[] { ("Effect", .26f), ("Explosion", .4f) }, lives = new[] { ("Explosion", .6f) } },

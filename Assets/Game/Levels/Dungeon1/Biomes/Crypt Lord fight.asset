@@ -51,8 +51,8 @@ MonoBehaviour:
   - enabled: 1
     when: 2
     seconds: 10
-    startBeat: 12
-    beats: 24
+    startBeat: 24
+    beats: 48
     health: 0.5
     what: 0
     line:
@@ -111,8 +111,8 @@ MonoBehaviour:
   - enabled: 1
     when: 2
     seconds: 10
-    startBeat: 24
-    beats: 24
+    startBeat: 48
+    beats: 72
     health: 0.5
     what: 5
     line:

@@ -7,6 +7,8 @@ using UnityEngine;
 // appear on the stage when the boss falls.
 public class DungeonStage : MonoBehaviour
 {
+    [Min(0), Tooltip("Cells kept between the stage and the grid's edge in front of the Dungeon Master (generated floors; an authored map places it itself). He leans over the table from its edge: a gap makes the view of him less steep.")]
+    public int edgeGap = 2;
     [Min(.3f), Tooltip("Metres from the dungeon floor up to the top of the stage.")]
     public float height = 2.4f;
     [Min(1), Tooltip("Cells the stair runs in from the doorway.")]

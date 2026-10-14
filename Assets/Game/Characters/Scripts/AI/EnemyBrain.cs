@@ -49,6 +49,9 @@ public class EnemyBrain : MonoBehaviour
     public bool IsAlerted => State == EnemyState.Chase || State == EnemyState.Attack;
     // Never caught unaware (a boss set down on the stage, watching the player from the start): no backstab while idle.
     public bool Wary { get; set; }
+    // Backing away from its target into something it can't get past, just now (HandleSpacing).
+    public bool Cornered => Time.time < corneredUntil;
+    float corneredUntil = -1f, backStuckSince = -1f;
 
     // Lying asleep (a sleeping pack, EnemySleep): it neither sees nor moves until woken, and every hit on it is a
     // backstab. The HumanoidController lies down (its Asleep bool); other rigs just slow their idle.
@@ -514,7 +517,9 @@ public class EnemyBrain : MonoBehaviour
             return;
         }
 
-        if (AnyAttackCoversDistance(dist) || dist <= PreferredDistance)
+        // A fighter who also casts (closesIn) only holds its ground in melee range: a spell that could reach from here
+        // but is recharging is no reason to stand and wait. It casts on the way in whenever one is ready (PickAttack).
+        if (CloseIn ? dist <= PreferredDistance : AnyAttackCoversDistance(dist) || dist <= PreferredDistance)
         {
             HandleSpacing(targetPos, dist);
             return;
@@ -557,8 +562,18 @@ public class EnemyBrain : MonoBehaviour
         if (dist < preferred - 0.35f)
         {
             Motor.Strafe(-toTarget, chaseSpeed * p.spacingSpeedFraction);
+            // Backing off but not getting anywhere (a wall behind it, a small room): cornered for a moment, so its
+            // ranged attacks may be used up close (EnemyAttackRunner.Usable).
+            float moving = new Vector3(Motor.Velocity.x, 0f, Motor.Velocity.z).magnitude;
+            if (moving < chaseSpeed * p.spacingSpeedFraction * .25f)
+            {
+                if (backStuckSince < 0f) backStuckSince = Time.time;
+                else if (Time.time - backStuckSince > .4f) corneredUntil = Time.time + 1.5f;
+            }
+            else backStuckSince = -1f;
             return;
         }
+        backStuckSince = -1f;
 
         if (!p.circleTarget || p.circleSpeedFraction <= 0f)
         {

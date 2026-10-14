@@ -67,8 +67,30 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     Vector3? focusAt, faceAt;
     [Tooltip("World units a second he moves when a boss fight brings him up to the table.")]
     [Min(.1f)] public float focusSpeed = 8f;
-    public void Focus(Vector3 standAt, Vector3 face) { focusAt = standAt; faceAt = face; }
-    public void Unfocus() { if (focusAt.HasValue) returning = true; focusAt = null; faceAt = null; }
+    [Tooltip("Held while a boss fight brings him to the table: he leans over it on his forearms, face low over the stage.")]
+    public string leanState = "Lean On Table";
+    [Tooltip("His standing idle, back from the table.")]
+    public string standingState = "IdleWalkRunBT";
+    [Min(0)] public float leanBlend = .8f;
+    [Tooltip("World units he stands back from the table's edge while he leans on it (his forearms reach the top).")]
+    [Min(0)] public float leanBack = 6f;
+
+    public void Focus(Vector3 standAt, Vector3 face)
+    {
+        focusAt = standAt; faceAt = face;
+        if (animator != null && animator.isActiveAndEnabled && animator.HasState(0, Animator.StringToHash(leanState)))
+            animator.CrossFadeInFixedTime(leanState, leanBlend, 0);
+    }
+
+    public void Unfocus()
+    {
+        if (focusAt.HasValue)
+        {
+            returning = true;
+            if (standing && animator != null && animator.isActiveAndEnabled) animator.CrossFadeInFixedTime(standingState, leanBlend, 0);
+        }
+        focusAt = null; faceAt = null;
+    }
     bool returning;
 
     void Update()

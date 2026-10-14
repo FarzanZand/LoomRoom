@@ -339,7 +339,7 @@ public class BossStageEncounter : MonoBehaviour
         return NavMesh.SamplePosition(spot, out var hit, 2f, NavMesh.AllAreas) ? hit.position : spot;
     }
 
-    // He stands at the table's edge straight out from the spot, so his reach covers it.
+    // He stands at the table's edge straight out from the spot (leanBack behind it, leaning over), so his reach covers it.
     Vector3 StandFor(Vector3 spot)
     {
         var dm = TableManager.HasInstance && TableManager.Instance.DM != null ? TableManager.Instance.DM.transform.position : spot + Vector3.right * 30f;
@@ -349,7 +349,7 @@ public class BossStageEncounter : MonoBehaviour
         // From the spot out to the table's edge along that line, then a step back from it.
         float toEdge = 0f;
         for (float d = 0; d < 200f; d += .5f) { var p = spot + away * d; if (p.x < box.min.x || p.x > box.max.x || p.z < box.min.z || p.z > box.max.z) { toEdge = d; break; } }
-        var at = spot + away * (toEdge + 1.2f);
+        var at = spot + away * (toEdge + (seat != null ? seat.leanBack : 1.2f));
         return new Vector3(at.x, dm.y, at.z);
     }
 
