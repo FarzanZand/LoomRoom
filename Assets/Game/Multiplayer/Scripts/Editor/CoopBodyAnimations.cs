@@ -68,6 +68,8 @@ public static class CoopBodyAnimations
             clips["BlockRaise"] = Bake("Block_Raise", "Coop Block Raise", Side.Left, false);
             clips["Block"] = Bake("BlockIdle", "Coop Block", Side.Left, true);
             clips["Bash"] = Bake("Shield_Bash", "Coop Shield Bash", Side.Left, false);
+            clips["Eat"] = Bake("Consume/Eat", "Coop Eat", Side.Right, false);
+            clips["Drink"] = Bake("Consume/Drink", "Coop Drink", Side.Right, false);
             clips["RestRight"] = RestPose(animator, idle, "Coop Rest (right)", Side.Right, overwrite);
             clips["RestLeft"] = RestPose(animator, idle, "Coop Rest (left)", Side.Left, overwrite);
             clips["RestRightMoving"] = RestPose(animator, idle, "Coop Rest moving (right)", Side.Right, overwrite, GuardMoving);
@@ -249,10 +251,10 @@ public static class CoopBodyAnimations
         var source = AssetDatabase.LoadAssetAtPath<AnimatorController>(Source);
         if (AssetDatabase.LoadAssetAtPath<Object>(ControllerPath) != null) AssetDatabase.DeleteAsset(ControllerPath);
         var c = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
-        foreach (var p in new[] { "MoveX", "MoveZ", "Speed", "MotionSpeed", "HurtSpeed", "LocoSpeed" }) c.AddParameter(p, AnimatorControllerParameterType.Float);
+        foreach (var p in new[] { "MoveX", "MoveZ", "Speed", "MotionSpeed", "HurtSpeed", "LocoSpeed", "UseSpeed" }) c.AddParameter(p, AnimatorControllerParameterType.Float);
         foreach (var p in new[] { "Grounded", "Crouch", "Armed", "Charge", "Block", "Dead" }) c.AddParameter(p, AnimatorControllerParameterType.Bool);
-        foreach (var p in new[] { "SwingA", "SwingB", "SwingHeavy", "Bash", "CastSpell", "Hurt", "Death", "Sit", "Stand" }) c.AddParameter(p, AnimatorControllerParameterType.Trigger);
-        c.parameters = c.parameters.Select(p => { if (p.name == "Grounded") p.defaultBool = true; if (p.name == "HurtSpeed" || p.name == "MotionSpeed" || p.name == "LocoSpeed") p.defaultFloat = 1f; return p; }).ToArray();
+        foreach (var p in new[] { "SwingA", "SwingB", "SwingHeavy", "Bash", "CastSpell", "Eat", "Drink", "Hurt", "Death", "Sit", "Stand" }) c.AddParameter(p, AnimatorControllerParameterType.Trigger);
+        c.parameters = c.parameters.Select(p => { if (p.name == "Grounded") p.defaultBool = true; if (p.name == "HurtSpeed" || p.name == "MotionSpeed" || p.name == "LocoSpeed" || p.name == "UseSpeed") p.defaultFloat = 1f; return p; }).ToArray();
 
         // Base layer: walking (the enemies' own blend), crouching, the jump, sitting and death.
         var sm = c.layers[0].stateMachine;
@@ -329,6 +331,17 @@ public static class CoopBodyAnimations
         Any(right, swingA, "SwingA", .03f, true);
         Any(right, swingB, "SwingB", .03f, true);
         Any(right, hurt, "Hurt", .05f, false);
+        // Eating and drinking: the first-person clips at the item's own time (UseSpeed), back to the guard at the end.
+        var eat = State(right, "Eat", clips["Eat"], new Vector3(850, 120));
+        var drink = State(right, "Drink", clips["Drink"], new Vector3(850, 240));
+        foreach (var st in new[] { eat, drink }) { st.speedParameter = "UseSpeed"; st.speedParameterActive = true; }
+        Any(right, eat, "Eat", .1f, false);
+        Any(right, drink, "Drink", .1f, false);
+        foreach (var st in new[] { eat, drink })
+        {
+            Back(st, rRest, ("Armed", true));
+            Back(st, rEmpty);
+        }
         foreach (var st in new[] { swingA, swingB, heavy, hurt })
         {
             Done(st, windup, ("Charge", true));

@@ -60,7 +60,8 @@ public class DungeonFloorCut : MonoBehaviour
         // edge is looked for a little further on than its body reaches.
         foreach (var brain in EnemyBrain.Active)
         {
-            if (brain == null || !brain.Character.IsAlive || brain.Motor == null || !brain.Motor.IsKnockedBack) continue;
+            // Co-op: a guest's copy of an enemy goes over only when the host's does (the host runs it).
+            if (brain == null || brain.NetworkPuppet || !brain.Character.IsAlive || brain.Motor == null || !brain.Motor.IsKnockedBack) continue;
             if (brain.Motor.KnockbackVelocity.sqrMagnitude < 1f) continue;
             var p = brain.transform.position + brain.Motor.KnockbackVelocity.normalized * EdgeReach;
             if (Mathf.Abs(brain.transform.position.y - floorY) > .8f || !Over(p)) continue;

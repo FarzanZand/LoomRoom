@@ -111,6 +111,22 @@ public class PlaytestBot : MonoBehaviour
         if (!string.IsNullOrEmpty(Spell) && !spellGiven) GiveSpell();
         TrackRoom(loader.Dungeon);
         WatchKills();
+        // Hurt: eat or drink something from the hotbar or the bag, as a player would (the Eat and Drink clips, and what
+        // a teammate sees of them).
+        if (player.Stats != null && player.Stats.CurrentHealth < player.Stats.MaxHealth * .5f && Time.time > nextMeal && player.Equipment != null && !player.Equipment.IsUsingItem)
+        {
+            nextMeal = Time.time + 4f;
+            foreach (var container in new[] { player.Hotbar, player.Bag })
+            {
+                if (container == null || !InventoryManager.HasInstance) continue;
+                int found = -1;
+                for (int i = 0; i < container.SlotCount && found < 0; i++) { var it = container.ItemAt(i); if (it != null && it.IsConsumable && it.AnimationOnUse != ItemUseAnimation.Instant) found = i; }
+                if (found < 0) continue;
+                Write($"hurt {player.Stats.CurrentHealth:0}/{player.Stats.MaxHealth:0}: using {container.ItemAt(found).itemName} ({container.ItemAt(found).AnimationOnUse})");
+                InventoryManager.Instance.Use(container, found);
+                break;
+            }
+        }
         if (!Mortal && player.Stats != null && player.Stats.CurrentHealth < player.Stats.MaxHealth * .25f)
         {
             Write($"low health {player.Stats.CurrentHealth:0}/{player.Stats.MaxHealth:0}: healed (mortal is off)");
@@ -128,7 +144,7 @@ public class PlaytestBot : MonoBehaviour
     // The layout's rooms (corridors are the regions after them).
     static int RoomCount(DungeonLayout layout) => layout.RegionCount - layout.CorridorCount;
 
-    float nextSync, nextStairsPress;
+    float nextSync, nextStairsPress, nextMeal;
     int roomGoal = -1;
     bool spellGiven;
 

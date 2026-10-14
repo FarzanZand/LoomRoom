@@ -25,6 +25,9 @@ public class ConsumableUse
 
     public bool Busy => item != null;
     public ItemData Item => item;
+    // The clip is playing (the wait for a swing or a spell is over); Length is its time in seconds.
+    public bool Playing => Busy && started >= 0f;
+    public float Length => length;
 
     public bool Begin(Equipment owner, Player by, ItemData what, Action onUse)
     {

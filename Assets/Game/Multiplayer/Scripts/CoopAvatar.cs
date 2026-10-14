@@ -24,6 +24,8 @@ public class CoopAvatar : MonoBehaviour
     float builtScale = 1f;
     string heldRight, heldLeft;
     GameObject rightVisual, leftVisual;
+    GameObject usedVisual;
+    float useEnds;
     Vector3 lastPosition;
     Vector3 velocity;
     bool shownDead, shownSeated;
@@ -33,7 +35,7 @@ public class CoopAvatar : MonoBehaviour
 
     static readonly int MoveX = Animator.StringToHash("MoveX"), MoveZ = Animator.StringToHash("MoveZ"), Speed = Animator.StringToHash("Speed"),
         MotionSpeed = Animator.StringToHash("MotionSpeed"), Grounded = Animator.StringToHash("Grounded"), Crouch = Animator.StringToHash("Crouch"),
-        Charge = Animator.StringToHash("Charge"), Armed = Animator.StringToHash("Armed"), LocoSpeed = Animator.StringToHash("LocoSpeed"), Block = Animator.StringToHash("Block"), HurtSpeed = Animator.StringToHash("HurtSpeed"), Dead = Animator.StringToHash("Dead");
+        Charge = Animator.StringToHash("Charge"), Armed = Animator.StringToHash("Armed"), LocoSpeed = Animator.StringToHash("LocoSpeed"), Block = Animator.StringToHash("Block"), HurtSpeed = Animator.StringToHash("HurtSpeed"), UseSpeed = Animator.StringToHash("UseSpeed"), Dead = Animator.StringToHash("Dead");
 
     public Animator Animator => animator;
     // How fast the locomotion clips step, in metres a second (measured from the foot's travel).
@@ -63,8 +65,12 @@ public class CoopAvatar : MonoBehaviour
         if (player == null || player.IsOwner || !player.IsSpawned) return;
         var s = player.Current;
         Rebuild(false);
+        if (usedVisual != null && Time.time >= useEnds) EndUse();
         if (nameLabel != null)
         {
+            // From the table a player in the room is a giant outside the board: no label over the walls for them.
+            bool shown = !(s.place == CoopPlace.Room && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table);
+            if (nameLabel.enabled != shown) nameLabel.enabled = shown;
             if (nameLabel.text != player.DisplayName) nameLabel.text = player.DisplayName;
             nameLabel.transform.position = transform.position + Vector3.up * labelHeight * builtScale;
             var cam = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
@@ -153,7 +159,8 @@ public class CoopAvatar : MonoBehaviour
         {
             carried = new GameObject("Carried light").AddComponent<Light>();
             carried.transform.SetParent(transform, false);
-            carried.transform.localPosition = new Vector3(0f, 1.7f, .25f);
+            // Above the head and a little ahead, as the player's own light: at the head it blew the helmet out white.
+            carried.transform.localPosition = new Vector3(0f, 2.5f, .45f);
             carried.type = LightType.Point;
             carried.shadows = LightShadows.None;
         }
@@ -174,7 +181,7 @@ public class CoopAvatar : MonoBehaviour
         // Leaving the table dead: the body stays where it fell, for the floor.
         if (model != null && builtPlace == CoopPlace.Table && s.place == CoopPlace.Room && shownDead) LeaveCorpse();
         else if (model != null) Destroy(model);
-        model = null; animator = null; rightVisual = leftVisual = null; heldRight = heldLeft = null; shownDead = false; shownSeated = false;
+        model = null; animator = null; rightVisual = leftVisual = usedVisual = null; heldRight = heldLeft = null; shownDead = false; shownSeated = false;
 
         var manager = MultiplayerManager.Instance;
         var prefab = s.place == CoopPlace.Room ? manager.RoomBody(player.SlotIndex) : manager.TableBody(cls);
@@ -218,21 +225,59 @@ public class CoopAvatar : MonoBehaviour
     void Hold(ref GameObject visual, string saveId, HumanBodyBones bone, EnemyWeaponGrip grip)
     {
         if (visual != null) Destroy(visual.transform.parent.gameObject);
-        visual = null;
         var item = Coop.Item(saveId);
-        if (item == null || item.worldPrefab == null || (item.itemType != ItemType.Weapon && item.itemType != ItemType.Shield)) return;
+        visual = item != null && (item.itemType == ItemType.Weapon || item.itemType == ItemType.Shield) ? Attach(item, bone, grip) : null;
+        if (visual != null && usedVisual != null && bone == HumanBodyBones.RightHand) visual.SetActive(false);
+    }
+
+    // The item's world model in a hand, on a grip socket as in first person (the grips are the first-person hand
+    // sockets) with the item's own grip offset; only a look (no colliders, physics or scripts).
+    GameObject Attach(ItemData item, HumanBodyBones bone, EnemyWeaponGrip grip)
+    {
+        if (item == null || item.worldPrefab == null) return null;
         var hand = animator.GetBoneTransform(bone);
-        if (hand == null) return;
+        if (hand == null) return null;
         var socket = new GameObject($"Grip - {bone}").transform;
         socket.SetParent(hand, false);
         if (grip != null) { socket.SetLocalPositionAndRotation(grip.position, Quaternion.Euler(grip.rotation)); socket.localScale = Vector3.one * Mathf.Max(.01f, grip.scale); }
-        // On the socket as in first person (the grips are the first-person hand sockets): the item's own grip offset.
-        visual = Instantiate(item.worldPrefab, socket, false);
+        var visual = Instantiate(item.worldPrefab, socket, false);
         visual.transform.SetLocalPositionAndRotation(item.heldPosition, Quaternion.Euler(item.heldRotation));
         visual.transform.localScale *= Mathf.Max(.01f, item.heldScale);
         foreach (var c in visual.GetComponentsInChildren<Collider>(true)) c.enabled = false;
         foreach (var b in visual.GetComponentsInChildren<Rigidbody>(true)) { b.isKinematic = true; b.detectCollisions = false; }
         foreach (var m in visual.GetComponentsInChildren<MonoBehaviour>(true)) m.enabled = false;
+        return visual;
+    }
+
+    // Eating or drinking, as the first-person arms play it: the item in the right hand in place of the weapon, the
+    // right arm's Eat or Drink clip fitted to the same time.
+    public void Use(string saveId, bool drink, float seconds)
+    {
+        if (animator == null || !animator.isHuman) return;
+        EndUse();
+        var clip = Clip(drink ? "Coop Drink" : "Coop Eat");
+        if (clip == null) return;
+        seconds = Mathf.Max(.2f, seconds);
+        animator.SetFloat(UseSpeed, clip.length / seconds);
+        animator.SetTrigger(drink ? "Drink" : "Eat");
+        if (rightVisual != null) rightVisual.SetActive(false);
+        usedVisual = Attach(Coop.Item(saveId), HumanBodyBones.RightHand, MultiplayerManager.Instance.weaponGrip);
+        if (usedVisual == null) usedVisual = new GameObject("Used item");   // nothing to show: still times the weapon's return
+        useEnds = Time.time + seconds;
+    }
+
+    void EndUse()
+    {
+        if (usedVisual != null) Destroy(usedVisual.transform.parent != null && usedVisual.transform.parent.name.StartsWith("Grip") ? usedVisual.transform.parent.gameObject : usedVisual);
+        usedVisual = null;
+        if (rightVisual != null) rightVisual.SetActive(true);
+    }
+
+    AnimationClip Clip(string name)
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return null;
+        foreach (var c in animator.runtimeAnimatorController.animationClips) if (c != null && c.name == name) return c;
+        return null;
     }
 
     // A swing as the first-person release starts (1 light, 2 the alternate light, 3 heavy) and its whoosh (the held

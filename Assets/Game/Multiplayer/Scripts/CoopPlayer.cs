@@ -22,6 +22,7 @@ public class CoopPlayer : NetworkBehaviour
 
     int shownRelease;
     bool wasCasting, wasBashing;
+    ItemData wasEating;
     Player watchedTable;
     Unity.Netcode.Components.NetworkTransform motion;
 
@@ -130,6 +131,10 @@ public class CoopPlayer : NetworkBehaviour
         bool casting = spells != null && spells.Casting;
         if (casting && !wasCasting) CastRpc();
         wasCasting = casting;
+        var eating = onTable && table.Equipment != null ? table.Equipment.UsingItem : null;
+        if (eating != null && eating != wasEating)
+            UseRpc(new FixedString64Bytes(Coop.SaveId(eating)), eating.AnimationOnUse == ItemUseAnimation.Drink, table.Equipment.UsingTime);
+        wasEating = eating;
     }
 
     // Development: log when a swing is sent and shown, on the wall clock (two editors on one computer compare them).
@@ -143,6 +148,7 @@ public class CoopPlayer : NetworkBehaviour
     }
     [Rpc(SendTo.NotOwner)] void BashRpc() => Avatar.Bash();
     [Rpc(SendTo.NotOwner)] void CastRpc() => Avatar.Cast();
+    [Rpc(SendTo.NotOwner)] void UseRpc(FixedString64Bytes item, bool drink, float seconds) => Avatar.Use(item.ToString(), drink, seconds);
     // Hurt: the others see the flinch and the blood.
     [Rpc(SendTo.NotOwner)]
     void HurtRpc(Vector3 point, Vector3 direction, Vector3 swing)
