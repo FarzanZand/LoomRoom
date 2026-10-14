@@ -14,6 +14,8 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     public int bonusGold;
     public Material debrisMaterial;
     public AudioClip openAudio;
+    // AudioManager SFX Library key every chest opens with (its Open Audio is the fallback).
+    public const string StandardOpenKey = "standardChestOpen";
     [Range(0,1)] public float openVolume = 1f;
     public Transform lid;
     [Tooltip("The lid's opening, an editable clip (legacy, curves under the chest's root: the lid swings up with a small bounce). Without one the lid turns to Lid Open Rotation in code.")]
@@ -65,7 +67,9 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         if (opened) return;
         opened = true;
         Opened?.Invoke(this);
-        if(AudioManager.HasInstance && openAudio!=null) AudioManager.Instance.PlaySFX(openAudio,transform.position,openVolume,.06f);
+        // A chest opens with the SFX Library's StandardOpenKey when it has one (each tier's sting comes after), else its own clip.
+        if(AudioManager.HasInstance && (!chest || AudioManager.Instance.PlayFirstSFX(transform.position,StandardOpenKey)==null) && openAudio!=null)
+            AudioManager.Instance.PlaySFX(openAudio,transform.position,openVolume,.06f);
         NoiseEvents.Report(transform.position,7);
         var rng = new System.Random(seed);
         if(!chest || lid==null)foreach(var collider in GetComponentsInChildren<Collider>())collider.enabled=false;
@@ -93,7 +97,8 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         var mouth=transform.position+Vector3.up*.55f;
         DungeonLootDrop.Spill(drops,gold,dropPosition,transform.parent,chest ? mouth : (Vector3?)null);
         if(chest)Glow(mouth);
-        if(chest && stingAudio!=null && AudioManager.HasInstance) DOVirtual.DelayedCall(.12f,()=>AudioManager.Instance.PlaySFX(stingAudio,transform.position,stingVolume,.02f)).SetLink(gameObject);
+        bool chime=InventoryManager.HasInstance && InventoryManager.Instance.chestOpenChime;
+        if(chest && chime && stingAudio!=null && AudioManager.HasInstance) DOVirtual.DelayedCall(.12f,()=>AudioManager.Instance.PlaySFX(stingAudio,transform.position,stingVolume,.02f)).SetLink(gameObject);
         if(chest && lid!=null)
         {
             if(lidClip!=null)

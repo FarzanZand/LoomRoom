@@ -12,14 +12,14 @@ public class EquipmentSlotUI : MonoBehaviour,IPointerClickHandler,IPointerEnterH
     public Image silhouette;
     Player player;
     public void Bind(Player owner){player=owner;Refresh();}
-    [Tooltip("Shown behind the icon when the worn item is honed.")]
-    public Image honedFill;
+    [Tooltip("Shown behind the icon in the worn item's rarity colour.")]
+    [UnityEngine.Serialization.FormerlySerializedAs("honedFill")] public Image rarityFill;
     public void Refresh(){var item=player?.Equipment?.Get(slot);if(icon!=null){icon.sprite=item!=null?item.icon:null;icon.enabled=item!=null;
         // A long weapon stands upright in a tall slot (Diablo); everything else fills the slot.
         var area=((RectTransform)transform).rect.size-Vector2.one*12f;
         ItemGridUI.UprightIcon(icon.rectTransform,area,item!=null && item.GridSize.x==1 && area.y>area.x*1.5f ? new Vector2Int(1,item.GridSize.y) : Vector2Int.one);}if(title!=null)title.text=Display(slot);
         if(silhouette!=null)silhouette.enabled=item==null && silhouette.sprite!=null;
-        ItemData.ShowSlotFill(honedFill,item);}
+        ItemData.ShowSlotFill(rarityFill,item);}
     public static string Display(EquipmentSlot slot)=>ItemData.SlotName(slot).ToUpperInvariant();
     // Click (either button) takes it off: a worn item goes to the bag and needs room there ("Make room" notice),
     // a hand item is put away and stays in its hotbar slot.

@@ -24,9 +24,30 @@ public static class DungeonPickup
                 }
                 var item=Spawn(drop.item,target,parent,count);remaining-=count;
                 if(item!=null && popFrom.HasValue) PopOut(item.transform,popFrom.Value,index);
+                // Heard as it lands: at once, or (thrown out of a chest) when its arc ends.
+                if(item!=null) DropSound(drop.item,item.transform.position,popFrom.HasValue ? .08f*index+.55f : 0f);
             }
         }
     }
+    // AudioManager SFX Library keys for an item landing on the floor, one per rarity, heard where it lands; a missing key falls back to
+    // DropKey (the plain sound), and with none of them the drop is silent.
+    public const string DropKey = "itemDrop";
+    public static string DropKeyFor(ItemData item) => item == null ? DropKey : item.rarity switch
+    {
+        ItemRarity.Rare => "itemDropRare",
+        ItemRarity.Fine => "itemDropFine",
+        ItemRarity.Masterwork => "itemDropMasterwork",
+        ItemRarity.Relic => "itemDropRelic",
+        _ => DropKey,
+    };
+
+    static void DropSound(ItemData item, Vector3 at, float delay)
+    {
+        if (!AudioManager.HasInstance) return;
+        if (delay <= 0f) { AudioManager.Instance.PlayFirstSFX(at, DropKeyFor(item), DropKey); return; }
+        DOVirtual.DelayedCall(delay, () => { if (AudioManager.HasInstance) AudioManager.Instance.PlayFirstSFX(at, DropKeyFor(item), DropKey); });
+    }
+
     // From the source to where it settled, in an arc, one item after another.
     // It leaves upright and tips over onto the floor on the way down.
     static void PopOut(Transform item, Vector3 from, int order)

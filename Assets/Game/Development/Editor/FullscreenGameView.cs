@@ -47,6 +47,19 @@ public static class FullscreenGameView
             var w = (EditorWindow)o;
             if (w.titleContent.text == Title) return window = w;
         }
+        // A script reload can also give the window back Unity's "Game" title (then it was never closed and stayed on top
+        // of everything). It is the only Game view that covers the whole monitor from its corner.
+        var monitor = TargetMonitor();
+        foreach (var o in Resources.FindObjectsOfTypeAll(type))
+        {
+            var w = (EditorWindow)o;
+            var r = w.position;
+            if (!w.maximized && Mathf.Abs(r.x - monitor.x) < 4 && Mathf.Abs(r.y - monitor.y) < 4 && r.width >= monitor.width - 4 && r.height >= monitor.height - 4)
+            {
+                w.titleContent = new GUIContent(Title);
+                return window = w;
+            }
+        }
         return null;
     }
 

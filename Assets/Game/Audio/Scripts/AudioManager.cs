@@ -40,43 +40,52 @@ public class UIEntry
 public partial class AudioManager : Singleton<AudioManager>
 {
     // ── Inspector ──────────────────────────────────────────────────────────────
-    [Header("Mixer")]
-    [SerializeField] private AudioMixer mixer;
+    // The inspector: three tabs, the settings in foldouts.
+    const string Tabs = "Tabs", LibrariesTab = "Libraries", SettingsTab = "Settings", VoiceTab = "Dungeon Master voice";
 
-    [Header("Pool")]
-    [SerializeField, Min(4), Tooltip("Sound effects that can play at once. A fight easily has 20 going (footsteps, whooshes, hits, gore, voices); past this the quietest one is cut. Keep it and the UI pool under Project Settings > Audio > Real Voice Count with room for music, ambience and loops.")]
-    private int sfxPoolSize = 48;
-    [SerializeField, Min(2)]  private int uiPoolSize  = 8;
-    [SerializeField, Min(1), Tooltip("Copies of one clip that can play at once (five footsteps or whooshes in a frame would fill the pool).")]
-    private int maxSameClip = 3;
-    [SerializeField, Min(0f), Tooltip("A clip that started this recently (seconds) isn't started again: the copies would only stack into one louder sound.")]
-    private float sameClipGap = .05f;
-    [SerializeField, Tooltip("Editor and development builds: log a warning when a playing sound is cut to make room.")]
-    private bool logCutSounds = true;
-    [Header("Default spatial SFX range")]
-    [SerializeField, Min(.01f), Tooltip("Full volume within this distance. Keeps nearby interactions audible.")]
-    float sfxMinDistance = 3.5f;
-    [SerializeField, Min(.01f)] float sfxMaxDistance = 40f;
-
-    [Header("Default Volumes (0–1)")]
-    [SerializeField, Range(0f, 1f)] private float defaultMasterVolume = 1f;
-    [SerializeField, Range(0f, 1f)] private float defaultMusicVolume  = 0.8f;
-    [SerializeField, Range(0f, 1f)] private float defaultSfxVolume    = 1f;
-    [SerializeField, Range(0f, 1f)] private float defaultUiVolume     = 1f;
-
-    [Header("Music")]
-    [SerializeField] private float defaultFadeDuration = 1.5f;
-
-    [Header("SFX Library")]
+    [Sirenix.OdinInspector.TabGroup(Tabs, LibrariesTab), Sirenix.OdinInspector.LabelText("SFX Library"), Tooltip("Sound effects by key, heard where they happen (PlaySFX(key, position)).")]
     [SerializeField] private SFXEntry[] sfxLibrary;
-
-    [Header("Music Library")]
+    [Sirenix.OdinInspector.TabGroup(Tabs, LibrariesTab), Tooltip("Music by key (shop music, the wake-up tune...).")]
     [SerializeField] private MusicEntry[] musicLibrary;
-
-    [Header("UI Library")]
+    [Sirenix.OdinInspector.TabGroup(Tabs, LibrariesTab), Sirenix.OdinInspector.LabelText("UI Library"), Tooltip("Flat sounds heard the same anywhere: UI, game cues (level up, item drops by rarity), the DM's syllables.")]
     [SerializeField] private UIEntry[] uiLibrary;
 
-    [Header("Ambience")]
+    [Sirenix.OdinInspector.TabGroup(Tabs, SettingsTab), Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Mixer", Expanded = true)]
+    [SerializeField] private AudioMixer mixer;
+
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool")]
+    [SerializeField, Min(4), Tooltip("Sound effects that can play at once. A fight easily has 20 going (footsteps, whooshes, hits, gore, voices); past this the quietest one is cut. Keep it and the UI pool under Project Settings > Audio > Real Voice Count with room for music, ambience and loops.")]
+    private int sfxPoolSize = 48;
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool"), Sirenix.OdinInspector.LabelText("UI Pool Size")]
+    [SerializeField, Min(2)]  private int uiPoolSize  = 8;
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool")]
+    [SerializeField, Min(1), Tooltip("Copies of one clip that can play at once (five footsteps or whooshes in a frame would fill the pool).")]
+    private int maxSameClip = 3;
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool")]
+    [SerializeField, Min(0f), Tooltip("A clip that started this recently (seconds) isn't started again: the copies would only stack into one louder sound.")]
+    private float sameClipGap = .05f;
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool")]
+    [SerializeField, Tooltip("Editor and development builds: log a warning when a playing sound is cut to make room.")]
+    private bool logCutSounds = true;
+
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Spatial sound"), Sirenix.OdinInspector.LabelText("Full Volume Within")]
+    [SerializeField, Min(.01f), Tooltip("Metres: sound effects are at full volume this close. Keeps nearby interactions audible.")]
+    float sfxMinDistance = 3.5f;
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Spatial sound"), Sirenix.OdinInspector.LabelText("Silent Beyond")]
+    [SerializeField, Min(.01f), Tooltip("Metres: sound effects fade out to nothing by this distance.")] float sfxMaxDistance = 40f;
+
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Default volumes"), Sirenix.OdinInspector.LabelText("Master")]
+    [SerializeField, Range(0f, 1f), Tooltip("Until the player sets their own in Settings.")] private float defaultMasterVolume = 1f;
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Default volumes"), Sirenix.OdinInspector.LabelText("Music")]
+    [SerializeField, Range(0f, 1f)] private float defaultMusicVolume  = 0.8f;
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Default volumes"), Sirenix.OdinInspector.LabelText("SFX")]
+    [SerializeField, Range(0f, 1f)] private float defaultSfxVolume    = 1f;
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Default volumes"), Sirenix.OdinInspector.LabelText("UI")]
+    [SerializeField, Range(0f, 1f)] private float defaultUiVolume     = 1f;
+
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Music and ambience"), Sirenix.OdinInspector.LabelText("Music Fade")]
+    [SerializeField, Tooltip("Seconds a music change fades over when the caller doesn't say.")] private float defaultFadeDuration = 1.5f;
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Music and ambience"), Sirenix.OdinInspector.LabelText("Ambience Fade")]
     [SerializeField, Min(0f)] private float ambienceFadeDuration = 2f;
 
     // ── Mixer param names ──────────────────────────────────────────────────────
@@ -139,6 +148,32 @@ public partial class AudioManager : Singleton<AudioManager>
         BuildPool(uiPool,  uiPoolSize,  "UI",  uiGroup,  spatialBlend: 0f);
     }
 
+    // Unity ignores AudioMixer.SetFloat on exposed parameters during Awake (the mixer isn't ready yet): the volumes read
+    // there are applied to the mixer again here, or every channel stays at 0 dB.
+    void Start() => ApplyVolumesToMixer();
+
+    void ApplyVolumesToMixer()
+    {
+        SetMixerDb(P_MASTER, masterVolume);
+        SetMixerDb(P_MUSIC,  musicVolume);
+        SetMixerDb(P_SFX,    sfxVolume);
+        SetMixerDb(P_UI,     uiVolume);
+    }
+
+#if UNITY_EDITOR
+    // The Default Volumes, changed in the inspector during Play, are heard at once (until the player saves their own
+    // in Settings, which then win).
+    void OnValidate()
+    {
+        if (!Application.isPlaying || mixer == null) return;
+        if (!PlayerPrefs.HasKey(K_MASTER)) masterVolume = defaultMasterVolume;
+        if (!PlayerPrefs.HasKey(K_MUSIC))  musicVolume  = defaultMusicVolume;
+        if (!PlayerPrefs.HasKey(K_SFX))    sfxVolume    = defaultSfxVolume;
+        if (!PlayerPrefs.HasKey(K_UI))     uiVolume     = defaultUiVolume;
+        ApplyVolumesToMixer();
+    }
+#endif
+
     void BuildLibraries()
     {
         if (sfxLibrary != null)
@@ -177,10 +212,7 @@ public partial class AudioManager : Singleton<AudioManager>
         musicVolume  = PlayerPrefs.GetFloat(K_MUSIC,  defaultMusicVolume);
         sfxVolume    = PlayerPrefs.GetFloat(K_SFX,    defaultSfxVolume);
         uiVolume     = PlayerPrefs.GetFloat(K_UI,     defaultUiVolume);
-        SetMixerDb(P_MASTER, masterVolume);
-        SetMixerDb(P_MUSIC,  musicVolume);
-        SetMixerDb(P_SFX,    sfxVolume);
-        SetMixerDb(P_UI,     uiVolume);
+        ApplyVolumesToMixer();
     }
 
     void SetMixerDb(string param, float linear) =>

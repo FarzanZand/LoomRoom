@@ -12,6 +12,25 @@ public partial class AudioManager
     public void CrossfadeMusic(AudioClip clip, bool loop = true, float fadeDuration = -1f, float volume = 1f) =>
         StartMusic(clip, loop, fadeDuration, Mathf.Clamp01(volume), 1f, crossfade: true);
 
+    // A Music Library entry, crossfaded in at its own volume. False when the key isn't in the library.
+    public bool CrossfadeMusic(string key, bool loop = true, float fadeDuration = -1f)
+    {
+        if (!musicDict.TryGetValue(key, out var entry) || entry.clip == null) { Debug.LogWarning($"[AudioManager] Music key '{key}' not found."); return false; }
+        StartMusic(entry.clip, loop, fadeDuration, entry.volume, 1f, crossfade: true);
+        return true;
+    }
+
+    // Seconds into the music now playing (to come back to it later with CrossfadeMusicAt).
+    public float CurrentMusicTime => ActiveMusic != null && ActiveMusic.isPlaying ? ActiveMusic.time : 0f;
+
+    // Crossfades back to a track from where it was left.
+    public void CrossfadeMusicAt(AudioClip clip, float time, bool loop = true, float fadeDuration = -1f, float volume = 1f)
+    {
+        if (clip == null) return;
+        StartMusic(clip, loop, fadeDuration, Mathf.Clamp01(volume), 1f, crossfade: true);
+        if (time > 0f && time < clip.length) ActiveMusic.time = time;
+    }
+
     public void PlayMusic(string key, bool loop = true, float fadeDuration = -1f)
     {
         if (!musicDict.TryGetValue(key, out var entry))

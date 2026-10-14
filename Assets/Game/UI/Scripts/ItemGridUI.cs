@@ -94,11 +94,11 @@ public class ItemGridUI : MonoBehaviour
             icon.preserveAspect = true;
             UprightIcon(icon.rectTransform, view.sizeDelta - Vector2.one * iconPadding * 2f, size);
         }
-        var honed = view.Find("Honed fill")?.GetComponent<Image>();
-        if (honed != null)
+        var fill = view.Find("Honed fill")?.GetComponent<Image>();
+        if (fill != null)
         {
-            ItemData.ShowSlotFill(honed, stack.item);
-            honed.rectTransform.sizeDelta = view.sizeDelta - Vector2.one * 4f;
+            ItemData.ShowSlotFill(fill, stack.item);
+            fill.rectTransform.sizeDelta = view.sizeDelta - Vector2.one * 4f;
         }
         var count = view.Find("Stack")?.GetComponent<TMP_Text>();
         if (count != null) { count.text = stack.count > 1 ? $"x{stack.count}" : ""; count.gameObject.SetActive(stack.count > 1); }

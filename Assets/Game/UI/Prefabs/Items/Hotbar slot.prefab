@@ -401,7 +401,7 @@ MonoBehaviour:
   iconImage: {fileID: 6855010152270734530}
   background: {fileID: 5613828116353594162}
   equippedHighlight: {fileID: 3344158904564442165}
-  honedFill: {fileID: 5325755822919617580}
+  rarityFill: {fileID: 5325755822919617580}
   keyLabel: {fileID: 4398070461049920375}
   stackLabel: {fileID: 9085092156063966659}
   emptyColor: {r: 0.24, g: 0.24, b: 0.24, a: 1}
@@ -753,8 +753,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 5566ad11e7fd95f42830b9507199d229, type: 3}
+  m_Type: 2
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4

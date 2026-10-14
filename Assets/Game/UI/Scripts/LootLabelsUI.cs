@@ -10,7 +10,7 @@ public class LootLabelsUI : MonoBehaviour
     [SerializeField, Min(.5f)] float range = 4.5f;
     [SerializeField, Min(1)] int maxLabels = 6;
     [SerializeField, Tooltip("Metres above the item the name floats.")] float height = .55f;
-    [SerializeField, Range(0f, 1f), Tooltip("How far the beam's colour is lightened towards white, so dark colours (Honed, Rare) still read.")]
+    [SerializeField, Range(0f, 1f), Tooltip("How far the beam's colour is lightened towards white, so dark colours (Rare) still read.")]
     float lighten = .55f;
 
     readonly List<TMP_Text> labels = new();

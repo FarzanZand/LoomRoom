@@ -103,7 +103,7 @@ MonoBehaviour:
     - 70
     growthPerFloor: 5
   - id: skeletons
-    enabled: 1
+    enabled: 0
     stat: 28
     statPerPoint: 0.01
     slots: 1
@@ -115,7 +115,7 @@ MonoBehaviour:
     - 50
     growthPerFloor: 5
   - id: beasts
-    enabled: 1
+    enabled: 0
     stat: 29
     statPerPoint: 0.01
     slots: 1
@@ -127,7 +127,7 @@ MonoBehaviour:
     - 50
     growthPerFloor: 5
   - id: slimes
-    enabled: 1
+    enabled: 0
     stat: 30
     statPerPoint: 0.01
     slots: 1

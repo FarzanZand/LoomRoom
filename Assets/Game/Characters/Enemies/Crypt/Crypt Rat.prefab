@@ -277,7 +277,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 0
-    baseValue: 11
+    baseValue: 12
     min: 0
     max: 0
   - stat: 2
@@ -373,7 +373,7 @@ MonoBehaviour:
     animatorTrigger: Attack
     minRange: 0
     maxRange: 1.5
-    cooldown: 1.3
+    cooldown: 1.1
     facingAngle: 45
     hitboxIndex: 0
     fallbackHitDelay: 0.45

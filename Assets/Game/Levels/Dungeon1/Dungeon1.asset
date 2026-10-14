@@ -32,8 +32,6 @@ MonoBehaviour:
     tier3: 0
     tier4: 0
     upgradeChance: 0
-    honedChance: 0.08
-    honedTwiceChance: 0.2
     fineChance: 0.3
     masterworkChance: 0.1
   - fromFloor: 2
@@ -42,8 +40,6 @@ MonoBehaviour:
     tier3: 0
     tier4: 0
     upgradeChance: 0
-    honedChance: 0.08
-    honedTwiceChance: 0.2
     fineChance: 0.3
     masterworkChance: 0.1
   - fromFloor: 3
@@ -52,8 +48,6 @@ MonoBehaviour:
     tier3: 0
     tier4: 0
     upgradeChance: 0
-    honedChance: 0.08
-    honedTwiceChance: 0.2
     fineChance: 0.3
     masterworkChance: 0.1
   - fromFloor: 4
@@ -62,8 +56,6 @@ MonoBehaviour:
     tier3: 0
     tier4: 0
     upgradeChance: 0
-    honedChance: 0.12
-    honedTwiceChance: 0.2
     fineChance: 0.3
     masterworkChance: 0.1
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
@@ -83,7 +75,7 @@ MonoBehaviour:
   minimumAmbient: 0.07
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
-  backgroundMusic: {fileID: 8300000, guid: 6b6bbf9a99b5f5643b1556284d1737dc, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: 68a87100ce18d3744805954328f56c37, type: 3}
   backgroundMusicVolume: 1
   loopMusic: 1
   musicFadeSeconds: 1.5
@@ -316,6 +308,7 @@ MonoBehaviour:
     sleepChance: 0.1
     maxSleepingPacks: 3
     pits: 1
+    playerFallsInPits: 0
     pitFallDamage: 0.25
     sunkenFloors: 1
     archerLedges: 1

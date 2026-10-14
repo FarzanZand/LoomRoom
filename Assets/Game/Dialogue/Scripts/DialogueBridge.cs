@@ -113,7 +113,7 @@ public class DialogueBridge : MonoBehaviour
         var item = InventoryManager.Instance.FindItem(itemName);
         var p = PlayerManager.Instance.Active;
         if (item == null || p == null) return false;
-        // Honed copies count as the item they were made from ("Iron Sword" matches "Honed Iron Sword +1").
+        // Rolled copies count as the item they were made from ("Iron Sword" matches a Fine Iron Sword).
         var root = item.BaseItem;
         if (Holds(p.Bag, root) || Holds(p.Hotbar, root)) return true;
         if (p.Equipment != null)

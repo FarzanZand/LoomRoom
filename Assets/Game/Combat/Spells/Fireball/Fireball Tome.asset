@@ -31,7 +31,7 @@ MonoBehaviour:
   itemType: 7
   maxStackSize: 1
   gridSize: {x: 0, y: 0}
-  value: 120
+  value: 40
   tier: 1
   lootWeight: 0.75
   pickupAudioSource: 0
@@ -56,6 +56,7 @@ MonoBehaviour:
     damageMultiplier: 1
     knockbackForce: -1
     hitStopScale: 1
+  damageSpread: 0
   effects: []
   useAudioSource: 0
   useAudio: {fileID: 0}

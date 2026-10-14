@@ -248,6 +248,7 @@ MonoBehaviour:
   cells: {x: 4, y: 2}
   depth: 4
   fallDamage: 0.25
+  keepPlayerOut: 1
 --- !u!1 &2588828056686384738
 GameObject:
   m_ObjectHideFlags: 0
@@ -346,6 +347,7 @@ MonoBehaviour:
   cells: {x: 4, y: 2}
   depth: 4
   fallDamage: 0.25
+  keepPlayerOut: 1
 --- !u!1 &5120056641221797466
 GameObject:
   m_ObjectHideFlags: 0
@@ -469,7 +471,7 @@ MonoBehaviour:
   - '####+####'
   minimumCells: {x: 6, y: 6}
   style: {fileID: 0}
-  heightTiles: 1
+  heightTiles: 3
   openCeiling: 0
   ceilingFrame: 0.3
   skylightRadius: 0

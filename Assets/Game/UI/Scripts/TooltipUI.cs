@@ -26,6 +26,12 @@ public class TooltipUI : Singleton<TooltipUI>
     [SerializeField, Tooltip("A weapon's swing speed against the held weapon's.")] CompareBar speedBar = new();
     [SerializeField, Tooltip("Under the bars: what grey stands for (\"Grey: your Iron Sword\").")] TextMeshProUGUI compareNote;
     [SerializeField] Color lineDefault = new(.3f, .3f, .33f);
+    [Header("Stone plate: footer and the equipped panel's header")]
+    [SerializeField, Tooltip("The footer row (left note, coin and price); hidden for text-only tooltips.")] GameObject footer;
+    [SerializeField] TextMeshProUGUI footerNote, footerPrice;
+    [SerializeField] Image compareIcon, compareIconSlot, compareRarityLine;
+    [SerializeField] GameObject compareFooter;
+    [SerializeField] TextMeshProUGUI compareFooterNote, compareFooterPrice;
 
     // One compare bar: grey up to what is worn, green for what this adds, red for what it would lose.
     [System.Serializable]
@@ -66,8 +72,10 @@ public class TooltipUI : Singleton<TooltipUI>
     {
         if (panel == null || item == null) return;
         bool bars = mainBar.root != null && item.TryMainStat(out _, out _, out _);
-        ShowText(Title(item), Kind(item), item.BuildTooltip(!bars));
+        ShowText(Title(item), Kind(item), item.BuildTooltip(!bars, footer == null));
         ShowHeader(item);
+        var gear = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
+        ShowFooter(footer, footerNote, footerPrice, item, gear != null && gear.IsEquipped(item) ? "Equipped" : "");
         if (compareBars != null) compareBars.SetActive(bars);
         if (bars) ShowBars(item);
         LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
@@ -89,7 +97,7 @@ public class TooltipUI : Singleton<TooltipUI>
     {
         Color colour = item.HasSlotFill ? Color.Lerp(item.RarityColour, Color.white, item.HasRarityColour ? .25f : .1f) : lineDefault;
         if (icon != null) { icon.sprite = item.icon; icon.enabled = item.icon != null; icon.preserveAspect = true; }
-        if (iconSlot != null) { iconSlot.gameObject.SetActive(item.icon != null); iconSlot.color = colour; }
+        if (iconSlot != null) iconSlot.gameObject.SetActive(item.icon != null);
         if (rarityLine != null) rarityLine.color = colour;
     }
 
@@ -143,9 +151,20 @@ public class TooltipUI : Singleton<TooltipUI>
         r.offsetMin = r.offsetMax = Vector2.zero;
     }
 
+    // The footer: a short note on the left (Equipped), the price on the right; hidden when there is neither.
+    static void ShowFooter(GameObject row, TextMeshProUGUI note, TextMeshProUGUI price, ItemData item, string text)
+    {
+        if (row == null) return;
+        bool priced = item != null && item.value > 0 && item.itemType != ItemType.Key;
+        row.SetActive(priced || !string.IsNullOrEmpty(text));
+        if (note != null) note.text = text;
+        if (price != null) { price.text = priced ? $"{item.value} gold" : ""; price.transform.parent.gameObject.SetActive(priced); }
+    }
+
     // Plain text tooltips (skills, buffs) have no item header or bars.
     void HideItemParts()
     {
+        if (footer != null) footer.SetActive(false);
         if (compareBars != null) compareBars.SetActive(false);
         if (iconSlot != null) iconSlot.gameObject.SetActive(false);
         if (rarityLine != null) rarityLine.color = lineDefault;
@@ -157,8 +176,13 @@ public class TooltipUI : Singleton<TooltipUI>
     void ShowCompare(ItemData equipped)
     {
         if (compareNameText != null) compareNameText.text = Title(equipped);
-        if (compareTypeText != null) compareTypeText.text = "EQUIPPED  ·  " + Kind(equipped);
-        if (compareDescriptionText != null) compareDescriptionText.text = equipped.BuildTooltip();
+        // The panel's own tab says EQUIPPED; without one the type line does.
+        if (compareTypeText != null) compareTypeText.text = (compareIcon != null ? "" : "EQUIPPED  ·  ") + Kind(equipped);
+        if (compareDescriptionText != null) compareDescriptionText.text = equipped.BuildTooltip(true, compareFooter == null);
+        if (compareIcon != null) { compareIcon.sprite = equipped.icon; compareIcon.enabled = equipped.icon != null; compareIcon.preserveAspect = true; }
+        if (compareIconSlot != null) compareIconSlot.gameObject.SetActive(equipped.icon != null);
+        if (compareRarityLine != null) compareRarityLine.color = equipped.HasSlotFill ? Color.Lerp(equipped.RarityColour, Color.white, equipped.HasRarityColour ? .25f : .1f) : lineDefault;
+        ShowFooter(compareFooter, compareFooterNote, compareFooterPrice, equipped, "");
         comparePanel.SetActive(true);
         var overlay = comparePanel.GetComponent<Canvas>(); if (overlay != null) overlay.overrideSorting = true;
         comparePanel.transform.SetAsLastSibling();

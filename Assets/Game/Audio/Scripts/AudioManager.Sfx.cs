@@ -44,6 +44,16 @@ public partial class AudioManager
         return PlaySFX(e.clip, position, e.volume, e.pitchVariance);
     }
 
+    public bool HasSFX(string key) => !string.IsNullOrEmpty(key) && sfxDict.ContainsKey(key);
+
+    // The first of these keys the SFX Library has, at a point; nothing (and no warning) when it has none of them.
+    public AudioSource PlayFirstSFX(Vector3 position, params string[] keys)
+    {
+        foreach (var key in keys)
+            if (HasSFX(key)) { var e = sfxDict[key]; return PlaySFX(e.clip, position, e.volume, e.pitchVariance); }
+        return null;
+    }
+
     public AudioSource PlaySFX2D(string key)
     {
         if (!sfxDict.TryGetValue(key, out var e))

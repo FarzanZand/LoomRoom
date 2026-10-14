@@ -10,7 +10,7 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler
 {
     [SerializeField] Image background;
     [SerializeField] Image icon;
-    [SerializeField] Image honedFill;
+    [SerializeField, UnityEngine.Serialization.FormerlySerializedAs("honedFill")] Image rarityFill;
     [SerializeField] TMP_Text count;
     [SerializeField] Button button;
 
@@ -25,9 +25,10 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler
         item = data; click = onClick; hover = onHover;
         bool filled = data != null;
         if (icon != null) { icon.sprite = filled ? data.icon : null; icon.enabled = icon.sprite != null; icon.color = available ? Color.white : new Color(1, 1, 1, .4f); }
-        ItemData.ShowSlotFill(honedFill, data, filled);
+        ItemData.ShowSlotFill(rarityFill, data, filled);
         if (count != null) count.text = filled && amount > 1 ? $"x{amount}" : "";
-        if (background != null) background.color = filled ? ItemSlotUI.DungeonFilled : ItemSlotUI.DungeonEmpty;
+        // The inventory's grey cell, the same filled or empty (the item's rarity floor marks it).
+        if (background != null) background.color = Color.white;
         if (button != null) button.interactable = filled && available;
     }
 

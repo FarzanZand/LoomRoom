@@ -218,6 +218,7 @@ MonoBehaviour:
   characterName: Crypt Warden
   faction: 2
   description: 
+  creatureKind: 0
   stats:
   - stat: 6
     baseValue: 1
@@ -228,15 +229,15 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 0
-    baseValue: 21
+    baseValue: 38
     min: 0
     max: 0
   - stat: 2
-    baseValue: 8
+    baseValue: 10
     min: 0
     max: 0
   - stat: 1
-    baseValue: 2
+    baseValue: 3
     min: 0
     max: 0
   audio:
@@ -360,4 +361,8 @@ MonoBehaviour:
       hitStopScale: 0.5
     pullAudio: {fileID: 0}
     fireAudio: {fileID: 0}
+  caster: 0
+  spells: []
+  closesIn: 0
+  spellGap: 4
   experience: 28

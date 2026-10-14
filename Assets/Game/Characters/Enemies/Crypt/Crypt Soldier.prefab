@@ -156,6 +156,7 @@ MonoBehaviour:
   characterName: Crypt Soldier
   faction: 2
   description: 
+  creatureKind: 0
   stats:
   - stat: 6
     baseValue: 1
@@ -166,11 +167,11 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 0
-    baseValue: 24
+    baseValue: 30
     min: 0
     max: 0
   - stat: 2
-    baseValue: 6
+    baseValue: 7
     min: 0
     max: 0
   - stat: 1
@@ -261,7 +262,7 @@ MonoBehaviour:
     animatorTrigger: Attack
     minRange: 0
     maxRange: 1.65
-    cooldown: 1.6
+    cooldown: 1.4
     facingAngle: 45
     hitboxIndex: 0
     fallbackHitDelay: 0.45
@@ -299,4 +300,8 @@ MonoBehaviour:
       hitStopScale: 0.5
     pullAudio: {fileID: 0}
     fireAudio: {fileID: 0}
+  caster: 0
+  spells: []
+  closesIn: 0
+  spellGap: 4
   experience: 18

@@ -430,7 +430,7 @@ MonoBehaviour:
   - '#########'
   minimumCells: {x: 6, y: 6}
   style: {fileID: 0}
-  heightTiles: 1
+  heightTiles: 2
   openCeiling: 0
   ceilingFrame: 0.3
   skylightRadius: 0

@@ -20,16 +20,59 @@ public class Merchant : MonoBehaviour, IInteractable
     public ItemData[] staples = new ItemData[0];
     [Min(0), Tooltip("Different consumables on offer.")] public int consumableCount = 2;
     [Min(1), Tooltip("How many of each consumable.")] public int stapleCount = 2;
-    [Min(0), Tooltip("Different pieces of gear (weapons, shields, armor, trinkets, tomes) on offer.")] public int gearCount = 5;
+    [Min(0), Tooltip("Different pieces of gear (weapons, shields, armor, trinkets, tomes) on offer. The shop screen shows six.")] public int gearCount = 6;
+    [Tooltip("At least one spell tome among the gear.")] public bool alwaysTome = true;
     [Tooltip("Rolled as Chest rewards for the stock. The generator sets this from the level when empty.")]
     public LootSource stockTable;
     [Range(.5f, 3f)] public float priceMultiplier = 1.2f;
+    [Min(0), Tooltip("Times the floor's chances of gear coming out Fine or Masterwork, for the merchant's stock (a better pick than the floor's loot). Their price follows the rarity's value.")]
+    public float rarityChanceBoost = 2f;
     [Range(0f, .5f), Tooltip("Price increase per floor beyond the first.")]
     public float pricePerFloor = .1f;
     public bool buysItems = true;
     public const string ShopTradeKey = "shopTrade";
     public AudioClip tradeClip;
     [Range(0, 1)] public float tradeVolume = .9f;
+    [Tooltip("Music Library key (AudioManager) played while the table player is near. Empty: no shop music.")]
+    public string musicKey = "shop";
+    [Min(0), Tooltip("Metres from the merchant at which the shop music fades in.")]
+    public float musicRadius = 8f;
+    [Min(0), Tooltip("Metres at which the floor's own music comes back (a little further than Music Radius, so walking along the edge doesn't flip it back and forth).")]
+    public float musicLeaveRadius = 11f;
+    [Min(0)] public float musicFade = 1.5f;
+
+    // The floor's music while the shop's plays: put back, from where it was, when the player walks off.
+    bool shopMusicOn;
+    AudioClip floorMusic;
+    float floorMusicTime, floorMusicVolume;
+    bool floorMusicLoops;
+
+    void Update()
+    {
+        if (string.IsNullOrEmpty(musicKey) || !AudioManager.HasInstance || !PlayerManager.HasInstance) return;
+        var player = PlayerManager.Instance.ActiveKind == PlayerKind.Table ? PlayerManager.Instance.Active : null;
+        float distance = player != null && player.IsAlive ? Vector3.Distance(player.transform.position, transform.position) : float.MaxValue;
+        if (!shopMusicOn && distance <= musicRadius) StartShopMusic();
+        else if (shopMusicOn && distance > musicLeaveRadius) StopShopMusic();
+    }
+
+    void OnDisable() { if (shopMusicOn) StopShopMusic(); }
+
+    void StartShopMusic()
+    {
+        var audio = AudioManager.Instance;
+        floorMusic = audio.CurrentMusic; floorMusicTime = audio.CurrentMusicTime;
+        floorMusicVolume = audio.CurrentMusicVolume; floorMusicLoops = audio.CurrentMusicLoops;
+        shopMusicOn = audio.CrossfadeMusic(musicKey, true, musicFade);
+    }
+
+    void StopShopMusic()
+    {
+        shopMusicOn = false;
+        if (!AudioManager.HasInstance) return;
+        if (floorMusic != null) AudioManager.Instance.CrossfadeMusicAt(floorMusic, floorMusicTime, floorMusicLoops, musicFade, floorMusicVolume);
+        else AudioManager.Instance.StopMusic(musicFade);
+    }
 
     [HideInInspector] public int seed;
     [HideInInspector] public int floorNumber = 1;
@@ -80,7 +123,25 @@ public class Merchant : MonoBehaviour, IInteractable
             Add(consumables[pick], stapleCount);
             consumables.RemoveAt(pick);
         }
-        foreach (var item in gear) Add(item, 1);
+        // Every merchant has a spell tome: when none came up, one takes the last place (a random tome of a tier this
+        // floor's gear reaches).
+        if (alwaysTome && !gear.Exists(i => i != null && i.spell != null) && InventoryManager.HasInstance)
+        {
+            int top = LootSource.FloorGear?.Invoke(floorNumber)?.HighestTier ?? 1;
+            var tomes = InventoryManager.Instance.itemCatalog.FindAll(i => i != null && i.spell != null && i.tier > 0 && i.tier <= Mathf.Max(1, top) && InventoryManager.Instance.CanDropLoot(i));
+            if (tomes.Count > 0)
+            {
+                if (gear.Count >= gearCount && gear.Count > 0) gear.RemoveAt(gear.Count - 1);
+                gear.Add(tomes[rng.Next(tomes.Count)]);
+            }
+        }
+        // The merchant's gear rolls its own rarity, from the plain item, at Rarity Chance Boost times the floor's chances.
+        var row = LootSource.FloorGear?.Invoke(floorNumber);
+        var profile = stockTable as DungeonLootProfile;
+        float fine = row != null ? row.fineChance : profile != null ? profile.fineChance : .3f;
+        float masterwork = row != null ? row.masterworkChance : profile != null ? profile.masterworkChance : .1f;
+        foreach (var item in gear)
+            Add(item.IsGear ? DungeonLootProfile.RollRarity(item.BaseItem, rng, floorNumber, fine, masterwork, rarityChanceBoost) : item, 1);
     }
 
     void Add(ItemData item, int count)

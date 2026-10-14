@@ -1,8 +1,9 @@
 using UnityEngine;
 
-// A shrine bargain (DungeonRoomFeatures.shrineBargains): bleed on it and it hones what you fight with, once. It takes a
-// share of your health and makes the weapon in your hand (or, failing that, your shield, then your body armour) one
-// step more Honed. It won't take more blood than you have.
+// A shrine bargain (DungeonRoomFeatures.shrineBargains): bleed on it and it raises what you fight with, once. It takes a
+// share of your health and lifts the weapon in your hand (or, failing that, your shield, then your body armour) one
+// rarity: Plain to Fine, Fine to Masterwork, with new properties rolled for the floor the way loot rolls them
+// (ItemPropertyTable). It won't take more blood than you have.
 public class DungeonShrine : MonoBehaviour, IInteractable
 {
     [Range(.05f, .9f), Tooltip("Share of the player's most health the bargain takes.")]
@@ -18,7 +19,7 @@ public class DungeonShrine : MonoBehaviour, IInteractable
 
     static Player Table => PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
 
-    // The slot the shrine would hone: the first in Order that holds something it can still raise.
+    // The slot the shrine would raise: the first in Order that holds gear below Masterwork.
     static bool Target(Player player, out EquipmentSlot slot, out ItemData item)
     {
         slot = EquipmentSlot.RightHand; item = null;
@@ -26,11 +27,22 @@ public class DungeonShrine : MonoBehaviour, IInteractable
         foreach (var s in Order)
         {
             var i = player.Equipment.Get(s);
-            if (i == null || !i.CanBeHoned || i.honed >= ItemData.MaxHoned) continue;
+            if (i == null || !i.IsGear || (i.rarity != ItemRarity.Plain && i.rarity != ItemRarity.Fine)) continue;
             slot = s; item = i;
             return true;
         }
         return false;
+    }
+
+    // One rarity up, with new properties rolled for this floor (Fine keeps none of its old rolls: it is made anew).
+    static ItemData Raise(ItemData item)
+    {
+        var table = ItemPropertyTable.Current;
+        if (table == null) return item;
+        var to = item.rarity == ItemRarity.Plain ? ItemRarity.Fine : ItemRarity.Masterwork;
+        int floor = TableManager.Loader != null && TableManager.Loader.Dungeon != null ? TableManager.Loader.Dungeon.FloorNumber : 1;
+        var properties = table.Roll(item.BaseItem, to, floor, new System.Random());
+        return properties.Length > 0 ? item.BaseItem.Rolled(to, properties) : item;
     }
 
     public string Prompt
@@ -38,7 +50,7 @@ public class DungeonShrine : MonoBehaviour, IInteractable
         get
         {
             if (used) return "The shrine is dry";
-            return Target(Table, out _, out var item) ? $"Bleed on the shrine (hone your {item.BaseItem.itemName})" : "Bleed on the shrine";
+            return Target(Table, out _, out var item) ? $"Bleed on the shrine (raise your {item.BaseItem.itemName})" : "Bleed on the shrine";
         }
     }
 
@@ -49,15 +61,15 @@ public class DungeonShrine : MonoBehaviour, IInteractable
         var player = DungeonFeatureUtility.TablePlayer(who);
         if (player == null) return;
         if (used) { MessageLog.Post("The shrine has had its blood.", MessageKind.Info); return; }
-        if (!Target(player, out var slot, out var item)) { MessageLog.Post("You hold nothing the shrine can hone.", MessageKind.Warning); return; }
+        if (!Target(player, out var slot, out var item)) { MessageLog.Post("You hold nothing the shrine can raise.", MessageKind.Warning); return; }
         float price = Mathf.Max(1f, player.Stats.MaxHealth * bloodPrice);
         if (player.Stats.CurrentHealth <= price) { MessageLog.Post("You are too weak to bleed for it.", MessageKind.Warning); return; }
         used = true;
         player.Stats.TakeDamage(new DamageInfo { Amount = price, SourceName = "the shrine", Magic = true, HitPoint = transform.position + Vector3.up });
-        var honed = item.Honed(item.honed + 1);
-        player.Equipment.Replace(slot, honed);
+        var raised = Raise(item);
+        if (raised != item) player.Equipment.Replace(slot, raised);
         if (AudioManager.HasInstance && offerClip != null) AudioManager.Instance.PlaySFX(offerClip, transform.position, offerVolume, .03f);
-        MessageLog.Post($"The shrine drinks. Your {item.BaseItem.itemName} is now {honed.itemName}.", MessageKind.Good);
+        MessageLog.Post($"The shrine drinks. Your {item.BaseItem.itemName} is now {raised.DisplayName}.", MessageKind.Good);
         foreach (var go in litWhileUnused) if (go != null) go.SetActive(false);
     }
 }

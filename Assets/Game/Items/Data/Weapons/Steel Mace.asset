@@ -53,9 +53,6 @@ MonoBehaviour:
   - stat: 7
     value: -0.15
     type: 0
-  - stat: 28
-    value: 0.4
-    type: 0
   weapon:
     useDefaultEffects: 1
     hitAudio: {fileID: 0}

@@ -27,12 +27,27 @@ public class InventoryManager : Singleton<InventoryManager>
     [Min(.1f)] public float beamHeight = 1.1f;
     [Min(.01f)] public float beamWidth = .07f;
     public Color beamNormal = new(.95f, .9f, .78f, .24f);
-    [Tooltip("Used when the UIManager is missing; otherwise Honed items take UIManager.honed.")]
-    public Color beamHoned = new(.45f, .7f, 1f, .3f);
+
+    [Header("Chests")]
+    [Tooltip("The chime a chest plays when it opens, one per chest tier (DungeonContainer.stingAudio).")]
+    public bool chestOpenChime;
 
     [Header("Rarity")]
     [Tooltip("The properties Fine and Masterwork gear can roll, their slots and their values by floor (Items/Data/Item Properties).")]
     public ItemPropertyTable itemProperties;
+
+    [Header("Loot balance (whole game)")]
+    [Min(0), Tooltip("Times every chance of gear coming out Fine or Masterwork, in every loot source (loot profiles, the floor table, merchants, the shrine's roll is not affected). 1 = as set on each table.")]
+    public float rarityChanceMultiplier = 1f;
+    [Min(0), Tooltip("Times every chance of an item dropping at all: gear and recovery chances of loot profiles, an enemy's drop chance and pool chances of hand-listed tables. 1 = as set on each table.")]
+    public float dropChanceMultiplier = 1f;
+    [Min(0), Tooltip("Times every amount of gold any loot gives. 1 = as set on each table.")]
+    public float goldMultiplier = 1f;
+
+    // The whole-game multipliers, safe to read with no manager (1 then).
+    public static float RarityChanceScale => HasInstance ? Instance.rarityChanceMultiplier : 1f;
+    public static float DropChanceScale => HasInstance ? Instance.dropChanceMultiplier : 1f;
+    public static float GoldScale => HasInstance ? Instance.goldMultiplier : 1f;
 
     [Header("Drop")]
     [Tooltip("Prefab with a WorldItem used when items are dropped or spawned from data.")]
@@ -54,7 +69,7 @@ public class InventoryManager : Singleton<InventoryManager>
         if (!filtered) return true;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         if (player == null) return true;
-        // Any variant (Honed, Fine, Masterwork) of the item counts as owning it.
+        // Any variant (Fine, Masterwork) of the item counts as owning it.
         bool Owns(Inventory inventory) { if (inventory == null) return false; for (int i = 0; i < inventory.SlotCount; i++) { var stack = inventory[i]; if (stack != null && !stack.IsEmpty && stack.item.BaseItem == item.BaseItem) return true; } return false; }
         if (Owns(player.Bag) || Owns(player.Hotbar)) return false;
         if (player.Equipment != null)

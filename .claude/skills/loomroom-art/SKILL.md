@@ -217,6 +217,19 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
   continuous across faces.
 - Check the result from every side close up (bed ring render plus in-game capture) before saying it is done.
 
+**Check every side, both ends**
+- A box prop has two ends: zooming only views 0, 2 and 8 of the turntable missed the chest's right end, which was a
+  stretched smear (2026-10-14). Look at all eight sides, and find smears by measurement too: per triangle, the share of
+  horizontally neighbouring texels that are identical (over ~0.6 is a smear); repaint those from the matching texels of
+  the clean opposite side.
+
+**Pixel size is measured, never judged by eye**
+- Every texture you make or remap (tiles, hand-drawn pieces, new UVs) must land on the density rule: 6.4 texels per
+  world unit in the room (128 per metre), 128 per metre on table props. After any change measure it with
+  `PixelRestyle.TexelsPerUnit(renderer, material)` (per material, so per submesh) and correct the UVs until it reads
+  the target. Painted textures look blockier than their texels; matching that look by eye gave a door knob half the
+  door's density (2026-10-14). When you change a tile's size, change its UV scale with it.
+
 **Room surfaces**
 - Wall/ceiling paint from the concept's own wall (crop it as the reference). Scatter the painting's marks (flakes,
   cracks) over a large tile instead of repeating one painting every 2 m. Take the painting's broad light drift out.

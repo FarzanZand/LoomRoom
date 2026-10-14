@@ -8,6 +8,8 @@ using UnityEngine.UI;
 public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler
 {
     [SerializeField] Image icon;
+    [Tooltip("The ware's rarity floor behind its icon (the inventory's), shown for Fine, Masterwork and other coloured items.")]
+    [SerializeField] Image rarityFill;
     [SerializeField] TMP_Text itemName;
     [SerializeField] TMP_Text info;
     [SerializeField] TMP_Text count;
@@ -26,7 +28,8 @@ public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler
         gameObject.SetActive(true);
         item = data; click = onClick; hover = onHover;
         if (icon != null) { icon.sprite = data != null ? data.icon : null; icon.enabled = icon.sprite != null; }
-        if (itemName != null) itemName.text = data != null ? data.itemName : "";
+        ItemData.ShowSlotFill(rarityFill, data, data != null);
+        if (itemName != null) itemName.text = data == null ? "" : data.HasRarityColour ? $"<color={data.RarityTextColour}>{data.DisplayName}</color>" : data.itemName;
         if (info != null) info.text = data != null ? data.ShortInfo() : "";
         if (count != null) count.text = amount > 1 ? $"x{amount}" : "";
         if (price != null) price.text = cost;

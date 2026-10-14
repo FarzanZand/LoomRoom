@@ -8,7 +8,8 @@ using UnityEngine;
 // RoomEventTest.Run(). It makes the table player very hard to kill, then, for whatever this floor has: springs an
 // ambush and kills its waves (gates up, waves, gates down, the reward chest), wakes a sleeping pack (asleep at first,
 // a step close by wakes it, the pack follows), opens a trapped chest beside the player (spikes hurt), bleeds on a
-// shrine (the held weapon is honed), drops the player into a pit (hurt, back at the edge) and knocks an enemy over
+// shrine (the held weapon rises a rarity), walks the player at a pit (held back at its edge, or hurt and put back when the
+// floor lets players fall) and knocks an enemy over
 // a pit's edge (it dies). Results go to Temp/RoomTest/report.txt and RoomEventTest.Report; frames to Temp/RoomTest.
 public class RoomEventTest : MonoBehaviour
 {
@@ -140,10 +141,19 @@ public class RoomEventTest : MonoBehaviour
         yield return new WaitForSeconds(.6f);
         yield return Shot("pit_edge");
         float hp = player.Stats.CurrentHealth;
-        player.Warp(hole + Vector3.up * .3f);
-        for (float t = 0; t < 2.5f && Mathf.Approximately(hp, player.Stats.CurrentHealth); t += Time.deltaTime) yield return null;
-        yield return new WaitForSeconds(.3f);
-        Line($"pit: fall cost {hp - player.Stats.CurrentHealth:F0} health, player now {(gen.CellOf(player.transform.position) == gen.CellOf(hole) ? "STILL IN THE PIT" : "back on the floor")} (y {player.transform.position.y - edge.y:F2} from the edge)");
+        // Walk straight at the hole for two seconds, as a player would (the edge holds them back unless the floor lets
+        // players fall: then they fall, are hurt and come back at the edge).
+        var toHole = hole - edge; toHole.y = 0f; toHole.Normalize();
+        float lowest = player.transform.position.y;
+        for (float t = 0; t < 2f; t += Time.deltaTime)
+        {
+            player.Motor.Controller.Move((toHole * 3.5f + Vector3.down * 2f) * Time.deltaTime);
+            lowest = Mathf.Min(lowest, player.transform.position.y);
+            yield return null;
+        }
+        yield return new WaitForSeconds(.5f);
+        yield return Shot("pit_walked");
+        Line($"pit: walking at it for 2 s cost {hp - player.Stats.CurrentHealth:F0} health, lowest {lowest - edge.y:F2} from the edge, player now {(gen.CellOf(player.transform.position) == gen.CellOf(hole) ? "OVER THE PIT" : "on the floor")} (held back: {pit.keepPlayerOut})");
         // An enemy at the edge, knocked over it.
         EnemyBrain victim = null;
         foreach (var b in EnemyBrain.Active) if (b.Character.IsAlive && !b.TryGetComponent<FlyingEnemy>(out _)) { victim = b; break; }

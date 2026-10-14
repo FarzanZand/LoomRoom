@@ -97,15 +97,15 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 0
-    baseValue: 40
+    baseValue: 30
     min: 0
     max: 0
   - stat: 2
-    baseValue: 14
+    baseValue: 9
     min: 0
     max: 0
   - stat: 1
-    baseValue: 2
+    baseValue: 1
     min: 0
     max: 0
   audio:
@@ -237,7 +237,7 @@ MonoBehaviour:
     handEffect: {fileID: 6658911669708422142, guid: 916fb89ef926e444ab27adab792c11fa, type: 3}
     minRange: 3
     maxRange: 12
-    cooldown: 3.5
+    cooldown: 4
     animatorTrigger: CastSpell
     releaseTime: 1.35
     aimTrackSpeed: 0

@@ -40,7 +40,7 @@ MonoBehaviour:
   minimumAmbient: 0.07
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
-  backgroundMusic: {fileID: 8300000, guid: 9b6676d6e31306043b7c187ddb5cd29c, type: 3}
+  backgroundMusic: {fileID: 0}
   backgroundMusicVolume: 0.3
   loopMusic: 1
   musicFadeSeconds: 1.5
@@ -300,6 +300,7 @@ MonoBehaviour:
     sleepChance: 0.2
     maxSleepingPacks: 3
     pits: 1
+    playerFallsInPits: 0
     pitFallDamage: 0.25
     sunkenFloors: 1
     archerLedges: 1

@@ -14,6 +14,10 @@ public class DungeonFloorCut : MonoBehaviour
     public float depth = 3.5f;
     [Range(0f, 1f), Tooltip("Pit: share of the player's health a fall takes.")]
     public float fallDamage = .25f;
+    [Tooltip("Pit: its edge holds the player back (they slide along it) instead of letting them fall in. Set from the floor's room features (Player Falls In Pits).")]
+    public bool keepPlayerOut = true;
+    // How far round the player's middle must stay off the hole (about the body's radius).
+    const float BodyRadius = .3f;
 
     // How far past an enemy, along a knockback, the pit's edge counts as reached.
     const float EdgeReach = 1.05f;
@@ -45,6 +49,31 @@ public class DungeonFloorCut : MonoBehaviour
 
     bool Over(Vector3 p) => holes != null && holes.Contains(dungeon.CellOf(p));
 
+    // Any part of a body standing at p over the hole.
+    bool BodyOver(Vector3 p) => Over(p) || Over(p + Vector3.right * BodyRadius) || Over(p - Vector3.right * BodyRadius)
+                                || Over(p + Vector3.forward * BodyRadius) || Over(p - Vector3.forward * BodyRadius);
+
+    Vector3 lastClear;
+    bool haveClear;
+
+    // The edge as a wall: a step that would put the body over the hole is undone along that axis, so the player slides
+    // along the edge. After the motor has moved them this frame.
+    void LateUpdate()
+    {
+        if (!keepPlayerOut || dungeon == null || holes == null) return;
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if (player == null || !player.isActiveAndEnabled || !player.IsAlive) { haveClear = false; return; }
+        var p = player.transform.position;
+        if (Mathf.Abs(p.y - floorY) > 1.5f && !Over(p)) { haveClear = false; return; }
+        if (!BodyOver(p)) { lastClear = p; haveClear = true; return; }
+        if (!haveClear) return;
+        var alongX = new Vector3(p.x, p.y, lastClear.z);
+        var alongZ = new Vector3(lastClear.x, p.y, p.z);
+        var back = !BodyOver(alongX) ? alongX : !BodyOver(alongZ) ? alongZ : new Vector3(lastClear.x, Mathf.Max(p.y, lastClear.y), lastClear.z);
+        player.Warp(back);
+        lastClear = back;
+    }
+
     void Update()
     {
         if (dungeon == null || holes == null) return;
@@ -54,7 +83,9 @@ public class DungeonFloorCut : MonoBehaviour
             var p = player.transform.position;
             bool over = Over(p);
             if (!over && player.Motor != null && player.Motor.IsGrounded && Mathf.Abs(p.y - floorY) < .6f) { lastSafe = p; haveSafe = true; }
-            if (over && p.y < floorY - fallDrop) Fall(player);
+            if (over && p.y < floorY - fallDrop && !keepPlayerOut) Fall(player);
+            // Held back, but somehow down there all the same (a dash, a knockback): out, without the fall's cost.
+            else if (over && p.y < floorY - fallDrop && haveSafe) player.Warp(lastSafe + Vector3.up * .05f);
         }
         // An enemy knocked back towards the edge goes down: its path keeps it about its own width from the drop, so the
         // edge is looked for a little further on than its body reaches.

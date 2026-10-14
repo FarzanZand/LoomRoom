@@ -277,15 +277,15 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 0
-    baseValue: 15
+    baseValue: 20
     min: 0
     max: 0
   - stat: 2
-    baseValue: 4
+    baseValue: 5
     min: 0
     max: 0
   - stat: 1
-    baseValue: 1
+    baseValue: 2
     min: 0
     max: 0
   audio:

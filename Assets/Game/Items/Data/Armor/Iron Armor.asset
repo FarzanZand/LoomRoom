@@ -31,7 +31,7 @@ MonoBehaviour:
   itemType: 6
   maxStackSize: 1
   gridSize: {x: 0, y: 0}
-  value: 70
+  value: 90
   tier: 2
   lootWeight: 1
   pickupAudioSource: 0

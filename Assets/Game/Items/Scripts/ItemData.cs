@@ -20,25 +20,24 @@ public partial class ItemData : ScriptableObject
 
     // Gear that takes a rarity: weapons, shields, worn armour and trinkets (not spell tomes).
     public bool IsGear => spell == null && (itemType == ItemType.Weapon || itemType == ItemType.Shield || itemType == ItemType.Equipment && canBeEquipped);
-    // A name, beam and pickup line in colour: any rarity above Plain, or honed gear (its blue).
-    public bool HasRarityColour => honed > 0 || rarity != ItemRarity.Plain;
-    public Color RarityColour => rarity != ItemRarity.Plain ? UIManager.RarityColor(rarity)
-        : honed > 0 ? (UIManager.HasInstance ? UIManager.Instance.honed : UIManager.DefaultHoned) : UIManager.RarityColor(ItemRarity.Plain);
+    // A name, beam and pickup line in colour: any rarity above Plain.
+    public bool HasRarityColour => rarity != ItemRarity.Plain;
+    public Color RarityColour => UIManager.RarityColor(rarity);
     public string RarityTextColour => "#" + ColorUtility.ToHtmlStringRGB(Color.Lerp(RarityColour, Color.white, .45f));
-    // The coloured fill behind the item in a bag, hotbar, equipment or shop slot: every piece of gear (Plain faintly) and any coloured item.
-    public bool HasSlotFill => HasRarityColour || IsGear || IsConsumable;
-    bool PlainFill => rarity == ItemRarity.Plain && honed == 0;
-    // A soft fill and a brighter 1 px border in the rarity colour (Plain gear and consumables: faint white).
-    public Color SlotFillColour { get { var c = RarityColour; c.a = PlainFill ? .1f : .4f; return c; } }
-    public Color SlotBorderColour { get { var c = Color.Lerp(RarityColour, Color.white, PlainFill ? .3f : .4f); c.a = PlainFill ? .55f : 1f; return c; } }
+    // The faint floor behind the item in a bag, hotbar, equipment or shop slot: only items with a rarity above Plain (a
+    // Plain item's slot looks like an empty one). The floor sprite (UI/Sprites/Diablo/Rarity floor, 9-sliced) carries
+    // the shape: a stepped band at the edges, nearly clear behind the icon; this is its colour.
+    public bool HasSlotFill => HasRarityColour;
+    public Color SlotFillColour { get { var c = RarityColour; c.a = 1f; return c; } }
 
     // A slot's rarity fill and its optional border image (an authored child named "Rarity border"), for any slot UI.
     public static void ShowSlotFill(UnityEngine.UI.Image fill, ItemData item, bool show = true)
     {
         bool on = show && item != null && item.HasSlotFill;
         if (fill != null) { fill.enabled = on; if (on) fill.color = item.SlotFillColour; }
+        // The old 1 px border is retired: the floor's edge band does its job.
         var border = fill != null ? fill.transform.Find("Rarity border")?.GetComponent<UnityEngine.UI.Image>() : null;
-        if (border != null) { border.enabled = on; if (on) border.color = item.SlotBorderColour; }
+        if (border != null) border.enabled = false;
     }
     // The name with a Fine or Masterwork rarity in front, for text without colour (the message log): "Masterwork Iron Sword".
     public string DisplayName => rarity == ItemRarity.Fine || rarity == ItemRarity.Masterwork ? $"{RarityName} {itemName}" : itemName;
@@ -175,18 +174,10 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Seconds the eating or drinking takes (the clip is played to fit).")]
     public float eatDuration = 1.3f;
 
-    // ── Honed ─────────────────────────────────────────────────────────
-    // Barony's blessing, called Honed here: a +1 or +2 piece of gear. A honed item is a runtime copy of
-    // its asset with the bonus baked into its stats, shared per level, so every "Honed Iron Sword +1" is
-    // the same object and the bag, hotbar and equipment treat it like any other item. Saved as "<saveId>+1".
-
-    // Honed, rarity and rolled properties all live on runtime copies of the asset (ItemData.Variants.cs).
-    public const int MaxHoned = 2;
+    // ── Variants ──────────────────────────────────────────────────────
+    // A rarity and its rolled properties live on runtime copies of the asset (ItemData.Variants.cs).
     [System.NonSerialized] public ItemData baseItem;
-    [System.NonSerialized] public int honed;
     public ItemData BaseItem => baseItem != null ? baseItem : this;
-    // Gear with a main stat to raise: weapons (damage), shields and armor (armor), trinkets (their bonuses).
-    public bool CanBeHoned => (itemType == ItemType.Weapon || itemType == ItemType.Shield || itemType == ItemType.Equipment) && statModifiers != null && statModifiers.Length > 0;
 
     // ── Queries ───────────────────────────────────────────────────────
 
@@ -238,12 +229,11 @@ public partial class ItemData : ScriptableObject
     }
 
     // Rich-text tooltip body shared by the in-game tooltip and the Item Database preview, Diablo's order: the main
-    // number big (a weapon's damage and how fast it swings, a shield's block armor, worn armor), the other stats (a
-    // honed stat shows its plain value plus the honed part), effects and spell, the change against what the player
+    // number big (a weapon's damage and how fast it swings, a shield's block armor, worn armor), the other stats,
+    // effects and spell, the change against what the player
     // is wearing in that slot (only while a player exists), then the description as flavour and the price.
     public const string TextColor = "#E6E1D6", DimColor = "#9AA3AD", GoodColor = "#80CEA0", BadColor = "#E78787", EffectColor = "#A1C5DE";
     public const string FlavourColor = "#B8A27A";
-    public static string HonedTextColor => "#" + ColorUtility.ToHtmlStringRGB(Color.Lerp(UIManager.HasInstance ? UIManager.Instance.honed : UIManager.DefaultHoned, Color.white, .45f));
 
     // The item's main number for the tooltip and its compare bars: a weapon's damage, a shield's or armour's armour.
     public bool TryMainStat(out string label, out float value, out string text)
@@ -259,7 +249,7 @@ public partial class ItemData : ScriptableObject
     public float SwingSpeed => FlatBonus(this, StatType.AttackSpeed);
 
     // withMain false: the main number and the compare lines are left out (the tooltip shows them as bars).
-    public string BuildTooltip(bool withMain = true)
+    public string BuildTooltip(bool withMain = true, bool withPrice = true)
     {
         var blocks = new System.Collections.Generic.List<string>();
         var lines = new System.Collections.Generic.List<string>();
@@ -267,11 +257,7 @@ public partial class ItemData : ScriptableObject
         bool showMain = TryMainStat(out string mainLabel, out float mainValue, out string mainText);
         if (showMain && withMain)
         {
-            string honedPart = "";
-            float plain = FlatBonus(BaseItem, main.Value), own = 0f;
-            for (int i = 0; i < BaseModifierCount; i++) { var m = statModifiers[i]; if (m != null && m.stat == main.Value && m.type == ModifierType.Flat) own += m.value; }
-            if (honed > 0 && Mathf.Abs(own - plain) > .001f) honedPart = $"  <color={HonedTextColor}>(+{own - plain:0.#} honed)</color>";
-            lines.Add($"<size=140%><color={TextColor}>{mainText}</color></size>  <color={DimColor}>{mainLabel}</color>{honedPart}");
+            lines.Add($"<size=140%><color={TextColor}>{mainText}</color></size>  <color={DimColor}>{mainLabel}</color>");
             if (IsWeapon) lines.Add($"<color={DimColor}>{SwingSpeedWord(SwingSpeed)} swings</color>");
         }
         // The item's own stats in white, the rolled properties of a Fine or Masterwork item in blue.
@@ -284,10 +270,7 @@ public partial class ItemData : ScriptableObject
                 if (!rolledStat && showMain && modifier.stat == main.Value && modifier.type == ModifierType.Flat) continue;
                 if (!rolledStat && IsWeapon && modifier.stat == StatType.AttackSpeed && modifier.type == ModifierType.Flat) continue;
                 string colour = Worse(modifier.stat, modifier.value) ? BadColor : rolledStat ? EffectColor : TextColor;
-                string line = $"<color={colour}>{StatLine(modifier.stat, modifier.type, modifier.value, BlockOnly(modifier.stat))}</color>";
-                float plain = PlainValue(modifier);
-                if (!rolledStat && honed > 0 && Mathf.Abs(modifier.value - plain) > .001f) line += $"  <color={HonedTextColor}>({plain:0.#} + {modifier.value - plain:0.#} honed)</color>";
-                lines.Add(line);
+                lines.Add($"<color={colour}>{StatLine(modifier.stat, modifier.type, modifier.value, BlockOnly(modifier.stat))}</color>");
             }
         Add(blocks, lines);
 
@@ -328,7 +311,7 @@ public partial class ItemData : ScriptableObject
         else if (gear != null && gear.IsEquipped(this)) { lines.Add($"<color={DimColor}>Equipped</color>"); Add(blocks, lines); }
 
         if (!string.IsNullOrWhiteSpace(description)) { lines.Add($"<color={FlavourColor}><i>{description.Trim()}</i></color>"); Add(blocks, lines); }
-        if (value > 0 && itemType != ItemType.Key) { lines.Add($"<color={DimColor}>Worth {value} gold</color>"); Add(blocks, lines); }
+        if (withPrice && value > 0 && itemType != ItemType.Key) { lines.Add($"<color={DimColor}>Worth {value} gold</color>"); Add(blocks, lines); }
         return string.Join("\n\n", blocks);
     }
 
@@ -427,15 +410,6 @@ public partial class ItemData : ScriptableObject
     bool BlockOnly(StatType stat) => itemType == ItemType.Shield && stat == StatType.Armor;
 
     static bool Worse(StatType stat, float value) => value < 0;
-
-    // The value a modifier has on the plain (unhoned) item.
-    float PlainValue(StatModifierEntry modifier)
-    {
-        if (BaseItem.statModifiers != null)
-            foreach (var m in BaseItem.statModifiers)
-                if (m != null && m.stat == modifier.stat && m.type == modifier.type) return m.value;
-        return modifier.value;
-    }
 
     static float FlatBonus(ItemData data, StatType stat)
     {

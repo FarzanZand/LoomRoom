@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Diablo-style floor loot: a pillar of light rises from an item lying on the floor, coloured by what it is
-// (normal, Honed, consumable), so loot reads from across a dark room. Added by WorldItem when
+// (normal, a rarity, consumable), so loot reads from across a dark room. Added by WorldItem when
 // InventoryManager.lootBeams is on; LootLabelsUI shows the item's name over the nearest ones.
 public class LootBeam : MonoBehaviour
 {
@@ -26,7 +26,6 @@ public class LootBeam : MonoBehaviour
         // Fine, Masterwork and Relic: their rarity colour, brighter and a little stronger the rarer.
         if (item.rarity == ItemRarity.Fine || item.rarity == ItemRarity.Masterwork || item.rarity == ItemRarity.Relic)
             return WithAlpha(Color.Lerp(item.RarityColour, Color.white, .3f), config.beamNormal.a * (item.rarity == ItemRarity.Fine ? 1.3f : item.rarity == ItemRarity.Masterwork ? 1.6f : 2f));
-        if (item.honed > 0) return UIManager.HasInstance ? WithAlpha(UIManager.Instance.honed, config.beamNormal.a) : config.beamHoned;
         if (item.rarity == ItemRarity.Rare) return WithAlpha(Color.Lerp(item.RarityColour, new Color(1f, .62f, .25f), .5f), config.beamNormal.a * 1.3f);
         // Plain gear and consumables share the white beam.
         return config.beamNormal;

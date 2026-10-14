@@ -25,16 +25,22 @@ public class MumbleVoiceSet
 
 public partial class AudioManager
 {
-    [Header("Dungeon Master voice")]
+    [Sirenix.OdinInspector.TabGroup(Tabs, VoiceTab)]
     [SerializeField, Tooltip("The gibberish the Dungeon Master mumbles under lines without a recorded voice.")]
     MumbleVoice mumbleVoice = MumbleVoice.Old;
+    [Sirenix.OdinInspector.TabGroup(Tabs, VoiceTab)]
     [SerializeField, Tooltip("Babble phrases for each voice except Syllables.")]
     MumbleVoiceSet[] mumbleVoices;
+    [Sirenix.OdinInspector.TabGroup(Tabs, VoiceTab)]
     [SerializeField, Tooltip("Syllables: UI Library key played once per syllable. Make it a Data entry to pick from several syllables.")]
     string mumbleKey = "dmMumble";
+    [Sirenix.OdinInspector.TabGroup(Tabs, VoiceTab)]
     [SerializeField, Min(.03f), Tooltip("Syllables: seconds between syllables.")] float syllableGap = .09f;
+    [Sirenix.OdinInspector.TabGroup(Tabs, VoiceTab)]
     [SerializeField, Min(1), Tooltip("Syllables: per word, capped by Max Syllables.")] float syllablesPerWord = 1.5f;
+    [Sirenix.OdinInspector.TabGroup(Tabs, VoiceTab)]
     [SerializeField, Min(1)] int maxSyllables = 14;
+    [Sirenix.OdinInspector.TabGroup(Tabs, VoiceTab)]
     [SerializeField, TextArea(1, 2), Tooltip("Lines the Test buttons mumble, picked at random.")]
     string[] testSentences =
     {
@@ -157,10 +163,10 @@ public partial class AudioManager
         return testSentences[i];
     }
 
-    [Button("Test voice"), PropertyOrder(100)]
+    [Sirenix.OdinInspector.TabGroup(Tabs, VoiceTab), Button("Test voice"), PropertyOrder(100)]
     void TestVoice() => Test(mumbleVoice, 0f);
 
-    [Button("Test all voices"), PropertyOrder(101)]
+    [Sirenix.OdinInspector.TabGroup(Tabs, VoiceTab), Button("Test all voices"), PropertyOrder(101)]
     void TestAllVoices()
     {
         float at = 0f;
