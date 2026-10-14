@@ -13,6 +13,5 @@ MonoBehaviour:
   m_Name: TableLevels
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelCatalog
   levels:
-  - {fileID: 11400000, guid: 4f83e5c765bc0c44eac87d4b195b71ea, type: 2}
   - {fileID: 11400000, guid: 42db8accb58492743bedbc91bbca4ba3, type: 2}
   - {fileID: 11400000, guid: 37cdd2af1d1b0c74c9971dd3e4523547, type: 2}

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Added to the table at runtime (TableManager), so nothing here is set in the Inspector: the
-// catalog comes from Resources/TableLevels, the town is the table's "Woodland Village" child and
+// catalog comes from Resources/TableLevels, the town is the table's "Woodland Village" child (removed for now) and
 // the lighting is the scene's LightingManager.
 public class TableLevelLoader : MonoBehaviour
 {
@@ -54,7 +54,8 @@ public class TableLevelLoader : MonoBehaviour
         if(Catalog==null) Debug.LogError("TableLevelLoader: no TableLevelCatalog at Resources/TableLevels; the adventure menu will be empty.", this);
         var village=transform.Find("Woodland Village");
         townRoot=village!=null ? village.gameObject : null;
-        if(townRoot==null) Debug.LogError("TableLevelLoader: no \"Woodland Village\" child under the table; the town cannot be shown or hidden.", this);
+        // The village was removed (2026-10-14, build size) along with the Town level; only a catalog with a town needs it.
+        if(townRoot==null && Catalog!=null && Array.Exists(Catalog.levels, l => l!=null && l.kind==TableLevelKind.Town)) Debug.LogError("TableLevelLoader: no \"Woodland Village\" child under the table; the town cannot be shown or hidden.", this);
         lighting=LightingManager.Instance!=null ? LightingManager.Instance : FindAnyObjectByType<LightingManager>(); // search only if it has not enabled yet
         if(lighting==null) Debug.LogError("TableLevelLoader: no LightingManager in the scene; level moods will not be applied.", this);
         player=PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;

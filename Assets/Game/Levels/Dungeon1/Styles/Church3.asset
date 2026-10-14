@@ -18,6 +18,8 @@ MonoBehaviour:
   ceiling: {fileID: 2100000, guid: 1e070bb1f4dcd2a48b24fdba33b44ae6, type: 2}
   hideTrims: 0
   trim: {fileID: 2100000, guid: 79f73cfbe80d1c04bbf6935e4da2bf78, type: 2}
+  wood: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
+  metal: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
   wallBaseWeight: 10
   wallVariants:
   - material: {fileID: 2100000, guid: 40fa32b1188b48848808d0a939d58d8c, type: 2}
