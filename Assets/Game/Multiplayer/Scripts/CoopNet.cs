@@ -44,7 +44,7 @@ public struct NetDamage : INetworkSerializable
     public sbyte attack;          // the enemy's attack (its hit profile), -1 unknown
     public float health;          // host -> guests: the enemy's health after the hit
     public float stun;            // guest -> host: seconds the blow stuns the enemy (a shield bash)
-    public FixedString64Bytes weapon;
+    public FixedString128Bytes weapon;
 
     const byte Heavy = 1, Critical = 2, Backstab = 4, Magic = 8, Blocked = 16, Parried = 32, FromEffect = 64, DiedFlag = 128;
     public bool Died { get => (flags & DiedFlag) != 0; set => flags = (byte)(value ? flags | DiedFlag : flags & ~DiedFlag); }
@@ -55,7 +55,7 @@ public struct NetDamage : INetworkSerializable
         {
             amount = info.Amount, hitPoint = info.HitPoint, direction = info.Direction, swing = info.SwingDirection,
             knockback = info.KnockbackForce, attack = -1, slot = Coop.NoSlot,
-            weapon = new FixedString64Bytes(Coop.SaveId(info.Weapon)),
+            weapon = new FixedString128Bytes(Coop.SaveId(info.Weapon)),
         };
         if (info.Heavy) d.flags |= Heavy;
         if (info.Critical) d.flags |= Critical;
@@ -126,7 +126,7 @@ public struct CoopEvent : INetworkSerializable
     public int id;                // the entity (index or loot key)
     public int amount;
     public Vector3 position, direction;
-    public FixedString64Bytes item;
+    public FixedString128Bytes item;
     public byte target;           // a player aimed at (Coop.NoSlot: none)
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter

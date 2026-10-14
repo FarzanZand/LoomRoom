@@ -413,7 +413,8 @@ public partial class BossStageEncounter : MonoBehaviour
             var away = at - exit.transform.position; away.y = 0;
             if (away.magnitude < 3.5f) at = exit.transform.position + (away.sqrMagnitude > .01f ? away.normalized : Vector3.right) * 3.5f;
         }
-        dungeon.SpawnBossChest(at, player != null ? player.transform.position : StageCentreOr(at));
+        // Co-op: one chest for everyone (every machine makes the same one, in the same order).
+        CoopWorld.AddContainer(dungeon.SpawnBossChest(at, player != null ? player.transform.position : StageCentreOr(at)));
     }
 
     Vector3 StageCentreOr(Vector3 at) => dungeon != null ? dungeon.StageCentre : at;

@@ -458,7 +458,7 @@ public static class CoopWorld
     public static void PickedUp(WorldItem item)
     {
         if (!Coop.Running || Applying || item == null || !lootKeys.TryGetValue(item.gameObject, out var key) || !SharedPiece(key)) return;
-        Send(new CoopEvent { kind = CoopEventKind.PickupTaken, id = key, item = new FixedString64Bytes(item.Item != null ? item.Item.itemName : "") });
+        Send(new CoopEvent { kind = CoopEventKind.PickupTaken, id = key, item = new FixedString128Bytes(item.Item != null ? item.Item.itemName : "") });
     }
 
     public static void CoinsTaken(CoinPickup coins, int amount)
@@ -473,7 +473,7 @@ public static class CoopWorld
         if (!Coop.Running || Applying || item == null || Floor == null || !item.transform.IsChildOf(Floor.transform)) return;
         int key = (DropScope + Coop.LocalSlot * 4096 + (dropCounter++ % 4096)) * 64;
         Tag(item.gameObject, key);
-        Send(new CoopEvent { kind = CoopEventKind.ItemDropped, id = key, amount = count, position = item.transform.position, item = new FixedString64Bytes(Coop.SaveId(item.Item)) });
+        Send(new CoopEvent { kind = CoopEventKind.ItemDropped, id = key, amount = count, position = item.transform.position, item = new FixedString128Bytes(Coop.SaveId(item.Item)) });
     }
 
     // ── Floor events ──────────────────────────────────────────────────

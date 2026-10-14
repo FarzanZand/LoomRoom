@@ -115,8 +115,8 @@ public class CoopPlayer : NetworkBehaviour
         s.health = table != null && table.Stats != null && table.Stats.MaxHealth > 0 ? (byte)Mathf.Clamp(Mathf.CeilToInt(table.Stats.CurrentHealth / table.Stats.MaxHealth * 255f), 0, 255) : (byte)0;
         var progress = table != null ? table.GetComponent<AdventurerProgress>() : null;
         s.classId = new FixedString32Bytes(progress != null && progress.selectedClass != null ? progress.selectedClass.id : "");
-        s.right = new FixedString64Bytes(onTable && table.Equipment != null ? Coop.SaveId(table.Equipment.Get(EquipmentSlot.RightHand)) : "");
-        s.left = new FixedString64Bytes(onTable && table.Equipment != null ? Coop.SaveId(table.Equipment.Get(EquipmentSlot.LeftHand)) : "");
+        s.right = new FixedString128Bytes(onTable && table.Equipment != null ? Coop.SaveId(table.Equipment.Get(EquipmentSlot.RightHand)) : "");
+        s.left = new FixedString128Bytes(onTable && table.Equipment != null ? Coop.SaveId(table.Equipment.Get(EquipmentSlot.LeftHand)) : "");
         if (!s.Equals(State.Value)) State.Value = s;
 
         // One-shot moments the others see, as the arms play them: a swing as its release starts, a bash, a spell.
@@ -135,7 +135,7 @@ public class CoopPlayer : NetworkBehaviour
         wasCasting = casting;
         var eating = onTable && table.Equipment != null ? table.Equipment.UsingItem : null;
         if (eating != null && eating != wasEating)
-            UseRpc(new FixedString64Bytes(Coop.SaveId(eating)), eating.AnimationOnUse == ItemUseAnimation.Drink, table.Equipment.UsingTime);
+            UseRpc(new FixedString128Bytes(Coop.SaveId(eating)), eating.AnimationOnUse == ItemUseAnimation.Drink, table.Equipment.UsingTime);
         wasEating = eating;
     }
 
@@ -150,7 +150,7 @@ public class CoopPlayer : NetworkBehaviour
     }
     [Rpc(SendTo.NotOwner)] void BashRpc() => Avatar.Bash();
     [Rpc(SendTo.NotOwner)] void CastRpc() => Avatar.Cast();
-    [Rpc(SendTo.NotOwner)] void UseRpc(FixedString64Bytes item, bool drink, float seconds) => Avatar.Use(item.ToString(), drink, seconds);
+    [Rpc(SendTo.NotOwner)] void UseRpc(FixedString128Bytes item, bool drink, float seconds) => Avatar.Use(item.ToString(), drink, seconds);
     // Hurt: the others see the flinch and the blood.
     [Rpc(SendTo.NotOwner)]
     void HurtRpc(Vector3 point, Vector3 direction, Vector3 swing)

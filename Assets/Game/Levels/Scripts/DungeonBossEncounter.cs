@@ -89,7 +89,8 @@ public class DungeonBossEncounter : MonoBehaviour
     {
         yield return new WaitForSeconds(1.2f);
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
-        dungeon.SpawnBossChest(at, player != null ? player.transform.position : at + Vector3.forward);
+        // Co-op: one chest for everyone (every machine makes the same one, in the same order).
+        CoopWorld.AddContainer(dungeon.SpawnBossChest(at, player != null ? player.transform.position : at + Vector3.forward));
     }
 
     void OnBossDied()

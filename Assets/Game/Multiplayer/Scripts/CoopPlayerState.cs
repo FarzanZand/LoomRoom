@@ -20,7 +20,7 @@ public struct CoopPlayerState : INetworkSerializable, System.IEquatable<CoopPlay
     public bool ghost;          // dead on the table, a ghost until the next floor
     public byte health;         // 0-255 of the table player's maximum
     public FixedString32Bytes classId;
-    public FixedString64Bytes right, left;   // held items (save ids)
+    public FixedString128Bytes right, left;  // held items (save ids; a rolled item's id carries its rarity and properties)
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
