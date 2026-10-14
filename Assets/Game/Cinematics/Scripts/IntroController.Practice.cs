@@ -159,6 +159,8 @@ public partial class IntroController
         float until = Time.time + killerSeconds;
         while (PracticeRunning && table.IsAlive && Time.time < until)
         {
+            // Co-op: once someone has fallen the rest follow soon (they would lie dead watching a black screen).
+            if (TeammateFell()) until = Mathf.Min(until, Time.time + TeammateFallenEnds);
             // Holding it off too well: the Dungeon Master has had enough, and the killer's volley finds the player wherever they run.
             if (hunter != null && hunter.IsAlive && landed >= killerHitsToVolley && volleySpell != null)
             {
@@ -182,6 +184,14 @@ public partial class IntroController
         info.Magic = true; info.FromEffect = true;
         info.SourceName = "the Dungeon Master";
         table.Stats.TakeDamage(info);
+    }
+
+    const float TeammateFallenEnds = 3f;
+    static bool TeammateFell()
+    {
+        if (!Coop.Running || !MultiplayerManager.HasInstance) return false;
+        foreach (var p in MultiplayerManager.Instance.Players) if (p != null && !p.IsOwner && p.Current.inRun && !p.Current.alive) return true;
+        return false;
     }
 
     // The killer stops, raises its hand and lets the homing volley go.

@@ -297,7 +297,10 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     }
 
     // Each player's spot beside the others in the room (room units: the room is built about roomScale to the metre).
-    public Vector3 RoomSpawnOffset(Quaternion facing) => SpawnOffset(facing) * roomScale;
+    public Vector3 RoomSpawnOffset(Quaternion facing) => SpawnOffset(facing) * roomScale * roomSpawnSpread;
+
+    [Tooltip("How much wider apart players stand in the room than on the table (both by spawnSpacing).")]
+    [Min(1)] public float roomSpawnSpread = 1.7f;
 
     // The co-op screen changed a rule: the guests get the new set.
     public void RulesChanged()
