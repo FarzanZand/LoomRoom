@@ -112,6 +112,7 @@ public enum CoopEventKind : byte
     RoomDoor = 13,      // a door in the apartment (not a floor's)
     EnemyHealth = 14,   // catching a player up: a wounded enemy's health now (amount = health x 100)
     EnemySpell = 15,    // an enemy cast: amount = its spell (EnemyData.spells), position = the hand or the ground spot, direction = a projectile's
+    AmbushOpened = 16,  // an ambush whose room the party left (all dead or outside): the gates lift, the fight goes on
 }
 
 public struct CoopEvent : INetworkSerializable

@@ -28,6 +28,11 @@ public class DungeonAmbush : MonoBehaviour
     public bool Sprung => phase != Phase.Waiting;
     public bool Cleared => phase == Phase.Done;
     readonly List<Character> alive = new();
+    // Co-op: the gates lifted before the end (OpenUp).
+    bool opened;
+    float emptyFor;
+    // Co-op: seconds with nobody of the party alive in the room before the gates lift.
+    const float EmptyRoomOpens = 3f;
 
     void Start()
     {
@@ -82,7 +87,7 @@ public class DungeonAmbush : MonoBehaviour
     void Finish()
     {
         phase = Phase.Done;
-        foreach (var g in gates) if (g != null) { Lower(g, false); Play(liftAudio, g.position, .7f); }
+        if (!opened) foreach (var g in gates) if (g != null) { Lower(g, false); Play(liftAudio, g.position, .7f); }
         CoopWorld.AddContainer(dungeon.SpawnRewardChest(chestAt, chestFacing, chestSeed));
         MessageLog.Post("The gates grind up. Something was left behind.", MessageKind.Good);
     }
@@ -127,8 +132,14 @@ public class DungeonAmbush : MonoBehaviour
             {
                 alive.RemoveAll(c => c == null || !c.IsAlive);
                 if (alive.Count == 0) break;
-                // Co-op: the fight goes on while anyone of the party is alive.
+                // Co-op: the fight goes on while anyone of the party is alive; with nobody left in the room (dead or shut
+                // out) the gates lift so the others can finish it.
                 if (Coop.Running ? !AnyoneAlive() : !player.IsAlive) yield break;
+                if (Coop.Running && !opened)
+                {
+                    emptyFor = AnyoneInside() ? 0f : emptyFor + .25f;
+                    if (emptyFor >= EmptyRoomOpens) { OpenUp(); CoopWorld.AmbushOpened(this); }
+                }
                 yield return new WaitForSeconds(.25f);
             }
             yield return new WaitForSeconds(1f);
@@ -138,12 +149,30 @@ public class DungeonAmbush : MonoBehaviour
     }
 
     static bool AnyoneAlive() { foreach (var c in CoopWorld.Party()) return true; return false; }
+    bool AnyoneInside() { foreach (var c in CoopWorld.Party()) if (dungeon.Layout.RoomAt(dungeon.CellOf(c.transform.position)) == room) return true; return false; }
+
+    // The gates lift while the room's enemies still live (co-op: the party left the room); the fight still ends with
+    // the chest when the last of them falls.
+    void OpenUp()
+    {
+        if (opened) return;
+        opened = true;
+        foreach (var g in gates) if (g != null) { Lower(g, false); Play(liftAudio, g.position, .7f); }
+        MessageLog.Post("The gates grind up.", MessageKind.Warning);
+    }
+
+    // Co-op guests: the host's ambush opened before the end.
+    public void OpenedOnHost()
+    {
+        if (phase == Phase.Fighting) OpenUp();
+    }
 
     // Each enemy of the wave at a spawn point on the far side of the room from the player, a moment apart.
     IEnumerator Spawn(List<GameObject> wave, Character player)
     {
         var points = new List<Vector3>(spawnPoints);
-        var from = player.transform.position;
+        // The one who sprang it may be gone (co-op: left the game): the room's middle then.
+        var from = player != null ? player.transform.position : transform.position;
         points.Sort((a, b) => (b - from).sqrMagnitude.CompareTo((a - from).sqrMagnitude));
         int far = Mathf.Max(1, Mathf.Min(points.Count, Mathf.Max(wave.Count, (points.Count + 1) / 2)));
         for (int i = 0; i < wave.Count; i++)

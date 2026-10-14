@@ -508,6 +508,14 @@ public static class CoopWorld
         if (id >= 0) Send(new CoopEvent { kind = cleared ? CoopEventKind.AmbushCleared : CoopEventKind.AmbushSprung, id = id, position = at });
     }
 
+    // Host: an ambush's gates lifted before the end, nobody of the party being left in its room.
+    public static void AmbushOpened(DungeonAmbush ambush)
+    {
+        if (!Coop.IsHost) return;
+        int id = ambushes.IndexOf(ambush);
+        if (id >= 0) Send(new CoopEvent { kind = CoopEventKind.AmbushOpened, id = id });
+    }
+
     // Host: an enemy's whoosh (its attack's swing sound) for the guests, whose puppets never swing for real.
     public static void EnemySwung(Character enemy, int attack)
     {
@@ -689,6 +697,9 @@ public static class CoopWorld
                 break;
             case CoopEventKind.AmbushCleared:
                 if (e.id >= 0 && e.id < ambushes.Count && ambushes[e.id] != null) ambushes[e.id].ClearedOnHost();
+                break;
+            case CoopEventKind.AmbushOpened:
+                if (e.id >= 0 && e.id < ambushes.Count && ambushes[e.id] != null) ambushes[e.id].OpenedOnHost();
                 break;
             case CoopEventKind.EnemySwing:
             {
