@@ -63,6 +63,7 @@ public class DungeonMasterBeam : MonoBehaviour
     Light palm, shieldLight;
     AudioSource sound;
     bool cancelled;
+    Player strained;   // whose shield shakes against the beam
     SpellVisual charge;
     Unity.Cinemachine.CinemachineCamera view;
     Unity.Cinemachine.CinemachineImpulseSource impulse;
@@ -187,6 +188,9 @@ public class DungeonMasterBeam : MonoBehaviour
         {
             var origin = Palm();
             bool blocking = Blocking(target, origin, fight);
+            // The shield shakes while it holds the beam off.
+            if (target.Combat != null) target.Combat.SetShieldStrain(blocking);
+            strained = target;
             var end = EndPoint(target, origin, blocking);
             if (hand != null) hand.Aim(end);
             if (charge != null) { charge.transform.position = origin; charge.SetCharge(1f); }
@@ -224,6 +228,7 @@ public class DungeonMasterBeam : MonoBehaviour
         sparks.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         spray.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         boltA.enabled = boltB.enabled = false;
+        if (target.Combat != null) target.Combat.SetShieldStrain(false);
         // It thins out instead of vanishing.
         for (float t = 0; t < .25f && !cancelled && Alive(target); t += Time.deltaTime)
         {
@@ -258,6 +263,8 @@ public class DungeonMasterBeam : MonoBehaviour
         if (charge != null) charge.Stop();
         charge = null;
         if (hand != null) hand.StopAiming();
+        if (strained != null && strained.Combat != null) strained.Combat.SetShieldStrain(false);
+        strained = null;
         Firing = false;
     }
 

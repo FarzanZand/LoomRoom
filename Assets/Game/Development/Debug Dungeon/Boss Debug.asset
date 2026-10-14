@@ -198,15 +198,13 @@ MonoBehaviour:
   windowSill: 0.55
   windowLintel: 0.75
   windowJamb: 0.45
-  defaultStyle: {fileID: 11400000, guid: 3ed247dad4868cf4eb56e62b707f908e, type: 2}
+  defaultStyle: {fileID: 11400000, guid: 45f2ff5c0d2776645bb1e6d731a0534e, type: 2}
   roomStyles:
-  - style: {fileID: 11400000, guid: effd0936d8ae44fbaf28bf7c3494ed2a, type: 2}
-    weight: 2
-  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
-    weight: 3
+  - style: {fileID: 11400000, guid: 45f2ff5c0d2776645bb1e6d731a0534e, type: 2}
+    weight: 1
   corridorsCopyConnectedRoomStyle: 1
   corridorStyles:
-  - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}
+  - style: {fileID: 11400000, guid: 45f2ff5c0d2776645bb1e6d731a0534e, type: 2}
     weight: 1
   roomProfiles: []
   roomPropPrefabs: []

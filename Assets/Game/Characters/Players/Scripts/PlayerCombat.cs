@@ -26,6 +26,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField] string rightHandEquippedParam = "RightHandEquipped";
     [SerializeField] string leftHandEquippedParam  = "LeftHandEquipped";
     [SerializeField] string blockHitTrigger        = "BlockHit";
+    [SerializeField] string blockStrainParam       = "BlockStrain";
     [SerializeField] string hurtTrigger            = "Hurt";
     [SerializeField] string windupSpeedParam       = "WindupSpeed";
     [SerializeField] string releaseSpeedParam      = "ReleaseSpeed";
@@ -353,9 +354,32 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (!ShieldHeld) AnimatorHelper.SetBool(armsAnimator, blockHeldParam, false);
     }
 
+    // The raised shield takes a hit it doesn't stop (magic goes through it, the Dungeon Master's beam leans on it): the
+    // arms play the same jolt as a blocked blow.
+    public void ShieldJolt()
+    {
+        if (!IsGuarding || IsAttacking) return;
+        AnimatorHelper.SetTrigger(armsAnimator, blockHitTrigger);
+    }
+
+    // The raised shield held against something that keeps pushing (the Dungeon Master's beam): the arms shake in the
+    // BlockStrain state until it is switched off.
+    public void SetShieldStrain(bool on) => AnimatorHelper.SetBool(armsAnimator, blockStrainParam, on);
+
+    // Shield up and facing where a hit came from (the same test TryBlock makes, without its stamina cost).
+    bool ShieldFaces(DamageInfo info)
+    {
+        if (!IsGuarding) return false;
+        if (info.Direction.sqrMagnitude <= 0.001f) return true;
+        float threshold = CombatManager.HasInstance ? CombatManager.Instance.blockFrontalDot : -0.3f;
+        Vector3 facing = player.Look != null ? player.Look.YawTransform.forward : transform.forward;
+        return Vector3.Dot(facing, info.Direction.normalized) < threshold;
+    }
+
     void OnDamaged(DamageInfo info)
     {
-        string trigger = info.Blocked ? blockHitTrigger : hurtTrigger;
+        // A spell that lands on the raised shield still hurts, but the shield shows the hit rather than the arms flinching.
+        string trigger = info.Blocked || (info.Magic && ShieldFaces(info)) ? blockHitTrigger : hurtTrigger;
         // The arms own attack timing and hitbox events. Keep windup, charge and
         // release playing through hits, including transitions into an attack.
         if (!IsAttacking) AnimatorHelper.SetTrigger(armsAnimator, trigger);

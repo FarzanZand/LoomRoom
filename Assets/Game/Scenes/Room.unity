@@ -18595,6 +18595,24 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
+  spellHitMe:
+  - text: Did you just throw that at me?
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Careful. I can see you.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: That's not how this game works.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Aim at the monsters, not at me.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  spellHitGap: 8
   closeCallFraction: 0.25
   remarkGap: 15
   runRemarkDelay: 1.5

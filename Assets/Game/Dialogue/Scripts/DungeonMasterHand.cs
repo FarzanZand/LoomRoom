@@ -52,7 +52,18 @@ public class DungeonMasterHand : MonoBehaviour
     void LateUpdate()
     {
         var hand = RightHand;
-        if (hanging != null && hand != null) hanging.SetPositionAndRotation(Fingertips() - Vector3.up * (hangHeight * grip), hangFacing);
+        if (hanging != null && hand != null)
+        {
+            var at = Fingertips() - Vector3.up * (hangHeight * grip);
+            // Set down, it comes straight down onto its spot and stops on the floor: where his arm falls short of the
+            // spot it would otherwise land early and be dragged along the stage.
+            if (settle > 0f)
+            {
+                var flat = Vector3.Lerp(new Vector3(at.x, 0, at.z), new Vector3(settleAt.x, 0, settleAt.z), settle);
+                at = new Vector3(flat.x, Mathf.Max(at.y, settleAt.y), flat.z);
+            }
+            hanging.SetPositionAndRotation(at, hangFacing);
+        }
         if (carriedLight != null && hanging != null && Camera.main != null)
         {
             var middle = hanging.position + Vector3.up * carriedHeight * .45f;
@@ -61,6 +72,8 @@ public class DungeonMasterHand : MonoBehaviour
     }
 
     Light carriedLight; float carriedHeight;
+    // While he lowers it: how far (0-1) the figure has been drawn over its spot, and the spot.
+    float settle; Vector3 settleAt;
 
     // Where his fingers pinch the figure: the lowest of his right fingertips (the figure is smaller than his hand; hung
     // from the wrist it would be inside his fist).
@@ -156,9 +169,10 @@ public class DungeonMasterHand : MonoBehaviour
             // The figure hangs from his fingertips, a hand's length under the wrist the IK places.
             float drop = hand != null ? hand.position.y - Fingertips().y : 0f;
             rightTarget = Vector3.Lerp(high, low + Vector3.up * drop, u);
+            settle = Mathf.SmoothStep(0, 1, Mathf.Clamp01(u * 1.6f)); settleAt = spot;
             yield return null;
         }
-        hanging = null;
+        hanging = null; settle = 0f;
         // Where his reach ran out, the figure is set the rest of the way down.
         var at = figure.position;
         for (float t = 0; t < .15f; t += Time.deltaTime) { figure.SetPositionAndRotation(Vector3.Lerp(at, spot, t / .15f), facing); yield return null; }
@@ -213,7 +227,7 @@ public class DungeonMasterHand : MonoBehaviour
     }
 
     // Stopped half way (the fight ended): he lets go of whatever he holds and straightens up.
-    public void Release() { hanging = null; if (carriedLight != null) Destroy(carriedLight.gameObject); carriedLight = null; rightGoal = leftGoal = lookGoal = leanGoal = 0f; Busy = false; }
+    public void Release() { hanging = null; settle = 0f; if (carriedLight != null) Destroy(carriedLight.gameObject); carriedLight = null; rightGoal = leftGoal = lookGoal = leanGoal = 0f; Busy = false; }
 
     public void StopAiming() { leftGoal = 0f; if (!Busy) { lookGoal = 0f; leanGoal = 0f; } }
 
