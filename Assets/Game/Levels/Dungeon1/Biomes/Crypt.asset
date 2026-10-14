@@ -160,6 +160,7 @@ MonoBehaviour:
     eerieRooms: 1
     eerieChance: 0.06
   lightRadius: 0
+  filmicLook: 0
   shadowTint: {r: 0.55, g: 0.85, b: 1, a: 1}
   lampTint: {r: 1.06, g: 0.97, b: 0.86, a: 1}
   lightingSettings:

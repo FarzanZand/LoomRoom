@@ -8,6 +8,10 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     public int seed;
     [Min(1)] public int floorNumber=1;
     public ItemData guaranteedItem;
+    [Tooltip("Always in it, one of each, thrown out with the rest (a boss chest's Chest Items).")]
+    public System.Collections.Generic.List<ItemData> guaranteedItems = new();
+    [Min(0), Tooltip("Gold on top of what the loot rolls (a boss chest's Bonus Gold).")]
+    public int bonusGold;
     public Material debrisMaterial;
     public AudioClip openAudio;
     [Range(0,1)] public float openVolume = 1f;
@@ -82,6 +86,8 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
                 if(rare.Count>0){ rare.Sort((a,b)=>(b.item!=null?b.item.tier:0).CompareTo(a.item!=null?a.item.tier:0)); drops.Add(rare[0]); }
             }
         }
+        if(guaranteedItems!=null)foreach(var item in guaranteedItems)if(item!=null)drops.Add(new LootSource.Drop(item,1));
+        gold+=bonusGold;
         if(chest && drops.Count==0 && guaranteedItem==null && gold<=0) gold=3+rng.Next(0,3)+floorNumber*2;
         // A chest glows gold as it opens and its loot jumps out.
         var mouth=transform.position+Vector3.up*.55f;

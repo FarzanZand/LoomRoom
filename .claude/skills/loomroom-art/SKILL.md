@@ -134,6 +134,73 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
 - Show the user stills; never say "good" from small contact sheets. If the user says it isn't up to the creatures, redo it
   with this pipeline, from scratch if needed.
 
+## Hard rules learned the hard way (2026-10-14 bedroom pass; the user found every one of these before I did)
+
+**Review**
+- **Never judge a prop from a whole turntable sheet.** At sheet size a view is a few hundred pixels and smears, grey
+  patches, dark outline flecks and stretched streaks are invisible. For every prop crop each view to its object and
+  enlarge it with nearest filtering until a texel is 4+ screen pixels (scratchpad `zoom.py` pattern: crop the object box
+  of each 4x3 turntable cell, resize nearest to ~700 px). Look at all 12 views of every prop, one prop at a time, and
+  list what is wrong before building the next thing. If you have not looked at a prop that way, do not call it fixed.
+- **Then look at it in the scene** from where the player stands and close up, next to its neighbours, in the room's
+  real lighting (Play mode, pixel lighting on). Edit-mode captures with a copied camera can be far darker or different.
+- **Done means it holds up side by side with the approved concept** (render from the concept's camera, put both in one
+  image). Palette, light, wall and ceiling texture, props present. If it does not, keep going.
+- When the user reports one broken prop, assume the cause is in the pipeline and every prop built with it is broken:
+  find the cause, fix it, rebuild all, and review all again.
+
+**Five-view painted props (PixelRestyle.PaintedProps)**
+- **Only for blocky props** (cabinets, wardrobes, chests, tables, chairs, doors, bookcases). Organic or intricate models
+  (plants, flowers, flamingo, cake, laundry, jars, bed linen) get smears and camouflage patches whatever the tuning: use
+  `PixelRestyle.PlainColours` (each face takes the colour the painter gave that part, per-texel variation, crease AO,
+  no projection) or a new Meshy model from an approved concept. Decide this per prop **before** painting it.
+- **The painter returns a square image, not the 16:9 sheet.** Always run `Tools/sheet_relayout.py` on every painted
+  sheet before projecting (it finds each painted view and fits it to its reference box); never let the projection lay
+  the 16:9 cell grid over a square painting (cells took in neighbouring views and smeared every side panel). Then
+  blend each relaid sheet over its reference to confirm no view is doubled or misplaced.
+- **Check every painted sheet's layout against its reference before projecting**: the painter moves views to other
+  cells, flips the top view upside down (bed, chair), swaps the side views (flamingo), stacks views, adds a roof that
+  isn't there, or draws a view the wrong size. Overlay painting and reference per cell; fix with `relay.py`-style
+  crop-and-place (flip/swap as needed), never project a sheet whose silhouettes don't match.
+- **Diagnose view assignment with a colour-coded sheet** (each view a flat colour with a checker): build it, turntable
+  it, and every face shows which view it really took. Do this as soon as projection looks wrong, instead of guessing.
+- Pick each texel's view by the **face's own geometric normal** (the plain cross product of its corners; verified
+  outward with a colour-coded sheet), never by the smoothed vertex normal (box sides leaned toward the front view).
+  Verify any change to normals or view picking with the colour-coded sheet and `PixelRestyle.DebugSquarest`.
+- **The most head-on view that sees a texel wins.** Colour may only veto a view that is clearly wrong (knob smear,
+  outline, background), never choose between views: "closest colour" picking made oblique views win and streaked every
+  side panel in the room.
+- Never remap a band of painted pixels to one pixel further in (the old "rim peel"): it copies one column across the
+  band and streaks every face beside a vertical edge. A flat-colour debug sheet can't show this kind of fault; check a
+  build of the real painting zoomed in as well.
+- Line a painted view up with its reference by the **body's** box (rows/columns that are substantially filled), not the
+  outermost pixel: knobs and handles drawn at another size shifted whole side views and put background on the edges.
+- The painter recolours freely (a grey Synty lamp comes back bronze), so never judge painted colour against Synty's
+  colour; judge against what the painting made of that part elsewhere.
+- Painted parts that obviously aren't the model's (clock hands on the dial, a knob smear, white specks, the painter's
+  pale rim) are fixed by hand on the sheet first (clear the dial, mirror the clean back of a door onto its front).
+- The Synty source for the reference render must be found by name **and size**: several packs share mesh names
+  (PolygonTown and PolygonDarkFantasy both have SM_Prop_Bookshelf_01). Render sources through plain URP Lit:
+  `Synty/Generic_Basic` renders solid black in the sheet camera.
+
+**Room props (scaled ~20x, `PixelRestyle.Room.cs`)**
+- Room objects are prefab instances scaled ~20x: everything that measures in units (sheet camera far clip, occlusion ray
+  length and start offset, AO distance) must scale with the prop's bounds.
+- Bake at `RoomTexelsPerUnit` (6.4 = 128 per real metre). The bookcase's contents (books, cake, flamingo) are separate
+  props: build the case without them (`MakeRoomHolder(..., alone: true)`), or the painter paints them onto the shelf.
+- A rebuild creates new mesh assets and the scene's references to the old ones go missing (the bed vanished): after
+  every build re-apply the holders to the scene and scan the scene for renderers with no mesh.
+- Lights belong under their prop (lamp, lantern, pendant), so moving the prop moves the light.
+- Lamp glow (emission) is masked by the shade's geometry, never by bright texels (that made the pole glow).
+- Moving parts (clock hands) stay separate objects with their own plain material; the dial is drawn by hand, marks on
+  the face, not the frame.
+
+**Room surfaces**
+- Wall/ceiling paint from the concept's own wall (crop it as the reference). Scatter the painting's marks (flakes,
+  cracks) over a large tile instead of repeating one painting every 2 m. Take the painting's broad light drift out.
+- Check wall boxes for overlapping or edge-touching faces (z-fighting flicker, hairline cracks at corners): walls must
+  run through the corners into each other, and no two faces may share a plane.
+
 ## Tiling surfaces (walls, floors, ceilings): check before showing
 
 Lessons from the Church room styles (`Levels/Dungeon1/Styles/HighRes Materials`, 2026-10-12). Lay the textures out as

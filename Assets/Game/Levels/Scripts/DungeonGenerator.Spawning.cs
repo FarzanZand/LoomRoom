@@ -150,7 +150,8 @@ public partial class DungeonGenerator
         foreach(var piece in instance.GetComponentsInChildren<DungeonKitPiece>(true))
             if(piece!=null)piece.Choose(data.kitModels,HeightAt(centre.x,centre.y));
         foreach(var block in instance.GetComponentsInChildren<DungeonKitBlock>(true))
-            if(block!=null)block.Build(RegionStyles!=null && index<RegionStyles.Length ? RegionStyles[index] : null,data,HeightAt(centre.x,centre.y),Cell(centre).y);
+            // On a boss stage the floor is the stage's top.
+            if(block!=null)block.Build(RegionStyles!=null && index<RegionStyles.Length ? RegionStyles[index] : null,data,HeightAt(centre.x,centre.y),Cell(centre).y+(index==StageRoom && Stage!=null ? Stage.height : 0f));
         var rewards=profiles[index]!=null ? profiles[index].rewards : null;
         StockPlacedLoot(instance,rewards);
         // A chest set down by hand with its own trap stays trapped (while the floor allows traps); others may be trapped.
@@ -495,10 +496,12 @@ public partial class DungeonGenerator
 
     Character SpawnBoss(Vector3 pos,Quaternion rotation)
     {
-        var boss=SpawnEnemyAt(Milestone.boss,pos,rotation,Milestone.bossLoot);
+        // With a boss chest the reward goes in the chest (SpawnBossChest); the body drops like any enemy's.
+        bool chest=Milestone.rewardChest;
+        var boss=SpawnEnemyAt(Milestone.boss,pos,rotation,chest ? null : Milestone.bossLoot);
         if(boss==null){Debug.LogWarning($"Milestone boss {Milestone.boss.name} could not be placed on navigation.",this);return null;}
         var drop=boss.GetComponent<DungeonLootDrop>();
-        if(drop!=null){if(Milestone.bossLoot!=null){drop.table=Milestone.bossLoot;drop.overrideLevelTable=true;}drop.bonusGold+=Milestone.bonusGold;}
+        if(drop!=null && !chest){if(Milestone.bossLoot!=null){drop.table=Milestone.bossLoot;drop.overrideLevelTable=true;}drop.bonusGold+=Milestone.bonusGold;}
         if(boss.Stats!=null && (Milestone.healthMultiplier!=1 || Milestone.damageMultiplier!=1))
         {
             boss.Stats.AddModifier(new StatModifier(StatType.MaxHealth,Milestone.healthMultiplier-1,ModifierType.PercentMultiply,Milestone));

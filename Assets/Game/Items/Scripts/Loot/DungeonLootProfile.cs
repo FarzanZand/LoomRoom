@@ -20,7 +20,9 @@ public class DungeonLootProfile : LootSource
     }
 
     [Title("Gear")]
-    [MinMaxSlider(1, 4, true), Tooltip("Gear tiers that drop here. 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal. The low end is most common on the biome's first floor, the high end on its last.")]
+    [Tooltip("Gear tiers, upgrade and honed chances come from the level's Gear By Floor table (Run tab) when it has a row for the floor. Off: always this profile's own settings below (a boss's reward).")]
+    public bool followFloorTiers = true;
+    [MinMaxSlider(1, 4, true), Tooltip("Gear tiers that drop here when the level has no gear-by-floor row (or Follow Floor Tiers is off). 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal. The low end is most common on the biome's first floor, the high end on its last.")]
     public Vector2Int gearTiers = new(1, 1);
     [Range(0, 1), Tooltip("Chance a gear drop is one tier better than rolled: an early upgrade.")]
     public float upgradeChance = .1f;
@@ -55,19 +57,24 @@ public class DungeonLootProfile : LootSource
         if (random == null || rule == null) return drops;
         if (random.NextDouble() < rule.gearChance)
         {
-            int tier = RollTier(random, floor);
-            if (random.NextDouble() < upgradeChance) tier++;
+            var row = followFloorTiers ? FloorGear?.Invoke(floor) : null;
+            int lowest = row != null ? row.LowestTier : gearTiers.x, highest = row != null ? row.HighestTier : gearTiers.y;
+            int tier = row != null ? row.Roll(random) : RollTier(random, floor);
+            if (random.NextDouble() < (row != null ? row.upgradeChance : upgradeChance)) tier++;
             // Spell tomes are part of the same roll, weighted like any other piece (they have no better versions,
             // so a tome can come up at its own tier or any above it).
             var gear = Pick(random, i => IsGear(i) && i.tier == tier || IsTome(i) && i.tier <= tier)
-                ?? Pick(random, i => IsGear(i) && i.tier >= gearTiers.x && i.tier <= gearTiers.y || IsTome(i) && i.tier <= gearTiers.y);
+                ?? Pick(random, i => IsGear(i) && i.tier >= lowest && i.tier <= highest || IsTome(i) && i.tier <= highest);
             if (gear != null && IsTome(gear)) { drops.Add(new Drop(gear, 1)); gear = null; }
-            if (gear != null && random.NextDouble() < honedChance) gear = gear.Honed(random.NextDouble() < honedTwiceChance ? 2 : 1);
+            float honed = row != null ? row.honedChance : honedChance, twice = row != null ? row.honedTwiceChance : honedTwiceChance;
+            if (gear != null && random.NextDouble() < honed) gear = gear.Honed(random.NextDouble() < twice ? 2 : 1);
             if (gear != null) drops.Add(new Drop(gear, 1));
         }
         if (random.NextDouble() < rule.recoveryChance)
         {
-            var item = Pick(random, i => i.itemType == ItemType.Consumable && i.spell == null && i.tier <= gearTiers.y);
+            var floorRow = followFloorTiers ? FloorGear?.Invoke(floor) : null;
+            int top = floorRow != null ? floorRow.HighestTier : gearTiers.y;
+            var item = Pick(random, i => i.itemType == ItemType.Consumable && i.spell == null && i.tier <= top);
             if (item != null) drops.Add(new Drop(item, 1));
         }
         return drops;

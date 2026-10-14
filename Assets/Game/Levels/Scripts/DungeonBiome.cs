@@ -59,6 +59,8 @@ public class DungeonBiome : ScriptableObject
     public DungeonRoomFeatures RoomFeatures(TableLevelData level) => overrideDungeonSettings || level == null ? roomFeatures : level.roomFeatures;
     [TabGroup(Look), Min(0f), Tooltip("Metres of full ambient light around the player here (LightingManager's light radius); 0 uses the manager's.")]
     public float lightRadius;
+    [TabGroup(Look), Range(0f, 1f), Tooltip("How much of the filmic grade (ScreenManager > Filmic look: ACES tonemapping, contrast, saturation, warm white balance) this biome's floors get. 1 as in the room; 0 plain, truer colours.")]
+    public float filmicLook = 1f;
     [TabGroup(Look), Tooltip("Colour split (ScreenManager): shadows and ambient lean to this (cool).")]
     public Color shadowTint = new(.55f, .85f, 1f);
     [TabGroup(Look), Tooltip("Colour split (ScreenManager): lamps, torches and the player's light lean to this (warm).")]

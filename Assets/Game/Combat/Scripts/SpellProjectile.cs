@@ -91,6 +91,18 @@ public class SpellProjectile : MonoBehaviour
             Instantiate(spell.impact, at, Quaternion.LookRotation(normal));
         }
         if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.impactSound, centre, spell.impactVolume);
+        Burst();
+    }
+
+    // The ball is gone: what travels with it (its glowing core, simulated in its own space) goes at once, or it would
+    // hang in the air where it burst as a lingering orb; the trail it left in the world fades out on its own, except
+    // right in front of the player's eyes (a hit on them), where its last sparks would pile up into a glowing ball.
+    void Burst()
+    {
+        var cam = Camera.main != null ? Camera.main.transform : null;
+        bool inFace = cam != null && Vector3.Distance(cam.position, transform.position) < nearView + 1.2f;
+        foreach (var ps in GetComponentsInChildren<ParticleSystem>(true))
+            if (inFace || ps.main.simulationSpace == ParticleSystemSimulationSpace.Local) ps.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
         GetComponent<SpellVisual>().Stop();
     }
 
@@ -121,7 +133,7 @@ public class SpellProjectile : MonoBehaviour
         return struck;
     }
 
-    public void Fizzle() { done = true; GetComponent<SpellVisual>().Stop(); }
+    public void Fizzle() { done = true; Burst(); }
 
     static bool Blocked(Vector3 from, Vector3 to, Transform target, LayerMask mask) =>
         Physics.Linecast(from, to, out var cover, mask, QueryTriggerInteraction.Ignore) && !cover.transform.IsChildOf(target);

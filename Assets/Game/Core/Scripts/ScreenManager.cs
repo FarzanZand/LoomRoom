@@ -171,6 +171,19 @@ public class ScreenManager : Singleton<ScreenManager>
         if (Application.isPlaying && pixelLighting != pixelLightingAtStart && pixelLookLibrary != null) pixelLookLibrary.SetPixelLighting(pixelLightingAtStart);
     }
 
+    [Header("Filmic look")]
+    [Tooltip("The scene's filmic grade (Lighting Manager > Lighting > Filmic Color and Bloom). On a dungeon floor its weight blends to the biome's Filmic Look; everywhere else it is full.")]
+    public UnityEngine.Rendering.Volume filmicVolume;
+    [Min(0f)] public float filmicBlendSeconds = 1.5f;
+
+    void ApplyFilmicLook()
+    {
+        if (filmicVolume == null) return;
+        var biome = Application.isPlaying && TargetTableWeight > 0f ? LightingManager.CurrentBiome() : null;
+        float target = biome != null ? biome.filmicLook : 1f;
+        filmicVolume.weight = filmicBlendSeconds > 0f ? Mathf.MoveTowards(filmicVolume.weight, target, Time.unscaledDeltaTime / filmicBlendSeconds) : target;
+    }
+
     [Header("Colour split")]
     [Tooltip("Two-tone colours on dungeon floors: shadows and ambient lean cool (teal), lamps and torches warm (orange). The tints are the biome's (DungeonBiome Look tab: Shadow Tint, Lamp Tint). Room surfaces are never tinted.")]
     public bool colourSplit = true;
@@ -192,6 +205,7 @@ public class ScreenManager : Singleton<ScreenManager>
     void Update()
     {
         ApplyColourSplit();
+        ApplyFilmicLook();
         SetPixelLightingGlobals();
         float step = effectBlendSeconds > 0f ? Time.unscaledDeltaTime / effectBlendSeconds : 1f;
         tableWeight = Mathf.MoveTowards(tableWeight, TargetTableWeight, step);

@@ -19,10 +19,12 @@ public abstract class LootSource : ScriptableObject
     public static int? GenerationLevel { get; set; }
     // How far through its biome a floor is, 0 on the first floor to 1 on the last (set by TableLevelLoader).
     public static System.Func<int, float> BiomeProgress { get; set; }
+    // The level's gear-by-floor row for a floor, or null (set by TableLevelLoader).
+    public static System.Func<int, LootFloorTiers> FloorGear { get; set; }
 
     // Enter Play Mode without a domain reload keeps statics: start each session with neither set.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetStatics() { GenerationLevel = null; BiomeProgress = null; }
+    static void ResetStatics() { GenerationLevel = null; BiomeProgress = null; FloorGear = null; }
 
     public abstract List<Drop> RollDrops(System.Random random, int floor, DungeonLootSource source);
     public abstract int RollGold(System.Random random, int floor, DungeonLootSource source);

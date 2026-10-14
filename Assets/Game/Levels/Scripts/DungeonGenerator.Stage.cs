@@ -59,6 +59,14 @@ public partial class DungeonGenerator
         var side = stage.sideMaterial != null ? stage.sideMaterial : data.trimMaterial;
         var root = new GameObject("Stage").transform; root.SetParent(geometry, false);
         instance.transform.position += Vector3.up * h;
+        // The template is laid out with the Dungeon Master's side along its +x (its cover, lights and spots): it is
+        // turned, in quarter turns about its middle, to face him wherever the stage stands.
+        var toDm = DungeonMasterPosition() - instance.transform.position;
+        if (new Vector2(toDm.x, toDm.z).sqrMagnitude > .01f)
+        {
+            float yaw = Mathf.Round(Mathf.Atan2(-toDm.z, toDm.x) * Mathf.Rad2Deg / 90f) * 90f;
+            instance.transform.rotation = Quaternion.Euler(0, yaw, 0) * instance.transform.rotation;
+        }
 
         // Stair runs: from a doorway cell inward, as long as the room allows.
         var stairs = new HashSet<Vector2Int>();

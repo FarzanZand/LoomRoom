@@ -54,7 +54,9 @@ public static partial class PixelRestyle
 
     // The Synty model a prop part was made from: the mesh with Synty's own UVs and its flat-colour materials. A part made
     // from a changed copy (the tall crate) finds the materials by its name without the last word, and keeps its own mesh.
-    static bool SyntySource(string baseName, out Mesh mesh, out Material[] mats)
+    // Several packs use the same mesh name (PolygonTown and PolygonFantasyKingdom both have an SM_Prop_Bookshelf_01):
+    // with `shape` given, only a model of that size counts.
+    static bool SyntySource(string baseName, out Mesh mesh, out Material[] mats, Bounds? shape = null)
     {
         mesh = null; mats = null;
         for (string name = baseName; ; )
@@ -65,6 +67,7 @@ public static partial class PixelRestyle
                 if (synty == null || synty.name != name) continue;
                 var smf = synty.GetComponentInChildren<MeshFilter>(true); var smr = smf != null ? smf.GetComponent<MeshRenderer>() : null;
                 if (smf == null || smr == null) continue;
+                if (shape is Bounds want && name == baseName && smf.sharedMesh != null && (smf.sharedMesh.bounds.size - want.size).magnitude > want.size.magnitude * .02f) continue;
                 mats = smr.sharedMaterials; if (name == baseName) mesh = smf.sharedMesh;
                 return true;
             }
@@ -75,6 +78,8 @@ public static partial class PixelRestyle
 
     // Half the side of every view's square: one scale for all five, so a texel is the same size in each.
     static float SheetHalf(Bounds b) => Mathf.Max(b.extents.x, Mathf.Max(b.extents.y, b.extents.z)) * 1.08f;
+
+    public static bool SheetFromRestyle;
 
     public static string RenderPropSheet(string propPrefabPath, string name)
     {
@@ -94,14 +99,28 @@ public static partial class PixelRestyle
         {
             var mf = r.GetComponent<MeshFilter>();
             string baseName = mf.sharedMesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
-            if (!SyntySource(baseName, out var syntyMesh, out var syntyMats)) continue;
+            // SheetFromRestyle: the plain restyle instead (its baked shading shows openings flat Synty colour hides).
+            if (SheetFromRestyle)
+            {
+                if (AssetDatabase.LoadAssetAtPath<Mesh>($"{Root}/Room/{baseName}/{baseName}.asset") is { } rm) mf.sharedMesh = rm;
+                if (AssetDatabase.LoadAssetAtPath<Material>($"{Root}/Room/{baseName}/{baseName}.mat") is { } rmat) r.sharedMaterials = new[] { rmat };
+                continue;
+            }
+            if (!SyntySource(baseName, out var syntyMesh, out var syntyMats, mf.sharedMesh.bounds)) continue;
             if (syntyMesh != null) mf.sharedMesh = syntyMesh;
             else if (AssetDatabase.LoadAssetAtPath<Mesh>($"{Root}/Props/{baseName}/{baseName}.asset") is { } own) mf.sharedMesh = own;
-            r.sharedMaterials = syntyMats;
+            // Synty's own shaders (Generic_Basic) can draw nothing in this render: a plain lit copy with the same atlas.
+            r.sharedMaterials = System.Array.ConvertAll(syntyMats, sm =>
+            {
+                if (sm == null || sm.shader.name == "Universal Render Pipeline/Lit") return sm;
+                var lit = new Material(Shader.Find("Universal Render Pipeline/Lit")) { hideFlags = HideFlags.DontSave };
+                lit.SetTexture("_BaseMap", MainTexture(sm)); lit.SetFloat("_Smoothness", 0f);
+                return lit;
+            });
         }
         var camGo = new GameObject("cam"); camGo.transform.SetParent(root.transform, false);
         var cam = camGo.AddComponent<Camera>(); cam.orthographic = true; cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = PaintBackground;
-        cam.nearClipPlane = .01f; cam.farClipPlane = 50f; cam.aspect = 1f;
+        cam.nearClipPlane = .01f; cam.farClipPlane = b.size.magnitude * 3f + 50f; cam.aspect = 1f;
         float half = SheetHalf(b); cam.orthographicSize = half;
         var light = new GameObject("light").AddComponent<Light>(); light.transform.SetParent(root.transform, false);
         light.type = LightType.Directional; light.intensity = 1.1f;
@@ -128,17 +147,19 @@ public static partial class PixelRestyle
     }
 
     // Same, logging to Temp/Paint/build.log.
-    public static string BuildPaintedPropLogged(string propPrefabPath, string name)
+    public static string BuildPaintedPropLogged(string propPrefabPath, string name, float texelsPerUnit = ItemTexelsPerUnit, string category = "Props")
     {
         string line;
-        try { line = BuildPaintedProp(propPrefabPath, name); }
+        try { line = BuildPaintedProp(propPrefabPath, name, texelsPerUnit, category); }
         catch (System.Exception e) { line = name + ": " + e; }
         File.AppendAllText($"{PaintFolder}/build.log", System.DateTime.Now.ToString("HH:mm:ss ") + line + System.Environment.NewLine);
         return line;
     }
 
-    // Projects the painted sheet onto every part of the prop at the item density and saves the prefab.
-    public static string BuildPaintedProp(string propPrefabPath, string name)
+    // Projects the painted sheet onto every part of the prop at the item density and saves the prefab. Room props
+    // (category "Room") are baked at the room's own density per world unit of the prefab, which carries the prop at
+    // the scale it stands at in the room; each part's plain restyle is read from Art/Synty Pixel/<category>/<mesh>.
+    public static string BuildPaintedProp(string propPrefabPath, string name, float texelsPerUnit = ItemTexelsPerUnit, string category = "Props")
     {
         var painted = new Texture2D(2, 2); painted.LoadImage(File.ReadAllBytes($"{PaintFolder}/{name} sheet painted.png")); painted.filterMode = FilterMode.Point;
         var reference = new Texture2D(2, 2); reference.LoadImage(File.ReadAllBytes($"{PaintFolder}/{name} sheet.png"));
@@ -152,7 +173,10 @@ public static partial class PixelRestyle
         }
         // Where the painting's outline is a little inside the model's, a sample would land on the grey background:
         // every background pixel points at its nearest painted pixel instead.
+        RimPeel = 0; // The rim peel copied one column across a band at every vertical edge (streaks); off.
+        PaintFaceNormals = category == "Room";
         var nearest = NearestPainted(painted);
+        RimPeel = 0;
         Object.DestroyImmediate(reference);
 
         var root = PrefabUtility.LoadPrefabContents(propPrefabPath);
@@ -176,6 +200,7 @@ public static partial class PixelRestyle
             }
             Physics.SyncTransforms();
             int mask = 1 << ProbeLayer;
+            float rayLength = Mathf.Max(20f, b.size.magnitude * 2f), rayStart = Mathf.Max(.004f, b.size.magnitude * .0002f);
 
             Color Sample(int v, Vector3 p)
             {
@@ -202,14 +227,16 @@ public static partial class PixelRestyle
                 string baseName = baseNames[r];
                 if (done.TryGetValue(baseName, out var shared)) { mf.sharedMesh = shared.mesh; r.sharedMaterials = new[] { shared.material }; continue; }
                 // Always from the plain restyle (a re-run must not start from the last painting's mesh and UVs).
-                var src = AssetDatabase.LoadAssetAtPath<Mesh>($"{Root}/Props/{baseName}/{baseName}.asset") ?? mf.sharedMesh;
-                var srcMats = AssetDatabase.LoadAssetAtPath<Material>($"{Root}/Props/{baseName}/{baseName}.mat") is { } plain ? new[] { plain } : r.sharedMaterials;
+                string folder = $"{Root}/{category}/{baseName}";
+                var src = AssetDatabase.LoadAssetAtPath<Mesh>($"{folder}/{baseName}.asset") ?? mf.sharedMesh;
+                var srcMats = AssetDatabase.LoadAssetAtPath<Material>($"{folder}/{baseName}.mat") is { } plain ? new[] { plain } : r.sharedMaterials;
                 string partName = baseName + " painted";
                 float scale = Mathf.Max(.01f, r.transform.lossyScale.x);
                 // Colour from the view that faces this point most squarely and can see it.
                 PaintSource = (p, n) =>
                 {
                     var pp = m.MultiplyPoint3x4(p); var pn = m.MultiplyVector(n).normalized;
+                    if (PaintFaceNormals) return PickByColour(pp, pn, Sample, probe.transform.position, rayLength, rayStart, mask);
                     int best = -1; float bestDot = float.NegativeInfinity; int fallback = 0; float fallbackDot = float.NegativeInfinity;
                     for (int v = 0; v < PropViews.Length; v++)
                     {
@@ -218,27 +245,44 @@ public static partial class PixelRestyle
                         // A view that sees the face nearly edge-on smears one painted pixel across it (streaks under an
                         // overhang): better the view it faces, even if another part hides it there.
                         if (dot <= .35f || dot <= bestDot) continue;
-                        var start = probe.transform.position + pp + pn * .004f;
-                        if (Physics.Raycast(start, PropViews[v].from, 20f, mask, QueryTriggerInteraction.Collide)) continue;
+                        var start = probe.transform.position + pp + pn * rayStart;
+                        if (Physics.Raycast(start, PropViews[v].from, rayLength, mask, QueryTriggerInteraction.Collide)) continue;
                         best = v; bestDot = dot;
                     }
                     return Sample(best >= 0 ? best : fallback, pp);
                 };
-                float aim = ItemTexelsPerUnit * scale, measured = 0f;
+                float aim = texelsPerUnit * scale, measured = 0f;
                 (Mesh mesh, Material material) built = default;
+                // Room props: one bake first only to learn what the painter made of each of the model's colours.
+                if (PaintFaceNormals)
+                {
+                    Learned = new Dictionary<int, List<Color>>(); Expected = null;
+                    AssetDatabase.DeleteAsset($"{folder}/{partName}.asset");
+                    Build(src, srcMats, category, partName, aim, folder);
+                    Expected = new Dictionary<int, Color>();
+                    foreach (var kv in Learned)
+                    {
+                        var l = kv.Value; if (l.Count < 3) continue;
+                        float[] rr = new float[l.Count], gg = new float[l.Count], bb = new float[l.Count];
+                        for (int i = 0; i < l.Count; i++) { rr[i] = l[i].r; gg[i] = l[i].g; bb[i] = l[i].b; }
+                        System.Array.Sort(rr); System.Array.Sort(gg); System.Array.Sort(bb); int h = l.Count / 2;
+                        Expected[kv.Key] = new Color(rr[h], gg[h], bb[h], 1f);
+                    }
+                    Learned = null;
+                }
                 for (int pass = 0; pass < 4; pass++)
                 {
                     // A fresh mesh asset each pass: copying over an existing one keeps its old UVs.
-                    AssetDatabase.DeleteAsset($"{Root}/Props/{src.name}/{partName}.asset");
-                    built = Build(src, srcMats, "Props", partName, aim);
+                    AssetDatabase.DeleteAsset($"{folder}/{partName}.asset");
+                    built = Build(src, srcMats, category, partName, aim, folder);
                     if (built.mesh == null) break;
                     mf.sharedMesh = built.mesh; r.sharedMaterials = new[] { built.material };
                     AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(built.material.GetTexture("_BaseMap")), ImportAssetOptions.ForceUpdate);
                     measured = TexelsPerUnit(r);
-                    if (measured <= 0f || Mathf.Abs(measured / ItemTexelsPerUnit - 1f) < .05f) break;
-                    aim *= ItemTexelsPerUnit / measured;
+                    if (measured <= 0f || Mathf.Abs(measured / texelsPerUnit - 1f) < .05f) break;
+                    aim *= texelsPerUnit / measured;
                 }
-                PaintSource = null;
+                PaintSource = null; Expected = null;
                 if (built.mesh == null) { results.Add($"{src.name} failed"); continue; }
                 done[baseName] = built;
                 results.Add($"{partName} {measured:0}/m");
@@ -248,8 +292,8 @@ public static partial class PixelRestyle
             foreach (var r in parts) AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(r.GetComponent<MeshFilter>().sharedMesh), ImportAssetOptions.ForceUpdate);
             AssetDatabase.ImportAsset(propPrefabPath, ImportAssetOptions.ForceUpdate);
         }
-        finally { PaintSource = null; Object.DestroyImmediate(probe); PrefabUtility.UnloadPrefabContents(root); Object.DestroyImmediate(painted); }
-        return $"{name}: " + string.Join(", ", results) + $" (target {ItemTexelsPerUnit:0})";
+        finally { PaintSource = null; PaintFaceNormals = false; Object.DestroyImmediate(probe); PrefabUtility.UnloadPrefabContents(root); Object.DestroyImmediate(painted); }
+        return $"{name}: " + string.Join(", ", results) + $" (target {texelsPerUnit:0.#})";
     }
 
     // Long flat props (rugs, runners): no single painting reaches ItemTexelsPerUnit along their length, so one painted
@@ -377,6 +421,77 @@ public static partial class PixelRestyle
         return outFile;
     }
 
+    // Room props: the painter recolours freely (a grey Synty lamp comes back bronze), so a texel's colour is judged
+    // against what the painting made of that Synty colour elsewhere on the model (Expected: the median painted colour
+    // over the faces of that colour, each seen squarely by an unhidden view, learned in a first bake). Of the views
+    // that see this point, the one closest to that colour wins; a view painting leaves on soil, a knob's black on a
+    // door or an outline's dark on a neck loses. With no view close enough, the expected colour itself.
+    static Dictionary<int, List<Color>> Learned;
+    // Organic props (plants, flowers, a cake, laundry): no projection at all. Each face takes the colour the painter
+    // gave that part of the model (Expected), varied a little per texel; creases still darken in Build.
+    public static bool PlainColours;
+    // Diagnosis: every texel takes the most head-on view that sees it, no colour judgement (for colour-coded sheets).
+    public static bool DebugSquarest;
+    static Dictionary<int, Color> Expected;
+    static int ColourKey(Color c) => Mathf.RoundToInt(c.r * 7) * 64 + Mathf.RoundToInt(c.g * 7) * 8 + Mathf.RoundToInt(c.b * 7);
+
+    static Color PickByColour(Vector3 pp, Vector3 pn, System.Func<int, Vector3, Color> sample, Vector3 probeAt, float rayLength, float rayStart, int mask)
+    {
+        int key = ColourKey(PaintBase);
+        int squarest = -1; float squarestDot = DebugSquarest ? .2f : .6f;
+        var seen = new List<(int v, float dot)>();
+        for (int v = 0; v < PropViews.Length; v++)
+        {
+            float dot = Vector3.Dot(pn, PropViews[v].from);
+            if (dot <= .45f) continue;
+            if (Physics.Raycast(probeAt + pp + pn * rayStart, PropViews[v].from, rayLength, mask, QueryTriggerInteraction.Collide)) continue;
+            seen.Add((v, dot));
+            if (dot > squarestDot) { squarestDot = dot; squarest = v; }
+        }
+        if (DebugSquarest) return squarest >= 0 ? sample(squarest, pp) : Color.magenta;
+        if (Learned != null)
+        {
+            if (squarest < 0) return PaintBase;
+            var c0 = sample(squarest, pp);
+            if (!Learned.TryGetValue(key, out var list)) Learned[key] = list = new List<Color>();
+            list.Add(c0);
+            return c0;
+        }
+        Color want = PaintBase;
+        if (Expected != null && !Expected.TryGetValue(key, out want))
+        {
+            // A colour no view saw squarely: the painted colour of the nearest model colour that was seen.
+            float bd = float.MaxValue; want = PaintBase;
+            foreach (var kv in Expected)
+            {
+                var kc = new Color(kv.Key / 64 / 7f, kv.Key / 8 % 8 / 7f, kv.Key % 8 / 7f);
+                float d = Mathf.Abs(kc.r - PaintBase.r) + Mathf.Abs(kc.g - PaintBase.g) + Mathf.Abs(kc.b - PaintBase.b);
+                if (d < bd) { bd = d; want = kv.Value; }
+            }
+        }
+        float wl = want.grayscale;
+        if (PlainColours) seen.Clear();
+        // The most head-on view wins; a view is only passed over when its colour is clearly not this part's (a knob
+        // smear, the painter's outline, background grey), then the next most head-on one is tried.
+        seen.Sort((x, y) => y.dot.CompareTo(x.dot));
+        foreach (var (v, dot) in seen)
+        {
+            var c = sample(v, pp); float cl = c.grayscale;
+            Vector3 a = new Vector3(c.r, c.g, c.b) / (cl + .05f), b = new Vector3(want.r, want.g, want.b) / (wl + .05f);
+            float score = (a - b).magnitude + Mathf.Abs(Mathf.Log((cl + .04f) / (wl + .04f))) * .6f;
+            if (score < .8f) return c;
+        }
+        float bestScore = float.MaxValue; Color best = want;
+        // Nothing fits: the expected colour, varied a little per texel so it isn't a flat patch.
+        // One step per texel (6.4 a world unit in the room) so the variation reads as pixels, not noise.
+        int hx = Mathf.FloorToInt(pp.x * RoomTexelsPerUnit), hy = Mathf.FloorToInt(pp.y * RoomTexelsPerUnit), hz = Mathf.FloorToInt(pp.z * RoomTexelsPerUnit);
+        float k = 1f + (Hash(hx, hy, hz) - .5f) * .12f;
+        return new Color(want.r * k, want.g * k, want.b * k, 1f);
+    }
+
+    // Extra pixels peeled off every painted silhouette's outside (set for room props only; items keep 0).
+    static int RimPeel;
+
     // For every pixel of the painted sheet, the index of the nearest pixel that is paint, not background (itself if it is
     // paint): a breadth-first fill outward from all painted pixels at once.
     static int[] NearestPainted(Texture2D tex)
@@ -406,6 +521,31 @@ public static partial class PixelRestyle
             }
             foreach (int i in peel) nearest[i] = -1;
         }
+        // Room props: the painter also lights every view's outer edge, and narrow faces beside an edge picked it up as a
+        // pale band. Each painted pixel within RimPeel of the background is pointed RimPeel deeper inside where the
+        // painting is that thick (thin parts, a chair's legs, keep their own pixels).
+        int[] deep = null;
+        if (RimPeel > 0)
+        {
+            var dist = new int[w * h]; var dq = new Queue<int>();
+            for (int i = 0; i < px.Length; i++) { if (nearest[i] < 0) { dist[i] = 0; dq.Enqueue(i); } else dist[i] = int.MaxValue; }
+            while (dq.Count > 0)
+            {
+                int i = dq.Dequeue(), x = i % w, y = i / w;
+                void Step(int j) { if (dist[j] > dist[i] + 1) { dist[j] = dist[i] + 1; dq.Enqueue(j); } }
+                if (x > 0) Step(i - 1); if (x < w - 1) Step(i + 1); if (y > 0) Step(i - w); if (y < h - 1) Step(i + w);
+            }
+            deep = new int[w * h]; var reach = new int[w * h];
+            for (int i = 0; i < px.Length; i++) { deep[i] = -1; reach[i] = int.MaxValue; }
+            for (int i = 0; i < px.Length; i++) if (nearest[i] >= 0 && dist[i] > RimPeel) { deep[i] = i; reach[i] = 0; dq.Enqueue(i); }
+            while (dq.Count > 0)
+            {
+                int i = dq.Dequeue(), x = i % w, y = i / w;
+                if (reach[i] >= RimPeel + 2) continue;
+                void Spread(int j) { if (reach[j] == int.MaxValue && nearest[j] >= 0) { reach[j] = reach[i] + 1; deep[j] = deep[i]; dq.Enqueue(j); } }
+                if (x > 0) Spread(i - 1); if (x < w - 1) Spread(i + 1); if (y > 0) Spread(i - w); if (y < h - 1) Spread(i + w);
+            }
+        }
         for (int i = 0; i < px.Length; i++) if (nearest[i] >= 0) queue.Enqueue(i);
         while (queue.Count > 0)
         {
@@ -414,6 +554,7 @@ public static partial class PixelRestyle
             if (x > 0) Visit(i - 1); if (x < w - 1) Visit(i + 1); if (y > 0) Visit(i - w); if (y < h - 1) Visit(i + w);
         }
         for (int i = 0; i < nearest.Length; i++) if (nearest[i] < 0) nearest[i] = i;
+        if (deep != null) for (int i = 0; i < nearest.Length; i++) { int k = nearest[i]; if (deep[k] >= 0) nearest[i] = deep[k]; }
         return nearest;
     }
 
@@ -424,14 +565,21 @@ public static partial class PixelRestyle
         var px = tex.GetPixels(cell.x + inset, cell.y + inset, cell.width - inset * 2, cell.height - inset * 2);
         int w = cell.width - inset * 2, h = cell.height - inset * 2;
         var bg = (px[0] + px[w - 1] + px[(h - 1) * w] + px[h * w - 1]) / 4f;
-        int x0 = w, y0 = h, x1 = -1, y1 = -1;
+        // The body's box, not the outermost pixel: thin protrusions (knobs, a handle, a stray stroke) are drawn at a
+        // different size by the painter and would shift the whole view. A column or row counts when it is at least a
+        // quarter as full as the fullest one.
+        var cols = new int[w]; var rows = new int[h];
         for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)
         {
             var p = px[y * w + x];
             if (Mathf.Abs(p.r - bg.r) + Mathf.Abs(p.g - bg.g) + Mathf.Abs(p.b - bg.b) < .12f) continue;
-            x0 = Mathf.Min(x0, x); x1 = Mathf.Max(x1, x); y0 = Mathf.Min(y0, y); y1 = Mathf.Max(y1, y);
+            cols[x]++; rows[y]++;
         }
-        if (x1 < 0) return cell;
+        int maxC = 0, maxR = 0; foreach (var c in cols) maxC = Mathf.Max(maxC, c); foreach (var r in rows) maxR = Mathf.Max(maxR, r);
+        if (maxC == 0) return cell;
+        int x0 = 0, x1 = w - 1, y0 = 0, y1 = h - 1;
+        while (x0 < w - 1 && cols[x0] < maxC / 4) x0++; while (x1 > x0 && cols[x1] < maxC / 4) x1--;
+        while (y0 < h - 1 && rows[y0] < maxR / 4) y0++; while (y1 > y0 && rows[y1] < maxR / 4) y1--;
         return new RectInt(cell.x + inset + x0, cell.y + inset + y0, x1 - x0 + 1, y1 - y0 + 1);
     }
 }

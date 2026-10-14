@@ -35,6 +35,8 @@ public class DungeonMasterHand : MonoBehaviour
     Transform hanging; float hangHeight; Quaternion hangFacing;
 
     public bool Busy { get; private set; }
+    // Where the last figure he set down ended up (Place).
+    public Vector3 LastPlacedAt { get; private set; }
     public Transform RightHand => animator != null ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
     public Transform LeftHand => animator != null ? animator.GetBoneTransform(HumanBodyBones.LeftHand) : null;
 
@@ -57,11 +59,9 @@ public class DungeonMasterHand : MonoBehaviour
             var at = Fingertips() - Vector3.up * (hangHeight * grip);
             // Set down, it comes straight down onto its spot and stops on the floor: where his arm falls short of the
             // spot it would otherwise land early and be dragged along the stage.
-            if (settle > 0f)
-            {
-                var flat = Vector3.Lerp(new Vector3(at.x, 0, at.z), new Vector3(settleAt.x, 0, settleAt.z), settle);
-                at = new Vector3(flat.x, Mathf.Max(at.y, settleAt.y), flat.z);
-            }
+            // Set down, it stops on the floor (his hand may go a little lower); it is never moved sideways off his
+            // fingers.
+            if (settle > 0f) at.y = Mathf.Max(at.y, settleAt.y);
             hanging.SetPositionAndRotation(at, hangFacing);
         }
         if (carriedLight != null && hanging != null && Camera.main != null)
@@ -166,18 +166,22 @@ public class DungeonMasterHand : MonoBehaviour
         for (float t = 0; t < lower; t += Time.deltaTime)
         {
             float u = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / lower), 2.2f);
-            // The figure hangs from his fingertips, a hand's length under the wrist the IK places.
-            float drop = hand != null ? hand.position.y - Fingertips().y : 0f;
-            rightTarget = Vector3.Lerp(high, low + Vector3.up * drop, u);
-            settle = Mathf.SmoothStep(0, 1, Mathf.Clamp01(u * 1.6f)); settleAt = spot;
+            // The figure hangs from his fingertips, a hand's length from the wrist the IK places: the wrist goes where
+            // it puts the fingertips straight over the spot.
+            var fingers = hand != null ? hand.position - Fingertips() : Vector3.zero;
+            float ease = Mathf.SmoothStep(0, 1, Mathf.Clamp01(t / lower * 4f));   // the correction comes in gently
+            rightTarget = Vector3.Lerp(high, low + Vector3.up * fingers.y, u) + new Vector3(fingers.x, 0, fingers.z) * ease;
+            settle = 1f; settleAt = spot;
             yield return null;
         }
         hanging = null; settle = 0f;
-        // Where his reach ran out, the figure is set the rest of the way down.
-        var at = figure.position;
-        for (float t = 0; t < .15f; t += Time.deltaTime) { figure.SetPositionAndRotation(Vector3.Lerp(at, spot, t / .15f), facing); yield return null; }
-        figure.SetPositionAndRotation(spot, facing);
-        if (lightGo != null) { lightGo.transform.position = spot + Vector3.up * height + (Camera.main != null ? Vector3.ProjectOnPlane(Camera.main.transform.position - spot, Vector3.up).normalized * height : Vector3.zero); Destroy(lightGo, .8f); }
+        // It stands where his hand set it down (on the spot when his reach allows), on the floor there.
+        var landedAt = new Vector3(figure.position.x, spot.y, figure.position.z);
+        if (UnityEngine.AI.NavMesh.SamplePosition(landedAt, out var onFloor, 1.5f, UnityEngine.AI.NavMesh.AllAreas)) landedAt = onFloor.position;
+        for (float t = 0; t < .12f; t += Time.deltaTime) { figure.position = Vector3.Lerp(figure.position, landedAt, t / .12f); yield return null; }
+        figure.SetPositionAndRotation(landedAt, facing);
+        LastPlacedAt = landedAt;
+        if (lightGo != null) { lightGo.transform.position = landedAt + Vector3.up * height + (Camera.main != null ? Vector3.ProjectOnPlane(Camera.main.transform.position - landedAt, Vector3.up).normalized * height : Vector3.zero); Destroy(lightGo, .8f); }
         carriedLight = null;
         landed?.Invoke();
         // He lets go and straightens up.

@@ -150,6 +150,7 @@ public class TableLevelLoader : MonoBehaviour
             bool ready=false;
             try {
                 LootSource.BiomeProgress = floor => { level.BiomeAt(floor, out int at, out int count); return count <= 1 ? 1 : (at - 1f) / (count - 1); };
+                LootSource.FloorGear = floor => level.GearAt(floor);
                 LootSource.GenerationLevel = resume != null ? Mathf.Max(1, resume.lootLevel) : descending ? player.GetComponent<AdventurerProgress>().Level : 1;
                 generationLevel = LootSource.GenerationLevel.Value;
                 Prepare(level, useReveal);

@@ -19,10 +19,45 @@ MonoBehaviour:
   environmentPrefab: {fileID: 0}
   stages:
   - biome: {fileID: 11400000, guid: 6b190885359363a4ba347cab4be462eb, type: 2}
-    floors: 3
+    floors: 2
+    boss: 0
   - biome: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
-    floors: 17
+    floors: 2
+    boss: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
+  gearByFloor:
+  - fromFloor: 1
+    tier1: 100
+    tier2: 0
+    tier3: 0
+    tier4: 0
+    upgradeChance: 0
+    honedChance: 0.08
+    honedTwiceChance: 0.2
+  - fromFloor: 2
+    tier1: 50
+    tier2: 50
+    tier3: 0
+    tier4: 0
+    upgradeChance: 0
+    honedChance: 0.08
+    honedTwiceChance: 0.2
+  - fromFloor: 3
+    tier1: 25
+    tier2: 75
+    tier3: 0
+    tier4: 0
+    upgradeChance: 0
+    honedChance: 0.08
+    honedTwiceChance: 0.2
+  - fromFloor: 4
+    tier1: 0
+    tier2: 100
+    tier3: 0
+    tier4: 0
+    upgradeChance: 0
+    honedChance: 0.12
+    honedTwiceChance: 0.2
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   moodLighting: 8
   overrideLighting: 0
@@ -122,10 +157,6 @@ MonoBehaviour:
   boardMoundProps: []
   furnishEntranceRims: 0
   architectureTileSize: 3
-  twoTileRoomPercent: 50
-  threeTileRoomPercent: 10
-  twoTileCorridorPercent: 25
-  threeTileCorridorPercent: 0
   hideRoof: 0
   hideRoofPercent: 5.9
   skylightFrame: 0.9
@@ -262,7 +293,6 @@ MonoBehaviour:
   - prefab: {fileID: 6682190492535852451, guid: a3f935b8a5116744c81458439dead315, type: 3}
     weight: 1
   kitModels: 1
-  floorBase: 4.5
   roomFeatures:
     shrineBargains: 1
     shrineChance: 0.35

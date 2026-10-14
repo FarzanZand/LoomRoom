@@ -12,10 +12,17 @@ public static partial class PixelRestyle
     public const string Root = "Assets/Game/Art/Synty Pixel";
     const int AoRays = 24, Super = 2, ProbeLayer = 31;
 
+    // How much a painted restyle darkens its creases (1 = as always; a clock face set flat in its frame wants 0, or the
+    // frame's shadow creeps across the dial).
+    public static float PaintAoStrength = 1f;
+    // Painted restyles pick each texel's view by its face's own facing instead of the smoothed vertex normal (room
+    // furniture: smoothed normals on a box made a side face lean toward the front view and smear its edge column).
+    public static bool PaintFaceNormals;
+
     public enum Kind { Auto = 0, Metal = 1, Stone = 2, Wood = 3, Bone = 4, Cloth = 5, Gold = 6, Painted = 7 }
 
     // texelsPerUnit: props ~40, hand-held items ~110 (a sword ~170 texels long).
-    public static (Mesh mesh, Material material) Build(Mesh src, Material[] mats, string category, string name, float texelsPerUnit)
+    public static (Mesh mesh, Material material) Build(Mesh src, Material[] mats, string category, string name, float texelsPerUnit, string folder = null)
     {
         // Fresh UVs on a copy (vertex attributes, bone weights and bind poses come along).
         var mesh = Object.Instantiate(src); mesh.name = src.name + " (Synty Pixel)";
@@ -88,6 +95,8 @@ public static partial class PixelRestyle
                 // Synty atlases are flat swatches: one colour per face (sampled at its centre) never bleeds into the next swatch.
                 var oc = (o0 + o1 + o2) / 3f;
                 Color baseC = (pal != null ? Sample(pal, oc) : Color.white) * tint; // untextured materials are their colour
+                // The face's own colour, averaged over its corners and centre (steadier than one grainy texel).
+                Color faceC = pal != null ? (Sample(pal, o0) + Sample(pal, o1) + Sample(pal, o2) + Sample(pal, oc) * 3f) / 6f * tint : baseC;
                 Color emC = emissive ? (emap != null ? Sample(emap, oc) : Color.white) * etint : Color.black;
                 if (emC.maxColorComponent < .15f) emC = Color.black; else anyEmission = true;
                 Kind kind = kindHint != Kind.Auto ? Refine(kindHint, baseC) : Classify(baseC);
@@ -116,7 +125,21 @@ public static partial class PixelRestyle
                         float ks = k1 + k2 + k3; texelC = Sample(pal, (o0 * k1 + o1 * k2 + o2 * k3) / ks) * tint;
                     }
                     // A painted restyle takes its colour from the painting; only the creases darken a little.
-                    if (PaintSource != null) { var painted = PaintSource(p, n); col[idx] = Color.Lerp(painted * .45f, painted, .5f + .5f * Mathf.Clamp01(ao)); col[idx].a = 1f; }
+                    if (PaintSource != null)
+                    {
+                        // A skinned model is painted in the pose it was rendered in, not its bind pose.
+                        if (PaintPose != null)
+                        {
+                            int s0 = (int)tags[i0].x, s1 = (int)tags[i1].x, s2 = (int)tags[i2].x;
+                            p = PaintPose[s0] * w1 + PaintPose[s1] * w2 + PaintPose[s2] * w3;
+                            n = (PaintPoseNormals[s0] * w1 + PaintPoseNormals[s1] * w2 + PaintPoseNormals[s2] * w3).normalized;
+                        }
+                        PaintBase = faceC;
+                        // The face's own facing from its winding (the plain cross product is outward here, checked with a
+                        // colour-coded sheet; smoothed normals made box sides lean toward the front view).
+                        if (PaintFaceNormals && PaintPose == null) n = fn;
+                        var painted = PaintSource(p, n); col[idx] = Color.Lerp(painted * (1f - .55f * PaintAoStrength), painted, .5f + .5f * Mathf.Clamp01(ao)); col[idx].a = 1f;
+                    }
                     else col[idx] = Shade(texelC, kind, p, n, ao, size);
                     emi[idx] = emC; cov[idx] = true;
                 }
@@ -139,6 +162,7 @@ public static partial class PixelRestyle
         // Two different models can share a name (the arms-only hunter and the full hunter): each source file gets its own folder.
         var srcFile = System.IO.Path.GetFileNameWithoutExtension(AssetDatabase.GetAssetPath(src));
         if (src.bindposes.Length > 0) dir = $"{Root}/{category}/{src.name} ({srcFile})";
+        if (folder != null) dir = folder;
         System.IO.Directory.CreateDirectory(dir);
         string texPath = $"{dir}/{name}.png"; Save(outC, W, texPath, false);
         string emiPath = $"{dir}/{name}_emission.png"; if (anyEmission) Save(outE, W, emiPath, true);
