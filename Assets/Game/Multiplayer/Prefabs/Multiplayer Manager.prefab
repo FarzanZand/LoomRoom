@@ -53,16 +53,11 @@ MonoBehaviour:
   sharedLoot: 1
   hostAdventurer: 1
   partyProgression: 0
-  hideCeilingsWhenDead: 1
-  cutawayTiles: 1
-  spectatorWatchZoom: -40
-  spectatorZoom: -38
-  spectatorEyeHeight: 2.05
-  spectatorFollow: 2.5
-  spectatorLightRadius: 2.2
-  spectatorLightBoost: 4
-  spectatorSlide: 60
-  reviveOnNextFloor: 1
+  ghostLightColor: {r: 0.6, g: 0.8, b: 1, a: 1}
+  ghostLightIntensity: 2.2
+  ghostLightRange: 6
+  ghostViewDrain: 0.5
+  ghostMaterial: {fileID: 2100000, guid: afed318d2483f484eabf8008b88fc278, type: 2}
   enemyHealthPerPlayer: 0.5
   extraEnemiesPerPlayer: 1
   partyKillExperience: 0.5
@@ -93,4 +88,3 @@ MonoBehaviour:
   partnerLightRange: 4
   snapshotRate: 15
   autoStartInEditor: 1
-  spectatorEdgeGap: 14

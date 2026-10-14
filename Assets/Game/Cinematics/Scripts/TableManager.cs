@@ -102,6 +102,20 @@ public class TableManager : Singleton<TableManager>, IInteractable
         PushDialogue();
         if (Coop.Running) MultiplayerManager.Instance.SatDown();
         yield return Sit(player);
+        // Co-op: the Dungeon Master and the figures wait until everyone in the room has sat down.
+        if (Coop.Running && only == null)
+        {
+            bool all = false;
+            yield return MultiplayerManager.Instance.WaitForEveryoneSeated(ok => all = ok);
+            if (!all)
+            {
+                PopDialogue();
+                StandUp(player);
+                MultiplayerManager.Instance.StoodUp();
+                sitting = null; sittingPlayer = null;
+                yield break;
+            }
+        }
 
         Seated?.Invoke(player);
         yield return null;

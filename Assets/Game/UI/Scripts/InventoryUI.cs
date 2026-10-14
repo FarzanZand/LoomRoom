@@ -100,6 +100,7 @@ public class InventoryUI : MonoBehaviour
 
     public void Toggle()
     {
+        if (!isOpen && CoopGhost.Active) return;   // a co-op ghost can't reach its bag
         if (isOpen) Close(); else Open();
     }
 

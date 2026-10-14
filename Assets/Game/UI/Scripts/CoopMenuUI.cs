@@ -57,7 +57,8 @@ public class CoopMenuUI : MonoBehaviour
         Instance = this;
         if (root != null) root.SetActive(false);
         if (status != null) statusColor = status.color;
-        Wire(hostButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Host(); });
+        // Hosting from here opens the lobby: friends who join wait until Begin.
+        Wire(hostButton, () => { if (MultiplayerManager.HasInstance) { MultiplayerManager.Instance.Host(); StartCoroutine(LobbyWhenHosting()); } });
         Wire(joinButton, Join);
         // Enter in the code box joins.
         if (address != null) address.onSubmit.AddListener(_ => { if (!Coop.Running) Join(); });
@@ -85,7 +86,17 @@ public class CoopMenuUI : MonoBehaviour
         Unpush();
     }
 
-    void OnCancel() { if (IsOpen && Current == Mode.Pause && !Typing) Close(); }
+    System.Collections.IEnumerator LobbyWhenHosting()
+    {
+        var manager = MultiplayerManager.Instance;
+        for (float t = 0; t < 20f && manager != null && !Coop.IsHost; t += Time.unscaledDeltaTime) yield return null;
+        if (manager != null && Coop.IsHost) manager.OpenLobby();
+    }
+
+    // The lobby can't be left with Esc: the host begins or stops hosting, a waiting guest leaves.
+    static bool InLobby => MultiplayerManager.HasInstance && (MultiplayerManager.Instance.HostInLobby || MultiplayerManager.Instance.LocalInLobby);
+
+    void OnCancel() { if (IsOpen && Current == Mode.Pause && !Typing && !InLobby) Close(); }
 
     bool Typing => (address != null && address.isFocused) || (playerName != null && playerName.isFocused);
 
@@ -114,7 +125,7 @@ public class CoopMenuUI : MonoBehaviour
     }
 
     // The host's Begin: everyone who has joined plays the new game's intro.
-    public void Begin() { Began = true; Close(); }
+    public void Begin() { Began = true; if (MultiplayerManager.HasInstance && Coop.IsHost) MultiplayerManager.Instance.BeginForEveryone(); Close(); }
 
     public void Open(Mode mode)
     {
@@ -144,7 +155,8 @@ public class CoopMenuUI : MonoBehaviour
         if (!IsOpen) return;
         Refresh();
         // A new game joined to someone else's: their game decides what happens next.
-        if (Current == Mode.NewGame && Coop.IsGuest) { Began = false; Close(); }
+        // (A guest who joined the host's lobby waits here for the host's Begin.)
+        if (Current == Mode.NewGame && Coop.IsGuest && !MultiplayerManager.Instance.LocalInLobby) { Began = false; Close(); }
     }
 
     void Refresh()
@@ -169,7 +181,8 @@ public class CoopMenuUI : MonoBehaviour
             status.text = error ? manager.LastError
                 : starting ? "Connecting..."
                 : page == Page.Start ? (newGame ? "Start the new game alone, or play it with friends." : "Play this game with friends, or join theirs.")
-                : page == Page.Host ? (manager.Players.Count <= 1 ? "Send the code to your friends." : newGame ? "Press Begin when everyone is in." : "Sit down at the table together to start a run.")
+                : page == Page.Host ? (manager.Players.Count <= 1 ? "Send the code to your friends." : newGame || manager.HostInLobby ? "Press Begin when everyone is in." : "Sit down at the table together to start a run.")
+                : manager.LocalInLobby ? $"Waiting for {hostName} to begin."
                 : $"You are in {hostName}'s game. The host decides the rules.";
         }
         if (hostButton != null) hostButton.interactable = !starting;
@@ -204,7 +217,8 @@ public class CoopMenuUI : MonoBehaviour
         // The bottom row: one centred button, or two side by side.
         Button left, right = null;
         if (page == Page.Start) left = newGame ? aloneButton : closeButton;
-        else if (page == Page.Host) { left = newGame ? beginButton : closeButton; right = newGame ? aloneButton : leaveButton; }
+        else if (page == Page.Host) { bool lobby = newGame || manager.HostInLobby; left = lobby ? beginButton : closeButton; right = newGame ? aloneButton : leaveButton; }
+        else if (manager.LocalInLobby) { left = leaveButton; }
         else { left = closeButton; right = leaveButton; }
         foreach (var b in new[] { beginButton, aloneButton, leaveButton, closeButton })
             if (b != null) b.gameObject.SetActive(b == left || b == right);
@@ -216,7 +230,7 @@ public class CoopMenuUI : MonoBehaviour
         if (page != shown)
         {
             shown = page;
-            var first = page == Page.Start ? hostButton : page == Page.Host ? (newGame ? beginButton : copyButton) : closeButton;
+            var first = page == Page.Start ? hostButton : page == Page.Host ? (newGame ? beginButton : copyButton) : manager.LocalInLobby ? leaveButton : closeButton;
             if (first != null && EventSystem.current != null) EventSystem.current.SetSelectedGameObject(first.gameObject);
         }
     }

@@ -50,7 +50,7 @@ public class PartyHudUI : MonoBehaviour
             bool onTable = s.place == CoopPlace.Table;
             UIBar.Set(row.fill, onTable && s.alive ? s.health / 255f : 0f);
             if (row.value != null)
-                row.value.text = s.inRun && !s.alive ? "watching" : onTable || s.seated ? "" : s.ready ? "ready" : s.atTable ? "at the table" : "in the room";
+                row.value.text = s.inRun && !s.alive ? (s.ghost ? "ghost" : "fallen") : onTable || s.seated ? "" : s.ready ? "ready" : s.atTable ? "at the table" : "in the room";
         }
     }
 }

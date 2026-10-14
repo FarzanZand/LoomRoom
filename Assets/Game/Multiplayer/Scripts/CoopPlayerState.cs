@@ -1,14 +1,14 @@
 using Unity.Collections;
 using Unity.Netcode;
 
-// Where a player is: walking the room (or watching from it after dying), or down on the table.
+// Where a player is: walking the room, or down on the table (alive, or a ghost after dying).
 public enum CoopPlace : byte { Room = 0, Table = 1 }
 
 // One player's state as everyone sees it, written by that player only.
 public struct CoopPlayerState : INetworkSerializable, System.IEquatable<CoopPlayerState>
 {
     public CoopPlace place;
-    public bool alive;          // the table player is alive (false: dead, watching from the room)
+    public bool alive;          // the table player is alive (false: dead, a ghost on the floor)
     public bool atTable;        // sitting at the table, picking a figure
     public bool ready;          // picked a figure and waits for the run
     public bool inRun;          // part of the run on the table now
@@ -16,6 +16,8 @@ public struct CoopPlayerState : INetworkSerializable, System.IEquatable<CoopPlay
     public bool seated;         // in a chair at the table (the intro)
     public bool charging;       // winding up or holding a swing (the release comes as SwingRpc)
     public bool airborne;       // off the ground (a jump, a fall)
+    public bool inLobby;        // joined, waiting on the co-op screen for the host's Begin (not in the room yet)
+    public bool ghost;          // dead on the table, a ghost until the next floor
     public byte health;         // 0-255 of the table player's maximum
     public FixedString32Bytes classId;
     public FixedString64Bytes right, left;   // held items (save ids)
@@ -23,12 +25,12 @@ public struct CoopPlayerState : INetworkSerializable, System.IEquatable<CoopPlay
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref place); s.SerializeValue(ref alive); s.SerializeValue(ref atTable); s.SerializeValue(ref ready);
-        s.SerializeValue(ref inRun); s.SerializeValue(ref blocking); s.SerializeValue(ref crouching); s.SerializeValue(ref seated); s.SerializeValue(ref charging); s.SerializeValue(ref airborne); s.SerializeValue(ref health);
+        s.SerializeValue(ref inRun); s.SerializeValue(ref blocking); s.SerializeValue(ref crouching); s.SerializeValue(ref seated); s.SerializeValue(ref charging); s.SerializeValue(ref airborne); s.SerializeValue(ref inLobby); s.SerializeValue(ref ghost); s.SerializeValue(ref health);
         s.SerializeValue(ref classId); s.SerializeValue(ref right); s.SerializeValue(ref left);
     }
 
     public bool Equals(CoopPlayerState o) =>
         place == o.place && alive == o.alive && atTable == o.atTable && ready == o.ready && inRun == o.inRun &&
-        blocking == o.blocking && crouching == o.crouching && seated == o.seated && charging == o.charging && airborne == o.airborne && health == o.health &&
+        blocking == o.blocking && crouching == o.crouching && seated == o.seated && charging == o.charging && airborne == o.airborne && inLobby == o.inLobby && ghost == o.ghost && health == o.health &&
         classId.Equals(o.classId) && right.Equals(o.right) && left.Equals(o.left);
 }

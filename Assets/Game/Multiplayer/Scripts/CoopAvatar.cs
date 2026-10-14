@@ -29,6 +29,7 @@ public class CoopAvatar : MonoBehaviour
     Vector3 lastPosition;
     Vector3 velocity;
     bool shownDead, shownSeated;
+    bool builtGhost;
     Vector3 lastSolid;
     float solidAfter;
     Light carried;
@@ -40,7 +41,7 @@ public class CoopAvatar : MonoBehaviour
     public Animator Animator => animator;
     // How fast the locomotion clips step, in metres a second (measured from the foot's travel).
     const float WalkClip = 1.8f, RunClip = 2.9f, CrouchClip = .8f;
-    // A dead player watching this one sees its light brighter and wider (MultiplayerManager.spectatorLightBoost).
+    // How much brighter and wider this teammate's carried light is drawn (1: as it is).
     public float LightBoost { get; set; } = 1f;
 
     public void Bind(CoopPlayer owner)
@@ -65,6 +66,11 @@ public class CoopAvatar : MonoBehaviour
         if (player == null || player.IsOwner || !player.IsSpawned) return;
         var s = player.Current;
         Rebuild(false);
+        // Still in the lobby (joined, waiting for the host's Begin): not in the room yet.
+        if (model != null && model.activeSelf == s.inLobby) model.SetActive(!s.inLobby);
+        if (nameLabel != null && nameLabel.gameObject.activeSelf == s.inLobby) nameLabel.gameObject.SetActive(!s.inLobby);
+        // A ghost drifts a little off the floor.
+        if (model != null && builtGhost) model.transform.localPosition = Vector3.up * (.18f + Mathf.Sin(Time.time * 1.7f) * .06f);
         if (usedVisual != null && Time.time >= useEnds) EndUse();
         if (nameLabel != null)
         {
@@ -119,7 +125,7 @@ public class CoopAvatar : MonoBehaviour
         bool onTable = s.place == CoopPlace.Table;
         animator.SetBool(Grounded, !s.airborne);
         animator.SetBool(Crouch, s.crouching);
-        animator.SetBool(Armed, onTable && s.alive);
+        animator.SetBool(Armed, onTable && s.alive && !builtGhost);
         animator.SetBool(Charge, onTable && s.charging);
         animator.SetBool(Block, onTable && s.blocking);
         animator.SetFloat(HurtSpeed, 1.3f);
@@ -131,14 +137,15 @@ public class CoopAvatar : MonoBehaviour
             animator.SetTrigger(s.seated ? "Sit" : "Stand");
         }
 
-        bool dead = s.place == CoopPlace.Table && s.inRun && !s.alive;
+        bool dead = s.place == CoopPlace.Table && s.inRun && !s.alive && !builtGhost;
         if (dead != shownDead)
         {
             shownDead = dead;
             animator.SetBool(Dead, dead);
             if (dead) animator.SetTrigger("Death");
         }
-        if (s.place == CoopPlace.Table) UpdateHeld(s.right.ToString(), s.left.ToString());
+        // A ghost's hands are empty.
+        if (s.place == CoopPlace.Table) UpdateHeld(builtGhost ? "" : s.right.ToString(), builtGhost ? "" : s.left.ToString());
         UpdateLight(s);
         // The shield turns to face the front as it comes up.
         if (leftVisual != null && MultiplayerManager.Instance.shieldGrip != null)
@@ -154,7 +161,8 @@ public class CoopAvatar : MonoBehaviour
     void UpdateLight(CoopPlayerState s)
     {
         var manager = MultiplayerManager.Instance;
-        bool on = s.place == CoopPlace.Table && s.alive && manager.partnerLightIntensity > 0;
+        bool ghostLight = s.place == CoopPlace.Table && s.ghost;
+        bool on = s.place == CoopPlace.Table && (s.alive || ghostLight) && manager.partnerLightIntensity > 0;
         if (on && carried == null)
         {
             carried = new GameObject("Carried light").AddComponent<Light>();
@@ -166,9 +174,9 @@ public class CoopAvatar : MonoBehaviour
         }
         if (carried == null) return;
         carried.enabled = on;
-        carried.color = manager.partnerLightColor;
-        carried.intensity = manager.partnerLightIntensity * LightBoost;
-        carried.range = manager.partnerLightRange * Mathf.Sqrt(LightBoost) * (LightBoost > 1f ? 1.5f : 1f);
+        carried.color = ghostLight ? manager.ghostLightColor : manager.partnerLightColor;
+        carried.intensity = ghostLight ? manager.ghostLightIntensity : manager.partnerLightIntensity * LightBoost;
+        carried.range = ghostLight ? manager.ghostLightRange : manager.partnerLightRange * Mathf.Sqrt(LightBoost) * (LightBoost > 1f ? 1.5f : 1f);
     }
 
     // A new body when the player changes world or class.
@@ -177,15 +185,16 @@ public class CoopAvatar : MonoBehaviour
         if (!MultiplayerManager.HasInstance) return;
         var s = player.Current;
         string cls = s.classId.ToString();
-        if (!force && model != null && builtPlace == s.place && (s.place == CoopPlace.Room || builtClass == cls)) return;
-        // Leaving the table dead: the body stays where it fell, for the floor.
-        if (model != null && builtPlace == CoopPlace.Table && s.place == CoopPlace.Room && shownDead) LeaveCorpse();
+        bool ghost = s.place == CoopPlace.Table && s.ghost;
+        if (!force && model != null && builtPlace == s.place && builtGhost == ghost && (s.place == CoopPlace.Room || builtClass == cls)) return;
+        // Leaving the table dead, or getting up as a ghost: the body stays where it fell, for the floor.
+        if (model != null && builtPlace == CoopPlace.Table && shownDead && (s.place == CoopPlace.Room || ghost)) LeaveCorpse();
         else if (model != null) Destroy(model);
         model = null; animator = null; rightVisual = leftVisual = usedVisual = null; heldRight = heldLeft = null; shownDead = false; shownSeated = false;
 
         var manager = MultiplayerManager.Instance;
         var prefab = s.place == CoopPlace.Room ? manager.RoomBody(player.SlotIndex) : manager.TableBody(cls);
-        builtPlace = s.place; builtClass = cls;
+        builtPlace = s.place; builtClass = cls; builtGhost = ghost;
         builtScale = s.place == CoopPlace.Room ? manager.roomScale : 1f;
         if (prefab == null) return;
         model = Instantiate(prefab, transform, false);
@@ -197,10 +206,21 @@ public class CoopAvatar : MonoBehaviour
         foreach (var t in model.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = 0;
         if (s.place == CoopPlace.Room)
             foreach (var r in model.GetComponentsInChildren<Renderer>(true)) r.renderingLayerMask |= LightingManager.RoomLayer;
+        // A ghost: the same body, pale and see-through, never casting a shadow.
+        if (ghost && manager.ghostMaterial != null)
+            foreach (var r in model.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++) mats[i] = manager.ghostMaterial;
+                r.sharedMaterials = mats;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
         animator = model.GetComponentInChildren<Animator>();
         if (animator != null)
         {
             if (manager.bodyController != null) animator.runtimeAnimatorController = manager.bodyController;
+            // The room bodies come from the room player's own model, whose Animator is off (it is never seen).
+            animator.enabled = true;
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
         }

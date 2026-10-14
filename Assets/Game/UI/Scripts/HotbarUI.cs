@@ -78,6 +78,7 @@ public class HotbarUI : MonoBehaviour
     {
         if (bound == null || player == null || index < 0 || index >= slots.Count) return;
         if (GameManager.HasInstance && !GameManager.Instance.GameplayActive) return;
+        if (CoopGhost.Active) return;   // a co-op ghost has nothing in its hands
 
         var item = bound.ItemAt(index);
         if (item == null) return;

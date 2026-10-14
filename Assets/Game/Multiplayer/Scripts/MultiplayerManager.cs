@@ -7,7 +7,7 @@ using UnityEngine;
 
 // Co-op for up to four players. One player hosts (their room, their save); the others join and walk the same room,
 // sit at the same table and go down into the same dungeon. Owns the session (host, join, leave), the host's rules
-// for it, and the run: who is at the table, when the run starts, the stairs, a dead player watching from the room,
+// for it, the lobby, and the run: who is at the table, when the run starts, the stairs, a dead player as a ghost,
 // and the end. The floor itself is CoopWorld's; each player is a CoopPlayer.
 [DefaultExecutionOrder(-800)]
 public class MultiplayerManager : Singleton<MultiplayerManager>
@@ -31,27 +31,15 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     [Tooltip("Off: only the host's save gains progression (unlocks, deepest floor). On: every player's own save gains what they earned too.")]
     public bool partyProgression = false;
 
-    [Title("Dead players", "Watch the others from the room until the next floor")]
-    [Tooltip("The dungeon's roof and ceilings are not drawn for a dead player, so the others can be seen from the room.")]
-    public bool hideCeilingsWhenDead = true;
-    [Tooltip("Walls above this many tiles are not drawn for a dead player either (0: whole walls).")]
-    [Min(0)] public float cutawayTiles = 1;
-    [Tooltip("Field of view change while a dead player watches (negative zooms in)...")]
-    public float spectatorWatchZoom = -40f;
-    [Tooltip("...and while it holds the right mouse button.")]
-    public float spectatorZoom = -62f;
-    [Tooltip("A dead player's eye height over the room floor while watching (the room player's own units; standing is about 1.6): leaning over the table.")]
-    public float spectatorEyeHeight = 2.05f;
-    [Tooltip("How quickly a dead player's view turns to follow the teammate it watches (0: free look only). Left click watches the next one.")]
-    [Min(0)] public float spectatorFollow = 2.5f;
-    [Tooltip("The dungeon's light radius around the watched teammate, against a player's own.")]
-    [Min(.1f)] public float spectatorLightRadius = 2.2f;
-    [Tooltip("The watched teammate's carried light, this many times brighter and wider for a dead player watching.")]
-    [Min(1)] public float spectatorLightBoost = 4f;
-    [Tooltip("A dead player walks along the table's west side to stay level with the teammate it watches (room units a second; 0: stays put).")]
-    [Min(0)] public float spectatorSlide = 60f;
-    [Tooltip("Dead players come back on the next floor.")]
-    public bool reviveOnNextFloor = true;
+    [Title("Dead players", "A ghost on the floor until the party reaches the next one")]
+    [Tooltip("The pale light a ghost carries (it lights the way for everyone).")]
+    public Color ghostLightColor = new Color(.6f, .8f, 1f);
+    [Min(0)] public float ghostLightIntensity = 2.2f;
+    [Min(.5f)] public float ghostLightRange = 6f;
+    [Tooltip("How drained of colour a ghost's own view is (0-1).")]
+    [Range(0, 1)] public float ghostViewDrain = .5f;
+    [Tooltip("The see-through look of a ghost's body for the others (a transparent material).")]
+    public Material ghostMaterial;
 
     [Title("Party")]
     [Tooltip("Enemy health added per player after the first (.5 = +50%).")]
@@ -129,7 +117,12 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     public bool LocalAtTable { get; private set; }
     public bool LocalReady { get; private set; }
     public bool LocalInRun { get; private set; }
-    public bool Spectating { get; private set; }
+    // The local table player died and walks the floor as a ghost (CoopGhost) until the next floor.
+    public bool Ghost { get; private set; }
+    // A guest that joined while the host was still on the co-op screen: it waits there until the host's Begin.
+    public bool LocalInLobby { get; private set; }
+    // Host: on the co-op screen with the game not begun yet (guests wait in the lobby).
+    public bool HostInLobby { get; private set; }
     public event System.Action SessionChanged;
 
     readonly List<CoopPlayer> players = new();
@@ -236,7 +229,6 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         }
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= OnFlagChanged;
         CoopWorld.Unhook();
-        SetCutaway(false);
     }
 
 #if UNITY_EDITOR
@@ -258,6 +250,55 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     // ── Session ───────────────────────────────────────────────────────
 
+    // ── The lobby ─────────────────────────────────────────────────────
+
+    // Host: hosting from the co-op screen opens the lobby: whoever joins waits on their screen until Begin.
+    public void OpenLobby()
+    {
+        if (!IsHost || LocalInRun) return;
+        HostInLobby = true;
+        RulesChanged();
+    }
+
+    // Host: Begin. Everyone waiting in the lobby comes into the game.
+    public void BeginForEveryone()
+    {
+        if (!HostInLobby) return;
+        HostInLobby = false;
+        RulesChanged();
+    }
+
+    // Guests: the host's rules came in. The first set after joining says whether to wait in the lobby; a later one
+    // without it lets a waiting player in.
+    bool rulesSeen;
+    void GuestRules(CoopRules r)
+    {
+        if (network.IsServer) return;
+        if (!rulesSeen)
+        {
+            rulesSeen = true; LocalInLobby = r.lobby && !LocalInRun;
+            // Joined a game already begun: into the room at once, at this player's own spot.
+            bool intro = IntroController.Seated;
+            if (!LocalInLobby && !LocalInRun && !intro && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Room
+                && WorldManager.HasInstance && WorldManager.Instance.wakeUpCutscene != null) WorldManager.Instance.wakeUpCutscene.PlaceInRoom();
+            return;
+        }
+        if (LocalInLobby && !r.lobby) { LocalInLobby = false; LeftLobby(); }
+    }
+
+    // In from the lobby: the screen goes and the player stands at their own spot in the room (a new game's intro
+    // seats everyone itself).
+    void LeftLobby()
+    {
+        var menu = CoopMenuUI.Instance;
+        bool newGame = menu != null && menu.IsOpen && menu.Current == CoopMenuUI.Mode.NewGame;
+        if (menu != null && menu.IsOpen && !newGame) menu.Close();
+        if (!newGame && WorldManager.HasInstance && WorldManager.Instance.wakeUpCutscene != null) WorldManager.Instance.wakeUpCutscene.PlaceInRoom();
+    }
+
+    // Each player's spot beside the others in the room (room units: the room is built about roomScale to the metre).
+    public Vector3 RoomSpawnOffset(Quaternion facing) => SpawnOffset(facing) * roomScale;
+
     // The co-op screen changed a rule: the guests get the new set.
     public void RulesChanged()
     {
@@ -265,7 +306,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (Connected && IsHost) CoopMessages.ToGuests(CoopMessages.Rules, rules);
     }
 
-    void SyncRules() => rules = new CoopRules { sharedLoot = sharedLoot, hostAdventurer = hostAdventurer, partyProgression = partyProgression, cutaway = hideCeilingsWhenDead, cutawayTiles = cutawayTiles };
+    void SyncRules() => rules = new CoopRules { sharedLoot = sharedLoot, hostAdventurer = hostAdventurer, partyProgression = partyProgression, lobby = HostInLobby };
 
     void Transport(string host)
     {
@@ -427,6 +468,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             CoopWorld.Hook();
             joinedOnce = true;
             LastError = null;
+            rulesSeen = false;
             joinedAt = Time.unscaledTime;
             if (!network.IsServer) StartCoroutine(Joined());
         }
@@ -471,15 +513,14 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (!string.IsNullOrEmpty(message)) NotificationUI.Show(message);
         CoopMessages.UnregisterAll(); messagesRegistered = false;
         CoopWorld.Unhook();
-        SetCutaway(false);
-        bool inRun = LocalInRun, spectating = Spectating;
-        if (spectating) StopSpectating();
-        LocalAtTable = LocalReady = LocalInRun = Spectating = false;
+        bool inRun = LocalInRun;
+        EndGhost();
+        LocalAtTable = LocalReady = LocalInRun = LocalInLobby = HostInLobby = false;
         runActive = false; countdownEnds = -1f; atExit.Clear(); runEndSent = false;
         players.Clear(); LocalPlayer = null; PartySize = 1; JoinCode = null;
         if (wasGuest) RestoreOwnFlags();
-        // The host keeps its own dungeon and plays on alone; a guest (or a host who was watching, dead) goes back to the room.
-        bool playOn = !wasGuest && !spectating && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table
+        // The host keeps its own dungeon and plays on alone; a guest (or a host who was a ghost, dead) goes back to the room.
+        bool playOn = !wasGuest && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table
             && PlayerManager.Instance.Active != null && PlayerManager.Instance.Active.IsAlive;
         if (inRun && !playOn && RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended)
         {
@@ -502,7 +543,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         CoopMessages.Register<CoopEvent>(CoopMessages.Event, CoopWorld.ReceiveEvent);
         CoopMessages.Register<EnemySpawn>(CoopMessages.Spawn, CoopWorld.ReceiveSpawn);
         CoopMessages.Register<FlagSet>(CoopMessages.Flags, (s, m) => ApplyHostFlags(m));
-        CoopMessages.Register<CoopRules>(CoopMessages.Rules, (s, m) => rules = m);
+        CoopMessages.Register<CoopRules>(CoopMessages.Rules, (s, m) => { rules = m; GuestRules(m); });
         CoopMessages.Register<CoopInt>(CoopMessages.Countdown, (s, m) => ShowCountdown(m.a, m.b));
         CoopMessages.Register<CoopInt>(CoopMessages.IntroBegin, (s, m) => { if (!network.IsServer && IntroController.HasInstance) IntroController.Instance.PlayShared(); });
         CoopMessages.Register<CoopInt>(CoopMessages.Finale, (s, m) => { if (!network.IsServer && IntroController.HasInstance) IntroController.Instance.RemoteFinale(m.a != 0); });
@@ -703,6 +744,38 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         done?.Invoke(started);
     }
 
+    // Sitting down: nobody hears the Dungeon Master or picks a figure alone. Seated, each waits until everyone in the
+    // room has sat down too (players in a run or still in the lobby don't count). False: Esc, stand up again.
+    public IEnumerator WaitForEveryoneSeated(System.Action<bool> done)
+    {
+        bool cancelled = false;
+        void Cancel() => cancelled = true;
+        if (InputManager.HasInstance) InputManager.Instance.CancelPressed += Cancel;
+        float nextNote = 0f;
+        try
+        {
+            while (Connected && !cancelled)
+            {
+                string waiting = null; int seated = 1, total = 1;
+                foreach (var p in players)
+                {
+                    if (p == null || p.IsOwner || p.Current.inRun || p.Current.inLobby) continue;
+                    total++;
+                    if (p.Current.atTable) seated++; else if (waiting == null) waiting = p.DisplayName;
+                }
+                if (waiting == null) break;
+                if (Time.unscaledTime >= nextNote)
+                {
+                    nextNote = Time.unscaledTime + 4f;
+                    NotificationUI.Show($"Waiting for {waiting} to sit down ({seated}/{total}). Esc stands up.");
+                }
+                yield return null;
+            }
+        }
+        finally { if (InputManager.HasInstance) InputManager.Instance.CancelPressed -= Cancel; }
+        done?.Invoke(!cancelled);
+    }
+
     public void SatDown() => LocalAtTable = true;
     public void StoodUp() { LocalAtTable = false; LocalReady = false; }
 
@@ -737,7 +810,6 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (!Connected) return;
         CoopWorld.Tick();
         if (IsHost) HostRun();
-        UpdateSpectating();
         TeammateNews();
         TickCountdown();
     }
@@ -833,10 +905,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         while (loader.Busy) yield return null;
         PartySize = Mathf.Max(1, start.partySize);
         if (start.descend && !LocalInRun) yield break;
-        bool wasSpectating = Spectating;
         LocalInRun = true; LocalReady = true;
-        if (wasSpectating) StopSpectating();
-        if (start.descend && !reviveOnNextFloor && wasSpectating) yield break;
+        // A ghost comes back on the new floor (the loader revives a dead player who goes down).
+        EndGhost();
         atExit.Clear(); countdownEnds = -1f;
         loader.CoopLoad(level, start);
         if (IsHost) runFloor = start.floor;
@@ -911,7 +982,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     public void ReachedStairs()
     {
-        if (!Connected || !LocalInRun) return;
+        if (!Connected || !LocalInRun || Ghost) return;
         CoopWorld.Send(new CoopEvent { kind = CoopEventKind.AtExit });
         if (IsHost) PlayerAtExit(LocalSlot);
     }
@@ -1005,7 +1076,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     void RunEnded(bool victory)
     {
         if (!LocalInRun) return;
-        StopSpectating();
+        EndGhost();
         LocalInRun = false; LocalReady = false; LocalAtTable = false;
         if (IsHost) { runActive = false; countdownEnds = -1f; }
         if (!RunManager.HasInstance) return;
@@ -1015,165 +1086,40 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     // ── A dead player ─────────────────────────────────────────────────
 
-    // TableLevelLoader: the local table player died. With someone still fighting, watch from the room.
+    // TableLevelLoader: the local table player died. With someone still fighting, a ghost until the next floor.
     public void LocalDied()
     {
         if (!LocalInRun) return;
         bool othersAlive = false;
         foreach (var p in players) if (p != null && !p.IsOwner && p.Current.inRun && p.Current.alive) othersAlive = true;
-        if (othersAlive) StartCoroutine(Spectate());
+        if (othersAlive && !IntroController.PracticeRunning) StartCoroutine(BecomeGhost());
         else NotificationUI.Show("Everyone has fallen");
     }
 
-    IEnumerator Spectate()
+    // After the death moment the dead player gets up as a ghost where it fell (its body stays for the others).
+    IEnumerator BecomeGhost()
     {
         yield return new WaitForSecondsRealtime(2.2f);
-        if (!LocalInRun || !Connected) yield break;
+        if (!LocalInRun || !Connected || Ghost) yield break;
         var table = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
-        if (table != null && table.IsAlive) yield break;
-        Spectating = true;
+        if (table == null || table.IsAlive) yield break;
         if (ScreenManager.HasInstance) { ScreenManager.Instance.FadeToBlack(.35f); yield return new WaitForSecondsRealtime(.4f); }
+        if (!LocalInRun || table.IsAlive) { if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.3f); yield break; }
+        Ghost = true;
+        // Player.OnDied pushed Dead; a ghost moves and looks about again.
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
-        PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
-        var room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
-        if (room != null && roomSpot != Vector3.zero) room.Warp(roomSpot, Quaternion.Euler(0, roomYaw, 0));
-        if (room != null && room.Look != null)
-        {
-            var target = TableManager.Loader != null && TableManager.Loader.Dungeon != null ? TableManager.Loader.Dungeon.transform.position : room.transform.position + room.transform.forward;
-            CameraEase.YawPitchTo(room.Look, target, out float yaw, out float pitch);
-            room.Look.SetYaw(yaw); room.Look.SetPitch(pitch);
-        }
-        if (room != null && room.Look != null) room.Look.HeightOverride = spectatorEyeHeight;
-        watched = -1;
-        WatchNext();
-        if (InputManager.HasInstance) { InputManager.Instance.PrimaryPressed -= WatchNext; InputManager.Instance.PrimaryPressed += WatchNext; }
-        if (ScreenManager.HasInstance) { ScreenManager.Instance.SetDeathEffect(0f); ScreenManager.Instance.FadeFromBlack(.5f); }
-        NotificationUI.Show("You watch from the room. Right mouse button looks closer, left click watches someone else.");
+        CoopGhost.Begin(table, ghostLightColor, ghostLightIntensity, ghostLightRange);
+        if (ScreenManager.HasInstance) { ScreenManager.Instance.SetDeathEffect(ghostViewDrain); ScreenManager.Instance.FadeFromBlack(.5f); }
+        NotificationUI.Show("You are a ghost. You come back when the others reach the next floor.");
     }
 
-    // The teammate a dead player's view follows (slot), and the next one along.
-    int watched = -1;
-    void WatchNext()
+    void EndGhost()
     {
-        if (!Spectating) return;
-        CoopPlayer next = null, first = null;
-        foreach (var p in players)
-        {
-            if (p == null || p.IsOwner || !p.Current.inRun || !p.Current.alive) continue;
-            if (first == null || p.SlotIndex < first.SlotIndex) first = p;
-            if (p.SlotIndex > watched && (next == null || p.SlotIndex < next.SlotIndex)) next = p;
-        }
-        var pick = next ?? first;
-        watched = pick != null ? pick.SlotIndex : -1;
-        if (pick != null) NotificationUI.Show($"Watching {pick.DisplayName}");
-    }
-
-    [Tooltip("How far from the table's edge a watching player stands (room units).")]
-    public float spectatorEdgeGap = 14f;
-
-    void StopSpectating()
-    {
-        if (!Spectating) return;
-        foreach (var p in players) if (p != null && !p.IsOwner) p.Avatar.LightBoost = 1f;
-        watchSide = -1;
-        Spectating = false;
-        SetCutaway(false);
-        if (InputManager.HasInstance) InputManager.Instance.PrimaryPressed -= WatchNext;
-        LightingManager.RadiusCentre = null; LightingManager.RadiusScale = 1f;
-        var room = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Room) : null;
-        if (room != null && room.CameraRig != null) room.CameraRig.FovOffset = 0f;
-        if (room != null && room.Look != null) room.Look.HeightOverride = null;
-    }
-
-    void UpdateSpectating()
-    {
-        if (!Spectating) return;
-        bool inRoom = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Room;
-        SetCutaway(inRoom && rules.cutaway);
-        var room = inRoom ? PlayerManager.Instance.Active : null;
-        if (room != null && room.CameraRig != null && InputManager.HasInstance)
-        {
-            float want = InputManager.Instance.SecondaryHeld && GameManager.HasInstance && GameManager.Instance.GameplayActive ? spectatorZoom : spectatorWatchZoom;
-            room.CameraRig.FovOffset = Mathf.Lerp(room.CameraRig.FovOffset, want, 1f - Mathf.Exp(-8f * Time.unscaledDeltaTime));
-        }
-        // The view keeps turning to the teammate being watched (the one followed dies: the next).
-        var target = watched >= 0 ? PlayerInSlot(watched) : null;
-        if (target != null && !target.Current.alive) { WatchNext(); target = watched >= 0 ? PlayerInSlot(watched) : null; }
-        LightingManager.RadiusCentre = target != null && inRoom ? target.transform.position + Vector3.up * 1.6f : (Vector3?)null;
-        LightingManager.RadiusScale = spectatorLightRadius;
-        foreach (var p in players) if (p != null && !p.IsOwner) p.Avatar.LightBoost = p == target && inRoom ? spectatorLightBoost : 1f;
-        // Round the table to the side nearest the one being watched, level with them, so the view always looks down
-        // on them (from the far side of the table it would be nearly flat).
-        if (room != null && target != null && spectatorSlide > 0 && TableManager.HasInstance && GameManager.HasInstance && GameManager.Instance.GameplayActive)
-        {
-            var table = TableManager.Instance.GetComponent<BoxCollider>();
-            if (table != null)
-            {
-                int side = watchSide;
-                var want = WatchSpot(room, table.bounds, target.transform.position);
-                var now = room.transform.position;
-                // A new side is a cut (sliding across would go through the table, whose collider pushes the body back);
-                // along a side the view slides.
-                if (side != watchSide) room.Warp(want);
-                else if ((want - now).sqrMagnitude > 4f) room.Warp(Vector3.MoveTowards(now, want, spectatorSlide * Time.unscaledDeltaTime));
-            }
-        }
-        if (room != null && room.Look != null && target != null && spectatorFollow > 0 && GameManager.HasInstance && GameManager.Instance.GameplayActive)
-        {
-            CameraEase.YawPitchTo(room.Look, target.transform.position + Vector3.up, out float yaw, out float pitch);
-            float k = 1f - Mathf.Exp(-spectatorFollow * Time.unscaledDeltaTime);
-            room.Look.SetYaw(Mathf.LerpAngle(room.Look.YawTransform.eulerAngles.y, yaw, k));
-            room.Look.SetPitch(Mathf.Lerp(room.Look.Pitch, pitch, k));
-        }
-    }
-
-    int watchSide = -1;
-
-    // The spot beside the table nearest the teammate: on one of its four sides, the edge gap out, level with them,
-    // where the eye is clear of walls and furniture. Keeps its side until another is clearly nearer.
-    Vector3 WatchSpot(Player room, Bounds b, Vector3 target)
-    {
-        float y = room.transform.position.y;
-        float eyeUp = room.Look != null ? room.Look.PitchTransform.position.y - y : 0f;
-        Vector3 Spot(int side) => side switch
-        {
-            0 => new Vector3(b.min.x - spectatorEdgeGap, y, Mathf.Clamp(target.z, b.min.z + 6f, b.max.z - 6f)),
-            1 => new Vector3(b.max.x + spectatorEdgeGap, y, Mathf.Clamp(target.z, b.min.z + 6f, b.max.z - 6f)),
-            2 => new Vector3(Mathf.Clamp(target.x, b.min.x + 6f, b.max.x - 6f), y, b.min.z - spectatorEdgeGap),
-            _ => new Vector3(Mathf.Clamp(target.x, b.min.x + 6f, b.max.x - 6f), y, b.max.z + spectatorEdgeGap),
-        };
-        int mask = ~(1 << room.gameObject.layer);
-        bool Clear(Vector3 at) => !Physics.CheckSphere(at + Vector3.up * eyeUp, 4f, mask, QueryTriggerInteraction.Ignore);
-        float Flat(Vector3 a) { a -= target; a.y = 0; return a.magnitude; }
-        int best = watchSide; float bestD = watchSide >= 0 && Clear(Spot(watchSide)) ? Flat(Spot(watchSide)) * .8f : float.MaxValue;
-        for (int side = 0; side < 4; side++)
-        {
-            if (side == watchSide) continue;
-            var at = Spot(side);
-            float d = Flat(at);
-            if (d < bestD && Clear(at)) { bestD = d; best = side; }
-        }
-        watchSide = best >= 0 ? best : 0;
-        return Spot(watchSide);
-    }
-
-    static readonly int CutawayId = Shader.PropertyToID("_LoomCutaway");
-    bool cutawayOn;
-    void SetCutaway(bool on)
-    {
-        var dungeon = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
-        if (on && dungeon != null)
-        {
-            dungeon.ShowCeilings(false);
-            float tile = dungeon.LevelData.architectureTileSize > .1f ? dungeon.LevelData.architectureTileSize : 3f;
-            float top = rules.cutawayTiles > 0 ? dungeon.FloorHeight + rules.cutawayTiles * tile : 1e6f;
-            Shader.SetGlobalVector(CutawayId, new Vector4(top, rules.cutawayTiles > 0 ? 1 : 0, 0, 0));
-            cutawayOn = true;
-            return;
-        }
-        if (!cutawayOn) return;
-        cutawayOn = false;
-        Shader.SetGlobalVector(CutawayId, Vector4.zero);
-        if (dungeon != null) dungeon.ShowCeilings(true);
+        if (!Ghost) return;
+        Ghost = false;
+        var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        var ghost = table != null ? table.GetComponent<CoopGhost>() : null;
+        if (ghost != null) ghost.End();
+        if (ScreenManager.HasInstance) ScreenManager.Instance.SetDeathEffect(0f);
     }
 }

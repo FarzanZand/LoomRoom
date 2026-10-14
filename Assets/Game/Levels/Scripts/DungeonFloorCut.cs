@@ -56,6 +56,14 @@ public class DungeonFloorCut : MonoBehaviour
             if (!over && player.Motor != null && player.Motor.IsGrounded && Mathf.Abs(p.y - floorY) < .6f) { lastSafe = p; haveSafe = true; }
             if (over && p.y < floorY - fallDrop) Fall(player);
         }
+        // A co-op ghost that drifts over the edge is put back on it (it can't be hurt, and the pit's bottom isn't walkable).
+        else if (player != null && player.isActiveAndEnabled && CoopGhost.Active)
+        {
+            var p = player.transform.position;
+            bool over = Over(p);
+            if (!over && player.Motor != null && player.Motor.IsGrounded && Mathf.Abs(p.y - floorY) < .6f) { lastSafe = p; haveSafe = true; }
+            if (over && p.y < floorY - fallDrop && haveSafe) player.Warp(lastSafe + Vector3.up * .05f);
+        }
         // An enemy knocked back towards the edge goes down: its path keeps it about its own width from the drop, so the
         // edge is looked for a little further on than its body reaches.
         foreach (var brain in EnemyBrain.Active)

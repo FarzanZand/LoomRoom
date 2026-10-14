@@ -64,11 +64,7 @@ public class WakeUpCutsceneController : CutsceneController
             else ScreenManager.Instance.FadeFromBlack(brief ? briefFadeDuration : screenFadeDuration, brief ? briefFadeHold : screenFadeHold);
         }
 
-        if (PlayerManager.HasInstance && startPositionRoom != null)
-        {
-            var room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
-            if (room != null) room.Warp(startPositionRoom.position, startPositionRoom.rotation);
-        }
+        PlaceInRoom();
 
         if (!string.IsNullOrEmpty(musicKey))
         {
@@ -78,13 +74,20 @@ public class WakeUpCutsceneController : CutsceneController
     }
 
     // Starting the game: no wake-up, the player stands where it would have left them, and the screen fades in.
+    // The room player at its morning spot (co-op: each player beside the others, not inside them).
+    public void PlaceInRoom()
+    {
+        if (!PlayerManager.HasInstance || startPositionRoom == null) return;
+        var room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
+        if (room == null) return;
+        var at = startPositionRoom.position;
+        if (Coop.Running) at += MultiplayerManager.Instance.RoomSpawnOffset(startPositionRoom.rotation);
+        room.Warp(at, startPositionRoom.rotation);
+    }
+
     public void StandUp()
     {
-        if (PlayerManager.HasInstance && startPositionRoom != null)
-        {
-            var room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
-            if (room != null) room.Warp(startPositionRoom.position, startPositionRoom.rotation);
-        }
+        PlaceInRoom();
         if (ScreenManager.HasInstance) { ScreenManager.Instance.FadeToBlack(0f); ScreenManager.Instance.FadeFromBlack(briefFadeDuration, briefFadeHold); }
     }
 

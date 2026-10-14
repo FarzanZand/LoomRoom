@@ -123,13 +123,13 @@ public struct FlagSet : INetworkSerializable
 // The host's rules for the session (MultiplayerManager's switches), sent to each guest as it joins and when they change.
 public struct CoopRules : INetworkSerializable
 {
-    public bool sharedLoot, hostAdventurer, partyProgression, cutaway;
-    public float cutawayTiles;
+    public bool sharedLoot, hostAdventurer, partyProgression;
+    public bool lobby;            // the host has not begun yet: newcomers wait on the co-op screen
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref sharedLoot); s.SerializeValue(ref hostAdventurer); s.SerializeValue(ref partyProgression);
-        s.SerializeValue(ref cutaway); s.SerializeValue(ref cutawayTiles);
+        s.SerializeValue(ref lobby);
     }
 }
 

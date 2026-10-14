@@ -102,6 +102,8 @@ public class CoopPlayer : NetworkBehaviour
         s.inRun = manager.LocalInRun;
         s.atTable = manager.LocalAtTable;
         s.ready = manager.LocalReady;
+        s.inLobby = manager.LocalInLobby;
+        s.ghost = manager.Ghost;
         s.crouching = active != null && active.Motor != null && active.Motor.IsCrouching;
         s.seated = s.place == CoopPlace.Room && IntroController.Seated;
         bool onTable = s.place == CoopPlace.Table && table != null;

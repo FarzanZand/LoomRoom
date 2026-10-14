@@ -76,9 +76,12 @@ public class DungeonCombatFeedback : MonoBehaviour
         view.handler=info=>EnemyDamaged(view,info);character.Damaged+=view.handler;
         root.gameObject.SetActive(false);enemies.Add(view);
     }
+    // Co-op: each player sees the numbers of their own hits only (a teammate's come in over the network).
+    static bool Mine(DamageInfo info)=>!Coop.Running || info.Source is Player p && p.kind==PlayerKind.Table;
     void EnemyDamaged(EnemyView view,DamageInfo info)
     {
         view.until=Time.time+3.5f;view.lossUntil=Time.time+.35f;
+        if(!Mine(info))return;
         bool special=!info.Blocked && (info.Critical || info.Backstab);
         float scale=numberScale*(special && CombatManager.HasInstance ? CombatManager.Instance.critNumberScale:1);
         string amount=Mathf.CeilToInt(info.Amount).ToString();
@@ -91,13 +94,14 @@ public class DungeonCombatFeedback : MonoBehaviour
     {
         if(target==null || !target.transform.IsChildOf(dungeon.transform))return;
         var view=objects.Find(o=>o.target==target);
-        if(view==null && dungeon.LevelData.enemyBarPrefab==null){ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f),numberScale);return;}
+        if(view==null && dungeon.LevelData.enemyBarPrefab==null){if(Mine(info))ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f),numberScale);return;}
         if(view==null)
         {
             var bar=Instantiate(dungeon.LevelData.enemyBarPrefab,canvas);bar.enemyName.text=target.DisplayName;
             view=new ObjectView{target=target,root=bar.Rect,fill=bar.healthFill,loss=bar.recentDamageFill};objects.Add(view);
         }
         view.until=Time.time+3f;view.lossUntil=Time.time+.35f;
+        if(!Mine(info))return;
         // A hit-counted breakable's bar already shows the hits left; the damage number would mislead.
         if(!target.CountsHits)ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f),numberScale);
     }
