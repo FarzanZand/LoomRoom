@@ -33,7 +33,8 @@ public static class DungeonFeatureUtility
 
     public static Vector3 WithY(this Vector3 v, float y) => new Vector3(v.x, y, v.z);
 
-    public static Player TablePlayer(Character who) => who is Player p && p.kind == PlayerKind.Table ? p : null;
+    // The living table player (a dead one, a co-op ghost among them, uses nothing in the dungeon).
+    public static Player TablePlayer(Character who) => who is Player p && p.kind == PlayerKind.Table && p.IsAlive ? p : null;
 
     // The world bounds around every renderer given; false when there are none.
     public static bool RendererBounds(Renderer[] renderers, out Bounds bounds)
