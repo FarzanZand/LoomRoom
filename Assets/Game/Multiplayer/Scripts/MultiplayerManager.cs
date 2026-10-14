@@ -373,7 +373,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (network == null || network.IsListening || Starting) return false;
         LastError = null;
         lastTarget = target;
-        if (string.IsNullOrWhiteSpace(target)) { Fail("Type the host's join code first."); return false; }
+        if (string.IsNullOrWhiteSpace(target)) { Fail("Paste or type the host's join code first."); return false; }
         if (CoopRelay.LooksLikeCode(target)) { StartCoroutine(JoinOnline(target)); return true; }
         JoinCode = null;
         Transport(target);

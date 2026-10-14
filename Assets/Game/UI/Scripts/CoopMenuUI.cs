@@ -106,6 +106,8 @@ public class CoopMenuUI : MonoBehaviour
     {
         if (!MultiplayerManager.HasInstance) return;
         if (playerName != null) MultiplayerManager.Instance.SetName(playerName.text);
+        // Nothing typed: a code copied from a chat will do.
+        if (address != null && string.IsNullOrWhiteSpace(address.text) && ClipboardCode(out var copied)) address.text = copied;
         MultiplayerManager.Instance.Join(address != null ? address.text : "");
     }
 
@@ -127,12 +129,31 @@ public class CoopMenuUI : MonoBehaviour
     // The host's Begin: everyone who has joined plays the new game's intro.
     public void Begin() { Began = true; if (MultiplayerManager.HasInstance && Coop.IsHost) MultiplayerManager.Instance.BeginForEveryone(); Close(); }
 
+    // A join code on the clipboard (six letters and digits, as the host's Copy gives): the code box fills itself in.
+    static bool ClipboardCode(out string code)
+    {
+        code = (GUIUtility.systemCopyBuffer ?? "").Trim().ToUpperInvariant();
+        if (code.Length != 6) return false;
+        foreach (var c in code) if (!char.IsLetterOrDigit(c)) return false;
+        return true;
+    }
+
+    void FillCodeFromClipboard()
+    {
+        if (address == null || Coop.Running || address.isFocused || !string.IsNullOrWhiteSpace(address.text)) return;
+        // Not this game's own code (a host who left keeps it on their clipboard).
+        if (ClipboardCode(out var code) && code != (MultiplayerManager.HasInstance ? MultiplayerManager.Instance.JoinCode : null)) address.text = code;
+    }
+
+    void OnApplicationFocus(bool focus) { if (focus && IsOpen) FillCodeFromClipboard(); }
+
     public void Open(Mode mode)
     {
         if (root == null) return;
         Current = mode; Began = false; shown = Page.None;
         root.SetActive(true);
         if (playerName != null && MultiplayerManager.HasInstance) playerName.text = MultiplayerManager.Instance.playerName;
+        FillCodeFromClipboard();
         if (!pushed && GameManager.HasInstance) { GameManager.Instance.Push(GameState.Menu); pushed = true; }
         Refresh();
     }
