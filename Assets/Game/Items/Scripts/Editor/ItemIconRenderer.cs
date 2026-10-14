@@ -57,9 +57,11 @@ public static partial class ItemIconRenderer
     // ── Automatic updates ─────────────────────────────────────────────
 
     static readonly HashSet<ItemData> queued = new();
+    // A Multiplayer Play Mode clone shares the main editor's assets read-only: it never writes icons.
+    static readonly bool Clone = Application.dataPath.Replace('\\', '/').Contains("/Library/VP/");
     static void Queue(ItemData item)
     {
-        if (item == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
+        if (item == null || Clone || EditorApplication.isPlayingOrWillChangePlaymode) return;
         if (queued.Add(item) && queued.Count == 1) EditorApplication.delayCall += Flush;
     }
     static void Flush()
