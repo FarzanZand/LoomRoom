@@ -33,21 +33,25 @@ public class Equipment : MonoBehaviour
     readonly Dictionary<EquipmentSlot, ItemData>   items   = new();
     readonly Dictionary<EquipmentSlot, GameObject> objects = new();
     readonly Dictionary<EquipmentSlot, object>     sources = new();
-    readonly HeldItemEating eating = new();
+    readonly ConsumableUse consuming = new();
     // The hotbar slot each held item was last seen in.
     readonly Dictionary<EquipmentSlot, int> heldAt = new();
 
-    public bool IsUsingItem => eating.IsPlaying;
+    // Eating or drinking: attacks, spells and other items wait until it is done.
+    public bool IsUsingItem => consuming.Busy;
 
-    public bool PlayEating(ItemData item, EquipmentSlot slot, Action complete)
+    // Uses a consumable the way its ItemData asks: Instant at once, Eat or Drink in the right hand with the arm's clip
+    // (ConsumableUse); use runs when it takes effect (it takes the item from the inventory and applies it). False when
+    // another item is already being used.
+    public bool Consume(ItemData item, Action use)
     {
-        if (IsUsingItem || !isActiveAndEnabled || !item.canBeEquipped || Get(slot) != item ||
-            Character is not Player player || !objects.TryGetValue(slot, out var held)) return false;
-        return eating.Play(player, item, GetAnchor(slot), held, complete);
+        if (item == null) return false;
+        if (IsUsingItem) return false;
+        if (item.AnimationOnUse == ItemUseAnimation.Instant || Character is not Player player || !isActiveAndEnabled) { use?.Invoke(); return true; }
+        return consuming.Begin(this, player, item, use);
     }
 
-    // Restore the eating pose before the Animator evaluates the next frame.
-    void Update() => eating.RestorePose();
+    void Update() => consuming.Tick();
 
     void LateUpdate()
     {
@@ -69,10 +73,9 @@ public class Equipment : MonoBehaviour
                 if (replacement != null && Fits(replacement, slot) && !IsEquipped(replacement)) { Equip(replacement); heldAt[slot] = was; }
             }
         }
-        eating.Tick();
     }
 
-    void OnDisable() => eating.Clear();
+    void OnDisable() => consuming.Cancel();
     public IEnumerable<ItemData> EquippedItems => items.Values;
 
     bool initialized;
@@ -243,7 +246,6 @@ public class Equipment : MonoBehaviour
             else if (!owner.Bag.TryAdd(item) && !owner.Hotbar.TryAdd(item) && InventoryManager.HasInstance)
                 InventoryManager.Instance.DropFromPlayer(item, owner);
         }
-        if (item == eating.Item) eating.Clear();
 
         if (objects.TryGetValue(slot, out var obj) && obj != null) Destroy(obj);
         objects.Remove(slot);

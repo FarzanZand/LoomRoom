@@ -131,6 +131,7 @@ public class PlayerSpellcasting : MonoBehaviour
         var spell = Selected;
         if (spell == null || Busy || !player.IsActive || !player.IsAlive) return;
         if (!GameManager.HasInstance || !GameManager.Instance.GameplayActive || player.Combat.IsAttacking) return;
+        if (player.Equipment != null && player.Equipment.IsUsingItem) return;   // eating or drinking
         if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { Refuse("Health is full"); return; }
         if (player.Stats.CurrentMana < Cost(spell)) { Refuse("Not enough mana"); return; }
 
@@ -159,9 +160,11 @@ public class PlayerSpellcasting : MonoBehaviour
             float before = player.Stats.CurrentHealth;
             player.Stats.Heal(Power(spell));
             progress?.PractiseHeal(player.Stats.CurrentHealth - before);
-            if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation, player.transform);
+            // Left where the player stands: parented under the player its particles never started.
+            if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation);
             if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
         }
+        else if (spell.groundArea) CastOnGround(spell);
         else if (spell.projectile != null) Launch(spell);
         Changed?.Invoke();
     }
@@ -183,6 +186,20 @@ public class PlayerSpellcasting : MonoBehaviour
         projectile.Launch(player, spell, Power(spell), progress);
 
         // The flame leaves the hand and relights once the throw has recovered.
+        if (held != null) { held.Stop(); held = null; }
+        relightAt = Time.time + spell.recoverySeconds + .1f;
+    }
+
+    // Ground spells land where the crosshair meets the floor (within Area Range), or at the end of the range.
+    void CastOnGround(SpellDefinition spell)
+    {
+        var view = player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : transform;
+        var point = view.position + view.forward * spell.areaRange;
+        var hits = Physics.RaycastAll(view.position, view.forward, spell.areaRange, ~0, QueryTriggerInteraction.Ignore);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        foreach (var hit in hits)
+            if (!hit.transform.IsChildOf(player.transform)) { point = hit.point; break; }
+        GroundAreaSpell.Cast(player, spell, Power(spell), GroundAreaSpell.GroundBelow(point), progress);
         if (held != null) { held.Stop(); held = null; }
         relightAt = Time.time + spell.recoverySeconds + .1f;
     }

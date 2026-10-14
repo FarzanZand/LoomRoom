@@ -87,15 +87,15 @@ public class ItemData : ScriptableObject
     [BoxGroup("Equipment"), ShowIf("canBeEquipped")]
     public EquipmentSlot equipSlot = EquipmentSlot.RightHand;
 
-    [BoxGroup("Equipment"), ShowIf("canBeEquipped"), Min(0.01f)]
-    [Tooltip("Visual scale while held. Does not change the world pickup or combat reach.")]
+    [BoxGroup("Equipment"), ShowIf("ShowsInHand"), Min(0.01f)]
+    [Tooltip("Visual scale while held (and while eaten or drunk). Does not change the world pickup or combat reach.")]
     public float heldScale = 1f;
 
-    [BoxGroup("Equipment"), ShowIf("canBeEquipped")]
+    [BoxGroup("Equipment"), ShowIf("ShowsInHand")]
     [Tooltip("Grip position relative to the equipment socket.")]
     public Vector3 heldPosition;
 
-    [BoxGroup("Equipment"), ShowIf("canBeEquipped")]
+    [BoxGroup("Equipment"), ShowIf("ShowsInHand")]
     [Tooltip("Grip rotation relative to the equipment socket, in degrees.")]
     public Vector3 heldRotation;
 
@@ -135,16 +135,12 @@ public class ItemData : ScriptableObject
     public string useMessage;
 
     [BoxGroup("Consumable"), ShowIf("IsConsumable")]
-    [Tooltip("Used only when consuming equipped items from the hand. Idle keeps the original behavior; Eat moves the hand and item toward the mouth.")]
-    public ItemUseAnimation AnimationOnUse = ItemUseAnimation.Idle;
+    [Tooltip("Instant: used at once. Eat or Drink: taken in the right hand in place of the held weapon, the arm eats or drinks (Characters/Animations/FirstPersonPlayer/Consume), it takes effect near the end and the weapon comes back. Attacks and spells wait until it is done.")]
+    public ItemUseAnimation AnimationOnUse = ItemUseAnimation.Instant;
 
-    [BoxGroup("Consumable"), ShowIf("UsesEatAnimation"), Min(.1f)]
-    public float eatDuration = .65f;
-    [BoxGroup("Consumable"), ShowIf("UsesEatAnimation")]
-    [Tooltip("Mouth position relative to the first-person camera.")]
-    public Vector3 eatMouthPosition = new Vector3(0, -.12f, .13f);
-    [BoxGroup("Consumable"), ShowIf("UsesEatAnimation")]
-    public Vector3 eatMouthRotation = new Vector3(-65, 0, 0);
+    [BoxGroup("Consumable"), ShowIf("UsesAnimation"), Min(.2f)]
+    [Tooltip("Seconds the eating or drinking takes (the clip is played to fit).")]
+    public float eatDuration = 1.3f;
 
     // ── Honed ─────────────────────────────────────────────────────────
     // Barony's blessing, called Honed here: a +1 or +2 piece of gear. A honed item is a runtime copy of
@@ -202,7 +198,8 @@ public class ItemData : ScriptableObject
 
     public bool IsWeapon     => itemType == ItemType.Weapon;
     public bool IsConsumable => itemType == ItemType.Consumable;
-    bool UsesEatAnimation => IsConsumable && canBeEquipped && AnimationOnUse == ItemUseAnimation.Eat;
+    bool UsesAnimation => IsConsumable && AnimationOnUse != ItemUseAnimation.Instant;
+    bool ShowsInHand => canBeEquipped || UsesAnimation;
     bool PickupUsesData => pickupAudioSource == ItemAudioSource.AudioData;
     bool PickupUsesClip => pickupAudioSource == ItemAudioSource.AudioClip;
     bool PickupUsesKey => pickupAudioSource == ItemAudioSource.AudioManagerKey;

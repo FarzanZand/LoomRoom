@@ -27,10 +27,22 @@ public class SpellDefinition : ScriptableObject
     [ShowIf(nameof(IsProjectile)), Min(1)] public float speed = 14;
     [ShowIf(nameof(IsProjectile)), Min(.1f)] public float lifetime = 5;
 
+    [Title("Ground area")]
+    [Tooltip("Lands on the ground at the target instead of flying: the spot is marked (Show Marker), then it erupts after Area Delay and hits everything hostile inside Area Radius. The eruption is the Impact effect.")]
+    public bool groundArea;
+    [ShowIf(nameof(groundArea)), Min(.1f), Tooltip("Metres.")] public float areaRadius = 2f;
+    [ShowIf(nameof(groundArea)), Min(0f), Tooltip("Seconds between the mark and the eruption: the time to step out.")] public float areaDelay = 1.2f;
+    [ShowIf(nameof(groundArea)), Tooltip("Show where it will land before it erupts. Off: it erupts with no warning (keep Area Delay short then).")] public bool showMarker = true;
+    [ShowIf(nameof(ShowsMarker)), AssetsOnly, Tooltip("Laid flat on the ground at the spot, scaled to Area Radius (authored for a radius of Marker Radius). A child named 'Fill' grows from the centre to full size over the delay.")]
+    public GameObject areaMarker;
+    [ShowIf(nameof(ShowsMarker)), Min(.1f), Tooltip("The radius the marker prefab is drawn at.")] public float markerRadius = 2f;
+    [ShowIf(nameof(groundArea)), Min(1f), Tooltip("Furthest the player can place it (where the crosshair meets the ground). Enemies use their own range.")] public float areaRange = 14f;
+    bool ShowsMarker => groundArea && showMarker;
+
     [Title("Presentation")]
     [Tooltip("Effect held in the palm while the spell is equipped. Grows while charging.")]
     public SpellVisual heldVisual;
-    [Tooltip("Projectile spells: spawned where it hits. Healing: spawned around the caster.")]
+    [Tooltip("Projectile spells: spawned where it hits. Ground spells: the eruption. Healing: spawned around the caster.")]
     public SpellVisual impact;
     [Tooltip("Animator SpellType value: 1 = throw (Fireball), 2 = gather (Heal).")]
     public int animation = 1;
@@ -49,7 +61,7 @@ public class SpellDefinition : ScriptableObject
     public AudioClip impactSound;
     [Range(0, 1)] public float impactVolume = 1f;
 
-    public bool IsProjectile => spell != LeftHandSpell.Heal;
+    public bool IsProjectile => spell != LeftHandSpell.Heal && !groundArea;
     public AdventureSkill Skill => spell == LeftHandSpell.Heal ? AdventureSkill.Thaumaturgy : AdventureSkill.Sorcery;
 }
 

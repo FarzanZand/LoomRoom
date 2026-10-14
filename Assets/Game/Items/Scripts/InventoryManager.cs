@@ -76,7 +76,9 @@ public class InventoryManager : Singleton<InventoryManager>
         if (item == null || player == null) return false;
 
         bool added = false;
-        if ((item.directToHotbar || preferHotbar) && player.Hotbar != null && player.Hotbar.Accepts(item))
+        // Consumables and spell tomes go to the hotbar while it has room, so they are one key away.
+        bool hotbarFirst = item.directToHotbar || preferHotbar || item.IsConsumable || item.spell != null;
+        if (hotbarFirst && player.Hotbar != null && player.Hotbar.Accepts(item))
             added = player.Hotbar.TryAdd(item, count);
         if (!added && player.Bag != null)
             added = player.Bag.TryAdd(item, count);
@@ -101,19 +103,25 @@ public class InventoryManager : Singleton<InventoryManager>
 
     // ── Use ───────────────────────────────────────────────────────────
 
-    // Use a consumable sitting in a container slot.
+    // Use a consumable sitting in a container slot: eaten or drunk in the right hand (or used at once, by its
+    // ItemData.AnimationOnUse), then the hand item held before comes back.
     public void Use(Inventory container, int index)
     {
         var item = container?.ItemAt(index);
         if (item == null || !item.IsConsumable) return;
         var player = container.GetComponentInParent<Player>();
-        if (item.canBeEquipped)
-        {
-            player?.Equipment?.Equip(item);
-            return;
-        }
-        item.Use(player);
-        container.Consume(index);
+        if (player == null || player.Equipment == null) { item.Use(player); container.Consume(index); return; }
+        player.Equipment.Consume(item, () => TakeAndUse(player, item, container, index));
+    }
+
+    // When it takes effect: one is taken from where it was (or, moved meanwhile, from the hotbar or bag) and used.
+    static void TakeAndUse(Player player, ItemData item, Inventory container, int index)
+    {
+        bool taken = container != null && container.ItemAt(index) == item;
+        if (taken) container.Consume(index);
+        if (!taken) taken = player.Hotbar != null && player.Hotbar.RemoveOne(item);
+        if (!taken) taken = player.Bag != null && player.Bag.RemoveOne(item);
+        if (taken) item.Use(player);
     }
 
     // A hotbar key: gear is taken in hand or put away again, a consumable that can't be held is used.
@@ -122,11 +130,10 @@ public class InventoryManager : Singleton<InventoryManager>
         var item = container?.ItemAt(index);
         if (item == null || player == null) return;
         var eq = player.Equipment;
-        if (eq == null || !eq.CanEquip(item))
-        {
-            if (item.IsConsumable) Use(container, index);
-            return;
-        }
+        // While eating or drinking nothing else is taken in hand or used.
+        if (eq != null && eq.IsUsingItem) return;
+        if (item.IsConsumable) { Use(container, index); return; }
+        if (eq == null || !eq.CanEquip(item)) return;
         if (eq.IsEquipped(item)) eq.Unequip(item);
         else eq.Equip(item);
     }
@@ -138,10 +145,7 @@ public class InventoryManager : Singleton<InventoryManager>
         if (item == null || !item.IsConsumable) return false;
 
         if (player.Equipment.IsUsingItem) return true;
-        if (item.canBeEquipped && item.AnimationOnUse == ItemUseAnimation.Eat &&
-            player.Equipment.PlayEating(item, slot, () => CompleteHeldUse(player, slot, item))) return true;
-
-        CompleteHeldUse(player, slot, item);
+        player.Equipment.Consume(item, () => CompleteHeldUse(player, slot, item));
         return true;
     }
 

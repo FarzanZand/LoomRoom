@@ -108,6 +108,7 @@ public class AdventureSave : MonoBehaviour
         }
         if (RunManager.HasInstance) RunManager.Instance.RunEnded += Ended;
         if (!existed) SeedStartingMemorials();
+        else if (ProgressionManager.HasInstance && ProgressionManager.Instance.IntroSkipped) Write();
     }
 
     // A new save starts with the rules' blank figures on the memorial table.

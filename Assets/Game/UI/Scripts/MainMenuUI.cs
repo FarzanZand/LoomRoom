@@ -5,10 +5,12 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// The main menu (Scenes/Main Menu, the first scene of a build): the table in the dark from the player's seat, the
-// Dungeon Master waiting behind it with his eyes lit, the title, and Continue (New game) / Skip intro / Quit. Play fades to black and
-// loads the game's scene. The set, buttons, title and fade are authored in the scene; this binds them. The menu scene
-// has no managers, so this sets the Pixel Lit shader's globals, frees the cursor and reads the music volume itself.
+// The main menu (Scenes/Main Menu, the first scene of a build): the Dungeon Master leaning over the table in a teal
+// haze, his eyes burning, one hand held out over a little ruin with a pewter figure in it, fog rolling across the table
+// (UI/Main Menu: pose clip, ruins, fog shader, look profile; Tools > LoomRoom > UI > Rebuild Main Menu Ruins), the
+// painted title, and Continue (New game) / Skip intro / Quit. Play fades to black and loads the game's scene. The set,
+// buttons, title and fade are authored in the scene; this binds them. Co-op opens the game on the co-op screen. The menu is drawn smooth, not pixel-lit, and the
+// scene has no managers, so this switches pixel lighting off, frees the cursor and reads the music volume itself.
 public class MainMenuUI : MonoBehaviour
 {
     [SerializeField] Button playButton;
@@ -25,21 +27,17 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] string gameScene = "Room";
 
     [Header("Set")]
-    [Tooltip("The Pixel Look library: the menu's set is drawn with the room's texels and brightness.")]
+    [Tooltip("The Pixel Look library: its materials are switched back to their own shaders, so the menu is drawn smooth.")]
     [SerializeField] PixelLookLibrary pixelLook;
-    [SerializeField, Range(1f, 8f)] float pixelSize = 1f;
     [SerializeField] Animator dungeonMaster;
-    [Tooltip("The Dungeon Master's state while he waits (his animator's seated idle).")]
-    [SerializeField] string dungeonMasterState = "Sitting Idle";
-    [Tooltip("The Dungeon Master's eyes, coloured like the intro's look (IntroController > Looks).")]
+    [Tooltip("The Dungeon Master's state while he waits (UI/Main Menu/Menu DM.controller: reaching over the table).")]
+    [SerializeField] string dungeonMasterState = "Reach";
+    [Tooltip("The Dungeon Master's eyes: burning slits (UI/Main Menu/Menu Eye.shader; colours on their materials).")]
     [SerializeField] Renderer[] eyes = new Renderer[0];
-    [SerializeField, ColorUsage(false)] Color eyeColour = new(1f, .78f, .4f);
-    [Tooltip("The lamp over the table; it breathes a little, like a flame.")]
-    [SerializeField] Light lamp;
-    [SerializeField, Range(0f, .3f)] float lampFlicker = .06f;
+    [Tooltip("How much the eyes' glow swells and fades, slowly and unevenly.")]
+    [SerializeField, Range(0f, .6f)] float eyePulse = .25f;
     [SerializeField] AudioSource music;
 
-    float lampBase;
     bool leaving;
 
     void Start()
@@ -47,15 +45,13 @@ public class MainMenuUI : MonoBehaviour
         // No GameManager here (it owns the cursor in the game's scene): the menu needs a free pointer.
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        if (pixelLook != null) { pixelLook.SetPixelLighting(true); pixelLook.ApplyGlobals(false, pixelSize); }   // as ScreenManager does in the game
+        if (pixelLook != null) pixelLook.SetPixelLighting(false);   // the game's ScreenManager switches it back on
         if (dungeonMaster != null && dungeonMaster.runtimeAnimatorController != null)
         {
             dungeonMaster.applyRootMotion = false;
             dungeonMaster.Play(dungeonMasterState, 0, Random.value);
         }
-        var block = new MaterialPropertyBlock();
-        foreach (var eye in eyes) { if (eye == null) continue; eye.GetPropertyBlock(block); block.SetColor("_Color", eyeColour); eye.SetPropertyBlock(block); }
-        if (lamp != null) lampBase = lamp.intensity;
+        SetEyes(1f);
         if (music != null)
         {
             music.volume *= PlayerPrefs.GetFloat(AudioManager.K_MASTER, 1f) * PlayerPrefs.GetFloat(AudioManager.K_MUSIC, .8f);
@@ -74,8 +70,7 @@ public class MainMenuUI : MonoBehaviour
 
     void Update()
     {
-        if (lamp != null && lampFlicker > 0f)
-            lamp.intensity = lampBase * (1f + (Mathf.PerlinNoise(Time.unscaledTime * 1.7f, .3f) - .5f) * 2f * lampFlicker);
+        if (eyePulse > 0f) SetEyes(1f + (Mathf.PerlinNoise(Time.unscaledTime * .45f, 7.1f) - .5f) * 2f * eyePulse);
         // A pad or the keyboard can always reach the buttons, even after a mouse click took the selection away.
         if (!leaving && UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject == null
             && (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame || Gamepad.current != null && Gamepad.current.dpad.ReadValue() != Vector2.zero))
@@ -111,6 +106,20 @@ public class MainMenuUI : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+
+    MaterialPropertyBlock eyeBlock;
+
+    void SetEyes(float strength)
+    {
+        eyeBlock ??= new MaterialPropertyBlock();
+        foreach (var eye in eyes)
+        {
+            if (eye == null) continue;
+            eye.GetPropertyBlock(eyeBlock);
+            eyeBlock.SetFloat("_Intensity", strength);
+            eye.SetPropertyBlock(eyeBlock);
+        }
     }
 
     IEnumerator Fade(float from, float to, System.Action then)

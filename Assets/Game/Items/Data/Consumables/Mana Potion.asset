@@ -41,8 +41,8 @@ MonoBehaviour:
   directToHotbar: 1
   canBeEquipped: 0
   equipSlot: 0
-  heldScale: 1
-  heldPosition: {x: 0, y: 0, z: 0}
+  heldScale: 0.45
+  heldPosition: {x: 0, y: -0.06, z: 0}
   heldRotation: {x: 0, y: 0, z: 0}
   equipOnPickup: 0
   statModifiers: []
@@ -76,7 +76,5 @@ MonoBehaviour:
   useClipVolume: 1
   useAudioKey: 
   useMessage: 
-  AnimationOnUse: 1
-  eatDuration: 0.65
-  eatMouthPosition: {x: 0, y: -0.12, z: 0.13}
-  eatMouthRotation: {x: -65, y: 0, z: 0}
+  AnimationOnUse: 2
+  eatDuration: 1.25

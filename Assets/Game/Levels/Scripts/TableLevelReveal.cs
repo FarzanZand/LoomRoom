@@ -13,6 +13,8 @@ public sealed class TableLevelReveal : MonoBehaviour
     readonly List<(Light light, bool enabled, float delay)> lights = new();
     // Particle effects (torch flames and the like) stay switched off until their spot is built.
     readonly List<(GameObject effect, bool active, float delay)> effects = new();
+    // The table stays whole under a pit until the build reaches it (TableCut).
+    readonly List<(TableCut.Hole hole, float delay)> holes = new();
     readonly List<LineRenderer> outlines = new();
     readonly List<Renderer> liftedCeilings = new();
     readonly List<(Renderer renderer, bool forcedOff)> handRenderers = new();
@@ -98,6 +100,11 @@ public sealed class TableLevelReveal : MonoBehaviour
                 effects.Add((go, go.activeSelf, Vector3.Distance(go.transform.position, dungeon.SpawnPoint) / range * .72f));
                 go.SetActive(false);
             }
+            foreach (var hole in dungeon.TableHoles)
+            {
+                var at = new Vector3(hole.area.center.x, dungeon.SpawnPoint.y, hole.area.center.y);
+                holes.Add((hole, Vector3.Distance(at, dungeon.SpawnPoint) / range * .72f)); hole.Open = false;
+            }
             BuildBlueprint(settings);
             if (settings.dustPrefab != null)
             {
@@ -128,6 +135,7 @@ public sealed class TableLevelReveal : MonoBehaviour
                     piece.renderer.transform.position = piece.position - Vector3.up * settings.liftDistance * (1 - settings.rise.Evaluate(t));
                 }
                 foreach (var entry in lights) if (entry.light != null) entry.light.enabled = entry.enabled && build > entry.delay + .25f;
+                foreach (var entry in holes) entry.hole.Open = build > entry.delay;
                 foreach (var entry in effects)
                 {
                     bool on = entry.active && build > entry.delay + .25f;
@@ -250,6 +258,7 @@ public sealed class TableLevelReveal : MonoBehaviour
         foreach (var entry in lights) if (entry.light != null) entry.light.enabled = entry.enabled;
         foreach (var entry in effects) if (entry.effect != null) entry.effect.SetActive(entry.active);
         foreach (var actor in actors) if (actor.target != null) actor.target.SetActive(actor.active);
+        foreach (var entry in holes) entry.hole.Open = true;
     }
 
     // Cancel and Submit arrive through InputManager's UI map, which is live during the cutscene state.
@@ -330,7 +339,7 @@ public sealed class TableLevelReveal : MonoBehaviour
         if (captured && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind != PlayerKind.Table) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Table);
         RestoreCeilings();
         if (dungeon != null) dungeon.ShowCeilings(true);
-        pieces.Clear(); actors.Clear(); lights.Clear(); effects.Clear(); outlines.Clear(); captured = false; IsPlaying = false;
+        pieces.Clear(); actors.Clear(); lights.Clear(); holes.Clear(); effects.Clear(); outlines.Clear(); captured = false; IsPlaying = false;
     }
     void OnDisable() => Restore();
 }

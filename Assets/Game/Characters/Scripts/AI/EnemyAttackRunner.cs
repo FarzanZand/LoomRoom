@@ -21,6 +21,7 @@ public class EnemyAttackRunner
     bool    fallbackHitPending;
     float   fallbackHitAt;
     float   pendingStagger;
+    SpellVisual handSpell;   // the spell glowing in the caster's hand while it casts
 
     // An EnableHitbox event that arrived before the minimum windup, replayed once it has passed.
     bool  hitboxOpenPending;
@@ -107,6 +108,7 @@ public class EnemyAttackRunner
                 if (attack != null) AnimatorHelper.ResetTrigger(Character.Animator, attack.animatorTrigger);
         fallbackHitPending = false; current = null; attackWasPlaying = false;
         if (brain.Loadout != null) brain.Loadout.SetArrowNocked(false);
+        DropHandSpell();
         if (brain.AttackRelay != null) brain.AttackRelay.DisableHitbox();
         hitboxOpenPending = false; hitboxCloseAt = -1f; pendingHitboxWindow = -1f;
         pendingStagger = 0f;
@@ -195,6 +197,21 @@ public class EnemyAttackRunner
             return;
         }
 
+        // A spell leaves the hand at its release time (or on the cast clip's OnAttackHit event).
+        if (attack.IsSpell)
+        {
+            var cast = attack.spellCast;
+            fallbackHitPending = true;
+            fallbackHitAt = Time.time + Mathf.Max(cast.releaseTime, MinWindup);
+            var hand = Hand();
+            var effect = cast.handEffect != null ? cast.handEffect : cast.spell.heldVisual;
+            if (effect != null && hand != null)
+                handSpell = Object.Instantiate(effect, hand.position, hand.rotation, hand);
+            if (cast.spell.chargeSound != null && AudioManager.HasInstance)
+                AudioManager.Instance.PlaySFX(cast.spell.chargeSound, brain.transform.position + Vector3.up * 1.5f, cast.spell.chargeVolume);
+            return;
+        }
+
         // Without a hitbox the hit lands either on the clip's OnAttackHit animation event
         // or, if the clip has none, after fallbackHitDelay seconds.
         if (hitbox == null)
@@ -218,9 +235,9 @@ public class EnemyAttackRunner
         // Windup: keep tracking the target so circling does not trivially dodge. Then commit.
         // A drawn bow keeps aiming until the arrow is loosed.
         float sinceStart = Time.time - attackStartedAt;
-        if (current.IsBowShot)
+        if (current.IsRanged)
         {
-            if (fallbackHitPending) Motor.LookAt(target.transform.position, current.bowShot.aimTrackSpeed);
+            if (fallbackHitPending) Motor.LookAt(target.transform.position, current.IsBowShot ? current.bowShot.aimTrackSpeed : current.spellCast.aimTrackSpeed);
             else CommitDirection();
         }
         else if (!directionCommitted && sinceStart < CommitTime && brain.Profile.windupTrackSpeed > 0f)
@@ -230,15 +247,17 @@ public class EnemyAttackRunner
         else CommitDirection();
 
         // The whoosh plays just before the blow lands (it used to play at the commit, after early hits).
-        if (HitAt < 0f && !current.IsBowShot) HitAt = EstimateHit();
-        if (!swingAudioPlayed && !current.IsBowShot && HitAt > 0f && Time.time >= HitAt - WhooshLead) { swingAudioPlayed = true; PlaySwingAudio(); }
+        if (HitAt < 0f && !current.IsRanged) HitAt = EstimateHit();
+        if (!swingAudioPlayed && !current.IsRanged && HitAt > 0f && Time.time >= HitAt - WhooshLead) { swingAudioPlayed = true; PlaySwingAudio(); }
         // A clip without a hit event: the whoosh at the commit, as before.
-        if (!swingAudioPlayed && !current.IsBowShot && HitAt < 0f && directionCommitted && attackWasPlaying) { swingAudioPlayed = true; PlaySwingAudio(); }
+        if (!swingAudioPlayed && !current.IsRanged && HitAt < 0f && directionCommitted && attackWasPlaying) { swingAudioPlayed = true; PlaySwingAudio(); }
 
         if (IsPlayingAttack()) { attackWasPlaying = true; return; }
 
         // Swing finished (or never started because the animator has no such state).
-        float startupTimeout = current.IsBowShot ? current.bowShot.fallbackReleaseTime + 0.2f : Mathf.Max(0.5f, current.fallbackHitDelay + 0.1f);
+        float startupTimeout = current.IsBowShot ? current.bowShot.fallbackReleaseTime + 0.2f
+            : current.IsSpell ? current.spellCast.releaseTime + 0.2f
+            : Mathf.Max(0.5f, current.fallbackHitDelay + 0.1f);
         if (attackWasPlaying || sinceStart > startupTimeout)
         {
             // Cooldown counts from the END of the swing, so there is always an opening
@@ -329,6 +348,7 @@ public class EnemyAttackRunner
     {
         fallbackHitPending = false;
         if (current != null && current.IsBowShot) { LooseArrow(); return; }
+        if (current != null && current.IsSpell) { ReleaseSpell(); return; }
         var target = Perception.Target;
         if (!CanOpenHitbox || target == null || !target.IsAlive || !FactionRules.IsHostile(Character.Faction, target.Faction)) return;
         CommitDirection();
@@ -393,6 +413,57 @@ public class EnemyAttackRunner
         var arrow = Object.Instantiate(bow.arrow, origin, Quaternion.LookRotation(dir));
         arrow.Launch(Character, dir, bow.arrowSpeed, damage, bow.hit);
         CoopWorld.ArrowLoosed(Character, origin, dir);
+    }
+
+    // ── Spells ────────────────────────────────────────────────────────
+
+    // The hand the cast clip throws with (the right); null for non-humanoids (they cast from the chest).
+    Transform Hand()
+    {
+        var anim = Character.Animator;
+        return anim != null && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.RightHand) : null;
+    }
+
+    void DropHandSpell()
+    {
+        if (handSpell != null) handSpell.Stop();
+        handSpell = null;
+    }
+
+    // The release: a projectile from the hand toward the target, or a ground spell under the target (led a little).
+    void ReleaseSpell()
+    {
+        var cast = current.spellCast;
+        var spell = cast.spell;
+        DropHandSpell();
+        var target = Perception.Target;
+        if (!SwingLive || target == null || !target.IsAlive || spell == null) return;
+        CommitDirection();
+
+        var hand = Hand();
+        Vector3 origin = hand != null ? hand.position : brain.transform.position + Vector3.up * 1.5f + brain.transform.forward * .4f;
+        float damage = cast.damageMultiplier > 0f
+            ? (Character.Stats != null ? Character.Stats.GetFinal(StatType.AttackDamage) : 0f) * cast.damageMultiplier
+            : spell.power;
+        var mover = target.GetComponent<CharacterController>();
+        Vector3 velocity = mover != null ? mover.velocity : Vector3.zero; velocity.y = 0f;
+        if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.releaseSound, origin, spell.releaseVolume);
+
+        if (spell.groundArea)
+        {
+            Vector3 spot = target.transform.position + velocity * spell.areaDelay * cast.leadTarget;
+            GroundAreaSpell.Cast(Character, spell, damage, GroundAreaSpell.GroundBelow(spot), null);
+            return;
+        }
+        if (spell.projectile == null) return;
+        Vector3 aim = AimPoint(target);
+        float flight = Vector3.Distance(origin, aim) / Mathf.Max(1f, spell.speed);
+        aim += velocity * flight * cast.leadTarget;
+        Vector3 dir = aim - origin;
+        dir = Quaternion.AngleAxis(Random.Range(-cast.spread, cast.spread), Vector3.up)
+            * Quaternion.AngleAxis(Random.Range(-cast.spread, cast.spread) * .5f, Vector3.Cross(Vector3.up, dir).normalized) * dir;
+        var projectile = Object.Instantiate(spell.projectile, origin, Quaternion.LookRotation(dir));
+        projectile.Launch(Character, spell, damage, null);
     }
 
     static Vector3 AimPoint(Character target)

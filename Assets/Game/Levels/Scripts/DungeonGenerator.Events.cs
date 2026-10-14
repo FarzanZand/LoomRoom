@@ -29,7 +29,7 @@ public partial class DungeonGenerator
     };
 
     // After the templates are chosen, before anything is placed. Hand-made floors (authored maps) keep to what their
-    // author put there.
+    // author put there: their templates' own events and moods, nothing rolled.
     void ChooseRoomEvents()
     {
         int n = Layout.rooms.Count;
@@ -43,15 +43,15 @@ public partial class DungeonGenerator
         bool AmbushLeft() => ambushes < Mathf.Min(f.maxAmbushes, 1);
         bool SleepLeft() => f.maxSleepingPacks <= 0 || sleepers < f.maxSleepingPacks;
         bool Special(int i) => i == 0 || i == MerchantRoom || (Roles[i] == RoomRole.Exit && Milestone != null);
-        // Rooms built for an event take their places under the caps first; the rest roll for what is left.
-        if (!Authored)
-            for (int i = 0; i < n; i++)
-            {
-                var t = templates[i];
-                if (t == null || Special(i) || Roles[i] != RoomRole.Combat) continue;
-                if (t.roomEvent == DungeonRoomEvent.Ambush && f.ambushes && data.ambushGatePrefab != null && AmbushLeft()) { roomEvents[i] = RoomEvent.Ambush; ambushes++; }
-                else if (t.roomEvent == DungeonRoomEvent.SleepingPack && f.sleepingPacks && SleepLeft()) { roomEvents[i] = RoomEvent.SleepingPack; sleepers++; }
-            }
+        // Rooms built for an event take their places under the caps first; the rest roll for what is left. An authored
+        // map's rooms get their template's own event (the author put it there) and nothing rolled.
+        for (int i = 0; i < n; i++)
+        {
+            var t = templates[i];
+            if (t == null || Special(i) || Roles[i] != RoomRole.Combat) continue;
+            if (t.roomEvent == DungeonRoomEvent.Ambush && f.ambushes && data.ambushGatePrefab != null && AmbushLeft()) { roomEvents[i] = RoomEvent.Ambush; ambushes++; }
+            else if (t.roomEvent == DungeonRoomEvent.SleepingPack && f.sleepingPacks && SleepLeft()) { roomEvents[i] = RoomEvent.SleepingPack; sleepers++; }
+        }
         for (int i = 0; i < n; i++)
         {
             // Four draws per room whatever is used, so one switch never moves another room's rolls.

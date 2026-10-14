@@ -31,7 +31,9 @@ public partial class IntroController
         if (finaleRoom >= 0 && !Coop.IsGuest) StartCoroutine(WatchFinaleRoom());
         foreach (var step in steps)
         {
-            if (step == null || Met(step)) continue;
+            if (step == null) continue;
+            // Done before it was given: skipped, but a follow-up with no line of its own still gets its remark.
+            if (Met(step)) { if (string.IsNullOrEmpty(step.line?.text)) yield return SayDone(step); continue; }
             while (step.room >= 0 && PlayerRoom() != step.room)
             {
                 if (!PracticeRunning || !table.IsAlive) yield break;
@@ -52,10 +54,15 @@ public partial class IntroController
                 if (step.goal == TutorialGoal.Wait && Time.time - started >= step.amount) break;
                 yield return null;
             }
-            if (Met(step) && step.doneLine != null) yield return SayAll(new[] { step.doneLine });
+            if (Met(step)) yield return SayDone(step);
         }
         if (Coop.IsGuest) yield break;
         yield return Finale();
+    }
+
+    IEnumerator SayDone(TutorialStep step)
+    {
+        if (step.doneLine != null && !string.IsNullOrEmpty(step.doneLine.text)) yield return SayAll(new[] { step.doneLine });
     }
 
     bool finale, fromStairs;

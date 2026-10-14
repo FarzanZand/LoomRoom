@@ -5,10 +5,12 @@ using System;
 // Which weapon skill a weapon trains and scales with (see AdventureSkills.ForWeapon).
 public enum WeaponCategory { Sword = 0, Mace = 1 }
 
+// How a consumable is used: at once, or eaten or drunk in the right hand with the arm's clip (ConsumableUse).
 public enum ItemUseAnimation
 {
-    Idle = 0,
+    Instant = 0,
     Eat = 1,
+    Drink = 2,
 }
 
 public enum ItemAudioSource

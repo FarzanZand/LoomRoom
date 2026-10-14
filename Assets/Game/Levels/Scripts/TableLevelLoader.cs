@@ -79,7 +79,7 @@ public class TableLevelLoader : MonoBehaviour
                 }
             }
         }
-        tableBounds=GetComponent<BoxCollider>().bounds;
+        tableBounds=TableBox;
         tableBounds.Expand(new Vector3(0,70,0));
         foreach(var c in FindObjectsByType<Character>(FindObjectsInactive.Include))
             if(!(c is Player) && tableBounds.Contains(c.transform.position)) townObjects.TryAdd(c.gameObject,c.gameObject.activeSelf);
@@ -274,6 +274,8 @@ public class TableLevelLoader : MonoBehaviour
             else yield return current;
         }
     }
+    // The table's whole box: its collider is swapped for a cut one while a floor's pits go into it (TableCut).
+    Bounds TableBox=>GetComponent<TableCut>() is { } cut && cut.Bounds.size!=Vector3.zero ? cut.Bounds : GetComponent<BoxCollider>().bounds;
     void Prepare(TableLevelData level, bool deferPlayerSwitch = false)
     {
         var previousEnvironment=environment;
@@ -283,7 +285,7 @@ public class TableLevelLoader : MonoBehaviour
         Vector3 spawn=townPosition;Quaternion rotation=townRotation;
         try {
             if(level.IsDungeon) {
-                var bounds=GetComponent<BoxCollider>().bounds;
+                var bounds=TableBox;
                 if(level.cellSize<=0 || level.width*level.cellSize>bounds.size.x-2 || level.depth*level.cellSize>bounds.size.z-2)
                     throw new InvalidOperationException("Dungeon dimensions exceed the table. Reduce dimensions on the level asset.");
                 // Hide and unregister the old surface while keeping it intact for rollback.

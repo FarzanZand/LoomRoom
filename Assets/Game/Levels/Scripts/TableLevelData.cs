@@ -281,8 +281,6 @@ public class TableLevelData : ScriptableObject
     public DungeonWeightedPrefab[] chestTiers = new DungeonWeightedPrefab[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("Hand-built rooms use the kit's painted models (pillars, arches, rubble, railings) where a piece has one. Off: every kit piece is built of plain blocks in the room's own stone.")]
     public bool kitModels = true;
-    [TabGroup(Tabs, Rooms), ShowIf(D), Min(0f), Tooltip("Metres of solid stone under a walled dungeon's floor: the floor stands this far above the table, and pits and sunken courts are cut into it (deeper than this they would show the table). 0 lays the floor straight on the table. Board levels ignore it.")]
-    public float floorBase = 4.5f;
     [TabGroup(Tabs, Rooms), ShowIf(D), Title("Room features", "Room events, heights and room light on every floor. A biome can replace them (its Rooms tab: Override Dungeon Settings).", HorizontalLine = false), InlineProperty, HideLabel]
     public DungeonRoomFeatures roomFeatures = new();
     [TabGroup(Tabs, Rooms), ShowIf(D), Title("Room event pieces", HorizontalLine = false), AssetsOnly, Tooltip("The shrine set in quiet rooms (DungeonShrine).")]

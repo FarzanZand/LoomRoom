@@ -39,7 +39,8 @@ public class RoomEventTest : MonoBehaviour
     {
         Running = true; log.Clear();
         System.IO.Directory.CreateDirectory(Folder);
-        gen = FindAnyObjectByType<DungeonGenerator>();
+        // The floor being played: another generator can be in the scene without a built floor.
+        foreach (var g in FindObjectsByType<DungeonGenerator>()) if (g.LevelData != null && g.isActiveAndEnabled) { gen = g; break; }
         player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         if (gen == null || player == null) { Line("no dungeon or no table player"); Finish(); yield break; }
         player.Stats.AddModifier(new StatModifier(StatType.MaxHealth, 5000, ModifierType.Flat, this));
