@@ -113,6 +113,9 @@ public enum CoopEventKind : byte
     EnemyHealth = 14,   // catching a player up: a wounded enemy's health now (amount = health x 100)
     EnemySpell = 15,    // an enemy cast: amount = its spell (EnemyData.spells), position = the hand or the ground spot, direction = a projectile's
     AmbushOpened = 16,  // an ambush whose room the party left (all dead or outside): the gates lift, the fight goes on
+    BossStageOpened = 17, // the stage fight began (position = who stepped up)
+    BossBeam = 18,      // the Dungeon Master's beam (target = at whom)
+    BossVolley = 19,    // the Dungeon Master's fireball volley (target = at whom, amount = its event in the fight)
 }
 
 public struct CoopEvent : INetworkSerializable
@@ -124,11 +127,12 @@ public struct CoopEvent : INetworkSerializable
     public int amount;
     public Vector3 position, direction;
     public FixedString64Bytes item;
+    public byte target;           // a player aimed at (Coop.NoSlot: none)
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref kind); s.SerializeValue(ref slot); s.SerializeValue(ref floorKey); s.SerializeValue(ref id);
-        s.SerializeValue(ref amount); s.SerializeValue(ref position); s.SerializeValue(ref direction); s.SerializeValue(ref item);
+        s.SerializeValue(ref amount); s.SerializeValue(ref position); s.SerializeValue(ref direction); s.SerializeValue(ref item); s.SerializeValue(ref target);
     }
 }
 

@@ -9,7 +9,7 @@ using UnityEngine.AI;
 // a moment it attacks. During the fight the DM fires his beam and does whatever else the fight's events ask (by
 // seconds, beats of the music or the boss's health) and he only talks about the fight. When the boss falls the stair
 // opens, the way on appears on the stage and the DM straightens up again.
-public class BossStageEncounter : MonoBehaviour
+public partial class BossStageEncounter : MonoBehaviour
 {
     DungeonGenerator dungeon;
     DungeonMilestone milestone;
@@ -51,6 +51,8 @@ public class BossStageEncounter : MonoBehaviour
     void Update()
     {
         if (finished || dungeon == null || dungeon.Stage == null) return;
+        // Co-op: the host runs the fight for the whole party (BossStageEncounter.Coop.cs).
+        if (Coop.Running) { CoopUpdate(); return; }
         if (!PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind != PlayerKind.Table) return;
         var player = PlayerManager.Instance.Active;
         if (!started)
@@ -67,7 +69,7 @@ public class BossStageEncounter : MonoBehaviour
 
     // ── Opening ───────────────────────────────────────────────────────
 
-    IEnumerator Open(Player player)
+    IEnumerator Open(Character player)
     {
         started = true; Current = this;
         DungeonMasterRemarks.Hold = true;
@@ -93,7 +95,9 @@ public class BossStageEncounter : MonoBehaviour
         if (hand != null) hand.Watch(spot, true);
         yield return new WaitForSeconds(fight != null ? fight.reachDelay : 1f);
 
-        boss = dungeon.SpawnStageBoss(spot, Quaternion.LookRotation(Flat(player.transform.position - spot)));
+        // Co-op guests: the host's boss comes as one of its enemies; the hand only shows setting it down.
+        if (Coop.IsGuest) { yield return TakeHostBoss(spot); yield break; }
+        boss = dungeon.SpawnStageBoss(spot, Quaternion.LookRotation(Flat((player != null ? player.transform.position : spot - Vector3.forward) - spot)));
         if (boss == null) { Debug.LogWarning("Boss stage: the boss could not be placed.", this); Finish(true); yield break; }
         brain = boss.GetComponent<EnemyBrain>();
         if (brain != null) brain.Wary = true;
@@ -106,7 +110,7 @@ public class BossStageEncounter : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.introMessage.Trim(), MessageKind.Warning);
         if (fight != null) Say(fight.fightLine, true);
         if (brain != null) { brain.enabled = true; brain.Alert(); }
-        if (hand != null) hand.Watch(player.transform.position, false);
+        if (hand != null && player != null) hand.Watch(player.transform.position, false);
         fightStart = Time.time;
     }
 
@@ -152,7 +156,7 @@ public class BossStageEncounter : MonoBehaviour
 
     // ── During the fight ──────────────────────────────────────────────
 
-    void RunEvents(Player player)
+    void RunEvents(Character player)
     {
         if (fight == null || boss == null) return;
         float t = FightTime, beat = Beat, health = boss.Stats != null ? boss.Stats.CurrentHealth / Mathf.Max(1f, boss.Stats.MaxHealth) : 1f;
@@ -187,18 +191,19 @@ public class BossStageEncounter : MonoBehaviour
         if (e != null && Fighting) Do(e, PlayerManager.Instance.Active);
     }
 
-    void Do(BossEvent e, Player player)
+    void Do(BossEvent e, Character player)
     {
         switch (e.what)
         {
-            case BossEvent.What.Beam: if (beamRun == null && beam != null && player != null) beamRun = StartCoroutine(Beam(player)); break;
+            // Co-op: the host picks a player at random for each beam and volley (CoopAttack).
+            case BossEvent.What.Beam: if (Coop.Running) { CoopAttack(e, true); break; } if (beamRun == null && beam != null && player is Player p) beamRun = StartCoroutine(Beam(p)); break;
             case BossEvent.What.Say: Say(e.line, true); break;
             case BossEvent.What.Music:
                 if (e.music != null && AudioManager.HasInstance) { AudioManager.Instance.CrossfadeMusic(e.music, true, fight.musicFade, e.volume); musicStart = Time.time; }
                 break;
-            case BossEvent.What.Spawn: if (e.enemy != null) StartCoroutine(SpawnAdds(e.enemy, e.count)); break;
+            case BossEvent.What.Spawn: if (e.enemy != null && !Coop.IsGuest) StartCoroutine(SpawnAdds(e.enemy, e.count)); break;
             case BossEvent.What.Shake: Shake(.5f * e.shake); break;
-            case BossEvent.What.Volley: if (player != null && e.spell != null) StartCoroutine(Volley(e, player)); break;
+            case BossEvent.What.Volley: if (Coop.Running) { CoopAttack(e, false); break; } if (player != null && e.spell != null) StartCoroutine(Volley(e, player)); break;
         }
     }
 
@@ -224,7 +229,7 @@ public class BossStageEncounter : MonoBehaviour
 
     // The boss during the beam: back to a few metres from the player, facing them, no attacks (a swing already under
     // way finishes first: EnemyBrain only asks while it isn't swinging).
-    bool GiveWay(Player player)
+    bool GiveWay(Character player)
     {
         if (boss == null || !boss.IsAlive || brain == null || player == null) return false;
         var away = boss.transform.position - player.transform.position; away.y = 0;
@@ -241,7 +246,8 @@ public class BossStageEncounter : MonoBehaviour
 
     // His fireball volley: from his left hand, raised toward the player while the balls appear and hang.
     readonly List<FireballVolley> volleys = new();
-    IEnumerator Volley(BossEvent e, Player player)
+    // real off: a teammate's volley as the others see it (no damage here; theirs hurts on their own machine).
+    IEnumerator Volley(BossEvent e, Character player, bool real = true)
     {
         while (beamRun != null) yield return null;
         bool done = false;
@@ -252,7 +258,7 @@ public class BossStageEncounter : MonoBehaviour
         System.Func<Vector3> palm = () => hand != null && hand.LeftHand != null ? hand.LeftHand.position : dungeon.StageCentre + Vector3.up * 4f;
         var eye = player.transform.position + Vector3.up * 1.6f;
         var row = eye + Flat(palm() - eye) * fight.volleyDistance + Vector3.up * .4f;
-        var v = FireballVolley.Cast(e.spell, null, palm, player, e.damage, e.volley, player, "the Dungeon Master", () => done = true, row);
+        var v = FireballVolley.Cast(e.spell, null, palm, player, real ? e.damage : 0f, e.volley, player, "the Dungeon Master", () => done = true, row);
         if (v != null) volleys.Add(v);
         float raised = e.volley.count * e.volley.spawnInterval + e.volley.riseSeconds;
         for (float t = 0; t < raised && !done && Fighting; t += Time.deltaTime) { if (hand != null) hand.Aim(player.transform.position + Vector3.up); yield return null; }

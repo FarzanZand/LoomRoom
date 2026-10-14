@@ -9,7 +9,7 @@ using UnityEngine;
 // shares of the screen, so the stream looks as thick next to the player as at his hand. Holding it off takes the shield
 // up, facing him, the whole time; any moment the player isn't blocking, it burns. On the DM (next to DungeonMasterHand,
 // which raises his palm). Textures: Tools/dm_beam_texture.py.
-public class DungeonMasterBeam : MonoBehaviour
+public partial class DungeonMasterBeam : MonoBehaviour
 {
     [Header("Art (Spells Pack)")]
     [Tooltip("The flowing body (DM beam body: Spell 5's wisps).")] public Material bodyMaterial;
@@ -143,7 +143,7 @@ public class DungeonMasterBeam : MonoBehaviour
     public IEnumerator Fire(Player target, BossFight fight, System.Action<bool> result)
     {
         if (Firing || target == null || fight == null) yield break;
-        Firing = true; cancelled = false;
+        Firing = true; cancelled = false; widthScale = 1f;
         bool held = true;
         view = target.CameraRig != null ? target.CameraRig.Camera : null;
         if (AudioManager.HasInstance && AudioManager.Instance.SfxGroup != null) sound.outputAudioMixerGroup = AudioManager.Instance.SfxGroup;
@@ -362,7 +362,7 @@ public class DungeonMasterBeam : MonoBehaviour
             float depth = cam != null ? Mathf.Max(.05f, Vector3.Dot(p - cam.position, cam.forward)) : 10f;
             // Out of his palm it starts narrow (the glow there covers it), and it swells where it meets the player.
             float shape = Mathf.Lerp(.45f, 1f, Mathf.Clamp01(u / .08f)) * Mathf.Lerp(1f, endSwell, Mathf.SmoothStep(0, 1, (u - .75f) / .25f));
-            widthKeys[i] = new Keyframe(u, ScreenToWorld(width, depth) * shape);
+            widthKeys[i] = new Keyframe(u, ScreenToWorld(width, depth) * shape * widthScale);
         }
         line.SetPositions(path);
         line.widthMultiplier = 1f;

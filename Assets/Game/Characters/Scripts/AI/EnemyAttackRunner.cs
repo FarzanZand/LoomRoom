@@ -172,9 +172,14 @@ public class EnemyAttackRunner
                 if (Attacks[i] != null && Attacks[i] != attack && Attacks[i].IsSpell) cooldowns[i] = Mathf.Max(cooldowns[i], brain.Data.spellGap);
     }
 
+    // Co-op: whom this cast is aimed at when it isn't the brain's own target (null: the brain's target).
+    Character spellTarget;
+    Character SpellAim(Character fallback) => spellTarget != null && spellTarget.IsAlive ? spellTarget : fallback;
+
     public void StartAttack(EnemyAttack attack)
     {
         current = attack;
+        spellTarget = null;
         attackStartedAt = Time.time;
         currentUninterruptible = nextUninterruptible;
         nextUninterruptible = false;
@@ -208,6 +213,8 @@ public class EnemyAttackRunner
         if (attack.IsSpell)
         {
             var cast = attack.spellCast;
+            // Co-op: the spell goes at any player in sight and range, at random (CoopWorld.SpellTarget).
+            spellTarget = CoopWorld.SpellTarget(Character, Perception.Target, cast.maxRange);
             fallbackHitPending = true;
             fallbackHitAt = Time.time + Mathf.Max(cast.releaseTime, MinWindup);
             var hand = Hand();
@@ -244,7 +251,7 @@ public class EnemyAttackRunner
         float sinceStart = Time.time - attackStartedAt;
         if (current.IsRanged)
         {
-            if (fallbackHitPending) Motor.LookAt(target.transform.position, current.IsBowShot ? current.bowShot.aimTrackSpeed : current.spellCast.aimTrackSpeed);
+            if (fallbackHitPending) Motor.LookAt((current.IsSpell ? SpellAim(target) : target).transform.position, current.IsBowShot ? current.bowShot.aimTrackSpeed : current.spellCast.aimTrackSpeed);
             else CommitDirection();
         }
         else if (!directionCommitted && sinceStart < CommitTime && brain.Profile.windupTrackSpeed > 0f)
@@ -443,7 +450,7 @@ public class EnemyAttackRunner
         var cast = current.spellCast;
         var spell = cast.spell;
         DropHandSpell();
-        var target = Perception.Target;
+        var target = SpellAim(Perception.Target);
         if (!SwingLive || target == null || !target.IsAlive || spell == null) return;
         CommitDirection();
 
@@ -469,6 +476,7 @@ public class EnemyAttackRunner
         {
             var from = hand; var body = brain.transform;
             FireballVolley.Cast(spell, Character, () => from != null ? from.position : body.position + Vector3.up * 1.8f, target, damage, cast.volleySettings);
+            CoopWorld.EnemyCast(Character, cast, origin, Vector3.zero, target);
             return;
         }
         Vector3 aim = AimPoint(target);

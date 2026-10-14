@@ -525,12 +525,38 @@ public static class CoopWorld
 
     // Host: an archer's arrow; guests loose a harmless copy along the same line (the host's hits it).
     // Host: an enemy's spell, so everyone sees it fly or land (the host's copy does the damage).
-    public static void EnemyCast(Character enemy, EnemySpell cast, Vector3 position, Vector3 direction)
+    public static void EnemyCast(Character enemy, EnemySpell cast, Vector3 position, Vector3 direction, Character target = null)
     {
         if (!Coop.Running || !Coop.IsHost || !TryEnemyId(enemy, out var id) || !(enemy.data is EnemyData data)) return;
         int index = data.spells.IndexOf(cast);
         if (index < 0) return;
-        Send(new CoopEvent { kind = CoopEventKind.EnemySpell, id = id, amount = index, position = position, direction = direction });
+        Send(new CoopEvent { kind = CoopEventKind.EnemySpell, id = id, amount = index, position = position, direction = direction, target = (byte)SlotOf(target) });
+    }
+
+    // Host: whom a caster's spell goes at, picked when the cast begins: any player it can see within the spell's
+    // range, at random (melee keeps to the nearest, ChooseTarget), so the host isn't always the one. Null: no one else
+    // qualifies, the current target stays.
+    public static Character SpellTarget(Character caster, Character current, float range)
+    {
+        if (!Coop.Running || !Coop.IsHost || caster == null) return null;
+        var from = caster.transform.position + Vector3.up * 1.5f;
+        var choices = new List<Character>();
+        foreach (var c in Party())
+        {
+            if (!FactionRules.IsHostile(caster.Faction, c.Faction)) continue;
+            var to = c.transform.position + Vector3.up * 1.2f;
+            if ((to - from).sqrMagnitude > range * range * 1.21f) continue;
+            if (!LineOfSight.Clear(from, to, ~0, caster.transform, c.transform, .1f)) continue;
+            choices.Add(c);
+        }
+        return choices.Count > 0 ? choices[Random.Range(0, choices.Count)] : null;
+    }
+
+    // Host: the stage fight's moments for the guests (BossStageEncounter).
+    public static void BossStage(CoopEventKind kind, int target, int index, Vector3 position)
+    {
+        if (!Coop.Running || !Coop.IsHost) return;
+        Send(new CoopEvent { kind = kind, target = (byte)Mathf.Clamp(target, 0, 255), amount = index, position = position });
     }
 
     public static void ArrowLoosed(Character enemy, Vector3 origin, Vector3 direction)
@@ -560,7 +586,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: return;
+            case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: return;
         }
         history.Add(e);
     }
@@ -698,6 +724,12 @@ public static class CoopWorld
             case CoopEventKind.AmbushCleared:
                 if (e.id >= 0 && e.id < ambushes.Count && ambushes[e.id] != null) ambushes[e.id].ClearedOnHost();
                 break;
+            case CoopEventKind.BossStageOpened: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley:
+            {
+                var stage = Object.FindAnyObjectByType<BossStageEncounter>();
+                if (stage != null) stage.FromHost(e.kind, e.target, e.amount, e.position);
+                break;
+            }
             case CoopEventKind.AmbushOpened:
                 if (e.id >= 0 && e.id < ambushes.Count && ambushes[e.id] != null) ambushes[e.id].OpenedOnHost();
                 break;
@@ -721,6 +753,14 @@ public static class CoopWorld
                 if (CoopPlayer.CoopTiming) Debug.Log($"[Coop] enemy {e.id} cast {spell.name}");
                 if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.releaseSound, e.position, spell.releaseVolume);
                 if (spell.groundArea) GroundAreaSpell.Cast(enemy, spell, 0f, e.position, null);
+                else if (cast.volley)
+                {
+                    // At the same player as on the host (here the balls only show; the host's hurt).
+                    var at = CharacterOf(e.target);
+                    var body = enemy.transform;
+                    var hand = enemy.Animator != null && enemy.Animator.isHuman ? enemy.Animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
+                    if (at != null) FireballVolley.Cast(spell, enemy, () => hand != null ? hand.position : body.position + Vector3.up * 1.8f, at, 0f, cast.volleySettings);
+                }
                 else if (spell.projectile != null && e.direction.sqrMagnitude > .0001f)
                     Object.Instantiate(spell.projectile, e.position, Quaternion.LookRotation(e.direction)).Launch(enemy, spell, 0f, null);
                 break;
