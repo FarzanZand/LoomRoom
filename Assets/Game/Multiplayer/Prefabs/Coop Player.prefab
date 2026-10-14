@@ -177,6 +177,7 @@ MonoBehaviour:
   nameLabel: {fileID: 5245810890675926840}
   body: {fileID: 1040031726843058184}
   labelHeight: 2.15
+  labelFullSize: 4
 --- !u!114 &1966322032610912200
 MonoBehaviour:
   m_ObjectHideFlags: 0

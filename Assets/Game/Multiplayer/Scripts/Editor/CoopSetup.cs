@@ -224,7 +224,9 @@ public static class CoopSetup
         var go = existing != null ? PrefabUtility.LoadPrefabContents(ManagerPrefabPath) : new GameObject("Multiplayer Manager");
         var manager = go.GetComponent<MultiplayerManager>();
         if (manager == null) manager = go.AddComponent<MultiplayerManager>();
-        manager.bodyController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Game/Characters/Animations/HumanoidController.controller");
+        // The teammates' own controller (Build Body Animations); the enemies' humanoid one only until that exists.
+        manager.bodyController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Game/Multiplayer/Animations/Coop Body.controller")
+            ?? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Game/Characters/Animations/HumanoidController.controller");
         manager.weaponGrip = FirstPersonGrip(WeaponGripPath, "RightHand_Socket");
         manager.shieldGrip = shieldGrip;
         if (roomBody != null && (manager.roomBodies == null || manager.roomBodies.All(b => b == null))) manager.roomBodies = new[] { roomBody };
