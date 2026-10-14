@@ -23,14 +23,21 @@ public static class DeathPhysics
         return (away + swing * .7f).normalized;
     }
 
+    // Every collider of a dead body. Interaction sight looks through them: an item lying by or
+    // under a corpse can still be picked up.
+    static readonly HashSet<Collider> corpsePieces = new();
+    public static bool IsCorpse(Collider c) => c != null && corpsePieces.Contains(c);
+
     public static void IgnorePlayers(List<Rigidbody> bodies)
     {
-        if (!PlayerManager.HasInstance) return;
         var pieces = new List<Collider>();
         foreach (var rb in bodies)
             if (rb != null)
                 foreach (var c in rb.GetComponents<Collider>())
                     if (c.enabled) pieces.Add(c);
+        corpsePieces.RemoveWhere(c => c == null);
+        corpsePieces.UnionWith(pieces);
+        if (!PlayerManager.HasInstance) return;
         foreach (var context in PlayerManager.Instance.players)
         {
             if (context == null || context.player == null) continue;

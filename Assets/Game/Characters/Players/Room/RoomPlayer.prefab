@@ -1457,8 +1457,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   knockbackDecay: 12
-  slopeHandler: {fileID: 0}
-  steepSlopeSlideModule: {fileID: 0}
 --- !u!114 &3986730878308701912
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1500,7 +1498,6 @@ MonoBehaviour:
   sprintInterval: 0.4
   crouchInterval: 0.7
   velocityThreshold: 0.1
-  swimmingIntervalFactor: 2
   pitchVariance: 0.05
   effects:
   - {fileID: 11400000, guid: e52fc476a96a64347b1994b9edd30de2, type: 2}
@@ -1513,7 +1510,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 65cc06fb6c4ac5d41befc214e044bf08, type: 2}
   - {fileID: 11400000, guid: 0334afb7368aee74bb3901a2f4126c4c, type: 2}
   genericEffect: {fileID: 11400000, guid: 63745dffb1aa68f488da13f9a35cdf28, type: 2}
-  waterEffect: {fileID: 11400000, guid: 6e69107bacefd8e4a96ccb4ff6200128, type: 2}
   jumpStartSounds:
   - {fileID: 8300000, guid: 20aba752ed74ae74d9b2996e8b98648a, type: 3}
   - {fileID: 8300000, guid: f5941d5fe22e31047a421265f0d583c1, type: 3}
@@ -1544,6 +1540,7 @@ MonoBehaviour:
   role: 0
   slotCount: 24
   allowedTypes: -1
+  gridWidth: 0
 --- !u!114 &186422536491478029
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1559,6 +1556,7 @@ MonoBehaviour:
   role: 1
   slotCount: 6
   allowedTypes: 30
+  gridWidth: 0
 --- !u!114 &4994854953764912045
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3260,6 +3258,7 @@ MonoBehaviour:
     m_Bits: 127
   nearClip: 0.1
   farClip: 5000
+  viewModelFieldOfView: 70
 --- !u!1 &8157182026811776937
 GameObject:
   m_ObjectHideFlags: 0
@@ -3573,16 +3572,23 @@ MonoBehaviour:
     walkStepInterval: 0.55
     runStepInterval: 0.34
     painCooldown: 0.6
+  gore:
+    kind: 1
+    color: {r: 0.72, g: 0.05, b: 0.04, a: 1}
+    amount: 1
+    burstOnDeath: 0
+    killSound: {fileID: 0}
   hurtTrigger: 
   deathTrigger: 
   deathDisableDelay: 0
   walkSpeed: 35
+  canSprint: 1
   sprintSpeed: 60
   crouchSpeed: 1
+  backwardSpeed: 0.5
   jumpForce: 12
   gravityMultiplier: 2.5
   sprintStaminaPerSecond: 0
-  jumpStaminaCost: 0
   staminaRegenDelay: 0.6
   sprintRecoveryFraction: 0.25
   startingItems: []

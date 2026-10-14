@@ -92,6 +92,8 @@ public sealed partial class LightingManager
         float edge = lightRadiusEdge, floor = lightRadiusFloor;
         DungeonRoomMood.Tick(centre, Time.deltaTime);
         DungeonRoomMood.LightRadius(ref radius, ref edge, ref floor);
+        // Never past the level's minimum ambient, even beyond the radius or in a dark room.
+        if (displayedMood.minAmbient > 0f && ambientPeak > .0001f) floor = Mathf.Max(floor, Mathf.Clamp01(displayedMood.minAmbient / ambientPeak));
         Shader.SetGlobalVector(LightRadiusId, new Vector4(centre.x, centre.y, centre.z, radius));
         // Partway into the darkness (a mood blending in) the floor rises towards full ambient.
         Shader.SetGlobalVector(LightRadiusEdgeId, new Vector4(edge, Mathf.Lerp(1f, floor, dark), 0f, 0f));

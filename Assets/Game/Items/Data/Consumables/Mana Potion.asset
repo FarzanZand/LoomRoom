@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 69474728574cd6447a0600711d3e224b
   weaponCategory: 0
   spell: {fileID: 0}
+  rarity: 0
   description: 
   icon: {fileID: 21300000, guid: 86a811fc670c4b04a9b09fc03ba31c50, type: 3}
   iconSource:
@@ -25,7 +26,7 @@ MonoBehaviour:
     turn: {x: 0, y: 0, z: 0}
     flip: 0
   tag: 
-  worldPrefab: {fileID: 6950012130812383543, guid: 1b21afa5057efec41abda064a8e59cb7, type: 3}
+  worldPrefab: {fileID: 7056362016547639520, guid: 01ce011f58ef0b3408f9f7231635d313, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 4
   maxStackSize: 5

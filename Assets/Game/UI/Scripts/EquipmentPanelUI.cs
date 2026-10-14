@@ -14,7 +14,7 @@ public class EquipmentPanelUI : MonoBehaviour
     public void Refresh(){foreach(var slot in slots)if(slot!=null)slot.Refresh();shownKey=null;Update();}
     // Every number the labels show, rounded as shown; the strings are rebuilt only when one changes.
     long[] shownKey;
-    readonly long[] key=new long[18+AdventureSkills.Count];
+    readonly long[] key=new long[18+AdventureSkills.Count*2];
     bool Same(){if(shownKey==null)return false;for(int i=0;i<key.Length;i++)if(shownKey[i]!=key[i])return false;return true;}
     static long Tenths(float v)=>(long)System.Math.Round(v*10,System.MidpointRounding.AwayFromZero);
     void Update(){
@@ -25,7 +25,7 @@ public class EquipmentPanelUI : MonoBehaviour
         key[7]=Tenths(s.ArmorWithoutShield);key[8]=Tenths(s.BlockArmor);key[9]=Tenths(s.FoodRemaining);key[10]=Tenths(s.FoodHealingPerSecond);
         for(int i=0;i<Attributes.Length;i++)key[11+i]=Tenths(s.GetFinal(Attributes[i].stat));
         var progress=player.GetComponent<AdventurerProgress>();key[17]=progress!=null?progress.Level:0;
-        for(int i=0;i<AdventureSkills.Count;i++)key[18+i]=progress!=null?progress.Ranks[i]:0;
+        for(int i=0;i<AdventureSkills.Count;i++){key[18+i]=progress!=null?progress.Ranks[i]:0;key[18+AdventureSkills.Count+i]=progress!=null?(long)(progress.SkillProgress((AdventureSkill)i)*200):0;}
         if(Same())return;
         shownKey??=new long[key.Length];System.Array.Copy(key,shownKey,key.Length);
         if(health!=null)health.text=$"HEALTH  {Mathf.CeilToInt(s.CurrentHealth)} / {s.MaxHealth:0}";

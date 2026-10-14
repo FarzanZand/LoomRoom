@@ -34,7 +34,6 @@ public class PlayerLook : MonoBehaviour
     public float Pitch => pitch;
 
     Player  player;
-    Vector2 smoothedLook;
     float   pitch;
     Vector3 cameraHeight;
 
@@ -52,23 +51,20 @@ public class PlayerLook : MonoBehaviour
 
         // ── Look input ──
         float sensitivity = (settings != null ? settings.mouseSensitivity : 1f) * UserSettings.MouseSensitivity / 5f;
-        float smoothing   = settings != null ? settings.mouseSmoothing : 20f;
 
         // The lock check is read only: it also catches the Editor's Esc and a lost window focus,
         // which unlock the cursor without GameManager knowing.
         bool canLook = Cursor.lockState == CursorLockMode.Locked && input != null &&
             (!GameManager.HasInstance || GameManager.Instance.GameplayActive);
         Vector2 raw = canLook ? input.Look : Vector2.zero;
-        if (!canLook) ResetInput();
         if (settings != null && settings.invertLook) raw.y = -raw.y;
 
-        Vector2 target = raw * sensitivity;
-        float lookT = 1f - Mathf.Exp(-smoothing * Time.deltaTime);
-        smoothedLook = Vector2.Lerp(smoothedLook, target, lookT);
+        // Applied as is: the view turns with the mouse, no smoothing.
+        Vector2 look = raw * sensitivity;
 
         // ── Rotation ──
-        float yaw = YawTransform.eulerAngles.y + smoothedLook.x;
-        pitch = Mathf.Clamp(pitch + smoothedLook.y, minClamp, maxClamp);
+        float yaw = YawTransform.eulerAngles.y + look.x;
+        pitch = Mathf.Clamp(pitch + look.y, minClamp, maxClamp);
 
         // ── Lean ──
         bool leanEnabled = settings == null || settings.enableLean;
@@ -92,13 +88,9 @@ public class PlayerLook : MonoBehaviour
         if (lateralTorso != null) lateralTorso.localPosition = cameraHeight;
     }
 
-    // Drop the smoothed mouse motion so the view stops dead.
-    public void ResetInput() => smoothedLook = Vector2.zero;
-
     // Snap the view to a world yaw (cutscenes, teleports).
     public void SetYaw(float worldYaw)
     {
-        ResetInput();
         if (lateralTorso != null) lateralTorso.rotation = Quaternion.Euler(0f, worldYaw, 0f);
         if (verticalNeck != null) verticalNeck.rotation = Quaternion.Euler(-pitch, worldYaw, 0f);
     }
@@ -106,7 +98,7 @@ public class PlayerLook : MonoBehaviour
     // Tilt the view (positive looks up), clamped like mouse look. Applied on the next Update.
     public void SetPitch(float degrees) => pitch = Mathf.Clamp(degrees, minClamp, maxClamp);
 
-    // Turns the view about world up, keeping pitch, lean and look smoothing (seamless teleports).
+    // Turns the view about world up, keeping pitch and lean (seamless teleports).
     public void RotateYaw(float degrees)
     {
         float yaw = YawTransform.eulerAngles.y + degrees;

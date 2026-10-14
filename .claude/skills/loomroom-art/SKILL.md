@@ -189,7 +189,9 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
 - Bake at `RoomTexelsPerUnit` (6.4 = 128 per real metre). The bookcase's contents (books, cake, flamingo) are separate
   props: build the case without them (`MakeRoomHolder(..., alone: true)`), or the painter paints them onto the shelf.
 - A rebuild creates new mesh assets and the scene's references to the old ones go missing (the bed vanished): after
-  every build re-apply the holders to the scene and scan the scene for renderers with no mesh.
+  every build re-apply the holders to the scene and scan the scene for renderers with no mesh. Re-apply must find
+  broken copies through their Synty source (`ApplyRoomHolder` does): a copy whose mesh is already missing has no name
+  to match, and 47 props were left invisible that way.
 - Lights belong under their prop (lamp, lantern, pendant), so moving the prop moves the light.
 - Lamp glow (emission) is masked by the shade's geometry, never by bright texels (that made the pole glow).
 - Moving parts (clock hands) stay separate objects with their own plain material; the dial is drawn by hand, marks on

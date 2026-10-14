@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: PlayerSettings
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSettings
   mouseSensitivity: 1
-  mouseSmoothing: 20
   invertLook: 0
   enableLean: 1
   holdToCrouch: 0

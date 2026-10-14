@@ -304,8 +304,8 @@ public class ItemData : ScriptableObject
         // Against the item it would replace (Equipment.SlotFor: a trinket goes to a free trinket slot first, so
         // with one free there is nothing to compare): every flat stat either item has.
         var gear = canBeEquipped && !IsConsumable && PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
-        var equipped = gear != null && !gear.IsEquipped(this) ? gear.Get(gear.SlotFor(this)) : null;
-        if (equipped != null && equipped != this)
+        var equipped = Replaces();
+        if (equipped != null)
         {
             var stats = new System.Collections.Generic.List<StatType>();
             foreach (var data in new[] { this, equipped })
@@ -327,6 +327,15 @@ public class ItemData : ScriptableObject
         if (!string.IsNullOrWhiteSpace(description)) { lines.Add($"<color={FlavourColor}><i>{description.Trim()}</i></color>"); Add(blocks, lines); }
         if (value > 0 && itemType != ItemType.Key) { lines.Add($"<color={DimColor}>Worth {value} gold</color>"); Add(blocks, lines); }
         return string.Join("\n\n", blocks);
+    }
+
+    // What the active player has in the slot this would go in (Equipment.SlotFor), or null: nothing there,
+    // this item itself, or not gear. The tooltip compares against it.
+    public ItemData Replaces()
+    {
+        var gear = canBeEquipped && !IsConsumable && PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
+        var equipped = gear != null && !gear.IsEquipped(this) ? gear.Get(gear.SlotFor(this)) : null;
+        return equipped != this ? equipped : null;
     }
 
     // How fast a weapon swings, from its AttackSpeed bonus.

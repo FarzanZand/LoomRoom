@@ -126,7 +126,7 @@ MonoBehaviour:
     trappedTreasure: 1
     trapChance: 0.3
     spikeDamage: 0.2
-    sleepingPacks: 1
+    sleepingPacks: 0
     sleepChance: 0.2
     maxSleepingPacks: 3
     pits: 1
@@ -140,6 +140,7 @@ MonoBehaviour:
     eerieRooms: 1
     eerieChance: 0.06
   lightRadius: 0
+  filmicLook: 1
   shadowTint: {r: 0.55, g: 0.85, b: 1, a: 1}
   lampTint: {r: 1.06, g: 0.97, b: 0.86, a: 1}
   lightingSettings:
@@ -202,7 +203,11 @@ MonoBehaviour:
     sealExit: 1
     bossLoot: {fileID: 11400000, guid: eb289ad8ef9ee0a4b8687b34b29e45f7, type: 2}
     bonusGold: 30
+    rewardChest: 1
+    chestPrefab: {fileID: 0}
+    chestItems: []
     arenaSizeScale: 1.6
+    fight: {fileID: 0}
   ambience: {fileID: 0}
   ambienceVolume: 0.45
   ambientOneShots: []

@@ -58,7 +58,7 @@ public class DungeonRoomTemplate : MonoBehaviour
     public bool replaceGeneratedProps = true;
     [HideIf(nameof(replaceGeneratedProps)), Tooltip("Also furnish the room from the level's and biome's prop rules (trees, plants, rocks...) around its own pieces.")]
     public bool addFurnishing;
-    [Tooltip("Spawn enemies only at Enemy sockets. Off also rolls the room's normal encounter.")]
+    [Tooltip("Enemies stand at the Enemy sockets first; if fewer than the biome's roll for the room (min to max enemies per room) are filled, generated ones make up the rest. Off rolls the room's normal encounter on top of the sockets.")]
     public bool replaceGeneratedEnemies = true;
     [Tooltip("Combat rooms: Rolled lets the floor roll an ambush or a sleeping pack like any room; Ambush and Sleeping Pack make it one (when the level allows it); None never.")]
     public DungeonRoomEvent roomEvent;

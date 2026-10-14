@@ -79,21 +79,34 @@ public static class DungeonPickup
     {
         if (!DungeonFeatureUtility.RendererBounds(pickup.GetComponentsInChildren<Renderer>(), out var bounds)) return;
         var from = new Vector3(bounds.center.x, bounds.max.y + .5f, bounds.center.z);
-        var hits = Physics.RaycastAll(from, Vector3.down, 6f, ~0, QueryTriggerInteraction.Ignore);
-        System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));
-        foreach (var hit in hits)
+        if (FloorBelow(from, 6f, pickup.transform, out float floorY))
         {
-            if (hit.transform.IsChildOf(pickup.transform) || !IsFloor(hit.collider)) continue;
-            pickup.transform.position += Vector3.up * (hit.point.y + .02f - bounds.min.y);
+            pickup.transform.position += Vector3.up * (floorY + .02f - bounds.min.y);
             return;
         }
         if (NavMesh.SamplePosition(bounds.center, out var floor, 3f, NavMesh.AllAreas))
             pickup.transform.position += Vector3.up * (floor.position.y + .02f - bounds.min.y);
     }
 
-    static bool IsFloor(Collider c) =>
+    // Fixed geometry only: also not a breakable, which leaves whatever rests on it hanging when it breaks.
+    public static bool IsFloor(Collider c) =>
         c.attachedRigidbody == null && c.GetComponentInParent<Character>() == null &&
         c.GetComponentInParent<CharacterController>() == null && c.GetComponentInParent<WorldItem>() == null &&
         c.GetComponentInParent<CoinPickup>() == null && c.GetComponentInParent<DungeonContainer>() == null &&
-        c.GetComponentInParent<DungeonCorpse>() == null;
+        c.GetComponentInParent<DungeonCorpse>() == null && c.GetComponentInParent<DungeonDestructible>() == null;
+
+    // The height of the first fixed floor straight below from (see IsFloor), within reach.
+    public static bool FloorBelow(Vector3 from, float reach, Transform ignore, out float y)
+    {
+        var hits = Physics.RaycastAll(from, Vector3.down, reach, ~0, QueryTriggerInteraction.Ignore);
+        System.Array.Sort(hits, (x, z) => x.distance.CompareTo(z.distance));
+        foreach (var hit in hits)
+        {
+            if ((ignore != null && hit.transform.IsChildOf(ignore)) || !IsFloor(hit.collider)) continue;
+            y = hit.point.y;
+            return true;
+        }
+        y = 0f;
+        return false;
+    }
 }

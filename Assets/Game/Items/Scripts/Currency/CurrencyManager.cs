@@ -50,7 +50,7 @@ public class CurrencyManager : Singleton<CurrencyManager>
         return best?.prefab;
     }
 
-    // Drop a pile of coins near origin, on navigation when possible.
+    // Drop a pile of coins near origin, on navigation when possible, resting on the floor.
     public CoinPickup SpawnCoins(int amount, Vector3 origin, Transform parent)
     {
         if (amount <= 0) return null;
@@ -62,6 +62,8 @@ public class CurrencyManager : Singleton<CurrencyManager>
             var desired = hit.position + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * .45f;
             if (!NavMesh.Raycast(hit.position, desired, out _, NavMesh.AllAreas)) position = desired;
         }
+        // On the floor below: the NavMesh can lie over low props and keeps its height across a step.
+        if (DungeonPickup.FloorBelow(position + Vector3.up * .8f, 3f, null, out float floorY)) position.y = floorY;
         var go = new GameObject($"Gold ({amount})");
         go.transform.SetParent(parent, true);
         go.transform.position = position;

@@ -177,6 +177,7 @@ public partial class DungeonGenerator
                 var gate = Instantiate(data.ambushGatePrefab, edge - outward * .32f, Quaternion.LookRotation(outward), root.transform);
                 ambush.gates.Add(gate.transform);
             }
+        ambush.OpenGates();
         // Where they come from: the room's own Enemy sockets, then free floor away from the ways in.
         if (ambushPoints.TryGetValue(index, out var points)) ambush.spawnPoints.AddRange(points);
         var cells = new List<Vector2Int>(Layout.RoomCells(index));

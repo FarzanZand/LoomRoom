@@ -123,6 +123,8 @@ public class TableLevelData : ScriptableObject
     public RoomLighting roomLighting;
     [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), Tooltip("The colour the room's light takes while this level is played: dark yellow, cold blue ... White leaves it as it is.")]
     [ColorUsage(false)] public Color roomTint = Color.white;
+    [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), Range(0f, .5f), Tooltip("The dungeon is never darker than this, so it is never pitch black: the ambient light's brightest channel, also past the light radius and in dark rooms. 0 leaves the dark as the Lighting Manager makes it.")]
+    public float minimumAmbient = .07f;
     [TabGroup(Tabs, Look), ShowIf(nameof(IsBoard)), Tooltip("The light hung over a board level, like a lamp over a gaming table: it lights every room.")]
     [ColorUsage(false)] public Color boardLightColor = new Color(1f, .86f, .68f);
     [TabGroup(Tabs, Look), ShowIf(nameof(IsBoard)), Min(0)] public float boardLightIntensity = 2600f;
@@ -399,6 +401,7 @@ public class TableLevelData : ScriptableObject
         state.darkness = biome != null && biome.litThroughout ? 0f : 1f;
         state.roomDark = RoomDarkness;
         state.roomShade = new Color(roomTint.r, roomTint.g, roomTint.b, 1f);
+        state.minAmbient = minimumAmbient;
         return state;
     }
 

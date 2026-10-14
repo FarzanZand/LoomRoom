@@ -14,6 +14,8 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
     public Button button;
     [Tooltip("Shown while this row is the one described in the detail panel.")]
     public GameObject selected;
+    [Tooltip("Optional: a thin bar under the row, filled with the progress to the next rank (UIBar: Filled, or stretched in its frame).")]
+    public Image progressFill;
     [HideInInspector] public AdventureCharacterUI owner;
 
     public void OnPointerExit(PointerEventData data) => Hide();
@@ -56,6 +58,7 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
         rank.text = value.ToString();
         rank.color = TierColour(value);
         label.text = def != null ? def.displayName : skill.ToString();
+        if (progressFill != null) { UIBar.Set(progressFill, character.SkillProgress(skill)); progressFill.color = TierColour(Mathf.Max(20, value)); }
         if (selected != null) selected.SetActive(false);
     }
 

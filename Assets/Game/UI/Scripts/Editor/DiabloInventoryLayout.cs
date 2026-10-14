@@ -199,7 +199,7 @@ public static class DiabloInventoryLayout
         var hint = inv.Find("InventoryHint");
         if (hint != null)
         {
-            var t = hint.GetComponent<TMP_Text>(); t.text = "Drag to move   Right-click for actions   Drag out to drop   Tab to close"; t.color = Dim; t.alignment = TextAlignmentOptions.Center; t.font = body; t.fontSize = 18; Record(t);
+            var t = hint.GetComponent<TMP_Text>(); t.text = "Drag to move   Right-click for actions   Drag out to drop   I to close"; t.color = Dim; t.alignment = TextAlignmentOptions.Center; t.font = body; t.fontSize = 18; Record(t);
             Place(hint, new Vector2(.5f, 0f), new Vector2(0f, 44f), new Vector2(W - 80f, 24f));
         }
         log.AppendLine("bag laid out");

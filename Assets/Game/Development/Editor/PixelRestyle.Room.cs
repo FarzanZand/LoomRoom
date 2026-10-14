@@ -59,12 +59,17 @@ public static partial class PixelRestyle
             string baseName = part.sharedMesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
             foreach (var mf in root.GetComponentsInChildren<MeshFilter>(true))
             {
-                if (mf.sharedMesh == null) continue;
-                string other = mf.sharedMesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
+                // A rebuild deletes and recreates mesh assets, so a scene copy may point at a mesh that no longer
+                // exists: it is still found through the Synty prefab it is an instance of.
+                var mesh = mf.sharedMesh;
+                if (mesh == null && PrefabUtility.GetCorrespondingObjectFromOriginalSource(mf) is MeshFilter srcMf) mesh = srcMf.sharedMesh;
+                if (mesh == null) continue;
+                string other = mesh.name.Replace(" (Synty Pixel)", "").Replace(" painted", "");
                 if (other != baseName) continue;
                 var mr = mf.GetComponent<MeshRenderer>();
                 Undo.RecordObject(mf, "Room restyle"); Undo.RecordObject(mr, "Room restyle");
                 mf.sharedMesh = part.sharedMesh; mr.sharedMaterials = pr.sharedMaterials;
+                foreach (var mc in mf.GetComponents<MeshCollider>()) { Undo.RecordObject(mc, "Room restyle"); mc.sharedMesh = part.sharedMesh; PrefabUtility.RecordPrefabInstancePropertyModifications(mc); }
                 PrefabUtility.RecordPrefabInstancePropertyModifications(mf); PrefabUtility.RecordPrefabInstancePropertyModifications(mr);
                 n++;
             }

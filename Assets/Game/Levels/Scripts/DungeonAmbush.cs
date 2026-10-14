@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// An ambush room (DungeonRoomFeatures.ambushes): it looks empty. Once the player is well inside, iron gates slam down
-// across every way out and the room's enemies come in waves, each out of a puff of dust at the far side. When the last
-// one falls the gates lift and a chest is left where the fight was. Set up by the generator (DungeonGenerator.Events).
+// An ambush room (DungeonRoomFeatures.ambushes): it looks empty. Once the player is well inside, iron gates rise out of
+// the floor across every way out and the room's enemies come in waves, each out of a puff of dust at the far side. When the last
+// one falls the gates sink back and a chest is left where the fight was. Set up by the generator (DungeonGenerator.Events).
 public class DungeonAmbush : MonoBehaviour
 {
     [HideInInspector] public DungeonGenerator dungeon;
@@ -29,7 +29,10 @@ public class DungeonAmbush : MonoBehaviour
     public bool Cleared => phase == Phase.Done;
     readonly List<Character> alive = new();
 
-    void Start()
+    // Gates start open, sunk in the floor. Called by the generator as it places them, before the table
+    // reveal records where every piece sits (opened later, in Start, the reveal kept drawing the bars
+    // shut where the gate had no collider, and up in the air once it closed).
+    public void OpenGates()
     {
         foreach (var g in gates) if (g != null) Lower(g, true);
     }
@@ -76,7 +79,7 @@ public class DungeonAmbush : MonoBehaviour
     IEnumerator Fight(Player player)
     {
         foreach (var g in gates) if (g != null) { Raise(g); Play(slamAudio, g.position); }
-        MessageLog.Post("Iron gates slam down across the ways out.", MessageKind.Warning);
+        MessageLog.Post("Iron gates slam shut across the ways out.", MessageKind.Warning);
         yield return new WaitForSeconds(.7f);
         foreach (var wave in new[] { waveOne, waveTwo })
         {
@@ -94,7 +97,7 @@ public class DungeonAmbush : MonoBehaviour
         phase = Phase.Done;
         foreach (var g in gates) if (g != null) { Lower(g, false); Play(liftAudio, g.position, .7f); }
         dungeon.SpawnRewardChest(chestAt, chestFacing, chestSeed);
-        MessageLog.Post("The gates grind up. Something was left behind.", MessageKind.Good);
+        MessageLog.Post("The gates sink back into the floor. Something was left behind.", MessageKind.Good);
     }
 
     // Each enemy of the wave at a spawn point on the far side of the room from the player, a moment apart.
