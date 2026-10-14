@@ -57,6 +57,19 @@ public static class CoopMessages
         }
     }
 
+    // Host only: to the guests in the run on the table (a floor's enemy updates are no use to one in the room, and a
+    // player who sits down later is caught up when their floor loads).
+    public static void ToRunGuests<T>(string name, T value, NetworkDelivery delivery = NetworkDelivery.ReliableSequenced) where T : INetworkSerializable
+    {
+        if (Net == null || !Net.IsServer || !MultiplayerManager.HasInstance) return;
+        using var writer = Write(value);
+        foreach (var p in MultiplayerManager.Instance.Players)
+        {
+            if (p == null || p.IsOwner || !p.Current.inRun) continue;
+            Net.CustomMessagingManager.SendNamedMessage(name, p.OwnerClientId, writer, delivery);
+        }
+    }
+
     // Host only: to one player (the host itself: straight to the handler).
     public static void ToClient<T>(string name, ulong client, T value, NetworkDelivery delivery = NetworkDelivery.ReliableSequenced) where T : INetworkSerializable
     {

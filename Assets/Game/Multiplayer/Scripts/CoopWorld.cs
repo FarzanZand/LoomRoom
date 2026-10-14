@@ -263,7 +263,7 @@ public static class CoopWorld
         hit.slot = (byte)(slot == Coop.NoSlot ? Coop.NoSlot : slot);
         hit.health = enemy.Stats != null ? enemy.Stats.CurrentHealth : 0;
         hit.Died = !enemy.IsAlive;
-        CoopMessages.ToGuests(CoopMessages.EnemyHit, hit);
+        CoopMessages.ToRunGuests(CoopMessages.EnemyHit, hit);
         if (hit.Died && slot != Coop.LocalSlot && RunManager.HasInstance) RunManager.Instance.AwardPartyKill(enemy);
     }
 
@@ -314,7 +314,7 @@ public static class CoopWorld
     }
 
     static void Send(List<EnemySnapshot> batch) =>
-        CoopMessages.ToGuests(CoopMessages.Snapshots, new SnapshotBatch { floorKey = FloorKey, items = batch.ToArray() }, NetworkDelivery.UnreliableSequenced);
+        CoopMessages.ToRunGuests(CoopMessages.Snapshots, new SnapshotBatch { floorKey = FloorKey, items = batch.ToArray() }, NetworkDelivery.UnreliableSequenced);
 
     static EnemySnapshot Capture(ushort id, Character c)
     {
@@ -562,8 +562,13 @@ public static class CoopWorld
             CoopMessages.ToClient(CoopMessages.Event, client, past);
         }
         for (int i = 0; i < enemies.Count; i++)
+        {
             if (enemies[i] == null || !enemies[i].IsAlive)
                 CoopMessages.ToClient(CoopMessages.Event, client, new CoopEvent { kind = CoopEventKind.EnemyGone, id = i, floorKey = FloorKey, slot = (byte)Coop.LocalSlot });
+            // Wounded: its health as it is (a hit sent while their floor was still loading never landed there).
+            else if (enemies[i].Stats != null && enemies[i].Stats.CurrentHealth < enemies[i].Stats.MaxHealth)
+                CoopMessages.ToClient(CoopMessages.Event, client, new CoopEvent { kind = CoopEventKind.EnemyHealth, id = i, amount = Mathf.RoundToInt(enemies[i].Stats.CurrentHealth * 100f), floorKey = FloorKey, slot = (byte)Coop.LocalSlot });
+        }
     }
 
     public static void Send(CoopEvent e)
@@ -654,6 +659,12 @@ public static class CoopWorld
             case CoopEventKind.DoorOpened:
                 if (e.id >= 0 && e.id < doors.Count && doors[e.id] != null && !doors[e.id].IsOpen) doors[e.id].Open(e.position);
                 break;
+            case CoopEventKind.EnemyHealth:
+            {
+                var enemy = Enemy(e.id);
+                if (enemy != null && enemy.IsAlive && enemy.Stats != null) enemy.Stats.SetNetworkHealth(e.amount / 100f);
+                break;
+            }
             case CoopEventKind.EnemyGone:
             {
                 // Killed before this player joined: no body, no loot, it is simply not there.

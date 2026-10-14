@@ -103,7 +103,7 @@ public class PlaytestBot : MonoBehaviour
 
         if (loader.FloorNumber != lastFloor)
         {
-            lastFloor = loader.FloorNumber; floorStartedAt = Time.time; visited.Clear(); unreachable.Clear(); doorsTried.Clear(); doorGoal = null; lastRoom = -2;
+            lastFloor = loader.FloorNumber; floorStartedAt = Time.time; visited.Clear(); unreachable.Clear(); doorsTried.Clear(); roomGoal = -1; doorGoal = null; lastRoom = -2;
             Write($"FLOOR {lastFloor}: {RoomCount(loader.Dungeon.Layout)} rooms, {EnemyBrain.Active.Count} enemies");
             player.Damaged -= OnHurt; player.Damaged += OnHurt;
         }
@@ -129,6 +129,7 @@ public class PlaytestBot : MonoBehaviour
     static int RoomCount(DungeonLayout layout) => layout.RegionCount - layout.CorridorCount;
 
     float nextSync, nextStairsPress;
+    int roomGoal = -1;
     bool spellGiven;
 
     // What both players should agree on, every five seconds (co-op logs from two machines are compared line by line).
@@ -316,14 +317,18 @@ public class PlaytestBot : MonoBehaviour
                 return;
             }
         }
-        // The nearest room not yet seen.
-        int target = -1; float bestD = float.MaxValue;
-        for (int r = 0; r < RoomCount(layout); r++)
-        {
-            if (visited.Contains(r) || unreachable.Contains(r)) continue;
-            float d = Vector3.Distance(dungeon.Cell(layout.RoomCenter(r)), player.transform.position);
-            if (d < bestD) { bestD = d; target = r; }
-        }
+        // The nearest room not yet seen; kept until it is reached or given up (else it flips between two rooms as
+        // their distances change on the way).
+        int target = roomGoal >= 0 && !visited.Contains(roomGoal) && !unreachable.Contains(roomGoal) ? roomGoal : -1;
+        float bestD = target >= 0 ? Vector3.Distance(dungeon.Cell(layout.RoomCenter(target)), player.transform.position) : float.MaxValue;
+        if (target < 0)
+            for (int r = 0; r < RoomCount(layout); r++)
+            {
+                if (visited.Contains(r) || unreachable.Contains(r)) continue;
+                float d = Vector3.Distance(dungeon.Cell(layout.RoomCenter(r)), player.transform.position);
+                if (d < bestD) { bestD = d; target = r; }
+            }
+        roomGoal = target;
         if (target < 0) return;
         string goingTo = $"exploring to room {target}";
         if (doing != goingTo) { Write($"{goingTo} ({bestD:0} m)"); stuckCount = 0; }
