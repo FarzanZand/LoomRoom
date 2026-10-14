@@ -144,20 +144,21 @@ public static class CoopBodyAnimations
         return clip;
     }
 
-    // Armed and doing nothing: a low guard (the first-person idle spreads the arms wide, which reads oddly from
-    // outside): the sword held up in front, angled out, the shield across the front of the body. Offsets from the
-    // third-person idle; the legs walk, run and crouch under it.
+    // Armed and doing nothing: a ready stance (the first-person idle spreads the arms wide, which reads oddly from
+    // outside): the sword held upright at the right side, the shield in front of the left half of the chest, facing
+    // forward. Offsets from the third-person idle; the legs walk, run and crouch under it. Tuned against front, side
+    // and follow-camera renders of the Warrior body holding the Bronze Sword and Shield on the co-op grips.
     static readonly (string muscle, float offset)[] Guard =
     {
-        ("Right Arm Front-Back", -.25f), ("Right Forearm Stretch", -.45f), ("Right Forearm Twist In-Out", .3f),
-        ("Left Arm Front-Back", -.3f), ("Left Forearm Stretch", -.6f), ("Left Arm Down-Up", .1f),
+        ("Right Arm Front-Back", .15f), ("Right Forearm Stretch", -.8f), ("Right Hand Down-Up", .4f),
+        ("Left Arm Front-Back", -.15f), ("Left Forearm Stretch", -.8f), ("Left Arm Twist In-Out", -.15f), ("Left Arm Down-Up", .1f),
     };
 
-    // Walking and running lean the chest forward; the arms come back a little so the guard reads the same.
+    // Walking and running lean the chest forward; the arms come back a little so the stance reads the same.
     static readonly (string muscle, float offset)[] GuardMoving =
     {
-        ("Right Arm Front-Back", .05f), ("Right Forearm Stretch", -.85f), ("Right Forearm Twist In-Out", .2f),
-        ("Left Arm Front-Back", -.05f), ("Left Forearm Stretch", -.9f), ("Left Arm Down-Up", .15f),
+        ("Right Arm Front-Back", .3f), ("Right Forearm Stretch", -.85f), ("Right Hand Down-Up", .4f),
+        ("Left Arm Front-Back", 0f), ("Left Forearm Stretch", -.85f), ("Left Arm Twist In-Out", -.15f), ("Left Arm Down-Up", .1f),
     };
 
     static AnimationClip RestPose(Animator animator, AnimationClip idle, string name, Side side, bool overwrite) => RestPose(animator, idle, name, side, overwrite, Guard);
