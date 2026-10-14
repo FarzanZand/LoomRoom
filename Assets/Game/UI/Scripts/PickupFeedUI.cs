@@ -51,7 +51,7 @@ public class PickupFeedUI : MonoBehaviour
     void OnItem(ItemData item, Player who, int count)
     {
         if (item == null || who == null || who.kind != PlayerKind.Table) return;
-        Show(item, item.icon, item.GridSize, count, n => n > 1 ? $"{item.itemName}  x{n}" : item.itemName, item.honed > 0 && UIManager.HasInstance ? Color.Lerp(UIManager.Instance.honed, Color.white, .35f) : itemColor);
+        Show(item, item.icon, item.GridSize, count, n => n > 1 ? $"{item.itemName}  x{n}" : item.itemName, item.HasRarityColour ? Color.Lerp(item.RarityColour, Color.white, .35f) : itemColor);
     }
 
     void OnGold(Player who, int amount)

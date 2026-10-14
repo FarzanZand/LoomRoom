@@ -30,6 +30,15 @@ public class DungeonMasterRemarks : MonoBehaviour
     [Tooltip("Run start, with the class the player has lost most often.")] public DungeonMaster.Line usualPick;
     [Tooltip("Run start, with a class the player has lost before.")] public DungeonMaster.Line samePick;
     [Tooltip("Run start, with a class none of the figures has.")] public DungeonMaster.Line newPick;
+    [Tooltip("When the player's spell hits him from the dungeon (up through a skylight). One picked at random; the boss fight has its own lines.")]
+    public System.Collections.Generic.List<DungeonMaster.Line> spellHitMe = new()
+    {
+        new() { text = "Did you just throw that at me?" },
+        new() { text = "Careful. I can see you." },
+        new() { text = "That's not how this game works." },
+        new() { text = "Aim at the monsters, not at me." },
+    };
+    [Min(0), Tooltip("Seconds before he answers another spell at him.")] public float spellHitGap = 8f;
     [InfoBox("What he says during a run (kills, close calls, new floors, rooms) is set on each level's Dialogue tab.")]
     [Range(.05f, .5f), Tooltip("Health left, as a fraction, that counts as a close call.")] public float closeCallFraction = .25f;
     [Min(0), Tooltip("Seconds between two run remarks.")] public float remarkGap = 25f;
@@ -200,13 +209,29 @@ public class DungeonMasterRemarks : MonoBehaviour
 
     // ── During a run ──────────────────────────────────────────────────
 
+    float lastSpellHit = -999f;
+    // A player's projectile spell hit the Dungeon Master (SpellProjectile). Not during a boss fight on the stage.
+    public static void SpellHit(Character caster)
+    {
+        var remarks = FindAnyObjectByType<DungeonMasterRemarks>();
+        if (remarks == null || caster is not Player || Hold || BossStageEncounter.Current != null) return;
+        if (Time.time - remarks.lastSpellHit < remarks.spellHitGap || remarks.spellHitMe.Count == 0) return;
+        remarks.lastSpellHit = Time.time;
+        DungeonMaster.Say(remarks.spellHitMe[Random.Range(0, remarks.spellHitMe.Count)], null, .4f);
+    }
+
     static bool RunOn => RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;
+
+    // While a boss fight is on the stage the DM only comments on the fight (BossStageEncounter); his other remarks wait.
+    public static bool Hold { get; set; }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetHold() => Hold = false;
 
     // The level's Dialogue entries for this trigger: the first that passes its chance (and has not had
     // its one go this run) is said. Spaced out so the DM never chatters.
     void Trigger(DungeonDialogueTrigger trigger, int room = -1, float delay = .6f)
     {
-        if (!RunOn || IntroController.PracticeRunning || Time.time - lastRemark < remarkGap) return;
+        if (!RunOn || Hold || IntroController.PracticeRunning || Time.time - lastRemark < remarkGap) return;
         var entries = RunManager.Instance.Level != null ? RunManager.Instance.Level.dialogue : null;
         if (entries == null) return;
         foreach (var entry in entries)

@@ -102,6 +102,41 @@ public class CombatTestBot : MonoBehaviour
                     case "heal": Heal(player); Heal(enemy); break;
                     case "cm": SetTuning(parts[1], parts[2]); break;
                     case "fight": yield return Fight(F(1, 40f), F(2, 14f), F(3, 1f)); break;
+                    // strafe <seconds> [speed]: run sideways (to the right) as a player dodging would.
+                    case "strafe":
+                        for (float t = 0, limit = F(1, 3f), speed = F(2, 4f); t < limit; t += Time.deltaTime)
+                        {
+                            var side = player.Look != null ? player.Look.YawTransform.right : player.transform.right;
+                            player.Motor.Controller.Move(side * speed * Time.deltaTime + Vector3.down * .5f * Time.deltaTime);
+                            yield return null;
+                        }
+                        break;
+                    // walkstage: walk (as the player would) to the middle of the boss stage.
+                    case "walkstage":
+                    {
+                        var g = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
+                        for (float t = 0; g != null && g.Stage != null && t < 10f; t += Time.deltaTime)
+                        {
+                            var d = g.StageCentre - player.transform.position; d.y = 0;
+                            if (d.magnitude < .8f) break;
+                            player.Motor.Controller.Move(d.normalized * 3f * Time.deltaTime + Vector3.down * .5f * Time.deltaTime);
+                            yield return null;
+                        }
+                        break;
+                    }
+                    // waitboss [s]: until the boss on the stage is down and the fight has begun (BossStageEncounter).
+                    case "waitboss":
+                        for (float t = 0, limit = F(1, 20f); t < limit && !(BossStageEncounter.Current != null && BossStageEncounter.Current.Fighting); t += Time.deltaTime)
+                        {
+                            // Watch his hand bring the boss down, as a player would.
+                            var dmHand = FindAnyObjectByType<DungeonMasterHand>();
+                            var boss = BossStageEncounter.Current != null ? BossStageEncounter.Current.Boss : null;
+                            if (dmHand != null && dmHand.Busy && dmHand.RightHand != null) FaceAt(Vector3.Lerp(dmHand.RightHand.position, boss != null ? boss.transform.position + Vector3.up : dmHand.RightHand.position, .6f), 3f);
+                            else if (boss != null) FaceAt(boss.transform.position + Vector3.up * 1.2f, 3f);
+                            yield return null;
+                        }
+                        Log(BossStageEncounter.Current != null && BossStageEncounter.Current.Fighting ? "boss fight begun" : "no boss fight");
+                        break;
                 }
             }
         }
@@ -127,8 +162,22 @@ public class CombatTestBot : MonoBehaviour
         player.Damaged += taken;
         var known = new System.Collections.Generic.HashSet<Character>();
         float nextSwing = 0f;
+        var dmBeam = FindAnyObjectByType<DungeonMasterBeam>();
+        int beams = 0; bool wasBeam = false, seeBeam = false; string lastBeamState = "";
         while (Time.time < until && player.IsAlive)
         {
+            // The Dungeon Master's beam: turn to him and hold the shield up until it ends (as often as blockSkill says).
+            if (dmBeam != null && dmBeam.Firing)
+            {
+                if (!wasBeam) { beams++; wasBeam = true; seeBeam = Random.value < blockSkill; }
+                var palm = FindAnyObjectByType<DungeonMasterHand>()?.LeftHand;
+                if (seeBeam) { FaceAt(palm != null ? palm.position : dmBeam.transform.position + Vector3.up * 25f, 6f); Block(true); }
+                else FaceAt(palm != null ? palm.position : dmBeam.transform.position + Vector3.up * 25f, 2f);
+                if (dmBeam.State != lastBeamState) { lastBeamState = dmBeam.State; Log("beam: " + lastBeamState); }
+                yield return null;
+                continue;
+            }
+            if (wasBeam) { wasBeam = false; Block(false); }
             Character nearest = null; float best = reach;
             foreach (var b in EnemyBrain.Active)
             {
@@ -162,6 +211,7 @@ public class CombatTestBot : MonoBehaviour
         Block(false);
         player.Damaged -= taken;
         foreach (var k in known) if (k == null || !k.IsAlive) kills++;
+        if (beams > 0) Log($"fight: {beams} beams");
         Log($"fight: {kills} killed, {hits} hits taken, health {hp0:0} -> {player.Stats.CurrentHealth:0} of {player.Stats.MaxHealth:0}, {(player.IsAlive ? "alive" : "DIED")}, {seconds - Mathf.Max(0f, until - Time.time):0.0} s");
     }
 
@@ -213,6 +263,23 @@ public class CombatTestBot : MonoBehaviour
         if (target != null) Log($"  push after .4 s: {Vector3.Distance(Flat(from), Flat(target.position)):0.00} m");
     }
     static Vector3 Flat(Vector3 v) { v.y = 0f; return v; }
+
+    // Turns the view toward aim; speed: how quickly (a player's turn, not a snap), 0 snaps.
+    void FaceAt(Vector3 aim, float speed = 0f)
+    {
+        if (player.Look == null) return;
+        Vector3 to = aim - player.Look.PitchTransform.position;
+        var flat = new Vector3(to.x, 0f, to.z);
+        float yaw = Quaternion.LookRotation(flat).eulerAngles.y, pitch = Mathf.Clamp(Mathf.Atan2(to.y, flat.magnitude) * Mathf.Rad2Deg, -60f, 60f);
+        if (speed > 0f)
+        {
+            float k = 1f - Mathf.Exp(-speed * Time.deltaTime);
+            yaw = Mathf.LerpAngle(player.Look.YawTransform.eulerAngles.y, yaw, k);
+            pitch = Mathf.Lerp(player.Look.Pitch, pitch, k);
+        }
+        player.Look.SetYaw(yaw);
+        player.Look.SetPitch(pitch);
+    }
 
     void Face()
     {

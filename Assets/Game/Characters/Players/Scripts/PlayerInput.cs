@@ -1278,6 +1278,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ToggleGodMode"",
+                    ""type"": ""Button"",
+                    ""id"": ""89e15413-8a7b-4285-a3cc-ad4b72ff5608"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -1322,6 +1331,17 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""TogglePixelLighting"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""97972de8-cb7b-4ccb-a818-3e62e956af91"",
+                    ""path"": ""<Keyboard>/f8"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ToggleGodMode"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1378,6 +1398,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Dev_Debug2 = m_Dev.FindAction("Debug2", throwIfNotFound: true);
         m_Dev_PreviewSceneMood = m_Dev.FindAction("PreviewSceneMood", throwIfNotFound: true);
         m_Dev_TogglePixelLighting = m_Dev.FindAction("TogglePixelLighting", throwIfNotFound: true);
+        m_Dev_ToggleGodMode = m_Dev.FindAction("ToggleGodMode", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -2116,6 +2137,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Dev_Debug2;
     private readonly InputAction m_Dev_PreviewSceneMood;
     private readonly InputAction m_Dev_TogglePixelLighting;
+    private readonly InputAction m_Dev_ToggleGodMode;
     /// <summary>
     /// Provides access to input actions defined in input action map "Dev".
     /// </summary>
@@ -2143,6 +2165,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Dev/TogglePixelLighting".
         /// </summary>
         public InputAction @TogglePixelLighting => m_Wrapper.m_Dev_TogglePixelLighting;
+        /// <summary>
+        /// Provides access to the underlying input action "Dev/ToggleGodMode".
+        /// </summary>
+        public InputAction @ToggleGodMode => m_Wrapper.m_Dev_ToggleGodMode;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -2181,6 +2207,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @TogglePixelLighting.started += instance.OnTogglePixelLighting;
             @TogglePixelLighting.performed += instance.OnTogglePixelLighting;
             @TogglePixelLighting.canceled += instance.OnTogglePixelLighting;
+            @ToggleGodMode.started += instance.OnToggleGodMode;
+            @ToggleGodMode.performed += instance.OnToggleGodMode;
+            @ToggleGodMode.canceled += instance.OnToggleGodMode;
         }
 
         /// <summary>
@@ -2204,6 +2233,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @TogglePixelLighting.started -= instance.OnTogglePixelLighting;
             @TogglePixelLighting.performed -= instance.OnTogglePixelLighting;
             @TogglePixelLighting.canceled -= instance.OnTogglePixelLighting;
+            @ToggleGodMode.started -= instance.OnToggleGodMode;
+            @ToggleGodMode.performed -= instance.OnToggleGodMode;
+            @ToggleGodMode.canceled -= instance.OnToggleGodMode;
         }
 
         /// <summary>
@@ -2548,5 +2580,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnTogglePixelLighting(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "ToggleGodMode" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnToggleGodMode(InputAction.CallbackContext context);
     }
 }

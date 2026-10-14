@@ -26,4 +26,6 @@ public class DungeonMilestone
     [Min(0)] public int bonusGold = 60;
     [Min(1), Tooltip("Exit room is enlarged by at least this factor to fit the arena.")]
     public float arenaSizeScale = 1.5f;
+    [AssetsOnly, Tooltip("The fight's script: music and beat, how the DM sets the boss down, his beam, timed events and his comments. Used when the arena is a stage (a template with a DungeonStage), which is always built at the edge in front of the Dungeon Master.")]
+    public BossFight fight;
 }

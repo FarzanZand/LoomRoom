@@ -5,9 +5,10 @@ using UnityEngine;
 public partial class DungeonGenerator
 {
     bool Descends=>FloorNumber<data.FloorCount;
-    DungeonExit MakeExit(Vector3 pos,bool entrance)
+    // stage: the exit on a boss stage, always the stone stairwell (there is no ceiling for a ladder to reach).
+    DungeonExit MakeExit(Vector3 pos,bool entrance,bool stage=false)
     {
-        bool descending=!entrance && Descends;
+        bool descending=!entrance && (Descends || stage);
         var go=new GameObject(entrance ? "Entrance stair" : descending ? "Stairs down" : "Final exit stair"); go.transform.SetParent(transform,false); go.transform.position=pos;
         var exit=go.AddComponent<DungeonExit>(); exit.entrance=entrance;
         var col=go.AddComponent<BoxCollider>(); col.isTrigger=true;

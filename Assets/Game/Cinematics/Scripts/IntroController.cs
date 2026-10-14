@@ -78,6 +78,13 @@ public partial class IntroController : Singleton<IntroController>
     [Min(1), Tooltip("If the player is still alive after this many seconds, the Dungeon Master ends it himself.")]
     public float killerSeconds = 20f;
     [Tooltip("Said when he ends it himself.")] public DungeonMaster.Line timeUp;
+    [Min(1), Tooltip("Hits the player lands on the killer before the Dungeon Master loses patience: he says Too Long and the killer throws a homing fireball volley that can't be escaped.")]
+    public int killerHitsToVolley = 5;
+    public DungeonMaster.Line tooLong = new() { text = "You are not supposed to live that long. I have things to do." };
+    [Min(0), Tooltip("Seconds between his line and the volley.")] public float volleyDelay = 2f;
+    [Tooltip("The spell the killer throws (Fireball): its projectile, speed and sounds.")] public SpellDefinition volleySpell;
+    [Min(1), Tooltip("Damage of each ball.")] public float volleyDamage = 60f;
+    public FireballVolley.Settings killerVolley = new() { homing = true };
 
     [Header("Back at the table")]
     [Tooltip("After the practice death, with the lamp still on.")] public DungeonMaster.Line[] afterPractice = new DungeonMaster.Line[0];

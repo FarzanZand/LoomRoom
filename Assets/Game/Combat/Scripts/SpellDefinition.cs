@@ -26,6 +26,10 @@ public class SpellDefinition : ScriptableObject
     [ShowIf(nameof(IsProjectile)), Min(0)] public float radius = 1.5f;
     [ShowIf(nameof(IsProjectile)), Min(1)] public float speed = 14;
     [ShowIf(nameof(IsProjectile)), Min(.1f)] public float lifetime = 5;
+    [ShowIf(nameof(IsProjectile)), Tooltip("It keeps turning toward its target in flight (can't be stepped away from). Off: it flies straight at where the target was when it left.")]
+    public bool homing;
+    [ShowIf("@IsProjectile && homing"), Min(10), Tooltip("Degrees a second it turns toward its target.")]
+    public float homingTurn = 540f;
 
     [Title("Ground area")]
     [Tooltip("Lands on the ground at the target instead of flying: the spot is marked (Show Marker), then it erupts after Area Delay and hits everything hostile inside Area Radius. The eruption is the Impact effect.")]

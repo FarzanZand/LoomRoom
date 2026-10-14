@@ -28,6 +28,8 @@ public class WorldManager : Singleton<WorldManager>
     [Header("Table level reveal")]
     [InlineEditor, Tooltip("Shared assembly and camera settings for entering dungeon levels. Clear this to use the standard transition.")]
     public TableLevelRevealSettings tableLevelReveal;
+    [Tooltip("Generated dungeons show no ceilings while they are looked at from the room (the reveal included): the rooms stay open to the room's view. The table player inside still has the ceilings over them.")]
+    public bool hideTopForGenerations = true;
     [Tooltip("Designer-editable adventure selection menu prefab.")]
     public TableAdventureMenuView tableAdventureMenu;
 

@@ -454,6 +454,12 @@ public class EnemyAttackRunner
             return;
         }
         if (spell.projectile == null) return;
+        if (cast.volley)
+        {
+            var from = hand; var body = brain.transform;
+            FireballVolley.Cast(spell, Character, () => from != null ? from.position : body.position + Vector3.up * 1.8f, target, damage, cast.volleySettings);
+            return;
+        }
         Vector3 aim = AimPoint(target);
         float flight = Vector3.Distance(origin, aim) / Mathf.Max(1f, spell.speed);
         aim += velocity * flight * cast.leadTarget;
@@ -461,6 +467,7 @@ public class EnemyAttackRunner
         dir = Quaternion.AngleAxis(Random.Range(-cast.spread, cast.spread), Vector3.up)
             * Quaternion.AngleAxis(Random.Range(-cast.spread, cast.spread) * .5f, Vector3.Cross(Vector3.up, dir).normalized) * dir;
         var projectile = Object.Instantiate(spell.projectile, origin, Quaternion.LookRotation(dir));
+        if (spell.homing) { projectile.HomingTarget = target; projectile.HomingTurn = spell.homingTurn; }
         projectile.Launch(Character, spell, damage, null);
     }
 

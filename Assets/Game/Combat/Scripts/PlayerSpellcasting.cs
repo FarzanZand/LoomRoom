@@ -183,6 +183,8 @@ public class PlayerSpellcasting : MonoBehaviour
         var direction = aim - origin;
         if (direction.sqrMagnitude < .01f) direction = view.forward;
         var projectile = Instantiate(spell.projectile, origin, Quaternion.LookRotation(direction.normalized));
+        if (spell.homing && hit.collider != null && hit.collider.GetComponentInParent<Character>() is { } aimed && aimed != player && aimed.IsAlive)
+        { projectile.HomingTarget = aimed; projectile.HomingTurn = spell.homingTurn; }
         projectile.Launch(player, spell, Power(spell), progress);
 
         // The flame leaves the hand and relights once the throw has recovered.

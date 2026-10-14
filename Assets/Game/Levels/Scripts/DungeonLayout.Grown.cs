@@ -20,7 +20,7 @@ public struct DungeonGrowthSettings
 // every opening is a planned doorway.
 public sealed partial class DungeonLayout
 {
-    const int EmptyCell = -1, CorridorCell = -2;
+    const int EmptyCell = -1, CorridorCell = -2, ReservedCell = -3;
     int[,] occupant;                // room index (floor or solid), CorridorCell or EmptyCell
     int[,] noise;
     System.Random growRandom;
@@ -29,15 +29,20 @@ public sealed partial class DungeonLayout
     readonly List<HashSet<Vector2Int>> doorAnchors = new();   // null: doors anywhere on the outline
     readonly List<DungeonShape> placedShapes = new();
 
-    public static DungeonLayout Grow(int width, int depth, IList<DungeonShape> requests, int seed, DungeonGrowthSettings settings)
+    // exitAt: where the exit room must stand (a boss stage in front of the Dungeon Master): the spot is kept free
+    // while the other rooms grow, then the exit is placed there and tunnelled to the nearest room it can reach.
+    public static DungeonLayout Grow(int width, int depth, IList<DungeonShape> requests, int seed, DungeonGrowthSettings settings, Vector2Int? exitAt = null)
     {
         if (requests == null || requests.Count < 2) throw new ArgumentException("Dungeon requires at least two rooms.");
         var layout = new DungeonLayout(width, depth, seed);
-        layout.GrowRooms(requests, settings);
+        layout.GrowRooms(requests, settings, exitAt);
         return layout;
     }
 
-    void GrowRooms(IList<DungeonShape> requests, DungeonGrowthSettings settings)
+    // The exit stands where it was asked to (a stage): it has one way in, so no loop or spur is cut into it.
+    public bool ExitPlacedAt { get; private set; }
+
+    void GrowRooms(IList<DungeonShape> requests, DungeonGrowthSettings settings, Vector2Int? exitAt)
     {
         int width = floor.GetLength(0), depth = floor.GetLength(1);
         growth = settings;
@@ -49,17 +54,28 @@ public sealed partial class DungeonLayout
         for (int x = 0; x < width; x++) for (int y = 0; y < depth; y++) { occupant[x, y] = EmptyCell; noise[x, y] = growRandom.Next(wander + 1); }
 
         var placed = new List<int>();
+        int last = requests.Count - 1;
+        var exitShape = requests[last].Trimmed();
+        bool reserved = exitAt.HasValue && Reserve(exitShape, exitAt.Value, true);
         if (!PlaceFirst(requests[0])) throw new InvalidOperationException("The entrance room does not fit the grid. Increase width/depth or reduce room size.");
         placed.Add(0);
-        int last = requests.Count - 1;
         for (int r = 1; r < last; r++)
             if (TryGrow(requests[r], null)) placed.Add(r);
-        // The exit grows off the room furthest from the entrance, trying nearer ones if it will not fit.
-        var distance = Distances(Start);
-        var anchors = new List<int>();
-        for (int i = 0; i < rooms.Count; i++) anchors.Add(i);
-        anchors.Sort((a, b) => distance[roomCenters[b].x, roomCenters[b].y].CompareTo(distance[roomCenters[a].x, roomCenters[a].y]));
-        if (!TryGrow(requests[last], anchors)) throw new InvalidOperationException("The exit room does not fit the grid. Increase width/depth or reduce room count or size.");
+        if (reserved)
+        {
+            Reserve(exitShape, exitAt.Value, false);
+            ExitPlacedAt = PlaceAt(exitShape, exitAt.Value);
+            if (!ExitPlacedAt) Debug.LogWarning($"Dungeon seed {seed}: the exit could not be reached at {exitAt.Value}; it is grown off the furthest room instead.");
+        }
+        if (!ExitPlacedAt)
+        {
+            // The exit grows off the room furthest from the entrance, trying nearer ones if it will not fit.
+            var distance = Distances(Start);
+            var anchors = new List<int>();
+            for (int i = 0; i < rooms.Count; i++) anchors.Add(i);
+            anchors.Sort((a, b) => distance[roomCenters[b].x, roomCenters[b].y].CompareTo(distance[roomCenters[a].x, roomCenters[a].y]));
+            if (!TryGrow(requests[last], anchors)) throw new InvalidOperationException("The exit room does not fit the grid. Increase width/depth or reduce room count or size.");
+        }
         placed.Add(last);
         if (placed.Count < requests.Count)
             Debug.LogWarning($"Dungeon seed {seed}: {requests.Count - placed.Count} of {requests.Count} rooms did not fit the {width}x{depth} grid. Reduce room count or size, or enlarge the grid.");
@@ -113,6 +129,36 @@ public sealed partial class DungeonLayout
                 Unplace(index);
             }
         }
+        return false;
+    }
+
+    // Keeps a room's spot (and the cell of clearance round it) free while the others grow, or frees it again.
+    bool Reserve(DungeonShape s, Vector2Int origin, bool keep)
+    {
+        int width = floor.GetLength(0), depth = floor.GetLength(1);
+        if (keep && !Fits(s, origin)) return false;
+        for (int x = -1; x <= s.width; x++) for (int y = -1; y <= s.height; y++)
+        {
+            int px = origin.x + x, py = origin.y + y;
+            if (px < 0 || py < 0 || px >= width || py >= depth) continue;
+            if (keep && occupant[px, py] == EmptyCell) occupant[px, py] = ReservedCell;
+            else if (!keep && occupant[px, py] == ReservedCell) occupant[px, py] = EmptyCell;
+        }
+        return true;
+    }
+
+    // A room at a fixed spot, tunnelled to the nearest room that a corridor can reach.
+    bool PlaceAt(DungeonShape s, Vector2Int origin)
+    {
+        if (!Fits(s, origin)) return false;
+        int index = Place(s, origin);
+        var centre = roomCenters[index];
+        var order = new List<int>();
+        for (int i = 0; i < index; i++) order.Add(i);
+        order.Sort((a, b) => (roomCenters[a] - centre).sqrMagnitude.CompareTo((roomCenters[b] - centre).sqrMagnitude));
+        foreach (int anchor in order)
+            if (Connect(anchor, index, 60 * 16)) return true;
+        Unplace(index);
         return false;
     }
 
@@ -301,6 +347,7 @@ public sealed partial class DungeonLayout
         var pairs = new List<(int, int)>();
         for (int i = 0; i < rooms.Count; i++) for (int j = i + 1; j < rooms.Count; j++)
         {
+            if (ExitPlacedAt && (i == rooms.Count - 1 || j == rooms.Count - 1)) continue;
             if (Connections.Contains(new Vector2Int(i, j)) || Connections.Contains(new Vector2Int(j, i))) continue;
             if (Gap(rooms[i], rooms[j]) <= reach) pairs.Add((i, j));
         }

@@ -39,7 +39,12 @@ public class EnemySpell
     [FoldoutGroup("Aim and damage"), Tooltip("Aims ahead of a moving target by this fraction of its travel (projectiles: during the flight; ground spells: during the delay).")]
     [Range(0f, 1f)] public float leadTarget = .4f;
 
-    string Label => spell != null ? (string.IsNullOrEmpty(spell.displayName) ? spell.name : spell.displayName) : "Spell";
+    [FoldoutGroup("Volley"), Tooltip("Cast as a volley (projectile spells): the balls appear one by one at the hand, hang in the air, then fly at the target one after another, speeding up (FireballVolley).")]
+    public bool volley;
+    [FoldoutGroup("Volley"), ShowIf(nameof(volley)), InlineProperty, HideLabel]
+    public FireballVolley.Settings volleySettings = new();
+
+    string Label => (spell != null ? (string.IsNullOrEmpty(spell.displayName) ? spell.name : spell.displayName) : "Spell") + (volley ? " volley" : "");
 
     [NonSerialized] EnemyAttack attack;
     // The brain's attack list entry for this spell, built on first use.

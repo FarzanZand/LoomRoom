@@ -19,7 +19,7 @@ public class EquipmentSlotUI : MonoBehaviour,IPointerClickHandler,IPointerEnterH
         var area=((RectTransform)transform).rect.size-Vector2.one*12f;
         ItemGridUI.UprightIcon(icon.rectTransform,area,item!=null && item.GridSize.x==1 && area.y>area.x*1.5f ? new Vector2Int(1,item.GridSize.y) : Vector2Int.one);}if(title!=null)title.text=Display(slot);
         if(silhouette!=null)silhouette.enabled=item==null && silhouette.sprite!=null;
-        if(honedFill!=null){honedFill.enabled=item!=null && item.honed>0;if(honedFill.enabled)honedFill.color=UIManager.HasInstance?UIManager.Instance.honed:UIManager.DefaultHoned;}}
+        if(honedFill!=null){honedFill.enabled=item!=null && item.HasRarityColour;if(honedFill.enabled)honedFill.color=item.RarityColour;}}
     public static string Display(EquipmentSlot slot)=>ItemData.SlotName(slot).ToUpperInvariant();
     // Click (either button) takes it off: a worn item goes to the bag and needs room there ("Make room" notice),
     // a hand item is put away and stays in its hotbar slot.

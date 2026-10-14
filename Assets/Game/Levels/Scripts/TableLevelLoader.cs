@@ -90,7 +90,7 @@ public class TableLevelLoader : MonoBehaviour
         if(player!=null) player.Died-=OnDied;
     }
     // The miniature keeps its ceilings from both sides; skylights and windows are the way to look in.
-    void OnPlayerSwapped(Player active) { if(Dungeon!=null) Dungeon.ShowCeilings(true); }
+    void OnPlayerSwapped(Player active) { if(Dungeon!=null) Dungeon.ShowCeilingsFor(active!=null ? active.kind : PlayerKind.Room); }
     public void ShowSelection(string title="Choose your adventure")
     {
         Initialize();

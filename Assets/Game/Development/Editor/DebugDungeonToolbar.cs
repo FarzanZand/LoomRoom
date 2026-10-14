@@ -32,6 +32,7 @@ public static class DebugDungeonToolbar
         new MainToolbarButton(new MainToolbarContent("Debug", "Start the test arena: one open room, enemies from Debug Dungeon Settings standing just outside detection range."), StartDebug),
         new MainToolbarButton(new MainToolbarContent("Dungeon", "Generate the level picked in the dropdown next to it and play it straight away, skipping the room."), StartDungeon),
         new MainToolbarDropdown(new MainToolbarContent(DungeonLabel(), "The level the Dungeon button plays (WorldManager's Debug Dungeons)."), ShowDungeonMenu),
+        new MainToolbarButton(new MainToolbarContent("Boss", "Start on the boss stage in front of the Dungeon Master (Boss Debug level). Walk to the middle of the stage and he sets the boss down."), StartBoss),
         new MainToolbarButton(new MainToolbarContent("Room", "Start in the room as the room player on an ordinary morning: no intro, wake-up or character sheet. Uses the normal save."), StartRoom),
         new MainToolbarToggle(new MainToolbarContent("Fullscreen", "Play in a borderless Game view covering the whole monitor (F11 toggles it by hand)."), FullscreenGameView.OnPlay, FullscreenGameView.SetOnPlay),
     };
@@ -67,6 +68,7 @@ public static class DebugDungeonToolbar
     public static void StartDebug() => Start(DebugDungeonSession.Mode.Arena);
     public static void StartDungeon() => Start(DebugDungeonSession.Mode.Dungeon);
     public static void StartRoom() => Start(DebugDungeonSession.Mode.Room);
+    public static void StartBoss() => Start(DebugDungeonSession.Mode.Boss);
 
     static void Start(DebugDungeonSession.Mode mode)
     {
@@ -87,6 +89,7 @@ public static class DebugDungeonToolbar
         {
             DebugDungeonSession.Mode.Dungeon => DebugDungeonSession.DungeonRequestKey,
             DebugDungeonSession.Mode.Room => DebugDungeonSession.RoomRequestKey,
+            DebugDungeonSession.Mode.Boss => DebugDungeonSession.BossRequestKey,
             _ => DebugDungeonSession.RequestKey,
         }, true);
         EditorApplication.isPlaying = true;

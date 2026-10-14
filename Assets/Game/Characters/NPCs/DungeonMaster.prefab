@@ -574,6 +574,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3663819416794516871, guid: 674e86dbfd8a94f4eac7271021377b8c, type: 3}
       insertIndex: 1
       addedObject: {fileID: 3952208145823684318}
+    - targetCorrespondingSourceObject: {fileID: 3663819416794516871, guid: 674e86dbfd8a94f4eac7271021377b8c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2509553252439216086}
+    - targetCorrespondingSourceObject: {fileID: 3663819416794516871, guid: 674e86dbfd8a94f4eac7271021377b8c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8118707400026791631}
   m_SourcePrefab: {fileID: 100100000, guid: 674e86dbfd8a94f4eac7271021377b8c, type: 3}
 --- !u!4 &8354458929810468110 stripped
 Transform:
@@ -609,6 +615,67 @@ MonoBehaviour:
     face: {fileID: 2627386721012427523}
   - kind: 4
     face: {fileID: 7627767077190084021}
+--- !u!114 &2509553252439216086
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8548514477391547922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98a9323c8c647e747829aaea72709e62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonMasterHand
+  reachLean: 28
+  aimReach: 0.5
+  aimKeepAway: 9
+  beamLean: 10
+  blend: 0.35
+  grip: 0.97
+  carryHeight: 7
+  carryLight: 40
+--- !u!114 &8118707400026791631
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8548514477391547922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0de886c0ec008ae44b2f10a95411d5b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonMasterBeam
+  bodyMaterial: {fileID: 2100000, guid: 110292bfd2daf724ba0a67deda464290, type: 2}
+  coreMaterial: {fileID: 2100000, guid: dc7b2903f187f2d4b86b34dba74176db, type: 2}
+  glowMaterial: {fileID: 2100000, guid: db8c08b8b36ea6e4dbdcebb80c31494f, type: 2}
+  boltMaterial: {fileID: 2100000, guid: 3b6209879c699754bbf1326f3699528f, type: 2}
+  flareMaterial: {fileID: 2100000, guid: ff9af0e3ceacb8040a25850a12716ee8, type: 2}
+  sparkMaterial: {fileID: 2100000, guid: 1d268683ca5efdb478bf0c538ff5b796, type: 2}
+  handEffect: {fileID: 7843412384735647069, guid: 9622c187f454d244cba23d95f5813644, type: 3}
+  handEffectScale: 1.6
+  impactEffect: {fileID: 7296478926641741468, guid: 389e3c4e3a2bbdd46b0bebf3d18cdecb, type: 3}
+  impactInterval: 0.35
+  impactOut: 2.5
+  blockSparks: {fileID: 8478314277763355861, guid: 420ad5fb586b1ff4092ea3e609068854, type: 3}
+  glowScreen: 0.26
+  bodyScreen: 0.11
+  coreScreen: 0.028
+  boltScreen: 0.07
+  warningScreen: 0.012
+  flareScreen: 0.42
+  endSwell: 1.5
+  flowRepeat: 6
+  scroll: -4
+  boltFlicker: 0.07
+  damageTick: 0.5
+  palmLight: 160
+  palmLightRange: 10
+  endLight: 3
+  endLightRange: 1.6
+  blockedShake: 0.12
+  hitShake: 0.35
 --- !u!1001 &8693144642281372731
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -726,6 +793,12 @@ MonoBehaviour:
     walkStepInterval: 0.55
     runStepInterval: 0.34
     painCooldown: 0.6
+  gore:
+    kind: 1
+    color: {r: 0.42, g: 0.03, b: 0.03, a: 1}
+    amount: 1
+    burstOnDeath: 0
+    killSound: {fileID: 0}
   hurtTrigger: 
   deathTrigger: 
   deathDisableDelay: 20

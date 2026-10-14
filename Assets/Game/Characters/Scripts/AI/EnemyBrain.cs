@@ -47,6 +47,8 @@ public class EnemyBrain : MonoBehaviour
     public event Action<EnemyState, EnemyState> StateChanged;
     // Chasing or attacking: it knows where the player is. Anything else can be backstabbed.
     public bool IsAlerted => State == EnemyState.Chase || State == EnemyState.Attack;
+    // Never caught unaware (a boss set down on the stage, watching the player from the start): no backstab while idle.
+    public bool Wary { get; set; }
 
     // Lying asleep (a sleeping pack, EnemySleep): it neither sees nor moves until woken, and every hit on it is a
     // backstab. The HumanoidController lies down (its Asleep bool); other rigs just slow their idle.
@@ -257,7 +259,19 @@ public class EnemyBrain : MonoBehaviour
         }
     }
 
-    float PreferredDistance => MaxAttackRange * Profile.preferredRangeFraction;
+    float PreferredDistance => (CloseIn ? MeleeRange : MaxAttackRange) * Profile.preferredRangeFraction;
+
+    // A caster that fights up close (EnemyData.closesIn) holds the distance of its melee attacks, not its spells'.
+    bool CloseIn => Data != null && Data.caster && Data.closesIn && Data.attacks != null && Data.attacks.Count > 0;
+    float MeleeRange
+    {
+        get
+        {
+            float r = 0f;
+            foreach (var a in Data.attacks) if (a != null) r = Mathf.Max(r, a.EffectiveMaxRange);
+            return r > 0f ? r : 1.8f;
+        }
+    }
 
     bool AnyAttackCoversDistance(float dist)
     {

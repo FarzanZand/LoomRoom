@@ -24,6 +24,7 @@ public class LootBeam : MonoBehaviour
     {
         if (item == null) return config.beamNormal;
         if (item.honed > 0) return UIManager.HasInstance ? WithAlpha(UIManager.Instance.honed, config.beamNormal.a) : config.beamHoned;
+        if (item.rarity == ItemRarity.Rare) return WithAlpha(Color.Lerp(item.RarityColour, new Color(1f, .62f, .25f), .5f), config.beamNormal.a * 1.3f);
         return item.itemType == ItemType.Consumable ? config.beamConsumable : config.beamNormal;
     }
     static Color WithAlpha(Color c, float a) { c.a = a; return c; }

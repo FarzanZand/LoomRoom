@@ -97,8 +97,8 @@ public class ItemGridUI : MonoBehaviour
         var honed = view.Find("Honed fill")?.GetComponent<Image>();
         if (honed != null)
         {
-            honed.enabled = stack.item.honed > 0;
-            if (honed.enabled) honed.color = UIManager.HasInstance ? UIManager.Instance.honed : UIManager.DefaultHoned;
+            honed.enabled = stack.item.HasRarityColour;
+            if (honed.enabled) honed.color = stack.item.RarityColour;
             honed.rectTransform.sizeDelta = view.sizeDelta - Vector2.one * 4f;
         }
         var count = view.Find("Stack")?.GetComponent<TMP_Text>();

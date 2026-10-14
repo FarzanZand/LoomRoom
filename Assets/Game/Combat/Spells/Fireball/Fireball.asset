@@ -24,7 +24,16 @@ MonoBehaviour:
   projectile: {fileID: 6498514768978316980, guid: e43e91865fe7ea147b56044f4351bd23, type: 3}
   radius: 1.5
   speed: 16
-  lifetime: 4
+  lifetime: 6
+  homing: 0
+  homingTurn: 540
+  groundArea: 0
+  areaRadius: 2
+  areaDelay: 1.2
+  showMarker: 1
+  areaMarker: {fileID: 0}
+  markerRadius: 2
+  areaRange: 14
   heldVisual: {fileID: 5233650602891333819, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
   impact: {fileID: 8076800287552310254, guid: b8c209c642364fb49bebf225b0e07ed8, type: 3}
   animation: 1

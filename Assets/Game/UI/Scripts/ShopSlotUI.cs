@@ -25,7 +25,7 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler
         item = data; click = onClick; hover = onHover;
         bool filled = data != null;
         if (icon != null) { icon.sprite = filled ? data.icon : null; icon.enabled = icon.sprite != null; icon.color = available ? Color.white : new Color(1, 1, 1, .4f); }
-        if (honedFill != null) honedFill.enabled = filled && data.honed > 0;
+        if (honedFill != null) { honedFill.enabled = filled && data.HasRarityColour; if (honedFill.enabled) honedFill.color = data.RarityColour; }
         if (count != null) count.text = filled && amount > 1 ? $"x{amount}" : "";
         if (background != null) background.color = filled ? ItemSlotUI.DungeonFilled : ItemSlotUI.DungeonEmpty;
         if (button != null) button.interactable = filled && available;

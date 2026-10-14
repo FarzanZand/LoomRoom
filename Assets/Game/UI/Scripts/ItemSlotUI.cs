@@ -103,8 +103,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         else if (background != null && GridCell) background.color = PreviewTint ?? (item != null ? occupiedTint : Color.white);
         if (honedFill != null)
         {
-            honedFill.enabled = item != null && item.honed > 0 && !GridCell;
-            if (honedFill.enabled) honedFill.color = UIManager.HasInstance ? UIManager.Instance.honed : UIManager.DefaultHoned;
+            honedFill.enabled = item != null && item.HasRarityColour && !GridCell;
+            if (honedFill.enabled) honedFill.color = item.RarityColour;
         }
         if (stackLabel != null)
         {
@@ -149,9 +149,28 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void OnPointerClick(PointerEventData e)
     {
         if (Item == null) return;
+        if (e.button == PointerEventData.InputButton.Left && !e.dragging && Keyboard.current != null && Keyboard.current.shiftKey.isPressed) { QuickMove(); return; }
         if (e.button == PointerEventData.InputButton.Right) { if (!ToggleEquip()) ShowContextMenu(); }
         else if (e.button == PointerEventData.InputButton.Left && !e.dragging && e.clickCount == 2)
             ActivateItem();
+    }
+
+    // Shift-click: from the bag to the first free hotbar slot that takes it, or from the hotbar back into the bag.
+    void QuickMove()
+    {
+        var owner = Owner;
+        var item = Item;
+        if (owner == null || item == null || Container == null) return;
+        if (ContextMenuUI.HasInstance) ContextMenuUI.Instance.Hide();
+        if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
+        bool fromHotbar = Container == owner.Hotbar;
+        var to = fromHotbar ? owner.Bag : owner.Hotbar;
+        if (to == null) return;
+        if (fromHotbar && HeldSlot(owner.Equipment, Container, Anchor).HasValue) { Refuse("Put it away first"); return; }
+        if (!to.Accepts(item)) { Refuse(fromHotbar ? null : "That doesn't go on the hotbar"); return; }
+        int spot = to.IsGrid ? to.FindSpot(item) : to.FirstEmpty();
+        if (spot < 0 || !Inventory.Move(Container, Anchor, to, spot)) { Refuse(fromHotbar ? "Inventory full" : "The hotbar is full"); return; }
+        var s = UIFeedbackSettings.Shared; s?.Play(s.equipKey);
     }
 
     void ActivateItem()
