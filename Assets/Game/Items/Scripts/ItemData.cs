@@ -14,6 +14,14 @@ public class ItemData : ScriptableObject
     [Tooltip("Stable save identifier; do not change after shipping.")] public string saveId;
     public WeaponCategory weaponCategory;
     [Tooltip("Makes this item a spell tome: held in the left hand, it casts this spell.")] public SpellDefinition spell;
+    [Tooltip("Rare items have their own colour on their slot, loot beam and name (UIManager.rare). Spell tomes are Rare.")]
+    public ItemRarity rarity;
+
+    // The colour behind the item in a slot (and its beam and name): Honed gear its blue, Rare items bronze, else none.
+    public bool HasRarityColour => honed > 0 || rarity == ItemRarity.Rare;
+    public Color RarityColour => honed > 0 ? (UIManager.HasInstance ? UIManager.Instance.honed : UIManager.DefaultHoned)
+        : UIManager.HasInstance ? UIManager.Instance.rare : UIManager.DefaultRare;
+    public string RarityTextColour => "#" + ColorUtility.ToHtmlStringRGB(Color.Lerp(RarityColour, Color.white, .45f));
     [TextArea] public string description;
     [HorizontalGroup("IconRow")]
     [Tooltip("Bag icon, sized to the item's footprint. Generated from the item's model (Icon Source) unless custom.")]

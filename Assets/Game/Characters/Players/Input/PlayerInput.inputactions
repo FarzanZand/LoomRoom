@@ -1192,6 +1192,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleGodMode",
+                    "type": "Button",
+                    "id": "89e15413-8a7b-4285-a3cc-ad4b72ff5608",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -1236,6 +1245,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "TogglePixelLighting",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "97972de8-cb7b-4ccb-a818-3e62e956af91",
+                    "path": "<Keyboard>/f8",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleGodMode",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

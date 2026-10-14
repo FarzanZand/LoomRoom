@@ -127,6 +127,8 @@ public partial class DungeonGenerator
         var instance=Instantiate(template.gameObject,Cell(Layout.RoomCenter(index)),Quaternion.Euler(0,90*Layout.RoomRotation(index),0),transform);
         instance.name=template.gameObject.name;
         templateInstances[index]=instance;
+        // A boss stage: the platform and stair go in, and the template is lifted onto it.
+        if(index==StageRoom)BuildStage(instance,index);
         var lanes=Lanes(index);
         foreach(var piece in instance.GetComponentsInChildren<DungeonTemplatePiece>(true))
         {
@@ -467,7 +469,7 @@ public partial class DungeonGenerator
                         break;
                     }
                     case DungeonSocketType.Boss:
-                        if(Milestone!=null && boss==null && room==exitIndex)boss=SpawnBoss(t.position,t.rotation);
+                        if(Milestone!=null && boss==null && room==exitIndex && StageRoom<0)boss=SpawnBoss(t.position,t.rotation);
                         break;
                     case DungeonSocketType.Merchant:
                         if(room==MerchantRoom)SpawnMerchant(t.position,t.rotation);
@@ -475,7 +477,9 @@ public partial class DungeonGenerator
                 }
             }
         }
-        if(Milestone!=null && boss==null && exitIndex>=0)
+        // A stage fight: the Dungeon Master sets the boss down when the player reaches the middle.
+        if(StageRoom>=0 && Milestone!=null)gameObject.AddComponent<BossStageEncounter>().Initialize(this,Milestone,exitStair);
+        else if(Milestone!=null && boss==null && exitIndex>=0)
         {
             var c=Cell(Layout.RoomCenter(exitIndex));
             var toExit=ExitPoint-c;toExit.y=0;

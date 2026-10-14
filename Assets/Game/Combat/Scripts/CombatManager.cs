@@ -492,7 +492,7 @@ public class CombatManager : Singleton<CombatManager>
         if (backstabsEnabled && brain != null)
         {
             bool behind = info.Direction.sqrMagnitude > .001f && Vector3.Dot(target.transform.forward, info.Direction) > backstabBehindDot;
-            if (!brain.IsAlerted || (backstabAlertFromBehind && behind))
+            if ((!brain.IsAlerted && !brain.Wary) || (backstabAlertFromBehind && behind))
             {
                 info.Backstab = true;
                 info.Amount *= backstabMultiplier;

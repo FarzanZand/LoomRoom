@@ -48,6 +48,7 @@ public class InputManager : Singleton<InputManager>
     public event Action<PlayerKind> DebugSwapRequested;
     public event Action DebugMoodPreviewRequested;
     public event Action DebugPixelLightingToggled;
+    public event Action DebugGodModeToggled;
 
     public PlayerInputActions Actions => actions;
 
@@ -98,6 +99,7 @@ public class InputManager : Singleton<InputManager>
         actions.Dev.PreviewSceneMood.performed += _ => { if (gameplayEnabled) DebugMoodPreviewRequested?.Invoke(); };
         // Look comparison, so it works anywhere, cutscenes included.
         actions.Dev.TogglePixelLighting.performed += _ => DebugPixelLightingToggled?.Invoke();
+        actions.Dev.ToggleGodMode.performed += _ => DebugGodModeToggled?.Invoke();
     }
 
     void Bind(InputAction move, InputAction look, InputAction jump, InputAction sprint, InputAction crouch,

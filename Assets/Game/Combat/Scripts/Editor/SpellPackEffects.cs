@@ -40,14 +40,17 @@ public static class SpellPackEffects
         var arts = new[]
         {
             new Art { prefab = "Fireball/Fireball Hand.prefab", effect = "Prefabs/Projectiles/Casting/Casting_Fire_LWRP.prefab", scale = .11f, charge = true, linger = .35f, remove = new[] { "Flame" }, drop = new[] { "Expansive Wave" } },
-            new Art { prefab = "Fireball/Fireball Projectile.prefab", parent = "Art", effect = "Prefabs/Projectiles/Projectiles/Projectile_Fire_LWRP.prefab", scale = .45f, remove = new[] { "Art/Core", "Art/Flame Tail", "Art/Embers" } },
-            new Art { prefab = "Fireball/Fireball Impact.prefab", effect = "Prefabs/Projectiles/Explosion/Explosion _Fire_4_LWRP.prefab", scale = .8f, once = true, life = .45f, maxScreen = .3f, lives = new[] { ("Effect", .45f) }, remove = new[] { "Flash", "Flames", "Sparks", "Puff" } },
+            new Art { prefab = "Fireball/Fireball Projectile.prefab", parent = "Art", effect = "Prefabs/Projectiles/Projectiles/Projectile_Fire_LWRP.prefab", scale = .45f, remove = new[] { "Art/Core", "Art/Flame Tail", "Art/Embers" }, drop = new[] { "Expansive Wave" } },
+            new Art { prefab = "Fireball/Fireball Impact.prefab", effect = "Prefabs/Projectiles/Explosion/Explosion _Fire_4_LWRP.prefab", scale = .8f, once = true, life = .45f, maxScreen = .08f, lives = new[] { ("Effect", .45f) }, remove = new[] { "Flash", "Flames", "Sparks", "Puff" }, drop = new[] { "Fireballs(Low Quality)" } },
             // Area Radius 2: the ground wave spreads about 4 m across, the burst stands a little over head height.
-            new Art { prefab = "Fire Circle/Fire Circle Eruption.prefab", effect = "Prefabs/Spells/Spell_Fire_5_LWRP.prefab", scale = 1f, once = true, life = .7f, maxScreen = .3f, sizes = new[] { ("Effect", .26f), ("Explosion", .8f) }, lives = new[] { ("Explosion", .6f) } },
+            new Art { prefab = "Fire Circle/Fire Circle Eruption.prefab", effect = "Prefabs/Spells/Spell_Fire_5_LWRP.prefab", scale = 1f, once = true, life = .7f, maxScreen = .07f, sizes = new[] { ("Effect", .26f), ("Explosion", .4f) }, lives = new[] { ("Explosion", .6f) } },
             // Held heal: a small steady green glow with a few motes, nothing more.
             new Art { prefab = "Heal/Heal Hand.prefab", effect = "Prefabs/Projectiles/Casting/Casting_Nature_2_LWRP.prefab", scale = .1f, charge = true, linger = .35f, remove = new[] { "Sparkles", "Motes" }, drop = new[] { "Thunder 3", "Spell 3" }, mute = new[] { "Effect" }, sizes = new[] { ("Energy", 1.6f), ("Glow", .6f) }, rates = new[] { ("Energy", .18f) } },
             // In first person the feet are out of view: the ring is set a little ahead, so it shows at the bottom of the screen.
             new Art { prefab = "Heal/Heal Impact.prefab", effect = "Prefabs/Spells/Spell_Nature_7_LWRP.prefab", scale = .6f, offset = new Vector3(0f, .05f, 1.1f), once = true, remove = new[] { "Sparkles", "Motes" }, maxScreen = .4f, sizes = new[] { ("Trail", .35f) } },
+            // The Dungeon Master's beam in a boss fight (DungeonMasterBeam): the glow at his hand, and where it lands on an unguarded player.
+            new Art { prefab = "Assets/Game/Combat/Effects/DM beam/DM beam charge.prefab", effect = "Prefabs/Projectiles/Casting/Casting_Light_LWRP.prefab", scale = 1.2f, maxScreen = .2f, charge = true, linger = .4f },
+            new Art { prefab = "Assets/Game/Combat/Effects/DM beam/DM beam impact.prefab", effect = "Prefabs/Projectiles/Explosion/Explosion_Light_LWRP.prefab", scale = .14f, once = true, life = .6f, maxScreen = .2f },
         };
         // The eruption was a variant of the fireball's impact: it becomes its own prefab, keeping its SpellVisual,
         // impulse and light.
@@ -60,7 +63,8 @@ public static class SpellPackEffects
 
     static void Build(Art art)
     {
-        string path = Spells + art.prefab;
+        string path = art.prefab.StartsWith("Assets/") ? art.prefab : Spells + art.prefab;
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null) return;
         var root = PrefabUtility.LoadPrefabContents(path);
         try
         {
@@ -88,7 +92,11 @@ public static class SpellPackEffects
             foreach (var c in effect.GetComponentsInChildren<Rigidbody>(true)) Object.DestroyImmediate(c);
             foreach (var l in effect.GetComponentsInChildren<Light>(true)) Object.DestroyImmediate(l.gameObject.GetComponent<ParticleSystem>() != null ? (Object)l : l.gameObject);
             if (art.drop != null)
-                foreach (var name in art.drop) { var t = effect.transform.Find(name); if (t != null) Object.DestroyImmediate(t.gameObject); }
+                foreach (var name in art.drop)
+                {
+                    var t = effect.transform.Find(name) ?? effect.GetComponentsInChildren<Transform>(true).FirstOrDefault(c => c.name == name);
+                    if (t != null && t != effect.transform) Object.DestroyImmediate(t.gameObject);
+                }
             if (PixelArt) Pixelate(effect);
             var systems = effect.GetComponentsInChildren<ParticleSystem>(true);
             foreach (var ps in systems)
@@ -224,7 +232,7 @@ public static class SpellPackEffects
     }
 
     // A copy of a pack material in _Pack/Materials whose textures are the pixel copies; refreshed from the pack each run.
-    static Material PixelMaterial(Material source, int divisor)
+    public static Material PixelMaterial(Material source, int divisor)
     {
         if (source == null || !AssetDatabase.GetAssetPath(source).StartsWith("Assets/Spells Pack/")) return source;
         string path = PixelFolder + "Materials/" + source.name + ".mat";

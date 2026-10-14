@@ -70,7 +70,8 @@ public sealed class TableLevelReveal : MonoBehaviour
                 // Keep the exact view if the player was already looking from the room.
                 if (Vector3.Distance(cameraPosition, overview) < 1f) { overview = cameraPosition; overviewRotation = cameraRotation; overviewProjection = originalProjection; }
             }
-            dungeon.ShowCeilings(true);
+            // From the room the rooms may stay open (WorldManager.hideTopForGenerations); the ceilings come back on arrival.
+            dungeon.ShowCeilingsFor(PlayerKind.Room);
             foreach (var character in dungeon.GetComponentsInChildren<Character>())
             { actors.Add((character.gameObject, character.gameObject.activeSelf)); character.gameObject.SetActive(false); }
             float range = Mathf.Max(1, new Vector2(width, depth).magnitude);
@@ -338,7 +339,7 @@ public sealed class TableLevelReveal : MonoBehaviour
         }
         if (captured && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind != PlayerKind.Table) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Table);
         RestoreCeilings();
-        if (dungeon != null) dungeon.ShowCeilings(true);
+        if (dungeon != null) dungeon.ShowCeilingsFor(PlayerManager.HasInstance ? PlayerManager.Instance.ActiveKind : PlayerKind.Table);
         pieces.Clear(); actors.Clear(); lights.Clear(); holes.Clear(); effects.Clear(); outlines.Clear(); captured = false; IsPlaying = false;
     }
     void OnDisable() => Restore();

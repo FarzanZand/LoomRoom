@@ -31,6 +31,12 @@ public class EnemyData : CharacterData
     [TabGroup("CharacterTabs/Combat/Details", "Spells"), ShowIf(nameof(caster))]
     [ListDrawerSettings(ShowFoldout = false, ListElementLabelName = "Label")]
     public List<EnemySpell> spells = new();
+    [TabGroup("CharacterTabs/Combat/Details", "Spells"), ShowIf(nameof(caster))]
+    [Tooltip("A fighter who also casts: it keeps closing in to its melee attacks and casts on the way and when the target backs off, instead of keeping spell range.")]
+    public bool closesIn;
+    [TabGroup("CharacterTabs/Combat/Details", "Spells"), ShowIf(nameof(caster)), Min(0)]
+    [Tooltip("Seconds after any cast before it may cast another spell (each spell's own cooldown still applies): without it, spells that are all ready are cast back to back while it stands still.")]
+    public float spellGap = 4f;
 
     [TabGroup(InspectorTabs, "Stats"), Title("Rewards")]
     [Tooltip("Character experience for killing this enemy. Zero derives it from maximum health, so tougher enemies are worth more.")]

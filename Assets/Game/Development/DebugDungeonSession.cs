@@ -5,10 +5,14 @@ using UnityEngine;
 // Editor test sessions use the normal dungeon and combat systems, with isolated saves.
 public class DebugDungeonSession : MonoBehaviour
 {
-    public enum Mode { Arena, Dungeon, Room }
+    public enum Mode { Arena, Dungeon, Room, Boss }
     public const string RequestKey = "LoomRoom.DebugDungeon";
     public const string DungeonRequestKey = "LoomRoom.DebugDungeon.Generated";
     public const string RoomRequestKey = "LoomRoom.DebugDungeon.Room";
+    public const string BossRequestKey = "LoomRoom.DebugDungeon.Boss";
+    // The Boss button: a small level whose exit is the boss stage in front of the Dungeon Master. The player starts on
+    // the stage; walking to its middle starts the fight (BossStageEncounter).
+    public const string BossLevelPath = "Assets/Game/Development/Debug Dungeon/Boss Debug.asset";
     public const string SettingsPath = "Assets/Game/Development/Debug Dungeon/Debug Dungeon Settings.asset";
     // Both dungeon modes skip the room (no intro, wake-up or reveal) and save to loomroom-debug.json.
     // Arena: the authored test arena with the settings' enemies. Dungeon: the level picked in the toolbar's dropdown (SelectedDungeon), generated as in a real run.
@@ -28,6 +32,8 @@ public class DebugDungeonSession : MonoBehaviour
 #if UNITY_EDITOR
         bool arena = UnityEditor.SessionState.GetBool(RequestKey, false);
         bool dungeon = UnityEditor.SessionState.GetBool(DungeonRequestKey, false);
+        bool boss = UnityEditor.SessionState.GetBool(BossRequestKey, false);
+        UnityEditor.SessionState.SetBool(BossRequestKey, false);
         RoomStart = UnityEditor.SessionState.GetBool(RoomRequestKey, false);
         UnityEditor.SessionState.SetBool(RequestKey, false);
         UnityEditor.SessionState.SetBool(DungeonRequestKey, false);
@@ -35,9 +41,9 @@ public class DebugDungeonSession : MonoBehaviour
         // Co-op tests (the Co-op button, Multiplayer Play Mode's virtual players) start in the room like Room does.
         if (CoopEditorTesting.Requested && !CoopEditorTesting.NewGame) RoomStart = true;
         if (RoomStart) { CurrentMode = Mode.Room; return; }
-        CurrentMode = dungeon ? Mode.Dungeon : Mode.Arena;
-        if (arena || dungeon) settings = UnityEditor.AssetDatabase.LoadAssetAtPath<DebugDungeonSettings>(SettingsPath);
-        Active = dungeon || arena && settings != null && settings.level != null;
+        CurrentMode = boss ? Mode.Boss : dungeon ? Mode.Dungeon : Mode.Arena;
+        if (arena || dungeon || boss) settings = UnityEditor.AssetDatabase.LoadAssetAtPath<DebugDungeonSettings>(SettingsPath);
+        Active = dungeon || boss || arena && settings != null && settings.level != null;
 #endif
     }
 
@@ -52,11 +58,39 @@ public class DebugDungeonSession : MonoBehaviour
         yield return null; // Let scene managers initialize first.
         var loader = FindAnyObjectByType<TableLevelLoader>();
         if (loader == null) { Debug.LogError("Debug dungeon requires the Room scene."); yield break; }
-        var level = CurrentMode == Mode.Arena ? settings.level : SelectedDungeon;
+        var level = CurrentMode == Mode.Arena ? settings.level : CurrentMode == Mode.Boss ? BossLevel : SelectedDungeon;
         if (level == null) { Debug.LogError("Add the levels the Dungeon button should play to WorldManager's Debug Dungeons."); yield break; }
         var player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         if (settings != null && settings.startingClass != null) player.GetComponent<AdventurerProgress>().selectedClass = settings.startingClass;
         loader.Load(level);
+        if (CurrentMode == Mode.Boss) yield return OntoStage(loader, player);
+    }
+
+    static TableLevelData BossLevel
+    {
+        get
+        {
+#if UNITY_EDITOR
+            return UnityEditor.AssetDatabase.LoadAssetAtPath<TableLevelData>(BossLevelPath);
+#else
+            return null;
+#endif
+        }
+    }
+
+    // Boss: once the floor is built, the player stands on the stage, on the side away from the Dungeon Master, facing him.
+    static IEnumerator OntoStage(TableLevelLoader loader, Player player)
+    {
+        for (float t = 0; t < 10f && (loader.Busy || loader.Dungeon == null); t += Time.deltaTime) yield return null;
+        var dungeon = loader.Dungeon;
+        if (dungeon == null || dungeon.Stage == null) { Debug.LogWarning("Boss debug: the floor has no boss stage."); yield break; }
+        var centre = dungeon.StageCentre;
+        var toDm = (TableManager.HasInstance && TableManager.Instance.DM != null ? TableManager.Instance.DM.transform.position : centre + Vector3.right) - centre; toDm.y = 0;
+        toDm = toDm.sqrMagnitude > .01f ? toDm.normalized : Vector3.right;
+        var at = centre - toDm * dungeon.LevelData.cellSize * 2.5f;
+        if (UnityEngine.AI.NavMesh.SamplePosition(at, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas)) at = hit.position;
+        player.Warp(at, Quaternion.LookRotation(toDm));
+        if (player.Look != null) { player.Look.SetYaw(Quaternion.LookRotation(toDm).eulerAngles.y); player.Look.SetPitch(8f); }
     }
 
     // The level the Dungeon button plays: the one picked in the toolbar's dropdown (remembered per user), else the first

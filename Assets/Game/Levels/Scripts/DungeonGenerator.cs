@@ -178,6 +178,7 @@ public partial class DungeonGenerator : MonoBehaviour
 
     void BuildArchitecture(TableLevelData level, int seed, int floorNumber, System.Diagnostics.Stopwatch watch)
     {
+        StageRoom = FindStageRoom();
         // Rooms are one tile high: only a template that asks for more is taller (for effect), never a generated room.
         RoomHeightTiles = new int[Layout.rooms.Count];
         for (int i = 0; i < RoomHeightTiles.Length; i++) { var t = TemplateOf(i); RoomHeightTiles[i] = t != null ? Mathf.Max(1, t.heightTiles) : 1; }
@@ -247,6 +248,8 @@ public partial class DungeonGenerator : MonoBehaviour
             var roofCenter = pos + new Vector3((left-right)*.5f, height+.12f, (back-front)*.5f);
             var roofSize = new Vector3(size-left-right, .24f, size-back-front);
             var ceilingMaterial = DungeonRoomStyle.Resolve(style != null ? style.ceiling : null, level.ceilingMaterial);
+            // The boss stage stands open: no ceiling, no walls (DungeonGenerator.Stage).
+            if (IsStageCell(x, z)) continue;
             if (!RoofOpen(new Vector2Int(x, z))) ArchitectureBox("Ceiling", roofCenter, roofSize, ceilingMaterial, ceiling);
             else Skylight(new Vector2Int(x, z), roofCenter, roofSize, frames[room], ceilingMaterial,
                 DungeonRoomStyle.Resolve(style != null ? style.trim : null, level.trimMaterial), RoofOpen);
@@ -327,7 +330,10 @@ public partial class DungeonGenerator : MonoBehaviour
         var ladderCell = CellOf(ladderAt);
         if (!Layout.InBounds(ladderCell) || !Layout.floor[ladderCell.x, ladderCell.y]) { ladderAt = SpawnPoint; SpawnPoint += forward * 1.2f; }
         MakeExit(ladderAt - Vector3.up * .12f, true).transform.rotation = SpawnRotation;
-        var exitStair = MakeExit(ExitPoint, false);
+        // On a stage the way on appears on the platform once the boss falls (BossStageEncounter shows it).
+        if (StageRoom >= 0) ExitPoint = StageExitPoint();
+        var exitStair = MakeExit(ExitPoint, false, StageRoom >= 0);
+        if (StageRoom >= 0) exitStair.gameObject.SetActive(false);
         // Spawn after navigation exists. The first room is always safe. An authored map brings its own.
         if (Authored) SpawnAuthoredContent();
         else for (int i=1;i<Layout.rooms.Count;i++)
@@ -624,6 +630,9 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     public void ShowCeilings(bool value) { if(ceiling!=null) ceiling.gameObject.SetActive(value); }
+    // Ceilings as the view asks (WorldManager.hideTopForGenerations): over the table player inside, off from the room.
+    public static bool HideTopFromRoom => WorldManager.HasInstance && WorldManager.Instance.hideTopForGenerations;
+    public void ShowCeilingsFor(PlayerKind viewer) => ShowCeilings(!(HideTopFromRoom && viewer != PlayerKind.Table));
     public Transform Ceilings => ceiling;
     // The spawn room has a skylight: the table reveal's camera can fly in through it.
     public bool SpawnRoofOpen { get; private set; }

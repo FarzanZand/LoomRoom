@@ -63,12 +63,53 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
         PlayerManager.Instance.PlayerSwapped += OnPlayerSwapped;
     }
 
+    // A boss fight brings him up to the table in front of the stage, facing it (BossStageEncounter).
+    Vector3? focusAt, faceAt;
+    [Tooltip("World units a second he moves when a boss fight brings him up to the table.")]
+    [Min(.1f)] public float focusSpeed = 8f;
+    [Tooltip("Held while a boss fight brings him to the table: he leans over it on his forearms, face low over the stage.")]
+    public string leanState = "Lean On Table";
+    [Tooltip("His standing idle, back from the table.")]
+    public string standingState = "IdleWalkRunBT";
+    [Min(0)] public float leanBlend = .8f;
+    [Tooltip("World units he stands back from the table's edge while he leans on it (his forearms reach the top).")]
+    [Min(0)] public float leanBack = 6f;
+
+    public void Focus(Vector3 standAt, Vector3 face)
+    {
+        focusAt = standAt; faceAt = face;
+        if (animator != null && animator.isActiveAndEnabled && animator.HasState(0, Animator.StringToHash(leanState)))
+            animator.CrossFadeInFixedTime(leanState, leanBlend, 0);
+    }
+
+    public void Unfocus()
+    {
+        if (focusAt.HasValue)
+        {
+            returning = true;
+            if (standing && animator != null && animator.isActiveAndEnabled) animator.CrossFadeInFixedTime(standingState, leanBlend, 0);
+        }
+        focusAt = null; faceAt = null;
+    }
+    bool returning;
+
     void Update()
     {
         // Seated (and sitting down), he stays on the chair: the clips' root motion would walk him off it.
         if (!standing) { body.SetPositionAndRotation(seatPosition, seatRotation); return; }
+        if (focusAt.HasValue)
+        {
+            var target = new Vector3(focusAt.Value.x, seatPosition.y, focusAt.Value.z);
+            body.position = Vector3.MoveTowards(body.position, target, focusSpeed * Time.deltaTime);
+            var look = faceAt.Value - body.position; look.y = 0;
+            if (look.sqrMagnitude > .01f) body.rotation = Quaternion.RotateTowards(body.rotation, Quaternion.LookRotation(look), turnSpeed * Time.deltaTime);
+            return;
+        }
         var standAt = seatPosition + standOffset;
-        body.position = new Vector3(standAt.x, seatPosition.y, standAt.z);
+        var standHere = new Vector3(standAt.x, seatPosition.y, standAt.z);
+        // Back from the stage he walks; otherwise he simply stands there.
+        if (returning) { body.position = Vector3.MoveTowards(body.position, standHere, focusSpeed * Time.deltaTime); returning = (body.position - standHere).sqrMagnitude > .01f; }
+        else body.position = standHere;
         if (!TableManager.HasInstance) return;
         var to = TableManager.Instance.transform.position - body.position; to.y = 0;
         if (to.sqrMagnitude < .01f) return;

@@ -45,6 +45,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIManager
   kitMaterial: {fileID: 2100000, guid: 80f060d7ffe21b043a6ee32d5d9f4e3a, type: 2}
+  preset: 0
+  savedTheme: {fileID: 0}
   shadow: {r: 0.043, g: 0.055, b: 0.067, a: 1}
   panel: {r: 0.114, g: 0.145, b: 0.173, a: 1}
   panelShading: 0.25
@@ -58,4 +60,7 @@ MonoBehaviour:
   experience: {r: 0.722, g: 0.565, b: 0.243, a: 1}
   gold: {r: 1, g: 0.851, b: 0.4, a: 1}
   bossHealth: {r: 0.722, g: 0.122, b: 0.122, a: 1}
+  enemyHealth: {r: 0.698, g: 0.22, b: 0.09, a: 1}
   recentDamage: {r: 0.949, g: 0.62, b: 0.298, a: 1}
+  honed: {r: 0.16, g: 0.3, b: 0.62, a: 1}
+  rare: {r: 0.34, g: 0.19, b: 0.07, a: 1}

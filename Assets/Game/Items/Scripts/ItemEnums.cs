@@ -2,6 +2,9 @@ using System;
 
 // All values are serialized as integers. Never renumber, never reuse a retired value.
 
+// How rare an item is: Rare items (spell tomes) get the bronze slot fill, loot beam and name colour (UIManager.rare).
+public enum ItemRarity { Common = 0, Rare = 1 }
+
 // Which weapon skill a weapon trains and scales with (see AdventureSkills.ForWeapon).
 public enum WeaponCategory { Sword = 0, Mace = 1 }
 

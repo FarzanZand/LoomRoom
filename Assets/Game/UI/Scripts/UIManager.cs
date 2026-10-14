@@ -90,6 +90,8 @@ public class UIManager : Singleton<UIManager>
     [PropertyOrder(2)] public Color recentDamage = new(.949f, .62f, .298f);
     [PropertyOrder(2), Tooltip("Slot background and tooltip line of honed (+1, +2) gear. Not part of the theme.")] public Color honed = DefaultHoned;
     public static readonly Color DefaultHoned = new(.16f, .3f, .62f);
+    [PropertyOrder(2), Tooltip("Slot background, loot beam and name of Rare items (spell tomes). Not part of the theme.")] public Color rare = DefaultRare;
+    public static readonly Color DefaultRare = new(.34f, .19f, .07f);
 
     public event Action Changed;
 

@@ -151,10 +151,29 @@ public partial class IntroController
     // enough, the Dungeon Master ends it anyway.
     IEnumerator EndPractice()
     {
-        SpawnKiller();
+        var hunter = SpawnKiller();
+        int landed = 0;
+        System.Action<DamageInfo> counted = info => { if (info.Source == table && info.Amount > 0f) landed++; };
+        if (hunter != null) hunter.Damaged += counted;
         yield return SayAll(new[] { killerLine });
         float until = Time.time + killerSeconds;
-        while (PracticeRunning && table.IsAlive && Time.time < until) yield return null;
+        while (PracticeRunning && table.IsAlive && Time.time < until)
+        {
+            // Holding it off too well: the Dungeon Master has had enough, and the killer's volley finds the player wherever they run.
+            if (hunter != null && hunter.IsAlive && landed >= killerHitsToVolley && volleySpell != null)
+            {
+                hunter.Damaged -= counted;
+                yield return SayAll(new[] { tooLong });
+                yield return new WaitForSeconds(volleyDelay);
+                if (!PracticeRunning || !table.IsAlive || hunter == null || !hunter.IsAlive) break;
+                yield return KillerVolley(hunter);
+                // The volley finishes it; the clock is only a fallback now.
+                until = Time.time + 8f;
+                landed = int.MinValue;
+            }
+            yield return null;
+        }
+        if (hunter != null) hunter.Damaged -= counted;
         if (!PracticeRunning || !table.IsAlive) yield break;
         yield return SayAll(new[] { timeUp });
         if (!table.IsAlive || table.Stats == null) yield break;
@@ -163,6 +182,21 @@ public partial class IntroController
         info.Magic = true; info.FromEffect = true;
         info.SourceName = "the Dungeon Master";
         table.Stats.TakeDamage(info);
+    }
+
+    // The killer stops, raises its hand and lets the homing volley go.
+    IEnumerator KillerVolley(Character hunter)
+    {
+        var brain = hunter.GetComponent<EnemyBrain>();
+        var animator = hunter.GetComponentInChildren<Animator>();
+        var hand = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
+        float casting = killerVolley.count * killerVolley.spawnInterval + killerVolley.riseSeconds;
+        if (brain != null) brain.Stun(casting);
+        AnimatorHelper.SetTrigger(animator, "CastSpell");
+        var body = hunter.transform;
+        FireballVolley.Cast(volleySpell, hunter, () => hand != null ? hand.position + Vector3.up * .3f : body.position + Vector3.up * 2f,
+            table, volleyDamage, killerVolley);
+        yield return new WaitForSeconds(casting);
     }
 
     Character SpawnKiller()

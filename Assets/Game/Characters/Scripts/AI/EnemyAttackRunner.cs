@@ -154,7 +154,10 @@ public class EnemyAttackRunner
     bool Usable(int i, float dist)
     {
         var a = Attacks[i];
-        return a != null && dist >= a.minRange && dist <= a.EffectiveMaxRange && i < cooldowns.Count && cooldowns[i] <= 0f;
+        // Cornered (backing off into a wall), a ranged attack is used however close the target is: there is nowhere
+        // left to get its range from.
+        float min = brain.Cornered && a != null && a.IsRanged ? 0f : a != null ? a.minRange : 0f;
+        return a != null && dist >= min && dist <= a.EffectiveMaxRange && i < cooldowns.Count && cooldowns[i] <= 0f;
     }
 
     void StartCooldown(EnemyAttack attack)
@@ -163,6 +166,10 @@ public class EnemyAttackRunner
         int index = Attacks.IndexOf(attack);
         if (index >= 0 && index < cooldowns.Count)
             cooldowns[index] = attack.cooldown * (Tuning != null ? Tuning.enemyCooldownMultiplier : 1f);
+        // After a cast, its other spells wait the spell gap too: it goes back to its other attacks in between.
+        if (attack.IsSpell && brain.Data != null && brain.Data.spellGap > 0f)
+            for (int i = 0; i < Attacks.Count && i < cooldowns.Count; i++)
+                if (Attacks[i] != null && Attacks[i] != attack && Attacks[i].IsSpell) cooldowns[i] = Mathf.Max(cooldowns[i], brain.Data.spellGap);
     }
 
     public void StartAttack(EnemyAttack attack)
@@ -458,6 +465,12 @@ public class EnemyAttackRunner
             return;
         }
         if (spell.projectile == null) return;
+        if (cast.volley)
+        {
+            var from = hand; var body = brain.transform;
+            FireballVolley.Cast(spell, Character, () => from != null ? from.position : body.position + Vector3.up * 1.8f, target, damage, cast.volleySettings);
+            return;
+        }
         Vector3 aim = AimPoint(target);
         float flight = Vector3.Distance(origin, aim) / Mathf.Max(1f, spell.speed);
         aim += velocity * flight * cast.leadTarget;
@@ -465,6 +478,7 @@ public class EnemyAttackRunner
         dir = Quaternion.AngleAxis(Random.Range(-cast.spread, cast.spread), Vector3.up)
             * Quaternion.AngleAxis(Random.Range(-cast.spread, cast.spread) * .5f, Vector3.Cross(Vector3.up, dir).normalized) * dir;
         var projectile = Object.Instantiate(spell.projectile, origin, Quaternion.LookRotation(dir));
+        if (spell.homing) { projectile.HomingTarget = target; projectile.HomingTurn = spell.homingTurn; }
         projectile.Launch(Character, spell, damage, null);
         CoopWorld.EnemyCast(Character, cast, origin, dir);
     }

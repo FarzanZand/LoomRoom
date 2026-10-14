@@ -38,7 +38,8 @@ public partial class DungeonGenerator
         var shapeRandom = new System.Random(unchecked(seed + 88667));
         var shapes = new DungeonShape[count];
         for (int i = 0; i < count; i++) shapes[i] = ChooseShape(roles[i], chosen[i], shapeRandom, RequestedTemplate(i, roles[i], chosen[i], merchant));
-        Layout = DungeonLayout.Grow(level.width, level.depth, shapes, seed, level.Growth);
+        // A stage arena is kept at the edge in front of the Dungeon Master (DungeonGenerator.Stage).
+        Layout = DungeonLayout.Grow(level.width, level.depth, shapes, seed, level.Growth, StageOrigin(shapes[count - 1]));
         var placed = Layout.PlacedRequests;
         Roles = new RoomRole[placed.Length];
         profiles = new DungeonRoomProfile[placed.Length];
