@@ -10,6 +10,7 @@ public class DungeonHud : MonoBehaviour
     RawImage mapImage;
     bool[,] explored;
     float next;
+    readonly System.Collections.Generic.List<Vector2Int> mates=new();
     public void Initialize(DungeonGenerator generator)
     {
         dungeon=generator;
@@ -38,6 +39,12 @@ public class DungeonHud : MonoBehaviour
         int w=map.width,h=map.height;
         var origin=dungeon.Cell(Vector2Int.zero);float cell=(dungeon.Cell(Vector2Int.right)-origin).x;
         int px=Mathf.RoundToInt((player.transform.position.x-origin.x)/cell),py=Mathf.RoundToInt((player.transform.position.z-origin.z)/cell);
+        // Co-op: teammates on the table show as their own dots, and what they see is explored for everyone.
+        mates.Clear();
+        if(Coop.Running && MultiplayerManager.HasInstance)
+            foreach(var p in MultiplayerManager.Instance.Players)
+                if(p!=null && !p.IsOwner && p.Current.inRun && p.Current.alive && p.Current.place==CoopPlace.Table)
+                    mates.Add(new Vector2Int(Mathf.RoundToInt((p.transform.position.x-origin.x)/cell),Mathf.RoundToInt((p.transform.position.z-origin.z)/cell)));
         if(shop==null)
         {
             shop=new bool[w,h];
@@ -46,9 +53,11 @@ public class DungeonHud : MonoBehaviour
         for(int x=0;x<w;x++)for(int y=0;y<h;y++)
         {
             if(Mathf.Abs(x-px)<=3 && Mathf.Abs(y-py)<=3)explored[x,y]=true;
+            foreach(var m in mates)if(Mathf.Abs(x-m.x)<=3 && Mathf.Abs(y-m.y)<=3)explored[x,y]=true;
             Color color=new Color(.025f,.035f,.04f,.85f);
             if(explored[x,y] && dungeon.Layout.floor[x,y])color=shop[x,y] ? new Color(.36f,.68f,.34f,.95f) : new Color(.46f,.48f,.43f,.92f); // the shop room shows green
             if(explored[x,y] && new Vector2Int(x,y)==dungeon.Layout.Exit)color=new Color(.4f,.85f,.6f);
+            foreach(var m in mates)if(x==m.x && y==m.y)color=new Color(.4f,.8f,1f);   // a teammate: blue
             if(x==px && y==py)color=new Color(1,.8f,.33f);
             map.SetPixel(x,y,color);
         }

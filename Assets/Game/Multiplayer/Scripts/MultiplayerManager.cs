@@ -503,7 +503,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         CoopMessages.Register<EnemySpawn>(CoopMessages.Spawn, CoopWorld.ReceiveSpawn);
         CoopMessages.Register<FlagSet>(CoopMessages.Flags, (s, m) => ApplyHostFlags(m));
         CoopMessages.Register<CoopRules>(CoopMessages.Rules, (s, m) => rules = m);
-        CoopMessages.Register<CoopInt>(CoopMessages.Countdown, (s, m) => ShowCountdown(m.a));
+        CoopMessages.Register<CoopInt>(CoopMessages.Countdown, (s, m) => ShowCountdown(m.a, m.b));
         CoopMessages.Register<CoopInt>(CoopMessages.IntroBegin, (s, m) => { if (!network.IsServer && IntroController.HasInstance) IntroController.Instance.PlayShared(); });
         CoopMessages.Register<CoopInt>(CoopMessages.Finale, (s, m) => { if (!network.IsServer && IntroController.HasInstance) IntroController.Instance.RemoteFinale(m.a != 0); });
         CoopMessages.Register<CoopInt>(CoopMessages.FloorHash, (s, m) =>
@@ -738,6 +738,30 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         CoopWorld.Tick();
         if (IsHost) HostRun();
         UpdateSpectating();
+        TeammateNews();
+        TickCountdown();
+    }
+
+    // What happens to the others in a run goes in the feed: one of them dies, or is back on the next floor. A change
+    // has to hold for a second before it is said (a state seen mid floor change never reaches the feed).
+    readonly Dictionary<CoopPlayer, (bool said, bool seen, float since)> aliveNews = new();
+    void TeammateNews()
+    {
+        foreach (var p in players)
+        {
+            if (p == null || p.IsOwner) continue;
+            var s = p.Current;
+            if (!s.inRun || TableManager.Loader == null || TableManager.Loader.Busy) { if (!s.inRun) aliveNews.Remove(p); continue; }
+            if (!aliveNews.TryGetValue(p, out var n)) { aliveNews[p] = (s.alive, s.alive, Time.unscaledTime); continue; }
+            if (s.alive != n.seen) n = (n.said, s.alive, Time.unscaledTime);
+            if (n.seen != n.said && Time.unscaledTime - n.since >= 1f)
+            {
+                MessageLog.Post(n.seen ? $"{p.DisplayName} is back." : $"{p.DisplayName} died.", n.seen ? MessageKind.Good : MessageKind.Bad);
+                Debug.Log($"[Coop] {p.DisplayName} {(n.seen ? "back" : "died")}: place {s.place} health {s.health} floor {TableManager.Loader.FloorNumber}");
+                n = (n.seen, n.seen, n.since);
+            }
+            aliveNews[p] = n;
+        }
     }
 
     // ── The host's run ────────────────────────────────────────────────
@@ -901,17 +925,37 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (countdownEnds < 0f)
         {
             countdownEnds = Time.unscaledTime + descendCountdown;
-            CoopMessages.ToGuests(CoopMessages.Countdown, new CoopInt { a = Mathf.CeilToInt(descendCountdown) });
-            ShowCountdown(Mathf.CeilToInt(descendCountdown));
+            CoopMessages.ToGuests(CoopMessages.Countdown, new CoopInt { a = Mathf.CeilToInt(descendCountdown), b = slot });
+            ShowCountdown(Mathf.CeilToInt(descendCountdown), slot);
         }
     }
 
-    void ShowCountdown(int seconds)
+    // Someone reached the stairs: who, and how long the rest have (counted down on screen from five).
+    void ShowCountdown(int seconds, int slot)
     {
         var loader = TableManager.Loader;
-        string where = loader != null && loader.HasNextFloor ? $"Going down in {seconds} seconds" : $"Leaving in {seconds} seconds";
-        NotificationUI.Show(where);
-        MessageLog.Post(where + ". Get to the stairs.", MessageKind.Info);
+        bool down = loader != null && loader.HasNextFloor;
+        string when = down ? $"Going down in {seconds} seconds" : $"Leaving in {seconds} seconds";
+        var who = PlayerInSlot(slot);
+        string line = who == null || who.IsOwner ? $"{when}. Waiting for the others." : $"{who.DisplayName} is at the stairs. {when}.";
+        NotificationUI.Show(line);
+        MessageLog.Post(line, MessageKind.Info);
+        countdownShownUntil = Time.unscaledTime + seconds;
+        countdownShownLast = seconds;
+        countdownDown = down;
+    }
+
+    float countdownShownUntil = -1f;
+    int countdownShownLast;
+    bool countdownDown;
+
+    void TickCountdown()
+    {
+        if (countdownShownUntil < 0f) return;
+        int left = Mathf.CeilToInt(countdownShownUntil - Time.unscaledTime);
+        if (left <= 0 || (TableManager.Loader != null && TableManager.Loader.Busy)) { countdownShownUntil = -1f; return; }
+        if (left < countdownShownLast && left <= 5) NotificationUI.Show(countdownDown ? $"Going down in {left}" : $"Leaving in {left}");
+        countdownShownLast = left;
     }
 
     void HostStairs()

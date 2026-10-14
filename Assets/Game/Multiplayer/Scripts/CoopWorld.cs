@@ -458,7 +458,7 @@ public static class CoopWorld
     public static void PickedUp(WorldItem item)
     {
         if (!Coop.Running || Applying || item == null || !lootKeys.TryGetValue(item.gameObject, out var key) || !SharedPiece(key)) return;
-        Send(new CoopEvent { kind = CoopEventKind.PickupTaken, id = key });
+        Send(new CoopEvent { kind = CoopEventKind.PickupTaken, id = key, item = new FixedString64Bytes(item.Item != null ? item.Item.itemName : "") });
     }
 
     public static void CoinsTaken(CoinPickup coins, int amount)
@@ -690,7 +690,10 @@ public static class CoopWorld
                 break;
             }
             case CoopEventKind.PickupTaken:
-                if (loot.TryGetValue(e.id, out var piece) && piece != null) Object.Destroy(piece);
+                // Shared loot a teammate took: say who, so it doesn't just vanish.
+                if (loot.TryGetValue(e.id, out var piece) && piece != null && e.item.Length > 0 && MultiplayerManager.Instance.PlayerInSlot(e.slot) is CoopPlayer taker)
+                    MessageLog.Post($"{taker.DisplayName} took the {e.item}.", MessageKind.Loot);
+                if (loot.TryGetValue(e.id, out piece) && piece != null) Object.Destroy(piece);
                 loot.Remove(e.id);
                 break;
             case CoopEventKind.CoinsTaken:

@@ -11,6 +11,10 @@ public class CoopAvatar : MonoBehaviour
     [SerializeField] CapsuleCollider body;
     [Tooltip("Height of the name over the feet, in metres of the world it is in.")]
     [SerializeField] float labelHeight = 2.15f;
+    [Tooltip("Metres (at the body's own scale) up to which the name label shrinks with distance like the body; further it keeps its size on screen.")]
+    [SerializeField] float labelFullSize = 4f;
+    static readonly int ZTestId = Shader.PropertyToID("unity_GUIZTestMode");
+    bool labelOnTop;
 
     CoopPlayer player;
     GameObject model;
@@ -61,10 +65,15 @@ public class CoopAvatar : MonoBehaviour
         Rebuild(false);
         if (nameLabel != null)
         {
-            nameLabel.text = player.DisplayName;
+            if (nameLabel.text != player.DisplayName) nameLabel.text = player.DisplayName;
             nameLabel.transform.position = transform.position + Vector3.up * labelHeight * builtScale;
-            nameLabel.transform.localScale = Vector3.one * builtScale;
             var cam = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
+            // Drawn over walls so teammates can find each other; past labelFullSize metres it keeps its size on
+            // screen (instead of shrinking away) and dims a little.
+            if (!labelOnTop) { var m = nameLabel.fontMaterial; m.SetFloat(ZTestId, (float)UnityEngine.Rendering.CompareFunction.Always); m.renderQueue = 4000; labelOnTop = true; }
+            float far = cam != null ? Vector3.Distance(cam.transform.position, nameLabel.transform.position) / (labelFullSize * builtScale) : 1f;
+            nameLabel.transform.localScale = Vector3.one * builtScale * Mathf.Max(1f, far);
+            nameLabel.alpha = far > 1f ? Mathf.Lerp(1f, .65f, Mathf.InverseLerp(1f, 4f, far)) : 1f;
             if (cam != null) nameLabel.transform.rotation = Quaternion.LookRotation(nameLabel.transform.position - cam.transform.position);
         }
         // A jump (room to table, a new floor): the body is not solid for a moment, so it never lands inside
