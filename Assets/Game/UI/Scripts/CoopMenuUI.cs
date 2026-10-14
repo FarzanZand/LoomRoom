@@ -61,7 +61,7 @@ public class CoopMenuUI : MonoBehaviour
         Wire(hostButton, () => { if (MultiplayerManager.HasInstance) { MultiplayerManager.Instance.Host(); StartCoroutine(LobbyWhenHosting()); } });
         Wire(joinButton, Join);
         // Enter in the code box joins.
-        if (address != null) address.onSubmit.AddListener(_ => { if (!Coop.Running) Join(); });
+        if (address != null) address.onSubmit.AddListener(_ => { if (!Coop.Running && joinButton != null && joinButton.interactable) Join(); });
         Wire(leaveButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Leave(); });
         Wire(beginButton, Begin);
         Wire(aloneButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Leave(); Began = true; Close(); });
@@ -175,18 +175,21 @@ public class CoopMenuUI : MonoBehaviour
 
         // The status line: what went wrong, what is happening, or what to do.
         bool error = page == Page.Start && !starting && !string.IsNullOrEmpty(manager.LastError);
+        // A solo run in progress can't be brought into co-op, and joining would leave it running behind someone's game.
+        bool soloRun = !running && RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;
         if (status != null)
         {
             status.color = error ? errorColor : statusColor;
             status.text = error ? manager.LastError
                 : starting ? "Connecting..."
+                : page == Page.Start && soloRun ? "Finish or leave your run to play together."
                 : page == Page.Start ? (newGame ? "Start the new game alone, or play it with friends." : "Play this game with friends, or join theirs.")
                 : page == Page.Host ? (manager.Players.Count <= 1 ? "Send the code to your friends." : newGame || manager.HostInLobby ? "Press Begin when everyone is in." : "Sit down at the table together to start a run.")
                 : manager.LocalInLobby ? $"Waiting for {hostName} to begin."
                 : $"You are in {hostName}'s game. The host decides the rules.";
         }
-        if (hostButton != null) hostButton.interactable = !starting;
-        if (joinButton != null) joinButton.interactable = !starting;
+        if (hostButton != null) hostButton.interactable = !starting && !soloRun;
+        if (joinButton != null) joinButton.interactable = !starting && !soloRun;
 
         if (page != Page.Start)
         {

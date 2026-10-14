@@ -404,12 +404,13 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (!network.StartClient()) Fail("Could not join.");
     }
 
+    const int JoinRetries = 3;
     IEnumerator RetryJoin()
     {
-        Debug.Log("[Coop] The connection timed out; trying once more.");
+        Debug.Log($"[Coop] The connection failed; trying again ({joinRetries}/{JoinRetries}).");
         Starting = true;   // the screen keeps saying Connecting
         while (network.IsListening || network.ShutdownInProgress) yield return null;
-        yield return new WaitForSecondsRealtime(.5f);
+        yield return new WaitForSecondsRealtime(joinRetries);
         Starting = false;
         JoinTarget(lastTarget);
     }
@@ -491,8 +492,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             // A refusal carries the host's own reason; the transport's own messages are not for players.
             string given = network.DisconnectReason;
             bool fromHost = !string.IsNullOrEmpty(given) && !given.StartsWith("[");
-            // The first connection to a code sometimes times out: try it once more before giving up.
-            if (!joinedOnce && !fromHost && joinRetries < 1 && CoopRelay.LooksLikeCode(lastTarget))
+            // The first connection to a code sometimes fails (more so just after the game starts): a few more tries,
+            // further apart, before giving up.
+            if (!joinedOnce && !fromHost && joinRetries < JoinRetries && CoopRelay.LooksLikeCode(lastTarget))
             {
                 joinRetries++;
                 StartCoroutine(RetryJoin());
