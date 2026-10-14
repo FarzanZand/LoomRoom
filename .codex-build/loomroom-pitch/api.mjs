@@ -1,1 +1,0 @@
-const api='https://www.notion.so/api/v3/loadCachedPageChunk'; const pageId='944f9e9ce4e54e8bba5ca459fdde14df';const body={page:{id:pageId},limit:100,chunkNumber:0,cursor:{stack:[]},verticalColumns:false};const r=await fetch(api,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}); console.log(r.status,(await r.text()).slice(0,1000));

@@ -1,1 +1,0 @@
-const { chromium }=await import('playwright'); const browser=await chromium.launch({headless:true}); const page=await browser.newPage({viewport:{width:1280,height:720}}); await page.goto('file:///C:/Game%20projects/LoomRoom/Assets/Game/Scenes/Room.unity'); console.log(await page.title()); await browser.close();
