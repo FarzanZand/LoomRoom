@@ -69,6 +69,8 @@ public class SpellProjectile : MonoBehaviour
     // way; crates, barrels and doors take it like any other hit. True if it hurt a character. Shared with GroundAreaSpell.
     public static bool Blast(Character owner, Vector3 centre, float radius, float power, LayerMask mask)
     {
+        // A blast with no power is only a look (a teammate's copy of the host's spell): it touches nothing.
+        if (power <= 0f) return false;
         var seen = new HashSet<Object>();
         bool struck = false;
         foreach (var col in Physics.OverlapSphere(centre, radius, mask, QueryTriggerInteraction.Ignore))

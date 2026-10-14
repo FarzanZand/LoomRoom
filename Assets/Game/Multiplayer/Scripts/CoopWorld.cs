@@ -516,6 +516,15 @@ public static class CoopWorld
     }
 
     // Host: an archer's arrow; guests loose a harmless copy along the same line (the host's hits it).
+    // Host: an enemy's spell, so everyone sees it fly or land (the host's copy does the damage).
+    public static void EnemyCast(Character enemy, EnemySpell cast, Vector3 position, Vector3 direction)
+    {
+        if (!Coop.Running || !Coop.IsHost || !TryEnemyId(enemy, out var id) || !(enemy.data is EnemyData data)) return;
+        int index = data.spells.IndexOf(cast);
+        if (index < 0) return;
+        Send(new CoopEvent { kind = CoopEventKind.EnemySpell, id = id, amount = index, position = position, direction = direction });
+    }
+
     public static void ArrowLoosed(Character enemy, Vector3 origin, Vector3 direction)
     {
         if (!Coop.IsHost || !TryEnemyId(enemy, out var id)) return;
@@ -543,7 +552,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: return;
+            case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: return;
         }
         history.Add(e);
     }
@@ -688,6 +697,21 @@ public static class CoopWorld
                 var hit = e.amount >= 0 && e.amount < data.attacks.Count ? data.attacks[e.amount].hit : null;
                 AudioData audio = hit == null || hit.useDefaultEffects ? (CombatManager.HasInstance ? CombatManager.Instance.defaultSwingAudio : null) : hit.swingAudio;
                 if (audio != null) AudioManager.Instance.PlaySFXData(audio, enemy.transform.position + Vector3.up);
+                break;
+            }
+            case CoopEventKind.EnemySpell:
+            {
+                // The look only: no damage here (the host's spell hurts, and its blows reach players from there).
+                var enemy = Enemy(e.id);
+                var data = enemy != null ? enemy.data as EnemyData : null;
+                var cast = data != null && e.amount >= 0 && e.amount < data.spells.Count ? data.spells[e.amount] : null;
+                var spell = cast != null ? cast.spell : null;
+                if (spell == null) break;
+                if (CoopPlayer.CoopTiming) Debug.Log($"[Coop] enemy {e.id} cast {spell.name}");
+                if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.releaseSound, e.position, spell.releaseVolume);
+                if (spell.groundArea) GroundAreaSpell.Cast(enemy, spell, 0f, e.position, null);
+                else if (spell.projectile != null && e.direction.sqrMagnitude > .0001f)
+                    Object.Instantiate(spell.projectile, e.position, Quaternion.LookRotation(e.direction)).Launch(enemy, spell, 0f, null);
                 break;
             }
             case CoopEventKind.ArrowLoosed:

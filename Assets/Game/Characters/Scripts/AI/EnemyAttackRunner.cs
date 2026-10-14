@@ -452,7 +452,9 @@ public class EnemyAttackRunner
         if (spell.groundArea)
         {
             Vector3 spot = target.transform.position + velocity * spell.areaDelay * cast.leadTarget;
-            GroundAreaSpell.Cast(Character, spell, damage, GroundAreaSpell.GroundBelow(spot), null);
+            var ground = GroundAreaSpell.GroundBelow(spot);
+            GroundAreaSpell.Cast(Character, spell, damage, ground, null);
+            CoopWorld.EnemyCast(Character, cast, ground, Vector3.zero);
             return;
         }
         if (spell.projectile == null) return;
@@ -464,6 +466,7 @@ public class EnemyAttackRunner
             * Quaternion.AngleAxis(Random.Range(-cast.spread, cast.spread) * .5f, Vector3.Cross(Vector3.up, dir).normalized) * dir;
         var projectile = Object.Instantiate(spell.projectile, origin, Quaternion.LookRotation(dir));
         projectile.Launch(Character, spell, damage, null);
+        CoopWorld.EnemyCast(Character, cast, origin, dir);
     }
 
     static Vector3 AimPoint(Character target)
