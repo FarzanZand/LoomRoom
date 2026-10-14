@@ -120,6 +120,26 @@ public partial class DungeonGenerator
         return cells;
     }
 
+    // A taller room (Height Tiles over 1): what hangs from a one-tile ceiling (a hanging chain) is lifted by the extra
+    // height so it still hangs from the ceiling, and a moonlit room's patch of night sky stays above the ceiling.
+    void HangFromCeiling(GameObject instance,DungeonRoomTemplate template)
+    {
+        if(template==null || template.heightTiles<=1 || Board)return;
+        float tile=Mathf.Max(.01f,data.architectureTileSize), extra=(template.heightTiles-1)*tile, ceiling=instance.transform.position.y+template.heightTiles*tile;
+        foreach(var t in instance.GetComponentsInChildren<Transform>(true))
+        {
+            if(t.name.StartsWith("Hanging chain"))t.position+=Vector3.up*extra;
+            else if(t.name=="Night sky" && t.position.y<ceiling+1f)
+            {
+                // The moon above it goes up with it.
+                float lift=ceiling+1.6f-t.position.y;
+                t.position+=Vector3.up*lift;
+                var moon=t.parent!=null ? t.parent.Find("Moon") : null;
+                if(moon!=null)moon.position+=Vector3.up*lift;
+            }
+        }
+    }
+
     void PlaceTemplate(int index)
     {
         var template=templates[index];
@@ -129,6 +149,7 @@ public partial class DungeonGenerator
         templateInstances[index]=instance;
         // A boss stage: the platform and stair go in, and the template is lifted onto it.
         if(index==StageRoom)BuildStage(instance,index);
+        HangFromCeiling(instance,template);
         var lanes=Lanes(index);
         foreach(var piece in instance.GetComponentsInChildren<DungeonTemplatePiece>(true))
         {
@@ -144,13 +165,14 @@ public partial class DungeonGenerator
         var features=RoomFeatures;
         foreach(var plate in instance.GetComponentsInChildren<DungeonSpikeTrap>(true))plate.playerDamage=features.spikeDamage;
         foreach(var shrine in instance.GetComponentsInChildren<DungeonShrine>(true))shrine.bloodPrice=features.shrinePrice;
-        foreach(var cut in instance.GetComponentsInChildren<DungeonFloorCut>(true))cut.fallDamage=features.pitFallDamage;
+        foreach(var cut in instance.GetComponentsInChildren<DungeonFloorCut>(true)){cut.fallDamage=features.pitFallDamage;cut.keepPlayerOut=!features.playerFallsInPits;}
         // Kit blocks (pillars, platforms, steps, niches) become boxes of this room's own stone, before the NavMesh bake.
         var centre=Layout.RoomCenter(index);
         foreach(var piece in instance.GetComponentsInChildren<DungeonKitPiece>(true))
             if(piece!=null)piece.Choose(data.kitModels,HeightAt(centre.x,centre.y));
         foreach(var block in instance.GetComponentsInChildren<DungeonKitBlock>(true))
-            if(block!=null)block.Build(RegionStyles!=null && index<RegionStyles.Length ? RegionStyles[index] : null,data,HeightAt(centre.x,centre.y),Cell(centre).y);
+            // On a boss stage the floor is the stage's top.
+            if(block!=null)block.Build(RegionStyles!=null && index<RegionStyles.Length ? RegionStyles[index] : null,data,HeightAt(centre.x,centre.y),Cell(centre).y+(index==StageRoom && Stage!=null ? Stage.height : 0f));
         var rewards=profiles[index]!=null ? profiles[index].rewards : null;
         StockPlacedLoot(instance,rewards);
         // A chest set down by hand with its own trap stays trapped (while the floor allows traps); others may be trapped.
@@ -507,10 +529,12 @@ public partial class DungeonGenerator
 
     Character SpawnBoss(Vector3 pos,Quaternion rotation)
     {
-        var boss=SpawnEnemyAt(Milestone.boss,pos,rotation,Milestone.bossLoot);
+        // With a boss chest the reward goes in the chest (SpawnBossChest); the body drops like any enemy's.
+        bool chest=Milestone.rewardChest;
+        var boss=SpawnEnemyAt(Milestone.boss,pos,rotation,chest ? null : Milestone.bossLoot);
         if(boss==null){Debug.LogWarning($"Milestone boss {Milestone.boss.name} could not be placed on navigation.",this);return null;}
         var drop=boss.GetComponent<DungeonLootDrop>();
-        if(drop!=null){if(Milestone.bossLoot!=null){drop.table=Milestone.bossLoot;drop.overrideLevelTable=true;}drop.bonusGold+=Milestone.bonusGold;}
+        if(drop!=null && !chest){if(Milestone.bossLoot!=null){drop.table=Milestone.bossLoot;drop.overrideLevelTable=true;}drop.bonusGold+=Milestone.bonusGold;}
         if(boss.Stats!=null && (Milestone.healthMultiplier!=1 || Milestone.damageMultiplier!=1))
         {
             boss.Stats.AddModifier(new StatModifier(StatType.MaxHealth,Milestone.healthMultiplier-1,ModifierType.PercentMultiply,Milestone));

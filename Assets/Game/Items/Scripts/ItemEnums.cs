@@ -2,8 +2,26 @@ using System;
 
 // All values are serialized as integers. Never renumber, never reuse a retired value.
 
-// How rare an item is: Rare items (spell tomes) get the bronze slot fill, loot beam and name colour (UIManager.rare).
-public enum ItemRarity { Common = 0, Rare = 1 }
+// How rare an item is. Plain, Fine, Masterwork and Relic are gear rarities (Fine and Masterwork roll properties,
+// ItemPropertyTable; Relics are hand-made assets). Rare is the spell tomes' bronze. Each has its colour on UIManager:
+// slot fill, loot beam and name.
+public enum ItemRarity { Plain = 0, Rare = 1, Fine = 2, Masterwork = 3, Relic = 4 }
+
+// Gear slots a rolled property can appear on (ItemPropertyTable).
+[Flags]
+public enum GearSlots
+{
+    None    = 0,
+    Weapon  = 1 << 0,
+    Shield  = 1 << 1,
+    Body    = 1 << 2,
+    Helm    = 1 << 3,
+    Gloves  = 1 << 4,
+    Boots   = 1 << 5,
+    Legs    = 1 << 6,
+    Ring    = 1 << 7,
+    Amulet  = 1 << 8,
+}
 
 // Which weapon skill a weapon trains and scales with (see AdventureSkills.ForWeapon).
 public enum WeaponCategory { Sword = 0, Mace = 1 }

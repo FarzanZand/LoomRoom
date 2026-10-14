@@ -84,6 +84,14 @@ public class DungeonBossEncounter : MonoBehaviour
         if (brain != null) brain.Alert();
     }
 
+    // The boss chest, a moment after the kill (the body is thrown first), facing the player.
+    System.Collections.IEnumerator BossChest(Vector3 at)
+    {
+        yield return new WaitForSeconds(1.2f);
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+        dungeon.SpawnBossChest(at, player != null ? player.transform.position : at + Vector3.forward);
+    }
+
     void OnBossDied()
     {
         if (finished) return;
@@ -92,6 +100,7 @@ public class DungeonBossEncounter : MonoBehaviour
         if (exit != null) exit.Sealed = false;
         if (RunManager.HasInstance) RunManager.Instance.NoteBossSlain();
         MessageLog.Post($"The {boss.DisplayName} falls! The way down is open.", MessageKind.Good);
+        if (dungeon != null) StartCoroutine(BossChest(boss.transform.position));
         if (AudioManager.HasInstance && dungeon != null)
         {
             var music = dungeon.LevelData.MusicFor(dungeon.FloorNumber, out float volume);

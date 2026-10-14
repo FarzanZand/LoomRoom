@@ -92,12 +92,17 @@ public sealed partial class LightingManager
             return;
         }
         float radius = biome != null && biome.lightRadius > 0f ? biome.lightRadius : lightRadiusMetres;
+        // Gear that lights the way (LightRadius on the table player).
+        var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if (table != null && table.Stats != null) radius += Mathf.Max(0f, table.Stats.GetFinal(StatType.LightRadius));
         var centre = RadiusCentre ?? cam.transform.position;
         if (RadiusCentre.HasValue) radius *= Mathf.Max(.1f, RadiusScale);
         // The room the player is in may pull the light in (a dark room) or open it out (DungeonRoomMood).
         float edge = lightRadiusEdge, floor = lightRadiusFloor;
         DungeonRoomMood.Tick(centre, Time.deltaTime);
         DungeonRoomMood.LightRadius(ref radius, ref edge, ref floor);
+        // Never past the level's minimum ambient, even beyond the radius or in a dark room.
+        if (displayedMood.minAmbient > 0f && ambientPeak > .0001f) floor = Mathf.Max(floor, Mathf.Clamp01(displayedMood.minAmbient / ambientPeak));
         Shader.SetGlobalVector(LightRadiusId, new Vector4(centre.x, centre.y, centre.z, radius));
         // Partway into the darkness (a mood blending in) the floor rises towards full ambient.
         Shader.SetGlobalVector(LightRadiusEdgeId, new Vector4(edge, Mathf.Lerp(1f, floor, dark), 0f, 0f));

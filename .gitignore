@@ -107,3 +107,6 @@ Tools/__pycache__/
 .claude/settings.local.json
 *.slnx
 *.dmp
+
+# Build folders of outside tools (pitch decks and the like)
+.codex-build/

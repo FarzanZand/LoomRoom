@@ -14,8 +14,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     [SerializeField] Image           iconImage;
     [SerializeField] Image           background;
     [SerializeField] Image           equippedHighlight;
-    [Tooltip("Shown behind the icon for honed gear (a blue background).")]
-    [SerializeField] Image           honedFill;
+    [Tooltip("Shown behind the icon in the item's rarity colour.")]
+    [SerializeField, UnityEngine.Serialization.FormerlySerializedAs("honedFill")] Image rarityFill;
     [SerializeField] TextMeshProUGUI keyLabel;
     [SerializeField] TextMeshProUGUI stackLabel;
 
@@ -26,7 +26,6 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     [SerializeField] Color frameColor = new Color(.5f,.57f,.55f);
     [SerializeField] Color equippedFrameColor = new Color(1,.83f,.35f);
     [Tooltip("Authored appearance: tint of a cell an item covers (Diablo's blue-grey).")]
-    [SerializeField] Color occupiedTint = new Color(.62f,.7f,.9f);
 
     public Inventory Container { get; private set; }
     public int       Index     { get; private set; }
@@ -78,6 +77,12 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         Refresh();
     }
 
+    // A HUD slot (its background switches with the HUD style) while the HUD is Rugged.
+    bool Rugged => background != null && background.TryGetComponent<HudStyleImage>(out _) && UIManager.CurrentHudStyle == HudStyle.Rugged;
+    UIManager styleSource;
+    void OnEnable() { if (UIManager.HasInstance) { styleSource = UIManager.Instance; styleSource.Changed += Refresh; } }
+    void OnDisable() { if (styleSource != null) styleSource.Changed -= Refresh; styleSource = null; }
+
     public void Bind(Inventory container, int index)
     {
         Container = container;
@@ -98,14 +103,14 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             iconImage.sprite  = item != null ? item.icon : null;
             iconImage.enabled = item != null && item.icon != null && !GridCell;
         }
-        if (background != null && !useAuthoredAppearance) background.color = PreviewTint ?? (item != null ? filledColor : emptyColor);
-        // Authored cells (the Diablo bag) keep their sprite; taken cells and the drag footprint only tint it.
-        else if (background != null && GridCell) background.color = PreviewTint ?? (item != null ? occupiedTint : Color.white);
-        if (honedFill != null)
-        {
-            honedFill.enabled = item != null && item.HasRarityColour && !GridCell;
-            if (honedFill.enabled) honedFill.color = item.RarityColour;
-        }
+        // The Rugged HUD (UIManager.hudStyle) draws the slot as the inventory's grey cell: its own colours, not the tint.
+        bool rugged = Rugged;
+        if (background != null && !useAuthoredAppearance) background.color = PreviewTint ?? (rugged ? Color.white : item != null ? filledColor : emptyColor);
+        // Authored cells (the Diablo bag) keep their sprite as it is, taken or not (the item's rarity floor marks it);
+        // only the drag footprint tints it.
+        else if (background != null && GridCell) background.color = PreviewTint ?? Color.white;
+        // The hotbar shows no rarity floor (the bag grid and the equipment slots do): its slots stay as they are.
+        if (rarityFill != null) ItemData.ShowSlotFill(rarityFill, item, false);
         if (stackLabel != null)
         {
             stackLabel.text = count > 1 ? $"x{count}" : "";
@@ -114,12 +119,12 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (equippedHighlight != null)
         {
             var eq = Owner != null ? Owner.Equipment : null;
-            equippedHighlight.gameObject.SetActive(item != null && !GridCell && HeldSlot(eq, Container, Index).HasValue);
+            equippedHighlight.gameObject.SetActive(!rugged && item != null && !GridCell && HeldSlot(eq, Container, Index).HasValue);
         }
         if(!useAuthoredAppearance && dungeonStyled && dungeonFrame!=null)
         {
             bool equipped=item!=null && HeldSlot(Owner?.Equipment, Container, Index).HasValue;
-            dungeonFrame.color=equipped ? equippedFrameColor:frameColor;
+            dungeonFrame.color=rugged ? Color.clear : equipped ? equippedFrameColor:frameColor;
         }
     }
 

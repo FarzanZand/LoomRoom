@@ -88,10 +88,33 @@ public class UIManager : Singleton<UIManager>
     [PropertyOrder(2)] public Color bossHealth = new(.722f, .122f, .122f);
     [PropertyOrder(2), Tooltip("The small bar over enemies you aim at or hit.")] public Color enemyHealth = new(.698f, .22f, .09f);
     [PropertyOrder(2)] public Color recentDamage = new(.949f, .62f, .298f);
-    [PropertyOrder(2), Tooltip("Slot background and tooltip line of honed (+1, +2) gear. Not part of the theme.")] public Color honed = DefaultHoned;
-    public static readonly Color DefaultHoned = new(.16f, .3f, .62f);
     [PropertyOrder(2), Tooltip("Slot background, loot beam and name of Rare items (spell tomes). Not part of the theme.")] public Color rare = DefaultRare;
     public static readonly Color DefaultRare = new(.34f, .19f, .07f);
+    [PropertyOrder(-1), Tooltip("The hotbar, health, mana, stamina and XP bars and buff frames: Pixel (the old pixel kit) or Rugged (the inventory's grey stone frames). Switches live, also outside Play mode (HudStyleImage).")]
+    public HudStyle hudStyle = HudStyle.Rugged;
+    public static HudStyle CurrentHudStyle => HasInstance ? Instance.hudStyle : HudStyle.Rugged;
+    [PropertyOrder(2), Tooltip("Slot fill and border of Plain gear and consumables: a faint white (names stay white).")] public Color plain = DefaultPlain;
+    public static readonly Color DefaultPlain = new(.9f, .88f, .84f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Fine gear (1-2 rolled properties).")] public Color fine = DefaultFine;
+    public static readonly Color DefaultFine = new(.09f, .42f, .29f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Masterwork gear (3-4 rolled properties).")] public Color masterwork = DefaultMasterwork;
+    public static readonly Color DefaultMasterwork = new(.52f, .34f, .06f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Relics (hand-made items).")] public Color relic = DefaultRelic;
+    public static readonly Color DefaultRelic = new(.58f, .17f, .06f);
+
+    // A rarity's colour, from the UIManager when there is one (Plain: the faint fill).
+    public static Color RarityColor(ItemRarity rarity)
+    {
+        var ui = HasInstance ? Instance : null;
+        return rarity switch
+        {
+            ItemRarity.Rare => ui != null ? ui.rare : DefaultRare,
+            ItemRarity.Fine => ui != null ? ui.fine : DefaultFine,
+            ItemRarity.Masterwork => ui != null ? ui.masterwork : DefaultMasterwork,
+            ItemRarity.Relic => ui != null ? ui.relic : DefaultRelic,
+            _ => ui != null ? ui.plain : DefaultPlain,
+        };
+    }
 
     public event Action Changed;
 
@@ -138,3 +161,6 @@ public class UIManager : Singleton<UIManager>
         Changed?.Invoke();
     }
 }
+
+// The HUD look (UIManager.hudStyle). Serialized by integer; append only.
+public enum HudStyle { Pixel = 0, Rugged = 1 }

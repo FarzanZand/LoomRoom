@@ -35,9 +35,11 @@ public class DungeonRoomFeatures
     public int maxSleepingPacks = 3;
 
     [Title("Heights", HorizontalLine = false)]
-    [ToggleLeft, Tooltip("Rooms with chasms and holes in the floor (bridges across them). A fall hurts and puts you back at the edge.")]
+    [ToggleLeft, Tooltip("Rooms with chasms and holes in the floor (bridges across them).")]
     public bool pits = true;
-    [ShowIf(nameof(pits)), Range(0f, 1f), Indent, Tooltip("Share of the player's most health a fall into a pit takes.")]
+    [ShowIf(nameof(pits)), ToggleLeft, Indent, Tooltip("The player can fall into a pit (it hurts and puts them back at the edge). Off: a pit's edge holds the player back like a wall they slide along. Enemies knocked back over the edge fall in either way.")]
+    public bool playerFallsInPits;
+    [ShowIf("@pits && playerFallsInPits"), Range(0f, 1f), Indent, Tooltip("Share of the player's most health a fall into a pit takes.")]
     public float pitFallDamage = .25f;
     [ToggleLeft, Tooltip("Rooms with a sunken floor: steps down into a lower court.")]
     public bool sunkenFloors = true;

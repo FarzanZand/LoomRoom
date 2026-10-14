@@ -128,8 +128,28 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
     {
         while (kept.Count >= MaxKeptDebris) { var old = kept.Dequeue(); if (old != null) Destroy(old); }
         kept.Enqueue(piece);
-        if (piece.TryGetComponent<Rigidbody>(out var rb)) DOVirtual.DelayedCall(4f, () => { if (rb != null) rb.isKinematic = true; }, false);
+        if (piece.TryGetComponent<Rigidbody>(out var rb)) DOVirtual.DelayedCall(3f, () => FreezeWhenSettled(rb, 0), false);
         return piece;
+    }
+
+    // Frozen only once it lies still on fixed floor. A piece resting on a barrel, an item or a body
+    // stays loose (asleep) and falls when that goes; one still moving is checked again later.
+    static void FreezeWhenSettled(Rigidbody rb, int tries)
+    {
+        if (rb == null || rb.isKinematic) return;
+        bool still = rb.IsSleeping() || rb.linearVelocity.sqrMagnitude < .01f;
+        if (still && rb.TryGetComponent<Collider>(out var col))
+        {
+            var b = col.bounds;
+            if (DungeonPickup.FloorBelow(b.center, b.extents.y + .08f, rb.transform, out _))
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.isKinematic = true;
+                return;
+            }
+        }
+        if (tries < 20) DOVirtual.DelayedCall(1.5f, () => FreezeWhenSettled(rb, tries + 1), false);
     }
 
     public void Break(Vector3 direction = default)
@@ -143,7 +163,11 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
         if (breakEffect != null) PoolManager.SpawnOrInstantiate(breakEffect, center, Quaternion.identity, 3f);
         Throw(center, direction, debrisCount, 1);
         (model != null ? model.transform : transform).DOKill();
+        var shape = Bounds();
         foreach (var c in GetComponentsInChildren<Collider>()) c.enabled = false;
+        // Chips from earlier hits resting on top fall with it.
+        foreach (var c in Physics.OverlapBox(shape.center, shape.extents + Vector3.one * .1f, Quaternion.identity, ~0, QueryTriggerInteraction.Ignore))
+            if (c.attachedRigidbody != null && !c.attachedRigidbody.isKinematic) c.attachedRigidbody.WakeUp();
         if (model != null) model.SetActive(false);
         else foreach (var r in GetComponentsInChildren<Renderer>()) r.enabled = false;
 

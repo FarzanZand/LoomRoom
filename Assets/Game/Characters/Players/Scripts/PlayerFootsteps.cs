@@ -133,6 +133,8 @@ public class PlayerFootsteps : MonoBehaviour
 
     void ReportNoise(float radius)
     {
+        // Quiet gear (Leather, QuietSteps) shortens how far each step carries; 1 or more makes no sound at all.
+        if (player != null && player.Stats != null) radius *= Mathf.Clamp01(1f - player.Stats.GetFinal(StatType.QuietSteps));
         if (radius > 0f) NoiseEvents.Report(transform.position, radius, player);
     }
 

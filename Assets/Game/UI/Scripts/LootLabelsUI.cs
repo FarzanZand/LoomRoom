@@ -10,6 +10,8 @@ public class LootLabelsUI : MonoBehaviour
     [SerializeField, Min(.5f)] float range = 4.5f;
     [SerializeField, Min(1)] int maxLabels = 6;
     [SerializeField, Tooltip("Metres above the item the name floats.")] float height = .55f;
+    [SerializeField, Range(0f, 1f), Tooltip("How far the beam's colour is lightened towards white, so dark colours (Rare) still read.")]
+    float lighten = .55f;
 
     readonly List<TMP_Text> labels = new();
     readonly List<LootBeam> near = new();
@@ -45,7 +47,7 @@ public class LootLabelsUI : MonoBehaviour
             var item = near[i].Item;
             label.text = item.Count > 1 ? $"{item.Item.itemName} x{item.Count}" : item.Item.itemName;
             var color = near[i].Color; color.a = 1f;
-            label.color = Color.Lerp(color, Color.white, .25f);
+            label.color = Color.Lerp(color, Color.white, lighten);
         }
         for (int i = shown; i < labels.Count; i++) if (labels[i].gameObject.activeSelf) labels[i].gameObject.SetActive(false);
     }

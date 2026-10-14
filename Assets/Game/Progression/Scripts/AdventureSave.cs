@@ -202,7 +202,7 @@ public class AdventureSave : MonoBehaviour
     {
         progress.selectedClass = progress.rules.classes.First(x => x != null && x.id == checkpoint.classId);
         player.Equipment.UnequipAll(); player.Bag.Clear(); player.Hotbar.Clear();
-        // Honed gear is saved as "<saveId>+1" and comes back as the same honed copy.
+        // Fine and Masterwork gear is saved with its rolls ("<saveId>~2:...") and comes back as the same copy; the "+1" of retired Honed gear is dropped on load.
         ItemData Item(string id) => ItemData.FromSaveId(id, InventoryManager.Instance.itemCatalog);
         void Fill(Inventory inventory, Stack[] stacks) { for (int i = 0; i < stacks.Length && i < inventory.SlotCount; i++) if (stacks[i] != null && stacks[i].count > 0) inventory.Set(i, new ItemStack(Item(stacks[i].item), stacks[i].count)); }
         Fill(player.Bag, checkpoint.bag); Fill(player.Hotbar, checkpoint.hotbar);

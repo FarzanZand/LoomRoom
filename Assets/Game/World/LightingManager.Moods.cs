@@ -43,9 +43,13 @@ public sealed partial class LightingManager
         public float roomDark;
         // The colour the room's light takes while a table level is played; alpha 0 leaves it alone.
         public Color roomShade;
+        // The dungeon's ambient never goes darker than this (brightest channel), past the light radius
+        // and in dark rooms too (TableLevelData.minimumAmbient). 0 leaves it as the darkness makes it.
+        public float minAmbient;
 
         public static MoodState LerpEnvironment(MoodState a, MoodState b, float t) => new MoodState {
             darkness = Mathf.Lerp(a.darkness, b.darkness, t), roomDark = Mathf.Lerp(a.roomDark, b.roomDark, t),
+            minAmbient = Mathf.Lerp(a.minAmbient, b.minAmbient, t),
             roomShade = Color.Lerp(a.roomShade.a > 0 ? a.roomShade : Color.white, b.roomShade.a > 0 ? b.roomShade : Color.white, t),
             sky = Color.Lerp(a.sky, b.sky, t), exposure = Mathf.Lerp(a.exposure, b.exposure, t),
             light = Color.Lerp(a.light, b.light, t), intensity = Mathf.Lerp(a.intensity, b.intensity, t),
@@ -283,6 +287,18 @@ public sealed partial class LightingManager
             horizon = originalAmbientHorizon, ground = originalAmbientGround, fog = originalFog };
     }
 
+    // The dimmest of the ambient colours just set (its brightest channel); the light radius keeps
+    // the level's minimum ambient by it.
+    float ambientPeak;
+
+    // Raised, keeping its hue, until its brightest channel reaches least (grey when black).
+    static Color AtLeast(Color c, float least)
+    {
+        float peak = c.maxColorComponent;
+        if (least <= 0f || peak >= least) return c;
+        return peak > .0001f ? c * (least / peak) : new Color(least, least, least, c.a);
+    }
+
     // Runs after the light groups, so the directional light and ambient come from the mood.
     void ApplyMood()
     {
@@ -324,6 +340,10 @@ public sealed partial class LightingManager
         // The user's ambient controls: the room's outside darkness, the dungeon's in it.
         float boost = Mathf.Lerp(roomAmbient, dungeonAmbient, dark);
         top *= boost; horizon *= boost; ground *= boost;
+        // The level's minimum: never pitch black, whatever the preset and the darkness.
+        float least = displayedMood.minAmbient * dark;
+        top = AtLeast(top, least); horizon = AtLeast(horizon, least); ground = AtLeast(ground, least);
+        ambientPeak = Mathf.Min(top.maxColorComponent, Mathf.Min(horizon.maxColorComponent, ground.maxColorComponent));
         RenderSettings.ambientSkyColor = top; RenderSettings.ambientEquatorColor = horizon;
         RenderSettings.ambientGroundColor = ground; RenderSettings.ambientLight = horizon;
         RenderSettings.ambientIntensity = originalAmbientIntensity * level * boost;

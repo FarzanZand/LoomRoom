@@ -13,15 +13,6 @@ MonoBehaviour:
   m_Name: Crypt supplies
   m_EditorClassIdentifier: Assembly-CSharp::DungeonLootTable
   entries:
-  - item: {fileID: 11400000, guid: 335b553d1e77a534ba228f8cc0fa27c1, type: 2}
-    weight: 2
-    minQuantity: 1
-    maxQuantity: 1
-    minFloor: 1
-    maxFloor: 0
-    sources: 15
-    weightPerFloor: 0
-    weightPerLevel: 0
   - item: {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
     weight: 2
     minQuantity: 1
@@ -58,7 +49,7 @@ MonoBehaviour:
     sources: 15
     weightPerFloor: 0
     weightPerLevel: 0
-  - item: {fileID: 11400000, guid: 0faf09e08158dc34f91d4868eedabb9e, type: 2}
+  - item: {fileID: 0}
     weight: 4
     minQuantity: 1
     maxQuantity: 1

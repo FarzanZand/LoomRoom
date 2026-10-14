@@ -307,7 +307,13 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         HealthChanged?.Invoke();
         Damaged?.Invoke(info);
 
-        if (!IsAlive) Died?.Invoke();
+        if (!IsAlive)
+        {
+            Died?.Invoke();
+            // Gear that heals on a kill (KillHeal).
+            var killer = info.Source != null && info.Source != Character ? info.Source.Stats : null;
+            if (killer != null && killer.IsAlive) { float heal = killer.GetFinal(StatType.KillHeal); if (heal > 0f) killer.Heal(heal); }
+        }
     }
 
     // Co-op guests: the host's result of a hit on a puppet enemy, played here as if it had been taken here.

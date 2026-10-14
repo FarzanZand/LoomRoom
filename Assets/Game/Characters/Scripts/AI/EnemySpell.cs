@@ -27,8 +27,8 @@ public class EnemySpell
     public string animatorTrigger = "CastSpell";
     [FoldoutGroup("Range and timing"), Tooltip("Seconds into the cast when the spell leaves the hand, unless the clip has an OnAttackHit event. The humanoid cast throws at about 1.35 s.")]
     public float releaseTime = 1.35f;
-    [FoldoutGroup("Range and timing"), Tooltip("Degrees per second the caster keeps turning toward the target while casting.")]
-    public float aimTrackSpeed = 240f;
+    [FoldoutGroup("Range and timing"), Tooltip("Degrees per second the caster keeps turning toward the target while casting. 0 (the default): none. The cast holds the legs still (CastSpell), so any turn spins the body on planted feet; the spell aims from the hand at the target anyway.")]
+    public float aimTrackSpeed = 0f;
     [FoldoutGroup("Range and timing"), Tooltip("Largest height difference to the target it will cast across.")]
     public float maxHeightDifference = 4f;
 

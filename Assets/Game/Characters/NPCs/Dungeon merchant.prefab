@@ -114,13 +114,19 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
   consumableCount: 2
   stapleCount: 2
-  gearCount: 5
+  gearCount: 6
+  alwaysTome: 1
   stockTable: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
   priceMultiplier: 1.2
+  rarityChanceBoost: 2
   pricePerFloor: 0.1
   buysItems: 1
   tradeClip: {fileID: 0}
   tradeVolume: 0.9
+  musicKey: shop
+  musicRadius: 8
+  musicLeaveRadius: 11
+  musicFade: 1.5
   seed: 0
   floorNumber: 1
 --- !u!1 &6421281305431218587
@@ -404,6 +410,7 @@ MonoBehaviour:
   characterName: Wandering Merchant
   faction: 0
   description: 
+  creatureKind: 0
   stats: []
   audio:
     idle: []
@@ -423,6 +430,12 @@ MonoBehaviour:
     walkStepInterval: 0.55
     runStepInterval: 0.34
     painCooldown: 0.6
+  gore:
+    kind: 1
+    color: {r: 0.72, g: 0.05, b: 0.04, a: 1}
+    amount: 1
+    burstOnDeath: 0
+    killSound: {fileID: 0}
   hurtTrigger: 
   deathTrigger: 
   deathDisableDelay: 0

@@ -196,8 +196,22 @@ public class Hitbox : MonoBehaviour
         if(heavy && CombatManager.HasInstance)
         { baseDamage*=CombatManager.Instance.heavyDamageMultiplier; force*=CombatManager.Instance.heavyKnockbackMultiplier; }
         var weapon = owner is Player wielder && wielder.Equipment != null ? wielder.Equipment.Get(EquipmentSlot.RightHand) : null;
+        // The weapon's damage range: each hit lands anywhere within its spread (5-9 for a 7 with 2).
+        if (weapon != null && weapon.damageSpread > 0) baseDamage = Mathf.Max(1f, baseDamage + UnityEngine.Random.Range(-weapon.damageSpread, weapon.damageSpread + 1));
         var skills = owner is Player trainee ? trainee.GetComponent<AdventurerProgress>() : null;
         if (skills != null) baseDamage = skills.MeleeDamage(baseDamage, weapon, heavy);
+        // Gear that hits one kind of creature harder (a mace on skeletons, a Ratcatcher on beasts).
+        if (owner != null && owner.Stats != null && target != null && target.data != null)
+        {
+            var bonus = target.data.Kind switch
+            {
+                CreatureKind.Skeleton => StatType.DamageToSkeletons,
+                CreatureKind.Beast => StatType.DamageToBeasts,
+                CreatureKind.Slime => StatType.DamageToSlimes,
+                _ => (StatType?)null,
+            };
+            if (bonus.HasValue) baseDamage *= 1f + Mathf.Max(0f, owner.Stats.GetFinal(bonus.Value));
+        }
         var info = new DamageInfo
         {
             Profile        = profile,
@@ -218,5 +232,6 @@ public class Hitbox : MonoBehaviour
         if(CombatManager.HasInstance && !CombatManager.Instance.HasMeleeLineOfSight(owner,victimRoot,contact))return;
         hitThisSwing.Add(damageable);
         damageable.TakeDamage(info); // the impact (CombatManager.PresentImpact) requests the light or heavy hit stop
+        if (owner is Player && target != null && CombatManager.HasInstance) CombatManager.Instance.GearOnHit(owner, target);
     }
 }

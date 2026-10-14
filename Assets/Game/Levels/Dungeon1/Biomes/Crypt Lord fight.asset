@@ -24,8 +24,15 @@ MonoBehaviour:
     inPerson: 0
   reachDelay: 1.2
   placeSeconds: 4.6
-  darkRoom: 1
+  painting: {fileID: 0}
+  changeRoomLighting: 1
+  roomLighting: 2
+  roomTint: {r: 1, g: 1, b: 1, a: 1}
   darkenSeconds: 2.5
+  dungeonMasterLight: 180
+  dungeonMasterLightColor: {r: 1, g: 0.85, b: 0.65, a: 1}
+  paintingLight: 0
+  paintingLightColor: {r: 1, g: 0.9, b: 0.75, a: 1}
   wakeDelay: 1.1
   landSound: {fileID: 8300000, guid: 6df976f37fe297c4d8da67f40cb3eaf6, type: 3}
   landVolume: 1
@@ -40,18 +47,25 @@ MonoBehaviour:
   beamStaminaPerSecond: 0
   beamFacing: 0.2
   beamOnBeat: 1
-  beamGiveWay: 4.5
+  beamGiveWay: 0
   beamColor: {r: 2, g: 0.95, b: 0.3, a: 1}
   beamChargeSound: {fileID: 8300000, guid: be0f71459df354c49a2d754371c38f37, type: 3}
   beamLoopSound: {fileID: 8300000, guid: ca3d6a0a1b57b514d87f9fe9efa06ecb, type: 3}
   beamBlockedSound: {fileID: 8300000, guid: 350a5a4734ab2854c9f726f4ddaf82a7, type: 3}
   beamVolume: 0.9
   volleyDistance: 7
+  phaseTwoHealth: 0.5
+  phaseTwoLine:
+    text: Now he's angry.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  phaseTwoShake: 1.2
   events:
   - enabled: 1
     when: 2
     seconds: 10
-    startBeat: 24
+    startBeat: 12
     beats: 48
     health: 0.5
     what: 0
@@ -111,7 +125,7 @@ MonoBehaviour:
   - enabled: 1
     when: 2
     seconds: 10
-    startBeat: 48
+    startBeat: 24
     beats: 72
     health: 0.5
     what: 5

@@ -8,8 +8,14 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     public int seed;
     [Min(1)] public int floorNumber=1;
     public ItemData guaranteedItem;
+    [Tooltip("Always in it, one of each, thrown out with the rest (a boss chest's Chest Items).")]
+    public System.Collections.Generic.List<ItemData> guaranteedItems = new();
+    [Min(0), Tooltip("Gold on top of what the loot rolls (a boss chest's Bonus Gold).")]
+    public int bonusGold;
     public Material debrisMaterial;
     public AudioClip openAudio;
+    // AudioManager SFX Library key every chest opens with (its Open Audio is the fallback).
+    public const string StandardOpenKey = "standardChestOpen";
     [Range(0,1)] public float openVolume = 1f;
     public Transform lid;
     [Tooltip("The lid's opening, an editable clip (legacy, curves under the chest's root: the lid swings up with a small bounce). Without one the lid turns to Lid Open Rotation in code.")]
@@ -66,7 +72,9 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         if (opened) return;
         opened = true;
         Opened?.Invoke(this);
-        if(AudioManager.HasInstance && openAudio!=null) AudioManager.Instance.PlaySFX(openAudio,transform.position,openVolume,.06f);
+        // A chest opens with the SFX Library's StandardOpenKey when it has one (each tier's sting comes after), else its own clip.
+        if(AudioManager.HasInstance && (!chest || AudioManager.Instance.PlayFirstSFX(transform.position,StandardOpenKey)==null) && openAudio!=null)
+            AudioManager.Instance.PlaySFX(openAudio,transform.position,openVolume,.06f);
         NoiseEvents.Report(transform.position,7);
         var rng = new System.Random(CoopWorld.LootSeed(seed));
         if(!chest || lid==null)foreach(var collider in GetComponentsInChildren<Collider>())collider.enabled=false;
@@ -88,13 +96,16 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
                 if(rare.Count>0){ rare.Sort((a,b)=>(b.item!=null?b.item.tier:0).CompareTo(a.item!=null?a.item.tier:0)); drops.Add(rare[0]); }
             }
         }
+        if(guaranteedItems!=null)foreach(var item in guaranteedItems)if(item!=null)drops.Add(new LootSource.Drop(item,1));
+        gold+=bonusGold;
         if(chest && drops.Count==0 && guaranteedItem==null && gold<=0) gold=3+rng.Next(0,3)+floorNumber*2;
         // A chest glows gold as it opens and its loot jumps out.
         var mouth=transform.position+Vector3.up*.55f;
         DungeonLootDrop.Spill(drops,gold,dropPosition,transform.parent,chest ? mouth : (Vector3?)null);
         CoopWorld.EndLoot();
         if(chest)Glow(mouth);
-        if(chest && stingAudio!=null && AudioManager.HasInstance) DOVirtual.DelayedCall(.12f,()=>AudioManager.Instance.PlaySFX(stingAudio,transform.position,stingVolume,.02f)).SetLink(gameObject);
+        bool chime=InventoryManager.HasInstance && InventoryManager.Instance.chestOpenChime;
+        if(chest && chime && stingAudio!=null && AudioManager.HasInstance) DOVirtual.DelayedCall(.12f,()=>AudioManager.Instance.PlaySFX(stingAudio,transform.position,stingVolume,.02f)).SetLink(gameObject);
         if(chest && lid!=null)
         {
             if(lidClip!=null)

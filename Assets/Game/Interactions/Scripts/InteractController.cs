@@ -105,7 +105,7 @@ public class InteractController : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             var hit = sightHits[i];
-            if (hit.transform.IsChildOf(transform) || target.Owns(hit.transform)) continue;
+            if (hit.transform.IsChildOf(transform) || target.Owns(hit.transform) || DeathPhysics.IsCorpse(hit.collider)) continue;
             return false;
         }
         return true;

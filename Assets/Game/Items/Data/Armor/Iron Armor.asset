@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 20154782471c9cb4ca51964d50a47397
   weaponCategory: 0
   spell: {fileID: 0}
+  rarity: 0
   description: 
   icon: {fileID: 21300000, guid: 4995fd7915e0f6446b8edea92f5f158a, type: 3}
   iconSource:
@@ -30,7 +31,7 @@ MonoBehaviour:
   itemType: 6
   maxStackSize: 1
   gridSize: {x: 0, y: 0}
-  value: 70
+  value: 90
   tier: 2
   lootWeight: 1
   pickupAudioSource: 0
@@ -49,6 +50,9 @@ MonoBehaviour:
   - stat: 1
     value: 3
     type: 0
+  - stat: 0
+    value: 8
+    type: 0
   weapon:
     useDefaultEffects: 1
     hitAudio: {fileID: 0}
@@ -58,6 +62,7 @@ MonoBehaviour:
     damageMultiplier: 1
     knockbackForce: -1
     hitStopScale: 1
+  damageSpread: 0
   effects: []
   useAudioSource: 0
   useAudio: {fileID: 0}
@@ -67,5 +72,3 @@ MonoBehaviour:
   useMessage: 
   AnimationOnUse: 0
   eatDuration: 0.65
-  eatMouthPosition: {x: 0, y: -0.12, z: 0.13}
-  eatMouthRotation: {x: -65, y: 0, z: 0}

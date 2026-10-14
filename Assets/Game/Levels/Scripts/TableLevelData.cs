@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Sirenix.OdinInspector;
 
@@ -40,12 +41,34 @@ public class TableLevelData : ScriptableObject
     [System.Serializable]
     public class BiomeStage
     {
-        [HorizontalGroup, HideLabel, AssetsOnly] public DungeonBiome biome;
-        [HorizontalGroup(90), LabelText("Floors"), LabelWidth(40), Min(1)] public int floors = 3;
+        [HideLabel, AssetsOnly] public DungeonBiome biome;
+        [HorizontalGroup("Row", LabelWidth = 45), LabelText("Floors"), Min(1), Tooltip("How many floors of this biome the run has.")]
+        public int floors = 3;
+        [HorizontalGroup("Row", LabelWidth = 105), LabelText("Boss on last floor"), Tooltip("The biome's guardian (its Boss tab) waits on this stage's last floor. Off: no boss in this stage, whatever the biome has set up.")]
+        public bool boss = true;
     }
     [TabGroup(Tabs, Run), ShowIf(D), Title("Biomes", "In order from the top floor down. Each biome lasts its number of floors and its guardian waits on its last floor.", HorizontalLine = false)]
     [ListDrawerSettings(ShowFoldout = true)]
     public BiomeStage[] stages = new BiomeStage[0];
+    [TabGroup(Tabs, Run), ShowIf(D), ShowInInspector, ReadOnly, LabelText("The run"), MultiLineProperty(2)]
+    public string RunSummary
+    {
+        get
+        {
+            if (!IsDungeon || stages == null) return "";
+            var parts = new List<string>();
+            int start = 1;
+            foreach (var stage in stages)
+            {
+                if (stage == null || stage.biome == null) continue;
+                int count = Mathf.Max(1, stage.floors), end = start + count - 1;
+                bool fight = stage.boss && stage.biome.guardian != null && stage.biome.guardian.enabled && stage.biome.guardian.boss != null;
+                parts.Add((count == 1 ? $"Floor {start}" : $"Floors {start}-{end}") + $" {stage.biome.name}" + (fight ? $" (boss on {end})" : ""));
+                start = end + 1;
+            }
+            return string.Join(", ", parts);
+        }
+    }
     [TabGroup(Tabs, Run), ShowIf(D), ShowInInspector, ReadOnly, LabelText("Floors in a run")]
     public int FloorCount
     {
@@ -59,6 +82,19 @@ public class TableLevelData : ScriptableObject
     public bool MultipleFloors => FloorCount > 1;
     [TabGroup(Tabs, Run), ShowIf(D), Tooltip("Per-floor enemy scaling across the whole run.")]
     public DungeonBalance balance;
+    [TabGroup(Tabs, Run), ShowIf(D), Title("Gear by floor", "Which gear tiers drop on each floor of the run, whatever the biome (each row lasts until the next row's floor). Biome loot profiles roll their gear from here; a profile with Follow Floor Tiers off (a boss's own reward) keeps its own tiers. Empty: each profile uses its own.", HorizontalLine = false)]
+    [ListDrawerSettings(ShowFoldout = false, ListElementLabelName = "Label")]
+    public List<LootFloorTiers> gearByFloor = new();
+
+    // The gear row for a floor: the last row starting on or before it (null when the table is empty).
+    public LootFloorTiers GearAt(int floor)
+    {
+        LootFloorTiers best = null;
+        if (gearByFloor != null)
+            foreach (var row in gearByFloor)
+                if (row != null && row.fromFloor <= floor && (best == null || row.fromFloor >= best.fromFloor)) best = row;
+        return best;
+    }
 
     void OnValidate()
     {
@@ -87,6 +123,8 @@ public class TableLevelData : ScriptableObject
     public RoomLighting roomLighting;
     [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), Tooltip("The colour the room's light takes while this level is played: dark yellow, cold blue ... White leaves it as it is.")]
     [ColorUsage(false)] public Color roomTint = Color.white;
+    [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), Range(0f, .5f), Tooltip("The dungeon is never darker than this, so it is never pitch black: the ambient light's brightest channel, also past the light radius and in dark rooms. 0 leaves the dark as the Lighting Manager makes it.")]
+    public float minimumAmbient = .07f;
     [TabGroup(Tabs, Look), ShowIf(nameof(IsBoard)), Tooltip("The light hung over a board level, like a lamp over a gaming table: it lights every room.")]
     [ColorUsage(false)] public Color boardLightColor = new Color(1f, .86f, .68f);
     [TabGroup(Tabs, Look), ShowIf(nameof(IsBoard)), Min(0)] public float boardLightIntensity = 2600f;
@@ -334,7 +372,10 @@ public class TableLevelData : ScriptableObject
 
     // The biome a floor belongs to, which of its floors this is (1-based) and how many it has.
     // Floors past the plan stay on the last biome's deepest floor.
-    public DungeonBiome BiomeAt(int floor, out int floorInBiome, out int biomeFloors)
+    public DungeonBiome BiomeAt(int floor, out int floorInBiome, out int biomeFloors) => StageAt(floor, out floorInBiome, out biomeFloors)?.biome;
+
+    // The stage a floor belongs to (past the end: the last stage, on its last floor).
+    BiomeStage StageAt(int floor, out int floorInBiome, out int biomeFloors)
     {
         int start = 1;
         BiomeStage last = null;
@@ -343,12 +384,12 @@ public class TableLevelData : ScriptableObject
             {
                 if (stage == null || stage.biome == null) continue;
                 int count = Mathf.Max(1, stage.floors);
-                if (floor < start + count) { floorInBiome = Mathf.Max(1, floor - start + 1); biomeFloors = count; return stage.biome; }
+                if (floor < start + count) { floorInBiome = Mathf.Max(1, floor - start + 1); biomeFloors = count; return stage; }
                 last = stage; start += count;
             }
         biomeFloors = last != null ? Mathf.Max(1, last.floors) : 1;
         floorInBiome = biomeFloors;
-        return last != null ? last.biome : null;
+        return last;
     }
 
     // The floor's biome decides; the level's own setting only applies to dungeons without biomes.
@@ -360,6 +401,7 @@ public class TableLevelData : ScriptableObject
         state.darkness = biome != null && biome.litThroughout ? 0f : 1f;
         state.roomDark = RoomDarkness;
         state.roomShade = new Color(roomTint.r, roomTint.g, roomTint.b, 1f);
+        state.minAmbient = minimumAmbient;
         return state;
     }
 
@@ -394,12 +436,12 @@ public class TableLevelData : ScriptableObject
         return backgroundMusic;
     }
 
-    // The biome's guardian, on the biome's last floor.
+    // The biome's guardian, on the stage's last floor (when the stage has its boss).
     public DungeonMilestone Milestone(int floor)
     {
         if (floor > FloorCount) return null;
-        var biome = BiomeAt(floor, out int floorInBiome, out int biomeFloors);
-        var guardian = biome != null ? biome.guardian : null;
+        var stage = StageAt(floor, out int floorInBiome, out int biomeFloors);
+        var guardian = stage != null && stage.boss && stage.biome != null ? stage.biome.guardian : null;
         return guardian != null && guardian.enabled && guardian.boss != null && floorInBiome == biomeFloors ? guardian : null;
     }
 

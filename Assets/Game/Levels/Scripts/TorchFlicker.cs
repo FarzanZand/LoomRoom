@@ -6,6 +6,8 @@ public class TorchFlicker : MonoBehaviour
 {
     [Range(0, 1)] public float amount = .18f;
     [Min(0)] public float speed = 5f;
+    // Set by others each frame to brighten or dim the flame around its flicker (a boss stage's beat and flares).
+    [System.NonSerialized] public float scale = 1f;
 
     Light torch;
     float baseIntensity, baseRange, seed;
@@ -25,7 +27,7 @@ public class TorchFlicker : MonoBehaviour
     void Update()
     {
         float n = Mathf.PerlinNoise(seed, Time.time * speed) * 2 - 1;
-        torch.intensity = baseIntensity * (1 + n * amount);
+        torch.intensity = baseIntensity * scale * (1 + n * amount);
         torch.range = baseRange * (1 + n * amount * .3f);
     }
 }

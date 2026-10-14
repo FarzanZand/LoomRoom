@@ -2283,6 +2283,7 @@ MonoBehaviour:
   rightHandEquippedParam: RightHandEquipped
   leftHandEquippedParam: LeftHandEquipped
   blockHitTrigger: BlockHit
+  blockStrainParam: BlockStrain
   hurtTrigger: Hurt
   windupSpeedParam: WindupSpeed
   releaseSpeedParam: ReleaseSpeed
@@ -9559,6 +9560,7 @@ MonoBehaviour:
   characterName: Table Player
   faction: 1
   description: 
+  creatureKind: 0
   stats:
   - stat: 6
     baseValue: 1
@@ -9651,7 +9653,7 @@ MonoBehaviour:
   canSprint: 0
   sprintSpeed: 6
   crouchSpeed: 1.75
-  backwardSpeed: 0.8
+  backwardSpeed: 0.45
   jumpForce: 8
   gravityMultiplier: 2.5
   sprintStaminaPerSecond: 6

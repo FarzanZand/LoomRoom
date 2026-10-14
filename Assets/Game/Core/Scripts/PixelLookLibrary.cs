@@ -40,12 +40,16 @@ public class PixelLookLibrary : ScriptableObject
     [Header("Materials")]
     [Tooltip("Hidden/LoomRoom/Pixel Lit Object (Rendering/PixelLook/PixelLitObject.shader), the per-object pixelation shader. Referenced here so player builds include it.")]
     public Shader objectShader;
+    // Editor only: the pairs are read by the editor tools alone, and in a player build they pulled every listed
+    // material and its full-size textures in (about 30 MB of Synty sheets nothing draws).
+#if UNITY_EDITOR
     [Tooltip("Folder the generated Pixel Lit materials are written to.")]
     [FolderPath] public string outputFolder = "Assets/Game/Rendering/PixelLook/Materials";
     [TableList(AlwaysExpanded = false, ShowPaging = true, NumberOfItemsPerPage = 30)]
     public List<Entry> entries = new();
     [Tooltip("Materials Build Materials leaves alone: they keep drawing as they are. For fine printed artwork, like the board's grid, that stripes when point-sampled.")]
     public List<Material> excluded = new();
+#endif
 
 
     // ── Pixel lighting ───────────────────────────────────────────────

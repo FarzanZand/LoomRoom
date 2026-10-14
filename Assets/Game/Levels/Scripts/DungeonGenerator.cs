@@ -342,9 +342,10 @@ public partial class DungeonGenerator : MonoBehaviour
             bool guarded=Roles[i]==RoomRole.Treasure || Roles[i]==RoomRole.Storage;
             if(Roles[i]!=RoomRole.Combat && Roles[i]!=RoomRole.Exit && !guarded)continue;
             int count=guarded ? 1 : random.Next(MinEnemiesPerRoom,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
+            // A hand-built room's own Enemy sockets count toward the roll; generated enemies make up the rest.
+            if(templates[i]!=null && templates[i].replaceGeneratedEnemies)count=Mathf.Max(0,count-SocketEnemies(i));
             // Co-op: bigger packs for a bigger party (added after the draw, so the room rolls the same).
             if(!guarded)count=Mathf.Min(8,count+Coop.ExtraEnemies);
-            if(templates[i]!=null && templates[i].replaceGeneratedEnemies)count=0;
             if(i==MerchantRoom)count=0;
             if(EventOf(i)==RoomEvent.Ambush)count=0;
             for(int j=0;j<count;j++)
@@ -369,6 +370,14 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     // A walkable point somewhere inside the room, for spawns whose usual spot is blocked.
+    // Enemy sockets of the room's template that rolled to be filled.
+    int SocketEnemies(int room)
+    {
+        int n=0;
+        if(actorSockets.TryGetValue(room,out var list))foreach(var socket in list)if(socket.type==DungeonSocketType.Enemy)n++;
+        return n;
+    }
+
     bool FindRoomFloor(int room, System.Random rng, out NavMeshHit hit)
     {
         var rect = Layout.rooms[room];

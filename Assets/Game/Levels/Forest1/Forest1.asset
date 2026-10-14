@@ -20,11 +20,15 @@ MonoBehaviour:
   stages:
   - biome: {fileID: 11400000, guid: 544a86e1822ce2e43b0bf64d8e1fa23a, type: 2}
     floors: 3
+    boss: 1
   - biome: {fileID: 11400000, guid: dd473345bee849243b0dc9153183de3e, type: 2}
     floors: 7
+    boss: 1
   - biome: {fileID: 11400000, guid: 8eaf9824efd9dcf4db22adc877d60d68, type: 2}
     floors: 10
+    boss: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
+  gearByFloor: []
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   moodLighting: 8
   overrideLighting: 0
@@ -39,6 +43,7 @@ MonoBehaviour:
     fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   roomLighting: 1
   roomTint: {r: 1, g: 1, b: 1, a: 1}
+  minimumAmbient: 0.07
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
   backgroundMusic: {fileID: 8300000, guid: ef4f5eea8a3e11d4ba749bcb52683db8, type: 3}
@@ -136,10 +141,6 @@ MonoBehaviour:
   - {fileID: 4512585253218133542, guid: 4d61de25fe2587a4284ad2d051b25095, type: 3}
   furnishEntranceRims: 1
   architectureTileSize: 3
-  twoTileRoomPercent: 50
-  threeTileRoomPercent: 10
-  twoTileCorridorPercent: 25
-  threeTileCorridorPercent: 0
   hideRoof: 0
   hideRoofPercent: 5.9
   skylightFrame: 0.9
@@ -311,7 +312,6 @@ MonoBehaviour:
   - prefab: {fileID: 6682190492535852451, guid: a3f935b8a5116744c81458439dead315, type: 3}
     weight: 1
   kitModels: 0
-  floorBase: 4.5
   roomFeatures:
     shrineBargains: 1
     shrineChance: 0.35
@@ -322,7 +322,7 @@ MonoBehaviour:
     trappedTreasure: 1
     trapChance: 0.3
     spikeDamage: 0.2
-    sleepingPacks: 1
+    sleepingPacks: 0
     sleepChance: 0.1
     maxSleepingPacks: 3
     pits: 1

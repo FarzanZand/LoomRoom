@@ -24,7 +24,8 @@ public partial class BossStageEncounter : MonoBehaviour
     readonly HashSet<BossEvent> done = new();
     readonly Dictionary<BossEvent, float> nextBeat = new();
     float fightStart = -1f, musicStart = -1f, lastComment = -100f;
-    bool started, finished, halfSaid, lowSaid, playerLowSaid, darkened;
+    bool started, finished, halfSaid, lowSaid, playerLowSaid, darkened, phaseTwo;
+    BossStageLights stageLights;
     Coroutine beamRun;
 
     // The fight in progress (a debug view and tests read it).
@@ -40,16 +41,87 @@ public partial class BossStageEncounter : MonoBehaviour
     {
         dungeon = generator; milestone = data; fight = data.fight; exit = stageExit;
         if (exit != null && milestone.sealExit) exit.Sealed = true;
+        // The floor is being built behind the loading screen: the fight's music and sounds are loaded now (a long track
+        // decompressed when it first plays stalls the game for a moment), and the painting changes, unseen.
+        foreach (var clip in new[] { fight != null ? fight.music : null, milestone.introSting, fight != null ? fight.landSound : null,
+                     fight != null ? fight.beamChargeSound : null, fight != null ? fight.beamLoopSound : null, fight != null ? fight.beamBlockedSound : null })
+            if (clip != null && clip.loadState == AudioDataLoadState.Unloaded) clip.LoadAudioData();
+        if (fight != null && fight.painting != null && RoomPainting.BehindDungeonMaster != null)
+        {
+            painting = RoomPainting.BehindDungeonMaster;
+            painting.Show(fight.painting);
+        }
     }
 
     void OnDestroy()
     {
         if (Current == this) Current = null;
         if (started && !finished) Cleanup(false);
+        // The floor is going (the next floor loading, or back to the room after a death): the painting's own again.
+        if (painting != null) painting.Restore();
+        DestroyRoomLights();
+    }
+
+    // ── The room's own lights for the fight (BossFight > Room) ────────
+    RoomPainting painting;
+    Light dmLight, paintingLight;
+
+    Light RoomLight(string name, Color colour, float angle)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(transform, false);
+        var l = go.AddComponent<Light>();
+        l.type = LightType.Spot; l.spotAngle = angle; l.innerSpotAngle = angle * .5f; l.range = 40f; l.intensity = 0f;
+        l.color = colour; l.shadows = LightShadows.None;
+        // Room renderers only: the miniature dungeon keeps its own darkness.
+        FirstPersonLighting.SetLayers(l, LightingManager.RoomLayer);
+        return l;
+    }
+
+    void LightRoom()
+    {
+        if (fight == null) return;
+        if (fight.dungeonMasterLight > 0f && dmLight == null) dmLight = RoomLight("Boss fight: Dungeon Master light", fight.dungeonMasterLightColor, 55f);
+        if (fight.paintingLight > 0f && paintingLight == null && RoomPainting.BehindDungeonMaster != null) paintingLight = RoomLight("Boss fight: painting light", fight.paintingLightColor, 45f);
+    }
+
+    // Each frame: on his face from the stage's side (he moves and leans), and on the painting from the room; faded in
+    // with the room's darkening and out when the fight is over.
+    void UpdateRoomLights()
+    {
+        float fade = fight != null && fight.darkenSeconds > 0f ? Time.deltaTime / fight.darkenSeconds : 1f;
+        var head = hand != null && hand.GetComponent<Animator>() is { isHuman: true } a ? a.GetBoneTransform(HumanBodyBones.Head) : null;
+        if (dmLight != null)
+        {
+            dmLight.intensity = Mathf.MoveTowards(dmLight.intensity, finished ? 0f : fight.dungeonMasterLight, fight.dungeonMasterLight * fade);
+            if (head != null && dungeon != null)
+            {
+                var out_ = dungeon.StageCentre - head.position; out_.y = 0; out_ = out_.sqrMagnitude > .01f ? out_.normalized : Vector3.forward;
+                // From below, out over the stage: lit like a face over a fire, his eyes left to glow.
+                dmLight.transform.position = head.position + out_ * 10f - Vector3.up * 8f;
+                dmLight.transform.LookAt(head.position);
+            }
+        }
+        if (paintingLight != null && RoomPainting.BehindDungeonMaster is { } art)
+        {
+            paintingLight.intensity = Mathf.MoveTowards(paintingLight.intensity, finished ? 0f : fight.paintingLight, fight.paintingLight * fade);
+            var from = head != null ? head.position : art.Centre + Vector3.down;
+            paintingLight.transform.position = art.Centre + art.Facing(from) * 16f + Vector3.up * 5f;
+            paintingLight.transform.LookAt(art.Centre);
+        }
+        if (finished && (dmLight == null || dmLight.intensity <= 0f) && (paintingLight == null || paintingLight.intensity <= 0f)) DestroyRoomLights();
+    }
+
+    void DestroyRoomLights()
+    {
+        if (dmLight != null) Destroy(dmLight.gameObject);
+        if (paintingLight != null) Destroy(paintingLight.gameObject);
+        dmLight = paintingLight = null;
     }
 
     void Update()
     {
+        if (dmLight != null || paintingLight != null) UpdateRoomLights();
         if (finished || dungeon == null || dungeon.Stage == null) return;
         // Co-op: the host runs the fight for the whole party (BossStageEncounter.Coop.cs).
         if (Coop.Running) { CoopUpdate(); return; }
@@ -72,6 +144,7 @@ public partial class BossStageEncounter : MonoBehaviour
     IEnumerator Open(Character player)
     {
         started = true; Current = this;
+        stageLights = dungeon.Stage != null ? dungeon.Stage.GetComponent<BossStageLights>() : null;
         DungeonMasterRemarks.Hold = true;
         FindDungeonMaster();
         ShutStair(true);
@@ -81,19 +154,24 @@ public partial class BossStageEncounter : MonoBehaviour
             musicStart = Time.time;
         }
         if (milestone.introSting != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(milestone.introSting, milestone.stingVolume);
-        // The room goes dark: the stage and his eyes are all that is lit.
-        if (fight != null && fight.darkRoom && LightingManager.Instance != null)
+        // The room takes the fight's look (Dark: the stage and his eyes are all that is lit), and its own lights come up.
+        if (fight != null && fight.changeRoomLighting && LightingManager.Instance != null)
         {
-            var dark = dungeon.LevelData.DungeonLighting(dungeon.FloorNumber);
-            dark.roomDark = 1f;
-            LightingManager.Instance.BlendToMood(dark, fight.darkenSeconds);
+            var look = dungeon.LevelData.DungeonLighting(dungeon.FloorNumber);
+            look.roomDark = LightingManager.Darkness(fight.roomLighting);
+            look.roomShade = new Color(fight.roomTint.r, fight.roomTint.g, fight.roomTint.b, 1f);
+            LightingManager.Instance.BlendToMood(look, fight.darkenSeconds);
             darkened = true;
         }
+        LightRoom();
         if (fight != null) Say(fight.openingLine, true);
         var spot = BossSpot();
         if (seat != null) seat.Focus(StandFor(spot), spot);
         if (hand != null) hand.Watch(spot, true);
         yield return new WaitForSeconds(fight != null ? fight.reachDelay : 1f);
+        // He reaches for the boss only once he stands at the table (his shoulder is where the reach is planned from).
+        for (float t = 0; seat != null && !seat.Arrived && t < 4f; t += Time.deltaTime) yield return null;
+        yield return new WaitForSeconds(.4f);
 
         // Co-op guests: the host's boss comes as one of its enemies; the hand only shows setting it down.
         if (Coop.IsGuest) { yield return TakeHostBoss(spot); yield break; }
@@ -109,6 +187,7 @@ public partial class BossStageEncounter : MonoBehaviour
         if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title);
         if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.introMessage.Trim(), MessageKind.Warning);
         if (fight != null) Say(fight.fightLine, true);
+        if (stageLights != null) stageLights.Follow(boss.transform);
         if (brain != null) { brain.enabled = true; brain.Alert(); }
         if (hand != null && player != null) hand.Watch(player.transform.position, false);
         fightStart = Time.time;
@@ -125,13 +204,18 @@ public partial class BossStageEncounter : MonoBehaviour
         if (figureBrain != null) figureBrain.enabled = false;
         if (agent != null) agent.enabled = false;
         if (motor != null) motor.enabled = false;
+        // Nothing of it shows or can be aimed at until it is in his hand (its weapon is put in its hand after it spawns).
+        var colliders = figure.GetComponentsInChildren<Collider>(true);
+        var solid = new bool[colliders.Length];
+        for (int i = 0; i < colliders.Length; i++) { solid[i] = colliders[i].enabled; colliders[i].enabled = false; }
         var kinematic = new bool[bodies.Length];
         for (int i = 0; i < bodies.Length; i++) { kinematic[i] = bodies[i].isKinematic; bodies[i].isKinematic = true; }
-        if (hand != null) yield return hand.Place(figure.transform, spot, seconds, TableTop(), () => Landed(figure, spot));
+        if (hand != null) { yield return hand.Place(figure.transform, spot, seconds, TableTop(), () => Landed(figure, hand.LastPlacedAt)); spot = hand.LastPlacedAt; }
         else { figure.transform.position = spot; Landed(figure, spot); }
         for (int i = 0; i < bodies.Length; i++) if (bodies[i] != null) bodies[i].isKinematic = kinematic[i];
+        for (int i = 0; i < colliders.Length; i++) if (colliders[i] != null) colliders[i].enabled = solid[i];
         if (motor != null) motor.enabled = true;
-        if (agent != null) { agent.enabled = true; agent.Warp(spot); }
+        if (agent != null) { agent.enabled = true; agent.Warp(spot); if (agent.isOnNavMesh) { agent.ResetPath(); agent.velocity = Vector3.zero; } }
         if (figureBrain != null && figure != boss) { figureBrain.enabled = true; figureBrain.Alert(); }
     }
 
@@ -173,6 +257,15 @@ public partial class BossStageEncounter : MonoBehaviour
                     if (BeatClock(t) >= at) { nextBeat[e] = at + Mathf.Max(1f, e.beats); Do(e, player); }
                     break;
             }
+        }
+        // The music's beat on the stage's fires, and the second phase.
+        if (stageLights != null) stageLights.Beat(musicStart >= 0f ? Beat : -1f);
+        if (!phaseTwo && fight.phaseTwoHealth > 0f && health <= fight.phaseTwoHealth)
+        {
+            phaseTwo = true; halfSaid = true;
+            if (stageLights != null) stageLights.PhaseTwo();
+            Say(fight.phaseTwoLine, true);
+            Shake(fight.phaseTwoShake);
         }
         // His comments on how it goes.
         if (!halfSaid && health <= .5f) { halfSaid = true; Comment(fight.bossHalf); }
@@ -300,6 +393,7 @@ public partial class BossStageEncounter : MonoBehaviour
     {
         finished = true;
         Cleanup(won);
+        if (won && dungeon != null && boss != null) StartCoroutine(BossChest(boss.transform.position));
         if (won && exit != null)
         {
             exit.Sealed = false;
@@ -308,8 +402,25 @@ public partial class BossStageEncounter : MonoBehaviour
         }
     }
 
+    // The boss chest, a moment after the kill (the body is thrown first), facing the player.
+    IEnumerator BossChest(Vector3 at)
+    {
+        yield return new WaitForSeconds(1.2f);
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+        // Clear of the exit stairs that rise in the middle of the stage.
+        if (exit != null)
+        {
+            var away = at - exit.transform.position; away.y = 0;
+            if (away.magnitude < 3.5f) at = exit.transform.position + (away.sqrMagnitude > .01f ? away.normalized : Vector3.right) * 3.5f;
+        }
+        dungeon.SpawnBossChest(at, player != null ? player.transform.position : StageCentreOr(at));
+    }
+
+    Vector3 StageCentreOr(Vector3 at) => dungeon != null ? dungeon.StageCentre : at;
+
     void Cleanup(bool won)
     {
+        if (stageLights != null) stageLights.Calm();
         StopAllCoroutines(); beamRun = null;
         if (beam != null) beam.Stop();
         foreach (var v in volleys) if (v != null) v.Stop();

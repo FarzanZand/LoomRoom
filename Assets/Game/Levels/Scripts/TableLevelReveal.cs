@@ -197,8 +197,6 @@ public sealed class TableLevelReveal : MonoBehaviour
             // the destination, never attached to the room camera during the flight.
             if (entryHands != null) entryHands.FollowTransitionCamera(output, 0);
             foreach (var entry in handRenderers) if (entry.renderer != null) entry.renderer.forceRenderingOff = entry.forcedOff;
-            // Discard residual smoothing before handing control back.
-            if (tablePlayer.Look != null) tablePlayer.Look.ResetInput();
             completed = true;
         }
         finally { Restore(); }

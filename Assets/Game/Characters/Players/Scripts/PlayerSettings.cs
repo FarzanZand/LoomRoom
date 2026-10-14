@@ -6,8 +6,6 @@ public class PlayerSettings : ScriptableObject
 {
     [Tooltip("Mouse sensitivity multiplier.")]
     public float mouseSensitivity = 1f;
-    [Tooltip("Higher values result in smoother but less responsive mouse movement: recommended 18-25.")]
-    public float mouseSmoothing = 20f;
     [Tooltip("Invert vertical look.")]
     public bool invertLook = false;
     [Tooltip("If disabled, lean input is ignored and the camera stays upright.")]

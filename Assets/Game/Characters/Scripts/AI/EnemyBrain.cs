@@ -381,7 +381,9 @@ public class EnemyBrain : MonoBehaviour
         if (IsSwinging && !info.Blocked && info.Amount > 0f && attackRunner.TryInterrupt())
             SetState(EnemyState.Chase);
         // A stagger is followed by a moment it can't be staggered again (CombatManager.enemyStaggerImmunity).
-        if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null && Time.time >= staggerImmuneUntil)
+        // A mace's heavy hit always staggers, even inside the immunity after the last stagger.
+        bool maceHeavy = info.Weapon != null && info.Weapon.IsWeapon && info.Weapon.weaponCategory == WeaponCategory.Mace;
+        if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null && (Time.time >= staggerImmuneUntil || maceHeavy))
         {
             var trainee = info.Source != null ? info.Source.Adventurer : null;
             float duration = Tuning.heavyStaggerDuration * (trainee != null ? trainee.StaggerMultiplier(info.Weapon) : 1);

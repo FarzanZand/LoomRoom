@@ -19,6 +19,7 @@ MonoBehaviour:
   environmentPrefab: {fileID: 0}
   stages: []
   balance: {fileID: 0}
+  gearByFloor: []
   mood: {fileID: 11400000, guid: d4f17c0d2b15de64593452a74b223d59, type: 2}
   moodLighting: 0
   overrideLighting: 0
@@ -33,6 +34,7 @@ MonoBehaviour:
     fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   roomLighting: 0
   roomTint: {r: 1, g: 1, b: 1, a: 1}
+  minimumAmbient: 0.07
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
   backgroundMusic: {fileID: 0}
@@ -92,17 +94,17 @@ MonoBehaviour:
   doorPercent: 65
   boardEdgeMaterial: {fileID: 0}
   boardGridMaterial: {fileID: 0}
+  boardPitMaterial: {fileID: 0}
   boardTileThickness: 0.14
   boardLayerHeight: 0.32
   boardMaxRaise: 2
   boardVerticality: 1
   boardTileTaps: []
   boardRevealAll: 0
+  boardDoorPosts: []
+  boardMoundProps: []
+  furnishEntranceRims: 0
   architectureTileSize: 3
-  twoTileRoomPercent: 25
-  threeTileRoomPercent: 0
-  twoTileCorridorPercent: 25
-  threeTileCorridorPercent: 0
   hideRoof: 0
   hideRoofPercent: 100
   skylightFrame: 0.9
@@ -125,7 +127,6 @@ MonoBehaviour:
   chestPrefab: {fileID: 0}
   chestTiers: []
   kitModels: 1
-  floorBase: 4.5
   roomFeatures:
     shrineBargains: 1
     shrineChance: 0.35
@@ -136,7 +137,7 @@ MonoBehaviour:
     trappedTreasure: 1
     trapChance: 0.3
     spikeDamage: 0.2
-    sleepingPacks: 1
+    sleepingPacks: 0
     sleepChance: 0.2
     maxSleepingPacks: 3
     pits: 1

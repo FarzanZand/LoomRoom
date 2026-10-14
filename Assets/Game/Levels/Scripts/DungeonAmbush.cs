@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// An ambush room (DungeonRoomFeatures.ambushes): it looks empty. Once the player is well inside, iron gates slam down
-// across every way out and the room's enemies come in waves, each out of a puff of dust at the far side. When the last
-// one falls the gates lift and a chest is left where the fight was. Set up by the generator (DungeonGenerator.Events).
+// An ambush room (DungeonRoomFeatures.ambushes): it looks empty. Once the player is well inside, iron gates rise out of
+// the floor across every way out and the room's enemies come in waves, each out of a puff of dust at the far side. When the last
+// one falls the gates sink back and a chest is left where the fight was. Set up by the generator (DungeonGenerator.Events).
 public class DungeonAmbush : MonoBehaviour
 {
     [HideInInspector] public DungeonGenerator dungeon;
@@ -34,7 +34,10 @@ public class DungeonAmbush : MonoBehaviour
     // Co-op: seconds with nobody of the party alive in the room before the gates lift.
     const float EmptyRoomOpens = 3f;
 
-    void Start()
+    // Gates start open, sunk in the floor. Called by the generator as it places them, before the table
+    // reveal records where every piece sits (opened later, in Start, the reveal kept drawing the bars
+    // shut where the gate had no collider, and up in the air once it closed).
+    public void OpenGates()
     {
         foreach (var g in gates) if (g != null) Lower(g, true);
     }
@@ -89,7 +92,7 @@ public class DungeonAmbush : MonoBehaviour
         phase = Phase.Done;
         if (!opened) foreach (var g in gates) if (g != null) { Lower(g, false); Play(liftAudio, g.position, .7f); }
         CoopWorld.AddContainer(dungeon.SpawnRewardChest(chestAt, chestFacing, chestSeed));
-        MessageLog.Post("The gates grind up. Something was left behind.", MessageKind.Good);
+        MessageLog.Post("The gates sink back into the floor. Something was left behind.", MessageKind.Good);
     }
 
     void Play(AudioClip clip, Vector3 at, float volume = .9f) { if (clip != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(clip, at, volume, .04f); }
@@ -122,7 +125,7 @@ public class DungeonAmbush : MonoBehaviour
     IEnumerator Fight(Character player)
     {
         foreach (var g in gates) if (g != null) { Raise(g); Play(slamAudio, g.position); }
-        MessageLog.Post("Iron gates slam down across the ways out.", MessageKind.Warning);
+        MessageLog.Post("Iron gates slam shut across the ways out.", MessageKind.Warning);
         yield return new WaitForSeconds(.7f);
         foreach (var wave in new[] { waveOne, waveTwo })
         {
@@ -158,7 +161,7 @@ public class DungeonAmbush : MonoBehaviour
         if (opened) return;
         opened = true;
         foreach (var g in gates) if (g != null) { Lower(g, false); Play(liftAudio, g.position, .7f); }
-        MessageLog.Post("The gates grind up.", MessageKind.Warning);
+        MessageLog.Post("The gates sink back into the floor.", MessageKind.Warning);
     }
 
     // Co-op guests: the host's ambush opened before the end.

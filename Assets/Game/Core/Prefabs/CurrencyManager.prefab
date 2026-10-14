@@ -50,13 +50,13 @@ MonoBehaviour:
   pickupVolume: 0.9
   coinVisuals:
   - minAmount: 1
-    prefab: {fileID: 3893912976215769978, guid: b128d6ee1ae18674aac74a914d79652e, type: 3}
+    prefab: {fileID: 7291562409071991215, guid: e8622eba7baa2724792d7528058890e8, type: 3}
     scale: 1.3
   - minAmount: 12
-    prefab: {fileID: 2957133505187866865, guid: b9ae89d8a0968554f92aec7cb3610c52, type: 3}
+    prefab: {fileID: 5197238947209605514, guid: 70f80632b7ea4e0408aaca0dca21014b, type: 3}
     scale: 1
   - minAmount: 40
-    prefab: {fileID: 4601325628514313937, guid: 4b5a571f5965945428f0221820974a6c, type: 3}
+    prefab: {fileID: 1362493059496774540, guid: 55013dc025b185b45823751bbcee985f, type: 3}
     scale: 1.1
   collectOnTouch: 1
   pickupRadius: 0.6

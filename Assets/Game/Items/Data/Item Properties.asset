@@ -1,0 +1,296 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88b2df04323fc784e803acaa0283182d, type: 3}
+  m_Name: Item Properties
+  m_EditorClassIdentifier: Assembly-CSharp::ItemPropertyTable
+  fineCount: {x: 1, y: 2}
+  masterworkCount: {x: 3, y: 4}
+  lowerChance: 0.3
+  fineValue: 1.6
+  masterworkValue: 4
+  properties:
+  - id: dmg
+    enabled: 1
+    stat: 2
+    statPerPoint: 1
+    slots: 129
+    weight: 1
+    byFloor:
+    - 1
+    - 2
+    - 2
+    - 3
+    growthPerFloor: 0.5
+  - id: armour
+    enabled: 1
+    stat: 1
+    statPerPoint: 1
+    slots: 124
+    weight: 1
+    byFloor:
+    - 1
+    - 1
+    - 2
+    - 2
+    growthPerFloor: 0.5
+  - id: block
+    enabled: 1
+    stat: 1
+    statPerPoint: 1
+    slots: 2
+    weight: 1
+    byFloor:
+    - 1
+    - 2
+    - 2
+    - 3
+    growthPerFloor: 0.5
+  - id: health
+    enabled: 1
+    stat: 0
+    statPerPoint: 1
+    slots: 334
+    weight: 1
+    byFloor:
+    - 4
+    - 6
+    - 9
+    - 12
+    growthPerFloor: 2
+  - id: speed
+    enabled: 1
+    stat: 7
+    statPerPoint: 0.01
+    slots: 17
+    weight: 1
+    byFloor:
+    - 5
+    - 8
+    - 11
+    - 15
+    growthPerFloor: 1
+  - id: crit
+    enabled: 1
+    stat: 20
+    statPerPoint: 0.01
+    slots: 145
+    weight: 1
+    byFloor:
+    - 3
+    - 5
+    - 7
+    - 9
+    growthPerFloor: 1
+  - id: backstab
+    enabled: 1
+    stat: 21
+    statPerPoint: 0.01
+    slots: 33
+    weight: 1
+    byFloor:
+    - 20
+    - 35
+    - 50
+    - 70
+    growthPerFloor: 5
+  - id: skeletons
+    enabled: 0
+    stat: 28
+    statPerPoint: 0.01
+    slots: 1
+    weight: 0.34
+    byFloor:
+    - 20
+    - 30
+    - 40
+    - 50
+    growthPerFloor: 5
+  - id: beasts
+    enabled: 0
+    stat: 29
+    statPerPoint: 0.01
+    slots: 1
+    weight: 0.34
+    byFloor:
+    - 20
+    - 30
+    - 40
+    - 50
+    growthPerFloor: 5
+  - id: slimes
+    enabled: 0
+    stat: 30
+    statPerPoint: 0.01
+    slots: 1
+    weight: 0.34
+    byFloor:
+    - 20
+    - 30
+    - 40
+    - 50
+    growthPerFloor: 5
+  - id: kill
+    enabled: 1
+    stat: 25
+    statPerPoint: 1
+    slots: 133
+    weight: 1
+    byFloor:
+    - 1
+    - 2
+    - 3
+    - 4
+    growthPerFloor: 0.5
+  - id: move
+    enabled: 1
+    stat: 6
+    statPerPoint: 0.01
+    slots: 32
+    weight: 1
+    byFloor:
+    - 3
+    - 4
+    - 6
+    - 8
+    growthPerFloor: 0.5
+  - id: quiet
+    enabled: 1
+    stat: 23
+    statPerPoint: 0.01
+    slots: 100
+    weight: 1
+    byFloor:
+    - 10
+    - 15
+    - 20
+    - 25
+    growthPerFloor: 2
+  - id: light
+    enabled: 1
+    stat: 22
+    statPerPoint: 1
+    slots: 264
+    weight: 1
+    byFloor:
+    - 0.5
+    - 1
+    - 1.5
+    - 2
+    growthPerFloor: 0.25
+  - id: mana
+    enabled: 1
+    stat: 10
+    statPerPoint: 1
+    slots: 264
+    weight: 1
+    byFloor:
+    - 6
+    - 9
+    - 12
+    - 16
+    growthPerFloor: 2
+  - id: manaregen
+    enabled: 1
+    stat: 11
+    statPerPoint: 1
+    slots: 264
+    weight: 1
+    byFloor:
+    - 0.3
+    - 0.5
+    - 0.7
+    - 1
+    growthPerFloor: 0.1
+  - id: spell
+    enabled: 1
+    stat: 24
+    statPerPoint: 0.01
+    slots: 384
+    weight: 1
+    byFloor:
+    - 8
+    - 12
+    - 16
+    - 22
+    growthPerFloor: 2
+  - id: bash
+    enabled: 1
+    stat: 27
+    statPerPoint: 1
+    slots: 18
+    weight: 1
+    byFloor:
+    - 2
+    - 3
+    - 4
+    - 6
+    growthPerFloor: 1
+  - id: swords
+    enabled: 1
+    stat: 31
+    statPerPoint: 1
+    slots: 272
+    weight: 0.34
+    byFloor:
+    - 2
+    - 3
+    - 4
+    - 5
+    growthPerFloor: 0.5
+  - id: maces
+    enabled: 1
+    stat: 32
+    statPerPoint: 1
+    slots: 272
+    weight: 0.34
+    byFloor:
+    - 2
+    - 3
+    - 4
+    - 5
+    growthPerFloor: 0.5
+  - id: blocking
+    enabled: 1
+    stat: 33
+    statPerPoint: 1
+    slots: 272
+    weight: 0.34
+    byFloor:
+    - 2
+    - 3
+    - 4
+    - 5
+    growthPerFloor: 0.5
+  - id: gold
+    enabled: 1
+    stat: 26
+    statPerPoint: 0.01
+    slots: 144
+    weight: 1
+    byFloor:
+    - 10
+    - 15
+    - 22
+    - 30
+    growthPerFloor: 2
+  - id: firecircle
+    enabled: 1
+    stat: 34
+    statPerPoint: 0.01
+    slots: 1
+    weight: 0.6
+    byFloor:
+    - 3
+    - 4
+    - 6
+    - 8
+    growthPerFloor: 0.5

@@ -18,6 +18,12 @@ public class CharacterData : ScriptableObject
     public Faction faction = Faction.Neutral;
     [VerticalGroup("Identity/Right"), LabelWidth(90), TextArea(2, 4)]
     public string description;
+    [VerticalGroup("Identity/Right"), LabelWidth(90), Tooltip("What gear's \"damage to skeletons / beasts / slimes\" counts it as. Auto: skeletons and slimes by their gore (bone dust, slime), anything else a humanoid.")]
+    public CreatureKind creatureKind;
+
+    public CreatureKind Kind => creatureKind != CreatureKind.Auto ? creatureKind
+        : gore != null && gore.kind == BloodKind.BoneDust ? CreatureKind.Skeleton
+        : gore != null && gore.kind == BloodKind.Slime ? CreatureKind.Slime : CreatureKind.Humanoid;
 
     [TabGroup(InspectorTabs, "Stats", Order = 0), Tooltip("Base values. Anything not listed reads as 0 (or 1 for multiplier stats). Dungeon enemies are scaled per floor by the level's balance asset.")]
     [ListDrawerSettings(ShowFoldout = false, ShowPaging = true, NumberOfItemsPerPage = 8)]
@@ -50,3 +56,6 @@ public class CharacterData : ScriptableObject
         };
     }
 }
+
+// What kind of creature a character is, for gear that hits one kind harder. Serialized by integer; append only.
+public enum CreatureKind { Auto = 0, Humanoid = 1, Beast = 2, Skeleton = 3, Slime = 4 }

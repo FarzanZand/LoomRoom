@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 // The script of a boss fight on the stage in front of the Dungeon Master (DungeonMilestone.fight, run by
 // BossStageEncounter): the music and its beat, how the DM sets the boss down, his energy beam, events on a
@@ -27,9 +28,22 @@ public class BossFight : ScriptableObject
     public float reachDelay = 1.2f;
     [TabGroup(Tabs, "Opening"), Min(.2f), Tooltip("Seconds the DM takes to bring the boss up from under the table, show it and set it down.")]
     public float placeSeconds = 4.6f;
-    [TabGroup(Tabs, "Opening"), Tooltip("The room goes dark for the fight (only the stage and his eyes are lit), as in the intro.")]
-    public bool darkRoom = true;
-    [TabGroup(Tabs, "Opening"), Min(0)] public float darkenSeconds = 2.5f;
+    // ── Room ──────────────────────────────────────────────────────────
+    [TabGroup(Tabs, "Room"), Tooltip("The picture in the painting on the wall behind the Dungeon Master (RoomPainting) for this fight. It is changed while the boss floor loads and put back when the floor is left (after a death, on the way back to the room), so it is never seen changing. Empty: the painting's own.")]
+    [PreviewField(70)] public Texture2D painting;
+    [TabGroup(Tabs, "Room"), FormerlySerializedAs("darkRoom"), Tooltip("The room takes its own look when the fight begins (below), instead of the level's.")]
+    public bool changeRoomLighting = true;
+    [TabGroup(Tabs, "Room"), ShowIf(nameof(changeRoomLighting)), Tooltip("Normal: as it was. Dim: its lights lowered. Night: dark blue. Dark: black, only the stage, his eyes and the lights below.")]
+    public RoomLighting roomLighting = RoomLighting.Dark;
+    [TabGroup(Tabs, "Room"), ShowIf(nameof(changeRoomLighting)), Tooltip("The colour the room's light takes for the fight. White leaves it as it is.")]
+    public Color roomTint = Color.white;
+    [TabGroup(Tabs, "Room"), ShowIf(nameof(changeRoomLighting)), Min(0)] public float darkenSeconds = 2.5f;
+    [TabGroup(Tabs, "Room"), Min(0), Tooltip("A light from the stage's side on the Dungeon Master's face and hands during the fight (0: none). He is many times a person's size: values in the hundreds.")]
+    public float dungeonMasterLight;
+    [TabGroup(Tabs, "Room"), ShowIf("@dungeonMasterLight > 0")] public Color dungeonMasterLightColor = new(1f, .85f, .65f);
+    [TabGroup(Tabs, "Room"), Min(0), Tooltip("A light on the painting behind him during the fight, so it shows in the dark (0: none).")]
+    public float paintingLight;
+    [TabGroup(Tabs, "Room"), ShowIf("@paintingLight > 0")] public Color paintingLightColor = new(1f, .9f, .75f);
     [TabGroup(Tabs, "Opening"), Min(0), Tooltip("Seconds the boss stands still after it is set down, before it attacks.")]
     public float wakeDelay = 1.1f;
     [TabGroup(Tabs, "Opening"), Tooltip("Sound when the boss touches the stage.")]
@@ -60,6 +74,12 @@ public class BossFight : ScriptableObject
     // ── Volley ────────────────────────────────────────────────────────
     [TabGroup(Tabs, "Volley"), Min(1), Tooltip("Volley events: metres from the player, toward the DM, where his fireballs hang before they fly.")]
     public float volleyDistance = 7f;
+
+    // ── Phase two ─────────────────────────────────────────────────────
+    [TabGroup(Tabs, "Phase two"), Range(0, 1), Tooltip("When the boss's health falls to this share the fight's second phase begins: the stage's fires turn and the moonlight goes red (the stage's BossStageLights), the DM says the line and the stage shakes. 0: no second phase.")]
+    public float phaseTwoHealth = .5f;
+    [TabGroup(Tabs, "Phase two")] public DungeonMaster.Line phaseTwoLine = new() { text = "Now he's angry." };
+    [TabGroup(Tabs, "Phase two"), Min(0)] public float phaseTwoShake = 1.2f;
 
     // ── Events ────────────────────────────────────────────────────────
     [TabGroup(Tabs, "Events"), Tooltip("What happens during the fight, in any order. Times count from the moment the boss wakes.")]

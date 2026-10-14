@@ -187,11 +187,13 @@ public partial class DungeonMasterBeam : MonoBehaviour
         for (float t = 0; t < fight.beamSeconds && Alive(target) && !cancelled; t += Time.deltaTime)
         {
             var origin = Palm();
-            bool blocking = Blocking(target, origin, fight);
+            // Something solid between his palm and the player (a pillar on the stage) takes the beam instead.
+            bool covered = Cover(target, origin, out var coverPoint);
+            bool blocking = covered || Blocking(target, origin, fight);
             // The shield shakes while it holds the beam off.
-            if (target.Combat != null) target.Combat.SetShieldStrain(blocking);
+            if (target.Combat != null) target.Combat.SetShieldStrain(blocking && !covered);
             strained = target;
-            var end = EndPoint(target, origin, blocking);
+            var end = covered ? coverPoint : EndPoint(target, origin, blocking);
             if (hand != null) hand.Aim(end);
             if (charge != null) { charge.transform.position = origin; charge.SetCharge(1f); }
             // It bursts out over the first moment, and throbs.
@@ -211,10 +213,11 @@ public partial class DungeonMasterBeam : MonoBehaviour
                 Instantiate(impactEffect, burst, Quaternion.LookRotation(origin - end));
                 if (blocking && blockSparks != null) Destroy(Instantiate(blockSparks, burst, Quaternion.LookRotation(origin - end)), 2f);
             }
-            State = $"guard {(target.Combat != null && target.Combat.IsGuarding)} dot {FacingDot(target, origin):F2} blocking {blocking}";
+            State = $"guard {(target.Combat != null && target.Combat.IsGuarding)} dot {FacingDot(target, origin):F2} blocking {blocking} covered {covered}";
             if (tick >= damageTick)
             {
-                if (blocking)
+                if (covered) { }   // behind cover: nothing reaches the player
+                else if (blocking)
                 {
                     if (fight.beamStaminaPerSecond > 0f && target.Stats != null && !target.Stats.TryUseStamina(fight.beamStaminaPerSecond * tick, .6f)) { held = false; Burn(target, fight, tick, end); }
                     impulse.GenerateImpulseWithForce(blockedShake);
@@ -308,6 +311,24 @@ public partial class DungeonMasterBeam : MonoBehaviour
     {
         var view = target.CameraRig != null && target.CameraRig.Camera != null ? target.CameraRig.Camera.transform.forward : target.transform.forward;
         return Vector3.Dot(Flat(view), Flat(origin - target.transform.position));
+    }
+
+    // The first solid thing (not a character, not him) on the line from his palm to the player's eyes, on the player's
+    // half of it (the table's edge near him is not cover), if any.
+    bool Cover(Player target, Vector3 origin, out Vector3 point)
+    {
+        point = default;
+        var eye = target.CameraRig != null && target.CameraRig.Camera != null ? target.CameraRig.Camera.transform.position : target.transform.position + Vector3.up * 1.6f;
+        var dir = eye - origin;
+        float length = dir.magnitude, nearest = float.MaxValue;
+        if (length < .1f) return false;
+        foreach (var hit in Physics.RaycastAll(origin, dir / length, length - .3f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (hit.distance < length * .5f || hit.distance >= nearest) continue;
+            if (hit.collider.GetComponentInParent<Character>() != null || hit.transform.IsChildOf(transform)) continue;
+            nearest = hit.distance; point = hit.point;
+        }
+        return nearest < float.MaxValue;
     }
 
     // Shield up (PlayerCombat.IsGuarding) and facing him.

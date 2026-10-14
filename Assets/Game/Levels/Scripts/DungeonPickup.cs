@@ -24,9 +24,30 @@ public static class DungeonPickup
                 }
                 var item=Spawn(drop.item,target,parent,count);remaining-=count;
                 if(item!=null && popFrom.HasValue) PopOut(item.transform,popFrom.Value,index);
+                // Heard as it lands: at once, or (thrown out of a chest) when its arc ends.
+                if(item!=null) DropSound(drop.item,item.transform.position,popFrom.HasValue ? .08f*index+.55f : 0f);
             }
         }
     }
+    // AudioManager SFX Library keys for an item landing on the floor, one per rarity, heard where it lands; a missing key falls back to
+    // DropKey (the plain sound), and with none of them the drop is silent.
+    public const string DropKey = "itemDrop";
+    public static string DropKeyFor(ItemData item) => item == null ? DropKey : item.rarity switch
+    {
+        ItemRarity.Rare => "itemDropRare",
+        ItemRarity.Fine => "itemDropFine",
+        ItemRarity.Masterwork => "itemDropMasterwork",
+        ItemRarity.Relic => "itemDropRelic",
+        _ => DropKey,
+    };
+
+    static void DropSound(ItemData item, Vector3 at, float delay)
+    {
+        if (!AudioManager.HasInstance) return;
+        if (delay <= 0f) { AudioManager.Instance.PlayFirstSFX(at, DropKeyFor(item), DropKey); return; }
+        DOVirtual.DelayedCall(delay, () => { if (AudioManager.HasInstance) AudioManager.Instance.PlayFirstSFX(at, DropKeyFor(item), DropKey); });
+    }
+
     // From the source to where it settled, in an arc, one item after another.
     // It leaves upright and tips over onto the floor on the way down.
     static void PopOut(Transform item, Vector3 from, int order)
@@ -80,21 +101,34 @@ public static class DungeonPickup
     {
         if (!DungeonFeatureUtility.RendererBounds(pickup.GetComponentsInChildren<Renderer>(), out var bounds)) return;
         var from = new Vector3(bounds.center.x, bounds.max.y + .5f, bounds.center.z);
-        var hits = Physics.RaycastAll(from, Vector3.down, 6f, ~0, QueryTriggerInteraction.Ignore);
-        System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));
-        foreach (var hit in hits)
+        if (FloorBelow(from, 6f, pickup.transform, out float floorY))
         {
-            if (hit.transform.IsChildOf(pickup.transform) || !IsFloor(hit.collider)) continue;
-            pickup.transform.position += Vector3.up * (hit.point.y + .02f - bounds.min.y);
+            pickup.transform.position += Vector3.up * (floorY + .02f - bounds.min.y);
             return;
         }
         if (NavMesh.SamplePosition(bounds.center, out var floor, 3f, NavMesh.AllAreas))
             pickup.transform.position += Vector3.up * (floor.position.y + .02f - bounds.min.y);
     }
 
-    static bool IsFloor(Collider c) =>
+    // Fixed geometry only: also not a breakable, which leaves whatever rests on it hanging when it breaks.
+    public static bool IsFloor(Collider c) =>
         c.attachedRigidbody == null && c.GetComponentInParent<Character>() == null &&
         c.GetComponentInParent<CharacterController>() == null && c.GetComponentInParent<WorldItem>() == null &&
         c.GetComponentInParent<CoinPickup>() == null && c.GetComponentInParent<DungeonContainer>() == null &&
-        c.GetComponentInParent<DungeonCorpse>() == null;
+        c.GetComponentInParent<DungeonCorpse>() == null && c.GetComponentInParent<DungeonDestructible>() == null;
+
+    // The height of the first fixed floor straight below from (see IsFloor), within reach.
+    public static bool FloorBelow(Vector3 from, float reach, Transform ignore, out float y)
+    {
+        var hits = Physics.RaycastAll(from, Vector3.down, reach, ~0, QueryTriggerInteraction.Ignore);
+        System.Array.Sort(hits, (x, z) => x.distance.CompareTo(z.distance));
+        foreach (var hit in hits)
+        {
+            if ((ignore != null && hit.transform.IsChildOf(ignore)) || !IsFloor(hit.collider)) continue;
+            y = hit.point.y;
+            return true;
+        }
+        y = 0f;
+        return false;
+    }
 }

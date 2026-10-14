@@ -231,11 +231,17 @@ public class InputManager : Singleton<InputManager>
 
     public void CancelRebind() => rebind?.Cancel();
 
+    // Also onto the UI map's action of that name (Inventory), which closes the menu while it is open.
     void Mirror(InputAction source, int index)
     {
         var binding = source.bindings[index];
         var map = source.actionMap == actions.Table.Get() ? actions.Room.Get() : actions.Table.Get();
-        var other = map.FindAction(source.name);
+        MirrorOnto(map.FindAction(source.name), binding);
+        MirrorOnto(actions.UI.Get().FindAction(source.name), binding);
+    }
+
+    static void MirrorOnto(InputAction other, InputBinding binding)
+    {
         if (other == null) return;
         for (int i = 0; i < other.bindings.Count; i++)
         {

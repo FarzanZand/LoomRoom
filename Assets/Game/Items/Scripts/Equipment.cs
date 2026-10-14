@@ -198,6 +198,22 @@ public class Equipment : MonoBehaviour
             NotificationUI.Show("Make room in your inventory first");
             return false;
         }
+        // A hand item goes from its hotbar slot into the bag; with no room there it stays on the hotbar. One held without
+        // a hotbar slot (never expected) is put in the bag or hotbar, or dropped, so it is never lost.
+        if (IsHand(slot) && Character is Player p && p.Bag != null && p.Hotbar != null)
+        {
+            int at = HeldIndex(slot);
+            Unequip(slot, false);
+            if (at >= 0)
+            {
+                int spot = p.Bag.Accepts(item) ? p.Bag.FindSpot(item) : -1;
+                if (spot >= 0) Inventory.Move(p.Hotbar, at, p.Bag, spot);
+                else NotificationUI.Show("No room in your bag: it stays on the hotbar");
+            }
+            else if (p.Bag.IndexOf(item) < 0 && p.Hotbar.IndexOf(item) < 0 && !p.Bag.TryAdd(item) && !p.Hotbar.TryAdd(item) && InventoryManager.HasInstance)
+                InventoryManager.Instance.DropFromPlayer(item, p);
+            return true;
+        }
         return Unequip(slot) != null;
     }
 

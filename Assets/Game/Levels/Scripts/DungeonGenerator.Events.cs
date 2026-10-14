@@ -177,6 +177,7 @@ public partial class DungeonGenerator
                 var gate = Instantiate(data.ambushGatePrefab, edge - outward * .32f, Quaternion.LookRotation(outward), root.transform);
                 ambush.gates.Add(gate.transform);
             }
+        ambush.OpenGates();
         // Where they come from: the room's own Enemy sockets, then free floor away from the ways in.
         if (ambushPoints.TryGetValue(index, out var points)) ambush.spawnPoints.AddRange(points);
         var cells = new List<Vector2Int>(Layout.RoomCells(index));
@@ -218,6 +219,31 @@ public partial class DungeonGenerator
         var chest = go.GetComponent<DungeonContainer>();
         if (chest == null) return null;
         chest.loot = FloorLoot; chest.seed = rng.Next(); chest.floorNumber = FloorNumber;
+        if (chest.openAudio == null) chest.openAudio = data.chestOpenAudio;
+        return chest;
+    }
+
+    // The boss chest (DungeonMilestone.rewardChest): where the guardian fell, out of a puff of dust, facing the player,
+    // holding the boss's reward and the milestone's Chest Items.
+    public DungeonContainer SpawnBossChest(Vector3 pos, Vector3 face)
+    {
+        var m = Milestone;
+        if (m == null || !m.rewardChest) return null;
+        var prefab = m.chestPrefab;
+        if (prefab == null && data.chestTiers != null)
+            foreach (var t in data.chestTiers) if (t != null && t.prefab != null) prefab = prefab == null ? t.prefab : Rarer(prefab, t.prefab);
+        if (prefab == null) prefab = data.chestPrefab;
+        if (prefab == null) return null;
+        if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas)) pos = hit.position;
+        var look = face - pos; look.y = 0;
+        var go = Instantiate(prefab, pos, Quaternion.LookRotation(look.sqrMagnitude > .01f ? look : Vector3.forward), transform);
+        if (data.ambushSpawnPuff != null) PoolManager.SpawnOrInstantiate(data.ambushSpawnPuff, pos, Quaternion.identity, 3f);
+        var chest = go.GetComponent<DungeonContainer>();
+        if (chest == null) return null;
+        chest.loot = m.bossLoot != null ? m.bossLoot : FloorLoot;
+        chest.seed = new System.Random(FloorNumber * 7919 + 17).Next(); chest.floorNumber = FloorNumber;
+        chest.guaranteedItems = new List<ItemData>(m.chestItems ?? new List<ItemData>());
+        chest.bonusGold = m.bonusGold;
         if (chest.openAudio == null) chest.openAudio = data.chestOpenAudio;
         return chest;
     }

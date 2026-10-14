@@ -19,8 +19,12 @@ public class DungeonMasterHand : MonoBehaviour
     [Range(0, 50)] public float beamLean = 10f;
     [Tooltip("Seconds his weights take to blend in and out.")]
     [Min(.05f)] public float blend = .35f;
-    [Tooltip("Where the figure hangs below his fingertips: a share of its own height (he pinches it by the head).")]
-    [Range(.5f, 1.2f)] public float grip = .97f;
+    [Tooltip("Where the figure hangs below his pinch: a share of its own height (a little over 1: the top of its head just under his fingers, never in them).")]
+    [Range(.5f, 1.2f)] public float grip = 1.04f;
+    [Range(0, 1), Tooltip("How far above the floor (a share of its height) he lets go of it: it drops the rest of the way.")]
+    public float dropHeight = .25f;
+    [Range(-.5f, 1f), Tooltip("How high above his shoulder (a share of his arm's length) he raises his hand to show the figure, where it appears.")]
+    public float raiseShown = .2f;
     [Tooltip("How high (world units) above the spot he carries the figure before he lowers it.")]
     [Min(0)] public float carryHeight = 7f;
     [Tooltip("Light on the figure while it is in his hand.")]
@@ -35,6 +39,8 @@ public class DungeonMasterHand : MonoBehaviour
     Transform hanging; float hangHeight; Quaternion hangFacing;
 
     public bool Busy { get; private set; }
+    // Where the last figure he set down ended up (Place).
+    public Vector3 LastPlacedAt { get; private set; }
     public Transform RightHand => animator != null ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
     public Transform LeftHand => animator != null ? animator.GetBoneTransform(HumanBodyBones.LeftHand) : null;
 
@@ -53,17 +59,7 @@ public class DungeonMasterHand : MonoBehaviour
     {
         var hand = RightHand;
         if (hanging != null && hand != null)
-        {
-            var at = Fingertips() - Vector3.up * (hangHeight * grip);
-            // Set down, it comes straight down onto its spot and stops on the floor: where his arm falls short of the
-            // spot it would otherwise land early and be dragged along the stage.
-            if (settle > 0f)
-            {
-                var flat = Vector3.Lerp(new Vector3(at.x, 0, at.z), new Vector3(settleAt.x, 0, settleAt.z), settle);
-                at = new Vector3(flat.x, Mathf.Max(at.y, settleAt.y), flat.z);
-            }
-            hanging.SetPositionAndRotation(at, hangFacing);
-        }
+            hanging.SetPositionAndRotation(Pinch() - Vector3.up * (hangHeight * grip), hangFacing);
         if (carriedLight != null && hanging != null && Camera.main != null)
         {
             var middle = hanging.position + Vector3.up * carriedHeight * .45f;
@@ -72,23 +68,20 @@ public class DungeonMasterHand : MonoBehaviour
     }
 
     Light carriedLight; float carriedHeight;
-    // While he lowers it: how far (0-1) the figure has been drawn over its spot, and the spot.
-    float settle; Vector3 settleAt;
 
-    // Where his fingers pinch the figure: the lowest of his right fingertips (the figure is smaller than his hand; hung
-    // from the wrist it would be inside his fist).
-    Vector3 Fingertips()
+    // Where his fingers pinch the figure: between the pads of his thumb and index finger (the figure is smaller than
+    // his hand; hung from the wrist it would be inside his fist, from one fingertip it dangles off a nail).
+    Vector3 Pinch()
     {
         var hand = RightHand;
-        Vector3 low = hand.position; bool any = false;
-        foreach (var b in new[] { HumanBodyBones.RightThumbDistal, HumanBodyBones.RightIndexDistal, HumanBodyBones.RightMiddleDistal })
+        Vector3 Pad(HumanBodyBones bone)
         {
-            var t = animator.GetBoneTransform(b);
-            if (t == null) continue;
+            var t = animator.GetBoneTransform(bone);
+            if (t == null) return hand.position;
             var tip = t.childCount > 0 ? t.GetChild(0).position : t.position + (t.position - t.parent.position) * .8f;
-            if (!any || tip.y < low.y) { low = tip; any = true; }
+            return Vector3.Lerp(t.position, tip, .5f);
         }
-        return low;
+        return Vector3.Lerp(Pad(HumanBodyBones.RightThumbDistal), Pad(HumanBodyBones.RightIndexDistal), .5f);
     }
 
     void OnAnimatorIK(int layer)
@@ -106,8 +99,9 @@ public class DungeonMasterHand : MonoBehaviour
     }
 
     // Sets a figure (already spawned, its brain off) down on spot over seconds, then calls landed. Read as one motion:
-    // his hand goes down below the table's edge (out of sight) and comes up holding the figure by the head, he holds
-    // it up toward the player for a moment, carries it out over the stage and lowers it slowly onto it, then lets go.
+    // his hand comes up from below the table's edge pinching the figure by the head and raises it beside his face; he
+    // holds it out toward the player for a moment, carries it out over the stage, brings it low over the spot and lets go: it
+    // drops the last stretch and lands (landed is called the moment its feet touch) while his hand rises away.
     // tableTop: the world height of the table, below which his hand is hidden.
     public IEnumerator Place(Transform figure, Vector3 spot, float seconds, float tableTop, System.Action landed)
     {
@@ -116,74 +110,62 @@ public class DungeonMasterHand : MonoBehaviour
         float height = FigureHeight(figure);
         var toSpot = spot - transform.position; toSpot.y = 0;
         var outward = toSpot.sqrMagnitude > .01f ? toSpot.normalized : transform.forward;
-        // It faces away from him, toward the rest of the stage (the player's side).
+        // It faces away from him, toward the rest of the stage (the player's side), the whole time.
         var facing = Quaternion.LookRotation(outward);
         var shoulder = animator != null ? animator.GetBoneTransform(HumanBodyBones.RightUpperArm) : null;
         var shoulderAt = shoulder != null ? shoulder.position : transform.position + Vector3.up * 26f;
         float reach = ArmLength(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand);
         var from = hand != null ? hand.position : shoulderAt;
-        // Under the table's edge on his side, then up in front of him, then out over the stage.
-        // Shown out to his right at shoulder height, clear of his body (in front of his chest it is lost against his robe).
+        // Raised out to his right beside his face, clear of his body (in front of his chest it is lost against his robe).
         var right = Vector3.Cross(Vector3.up, outward);
-        var under = new Vector3(shoulderAt.x, tableTop - height * 1.2f, shoulderAt.z) + outward * reach * .25f + right * reach * .2f;
-        var shown = shoulderAt + right * reach * .45f + outward * reach * .35f + Vector3.up * reach * .05f;
-        var high = spot + Vector3.up * (carryHeight + height * grip);
-        var low = spot + Vector3.up * (height * grip);
+        var shown = shoulderAt + right * reach * .35f + outward * reach * .45f + Vector3.up * reach * raiseShown;
         rightRotation = Quaternion.LookRotation(Vector3.down, outward);
         lookTarget = spot; lookGoal = 1f; rightGoal = 1f;
+        // The wrist goes where it puts the pinch (the figure's head) at p.
+        Vector3 Wrist(Vector3 p) => p + (hand.position - Pinch());
 
-        var renderers = figure.GetComponentsInChildren<Renderer>();
-        var visible = new bool[renderers.Length];
-        for (int i = 0; i < renderers.Length; i++) { visible[i] = renderers[i].enabled; renderers[i].enabled = false; }
-        float dip = seconds * .14f, rise = seconds * .18f, hold = seconds * .2f, carry = seconds * .2f, lower = seconds * .28f;
+        float dip = seconds * .14f, rise = seconds * .2f, carry = seconds * .22f, lower = seconds * .2f;
 
-        // Down below the edge, empty-handed.
-        leanGoal = reachLean * .4f;
-        yield return Move(from, under, dip, 0f);
-        // He has it: up into view, held by the head.
-        var turned = Quaternion.LookRotation(Quaternion.Euler(0, 60f, 0) * outward);
-        hanging = figure; hangHeight = height; hangFacing = turned;
+        // He has it from the start: pinched in his fingers where his hand rests, below the table's edge, and it comes up
+        // with his hand.
+        hanging = figure; hangHeight = height; hangFacing = facing;
         // Lit from the player's side (LateUpdate keeps the light between it and the camera): the room is dark by now.
         var lightGo = new GameObject("Carried light");
         var carried = lightGo.AddComponent<Light>(); carried.type = LightType.Point; carried.range = height * 1.6f; carried.intensity = carryLight; carried.color = new Color(1f, .82f, .6f);
         carriedLight = carried; carriedHeight = height;
-        yield return null;
-        for (int i = 0; i < renderers.Length; i++) if (renderers[i] != null) renderers[i].enabled = visible[i];
-        leanGoal = reachLean * .3f;
-        yield return Move(under, shown, rise, height * .3f);
-        // Shown to the player, turning slowly to face them.
-        for (float t = 0; t < hold; t += Time.deltaTime)
+        // One motion: up past his face, out over the stage and down to just above the spot (a curve through the shown
+        // point and over the spot), leaning in as he goes; then he lets go.
+        var high = spot + Vector3.up * (carryHeight + height * grip);
+        var dropFrom = spot + Vector3.up * (height * grip + height * dropHeight);
+        float total = dip + rise + carry + lower;
+        for (float t = 0; t < total; t += Time.deltaTime)
         {
-            hangFacing = Quaternion.Slerp(turned, facing, Mathf.SmoothStep(0, 1, t / hold));
-            rightTarget = shown + Vector3.up * Mathf.Sin(t * 2.4f) * height * .04f;
+            float u = Mathf.SmoothStep(0, 1, t / total), v = 1f - u;
+            leanGoal = Mathf.Lerp(reachLean * .3f, reachLean, u);
+            // The wrist targets for the curve's control points are taken now: the pinch moves as his hand turns.
+            var p = v * v * v * from + 3f * v * v * u * shown + 3f * v * u * u * Wrist(high) + u * u * u * Wrist(dropFrom);
+            rightTarget = p;
             yield return null;
         }
-        hangFacing = facing;
-        // Out over the stage, leaning in.
-        leanGoal = reachLean;
-        yield return Move(shown, high, carry, height * .5f);
-        // And down, slowing as it nears the floor.
-        for (float t = 0; t < lower; t += Time.deltaTime)
-        {
-            float u = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / lower), 2.2f);
-            // The figure hangs from his fingertips, a hand's length under the wrist the IK places.
-            float drop = hand != null ? hand.position.y - Fingertips().y : 0f;
-            rightTarget = Vector3.Lerp(high, low + Vector3.up * drop, u);
-            settle = Mathf.SmoothStep(0, 1, Mathf.Clamp01(u * 1.6f)); settleAt = spot;
-            yield return null;
-        }
-        hanging = null; settle = 0f;
-        // Where his reach ran out, the figure is set the rest of the way down.
-        var at = figure.position;
-        for (float t = 0; t < .15f; t += Time.deltaTime) { figure.SetPositionAndRotation(Vector3.Lerp(at, spot, t / .15f), facing); yield return null; }
-        figure.SetPositionAndRotation(spot, facing);
-        if (lightGo != null) { lightGo.transform.position = spot + Vector3.up * height + (Camera.main != null ? Vector3.ProjectOnPlane(Camera.main.transform.position - spot, Vector3.up).normalized * height : Vector3.zero); Destroy(lightGo, .8f); }
-        carriedLight = null;
-        landed?.Invoke();
-        // He lets go and straightens up.
+        // He lets go: it falls straight down onto its spot (where his hand had it) and lands; his hand rises away.
+        hanging = null;
+        var landedAt = new Vector3(figure.position.x, spot.y, figure.position.z);
+        LastPlacedAt = landedAt;
         var release = rightTarget;
         rightGoal = 0f; leanGoal = 0f;
-        for (float t = 0; t < blend; t += Time.deltaTime) { rightTarget = release + Vector3.up * (t / blend) * height; yield return null; }
+        float speed = 0f;
+        while (figure.position.y > landedAt.y)
+        {
+            speed += 9.81f * 2.5f * Time.deltaTime;
+            var p = figure.position; p.y = Mathf.Max(landedAt.y, p.y - speed * Time.deltaTime);
+            figure.SetPositionAndRotation(p, facing);
+            rightTarget = release + Vector3.up * (release.y - p.y);
+            yield return null;
+        }
+        figure.SetPositionAndRotation(landedAt, facing);
+        if (lightGo != null) { lightGo.transform.position = landedAt + Vector3.up * height + (Camera.main != null ? Vector3.ProjectOnPlane(Camera.main.transform.position - landedAt, Vector3.up).normalized * height : Vector3.zero); Destroy(lightGo, .8f); }
+        carriedLight = null;
+        landed?.Invoke();
         Busy = false;
     }
 
@@ -227,7 +209,7 @@ public class DungeonMasterHand : MonoBehaviour
     }
 
     // Stopped half way (the fight ended): he lets go of whatever he holds and straightens up.
-    public void Release() { hanging = null; settle = 0f; if (carriedLight != null) Destroy(carriedLight.gameObject); carriedLight = null; rightGoal = leftGoal = lookGoal = leanGoal = 0f; Busy = false; }
+    public void Release() { hanging = null; if (carriedLight != null) Destroy(carriedLight.gameObject); carriedLight = null; rightGoal = leftGoal = lookGoal = leanGoal = 0f; Busy = false; }
 
     public void StopAiming() { leftGoal = 0f; if (!Busy) { lookGoal = 0f; leanGoal = 0f; } }
 
