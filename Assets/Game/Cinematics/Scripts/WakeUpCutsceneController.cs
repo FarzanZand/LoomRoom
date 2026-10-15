@@ -88,8 +88,34 @@ public class WakeUpCutsceneController : CutsceneController
         var room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
         if (room == null) return;
         var at = startPositionRoom.position;
-        if (Coop.Running) at += MultiplayerManager.Instance.RoomSpawnOffset(startPositionRoom.rotation);
+        if (Coop.Running) at = ClearSpot(room, at, at + MultiplayerManager.Instance.RoomSpawnOffset(startPositionRoom.rotation));
         room.Warp(at, startPositionRoom.rotation);
+    }
+
+    // Co-op: the player's own spot beside the morning spot, stepped clear of furniture (a body is wide in the room's
+    // scale): further out, nearer in, or turned around the morning spot, never onto the host's place there.
+    static Vector3 ClearSpot(Player room, Vector3 centre, Vector3 wanted)
+    {
+        var cc = room.GetComponent<CharacterController>();
+        var offset = wanted - centre;
+        if (cc == null || offset.sqrMagnitude < .01f) return wanted;
+        float scale = room.transform.lossyScale.x, radius = cc.radius * scale, half = Mathf.Max(0f, cc.height * room.transform.lossyScale.y / 2f - radius);
+        Vector3 centreUp = Vector3.up * (cc.center.y * room.transform.lossyScale.y);
+        bool Free(Vector3 p)
+        {
+            if ((p - centre).magnitude < radius * 2.2f) return false;
+            var mid = p + centreUp;
+            foreach (var c in Physics.OverlapCapsule(mid - Vector3.up * (half - radius * .1f), mid + Vector3.up * half, radius))
+                if (!c.isTrigger && !c.transform.IsChildOf(room.transform)) return false;
+            return true;
+        }
+        foreach (float stretch in new[] { 1f, 1.2f, .85f, 1.4f, .7f })
+            foreach (float turn in new[] { 0f, 25f, -25f, 50f, -50f, 80f, -80f })
+            {
+                var p = centre + Quaternion.Euler(0f, turn, 0f) * offset * stretch;
+                if (Free(p)) return p;
+            }
+        return wanted;
     }
 
     public void StandUp()

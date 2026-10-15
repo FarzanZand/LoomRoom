@@ -13,8 +13,10 @@ using UnityEngine.UI;
 // right after the intro dungeon) and starts in a free slot (or asks which save to replace when all are taken),
 // Load game lists the saves to play or delete. Playing fades to black and loads the game's scene. The set, buttons,
 // save list, title and fade are authored in the scene (Tools > LoomRoom > UI > Build Main Menu Saves); this binds them.
-// Co-op asks which save to play together with (an empty slot starts a new game there) and opens the game on the co-op
-// screen. The menu is drawn smooth, not pixel-lit, and the
+// Co-op opens the co-op menu: your name, Host a game, or a friend's code and Join; then which save to play with (an
+// empty slot starts a new game there: a host is asked about the intro, a guest plays the host's game), and the game
+// opens already hosting (the lobby, with the code to send) or joining (MultiplayerManager.StartFromMenu). The menu is
+// drawn smooth, not pixel-lit, and the
 // scene has no managers, so this switches pixel lighting off, frees the cursor and reads the music volume itself.
 public class MainMenuUI : MonoBehaviour
 {
@@ -33,7 +35,7 @@ public class MainMenuUI : MonoBehaviour
     [Tooltip("Opens the save list. Hidden while there is no save.")]
     [SerializeField] Button loadButton;
     [SerializeField] Button quitButton;
-    [Tooltip("Co-op: asks which save to play together with, then the game opens with the co-op screen (host or join).")]
+    [Tooltip("Opens the co-op menu.")]
     [SerializeField] Button coopButton;
     [Tooltip("The column of menu buttons, hidden while the save list is open.")]
     [SerializeField] GameObject buttons;
@@ -56,6 +58,14 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] GameObject confirmPanel;
     [SerializeField] TMP_Text confirmText;
     [SerializeField] Button confirmYes, confirmNo;
+    [Header("Co-op")]
+    [Tooltip("The co-op menu: your name, Host a game, or a friend's code and Join.")]
+    [SerializeField] GameObject coopPanel;
+    [SerializeField] TMP_InputField coopName, coopCode;
+    [SerializeField] Button coopHost, coopJoin, coopBack;
+    [Tooltip("What to do, or what went wrong (no code typed).")]
+    [SerializeField] TMP_Text coopStatus;
+
     [Tooltip("Black over everything: fades out when the menu opens and in before the game loads.")]
     [SerializeField] CanvasGroup fade;
     [SerializeField, Min(.05f)] float fadeSeconds = 1f;
@@ -75,10 +85,14 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] AudioSource music;
 
     bool leaving;
+    static bool skippedForCommandLine;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => skippedForCommandLine = false;
     enum SavesMode { Load, Replace, Coop }
     SavesMode mode;
     bool replaceSkipsIntro;
     bool coop;            // the save list and the new game question are for co-op
+    MultiplayerManager.MenuStart coopStart;   // host, or join coopJoinCode
+    string coopJoinCode;
     int newGameSlot;      // co-op: the empty slot picked for the new game (0: the first free one)
     System.Action confirmed;
 
@@ -120,11 +134,18 @@ public class MainMenuUI : MonoBehaviour
         if (newGamePanel != null) newGamePanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(false);
         RefreshButtons();
-        coopButton?.onClick.AddListener(PlayCoop);
+        coopButton?.onClick.AddListener(OpenCoop);
+        coopHost?.onClick.AddListener(CoopHost);
+        coopJoin?.onClick.AddListener(CoopJoin);
+        coopBack?.onClick.AddListener(CloseCoop);
+        coopCode?.onSubmit.AddListener(_ => CoopJoin());
+        if (coopPanel != null) coopPanel.SetActive(false);
         if (fade != null) StartCoroutine(Fade(1f, 0f, null));
-        // Started with -host or -join (co-op from the command line): straight into the game.
-        foreach (var arg in System.Environment.GetCommandLineArgs())
-            if (arg.ToLowerInvariant() == "-host" || arg.ToLowerInvariant() == "-join") { leaving = true; SceneManager.LoadScene(gameScene); break; }
+        // Started with -host or -join (co-op from the command line): straight into the game, once (coming back to the
+        // menu later stays here).
+        if (!skippedForCommandLine)
+            foreach (var arg in System.Environment.GetCommandLineArgs())
+                if (arg.ToLowerInvariant() == "-host" || arg.ToLowerInvariant() == "-join") { skippedForCommandLine = leaving = true; SceneManager.LoadScene(gameScene); break; }
     }
 
     void Update()
@@ -141,6 +162,7 @@ public class MainMenuUI : MonoBehaviour
             if (confirmPanel != null && confirmPanel.activeSelf) CloseConfirm();
             else if (savesPanel != null && savesPanel.activeSelf) CloseSaves();
             else if (newGamePanel != null && newGamePanel.activeSelf) CloseNewGame();
+            else if (coopPanel != null && coopPanel.activeSelf) CloseCoop();
         }
     }
 
@@ -153,6 +175,7 @@ public class MainMenuUI : MonoBehaviour
             savesBack?.Select(); return;
         }
         if (newGamePanel != null && newGamePanel.activeSelf) { playIntroButton?.Select(); return; }
+        if (coopPanel != null && coopPanel.activeSelf) { coopHost?.Select(); return; }
         if (playButton != null && playButton.gameObject.activeInHierarchy) playButton.Select();
         else newGameButton?.Select();
     }
@@ -172,6 +195,8 @@ public class MainMenuUI : MonoBehaviour
         leaving = true;
         AdventureSave.Slot = slot;
         MultiplayerManager.CoopFromMenu = coop;
+        MultiplayerManager.StartFromMenu = coop ? coopStart : MultiplayerManager.MenuStart.None;
+        MultiplayerManager.MenuJoinCode = coop && coopStart == MultiplayerManager.MenuStart.Join ? coopJoinCode : null;
         StartCoroutine(Fade(0f, 1f, () => SceneManager.LoadScene(gameScene)));
     }
 
@@ -181,13 +206,77 @@ public class MainMenuUI : MonoBehaviour
         if (slot > 0) Play(slot); else OpenNewGame();
     }
 
-    // Co-op: the save to play together with (a guest's own spoils, sheet and trophies go to it too); with no save yet,
-    // straight to the new game question. The game then opens on the co-op screen.
-    void PlayCoop()
+    // ── The co-op menu ───────────────────────────────────────────────
+
+    void OpenCoop()
     {
         if (leaving) return;
-        coop = true;
+        coop = false; newGameSlot = 0;
+        if (coopPanel == null) return;
+        if (buttons != null) buttons.SetActive(false);
+        if (savesPanel != null) savesPanel.SetActive(false);
+        if (newGamePanel != null) newGamePanel.SetActive(false);
+        coopPanel.SetActive(true);
+        if (coopName != null) coopName.text = PlayerPrefs.GetString(MultiplayerManager.NameKey, "");
+        // A code copied from a chat fills itself in.
+        if (coopCode != null && string.IsNullOrWhiteSpace(coopCode.text) && ClipboardCode(out var copied)) coopCode.text = copied;
+        CoopStatus("Host a game, or join a friend's with their code.", false);
+        SelectFirst();
+    }
+
+    void CloseCoop()
+    {
+        if (coopPanel != null) coopPanel.SetActive(false);
+        if (buttons != null) buttons.SetActive(true);
+        RefreshButtons();
+    }
+
+    void KeepName()
+    {
+        if (coopName == null) return;
+        PlayerPrefs.SetString(MultiplayerManager.NameKey, coopName.text.Trim());
+        PlayerPrefs.Save();
+    }
+
+    // Hosting: the save to play (a new game asks about the intro); the game opens with the lobby and its code.
+    void CoopHost()
+    {
+        if (leaving) return;
+        KeepName();
+        coop = true; coopStart = MultiplayerManager.MenuStart.Host;
+        if (coopPanel != null) coopPanel.SetActive(false);
         if (AdventureSave.SaveExists) OpenSaves(SavesMode.Coop); else OpenNewGame();
+    }
+
+    // Joining: the save whose spoils, sheet and trophies are this player's (an empty slot makes a new one); the game
+    // opens joining the friend's, which decides what is played.
+    void CoopJoin()
+    {
+        if (leaving) return;
+        KeepName();
+        string code = coopCode != null ? coopCode.text.Trim().ToUpperInvariant() : "";
+        if (code.Length == 0 && ClipboardCode(out var copied)) code = copied;
+        if (code.Length == 0) { CoopStatus("Type your friend's code first.", true); coopCode?.Select(); return; }
+        coop = true; coopStart = MultiplayerManager.MenuStart.Join; coopJoinCode = code;
+        if (coopPanel != null) coopPanel.SetActive(false);
+        if (AdventureSave.SaveExists) OpenSaves(SavesMode.Coop);
+        else StartNew(AdventureSave.FreeSlot, false);
+    }
+
+    void CoopStatus(string text, bool error)
+    {
+        if (coopStatus == null) return;
+        coopStatus.text = text;
+        coopStatus.color = error ? new Color(.92f, .45f, .4f) : (playLabel != null ? playLabel.color : Color.white);
+    }
+
+    // A join code on the clipboard (six letters and digits, as the host's Copy gives).
+    static bool ClipboardCode(out string code)
+    {
+        code = (GUIUtility.systemCopyBuffer ?? "").Trim().ToUpperInvariant();
+        if (code.Length != 6) return false;
+        foreach (var c in code) if (!char.IsLetterOrDigit(c)) return false;
+        return true;
     }
 
     void OpenNewGame()
@@ -202,8 +291,9 @@ public class MainMenuUI : MonoBehaviour
 
     void CloseNewGame()
     {
-        coop = false; newGameSlot = 0;
         if (newGamePanel != null) newGamePanel.SetActive(false);
+        if (coop) { OpenCoop(); return; }   // back to the co-op menu
+        newGameSlot = 0;
         if (buttons != null) buttons.SetActive(true);
         RefreshButtons();
     }
@@ -229,7 +319,7 @@ public class MainMenuUI : MonoBehaviour
     void OpenSaves(SavesMode m)
     {
         mode = m;
-        if (savesTitle != null) savesTitle.text = mode == SavesMode.Load ? "Load game" : mode == SavesMode.Coop ? "Play together with which save?" : "All saves are taken. Pick one to replace.";
+        if (savesTitle != null) savesTitle.text = mode == SavesMode.Load ? "Load game" : mode == SavesMode.Coop ? (coopStart == MultiplayerManager.MenuStart.Join ? "Join with which save?" : "Host with which save?") : "All saves are taken. Pick one to replace.";
         if (buttons != null) buttons.SetActive(false);
         if (savesPanel != null) savesPanel.SetActive(true);
         FillSaves();
@@ -238,9 +328,9 @@ public class MainMenuUI : MonoBehaviour
 
     void CloseSaves()
     {
-        coop = false;
         CloseConfirm();
         if (savesPanel != null) savesPanel.SetActive(false);
+        if (coop) { OpenCoop(); return; }   // back to the co-op menu
         if (buttons != null) buttons.SetActive(true);
         RefreshButtons();
     }
@@ -253,7 +343,7 @@ public class MainMenuUI : MonoBehaviour
             var save = AdventureSave.Summarize(slot);
             bool startHere = !save.exists && mode == SavesMode.Coop;   // co-op: an empty slot starts a new game
             if (row.title != null) row.title.text = !save.exists ? "Empty" : string.IsNullOrWhiteSpace(save.name) ? $"Save {slot}" : save.name;
-            if (row.details != null) row.details.text = startHere ? "Start a new game here" : !save.exists ? "" : !save.readable ? "This save can't be read" : Details(save);
+            if (row.details != null) row.details.text = startHere ? (coopStart == MultiplayerManager.MenuStart.Join ? "Start a new save here" : "Start a new game here") : !save.exists ? "" : !save.readable ? "This save can't be read" : Details(save);
             if (row.time != null) row.time.text = save.exists ? save.lastPlayed.ToString("d MMM, HH:mm") : "";
             if (row.button != null)
             {
@@ -283,6 +373,7 @@ public class MainMenuUI : MonoBehaviour
         if (mode == SavesMode.Coop)
         {
             if (AdventureSave.SlotExists(slot)) Play(slot);
+            else if (coopStart == MultiplayerManager.MenuStart.Join) StartNew(slot, false);   // the host's game decides what is played
             else { newGameSlot = slot; OpenNewGame(); }
             return;
         }

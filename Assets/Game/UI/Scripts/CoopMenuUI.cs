@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -6,14 +7,16 @@ using UnityEngine.UI;
 // The co-op screen (authored in the scene under the HUD canvas; Tools > LoomRoom > Multiplayer > Rebuild Co-op Screen
 // builds it). Three pages: Start (your name, host a game, or join one with its code), Your game (the host: the join
 // code, who is in, the rules) and someone else's game (a guest: who is in, the host's rules). Opened from the pause
-// menu's Co-op button, or at the start of a new game (IntroController asks MultiplayerManager.NewGameLobby): there the
-// host's Begin starts the intro for everyone who has joined, and Play alone starts it alone.
+// menu's Co-op button, or as a game opened from the main menu's co-op menu (already hosting or joining) or a new game's
+// intro (IntroController asks MultiplayerManager.NewGameLobby): there the host's Begin starts the intro for everyone
+// who has joined, Play alone starts it alone, and Main menu goes back to the main menu.
 public class CoopMenuUI : MonoBehaviour
 {
     public enum Mode { Pause, NewGame }
 
     [SerializeField] GameObject root;
     [SerializeField] TMP_Text title, status;
+    float titleSize;
     [Tooltip("The status line's colour for something that went wrong (a bad code, a refusal).")]
     [SerializeField] Color errorColor = new Color(.92f, .45f, .4f);
 
@@ -58,14 +61,14 @@ public class CoopMenuUI : MonoBehaviour
         if (root != null) root.SetActive(false);
         if (status != null) statusColor = status.color;
         // Hosting from here opens the lobby: friends who join wait until Begin.
-        Wire(hostButton, () => { if (MultiplayerManager.HasInstance) { MultiplayerManager.Instance.Host(); StartCoroutine(LobbyWhenHosting()); } });
+        Wire(hostButton, () => { if (MultiplayerManager.HasInstance) { MultiplayerManager.Instance.Host(); StartCoroutine(MultiplayerManager.Instance.LobbyOnceHosting()); } });
         Wire(joinButton, Join);
         // Enter in the code box joins.
         if (address != null) address.onSubmit.AddListener(_ => { if (!Coop.Running && joinButton != null && joinButton.interactable) Join(); });
         Wire(leaveButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Leave(); });
         Wire(beginButton, Begin);
         Wire(aloneButton, () => { if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.Leave(); Began = true; Close(); });
-        Wire(closeButton, Close);
+        Wire(closeButton, CloseOrMenu);
         Wire(copyButton, Copy);
         if (playerName != null)
         {
@@ -87,11 +90,11 @@ public class CoopMenuUI : MonoBehaviour
         Unpush();
     }
 
-    System.Collections.IEnumerator LobbyWhenHosting()
+    // Before a new game the screen's way out is the main menu (Play alone is the other); elsewhere it just closes.
+    void CloseOrMenu()
     {
-        var manager = MultiplayerManager.Instance;
-        for (float t = 0; t < 20f && manager != null && !Coop.IsHost; t += Time.unscaledDeltaTime) yield return null;
-        if (manager != null && Coop.IsHost) manager.OpenLobby();
+        if (Current == Mode.NewGame && shown == Page.Start && MultiplayerManager.HasInstance) { Close(); MultiplayerManager.Instance.ToMainMenu(); return; }
+        Close();
     }
 
     // The lobby can't be left with Esc: the host begins or stops hosting, a waiting guest leaves.
@@ -193,7 +196,14 @@ public class CoopMenuUI : MonoBehaviour
 
         if (startPage != null) startPage.SetActive(page == Page.Start);
         if (gamePage != null) gamePage.SetActive(page != Page.Start);
-        if (title != null) title.text = page == Page.Host ? "YOUR GAME" : page == Page.Guest ? $"{hostName.ToUpperInvariant()}'S GAME" : newGame ? "NEW GAME" : "CO-OP";
+        if (title != null)
+        {
+            // One line: a long host name shrinks the title instead of wrapping it over the line below.
+            if (titleSize <= 0f) titleSize = title.fontSize;
+            title.textWrappingMode = TextWrappingModes.NoWrap;
+            title.enableAutoSizing = true; title.fontSizeMax = titleSize; title.fontSizeMin = titleSize * .35f;
+            title.text = page == Page.Host ? "Your game" : page == Page.Guest ? $"{hostName}'s game" : newGame ? "New game" : "Co-op";
+        }
 
         // The status line: what went wrong, what is happening, or what to do.
         bool error = page == Page.Start && !starting && !string.IsNullOrEmpty(manager.LastError);
@@ -223,10 +233,11 @@ public class CoopMenuUI : MonoBehaviour
             if (playersHeader != null) playersHeader.text = $"PLAYERS  {manager.Players.Count}/{manager.maxPlayers}";
             if (playerList != null)
             {
-                var text = new System.Text.StringBuilder();
+                // One line, wide gaps between names (a second line only with four long ones).
+                var names = new List<string>();
                 foreach (var p in manager.Players)
-                    if (p != null) text.AppendLine(p.DisplayName + (p.IsOwner ? " (you)" : p.SlotIndex == 0 ? " (host)" : ""));
-                playerList.text = text.ToString();
+                    if (p != null) names.Add(p.DisplayName + (p.IsOwner ? " (you)" : p.SlotIndex == 0 ? " (host)" : ""));
+                playerList.text = string.Join("      ", names);
             }
             if (hostRules != null) hostRules.SetActive(page == Page.Host);
             if (guestRules != null)
@@ -242,7 +253,7 @@ public class CoopMenuUI : MonoBehaviour
 
         // The bottom row: one centred button, or two side by side.
         Button left, right = null;
-        if (page == Page.Start) left = newGame ? aloneButton : closeButton;
+        if (page == Page.Start) { left = newGame ? aloneButton : closeButton; if (newGame) right = closeButton; }
         else if (page == Page.Host) { bool lobby = newGame || manager.HostInLobby; left = lobby ? beginButton : closeButton; right = newGame ? aloneButton : leaveButton; }
         else if (manager.LocalInLobby) { left = leaveButton; }
         else { left = closeButton; right = leaveButton; }
@@ -251,6 +262,7 @@ public class CoopMenuUI : MonoBehaviour
         Place(left, right != null ? -bottomSpread : 0f);
         Place(right, bottomSpread);
         SetLabel(leaveButton, page == Page.Host ? "Stop hosting" : "Leave the game");
+        SetLabel(closeButton, newGame && page == Page.Start ? "Main menu" : "Back");
 
         // A new page: the keyboard and gamepad start on its main button.
         if (page != shown)

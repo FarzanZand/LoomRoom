@@ -134,8 +134,81 @@ public static class CoopMenuBuilder
         Set("guestRules", guestRules);
         Set("beginButton", begin); Set("aloneButton", alone); Set("leaveButton", leave); Set("closeButton", close);
         so.ApplyModifiedPropertiesWithoutUndo();
+        Layout(ui);
         root.SetActive(false);
         Undo.RegisterCreatedObjectUndo(menu, "Co-op screen");
+    }
+
+    // The game page's layout, top to bottom with room between every row: a small title in the body font, the status,
+    // the join code with Copy beside it, the players on one line, the four rules, then the bottom row. Safe to run again.
+    [MenuItem("Tools/LoomRoom/Multiplayer/Lay Out Co-op Screen")]
+    public static void LayOut()
+    {
+        var ui = Object.FindAnyObjectByType<CoopMenuUI>(FindObjectsInactive.Include);
+        if (ui == null) { Debug.LogWarning("[Coop] No co-op screen in the open scenes."); return; }
+        Layout(ui);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(ui.gameObject.scene);
+    }
+
+    static void Layout(CoopMenuUI ui)
+    {
+        var box = ui.transform.Find("Co-op screen/Panel");
+        if (box == null) { Debug.LogWarning("[Coop] The co-op screen has no Co-op screen/Panel."); return; }
+        ((RectTransform)box).sizeDelta = new Vector2(620, 700);
+        var game = box.Find("Game page");
+        var body = box.GetComponentsInChildren<TMP_Text>(true).FirstOrDefault(t => t.name == "Status");
+        void Place(Transform parent, string path, float x, float y, float w = -1, float h = -1)
+        {
+            var t = parent != null ? parent.Find(path) as RectTransform : null;
+            if (t == null) { Debug.LogWarning($"[Coop] Co-op screen: no {path}."); return; }
+            t.anchoredPosition = new Vector2(x, y);
+            if (w > 0 || h > 0) t.sizeDelta = new Vector2(w > 0 ? w : t.sizeDelta.x, h > 0 ? h : t.sizeDelta.y);
+            var label = t.GetComponent<Button>() != null ? t.GetComponentInChildren<TMP_Text>(true) : null;
+            if (label != null) ((RectTransform)label.transform).sizeDelta = t.sizeDelta;
+        }
+
+        // Title: the body font, gold, a modest size (the pause menu's big pixel title was too loud here).
+        var title = box.Find("Title")?.GetComponent<TMP_Text>();
+        if (title != null)
+        {
+            if (body != null) { title.font = body.font; title.fontSharedMaterial = body.font.material; }
+            title.fontSize = 34; title.enableAutoSizing = false; title.color = new Color(.91f, .78f, .48f);
+            title.alignment = TextAlignmentOptions.Center;
+        }
+        Place(box, "Title", 0, 308, 560, 44);
+        Place(box, "Status", 0, 264, 560, 44);
+
+        // The start page sits under the status as before, just lower for the taller panel.
+        var start = box.Find("Start page");
+        if (start != null) ((RectTransform)start).anchoredPosition = new Vector2(0, -10);
+
+        // The code with Copy beside it.
+        var code = game != null ? game.Find("Code") : null;
+        Place(code, "Code caption", -90, 230, 300, 26);
+        Place(code, "Code", -90, 194, 300, 52);
+        var codeText = code != null ? code.Find("Code")?.GetComponent<TMP_Text>() : null;
+        // A long LAN address shrinks to fit beside Copy.
+        if (codeText != null) { codeText.enableAutoSizing = true; codeText.fontSizeMax = 40; codeText.fontSizeMin = 16; codeText.textWrappingMode = TextWrappingModes.NoWrap; codeText.alignment = TextAlignmentOptions.Center; }
+        Place(code, "Copy", 150, 194, 160, 58);
+
+        // The players on one line (wrapping to a second with four long names).
+        Place(game, "Players caption", 0, 146);
+        Place(game, "Players", 0, 112, 560, 50);
+
+        // The rules, 58 tall on a 68 pitch.
+        var rules = game != null ? game.Find("Rules") : null;
+        Place(rules, "Rules caption", 0, 70);
+        string[] rows = { "Loot rule", "Adventurer rule", "Progress rule", "Spoils rule" };
+        for (int i = 0; i < rows.Length; i++) Place(rules, rows[i], 0, 28 - i * 68, 560, 58);
+        Place(game, "Guest rules", 0, -66, 560, 220);
+
+        // The bottom row, well clear of the last rule (CoopMenuUI places the buttons at bottomY).
+        var so = new SerializedObject(ui);
+        so.FindProperty("bottomY").floatValue = -282f;
+        so.FindProperty("bottomSpread").floatValue = 145f;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        foreach (var name in new[] { "Begin", "Alone", "Leave", "Close" }) Place(box, name, ((RectTransform)box.Find(name)).anchoredPosition.x, -282);
+        EditorUtility.SetDirty(ui);
     }
 
     // A Co-op button under Settings; the buttons below move down to make room.

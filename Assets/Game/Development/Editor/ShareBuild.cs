@@ -50,16 +50,17 @@ Everyone needs this same build. Unzip it anywhere and start The Table Waits.exe.
 If Windows says it protected your PC, click More info, then Run anyway.
 
 Hosting:
-1. Click Co-op on the main menu and pick a save to play with. An empty slot starts a new game:
-   choose Play the intro or Skip intro (Skip starts on the first morning, in bed).
-2. Click Host a game. A join code appears (it is also copied, so you can paste it to your friends).
-3. Press Begin when everyone is in. With the intro, it plays for all of you.
+1. Click Co-op on the main menu, type your name and click Host a game.
+2. Pick a save to play. An empty slot starts a new game: choose Play the intro or Skip intro.
+3. The game opens with your join code on screen (it is also copied, so you can paste it to your friends).
+4. Press Begin when everyone is in. With the intro, it plays for all of you.
    Otherwise, sit down at the table together and pick your figures.
 
 Joining:
-1. Click Co-op on the main menu and pick your own save (or an empty slot). Your spoils, character
-   sheet and trophies are kept in that save.
-2. Paste the host's code into the box and click Join (or press Enter). Wait for the host to begin.
+1. Copy the host's code. Click Co-op on the main menu and type your name.
+   The code box fills itself in from what you copied (or type it), then click Join.
+2. Pick your own save (or an empty slot). Your spoils, character sheet and trophies are kept in it.
+3. Wait for the host to begin.
 
 You can also host or join later from the pause menu (Esc, then Co-op).
 Up to 4 players. Playing over the internet needs no port forwarding.

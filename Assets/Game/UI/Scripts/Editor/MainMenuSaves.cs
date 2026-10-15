@@ -6,8 +6,9 @@ using UnityEngine.UI;
 
 // Builds the main menu's save pieces in the open Main Menu scene: the button column (Continue, New game, Load game,
 // Quit), the New game choice (Play the intro, Skip intro, Back), the save list (three slot rows, each with a Delete
-// button, and Back) and the question asked before a save is deleted or replaced, all in the menu's painted gold
-// frames and Lilita One, and binds them on MainMenuUI. Safe to run again: the panels are rebuilt, the buttons kept.
+// button, and Back), the question asked before a save is deleted or replaced, and the co-op menu (your name, Host a
+// game, a friend's code and Join, a status line, Back), all in the menu's painted gold frames and Lilita One, and binds
+// them on MainMenuUI. Safe to run again: the panels are rebuilt, the buttons kept.
 public static class MainMenuSaves
 {
     const string Frame = "Assets/Game/UI/Main Menu/Textures/Menu button.png", FrameHover = "Assets/Game/UI/Main Menu/Textures/Menu button hover.png";
@@ -142,6 +143,39 @@ public static class MainMenuSaves
         }
         ask.gameObject.SetActive(false);
 
+        // ── The co-op menu ──────────────────────────────────────────
+        var oldCoop = canvas.Find("Co-op menu"); if (oldCoop != null) Object.DestroyImmediate(oldCoop.gameObject);
+        var coopMenu = New("Co-op menu", canvas);
+        coopMenu.anchorMin = coopMenu.anchorMax = Vector2.zero; coopMenu.pivot = Vector2.zero;
+        coopMenu.anchoredPosition = new Vector2(102f, 33.5f); coopMenu.sizeDelta = new Vector2(900f, 470f);
+        var coopTitle = Text("Title", coopMenu, Label(play), 34f, Gold, TextAlignmentOptions.BottomLeft);
+        Place(coopTitle.rectTransform, 0f, 400f, 700f, 60f);
+        coopTitle.text = "Co-op";
+        var nameCaption = Text("Name caption", coopMenu, Label(play), 22f, Label(play).color, TextAlignmentOptions.BottomLeft);
+        Place(nameCaption.rectTransform, 0f, 356f, 326f, 32f);
+        nameCaption.text = "Your name";
+        var nameField = Field("Name", coopMenu, play, "Player", 16);
+        Place((RectTransform)nameField.transform, 0f, 296f, 326f, 56f);
+        var hostGame = Copy(play, coopMenu, "Host a game"); Label(hostGame).text = "Host a game";
+        Place((RectTransform)hostGame.transform, 0f, 210f, 326f, 61f);
+        var hostNote = Text("Host note", coopMenu, Label(play), 22f, Label(play).color, TextAlignmentOptions.Left);
+        Place(hostNote.rectTransform, 350f, 210f, 560f, 61f);
+        hostNote.text = "Pick a save. Your friends join with your code.";
+        var codeCaption = Text("Code caption", coopMenu, Label(play), 22f, Label(play).color, TextAlignmentOptions.BottomLeft);
+        Place(codeCaption.rectTransform, 0f, 150f, 326f, 32f);
+        codeCaption.text = "Or join a friend";
+        var codeField = Field("Code", coopMenu, play, "Their code", 6);
+        codeField.characterValidation = TMP_InputField.CharacterValidation.Alphanumeric;
+        Place((RectTransform)codeField.transform, 0f, 90f, 326f, 56f);
+        var joinGame = Copy(play, coopMenu, "Join"); Label(joinGame).text = "Join";
+        Place((RectTransform)joinGame.transform, 350f, 87.5f, 200f, 61f);
+        var coopStatus = Text("Status", coopMenu, Label(play), 22f, Label(play).color, TextAlignmentOptions.Left);
+        Place(coopStatus.rectTransform, 350f, 0f, 560f, 61f);
+        coopStatus.text = "";
+        var coopBack = Copy(quit, coopMenu, "Back"); Label(coopBack).text = "Back";
+        Place((RectTransform)coopBack.transform, 0f, 0f, 326f, 61f);
+        coopMenu.gameObject.SetActive(false);
+
         // The fade stays over everything.
         var fade = (CanvasGroup)so.FindProperty("fade").objectReferenceValue;
         if (fade != null) fade.transform.SetAsLastSibling();
@@ -162,9 +196,16 @@ public static class MainMenuSaves
         so.FindProperty("confirmText").objectReferenceValue = question;
         so.FindProperty("confirmYes").objectReferenceValue = yes;
         so.FindProperty("confirmNo").objectReferenceValue = no;
+        so.FindProperty("coopPanel").objectReferenceValue = coopMenu.gameObject;
+        so.FindProperty("coopName").objectReferenceValue = nameField;
+        so.FindProperty("coopCode").objectReferenceValue = codeField;
+        so.FindProperty("coopHost").objectReferenceValue = hostGame;
+        so.FindProperty("coopJoin").objectReferenceValue = joinGame;
+        so.FindProperty("coopStatus").objectReferenceValue = coopStatus;
+        so.FindProperty("coopBack").objectReferenceValue = coopBack;
         so.ApplyModifiedProperties();
         EditorSceneManager.MarkSceneDirty(menu.gameObject.scene);
-        Debug.Log("Main menu saves built: button column, save list with " + AdventureSave.SlotCount + " slots, and the question.");
+        Debug.Log("Main menu saves built: button column, save list with " + AdventureSave.SlotCount + " slots, the question and the co-op menu.");
     }
 
     static RectTransform New(string name, Transform parent)
@@ -176,6 +217,31 @@ public static class MainMenuSaves
     }
 
     static TMP_Text Label(Button b) => b.GetComponentInChildren<TMP_Text>(true);
+
+    // A text box in a button's painted frame (9-sliced) and its font, with a dim placeholder.
+    static TMP_InputField Field(string name, Transform parent, Button style, string hint, int limit)
+    {
+        var box = New(name, parent);
+        var image = box.gameObject.AddComponent<Image>();
+        image.sprite = style.GetComponent<Image>().sprite; image.type = Image.Type.Sliced; image.pixelsPerUnitMultiplier = 2f;
+        var area = New("Text Area", box);
+        Inset(area, 22f, 8f, 22f, 8f);
+        area.gameObject.AddComponent<RectMask2D>();
+        var text = Text("Text", area, Label(style), 26f, Label(style).color, TextAlignmentOptions.Left);
+        Inset(text.rectTransform, 0f, 0f, 0f, 0f);
+        text.text = ""; text.overflowMode = TextOverflowModes.Overflow;
+        var placeholder = Text("Placeholder", area, Label(style), 26f, Dim, TextAlignmentOptions.Left);
+        Inset(placeholder.rectTransform, 0f, 0f, 0f, 0f);
+        placeholder.text = hint; placeholder.fontStyle = FontStyles.Italic;
+        var field = box.gameObject.AddComponent<TMP_InputField>();
+        field.targetGraphic = image;
+        field.textViewport = area; field.textComponent = text; field.placeholder = placeholder;
+        field.fontAsset = text.font; field.pointSize = 26f;
+        field.characterLimit = limit;
+        field.lineType = TMP_InputField.LineType.SingleLine;
+        var hover = style.spriteState; field.transition = Selectable.Transition.SpriteSwap; field.spriteState = hover;
+        return field;
+    }
 
     static Button Copy(Button source, Transform parent, string name)
     {

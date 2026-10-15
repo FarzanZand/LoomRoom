@@ -93,6 +93,10 @@ public class AdventureSave : MonoBehaviour
         }
     }
     static int customSlot = 1;
+    // Domain reload is off in this project: the folder is found again at every Play (an editor test folder set in
+    // between must take effect, and the real one must never be kept by mistake).
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetFolder() { folder = null; customFolder = false; customSlot = 1; }
     static bool CustomFolder { get { _ = Folder; return customFolder; } }
     static string SlotFile(int slot) => slot <= 1 ? AdventureFile : $"loomroom-adventure-{slot}.json";
     static string SlotPath(int slot) => Path.Combine(Folder, SlotFile(slot));

@@ -92,9 +92,14 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     // ── State ─────────────────────────────────────────────────────────
 
-    // The main menu's Co-op button: the game opens with the co-op screen (a new game asks before its intro).
+    // The main menu's co-op menu: the game opens with the co-op screen, already hosting (StartFromMenu Host: the lobby
+    // opens with the code to send) or joining MenuJoinCode.
+    public enum MenuStart { None, Host, Join }
     public static bool CoopFromMenu;
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => CoopFromMenu = false;
+    public static MenuStart StartFromMenu;
+    public static string MenuJoinCode;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() { CoopFromMenu = false; StartFromMenu = MenuStart.None; MenuJoinCode = null; }
 
     // The host's Relay join code (null when hosting by address, or not hosting).
     public string JoinCode { get; private set; }
@@ -151,7 +156,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     float roomYaw;
     TableLevelData pendingLevel;
 
-    const string NameKey = "coop_name";
+    // PlayerPrefs key of this player's name (the main menu's co-op menu writes it too).
+    public const string NameKey = "coop_name";
 
     // This player's name, kept between games (the co-op screen's name box).
     public void SetName(string name)
@@ -170,7 +176,14 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (network == null) network = FindAnyObjectByType<NetworkManager>();
         SyncRules();
         CommandLine();
+        // Read here like the command line, so a new game's intro knows to wait for the connection.
+        menuHost = StartFromMenu == MenuStart.Host;
+        menuJoin = StartFromMenu == MenuStart.Join && !string.IsNullOrWhiteSpace(MenuJoinCode) ? MenuJoinCode.Trim() : null;
+        StartFromMenu = MenuStart.None; MenuJoinCode = null;
     }
+
+    bool menuHost;
+    string menuJoin;
 
     void Start()
     {
@@ -185,6 +198,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 #endif
         if (commandHost) Host();
         else if (commandJoin != null) Join(commandJoin);
+        else if (menuHost) { Host(); StartCoroutine(LobbyOnceHosting()); }
+        else if (menuJoin != null) Join(menuJoin);
         if (CoopFromMenu) StartCoroutine(OpenFromMenu());
     }
 
@@ -204,7 +219,14 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     bool commandHost;
     string commandJoin;
     int autoBegin;   // -autobegin <players>: the host begins a new game by itself once that many are in
-    public bool CommandLineCoop => commandHost || commandJoin != null;
+    public bool CommandLineCoop => commandHost || commandJoin != null || menuHost || menuJoin != null;
+
+    // Hosting from a menu opens the lobby once the game is up: friends who join wait until Begin.
+    public IEnumerator LobbyOnceHosting()
+    {
+        for (float t = 0; t < 20f && !IsHost; t += Time.unscaledDeltaTime) yield return null;
+        if (IsHost) OpenLobby();
+    }
 
     void CommandLine()
     {
@@ -457,6 +479,15 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         bool wasGuest = !network.IsServer;
         network.Shutdown();
         Ended(wasGuest, "You left the game");
+    }
+
+    // Back to the main menu: out of any session, and the Network Manager (kept across scene loads) goes with this
+    // scene, so the game's scene starts with its own again.
+    public void ToMainMenu()
+    {
+        Leave();
+        if (network != null) Destroy(network.gameObject);
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Main Menu");
     }
 
     void Approve(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
