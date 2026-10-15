@@ -34,7 +34,7 @@ public class Perception : MonoBehaviour
     {
         if (!PlayerManager.HasInstance) return null;
         var player = PlayerManager.Instance.Active;
-        if (player == null || !player.IsAlive) return null;
+        if (player == null || !player.IsAlive || player.Ghost) return null;
         if (self != null && !FactionRules.IsHostile(self.Faction, player.Faction)) return null;
         return player;
     }

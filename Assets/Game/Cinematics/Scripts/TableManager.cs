@@ -98,6 +98,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
     // Dialogue state while sitting and listening: no movement or look, HUD (and the DM's lines) visible.
     IEnumerator SitThenChoose(Player player, TableLevelData chosenLevel = null, AdventurerClass only = null, DungeonMaster.Line prompt = null, bool showCard = true)
     {
+        // The last game's floor sinks into the table at once while the player sits down.
+        if (figures != null && figures.HasFigures) loader.SweepTable(player.transform.position);
         PushDialogue();
         yield return Sit(player);
 

@@ -55,7 +55,10 @@ public partial class DungeonGenerator : MonoBehaviour
     public int FloorInBiome { get; private set; }=1;
     public int BiomeFloors { get; private set; }=1;
     float EncounterChance=>Biome!=null ? Biome.EncounterChance(FloorInBiome,BiomeFloors) : 0;
-    int MaxEnemiesPerRoom=>Biome!=null ? Biome.maxEnemiesPerRoom : 1;
+    // A generated room never rolls more than this many enemies, whatever its biome says; a hand-built room's own Enemy
+    // sockets can add more (they always count toward the roll, so only the sockets go past it).
+    public const int MaxGeneratedPerRoom=3;
+    int MaxEnemiesPerRoom=>Biome!=null ? Mathf.Min(Biome.maxEnemiesPerRoom,MaxGeneratedPerRoom) : 1;
     int MinEnemiesPerRoom=>Biome!=null ? Mathf.Clamp(Biome.minEnemiesPerRoom,1,MaxEnemiesPerRoom) : 1;
     public DungeonMilestone Milestone { get; private set; }
     public int MerchantRoom { get; private set; }=-1;
@@ -341,7 +344,7 @@ public partial class DungeonGenerator : MonoBehaviour
             if(Roles[i]!=RoomRole.Combat && Roles[i]!=RoomRole.Exit && !guarded)continue;
             int count=guarded ? 1 : random.Next(MinEnemiesPerRoom,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
             // A hand-built room's own Enemy sockets count toward the roll; generated enemies make up the rest.
-            if(templates[i]!=null && templates[i].replaceGeneratedEnemies)count=Mathf.Max(0,count-SocketEnemies(i));
+            count=Mathf.Max(0,count-SocketEnemies(i));
             if(i==MerchantRoom)count=0;
             if(EventOf(i)==RoomEvent.Ambush)count=0;
             for(int j=0;j<count;j++)

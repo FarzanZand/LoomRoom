@@ -130,6 +130,7 @@ MonoBehaviour:
     sleepChance: 0.2
     maxSleepingPacks: 3
     pits: 1
+    playerFallsInPits: 0
     pitFallDamage: 0.25
     sunkenFloors: 1
     archerLedges: 1
@@ -184,7 +185,7 @@ MonoBehaviour:
     fromFloor: 1
   encounterChance: {x: 0.75, y: 0.8}
   minEnemiesPerRoom: 2
-  maxEnemiesPerRoom: 4
+  maxEnemiesPerRoom: 3
   features: []
   loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
   merchantChance: 0.5

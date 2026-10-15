@@ -279,12 +279,20 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
     // ── Damage ────────────────────────────────────────────────────────
 
+    // Damage this returns true for is ignored (the dev console's god mode). Null in normal play.
+    public static System.Func<CharacterStats, bool> Invulnerable;
+
+    // The boss arena's blessing (BossBlessing): a successful block stops all of a hit's damage, spells included.
+    public bool BlockBlessing { get; set; }
+
     public void TakeDamage(DamageInfo info)
     {
         if (!IsAlive) return;
+        if (Invulnerable != null && Invulnerable(this)) return;
         info.Target = Character;
 
-        if (!info.Magic && blocker != null && blocker.TryBlock(ref info))
+        bool blessed = BlockBlessing;
+        if ((!info.Magic || blessed) && blocker != null && blocker.TryBlock(ref info))
         {
             info.Blocked = true;
 
@@ -296,6 +304,8 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         float actual  = Mathf.Max(0f, effective * info.Amount - armor) + (1f - effective) * info.Amount;
         // Legendary Blocking: nothing gets through a successful block.
         if (info.Blocked && adventurer != null && adventurer.BlockAbsorbsAll) actual = 0;
+        // The boss arena's blessing: the same, for every blocked hit.
+        if (info.Blocked && blessed) actual = 0;
         info.Amount   = actual;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
@@ -304,6 +314,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
         if (!IsAlive)
         {
+            BlockBlessing = false;
             Died?.Invoke();
             // Gear that heals on a kill (KillHeal).
             var killer = info.Source != null && info.Source != Character ? info.Source.Stats : null;

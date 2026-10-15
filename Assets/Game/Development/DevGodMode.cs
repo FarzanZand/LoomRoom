@@ -1,7 +1,8 @@
 using UnityEngine;
 
-// F8 (Dev input map, Editor and development builds only): god mode. While it is on, both players are kept at full
-// health, stamina and mana every frame, so a fight can be watched or tested without dying.
+// F8 (Dev input map) or the dev console's "god" (Editor and development builds only): god mode. While it is on, both
+// players take no damage and are kept at full health, stamina and mana every frame, so a fight can be watched or tested
+// without dying.
 public class DevGodMode : MonoBehaviour
 {
     public static bool On { get; private set; }
@@ -10,6 +11,7 @@ public class DevGodMode : MonoBehaviour
     static void Launch()
     {
         On = false;
+        CharacterStats.Invulnerable = null;
         if (!Debug.isDebugBuild) return;
         var go = new GameObject("Dev god mode") { hideFlags = HideFlags.HideInHierarchy };
         DontDestroyOnLoad(go);
@@ -32,11 +34,16 @@ public class DevGodMode : MonoBehaviour
         }
     }
 
-    void Toggle()
+    void Toggle() => Set(!On);
+
+    public static void Set(bool on)
     {
-        On = !On;
+        On = on;
+        CharacterStats.Invulnerable = on ? IsPlayer : null;
         NotificationUI.Show(On ? "God mode on" : "God mode off");
     }
+
+    static bool IsPlayer(CharacterStats stats) => stats != null && stats.GetComponentInParent<Player>() != null;
 
     void OnDestroy() { if (input != null) input.DebugGodModeToggled -= Toggle; }
 }

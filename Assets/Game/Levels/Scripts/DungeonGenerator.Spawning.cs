@@ -420,10 +420,10 @@ public partial class DungeonGenerator
         return go;
     }
 
-    Character SpawnEnemyAt(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewards)
+    Character SpawnEnemyAt(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewards,bool boss=false)
     {
         if(prefab==null || !NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas))return null;
-        return SetUpEnemy(Instantiate(prefab,hit.position,rotation,transform),extraRandom,rewards);
+        return SetUpEnemy(Instantiate(prefab,hit.position,rotation,transform),extraRandom,rewards,boss);
     }
 
     // Floor scaling for every enemy the generator places. With a loot stream, also the room's rewards
@@ -443,10 +443,10 @@ public partial class DungeonGenerator
         return SetUpEnemy(go,new System.Random(Scramble(unchecked(PlacedSeed(pos)^seed0*31^++ambushersSpawned*486187739))));
     }
 
-    Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null)
+    Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null,bool boss=false)
     {
         var character=enemy.GetComponent<Character>();
-        if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber);
+        if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber,boss);
         var drop=lootRandom!=null ? enemy.GetComponent<DungeonLootDrop>() : null;
         if(drop!=null){if(!drop.overrideLevelTable)drop.table=First(rewards,FloorLoot);drop.seed=lootRandom.Next();drop.floorNumber=FloorNumber;}
         return character;
@@ -519,7 +519,7 @@ public partial class DungeonGenerator
     {
         // With a boss chest the reward goes in the chest (SpawnBossChest); the body drops like any enemy's.
         bool chest=Milestone.rewardChest;
-        var boss=SpawnEnemyAt(Milestone.boss,pos,rotation,chest ? null : Milestone.bossLoot);
+        var boss=SpawnEnemyAt(Milestone.boss,pos,rotation,chest ? null : Milestone.bossLoot,true);
         if(boss==null){Debug.LogWarning($"Milestone boss {Milestone.boss.name} could not be placed on navigation.",this);return null;}
         var drop=boss.GetComponent<DungeonLootDrop>();
         if(drop!=null && !chest){if(Milestone.bossLoot!=null){drop.table=Milestone.bossLoot;drop.overrideLevelTable=true;}drop.bonusGold+=Milestone.bonusGold;}

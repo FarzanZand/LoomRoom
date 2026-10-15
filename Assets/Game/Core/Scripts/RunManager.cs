@@ -101,6 +101,7 @@ public class RunManager : Singleton<RunManager>
     public void BeginRun(TableLevelData level, int seed)
     {
         StopDeathMoment();
+        deathPending = false;
         Running = true; Ended = false;
         Level = level; Seed = seed; Floor = 1;
         Kills = 0; GoldFound = 0; BossesSlain = 0; HealthSlain = 0; Seconds = 0f; Killer = null; LastTally = default;
@@ -108,6 +109,7 @@ public class RunManager : Singleton<RunManager>
         if (player != null)
         {
             player.Stats?.RemoveAllFromSource(BlessingSource);
+            if (player.Stats != null) player.Stats.BlockBlessing = false;
             player.Wallet?.Clear();
         }
         recap?.Hide();
@@ -146,19 +148,52 @@ public class RunManager : Singleton<RunManager>
     }
 
     // Returns false when there is no recap screen, so the caller falls back to its old menu.
+    // The death is banked and saved (Settle, RunEnded) on the frame of death. Only once the dev console has been opened
+    // (Editor and development builds) does it wait for the recap, so the console's revive costs nothing until then.
     public bool PlayDeath()
     {
         if (!Running || Ended || recap == null) return false;
         Ended = true;
-        Settle(false);
-        RunEnded?.Invoke(false);
+        deathPending = true;
+        if (!DeferDeath) CommitDeath();
         StopDeathMoment();
         deathRoutine = StartCoroutine(DeathMoment());
         return true;
     }
 
+    // Set by the dev console: DeferDeath once it has been opened (a death waits for the recap before it is banked),
+    // HoldDeath while it is open (the death moment waits too). Never set in a release build.
+    public static bool DeferDeath, HoldDeath;
+    bool deathPending;
+
+    void CommitDeath()
+    {
+        if (!deathPending) return;
+        deathPending = false;
+        Settle(false);
+        RunEnded?.Invoke(false);
+    }
+
+    // The dev console's revive: the run goes on after a death. Before the recap came up the death was never banked, so
+    // nothing changes; after it, the death had been banked and saved, so the tallies restart from here and nothing is
+    // banked twice. Returns whether the death had already been counted.
+    public bool ReviveRun(out bool counted)
+    {
+        counted = false;
+        if (!Running || !Ended) return false;
+        counted = !deathPending;
+        deathPending = false;
+        StopDeathMoment();
+        recap?.Hide();
+        Ended = false;
+        if (counted) { Kills = 0; HealthSlain = 0; }
+        Killer = null;
+        return true;
+    }
+
     public void Abandon()
     {
+        CommitDeath();
         StopDeathMoment();
         Running = false;
         recap?.Hide();
@@ -179,7 +214,9 @@ public class RunManager : Singleton<RunManager>
             yield return null;
         }
         Time.timeScale = 1f;
+        while (HoldDeath) yield return null;
         deathRoutine = null;
+        CommitDeath();
         ShowRecap(false);
     }
 

@@ -15,6 +15,7 @@ public class TableLevelLoader : MonoBehaviour
     public DungeonGenerator Dungeon { get; private set; }
     public bool Busy { get; private set; }
     [SerializeField, Min(0), Tooltip("Seconds after arriving in a new biome before the Dungeon Master speaks.")] float entryLineDelay = 5f;
+    [SerializeField, Min(.1f), Tooltip("Seconds the last floor takes to sink into the table when the player sits down for the next game.")] float sweepSeconds = .8f;
     DungeonMaster.Line entryLine;
     public int FloorNumber { get; private set; } = 1;
     int generationLevel = 1;
@@ -364,7 +365,50 @@ public class TableLevelLoader : MonoBehaviour
         ShowSelection("Dungeon complete");
     }
     IEnumerator DeathMenu() { yield return new WaitForSecondsRealtime(.8f);ShowSelection("You died"); }
-    // Sweeps the last floor off the table before a new game is set up (never during a run).
+    // Sinks the last floor into the table, from the player's side outward, over sweepSeconds, then destroys it (never
+    // during a run). The loader lets go of it at once, so the next game can be set up while it goes.
+    public void SweepTable(Vector3 from)
+    {
+        if(Busy || environment==null || (RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended)) return;
+        var swept=environment;
+        environment=null; Dungeon=null;
+        StartCoroutine(Sweep(swept, from));
+    }
+    IEnumerator Sweep(GameObject swept, Vector3 from)
+    {
+        var settings=WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
+        float drop=settings!=null ? settings.liftDistance : 2.5f;
+        foreach(var ps in swept.GetComponentsInChildren<ParticleSystem>()) ps.Stop(true,ParticleSystemStopBehavior.StopEmittingAndClear);
+        var pieces=new List<(Transform t, Vector3 at, Vector3 scale, float delay)>();
+        float far=.01f;
+        foreach(var r in swept.GetComponentsInChildren<Renderer>()) { var d=r.transform.position-from; d.y=0; far=Mathf.Max(far,d.magnitude); }
+        var seen=new HashSet<Transform>();
+        foreach(var r in swept.GetComponentsInChildren<Renderer>())
+        {
+            var t=r.transform; if(!seen.Add(t)) continue;
+            var d=t.position-from; d.y=0;
+            pieces.Add((t,t.position,t.localScale,d.magnitude/far*.5f));
+        }
+        var lights=new List<(Light l, float intensity)>();
+        foreach(var l in swept.GetComponentsInChildren<Light>()) lights.Add((l,l.intensity));
+        float piece=sweepSeconds*.5f;
+        for(float time=0; time<sweepSeconds && swept!=null; time+=Time.deltaTime)
+        {
+            float k=Mathf.Clamp01(time/sweepSeconds);
+            foreach(var (l,intensity) in lights) if(l!=null) l.intensity=intensity*(1f-k);
+            foreach(var (t,at,scale,delay) in pieces)
+            {
+                if(t==null) continue;
+                float u=Mathf.Clamp01((time-delay*sweepSeconds)/piece); u*=u;
+                t.position=at+Vector3.down*drop*u;
+                t.localScale=scale*(1f-u);
+            }
+            yield return null;
+        }
+        if(swept!=null) Destroy(swept);
+    }
+
+    // Sweeps the last floor off the table at once before a new game is set up (never during a run).
     public void ClearTable()
     {
         if(Busy || environment==null || (RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended)) return;
