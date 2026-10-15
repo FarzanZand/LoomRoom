@@ -20,7 +20,7 @@ public class AdventureSave : MonoBehaviour
         public LeftHandSpell leftHand;
         public Blessing[] blessings;
         public float foodSeconds, foodRate, runSeconds;
-        public int kills, bosses, goldFound;
+        public int kills, bosses, goldFound, healthSlain;
     }
     [Serializable] public class Memorial
     {
@@ -39,6 +39,7 @@ public class AdventureSave : MonoBehaviour
         public Checkpoint checkpoint;
         public List<Memorial> memorials = new();
         public List<ProgressionManager.FlagEntry> flags = new();
+        [Tooltip("The name written on the character sheet.")] public string characterName = "";
     }
     public Data Saved { get; private set; } = new();
     [Tooltip("In the Unity editor, every Play session starts as a new game: the save file is neither read nor written. Turn off to test saving and continuing.")]
@@ -189,7 +190,7 @@ public class AdventureSave : MonoBehaviour
             health = player.Stats.CurrentHealth, mana = player.Stats.CurrentMana, stamina = player.Stats.CurrentStamina, gold = player.Wallet.Gold,
             bag = Capture(player.Bag), hotbar = Capture(player.Hotbar), equipped = player.Equipment.EquippedItems.Select(x => x.saveId).ToArray(), leftHand = GetComponent<PlayerSpellcasting>().Equipped,
             blessings = player.Stats.Modifiers.Where(m => ReferenceEquals(m.Source, RunManager.BlessingSource)).Select(m => new Blessing { stat=m.Stat, type=m.Type, value=m.Value, duration=m.Duration }).ToArray(),
-            foodSeconds=player.Stats.FoodRemaining, foodRate=player.Stats.FoodHealingPerSecond, runSeconds=run.Seconds, kills=run.Kills, bosses=run.BossesSlain, goldFound=run.GoldFound };
+            foodSeconds=player.Stats.FoodRemaining, foodRate=player.Stats.FoodHealingPerSecond, runSeconds=run.Seconds, kills=run.Kills, bosses=run.BossesSlain, goldFound=run.GoldFound, healthSlain=run.HealthSlain };
         Write();
     }
     public bool CanRestore(Checkpoint checkpoint)
@@ -214,7 +215,7 @@ public class AdventureSave : MonoBehaviour
         if (checkpoint.foodSeconds > 0) player.Stats.EatFood(checkpoint.foodRate, checkpoint.foodSeconds);
         player.Stats.RestorePools(checkpoint.health, checkpoint.mana, checkpoint.stamina);
         player.Wallet.Clear(); player.Wallet.Add(checkpoint.gold);
-        RunManager.Instance.RestoreTotals(checkpoint.kills, checkpoint.bosses, checkpoint.goldFound, checkpoint.runSeconds);
+        RunManager.Instance.RestoreTotals(checkpoint.kills, checkpoint.bosses, checkpoint.goldFound, checkpoint.runSeconds, checkpoint.healthSlain);
         if (!player.Equipment.Has(EquipmentSlot.LeftHand) && checkpoint.leftHand != LeftHandSpell.Shield)
             GetComponent<PlayerSpellcasting>().ResetHand(checkpoint.leftHand);
         else GetComponent<PlayerSpellcasting>().RestoreEquippedHand();

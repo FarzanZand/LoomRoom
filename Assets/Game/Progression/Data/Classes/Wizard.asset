@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: Wizard
   description: Starts with a Fireball Tome and lots of mana. Low health.
   portrait: {fileID: 21300000, guid: 5ed52b5d2b92c7e4db8676ed0e6bb005, type: 3}
+  sheetPortrait: {fileID: 0}
   miniature: {fileID: 7150585330265139970, guid: 5de9132990a12fe4c95693101094544e, type: 3}
   unlockFlag: 
   coopBody: {fileID: 272089454752684668, guid: 13bff3fd77a1aca428e375024d5a3a2b, type: 3}
@@ -36,4 +37,4 @@ MonoBehaviour:
   health: 20
   mana: 50
   stamina: 30
-  skills: 050000000000000000000000320000000f0000000000000000000000
+  skills: 00000000000000000000000028000000050000000000000000000000

@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: Arcanist
   description: Sword and a Fireball Tome. Quick, but fragile.
   portrait: {fileID: 21300000, guid: 293f3cf007bf42a438328c01b10f6578, type: 3}
+  sheetPortrait: {fileID: 0}
   miniature: {fileID: 4805614000556487136, guid: 5c624b2e55c5cf7469acc41b4e524e81, type: 3}
   unlockFlag: class.spellblade
   coopBody: {fileID: 3084636054546760879, guid: b3bbd95d6b4aa664096cf4b359e56254, type: 3}
@@ -36,4 +37,4 @@ MonoBehaviour:
   health: 25
   mana: 40
   stamina: 30
-  skills: 1400000000000000000000001e000000000000000a00000000000000
+  skills: 0a000000000000000000000014000000000000000000000000000000

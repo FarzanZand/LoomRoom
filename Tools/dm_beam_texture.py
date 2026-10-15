@@ -3,6 +3,7 @@
   DM beam body.png   the beam's body: the pack Glow's soft falloff across it, two of Spell 5's flame wisps turned to
                      run along it (they scroll toward the player)
   DM beam core.png   its white-hot middle: a narrow falloff with a faint trace of the wisps
+  DM beam glow.png   the soft halo round it: a smooth falloff across, fading to nothing at its edges
   DM beam flare.png  where it meets the shield: Spell 3's first burst over the Glow
 
 White with the shape in alpha (LoomRoom/Beam Additive reads alpha as the mask). Usage:
@@ -45,6 +46,11 @@ def main():
     flow /= max(flow.max(), 1e-3)
 
     save((across ** .5)[:, None] * (.4 + .6 * flow) * 1.1, "DM beam body.png")
+    # The halo: a smooth falloff across (no hard edge, so it never reads as a tube), 64 rows so it stays smooth even
+    # point-filtered, and the same along the beam.
+    v = np.linspace(-1, 1, 64)
+    halo = np.exp(-(v / .42) ** 2) * (1 - np.abs(v)) ** .6
+    save(np.tile(halo[:, None], (1, 8)), "DM beam glow.png")
     save((across ** 3)[:, None] * (.8 + .2 * flow), "DM beam core.png")
 
     burst = Image.open(os.path.join(PACK, "Spell 3.png")).convert("L")

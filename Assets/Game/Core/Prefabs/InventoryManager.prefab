@@ -55,9 +55,11 @@ MonoBehaviour:
   beamHeight: 1.1
   beamWidth: 0.07
   beamNormal: {r: 0.95, g: 0.9, b: 0.78, a: 0.3}
-  beamHoned: {r: 0.45, g: 0.7, b: 1, a: 0.38}
-  beamConsumable: {r: 0.35, g: 1, b: 0.4, a: 0.3}
+  chestOpenChime: 0
   itemProperties: {fileID: 11400000, guid: d744132bf8bd57b4e9d2c6af998b75fd, type: 2}
+  rarityChanceMultiplier: 1
+  dropChanceMultiplier: 1
+  goldMultiplier: 1
   pickupPrefab: {fileID: 1330799697983367974, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
   dropDistance: 1.5
   dropHeight: 0.5
@@ -73,6 +75,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 05197bf5abf054f41987eff16771ea6e, type: 2}
   - {fileID: 11400000, guid: ef5f66e3c2c30c4439c9bfe0a2653800, type: 2}
   - {fileID: 11400000, guid: 0318d74d3f077054caa1e5e071c8bede, type: 2}
+  - {fileID: 11400000, guid: c8c0daea26038644da47464013264bfb, type: 2}
   - {fileID: 11400000, guid: 3714d07b11ffab84daa631fb9eec41ff, type: 2}
   - {fileID: 11400000, guid: d2fe73b880660564c8579d3e8f237075, type: 2}
   - {fileID: 11400000, guid: e4888f7438cf15544b5c452e559fde82, type: 2}
@@ -85,7 +88,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d8e0969c57b7e9c428bc2a0c1f595eb5, type: 2}
   - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
   - {fileID: 11400000, guid: ab6f16f47978a9640aaf59e418d98b96, type: 2}
+  - {fileID: 11400000, guid: ffebbd1e82a7438439df635551803fee, type: 2}
   - {fileID: 11400000, guid: ca1254f5ad9dfb44eab2336cc7ad3302, type: 2}
+  - {fileID: 11400000, guid: 48f8aa9893560ed4f94bbb03837ce89c, type: 2}
   - {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   - {fileID: 11400000, guid: efb210faa4ae384408891531f33ee657, type: 2}
   - {fileID: 11400000, guid: 20154782471c9cb4ca51964d50a47397, type: 2}
@@ -102,6 +107,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8539e05408475f247ad2bcbf50e3d7fe, type: 2}
   - {fileID: 11400000, guid: 1ba720940abfc634789e033fabe50259, type: 2}
   - {fileID: 11400000, guid: 88b9084b9e04dfb4091fe6bdaf6cc7ab, type: 2}
+  - {fileID: 11400000, guid: 0fc4ea10ef14e314f8e3503aadcfb21c, type: 2}
   - {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
   - {fileID: 11400000, guid: e4e9de3d3ed801b44bcef84d0ed5ccc8, type: 2}
   - {fileID: 11400000, guid: c94488e517e3d7d4f9bb0817226b113b, type: 2}

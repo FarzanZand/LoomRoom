@@ -108,16 +108,12 @@ ink_rect(d, 11, 11, W - 12, H - 12, width=1, fill=faint)
 # small corner diamonds
 for cx, cy in ((8, 8), (W - 9, 8), (8, H - 9), (W - 9, H - 9)):
     d.polygon([(cx, cy - 3), (cx + 3, cy), (cx, cy + 3), (cx - 3, cy)], fill=ink)
-# a couple of foxing spots and a faint fold crease
+# a couple of foxing spots (no fold crease: drawn opaque it read as a line across the card)
 stains = Image.new("RGBA", (W, H), (0, 0, 0, 0)); sd = ImageDraw.Draw(stains)
 for _ in range(4):
     x, y, r = random.randint(24, W - 24), random.randint(24, H - 24), random.uniform(4, 9)
     sd.ellipse([x - r, y - r, x + r, y + r], fill=P["stain"][:3] + (random.randint(P["stain"][3] // 2, P["stain"][3]),))
 img = Image.alpha_composite(img, stains.filter(ImageFilter.GaussianBlur(3))); d = ImageDraw.Draw(img)
-crease = int(H * .52)
-for x in range(14, W - 14):
-    a = int(7 + 3 * math.sin(x * .05))
-    d.point((x, crease), fill=P["fold"][0] + (a,)); d.point((x, crease + 1), fill=P["fold"][1] + (a // 6,))
 alpha = (deckle_mask(W, H) * 255).astype(np.uint8)
 img.putalpha(Image.fromarray(alpha))
 save(img, "Paper card.png")

@@ -41,7 +41,7 @@ public partial class ItemData : ScriptableObject
     }
     // The name with a Fine or Masterwork rarity in front, for text without colour (the message log): "Masterwork Iron Sword".
     public string DisplayName => rarity == ItemRarity.Fine || rarity == ItemRarity.Masterwork ? $"{RarityName} {itemName}" : itemName;
-    public string RarityName => rarity switch { ItemRarity.Fine => "Fine", ItemRarity.Masterwork => "Masterwork", ItemRarity.Relic => "Relic", ItemRarity.Rare => "Rare", _ => "Plain" };
+    public string RarityName => rarity switch { ItemRarity.Fine => "Fine", ItemRarity.Masterwork => "Masterwork", ItemRarity.Relic => "Relic", ItemRarity.Rare => "Rare", ItemRarity.Spoils => "Spoils", _ => "Plain" };
     [TextArea] public string description;
     [HorizontalGroup("IconRow")]
     [Tooltip("Bag icon, sized to the item's footprint. Generated from the item's model (Icon Source) unless custom.")]
@@ -311,7 +311,7 @@ public partial class ItemData : ScriptableObject
         else if (gear != null && gear.IsEquipped(this)) { lines.Add($"<color={DimColor}>Equipped</color>"); Add(blocks, lines); }
 
         if (!string.IsNullOrWhiteSpace(description)) { lines.Add($"<color={FlavourColor}><i>{description.Trim()}</i></color>"); Add(blocks, lines); }
-        if (withPrice && value > 0 && itemType != ItemType.Key) { lines.Add($"<color={DimColor}>Worth {value} gold</color>"); Add(blocks, lines); }
+        if (withPrice && value > 0 && itemType != ItemType.Key && itemType != ItemType.Spoils) { lines.Add($"<color={DimColor}>Worth {value} gold</color>"); Add(blocks, lines); }
         return string.Join("\n\n", blocks);
     }
 
@@ -341,6 +341,7 @@ public partial class ItemData : ScriptableObject
             case ItemType.Shield: return "Shield";
             case ItemType.Consumable: return Named("potion") || Named("tonic") || Named("elixir") ? "Potion" : AnimationOnUse == ItemUseAnimation.Eat ? "Food" : "Consumable";
             case ItemType.Key: return "Key";
+            case ItemType.Spoils: return "Spoils";
             case ItemType.Tool: return "Tool";
             case ItemType.Equipment:
                 if (!canBeEquipped) return "Item";

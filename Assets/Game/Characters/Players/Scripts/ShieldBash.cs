@@ -45,11 +45,23 @@ public class ShieldBash : MonoBehaviour
 
     void OnDisable() => Stop();
 
+    // Shield bash is Blocking's first milestone (ProgressionManager): its mounted trophy, or this run's Blocking reaching it
+    // once the first lesson has taught it.
+    bool Unlocked
+    {
+        get
+        {
+            if (!ProgressionManager.HasInstance || !ProgressionManager.MetaActive) return true;
+            var progress = GetComponent<AdventurerProgress>();
+            return ProgressionManager.Instance.Unlocked(AdventureSkill.Blocking, 0, progress != null ? progress.Rank(AdventureSkill.Blocking) : 0);
+        }
+    }
+
     // Block held and attack pressed: bash if it is switched on, ready, and a shield is in hand.
     public bool TryStart()
     {
         var t = Tuning;
-        if (t == null || !t.enableShieldBash || Busy || Time.time < readyAt || !player.IsActive || !ShieldHeld) return false;
+        if (t == null || !t.enableShieldBash || Busy || Time.time < readyAt || !player.IsActive || !ShieldHeld || !Unlocked) return false;
         if (motor != null && !motor.IsGrounded) return false;
         var stats = player.Stats;
         if (stats != null && stats.HasStat(StatType.MaxStamina) && t.shieldBashStaminaCost > 0f &&

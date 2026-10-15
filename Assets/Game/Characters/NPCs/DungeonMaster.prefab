@@ -628,14 +628,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonMasterHand
   reachLean: 8
-  aimReach: 0.5
+  aimReach: 0.42
   aimKeepAway: 9
   beamLean: 0
   blend: 0.35
   grip: 1.04
   dropHeight: 0.25
+  raiseShown: 0.2
   carryHeight: 7
   carryLight: 40
+  palmOpen: 0.9
+  palmFacesTarget: 1
+  flipPalm: 1
 --- !u!114 &8118707400026791631
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -670,6 +674,10 @@ MonoBehaviour:
   flowRepeat: 6
   scroll: -4
   boltFlicker: 0.07
+  ripple: 0.35
+  rippleSpeed: 2.2
+  corePulses: 2
+  pulseSeconds: 0.45
   damageTick: 0.5
   palmLight: 160
   palmLightRange: 10

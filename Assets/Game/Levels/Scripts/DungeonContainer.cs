@@ -97,6 +97,8 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
             }
         }
         if(guaranteedItems!=null)foreach(var item in guaranteedItems)if(item!=null)drops.Add(new LootSource.Drop(item,1));
+        // Spoils for the tally (ProgressionManager): chests only, at their own chance.
+        if(chest && ProgressionManager.HasInstance){var spoils=ProgressionManager.Instance.RollSpoils(seed,floorNumber,true);if(spoils!=null)drops.Add(new LootSource.Drop(spoils,1));}
         gold+=bonusGold;
         if(chest && drops.Count==0 && guaranteedItem==null && gold<=0) gold=3+rng.Next(0,3)+floorNumber*2;
         // A chest glows gold as it opens and its loot jumps out.

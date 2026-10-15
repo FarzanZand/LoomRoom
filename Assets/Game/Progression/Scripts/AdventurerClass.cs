@@ -27,6 +27,8 @@ public class AdventurerClass : ScriptableObject
     public string displayName;
     [TextArea] public string description;
     [PreviewField(64)] public Sprite portrait;
+    [PreviewField(64), Tooltip("The picture on the character sheet when this class's portrait is picked. Empty: a stick figure stands in.")]
+    public Sprite sheetPortrait;
     [Tooltip("Model shown as a miniature on the memorial table in the room.")]
     [AssetsOnly] public GameObject miniature;
     [Tooltip("Empty = available from the start. Otherwise the progression flag that unlocks it.")]

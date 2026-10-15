@@ -38,6 +38,7 @@ public static class DungeonPickup
         ItemRarity.Fine => "itemDropFine",
         ItemRarity.Masterwork => "itemDropMasterwork",
         ItemRarity.Relic => "itemDropRelic",
+        ItemRarity.Spoils => "itemDropSpoils",
         _ => DropKey,
     };
 
