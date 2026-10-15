@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05d156f50495df842bdb867333c3ccd5, type: 3}
+  m_Name: Vhs2
+  m_EditorClassIdentifier: Assembly-CSharp::ScreenFilterLook
+  filter: 10
+  profile: {fileID: 0}
+  pixelLines: 400
+  colourLevels: 0
+  dither: 1
+  ditherSize: 4
+  ditherScale: 1
+  ditherBrightness: 0
+  ditherBand: 1
+  blackLift: 0
+  glowGrid: 0
+  sharpen: 0
+  colour: 1
+  saturation: 0.85
+  contrast: -0.05
+  shadowTint: {r: 0.2, g: 0.55, b: 0.6, a: 0}
+  lightTint: {r: 1, g: 0.65, b: 0.35, a: 0}
+  monoDark: {r: 0, g: 0, b: 0, a: 1}
+  monoLight: {r: 1, g: 1, b: 1, a: 1}
+  keepRed: 0
+  palette:
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  - {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  - {r: 1, g: 1, b: 1, a: 1}
+  crush: 0
+  lift: 1
+  curvature: 0
+  scanlines: 0.15
+  scanlineCount: 480
+  mask: 0
+  colourBleed: 4
+  wobble: 0
+  vignette: 0.2
+  grain: 0.3

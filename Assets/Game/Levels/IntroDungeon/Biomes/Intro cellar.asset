@@ -42,6 +42,7 @@ MonoBehaviour:
     sleepChance: 0.1
     maxSleepingPacks: 3
     pits: 1
+    playerFallsInPits: 0
     pitFallDamage: 0.25
     sunkenFloors: 1
     archerLedges: 1
@@ -52,6 +53,7 @@ MonoBehaviour:
     eerieRooms: 1
     eerieChance: 0.06
   lightRadius: 8
+  filmicLook: 1
   shadowTint: {r: 0.55, g: 0.85, b: 1, a: 1}
   lampTint: {r: 1.06, g: 0.97, b: 0.86, a: 1}
   lightingSettings:
@@ -75,9 +77,6 @@ MonoBehaviour:
   - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
     weight: 2
     fromFloor: 1
-  - enemy: {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
-    weight: 1
-    fromFloor: 1
   encounterChance: {x: 1, y: 1}
   minEnemiesPerRoom: 1
   maxEnemiesPerRoom: 1
@@ -99,7 +98,11 @@ MonoBehaviour:
     sealExit: 1
     bossLoot: {fileID: 11400000, guid: c1a50f12fd6d9a84db3ad05cacdea71b, type: 2}
     bonusGold: 40
+    rewardChest: 1
+    chestPrefab: {fileID: 0}
+    chestItems: []
     arenaSizeScale: 1.5
+    fight: {fileID: 0}
   ambience: {fileID: 0}
   ambienceVolume: 0.45
   ambientOneShots: []

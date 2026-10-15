@@ -84,7 +84,6 @@ MonoBehaviour:
   - {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
   - {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
-  - {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
   - {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
   - {fileID: 5746219887415064482, guid: ae52da96cec3d1d4db895d43de610fd3, type: 3}
   partnerLightColor: {r: 1, g: 0.78, b: 0.5, a: 1}

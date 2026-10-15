@@ -130,7 +130,7 @@ public sealed partial class LightingManager
     // ── Moods ─────────────────────────────────────────────────────────
 
     [TabGroup("Tabs", "Moods")]
-    [Button("Toggle Mood (F5)")]
+    [Button("Toggle Mood (F7)")]
     public void ToggleMood()
     {
         if (keyboardMoodPreview) { RestoreDefault(); return; }

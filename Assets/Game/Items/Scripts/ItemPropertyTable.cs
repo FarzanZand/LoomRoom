@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// One rolled property on a Fine or Masterwork item: which property (ItemPropertyDef.id) and its rolled value in the
+// One rolled property on a rolled item: which property (ItemPropertyDef.id) and its rolled value in the
 // numbers the tooltip shows (7 for +7% critical chance). Saved inside the item's id ("iron_sword~3:crit=7").
 [Serializable]
 public struct RolledProperty
@@ -40,14 +40,12 @@ public class ItemPropertyDef
     }
 }
 
-// Every property Fine and Masterwork gear can roll (Items/Data/Item Properties). Lives on InventoryManager.
+// Every property rolled gear (Fine, Superior, Masterwork) can roll (Items/Data/Item Properties). Lives on InventoryManager.
 [CreateAssetMenu(menuName = "Items/Item Property Table")]
 public class ItemPropertyTable : ScriptableObject
 {
-    [MinMaxSlider(1, 6, true), Tooltip("How many properties a Fine item rolls.")] public Vector2Int fineCount = new(1, 2);
-    [MinMaxSlider(1, 6, true), Tooltip("How many properties a Masterwork rolls; its first is a floor deeper.")] public Vector2Int masterworkCount = new(3, 4);
+    // How many properties each rarity rolls and its price are on InventoryManager > Rarity. A Masterwork's first property is a floor deeper.
     [Range(0, 1), Tooltip("Chance each property rolls one floor lower than the floor it drops on.")] public float lowerChance = .3f;
-    [Tooltip("Price multiplier by rarity: Fine, Masterwork.")] public float fineValue = 1.6f, masterworkValue = 4f;
     [ListDrawerSettings(ShowFoldout = false, ListElementLabelName = "id")]
     public List<ItemPropertyDef> properties = new();
 
@@ -82,8 +80,9 @@ public class ItemPropertyTable : ScriptableObject
     public RolledProperty[] Roll(ItemData gear, ItemRarity rarity, int floor, System.Random random)
     {
         var slot = SlotOf(gear);
-        if (slot == GearSlots.None || (rarity != ItemRarity.Fine && rarity != ItemRarity.Masterwork) || properties == null) return Array.Empty<RolledProperty>();
-        var range = rarity == ItemRarity.Fine ? fineCount : masterworkCount;
+        var rarityStep = InventoryManager.StepFor(rarity);
+        if (slot == GearSlots.None || rarityStep == null || properties == null) return Array.Empty<RolledProperty>();
+        var range = rarityStep.properties;
         int count = random.Next(range.x, Mathf.Max(range.x, range.y) + 1);
         var pool = new List<ItemPropertyDef>();
         // A stat the item already has stays off the list (a sword's crit, a ring's health), except its main number.

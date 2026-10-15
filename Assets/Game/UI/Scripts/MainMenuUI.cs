@@ -9,8 +9,9 @@ using UnityEngine.UI;
 // haze, his eyes burning, one hand held out over a little ruin with a pewter figure in it, fog rolling across the table
 // (UI/Main Menu: pose clip, ruins, fog shader, look profile; Tools > LoomRoom > UI > Rebuild Main Menu Ruins), the
 // painted title, and Continue / New game / Load game / Quit. There are three save slots (AdventureSave.Slot):
-// Continue plays the newest save, New game asks whether to play the intro or skip it (starting on the first morning,
-// right after the intro dungeon) and starts in a free slot (or asks which save to replace when all are taken),
+// Continue plays the newest save, New game asks for the player's name (the save is known by it) and whether to play
+// the intro or skip it (starting on the first morning, right after the intro dungeon) and starts in a free slot (or
+// asks which save to replace when all are taken),
 // Load game lists the saves to play or delete. Playing fades to black and loads the game's scene. The set, buttons,
 // save list, title and fade are authored in the scene (Tools > LoomRoom > UI > Build Main Menu Saves); this binds them.
 // Co-op opens the co-op menu: your name, Host a game, or a friend's code and Join; then which save to play with (an
@@ -41,8 +42,10 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] GameObject buttons;
 
     [Header("New game")]
-    [Tooltip("Asked when New game is pressed: play the intro, or skip it.")]
+    [Tooltip("Asked when New game is pressed: the player's name, then play the intro or skip it.")]
     [SerializeField] GameObject newGamePanel;
+    [Tooltip("The player's name: the new save is known by it (AdventureSave.NewCharacterName). Play the intro and Skip intro wait for one.")]
+    [SerializeField] TMP_InputField nameField;
     [SerializeField] Button playIntroButton;
     [Tooltip("Starts on the first morning, as if the intro dungeon had just been played (ProgressionManager.SkipIntroRequested).")]
     [SerializeField] Button skipIntroButton;
@@ -113,6 +116,9 @@ public class MainMenuUI : MonoBehaviour
             music.volume *= PlayerPrefs.GetFloat(AudioManager.K_MASTER, 1f) * PlayerPrefs.GetFloat(AudioManager.K_MUSIC, .8f);
             if (!music.isPlaying) music.Play();
         }
+        AdventureSave.NewCharacterName = null;   // a name typed earlier but never played
+        ProgressionManager.SkipIntroRequested = false;
+        AdventureSave.MigrateOldSaves();   // saves from before the rename, brought over once
         if (playLabel != null) playLabel.text = "Continue";
         playButton?.onClick.AddListener(Continue);
         newGameButton?.onClick.AddListener(OpenNewGame);
@@ -120,6 +126,13 @@ public class MainMenuUI : MonoBehaviour
         playIntroButton?.onClick.AddListener(() => NewGame(false));
         skipIntroButton?.onClick.AddListener(() => NewGame(true));
         newGameBack?.onClick.AddListener(CloseNewGame);
+        if (nameField != null)
+        {
+            nameField.characterLimit = AdventureSave.NameLength;
+            nameField.onValidateInput = (text, index, c) => Typeable(c) ? c : '\0';
+            nameField.onSubmit.AddListener(_ => playIntroButton?.Select());
+            if (nameField.placeholder is TMP_Text hint) hint.text = AdventureSave.DefaultName;
+        }
         quitButton?.onClick.AddListener(Quit);
         savesBack?.onClick.AddListener(CloseSaves);
         confirmYes?.onClick.AddListener(() => { var then = confirmed; CloseConfirm(); then?.Invoke(); });
@@ -144,8 +157,16 @@ public class MainMenuUI : MonoBehaviour
         // Started with -host or -join (co-op from the command line): straight into the game, once (coming back to the
         // menu later stays here).
         if (!skippedForCommandLine)
-            foreach (var arg in System.Environment.GetCommandLineArgs())
-                if (arg.ToLowerInvariant() == "-host" || arg.ToLowerInvariant() == "-join") { skippedForCommandLine = leaving = true; SceneManager.LoadScene(gameScene); break; }
+        {
+            var args = System.Environment.GetCommandLineArgs();
+            foreach (var arg in args)
+                if (arg.ToLowerInvariant() == "-host" || arg.ToLowerInvariant() == "-join")
+                {
+                    // A new save made this way is named after the player (-name).
+                    for (int i = 0; i + 1 < args.Length; i++) if (args[i].ToLowerInvariant() == "-name") AdventureSave.NewCharacterName = AdventureSave.CleanName(args[i + 1]);
+                    skippedForCommandLine = leaving = true; SceneManager.LoadScene(gameScene); break;
+                }
+        }
     }
 
     void Update()
@@ -155,6 +176,14 @@ public class MainMenuUI : MonoBehaviour
         if (!leaving && UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject == null
             && (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame || Gamepad.current != null && Gamepad.current.dpad.ReadValue() != Vector2.zero))
             SelectFirst();
+        // A pad can't type, and a focused name field keeps the pad's moves: its first move or press leaves the field for the
+        // start buttons (an empty name becomes the default one).
+        if (!leaving && nameField != null && nameField.isFocused && Gamepad.current != null
+            && (Gamepad.current.dpad.ReadValue() != Vector2.zero || Gamepad.current.leftStick.ReadValue().sqrMagnitude > .25f || Gamepad.current.buttonSouth.wasPressedThisFrame))
+        {
+            nameField.DeactivateInputField();
+            playIntroButton?.Select();
+        }
         // Escape (or a pad's east button) steps back: the question first, then the save list.
         bool back = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame || Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame;
         if (back && !leaving)
@@ -174,7 +203,7 @@ public class MainMenuUI : MonoBehaviour
             foreach (var row in slotRows) if (row.button != null && row.button.interactable) { row.button.Select(); return; }
             savesBack?.Select(); return;
         }
-        if (newGamePanel != null && newGamePanel.activeSelf) { playIntroButton?.Select(); return; }
+        if (newGamePanel != null && newGamePanel.activeSelf) { if (nameField != null) nameField.Select(); else playIntroButton?.Select(); return; }
         if (coopPanel != null && coopPanel.activeSelf) { coopHost?.Select(); return; }
         if (playButton != null && playButton.gameObject.activeInHierarchy) playButton.Select();
         else newGameButton?.Select();
@@ -231,6 +260,8 @@ public class MainMenuUI : MonoBehaviour
         RefreshButtons();
     }
 
+    string CoopName => AdventureSave.CleanName(coopName != null ? coopName.text : "");
+
     void KeepName()
     {
         if (coopName == null) return;
@@ -286,7 +317,28 @@ public class MainMenuUI : MonoBehaviour
         if (savesPanel != null) savesPanel.SetActive(false);
         if (newGamePanel != null) newGamePanel.SetActive(true);
         else { NewGame(false); return; }
+        // Co-op: the name typed in the co-op menu is the new save's too, unless changed here.
+        nameField?.SetTextWithoutNotify(coop ? CoopName : "");
         SelectFirst();
+    }
+
+    // The typed name, or the default one when the field is left empty (the placeholder shows it).
+    string ChosenName
+    {
+        get
+        {
+            var typed = AdventureSave.CleanName(nameField != null ? nameField.text : "");
+            return typed.Length > 0 ? typed : AdventureSave.DefaultName;
+        }
+    }
+
+    // Only letters the name's font can draw (the save list and the character sheet show it too); no control characters.
+    // Checked against the font file, so asking adds nothing to the font asset.
+    bool Typeable(char c)
+    {
+        if (char.IsControl(c) || char.IsSurrogate(c)) return false;
+        var font = nameField.textComponent != null ? nameField.textComponent.font : null;
+        return c == ' ' || font == null || font.HasCharacter(c, true, false) || font.sourceFontFile != null && font.sourceFontFile.HasCharacter(c);
     }
 
     void CloseNewGame()
@@ -311,6 +363,9 @@ public class MainMenuUI : MonoBehaviour
     {
         AdventureSave.DeleteSlot(slot);   // nothing there, or the save the player chose to replace
         ProgressionManager.SkipIntroRequested = skipIntro;
+        // A guest's new save (no New game question) is named after the player.
+        bool joining = coop && coopStart == MultiplayerManager.MenuStart.Join;
+        AdventureSave.NewCharacterName = joining ? (CoopName.Length > 0 ? CoopName : AdventureSave.DefaultName) : nameField != null ? ChosenName : null;
         Play(slot);
     }
 
@@ -342,7 +397,7 @@ public class MainMenuUI : MonoBehaviour
             var row = slotRows[i]; int slot = i + 1;
             var save = AdventureSave.Summarize(slot);
             bool startHere = !save.exists && mode == SavesMode.Coop;   // co-op: an empty slot starts a new game
-            if (row.title != null) row.title.text = !save.exists ? "Empty" : string.IsNullOrWhiteSpace(save.name) ? $"Save {slot}" : save.name;
+            if (row.title != null) row.title.text = !save.exists ? "Empty" : Name(save);
             if (row.details != null) row.details.text = startHere ? (coopStart == MultiplayerManager.MenuStart.Join ? "Start a new save here" : "Start a new game here") : !save.exists ? "" : !save.readable ? "This save can't be read" : Details(save);
             if (row.time != null) row.time.text = save.exists ? save.lastPlayed.ToString("d MMM, HH:mm") : "";
             if (row.button != null)
@@ -387,11 +442,10 @@ public class MainMenuUI : MonoBehaviour
         else CloseSaves();
     });
 
-    static string SaveName(int slot)
-    {
-        var save = AdventureSave.Summarize(slot);
-        return string.IsNullOrWhiteSpace(save.name) ? $"Save {slot}" : save.name;
-    }
+    static string SaveName(int slot) => Name(AdventureSave.Summarize(slot));
+
+    // A save is known by the player's name; saves from before names were asked for may have none.
+    static string Name(AdventureSave.Summary save) => string.IsNullOrWhiteSpace(save.name) ? "Unnamed" : save.name;
 
     void Ask(string question, System.Action yes)
     {

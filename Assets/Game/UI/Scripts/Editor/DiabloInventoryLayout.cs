@@ -97,7 +97,7 @@ public static class DiabloInventoryLayout
         var log = new System.Text.StringBuilder();
         // Plain on purpose (the user found the ornate frames and gold slots too busy).
         var frame = Sprite("Plain frame grey", 8); var socket = Sprite("Plain slot grey", 4); var slotFrame = socket;
-        var title = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PIXEARG_ SDF.asset");
+        var title = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
         var body = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
 
         var ui = Object.FindAnyObjectByType<InventoryUI>(FindObjectsInactive.Include);

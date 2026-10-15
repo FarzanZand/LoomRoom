@@ -197,9 +197,11 @@ public class GoreManager : Singleton<GoreManager>
             if (chunks.Count >= maxChunks) { chunk = chunks.Dequeue(); if (chunk == null) continue; }
             else
             {
-                chunk = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                chunk.name = "Gore chunk";
-                chunk.GetComponent<MeshRenderer>().sharedMaterial = chunkMaterial;
+                // A soft lump, not a box (cubes read as dice next to the pixel art).
+                chunk = new GameObject("Gore chunk");
+                chunk.AddComponent<MeshFilter>().sharedMesh = Lump(chunks.Count);
+                chunk.AddComponent<MeshRenderer>().sharedMaterial = chunkMaterial;
+                chunk.AddComponent<SphereCollider>().radius = .45f;
                 chunk.AddComponent<Rigidbody>();
             }
             chunk.transform.SetParent(root, true);
@@ -217,6 +219,46 @@ public class GoreManager : Singleton<GoreManager>
             if (settling.TryGetValue(rb, out var old) && old != null) StopCoroutine(old);
             settling[rb] = StartCoroutine(Settle(rb));
         }
+    }
+
+    // A few irregular, squashed lumps (an octahedron split once, its corners pushed in and out), shared by all chunks.
+    static Mesh[] lumps;
+    static Mesh Lump(int index)
+    {
+        if (lumps == null)
+        {
+            lumps = new Mesh[4];
+            var rng = new System.Random(17);
+            for (int k = 0; k < lumps.Length; k++)
+            {
+                var corners = new List<Vector3> { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
+                int[] faces = { 2, 4, 0, 2, 0, 5, 2, 5, 1, 2, 1, 4, 3, 0, 4, 3, 5, 0, 3, 1, 5, 3, 4, 1 };
+                var mids = new Dictionary<(int, int), int>();
+                int Mid(int a, int b)
+                {
+                    var key = a < b ? (a, b) : (b, a);
+                    if (!mids.TryGetValue(key, out int m)) { m = corners.Count; corners.Add((corners[a] + corners[b]).normalized); mids[key] = m; }
+                    return m;
+                }
+                var split = new List<int>();
+                for (int f = 0; f < faces.Length; f += 3)
+                {
+                    int a = faces[f], b = faces[f + 1], c = faces[f + 2], ab = Mid(a, b), bc = Mid(b, c), ca = Mid(c, a);
+                    split.AddRange(new[] { a, ab, ca, ab, b, bc, ca, bc, c, ab, bc, ca });
+                }
+                for (int i = 0; i < corners.Count; i++)
+                {
+                    var v = corners[i] * (.38f + (float)rng.NextDouble() * .2f); v.y *= .6f; corners[i] = v;
+                }
+                // Flat facets: each triangle has its own corners.
+                var verts = new List<Vector3>(); var tris = new List<int>();
+                foreach (int i in split) { tris.Add(verts.Count); verts.Add(corners[i]); }
+                var mesh = new Mesh { name = "Gore lump" };
+                mesh.SetVertices(verts); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
+                lumps[k] = mesh;
+            }
+        }
+        return lumps[index % lumps.Length];
     }
 
     // Chunks freeze where they lie (saves physics time) and stay for the floor.

@@ -64,13 +64,13 @@ public class DungeonLootTable : LootSource
         if(random==null)throw new ArgumentNullException(nameof(random));
         floor=Math.Max(1,floor);
         var result=new List<Drop>();
-        if(source==DungeonLootSource.Enemy && random.NextDouble()>=Mathf.Clamp01(enemyDropChance*InventoryManager.DropChanceScale))return result;
+        if(source==DungeonLootSource.Enemy && random.NextDouble()>=Mathf.Clamp01(enemyDropChance*InventoryManager.DropChanceFor(source)))return result;
         if(guaranteed!=null)foreach(var entry in guaranteed)if(Eligible(entry,floor,source))Add(result,entry,random);
         if(pools==null || pools.Length==0) {
             var selected=Select(entries,random,floor,source,null);
             if(selected!=null)Add(result,selected,random);
         } else foreach(var pool in pools) {
-            if(pool==null || (pool.sources&source)==0 || random.NextDouble()>=Mathf.Clamp01(pool.chance*InventoryManager.DropChanceScale))continue;
+            if(pool==null || (pool.sources&source)==0 || random.NextDouble()>=Mathf.Clamp01(pool.chance*InventoryManager.DropChanceFor(source)))continue;
             int min=Mathf.Clamp(pool.minRolls,0,20),max=Mathf.Clamp(pool.maxRolls,min,20);
             int rolls=random.Next(min,max+1);
             var used=pool.uniqueItems ? new HashSet<ItemData>() : null;

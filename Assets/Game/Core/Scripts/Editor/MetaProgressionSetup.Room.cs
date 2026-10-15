@@ -82,7 +82,6 @@ public static partial class MetaProgressionSetup
         root.transform.position = new Vector3(WallCentreX, FloorY, WallZ);
         var wall = root.AddComponent<TrophyWall>();
         wall.outlineMaterial = OutlineMaterial();
-        var wood = PlaqueMaterial();
         var brass = Mat(ApartmentArt + "Decor - Brass.mat");
         AdventureSkill[] order = { AdventureSkill.Blocking, AdventureSkill.Swords, AdventureSkill.Maces, AdventureSkill.Sorcery, AdventureSkill.Thaumaturgy, AdventureSkill.Athletics, AdventureSkill.Stealth, AdventureSkill.Trading };
         var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
@@ -99,8 +98,7 @@ public static partial class MetaProgressionSetup
                 var mount = new GameObject($"{order[c]} {values[r]}");
                 mount.transform.SetParent(root.transform, false);
                 mount.transform.localPosition = new Vector3(x, y, 0);
-                Box("Plaque", mount.transform, new Vector3(0, 0, .35f), new Vector3(12f, 12f, .7f), wood);
-                Box("Peg", mount.transform, new Vector3(0, 4.2f, 1f), new Vector3(.8f, .8f, .7f), brass);
+                Backing(mount.transform);
                 var anchor = new GameObject("Anchor").transform;
                 anchor.SetParent(mount.transform, false);
                 anchor.localPosition = new Vector3(0, 0, 2.6f);
@@ -141,7 +139,25 @@ public static partial class MetaProgressionSetup
         EditorUtility.SetDirty(wall);
     }
 
-    // The plaques: plain stained wood.
+    // A trophy's backing: Synty's carved animal-head board, 12 units wide, its back flat on the wall, in the room's wood
+    // (RoomTiles).
+    static void Backing(Transform mount)
+    {
+        var pf = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Synty/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Animal_Head_Backing_05.prefab");
+        if (pf == null) { Debug.LogWarning("Trophy wall: no animal-head backing prefab"); return; }
+        var smf = pf.GetComponentInChildren<MeshFilter>();
+        var go = new GameObject("Backing");
+        go.transform.SetParent(mount, false);
+        go.AddComponent<MeshFilter>().sharedMesh = smf.sharedMesh;
+        var r = go.AddComponent<MeshRenderer>(); r.sharedMaterials = smf.GetComponent<MeshRenderer>().sharedMaterials;
+        var size = smf.sharedMesh.bounds.size;
+        go.transform.localScale = Vector3.one * (12f / Mathf.Max(size.x, size.y));
+        var b = r.bounds; var lo = mount.InverseTransformPoint(b.min); var hi = mount.InverseTransformPoint(b.max); var c = mount.InverseTransformPoint(b.center);
+        go.transform.localPosition = new Vector3(-c.x, -c.y, -Mathf.Min(lo.z, hi.z));
+        RoomTiles.ApplyTo(r);
+    }
+
+    // The plaques: plain stained wood (the backings replaced them; kept for the name plates' look).
     static Material PlaqueMaterial()
     {
         const string path = "Assets/Game/Progression/Room/Trophy plaque.mat";
@@ -170,7 +186,7 @@ public static partial class MetaProgressionSetup
         mat.SetInt("_ZWrite", 0);
         mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-        mat.SetColor("_BaseColor", new Color(.12f, .09f, .07f, .38f));
+        mat.SetColor("_BaseColor", new Color(.93f, .86f, .74f, .13f));   // a faint chalk mark on the wood backing
         AssetDatabase.CreateAsset(mat, path);
         return mat;
     }

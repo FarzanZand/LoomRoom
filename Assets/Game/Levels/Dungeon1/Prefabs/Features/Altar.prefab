@@ -103,13 +103,13 @@ MonoBehaviour:
     soundVolume: 0.9
   - label: Blessing of the ward
     weight: 2
-    message: A pale light settles over your armour. (+1 armour)
+    message: A pale light settles over your armour. (+5 armour)
     kind: 3
     effects:
     - type: 2
       trigger: 0
       chance: 100
-      value: 1
+      value: 5
       stat: 1
       modifierType: 0
       duration: 0

@@ -102,16 +102,30 @@ public class AdventureSave : MonoBehaviour
     static string SlotPath(int slot) => Path.Combine(Folder, SlotFile(slot));
     public static bool SlotExists(int slot) => File.Exists(SlotPath(slot)) || File.Exists(SlotPath(slot) + ".bak");
 
+    // The name the player gives a new game on the main menu: the save is known by it (the save list, the character
+    // sheet). Written into the new save when the game's scene makes it.
+    public static string NewCharacterName;
+    // Domain reload is off: a name typed on the menu must not carry over to the next Play session.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => NewCharacterName = null;
+    // The name a new game gets when none is typed (a pad has no keyboard); it can be changed on the character sheet.
+    public const string DefaultName = "Adventurer";
+    public const int NameLength = 16;
+    // A name as it is kept: spaces run together and trimmed, at most NameLength letters.
+    public static string CleanName(string text)
+    {
+        text = string.Join(" ", (text ?? "").Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
+        return text.Length > NameLength ? text.Substring(0, NameLength).TrimEnd() : text;
+    }
+
     // Whether any game has been saved (the main menu offers Continue and Load game).
-    public static bool SaveExists { get { MigrateOldSaves(); for (int i = 1; i <= SlotCount; i++) if (SlotExists(i)) return true; return false; } }
-    // The save played last (newest file), or 0 when there is none.
+    public static bool SaveExists { get { for (int i = 1; i <= SlotCount; i++) if (SlotExists(i)) return true; return false; } }
+    // The save played last (newest readable file), or 0 when there is none. An unreadable save is left to the save list.
     public static int LatestSlot
     {
         get
         {
-            MigrateOldSaves();
             int best = 0; DateTime newest = DateTime.MinValue;
-            for (int i = 1; i <= SlotCount; i++) { var time = LastWritten(i); if (time.HasValue && time.Value > newest) { newest = time.Value; best = i; } }
+            for (int i = 1; i <= SlotCount; i++) { var time = LastWritten(i); if (time.HasValue && time.Value > newest && Summarize(i).readable) { newest = time.Value; best = i; } }
             return best;
         }
     }
@@ -168,15 +182,25 @@ public class AdventureSave : MonoBehaviour
     }
 
     // The game was called LoomRoom until 2026-10-13; the save folder follows the product name, so saves from before the
-    // rename sit in the old folder beside the new one. Brought over once, while the new folder has none.
-    static void MigrateOldSaves()
+    // rename sit in the old folder beside the new one. Brought over once ever (a PlayerPrefs marker, also set by any save
+    // written here), and only into a folder with no saves yet: a save deleted later must stay deleted. Called by the main
+    // menu as it opens and by Initialize.
+    const string MigratedPref = "LoomRoom.SavesMigrated";
+    static void MarkMigrated()
     {
+        if (PlayerPrefs.GetInt(MigratedPref, 0) == 1) return;
+        PlayerPrefs.SetInt(MigratedPref, 1); PlayerPrefs.Save();
+    }
+    public static void MigrateOldSaves()
+    {
+        if (PlayerPrefs.GetInt(MigratedPref, 0) == 1 || CustomFolder) return;   // a copy with its own folder (-savedir) leaves the game's alone
+        MarkMigrated();
         try
         {
-            if (Folder != null && customFolder) return;
             var current = Application.persistentDataPath;
             var old = Path.Combine(Path.GetDirectoryName(current) ?? "", "LoomRoom");
             if (!Directory.Exists(old) || string.Equals(Path.GetFullPath(old), Path.GetFullPath(current), StringComparison.OrdinalIgnoreCase)) return;
+            if (Directory.Exists(current) && Directory.GetFiles(current, "loomroom-*.json*").Length > 0) return;
             Directory.CreateDirectory(current);
             foreach (var name in new[] { AdventureFile, AdventureFile + ".bak", DebugFile, DebugFile + ".bak" })
             {
@@ -196,6 +220,9 @@ public class AdventureSave : MonoBehaviour
         if (UsesFile) MigrateOldSaves();
         bool existed = UsesFile && Read();
         Saved.memorials ??= new(); Saved.flags ??= new();
+        bool named = !existed && !string.IsNullOrEmpty(NewCharacterName);
+        if (named) Saved.characterName = CleanName(NewCharacterName);
+        NewCharacterName = null;
         if (ProgressionManager.HasInstance)
         {
             loading = true;
@@ -204,7 +231,7 @@ public class AdventureSave : MonoBehaviour
         }
         if (RunManager.HasInstance) RunManager.Instance.RunEnded += Ended;
         if (!existed) SeedStartingMemorials();
-        if (ProgressionManager.HasInstance && ProgressionManager.Instance.IntroSkipped) Write();
+        if (named || ProgressionManager.HasInstance && ProgressionManager.Instance.IntroSkipped) Write();
     }
 
     // A new save starts with the rules' blank figures on the memorial table.
@@ -269,6 +296,7 @@ public class AdventureSave : MonoBehaviour
         try
         {
             Directory.CreateDirectory(Folder);
+            if (!CustomFolder) MarkMigrated();   // this folder has saves of its own now
             File.WriteAllText(FilePath + ".tmp", JsonUtility.ToJson(Saved, true));
             if (File.Exists(FilePath)) File.Replace(FilePath + ".tmp", FilePath, FilePath + ".bak");
             else File.Move(FilePath + ".tmp", FilePath);

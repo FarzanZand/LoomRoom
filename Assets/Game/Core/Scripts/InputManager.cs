@@ -49,6 +49,7 @@ public class InputManager : Singleton<InputManager>
     public event Action DebugMoodPreviewRequested;
     public event Action DebugPixelLightingToggled;
     public event Action DebugGodModeToggled;
+    public event Action DebugScreenFilterCycled;
 
     public PlayerInputActions Actions => actions;
 
@@ -100,6 +101,7 @@ public class InputManager : Singleton<InputManager>
         // Look comparison, so it works anywhere, cutscenes included.
         actions.Dev.TogglePixelLighting.performed += _ => DebugPixelLightingToggled?.Invoke();
         actions.Dev.ToggleGodMode.performed += _ => DebugGodModeToggled?.Invoke();
+        actions.Dev.CycleScreenFilter.performed += _ => DebugScreenFilterCycled?.Invoke();
     }
 
     void Bind(InputAction move, InputAction look, InputAction jump, InputAction sprint, InputAction crouch,

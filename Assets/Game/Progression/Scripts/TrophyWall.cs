@@ -23,7 +23,7 @@ public class TrophyWall : MonoBehaviour, IInteractable
     [Tooltip("The faint outline an empty mount shows (a transparent unlit material).")] public Material outlineMaterial;
     [Min(.1f), Tooltip("A trophy's longest side, in room units (the room is ~22 units to the metre).")] public float trophySize = 7f;
     [Tooltip("Long trophies (swords, maces, knives) hang at this angle.")] public float longTilt = 45f;
-    [Tooltip("How far out from the mount (the plaque's front is at 0.7) a trophy's back rests.")] public float restOffset = 1f;
+    [Tooltip("How far in front of the mount's face (its backing) a trophy's back rests.")] public float restGap = .3f;
     [Tooltip("SFX Library key played as the trophies go up.")] public string hangKey = "trophyHang";
     public AudioClip hangClip;
 
@@ -53,10 +53,21 @@ public class TrophyWall : MonoBehaviour, IInteractable
 
     void Start()
     {
-        if (ProgressionManager.HasInstance) ProgressionManager.Instance.MetaChanged += Refresh;
+        if (ProgressionManager.HasInstance)
+        {
+            ProgressionManager.Instance.MetaChanged += Refresh;
+            ProgressionManager.Instance.FlagChanged += OnFlag;
+        }
         Refresh();
     }
-    void OnDestroy() { if (ProgressionManager.HasInstance) ProgressionManager.Instance.MetaChanged -= Refresh; }
+    void OnDestroy()
+    {
+        if (!ProgressionManager.HasInstance) return;
+        ProgressionManager.Instance.MetaChanged -= Refresh;
+        ProgressionManager.Instance.FlagChanged -= OnFlag;
+    }
+    // A save loaded after this Start sets its trophy flags without MetaChanged: hang them as they come in.
+    void OnFlag(string key, int value) { if (key.StartsWith(ProgressionManager.TrophyPrefix)) Refresh(); }
 
     public void Refresh()
     {
@@ -113,22 +124,55 @@ public class TrophyWall : MonoBehaviour, IInteractable
             go.transform.localRotation = Quaternion.Euler(0, 0, longTilt) * go.transform.localRotation;
             bounds = Measure(renderers);
         }
+        // Its front to the room: a shield's handle or a buckle's strap is on its back, sparse and reaching further
+        // than the face, so the bulk of its surface lies toward the front. Turned round when that is the wall's side
+        // (a shield hung showing its handle).
+        if (anchor.parent != null && FrontAway(renderers, bounds.Value.center, anchor.parent.forward))
+        {
+            go.transform.RotateAround(bounds.Value.center, anchor.parent.up, 180f);
+            bounds = Measure(renderers);
+        }
         // Thick things (rings) stand out of the wall toward the viewer and look bigger, so their depth counts too.
         size = bounds.Value.size;
         float across = Mathf.Max(size.x, size.y) + size.z;
         go.transform.localScale = Vector3.one * (trophySize / Mathf.Max(.0001f, across));
         go.transform.position += anchor.position - Measure(renderers).Value.center;
-        // Its back rests just off the plaque.
+        // Its back rests just off the mount's face (the backing behind it, however thick).
         if (anchor.parent != null)
         {
-            var b = Measure(renderers).Value;
             var outward = anchor.parent.forward;
-            float depth = Mathf.Abs(outward.x) * b.extents.x + Mathf.Abs(outward.y) * b.extents.y + Mathf.Abs(outward.z) * b.extents.z;
-            float back = Vector3.Dot(b.center - anchor.parent.position, outward) - depth;
-            go.transform.position += outward * (restOffset - back);
+            float back = Reach(Measure(renderers).Value, anchor.parent.position, -outward);
+            float face = 0f;
+            foreach (var r in anchor.parent.GetComponentsInChildren<Renderer>())
+                if (!r.transform.IsChildOf(go.transform)) face = Mathf.Max(face, Reach(r.bounds, anchor.parent.position, outward));
+            go.transform.position += outward * (face + restGap + back);
         }
         return go;
     }
+
+    // True when the area-weighted middle of the model's surface lies behind its bounds' middle, along `outward`.
+    static bool FrontAway(Renderer[] renderers, Vector3 centre, Vector3 outward)
+    {
+        float sum = 0f, weight = 0f;
+        foreach (var r in renderers)
+        {
+            var mf = r.GetComponent<MeshFilter>();
+            var mesh = mf != null ? mf.sharedMesh : null;
+            if (mesh == null || !mesh.isReadable) continue;
+            var v = mesh.vertices; var t = mesh.triangles; var m = r.transform.localToWorldMatrix;
+            for (int i = 0; i < t.Length; i += 3)
+            {
+                Vector3 a = m.MultiplyPoint3x4(v[t[i]]), b = m.MultiplyPoint3x4(v[t[i + 1]]), c = m.MultiplyPoint3x4(v[t[i + 2]]);
+                float area = Vector3.Cross(b - a, c - a).magnitude;
+                sum += Vector3.Dot((a + b + c) / 3f - centre, outward) * area; weight += area;
+            }
+        }
+        return weight > 0f && sum / weight < 0f;
+    }
+
+    // How far the bounds reach from `origin` along `dir`.
+    static float Reach(Bounds b, Vector3 origin, Vector3 dir) =>
+        Vector3.Dot(b.center - origin, dir) + Mathf.Abs(dir.x) * b.extents.x + Mathf.Abs(dir.y) * b.extents.y + Mathf.Abs(dir.z) * b.extents.z;
 
     static Bounds? Measure(Renderer[] renderers)
     {

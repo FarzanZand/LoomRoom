@@ -5,8 +5,8 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
-// Whole-screen presentation: per-player rendering effects, the retro pixel grid, pixel lighting, the colour split and
-// the black fade overlay. Scene lighting and moods belong to LightingManager.
+// Whole-screen presentation: per-player rendering effects, the retro pixel grid, the camera filter, pixel lighting, the
+// colour split and the black fade overlay. Scene lighting and moods belong to LightingManager.
 public class ScreenManager : Singleton<ScreenManager>
 {
     public Image fadeFullscreenImage;
@@ -26,6 +26,14 @@ public class ScreenManager : Singleton<ScreenManager>
     [FoldoutGroup("Retro pixel grid"), ShowInInspector, ReadOnly, Tooltip("Player's choice from the settings menu. -1 = use the authored values, 0 = off.")]
     public int UserPixelLines { get; private set; } = -1;
     const string PixelLinesPref = "pixel_lines";
+
+    [FoldoutGroup("Camera filter"), LabelText("Filter")]
+    [Tooltip("The whole screen's look. Standard is the game's own; the others are the looks below (Rendering/Filters), drawn after the world and its post-processing and under the UI. Switches at once in Play mode. Not saved as a player setting.")]
+    public ScreenFilter cameraFilter = ScreenFilter.Standard;
+    [FoldoutGroup("Camera filter"), LabelText("Looks"), Tooltip("One look per filter (Tools > LoomRoom > Rendering > Build Screen Filters). A filter without a look shows Standard.")]
+    public ScreenFilterLook[] filterLooks = new ScreenFilterLook[0];
+    [FoldoutGroup("Camera filter"), LabelText("F5 cycle"), Tooltip("Drag looks here: F5 in Play mode (Dev map, Editor and development builds) steps through Standard and these, in this order.")]
+    public ScreenFilterLook[] cycleLooks = new ScreenFilterLook[0];
 
     [FoldoutGroup("Pixel lighting"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLighting))]
     [Tooltip("The game's materials lit like pixel art (LoomRoom/Pixel Lit: light per texel, stepped into bands) instead of smooth URP lighting. No camera filter. F6 flips it in Play mode. The materials are listed on the library (Tools > LoomRoom > Pixel Look > Register Pixel Lighting Materials).")]
@@ -59,9 +67,16 @@ public class ScreenManager : Singleton<ScreenManager>
     static readonly int ColorLevelsId = Shader.PropertyToID("_RetroColorLevels");
     static readonly int DitherId      = Shader.PropertyToID("_RetroDither");
     static readonly int StrengthId    = Shader.PropertyToID("_RetroStrength");
+    static readonly int FilterOnId = Shader.PropertyToID("_RetroFilterOn"), BayerId = Shader.PropertyToID("_RetroBayer"),
+        DitherScaleId = Shader.PropertyToID("_RetroDitherScale"), BrightDitherId = Shader.PropertyToID("_RetroBrightDither"), LiftId = Shader.PropertyToID("_RetroLift"), ShadeId = Shader.PropertyToID("_RetroShade"), ColourModeId = Shader.PropertyToID("_RetroColourMode"),
+        GradeId = Shader.PropertyToID("_RetroGrade"), ShadowTintFxId = Shader.PropertyToID("_RetroShadowTint"),
+        LightTintFxId = Shader.PropertyToID("_RetroLightTint"), MonoDarkId = Shader.PropertyToID("_RetroMonoDark"),
+        MonoLightId = Shader.PropertyToID("_RetroMonoLight"), ScreenFxId = Shader.PropertyToID("_RetroScreenFx"), TapeId = Shader.PropertyToID("_RetroTape");
+    static readonly int[] PaletteIds = { Shader.PropertyToID("_RetroPalette0"), Shader.PropertyToID("_RetroPalette1"), Shader.PropertyToID("_RetroPalette2"), Shader.PropertyToID("_RetroPalette3") };
 
     bool originalAO, originalRetro, effectsInitialized;
     EffectLayer roomLayer, tableLayer, deathLayer;
+    Volume filterVolume;
     float deathWeight;
     float tableWeight; // 0 = room effects, 1 = table effects
     Coroutine fadeRoutine;
@@ -149,6 +164,12 @@ public class ScreenManager : Singleton<ScreenManager>
         roomLayer = new EffectLayer(transform, "Room screen effects", 10000);
         tableLayer = new EffectLayer(transform, "Table screen effects", 10001);
         deathLayer = new EffectLayer(transform, "Death screen effects", 10002);
+        // The filter's own profile sits over the room and table effects (whose values would otherwise win), under death.
+        filterVolume = new GameObject("Camera filter").AddComponent<Volume>();
+        filterVolume.transform.SetParent(transform, false);
+        filterVolume.isGlobal = true;
+        filterVolume.priority = 10001.5f;
+        filterVolume.enabled = false;
         UserPixelLines = PlayerPrefs.GetInt(PixelLinesPref, -1);
         tableWeight = TargetTableWeight;
         effectsInitialized = true;
@@ -160,13 +181,13 @@ public class ScreenManager : Singleton<ScreenManager>
     {
         pixelLightingAtStart = pixelLighting;
         ApplyPixelLighting();
-        if (InputManager.HasInstance) InputManager.Instance.DebugPixelLightingToggled += TogglePixelLighting;
+        if (InputManager.HasInstance) { InputManager.Instance.DebugPixelLightingToggled += TogglePixelLighting; InputManager.Instance.DebugScreenFilterCycled += CycleFilter; }
     }
 
     protected override void OnDestroy()
     {
         base.OnDestroy();
-        if (InputManager.HasInstance) InputManager.Instance.DebugPixelLightingToggled -= TogglePixelLighting;
+        if (InputManager.HasInstance) { InputManager.Instance.DebugPixelLightingToggled -= TogglePixelLighting; InputManager.Instance.DebugScreenFilterCycled -= CycleFilter; }
         // F6 switches the material assets themselves: put them back as the scene has it when Play ends.
         if (Application.isPlaying && pixelLighting != pixelLightingAtStart && pixelLookLibrary != null) pixelLookLibrary.SetPixelLighting(pixelLightingAtStart);
     }
@@ -220,6 +241,7 @@ public class ScreenManager : Singleton<ScreenManager>
         roomLayer.Destroy();
         tableLayer.Destroy();
         deathLayer.Destroy();
+        if (filterVolume != null) Destroy(filterVolume.gameObject);
         effectsInitialized = false;
     }
 
@@ -272,11 +294,88 @@ public class ScreenManager : Singleton<ScreenManager>
         float tableRetro = UsesRetro(table) ? t : 0f;
         var retro = tableRetro > roomRetro ? table : room;
         float strength = roomRetro + tableRetro;
+        float lines = PixelLinesFor(retro), levels = retro.colorBanding ? retro.colorLevels : 0, dither = retro.dither;
+
+        var look = FilterLook;
+        var profile = look != null ? look.profile : null;
+        filterVolume.enabled = profile != null;
+        if (filterVolume.sharedProfile != profile) filterVolume.sharedProfile = profile;
+        bool filtered = look != null && UsesPass(look);
+        Shader.SetGlobalFloat(FilterOnId, filtered ? 1f : 0f);
+        if (filtered)
+        {
+            if (look.pixelLines > 0) lines = look.pixelLines;
+            if (look.colourLevels > 0) levels = look.colourLevels;
+            dither = look.dither;
+            strength = 1f;   // a filter is whole on either player
+            ApplyFilterGlobals(look);
+        }
         SetFeature(retroScreenFeature, strength > .001f);
-        Shader.SetGlobalFloat(PixelLinesId, PixelLinesFor(retro));
-        Shader.SetGlobalFloat(ColorLevelsId, retro.colorBanding ? retro.colorLevels : 0);
-        Shader.SetGlobalFloat(DitherId, retro.dither);
+        Shader.SetGlobalFloat(PixelLinesId, lines);
+        Shader.SetGlobalFloat(ColorLevelsId, levels);
+        Shader.SetGlobalFloat(DitherId, dither);
         Shader.SetGlobalFloat(StrengthId, strength);
+    }
+
+    // ── Camera filter ─────────────────────────────────────────────────
+
+    ScreenFilterLook FilterLook
+    {
+        get
+        {
+            if (cameraFilter == ScreenFilter.Standard || filterLooks == null) return null;
+            foreach (var look in filterLooks) if (look != null && look.filter == cameraFilter) return look;
+            return null;
+        }
+    }
+
+    // F5: Standard, then each look in the cycle list, then Standard again.
+    void CycleFilter()
+    {
+        var stops = new System.Collections.Generic.List<ScreenFilter> { ScreenFilter.Standard };
+        if (cycleLooks != null) foreach (var look in cycleLooks) if (look != null && !stops.Contains(look.filter)) stops.Add(look.filter);
+        int at = stops.IndexOf(cameraFilter);
+        cameraFilter = stops[(at + 1) % stops.Count];
+        if (cameraFilter != ScreenFilter.Standard && FilterLook == null && cycleLooks != null)
+            foreach (var look in cycleLooks) if (look != null && look.filter == cameraFilter) { filterLooks = AddLook(filterLooks, look); break; }
+        ApplyRenderingEffects();
+        AnnouncementUI.Show(cameraFilter.ToString(), "F5");
+    }
+
+    static ScreenFilterLook[] AddLook(ScreenFilterLook[] looks, ScreenFilterLook look)
+    {
+        var list = new System.Collections.Generic.List<ScreenFilterLook>(looks ?? new ScreenFilterLook[0]) { look };
+        return list.ToArray();
+    }
+
+    // Whether the look needs the Retro Screen pass (a look that is only a volume profile, like Ghost, does not).
+    static bool UsesPass(ScreenFilterLook l) => l.pixelLines > 0 || l.colourLevels > 0 || l.colour != ScreenFilterLook.ColourMode.Keep || l.curvature > 0
+        || l.scanlines > 0 || l.mask > 0 || l.colourBleed > 0 || l.wobble > 0 || l.vignette > 0 || l.grain > 0 || l.blackLift > 0 || l.sharpen > 0;
+
+    static void ApplyFilterGlobals(ScreenFilterLook l)
+    {
+        Shader.SetGlobalFloat(BayerId, l.ditherSize);
+        Shader.SetGlobalFloat(DitherScaleId, l.ditherScale);
+        Shader.SetGlobalFloat(BrightDitherId, l.ditherBrightness ? 1f : 0f);
+        Shader.SetGlobalFloat(LiftId, l.lift);
+        Shader.SetGlobalVector(ShadeId, new Vector4(l.ditherBand, l.blackLift, l.glowGrid, l.sharpen));
+        Shader.SetGlobalFloat(ColourModeId, (int)l.colour);
+        Shader.SetGlobalVector(GradeId, new Vector4(l.saturation, l.contrast, l.crush, l.keepRed));
+        Shader.SetGlobalVector(ShadowTintFxId, Tint(l.shadowTint));
+        Shader.SetGlobalVector(LightTintFxId, Tint(l.lightTint));
+        Shader.SetGlobalColor(MonoDarkId, l.monoDark);
+        Shader.SetGlobalColor(MonoLightId, l.monoLight);
+        for (int i = 0; i < PaletteIds.Length; i++)
+            Shader.SetGlobalColor(PaletteIds[i], l.palette != null && l.palette.Length > 0 ? l.palette[Mathf.Min(i, l.palette.Length - 1)] : Color.grey);
+        Shader.SetGlobalVector(ScreenFxId, new Vector4(l.curvature, l.scanlines, l.mask, l.scanlineCount));
+        Shader.SetGlobalVector(TapeId, new Vector4(l.colourBleed, l.wobble, l.vignette, l.grain));
+    }
+
+    // A tint as a multiplier that keeps brightness (its colour over its own grey), with its alpha as the amount.
+    static Vector4 Tint(Color c)
+    {
+        float grey = Mathf.Max(.01f, c.r * .299f + c.g * .587f + c.b * .114f);
+        return new Vector4(c.r / grey, c.g / grey, c.b / grey, c.a);
     }
 
     bool UsesRetro(ScreenEffectSettings fx) => PixelLinesFor(fx) > 0 || fx.colorBanding;

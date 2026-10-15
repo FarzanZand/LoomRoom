@@ -37,8 +37,23 @@ tone = gaussian_filter(rng.normal(0, 1, (H // 8, W // 8)), 6); tone = zoom(tone,
 y, x = np.mgrid[0:H, 0:W]
 edge = np.minimum.reduce([x, y, W - 1 - x, H - 1 - y]).astype(float)
 shade = np.clip(1 - edge / 30, 0, 1) ** 2
-lum = .7 * fine + .7 * fibre + 1.4 * tone - 6 * shade
-rgb = np.clip(base[None, None, :] + lum[..., None] - shade[..., None] * np.array([0, 1, 3])[None, None, :], 0, 255)
+# More paper in it (the user, 2026-10-15): long fibres running across the sheet, the faint laid lines of hand-made
+# paper, a stronger mottle, a few pale foxing spots and a softer darkened rim; still near-white, never cream. Drawn
+# from its own generator so the other sprites below keep their random draws.
+prng = np.random.default_rng(77)
+streak = gaussian_filter(prng.normal(0, 1, (H, W)), (0.6, 9)); streak /= streak.std()
+cross = gaussian_filter(prng.normal(0, 1, (H, W)), (7, 0.6)); cross /= cross.std()
+laid = np.sin(y * 2 * np.pi / 3.2) * .55 + np.where((x % 46) < 2, -1.2, 0)
+mottle = gaussian_filter(prng.normal(0, 1, (H // 4, W // 4)), 3); mottle = zoom(mottle, (H / mottle.shape[0], W / mottle.shape[1]), order=3); mottle /= mottle.std()
+fox = np.zeros((H, W))
+for _ in range(14):
+    cy, cx, r = prng.integers(0, H), prng.integers(0, W), prng.uniform(1.5, 5)
+    fox += np.exp(-((y - cy) ** 2 + (x - cx) ** 2) / (2 * r * r)) * prng.uniform(.4, 1)
+shade = np.clip(1 - edge / 42, 0, 1) ** 1.6
+# Twice the grain of the first pass (QA, 2026-10-15: barely visible at 1080p); a little darker base so the light
+# fibres don't clip at white.
+lum = 3.4 * fine + 4.8 * streak + 2.4 * cross + 2 * fibre + 2.2 * laid + 4.5 * tone + 6.5 * mottle - 16 * shade - 14 * fox
+rgb = np.clip(base[None, None, :] - 11 + lum[..., None] - (shade[..., None] + fox[..., None] * .8) * np.array([0, 2, 5])[None, None, :], 0, 255)
 
 
 def wander(n):

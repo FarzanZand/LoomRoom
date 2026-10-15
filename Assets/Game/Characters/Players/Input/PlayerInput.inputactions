@@ -1234,6 +1234,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "CycleScreenFilter",
+                    "type": "Button",
+                    "id": "47627056-336c-44a4-bb8b-7996c0c907a0",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -1262,7 +1271,7 @@
                 {
                     "name": "",
                     "id": "fa5d7620-775f-4c40-8cd1-6d6e32f2c788",
-                    "path": "<Keyboard>/f5",
+                    "path": "<Keyboard>/f7",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -1289,6 +1298,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "ToggleGodMode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "4d1aa21a-940f-43bd-8e44-edf5d40326bc",
+                    "path": "<Keyboard>/f5",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "CycleScreenFilter",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

@@ -16,7 +16,11 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
     public GameObject selected;
     [Tooltip("Optional: a thin bar under the row, filled with the progress to the next rank (UIBar: Filled, or stretched in its frame).")]
     public Image progressFill;
+    [Tooltip("Optional: one marker per milestone of the skill's track on the character sheet (ProgressionManager > Meta progression): its unlock icon, or \"?\" in the mark, in colour when unlocked for this run, grey when not.")]
+    public Image[] milestoneIcons = new Image[0];
+    public TMP_Text[] milestoneMarks = new TMP_Text[0];
     [HideInInspector] public AdventureCharacterUI owner;
+    static readonly Color LockedTint = new(.42f, .42f, .42f, .55f);
 
     public void OnPointerExit(PointerEventData data) => Hide();
     public void OnDeselect(BaseEventData data) => Hide();
@@ -46,6 +50,12 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
             text.Append("Now: ").Append(now < .05f ? "none" : string.Format(def.bonusText, now.ToString("0.#")));
         }
         else text.Append(def.description);
+        // The milestones: what each unlocks and whether this run has it.
+        var meta = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+        var track = meta != null ? meta.Track(skill) : null;
+        if (track != null && track.milestones != null)
+            foreach (var m in track.milestones)
+                if (m != null) text.AppendLine().Append(m.value).Append(": ").Append(m.unlock).Append(meta.Unlocked(track, m, rank) ? "" : "  (not learned)");
         TooltipUI.Instance.ShowText(def.displayName, $"{AdventureSkills.Tier(rank).ToUpperInvariant()}  {rank} / 100", text.ToString());
     }
 
@@ -60,6 +70,31 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
         label.text = def != null ? def.displayName : skill.ToString();
         if (progressFill != null) { UIBar.Set(progressFill, character.SkillProgress(skill)); progressFill.color = TierColour(Mathf.Max(20, value)); }
         if (selected != null) selected.SetActive(false);
+        RefreshMilestones(value);
+    }
+
+    void RefreshMilestones(int rank)
+    {
+        if (milestoneIcons == null || milestoneIcons.Length == 0) return;
+        var meta = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+        var track = meta != null ? meta.Track(skill) : null;
+        int count = track != null && track.milestones != null ? track.milestones.Count : 0;
+        for (int i = 0; i < milestoneIcons.Length; i++)
+        {
+            var m = i < count ? track.milestones[i] : null;
+            var mark = milestoneMarks != null && i < milestoneMarks.Length ? milestoneMarks[i] : null;
+            if (milestoneIcons[i] != null) milestoneIcons[i].transform.parent.gameObject.SetActive(m != null);
+            if (m == null) continue;
+            bool learned = meta.Unlocked(track, m, rank);
+            var image = milestoneIcons[i];
+            if (image != null)
+            {
+                image.enabled = m.icon != null;
+                if (m.icon != null) image.sprite = m.icon;
+                image.color = learned ? Color.white : LockedTint;
+            }
+            if (mark != null) { mark.text = m.icon != null ? "" : "?"; mark.color = learned ? Color.white : LockedTint; }
+        }
     }
 
     // Barony-like progression of colours: grey for untrained through gold for Legendary.

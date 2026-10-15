@@ -45,8 +45,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   fadeFullscreenImage: {fileID: 0}
-  ambientOcclusionFeature: {fileID: 7833122117494664109, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
-  retroScreenFeature: {fileID: 6238588630179067837, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
   roomEffects:
     ambientOcclusion: 1
     filmGrain: 1
@@ -91,3 +89,54 @@ MonoBehaviour:
     saturation: 0
     colorFilter: {r: 1, g: 1, b: 1, a: 1}
     postExposure: 0
+  effectBlendSeconds: 1.5
+  pixelationEnabled: 1
+  pixelationStrength: 1
+  cameraFilter: 0
+  filterLooks:
+  - {fileID: 11400000, guid: d45636b708e9fc44a8d198f418904f6a, type: 2}
+  - {fileID: 11400000, guid: ed8e7cd98215e104c8509419bb2773a7, type: 2}
+  - {fileID: 11400000, guid: 58f017aeaefb91e45bdf7b6cf295495f, type: 2}
+  - {fileID: 11400000, guid: c62614b57561df44f98b02189b7023ec, type: 2}
+  - {fileID: 11400000, guid: 8b7232793a781944cbccd08753246187, type: 2}
+  - {fileID: 11400000, guid: 18b03854c179e4641981022b33ce8d33, type: 2}
+  - {fileID: 11400000, guid: 3312d881484e32d439a12885a3ac02f6, type: 2}
+  - {fileID: 11400000, guid: 7922cd4d3d0f8504b802ed8c76d34c1a, type: 2}
+  - {fileID: 11400000, guid: 4a58eca949c6c19449ffc31f240331b6, type: 2}
+  - {fileID: 11400000, guid: 2dcbec5829490f544be7acae88ba817d, type: 2}
+  - {fileID: 11400000, guid: cc067318e4694b046939aecadf15f9eb, type: 2}
+  - {fileID: 11400000, guid: 9ecc1368f26627b41b94c74d76b562c2, type: 2}
+  - {fileID: 11400000, guid: 9d3d1a27919399e4a94ff3775c981917, type: 2}
+  - {fileID: 11400000, guid: e7bb2ff821ee302479f3e46025127f6a, type: 2}
+  cycleLooks: []
+  pixelLighting: 1
+  pixelSize: 1
+  pixelLookLibrary: {fileID: 0}
+  deathEffects:
+    ambientOcclusion: 1
+    filmGrain: 0
+    grainType: 0
+    filmGrainIntensity: 0.2
+    filmGrainResponse: 0.8
+    pixelate: 0
+    pixelLines: 320
+    colorBanding: 0
+    colorLevels: 24
+    dither: 1
+    vignette: 1
+    vignetteIntensity: 0.5
+    vignetteSmoothness: 0.45
+    vignetteColor: {r: 0.12, g: 0, b: 0, a: 1}
+    chromaticAberration: 0
+    chromaticAberrationIntensity: 0.15
+    colorGrading: 1
+    contrast: 15
+    saturation: -100
+    colorFilter: {r: 0.9, g: 0.85, b: 0.85, a: 1}
+    postExposure: -0.2
+  ambientOcclusionFeature: {fileID: 7833122117494664109, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
+  retroScreenFeature: {fileID: 6238588630179067837, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
+  filmicVolume: {fileID: 0}
+  filmicBlendSeconds: 1.5
+  colourSplit: 1
+  colourSplitStrength: 0.7

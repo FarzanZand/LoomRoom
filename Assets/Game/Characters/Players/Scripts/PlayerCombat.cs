@@ -368,6 +368,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
 
     // The raised shield held against something that keeps pushing (the Dungeon Master's beam): the arms shake in the
     // BlockStrain state until it is switched off.
+    public Animator ArmsAnimator => armsAnimator;
     public void SetShieldStrain(bool on) => AnimatorHelper.SetBool(armsAnimator, blockStrainParam, on);
 
     // Shield up and facing where a hit came from (the same test TryBlock makes, without its stamina cost).
@@ -388,7 +389,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         // release playing through hits, including transitions into an attack.
         if (!IsAttacking) AnimatorHelper.SetTrigger(armsAnimator, trigger);
         // Character already plays Hurt on its own animator; only add what it doesn't.
-        if (info.Blocked || bodyAnimator != player.Animator) AnimatorHelper.SetTrigger(bodyAnimator, trigger);
+        // One body: the body is the arms' animator, which has had its say above.
+        if (bodyAnimator != armsAnimator && (info.Blocked || bodyAnimator != player.Animator)) AnimatorHelper.SetTrigger(bodyAnimator, trigger);
     }
 
     // ── Charge feel ───────────────────────────────────────────────────

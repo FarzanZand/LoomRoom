@@ -146,6 +146,7 @@ public partial class BossStageEncounter : MonoBehaviour
         started = true; Current = this;
         stageLights = dungeon.Stage != null ? dungeon.Stage.GetComponent<BossStageLights>() : null;
         DungeonMasterRemarks.Hold = true;
+        BossBlessing.Grant(false);
         FindDungeonMaster();
         ShutStair(true);
         if (fight != null && fight.music != null && AudioManager.HasInstance)
@@ -181,6 +182,8 @@ public partial class BossStageEncounter : MonoBehaviour
         if (brain != null) brain.Wary = true;
         boss.Died += OnBossDied;
         yield return Carry(boss, spot, fight != null ? fight.placeSeconds : 2f);
+        // Said once the boss is down and the room is dark, where it can be read.
+        BossBlessing.Announce();
         yield return new WaitForSeconds(fight != null ? fight.wakeDelay : 1f);
         if (boss == null || !boss.IsAlive) yield break;
 
@@ -422,6 +425,7 @@ public partial class BossStageEncounter : MonoBehaviour
     void Cleanup(bool won)
     {
         if (stageLights != null) stageLights.Calm();
+        BossBlessing.Clear();
         StopAllCoroutines(); beamRun = null;
         if (beam != null) beam.Stop();
         foreach (var v in volleys) if (v != null) v.Stop();

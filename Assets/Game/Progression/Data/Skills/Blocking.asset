@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AdventureSkillData
   skill: 2
   displayName: Blocking
-  icon: {fileID: 21300000, guid: 1486fd8fc298a864aaabd2d916137814, type: 3}
+  icon: {fileID: 21300000, guid: ad36d064dc484d64facfd26145025132, type: 3}
   associatedStat: 16
   description: Less stamina lost when you block.
   practice:
@@ -22,7 +22,7 @@ MonoBehaviour:
     experience: 16.6667
     text: Blocking an enemy's attack
   rankExperience: 100
-  masterExperienceMultiplier: 2.0
+  masterExperienceMultiplier: 2
   perEnemyLimit: 2
   bonusAt100: 0.5
   bonusText: -{0}% block stamina

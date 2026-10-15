@@ -74,10 +74,13 @@ public class Character : MonoBehaviour
         }
     }
 
+    // Whether a hit plays the hurt animation on this character's animator now (Player: not mid-swing on one body).
+    protected virtual bool PlaysHurt => true;
+
     protected virtual void OnDamaged(DamageInfo info)
     {
         LastDamage = info;
-        if (!info.Blocked && data != null && !IsEnemy)
+        if (!info.Blocked && data != null && !IsEnemy && PlaysHurt)
             TriggerAnimation(data.hurtTrigger);
 
         FX?.NotifyHurtReceived(info);

@@ -66,6 +66,8 @@ public class ConsumableUse
     {
         var anchor = equipment.GetAnchor(EquipmentSlot.RightHand);
         arms = anchor != null ? anchor.GetComponentInParent<Animator>() : null;
+        // The first-person hands may have no animator of their own (they copy the body's pose): use the player's.
+        if (arms == null && player.Combat != null) arms = player.Combat.ArmsAnimator;
         int type = item.AnimationOnUse == ItemUseAnimation.Drink ? 2 : 1;
         var clip = Clip(arms, type == 2 ? "Drink" : "Eat");
         // No arms to play it on (the room player): used at once.

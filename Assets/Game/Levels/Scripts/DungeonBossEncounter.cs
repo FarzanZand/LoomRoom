@@ -29,6 +29,7 @@ public class DungeonBossEncounter : MonoBehaviour
         if (brain != null) brain.StateChanged -= OnBossState;
         if (started && !finished)
         {
+            BossBlessing.Clear();
             if (BossBarUI.HasInstance) BossBarUI.Instance.Hide();
         }
     }
@@ -82,6 +83,7 @@ public class DungeonBossEncounter : MonoBehaviour
         MessageLog.Post($"The {boss.DisplayName} awakens!", MessageKind.Bad);
         if (NotificationUI.HasInstance) NotificationUI.Show(boss.DisplayName.ToUpperInvariant());
         if (brain != null) brain.Alert();
+        BossBlessing.Grant();
     }
 
     // The boss chest, a moment after the kill (the body is thrown first), facing the player.
@@ -97,6 +99,7 @@ public class DungeonBossEncounter : MonoBehaviour
     {
         if (finished) return;
         finished = true;
+        BossBlessing.Clear();
         if (BossBarUI.HasInstance) BossBarUI.Instance.Hide();
         if (exit != null) exit.Sealed = false;
         if (RunManager.HasInstance) RunManager.Instance.NoteBossSlain();

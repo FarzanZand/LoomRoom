@@ -133,7 +133,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         DashVelocity = Vector3.zero;
     }
 
-    void OnJump()          { if (IsControllable) jumpQueued = true; }
+    void OnJump()          { if (IsControllable && (player == null || player.PlayerData == null || player.PlayerData.canJump)) jumpQueued = true; }
     void OnSprintPressed() { if (IsControllable) sprintToggleRequested = true; }
     void OnCrouchPressed() { if (IsControllable) crouchToggleRequested = true; }
 
@@ -225,6 +225,8 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
 
     void ApplyMovement(Vector2 moveInput)
     {
+        if (player != null && player.Ghost) { GhostMove(moveInput); return; }
+        if (!Controller.enabled) Controller.enabled = true;
         var p = Movement;
         float speedMul = (player != null && player.Stats != null ? player.Stats.GetMultiplier(StatType.MoveSpeed) : 1f) * SpeedScale;
 
@@ -289,6 +291,23 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         }
         else AirborneTime = 0f;
         wasGrounded = grounded;
+    }
+
+    // Dev console ghost mode: fly along the view, through walls (the controller is off), with no gravity.
+    const float GhostSpeed = 6f, GhostSprintSpeed = 14f;
+
+    void GhostMove(Vector2 moveInput)
+    {
+        if (Controller.enabled) Controller.enabled = false;
+        var view = player.Look != null ? player.Look.PitchTransform : transform;
+        var dir = view.forward * moveInput.y + view.right * moveInput.x;
+        if (dir.sqrMagnitude > 1f) dir.Normalize();
+        IsMoving = dir.sqrMagnitude > .0001f;
+        Speed = IsSprinting ? GhostSprintSpeed : GhostSpeed;
+        transform.position += dir * Speed * Time.deltaTime;
+        movement = Vector3.zero;
+        knockbackVelocity = Vector3.zero;
+        jumpQueued = false;
     }
 
     void UpdateCrouchCollider()

@@ -27,7 +27,7 @@ public class DungeonShrine : MonoBehaviour, IInteractable
         foreach (var s in Order)
         {
             var i = player.Equipment.Get(s);
-            if (i == null || !i.IsGear || (i.rarity != ItemRarity.Plain && i.rarity != ItemRarity.Fine)) continue;
+            if (i == null || !i.IsGear || InventoryManager.NextRarity(i.rarity) == ItemRarity.Plain) continue;
             slot = s; item = i;
             return true;
         }
@@ -39,7 +39,7 @@ public class DungeonShrine : MonoBehaviour, IInteractable
     {
         var table = ItemPropertyTable.Current;
         if (table == null) return item;
-        var to = item.rarity == ItemRarity.Plain ? ItemRarity.Fine : ItemRarity.Masterwork;
+        var to = InventoryManager.NextRarity(item.rarity);
         int floor = TableManager.Loader != null && TableManager.Loader.Dungeon != null ? TableManager.Loader.Dungeon.FloorNumber : 1;
         var properties = table.Roll(item.BaseItem, to, floor, new System.Random());
         return properties.Length > 0 ? item.BaseItem.Rolled(to, properties) : item;

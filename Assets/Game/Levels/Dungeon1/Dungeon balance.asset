@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4486656d5770a27458587aa7a245946f, type: 3}
   m_Name: Dungeon balance
   m_EditorClassIdentifier: Assembly-CSharp::DungeonBalance
-  damageMultiplier: 1.5
+  damageMultiplier: 1
+  separateBossDamage: 0
+  bossDamageMultiplier: 1
   healthMultiplier: 1.25
   damagePerFloor: 2.5
   healthGrowthPerFloor: 0.2
-  armorPerFloor: 0.25
+  armorPerFloor: 1.25

@@ -162,6 +162,15 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
   cells, flips the top view upside down (bed, chair), swaps the side views (flamingo), stacks views, adds a roof that
   isn't there, or draws a view the wrong size. Overlay painting and reference per cell; fix with `relay.py`-style
   crop-and-place (flip/swap as needed), never project a sheet whose silhouettes don't match.
+- **`sheet_relayout.py` matches views by shape only**, so on a boxy prop whose front, back and sides have the same
+  shape it can swap them (the bedside drawer, 2026-10-15: drawers painted onto a side, the front got planks, the top
+  went into the back's cell). Check which painted view landed in each cell by its features (knobs, drawers, which
+  side the knobs stick out), and assign them by hand when needed.
+- **Plain colours group faces by the Synty original's swatch per triangle** (`SyntyFaceColours`, exact colour, one
+  part each), not by the grainy plain restyle or a rounded colour key: those split one white jar body into two parts,
+  so half its triangles took the lid's brown (diagonal leaks, 2026-10-15). `ModelColourProps` (Pot plant, Flamingo)
+  keep the room's own colour per part, because their thin parts learn grey or olive from the painting. A view the painter drew in another cell's box has
+  that box's proportions: prefer a well-proportioned painting mirrored (one side for the other) over stretching one.
 - **Diagnose view assignment with a colour-coded sheet** (each view a flat colour with a checker): build it, turntable
   it, and every face shows which view it really took. Do this as soon as projection looks wrong, instead of guessing.
 - Pick each texel's view by the **face's own geometric normal** (the plain cross product of its corners; verified
@@ -216,6 +225,12 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
   linen, cotton, walnut with grain turned along each wood piece's long side). Equal pixels everywhere, patterns
   continuous across faces.
 - Check the result from every side close up (bed ring render plus in-game capture) before saying it is done.
+- Material classes per triangle bleed across the model's seams (green on the mattress, white on the headboard): each
+  connected piece takes one class, its majority. Loose cloth pieces (folds, rolled strips, corner drapes) are dropped.
+- Cloth that hangs over an edge is unfolded, not box-projected per triangle (lines broke and bent at every curve):
+  `BedCloth.DuvetUv`, top laid flat, each side continued by its drop below the top.
+- Meshy meshes are stored tiny (the bed is scaled 4300x): cross products in mesh units fall under Unity's 1e-5
+  `normalized` cut-off and become zero normals (a black top). Scale to world units first.
 
 **Check every side, both ends**
 - A box prop has two ends: zooming only views 0, 2 and 8 of the turntable missed the chest's right end, which was a

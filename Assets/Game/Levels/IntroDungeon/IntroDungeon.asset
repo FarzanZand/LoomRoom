@@ -206,11 +206,6 @@ MonoBehaviour:
     item: {fileID: 0}
     count: 1
     loot: {fileID: 0}
-  - key: s
-    prefab: {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
-    item: {fileID: 0}
-    count: 1
-    loot: {fileID: 0}
   - key: b
     prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
     item: {fileID: 0}
@@ -373,6 +368,7 @@ MonoBehaviour:
     sleepChance: 0.2
     maxSleepingPacks: 3
     pits: 1
+    playerFallsInPits: 0
     pitFallDamage: 0.25
     sunkenFloors: 1
     archerLedges: 1

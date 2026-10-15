@@ -5,10 +5,10 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Builds the main menu's save pieces in the open Main Menu scene: the button column (Continue, New game, Load game,
-// Quit), the New game choice (Play the intro, Skip intro, Back), the save list (three slot rows, each with a Delete
-// button, and Back), the question asked before a save is deleted or replaced, and the co-op menu (your name, Host a
-// game, a friend's code and Join, a status line, Back), all in the menu's painted gold frames and Lilita One, and binds
-// them on MainMenuUI. Safe to run again: the panels are rebuilt, the buttons kept.
+// Quit), the New game choice (the player's name, Play the intro, Skip intro, Back), the save list (three slot rows, each
+// with a Delete button, and Back), the question asked before a save is deleted or replaced, and the co-op menu (your
+// name, Host a game, a friend's code and Join, a status line, Back), all in the menu's painted gold frames and Lilita
+// One, and binds them on MainMenuUI. Safe to run again: the panels are rebuilt, the buttons kept.
 public static class MainMenuSaves
 {
     const string Frame = "Assets/Game/UI/Main Menu/Textures/Menu button.png", FrameHover = "Assets/Game/UI/Main Menu/Textures/Menu button hover.png";
@@ -59,10 +59,34 @@ public static class MainMenuSaves
         var oldChoice = canvas.Find("New game choice"); if (oldChoice != null) Object.DestroyImmediate(oldChoice.gameObject);
         var choice = New("New game choice", canvas);
         choice.anchorMin = choice.anchorMax = Vector2.zero; choice.pivot = Vector2.zero;
-        choice.anchoredPosition = new Vector2(102f, 33.5f); choice.sizeDelta = new Vector2(900f, 380f);
+        choice.anchoredPosition = new Vector2(102f, 33.5f); choice.sizeDelta = new Vector2(900f, 456f);
         var choiceTitle = Text("Title", choice, Label(play), 34f, Gold, TextAlignmentOptions.BottomLeft);
-        Place(choiceTitle.rectTransform, 0f, 300f, 700f, 60f);
+        Place(choiceTitle.rectTransform, 0f, 376f, 700f, 60f);
         choiceTitle.text = "New game";
+        // The player's name, in the menu's frame: the new save is known by it.
+        var nameRect = New("Name", choice);
+        Place(nameRect, 0f, 304f, 440f, 61f);   // wide enough for the longest name (AdventureSave.NameLength)
+        var nameFrame = nameRect.gameObject.AddComponent<Image>();
+        nameFrame.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(Frame); nameFrame.type = Image.Type.Sliced; nameFrame.pixelsPerUnitMultiplier = 2f;
+        var nameArea = New("Text Area", nameRect);
+        Inset(nameArea, 26f, 8f, 26f, 8f);
+        nameArea.gameObject.AddComponent<RectMask2D>();
+        var nameText = Text("Text", nameArea, Label(play), 28f, Label(play).color, TextAlignmentOptions.Left);
+        Inset(nameText.rectTransform, 0f, 0f, 0f, 0f);
+        nameText.overflowMode = TextOverflowModes.Overflow;   // the field scrolls its text itself
+        nameText.text = "";
+        var namePlaceholder = Text("Placeholder", nameArea, Label(play), 28f, Dim, TextAlignmentOptions.Left);
+        Inset(namePlaceholder.rectTransform, 0f, 0f, 0f, 0f);
+        namePlaceholder.text = AdventureSave.DefaultName;   // the name a new game gets when none is typed
+        var nameInput = nameRect.gameObject.AddComponent<TMP_InputField>();
+        nameInput.textViewport = nameArea; nameInput.textComponent = nameText; nameInput.placeholder = namePlaceholder;
+        nameInput.characterLimit = AdventureSave.NameLength; nameInput.targetGraphic = nameFrame;
+        nameInput.customCaretColor = true; nameInput.caretColor = Gold; nameInput.caretWidth = 2; nameInput.selectionColor = new Color(Gold.r, Gold.g, Gold.b, .3f);
+        var hover = nameInput.spriteState; hover.highlightedSprite = hover.selectedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(FrameHover);
+        nameInput.transition = Selectable.Transition.SpriteSwap; nameInput.spriteState = hover;
+        var nameNote = Text("Name note", choice, Label(play), 22f, Label(play).color, TextAlignmentOptions.Left);
+        Place(nameNote.rectTransform, 464f, 304f, 480f, 61f);
+        nameNote.text = "Your save is called by this name.";
         var playIntro = Copy(play, choice, "Play the intro"); Label(playIntro).text = "Play the intro";
         Place((RectTransform)playIntro.transform, 0f, 228f, 326f, 61f);
         var skipIntro = Copy(play, choice, "Skip intro"); Label(skipIntro).text = "Skip intro";
@@ -182,6 +206,7 @@ public static class MainMenuSaves
 
         so.FindProperty("newGameButton").objectReferenceValue = newGame;
         so.FindProperty("newGamePanel").objectReferenceValue = choice.gameObject;
+        so.FindProperty("nameField").objectReferenceValue = nameInput;
         so.FindProperty("playIntroButton").objectReferenceValue = playIntro;
         so.FindProperty("skipIntroButton").objectReferenceValue = skipIntro;
         so.FindProperty("newGameBack").objectReferenceValue = choiceBack;

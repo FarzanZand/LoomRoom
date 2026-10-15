@@ -108,6 +108,7 @@ public class ShieldBash : MonoBehaviour
         phaseEnds = Time.time + .05f;   // the stall check waits this long for the dash to start moving
         lastPosition = transform.position;
         Streaks(true);
+        if (ProgressionManager.HasInstance) ProgressionManager.Instance.CompleteQuest(ProgressionManager.ShieldBashQuest);
     }
 
     void UpdateDash(CombatManager t)
@@ -166,7 +167,7 @@ public class ShieldBash : MonoBehaviour
         var col = target.GetComponent<Collider>();
         var info = new DamageInfo
         {
-            Amount = t.shieldBashDamage + Mathf.Max(0f, armor) * t.shieldBashDamagePerArmor + (player.Stats != null ? Mathf.Max(0f, player.Stats.GetFinal(StatType.ShieldBashDamage)) : 0f),
+            Amount = t.shieldBashDamage + Mathf.Max(0f, armor) * CombatManager.ArmorPerPoint * t.shieldBashDamagePerArmor + (player.Stats != null ? Mathf.Max(0f, player.Stats.GetFinal(StatType.ShieldBashDamage)) : 0f),
             Source = player,
             Weapon = player.Equipment != null ? player.Equipment.Get(EquipmentSlot.LeftHand) : null,
             HitPoint = col != null ? col.ClosestPoint(transform.position + Vector3.up * (chest.y - transform.position.y)) : chest,

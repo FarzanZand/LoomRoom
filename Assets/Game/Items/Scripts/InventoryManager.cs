@@ -32,21 +32,105 @@ public class InventoryManager : Singleton<InventoryManager>
     [Tooltip("The chime a chest plays when it opens, one per chest tier (DungeonContainer.stingAudio).")]
     public bool chestOpenChime;
 
+    [Header("Drops by source")]
+    [Title("Enemy kill"), InlineProperty, HideLabel, Tooltip("What an enemy drops when killed, in every biome (a loot profile with Own Drop Chances on, like a boss's reward, uses its own).")]
+    public SourceDrops enemyDrops = new() { goldChance = .3f, goldMin = 1, goldMax = 4, gearChance = .3f, recoveryChance = .16f };
+    [Title("Breakable"), InlineProperty, HideLabel, Tooltip("What a barrel, crate, urn or other breakable drops, in every biome.")]
+    public SourceDrops breakableDrops = new() { goldChance = .25f, goldMin = 1, goldMax = 2, gearChance = .05f, recoveryChance = .12f };
+    [Title("Chest"), InlineProperty, HideLabel, Tooltip("What a chest, bookshelf, grave or loot on the floor gives, in every biome (iron and gold chests roll it again, DungeonContainer.extraRolls).")]
+    public SourceDrops chestDrops = new() { goldChance = .6f, goldMin = 4, goldMax = 10, gearChance = 1f, recoveryChance = .7f };
+
+    // The drop chances of a kind of source (Floor counts as a chest).
+    public SourceDrops DropsFor(DungeonLootSource source) => source == DungeonLootSource.Enemy ? enemyDrops : source == DungeonLootSource.Barrel ? breakableDrops : chestDrops;
+
     [Header("Rarity")]
-    [Tooltip("The properties Fine and Masterwork gear can roll, their slots and their values by floor (Items/Data/Item Properties).")]
+    [Tooltip("The properties rolled gear can have, their slots and their values by floor (Items/Data/Item Properties).")]
     public ItemPropertyTable itemProperties;
+    [Tooltip("Gear rarities above Plain, worst first: properties, bonus on the main number, price, and chance by floor. Plain is whatever is left. Every loot source and merchant rolls from here.")]
+    [ListDrawerSettings(ShowFoldout = false, ListElementLabelName = "rarity")]
+    public List<RarityStep> rarities = new()
+    {
+        new RarityStep { rarity = ItemRarity.Fine, properties = new(1, 1), baseBonus = .2f, priceMultiplier = 1.6f, chance = .25f, chancePerFloor = 0f },
+        new RarityStep { rarity = ItemRarity.Superior, properties = new(2, 2), baseBonus = .4f, priceMultiplier = 2.5f, chance = .15f, chancePerFloor = 0f },
+        new RarityStep { rarity = ItemRarity.Masterwork, properties = new(3, 3), baseBonus = .6f, priceMultiplier = 4f, chance = .08f, chancePerFloor = 0f },
+    };
+    [Min(0), Tooltip("Times every rarity chance for a merchant's gear (a better pick than the floor's loot; its price follows the rarity).")] public float merchantRarity = 2f;
+
+    [ShowInInspector, ReadOnly, MultiLineProperty(4), LabelText("Chests by floor"), Tooltip("Rarity of chest gear on each floor, with the whole-game multiplier.")]
+    string RarityPreview
+    {
+        get
+        {
+            var lines = new List<string>();
+            float scale = rarityChanceMultiplier * (chestDrops != null ? chestDrops.rarityMultiplier : 1f);
+            for (int floor = 1; floor <= 4; floor++)
+            {
+                float rest = 1f; string parts = "";
+                for (int i = rarities.Count - 1; i >= 0; i--)
+                {
+                    var step = rarities[i];
+                    if (step == null) continue;
+                    float p = Mathf.Min(rest, step.ChanceOn(floor) * scale); rest -= p;
+                    parts = $"  {step.rarity} {p * 100f:0.#}%" + parts;
+                }
+                lines.Add($"Floor {floor}: Plain {rest * 100f:0.#}%" + parts);
+            }
+            return string.Join("\n", lines);
+        }
+    }
+
+    // A rarity's step, or null for Plain and the rarities that are not rolled (tomes, Relics, spoils).
+    public static RarityStep StepFor(ItemRarity rarity)
+    {
+        if (!HasInstance || Instance.rarities == null) return null;
+        foreach (var step in Instance.rarities) if (step != null && step.rarity == rarity) return step;
+        return null;
+    }
+
+    // The next rarity up from this one (the shrine's raise), or Plain when there is none.
+    public static ItemRarity NextRarity(ItemRarity rarity)
+    {
+        if (!HasInstance || Instance.rarities == null) return ItemRarity.Plain;
+        var list = Instance.rarities;
+        if (rarity == ItemRarity.Plain) return list.Count > 0 && list[0] != null ? list[0].rarity : ItemRarity.Plain;
+        for (int i = 0; i < list.Count - 1; i++) if (list[i] != null && list[i].rarity == rarity && list[i + 1] != null) return list[i + 1].rarity;
+        return ItemRarity.Plain;
+    }
+
+    // The rarity multiplier of a loot source (Drops by source).
+    public static float RaritySourceScale(DungeonLootSource source) => HasInstance && Instance.DropsFor(source) != null ? Instance.DropsFor(source).rarityMultiplier : 1f;
+
+    // One rarity for a piece of gear on a floor, the best step first; each chance is times scale (the whole-game
+    // multiplier is the caller's to include).
+    public ItemRarity RollRarity(System.Random random, int floor, float scale)
+    {
+        double roll = random.NextDouble();
+        float sum = 0f;
+        for (int i = rarities.Count - 1; i >= 0; i--)
+        {
+            var step = rarities[i];
+            if (step == null) continue;
+            sum += step.ChanceOn(floor) * scale;
+            if (roll < sum) return step.rarity;
+        }
+        return ItemRarity.Plain;
+    }
 
     [Header("Loot balance (whole game)")]
-    [Min(0), Tooltip("Times every chance of gear coming out Fine or Masterwork, in every loot source (loot profiles, the floor table, merchants, the shrine's roll is not affected). 1 = as set on each table.")]
+    [Min(0), Tooltip("Times every chance of gear coming out above Plain, in every loot source and merchant (the shrine's raise is not affected). 1 = as set under Rarity.")]
     public float rarityChanceMultiplier = 1f;
     [Min(0), Tooltip("Times every chance of an item dropping at all: gear and recovery chances of loot profiles, an enemy's drop chance and pool chances of hand-listed tables. 1 = as set on each table.")]
     public float dropChanceMultiplier = 1f;
+    [Min(0), Tooltip("Times the chance of an enemy dropping an item (gear and recovery from every biome's loot profile and hand-listed tables), on top of Drop Chance Multiplier. 0 = enemies drop no items (gold and spoils still drop). 1 = as set on each table.")]
+    public float enemyDropMultiplier = 1f;
     [Min(0), Tooltip("Times every amount of gold any loot gives. 1 = as set on each table.")]
     public float goldMultiplier = 1f;
 
     // The whole-game multipliers, safe to read with no manager (1 then).
     public static float RarityChanceScale => HasInstance ? Instance.rarityChanceMultiplier : 1f;
     public static float DropChanceScale => HasInstance ? Instance.dropChanceMultiplier : 1f;
+    // The drop multiplier for one loot source: the whole-game one, times the enemy one for kills.
+    public static float DropChanceFor(DungeonLootSource source) => DropChanceScale * (source == DungeonLootSource.Enemy && HasInstance ? Instance.enemyDropMultiplier : 1f);
     public static float GoldScale => HasInstance ? Instance.goldMultiplier : 1f;
 
     [Header("Drop")]

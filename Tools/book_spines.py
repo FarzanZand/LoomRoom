@@ -4,7 +4,12 @@ Every book face takes its own model colour (Synty's swatch: red, blue, green, br
 a dark outline where one book meets the next, a light top edge, two light bands across tall spines (like titles and
 bindings), and fine lines on the cream page edges. Wood faces of the insert are left as they are in <base.png>.
 
-    python Tools/book_spines.py <base.png> <gbuffer.bin> <out.png>
+    python Tools/book_spines.py <base.png> <gbuffer.bin> <out.png> [--books <ids.bin>]
+
+--books: one int32 per triangle naming the book it belongs to (triangles joined by shared corners). Each book's covers
+then take their own colour from a small palette of old bindings, for models whose books all share one swatch.
+Bands cross a spine across its length, so the spine of a book lying in a stack gets them too.
+--calm: for stacks seen from above, whose covers are large: fainter cloth grain, few stains, fine page lines.
 """
 import sys
 import numpy as np
@@ -15,6 +20,9 @@ sys.path.insert(0, __file__.rsplit('\\', 1)[0].rsplit('/', 1)[0])
 from prop_structure import segments, lum  # noqa: E402
 
 base_path, gb_path, out_path = sys.argv[1:4]
+books_path = sys.argv[sys.argv.index('--books') + 1] if '--books' in sys.argv else None
+calm = '--calm' in sys.argv
+GRAIN, STAIN, SCUFF, PAGE = (.10, .015, .01, .92) if calm else (.22, .07, .03, .82)
 B = np.asarray(Image.open(base_path).convert('RGB')).astype(np.float32) / 255
 H, W = B.shape[:2]
 g = np.fromfile(gb_path, dtype=np.float32).reshape(H, W, 12)[::-1]
@@ -42,6 +50,13 @@ for t_, (u_, _) in best.items():
     if best.get(u_, (None, 0))[0] == t_:          # mutual partners: one spine
         big = t_ if area[t_] >= area[u_] else u_
         own[tt == t_] = tri_col[big]
+if books_path:
+    book = np.fromfile(books_path, dtype=np.int32)
+    BINDINGS = np.array([[.46, .13, .10], [.16, .22, .42], [.17, .33, .21], [.58, .43, .16], [.34, .18, .32], [.40, .25, .14]])
+    for i, b_ in enumerate(np.unique(book)):
+        on = cov & np.isin(tri, np.nonzero(book == b_)[0])
+        cream_ = (own.min(2) > .45) & (own.max(2) - own.min(2) < .2)
+        own[on & ~cream_] = BINDINGS[i % len(BINDINGS)]
 lab, n = segments(cov, nrm, tri, np.round(own * 10) / 10)
 
 out = B.copy()
@@ -61,6 +76,12 @@ for s, sl in enumerate(ndimage.find_objects(lab + 1)):
     py = pos[sl][..., 1]
     y0, y1 = py[m].min(), py[m].max(); hgt = max(y1 - y0, 1e-4)
     t = (py - y0) / hgt
+    # Along the spine: up for a standing book, across for one lying down.
+    nm = np.median(nrm[sl][m], axis=0)
+    side = np.cross([0, 1, 0], nm); side /= max(np.linalg.norm(side), 1e-6)
+    ps = pos[sl] @ side
+    s0, s1 = ps[m].min(), ps[m].max()
+    along = (ps - s0) / max(s1 - s0, 1e-4) if (s1 - s0) > hgt * 1.3 else t
     # Outline only where this book meets something really different (another book, the shelf, the edge), never on
     # the seam between the two triangles of one spine.
     border = np.zeros_like(m)
@@ -79,27 +100,27 @@ for s, sl in enumerate(ndimage.find_objects(lab + 1)):
         if cream:
             # page edges: a darker line every other texel across the height
             ty = int(np.floor((py[y, x] - y0) / hgt * (m.sum() ** .5) * 1.0))
-            col = c * (.82 if ty % 2 else 1.0)
+            col = c * (PAGE if ty % 2 else 1.0)
         else:
             vertical = abs(nrm[sl][y, x, 1]) < .4
-            if vertical and m.sum() > 20 and (.16 < t[y, x] < .23 or .77 < t[y, x] < .84):
+            if vertical and m.sum() > 20 and (.16 < along[y, x] < .23 or .77 < along[y, x] < .84):
                 col = np.clip(c * 1.35 + np.array([.08, .06, 0]), 0, 1)        # binding bands
         if border[y, x]:
-            col = c * .55 if t[y, x] < .9 else np.clip(c * 1.25, 0, 1)        # outline; light top edge
+            col = c * .55 if t[y, x] < .9 or calm else np.clip(c * 1.25, 0, 1)        # outline; light top edge
         else:
             Y, X = y + sl[0].start, x + sl[1].start
             # Old, handled books: the cloth varies in small steps from texel to texel, in clumps (2 x 1), never smooth.
-            col = col * (1 + (hh(Y // 2, X, s, 1) - .5) * .22) * (1 + (hh(Y, X, s, 2) - .5) * .08)
+            col = col * (1 + (hh(Y // 2, X, s, 1) - .5) * (0 if calm and cream else GRAIN)) * (1 + (hh(Y, X, s, 2) - .5) * .08)
             # Dirt and grime gather toward the bottom of each spine and its shelf.
-            if t[y, x] < .3 and hh(Y // 2, X // 2, s, 3) < (.3 - t[y, x]) * 2.2:
+            if not calm and t[y, x] < .3 and hh(Y // 2, X // 2, s, 3) < (.3 - t[y, x]) * 2.2:
                 col = col * .72 + np.array([.05, .04, .03])
             # Faded, sun-bleached tops.
-            if t[y, x] > .8 and hh(Y, X // 2, s, 4) < .35:
+            if not calm and t[y, x] > .8 and hh(Y, X // 2, s, 4) < .35:
                 col = col * .85 + np.array([.07, .06, .05])
             # A few stains and scuffs per book, a couple of texels each.
-            if hh(Y // 2, X // 2, s, 5) < .07:
+            if hh(Y // 2, X // 2, s, 5) < STAIN:
                 col = col * .6
-            elif hh(Y, X, s, 6) < .03:
+            elif hh(Y, X, s, 6) < SCUFF:
                 col = np.clip(col * 1.25 + .05, 0, 1)
         # Grey dust and dirt over everything, a little.
         col = col * .9 + np.array([.04, .035, .03])

@@ -37,6 +37,11 @@ public class Player : Character
     public PlayerData        PlayerData => data as PlayerData;
 
     public bool IsActive => PlayerManager.HasInstance && PlayerManager.Instance.Active == this;
+    // Dev console ghost mode: flies through walls along the view, enemies don't see it (PlayerMotor, Perception).
+    public bool Ghost { get; set; }
+
+    // One body: the body's animator is the arms', which keep a swing playing through hits (PlayerCombat.OnDamaged).
+    protected override bool PlaysHurt => Combat == null || Combat.ArmsAnimator != Animator || !Combat.IsAttacking;
 
     // Starting items are applied once per play session even if the player is swapped
     // out and back in (the root gets SetActive toggled, which re-runs OnEnable).

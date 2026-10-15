@@ -282,25 +282,34 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     // Co-op (CoopWorld): asked before any hit lands. True means the network handles it (a guest's blow on a puppet
     // goes to the host; a blow on another player's stand-in goes to that player) and nothing happens here.
     public static Func<CharacterStats, DamageInfo, bool> NetworkIntercept;
+    // Damage this returns true for is ignored (the dev console's god mode). Null in normal play.
+    public static System.Func<CharacterStats, bool> Invulnerable;
+
+    // The boss arena's blessing (BossBlessing): a successful block stops all of a hit's damage, spells included.
+    public bool BlockBlessing { get; set; }
 
     public void TakeDamage(DamageInfo info)
     {
         if (!IsAlive) return;
+        if (Invulnerable != null && Invulnerable(this)) return;
         if (NetworkIntercept != null && NetworkIntercept(this, info)) return;
         info.Target = Character;
 
-        if (!info.Magic && blocker != null && blocker.TryBlock(ref info))
+        bool blessed = BlockBlessing;
+        if ((!info.Magic || blessed) && blocker != null && blocker.TryBlock(ref info))
         {
             info.Blocked = true;
 
         }
 
-        float armor = info.Magic ? 0 : ResolveStat(StatType.Armor, info.Blocked);
+        float armor = info.Magic ? 0 : ResolveStat(StatType.Armor, info.Blocked) * CombatManager.ArmorPerPoint;
         // Barony: armor comes off the effective share of the hit; the rest always lands. A block uses all of it.
         float effective = info.Blocked ? 1f : CombatManager.HasInstance ? CombatManager.Instance.armorEffectiveness : .75f;
         float actual  = Mathf.Max(0f, effective * info.Amount - armor) + (1f - effective) * info.Amount;
         // Legendary Blocking: nothing gets through a successful block.
         if (info.Blocked && adventurer != null && adventurer.BlockAbsorbsAll) actual = 0;
+        // The boss arena's blessing: the same, for every blocked hit.
+        if (info.Blocked && blessed) actual = 0;
         info.Amount   = actual;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
@@ -309,6 +318,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
         if (!IsAlive)
         {
+            BlockBlessing = false;
             Died?.Invoke();
             // Gear that heals on a kill (KillHeal).
             var killer = info.Source != null && info.Source != Character ? info.Source.Stats : null;

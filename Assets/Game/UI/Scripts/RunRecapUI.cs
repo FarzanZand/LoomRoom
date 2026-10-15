@@ -115,7 +115,9 @@ public class RunRecapUI : MonoBehaviour
         var t = s.tally;
         Clear(spoilsStrip, spoilsIconTemplate); Clear(killsStrip, skullTemplate);
         SetText(spoilsValue, "0"); SetText(killsValue, "0"); SetText(healthValue, "0"); SetText(totalValue, "0");
-        SetText(healthLine, $"Health slain  0 / {HealthPer}");
+        // The health line is gone from the recap (the user's call); the spoils it gives still count in the total.
+        if (healthLine != null) healthLine.gameObject.SetActive(false);
+        if (healthValue != null) healthValue.gameObject.SetActive(false);
         SetText(bankValue, t.before.ToString());
         SetText(helpLine, "");
         yield return Wait(.45f);
@@ -139,10 +141,7 @@ public class RunRecapUI : MonoBehaviour
             if (i < maxSkulls) yield return Wait(skullPopSeconds);
         }
         yield return Wait(.25f);
-        yield return CountUp(healthLine, 0, t.healthSlain, v => $"Health slain  {v:N0} / {HealthPer}");
-        SetText(healthValue, t.fromHealth.ToString());
-        Tick();
-        yield return Wait(.35f);
+        yield return Wait(.1f);
         yield return CountUp(totalValue, 0, t.total, v => v.ToString());
         if (t.sharedWith > 1) SetText(helpLine, $"Shared between {t.sharedWith}");
         if (t.toppedUp > 0) SetText(helpLine, $"+{t.toppedUp} from the Dungeon Master");
@@ -151,7 +150,6 @@ public class RunRecapUI : MonoBehaviour
         counting = null;
     }
     static ProgressionManager Meta => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
-    static int HealthPer => Meta != null ? Meta.healthPerSpoil : 50;
     static void SetText(TMP_Text text, string value) { if (text != null) text.text = value; }
     static object Wait(float seconds) => new WaitForSecondsRealtime(seconds);
     IEnumerator CountUp(TMP_Text text, int from, int to, System.Func<int, string> format)

@@ -17,16 +17,16 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   rarity: 5
-  description: A heap of bones, a skull and a full sack. Worth 10 at the tally.
+  description: Raw gems in their rock. Worth 10 at the tally.
   icon: {fileID: 21300000, guid: f5376dbd57eb91c45adb6c22331e445b, type: 3}
   iconSource:
     custom: 0
     model: {fileID: 0}
     outfit: 
-    turn: {x: 0, y: 0, z: 0}
+    turn: {x: -25, y: 30, z: 0}
     flip: 0
   tag: 
-  worldPrefab: {fileID: 1861639732731933039, guid: a5a708a03dec74542ae307a9c6846dd5, type: 3}
+  worldPrefab: {fileID: 2530244016208095397, guid: a5a708a03dec74542ae307a9c6846dd5, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 8
   maxStackSize: 5
