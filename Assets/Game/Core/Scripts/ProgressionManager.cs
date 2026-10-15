@@ -40,8 +40,9 @@ public partial class ProgressionManager : Singleton<ProgressionManager>
 
     public event Action<string, int> FlagChanged;
 
-    // The main menu's Skip intro (MainMenuUI): the next game scene starts as an ordinary morning, with the intro and
-    // the character sheet done (the flags After Character Sheet sets). The flags go into the save with the next write.
+    // New game > Skip intro on the main menu (MainMenuUI): the next game scene starts on the first morning, after the
+    // intro dungeon, with the character sheet and dice skipped too (the flags After Character Sheet sets); the player
+    // wakes in bed. The flags go into the save at once.
     public static bool SkipIntroRequested;
     // This launch skipped the intro: AdventureSave writes the flags at once, so a quit before anything else is saved
     // doesn't bring the intro back.

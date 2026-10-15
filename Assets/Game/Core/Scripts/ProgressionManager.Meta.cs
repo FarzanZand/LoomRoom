@@ -93,7 +93,7 @@ public partial class ProgressionManager
 
     // Story flags of the lesson; meta.* flags hold the state.
     public const string LedgerIntroFlag = "story.ledgerIntro", LedgerSaidFlag = "story.ledgerSaid", BlockingTaughtFlag = "story.blockingTaught", BashMountedFlag = "story.bashMounted";
-    const string SpoilsFlag = "meta.spoils", BoughtPrefix = "meta.bought.", TrophyPrefix = "meta.trophy.", PortraitFlag = "meta.portrait";
+    public const string SpoilsFlag = "meta.spoils", BoughtPrefix = "meta.bought.", TrophyPrefix = "meta.trophy.", PortraitFlag = "meta.portrait";
     // A trophy's state, kept in meta.trophy.<track>.<value>.
     public enum TrophyState { None = 0, Earned = 1, Carried = 2, Mounted = 3 }
 
