@@ -3,7 +3,8 @@ using TMPro;
 using UnityEngine;
 
 // The quest log on the HUD: the open quests (ProgressionManager > Quests), one line each under a title. A quest that is
-// done turns green and crossed out, stays a moment, then fades; the log hides when nothing is open. Authored in the scene
+// done turns green and crossed out, stays a moment, then fades; the log hides when nothing is open and while the inventory
+// is open. Authored in the scene
 // (Tools > LoomRoom > UI > Build Quest Log); this binds the title and clones the row template.
 public class QuestLogUI : MonoBehaviour
 {
@@ -85,8 +86,10 @@ public class QuestLogUI : MonoBehaviour
         }
         if (group != null)
         {
-            float target = rows.Count > 0 ? 1f : 0f;
-            group.alpha = Mathf.MoveTowards(group.alpha, target, Time.unscaledDeltaTime / fadeSeconds);
+            // Out of the way while the inventory is open: it sits where the character panel's title is.
+            bool inventory = GameManager.HasInstance && GameManager.Instance.State == GameState.Inventory;
+            float target = rows.Count > 0 && !inventory ? 1f : 0f;
+            group.alpha = inventory ? 0f : Mathf.MoveTowards(group.alpha, target, Time.unscaledDeltaTime / fadeSeconds);
         }
     }
 }
