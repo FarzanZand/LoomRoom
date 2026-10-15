@@ -43,7 +43,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     [SerializeField] TMP_Text tipTitle, tipBody;
     [Header("Look")]
     [SerializeField] Sprite bubbleFilled, bubbleOutline, bubbleDashed, portraitPlaceholder;
-    [SerializeField] Color ink = new(.17f, .15f, .14f), pen = new(.18f, .31f, .6f), faint = new(.47f, .45f, .42f), poor = new(.6f, .58f, .55f);
+    [SerializeField] Color ink = new(.17f, .15f, .14f), pen = new(.58f, .16f, .12f), faint = new(.47f, .45f, .42f), poor = new(.6f, .58f, .55f);
     [SerializeField, Min(.5f)] float feedbackSeconds = 3f;
 
     bool open;

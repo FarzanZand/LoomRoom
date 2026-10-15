@@ -186,7 +186,7 @@ public static partial class MetaProgressionSetup
         mat.SetInt("_ZWrite", 0);
         mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-        mat.SetColor("_BaseColor", new Color(.12f, .09f, .07f, .38f));
+        mat.SetColor("_BaseColor", new Color(.93f, .86f, .74f, .13f));   // a faint chalk mark on the wood backing
         AssetDatabase.CreateAsset(mat, path);
         return mat;
     }

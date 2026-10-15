@@ -23,7 +23,7 @@ public class TrophyWall : MonoBehaviour, IInteractable
     [Tooltip("The faint outline an empty mount shows (a transparent unlit material).")] public Material outlineMaterial;
     [Min(.1f), Tooltip("A trophy's longest side, in room units (the room is ~22 units to the metre).")] public float trophySize = 7f;
     [Tooltip("Long trophies (swords, maces, knives) hang at this angle.")] public float longTilt = 45f;
-    [Tooltip("How far out from the mount (the plaque's front is at 0.7) a trophy's back rests.")] public float restOffset = 1f;
+    [Tooltip("How far in front of the mount's face (its backing) a trophy's back rests.")] public float restGap = .3f;
     [Tooltip("SFX Library key played as the trophies go up.")] public string hangKey = "trophyHang";
     public AudioClip hangClip;
 
@@ -137,14 +137,15 @@ public class TrophyWall : MonoBehaviour, IInteractable
         float across = Mathf.Max(size.x, size.y) + size.z;
         go.transform.localScale = Vector3.one * (trophySize / Mathf.Max(.0001f, across));
         go.transform.position += anchor.position - Measure(renderers).Value.center;
-        // Its back rests just off the plaque.
+        // Its back rests just off the mount's face (the backing behind it, however thick).
         if (anchor.parent != null)
         {
-            var b = Measure(renderers).Value;
             var outward = anchor.parent.forward;
-            float depth = Mathf.Abs(outward.x) * b.extents.x + Mathf.Abs(outward.y) * b.extents.y + Mathf.Abs(outward.z) * b.extents.z;
-            float back = Vector3.Dot(b.center - anchor.parent.position, outward) - depth;
-            go.transform.position += outward * (restOffset - back);
+            float back = Reach(Measure(renderers).Value, anchor.parent.position, -outward);
+            float face = 0f;
+            foreach (var r in anchor.parent.GetComponentsInChildren<Renderer>())
+                if (!r.transform.IsChildOf(go.transform)) face = Mathf.Max(face, Reach(r.bounds, anchor.parent.position, outward));
+            go.transform.position += outward * (face + restGap + back);
         }
         return go;
     }
@@ -168,6 +169,10 @@ public class TrophyWall : MonoBehaviour, IInteractable
         }
         return weight > 0f && sum / weight < 0f;
     }
+
+    // How far the bounds reach from `origin` along `dir`.
+    static float Reach(Bounds b, Vector3 origin, Vector3 dir) =>
+        Vector3.Dot(b.center - origin, dir) + Mathf.Abs(dir.x) * b.extents.x + Mathf.Abs(dir.y) * b.extents.y + Mathf.Abs(dir.z) * b.extents.z;
 
     static Bounds? Measure(Renderer[] renderers)
     {

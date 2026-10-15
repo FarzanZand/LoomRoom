@@ -50,8 +50,10 @@ for _ in range(14):
     cy, cx, r = prng.integers(0, H), prng.integers(0, W), prng.uniform(1.5, 5)
     fox += np.exp(-((y - cy) ** 2 + (x - cx) ** 2) / (2 * r * r)) * prng.uniform(.4, 1)
 shade = np.clip(1 - edge / 42, 0, 1) ** 1.6
-lum = 1.8 * fine + 2.4 * streak + 1.2 * cross + 1 * fibre + 1.1 * laid + 3 * tone + 3.6 * mottle - 14 * shade - 12 * fox
-rgb = np.clip(base[None, None, :] - 6 + lum[..., None] - (shade[..., None] + fox[..., None] * .8) * np.array([0, 2, 5])[None, None, :], 0, 255)
+# Twice the grain of the first pass (QA, 2026-10-15: barely visible at 1080p); a little darker base so the light
+# fibres don't clip at white.
+lum = 3.4 * fine + 4.8 * streak + 2.4 * cross + 2 * fibre + 2.2 * laid + 4.5 * tone + 6.5 * mottle - 16 * shade - 14 * fox
+rgb = np.clip(base[None, None, :] - 11 + lum[..., None] - (shade[..., None] + fox[..., None] * .8) * np.array([0, 2, 5])[None, None, :], 0, 255)
 
 
 def wander(n):
