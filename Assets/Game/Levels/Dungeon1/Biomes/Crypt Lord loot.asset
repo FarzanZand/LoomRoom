@@ -15,11 +15,8 @@ MonoBehaviour:
   followFloorTiers: 0
   gearTiers: {x: 3, y: 3}
   upgradeChance: 0
-  honedChance: 0.5
-  honedTwiceChance: 0.4
-  fineChance: 0.3
-  masterworkChance: 0.1
   goldGrowthPerFloor: 0
+  ownDropChances: 1
   enemies:
     goldChance: 1
     goldMin: 40

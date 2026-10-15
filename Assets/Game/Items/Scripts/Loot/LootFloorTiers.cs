@@ -3,7 +3,7 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 
 // One row of a level's gear-by-floor table (TableLevelData.gearByFloor): from this floor on (until the next row), how
-// likely each gear tier is, how often a drop comes one tier better and how often it rolls Fine or Masterwork. Every loot profile that
+// likely each gear tier is and how often a drop comes one tier better (rarity is on InventoryManager > Rarity). Every loot profile that
 // follows the floor tiers (DungeonLootProfile.followFloorTiers) rolls its gear from here instead of its own range.
 [Serializable]
 public class LootFloorTiers
@@ -20,10 +20,6 @@ public class LootFloorTiers
     public float tier4;
     [Range(0, 1), Tooltip("Chance a gear drop comes one tier better than rolled.")]
     public float upgradeChance;
-    [Range(0, 1), Tooltip("Chance a gear drop is Fine: 1-2 rolled properties (ItemPropertyTable).")]
-    public float fineChance = .3f;
-    [Range(0, 1), Tooltip("Chance a gear drop is Masterwork: 3-4 rolled properties. Rolled before Fine.")]
-    public float masterworkChance = .1f;
 
     public string Label
     {

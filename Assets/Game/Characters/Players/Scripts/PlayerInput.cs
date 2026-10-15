@@ -1320,6 +1320,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""CycleScreenFilter"",
+                    ""type"": ""Button"",
+                    ""id"": ""47627056-336c-44a4-bb8b-7996c0c907a0"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -1348,7 +1357,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""fa5d7620-775f-4c40-8cd1-6d6e32f2c788"",
-                    ""path"": ""<Keyboard>/f5"",
+                    ""path"": ""<Keyboard>/f7"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -1375,6 +1384,17 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""ToggleGodMode"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""4d1aa21a-940f-43bd-8e44-edf5d40326bc"",
+                    ""path"": ""<Keyboard>/f5"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CycleScreenFilter"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1432,6 +1452,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Dev_PreviewSceneMood = m_Dev.FindAction("PreviewSceneMood", throwIfNotFound: true);
         m_Dev_TogglePixelLighting = m_Dev.FindAction("TogglePixelLighting", throwIfNotFound: true);
         m_Dev_ToggleGodMode = m_Dev.FindAction("ToggleGodMode", throwIfNotFound: true);
+        m_Dev_CycleScreenFilter = m_Dev.FindAction("CycleScreenFilter", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -2171,6 +2192,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Dev_PreviewSceneMood;
     private readonly InputAction m_Dev_TogglePixelLighting;
     private readonly InputAction m_Dev_ToggleGodMode;
+    private readonly InputAction m_Dev_CycleScreenFilter;
     /// <summary>
     /// Provides access to input actions defined in input action map "Dev".
     /// </summary>
@@ -2202,6 +2224,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Dev/ToggleGodMode".
         /// </summary>
         public InputAction @ToggleGodMode => m_Wrapper.m_Dev_ToggleGodMode;
+        /// <summary>
+        /// Provides access to the underlying input action "Dev/CycleScreenFilter".
+        /// </summary>
+        public InputAction @CycleScreenFilter => m_Wrapper.m_Dev_CycleScreenFilter;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -2243,6 +2269,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @ToggleGodMode.started += instance.OnToggleGodMode;
             @ToggleGodMode.performed += instance.OnToggleGodMode;
             @ToggleGodMode.canceled += instance.OnToggleGodMode;
+            @CycleScreenFilter.started += instance.OnCycleScreenFilter;
+            @CycleScreenFilter.performed += instance.OnCycleScreenFilter;
+            @CycleScreenFilter.canceled += instance.OnCycleScreenFilter;
         }
 
         /// <summary>
@@ -2269,6 +2298,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @ToggleGodMode.started -= instance.OnToggleGodMode;
             @ToggleGodMode.performed -= instance.OnToggleGodMode;
             @ToggleGodMode.canceled -= instance.OnToggleGodMode;
+            @CycleScreenFilter.started -= instance.OnCycleScreenFilter;
+            @CycleScreenFilter.performed -= instance.OnCycleScreenFilter;
+            @CycleScreenFilter.canceled -= instance.OnCycleScreenFilter;
         }
 
         /// <summary>
@@ -2620,5 +2652,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnToggleGodMode(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "CycleScreenFilter" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCycleScreenFilter(InputAction.CallbackContext context);
     }
 }

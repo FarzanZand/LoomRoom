@@ -15,22 +15,18 @@ MonoBehaviour:
   followFloorTiers: 1
   gearTiers: {x: 1, y: 2}
   upgradeChance: 0.1
-  honedChance: 0.12
-  honedTwiceChance: 0.2
-  fineChance: 0.3
-  masterworkChance: 0.1
   goldGrowthPerFloor: 0.15
   enemies:
     goldChance: 0.3
     goldMin: 1
     goldMax: 4
-    gearChance: 0.45000002
+    gearChance: 0.3
     recoveryChance: 0.16
   breakables:
     goldChance: 0.25
     goldMin: 1
     goldMax: 2
-    gearChance: 0.089999996
+    gearChance: 0.05
     recoveryChance: 0.12
   chests:
     goldChance: 0.6

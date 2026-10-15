@@ -95,9 +95,11 @@ public class UIManager : Singleton<UIManager>
     public static HudStyle CurrentHudStyle => HasInstance ? Instance.hudStyle : HudStyle.Rugged;
     [PropertyOrder(2), Tooltip("Slot fill and border of Plain gear and consumables: a faint white (names stay white).")] public Color plain = DefaultPlain;
     public static readonly Color DefaultPlain = new(.9f, .88f, .84f);
-    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Fine gear (1-2 rolled properties).")] public Color fine = DefaultFine;
-    public static readonly Color DefaultFine = new(.09f, .42f, .29f);
-    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Masterwork gear (3-4 rolled properties).")] public Color masterwork = DefaultMasterwork;
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Fine gear (blue, the first step above Plain).")] public Color fine = DefaultFine;
+    public static readonly Color DefaultFine = new(.12f, .3f, .64f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Superior gear (green, between Fine and Masterwork).")] public Color superior = DefaultSuperior;
+    public static readonly Color DefaultSuperior = new(.09f, .42f, .29f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Masterwork gear (bronze-gold, the best rolled step).")] public Color masterwork = DefaultMasterwork;
     public static readonly Color DefaultMasterwork = new(.52f, .34f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Relics (hand-made items).")] public Color relic = DefaultRelic;
     public static readonly Color DefaultRelic = new(.58f, .17f, .06f);
@@ -112,6 +114,7 @@ public class UIManager : Singleton<UIManager>
         {
             ItemRarity.Rare => ui != null ? ui.rare : DefaultRare,
             ItemRarity.Fine => ui != null ? ui.fine : DefaultFine,
+            ItemRarity.Superior => ui != null ? ui.superior : DefaultSuperior,
             ItemRarity.Masterwork => ui != null ? ui.masterwork : DefaultMasterwork,
             ItemRarity.Relic => ui != null ? ui.relic : DefaultRelic,
             ItemRarity.Spoils => ui != null ? ui.spoils : DefaultSpoils,

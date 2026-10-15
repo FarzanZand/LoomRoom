@@ -20,26 +20,28 @@ public class DungeonLootProfile : LootSource
     }
 
     [Title("Gear")]
-    [Tooltip("Gear tiers, upgrade and rarity chances come from the level's Gear By Floor table (Run tab) when it has a row for the floor. Off: always this profile's own settings below (a boss's reward).")]
+    [Tooltip("Gear tiers and the upgrade chance come from the level's Gear By Floor table (Run tab) when it has a row for the floor. Off: always this profile's own settings below (a boss's reward).")]
     public bool followFloorTiers = true;
     [MinMaxSlider(1, 4, true), Tooltip("Gear tiers that drop here when the level has no gear-by-floor row (or Follow Floor Tiers is off). 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal. The low end is most common on the biome's first floor, the high end on its last.")]
     public Vector2Int gearTiers = new(1, 1);
     [Range(0, 1), Tooltip("Chance a gear drop is one tier better than rolled: an early upgrade.")]
     public float upgradeChance = .1f;
-    [Range(0, 1), Tooltip("Chance a gear drop is Fine (1-2 rolled properties) when the level has no gear-by-floor row.")]
-    public float fineChance = .3f;
-    [Range(0, 1), Tooltip("Chance a gear drop is Masterwork (3-4 rolled properties) when the level has no gear-by-floor row.")]
-    public float masterworkChance = .1f;
     [Range(0, 1), Tooltip("Gold amounts grow by this fraction per floor beyond the first.")]
     public float goldGrowthPerFloor = .15f;
 
     [Title("Sources")]
-    public Rule enemies = new() { goldChance = .6f, goldMin = 2, goldMax = 6, gearChance = .04f, recoveryChance = .08f };
-    public Rule breakables = new() { goldChance = .5f, goldMin = 1, goldMax = 4, gearChance = .02f, recoveryChance = .06f };
-    [Tooltip("Chests, bookshelves, graves and loot placed on the floor.")]
+    [Tooltip("Off: enemy kills, breakables and chests drop by InventoryManager > Drops by source, the same in every biome. On: this profile's own chances below (a boss's reward).")]
+    public bool ownDropChances;
+    [ShowIf(nameof(ownDropChances))] public Rule enemies = new() { goldChance = .6f, goldMin = 2, goldMax = 6, gearChance = .04f, recoveryChance = .08f };
+    [ShowIf(nameof(ownDropChances))] public Rule breakables = new() { goldChance = .5f, goldMin = 1, goldMax = 4, gearChance = .02f, recoveryChance = .06f };
+    [ShowIf(nameof(ownDropChances)), Tooltip("Chests, bookshelves, graves and loot placed on the floor.")]
     public Rule chests = new() { goldChance = .6f, goldMin = 4, goldMax = 10, gearChance = .85f, recoveryChance = .7f };
 
-    Rule For(DungeonLootSource source) => source == DungeonLootSource.Enemy ? enemies : source == DungeonLootSource.Barrel ? breakables : chests;
+    Rule For(DungeonLootSource source)
+    {
+        if (!ownDropChances && InventoryManager.HasInstance) return InventoryManager.Instance.DropsFor(source);
+        return source == DungeonLootSource.Enemy ? enemies : source == DungeonLootSource.Barrel ? breakables : chests;
+    }
 
     public override int RollGold(System.Random random, int floor, DungeonLootSource source)
     {
@@ -55,7 +57,7 @@ public class DungeonLootProfile : LootSource
         var drops = new List<Drop>();
         var rule = For(source);
         if (random == null || rule == null) return drops;
-        if (random.NextDouble() < rule.gearChance * InventoryManager.DropChanceScale)
+        if (random.NextDouble() < rule.gearChance * InventoryManager.DropChanceFor(source))
         {
             var row = followFloorTiers ? FloorGear?.Invoke(floor) : null;
             int lowest = row != null ? row.LowestTier : gearTiers.x, highest = row != null ? row.HighestTier : gearTiers.y;
@@ -66,10 +68,10 @@ public class DungeonLootProfile : LootSource
             var gear = Pick(random, i => IsGear(i) && i.tier == tier || IsTome(i) && i.tier <= tier)
                 ?? Pick(random, i => IsGear(i) && i.tier >= lowest && i.tier <= highest || IsTome(i) && i.tier <= highest);
             if (gear != null && IsTome(gear)) { drops.Add(new Drop(gear, 1)); gear = null; }
-            if (gear != null) gear = RollRarity(gear, random, floor, row != null ? row.fineChance : fineChance, row != null ? row.masterworkChance : masterworkChance);
+            if (gear != null) gear = RollRarity(gear, random, floor, InventoryManager.RaritySourceScale(source));
             if (gear != null) drops.Add(new Drop(gear, 1));
         }
-        if (random.NextDouble() < rule.recoveryChance * InventoryManager.DropChanceScale)
+        if (random.NextDouble() < rule.recoveryChance * InventoryManager.DropChanceFor(source))
         {
             var floorRow = followFloorTiers ? FloorGear?.Invoke(floor) : null;
             int top = floorRow != null ? floorRow.HighestTier : gearTiers.y;
@@ -92,19 +94,16 @@ public class DungeonLootProfile : LootSource
         return max;
     }
 
-    // Plain gear comes out Masterwork or Fine by chance, with properties rolled for the floor (Relics are hand-made and stay as they are).
-    // boost: times the chances on top of the whole-game Rarity Chance Multiplier (a merchant's stock rolls at 2).
-    public static ItemData RollRarity(ItemData gear, System.Random random, int floor, float fine, float masterwork, float boost = 1f)
+    // Plain gear comes out Fine, Superior or Masterwork by the chances on InventoryManager > Rarity for the floor, with
+    // properties rolled for the floor (Relics are hand-made and stay as they are). sourceScale: the loot source's or the
+    // merchant's multiplier, on top of the whole-game Rarity Chance Multiplier.
+    public static ItemData RollRarity(ItemData gear, System.Random random, int floor, float sourceScale = 1f)
     {
         var table = ItemPropertyTable.Current;
-        if (gear == null || table == null || !gear.IsGear || gear.rarity != ItemRarity.Plain) return gear;
-        float scale = InventoryManager.RarityChanceScale * boost;
-        fine *= scale; masterwork *= scale;
-        double roll = random.NextDouble();
-        var rarity = roll < masterwork ? ItemRarity.Masterwork : roll < masterwork + fine ? ItemRarity.Fine : ItemRarity.Plain;
+        if (gear == null || table == null || !gear.IsGear || gear.rarity != ItemRarity.Plain || !InventoryManager.HasInstance) return gear;
+        var rarity = InventoryManager.Instance.RollRarity(random, Mathf.Max(1, floor), InventoryManager.RarityChanceScale * sourceScale);
         if (rarity == ItemRarity.Plain) return gear;
-        var properties = table.Roll(gear, rarity, Mathf.Max(1, floor), random);
-        return properties.Length > 0 ? gear.Rolled(rarity, properties) : gear;
+        return gear.Rolled(rarity, table.Roll(gear, rarity, Mathf.Max(1, floor), random));
     }
 
     static bool IsTome(ItemData i) => i.spell != null;

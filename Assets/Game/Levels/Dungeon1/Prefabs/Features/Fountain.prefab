@@ -214,11 +214,11 @@ MonoBehaviour:
     soundVolume: 0.9
   - label: Something stirs
     weight: 0.7
-    message: Something slithers out of the basin!
+    message: Something crawls out of the basin!
     kind: 4
     effects: []
     spawnEnemies:
-    - {fileID: 4124661246665639223, guid: cb8d1588cced3854db3a8f13b6a9bccb, type: 3}
+    - {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
     sound: {fileID: 0}
     soundVolume: 0.9
 --- !u!1 &5177725952202656524

@@ -39,9 +39,9 @@ public partial class ItemData : ScriptableObject
         var border = fill != null ? fill.transform.Find("Rarity border")?.GetComponent<UnityEngine.UI.Image>() : null;
         if (border != null) border.enabled = false;
     }
-    // The name with a Fine or Masterwork rarity in front, for text without colour (the message log): "Masterwork Iron Sword".
-    public string DisplayName => rarity == ItemRarity.Fine || rarity == ItemRarity.Masterwork ? $"{RarityName} {itemName}" : itemName;
-    public string RarityName => rarity switch { ItemRarity.Fine => "Fine", ItemRarity.Masterwork => "Masterwork", ItemRarity.Relic => "Relic", ItemRarity.Rare => "Rare", ItemRarity.Spoils => "Spoils", _ => "Plain" };
+    // The name with a rolled rarity in front, for text without colour (the message log): "Masterwork Iron Sword".
+    public string DisplayName => rarity == ItemRarity.Fine || rarity == ItemRarity.Superior || rarity == ItemRarity.Masterwork ? $"{RarityName} {itemName}" : itemName;
+    public string RarityName => rarity switch { ItemRarity.Fine => "Fine", ItemRarity.Superior => "Superior", ItemRarity.Masterwork => "Masterwork", ItemRarity.Relic => "Relic", ItemRarity.Rare => "Rare", ItemRarity.Spoils => "Spoils", _ => "Plain" };
     [TextArea] public string description;
     [HorizontalGroup("IconRow")]
     [Tooltip("Bag icon, sized to the item's footprint. Generated from the item's model (Icon Source) unless custom.")]
@@ -238,7 +238,7 @@ public partial class ItemData : ScriptableObject
     // The item's main number for the tooltip and its compare bars: a weapon's damage, a shield's or armour's armour.
     public bool TryMainStat(out string label, out float value, out string text)
     {
-        StatType? main = IsWeapon ? StatType.AttackDamage : (itemType == ItemType.Shield || itemType == ItemType.Equipment) && canBeEquipped && equipSlot != EquipmentSlot.Trinket1 && equipSlot != EquipmentSlot.Trinket2 ? StatType.Armor : null;
+        StatType? main = MainStatType;
         value = main.HasValue ? FlatBonus(this, main.Value) : 0f;
         label = main == StatType.AttackDamage ? "Damage" : itemType == ItemType.Shield ? "Armor when blocking" : "Armor";
         text = IsWeapon && damageSpread > 0 ? $"{Mathf.Max(1f, value - damageSpread):0}-{value + damageSpread:0}" : $"{value:0.#}";

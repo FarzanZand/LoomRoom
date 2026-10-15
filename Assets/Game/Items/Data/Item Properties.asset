@@ -12,11 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88b2df04323fc784e803acaa0283182d, type: 3}
   m_Name: Item Properties
   m_EditorClassIdentifier: Assembly-CSharp::ItemPropertyTable
-  fineCount: {x: 1, y: 2}
-  masterworkCount: {x: 3, y: 4}
   lowerChance: 0.3
-  fineValue: 1.6
-  masterworkValue: 4
   properties:
   - id: dmg
     enabled: 1
@@ -33,7 +29,7 @@ MonoBehaviour:
   - id: armour
     enabled: 1
     stat: 1
-    statPerPoint: 1
+    statPerPoint: 5
     slots: 124
     weight: 1
     byFloor:
@@ -45,7 +41,7 @@ MonoBehaviour:
   - id: block
     enabled: 1
     stat: 1
-    statPerPoint: 1
+    statPerPoint: 5
     slots: 2
     weight: 1
     byFloor:

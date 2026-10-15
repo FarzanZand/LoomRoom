@@ -277,6 +277,7 @@ MonoBehaviour:
   faction: 2
   description: Defaults for new enemies made from this base. Each enemy gets its
     own copy.
+  creatureKind: 0
   stats:
   - stat: 6
     baseValue: 1
@@ -295,7 +296,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 1
-    baseValue: 1
+    baseValue: 5
     min: 0
     max: 0
   audio:
@@ -421,4 +422,8 @@ MonoBehaviour:
       hitStopScale: 0.5
     pullAudio: {fileID: 0}
     fireAudio: {fileID: 0}
+  caster: 0
+  spells: []
+  closesIn: 0
+  spellGap: 4
   experience: 0

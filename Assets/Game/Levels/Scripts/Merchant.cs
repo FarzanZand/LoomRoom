@@ -25,8 +25,6 @@ public class Merchant : MonoBehaviour, IInteractable
     [Tooltip("Rolled as Chest rewards for the stock. The generator sets this from the level when empty.")]
     public LootSource stockTable;
     [Range(.5f, 3f)] public float priceMultiplier = 1.2f;
-    [Min(0), Tooltip("Times the floor's chances of gear coming out Fine or Masterwork, for the merchant's stock (a better pick than the floor's loot). Their price follows the rarity's value.")]
-    public float rarityChanceBoost = 2f;
     [Range(0f, .5f), Tooltip("Price increase per floor beyond the first.")]
     public float pricePerFloor = .1f;
     public bool buysItems = true;
@@ -135,13 +133,10 @@ public class Merchant : MonoBehaviour, IInteractable
                 gear.Add(tomes[rng.Next(tomes.Count)]);
             }
         }
-        // The merchant's gear rolls its own rarity, from the plain item, at Rarity Chance Boost times the floor's chances.
-        var row = LootSource.FloorGear?.Invoke(floorNumber);
-        var profile = stockTable as DungeonLootProfile;
-        float fine = row != null ? row.fineChance : profile != null ? profile.fineChance : .3f;
-        float masterwork = row != null ? row.masterworkChance : profile != null ? profile.masterworkChance : .1f;
+        // The merchant's gear rolls its own rarity, from the plain item, at InventoryManager's Merchant Rarity times the floor's chances.
+        float boost = InventoryManager.HasInstance ? InventoryManager.Instance.merchantRarity : 2f;
         foreach (var item in gear)
-            Add(item.IsGear ? DungeonLootProfile.RollRarity(item.BaseItem, rng, floorNumber, fine, masterwork, rarityChanceBoost) : item, 1);
+            Add(item.IsGear ? DungeonLootProfile.RollRarity(item.BaseItem, rng, floorNumber, boost) : item, 1);
     }
 
     void Add(ItemData item, int count)

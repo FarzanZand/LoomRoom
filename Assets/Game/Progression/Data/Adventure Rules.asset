@@ -41,7 +41,7 @@ MonoBehaviour:
   legendaryAttack: 5
   legendaryStamina: 20
   strengthAttack: 1
-  constitutionArmor: 0.25
+  constitutionArmor: 1.25
   constitutionHealth: 0
   intelligenceMana: 0
   intelligenceSpell: 0.035

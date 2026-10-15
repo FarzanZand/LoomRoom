@@ -2,12 +2,14 @@ using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
-// Variants of an item asset: a rarity with its rolled properties (Fine, Masterwork), on one runtime copy of the asset.
+// Variants of an item asset: a rarity with its rolled properties (Fine, Superior, Masterwork), on one runtime copy of the asset.
 // Each distinct variant is one shared object, so the bag, hotbar and equipment treat it like any other item. It is saved
 // as its id: "iron_sword" or "iron_sword~3:crit=7,speed=11".
 public partial class ItemData
 {
-    // The rolled properties of a Fine or Masterwork copy (empty on assets).
+    // The item's main number: a weapon's damage, a shield's or worn armour's armour (trinkets have none).
+    public StatType? MainStatType => IsWeapon ? StatType.AttackDamage : (itemType == ItemType.Shield || itemType == ItemType.Equipment) && canBeEquipped && equipSlot != EquipmentSlot.Trinket1 && equipSlot != EquipmentSlot.Trinket2 ? StatType.Armor : null;
+    // The rolled properties of a rolled copy (empty on assets).
     [System.NonSerialized] public RolledProperty[] rolls;
     // How many of statModifiers come from the asset; the rest are the rolled properties.
     [System.NonSerialized] int baseModifiers = -1;
@@ -40,10 +42,22 @@ public partial class ItemData
         copy.rolls = properties ?? System.Array.Empty<RolledProperty>();
         copy.saveId = key;
 
-        // Rolled properties join the item's stat modifiers after its own.
+        // The rarity's bonus on the main number (a weapon's damage, a shield's or armour's armour): +20% a step by default,
+        // whole numbers kept whole. Then rolled properties join the item's stat modifiers after its own.
         var table = ItemPropertyTable.Current;
+        var step = InventoryManager.StepFor(rarity);
         var modifiers = new List<StatModifierEntry>(copy.statModifiers ?? System.Array.Empty<StatModifierEntry>());
         copy.baseModifiers = modifiers.Count;
+        var main = copy.MainStatType;
+        if (step != null && main.HasValue && step.baseBonus > 0f)
+            for (int i = 0; i < modifiers.Count; i++)
+            {
+                var m = modifiers[i];
+                if (m == null || m.stat != main.Value || m.type != ModifierType.Flat) continue;
+                float raised = m.value * (1f + step.baseBonus);
+                bool whole = Mathf.Abs(m.value - Mathf.Round(m.value)) < .001f;
+                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = whole ? Mathf.Round(raised) : Mathf.Round(raised * 10f) / 10f };
+            }
         foreach (var roll in copy.rolls)
         {
             var def = table != null ? table.Find(roll.id) : null;
@@ -51,11 +65,11 @@ public partial class ItemData
             modifiers.Add(new StatModifierEntry { stat = def.stat, type = ModifierType.Flat, value = roll.value * def.statPerPoint });
         }
         copy.statModifiers = modifiers.ToArray();
-        if (rarity == ItemRarity.Fine) copy.value = Mathf.RoundToInt(copy.value * (table != null ? table.fineValue : 1.6f));
-        else if (rarity == ItemRarity.Masterwork) copy.value = Mathf.RoundToInt(copy.value * (table != null ? table.masterworkValue : 4f));
+        if (step != null) copy.value = Mathf.RoundToInt(copy.value * step.priceMultiplier);
 
         if (copy.rolls.Length > 0 && table == null) Debug.LogError($"[Items] No ItemPropertyTable (InventoryManager.itemProperties): {key} has no rolled stats.");
-        else variants[key] = copy;
+        // Without the InventoryManager a rolled rarity has no bonus or price yet: don't keep that copy.
+        else if (InventoryManager.HasInstance) variants[key] = copy;
         return copy;
     }
 

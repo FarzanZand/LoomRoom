@@ -150,7 +150,8 @@ public partial class ProgressionManager
     {
         if (t == null || m == null) return true;
         if (Trophy(t, m) == TrophyState.Mounted) return true;
-        return BlockingTaught && runRank >= m.value;
+        // The editor's Debug, Dungeon and Boss sessions skip the lesson, so the run's own ranks count there.
+        return (BlockingTaught || DebugDungeonSession.Active) && runRank >= m.value;
     }
     public bool Unlocked(AdventureSkill skill, int milestoneIndex, int runRank)
     {

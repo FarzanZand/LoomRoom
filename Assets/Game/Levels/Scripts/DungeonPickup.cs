@@ -36,6 +36,7 @@ public static class DungeonPickup
     {
         ItemRarity.Rare => "itemDropRare",
         ItemRarity.Fine => "itemDropFine",
+        ItemRarity.Superior => "itemDropSuperior",
         ItemRarity.Masterwork => "itemDropMasterwork",
         ItemRarity.Relic => "itemDropRelic",
         ItemRarity.Spoils => "itemDropSpoils",
@@ -45,8 +46,10 @@ public static class DungeonPickup
     static void DropSound(ItemData item, Vector3 at, float delay)
     {
         if (!AudioManager.HasInstance) return;
-        if (delay <= 0f) { AudioManager.Instance.PlayFirstSFX(at, DropKeyFor(item), DropKey); return; }
-        DOVirtual.DelayedCall(delay, () => { if (AudioManager.HasInstance) AudioManager.Instance.PlayFirstSFX(at, DropKeyFor(item), DropKey); });
+        // Superior has no sound of its own yet: it falls back to Fine's before the plain one.
+        string own = DropKeyFor(item), step = item != null && item.rarity == ItemRarity.Superior ? "itemDropFine" : DropKey;
+        if (delay <= 0f) { AudioManager.Instance.PlayFirstSFX(at, own, step, DropKey); return; }
+        DOVirtual.DelayedCall(delay, () => { if (AudioManager.HasInstance) AudioManager.Instance.PlayFirstSFX(at, own, step, DropKey); });
     }
 
     // From the source to where it settled, in an arc, one item after another.

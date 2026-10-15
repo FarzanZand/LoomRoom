@@ -18,4 +18,4 @@ MonoBehaviour:
   healthMultiplier: 1.25
   damagePerFloor: 2.5
   healthGrowthPerFloor: 0.2
-  armorPerFloor: 0.25
+  armorPerFloor: 1.25
