@@ -17,7 +17,10 @@ public class CoopGhost : MonoBehaviour
     Light glow;
     Player player;
     UnityEngine.Rendering.Volume look;
-    float lookFade, lookWeight;
+    UnityEngine.Rendering.VolumeProfile lookCopy;
+    UnityEngine.Rendering.Universal.Vignette vignette;
+    UnityEngine.Rendering.Universal.LensDistortion lens;
+    float lookFade, lookWeight, vignetteBase, lensBase;
 
     public static CoopGhost Begin(Player p, Color colour, float intensity, float range, float speed = 1f, UnityEngine.Rendering.VolumeProfile profile = null, float fade = .8f)
     {
@@ -53,8 +56,13 @@ public class CoopGhost : MonoBehaviour
             look = new GameObject("Ghost look").AddComponent<UnityEngine.Rendering.Volume>();
             look.isGlobal = true;
             look.priority = 500f;   // over the room's, the floor's and the screen effects' volumes
-            look.sharedProfile = profile;
+            // A copy of its own, so the edges can breathe without touching the asset.
+            lookCopy = Instantiate(profile);
+            for (int i = 0; i < lookCopy.components.Count; i++) lookCopy.components[i] = Instantiate(lookCopy.components[i]);
+            look.sharedProfile = lookCopy;
             look.weight = lookWeight = 0f;
+            if (lookCopy.TryGet(out vignette)) vignetteBase = vignette.intensity.value;
+            if (lookCopy.TryGet(out lens)) lensBase = lens.intensity.value;
         }
         lookFade = fade;
     }
@@ -62,9 +70,19 @@ public class CoopGhost : MonoBehaviour
     void Update()
     {
         if (look == null) return;
-        // In over the fade, then a slow breath so the view never settles.
+        // In over the fade; then only the edges breathe (the vignette and the bulge), slowly, so the middle stays still.
         lookWeight = lookFade > 0f ? Mathf.MoveTowards(lookWeight, 1f, Time.unscaledDeltaTime / lookFade) : 1f;
-        look.weight = lookWeight * (.88f + .12f * Mathf.Sin(Time.unscaledTime * 1.3f));
+        look.weight = lookWeight;
+        float breath = Mathf.Sin(Time.unscaledTime * 1.2f);
+        if (vignette != null) vignette.intensity.value = vignetteBase * (1f + .12f * breath);
+        if (lens != null) lens.intensity.value = lensBase * (1f + .35f * Mathf.Sin(Time.unscaledTime * .9f + 1f));
+    }
+
+    void DropLook()
+    {
+        if (look != null) Destroy(look.gameObject);
+        if (lookCopy != null) { foreach (var c in lookCopy.components) if (c != null) Destroy(c); Destroy(lookCopy); }
+        look = null; lookCopy = null; vignette = null; lens = null;
     }
 
     public void End()
@@ -76,7 +94,7 @@ public class CoopGhost : MonoBehaviour
         hidden.Clear();
         if (glow != null) Destroy(glow.gameObject);
         if (player != null && player.Motor != null) player.Motor.SpeedScale = 1f;
-        if (look != null) Destroy(look.gameObject);
+        DropLook();
         if (ScreenManager.HasInstance) ScreenManager.Instance.SetDeathEffect(0f);
         Destroy(this);
     }
@@ -84,7 +102,7 @@ public class CoopGhost : MonoBehaviour
     void OnDestroy()
     {
         if (Active && switchedOff.Count > 0) Active = false;
-        if (look != null) Destroy(look.gameObject);
+        DropLook();
         if (player != null && player.Motor != null) player.Motor.SpeedScale = 1f;
     }
 
