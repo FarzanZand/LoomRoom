@@ -62,10 +62,10 @@ public static class PlainUIStyle
             }
             if (PrefabUtility.IsPartOfPrefabInstance(image)) PrefabUtility.RecordPrefabInstancePropertyModifications(image);
         }
-        // Titles in the old grey pixel font turn gold, as the inventory's.
+        // Titles still in the old title grey (bold pixel font) turn gold, as the inventory's.
         foreach (var text in canvas.GetComponentsInChildren<TMPro.TextMeshProUGUI>(true))
         {
-            if (text.font == null || !text.font.name.StartsWith("PIXEARG") || !Similar(text.color, OldTitleGrey)) continue;
+            if (text.font == null || !text.font.name.StartsWith("PixelOperator-Bold") || !Similar(text.color, OldTitleGrey)) continue;
             Undo.RecordObject(text, "Plain UI style");
             text.color = TitleGold; titles++;
             if (PrefabUtility.IsPartOfPrefabInstance(text)) PrefabUtility.RecordPrefabInstancePropertyModifications(text);
