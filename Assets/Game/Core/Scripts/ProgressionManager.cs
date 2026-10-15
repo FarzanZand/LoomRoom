@@ -44,6 +44,8 @@ public partial class ProgressionManager : Singleton<ProgressionManager>
     // intro dungeon, with the character sheet and dice skipped too (the flags After Character Sheet sets); the player
     // wakes in bed. The flags go into the save at once.
     public static bool SkipIntroRequested;
+    // Domain reload is off: a skip asked for on the menu must not carry over to the next Play session.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetSkipIntro() => SkipIntroRequested = false;
     // This launch skipped the intro: AdventureSave writes the flags at once, so a quit before anything else is saved
     // doesn't bring the intro back.
     public bool IntroSkipped { get; private set; }
