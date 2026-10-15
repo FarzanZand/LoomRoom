@@ -84,7 +84,7 @@ public class StatModifierEntry
                 case StatType.CriticalChance: return $"{sign}{value * 100f:0.#}% critical chance";
                 case StatType.BackstabDamage: return $"{sign}{value * 100f:0.#}% backstab damage";
                 case StatType.LightRadius: return $"{sign}{value:0.#} m light radius";
-                case StatType.QuietSteps: return value >= 1f ? "Your steps make no noise" : $"Your steps are heard {value * 100f:0}% less far";
+                case StatType.QuietSteps: return value >= 1f ? "Silent steps" : $"{value * 100f:0}% quieter steps";
                 case StatType.SpellDamage: return $"{sign}{value * 100f:0.#}% spell damage";
                 case StatType.KillHeal: return $"Kills heal {value:0.#}";
                 case StatType.GoldFind: return $"{sign}{value * 100f:0.#}% gold found";
@@ -95,10 +95,10 @@ public class StatModifierEntry
                 case StatType.SwordsSkill: return $"{sign}{value:0} Swords";
                 case StatType.MacesSkill: return $"{sign}{value:0} Maces";
                 case StatType.BlockingSkill: return $"{sign}{value:0} Blocking";
-                case StatType.FireCircleOnHit: return $"{value * 100f:0.#}% chance on hit to cast Fire Circle";
+                case StatType.FireCircleOnHit: return $"{value * 100f:0.#}% Fire Circle on hit";
                 case StatType.MoveSpeed: return $"{sign}{value * 100f:0.#}% move speed";
                 case StatType.AttackSpeed: return $"Swings {Mathf.Abs(value) * 100f:0}% {(value < 0 ? "slower" : "faster")}";
-                case StatType.ManaRegen: return $"{sign}{value:0.#} mana a second";
+                case StatType.ManaRegen: return $"{sign}{value:0.#} mana/s";
                 case StatType.MaxHealth: return $"{sign}{value:0.#} health";
                 case StatType.MaxMana: return $"{sign}{value:0.#} mana";
                 case StatType.AttackDamage: return $"{sign}{value:0.#} damage";

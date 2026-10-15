@@ -19,7 +19,7 @@ public static class QuestLogSetup
         var old = hud.transform.Find("Quest log");
         if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
 
-        var title = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PIXEARG_ SDF.asset");
+        var title = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
         var body = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
 
         var root = new GameObject("Quest log", typeof(RectTransform), typeof(CanvasGroup), typeof(UnityEngine.UI.VerticalLayoutGroup), typeof(QuestLogUI));

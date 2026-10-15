@@ -546,8 +546,12 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             AnimatorHelper.SetBool(armsAnimator, blockHeldParam, false);
             return false;
         }
+        LastBlockTime = Time.time;
         return true;
     }
+
+    // When the last hit was blocked (Riposte, Swords 25).
+    public float LastBlockTime { get; private set; } = -10f;
 
     // ── Helpers ───────────────────────────────────────────────────────
 

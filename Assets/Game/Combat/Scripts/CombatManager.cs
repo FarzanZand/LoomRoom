@@ -486,8 +486,9 @@ public class CombatManager : Singleton<CombatManager>
         if (stealthPlayer == null) return;
         bool sneaking = stealthPlayer.Motor != null && stealthPlayer.Motor.IsCrouching;
         float skill = sneaking && stealthPlayer.TryGetComponent<AdventurerProgress>(out var progress) && progress.InRun ? progress.Bonus(AdventureSkill.Stealth) : 0;
-        close = (sneaking ? sneakCloseScale : unseenCloseScale) * Mathf.Clamp01(1 - skill);
-        sight = sneaking ? sneakSightScale * Mathf.Clamp01(1 - skill * .5f) : 1;
+        // Never quite unheard or unseen, however good the sneak.
+        close = (sneaking ? sneakCloseScale : unseenCloseScale) * Mathf.Clamp(1 - skill, .25f, 1f);
+        sight = sneaking ? sneakSightScale * Mathf.Clamp(1 - skill * .5f, .25f, 1f) : 1;
     }
     Transform stealthTarget;
     Player stealthPlayer;
@@ -503,8 +504,14 @@ public class CombatManager : Singleton<CombatManager>
             {
                 info.Backstab = true;
                 info.Amount *= backstabMultiplier * (1f + GearStat(info.Source, StatType.BackstabDamage));
-                // Legendary Stealth doubles backstabs.
-                if (info.Source != null && info.Source.TryGetComponent<AdventurerProgress>(out var progress) && progress.InRun && progress.Rank(AdventureSkill.Stealth) >= 100) info.Amount *= 2;
+                if (info.Source != null && info.Source.TryGetComponent<AdventurerProgress>(out var progress) && progress.InRun)
+                {
+                    // Stealth's second bonus: backstabs hit harder every rank. Legendary Stealth doubles them.
+                    info.Amount *= 1f + progress.Extra(AdventureSkill.Stealth);
+                    if (progress.Rank(AdventureSkill.Stealth) >= 100) info.Amount *= 2;
+                    // Ambush (Stealth 25): a backstab is a critical hit as well.
+                    if (criticalHitsEnabled && progress.FirstMilestone(AdventureSkill.Stealth)) { info.Amount *= critMultiplier; info.Critical = true; }
+                }
                 return;
             }
         }

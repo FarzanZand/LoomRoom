@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Stealth
   icon: {fileID: 21300000, guid: cd103f6bc8443aa4faf7649efe999363, type: 3}
   associatedStat: 15
-  description: Getting close without being noticed.
+  description: Getting close without being noticed, and backstabs.
   practice:
   - action: 9
     experience: 50
@@ -25,8 +25,11 @@ MonoBehaviour:
     experience: 20
     text: Sneaking up on enemies
   rankExperience: 100
-  masterExperienceMultiplier: 2.0
+  masterExperienceMultiplier: 2
   perEnemyLimit: 3
-  bonusAt100: 0.5
+  bonusAt100: 1.5
   bonusText: '{0}% harder to notice while sneaking'
+  extraAt100: 2
+  extraText: +{0}% backstab damage
+  extraFlat: 0
   legendaryText: Backstabs deal double damage.

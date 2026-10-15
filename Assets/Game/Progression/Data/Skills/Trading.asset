@@ -27,6 +27,9 @@ MonoBehaviour:
   rankExperience: 100
   masterExperienceMultiplier: 2
   perEnemyLimit: 0
-  bonusAt100: 0.5
-  bonusText: -{0}% prices
+  bonusAt100: 1
+  bonusText: -{0}% buying prices
+  extraAt100: 1.5
+  extraText: +{0}% when selling
+  extraFlat: 0
   legendaryText: Prices 10% lower.

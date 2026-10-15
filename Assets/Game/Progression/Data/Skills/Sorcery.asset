@@ -22,8 +22,11 @@ MonoBehaviour:
     experience: 25
     text: Hitting an enemy with Fireball
   rankExperience: 100
-  masterExperienceMultiplier: 2.0
+  masterExperienceMultiplier: 2
   perEnemyLimit: 0
-  bonusAt100: 0.6
+  bonusAt100: 1.5
   bonusText: +{0}% spell damage
+  extraAt100: 0.6
+  extraText: -{0}% cast time
+  extraFlat: 0
   legendaryText: Spells cast twice as fast and hit harder.

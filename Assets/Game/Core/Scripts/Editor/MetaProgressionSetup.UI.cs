@@ -91,7 +91,7 @@ public static partial class MetaProgressionSetup
         var paper = Img("Paper", root, Vector2.zero, new Vector2(1640, 900), MetaSprite("Paper"), Color.white);
         var p = paper.transform;
         var border = Img("Border", p, Vector2.zero, new Vector2(1580, 840), MetaSprite("Pen frame", new Vector4(3, 3, 3, 3)), new Color(Ink.r, Ink.g, Ink.b, .55f), Image.Type.Sliced);
-        var body = Font("PixelOperator"); var bold = Font("PixelOperator-Bold"); var title = Font("PixelOperator-Bold");   // one font everywhere (titles were PIXEARG_)
+        var body = Font("PixelOperator"); var bold = Font("PixelOperator-Bold"); var title = Font("PixelOperator-Bold");   // one font everywhere
 
         // You: portrait, name, attributes.
         var ring = Img("Portrait ring", p, new Vector2(-580, 230), new Vector2(260, 260), MetaSprite("Ring"), Color.white);
@@ -281,7 +281,7 @@ public static partial class MetaProgressionSetup
         foreach (var b in new[] { "New run", "Adventures", "Return to room" }) Move(b, -390);
         var tally = Rect("Tally", panel, Vector2.zero, new Vector2(780, 600));
         Undo.RegisterCreatedObjectUndo(tally.gameObject, "Build tally");
-        var body = Font("PixelOperator"); var bold = Font("PixelOperator-Bold"); var title = Font("PixelOperator-Bold");   // one font everywhere (titles were PIXEARG_)
+        var body = Font("PixelOperator"); var bold = Font("PixelOperator-Bold"); var title = Font("PixelOperator-Bold");   // one font everywhere
         var gold = new Color(.86f, .7f, .38f); var text = new Color(.9f, .88f, .84f); var dim = new Color(.6f, .64f, .68f);
         var slotSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Diablo/Plain slot grey.png");
         TMP_Text Label(string n, float y, string s, Color c, TMP_FontAsset f, float size, bool right = false) =>

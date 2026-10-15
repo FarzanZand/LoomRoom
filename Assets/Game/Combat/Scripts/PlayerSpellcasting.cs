@@ -161,6 +161,8 @@ public class PlayerSpellcasting : MonoBehaviour
             float before = player.Stats.CurrentHealth;
             player.Stats.Heal(Power(spell));
             progress?.PractiseHeal(player.Stats.CurrentHealth - before);
+            // Mending (Thaumaturgy 25): the heal keeps healing, half as much again over 4 seconds.
+            if (progress != null && progress.InRun && progress.FirstMilestone(AdventureSkill.Thaumaturgy)) StartCoroutine(Mend(Power(spell) * .5f, 4));
             // Left where the player stands: parented under the player its particles never started.
             if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation);
             if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
@@ -168,6 +170,17 @@ public class PlayerSpellcasting : MonoBehaviour
         else if (spell.groundArea) CastOnGround(spell);
         else if (spell.projectile != null) Launch(spell);
         Changed?.Invoke();
+    }
+
+    // A heal that lasts: the amount in even parts, one a second.
+    System.Collections.IEnumerator Mend(float amount, int seconds)
+    {
+        for (int i = 0; i < seconds; i++)
+        {
+            yield return new WaitForSeconds(1f);
+            if (player == null || !player.IsAlive) yield break;
+            player.Stats.Heal(amount / seconds);
+        }
     }
 
     void Launch(SpellDefinition spell)

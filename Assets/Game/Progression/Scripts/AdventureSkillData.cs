@@ -36,7 +36,17 @@ public class AdventureSkillData : ScriptableObject
     public float bonusAt100 = .5f;
     [Tooltip("How the continuous bonus reads in the sheet. {0} is the current percentage.")]
     public string bonusText = "+{0}% damage";
+    [Tooltip("A second bonus at rank 100, scaled by rank like the first (0.6 = 60%; with Extra Flat, 40 = +40).")]
+    public float extraAt100;
+    [Tooltip("How the second bonus reads in the sheet. {0} is its current value.")]
+    public string extraText;
+    [Tooltip("On: the second bonus is a plain amount (stamina), not a percentage.")]
+    public bool extraFlat;
     public string legendaryText;
+
+    // The second bonus at a rank, and as it is shown (a percentage, or a plain amount).
+    public float ExtraAt(int rank) => rank * .01f * extraAt100;
+    public string ExtraShown(float rank) => (extraFlat ? rank * .01f * extraAt100 : rank * extraAt100).ToString("0.#");
 
     public float ExperienceRequired(int rank) => Mathf.Max(1, rankExperience * Mathf.Lerp(1, Mathf.Max(1, masterExperienceMultiplier), Mathf.Clamp01(rank / 100f)));
 

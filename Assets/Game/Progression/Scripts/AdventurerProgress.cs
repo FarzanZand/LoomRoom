@@ -47,6 +47,10 @@ public class AdventurerProgress : MonoBehaviour
     public bool Legendary(AdventureSkill skill) => Rank(skill) >= 100;
     // The continuous bonus at the current rank (0.25 = +25%).
     public float Bonus(AdventureSkill skill) => Rank(skill) * .01f * (Definition(skill)?.bonusAt100 ?? 0);
+    // The skill's second bonus (cast time, blocked damage, backstabs, selling, max stamina).
+    public float Extra(AdventureSkill skill) => Definition(skill)?.ExtraAt(Rank(skill)) ?? 0;
+    // The skill's first milestone (Shield bash for Blocking, the 25 for the others): learned for this run.
+    public bool FirstMilestone(AdventureSkill skill) => ProgressionManager.HasInstance && ProgressionManager.Instance.Unlocked(skill, 0, Rank(skill));
     int GearRanks(AdventureSkill skill)
     {
         StatType? stat = skill switch { AdventureSkill.Swords => StatType.SwordsSkill, AdventureSkill.Maces => StatType.MacesSkill, AdventureSkill.Blocking => StatType.BlockingSkill, _ => null };
@@ -62,15 +66,27 @@ public class AdventurerProgress : MonoBehaviour
         damage *= 1 + Bonus(skill);
         if (Legendary(skill)) damage += rules != null ? rules.legendaryAttack : 5;
         if (heavy && skill == AdventureSkill.Swords && Legendary(skill)) damage *= 1.25f;
+        // Riposte (Swords 25): the first sword swing after a block hits half as hard again.
+        if (skill == AdventureSkill.Swords && player != null && player.Combat != null && FirstMilestone(AdventureSkill.Swords))
+        {
+            float blocked = player.Combat.LastBlockTime;
+            if (blocked > riposteUsed && Time.time - blocked <= RiposteWindow) { damage *= 1.5f; riposteUsed = blocked; }
+        }
         return damage;
     }
     // Legendary Maces: fully charged strikes stagger for twice as long.
     public float StaggerMultiplier(ItemData weapon) => AdventureSkills.ForWeapon(weapon) == AdventureSkill.Maces && Legendary(AdventureSkill.Maces) ? 2 : 1;
 
     public float BlockCost => Mathf.Max(.2f, 1 - Bonus(AdventureSkill.Blocking));
+    // Blocking's second bonus: less of a blocked hit gets through.
+    public float BlockedDamageMultiplier => Mathf.Clamp01(1 - Extra(AdventureSkill.Blocking));
+    // Sprint (Athletics 25): this run can sprint, though the table player can't otherwise.
+    public bool SprintUnlocked => FirstMilestone(AdventureSkill.Athletics);
+    const float RiposteWindow = 1.5f;
+    float riposteUsed = -1;
     // Legendary Blocking: a successful block takes no damage.
     public bool BlockAbsorbsAll => Legendary(AdventureSkill.Blocking);
-    public float SprintCost => Mathf.Max(.2f, 1 - Bonus(AdventureSkill.Athletics));
+    public float SprintCost => 1f;
 
     public float SpellPower(AdventureSkill school)
     {
@@ -79,10 +95,10 @@ public class AdventurerProgress : MonoBehaviour
         if (school == AdventureSkill.Thaumaturgy) intelligence += Mathf.Max(0, Attribute(StatType.Constitution)) * (rules != null ? rules.intelligenceSpell * .5f : .0175f);
         return (1 + Bonus(school)) * (1 + intelligence * (Legendary(school) ? 1.4f : 1));
     }
-    public float SpellCastTime(AdventureSkill school) => Legendary(school) ? .5f : 1 - .3f * Ranks[(int)school] * .01f;
+    public float SpellCastTime(AdventureSkill school) => Legendary(school) ? .5f : Mathf.Max(.5f, 1 - Extra(school));
 
     public float BuyPriceMultiplier => Mathf.Max(.5f, 1 - Bonus(AdventureSkill.Trading) - Charisma - (Legendary(AdventureSkill.Trading) ? .1f : 0));
-    public float SellPriceMultiplier => 1 + Bonus(AdventureSkill.Trading) * 1.5f + Charisma;
+    public float SellPriceMultiplier => 1 + Extra(AdventureSkill.Trading) + Charisma;
     float Charisma => rules != null ? Mathf.Clamp(Attribute(StatType.Charisma) * rules.charismaDiscountPerPoint, 0, rules.charismaDiscountCap) : 0;
 
     // ── Practising skills ──────────────────────────────────────────────────────
@@ -130,7 +146,24 @@ public class AdventurerProgress : MonoBehaviour
         if (hit.FromEffect || hit.Magic || hit.Target == null || !FactionRules.IsHostile(player.Faction, hit.Target.Faction)) return;
         if (hit.Amount <= 0 && !hit.Blocked) return;
         Practise(AdventureSkills.ForWeapon(hit.Weapon), hit.Target.IsAlive ? SkillAction.Hit : SkillAction.Kill, hit.Target);
+        if (hit.Heavy && hit.Target.IsAlive && AdventureSkills.ForWeapon(hit.Weapon) == AdventureSkill.Maces && FirstMilestone(AdventureSkill.Maces)) Crush(hit.Target);
         if (hit.Backstab) Practise(AdventureSkill.Stealth, SkillAction.Backstab, hit.Target);
+    }
+
+    // Crush (Maces 25): a heavy mace hit knocks up to CrushArmor off the target's armour for the rest of the fight, never
+    // below none, up to CrushStacks times.
+    const float CrushArmor = 10f;
+    const int CrushStacks = 5;
+    static readonly System.Collections.Generic.Dictionary<Character, int> crushed = new();
+    static readonly object crushSource = new();
+    static void Crush(Character target)
+    {
+        if (target.Stats == null) return;
+        crushed.TryGetValue(target, out int stacks);
+        if (stacks >= CrushStacks) return;
+        float off = Mathf.Min(CrushArmor, target.Stats.GetFinal(StatType.Armor));
+        crushed[target] = stacks + 1;
+        if (off > 0f) target.Stats.AddModifier(new StatModifier(StatType.Armor, -off, ModifierType.Flat, crushSource));
     }
 
     void OnHurt(DamageInfo hit)
@@ -195,6 +228,9 @@ public class AdventurerProgress : MonoBehaviour
         Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + (Level - 1) * rules.manaPerLevel);
         // Legendary Athletics: a deeper well of stamina.
         Add(StatType.MaxStamina, selectedClass.stamina - stats.GetBase(StatType.MaxStamina) + (Legendary(AdventureSkill.Athletics) ? rules.legendaryStamina : 0));
+        // Athletics: faster on your feet, and a little more stamina every rank.
+        if (Bonus(AdventureSkill.Athletics) > 0) Add(StatType.MoveSpeed, Bonus(AdventureSkill.Athletics), ModifierType.PercentAdd);
+        if (Extra(AdventureSkill.Athletics) > 0) Add(StatType.MaxStamina, Extra(AdventureSkill.Athletics));
         // The character sheet's attributes: each point above the base adds health, mana or damage.
         if (ProgressionManager.HasInstance && ProgressionManager.MetaActive)
         {

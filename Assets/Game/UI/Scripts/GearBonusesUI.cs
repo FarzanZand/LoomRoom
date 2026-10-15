@@ -20,6 +20,8 @@ public class GearBonusesUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     };
 
     readonly List<string> lines = new();
+    // The first number of a bonus line, with its sign and percent ("+20%", "14%", "1").
+    static readonly System.Text.RegularExpressions.Regex Number = new(@"([+\-]?\d+(?:\.\d+)?%?)");
     string shown;
     bool hovering;
 
@@ -58,7 +60,8 @@ public class GearBonusesUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     public void Refresh(Equipment gear)
     {
         Collect(gear, lines);
-        string line = lines.Count == 0 ? none : string.Join("   ", lines.GetRange(0, Mathf.Min(shownInLine, lines.Count))) + (lines.Count > shownInLine ? $"   +{lines.Count - shownInLine} more" : "");
+        // One bonus a line (the box holds two), the rest counted; hovering lists them all.
+        string line = lines.Count == 0 ? none : string.Join("\n", lines.GetRange(0, Mathf.Min(shownInLine, lines.Count))) + (lines.Count > shownInLine ? $"<color={ItemData.DimColor}>   +{lines.Count - shownInLine} more</color>" : "");
         if (line == shown) return;
         shown = line;
         if (text != null) text.text = line;
@@ -68,7 +71,9 @@ public class GearBonusesUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     void ShowTooltip()
     {
         if (!TooltipUI.HasInstance) return;
-        TooltipUI.Instance.ShowText("Gear bonuses", "FROM WHAT YOU WEAR", lines.Count == 0 ? none : string.Join("\n", lines));
+        var body = new System.Text.StringBuilder();
+        foreach (var l in lines) body.AppendLine(Number.Replace(l, $"<color={ItemData.GoodColor}>$1</color>", 1));
+        TooltipUI.Instance.ShowText("Gear bonuses", "", lines.Count == 0 ? none : body.ToString().TrimEnd());
     }
 
     public void OnPointerEnter(PointerEventData eventData) { hovering = true; ShowTooltip(); }

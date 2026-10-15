@@ -135,6 +135,10 @@ public class Merchant : MonoBehaviour, IInteractable
         }
         // The merchant's gear rolls its own rarity, from the plain item, at InventoryManager's Merchant Rarity times the floor's chances.
         float boost = InventoryManager.HasInstance ? InventoryManager.Instance.merchantRarity : 2f;
+        // Keen eye (Trading 25): Fine and Masterwork gear twice as often again.
+        var buyer = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        var trader = buyer != null ? buyer.GetComponent<AdventurerProgress>() : null;
+        if (trader != null && trader.FirstMilestone(AdventureSkill.Trading)) boost *= 2f;
         foreach (var item in gear)
             Add(item.IsGear ? DungeonLootProfile.RollRarity(item.BaseItem, rng, floorNumber, boost) : item, 1);
     }
