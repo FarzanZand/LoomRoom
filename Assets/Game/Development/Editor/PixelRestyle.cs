@@ -90,6 +90,7 @@ public static partial class PixelRestyle
             // atlas's emissive sheet, which baked stray glowing patches onto the DM's faces).
             if (mat != null && mat.HasProperty("_Enable_Emission") && mat.GetFloat("_Enable_Emission") < .5f) emissive = false;
             var t = mesh.GetTriangles(sub);
+            int firstTriangle = 0; for (int k = 0; k < sub; k++) firstTriangle += (int)mesh.GetIndexCount(k) / 3;
             for (int f = 0; f < t.Length; f += 3)
             {
                 int i0 = t[f], i1 = t[f + 1], i2 = t[f + 2];
@@ -137,7 +138,9 @@ public static partial class PixelRestyle
                             p = PaintPose[s0] * w1 + PaintPose[s1] * w2 + PaintPose[s2] * w3;
                             n = (PaintPoseNormals[s0] * w1 + PaintPoseNormals[s1] * w2 + PaintPoseNormals[s2] * w3).normalized;
                         }
-                        PaintBase = faceC;
+                        // Plain colours: the face's part, by its colour on the Synty original (PlainParts).
+                        PaintBase = PlainColours && PlainFaceColours != null ? PlainPart(PlainFaceColours[firstTriangle + f / 3]) : faceC;
+                        NotePlainColour(faceC);
                         // The face's own facing from its winding (the plain cross product is outward here, checked with a
                         // colour-coded sheet; smoothed normals made box sides lean toward the front view).
                         if (PaintFaceNormals && PaintPose == null) n = fn;

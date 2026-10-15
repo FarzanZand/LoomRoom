@@ -256,7 +256,9 @@ public static partial class PixelRestyle
                 // Room props: one bake first only to learn what the painter made of each of the model's colours.
                 if (PaintFaceNormals)
                 {
-                    Learned = new Dictionary<int, List<Color>>(); Expected = null;
+                    Learned = new Dictionary<int, List<Color>>(); Expected = null; PlainParts.Clear(); PartPlainSum.Clear();
+                    PlainFaceColours = PlainColours ? SyntyFaceColours(baseName, src.triangles.Length / 3) : null;
+                    ModelColours = PlainColours && System.Array.IndexOf(ModelColourProps, name.Substring(name.LastIndexOf('/') + 1)) >= 0;
                     AssetDatabase.DeleteAsset($"{folder}/{partName}.asset");
                     Build(src, srcMats, category, partName, aim, folder);
                     Expected = new Dictionary<int, Color>();
@@ -267,7 +269,10 @@ public static partial class PixelRestyle
                         for (int i = 0; i < l.Count; i++) { rr[i] = l[i].r; gg[i] = l[i].g; bb[i] = l[i].b; }
                         System.Array.Sort(rr); System.Array.Sort(gg); System.Array.Sort(bb); int h = l.Count / 2;
                         Expected[kv.Key] = new Color(rr[h], gg[h], bb[h], 1f);
+                        // ModelColourProps keep the room's own colour per part (see there).
+                        if (kv.Key >= PartKey && ModelColours) Expected[kv.Key] = PartColour(kv.Key - PartKey);
                     }
+                    if (PlainColours && PlainFaceColours != null) for (int i = 0; i < PlainParts.Count; i++) if (!Expected.ContainsKey(PartKey + i)) Expected[PartKey + i] = PartColour(i);
                     Learned = null;
                 }
                 for (int pass = 0; pass < 4; pass++)
@@ -282,7 +287,7 @@ public static partial class PixelRestyle
                     if (measured <= 0f || Mathf.Abs(measured / texelsPerUnit - 1f) < .05f) break;
                     aim *= texelsPerUnit / measured;
                 }
-                PaintSource = null; Expected = null;
+                PaintSource = null; Expected = null; PlainFaceColours = null; ModelColours = false;
                 if (built.mesh == null) { results.Add($"{src.name} failed"); continue; }
                 done[baseName] = built;
                 results.Add($"{partName} {measured:0}/m");
@@ -430,14 +435,74 @@ public static partial class PixelRestyle
     // Organic props (plants, flowers, a cake, laundry): no projection at all. Each face takes the colour the painter
     // gave that part of the model (Expected), varied a little per texel; creases still darken in Build.
     public static bool PlainColours;
+    // Plain colours: the model's parts, one per Synty swatch colour (only rounding apart: some real parts differ by
+    // less than 0.1, cream and white jugs). The painted colour is learned and looked up per part; the rounded colour
+    // key put faces of one part on either side of a key step and gave them two painted colours (diagonal splits and a
+    // lid's brown on a jar body, 2026-10-15).
+    static List<Color> PlainParts = new List<Color>();
+    // Plain colours: each triangle's colour on the Synty original (flat swatches), by triangle index. The plain
+    // restyle the bake starts from is grainy pixel art, and colours read from it scattered one part over several.
+    static Color[] PlainFaceColours;
+    // Plain-colour room props whose painting can't be read per part (thin necks and leaves: most samples are outline
+    // and shadow, the median came out grey-brown or olive): each part keeps the room's own colour instead.
+    public static readonly string[] ModelColourProps = { "Pot plant", "Flamingo" };
+    static bool ModelColours;
+    // Each part's colour on the plain restyle (the room's own materials, averaged over the part): the Synty atlas only
+    // tells which faces belong together (the room's flowers use a green material, the Synty prefab an olive one).
+    static Dictionary<int, Vector4> PartPlainSum = new Dictionary<int, Vector4>();
+    public static void NotePlainColour(Color plainColour)
+    {
+        if (Learned == null || !PlainColours || PlainFaceColours == null) return;
+        int part = PlainParts.IndexOf(PaintBase); if (part < 0) return;
+        PartPlainSum.TryGetValue(part, out var v); PartPlainSum[part] = v + new Vector4(plainColour.r, plainColour.g, plainColour.b, 1f);
+    }
+    static Color PartColour(int part) => PartPlainSum.TryGetValue(part, out var v) && v.w > 0 ? new Color(v.x / v.w, v.y / v.w, v.z / v.w, 1f) : PlainParts[part];
+    static Color[] SyntyFaceColours(string baseName, int triangles)
+    {
+        if (!SyntySource(baseName, out var sMesh, out var sMats) || sMesh == null || sMats == null || sMats.Length == 0) return null;
+        var st = sMesh.triangles; if (st.Length / 3 != triangles) return null;
+        var suv = new List<Vector2>(); sMesh.GetUVs(0, suv); if (suv.Count == 0) return null;
+        var cache = new Dictionary<Texture, Texture2D>(); var result = new Color[triangles];
+        for (int sub = 0, at = 0; sub < sMesh.subMeshCount; sub++)
+        {
+            var mat = sMats[Mathf.Min(sub, sMats.Length - 1)];
+            var pal = Palette(mat, "_BaseMap", "_Albedo_Map", "_MainTex", cache);
+            Color tint = mat != null && mat.HasProperty("_BaseColor") ? mat.GetColor("_BaseColor") : Color.white;
+            var t = sMesh.GetTriangles(sub);
+            for (int f = 0; f < t.Length; f += 3, at++)
+                result[at] = (pal != null ? Sample(pal, (suv[t[f]] + suv[t[f + 1]] + suv[t[f + 2]]) / 3f) : Color.white) * tint;
+        }
+        foreach (var c in cache.Values) Object.DestroyImmediate(c);
+        return result;
+    }
+    static Color PlainPart(Color c)
+    {
+        foreach (var p in PlainParts) if (Mathf.Abs(p.r - c.r) + Mathf.Abs(p.g - c.g) + Mathf.Abs(p.b - c.b) < .03f) return p;
+        PlainParts.Add(c); return c;
+    }
     // Diagnosis: every texel takes the most head-on view that sees it, no colour judgement (for colour-coded sheets).
     public static bool DebugSquarest;
+    // Diagnosis: plain-colour props show each face's own model colour (its part), not the painted colour.
+    public static bool DebugPlainBase;
     static Dictionary<int, Color> Expected;
+    const int PartKey = 1 << 20;
     static int ColourKey(Color c) => Mathf.RoundToInt(c.r * 7) * 64 + Mathf.RoundToInt(c.g * 7) * 8 + Mathf.RoundToInt(c.b * 7);
+
+    // How far a painted colour is from the colour wanted: hue and saturation (colour over its brightness) plus a
+    // little for brightness.
+    static float ColourScore(Color c, Color want)
+    {
+        float cl = c.grayscale, wl = want.grayscale;
+        Vector3 a = new Vector3(c.r, c.g, c.b) / (cl + .05f), b = new Vector3(want.r, want.g, want.b) / (wl + .05f);
+        return (a - b).magnitude + Mathf.Abs(Mathf.Log((cl + .04f) / (wl + .04f))) * .6f;
+    }
 
     static Color PickByColour(Vector3 pp, Vector3 pn, System.Func<int, Vector3, Color> sample, Vector3 probeAt, float rayLength, float rayStart, int mask)
     {
-        int key = ColourKey(PaintBase);
+        // Plain colours learn and look up the painted colour per part (rounded keys could put two faces of one part
+        // on either side of a step and give them two painted colours).
+        int part = PlainColours && PlainFaceColours != null ? PlainParts.IndexOf(PaintBase) : -1;
+        int key = part >= 0 ? PartKey + part : ColourKey(PaintBase);
         int squarest = -1; float squarestDot = DebugSquarest ? .2f : .6f;
         var seen = new List<(int v, float dot)>();
         for (int v = 0; v < PropViews.Length; v++)
@@ -464,22 +529,20 @@ public static partial class PixelRestyle
             float bd = float.MaxValue; want = PaintBase;
             foreach (var kv in Expected)
             {
-                var kc = new Color(kv.Key / 64 / 7f, kv.Key / 8 % 8 / 7f, kv.Key % 8 / 7f);
+                var kc = kv.Key >= PartKey ? PlainParts[kv.Key - PartKey] : new Color(kv.Key / 64 / 7f, kv.Key / 8 % 8 / 7f, kv.Key % 8 / 7f);
                 float d = Mathf.Abs(kc.r - PaintBase.r) + Mathf.Abs(kc.g - PaintBase.g) + Mathf.Abs(kc.b - PaintBase.b);
                 if (d < bd) { bd = d; want = kv.Value; }
             }
         }
-        float wl = want.grayscale;
+        if (PlainColours && DebugPlainBase) return PaintBase;
         if (PlainColours) seen.Clear();
         // The most head-on view wins; a view is only passed over when its colour is clearly not this part's (a knob
         // smear, the painter's outline, background grey), then the next most head-on one is tried.
         seen.Sort((x, y) => y.dot.CompareTo(x.dot));
         foreach (var (v, dot) in seen)
         {
-            var c = sample(v, pp); float cl = c.grayscale;
-            Vector3 a = new Vector3(c.r, c.g, c.b) / (cl + .05f), b = new Vector3(want.r, want.g, want.b) / (wl + .05f);
-            float score = (a - b).magnitude + Mathf.Abs(Mathf.Log((cl + .04f) / (wl + .04f))) * .6f;
-            if (score < .8f) return c;
+            var c = sample(v, pp);
+            if (ColourScore(c, want) < .8f) return c;
         }
         float bestScore = float.MaxValue; Color best = want;
         // Nothing fits: the expected colour, varied a little per texel so it isn't a flat patch.

@@ -30,15 +30,10 @@ public static class BedCloth
             cent[f] = Vector3.Scale((a + b + c) / 3f, scale);
             fnorm[f] = (n[t[f * 3]] + n[t[f * 3 + 1]] + n[t[f * 3 + 2]]).normalized;
         }
-        // Triangles too small to have a texel take the class of the nearest triangle that has one.
-        for (int f = 0; f < nt; f++)
-        {
-            if (cls[f] >= 0) continue;
-            float best = float.MaxValue; int bc = 3;
-            for (int o = 0; o < nt; o++) { if (cls[o] < 0) continue; float d = (cent[o] - cent[f]).sqrMagnitude; if (d < best) { best = d; bc = cls[o]; } }
-            cls[f] = bc;
-        }
-        // Edge neighbours (shared corner positions), then cloth triangles whose neighbours mostly disagree flip.
+        // Edge neighbours (shared corner positions) give the model's separate pieces: frame boards, the mattress, the
+        // duvet, the turned-down sheet, each pillow. The painting's colour per triangle bleeds across seams (green and
+        // wood on the mattress, white on the headboard), so each piece takes one class: the one most of its triangles
+        // have. A piece with no clear majority is the mattress block (its sides show under the sheet): sheet.
         var key = new Dictionary<(int, int, int), int>(); var vid = new int[v.Length];
         for (int i = 0; i < v.Length; i++) { var k = (Mathf.RoundToInt(v[i].x * 1e6f), Mathf.RoundToInt(v[i].y * 1e6f), Mathf.RoundToInt(v[i].z * 1e6f)); if (!key.TryGetValue(k, out var id)) { id = key.Count; key[k] = id; } vid[i] = id; }
         var edges = new Dictionary<(int, int), List<int>>();
@@ -49,72 +44,106 @@ public static class BedCloth
         }
         var nbs = new List<int>[nt]; for (int f = 0; f < nt; f++) nbs[f] = new List<int>();
         foreach (var l in edges.Values) for (int i = 0; i < l.Count; i++) for (int j = 0; j < l.Count; j++) if (i != j) nbs[l[i]].Add(l[j]);
-        int flips = 0;
-        for (int pass = 0; pass < 6; pass++)
-        {
-            var next = (int[])cls.Clone();
-            for (int f = 0; f < nt; f++)
-            {
-                if (cls[f] == 3 || nbs[f].Count == 0) continue;
-                var cnt = new int[4]; foreach (var o in nbs[f]) cnt[cls[o]]++;
-                int m = 0; for (int c = 1; c < 3; c++) if (cnt[c] > cnt[m]) m = c;
-                if (m != cls[f] && cnt[m] * 2 > nbs[f].Count && cnt[cls[f]] <= 1) { next[f] = m; flips++; }
-            }
-            cls = next;
-        }
-        // Patches: connected cloth triangles of one class. A small patch (a cluster the painting got wrong, a notch of
-        // sheet in the duvet) takes the class most of its border touches.
-        for (int pass = 0; pass < 3; pass++)
-        {
-            var comp = new int[nt]; for (int f = 0; f < nt; f++) comp[f] = -1;
-            int nc = 0;
-            for (int f0 = 0; f0 < nt; f0++)
-            {
-                if (comp[f0] >= 0 || cls[f0] == 3) continue;
-                var members = new List<int> { f0 }; comp[f0] = nc; var border = new int[4];
-                for (int i = 0; i < members.Count; i++)
-                    foreach (var o in nbs[members[i]])
-                    {
-                        if (cls[o] == cls[f0]) { if (comp[o] < 0) { comp[o] = nc; members.Add(o); } }
-                        else border[cls[o]]++;
-                    }
-                nc++;
-                int m = 0; for (int c = 1; c < 3; c++) if (border[c] > border[m]) m = c;
-                int total = border[0] + border[1] + border[2] + border[3];
-                if (members.Count < 60 && total > 0 && border[m] * 10 >= total * 6 && m != cls[f0])
-                    foreach (var f in members) { cls[f] = m; flips++; }
-            }
-        }
         var log = new System.Text.StringBuilder();
-        // Pillows are separate pieces of the model: a connected piece that is mostly pillow-coloured is all pillow;
-        // in every other piece pillow-coloured triangles are the sheet (the fold-over came out peach otherwise).
         var piece = new int[nt]; for (int f = 0; f < nt; f++) piece[f] = -1;
         var pieceLong = new List<int>();   // the world axis each piece is longest along
-        var drop = new bool[nt];             // loose strips Meshy laid on the duvet (a "rolled cigar", a long ridge)
+        var pieces = new List<List<int>>(); var pieceClass = new List<int>();
+        int flips = 0;
+        for (int f0 = 0; f0 < nt; f0++)
         {
-            int np = 0;
-            for (int f0 = 0; f0 < nt; f0++)
+            if (piece[f0] >= 0) continue;
+            int np = pieces.Count;
+            var members = new List<int> { f0 }; piece[f0] = np;
+            for (int i = 0; i < members.Count; i++) foreach (var o in nbs[members[i]]) if (piece[o] < 0) { piece[o] = np; members.Add(o); }
+            var cnt = new int[4]; int known = 0; foreach (var f in members) if (cls[f] >= 0) { cnt[cls[f]]++; known++; }
+            int m = 3; for (int c = 0; c < 4; c++) if (cnt[c] > cnt[m]) m = c;
+            if (known > 0 && cnt[m] * 10 < known * 6) m = 1;
+            var pb = new Bounds(cent[members[0]], Vector3.zero); foreach (var f in members) pb.Encapsulate(cent[f]);
+            var wb = new Bounds(rot * cent[members[0]], Vector3.zero); foreach (var f in members) wb.Encapsulate(rot * cent[f]);
+            pieceLong.Add(wb.size.x >= wb.size.y && wb.size.x >= wb.size.z ? 0 : wb.size.y >= wb.size.z ? 1 : 2);
+            log.AppendLine($"piece {np}: {members.Count} tris, duvet {cnt[0]} sheet {cnt[1]} pillow {cnt[2]} wood {cnt[3]} -> {m}, centre {pb.center:F1} size {pb.size:F1}");
+            foreach (var f in members) { if (cls[f] != m) flips++; cls[f] = m; }
+            pieces.Add(members); pieceClass.Add(m);
+        }
+        // Folds: Meshy laid loose duvet pieces over the duvet (a ridge by the sheet, a rolled strip) and drapes at the
+        // foot corners. Only the biggest duvet piece is the duvet; the others are dropped.
+        var drop = new bool[nt];
+        int duvet = -1; for (int p = 0; p < pieces.Count; p++) if (pieceClass[p] == 0 && (duvet < 0 || pieces[p].Count > pieces[duvet].Count)) duvet = p;
+        for (int p = 0; p < pieces.Count; p++) if (pieceClass[p] == 0 && p != duvet) { foreach (var f in pieces[p]) drop[f] = true; log.AppendLine($"piece {p} dropped (fold)"); }
+        // The duvet's top has small bumps and ridges (the plaid bends over them). Its flat top corners are smoothed in
+        // height toward their flat neighbours only (the rolled edges below would pull the middle down through the duvet's
+        // underside), and their normals made again.
+        var pos = (Vector3[])v.Clone(); var nrm = (Vector3[])n.Clone();
+        if (duvet >= 0)
+        {
+            var faceUp = new Dictionary<int, bool>(); var links = new Dictionary<int, HashSet<int>>(); var corners = new Dictionary<int, List<int>>();
+            foreach (var f in pieces[duvet])
+                for (int e = 0; e < 3; e++)
+                {
+                    int w = vid[t[f * 3 + e]];
+                    bool up = (rot * fnorm[f]).y > .8f;
+                    faceUp[w] = faceUp.TryGetValue(w, out var u) ? u && up : up;
+                    if (!links.TryGetValue(w, out var s)) links[w] = s = new HashSet<int>();
+                    s.Add(vid[t[f * 3 + (e + 1) % 3]]); s.Add(vid[t[f * 3 + (e + 2) % 3]]);
+                    if (!corners.TryGetValue(w, out var c)) corners[w] = c = new List<int>();
+                    if (!c.Contains(t[f * 3 + e])) c.Add(t[f * 3 + e]);
+                }
+            var h = new Dictionary<int, float>(); foreach (var w in links.Keys) h[w] = v[corners[w][0]].y;
+            int moved = 0;
+            for (int it = 0; it < 40; it++)
             {
-                if (piece[f0] >= 0) continue;
-                var members = new List<int> { f0 }; piece[f0] = np;
-                for (int i = 0; i < members.Count; i++) foreach (var o in nbs[members[i]]) if (piece[o] < 0) { piece[o] = np; members.Add(o); }
-                var cnt = new int[4]; foreach (var f in members) cnt[cls[f]]++;
-                int cloth = cnt[0] + cnt[1] + cnt[2];
-                var pb = new Bounds(cent[members[0]], Vector3.zero); foreach (var f in members) pb.Encapsulate(cent[f]);
-                var wb = new Bounds(rot * cent[members[0]], Vector3.zero); foreach (var f in members) wb.Encapsulate(rot * cent[f]);
-                pieceLong.Add(wb.size.x >= wb.size.y && wb.size.x >= wb.size.z ? 0 : wb.size.y >= wb.size.z ? 1 : 2);
-                log.AppendLine($"piece {np}: {members.Count} tris, duvet {cnt[0]} sheet {cnt[1]} pillow {cnt[2]} wood {cnt[3]}, centre {pb.center:F1} size {pb.size:F1}");
-                bool pillow = cloth > 0 && cnt[2] * 2 > cloth && cnt[3] * 4 < members.Count;
-                if (cnt[0] * 10 > members.Count * 9 && members.Count < 300 && pb.size.y < 2f)
-                    foreach (var f in members) drop[f] = true;
-                foreach (var f in members) { if (cls[f] == 3) continue; int c = pillow ? 2 : (cls[f] == 2 ? 1 : cls[f]); if (c != cls[f]) { cls[f] = c; flips++; } }
-                np++;
+                var nh = new Dictionary<int, float>(h);
+                foreach (var w in links.Keys)
+                {
+                    if (!faceUp[w]) continue;
+                    float sum = h[w]; int k = 1; foreach (var o in links[w]) if (faceUp[o]) { sum += h[o]; k++; }
+                    nh[w] = sum / k;
+                }
+                h = nh;
             }
+            foreach (var w in links.Keys) if (faceUp[w]) { foreach (var i in corners[w]) pos[i].y = h[w]; moved++; }
+            // Normals of the moved corners from the faces around them.
+            var acc = new Dictionary<int, Vector3>();
+            foreach (var f in pieces[duvet])
+            {
+                Vector3 fa = pos[t[f * 3]], fb = pos[t[f * 3 + 1]], fc = pos[t[f * 3 + 2]];
+                var fn = Vector3.Cross(Vector3.Scale(fb - fa, scale), Vector3.Scale(fc - fa, scale));   // in mesh units the cross is too small to normalize
+                if (Vector3.Dot(fn, fnorm[f]) < 0) fn = -fn;
+                for (int e = 0; e < 3; e++) { int w = vid[t[f * 3 + e]]; acc[w] = (acc.TryGetValue(w, out var a) ? a : Vector3.zero) + fn; }
+            }
+            foreach (var w in links.Keys) if (faceUp[w]) foreach (var i in corners[w]) nrm[i] = acc[w].normalized;
+            log.AppendLine($"duvet top: {moved} corners smoothed");
         }
         // A new mesh: one vertex per triangle corner, submesh per class.
         var nv = new List<Vector3>(); var nn = new List<Vector3>(); var nu = new List<Vector2>();
         var subs = new List<int>[4]; for (int c = 0; c < 4; c++) subs[c] = new List<int>();
         var tiles = new[] { 32f, 16f, 16f, 32f };
+        // The duvet is unfolded as cloth hanging over a box: the top is laid flat (x, z) and each side carries on from
+        // its edge by how far the cloth has dropped below the top, so plaid lines run over the edge and down the side
+        // without a break (a projection axis per triangle broke and bent them wherever the cloth curved). Near each
+        // edge a short ramp moves from the top's mapping to the side's; the corners fold diagonally.
+        Vector3 R(int i) => rot * Vector3.Scale(pos[i], scale);
+        float cx = 0, cz = 0, hx = 1, hz = 1, top = 0;
+        if (duvet >= 0)
+        {
+            var db = new Bounds(R(t[pieces[duvet][0] * 3]), Vector3.zero); float sum = 0; int count = 0;
+            foreach (var f in pieces[duvet]) for (int e = 0; e < 3; e++)
+            {
+                int i = t[f * 3 + e]; var p = R(i); db.Encapsulate(p);
+                if ((rot * nrm[i]).y > .9f) { sum += p.y; count++; }
+            }
+            cx = db.center.x; cz = db.center.z; hx = db.extents.x; hz = db.extents.z; top = count > 0 ? sum / count : db.max.y;
+        }
+        const float EdgeRamp = 1.5f;   // world units (about 7 cm) over which the mapping turns down an edge
+        Vector2 DuvetUv(int i)
+        {
+            var p = R(i); float drop = Mathf.Max(0f, top - p.y);
+            float ax = Mathf.Clamp01((Mathf.Abs(p.x - cx) - (hx - EdgeRamp)) / EdgeRamp), az = Mathf.Clamp01((Mathf.Abs(p.z - cz) - (hz - EdgeRamp)) / EdgeRamp);
+            // Down a side only the drop counts (the edge's own place, not the cloth's bulges), so its lines run level.
+            float sx = Mathf.Sign(p.x - cx), sz = Mathf.Sign(p.z - cz);
+            float u = Mathf.Lerp(p.x, cx + sx * hx, ax) + sx * ax * drop, w = Mathf.Lerp(p.z, cz + sz * hz, az) + sz * az * drop;
+            return new Vector2(u, w) * PixelRestyle.RoomTexelsPerUnit / tiles[0];
+        }
         for (int f = 0; f < nt; f++)
         {
             if (drop[f]) continue;
@@ -125,14 +154,14 @@ public static class BedCloth
             for (int e = 0; e < 3; e++)
             {
                 int i = t[f * 3 + e];
-                subs[c].Add(nv.Count); nv.Add(v[i]); nn.Add(n[i]);
-                var w = rot * Vector3.Scale(v[i], scale) * PixelRestyle.RoomTexelsPerUnit / tiles[c];
+                subs[c].Add(nv.Count); nv.Add(pos[i]); nn.Add(nrm[i]);
+                var w = rot * Vector3.Scale(pos[i], scale) * PixelRestyle.RoomTexelsPerUnit / tiles[c];
                 // u, v and the world axes they run along.
                 Vector2 q = axis == 1 ? new Vector2(w.x, w.z) : axis == 0 ? new Vector2(w.z, w.y) : new Vector2(w.x, w.y);
                 int uAxis = axis == 1 ? 0 : axis == 0 ? 2 : 0;
                 // Wood: the tile's planks run along v, so a piece long along u is drawn turned (grain along the rail).
                 if (c == 3 && pieceLong[piece[f]] == uAxis) q = new Vector2(q.y, q.x);
-                nu.Add(q);
+                nu.Add(c == 0 ? DuvetUv(i) : q);
             }
         }
         var mesh = new Mesh { name = "Bed_A cloth", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
