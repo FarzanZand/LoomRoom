@@ -144,6 +144,14 @@ public class RunRecapUI : MonoBehaviour
         yield return Wait(.1f);
         yield return CountUp(totalValue, 0, t.total, v => v.ToString());
         if (t.sharedWith > 1) SetText(helpLine, $"Shared between {t.sharedWith}");
+        // Co-op: the party's kills, everyone's (the spoils are each player's own unless shared).
+        if (Coop.Running && MultiplayerManager.Instance.Players.Count > 1)
+        {
+            var party = new System.Collections.Generic.List<string>();
+            foreach (var p in MultiplayerManager.Instance.Players)
+                if (p != null) party.Add($"{p.DisplayName} {(p.IsOwner ? (RunManager.HasInstance ? RunManager.Instance.Kills : 0) : p.Current.kills)}");
+            if (party.Count > 1) SetText(helpLine, (t.sharedWith > 1 ? $"Shared between {t.sharedWith}.   " : "") + "Kills: " + string.Join(",  ", party));
+        }
         if (t.toppedUp > 0) SetText(helpLine, $"+{t.toppedUp} from the Dungeon Master");
         yield return Wait(.25f);
         yield return CountUp(bankValue, t.before, t.after, v => v.ToString());

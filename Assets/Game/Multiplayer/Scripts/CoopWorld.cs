@@ -586,7 +586,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: return;
+            case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: return;
         }
         history.Add(e);
     }
@@ -661,6 +661,7 @@ public static class CoopWorld
         // The host passes a guest's event on to the other guests before playing it itself.
         if (Coop.IsHost && sender != NetworkManager.ServerClientId && e.kind != CoopEventKind.RoomDoor) { CoopMessages.ToGuests(CoopMessages.Event, e, NetworkDelivery.ReliableSequenced, sender); Record(e); }
         if (e.kind == CoopEventKind.AtExit) { if (Coop.IsHost) MultiplayerManager.Instance.PlayerAtExit(e.slot); return; }
+        if (e.kind == CoopEventKind.Ping) { if (e.floorKey == FloorKey) CoopPing.Show(e.slot, e.position, e.item.ToString()); return; }
         if (e.kind == CoopEventKind.RoomDoor)
         {
             if (Coop.IsHost && sender != NetworkManager.ServerClientId) CoopMessages.ToGuests(CoopMessages.Event, e, NetworkDelivery.ReliableSequenced, sender);

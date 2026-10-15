@@ -114,11 +114,13 @@ public class CoopPlayer : NetworkBehaviour
         s.airborne = active != null && active.Motor != null && !active.Motor.IsGrounded && active.Motor.AirborneTime > .15f;
         s.health = table != null && table.Stats != null && table.Stats.MaxHealth > 0 ? (byte)Mathf.Clamp(Mathf.CeilToInt(table.Stats.CurrentHealth / table.Stats.MaxHealth * 255f), 0, 255) : (byte)0;
         s.spoils = (ushort)Mathf.Clamp(onTable ? CarriedSpoils(table) : 0, 0, ushort.MaxValue);
+        s.kills = (ushort)Mathf.Clamp(RunManager.HasInstance ? RunManager.Instance.Kills : 0, 0, ushort.MaxValue);
         var progress = table != null ? table.GetComponent<AdventurerProgress>() : null;
         s.classId = new FixedString32Bytes(progress != null && progress.selectedClass != null ? progress.selectedClass.id : "");
         s.right = new FixedString128Bytes(onTable && table.Equipment != null ? Coop.SaveId(table.Equipment.Get(EquipmentSlot.RightHand)) : "");
         s.left = new FixedString128Bytes(onTable && table.Equipment != null ? Coop.SaveId(table.Equipment.Get(EquipmentSlot.LeftHand)) : "");
         if (!s.Equals(State.Value)) State.Value = s;
+        SendArms(onTable && s.alive ? table : null);
 
         // One-shot moments the others see, as the arms play them: a swing as its release starts, a bash, a spell.
         if (release != shownRelease && release != 0)
@@ -165,6 +167,48 @@ public class CoopPlayer : NetworkBehaviour
         Avatar.Swing(kind);
     }
     [Rpc(SendTo.NotOwner)] void BashRpc() => Avatar.Bash();
+
+    // The one body's animation for the others (CoopAvatar on Guen's one body): every layer's state as it changes (at
+    // once, reliably) and the animator's parameters and the look's pitch ten times a second (unreliably), so a teammate's
+    // body plays the very clips the owner's first person plays, from the same moment.
+    readonly int[] sentStates = new int[15];
+    float nextArms;
+
+    void SendArms(Player table)
+    {
+        var an = table != null && table.Combat != null ? table.Combat.ArmsAnimator : null;
+        if (an == null || !an.isActiveAndEnabled) return;
+        var states = new FixedList64Bytes<int>();
+        bool changed = false;
+        for (int l = 0; l < an.layerCount && l < sentStates.Length; l++)
+        {
+            int h = an.IsInTransition(l) ? an.GetNextAnimatorStateInfo(l).fullPathHash : an.GetCurrentAnimatorStateInfo(l).fullPathHash;
+            states.Add(h);
+            if (h != sentStates[l]) { sentStates[l] = h; changed = true; }
+        }
+        if (!changed && Time.unscaledTime < nextArms) return;
+        nextArms = Time.unscaledTime + .1f;
+        var values = new FixedList512Bytes<float>();
+        foreach (var prm in an.parameters)
+        {
+            if (values.Length >= values.Capacity) break;
+            if (prm.type == AnimatorControllerParameterType.Float) values.Add(an.GetFloat(prm.nameHash));
+            else if (prm.type == AnimatorControllerParameterType.Int) values.Add(an.GetInteger(prm.nameHash));
+            else if (prm.type == AnimatorControllerParameterType.Bool) values.Add(an.GetBool(prm.nameHash) ? 1f : 0f);
+        }
+        float pitch = 0f;
+        if (table.Look != null)
+        {
+            var yaw = Quaternion.Euler(0f, table.Look.YawTransform.eulerAngles.y, 0f);
+            pitch = Mathf.DeltaAngle(0f, (Quaternion.Inverse(yaw) * table.Look.PitchTransform.rotation).eulerAngles.x);
+        }
+        var pose = new ArmsPose { states = states, values = values, pitch = pitch };
+        if (changed) ArmsRpc(pose);
+        else ArmsTickRpc(pose);
+    }
+
+    [Rpc(SendTo.NotOwner)] void ArmsRpc(ArmsPose pose) => Avatar.ApplyArms(pose);
+    [Rpc(SendTo.NotOwner, Delivery = RpcDelivery.Unreliable)] void ArmsTickRpc(ArmsPose pose) => Avatar.ApplyArms(pose);
     [Rpc(SendTo.NotOwner)] void CastRpc() => Avatar.Cast();
     [Rpc(SendTo.NotOwner)] void UseRpc(FixedString128Bytes item, bool drink, float seconds) => Avatar.Use(item.ToString(), drink, seconds);
     // Hurt: the others see the flinch and the blood.

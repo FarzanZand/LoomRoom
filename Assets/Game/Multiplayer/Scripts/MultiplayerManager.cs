@@ -193,6 +193,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         network.OnServerStarted += OnStarted;
         network.ConnectionApprovalCallback = Approve;
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged += OnFlagChanged;
+        if (InputManager.HasInstance) InputManager.Instance.PingPressed += CoopPing.PingFromLocal;
+        // The Dungeon Master talks to the party (lines on CoopRemarks; Set Up Co-op adds it to the prefab).
+        if (GetComponent<CoopRemarks>() == null) gameObject.AddComponent<CoopRemarks>();
 #if UNITY_EDITOR
         if (autoStartInEditor && CoopEditorTesting.Requested) StartCoroutine(AutoStart());
 #endif
@@ -258,6 +261,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             network.OnServerStarted -= OnStarted;
         }
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= OnFlagChanged;
+        if (InputManager.HasInstance) InputManager.Instance.PingPressed -= CoopPing.PingFromLocal;
         CoopWorld.Unhook();
     }
 

@@ -1,8 +1,10 @@
 using TMPro;
 using UnityEngine;
 
-// What the other players see of someone: in the room their room body, on the table their class's body
-// (AdventurerClass.coopBody) with the weapon and shield they hold, walking, swinging, blocking and dying as they do.
+// What the other players see of someone: in the room their room body; on the table, alive, the one body (a copy of the
+// local table player's OneBodyRig body, the same rig and FirstPersonTable controller, playing the owner's own arm states
+// and parameters as CoopPlayer sends them, bending with their look); dead or a ghost their class's body
+// (AdventurerClass.coopBody, the Humanoid controller) as before, with the weapon and shield they hold.
 // Hidden on the owner's own machine. The body is a humanoid driven by the Humanoid controller, so any Synty character works.
 public class CoopAvatar : MonoBehaviour
 {
@@ -29,7 +31,11 @@ public class CoopAvatar : MonoBehaviour
     Vector3 lastPosition;
     Vector3 velocity;
     bool shownDead, shownSeated;
-    bool builtGhost;
+    bool builtGhost, builtOneBody;
+    OneBodyRig rig;
+    Transform rigRight, rigLeft;
+    readonly int[] shownStates = new int[15];
+    float targetPitch;
     Vector3 lastSolid;
     float solidAfter;
     Light carried;
@@ -100,6 +106,13 @@ public class CoopAvatar : MonoBehaviour
             body.enabled = s.place == CoopPlace.Table && builtPlace == CoopPlace.Table && s.alive && Time.time >= solidAfter;
         }
         if (animator == null) return;
+        if (builtOneBody)
+        {
+            if (rig != null) rig.remotePitch = Mathf.LerpAngle(rig.remotePitch, targetPitch, 1f - Mathf.Exp(-12f * Time.deltaTime));
+            UpdateHeld(s.right.ToString(), s.left.ToString());
+            UpdateLight(s);
+            return;
+        }
 
         float dt = Mathf.Max(Time.deltaTime, 1e-4f);
         var moved = (transform.position - lastPosition) / dt;
@@ -189,15 +202,20 @@ public class CoopAvatar : MonoBehaviour
         var s = player.Current;
         string cls = s.classId.ToString();
         bool ghost = s.place == CoopPlace.Table && s.ghost;
-        if (!force && model != null && builtPlace == s.place && builtGhost == ghost && (s.place == CoopPlace.Room || builtClass == cls)) return;
+        // Alive on the table: the one body (when the local table player has one to copy).
+        bool oneBody = s.place == CoopPlace.Table && !ghost && s.alive && OneBodySource() != null;
+        if (!force && model != null && builtPlace == s.place && builtGhost == ghost && builtOneBody == oneBody && (s.place == CoopPlace.Room || builtClass == cls)) return;
         // Leaving the table dead, or getting up as a ghost: the body stays where it fell, for the floor.
         if (model != null && builtPlace == CoopPlace.Table && shownDead && (s.place == CoopPlace.Room || ghost)) LeaveCorpse();
         else if (model != null) Destroy(model);
         model = null; animator = null; rightVisual = leftVisual = usedVisual = null; heldRight = heldLeft = null; shownDead = false; shownSeated = false;
+        rig = null; rigRight = rigLeft = null; builtOneBody = false;
+        System.Array.Clear(shownStates, 0, shownStates.Length);
 
         var manager = MultiplayerManager.Instance;
-        var prefab = s.place == CoopPlace.Room ? manager.RoomBody(player.SlotIndex) : manager.TableBody(cls);
         builtPlace = s.place; builtClass = cls; builtGhost = ghost;
+        if (oneBody) { BuildOneBody(); return; }
+        var prefab = s.place == CoopPlace.Room ? manager.RoomBody(player.SlotIndex) : manager.TableBody(cls);
         builtScale = s.place == CoopPlace.Room ? manager.roomScale : 1f;
         if (prefab == null) return;
         model = Instantiate(prefab, transform, false);
@@ -230,6 +248,70 @@ public class CoopAvatar : MonoBehaviour
         lastPosition = transform.position;
     }
 
+    // The local table player's one body, to copy for a teammate.
+    static OneBodyRig OneBodySource()
+    {
+        var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        return table != null ? table.GetComponentInChildren<OneBodyRig>(true) : null;
+    }
+
+    // A copy of the one body, made while switched off so its rig never wakes up still tied to the local player's
+    // first-person arms; it then follows this avatar, with no arms cut and no held copies of its own.
+    void BuildOneBody()
+    {
+        var source = OneBodySource();
+        var holder = new GameObject("one body holder");
+        holder.SetActive(false);
+        var copy = Instantiate(source.gameObject, holder.transform);
+        rig = copy.GetComponent<OneBodyRig>();
+        rig.player = null; rig.firstPersonArms = null; rig.follow = transform; rig.remotePitch = 0f;
+        animator = rig.animator != null ? rig.animator : copy.GetComponentInChildren<Animator>(true);
+        foreach (var t in copy.GetComponentsInChildren<Transform>(true))
+        {
+            if (t.name == "RightHand_Socket") rigRight = t;
+            else if (t.name == "LeftHand_Socket") rigLeft = t;
+        }
+        foreach (var socket in new[] { rigRight, rigLeft })
+            if (socket != null) for (int i = socket.childCount - 1; i >= 0; i--) DestroyImmediate(socket.GetChild(i).gameObject);
+        foreach (var c in copy.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+        foreach (var t in copy.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = 0;
+        copy.name = "Body";
+        copy.transform.SetParent(transform, false);
+        copy.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+        Destroy(holder);
+        model = copy;
+        if (animator != null) { animator.enabled = true; animator.applyRootMotion = false; animator.cullingMode = AnimatorCullingMode.AlwaysAnimate; }
+        builtOneBody = true;
+        lastPosition = transform.position;
+    }
+
+    // The owner's arm states and parameters (CoopPlayer.SendArms): parameters set as they are there, and a layer
+    // whose state changed starts it here too.
+    public void ApplyArms(in ArmsPose pose)
+    {
+        if (!builtOneBody || animator == null || !animator.isActiveAndEnabled) return;
+        targetPitch = pose.pitch;
+        var values = pose.values; var states = pose.states;
+        int i = 0;
+        foreach (var prm in animator.parameters)
+        {
+            if (prm.type == AnimatorControllerParameterType.Trigger) continue;
+            if (i >= values.Length) break;
+            float v = values[i++];
+            if (prm.type == AnimatorControllerParameterType.Float) animator.SetFloat(prm.nameHash, v);
+            else if (prm.type == AnimatorControllerParameterType.Int) animator.SetInteger(prm.nameHash, Mathf.RoundToInt(v));
+            else animator.SetBool(prm.nameHash, v > .5f);
+        }
+        for (int l = 0; l < states.Length && l < animator.layerCount && l < shownStates.Length; l++)
+        {
+            int h = states[l];
+            if (h == 0 || h == shownStates[l]) continue;
+            shownStates[l] = h;
+            int now = animator.IsInTransition(l) ? animator.GetNextAnimatorStateInfo(l).fullPathHash : animator.GetCurrentAnimatorStateInfo(l).fullPathHash;
+            if (now != h && animator.HasState(l, h)) animator.CrossFadeInFixedTime(h, .08f, l);
+        }
+    }
+
     void LeaveCorpse()
     {
         var floor = TableManager.Loader != null && TableManager.Loader.Dungeon != null ? TableManager.Loader.Dungeon.transform : null;
@@ -240,6 +322,12 @@ public class CoopAvatar : MonoBehaviour
 
     void UpdateHeld(string right, string left)
     {
+        if (builtOneBody)
+        {
+            if (right != heldRight) { heldRight = right; HoldOn(ref rightVisual, right, rigRight); }
+            if (left != heldLeft) { heldLeft = left; HoldOn(ref leftVisual, left, rigLeft); }
+            return;
+        }
         if (animator == null || !animator.isHuman) return;
         if (right != heldRight) { heldRight = right; Hold(ref rightVisual, right, HumanBodyBones.RightHand, MultiplayerManager.Instance.weaponGrip); }
         if (left != heldLeft) { heldLeft = left; Hold(ref leftVisual, left, HumanBodyBones.LeftHand, MultiplayerManager.Instance.shieldGrip); }
@@ -251,6 +339,29 @@ public class CoopAvatar : MonoBehaviour
         var item = Coop.Item(saveId);
         visual = item != null && (item.itemType == ItemType.Weapon || item.itemType == ItemType.Shield) ? Attach(item, bone, grip) : null;
         if (visual != null && usedVisual != null && bone == HumanBodyBones.RightHand) visual.SetActive(false);
+    }
+
+    void HoldOn(ref GameObject visual, string saveId, Transform socket)
+    {
+        if (visual != null) Destroy(visual);
+        visual = null;
+        var item = Coop.Item(saveId);
+        if (socket == null || item == null || item.worldPrefab == null || (item.itemType != ItemType.Weapon && item.itemType != ItemType.Shield)) return;
+        visual = Look(item, socket);
+        if (usedVisual != null && socket == rigRight) visual.SetActive(false);
+    }
+
+    // The item's world model on a hand socket as the first-person hands hold it; only a look.
+    GameObject Look(ItemData item, Transform socket)
+    {
+        var visual = Instantiate(item.worldPrefab, socket, false);
+        visual.transform.SetLocalPositionAndRotation(item.heldPosition, Quaternion.Euler(item.heldRotation));
+        visual.transform.localScale *= Mathf.Max(.01f, item.heldScale);
+        foreach (var c in visual.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+        foreach (var b in visual.GetComponentsInChildren<Rigidbody>(true)) { b.isKinematic = true; b.detectCollisions = false; }
+        foreach (var m in visual.GetComponentsInChildren<MonoBehaviour>(true)) m.enabled = false;
+        foreach (var t in visual.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = 0;
+        return visual;
     }
 
     // The item's world model in a hand, on a grip socket as in first person (the grips are the first-person hand
@@ -276,6 +387,16 @@ public class CoopAvatar : MonoBehaviour
     // right arm's Eat or Drink clip fitted to the same time.
     public void Use(string saveId, bool drink, float seconds)
     {
+        // The one body plays the owner's Eat or Drink itself (ApplyArms); the item is shown in the hand meanwhile.
+        if (builtOneBody)
+        {
+            EndUse();
+            var food = Coop.Item(saveId);
+            if (rightVisual != null) rightVisual.SetActive(false);
+            usedVisual = food != null && food.worldPrefab != null && rigRight != null ? Look(food, rigRight) : new GameObject("Used item");
+            useEnds = Time.time + Mathf.Max(.2f, seconds);
+            return;
+        }
         if (animator == null || !animator.isHuman) return;
         EndUse();
         var clip = Clip(drink ? "Coop Drink" : "Coop Eat");
@@ -291,7 +412,7 @@ public class CoopAvatar : MonoBehaviour
 
     void EndUse()
     {
-        if (usedVisual != null) Destroy(usedVisual.transform.parent != null && usedVisual.transform.parent.name.StartsWith("Grip") ? usedVisual.transform.parent.gameObject : usedVisual);
+        if (usedVisual != null) Destroy(usedVisual.transform.parent != null && usedVisual.transform.parent.name.StartsWith("Grip - ") ? usedVisual.transform.parent.gameObject : usedVisual);
         usedVisual = null;
         if (rightVisual != null) rightVisual.SetActive(true);
     }
@@ -308,7 +429,7 @@ public class CoopAvatar : MonoBehaviour
     public void Swing(byte kind)
     {
         bool heavy = kind == 3;
-        if (animator != null) animator.SetTrigger(heavy ? "SwingHeavy" : kind == 2 ? "SwingB" : "SwingA");
+        if (animator != null && !builtOneBody) animator.SetTrigger(heavy ? "SwingHeavy" : kind == 2 ? "SwingB" : "SwingA");
         if (!AudioManager.HasInstance || player == null) return;
         var weapon = Coop.Item(player.Current.right.ToString());
         var profile = weapon != null ? weapon.weapon : null;
@@ -320,11 +441,12 @@ public class CoopAvatar : MonoBehaviour
     // The shield bash, with its sound where the body is.
     public void Bash()
     {
-        if (animator != null) animator.SetTrigger("Bash");
+        if (animator != null && !builtOneBody) animator.SetTrigger("Bash");
         var audio = CombatManager.HasInstance ? CombatManager.Instance.shieldBashAudio : null;
         if (audio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(audio, transform.position + Vector3.up * 1.2f * builtScale);
     }
 
-    public void Cast() { if (animator != null) animator.SetTrigger("CastSpell"); }
-    public void Hurt() { if (animator != null && player != null && player.Current.alive) animator.SetTrigger("Hurt"); }
+    // The one body gets these from the owner's own states (ApplyArms).
+    public void Cast() { if (animator != null && !builtOneBody) animator.SetTrigger("CastSpell"); }
+    public void Hurt() { if (animator != null && !builtOneBody && player != null && player.Current.alive) animator.SetTrigger("Hurt"); }
 }

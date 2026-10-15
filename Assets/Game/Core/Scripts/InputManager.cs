@@ -33,6 +33,8 @@ public class InputManager : Singleton<InputManager>
     public event Action SprintPressed;
     public event Action CrouchPressed;
     public event Action InteractPressed;
+    // Co-op: mark what the table player looks at for the others (CoopPing).
+    public event Action PingPressed;
     public event Action InventoryToggled;
     public event Action CancelPressed;
     public event Action PausePressed;    // Room or Table gameplay: open the pause menu
@@ -80,6 +82,7 @@ public class InputManager : Singleton<InputManager>
         actions.Table.SecondaryAction.canceled  += _ => { SecondaryHeld = false; SecondaryReleased?.Invoke(); };
 
         actions.Table.Pause.performed += _ => PausePressed?.Invoke();
+        actions.Table.Ping.performed += _ => PingPressed?.Invoke();
         actions.Room.Pause.performed  += _ => PausePressed?.Invoke();
         LoadBindingOverrides();
         actions.UI.Navigate.performed += _ => NavigatePressed?.Invoke();

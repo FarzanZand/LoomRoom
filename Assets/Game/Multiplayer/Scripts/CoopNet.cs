@@ -116,6 +116,16 @@ public enum CoopEventKind : byte
     BossStageOpened = 17, // the stage fight began (position = who stepped up)
     BossBeam = 18,      // the Dungeon Master's beam (target = at whom)
     BossVolley = 19,    // the Dungeon Master's fireball volley (target = at whom, amount = its event in the fight)
+    Ping = 20,          // a player pointed at something (position = where, item = what it is called; CoopPing)
+}
+
+// The owner's arm animation for a teammate's one body (CoopPlayer.SendArms, CoopAvatar.ApplyArms): each layer's state,
+// the animator's float, int and bool parameters in the controller's order, and the look's pitch.
+public struct ArmsPose : INetworkSerializeByMemcpy
+{
+    public Unity.Collections.FixedList64Bytes<int> states;
+    public Unity.Collections.FixedList512Bytes<float> values;
+    public float pitch;
 }
 
 public struct CoopEvent : INetworkSerializable

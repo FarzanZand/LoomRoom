@@ -21,17 +21,18 @@ public struct CoopPlayerState : INetworkSerializable, System.IEquatable<CoopPlay
     public byte health;         // 0-255 of the table player's maximum
     public ushort spoils;       // the worth of the spoils carried on the table (pooled at the run's end with shared loot)
     public FixedString32Bytes classId;
+    public ushort kills;        // kills in the current run (the party line on the recap)
     public FixedString128Bytes right, left;  // held items (save ids; a rolled item's id carries its rarity and properties)
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref place); s.SerializeValue(ref alive); s.SerializeValue(ref atTable); s.SerializeValue(ref ready);
-        s.SerializeValue(ref inRun); s.SerializeValue(ref blocking); s.SerializeValue(ref crouching); s.SerializeValue(ref seated); s.SerializeValue(ref charging); s.SerializeValue(ref airborne); s.SerializeValue(ref inLobby); s.SerializeValue(ref ghost); s.SerializeValue(ref health); s.SerializeValue(ref spoils);
+        s.SerializeValue(ref inRun); s.SerializeValue(ref blocking); s.SerializeValue(ref crouching); s.SerializeValue(ref seated); s.SerializeValue(ref charging); s.SerializeValue(ref airborne); s.SerializeValue(ref inLobby); s.SerializeValue(ref ghost); s.SerializeValue(ref health); s.SerializeValue(ref spoils); s.SerializeValue(ref kills);
         s.SerializeValue(ref classId); s.SerializeValue(ref right); s.SerializeValue(ref left);
     }
 
     public bool Equals(CoopPlayerState o) =>
         place == o.place && alive == o.alive && atTable == o.atTable && ready == o.ready && inRun == o.inRun &&
-        blocking == o.blocking && crouching == o.crouching && seated == o.seated && charging == o.charging && airborne == o.airborne && inLobby == o.inLobby && ghost == o.ghost && health == o.health && spoils == o.spoils &&
+        blocking == o.blocking && crouching == o.crouching && seated == o.seated && charging == o.charging && airborne == o.airborne && inLobby == o.inLobby && ghost == o.ghost && health == o.health && spoils == o.spoils && kills == o.kills &&
         classId.Equals(o.classId) && right.Equals(o.right) && left.Equals(o.left);
 }

@@ -38,6 +38,12 @@ public class OneBodyRig : MonoBehaviour
     [Tooltip("Off: from outside the arms play the first-person pose as it is (for comparing).")]
     public bool naturalArms = true;
 
+    [Header("Seen as a teammate (co-op)")]
+    [Tooltip("Co-op: a copy of this body shows a teammate (CoopAvatar). With no player it follows this transform's place and yaw, bends with remotePitch, and has no first-person arms.")]
+    public Transform follow;
+    [Tooltip("The teammate's look up or down, degrees (down positive), as their own look sent it.")]
+    public float remotePitch;
+
     // A second camera that renders as the owner's eyes (the capture harness's first-person-only render).
     public static Camera AlsoOwner;
 
@@ -129,11 +135,12 @@ public class OneBodyRig : MonoBehaviour
 
     void LateUpdate()
     {
-        if (player == null) return;
+        if (player == null && follow == null) return;
         // Under the player: position from the controller, yaw from the look. Never the camera's own motion.
-        var look = player.Look;
-        float yaw = look != null ? look.YawTransform.eulerAngles.y : player.transform.eulerAngles.y;
-        transform.SetPositionAndRotation(player.transform.position, Quaternion.Euler(0f, yaw, 0f));
+        // A teammate's copy: under its avatar, which moves and turns as they do.
+        var look = player != null ? player.Look : null;
+        float yaw = player == null ? follow.eulerAngles.y : look != null ? look.YawTransform.eulerAngles.y : player.transform.eulerAngles.y;
+        transform.SetPositionAndRotation(player != null ? player.transform.position : follow.position, Quaternion.Euler(0f, yaw, 0f));
         // A bone the animator didn't write this frame still holds last frame's turn: start it from its rest pose.
         for (int i = 0; i < turned.Length; i++)
             if (turned[i].localRotation == written[i]) turned[i].localRotation = rest[i];
@@ -147,6 +154,7 @@ public class OneBodyRig : MonoBehaviour
         // A class or gear change (a body mesh switched on or off or swapped): the arms are cut again, at once.
         if (BodySignature() != bodySignature) RefreshArms();
         if (followLook && look != null && player.IsActive) Bend(look.PitchTransform.rotation);
+        else if (followLook && player == null) Bend(Quaternion.Euler(remotePitch, yaw, 0f));
         for (int i = 0; i < turned.Length; i++) written[i] = turned[i].localRotation;
         for (int a = 0; a < arms.Length; a++)
         {
