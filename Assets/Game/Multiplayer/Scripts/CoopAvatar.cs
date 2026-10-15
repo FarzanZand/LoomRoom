@@ -143,6 +143,9 @@ public class CoopAvatar : MonoBehaviour
             shownDead = dead;
             animator.SetBool(Dead, dead);
             if (dead) animator.SetTrigger("Death");
+            // Alive again (revived on a new floor; for a moment the body can be shown dead as the ghost ends): the
+            // death pose has no way out, so the body starts over from standing.
+            else animator.Rebind();
         }
         // A ghost's hands are empty.
         if (s.place == CoopPlace.Table) UpdateHeld(builtGhost ? "" : s.right.ToString(), builtGhost ? "" : s.left.ToString());

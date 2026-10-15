@@ -73,6 +73,8 @@ public partial class BossStageEncounter
             Destroy(held.gameObject);
         }
         else Landed(boss, spot);
+        // Said once the boss is down, as on the host.
+        BossBlessing.Announce();
         yield return new WaitForSeconds(fight != null ? fight.wakeDelay : 1f);
         if (boss == null || !boss.IsAlive) yield break;
         if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title);

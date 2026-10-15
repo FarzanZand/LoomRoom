@@ -230,6 +230,8 @@ public static class CoopMenuBuilder
         foreach (RectTransform child in panel)
         {
             if (child == (RectTransform)coop.transform) continue;
+            // Pieces stretched over the panel (its background) grow with it and stay where they are.
+            if (child.anchorMin != child.anchorMax) continue;
             var p = child.anchoredPosition;
             // Everything above Co-op goes up half a step, everything below down half a step.
             bool above = p.y > (settings != null ? ((RectTransform)settings).anchoredPosition.y - 1 : 0);
