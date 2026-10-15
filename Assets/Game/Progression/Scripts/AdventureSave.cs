@@ -50,7 +50,7 @@ public class AdventureSave : MonoBehaviour
     public event Action Changed;
     Player player; AdventurerProgress progress;
     const string AdventureFile = "loomroom-adventure.json", DebugFile = "loomroom-debug.json";
-    string FilePath => Path.Combine(Folder, DebugDungeonSession.Active ? DebugFile : AdventureFile);
+    string FilePath => Path.Combine(Folder, DebugDungeonSession.Active ? DebugFile : SlotFile(Slot));
 
     // Where saves go: the game's own folder, or another one given with -savedir <folder> (two copies on one computer,
     // each with its own save).
@@ -69,8 +69,92 @@ public class AdventureSave : MonoBehaviour
     static string folder;
     static bool customFolder;
 
-    // Whether a game has been saved (the main menu offers Continue).
-    public static bool SaveExists { get { MigrateOldSaves(); return File.Exists(Path.Combine(Folder, AdventureFile)); } }
+    // ── Save slots ───────────────────────────────────────────────────
+    // Three saves side by side; the main menu picks one (New game, Continue, Load game) before the game's scene loads,
+    // and the last one played is remembered, so Play straight from the Room scene uses it too. Slot 1 is the file
+    // from before slots existed.
+    public const int SlotCount = 3;
+    const string SlotPref = "LoomRoom.SaveSlot";
+    // A copy with its own folder (-savedir) keeps its slot to itself, so it never changes the game's remembered one.
+    public static int Slot
+    {
+        get => CustomFolder ? customSlot : Mathf.Clamp(PlayerPrefs.GetInt(SlotPref, 1), 1, SlotCount);
+        set
+        {
+            if (CustomFolder) { customSlot = Mathf.Clamp(value, 1, SlotCount); return; }
+            PlayerPrefs.SetInt(SlotPref, Mathf.Clamp(value, 1, SlotCount)); PlayerPrefs.Save();
+        }
+    }
+    static int customSlot = 1;
+    static bool CustomFolder { get { _ = Folder; return customFolder; } }
+    static string SlotFile(int slot) => slot <= 1 ? AdventureFile : $"loomroom-adventure-{slot}.json";
+    static string SlotPath(int slot) => Path.Combine(Folder, SlotFile(slot));
+    public static bool SlotExists(int slot) => File.Exists(SlotPath(slot)) || File.Exists(SlotPath(slot) + ".bak");
+
+    // Whether any game has been saved (the main menu offers Continue and Load game).
+    public static bool SaveExists { get { MigrateOldSaves(); for (int i = 1; i <= SlotCount; i++) if (SlotExists(i)) return true; return false; } }
+    // The save played last (newest file), or 0 when there is none.
+    public static int LatestSlot
+    {
+        get
+        {
+            MigrateOldSaves();
+            int best = 0; DateTime newest = DateTime.MinValue;
+            for (int i = 1; i <= SlotCount; i++) { var time = LastWritten(i); if (time.HasValue && time.Value > newest) { newest = time.Value; best = i; } }
+            return best;
+        }
+    }
+    // The first slot with no save, or 0 when all are taken.
+    public static int FreeSlot { get { for (int i = 1; i <= SlotCount; i++) if (!SlotExists(i)) return i; return 0; } }
+    static DateTime? LastWritten(int slot)
+    {
+        foreach (var path in new[] { SlotPath(slot), SlotPath(slot) + ".bak" }) if (File.Exists(path)) return File.GetLastWriteTime(path);
+        return null;
+    }
+
+    // Removes a save for good (its backup too).
+    public static void DeleteSlot(int slot)
+    {
+        foreach (var path in new[] { SlotPath(slot), SlotPath(slot) + ".bak", SlotPath(slot) + ".tmp" })
+            try { if (File.Exists(path)) File.Delete(path); } catch (Exception e) { Debug.LogError($"Could not delete save {path}: {e.Message}"); }
+    }
+
+    // What the main menu shows of a save without loading the game.
+    public struct Summary
+    {
+        public bool exists, readable;
+        public string name;
+        public int runs, trophies, spoils, runFloor;
+        public DateTime lastPlayed;
+    }
+    public static Summary Summarize(int slot)
+    {
+        var summary = new Summary { exists = SlotExists(slot) };
+        if (!summary.exists) return summary;
+        summary.lastPlayed = LastWritten(slot) ?? DateTime.MinValue;
+        foreach (var path in new[] { SlotPath(slot), SlotPath(slot) + ".bak" })
+        {
+            if (!File.Exists(path)) continue;
+            try
+            {
+                var data = JsonUtility.FromJson<Data>(File.ReadAllText(path));
+                if (data == null) continue;
+                summary.readable = true;
+                summary.name = data.characterName;
+                summary.runs = data.memorials != null ? data.memorials.Count(m => m != null && !m.forgotten) : 0;
+                if (data.flags != null)
+                    foreach (var flag in data.flags)
+                    {
+                        if (flag.key == ProgressionManager.SpoilsFlag) summary.spoils = flag.value;
+                        else if (flag.key.StartsWith(ProgressionManager.TrophyPrefix) && flag.value == (int)ProgressionManager.TrophyState.Mounted) summary.trophies++;
+                    }
+                summary.runFloor = data.version == Data.Current && data.checkpoint != null ? data.checkpoint.floor : 0;
+                return summary;
+            }
+            catch (Exception e) { Debug.LogWarning($"Could not read save {path}: {e.Message}"); }
+        }
+        return summary;
+    }
 
     // The game was called LoomRoom until 2026-10-13; the save folder follows the product name, so saves from before the
     // rename sit in the old folder beside the new one. Brought over once, while the new folder has none.
@@ -109,7 +193,7 @@ public class AdventureSave : MonoBehaviour
         }
         if (RunManager.HasInstance) RunManager.Instance.RunEnded += Ended;
         if (!existed) SeedStartingMemorials();
-        else if (ProgressionManager.HasInstance && ProgressionManager.Instance.IntroSkipped) Write();
+        if (ProgressionManager.HasInstance && ProgressionManager.Instance.IntroSkipped) Write();
     }
 
     // A new save starts with the rules' blank figures on the memorial table.
