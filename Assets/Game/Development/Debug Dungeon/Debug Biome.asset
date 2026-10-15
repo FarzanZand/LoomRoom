@@ -83,18 +83,12 @@ MonoBehaviour:
   - enemy: {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
     weight: 1
     fromFloor: 1
-  - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
-    weight: 1
-    fromFloor: 1
-  - enemy: {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
-    weight: 1
-    fromFloor: 1
   - enemy: {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
     weight: 1
     fromFloor: 1
   encounterChance: {x: 1, y: 1}
   minEnemiesPerRoom: 1
-  maxEnemiesPerRoom: 3
+  maxEnemiesPerRoom: 4
   features: []
   loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
   merchantChance: 0

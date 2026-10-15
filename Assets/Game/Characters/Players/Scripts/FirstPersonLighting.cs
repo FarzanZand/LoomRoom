@@ -13,16 +13,20 @@ public class FirstPersonLighting : MonoBehaviour
     [Tooltip("The light that shows the dungeon around the player.")] public Light worldLight;
     [Tooltip("Soft light for arms and held items only.")] public Light armsLight;
     [Tooltip("Sits below the floor and lights ceilings only (the world light is above them). Follows the world light's range.")] public Light ceilingLight;
-    [Tooltip("The key light: held off to the side of the view (a lantern in the off hand), it lights enemies from one side and throws their shadows across the floor. The world light above stays as a soft fill.")]
+    [Tooltip("The key light: straight above the player's head, so it lights the same whichever way they look, and throws shadows out across the floor from where they stand. The world light above stays as a soft fill.")]
     public Light shadowLight;
-    [Tooltip("The key light stays this far on the player's side of a wall between the eyes and its place (in a corridor its spot is often inside the wall, which would leave the corridor dark).")]
+    [Tooltip("On: the key light hangs straight above the head and lights the same whichever way the player looks. Off: the older side light, at its authored spot beside the view (a metre left), which turns with the view.")]
+    public bool keyLightOverHead = true;
+    [Tooltip("How far above the eyes the key light hangs (lower under a low ceiling).")]
+    [SerializeField, Min(0f)] float shadowLightHeight = 1f;
+    [Tooltip("The key light stays this far in front of a wall or below a ceiling that would come between it and the eyes.")]
     [SerializeField, Min(0f)] float shadowLightWallMargin = .3f;
     [SerializeField, Min(.1f)] float refreshSeconds = .5f;
 
     float nextRefresh, worldRange, shadowRange, worldLimited = -1f, shadowLimited = -1f;
     const float EyeHeight = 1.6f;
-    Vector3 shadowLightOffset;   // where it is authored, in its parent's space
     bool shadowLightPlaced;
+    Vector3 shadowLightOffset;   // the side light's authored spot, in its parent's space
     readonly RaycastHit[] wallHits = new RaycastHit[8];
     readonly List<Renderer> renderers = new();
 
@@ -73,9 +77,36 @@ public class FirstPersonLighting : MonoBehaviour
         Limit(shadowLight, ref shadowRange, ref shadowLimited);
     }
 
-    // From the eyes toward the authored spot; a wall in between brings the light in front of it.
-    // It moves in quickly and eases back out, so it never flickers between the two.
+    // Straight above the eyes, whatever the look: turning never moves it, and no corner can stand between it and what
+    // the player sees. A ceiling over the head brings it down below the ceiling. It moves down quickly and eases back up.
     void PlaceShadowLight()
+    {
+        if (shadowLight == null) return;
+        if (!keyLightOverHead) { PlaceSideLight(); return; }
+        var eye = armsLight != null && armsLight.transform.parent != null ? armsLight.transform.parent.position : transform.position + Vector3.up * EyeHeight;   // the player camera
+        float height = shadowLightHeight;
+        if (height > .001f)
+        {
+            int count = Physics.SphereCastNonAlloc(eye, .12f, Vector3.up, wallHits, height + shadowLightWallMargin, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                var hit = wallHits[i];
+                if (hit.distance <= 0f || hit.collider.attachedRigidbody != null || hit.collider.GetComponentInParent<Character>() != null) continue;
+                height = Mathf.Min(height, Mathf.Max(0f, hit.distance - shadowLightWallMargin));
+            }
+        }
+        var target = eye + Vector3.up * height;
+        var current = shadowLight.transform.position;
+        float speed = target.y < current.y ? 40f : 6f;
+        var placed = shadowLightPlaced ? Vector3.Lerp(current, target, 1f - Mathf.Exp(-speed * Time.deltaTime)) : target;
+        // Horizontally it is always right over the eyes; only its height eases.
+        shadowLight.transform.position = new Vector3(eye.x, placed.y, eye.z);
+        shadowLightPlaced = true;
+    }
+
+    // The side light (Key Light Over Head off): from the eyes toward the authored spot; a wall in between brings the light in front of it.
+    // It moves in quickly and eases back out, so it never flickers between the two.
+    void PlaceSideLight()
     {
         if (shadowLight == null || shadowLight.transform.parent == null) return;
         var parent = shadowLight.transform.parent;

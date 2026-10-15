@@ -13,6 +13,8 @@ public class WeaponAnimationRelay : MonoBehaviour
     public event System.Action AttackEnded;
     // Raised by the PlaySwingAudio event every attack clip carries at the start of the swing.
     public event System.Action SwingStarted;
+    // Raised when an attack clip opens a hitbox (the strike).
+    public event System.Action HitboxOpened;
 
     void Awake()
     {
@@ -36,6 +38,7 @@ public class WeaponAnimationRelay : MonoBehaviour
     {
         if (!AllowHitbox(index)) return;
         foreach (var h in hitboxes) if (h.HitboxIndex == index) h.EnableHitbox();
+        HitboxOpened?.Invoke();
     }
 
     public void PlaySwingAudio()

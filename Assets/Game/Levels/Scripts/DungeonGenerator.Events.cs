@@ -133,6 +133,8 @@ public partial class DungeonGenerator
     {
         var taken = new List<Vector2Int>();
         if (chest == null || !chest.chest || data.spikeTrapPrefab == null || Authored || trapRandom == null) return taken;
+        // The starting room's chest is the player's first gift: never trapped.
+        if (InStartingRoom(chest.transform.position)) return taken;
         var f = RoomFeatures;
         double roll = trapRandom.NextDouble();
         if (!f.trappedTreasure || (!always && roll >= f.trapChance)) return taken;

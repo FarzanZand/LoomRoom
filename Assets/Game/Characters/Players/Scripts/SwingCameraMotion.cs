@@ -22,6 +22,6 @@ public class SwingCameraMotion : CinemachineExtension
         }
         rotation = Vector3.Lerp(rotation, player.Combat.SwingCameraRotation(tuning),
             1f - Mathf.Exp(-Mathf.Max(1f, tuning.swingCameraBlendSpeed) * deltaTime));
-        state.OrientationCorrection *= Quaternion.Euler(rotation);
+        state.OrientationCorrection *= Quaternion.Euler(rotation + player.Combat.CameraKick);
     }
 }

@@ -79,6 +79,14 @@ public class CharacterFX : MonoBehaviour
                                                       CombatManager.Instance.hitFlashDuration));
     }
 
+    // A short glow when the character starts an attack (CombatManager.enemyAttackTell); a hit flash takes priority.
+    public void Tell(Color color, float duration)
+    {
+        if (renderers == null || duration <= 0f || flashRoutine != null) return;
+        SaveBlocks();
+        flashRoutine = StartCoroutine(HitFlashRoutine(color, duration));
+    }
+
     void SaveBlocks()
     {
         if (originals == null || originals.Length != renderers.Length)

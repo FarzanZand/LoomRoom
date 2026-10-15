@@ -54,6 +54,26 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("IK swing camera motion over the release clip: peaks with the strike, eases off through the follow-through.")]
     public AnimationCurve ikSwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.12f, 1f), new Keyframe(.6f, .35f), new Keyframe(1f, 0f));
 
+    // ── Player: Strike feel ──
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
+    [Min(0), Tooltip("Metres the player steps into a swing when its hitbox opens (personal space still stops them at an enemy). 0: no lunge.")]
+    public float strikeLunge = .25f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
+    [Min(.01f), Tooltip("Seconds the lunge takes.")]
+    public float strikeLungeTime = .12f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
+    [Min(0), Tooltip("Times the lunge and the camera kicks for a heavy swing.")]
+    public float heavyStrikeScale = 2f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
+    [Tooltip("Camera kick in degrees (pitch, yaw, roll) when a swing's hitbox opens; the alternate swing mirrors yaw and roll.")]
+    public Vector3 strikeKick = new Vector3(.8f, 0f, .4f);
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
+    [Tooltip("Extra camera kick when the swing lands on an enemy.")]
+    public Vector3 hitKick = new Vector3(1.2f, 0f, .6f);
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
+    [Min(1), Tooltip("How fast a camera kick settles (higher is snappier).")]
+    public float kickRecovery = 14f;
+
     // ── Player: Swing camera ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing camera")]
     public bool swingCameraMotionEnabled = true;
@@ -245,6 +265,15 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("The hit can never land sooner than this after the swing starts, even if the clip's event is earlier.")]
     [Min(0)] public float enemyMinimumWindup = .3f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("An enemy's body glows briefly when it starts an attack, so the windup reads at any distance (CharacterFX.Tell).")]
+    public bool enemyAttackTell = true;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemyAttackTell))]
+    [ColorUsage(false, true)] public Color enemyTellColor = new Color(1.8f, 1.15f, .6f);
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemyAttackTell))]
+    [Min(0)] public float enemyTellDuration = .14f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemyAttackTell)), Tooltip("Optional sound at the start of every enemy attack.")]
+    public AudioData enemyTellAudio;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Max angle between where the enemy committed to swing and the target for the hit to land.")]
     [Range(10,100)] public float enemyHitFacingAngle = 60f;
@@ -554,6 +583,9 @@ public class CombatManager : Singleton<CombatManager>
             Vector3 direction = info.Direction.sqrMagnitude > .001f ? -info.Direction : Vector3.up;
             PoolManager.SpawnOrInstantiate(prefab,info.HitPoint,Quaternion.LookRotation(direction),impactParticleLifetime);
         }
+        // The player's camera kicks when their swing lands (Strike feel).
+        if(!(victim is Player) && !info.Blocked && info.Source is Player striker && striker.Combat != null)
+            striker.Combat.Kick(info.Heavy ? hitKick * heavyStrikeScale : hitKick);
         if(!(victim is Player) || hitStopOnPlayerHurt)
             RequestHitStop(info.Heavy, (profile != null ? profile.hitStopScale : 1f) * (info.Blocked ? blockHitStopScale
                 : info.Backstab ? backstabHitStopScale : info.Critical ? critHitStopScale : 1f), victim);

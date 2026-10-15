@@ -176,6 +176,19 @@ public static class OneBodyBuilder
                     so.ApplyModifiedPropertiesWithoutUndo();
                 }
 
+            // Spells come from the first-person hand, where the owner sees the flame (the body's twin is drawn as a shadow).
+            if (arms != null)
+                foreach (var caster in root.GetComponentsInChildren<PlayerSpellcasting>(true))
+                {
+                    if (caster.castOrigin == null || caster.castOrigin.IsChildOf(arms)) continue;
+                    Transform twin = null;
+                    foreach (var t in arms.GetComponentsInChildren<Transform>(true)) if (t.name == caster.castOrigin.name) { twin = t; break; }
+                    if (twin == null) continue;
+                    caster.castOrigin = twin;
+                    EditorUtility.SetDirty(caster);
+                    log.AppendLine("Spell origin on the first-person " + twin.parent.name);
+                }
+
             // The old knight goes; its references point at the one animator.
             var knight = Find("BodyVisuals");
             if (knight != null) { Object.DestroyImmediate(knight.gameObject); log.AppendLine("Deleted BodyVisuals"); }

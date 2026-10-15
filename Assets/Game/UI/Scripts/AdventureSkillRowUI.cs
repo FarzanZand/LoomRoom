@@ -65,8 +65,6 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
                 text.AppendLine().Append("<pos=36%>").Append(Coloured(def.extraText, (def.extraFlat ? def.extraAt100 * .01f : def.extraAt100).ToString("0.##")));
         }
         else text.Append(def.description);
-        if (rank < 100)
-            text.AppendLine().Append($"<color={Dim}>Next rank</color><pos=36%><color={Good}>{progress.SkillProgress(skill) * 100f:0}%</color>");
         TooltipUI.Instance.ShowText(def.displayName, $"{AdventureSkills.Tier(rank).ToUpperInvariant()}  {rank} / 100", text.ToString());
     }
 

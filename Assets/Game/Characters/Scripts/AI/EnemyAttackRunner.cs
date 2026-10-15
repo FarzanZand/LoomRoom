@@ -196,6 +196,12 @@ public class EnemyAttackRunner
         // Clear a flinch queued earlier this frame before it can override this swing.
         if (Character.data != null) AnimatorHelper.ResetTrigger(Character.Animator, Character.data.hurtTrigger);
         Character.TriggerAnimation(attack.animatorTrigger);
+        // The tell: a short glow (and an optional sound) the moment the windup starts.
+        if (Tuning != null && Tuning.enemyAttackTell)
+        {
+            if (Character.FX != null) Character.FX.Tell(Tuning.enemyTellColor, Tuning.enemyTellDuration);
+            if (Tuning.enemyTellAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(Tuning.enemyTellAudio, brain.transform.position + Vector3.up);
+        }
 
         // A bow shot is loosed by the release clip's OnAttackHit event (or a late fallback).
         if (attack.IsBowShot)

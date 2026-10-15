@@ -189,7 +189,7 @@ MonoBehaviour:
     fromFloor: 1
   - enemy: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
     weight: 1
-    fromFloor: 1
+    fromFloor: 2
   - enemy: {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
     weight: 2
     fromFloor: 1
@@ -204,7 +204,7 @@ MonoBehaviour:
     fromFloor: 1
   - enemy: {fileID: 8694082213274042645, guid: 201900fae6c0585468bd8ec588f74292, type: 3}
     weight: 1
-    fromFloor: 2
+    fromFloor: 1
   encounterChance: {x: 0.75, y: 0.8}
   minEnemiesPerRoom: 2
   maxEnemiesPerRoom: 3

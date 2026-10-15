@@ -100,6 +100,12 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  strikeLunge: 0.25
+  strikeLungeTime: 0.12
+  heavyStrikeScale: 2
+  strikeKick: {x: 0.8, y: 0, z: 0.4}
+  hitKick: {x: 1.2, y: 0, z: 0.6}
+  kickRecovery: 14
   swingCameraMotionEnabled: 1
   lightSwingCameraRotation: {x: 0.3, y: 0.8, z: -0.35}
   alternateSwingCameraRotation: {x: 0.5, y: 0.8, z: -0.55}
@@ -311,9 +317,13 @@ MonoBehaviour:
   enemyAttackCommitTime: 0.65
   enemyRecoveryTime: 0.12
   enemyCooldownMultiplier: 0.8
-  enemyMinimumWindup: 0.3
+  enemyMinimumWindup: 0.45
+  enemyAttackTell: 1
+  enemyTellColor: {r: 1.8, g: 1.15, b: 0.6, a: 1}
+  enemyTellDuration: 0.14
+  enemyTellAudio: {fileID: 0}
   enemyHitFacingAngle: 85
-  enemyAttackAnimationSpeed: 1.5
+  enemyAttackAnimationSpeed: 1.25
   fightNoiseRadius: 8
   wallMuffle: 0.3
   hitsInterruptWindup: 0
@@ -345,6 +355,7 @@ MonoBehaviour:
   backstabAudio: {fileID: 11400000, guid: fd765cee151cf714891777d45a481eea, type: 2}
   critNumberScale: 2
   armorEffectiveness: 0.75
+  armorPerPoint: 0.2
   hitStopEnabled: 0
   lightHitStopDuration: 0.045
   lightHitStopTimeScale: 0.12

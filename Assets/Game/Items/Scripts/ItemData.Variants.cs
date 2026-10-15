@@ -42,8 +42,8 @@ public partial class ItemData
         copy.rolls = properties ?? System.Array.Empty<RolledProperty>();
         copy.saveId = key;
 
-        // The rarity's bonus on the main number (a weapon's damage, a shield's or armour's armour): +20% a step by default,
-        // whole numbers kept whole. Then rolled properties join the item's stat modifiers after its own.
+        // The rarity's bonus on the main number (a weapon's damage, a shield's or armour's armour): +15% a step by default,
+        // always rounded up (a 4-damage weapon +15% = 4.6 = 5), whole numbers to whole, others to a tenth. Then rolled properties join the item's stat modifiers after its own.
         var table = ItemPropertyTable.Current;
         var step = InventoryManager.StepFor(rarity);
         var modifiers = new List<StatModifierEntry>(copy.statModifiers ?? System.Array.Empty<StatModifierEntry>());
@@ -56,7 +56,7 @@ public partial class ItemData
                 if (m == null || m.stat != main.Value || m.type != ModifierType.Flat) continue;
                 float raised = m.value * (1f + step.baseBonus);
                 bool whole = Mathf.Abs(m.value - Mathf.Round(m.value)) < .001f;
-                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = whole ? Mathf.Round(raised) : Mathf.Round(raised * 10f) / 10f };
+                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = whole ? Mathf.Ceil(raised - .001f) : Mathf.Ceil(raised * 10f - .001f) / 10f };
             }
         foreach (var roll in copy.rolls)
         {

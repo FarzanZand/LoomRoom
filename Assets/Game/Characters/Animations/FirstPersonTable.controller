@@ -49,7 +49,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 3071fae413049bf44a920bec14c46e53, type: 2}
+  m_Motion: {fileID: 7400000, guid: c56222483d36dcc49a04021105b6929f, type: 2}
   m_Tag: AttackReleaseAlt
   m_SpeedParameter: ReleaseSpeed
   m_MirrorParameter: 
@@ -674,7 +674,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: c316be4afdce1ab4896c929bef217ba3, type: 2}
+  m_Motion: {fileID: 7400000, guid: 0012ea4605bdcaf47bd1f4d1ade42307, type: 2}
   m_Tag: AttackRelease
   m_SpeedParameter: ReleaseSpeed
   m_MirrorParameter: 
@@ -2117,7 +2117,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 208cdf1506a4030409b699e3a4d70675, type: 2}
+  m_Motion: {fileID: 7400000, guid: 2e13a16bf869d0042849ff5b53bf5db3, type: 2}
   m_Tag: AttackHeavyRelease
   m_SpeedParameter: HeavyReleaseSpeed
   m_MirrorParameter: 
