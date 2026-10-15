@@ -33,7 +33,7 @@ public class CoopAvatar : MonoBehaviour
     bool shownDead, shownSeated;
     bool builtGhost, builtOneBody;
     OneBodyRig rig;
-    Transform rigRight, rigLeft;
+    Transform rigRight, rigLeft, rigSpell;
     readonly int[] shownStates = new int[15];
     float targetPitch;
     Vector3 lastSolid;
@@ -209,7 +209,7 @@ public class CoopAvatar : MonoBehaviour
         if (model != null && builtPlace == CoopPlace.Table && shownDead && (s.place == CoopPlace.Room || ghost)) LeaveCorpse();
         else if (model != null) Destroy(model);
         model = null; animator = null; rightVisual = leftVisual = usedVisual = null; heldRight = heldLeft = null; shownDead = false; shownSeated = false;
-        rig = null; rigRight = rigLeft = null; builtOneBody = false;
+        rig = null; rigRight = rigLeft = rigSpell = null; builtOneBody = false;
         System.Array.Clear(shownStates, 0, shownStates.Length);
 
         var manager = MultiplayerManager.Instance;
@@ -270,6 +270,7 @@ public class CoopAvatar : MonoBehaviour
         {
             if (t.name == "RightHand_Socket") rigRight = t;
             else if (t.name == "LeftHand_Socket") rigLeft = t;
+            else if (t.name == "Spell Origin") rigSpell = t;
         }
         foreach (var socket in new[] { rigRight, rigLeft })
             if (socket != null) for (int i = socket.childCount - 1; i >= 0; i--) DestroyImmediate(socket.GetChild(i).gameObject);
@@ -325,7 +326,17 @@ public class CoopAvatar : MonoBehaviour
         if (builtOneBody)
         {
             if (right != heldRight) { heldRight = right; HoldOn(ref rightVisual, right, rigRight); }
-            if (left != heldLeft) { heldLeft = left; HoldOn(ref leftVisual, left, rigLeft); }
+            if (left != heldLeft)
+            {
+                heldLeft = left; HoldOn(ref leftVisual, left, rigLeft);
+                // A spell in the left hand: its held flame on the body's spell origin, as the owner's first person shows it.
+                var spell = Coop.Item(left)?.spell;
+                if (leftVisual == null && spell != null && spell.heldVisual != null && (rigSpell != null || rigLeft != null))
+                {
+                    leftVisual = Instantiate(spell.heldVisual, rigSpell != null ? rigSpell : rigLeft).gameObject;
+                    foreach (var t in leftVisual.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = 0;
+                }
+            }
             return;
         }
         if (animator == null || !animator.isHuman) return;
