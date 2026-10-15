@@ -30,6 +30,8 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     [Range(0,1)] public float stingVolume = .7f;
     [Min(0), Tooltip("Extra item rolls (an iron chest: 1).")]
     public int extraRolls;
+    [Tooltip("The starting room's chest: exactly one piece of gear rolled from its loot plus its guaranteed items (a potion), no spoils (set by the generator).")]
+    public bool startingKit;
     [Min(0), Tooltip("Floors deeper a bonus roll comes from (a gold chest: one item as if from 3 floors down). 0 = none.")]
     public int rareRollFloors;
     bool opened;
@@ -77,10 +79,19 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         if(guaranteedItem!=null)DungeonPickup.Spawn(guaranteedItem,dropPosition,transform.parent);
         var source=chest ? DungeonLootSource.Chest:DungeonLootSource.Barrel;
         var (drops,gold)=DungeonLootDrop.Roll(loot,rng,floorNumber,source);
+        if(startingKit)
+        {
+            // One piece of gear, rolled until one comes out; the potion comes with the guaranteed items below.
+            var gear=new System.Collections.Generic.List<LootSource.Drop>();
+            for(int i=0;gear.Count==0 && loot!=null && i<24;i++)
+                foreach(var d in i==0 ? drops : loot.RollDrops(rng,floorNumber,source))
+                    if(d.item!=null && d.item.IsGear){gear.Add(new LootSource.Drop(d.item,1));break;}
+            drops=gear;
+        }
         // A chest is never empty: reroll the items a few times, then fall back to a little gold.
         for(int i=0;chest && drops.Count==0 && guaranteedItem==null && loot!=null && i<4;i++) drops=loot.RollDrops(rng,floorNumber,source);
         // Better chests: more rolls, and one roll from deeper floors (its best item only).
-        if(chest && loot!=null)
+        if(chest && loot!=null && !startingKit)
         {
             for(int i=0;i<extraRolls;i++) drops.AddRange(loot.RollDrops(rng,floorNumber,source));
             if(rareRollFloors>0)
@@ -92,7 +103,7 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         }
         if(guaranteedItems!=null)foreach(var item in guaranteedItems)if(item!=null)drops.Add(new LootSource.Drop(item,1));
         // Spoils for the tally (ProgressionManager): chests only, at their own chance.
-        if(chest && ProgressionManager.HasInstance){var spoils=ProgressionManager.Instance.RollSpoils(seed,floorNumber,true);if(spoils!=null)drops.Add(new LootSource.Drop(spoils,1));}
+        if(chest && !startingKit && ProgressionManager.HasInstance){var spoils=ProgressionManager.Instance.RollSpoils(seed,floorNumber,true);if(spoils!=null)drops.Add(new LootSource.Drop(spoils,1));}
         gold+=bonusGold;
         if(chest && drops.Count==0 && guaranteedItem==null && gold<=0) gold=3+rng.Next(0,3)+floorNumber*2;
         // A chest glows gold as it opens and its loot jumps out.

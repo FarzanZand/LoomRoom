@@ -27,7 +27,7 @@ MonoBehaviour:
   rankExperience: 100
   masterExperienceMultiplier: 2
   perEnemyLimit: 3
-  bonusAt100: 1.5
+  bonusAt100: 1
   bonusText: +{0}% sword damage
   extraAt100: 0
   extraText: 

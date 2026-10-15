@@ -184,6 +184,34 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         AnimatorHelper.SetInteger(armsAnimator, swingIndexParam, swingIndex);
     }
     void OnSwingStarted() { windingUp = false; }
+
+    // Strike feel (CombatManager > Player > Strike feel): the player steps into the blow and the camera kicks as the
+    // hitbox opens; a landed hit kicks again (CombatManager.PresentImpact). Heavy swings do both harder.
+    Vector3 kick;
+    public Vector3 CameraKick => kick;
+    public void Kick(Vector3 degrees) { if (degrees.sqrMagnitude > kick.sqrMagnitude) kick = degrees; }
+
+    void OnStrike()
+    {
+        var t = CombatManager.HasInstance ? CombatManager.Instance : null;
+        if (t == null || !player.IsActive) return;
+        bool heavy = false, alternate = false;
+        if (AnimatorHelper.Ready(armsAnimator))
+            for (int layer = 0; layer < armsAnimator.layerCount; layer++)
+            {
+                var info = armsAnimator.IsInTransition(layer) ? armsAnimator.GetNextAnimatorStateInfo(layer) : armsAnimator.GetCurrentAnimatorStateInfo(layer);
+                heavy |= AnimatorHelper.HasTag(info, heavyReleaseHash);
+                alternate |= AnimatorHelper.HasTag(info, alternateReleaseHash);
+            }
+        float scale = heavy ? t.heavyStrikeScale : 1f;
+        var k = t.strikeKick * scale;
+        Kick(alternate ? new Vector3(k.x, -k.y, -k.z) : k);
+        if (t.strikeLunge > 0f && player.Motor != null)
+        {
+            var yaw = player.Look != null ? player.Look.YawTransform : transform;
+            player.Motor.Lunge(yaw.forward, t.strikeLunge * scale, t.strikeLungeTime);
+        }
+    }
     int NextSwingIndex => Time.time - lastSwingAt <= swingSequenceReset ? (swingIndex + 1) % 2 : 0;
 
     void OnEnable()
@@ -192,6 +220,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         {
             relay.AttackStarted += OnAttackStarted;
             relay.SwingStarted  += OnSwingStarted;
+            relay.HitboxOpened  += OnStrike;
         }
         if (InputManager.HasInstance)
         {
@@ -209,6 +238,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         {
             relay.AttackStarted -= OnAttackStarted;
             relay.SwingStarted  -= OnSwingStarted;
+            relay.HitboxOpened  -= OnStrike;
         }
         windingUp = false;
         queuedPresses = 0;
@@ -270,6 +300,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
 
     void Update()
     {
+        if (kick.sqrMagnitude > 0f)
+            kick = Vector3.Lerp(kick, Vector3.zero, 1f - Mathf.Exp(-(CombatManager.HasInstance ? CombatManager.Instance.kickRecovery : 14f) * Time.deltaTime));
         if (!AnimatorHelper.Ready(armsAnimator)) return;
 
         bool gameplay = !GameManager.HasInstance || GameManager.Instance.GameplayActive;

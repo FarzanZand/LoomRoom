@@ -201,7 +201,7 @@ MonoBehaviour:
     weight: 2
     fromFloor: 1
   - enemy: {fileID: 8694082213274042645, guid: 201900fae6c0585468bd8ec588f74292, type: 3}
-    weight: 2
+    weight: 1
     fromFloor: 1
   encounterChance: {x: 0.78, y: 0.85}
   minEnemiesPerRoom: 2

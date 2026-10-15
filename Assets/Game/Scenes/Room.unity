@@ -116375,7 +116375,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 13
   m_Type: 2
-  m_Color: {r: 1, g: 0.82, b: 0.6, a: 1}
+  m_Color: {r: 1, g: 0.87023675, b: 0.7122642, a: 1}
   m_Intensity: 13
   m_Range: 12
   m_SpotAngle: 30
@@ -116385,7 +116385,7 @@ Light:
     m_Type: 1
     m_Resolution: -1
     m_CustomResolution: -1
-    m_Strength: 1
+    m_Strength: 0.8
     m_Bias: 0.04
     m_NormalBias: 0.3
     m_NearPlane: 0.2
@@ -282699,7 +282699,7 @@ MonoBehaviour:
   fireball: {fileID: 11400000, guid: 97ab782aa2e5c9545b64aafe17d3c498, type: 2}
   heal: {fileID: 11400000, guid: b8ae3872aac7c474a82ca91162f9a632, type: 2}
   arms: {fileID: 8376796199627212064}
-  castOrigin: {fileID: 5633155909966324031}
+  castOrigin: {fileID: 1682400077}
   spellLayer: Left Hand Spell
   castParameter: SpellCast
   releaseParameter: SpellRelease
@@ -285163,7 +285163,7 @@ MonoBehaviour:
   superior: {r: 0.09, g: 0.42, b: 0.29, a: 1}
   masterwork: {r: 0.52, g: 0.34, b: 0.06, a: 1}
   relic: {r: 0.58, g: 0.17, b: 0.06, a: 1}
-  spoils: {r: 0.72, g: 0.07, b: 0.1, a: 1}
+  spoils: {r: 0.58, g: 0.22, b: 0.86, a: 1}
 --- !u!114 &5441364035704603308
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -291450,19 +291450,19 @@ MonoBehaviour:
   rarities:
   - rarity: 2
     properties: {x: 1, y: 1}
-    baseBonus: 0.2
+    baseBonus: 0.15
     priceMultiplier: 1.6
     chance: 0.25
     chancePerFloor: 0
   - rarity: 6
     properties: {x: 2, y: 2}
-    baseBonus: 0.4
+    baseBonus: 0.3
     priceMultiplier: 2.5
     chance: 0.15
     chancePerFloor: 0
   - rarity: 3
     properties: {x: 3, y: 3}
-    baseBonus: 0.6
+    baseBonus: 0.45
     priceMultiplier: 4
     chance: 0.08
     chancePerFloor: 0
@@ -308380,6 +308380,12 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  strikeLunge: 0.25
+  strikeLungeTime: 0.12
+  heavyStrikeScale: 2
+  strikeKick: {x: 0.8, y: 0, z: 0.4}
+  hitKick: {x: 1.2, y: 0, z: 0.6}
+  kickRecovery: 14
   swingCameraMotionEnabled: 1
   lightSwingCameraRotation: {x: 0.3, y: 0.8, z: -0.35}
   alternateSwingCameraRotation: {x: 0.5, y: 0.8, z: -0.55}
@@ -308591,9 +308597,13 @@ MonoBehaviour:
   enemyAttackCommitTime: 0.65
   enemyRecoveryTime: 0.12
   enemyCooldownMultiplier: 0.8
-  enemyMinimumWindup: 0.3
+  enemyMinimumWindup: 0.45
+  enemyAttackTell: 1
+  enemyTellColor: {r: 1.8, g: 1.15, b: 0.6, a: 1}
+  enemyTellDuration: 0.14
+  enemyTellAudio: {fileID: 0}
   enemyHitFacingAngle: 85
-  enemyAttackAnimationSpeed: 1.5
+  enemyAttackAnimationSpeed: 1.25
   fightNoiseRadius: 8
   wallMuffle: 0.3
   hitsInterruptWindup: 0
@@ -311567,6 +311577,8 @@ MonoBehaviour:
   armsLight: {fileID: 768905766005677306}
   ceilingLight: {fileID: 8223217917106352572}
   shadowLight: {fileID: 1357559651}
+  keyLightOverHead: 1
+  shadowLightHeight: 1
   shadowLightWallMargin: 0.3
   refreshSeconds: 0.5
 --- !u!1 &8907706898659315581

@@ -360,6 +360,7 @@ public partial class DungeonGenerator : MonoBehaviour
             }
         }
         SpawnSocketActors(exitStair);
+        StockStartingChest();
         FinishRoomEvents();
         gameObject.AddComponent<DungeonAmbience>().Initialize(Biome);
         gameObject.AddComponent<DungeonHud>().Initialize(this);
@@ -592,6 +593,22 @@ public partial class DungeonGenerator : MonoBehaviour
 
     // A breakable's pick and turn come from the extra stream, but its loot seed (like a chest's or a
     // barrel's) from the main one: one main draw per supply spot, whatever stands there.
+    // In the starting room (room 0 built from the level's Starting Room template).
+    bool InStartingRoom(Vector3 pos) => !Authored && data.startingRoom!=null && Layout!=null && TemplatePrefab(0)==data.startingRoom && Layout.RoomAt(CellOf(pos))==0;
+
+    // The starting room's chest: one piece of gear and the level's potion, always (DungeonContainer.startingKit).
+    void StockStartingChest()
+    {
+        if(data.startingChestConsumable==null)return;
+        foreach(var chest in GetComponentsInChildren<DungeonContainer>(true))
+        {
+            if(chest==null || !chest.chest || !InStartingRoom(chest.transform.position))continue;
+            chest.startingKit=true;
+            chest.extraRolls=0; chest.rareRollFloors=0;
+            if(!chest.guaranteedItems.Contains(data.startingChestConsumable))chest.guaranteedItems.Add(data.startingChestConsumable);
+        }
+    }
+
     DungeonContainer MakeContainer(Vector3 pos,bool chest,LootSource rewardOverride=null,Quaternion? facing=null)
     {
         if(!chest)

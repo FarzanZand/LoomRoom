@@ -16,6 +16,10 @@ public class PlayerData : CharacterData
     public float sprintSpeed = 6f;
     [TabGroup(InspectorTabs, "Movement")]
     public float crouchSpeed = 1.75f;
+    [TabGroup(InspectorTabs, "Movement"), Min(0), Tooltip("Seconds from standing to full speed. 0: instant.")]
+    public float accelerationTime = .1f;
+    [TabGroup(InspectorTabs, "Movement"), Min(0), Tooltip("Seconds from full speed to a stop when the keys are let go. 0: instant.")]
+    public float stopTime = .07f;
     [TabGroup(InspectorTabs, "Movement"), Range(.1f, 1f), Tooltip("Share of the speed kept while moving backwards. Barony backs off at half speed, so attacks can't simply be outwalked.")]
     public float backwardSpeed = 1f;
     [TabGroup(InspectorTabs, "Movement"), Title("Jump & gravity", HorizontalLine = false), Tooltip("Off: the jump input does nothing (the room player).")]

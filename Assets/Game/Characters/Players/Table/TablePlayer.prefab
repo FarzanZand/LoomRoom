@@ -2365,7 +2365,7 @@ MonoBehaviour:
   fireball: {fileID: 11400000, guid: 97ab782aa2e5c9545b64aafe17d3c498, type: 2}
   heal: {fileID: 11400000, guid: b8ae3872aac7c474a82ca91162f9a632, type: 2}
   arms: {fileID: 2764288027749529575}
-  castOrigin: {fileID: 2031158504740361208}
+  castOrigin: {fileID: 6742502895956787983}
   spellLayer: Left Hand Spell
   castParameter: SpellCast
   releaseParameter: SpellRelease
@@ -8378,6 +8378,8 @@ MonoBehaviour:
   armsLight: {fileID: 6392667437929328189}
   ceilingLight: {fileID: 2306511181029770107}
   shadowLight: {fileID: 0}
+  keyLightOverHead: 1
+  shadowLightHeight: 1
   shadowLightWallMargin: 0.3
   refreshSeconds: 0.5
 --- !u!1 &8052408066950581033
@@ -9557,10 +9559,12 @@ MonoBehaviour:
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 0
-  walkSpeed: 3.6
+  walkSpeed: 3.24
   canSprint: 0
   sprintSpeed: 6
   crouchSpeed: 1.75
+  accelerationTime: 0.1
+  stopTime: 0.07
   backwardSpeed: 0.45
   canJump: 1
   jumpForce: 8

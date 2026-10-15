@@ -54,6 +54,16 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     // A dash (the shield bash) replaces walking while it is set: horizontal velocity from its owner, no personal space
     // (the dash stops at the enemy itself). Zero = walk as usual.
     public Vector3 DashVelocity { get; set; }
+    Vector3 walkVelocity, lungeVelocity;
+    float lungeUntil;
+    // A short step along direction (the swing's lunge), added to walking.
+    public void Lunge(Vector3 direction, float distance, float seconds)
+    {
+        direction.y = 0f;
+        if (direction.sqrMagnitude < .0001f || distance <= 0f || seconds <= 0f) return;
+        lungeVelocity = direction.normalized * (distance / seconds);
+        lungeUntil = Time.time + seconds;
+    }
     public bool Dashing => DashVelocity.sqrMagnitude > .01f;
 
     public float AirborneTime { get; private set; }
@@ -257,7 +267,14 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         float yVel = movement.y;
         // Backing away is slower (PlayerData.backwardSpeed); strafing keeps full speed.
         float back = moveDir.z < 0f ? Mathf.Clamp(p.backwardSpeed, .1f, 1f) : 1f;
-        movement = (forward * moveDir.z * back + right * moveDir.x) * Speed;
+        // Speeding up and slowing down take a moment (PlayerData.accelerationTime, stopTime), so stepping in and out
+        // of reach has weight instead of snapping to full speed.
+        Vector3 target = (forward * moveDir.z * back + right * moveDir.x) * Speed;
+        float ramp = target.sqrMagnitude >= walkVelocity.sqrMagnitude ? p.accelerationTime : p.stopTime;
+        walkVelocity = ramp > 0f ? Vector3.MoveTowards(walkVelocity, target, Mathf.Max(Speed, p.walkSpeed) / ramp * Time.deltaTime) : target;
+        movement = walkVelocity;
+        // A swing's lunge steps into the blow (PlayerCombat.OnStrike); personal space below still stops it at an enemy.
+        if (Time.time < lungeUntil) movement += lungeVelocity;
         movement.y = yVel;
         if (Dashing) { movement.x = DashVelocity.x; movement.z = DashVelocity.z; }
         else KeepPersonalSpace();

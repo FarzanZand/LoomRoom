@@ -174,6 +174,8 @@ public class TableLevelData : ScriptableObject
     public DungeonShapeChoice[] roomShapes = DefaultShapes();
     [TabGroup(Tabs, Layout), ShowIf(D), AssetsOnly, Tooltip("Room template prefab the player starts in on the first floor and on the first floor of each new biome. Give its footprint one door cell: the only way out, which the player faces from the centre. Empty uses an ordinary entrance room.")]
     public GameObject startingRoom;
+    [TabGroup(Tabs, Layout), ShowIf(D), AssetsOnly, Tooltip("The starting room's chest always holds two things: one piece of gear rolled from the floor's loot, and this (a potion). Its chest is never trapped. Empty: an ordinary chest.")]
+    public ItemData startingChestConsumable;
 
     // ── Authored layout ───────────────────────────────────────────────
     [System.Serializable]

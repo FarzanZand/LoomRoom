@@ -32,32 +32,24 @@ MonoBehaviour:
     tier3: 0
     tier4: 0
     upgradeChance: 0
-    fineChance: 0.3
-    masterworkChance: 0.1
   - fromFloor: 2
     tier1: 50
     tier2: 50
     tier3: 0
     tier4: 0
     upgradeChance: 0
-    fineChance: 0.3
-    masterworkChance: 0.1
   - fromFloor: 3
     tier1: 25
     tier2: 75
     tier3: 0
     tier4: 0
     upgradeChance: 0
-    fineChance: 0.3
-    masterworkChance: 0.1
   - fromFloor: 4
     tier1: 0
     tier2: 100
     tier3: 0
     tier4: 0
     upgradeChance: 0
-    fineChance: 0.3
-    masterworkChance: 0.1
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   moodLighting: 8
   overrideLighting: 0
@@ -139,6 +131,7 @@ MonoBehaviour:
     shape: {fileID: 11400000, guid: b83f1b9ea222f1f4690c0e00502d6342, type: 2}
     weight: 0.6
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   authoredMap: 
   authoredContent: 
   authoredRooms: []

@@ -117,10 +117,7 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 3e5b020ebc233bf4fa7ed272fc529852, type: 3}
     alert:
     - {fileID: 8300000, guid: 31de1cccf148f0747b9a3d3353af3fd5, type: 3}
-    pain:
-    - {fileID: 8300000, guid: e4f8523e0f390ed418bb3319e678af6f, type: 3}
-    - {fileID: 8300000, guid: 9170416de89bc7d4ea5d38d63c7e9cad, type: 3}
-    - {fileID: 8300000, guid: a0ec7d8869f875249adb9124494699ac, type: 3}
+    pain: []
     death:
     - {fileID: 8300000, guid: d7b847c2faea56048a132bffb57f95f9, type: 3}
     footsteps:
