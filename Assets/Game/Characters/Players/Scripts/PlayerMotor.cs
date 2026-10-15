@@ -236,7 +236,8 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
             (InputManager.Instance.LeanLeftHeld || InputManager.Instance.LeanRightHeld) &&
             (player == null || player.settings == null || player.settings.enableLean);
 
-        sprintApplied = p.canSprint && IsSprinting && moveDir.z > 0f && !leanBlocksSprint && !IsCrouching;
+        // Athletics 25 lets a table player sprint who otherwise can't.
+        sprintApplied = (p.canSprint || (adventurer != null && adventurer.SprintUnlocked)) && IsSprinting && moveDir.z > 0f && !leanBlocksSprint && !IsCrouching;
 
         Speed = p.walkSpeed;
         if (sprintApplied && player != null && player.Stats != null &&

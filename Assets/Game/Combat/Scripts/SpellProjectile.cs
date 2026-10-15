@@ -78,7 +78,10 @@ public class SpellProjectile : MonoBehaviour
     {
         done = true;
         var centre = point + normal * surfaceOffset;
-        bool struck = Blast(owner, centre, spell.radius, power, collisionMask, Only, SourceName);
+        // Burning (Sorcery 25): a Fireball sets what it hits alight, a fifth of the hit each second for 3 seconds.
+        System.Action<Character> burn = spell.spell == LeftHandSpell.Fireball && progress != null && progress.InRun && progress.FirstMilestone(AdventureSkill.Sorcery)
+            ? t => Burning.Ignite(t, owner, power * .2f, 3f, spell.heldVisual != null ? spell.heldVisual.gameObject : null) : null;
+        bool struck = Blast(owner, centre, spell.radius, power, collisionMask, Only, SourceName, burn);
         // One practice roll per cast that hurt an enemy, however many it caught.
         if (struck) progress?.Practise(spell.Skill, SkillAction.Cast);
         if (spell.impact != null)
@@ -109,7 +112,8 @@ public class SpellProjectile : MonoBehaviour
     // A blast of magic damage: every character hostile to the caster within radius, once each, unless a wall is in the
     // way; crates, barrels and doors take it like any other hit. True if it hurt a character. Shared with GroundAreaSpell.
     // only: hurt that character alone (and breakables); sourceName: what a death is put down to when there is no owner.
-    public static bool Blast(Character owner, Vector3 centre, float radius, float power, LayerMask mask, Character only = null, string sourceName = null)
+    // onHit: called for every character the blast hurt and left alive (Burning).
+    public static bool Blast(Character owner, Vector3 centre, float radius, float power, LayerMask mask, Character only = null, string sourceName = null, System.Action<Character> onHit = null)
     {
         var seen = new HashSet<Object>();
         bool struck = false;
@@ -124,6 +128,7 @@ public class SpellProjectile : MonoBehaviour
                 if (Blocked(centre, aim, target.transform, mask)) continue;
                 target.Stats.TakeDamage(new DamageInfo { Amount = power, Source = owner, SourceName = sourceName, Magic = true, HitPoint = aim, Direction = Flat(aim - centre) });
                 struck = true;
+                if (onHit != null && target.IsAlive) onHit(target);
                 continue;
             }
             var damageable = col.GetComponentInParent<IDamageable>();

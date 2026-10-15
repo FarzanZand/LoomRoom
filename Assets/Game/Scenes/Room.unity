@@ -288754,9 +288754,9 @@ MonoBehaviour:
     unit: health
     milestones:
     - value: 25
-      unlock: '?'
-      description: 
-      icon: {fileID: 0}
+      unlock: Riposte
+      description: The first sword swing after a block hits 50% harder.
+      icon: {fileID: 21300000, guid: 0f582b2186aa8b840a27267502e06b25, type: 3}
       trophy: {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
     - value: 50
       unlock: '?'
@@ -288777,9 +288777,10 @@ MonoBehaviour:
     unit: health
     milestones:
     - value: 25
-      unlock: '?'
-      description: 
-      icon: {fileID: 0}
+      unlock: Crush
+      description: A heavy mace hit knocks 10 armour off the target for the rest
+        of the fight, up to 5 times.
+      icon: {fileID: 21300000, guid: f1ed4db51803b9f4887153344cf3a682, type: 3}
       trophy: {fileID: 11400000, guid: b1a6850fe492d4643b2c79564b88c087, type: 2}
     - value: 50
       unlock: '?'
@@ -288800,9 +288801,10 @@ MonoBehaviour:
     unit: health
     milestones:
     - value: 25
-      unlock: '?'
-      description: 
-      icon: {fileID: 0}
+      unlock: Burning
+      description: 'Fireball sets what it hits on fire: a fifth of the hit again
+        every second for 3 seconds.'
+      icon: {fileID: 21300000, guid: a71af6f4ed9937544b05dbbfe2b295ee, type: 3}
       trophy: {fileID: 11400000, guid: 90fcb602aa103114bba5a2c00f5127d6, type: 2}
     - value: 50
       unlock: '?'
@@ -288823,9 +288825,9 @@ MonoBehaviour:
     unit: health
     milestones:
     - value: 25
-      unlock: '?'
-      description: 
-      icon: {fileID: 0}
+      unlock: Mending
+      description: 'Heal keeps healing: half as much again over 4 seconds.'
+      icon: {fileID: 21300000, guid: b61b9a099ca04674cb987f8f43997087, type: 3}
       trophy: {fileID: 11400000, guid: 38526901aa689654ea34e6a6200e56be, type: 2}
     - value: 50
       unlock: '?'
@@ -288846,9 +288848,9 @@ MonoBehaviour:
     unit: health
     milestones:
     - value: 25
-      unlock: '?'
-      description: 
-      icon: {fileID: 0}
+      unlock: Sprint
+      description: You can sprint.
+      icon: {fileID: 21300000, guid: 3abb8a93864023c4ba6278d569f39081, type: 3}
       trophy: {fileID: 11400000, guid: 0fa67589586481d43b0d3147311b842c, type: 2}
     - value: 50
       unlock: '?'
@@ -288869,9 +288871,9 @@ MonoBehaviour:
     unit: health
     milestones:
     - value: 25
-      unlock: '?'
-      description: 
-      icon: {fileID: 0}
+      unlock: Ambush
+      description: A backstab is a critical hit as well.
+      icon: {fileID: 21300000, guid: cd103f6bc8443aa4faf7649efe999363, type: 3}
       trophy: {fileID: 11400000, guid: 4c4a17a16a14b5a49bd9466ac8e9b724, type: 2}
     - value: 50
       unlock: '?'
@@ -288892,9 +288894,9 @@ MonoBehaviour:
     unit: health
     milestones:
     - value: 25
-      unlock: '?'
-      description: 
-      icon: {fileID: 0}
+      unlock: Keen eye
+      description: Merchants offer Fine and Masterwork gear twice as often.
+      icon: {fileID: 21300000, guid: 90fc2f9c33a16df49be87051ba30b016, type: 3}
       trophy: {fileID: 11400000, guid: ef5f66e3c2c30c4439c9bfe0a2653800, type: 2}
     - value: 50
       unlock: '?'

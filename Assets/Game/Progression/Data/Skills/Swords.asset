@@ -25,8 +25,11 @@ MonoBehaviour:
     experience: 12.5
     text: Killing an enemy with a sword
   rankExperience: 100
-  masterExperienceMultiplier: 2.0
+  masterExperienceMultiplier: 2
   perEnemyLimit: 3
-  bonusAt100: 0.5
+  bonusAt100: 1.5
   bonusText: +{0}% sword damage
+  extraAt100: 0
+  extraText: 
+  extraFlat: 0
   legendaryText: +5 Attack with swords. Charged hits deal 25% more.

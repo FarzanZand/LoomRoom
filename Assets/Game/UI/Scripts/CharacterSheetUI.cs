@@ -345,7 +345,9 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         var def = p != null ? p.GetComponent<AdventurerProgress>()?.Definition(t.skill) : null;
         if (def == null) return "";
         if (string.IsNullOrEmpty(def.bonusText) || def.bonusAt100 <= 0) return def.description;
-        return string.Format(def.bonusText, (value * def.bonusAt100).ToString("0.#")) + ".";
+        string line = string.Format(def.bonusText, (value * def.bonusAt100).ToString("0.#")) + ".";
+        if (!string.IsNullOrEmpty(def.extraText) && def.extraAt100 > 0) line += " " + string.Format(def.extraText, def.ExtraShown(value)) + ".";
+        return line;
     }
 
     void ShowCard(string title, string body, RectTransform near)

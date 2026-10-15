@@ -306,6 +306,8 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         if (info.Blocked && adventurer != null && adventurer.BlockAbsorbsAll) actual = 0;
         // The boss arena's blessing: the same, for every blocked hit.
         if (info.Blocked && blessed) actual = 0;
+        // Blocking's second bonus: less of a blocked hit gets through.
+        else if (info.Blocked && adventurer != null) actual *= adventurer.BlockedDamageMultiplier;
         info.Amount   = actual;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
