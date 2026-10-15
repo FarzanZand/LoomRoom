@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Dungeon balance
   m_EditorClassIdentifier: Assembly-CSharp::DungeonBalance
   damageMultiplier: 1
-  separateBossDamage: 1
-  bossDamageMultiplier: 1.5
+  separateBossDamage: 0
+  bossDamageMultiplier: 1
   healthMultiplier: 1.25
   damagePerFloor: 2.5
   healthGrowthPerFloor: 0.2
