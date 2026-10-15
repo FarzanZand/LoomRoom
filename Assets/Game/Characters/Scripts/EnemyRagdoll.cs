@@ -54,10 +54,10 @@ public class EnemyRagdoll : MonoBehaviour
         if (deathAnimationInstead && character.Animator != null && character.Animator.runtimeAnimatorController != null) return;
         IsRagdolled = true;
         var anim = character.Animator;
-        if (anim != null && anim.isHuman) BuildHumanoid(anim);
-        else BuildRigid();
-
         bool thrownWithClip = deathClipWhileThrown && anim != null && !anim.isHuman && anim.runtimeAnimatorController != null;
+        if (anim != null && anim.isHuman) BuildHumanoid(anim);
+        else BuildRigid(thrownWithClip ? DeathClip(anim) : null);
+
         if (thrownWithClip) foreach (var hr in GetComponentsInChildren<HitReactionController>()) hr.enabled = false;
         else DeathPhysics.StopPosing(this, anim);
         DeathPhysics.IgnorePlayers(bodies);
@@ -167,10 +167,21 @@ public class EnemyRagdoll : MonoBehaviour
 
     // ── Rigid body fallback ───────────────────────────────────────────
 
-    void BuildRigid()
+    // The controller's death clip (by name), for bodies thrown while it plays.
+    static AnimationClip DeathClip(Animator anim)
     {
-        // The box fits the body as it is posed now (the skinned mesh baked), in the root's space. A skinned renderer's
+        foreach (var c in anim.runtimeAnimatorController.animationClips)
+            if (c != null && c.name.IndexOf("death", System.StringComparison.OrdinalIgnoreCase) >= 0) return c;
+        return null;
+    }
+
+    void BuildRigid(AnimationClip lyingClip = null)
+    {
+        // The box fits the body as it is posed (the skinned mesh baked), in the root's space. A skinned renderer's
         // own bounds are loose (a rat's reached 0.24 m below its feet), and a box that big held dead bodies up in the air.
+        // A body thrown while its death clip plays gets the box of the clip's last pose, lying down: a box of the pose it
+        // died in stood the curled-up rat on its tail or its legs.
+        if (lyingClip != null) lyingClip.SampleAnimation(gameObject, lyingClip.length);
         bool any = false; var bounds = new Bounds(Vector3.up * .3f, Vector3.one * .6f);
         var toRoot = transform.worldToLocalMatrix; var baked = new Mesh();
         foreach (var r in GetComponentsInChildren<Renderer>())

@@ -29,13 +29,12 @@ public static partial class MetaProgressionSetup
     struct Piece { public string mesh; public Vector3 at; public float scale; public Vector3 euler; }
     static readonly (string name, string id, string description, Piece[] pieces)[] SpoilsKinds =
     {
-        ("Lesser spoils", "spoils_lesser", "A small sack of teeth, claws and the odd bauble. Worth 1 at the tally.",
-            new[] { new Piece { mesh = "SM_Prop_Sack_03", at = Vector3.zero, scale = .42f } }),
-        ("Greater spoils", "spoils_greater", "A sack of monster parts with a skull on top and baubles at the bottom. Worth 5 at the tally.",
-            new[] { new Piece { mesh = "SM_Prop_Sack_01", at = Vector3.zero, scale = .55f }, new Piece { mesh = "SM_Prop_Skull_01", at = new Vector3(.17f, 0, -.05f), scale = .55f, euler = new Vector3(0, 155, 0) } }),
-        ("Grand spoils", "spoils_grand", "A heap of bones, a skull and a full sack. Worth 10 at the tally.",
-            new[] { new Piece { mesh = "SM_Prop_Bone_Pile_01", at = Vector3.zero, scale = .42f }, new Piece { mesh = "SM_Prop_Sack_01", at = new Vector3(-.08f, .03f, .05f), scale = .5f },
-                    new Piece { mesh = "SM_Prop_Skull_01", at = new Vector3(.17f, .04f, -.08f), scale = .62f, euler = new Vector3(0, 200, 0) } }),
+        ("Lesser spoils", "spoils_lesser", "A lump of iron ore. Worth 1 at the tally.",
+            new[] { new Piece { mesh = "SM_Prop_Ore_Iron_01", at = Vector3.zero, scale = 1.3f } }),
+        ("Greater spoils", "spoils_greater", "A lump of gold ore. Worth 5 at the tally.",
+            new[] { new Piece { mesh = "SM_Prop_Ore_Gold_01", at = Vector3.zero, scale = 1.45f } }),
+        ("Grand spoils", "spoils_grand", "Raw gems in their rock. Worth 10 at the tally.",
+            new[] { new Piece { mesh = "SM_Prop_Ore_Gem_01", at = Vector3.zero, scale = 1.6f } }),
         ("Crypt Lord's spoils", "spoils_crypt_lord", "What the Crypt Lord left behind: his skull, his bones, his hoard. Worth 25 at the tally.",
             new[] { new Piece { mesh = "SM_Prop_Bone_Pile_01", at = Vector3.zero, scale = .5f }, new Piece { mesh = "SM_Prop_Skull_01", at = new Vector3(0, .1f, 0), scale = 1.15f, euler = new Vector3(-10, 185, 0) },
                     new Piece { mesh = "SM_Prop_Sack_01", at = new Vector3(-.24f, .02f, .12f), scale = .45f } }),
@@ -56,8 +55,10 @@ public static partial class MetaProgressionSetup
                 var root = new GameObject(kind.name);
                 foreach (var piece in kind.pieces)
                 {
+                    // The painted restyle, or the plain pixel restyle (the ores, built here from the Synty model).
                     var mesh = AssetDatabase.LoadAssetAtPath<Mesh>($"{Painted}{piece.mesh}/{piece.mesh} painted.asset");
                     var mat = AssetDatabase.LoadAssetAtPath<Material>($"{Painted}{piece.mesh}/{piece.mesh} painted.mat");
+                    if (mesh == null && piece.mesh.StartsWith("SM_Prop_Ore_")) (mesh, mat) = RestyleOre(piece.mesh, piece.scale, rebuildModels);
                     if (mesh == null || mat == null) { Debug.LogError($"Spoils: missing painted {piece.mesh}"); continue; }
                     var go = new GameObject("Model " + piece.mesh.Replace("SM_Prop_", ""));
                     go.transform.SetParent(root.transform, false);
@@ -74,6 +75,7 @@ public static partial class MetaProgressionSetup
             item.itemName = kind.name; item.saveId = kind.id; item.description = kind.description;
             item.itemType = ItemType.Spoils; item.rarity = ItemRarity.Spoils; item.maxStackSize = 5;
             item.value = 0; item.tier = 0; item.lootWeight = 0; item.worldPrefab = prefab;
+            if (item.iconSource != null && kind.pieces[0].mesh.StartsWith("SM_Prop_Ore_")) item.iconSource.turn = new Vector3(-25, 30, 0);   // low heaps: seen from above
             EditorUtility.SetDirty(item);
         }
         AssetDatabase.SaveAssets();
@@ -85,6 +87,96 @@ public static partial class MetaProgressionSetup
         EditorApplication.ExecuteMenuItem("Tools/LoomRoom/Sync Item Catalog");
         AssetDatabase.SaveAssets();
         Debug.Log("Meta: spoils items ready in " + SpoilsData);
+    }
+
+    // An ore (spoils) in the pixel style without painting: PixelRestyle's plain restyle of the Synty model (its own
+    // colours, stone grain, baked creases), baked so that at the spoils' scale it lands on the item pixel size.
+    static (Mesh, Material) RestyleOre(string meshName, float scale, bool rebuild)
+    {
+        string dir = $"{Painted}{meshName}";
+        var mesh = AssetDatabase.LoadAssetAtPath<Mesh>($"{dir}/{meshName}.asset");
+        var mat = AssetDatabase.LoadAssetAtPath<Material>($"{dir}/{meshName}.mat");
+        if (mesh != null && mat != null && !rebuild) return (mesh, mat);
+        var source = AssetDatabase.FindAssets(meshName + " t:Prefab", new[] { "Assets/Synty" });
+        GameObject synty = null;
+        foreach (var g in source) { var go = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g)); if (go != null && go.name == meshName) { synty = go; break; } }
+        if (synty == null) { Debug.LogError("Spoils: no Synty prefab " + meshName); return (null, null); }
+        var smf = synty.GetComponentInChildren<MeshFilter>();
+        var probe = new GameObject("Ore probe") { hideFlags = HideFlags.HideAndDontSave };
+        probe.transform.localScale = Vector3.one * scale;
+        var pmf = probe.AddComponent<MeshFilter>(); var pmr = probe.AddComponent<MeshRenderer>();
+        try
+        {
+            float aim = PixelRestyle.ItemTexelsPerUnit * scale;
+            for (int pass = 0; pass < 4; pass++)
+            {
+                (mesh, mat) = PixelRestyle.Build(smf.sharedMesh, smf.GetComponent<MeshRenderer>().sharedMaterials, "Props", meshName, aim, dir);
+                if (mesh == null) break;
+                pmf.sharedMesh = mesh; pmr.sharedMaterial = mat;
+                AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(mat.GetTexture("_BaseMap")), ImportAssetOptions.ForceUpdate);
+                float measured = PixelRestyle.TexelsPerUnit(pmr);
+                if (measured <= 0f || Mathf.Abs(measured / PixelRestyle.ItemTexelsPerUnit - 1f) < .05f) break;
+                aim *= PixelRestyle.ItemTexelsPerUnit / measured;
+            }
+        }
+        finally { Object.DestroyImmediate(probe); }
+        if (mesh != null && OreRock.TryGetValue(meshName, out var rock)) RecolourRock(meshName, mesh, mat, rock);
+        return (mesh, mat);
+    }
+
+    // The rock around the nuggets in a colour of our own (Synty's brown rock hid the iron's rust nuggets and dulled the
+    // gold): the model's most common colour is the rock, its triangles are repainted keeping each texel's shading.
+    static readonly System.Collections.Generic.Dictionary<string, Color> OreRock = new()
+    {
+        { "SM_Prop_Ore_Iron_01", new Color(.3f, .32f, .36f) },   // cool slate
+        { "SM_Prop_Ore_Gold_01", new Color(.25f, .25f, .29f) },  // dark charcoal, so the gold shows
+    };
+
+    static void RecolourRock(string meshName, Mesh mesh, Material mat, Color target)
+    {
+        var tris = mesh.triangles; int n = tris.Length / 3;
+        var colours = PixelRestyle.SyntyFaceColours(meshName, n);
+        if (colours == null) { Debug.LogWarning("Spoils: no Synty colours for " + meshName); return; }
+        var v = mesh.vertices; var area = new System.Collections.Generic.Dictionary<Color, float>();
+        for (int f = 0; f < n; f++) { float a = Vector3.Cross(v[tris[f * 3 + 1]] - v[tris[f * 3]], v[tris[f * 3 + 2]] - v[tris[f * 3]]).magnitude; area[colours[f]] = (area.TryGetValue(colours[f], out var x) ? x : 0) + a; }
+        Color rock = default; float best = -1; foreach (var kv in area) if (kv.Value > best) { best = kv.Value; rock = kv.Key; }
+        string texPath = AssetDatabase.GetAssetPath(mat.GetTexture("_BaseMap"));
+        var tex = new Texture2D(2, 2); tex.LoadImage(System.IO.File.ReadAllBytes(texPath));
+        int W = tex.width, H = tex.height; var px = tex.GetPixels(); var mask = new bool[px.Length]; var other = new bool[px.Length];
+        var uv = mesh.uv;
+        for (int f = 0; f < n; f++)
+        {
+            var into = colours[f] == rock ? mask : other;
+            Vector2 a = uv[tris[f * 3]] * new Vector2(W, H), b = uv[tris[f * 3 + 1]] * new Vector2(W, H), c = uv[tris[f * 3 + 2]] * new Vector2(W, H);
+            int x0 = Mathf.Max(0, Mathf.FloorToInt(Mathf.Min(a.x, Mathf.Min(b.x, c.x))) - 1), x1 = Mathf.Min(W - 1, Mathf.CeilToInt(Mathf.Max(a.x, Mathf.Max(b.x, c.x))) + 1);
+            int y0 = Mathf.Max(0, Mathf.FloorToInt(Mathf.Min(a.y, Mathf.Min(b.y, c.y))) - 1), y1 = Mathf.Min(H - 1, Mathf.CeilToInt(Mathf.Max(a.y, Mathf.Max(b.y, c.y))) + 1);
+            float den = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y); if (Mathf.Abs(den) < 1e-9f) continue;
+            for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++)
+            {
+                float qx = x + .5f, qy = y + .5f;
+                float w1 = ((b.y - c.y) * (qx - c.x) + (c.x - b.x) * (qy - c.y)) / den, w2 = ((c.y - a.y) * (qx - c.x) + (a.x - c.x) * (qy - c.y)) / den;
+                if (w1 >= -.05f && w2 >= -.05f && 1 - w1 - w2 >= -.05f) into[y * W + x] = true;
+            }
+        }
+        // Two texels past the rock's own triangles (the padding round each island kept the old brown as seams), never
+        // into a nugget's.
+        for (int grow = 0; grow < 2; grow++)
+        {
+            var next = (bool[])mask.Clone();
+            for (int y = 0; y < H; y++) for (int x = 0; x < W; x++)
+            {
+                int i = y * W + x; if (mask[i] || other[i]) continue;
+                if ((x > 0 && mask[i - 1]) || (x < W - 1 && mask[i + 1]) || (y > 0 && mask[i - W]) || (y < H - 1 && mask[i + W])) next[i] = true;
+            }
+            mask = next;
+        }
+        float sum = 0; int count = 0; for (int i = 0; i < px.Length; i++) if (mask[i] && px[i].a > .5f) { sum += px[i].grayscale; count++; }
+        if (count == 0) return;
+        float mean = sum / count;
+        for (int i = 0; i < px.Length; i++) if (mask[i] && px[i].a > .5f) { float k = px[i].grayscale / mean; px[i] = new Color(target.r * k, target.g * k, target.b * k, px[i].a); }
+        tex.SetPixels(px); tex.Apply();
+        System.IO.File.WriteAllBytes(texPath, tex.EncodeToPNG()); Object.DestroyImmediate(tex);
+        AssetDatabase.ImportAsset(texPath, ImportAssetOptions.ForceUpdate);
     }
 
     // ── The Progression Manager's tracks and spoils ───────────────────

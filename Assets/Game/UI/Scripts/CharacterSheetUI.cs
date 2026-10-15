@@ -48,6 +48,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
 
     bool open;
     float feedbackUntil;
+    Sequence bannerSequence;
     public bool IsOpen => open;
     static ProgressionManager Meta => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
 
@@ -65,6 +66,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             var r = row;
             r.buy?.onClick.AddListener(() => Buy(r));
             foreach (var hover in HoverTargets(r)) AddHover(hover, r);
+            for (int m = 0; m < r.milestoneIcons.Length; m++) if (r.milestoneIcons[m] != null) AddHover(r.milestoneIcons[m].transform.parent.gameObject, r, m);
             // The next bubble buys too.
             for (int i = 0; i < r.bubbles.Length; i++)
             {
@@ -93,13 +95,13 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     {
         if (r.icon != null) yield return r.icon.gameObject;
         if (r.title != null) yield return r.title.gameObject;
-        foreach (var m in r.milestoneIcons) if (m != null) yield return m.transform.parent.gameObject;
     }
-    void AddHover(GameObject target, Row r)
+    // A milestone bubble tells only about its own unlock; the row's icon and name tell what the track does.
+    void AddHover(GameObject target, Row r, int milestone = -1)
     {
         var trigger = target.GetComponent<EventTrigger>() ?? target.AddComponent<EventTrigger>();
         var enter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
-        enter.callback.AddListener(_ => ShowTip(r, target.transform as RectTransform));
+        enter.callback.AddListener(_ => { if (milestone >= 0) ShowMilestoneTip(r, milestone, target.transform as RectTransform); else ShowTip(r, target.transform as RectTransform); });
         var exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
         exit.callback.AddListener(_ => HideTip());
         trigger.triggers.Add(enter); trigger.triggers.Add(exit);
@@ -155,8 +157,9 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     {
         var save = Save;
         if (save == null) return;
-        text = (text ?? "").Trim();
-        if (text.Length > 16) text = text.Substring(0, 16);
+        text = AdventureSave.CleanName(text);
+        // The save is known by this name: a cleared field keeps the old one.
+        if (text.Length == 0) { nameField?.SetTextWithoutNotify(save.Saved.characterName); return; }
         if (save.Saved.characterName == text) return;
         save.Saved.characterName = text;
         save.Write();
@@ -212,9 +215,11 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (unlockTitle != null) unlockTitle.text = title;
         if (unlockSub != null) unlockSub.text = sub;
         unlockBanner.gameObject.SetActive(true);
+        // A banner shown while another is up starts over: the old sequence would otherwise hide the new one early.
+        bannerSequence?.Kill();
         unlockBanner.DOKill(true);
         unlockBanner.localScale = Vector3.one * .6f;
-        DOTween.Sequence().SetUpdate(true).SetLink(unlockBanner.gameObject)
+        bannerSequence = DOTween.Sequence().SetUpdate(true).SetLink(unlockBanner.gameObject)
             .Append(unlockBanner.DOScale(1f, .22f).SetEase(Ease.OutBack))
             .AppendInterval(3.2f)
             .AppendCallback(() => unlockBanner.gameObject.SetActive(false));
@@ -305,29 +310,49 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (r.buyIcon != null) r.buyIcon.enabled = price >= 0;
     }
 
+    // What the track gives now: a skill's bonus at its value, an attribute's bonus per point.
     void ShowTip(Row r, RectTransform near)
     {
         var meta = Meta; var t = Track(r);
         if (tip == null || meta == null || t == null) return;
-        tip.gameObject.SetActive(true);
-        if (tipTitle != null) tipTitle.text = $"{t.displayName}  <color=#{ColorUtility.ToHtmlStringRGB(pen)}>{meta.Value(t)}</color>";
-        var sb = new System.Text.StringBuilder();
+        string body;
         if (t.kind == MetaTrackKind.Attribute)
-            sb.Append($"Score {meta.Value(t)} of {t.baseScore + t.levels}. Each point above {t.baseScore}: +{t.bonusPerPoint:0.#} {t.unit}.");
-        else
         {
-            sb.Append($"Every run starts at {meta.Value(t)}, before your class adds its own.\n");
-            if (t.milestones != null)
-                foreach (var m in t.milestones)
-                {
-                    bool got = meta.Reached(t, m);
-                    string state = got ? (meta.Trophy(t, m) == ProgressionManager.TrophyState.Mounted ? "yours" : "trophy to hang") : $"{m.value - meta.Value(t)} to go";
-                    string colour = got ? ColorUtility.ToHtmlStringRGB(pen) : ColorUtility.ToHtmlStringRGB(faint);
-                    sb.Append($"\n<color=#{colour}><b>{m.value}</b>  {(string.IsNullOrEmpty(m.unlock) ? "?" : m.unlock)}  ·  {state}</color>");
-                    if (!string.IsNullOrEmpty(m.description)) sb.Append($"\n<size=80%>{m.description}</size>");
-                }
+            float bonus = meta.AttributeBonus(t);
+            body = $"+{t.bonusPerPoint:0.#} {t.unit} per point.";
+            if (bonus > 0) body += $"\nNow: +{bonus:0.#} {t.unit}.";
         }
-        if (tipBody != null) tipBody.text = sb.ToString();
+        else body = SkillBonus(t, meta.Value(t));
+        ShowCard($"{t.displayName}  <color=#{ColorUtility.ToHtmlStringRGB(pen)}>{meta.Value(t)}</color>", body, near);
+    }
+
+    void ShowMilestoneTip(Row r, int index, RectTransform near)
+    {
+        var meta = Meta; var t = Track(r);
+        if (tip == null || meta == null || t == null || t.milestones == null || index >= t.milestones.Count) return;
+        var m = t.milestones[index];
+        bool got = meta.Reached(t, m);
+        string state = got ? (meta.Trophy(t, m) == ProgressionManager.TrophyState.Mounted ? "On the wall." : "A trophy to hang.") : $"At {t.displayName} {m.value}.";
+        string name = string.IsNullOrEmpty(m.unlock) || m.unlock == "?" ? "?" : m.unlock;
+        string body = string.IsNullOrEmpty(m.description) ? state : $"{m.description}\n<color=#{ColorUtility.ToHtmlStringRGB(got ? pen : faint)}>{state}</color>";
+        ShowCard(name, body, near);
+    }
+
+    // A skill's bonus at a value, in the words of its definition ("+5% damage").
+    static string SkillBonus(ProgressionManager.MetaTrack t, int value)
+    {
+        var p = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        var def = p != null ? p.GetComponent<AdventurerProgress>()?.Definition(t.skill) : null;
+        if (def == null) return "";
+        if (string.IsNullOrEmpty(def.bonusText) || def.bonusAt100 <= 0) return def.description;
+        return string.Format(def.bonusText, (value * def.bonusAt100).ToString("0.#")) + ".";
+    }
+
+    void ShowCard(string title, string body, RectTransform near)
+    {
+        tip.gameObject.SetActive(true);
+        if (tipTitle != null) tipTitle.text = title;
+        if (tipBody != null) tipBody.text = body;
         // Beside what is hovered, inside the sheet.
         var parent = tip.parent as RectTransform;
         if (near != null && parent != null)

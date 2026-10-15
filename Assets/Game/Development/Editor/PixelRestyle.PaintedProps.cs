@@ -56,7 +56,7 @@ public static partial class PixelRestyle
     // from a changed copy (the tall crate) finds the materials by its name without the last word, and keeps its own mesh.
     // Several packs use the same mesh name (PolygonTown and PolygonFantasyKingdom both have an SM_Prop_Bookshelf_01):
     // with `shape` given, only a model of that size counts.
-    static bool SyntySource(string baseName, out Mesh mesh, out Material[] mats, Bounds? shape = null)
+    public static bool SyntySource(string baseName, out Mesh mesh, out Material[] mats, Bounds? shape = null)
     {
         mesh = null; mats = null;
         for (string name = baseName; ; )
@@ -457,9 +457,15 @@ public static partial class PixelRestyle
         PartPlainSum.TryGetValue(part, out var v); PartPlainSum[part] = v + new Vector4(plainColour.r, plainColour.g, plainColour.b, 1f);
     }
     static Color PartColour(int part) => PartPlainSum.TryGetValue(part, out var v) && v.w > 0 ? new Color(v.x / v.w, v.y / v.w, v.z / v.w, 1f) : PlainParts[part];
-    static Color[] SyntyFaceColours(string baseName, int triangles)
+    public static Color[] SyntyFaceColours(string baseName, int triangles)
     {
         if (!SyntySource(baseName, out var sMesh, out var sMats) || sMesh == null || sMats == null || sMats.Length == 0) return null;
+        return SyntyFaceColours(sMesh, sMats, triangles);
+    }
+
+    public static Color[] SyntyFaceColours(Mesh sMesh, Material[] sMats, int triangles)
+    {
+        if (sMesh == null || sMats == null || sMats.Length == 0) return null;
         var st = sMesh.triangles; if (st.Length / 3 != triangles) return null;
         var suv = new List<Vector2>(); sMesh.GetUVs(0, suv); if (suv.Count == 0) return null;
         var cache = new Dictionary<Texture, Texture2D>(); var result = new Color[triangles];

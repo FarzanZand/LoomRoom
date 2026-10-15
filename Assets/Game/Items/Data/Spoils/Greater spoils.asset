@@ -17,17 +17,16 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   rarity: 5
-  description: A sack of monster parts with a skull on top and baubles at the bottom.
-    Worth 5 at the tally.
+  description: A lump of gold ore. Worth 5 at the tally.
   icon: {fileID: 21300000, guid: c136d6606effe4f4384302ac52f5e67a, type: 3}
   iconSource:
     custom: 0
     model: {fileID: 0}
     outfit: 
-    turn: {x: 0, y: 0, z: 0}
+    turn: {x: -25, y: 30, z: 0}
     flip: 0
   tag: 
-  worldPrefab: {fileID: 4895708843745022742, guid: 7904ccc2867174842b595780e9c0bd99, type: 3}
+  worldPrefab: {fileID: 7046181507434430085, guid: 7904ccc2867174842b595780e9c0bd99, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 8
   maxStackSize: 5

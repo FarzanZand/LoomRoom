@@ -280,6 +280,7 @@ MonoBehaviour:
   label: {fileID: 549630955172660350}
   button: {fileID: 632361064367488260}
   selected: {fileID: 1989718254791506207}
+  progressFill: {fileID: 0}
   owner: {fileID: 0}
 --- !u!1 &910098425212278351
 GameObject:
@@ -348,8 +349,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 0
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
-  m_sharedMaterial: {fileID: -3359197029103750868, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -373,8 +374,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
-  m_fontSizeBase: 26
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 0
@@ -561,6 +562,7 @@ MonoBehaviour:
   label: {fileID: 6676732374939989477}
   button: {fileID: 8759030257088601731}
   selected: {fileID: 7801705813751463703}
+  progressFill: {fileID: 0}
   owner: {fileID: 0}
 --- !u!1 &1025052281741317002
 GameObject:
@@ -629,8 +631,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 0
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
-  m_sharedMaterial: {fileID: -3359197029103750868, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -654,8 +656,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
-  m_fontSizeBase: 26
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 0
@@ -842,6 +844,7 @@ MonoBehaviour:
   label: {fileID: 7870376535768408704}
   button: {fileID: 2402511606393092749}
   selected: {fileID: 4372820549216841813}
+  progressFill: {fileID: 0}
   owner: {fileID: 0}
 --- !u!1 &1582974082288733606
 GameObject:
@@ -1136,6 +1139,7 @@ MonoBehaviour:
   label: {fileID: 1138556639974026241}
   button: {fileID: 6752466469515965016}
   selected: {fileID: 2510548332175231640}
+  progressFill: {fileID: 0}
   owner: {fileID: 0}
 --- !u!1 &2510548332175231640
 GameObject:
@@ -2041,8 +2045,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 0
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
-  m_sharedMaterial: {fileID: -3359197029103750868, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2066,8 +2070,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
-  m_fontSizeBase: 26
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 0
@@ -2254,6 +2258,7 @@ MonoBehaviour:
   label: {fileID: 3617306190305993663}
   button: {fileID: 2886590536587797570}
   selected: {fileID: 4761847241972446498}
+  progressFill: {fileID: 0}
   owner: {fileID: 0}
 --- !u!1 &4191045395449221977
 GameObject:
@@ -2959,8 +2964,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 0
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
-  m_sharedMaterial: {fileID: -3359197029103750868, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2984,8 +2989,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
-  m_fontSizeBase: 26
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 0
@@ -3323,6 +3328,7 @@ MonoBehaviour:
   label: {fileID: 7706674512163029889}
   button: {fileID: 4619339764717883057}
   selected: {fileID: 3456273045288818764}
+  progressFill: {fileID: 0}
   owner: {fileID: 0}
 --- !u!1 &5076691088569470048
 GameObject:
@@ -3466,8 +3472,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 0
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
-  m_sharedMaterial: {fileID: -3359197029103750868, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3491,8 +3497,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
-  m_fontSizeBase: 26
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 0
@@ -3603,8 +3609,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: LVL 1 Warrior
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
-  m_sharedMaterial: {fileID: -3359197029103750868, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3628,8 +3634,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 32
-  m_fontSizeBase: 32
+  m_fontSize: 27
+  m_fontSizeBase: 27
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 0
@@ -3740,8 +3746,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 0
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
-  m_sharedMaterial: {fileID: -3359197029103750868, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3765,8 +3771,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
-  m_fontSizeBase: 26
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 0
@@ -3952,8 +3958,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 0
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
-  m_sharedMaterial: {fileID: -3359197029103750868, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3977,8 +3983,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
-  m_fontSizeBase: 26
+  m_fontSize: 22
+  m_fontSizeBase: 22
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 0
@@ -4664,6 +4670,7 @@ MonoBehaviour:
   label: {fileID: 8972663691513912413}
   button: {fileID: 1424010601123356134}
   selected: {fileID: 3874219602307806016}
+  progressFill: {fileID: 0}
   owner: {fileID: 0}
 --- !u!1 &8723660063390437574
 GameObject:

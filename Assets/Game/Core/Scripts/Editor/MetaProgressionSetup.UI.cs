@@ -10,7 +10,7 @@ using UnityEngine.UI;
 public static partial class MetaProgressionSetup
 {
     const string MetaSprites = "Assets/Game/UI/Sprites/Meta/";
-    static readonly Color Ink = new(.17f, .15f, .14f), Pen = new(.18f, .31f, .6f), Faint = new(.47f, .45f, .42f);
+    static readonly Color Ink = new(.17f, .15f, .14f), Pen = new(.58f, .16f, .12f), Faint = new(.47f, .45f, .42f);
 
     static Sprite MetaSprite(string name, Vector4 border = default)
     {
@@ -52,14 +52,17 @@ public static partial class MetaProgressionSetup
         t.textWrappingMode = TextWrappingModes.NoWrap; t.overflowMode = TextOverflowModes.Overflow;
         return t;
     }
+    // Buy buttons are inked price tags, the others rubber stamps (sprites from Tools/meta_sheet_buttons.py), not boxes.
     static Button PenButton(string name, Transform parent, Vector2 pos, Vector2 size, string label, float fontSize, out TMP_Text text)
     {
-        var img = Img(name, parent, pos, size, MetaSprite("Pen frame", new Vector4(3, 3, 3, 3)), Pen, Image.Type.Sliced, true);
+        bool buy = name.EndsWith(" buy");
+        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Game/UI/Sprites/Meta/{(buy ? "Ink tag" : "Ink stamp")}.png");
+        var img = Img(name, parent, pos, size, sprite, buy ? Color.white : Pen, Image.Type.Sliced, true);
         img.pixelsPerUnitMultiplier = 1f;
         var b = img.gameObject.AddComponent<Button>();
-        var colors = b.colors; colors.normalColor = Color.white; colors.highlightedColor = new Color(.75f, .82f, 1f); colors.pressedColor = new Color(.6f, .7f, 1f); colors.disabledColor = new Color(1, 1, 1, .35f); b.colors = colors;
+        var colors = b.colors; colors.normalColor = Color.white; colors.highlightedColor = new Color(1f, .9f, .82f); colors.pressedColor = new Color(.85f, .78f, .72f); colors.disabledColor = new Color(1, 1, 1, .45f); b.colors = colors;
         b.targetGraphic = img;
-        text = Text("Label", img.transform, Vector2.zero, size, label, Font("PixelOperator-Bold"), fontSize, Pen, TextAlignmentOptions.Center);
+        text = Text("Label", img.transform, buy ? new Vector2(8, 0) : Vector2.zero, buy ? new Vector2(size.x - 22, size.y) : size, label, Font("PixelOperator-Bold"), fontSize, Pen, TextAlignmentOptions.Center);
         return b;
     }
 
@@ -88,7 +91,7 @@ public static partial class MetaProgressionSetup
         var paper = Img("Paper", root, Vector2.zero, new Vector2(1640, 900), MetaSprite("Paper"), Color.white);
         var p = paper.transform;
         var border = Img("Border", p, Vector2.zero, new Vector2(1580, 840), MetaSprite("Pen frame", new Vector4(3, 3, 3, 3)), new Color(Ink.r, Ink.g, Ink.b, .55f), Image.Type.Sliced);
-        var body = Font("PixelOperator"); var bold = Font("PixelOperator-Bold"); var title = Font("PIXEARG_ SDF");
+        var body = Font("PixelOperator"); var bold = Font("PixelOperator-Bold"); var title = Font("PixelOperator-Bold");   // one font everywhere (titles were PIXEARG_)
 
         // You: portrait, name, attributes.
         var ring = Img("Portrait ring", p, new Vector2(-580, 230), new Vector2(260, 260), MetaSprite("Ring"), Color.white);
@@ -138,12 +141,12 @@ public static partial class MetaProgressionSetup
         Img("Divider", p, new Vector2(-350, 0), new Vector2(2, 780), null, new Color(Ink.r, Ink.g, Ink.b, .35f));
 
         // Skills.
-        Text("Title", p, new Vector2(-320, 382), new Vector2(700, 64), "CHARACTER SHEET", title, 50, Ink).rectTransform.pivot = new Vector2(0, .5f);
+        Text("Title", p, new Vector2(-320, 382), new Vector2(700, 64), "Character sheet", title, 40, Ink).rectTransform.pivot = new Vector2(0, .5f);
         ((RectTransform)p.Find("Title")).anchoredPosition = new Vector2(-320, 382);
         var purse = Img("Purse", p, new Vector2(555, 382), new Vector2(430, 64), MetaSprite("Pen frame", new Vector4(3, 3, 3, 3)), Ink, Image.Type.Sliced);
         var purseIcon = Img("Spoils icon", purse.transform, new Vector2(-180, 0), new Vector2(46, 46), null, Color.white);
-        var lesser = AssetDatabase.LoadAssetAtPath<ItemData>($"{SpoilsData}/Greater spoils.asset");
-        purseIcon.sprite = lesser != null ? lesser.icon : null; purseIcon.preserveAspect = true;
+        var gem = AssetDatabase.LoadAssetAtPath<ItemData>($"{SpoilsData}/Grand spoils.asset");   // spoils as a currency: the gem
+        purseIcon.sprite = gem != null ? gem.icon : null; purseIcon.preserveAspect = true;
         var spoilsText = Text("Spoils", purse.transform, new Vector2(-100, 0), new Vector2(110, 50), "0", bold, 40, Pen, TextAlignmentOptions.Center);
         Text("Spoils label", purse.transform, new Vector2(35, -2), new Vector2(170, 30), "SPOILS TO SPEND", body, 20, Ink);
         var refund = PenButton("Refund all", purse.transform, new Vector2(150, 0), new Vector2(104, 38), "Refund all", 20, out _);
@@ -188,10 +191,10 @@ public static partial class MetaProgressionSetup
         }
         var feedback = Text("Feedback", p, new Vector2(-40, -398), new Vector2(900, 34), "", bold, 26, Pen, TextAlignmentOptions.Center);
         var close = PenButton("Put down", p, new Vector2(680, -392), new Vector2(170, 46), "Put down", 26, out _);
-        var banner = Img("Unlock banner", p, new Vector2(230, 20), new Vector2(760, 150), MetaSprite("Pen frame", new Vector4(3, 3, 3, 3)), Pen, Image.Type.Sliced);
-        var bannerFill = Img("Fill", banner.transform, Vector2.zero, new Vector2(752, 142), null, new Color(.985f, .978f, .955f, .97f));
-        var unlockTitle = Text("Title", banner.transform, new Vector2(0, 18), new Vector2(740, 70), "Unlocked: Shield bash", title, 52, Pen, TextAlignmentOptions.Center);
-        var unlockSub = Text("Sub", banner.transform, new Vector2(0, -40), new Vector2(740, 34), "A trophy for the wall", body, 28, Ink, TextAlignmentOptions.Center);
+        var banner = Img("Unlock banner", p, new Vector2(230, 20), new Vector2(480, 96), MetaSprite("Pen frame", new Vector4(3, 3, 3, 3)), Pen, Image.Type.Sliced);
+        var bannerFill = Img("Fill", banner.transform, Vector2.zero, new Vector2(472, 88), null, new Color(.985f, .978f, .955f, .97f));
+        var unlockTitle = Text("Title", banner.transform, new Vector2(0, 12), new Vector2(460, 44), "Unlocked: Shield bash", title, 34, Pen, TextAlignmentOptions.Center);
+        var unlockSub = Text("Sub", banner.transform, new Vector2(0, -24), new Vector2(460, 28), "A trophy for the wall", body, 22, Ink, TextAlignmentOptions.Center);
         banner.gameObject.SetActive(false);
 
         // Hover card.
@@ -278,7 +281,7 @@ public static partial class MetaProgressionSetup
         foreach (var b in new[] { "New run", "Adventures", "Return to room" }) Move(b, -390);
         var tally = Rect("Tally", panel, Vector2.zero, new Vector2(780, 600));
         Undo.RegisterCreatedObjectUndo(tally.gameObject, "Build tally");
-        var body = Font("PixelOperator"); var bold = Font("PixelOperator-Bold"); var title = Font("PIXEARG_ SDF");
+        var body = Font("PixelOperator"); var bold = Font("PixelOperator-Bold"); var title = Font("PixelOperator-Bold");   // one font everywhere (titles were PIXEARG_)
         var gold = new Color(.86f, .7f, .38f); var text = new Color(.9f, .88f, .84f); var dim = new Color(.6f, .64f, .68f);
         var slotSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Diablo/Plain slot grey.png");
         TMP_Text Label(string n, float y, string s, Color c, TMP_FontAsset f, float size, bool right = false) =>

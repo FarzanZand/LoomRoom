@@ -17,16 +17,16 @@ MonoBehaviour:
   weaponCategory: 0
   spell: {fileID: 0}
   rarity: 5
-  description: A small sack of teeth, claws and the odd bauble. Worth 1 at the tally.
+  description: A lump of iron ore. Worth 1 at the tally.
   icon: {fileID: 21300000, guid: cf160179fa02e42469923bcfc1b565d2, type: 3}
   iconSource:
     custom: 0
     model: {fileID: 0}
     outfit: 
-    turn: {x: 0, y: 0, z: 0}
+    turn: {x: -25, y: 30, z: 0}
     flip: 0
   tag: 
-  worldPrefab: {fileID: 9043384561545774721, guid: 5c90bcfc6d99f7f4fb099f2999303d80, type: 3}
+  worldPrefab: {fileID: 1919247168228454946, guid: 5c90bcfc6d99f7f4fb099f2999303d80, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 8
   maxStackSize: 5

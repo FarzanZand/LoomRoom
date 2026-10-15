@@ -1787,8 +1787,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: WARRIOR
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
-  m_sharedMaterial: {fileID: -3359197029103750868, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1812,8 +1812,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 34
-  m_fontSizeBase: 34
+  m_fontSize: 29
+  m_fontSizeBase: 29
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -2997,7 +2997,6 @@ MonoBehaviour:
   className: {fileID: 4010487408709744713}
   description: {fileID: 2534442785043359847}
   resources: {fileID: 373010231166143781}
-  lockedHint: {fileID: 0}
   skillIcons:
   - {fileID: 1581943301911955720}
   - {fileID: 912525905241921378}
@@ -3172,8 +3171,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: CHOOSE YOUR ADVENTURE
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
-  m_sharedMaterial: {fileID: -3359197029103750868, guid: 75dd658e35ed84d45b1b78b932edf967, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
+  m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3197,8 +3196,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 38
-  m_fontSizeBase: 38
+  m_fontSize: 32
+  m_fontSizeBase: 32
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
