@@ -42,8 +42,8 @@ MonoBehaviour:
   directToHotbar: 0
   canBeEquipped: 1
   equipSlot: 0
-  heldScale: 1
-  heldPosition: {x: 0, y: 0, z: 0}
+  heldScale: 0.6
+  heldPosition: {x: 0, y: 0.10709543, z: 0}
   heldRotation: {x: 0, y: 0, z: 0}
   equipOnPickup: 1
   statModifiers:
