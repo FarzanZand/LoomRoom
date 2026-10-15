@@ -82,8 +82,7 @@ MonoBehaviour:
     milestones:
     - value: 15
       unlock: Shield bash
-      description: 'With a shield up, press attack: dash into the first enemy ahead
-        and stun it.'
+      description: 'Shield up, then attack: dash into the enemy ahead and stun it.'
       icon: {fileID: 21300000, guid: 4345c96bd34f64546ae95654d1130956, type: 3}
       trophy: {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}
     - value: 50
@@ -322,6 +321,9 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   lessonDelay: 2.5
+  quests:
+  - id: shieldBash
+    text: 'Try your shield bash: hold {block} and press {attack}.'
   startingPlayer: 1
   skipWakeUp: 1
   startAt: 0

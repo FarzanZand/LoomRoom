@@ -34,8 +34,19 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
         if (owner != null) { owner.Inspect(skill, false); return; }
         if (progress != null) ShowTooltip(progress, skill);
     }
+    // The row's own tooltip again, after the pointer leaves one of its milestone markers for the row.
+    public void ReshowTooltip() { if (owner == null && progress != null) ShowTooltip(progress, skill); }
 
-    // What the skill does for each point and what it gives now (how it is trained is left for the player to find out).
+    // Tooltip colours: labels dim, numbers green, a locked milestone red.
+    public const string Dim = ItemData.DimColor, Good = ItemData.GoodColor, Bad = ItemData.BadColor;
+    static readonly System.Text.RegularExpressions.Regex Number = new(@"([+\-]?)\u0001([^\u0002]*)\u0002(%?)");
+
+    // A bonus line with its number in colour: "{0}% block stamina" with 12.5 -> "<green>-12.5%</green> block stamina".
+    public static string Coloured(string format, string value, string colour = Good) =>
+        Number.Replace(string.Format(format, "\u0001" + value + "\u0002"), $"<color={colour}>$1$2$3</color>");
+
+    // What the skill does for each point, what it gives at this rank and how close the next point is (how it is trained
+    // is left for the player to find out; the milestones have their own tooltips on their markers).
     public static void ShowTooltip(AdventurerProgress progress, AdventureSkill skill)
     {
         if (progress == null || !TooltipUI.HasInstance) return;
@@ -45,18 +56,39 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
         var text = new System.Text.StringBuilder();
         if (!string.IsNullOrEmpty(def.bonusText) && def.bonusAt100 > 0)
         {
-            text.Append(string.Format(def.bonusText, (def.bonusAt100).ToString("0.##"))).Append(" per point").AppendLine();
             float now = progress.Bonus(skill) * 100;
-            text.Append("Now: ").Append(now < .05f ? "none" : string.Format(def.bonusText, now.ToString("0.#")));
+            text.Append($"<color={Dim}>Now</color><pos=36%>").Append(now < .05f ? $"<color={Dim}>none</color>" : Coloured(def.bonusText, now.ToString("0.#"))).AppendLine();
+            if (!string.IsNullOrEmpty(def.extraText) && def.extraAt100 > 0)
+                text.Append("<pos=36%>").Append(rank <= 0 ? $"<color={Dim}>none</color>" : Coloured(def.extraText, def.ExtraShown(rank))).AppendLine();
+            text.Append($"<color={Dim}>Per rank</color><pos=36%>").Append(Coloured(def.bonusText, (def.bonusAt100).ToString("0.##")));
+            if (!string.IsNullOrEmpty(def.extraText) && def.extraAt100 > 0)
+                text.AppendLine().Append("<pos=36%>").Append(Coloured(def.extraText, (def.extraFlat ? def.extraAt100 * .01f : def.extraAt100).ToString("0.##")));
         }
         else text.Append(def.description);
-        // The milestones: what each unlocks and whether this run has it.
+        if (rank < 100)
+            text.AppendLine().Append($"<color={Dim}>Next rank</color><pos=36%><color={Good}>{progress.SkillProgress(skill) * 100f:0}%</color>");
+        TooltipUI.Instance.ShowText(def.displayName, $"{AdventureSkills.Tier(rank).ToUpperInvariant()}  {rank} / 100", text.ToString());
+    }
+
+    // A milestone marker's tooltip: what it unlocks, at which rank, and whether this run has it.
+    public void ShowMilestone(int index)
+    {
+        if (progress == null || !TooltipUI.HasInstance) return;
         var meta = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
         var track = meta != null ? meta.Track(skill) : null;
-        if (track != null && track.milestones != null)
-            foreach (var m in track.milestones)
-                if (m != null) text.AppendLine().Append(m.value).Append(": ").Append(m.unlock).Append(meta.Unlocked(track, m, rank) ? "" : "  (not learned)");
-        TooltipUI.Instance.ShowText(def.displayName, $"{AdventureSkills.Tier(rank).ToUpperInvariant()}  {rank} / 100", text.ToString());
+        if (track == null || track.milestones == null || index < 0 || index >= track.milestones.Count || track.milestones[index] == null) return;
+        var m = track.milestones[index];
+        var def = progress.Definition(skill);
+        string skillName = def != null ? def.displayName : skill.ToString();
+        int rank = progress.Rank(skill);
+        bool known = !string.IsNullOrEmpty(m.unlock) && m.unlock != "?";
+        var text = new System.Text.StringBuilder();
+        if (known && !string.IsNullOrEmpty(m.description)) text.Append(m.description).AppendLine().AppendLine();
+        if (meta.Trophy(track, m) == ProgressionManager.TrophyState.Mounted) text.Append($"<color={Good}>Learned</color> <color={Dim}>(trophy wall)</color>");
+        else if (meta.Unlocked(track, m, rank)) text.Append($"<color={Good}>Learned</color>");
+        else if (rank >= m.value) text.Append($"<color={Bad}>Locked</color>");
+        else text.Append($"<color={Bad}>Locked</color> <color={Dim}>(rank {rank} / {m.value})</color>");
+        TooltipUI.Instance.ShowText(known ? m.unlock : "?", $"{skillName.ToUpperInvariant()}  {m.value}", text.ToString());
     }
 
     public void Refresh(AdventurerProgress character, AdventureSkill shown)

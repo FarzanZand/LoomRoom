@@ -10,6 +10,54 @@ public class EquipmentPanelUI : MonoBehaviour
     [Tooltip("The skills with their ranks; hovering one shows what it does per point and now.")] public AdventureSkillRowUI[] skills;
     [Tooltip("Optional: the line of gear bonuses (critical chance, kill heal...) under armor; hovering it lists them all.")] public GearBonusesUI gearBonuses;
     Player player;
+    const string ValueColumn="<pos=34%>";
+    static string Line(string label,string value)=>$"<color={ItemData.DimColor}>{label}</color>{ValueColumn}{value}";
+    // A status bar colour lifted for text on the dark panel.
+    static string Status(Color c)=>"#"+ColorUtility.ToHtmlStringRGB(Color.Lerp(c,Color.white,.35f));
+    // The held weapon's spread makes damage a range (5-9).
+    string DamageText(CharacterStats s){var held=player.Equipment!=null?player.Equipment.Get(EquipmentSlot.RightHand):null;int spread=held!=null && held.IsWeapon?held.damageSpread:0;float dmg=s.GetFinal(StatType.AttackDamage);return spread>0?$"{Mathf.Max(1f,dmg-spread):0}-{dmg+spread:0}":$"{dmg:0.#}";}
+
+    // What a stat line means, with the player's own numbers, for its hover tooltip (StatTooltipUI).
+    public bool Explain(StatTooltipUI.Kind kind,out string title,out string subtitle,out string body)
+    {
+        title=subtitle=body="";
+        if(player==null || player.Stats==null)return false;
+        var s=player.Stats;string good=ItemData.GoodColor,dim=ItemData.DimColor;
+        switch(kind)
+        {
+            case StatTooltipUI.Kind.Health:
+                title="Health";subtitle=$"{Mathf.CeilToInt(s.CurrentHealth)} / {s.MaxHealth:0}";
+                body="At 0 the run ends."+(s.FoodRemaining>0?$"\n\n<color={dim}>Food</color><pos=50%><color={good}>+{s.FoodHealingPerSecond:0.#}/s</color> <color={dim}>for {s.FoodRemaining:0}s</color>":"");
+                return true;
+            case StatTooltipUI.Kind.Stamina:
+                title="Stamina";subtitle=$"{Mathf.CeilToInt(s.CurrentStamina)} / {s.MaxStamina:0}";
+                body="Used by heavy swings, blocks and the shield bash.";
+                return true;
+            case StatTooltipUI.Kind.Mana:
+                title="Mana";subtitle=$"{Mathf.CeilToInt(s.CurrentMana)} / {s.MaxMana:0}";
+                body="Used by spells.";
+                return true;
+            case StatTooltipUI.Kind.Damage:
+            {
+                float crit=(CombatManager.HasInstance?CombatManager.Instance.critChance:.08f)+s.GetFinal(StatType.CriticalChance);
+                title="Damage";subtitle=DamageText(s);
+                body=$"Before the enemy's armor.\n\n<color={dim}>Critical chance</color><pos=60%><color={good}>{crit*100f:0.#}%</color>";
+                return true;
+            }
+            case StatTooltipUI.Kind.Armor:
+            {
+                float per=CombatManager.ArmorPerPoint,share=CombatManager.HasInstance?CombatManager.Instance.armorEffectiveness:.75f;
+                float armorNow=s.ArmorWithoutShield,block=s.BlockArmor;
+                title="Armor";subtitle=block>0?$"{armorNow:0.#}  (+{block:0.#} blocking)":$"{armorNow:0.#}";
+                body=$"<color={dim}>Per hit</color><pos=60%><color={good}>-{armorNow*per:0.#}</color>";
+                if(block>0)body+=$"\n<color={dim}>Per blocked hit</color><pos=60%><color={good}>-{(armorNow+block)*per:0.#}</color>";
+                body+=$"\n\n<color={dim}>{(1f-share)*100f:0}% of a hit always lands, unless blocked.</color>";
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void Bind(Player value){player=value;foreach(var slot in slots)if(slot!=null)slot.Bind(player);Refresh();}
     static readonly (StatType stat,string label)[] Attributes={(StatType.Strength,"STRENGTH"),(StatType.Dexterity,"DEXTERITY"),(StatType.Constitution,"CONSTITUTION"),(StatType.Intelligence,"INTELLIGENCE"),(StatType.Perception,"PERCEPTION"),(StatType.Charisma,"CHARISMA")};
     public void Refresh(){foreach(var slot in slots)if(slot!=null)slot.Refresh();shownKey=null;Update();}
@@ -32,14 +80,13 @@ public class EquipmentPanelUI : MonoBehaviour
         key[key.Length-2]=gearHash;key[key.Length-1]=Tenths(s.GetFinal(StatType.CriticalChance)*100+s.GetFinal(StatType.KillHeal)+s.GetFinal(StatType.LightRadius));
         if(Same())return;
         shownKey??=new long[key.Length];System.Array.Copy(key,shownKey,key.Length);
-        if(health!=null)health.text=$"HEALTH  {Mathf.CeilToInt(s.CurrentHealth)} / {s.MaxHealth:0}";
-        if(stamina!=null)stamina.text=$"STAMINA  {Mathf.CeilToInt(s.CurrentStamina)} / {s.MaxStamina:0}";
-        if(mana!=null)mana.text=$"MANA  {Mathf.CeilToInt(s.CurrentMana)} / {s.MaxMana:0}";
-        // The held weapon's spread makes damage a range (5-9).
-        var held=player.Equipment!=null?player.Equipment.Get(EquipmentSlot.RightHand):null;int spread=held!=null && held.IsWeapon?held.damageSpread:0;float dmg=s.GetFinal(StatType.AttackDamage);
-        if(damage!=null)damage.text=spread>0?$"DAMAGE  {Mathf.Max(1f,dmg-spread):0}-{dmg+spread:0}":$"DAMAGE  {dmg:0.#}";
+        // Label dim on the left, the number in a column in its bar's colour (hover a line for what it does, StatTooltipUI).
+        if(health!=null)health.text=Line("HEALTH",$"<color={Status(UIManager.HasInstance?UIManager.Instance.health:Color.red)}>{Mathf.CeilToInt(s.CurrentHealth)}</color><color={ItemData.DimColor}> / {s.MaxHealth:0}</color>");
+        if(stamina!=null)stamina.text=Line("STAMINA",$"<color={Status(UIManager.HasInstance?UIManager.Instance.stamina:Color.green)}>{Mathf.CeilToInt(s.CurrentStamina)}</color><color={ItemData.DimColor}> / {s.MaxStamina:0}</color>");
+        if(mana!=null)mana.text=Line("MANA",$"<color={Status(UIManager.HasInstance?UIManager.Instance.mana:Color.blue)}>{Mathf.CeilToInt(s.CurrentMana)}</color><color={ItemData.DimColor}> / {s.MaxMana:0}</color>");
+        if(damage!=null)damage.text=Line("DAMAGE",$"<color={ItemData.TextColor}>{DamageText(s)}</color>");
         // Shield armor counts only on a block: shown apart so the main number is what always applies.
-        if(armor!=null){float block=s.BlockArmor;armor.text=$"ARMOR  {s.ArmorWithoutShield:0.#}"+(block>0?$"  <color={ItemData.DimColor}>(+{block:0.#} BLOCK)</color>":"");}
+        if(armor!=null){float block=s.BlockArmor;armor.text=Line("ARMOR",$"<color={ItemData.TextColor}>{s.ArmorWithoutShield:0.#}</color>"+(block>0?$"<color={ItemData.DimColor}>   +{block:0.#} blocking</color>":""));}
         if(identity!=null){var p=player.GetComponent<AdventurerProgress>();string cls=p!=null && p.selectedClass!=null?p.selectedClass.displayName:"Adventurer";identity.text=$"{cls.ToUpperInvariant()}\n<color={ItemData.DimColor}>LEVEL {(p!=null?p.Level:1)}</color>";}
         if(attributes!=null){var sb=new System.Text.StringBuilder();foreach(var (stat,label) in Attributes)sb.Append(label).Append("<pos=62%>").Append(s.GetFinal(stat).ToString("0")).Append('\n');attributes.text=sb.ToString();}
         if(gearBonuses!=null)gearBonuses.Refresh(player.Equipment);
