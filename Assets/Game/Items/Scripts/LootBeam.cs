@@ -26,6 +26,8 @@ public class LootBeam : MonoBehaviour
         // Fine, Masterwork and Relic: their rarity colour, brighter and a little stronger the rarer.
         if (item.rarity == ItemRarity.Fine || item.rarity == ItemRarity.Masterwork || item.rarity == ItemRarity.Relic)
             return WithAlpha(Color.Lerp(item.RarityColour, Color.white, .3f), config.beamNormal.a * (item.rarity == ItemRarity.Fine ? 1.3f : item.rarity == ItemRarity.Masterwork ? 1.6f : 2f));
+        // Spoils: a strong red beam, so the currency reads from across a dark room.
+        if (item.rarity == ItemRarity.Spoils) return WithAlpha(Color.Lerp(item.RarityColour, Color.white, .25f), config.beamNormal.a * 1.8f);
         if (item.rarity == ItemRarity.Rare) return WithAlpha(Color.Lerp(item.RarityColour, new Color(1f, .62f, .25f), .5f), config.beamNormal.a * 1.3f);
         // Plain gear and consumables share the white beam.
         return config.beamNormal;

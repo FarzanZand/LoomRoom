@@ -101,6 +101,8 @@ public class UIManager : Singleton<UIManager>
     public static readonly Color DefaultMasterwork = new(.52f, .34f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Relics (hand-made items).")] public Color relic = DefaultRelic;
     public static readonly Color DefaultRelic = new(.58f, .17f, .06f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of spoils (the meta currency: monster parts and baubles).")] public Color spoils = DefaultSpoils;
+    public static readonly Color DefaultSpoils = new(.72f, .07f, .1f);
 
     // A rarity's colour, from the UIManager when there is one (Plain: the faint fill).
     public static Color RarityColor(ItemRarity rarity)
@@ -112,6 +114,7 @@ public class UIManager : Singleton<UIManager>
             ItemRarity.Fine => ui != null ? ui.fine : DefaultFine,
             ItemRarity.Masterwork => ui != null ? ui.masterwork : DefaultMasterwork,
             ItemRarity.Relic => ui != null ? ui.relic : DefaultRelic,
+            ItemRarity.Spoils => ui != null ? ui.spoils : DefaultSpoils,
             _ => ui != null ? ui.plain : DefaultPlain,
         };
     }

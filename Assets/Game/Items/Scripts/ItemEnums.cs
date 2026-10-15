@@ -5,7 +5,7 @@ using System;
 // How rare an item is. Plain, Fine, Masterwork and Relic are gear rarities (Fine and Masterwork roll properties,
 // ItemPropertyTable; Relics are hand-made assets). Rare is the spell tomes' bronze. Each has its colour on UIManager:
 // slot fill, loot beam and name.
-public enum ItemRarity { Plain = 0, Rare = 1, Fine = 2, Masterwork = 3, Relic = 4 }
+public enum ItemRarity { Plain = 0, Rare = 1, Fine = 2, Masterwork = 3, Relic = 4, Spoils = 5 }
 
 // Gear slots a rolled property can appear on (ItemPropertyTable).
 [Flags]
@@ -51,6 +51,7 @@ public enum ItemType
     Key        = 5,
     Equipment  = 6,
     Spell      = 7,
+    Spoils     = 8,   // monster parts and baubles carried out of a run; counted at the tally (ProgressionManager)
 }
 
 // Bit mask over ItemType, for container filters ("the hotbar only takes these").
@@ -66,6 +67,7 @@ public enum ItemTypeMask
     Key        = 1 << 5,
     Equipment  = 1 << 6,
     Spell      = 1 << 7,
+    Spoils     = 1 << 8,
     All        = ~0,
 }
 

@@ -24,6 +24,16 @@ public class DungeonLootDrop : MonoBehaviour
         // Gold rolls after items so the item results match earlier seeds.
         var (items, tableGold) = Roll(table, rng, floorNumber, DungeonLootSource.Enemy);
         drops.AddRange(items);
+        // Spoils for the tally (ProgressionManager): a chance per kill, and a boss always drops its own.
+        if (ProgressionManager.HasInstance)
+        {
+            var meta = ProgressionManager.Instance;
+            var spoils = meta.RollSpoils(seed, floorNumber, false);
+            if (spoils != null) drops.Add(new LootSource.Drop(spoils, 1));
+            var brain = GetComponent<EnemyBrain>();
+            var bossSpoils = meta.BossSpoilsFor(brain != null ? brain.Data : null);
+            if (bossSpoils != null) drops.Add(new LootSource.Drop(bossSpoils, 1));
+        }
         int gold = bonusGold + tableGold;
         if (CombatManager.HasInstance && CombatManager.Instance.lootableCorpses)
         {

@@ -163,7 +163,9 @@ public class AdventurerProgress : MonoBehaviour
         Level = 1; Experience = 0; Growth = new int[StatNames.Length];
         SkillExperience = new float[AdventureSkills.Count];
         Ranks = new int[AdventureSkills.Count];
-        foreach (var skill in AdventureSkills.All) Ranks[(int)skill] = selectedClass.StartingRank(skill);
+        // A run starts from the base bought on the character sheet (ProgressionManager) plus the class.
+        bool meta = ProgressionManager.HasInstance && ProgressionManager.MetaActive;
+        foreach (var skill in AdventureSkills.All) Ranks[(int)skill] = Mathf.Clamp((meta ? ProgressionManager.Instance.BaseRank(skill) : 0) + selectedClass.StartingRank(skill), 0, 100);
         taught.Clear(); visited.Clear(); sprintDistance = healCredit = 0; lastPosition = transform.position;
         player.Equipment.UnequipAll(); player.Bag.Clear(); player.Hotbar.Clear();
         ApplyStats();
@@ -193,6 +195,14 @@ public class AdventurerProgress : MonoBehaviour
         Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + (Level - 1) * rules.manaPerLevel);
         // Legendary Athletics: a deeper well of stamina.
         Add(StatType.MaxStamina, selectedClass.stamina - stats.GetBase(StatType.MaxStamina) + (Legendary(AdventureSkill.Athletics) ? rules.legendaryStamina : 0));
+        // The character sheet's attributes: each point above the base adds health, mana or damage.
+        if (ProgressionManager.HasInstance && ProgressionManager.MetaActive)
+        {
+            var meta = ProgressionManager.Instance;
+            if (meta.MetaBonus(MetaAttribute.Constitution) != 0) Add(StatType.MaxHealth, meta.MetaBonus(MetaAttribute.Constitution));
+            if (meta.MetaBonus(MetaAttribute.Intelligence) != 0) Add(StatType.MaxMana, meta.MetaBonus(MetaAttribute.Intelligence));
+            if (meta.MetaBonus(MetaAttribute.Strength) != 0) Add(StatType.AttackDamage, meta.MetaBonus(MetaAttribute.Strength));
+        }
         stats.RestorePools(health, mana, stamina);
         Changed?.Invoke();
     }

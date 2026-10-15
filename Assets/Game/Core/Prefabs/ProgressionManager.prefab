@@ -44,6 +44,285 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c04dd86de740594b8c77051febff8db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressionManager
+  spoils:
+  - item: {fileID: 11400000, guid: 0fc4ea10ef14e314f8e3503aadcfb21c, type: 2}
+    worth: 1
+    floor1: 75
+    perFloor: -5
+  - item: {fileID: 11400000, guid: 48f8aa9893560ed4f94bbb03837ce89c, type: 2}
+    worth: 5
+    floor1: 15
+    perFloor: 3
+  - item: {fileID: 11400000, guid: ffebbd1e82a7438439df635551803fee, type: 2}
+    worth: 10
+    floor1: 10
+    perFloor: 2
+  enemySpoilsChance: 0.15
+  chestSpoilsChance: 0.3
+  healthPerSpoil: 50
+  bossSpoils:
+  - boss: {fileID: -8644375173445383690, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
+    item: {fileID: 11400000, guid: c8c0daea26038644da47464013264bfb, type: 2}
+    worth: 25
+  firstPrice: 16
+  priceMultiplier: 1.5
+  tracks:
+  - id: blocking
+    displayName: Blocking
+    kind: 0
+    skill: 2
+    attribute: 0
+    icon: {fileID: 21300000, guid: 1486fd8fc298a864aaabd2d916137814, type: 3}
+    givenLevels: 2
+    levels: 10
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: health
+    milestones:
+    - value: 15
+      unlock: Shield bash
+      description: 'With a shield up, press attack: dash into the first enemy ahead
+        and stun it.'
+      icon: {fileID: 21300000, guid: d77131e6fddd0ba40ab98dfb7dfc34ea, type: 3}
+      trophy: {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}
+    - value: 50
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 49d3c10a30673d240982e4adce0127fd, type: 2}
+  - id: swords
+    displayName: Swords
+    kind: 0
+    skill: 0
+    attribute: 0
+    icon: {fileID: 21300000, guid: 9433a5ca94182da42a0382452727c847, type: 3}
+    givenLevels: 2
+    levels: 10
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: health
+    milestones:
+    - value: 25
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
+    - value: 50
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: f4e99b53585eca643bdaa6867018a4aa, type: 2}
+  - id: maces
+    displayName: Maces
+    kind: 0
+    skill: 1
+    attribute: 0
+    icon: {fileID: 21300000, guid: 0323defcc7204924787491d8a559435e, type: 3}
+    givenLevels: 2
+    levels: 10
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: health
+    milestones:
+    - value: 25
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: b1a6850fe492d4643b2c79564b88c087, type: 2}
+    - value: 50
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 6fc213fd8195b2c48a8426320b3e6011, type: 2}
+  - id: sorcery
+    displayName: Sorcery
+    kind: 0
+    skill: 3
+    attribute: 0
+    icon: {fileID: 21300000, guid: 446f79a07be0d954c947088f20f4403e, type: 3}
+    givenLevels: 2
+    levels: 10
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: health
+    milestones:
+    - value: 25
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 90fcb602aa103114bba5a2c00f5127d6, type: 2}
+    - value: 50
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: ab6f16f47978a9640aaf59e418d98b96, type: 2}
+  - id: thaumaturgy
+    displayName: Thaumaturgy
+    kind: 0
+    skill: 4
+    attribute: 0
+    icon: {fileID: 21300000, guid: e578053d3f67fd246a11d97606107e5f, type: 3}
+    givenLevels: 2
+    levels: 10
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: health
+    milestones:
+    - value: 25
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 38526901aa689654ea34e6a6200e56be, type: 2}
+    - value: 50
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 5b9f5f3f0e5c1c642939320cf3a3a55b, type: 2}
+  - id: athletics
+    displayName: Athletics
+    kind: 0
+    skill: 5
+    attribute: 0
+    icon: {fileID: 21300000, guid: feb16e39c94558c439c4c0a781b4529e, type: 3}
+    givenLevels: 2
+    levels: 10
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: health
+    milestones:
+    - value: 25
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 0fa67589586481d43b0d3147311b842c, type: 2}
+    - value: 50
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: e23a2bb6edba93146bdad2eb243d9f2f, type: 2}
+  - id: stealth
+    displayName: Stealth
+    kind: 0
+    skill: 7
+    attribute: 0
+    icon: {fileID: 21300000, guid: cd103f6bc8443aa4faf7649efe999363, type: 3}
+    givenLevels: 2
+    levels: 10
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: health
+    milestones:
+    - value: 25
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 4c4a17a16a14b5a49bd9466ac8e9b724, type: 2}
+    - value: 50
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 335b553d1e77a534ba228f8cc0fa27c1, type: 2}
+  - id: trading
+    displayName: Trading
+    kind: 0
+    skill: 6
+    attribute: 0
+    icon: {fileID: 21300000, guid: a4b5f30bd57565a459e49d70d505fb28, type: 3}
+    givenLevels: 2
+    levels: 10
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: health
+    milestones:
+    - value: 25
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: ef5f66e3c2c30c4439c9bfe0a2653800, type: 2}
+    - value: 50
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 35c618e2647828647b7a1e64dc17e4be, type: 2}
+  - id: constitution
+    displayName: Constitution
+    kind: 1
+    skill: 0
+    attribute: 0
+    icon: {fileID: 21300000, guid: 55b4010105dd8f64badc3925d87f252c, type: 3}
+    givenLevels: 0
+    levels: 8
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: health
+    milestones: []
+  - id: intelligence
+    displayName: Intelligence
+    kind: 1
+    skill: 0
+    attribute: 1
+    icon: {fileID: 21300000, guid: 3759841264514d145989f462e118c95b, type: 3}
+    givenLevels: 0
+    levels: 8
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: mana
+    milestones: []
+  - id: strength
+    displayName: Strength
+    kind: 1
+    skill: 0
+    attribute: 2
+    icon: {fileID: 21300000, guid: dbc2f2430bb941c45997e1fa0868ac4e, type: 3}
+    givenLevels: 0
+    levels: 8
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 1
+    unit: damage
+    milestones: []
+  lessonIntro:
+    text: There's a sheet on the little table by the wall. Have a look.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  lessonBlockingFirst:
+    text: Blocking first. Trust me.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  lessonTopUp:
+    text: Here. Don't tell anyone.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  handOverOne:
+    text: Here. Hang it on the wall.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  handOverMany:
+    text: Here, all of them. On the wall they go.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  shieldBashMounted:
+    text: Next time down there, hold the shield up and press attack.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  lessonDelay: 2.5
   startingPlayer: 1
   skipWakeUp: 1
+  startAt: 0
   initialFlags: []

@@ -35,6 +35,10 @@ public class RunManager : Singleton<RunManager>
     public int Kills { get; private set; }
     public int GoldFound { get; private set; }
     public int BossesSlain { get; private set; }
+    // The summed maximum health of the player's kills: the tally turns it into spoils (ProgressionManager.healthPerSpoil).
+    public int HealthSlain { get; private set; }
+    // The run's tally, settled as it ends (spoils into the bank).
+    public ProgressionManager.Tally LastTally { get; private set; }
     public float Seconds { get; private set; }
     public string Killer { get; private set; }
     public bool Ended { get; private set; }
@@ -99,7 +103,7 @@ public class RunManager : Singleton<RunManager>
         StopDeathMoment();
         Running = true; Ended = false;
         Level = level; Seed = seed; Floor = 1;
-        Kills = 0; GoldFound = 0; BossesSlain = 0; Seconds = 0f; Killer = null;
+        Kills = 0; GoldFound = 0; BossesSlain = 0; HealthSlain = 0; Seconds = 0f; Killer = null; LastTally = default;
         ListenToWallet();
         if (player != null)
         {
@@ -122,12 +126,19 @@ public class RunManager : Singleton<RunManager>
         if (advanced) player?.GetComponent<AdventurerProgress>()?.ReachedFloor();
     }
     public void NoteBossSlain() => BossesSlain++;
-    public void RestoreTotals(int kills, int bosses, int gold, float seconds) { Kills=Mathf.Max(0,kills); BossesSlain=Mathf.Max(0,bosses); GoldFound=Mathf.Max(0,gold); Seconds=Mathf.Max(0,seconds); }
+    public void RestoreTotals(int kills, int bosses, int gold, float seconds, int healthSlain = 0) { Kills=Mathf.Max(0,kills); BossesSlain=Mathf.Max(0,bosses); GoldFound=Mathf.Max(0,gold); Seconds=Mathf.Max(0,seconds); HealthSlain=Mathf.Max(0,healthSlain); }
+
+    // Spoils carried and the kills' health go into the bank before anything else hears the run end.
+    void Settle(bool victory)
+    {
+        LastTally = ProgressionManager.HasInstance ? ProgressionManager.Instance.Settle(player, Kills, HealthSlain, victory) : default;
+    }
 
     public void EndRunInVictory()
     {
         if (!Running || Ended) return;
         Ended = true;
+        Settle(true);
         RunEnded?.Invoke(true);
         if (AudioManager.HasInstance && victorySting != null) AudioManager.Instance.PlaySFX2D(victorySting, victoryStingVolume);
         MessageLog.Post($"You conquer {Level?.displayName}!", MessageKind.Good);
@@ -139,6 +150,7 @@ public class RunManager : Singleton<RunManager>
     {
         if (!Running || Ended || recap == null) return false;
         Ended = true;
+        Settle(false);
         RunEnded?.Invoke(false);
         StopDeathMoment();
         deathRoutine = StartCoroutine(DeathMoment());
@@ -204,6 +216,7 @@ public class RunManager : Singleton<RunManager>
         bosses = BossesSlain,
         seconds = Seconds,
         seed = Seed,
+        tally = LastTally,
         adventurer = Adventurer(out var skills),
         skills = skills,
     };
@@ -243,6 +256,7 @@ public class RunManager : Singleton<RunManager>
         if (!Running || Ended || c == null || c is Player || c.GetComponent<EnemyBrain>() == null) return;
         if (player == null || c.LastDamage.Source != player) return; // only the player's kills count and give XP
         Kills++;
+        if (c.Stats != null) HealthSlain += Mathf.RoundToInt(c.Stats.MaxHealth);
         var progress = player != null ? player.GetComponent<AdventurerProgress>() : null;
         if (progress == null || progress.rules == null) return;
         // Tougher enemies are worth more: an authored value, or one scaled from maximum health.
@@ -259,6 +273,7 @@ public struct RunSummary
     public string adventurer, skills;
     public string levelName, killer;
     public int floor, floors, kills, gold, bosses, seed;
+    public ProgressionManager.Tally tally;
     public float seconds;
 
     public string TimeText

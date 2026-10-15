@@ -196,6 +196,7 @@ public class Merchant : MonoBehaviour, IInteractable
         reason = null;
         if (!buysItems) { reason = $"The {merchantName} isn't buying."; return false; }
         if (item == null) return false;
+        if (item.itemType == ItemType.Spoils) { reason = "Spoils go to the tally, not the till."; return false; }
         int owned = (player.Bag != null ? player.Bag.TotalCount(item) : 0) + (player.Hotbar != null ? player.Hotbar.TotalCount(item) : 0);
         // A held item stays in the hotbar, so its last copy there is the one in hand; worn items leave the bag, so
         // any copy still in it is a spare.

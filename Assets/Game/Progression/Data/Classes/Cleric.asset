@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: Cleric
   description: Mace, shield and a Heal Tome.
   portrait: {fileID: 21300000, guid: 1d817ca439b2c534baddb60371f4aec0, type: 3}
+  sheetPortrait: {fileID: 0}
   miniature: {fileID: 9058385677225207783, guid: 631d397a04272644e86d53db57b46ad0, type: 3}
   unlockFlag: 
   equipment:
@@ -37,4 +38,4 @@ MonoBehaviour:
   health: 30
   mana: 30
   stamina: 30
-  skills: 00000000190000000a0000000000000028000000000000000a000000
+  skills: 000000000f00000000000000000000001e0000000000000000000000

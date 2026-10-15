@@ -36,6 +36,11 @@ public class DungeonMasterBeam : MonoBehaviour
     [Min(.05f), Tooltip("World units one repeat of the body's wisps covers along the beam.")] public float flowRepeat = 6f;
     [Tooltip("How fast the body and core run toward the player (texture repeats a second).")] public float scroll = -3.5f;
     [Min(.02f), Tooltip("Seconds between the arcs' jumps.")] public float boltFlicker = .07f;
+    [Range(0, 1), Tooltip("How much the halo's and body's widths ripple along the beam (swells running toward the player).")]
+    public float ripple = .35f;
+    [Min(0), Tooltip("Ripples a second running down the beam.")] public float rippleSpeed = 2.2f;
+    [Min(0), Tooltip("Bright pulses running down the core toward the player, at once (0: a steady core).")] public int corePulses = 2;
+    [Min(0), Tooltip("Seconds a core pulse takes from his palm to the player.")] public float pulseSeconds = .45f;
     [Min(.05f)] public float damageTick = .5f;
 
     [Header("Light and shake")]
@@ -275,9 +280,11 @@ public class DungeonMasterBeam : MonoBehaviour
     void Pour(Vector3 origin, Vector3 end, float swell, Color colour, Color hot, float t, bool arcs = true)
     {
         float flow = Vector3.Distance(origin, end) / flowRepeat;
-        Draw(glow, origin, end, glowScreen * swell, colour * .5f, 0f, 1f);
-        Draw(body, origin, end, bodyScreen * swell, colour, t * scroll, flow);
-        Draw(core, origin, end, coreScreen * swell, hot, t * scroll * 1.6f, flow * .5f);
+        rippleTime = t;
+        rippleAmount = ripple; Draw(glow, origin, end, glowScreen * swell, colour * .55f, 0f, 1f);
+        rippleAmount = ripple * .5f; Draw(body, origin, end, bodyScreen * swell, colour, t * scroll, flow);
+        rippleAmount = 0f; Draw(core, origin, end, coreScreen * swell, hot, t * scroll * 1.6f, flow * .5f);
+        Pulses(core, hot, t);
         if (!arcs) return;
         Bolt(boltA, origin, end, boltScreen * swell, Color.Lerp(colour, Color.white, .5f), t);
         Bolt(boltB, origin, end, boltScreen * .7f * swell, colour, t + 13.7f);
@@ -383,6 +390,13 @@ public class DungeonMasterBeam : MonoBehaviour
             float depth = cam != null ? Mathf.Max(.05f, Vector3.Dot(p - cam.position, cam.forward)) : 10f;
             // Out of his palm it starts narrow (the glow there covers it), and it swells where it meets the player.
             float shape = Mathf.Lerp(.45f, 1f, Mathf.Clamp01(u / .08f)) * Mathf.Lerp(1f, endSwell, Mathf.SmoothStep(0, 1, (u - .75f) / .25f));
+            // A ripple: swells that run from his palm toward the player, uneven (two noise layers), never at the ends.
+            if (rippleAmount > 0f)
+            {
+                float run = u * 3.2f - rippleTime * rippleSpeed;
+                float n = Mathf.PerlinNoise(run, line == glow ? 1.3f : 4.7f) * .7f + Mathf.PerlinNoise(run * 2.3f, 7.1f) * .3f;
+                shape *= 1f + (n - .5f) * 2f * rippleAmount * Mathf.Clamp01(u * 6f) * Mathf.Clamp01((1f - u) * 6f);
+            }
             widthKeys[i] = new Keyframe(u, ScreenToWorld(width, depth) * shape);
         }
         line.SetPositions(path);
@@ -395,6 +409,31 @@ public class DungeonMasterBeam : MonoBehaviour
             m.mainTextureScale = new Vector2(Mathf.Max(.01f, repeats), flip ? -1f : 1f);
             m.mainTextureOffset = new Vector2(offset, 0f);
         }
+    }
+
+    float rippleTime, rippleAmount;
+
+    // Bright pulses running down the core: the core's alpha along its length, dim between them.
+    readonly GradientAlphaKey[] pulseKeys = new GradientAlphaKey[8];
+    void Pulses(LineRenderer line, Color colour, float t)
+    {
+        var g = new Gradient();
+        var c = new Color(colour.r, colour.g, colour.b, 1f);
+        int n = 0;
+        pulseKeys[n++] = new GradientAlphaKey(.7f, 0f);
+        for (int k = 0; k < Mathf.Min(corePulses, 2); k++)
+        {
+            float at = Mathf.Repeat(t / Mathf.Max(.05f, pulseSeconds) + k / (float)Mathf.Max(1, corePulses), 1f);
+            pulseKeys[n++] = new GradientAlphaKey(.55f, Mathf.Clamp01(at - .07f));
+            pulseKeys[n++] = new GradientAlphaKey(1f, at);
+            pulseKeys[n++] = new GradientAlphaKey(.55f, Mathf.Clamp01(at + .07f));
+        }
+        pulseKeys[n++] = new GradientAlphaKey(.7f, 1f);
+        var keys = new GradientAlphaKey[n];
+        System.Array.Copy(pulseKeys, keys, n);
+        System.Array.Sort(keys, (a, b) => a.time.CompareTo(b.time));
+        g.SetKeys(new[] { new GradientColorKey(c, 0f), new GradientColorKey(c, 1f) }, keys);
+        line.colorGradient = g;
     }
 
     // A crackling arc: the bolt texture, jumping to a new shape every Bolt Flicker, flipped at random.

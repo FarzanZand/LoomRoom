@@ -155,7 +155,7 @@ public class TooltipUI : Singleton<TooltipUI>
     static void ShowFooter(GameObject row, TextMeshProUGUI note, TextMeshProUGUI price, ItemData item, string text)
     {
         if (row == null) return;
-        bool priced = item != null && item.value > 0 && item.itemType != ItemType.Key;
+        bool priced = item != null && item.value > 0 && item.itemType != ItemType.Key && item.itemType != ItemType.Spoils;
         row.SetActive(priced || !string.IsNullOrEmpty(text));
         if (note != null) note.text = text;
         if (price != null) { price.text = priced ? $"{item.value} gold" : ""; price.transform.parent.gameObject.SetActive(priced); }

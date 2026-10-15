@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
 
@@ -12,7 +13,7 @@ public class DungeonMasterHand : MonoBehaviour
     [Tooltip("Degrees he leans over the table while he reaches for the stage.")]
     [Range(0, 60)] public float reachLean = 32f;
     [Range(.2f, 1f), Tooltip("How far his arm stretches toward the player while he aims, as a share of its length.")]
-    public float aimReach = .5f;
+    public float aimReach = .42f;
     [Min(0), Tooltip("Least distance (world units, level) his aiming hand keeps from the player.")]
     public float aimKeepAway = 9f;
     [Tooltip("Degrees he leans while he aims the beam.")]
@@ -31,7 +32,7 @@ public class DungeonMasterHand : MonoBehaviour
     [Min(0)] public float carryLight = 40f;
 
     Animator animator;
-    Vector3 rightTarget, leftTarget, lookTarget;
+    Vector3 rightTarget, leftTarget, leftHint, lookTarget;
     Quaternion rightRotation, leftRotation;
     float rightWeight, leftWeight, lookWeight, lean;
     float rightGoal, leftGoal, lookGoal, leanGoal;
@@ -44,7 +45,30 @@ public class DungeonMasterHand : MonoBehaviour
     public Transform RightHand => animator != null ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
     public Transform LeftHand => animator != null ? animator.GetBoneTransform(HumanBodyBones.LeftHand) : null;
 
-    void Awake() => animator = GetComponent<Animator>();
+    void Awake()
+    {
+        animator = GetComponent<Animator>();
+        // The rig's rest pose from its avatar: fingers straight (an open hand), as the model was made. (The prefab is
+        // saved seated, with its fingers curled, so its own pose is no use.)
+        if (animator == null || animator.avatar == null) return;
+        var rest = new Dictionary<string, Quaternion>();
+        foreach (var bone in animator.avatar.humanDescription.skeleton) rest[bone.name] = bone.rotation;
+        for (var b = HumanBodyBones.LeftThumbProximal; b <= HumanBodyBones.LeftLittleDistal; b++)
+        {
+            var t = animator.GetBoneTransform(b);
+            if (t != null && rest.TryGetValue(t.name, out var open)) openFingers.Add((t, open));
+        }
+    }
+
+    [Header("Open palm (beam)")]
+    [Range(0, 1), Tooltip("How far his left fingers open while he aims the beam (1: straight, as the model rests).")]
+    public float palmOpen = .9f;
+    [Tooltip("Turn the left hand so its palm faces the player and its fingers point up while he aims.")]
+    public bool palmFacesTarget = true;
+    [Tooltip("Flip which side of the hand counts as the palm (if the back of the hand faces the player).")]
+    public bool flipPalm = true;
+    readonly List<(Transform bone, Quaternion open)> openFingers = new();
+    Vector3 palmTarget;
 
     void Update()
     {
@@ -57,6 +81,7 @@ public class DungeonMasterHand : MonoBehaviour
 
     void LateUpdate()
     {
+        OpenPalm();
         var hand = RightHand;
         if (hanging != null && hand != null)
             hanging.SetPositionAndRotation(Pinch() - Vector3.up * (hangHeight * grip), hangFacing);
@@ -94,6 +119,8 @@ public class DungeonMasterHand : MonoBehaviour
         animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, leftWeight);
         animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, leftWeight * .7f);
         if (leftWeight > 0) { animator.SetIKPosition(AvatarIKGoal.LeftHand, leftTarget); animator.SetIKRotation(AvatarIKGoal.LeftHand, leftRotation); }
+        animator.SetIKHintPositionWeight(AvatarIKHint.LeftElbow, leftWeight);
+        if (leftWeight > 0) animator.SetIKHintPosition(AvatarIKHint.LeftElbow, leftHint);
         animator.SetLookAtWeight(lookWeight, .25f, .8f, 1f, .6f);
         if (lookWeight > 0) animator.SetLookAtPosition(lookTarget);
     }
@@ -188,8 +215,40 @@ public class DungeonMasterHand : MonoBehaviour
         return Mathf.Max(.5f, bounds.max.y - figure.position.y);
     }
 
-    // The beam's pose: his left hand thrust out at shoulder height, a little to his side, palm toward the target, and he
-    // leans into it. Pointed straight down at the player, the hand would come right up to their face.
+    // While he aims: his left hand turned palm out at the target, fingers up, and the fingers opened (after the
+    // animator and its IK have placed the hand, so they don't undo it).
+    void OpenPalm()
+    {
+        if (leftWeight <= .01f || animator == null) return;
+        var hand = LeftHand;
+        if (hand == null) return;
+        if (palmFacesTarget)
+        {
+            // The palm from the knuckles (this rig's hands have a thumb, index and middle finger only): across the
+            // knuckles from middle to index, and out along the fingers.
+            var index = animator.GetBoneTransform(HumanBodyBones.LeftIndexProximal);
+            var middle = animator.GetBoneTransform(HumanBodyBones.LeftMiddleProximal);
+            var little = animator.GetBoneTransform(HumanBodyBones.LeftLittleProximal) ?? animator.GetBoneTransform(HumanBodyBones.LeftRingProximal) ?? middle;
+            if (index != null && middle != null && little != null && little != index)
+            {
+                var normal = Vector3.Cross(little.position - hand.position, index.position - hand.position).normalized * (flipPalm ? -1f : 1f);
+                var toward = palmTarget - hand.position;
+                var level = new Vector3(toward.x, 0f, toward.z).normalized;
+                var toTarget = Vector3.Slerp(level, toward.normalized, .35f).normalized;
+                var fix = Quaternion.FromToRotation(normal, toTarget);
+                // Then fingers up: turn about the palm's normal until the knuckles point as near to up as they can.
+                var fingers = Vector3.ProjectOnPlane(fix * (middle.position - hand.position), toTarget);
+                var up = Vector3.ProjectOnPlane(Vector3.up, toTarget);
+                if (fingers.sqrMagnitude > 1e-6f && up.sqrMagnitude > 1e-6f) fix = Quaternion.FromToRotation(fingers, up) * fix;
+                hand.rotation = Quaternion.Slerp(hand.rotation, fix * hand.rotation, leftWeight);
+            }
+        }
+        float open = leftWeight * palmOpen;
+        foreach (var (bone, rest) in openFingers) bone.localRotation = Quaternion.Slerp(bone.localRotation, rest, open);
+    }
+
+    // The beam's pose, a blessing raised: his upper arm down by his side, the elbow bent, the forearm upright and the
+    // open hand at shoulder height in front of him, palm out at the target, fingers up.
     public void Aim(Vector3 target)
     {
         var shoulder = animator != null ? animator.GetBoneTransform(HumanBodyBones.LeftUpperArm) : null;
@@ -198,13 +257,11 @@ public class DungeonMasterHand : MonoBehaviour
         flat = flat.sqrMagnitude > .01f ? flat.normalized : transform.forward;
         var outside = Vector3.Cross(flat, Vector3.up);   // his left
         float reach = ArmLength(HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand);
-        leftTarget = origin + (flat * aimReach + outside * .22f + Vector3.up * .08f) * reach;
-        // Never right over the player: his hand is the size of their whole view.
-        var fromTarget = leftTarget - target; fromTarget.y = 0;
-        if (fromTarget.magnitude < aimKeepAway) leftTarget += -flat * (aimKeepAway - fromTarget.magnitude);
-        var palmOut = (target - leftTarget).normalized;
-        leftRotation = Quaternion.LookRotation(palmOut, Vector3.up) * Quaternion.Euler(0, 0, 90);
-        lookTarget = target;
+        leftTarget = origin + (flat * aimReach + outside * .14f - Vector3.up * .12f) * reach;
+        // The elbow low and a little out, so the forearm stands up from it.
+        leftHint = origin + (-Vector3.up * .55f + outside * .3f + flat * .1f) * reach;
+        leftRotation = Quaternion.LookRotation(flat, Vector3.up);
+        lookTarget = target; palmTarget = target;
         leftGoal = 1f; lookGoal = 1f; leanGoal = Mathf.Max(leanGoal, beamLean);
     }
 

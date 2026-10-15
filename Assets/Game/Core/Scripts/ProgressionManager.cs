@@ -14,7 +14,7 @@ public enum ProgressionStart
 // Story flags. Items, interactions, dialogue and cutscenes set and read named flags
 // here; nothing else needs a bespoke bool. AdventureSave stores them as a list of
 // (key, value) with the adventure and puts them back on load.
-public class ProgressionManager : Singleton<ProgressionManager>
+public partial class ProgressionManager : Singleton<ProgressionManager>
 {
     [Serializable]
     public class FlagEntry
