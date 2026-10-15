@@ -50,17 +50,19 @@ MonoBehaviour:
   maxPlayers: 4
   playerName: 
   online: 1
-  sharedLoot: 1
+  sharedLoot: 0
   hostAdventurer: 0
   partyProgression: 0
   sharedSpoils: 1
   ghostLightColor: {r: 0.6, g: 0.8, b: 1, a: 1}
   ghostLightIntensity: 2.2
   ghostLightRange: 6
-  ghostViewDrain: 0.5
+  ghostSpeed: 1.6
+  ghostLook: {fileID: 11400000, guid: 9cd1af3bd8dc91a4daab6ea769667c87, type: 2}
+  ghostLookFade: 0.8
   ghostMaterial: {fileID: 2100000, guid: afed318d2483f484eabf8008b88fc278, type: 2}
   enemyHealthPerPlayer: 0.5
-  extraEnemiesPerPlayer: 1
+  extraEnemiesPerPlayer: 0
   partyKillExperience: 0.5
   descendCountdown: 10
   stairsRadius: 5

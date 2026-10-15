@@ -36,10 +36,17 @@ public class WakeUpCutsceneController : CutsceneController
     // When the player can move again; true after a brief (death) wake-up.
     public event System.Action<bool> Woke;
 
-    // The full opening, or the short version for every morning after a death.
+    // The full opening, or the short version for every morning after a death. In co-op only the host wakes in the
+    // bed: a guest is already up, standing at their own spot in the room (else they would all wake inside each other).
     public void Play(bool brief)
     {
         if (IsPlaying) return;
+        if (Coop.IsGuest)
+        {
+            StandUp();
+            Woke?.Invoke(brief);
+            return;
+        }
         this.brief = brief;
         Play();
         if (brief && director != null && IsPlaying)

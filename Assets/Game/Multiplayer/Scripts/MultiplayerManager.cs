@@ -25,7 +25,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     [Title("Rules", "The host's apply to everyone")]
     [Tooltip("On: the party shares one lot of loot, taken once, and gold anyone picks up goes to everyone. Off: each player sees and rolls their own loot.")]
-    public bool sharedLoot = true;
+    public bool sharedLoot = false;
     [Tooltip("On: everyone plays the host's adventurer (the host's unlocked classes and story). Off: each player brings their own.")]
     public bool hostAdventurer = false;
     [Tooltip("Off: only the host's save gains progression (unlocks, deepest floor). On: every player's own save gains what they earned too.")]
@@ -38,16 +38,20 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     public Color ghostLightColor = new Color(.6f, .8f, 1f);
     [Min(0)] public float ghostLightIntensity = 2.2f;
     [Min(.5f)] public float ghostLightRange = 6f;
-    [Tooltip("How drained of colour a ghost's own view is (0-1).")]
-    [Range(0, 1)] public float ghostViewDrain = .5f;
+    [Tooltip("How much faster a ghost walks and runs than the living (1.6 = 60% faster).")]
+    [Min(1)] public float ghostSpeed = 1.6f;
+    [Tooltip("The ghost's own view: a post-processing profile laid over everything while it is a ghost (Multiplayer/Ghost look: cold, drained, a dark blue vignette, grain and colour fringes).")]
+    public UnityEngine.Rendering.VolumeProfile ghostLook;
+    [Tooltip("Seconds the ghost look takes to come in.")]
+    [Min(0)] public float ghostLookFade = .8f;
     [Tooltip("The see-through look of a ghost's body for the others (a transparent material).")]
     public Material ghostMaterial;
 
     [Title("Party")]
     [Tooltip("Enemy health added per player after the first (.5 = +50%).")]
     [Min(0)] public float enemyHealthPerPlayer = .5f;
-    [Tooltip("Enemies added to a pack per player after the first.")]
-    [Min(0)] public int extraEnemiesPerPlayer = 1;
+    [Tooltip("Enemies added to a pack per player after the first (0: the same packs as alone).")]
+    [Min(0)] public int extraEnemiesPerPlayer = 0;
     [Tooltip("XP a player gets for another player's kill, against the killer's.")]
     [Range(0, 1)] public float partyKillExperience = .5f;
     [Tooltip("Seconds the stairs wait for the others once someone reaches them.")]
@@ -1170,8 +1174,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         Ghost = true;
         // Player.OnDied pushed Dead; a ghost moves and looks about again.
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
-        CoopGhost.Begin(table, ghostLightColor, ghostLightIntensity, ghostLightRange);
-        if (ScreenManager.HasInstance) { ScreenManager.Instance.SetDeathEffect(ghostViewDrain); ScreenManager.Instance.FadeFromBlack(.5f); }
+        CoopGhost.Begin(table, ghostLightColor, ghostLightIntensity, ghostLightRange, ghostSpeed, ghostLook, ghostLookFade);
+        if (ScreenManager.HasInstance) { ScreenManager.Instance.SetDeathEffect(0f); ScreenManager.Instance.FadeFromBlack(.5f); }
         NotificationUI.Show("You are a ghost. You come back when the others reach the next floor.");
     }
 

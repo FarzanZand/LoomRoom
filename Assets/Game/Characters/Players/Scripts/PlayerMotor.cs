@@ -30,6 +30,8 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     public bool  IsMoving    { get; private set; }
     public bool  IsGrounded  => Controller != null && Controller.isGrounded;
     public float Speed       { get; private set; }
+    // Scales every walking speed on top of the MoveSpeed stat (a co-op ghost moves faster, CoopGhost).
+    public float SpeedScale  { get; set; } = 1f;
 
     // Enemies block like Barony's monsters: walking toward one inside the personal space goes nowhere.
     void KeepPersonalSpace()
@@ -224,7 +226,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     void ApplyMovement(Vector2 moveInput)
     {
         var p = Movement;
-        float speedMul = player != null && player.Stats != null ? player.Stats.GetMultiplier(StatType.MoveSpeed) : 1f;
+        float speedMul = (player != null && player.Stats != null ? player.Stats.GetMultiplier(StatType.MoveSpeed) : 1f) * SpeedScale;
 
         Vector3 moveDir = new Vector3(moveInput.x, 0f, moveInput.y);
         if (moveDir.sqrMagnitude > 1f) moveDir.Normalize();
