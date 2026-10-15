@@ -32,7 +32,7 @@ public static class RoomTiles
         ("SM_Prop_Side_Table_02", "cherry"),
         ("SM_Prop_Desk_01", "smoked oak"),
         ("SM_Prop_DiningChair_01", "mahogany"),
-        ("SM_Prop_Animal_Head_Backing_05", "mahogany"),
+        ("SM_Prop_Animal_Head_Backing_05", "mahogany fronts"),   // the lighter grade all over: the plain one went black under the trophy light
     };
     const string DefaultWood = "walnut";
     static string wood = DefaultWood;
