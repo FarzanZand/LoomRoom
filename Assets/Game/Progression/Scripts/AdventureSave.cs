@@ -45,7 +45,7 @@ public class AdventureSave : MonoBehaviour
     [Tooltip("In the Unity editor, every Play session starts as a new game: the save file is neither read nor written. Turn off to test saving and continuing.")]
     [SerializeField] bool freshStartInEditor = true;
     // Built games always save; the editor only when Fresh Start In Editor is off.
-    bool UsesFile => !(Application.isEditor && freshStartInEditor);
+    bool UsesFile => !(Application.isEditor && freshStartInEditor && !CustomFolder);
     public bool HasCheckpoint => Saved.checkpoint != null;
     public event Action Changed;
     Player player; AdventurerProgress progress;
@@ -63,11 +63,18 @@ public class AdventureSave : MonoBehaviour
             var args = Environment.GetCommandLineArgs();
             for (int i = 0; i + 1 < args.Length; i++)
                 if (args[i].Equals("-savedir", StringComparison.OrdinalIgnoreCase)) { folder = args[i + 1]; customFolder = true; }
+#if UNITY_EDITOR
+            var test = UnityEditor.SessionState.GetString(TestFolderKey, "");
+            if (!string.IsNullOrEmpty(test)) { folder = test; customFolder = true; }
+#endif
             return folder;
         }
     }
     static string folder;
     static bool customFolder;
+    // Editor tests: a save folder for this editor session only (SessionState). Saves there are read and written even
+    // with Fresh Start In Editor on, and the real save is never touched.
+    public const string TestFolderKey = "LoomRoom.Save.TestFolder";
 
     // ── Save slots ───────────────────────────────────────────────────
     // Three saves side by side; the main menu picks one (New game, Continue, Load game) before the game's scene loads,

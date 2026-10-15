@@ -26,7 +26,9 @@ public static class CoopEditorTesting
     {
         Requested = false; NewGame = false; ExpectedGuests = 0;
 #if UNITY_EDITOR
-        Requested = IsVirtualPlayer || UnityEditor.SessionState.GetBool(RequestKey, false);
+        // Play started on the main menu plays like a player: no auto-host or auto-join (menu tests).
+        bool menu = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Main Menu";
+        Requested = !menu && (IsVirtualPlayer || UnityEditor.SessionState.GetBool(RequestKey, false));
         NewGame = IsMainEditor && UnityEditor.SessionState.GetBool(NewGameKey, false);
         ExpectedGuests = UnityEditor.SessionState.GetInt(GuestsKey, 1);
         UnityEditor.SessionState.SetBool(RequestKey, false);
