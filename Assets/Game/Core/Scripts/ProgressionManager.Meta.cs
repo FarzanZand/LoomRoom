@@ -264,13 +264,17 @@ public partial class ProgressionManager
         public List<(ItemData item, int count)> carried;
         public int carriedWorth, kills, healthSlain, fromHealth, total, before, after, toppedUp;
         public bool counted;
+        // Co-op with shared loot: the party's spoils were pooled and split between this many (1: not shared).
+        public int sharedWith;
     }
 
     // The run's end: the spoils carried out plus 1 per Health Per Spoil of the kills, into the bank. On the first death
     // in a real dungeon the lesson starts, and the DM tops the bank up to Blocking's next price.
-    public Tally Settle(Player player, int kills, int healthSlain, bool victory)
+    // sharedTotal: co-op with shared loot, this player's share of the party's pooled spoils (the host works it out), in
+    // place of their own; sharedWith is how many shared them.
+    public Tally Settle(Player player, int kills, int healthSlain, bool victory, int sharedTotal = -1, int sharedWith = 1)
     {
-        var tally = new Tally { carried = new(), kills = kills, healthSlain = healthSlain, before = Spoils };
+        var tally = new Tally { carried = new(), kills = kills, healthSlain = healthSlain, before = Spoils, sharedWith = 1 };
         if (!MetaActive) { tally.after = Spoils; return tally; }
         void Count(Inventory inventory)
         {
@@ -289,6 +293,7 @@ public partial class ProgressionManager
         tally.carried.Sort((a, b) => WorthOf(a.item).CompareTo(WorthOf(b.item)));
         tally.fromHealth = healthSlain / Mathf.Max(1, healthPerSpoil);
         tally.total = tally.carriedWorth + tally.fromHealth;
+        if (sharedTotal >= 0 && sharedWith > 1) { tally.total = sharedTotal; tally.sharedWith = sharedWith; }
         SetFlag(SpoilsFlag, Spoils + tally.total);
         // The carried spoils are spent into the bank: they leave the bag.
         if (player != null) foreach (var inv in new[] { player.Bag, player.Hotbar }) if (inv != null) for (int i = 0; i < inv.SlotCount; i++) if (inv.ItemAt(i) != null && inv.ItemAt(i).itemType == ItemType.Spoils) inv.RemoveAt(i);

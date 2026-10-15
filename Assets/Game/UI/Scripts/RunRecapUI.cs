@@ -144,6 +144,7 @@ public class RunRecapUI : MonoBehaviour
         Tick();
         yield return Wait(.35f);
         yield return CountUp(totalValue, 0, t.total, v => v.ToString());
+        if (t.sharedWith > 1) SetText(helpLine, $"Shared between {t.sharedWith}");
         if (t.toppedUp > 0) SetText(helpLine, $"+{t.toppedUp} from the Dungeon Master");
         yield return Wait(.25f);
         yield return CountUp(bankValue, t.before, t.after, v => v.ToString());

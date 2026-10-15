@@ -51,8 +51,9 @@ MonoBehaviour:
   playerName: 
   online: 1
   sharedLoot: 1
-  hostAdventurer: 1
+  hostAdventurer: 0
   partyProgression: 0
+  sharedSpoils: 1
   ghostLightColor: {r: 0.6, g: 0.8, b: 1, a: 1}
   ghostLightIntensity: 2.2
   ghostLightRange: 6
@@ -89,3 +90,4 @@ MonoBehaviour:
   partnerLightRange: 4
   snapshotRate: 15
   autoStartInEditor: 1
+  roomSpawnSpread: 1.7

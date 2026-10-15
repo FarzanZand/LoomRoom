@@ -109,11 +109,12 @@ public static class CoopMenuBuilder
         var playersHeader = Line("Players caption", game, "PLAYERS", 60, 26, 18);
         var players = Line("Players", game, "", 5, 84);
         var rules = Group("Rules", game);
-        Line("Rules caption", rules, "RULES (CLICK TO CHANGE)", -50, 26, 18);
-        var loot = MakeButton("Loot rule", rules, "Loot", new Vector2(0, -95), 560);
-        var adventurer = MakeButton("Adventurer rule", rules, "Classes", new Vector2(0, -157), 560);
-        var progress = MakeButton("Progress rule", rules, "Progress", new Vector2(0, -219), 560);
-        var guestRules = Line("Guest rules", game, "", -150, 140);
+        Line("Rules caption", rules, "RULES (CLICK TO CHANGE)", -45, 26, 18);
+        var loot = MakeButton("Loot rule", rules, "Loot", new Vector2(0, -85), 560);
+        var adventurer = MakeButton("Adventurer rule", rules, "Classes", new Vector2(0, -137), 560);
+        var progress = MakeButton("Progress rule", rules, "Progress", new Vector2(0, -189), 560);
+        var spoils = MakeButton("Spoils rule", rules, "Spoils", new Vector2(0, -241), 560);
+        var guestRules = Line("Guest rules", game, "", -150, 170);
         guestRules.lineSpacing = 20;
 
         // The bottom row (CoopMenuUI places them).
@@ -129,7 +130,7 @@ public static class CoopMenuBuilder
         Set("hostButton", host); Set("joinButton", join);
         Set("gamePage", game.gameObject); Set("codeGroup", code.gameObject); Set("codeCaption", codeCaption); Set("codeText", codeText);
         Set("playersHeader", playersHeader); Set("playerList", players); Set("copyButton", copy);
-        Set("hostRules", rules.gameObject); Set("sharedLootButton", loot); Set("hostAdventurerButton", adventurer); Set("partyProgressionButton", progress);
+        Set("hostRules", rules.gameObject); Set("sharedLootButton", loot); Set("hostAdventurerButton", adventurer); Set("partyProgressionButton", progress); Set("sharedSpoilsButton", spoils);
         Set("guestRules", guestRules);
         Set("beginButton", begin); Set("aloneButton", alone); Set("leaveButton", leave); Set("closeButton", close);
         so.ApplyModifiedPropertiesWithoutUndo();

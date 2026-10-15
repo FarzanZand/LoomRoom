@@ -27,9 +27,11 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     [Tooltip("On: the party shares one lot of loot, taken once, and gold anyone picks up goes to everyone. Off: each player sees and rolls their own loot.")]
     public bool sharedLoot = true;
     [Tooltip("On: everyone plays the host's adventurer (the host's unlocked classes and story). Off: each player brings their own.")]
-    public bool hostAdventurer = true;
+    public bool hostAdventurer = false;
     [Tooltip("Off: only the host's save gains progression (unlocks, deepest floor). On: every player's own save gains what they earned too.")]
     public bool partyProgression = false;
+    [Tooltip("On: the spoils the party carries out and earns from the health slain are pooled and split evenly at the run's end. Off: everyone keeps their own. Either way each player banks into their own spoils, whatever the class rule says.")]
+    public bool sharedSpoils = true;
 
     [Title("Dead players", "A ghost on the floor until the party reaches the next one")]
     [Tooltip("The pale light a ghost carries (it lights the way for everyone).")]
@@ -109,6 +111,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     public int PartySize { get; private set; } = 1;
     public CoopRules Rules => rules;
     public bool SharedLoot => !Connected || rules.sharedLoot;
+    // The party's spoils are pooled and split at a run's end (the host's rule).
+    public bool SharedSpoils => Connected && rules.sharedSpoils;
     // Empty: everyone shows this player as "Player <slot>" (CoopPlayer.DisplayName).
     public string LocalName => !string.IsNullOrWhiteSpace(playerName) ? playerName.Trim() : "";
     public (int key, int hash) HostFloorHash { get; set; }
@@ -309,7 +313,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (Connected && IsHost) CoopMessages.ToGuests(CoopMessages.Rules, rules);
     }
 
-    void SyncRules() => rules = new CoopRules { sharedLoot = sharedLoot, hostAdventurer = hostAdventurer, partyProgression = partyProgression, lobby = HostInLobby };
+    void SyncRules() => rules = new CoopRules { sharedLoot = sharedLoot, hostAdventurer = hostAdventurer, partyProgression = partyProgression, lobby = HostInLobby, sharedSpoils = sharedSpoils };
 
     void Transport(string host)
     {
@@ -519,6 +523,18 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         CoopMessages.UnregisterAll(); messagesRegistered = false;
         CoopWorld.Unhook();
         bool inRun = LocalInRun;
+        // Leaving a run part way (or the host leaving): what this player carries and their share of the health slain go
+        // into their own spoils, as at a run's end, not lost with the run (a host who plays on keeps the run instead).
+        bool goesOn = !wasGuest && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table
+            && PlayerManager.Instance.Active != null && PlayerManager.Instance.Active.IsAlive;
+        if (inRun && !goesOn && RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended
+            && ProgressionManager.HasInstance && ProgressionManager.MetaActive)
+        {
+            int with = 1;
+            foreach (var p in players) if (p != null && !p.IsOwner && p.Current.inRun) with++;
+            int health = rules.sharedSpoils ? RunManager.Instance.HealthSlain / with : RunManager.Instance.HealthSlain;
+            ProgressionManager.Instance.Settle(PlayerManager.Instance.GetPlayer(PlayerKind.Table), RunManager.Instance.Kills, health, false);
+        }
         EndGhost();
         LocalAtTable = LocalReady = LocalInRun = LocalInLobby = HostInLobby = false;
         runActive = false; countdownEnds = -1f; atExit.Clear(); runEndSent = false;
@@ -541,7 +557,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (messagesRegistered) return;
         messagesRegistered = true;
         CoopMessages.Register<RunStart>(CoopMessages.RunStart, (s, m) => StartCoroutine(BeginRun(m)));
-        CoopMessages.Register<CoopInt>(CoopMessages.RunEnd, (s, m) => RunEnded(m.a != 0));
+        CoopMessages.Register<CoopInt>(CoopMessages.RunEnd, (s, m) => RunEnded((m.a & 1) != 0, m.b, m.a >> 1));
         CoopMessages.Register<SnapshotBatch>(CoopMessages.Snapshots, CoopWorld.ReceiveSnapshots);
         CoopMessages.Register<NetDamage>(CoopMessages.EnemyHit, CoopWorld.ReceiveEnemyDamaged);
         CoopMessages.Register<NetDamage>(CoopMessages.Strike, CoopWorld.ReceiveStrike);
@@ -659,10 +675,16 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     // ── Flags (the host's story and unlocks) ──────────────────────────
 
+    // A player's own meta progression (spoils, the character sheet, the trophies, the ledger lesson): never the host's,
+    // never sent to anyone, kept as it is when leaving someone's game and written to the player's own save at once.
+    // Each player sees their own sheet and their own trophies on the same wall.
+    public static bool PersonalFlag(string key) => key.StartsWith("meta.") || key == ProgressionManager.LedgerIntroFlag || key == ProgressionManager.LedgerSaidFlag
+        || key == ProgressionManager.BlockingTaughtFlag || key == ProgressionManager.BashMountedFlag;
+
     FlagSet HostFlags()
     {
         var keys = new List<string>(); var values = new List<int>();
-        if (ProgressionManager.HasInstance) foreach (var pair in ProgressionManager.Instance.AllFlags) { keys.Add(pair.Key); values.Add(pair.Value); }
+        if (ProgressionManager.HasInstance) foreach (var pair in ProgressionManager.Instance.AllFlags) { if (PersonalFlag(pair.Key)) continue; keys.Add(pair.Key); values.Add(pair.Value); }
         return new FlagSet { keys = keys.ToArray(), values = values.ToArray() };
     }
 
@@ -677,16 +699,17 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             // Playing someone else's game: their story, so the room and the table behave as they do for the host.
             // With their own adventurer a guest keeps its own unlocks and takes only the story flags it lacks.
             for (int i = 0; i < set.keys.Length; i++)
-                if (rules.hostAdventurer || set.keys[i].StartsWith("story.") || set.keys[i] == ProgressionManager.TableEnteredFlag || set.keys[i] == DungeonMasterRemarks.SatFlag)
+                if (PersonalFlag(set.keys[i])) continue;
+                else if (rules.hostAdventurer || set.keys[i].StartsWith("story.") || set.keys[i] == ProgressionManager.TableEnteredFlag || set.keys[i] == DungeonMasterRemarks.SatFlag)
                     progression.SetFlag(set.keys[i], set.values[i]);
-            if (rules.hostAdventurer && !set.changes) foreach (var pair in ownFlags) if (System.Array.IndexOf(set.keys, pair.Key) < 0) progression.SetFlag(pair.Key, 0);
+            if (rules.hostAdventurer && !set.changes) foreach (var pair in ownFlags) if (!PersonalFlag(pair.Key) && System.Array.IndexOf(set.keys, pair.Key) < 0) progression.SetFlag(pair.Key, 0);
         }
         finally { applyingHostFlags = false; }
     }
 
     void OnFlagChanged(string key, int value)
     {
-        if (applyingHostFlags || network == null || !network.IsListening) return;
+        if (applyingHostFlags || network == null || !network.IsListening || PersonalFlag(key)) return;
         // The host's unlocks and story reach the guests at once (playing the host's adventurer).
         if (network.IsServer) { if (rules.hostAdventurer) CoopMessages.ToGuests(CoopMessages.Flags, new FlagSet { keys = new[] { key }, values = new[] { value }, changes = true }); return; }
         earnedFlags[key] = value;
@@ -704,16 +727,28 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         applyingHostFlags = true;
         try
         {
-            foreach (var key in now) if (!ownFlags.ContainsKey(key)) progression.SetFlag(key, 0);
-            foreach (var pair in ownFlags) progression.SetFlag(pair.Key, pair.Value);
+            foreach (var key in now) if (!ownFlags.ContainsKey(key) && !PersonalFlag(key)) progression.SetFlag(key, 0);
+            foreach (var pair in ownFlags) if (!PersonalFlag(pair.Key)) progression.SetFlag(pair.Key, pair.Value);
             if (keep) foreach (var pair in earned) if (pair.Value > progression.GetFlag(pair.Key)) progression.SetFlag(pair.Key, pair.Value);
         }
         finally { applyingHostFlags = false; }
         ownFlags = null; earnedFlags.Clear();
     }
 
-    // A guest's save is left alone while it plays someone else's game (AdventureSave asks).
+    // A guest's save is left alone while it plays someone else's game (AdventureSave asks), all but the player's
+    // own meta progression: SaveFlags is what it writes meanwhile.
     public bool HoldsSave => Connected && !IsHost;
+
+    // A guest's flags as its own save should have them now: its own from before joining, with its meta progression as
+    // it is (null: nothing held, save as usual).
+    public List<ProgressionManager.FlagEntry> GuestSaveFlags()
+    {
+        if (!HoldsSave || ownFlags == null || !ProgressionManager.HasInstance) return null;
+        var list = new List<ProgressionManager.FlagEntry>();
+        foreach (var pair in ownFlags) if (!PersonalFlag(pair.Key)) list.Add(new ProgressionManager.FlagEntry { key = pair.Key, value = pair.Value });
+        foreach (var pair in ProgressionManager.Instance.AllFlags) if (PersonalFlag(pair.Key)) list.Add(new ProgressionManager.FlagEntry { key = pair.Key, value = pair.Value });
+        return list;
+    }
 
     // ── The table ─────────────────────────────────────────────────────
 
@@ -1073,14 +1108,36 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     {
         if (runEndSent) return;
         runEndSent = true;
-        CoopMessages.ToGuests(CoopMessages.RunEnd, new CoopInt { a = victory ? 1 : 0 });
-        RunEnded(victory);
+        // Shared loot: the party's spoils, pooled and split (a = victory | how many shared << 1, b = each one's share).
+        var (share, with) = SpoilsShares();
+        CoopMessages.ToGuests(CoopMessages.RunEnd, new CoopInt { a = (victory ? 1 : 0) | (with << 1), b = share });
+        RunEnded(victory, share, with);
     }
 
     // Everyone: the run is over (all dead, or the last stairs). The recap's button takes each player back to the room.
-    void RunEnded(bool victory)
+    // Host: with shared spoils, each one's share of everything the party carries out plus the spoils of the health slain
+    // (every player's count already holds the whole party's kills): the total split evenly, rounded up so none is lost.
+    // (-1, 1): not shared, each keeps their own.
+    (int share, int with) SpoilsShares()
+    {
+        if (!SharedSpoils || !ProgressionManager.MetaActive || !ProgressionManager.HasInstance || !RunManager.HasInstance) return (-1, 1);
+        int with = 0, carried = 0;
+        foreach (var p in players)
+        {
+            if (p == null) continue;
+            if (p.IsOwner) { if (!LocalInRun) continue; carried += CoopPlayer.CarriedSpoils(PlayerManager.Instance.GetPlayer(PlayerKind.Table)); }
+            else { if (!p.Current.inRun) continue; carried += p.Current.spoils; }
+            with++;
+        }
+        if (with <= 1) return (-1, 1);
+        int total = carried + RunManager.Instance.HealthSlain / Mathf.Max(1, ProgressionManager.Instance.healthPerSpoil);
+        return (Mathf.CeilToInt(total / (float)with), with);
+    }
+
+    void RunEnded(bool victory, int spoilsShare = -1, int sharedWith = 1)
     {
         if (!LocalInRun) return;
+        if (spoilsShare >= 0 && sharedWith > 1 && RunManager.HasInstance) RunManager.Instance.SpoilsShare = (spoilsShare, sharedWith);
         EndGhost();
         LocalInRun = false; LocalReady = false; LocalAtTable = false;
         if (IsHost) { runActive = false; countdownEnds = -1f; }

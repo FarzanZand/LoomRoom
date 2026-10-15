@@ -113,6 +113,7 @@ public class CoopPlayer : NetworkBehaviour
         s.charging = onTable && table.Combat != null && table.Combat.IsAttacking && release == 0;
         s.airborne = active != null && active.Motor != null && !active.Motor.IsGrounded && active.Motor.AirborneTime > .15f;
         s.health = table != null && table.Stats != null && table.Stats.MaxHealth > 0 ? (byte)Mathf.Clamp(Mathf.CeilToInt(table.Stats.CurrentHealth / table.Stats.MaxHealth * 255f), 0, 255) : (byte)0;
+        s.spoils = (ushort)Mathf.Clamp(onTable ? CarriedSpoils(table) : 0, 0, ushort.MaxValue);
         var progress = table != null ? table.GetComponent<AdventurerProgress>() : null;
         s.classId = new FixedString32Bytes(progress != null && progress.selectedClass != null ? progress.selectedClass.id : "");
         s.right = new FixedString128Bytes(onTable && table.Equipment != null ? Coop.SaveId(table.Equipment.Get(EquipmentSlot.RightHand)) : "");
@@ -137,6 +138,21 @@ public class CoopPlayer : NetworkBehaviour
         if (eating != null && eating != wasEating)
             UseRpc(new FixedString128Bytes(Coop.SaveId(eating)), eating.AnimationOnUse == ItemUseAnimation.Drink, table.Equipment.UsingTime);
         wasEating = eating;
+    }
+
+    // The worth of the spoils in a table player's bag and hotbar.
+    public static int CarriedSpoils(Player table)
+    {
+        if (table == null || !ProgressionManager.HasInstance) return 0;
+        int worth = 0;
+        foreach (var inv in new[] { table.Bag, table.Hotbar })
+            if (inv != null)
+                for (int i = 0; i < inv.SlotCount; i++)
+                {
+                    var item = inv.ItemAt(i);
+                    if (item != null && item.itemType == ItemType.Spoils) worth += ProgressionManager.Instance.WorthOf(item) * inv.CountAt(i);
+                }
+        return worth;
     }
 
     // Development: log when a swing is sent and shown, on the wall clock (two editors on one computer compare them).

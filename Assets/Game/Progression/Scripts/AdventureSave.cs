@@ -162,8 +162,15 @@ public class AdventureSave : MonoBehaviour
     {
         // Playing in someone else's co-op game: this player's save is left as it was (MultiplayerManager.partyProgression
         // adds what was earned when the game ends).
-        if (!UsesFile || (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave)) { Changed?.Invoke(); return; }
-        if (ProgressionManager.HasInstance) Saved.flags = ProgressionManager.Instance.AllFlags.Select(x => new ProgressionManager.FlagEntry { key = x.Key, value = x.Value }).ToList();
+        // Their own meta progression (spoils, the sheet, the trophies) is still written at once (GuestSaveFlags).
+        if (!UsesFile) { Changed?.Invoke(); return; }
+        if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave)
+        {
+            var own = MultiplayerManager.Instance.GuestSaveFlags();
+            if (own == null) { Changed?.Invoke(); return; }
+            Saved.flags = own;
+        }
+        else if (ProgressionManager.HasInstance) Saved.flags = ProgressionManager.Instance.AllFlags.Select(x => new ProgressionManager.FlagEntry { key = x.Key, value = x.Value }).ToList();
         try
         {
             Directory.CreateDirectory(Folder);

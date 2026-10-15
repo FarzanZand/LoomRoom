@@ -125,11 +125,12 @@ public struct CoopRules : INetworkSerializable
 {
     public bool sharedLoot, hostAdventurer, partyProgression;
     public bool lobby;            // the host has not begun yet: newcomers wait on the co-op screen
+    public bool sharedSpoils;     // the party's spoils are pooled and split at a run's end
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref sharedLoot); s.SerializeValue(ref hostAdventurer); s.SerializeValue(ref partyProgression);
-        s.SerializeValue(ref lobby);
+        s.SerializeValue(ref lobby); s.SerializeValue(ref sharedSpoils);
     }
 }
 

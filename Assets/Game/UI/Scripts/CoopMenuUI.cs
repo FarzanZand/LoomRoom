@@ -31,7 +31,7 @@ public class CoopMenuUI : MonoBehaviour
     [SerializeField] TMP_Text codeCaption, codeText, playersHeader, playerList;
     [SerializeField] Button copyButton;
     [SerializeField] GameObject hostRules;
-    [SerializeField] Button sharedLootButton, hostAdventurerButton, partyProgressionButton;
+    [SerializeField] Button sharedLootButton, hostAdventurerButton, partyProgressionButton, sharedSpoilsButton;
     [Tooltip("A guest's view of the host's rules.")]
     [SerializeField] TMP_Text guestRules;
 
@@ -75,6 +75,7 @@ public class CoopMenuUI : MonoBehaviour
         Wire(sharedLootButton, () => Toggle(ref MultiplayerManager.Instance.sharedLoot));
         Wire(hostAdventurerButton, () => Toggle(ref MultiplayerManager.Instance.hostAdventurer));
         Wire(partyProgressionButton, () => Toggle(ref MultiplayerManager.Instance.partyProgression));
+        Wire(sharedSpoilsButton, () => Toggle(ref MultiplayerManager.Instance.sharedSpoils));
     }
 
     void Start() { if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel; }
@@ -231,11 +232,12 @@ public class CoopMenuUI : MonoBehaviour
             if (guestRules != null)
             {
                 guestRules.gameObject.SetActive(page == Page.Guest);
-                if (page == Page.Guest) guestRules.text = $"{LootRule(manager)}\n{AdventurerRule(manager)}\n{ProgressRule(manager)}";
+                if (page == Page.Guest) guestRules.text = $"{LootRule(manager)}\n{AdventurerRule(manager)}\n{ProgressRule(manager)}\n{SpoilsRule(manager)}";
             }
             SetLabel(sharedLootButton, LootRule(manager));
             SetLabel(hostAdventurerButton, AdventurerRule(manager));
             SetLabel(partyProgressionButton, ProgressRule(manager));
+            SetLabel(sharedSpoilsButton, SpoilsRule(manager));
         }
 
         // The bottom row: one centred button, or two side by side.
@@ -267,6 +269,7 @@ public class CoopMenuUI : MonoBehaviour
 
     static string LootRule(MultiplayerManager m) => m.Rules.sharedLoot ? "Loot: shared by everyone" : "Loot: everyone finds their own";
     static string AdventurerRule(MultiplayerManager m) => m.Rules.hostAdventurer ? "Classes: everyone uses the host's" : "Classes: everyone brings their own";
+    static string SpoilsRule(MultiplayerManager m) => m.Rules.sharedSpoils ? "Spoils: split between everyone" : "Spoils: everyone keeps their own";
     static string ProgressRule(MultiplayerManager m) => m.Rules.partyProgression ? "Progress saved: for everyone" : "Progress saved: for the host only";
 
     static void SetLabel(Button button, string text)

@@ -131,8 +131,12 @@ public class RunManager : Singleton<RunManager>
     // Spoils carried and the kills' health go into the bank before anything else hears the run end.
     void Settle(bool victory)
     {
-        LastTally = ProgressionManager.HasInstance ? ProgressionManager.Instance.Settle(player, Kills, HealthSlain, victory) : default;
+        var share = SpoilsShare; SpoilsShare = null;
+        LastTally = ProgressionManager.HasInstance ? ProgressionManager.Instance.Settle(player, Kills, HealthSlain, victory, share?.total ?? -1, share?.with ?? 1) : default;
     }
+
+    // Co-op with shared spoils: this player's share of the party's spoils for the tally, set just before the run ends.
+    public (int total, int with)? SpoilsShare { get; set; }
 
     public void EndRunInVictory()
     {
@@ -260,12 +264,13 @@ public class RunManager : Singleton<RunManager>
         GainKillExperience(c, 1f);
     }
 
-    // Co-op: another player's kill gives this player a share of its XP, and the whole of its health toward the
-    // tally's spoils (spoils are earned together: whoever lands the last blow).
+    // Co-op: another player's kill gives this player a share of its XP and, with shared loot, its health toward the
+    // tally's spoils when the party's spoils are shared (pooled and split at the end, MultiplayerManager.SpoilsShares).
     public void AwardPartyKill(Character c)
     {
         if (!Running || Ended || c == null || c.GetComponent<EnemyBrain>() == null) return;
-        if (c.Stats != null) HealthSlain += Mathf.RoundToInt(c.Stats.MaxHealth);
+        // Shared spoils pool the health slain too; with each their own, only your own kills count.
+        if (c.Stats != null && MultiplayerManager.HasInstance && MultiplayerManager.Instance.SharedSpoils) HealthSlain += Mathf.RoundToInt(c.Stats.MaxHealth);
         GainKillExperience(c, MultiplayerManager.HasInstance ? MultiplayerManager.Instance.partyKillExperience : .5f);
     }
 
