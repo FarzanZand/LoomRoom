@@ -14,7 +14,7 @@ using UnityEngine;
 // - Edit keys in Unity's Animation window: Select rig, then pick the clip there and press record. Both views follow
 //   every change and the Animation window's time; the clip is an ordinary .anim asset.
 // - The blade's path through the clip can be traced in both views; animation events show as marks on the timeline.
-// - The Scene view buttons (and Shift+Alt+O, E, F) put the Scene view's camera on the edited body: as the outside view,
+// - The Scene view buttons (and Shift+Alt+A, S, D, shown on them, with the workbench or the Scene view focused) put the Scene view's camera on the edited body: as the outside view,
 //   from the eyes, or framing it, to pose bones there while recording.
 // - New clip makes a copy of the current one to start from; Add to controller puts it in FirstPersonTable on a layer
 //   with its own trigger. In Play mode, Fire sets any trigger on the table player to try it in the game.
@@ -168,9 +168,9 @@ public partial class AnimationWorkbench : EditorWindow
         using (new EditorGUILayout.HorizontalScope())
         {
             GUILayout.Label(new GUIContent("Scene view", "Puts the Scene view's camera on the edited body (it lies far below the world), to pose bones there while recording."), GUILayout.Width(90));
-            if (GUILayout.Button(new GUIContent("Like the outside view", "Shift+Alt+O"), EditorStyles.miniButtonLeft)) SceneViewLikeOutside();
-            if (GUILayout.Button(new GUIContent("From the eyes", "Shift+Alt+E: the first-person camera's place and field of view, on the body itself"), EditorStyles.miniButtonMid)) SceneViewFromEyes();
-            if (GUILayout.Button(new GUIContent("Frame the rig", "Shift+Alt+F"), EditorStyles.miniButtonRight)) SceneViewFrame();
+            if (GUILayout.Button(new GUIContent($"Like the outside view   {Keys("Animation Workbench/Like The Outside View")}", "The workbench's outside camera: set the angle above, then press this."), EditorStyles.miniButtonLeft)) SceneViewLikeOutside();
+            if (GUILayout.Button(new GUIContent($"From the eyes   {Keys("Animation Workbench/From The Eyes")}", "The first-person camera's place and field of view, on the body itself."), EditorStyles.miniButtonMid)) SceneViewFromEyes();
+            if (GUILayout.Button(new GUIContent($"Frame the rig   {Keys("Animation Workbench/Frame The Rig")}", "The whole body."), EditorStyles.miniButtonRight)) SceneViewFrame();
             GUILayout.FlexibleSpace();
         }
         Timeline();
@@ -324,12 +324,27 @@ public partial class AnimationWorkbench : EditorWindow
 
     // ── The Scene view on the edited body ────────────────────────────
 
-    [Shortcut("Animation Workbench/Scene View Like The Outside View", KeyCode.O, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
+    // Shift+Alt+A, S and D, while the workbench or the Scene view has focus (elsewhere Unity's own Shift+Alt+A, which
+    // switches the selected object on and off, stays as it is).
+    [Shortcut("Animation Workbench/Like The Outside View", typeof(AnimationWorkbench), KeyCode.A, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
     static void ShortcutOutside() { if (Open(out var w)) w.SceneViewLikeOutside(); }
-    [Shortcut("Animation Workbench/Scene View From The Eyes", KeyCode.E, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
+    [Shortcut("Animation Workbench/From The Eyes", typeof(AnimationWorkbench), KeyCode.S, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
     static void ShortcutEyes() { if (Open(out var w)) w.SceneViewFromEyes(); }
-    [Shortcut("Animation Workbench/Scene View Frame The Rig", KeyCode.F, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
+    [Shortcut("Animation Workbench/Frame The Rig", typeof(AnimationWorkbench), KeyCode.D, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
     static void ShortcutFrame() { if (Open(out var w)) w.SceneViewFrame(); }
+    [Shortcut("Animation Workbench/Like The Outside View (Scene View)", typeof(SceneView), KeyCode.A, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
+    static void SceneShortcutOutside() => ShortcutOutside();
+    [Shortcut("Animation Workbench/From The Eyes (Scene View)", typeof(SceneView), KeyCode.S, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
+    static void SceneShortcutEyes() => ShortcutEyes();
+    [Shortcut("Animation Workbench/Frame The Rig (Scene View)", typeof(SceneView), KeyCode.D, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
+    static void SceneShortcutFrame() => ShortcutFrame();
+
+    // The key a shortcut is bound to now (the user may have changed it in Edit > Shortcuts).
+    static string Keys(string id)
+    {
+        var binding = ShortcutManager.instance.GetShortcutBinding(id).ToString();
+        return string.IsNullOrEmpty(binding) ? "no key" : binding;
+    }
 
     static bool Open(out AnimationWorkbench window)
     {
