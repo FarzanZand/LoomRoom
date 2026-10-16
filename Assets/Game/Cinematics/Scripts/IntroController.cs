@@ -190,7 +190,9 @@ public partial class IntroController : Singleton<IntroController>
         yield return new WaitForSeconds(openingFade);
         yield return SayAll(beforeLamp);
         yield return LampOn();
-        yield return SayAll(afterLamp);
+        // The view turns to the figure while the last line is still up.
+        yield return SayAll(afterLamp, false);
+        yield return new WaitForSeconds(.4f);
         PopDialogue();
         yield return WaitForTable();
         PlayPractice(true);
@@ -378,13 +380,16 @@ public partial class IntroController : Singleton<IntroController>
         FirstPersonLighting.SetLayers(lamp, uint.MaxValue);
     }
 
-    static IEnumerator SayAll(DungeonMaster.Line[] lines)
+    // Says the lines one after another; waitLast false moves on as soon as the last one is shown.
+    static IEnumerator SayAll(DungeonMaster.Line[] lines, bool waitLast = true)
     {
-        foreach (var line in lines)
+        for (int i = 0; i < lines.Length; i++)
         {
+            var line = lines[i];
             if (line == null) continue;
             DungeonMaster.Say(line);
             yield return null;
+            if (!waitLast && i == lines.Length - 1) yield break;
             while (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking) yield return null;
         }
     }

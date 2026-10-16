@@ -47,7 +47,7 @@ public partial class IntroController
     [FoldoutGroup("Tabletop lines"), Tooltip("Said once they are seated.")] public DungeonMaster.Line[] lampLines = new DungeonMaster.Line[0];
     [FoldoutGroup("Tabletop lines"), Tooltip("The first morning's first seat at the table, before the sheet.")] public DungeonMaster.Line[] morningSheetLines = new DungeonMaster.Line[0];
     [FoldoutGroup("Tabletop lines"), Tooltip("As the sheet comes across.")] public DungeonMaster.Line[] sheetLines = new DungeonMaster.Line[0];
-    [FoldoutGroup("Tabletop lines"), Tooltip("One per rolled attribute, before its roll.")] public DungeonMaster.Line[] rollLines = new DungeonMaster.Line[0];
+    [FoldoutGroup("Tabletop lines"), Tooltip("Not said any more (2026-10-16: the dice are thrown straight away, the attribute name is on the sheet).")] public DungeonMaster.Line[] rollLines = new DungeonMaster.Line[0];
     [FoldoutGroup("Tabletop lines"), Tooltip("After a roll; {n} is the total. Low (8 or less), middling, high (15 or more): one is picked.")]
     public DungeonMaster.Line[] lowRoll = new DungeonMaster.Line[0], midRoll = new DungeonMaster.Line[0], highRoll = new DungeonMaster.Line[0];
     [FoldoutGroup("Tabletop lines"), Tooltip("When all three dice show the same face; {n} is the total. Replaces the usual remark.")]
@@ -122,7 +122,7 @@ public partial class IntroController
         PushDialogue();
         yield return GlideIntoSeat();
         yield return SayAll(lampLines);
-        yield return SheetAndDice(practiceClass != null ? practiceClass.displayName : "", practiceClass != null ? practiceClass.description : "");
+        yield return SheetAndDice(practiceClass != null ? practiceClass.displayName : "", practiceClass != null ? practiceClass.description : "", sheetLines);
         PopDialogue();
         yield return WaitForTable();
         PlayPractice(false);
@@ -155,7 +155,7 @@ public partial class IntroController
     }
 
     // He pushes the sheet across, the player rolls three dice per attribute; every roll stands.
-    IEnumerator SheetAndDice(string className, string blurb)
+    IEnumerator SheetAndDice(string className, string blurb, DungeonMaster.Line[] pushLines)
     {
         if (sheet == null) yield break;
         sheet.Clear(className, blurb, rolledAttributes);
@@ -165,7 +165,7 @@ public partial class IntroController
         if (dm != null) dm.Gesture(pushGesture, pushSeconds);
         yield return new WaitForSeconds(.3f);
         StartCoroutine(sheet.SlideIn());
-        yield return SayAll(sheetLines);
+        yield return SayAll(pushLines);
         // Between the sheet and where the dice land, so both are in view.
         var sheetAt = sheet.rest != null ? sheet.rest.position : sheet.transform.position;
         yield return LookAt(diceTo != null ? Vector3.Lerp(sheetAt, diceTo.position, .45f) : sheetAt, .7f);
@@ -173,7 +173,7 @@ public partial class IntroController
         if (InputManager.HasInstance) { InputManager.Instance.SubmitPressed -= OnSubmit; InputManager.Instance.SubmitPressed += OnSubmit; }
         for (int i = 0; i < rolledAttributes.Length; i++)
         {
-            if (i < rollLines.Length) yield return SayAll(new[] { rollLines[i] });
+            // No line before a roll: the attribute's name is on the sheet, the dice are thrown straight away.
             yield return WaitForRoll(i == 0);
             int total = 0;
             yield return Roll(3, t => total = t);
@@ -189,7 +189,8 @@ public partial class IntroController
         }
         if (InputManager.HasInstance) InputManager.Instance.SubmitPressed -= OnSubmit;
         PickFigures();
-        yield return SayAll(afterRolls);
+        // The figures come out while the closing line is up.
+        yield return SayAll(afterRolls, false);
     }
 
     // The two highest rolls pick the figures that come out after the sheet, the highest first (a tie goes
@@ -233,8 +234,8 @@ public partial class IntroController
         sheetAtTable = true;
         if (RunManager.HasInstance) { RunManager.Instance.RunStarted -= HideSheetForRun; RunManager.Instance.RunStarted += HideSheetForRun; }
         yield return GlideIntoSeat();
-        yield return SayAll(morningSheetLines);
-        yield return SheetAndDice(sheetUnknownClass, "");
+        // One line while the sheet comes across.
+        yield return SheetAndDice(sheetUnknownClass, "", morningSheetLines);
     }
 
     // The class picked from the figures goes on the sheet.
@@ -346,7 +347,7 @@ public partial class IntroController
         }
         if (diceSounds != null && diceSounds.Length > 0 && AudioManager.HasInstance)
             StartCoroutine(Rattle());
-        float giveUp = Time.time + 4f;
+        float giveUp = Time.time + 3f;
         yield return new WaitForSeconds(.25f);
         while (Time.time < giveUp && dice.Exists(d => d != null && !d.Settled)) yield return null;
         int total = 0, first = -1;
@@ -356,7 +357,7 @@ public partial class IntroController
             total += d.Value; d.Body.isKinematic = true;
             if (first < 0) first = d.Value; else if (d.Value != first) lastTriple = false;
         }
-        yield return new WaitForSeconds(.35f);
+        yield return new WaitForSeconds(.15f);
         done(total);
     }
 

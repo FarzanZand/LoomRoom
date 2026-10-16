@@ -126,10 +126,18 @@ public class DungeonMaster : Singleton<DungeonMaster>
             float speaking = Speak(line);
             float pause = speaking + .6f;
             if (line.inPerson) pause = Mathf.Max(pause, readBase + readPerWord * line.text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length);
-            yield return new WaitForSecondsRealtime(pause);
+            // In a conversation scene (Dialogue state: the intro, the character sheet) a click, Space, Enter or
+            // gamepad South moves on to the next line.
+            for (float t = 0f; t < pause; t += Time.unscaledDeltaTime)
+            {
+                if (t > .2f && Skippable && InputManager.HasInstance && InputManager.Instance.SkipLinePressed) break;
+                yield return null;
+            }
         }
         running = null;
     }
+
+    static bool Skippable => GameManager.HasInstance && GameManager.Instance.State == GameState.Dialogue;
 
     // A line straight away, outside the queue: a conversation paces its own lines.
     public void SayNow(Line line)

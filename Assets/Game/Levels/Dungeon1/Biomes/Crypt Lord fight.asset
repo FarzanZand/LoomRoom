@@ -48,6 +48,8 @@ MonoBehaviour:
   beamFacing: 0.2
   beamOnBeat: 1
   beamGiveWay: 0
+  beamKneel: 1
+  beamKneelLead: 2.5
   beamColor: {r: 2, g: 0.95, b: 0.3, a: 1}
   beamChargeSound: {fileID: 8300000, guid: be0f71459df354c49a2d754371c38f37, type: 3}
   beamLoopSound: {fileID: 8300000, guid: ca3d6a0a1b57b514d87f9fe9efa06ecb, type: 3}
@@ -65,8 +67,8 @@ MonoBehaviour:
   - enabled: 1
     when: 2
     seconds: 10
-    startBeat: 12
-    beats: 48
+    startBeat: 64
+    beats: 69
     health: 0.5
     what: 0
     line:
@@ -125,8 +127,8 @@ MonoBehaviour:
   - enabled: 1
     when: 2
     seconds: 10
-    startBeat: 24
-    beats: 72
+    startBeat: 103
+    beats: 69
     health: 0.5
     what: 5
     line:
