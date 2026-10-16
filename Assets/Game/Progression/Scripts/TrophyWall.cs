@@ -58,10 +58,12 @@ public class TrophyWall : MonoBehaviour, IInteractable
             ProgressionManager.Instance.MetaChanged += Refresh;
             ProgressionManager.Instance.FlagChanged += OnFlag;
         }
+        if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.HostTrophiesChanged += Refresh;
         Refresh();
     }
     void OnDestroy()
     {
+        if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.HostTrophiesChanged -= Refresh;
         if (!ProgressionManager.HasInstance) return;
         ProgressionManager.Instance.MetaChanged -= Refresh;
         ProgressionManager.Instance.FlagChanged -= OnFlag;
@@ -79,7 +81,11 @@ public class TrophyWall : MonoBehaviour, IInteractable
             var track = meta.Track(mount.trackId);
             var milestone = track?.milestones?.Find(x => x != null && x.value == mount.value);
             var item = milestone?.trophy;
-            bool hung = milestone != null && meta.Trophy(track, milestone) == ProgressionManager.TrophyState.Mounted;
+            // Co-op guest: the host's wall (MultiplayerManager keeps it up to date).
+            var state = milestone == null ? ProgressionManager.TrophyState.None
+                : MultiplayerManager.HasInstance && MultiplayerManager.Instance.ShowsHostTrophies ? (ProgressionManager.TrophyState)MultiplayerManager.Instance.HostTrophy(meta.TrophyKey(track, milestone))
+                : meta.Trophy(track, milestone);
+            bool hung = state == ProgressionManager.TrophyState.Mounted;
             if (item == null || item.worldPrefab == null) { if (mount.model != null) Destroy(mount.model); mount.model = null; continue; }
             if (mount.model != null && mount.shownItem == item && mount.showingOutline == !hung) continue;
             if (mount.model != null) Destroy(mount.model);

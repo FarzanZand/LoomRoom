@@ -15,6 +15,8 @@ public class CoopMenuUI : MonoBehaviour
     public enum Mode { Pause, NewGame }
 
     [SerializeField] GameObject root;
+    [Tooltip("Blank backdrop over the room while a game opened from the main menu waits in the lobby (MultiplayerManager.MenuLobby).")]
+    [SerializeField] GameObject lobbyBackdrop;
     [SerializeField] TMP_Text title, status;
     float titleSize;
     [Tooltip("The status line's colour for something that went wrong (a bad code, a refusal).")]
@@ -194,6 +196,7 @@ public class CoopMenuUI : MonoBehaviour
         var hostPlayer = manager.PlayerInSlot(0);
         string hostName = hostPlayer != null ? hostPlayer.DisplayName : "the host";
 
+        if (lobbyBackdrop != null && lobbyBackdrop.activeSelf != (manager.MenuLobby || IntroController.Seated && newGame)) lobbyBackdrop.SetActive(manager.MenuLobby || IntroController.Seated && newGame);
         if (startPage != null) startPage.SetActive(page == Page.Start);
         if (gamePage != null) gamePage.SetActive(page != Page.Start);
         if (title != null)

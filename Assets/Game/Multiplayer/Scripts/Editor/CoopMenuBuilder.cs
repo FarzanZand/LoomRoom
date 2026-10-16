@@ -125,6 +125,20 @@ public static class CoopMenuBuilder
 
         var so = new SerializedObject(ui);
         void Set(string field, Object value) => so.FindProperty(field).objectReferenceValue = value;
+        // The lobby's blank backdrop: over the whole screen, behind the box.
+        var backdrop = root.transform.Find("Lobby backdrop");
+        if (backdrop == null)
+        {
+            var go = new GameObject("Lobby backdrop", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            go.layer = root.layer;
+            go.transform.SetParent(root.transform, false);
+            var r = (RectTransform)go.transform; r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one; r.offsetMin = r.offsetMax = Vector2.zero;
+            go.GetComponent<UnityEngine.UI.Image>().color = new Color(.02f, .045f, .05f, 1f);
+            backdrop = go.transform;
+        }
+        backdrop.SetAsFirstSibling();
+        backdrop.gameObject.SetActive(false);
+        Set("lobbyBackdrop", backdrop.gameObject);
         Set("root", root); Set("title", title); Set("status", status);
         Set("startPage", start.gameObject); Set("playerName", playerName); Set("address", address);
         Set("hostButton", host); Set("joinButton", join);

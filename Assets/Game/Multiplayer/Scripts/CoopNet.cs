@@ -128,6 +128,13 @@ public struct ArmsPose : INetworkSerializeByMemcpy
     public float pitch;
 }
 
+// The host's trophy wall for the guests (MultiplayerManager.SendTrophies): "key=state;key=state" of its meta.trophy flags.
+public struct CoopTrophies : INetworkSerializable
+{
+    public Unity.Collections.FixedString4096Bytes text;
+    public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter => s.SerializeValue(ref text);
+}
+
 public struct CoopEvent : INetworkSerializable
 {
     public CoopEventKind kind;

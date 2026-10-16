@@ -126,7 +126,7 @@ public partial class ProgressionManager
     // What the attributes add to a run: (health, mana, damage).
     public float MetaBonus(MetaAttribute attribute) => AttributeBonus(Track(attribute));
 
-    string TrophyKey(MetaTrack t, Milestone m) => $"{TrophyPrefix}{t.id}.{m.value}";
+    public string TrophyKey(MetaTrack t, Milestone m) => $"{TrophyPrefix}{t.id}.{m.value}";
     public TrophyState Trophy(MetaTrack t, Milestone m) => t == null || m == null ? TrophyState.None : (TrophyState)Mathf.Clamp(GetFlag(TrophyKey(t, m)), 0, 3);
     void SetTrophy(MetaTrack t, Milestone m, TrophyState state) => SetFlag(TrophyKey(t, m), (int)state);
     public bool Reached(MetaTrack t, Milestone m) => t != null && m != null && Value(t) >= m.value;

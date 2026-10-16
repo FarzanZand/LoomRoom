@@ -63,8 +63,10 @@ public class WorldManager : Singleton<WorldManager>
         ApplyRoomExit();
     }
 
-    void Start()
+    System.Collections.IEnumerator Start()
     {
+        // Co-op from the main menu: everyone waits in the lobby, and the morning starts once the host begins.
+        while (MultiplayerManager.HasInstance && MultiplayerManager.Instance.MenuLobby && !IntroController.Seated) yield return null;
         var progression = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
         // The editor's Debug and Dungeon buttons go straight to the table.
         bool skip = DebugDungeonSession.Active || progression != null &&

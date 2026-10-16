@@ -156,6 +156,37 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     float roomYaw;
     TableLevelData pendingLevel;
 
+    // ── The host's trophy wall ────────────────────────────────────────
+    // In the host's game a guest's trophy wall shows the host's trophies (TrophyWall reads HostTrophy), kept up to date
+    // as the host hangs or takes them down. The guest's own trophies stay in the guest's own save.
+    readonly Dictionary<string, int> hostTrophies = new();
+    public event System.Action HostTrophiesChanged;
+    public bool ShowsHostTrophies => Connected && !IsHost;
+    public int HostTrophy(string key) => hostTrophies.TryGetValue(key, out var v) ? v : 0;
+
+    void SendTrophies(ulong? to = null)
+    {
+        if (!Connected || !IsHost || !ProgressionManager.HasInstance) return;
+        var sb = new System.Text.StringBuilder();
+        foreach (var f in ProgressionManager.Instance.AllFlags)
+            if (f.Key.StartsWith(ProgressionManager.TrophyPrefix)) sb.Append(f.Key).Append('=').Append(f.Value).Append(';');
+        var msg = new CoopTrophies { text = new Unity.Collections.FixedString4096Bytes(sb.Length <= 4000 ? sb.ToString() : sb.ToString(0, 4000)) };
+        if (to.HasValue) CoopMessages.ToClient(CoopMessages.Trophies, to.Value, msg);
+        else CoopMessages.ToGuests(CoopMessages.Trophies, msg);
+    }
+
+    void ReceiveTrophies(CoopTrophies msg)
+    {
+        if (IsHost) return;
+        hostTrophies.Clear();
+        foreach (var pair in msg.text.ToString().Split(';'))
+        {
+            int eq = pair.IndexOf('=');
+            if (eq > 0 && int.TryParse(pair.Substring(eq + 1), out var v)) hostTrophies[pair.Substring(0, eq)] = v;
+        }
+        HostTrophiesChanged?.Invoke();
+    }
+
     // PlayerPrefs key of this player's name (the main menu's co-op menu writes it too).
     public const string NameKey = "coop_name";
 
@@ -180,7 +211,13 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         menuHost = StartFromMenu == MenuStart.Host;
         menuJoin = StartFromMenu == MenuStart.Join && !string.IsNullOrWhiteSpace(MenuJoinCode) ? MenuJoinCode.Trim() : null;
         StartFromMenu = MenuStart.None; MenuJoinCode = null;
+        MenuLobby = menuHost || menuJoin != null;
     }
+
+    // A game opened from the main menu's co-op menu waits in the lobby before anything happens: the co-op screen over
+    // a blank backdrop (CoopMenuUI), no wake-up and no one in the room (WorldManager waits), until the host's Begin
+    // lets everyone in together. Also ends when joining fails or the player leaves.
+    public bool MenuLobby { get; private set; }
 
     bool menuHost;
     string menuJoin;
@@ -210,10 +247,11 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     // (A new game asks in the dark before its intro instead, NewGameLobby.)
     IEnumerator OpenFromMenu()
     {
-        yield return new WaitForSecondsRealtime(1.5f);
+        yield return new WaitForSecondsRealtime(MenuLobby ? .2f : 1.5f);
         if (IntroController.Seated) yield break;
         CoopFromMenu = false;
-        while (GameManager.HasInstance && GameManager.Instance.State != GameState.Explore) yield return null;
+        // In the lobby the screen opens at once (nothing has happened in the room yet); otherwise once the player is up.
+        while (!MenuLobby && GameManager.HasInstance && GameManager.Instance.State != GameState.Explore) yield return null;
         if (CoopMenuUI.Instance != null && !CoopMenuUI.Instance.IsOpen) CoopMenuUI.Instance.Open(CoopMenuUI.Mode.Pause);
     }
 
@@ -297,6 +335,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     // Host: Begin. Everyone waiting in the lobby comes into the game.
     public void BeginForEveryone()
     {
+        MenuLobby = false;
         if (!HostInLobby) return;
         HostInLobby = false;
         RulesChanged();
@@ -311,6 +350,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (!rulesSeen)
         {
             rulesSeen = true; LocalInLobby = r.lobby && !LocalInRun;
+            if (!LocalInLobby) MenuLobby = false;   // the game has begun: straight in
             // Joined a game already begun: into the room at once, at this player's own spot.
             bool intro = IntroController.Seated;
             if (!LocalInLobby && !LocalInRun && !intro && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Room
@@ -324,6 +364,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     // seats everyone itself).
     void LeftLobby()
     {
+        MenuLobby = false;
         var menu = CoopMenuUI.Instance;
         bool newGame = menu != null && menu.IsOpen && menu.Current == CoopMenuUI.Mode.NewGame;
         if (menu != null && menu.IsOpen && !newGame) menu.Close();
@@ -485,6 +526,12 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         Ended(wasGuest, "You left the game");
     }
 
+    IEnumerator HostGone()
+    {
+        yield return new WaitForSecondsRealtime(2.5f);
+        if (!Connected) ToMainMenu();
+    }
+
     // Back to the main menu: out of any session, and the Network Manager (kept across scene loads) goes with this
     // scene, so the game's scene starts with its own again.
     public void ToMainMenu()
@@ -524,6 +571,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             SyncRules();
             CoopMessages.ToClient(CoopMessages.Rules, client, rules);
             CoopMessages.ToClient(CoopMessages.Flags, client, HostFlags());
+            SendTrophies(client);
             CoopWorld.SendRoom(client);
         }
         SessionChanged?.Invoke();
@@ -550,6 +598,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
                 : joinedOnce ? "The host left the game" : "Could not join. Check the code or address, and that the host is still in the game.";
             if (!joinedOnce) LastError = reason;
             Ended(true, reason);
+            // The host left (or sent us away): the game was theirs, so everyone goes back to the main menu.
+            if (joinedOnce) StartCoroutine(HostGone());
             return;
         }
         SessionChanged?.Invoke();
@@ -575,10 +625,11 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             ProgressionManager.Instance.Settle(PlayerManager.Instance.GetPlayer(PlayerKind.Table), RunManager.Instance.Kills, health, false);
         }
         EndGhost();
-        LocalAtTable = LocalReady = LocalInRun = LocalInLobby = HostInLobby = false;
+        LocalAtTable = LocalReady = LocalInRun = LocalInLobby = HostInLobby = MenuLobby = false;
         runActive = false; countdownEnds = -1f; atExit.Clear(); runEndSent = false;
         players.Clear(); LocalPlayer = null; PartySize = 1; JoinCode = null;
         if (wasGuest) RestoreOwnFlags();
+        if (hostTrophies.Count > 0) { hostTrophies.Clear(); HostTrophiesChanged?.Invoke(); }
         // The host keeps its own dungeon and plays on alone; a guest (or a host who was a ghost, dead) goes back to the room.
         bool playOn = !wasGuest && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table
             && PlayerManager.Instance.Active != null && PlayerManager.Instance.Active.IsAlive;
@@ -596,6 +647,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (messagesRegistered) return;
         messagesRegistered = true;
         CoopMessages.Register<RunStart>(CoopMessages.RunStart, (s, m) => StartCoroutine(BeginRun(m)));
+        CoopMessages.Register<CoopTrophies>(CoopMessages.Trophies, (s, m) => ReceiveTrophies(m));
         CoopMessages.Register<CoopInt>(CoopMessages.RunEnd, (s, m) => RunEnded((m.a & 1) != 0, m.b, m.a >> 1));
         CoopMessages.Register<SnapshotBatch>(CoopMessages.Snapshots, CoopWorld.ReceiveSnapshots);
         CoopMessages.Register<NetDamage>(CoopMessages.EnemyHit, CoopWorld.ReceiveEnemyDamaged);
@@ -748,6 +800,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     void OnFlagChanged(string key, int value)
     {
+        // The host's wall changed: the guests' walls follow.
+        if (network != null && network.IsListening && network.IsServer && key.StartsWith(ProgressionManager.TrophyPrefix)) SendTrophies();
         if (applyingHostFlags || network == null || !network.IsListening || PersonalFlag(key)) return;
         // The host's unlocks and story reach the guests at once (playing the host's adventurer).
         if (network.IsServer) { if (rules.hostAdventurer) CoopMessages.ToGuests(CoopMessages.Flags, new FlagSet { keys = new[] { key }, values = new[] { value }, changes = true }); return; }

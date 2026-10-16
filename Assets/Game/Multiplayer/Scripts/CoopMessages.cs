@@ -9,7 +9,7 @@ public static class CoopMessages
 {
     public const string RunStart = "loom.run", RunEnd = "loom.runEnd", Snapshots = "loom.snap", EnemyHit = "loom.enemyHit",
         Strike = "loom.strike", Event = "loom.event", Spawn = "loom.spawn", Flags = "loom.flags", FloorHash = "loom.hash",
-        Countdown = "loom.countdown", Rules = "loom.rules", IntroBegin = "loom.intro", Finale = "loom.finale", Ready = "loom.ready";
+        Countdown = "loom.countdown", Rules = "loom.rules", IntroBegin = "loom.intro", Finale = "loom.finale", Ready = "loom.ready", Trophies = "loom.trophies";
 
     static readonly Dictionary<string, Action<ulong, FastBufferReader>> handlers = new();
 
