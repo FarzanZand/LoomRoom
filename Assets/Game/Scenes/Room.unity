@@ -297498,7 +297498,7 @@ MonoBehaviour:
     text: 'Try your shield bash: hold {block} and press {attack}.'
   startingPlayer: 0
   skipWakeUp: 0
-  startAt: 1
+  startAt: 0
   initialFlags: []
 --- !u!23 &5835774047401790171
 MeshRenderer:
