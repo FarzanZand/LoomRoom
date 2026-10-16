@@ -252,6 +252,8 @@ public class TableLevelData : ScriptableObject
     public AudioClip[] boardTileTaps = new AudioClip[0];
     [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), Tooltip("Show the whole board from the start, like a walled dungeon, instead of dealing in the rooms behind each door as it opens.")]
     public bool boardRevealAll;
+    [TabGroup(Tabs, Architecture), Tooltip("While the floor is built on the table, the starting room's wall on the viewer's side and its ceiling stay hidden (from the room they show only their dark outside), and come back when the player arrives. The intro uses it.")]
+    public bool hideStartWallInReveal;
     [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), AssetsOnly, Tooltip("Board doors stand between two of these (trees, for a forest) instead of a stone arch with a beam. Empty builds the arch.")]
     public GameObject[] boardDoorPosts = new GameObject[0];
     [TabGroup(Tabs, Architecture), ShowIf(nameof(IsBoard)), AssetsOnly, Tooltip("Cells a room's shape leaves out inside it (between the columns of a pillar hall, the middle of a ring) become low mounds with one of these on top, instead of holes in the board. Empty leaves the holes.")]

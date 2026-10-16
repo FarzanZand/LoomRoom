@@ -107,7 +107,7 @@ public sealed class TableLevelReveal : MonoBehaviour
                 holes.Add((hole, Vector3.Distance(at, dungeon.SpawnPoint) / range * .72f)); hole.Open = false;
             }
             BuildBlueprint(settings);
-            MakeRevealLight(settings, width, depth, overview);
+            HideStartWall(overview);
             if (settings.dustPrefab != null)
             {
                 dust = Instantiate(settings.dustPrefab, dungeon.transform.position + Vector3.up * .2f, Quaternion.identity, transform);
@@ -137,7 +137,6 @@ public sealed class TableLevelReveal : MonoBehaviour
                     piece.renderer.transform.position = piece.position - Vector3.up * settings.liftDistance * (1 - settings.rise.Evaluate(t));
                 }
                 foreach (var entry in lights) if (entry.light != null) entry.light.enabled = entry.enabled && build > entry.delay + .25f;
-                if (revealLight != null) revealLight.intensity = revealIntensity * Mathf.Clamp01(elapsed / .5f);
                 foreach (var entry in holes) entry.hole.Open = build > entry.delay;
                 foreach (var entry in effects)
                 {
@@ -189,12 +188,12 @@ public sealed class TableLevelReveal : MonoBehaviour
             var target = targetCamera.State;
             var targetProjection = Matrix4x4.Perspective(target.Lens.FieldOfView, output.aspect, target.Lens.NearClipPlane, target.Lens.FarClipPlane);
             beginEntry?.Invoke();
-            if (revealLight != null) StartCoroutine(FadeRevealLight(SkipRequested ? .3f : settings.approachSeconds));
             // Fly over the entrance and descend through its temporarily open roof.
             yield return MoveCamera(target.GetFinalPosition(), target.GetFinalOrientation(), targetProjection,
                 SkipRequested ? .3f : settings.approachSeconds, true, targetCamera);
             output.fieldOfView = target.Lens.FieldOfView;
             HasArrived = true;
+            ShowStartWall();
             RestoreCeilings();
             // The loadout is ready, but belongs only to the dungeon POV. Reveal it at
             // the destination, never attached to the room camera during the flight.
@@ -315,49 +314,81 @@ public sealed class TableLevelReveal : MonoBehaviour
         if (fade) outlines.Add(line);
     }
     // Safe to call more than once (the coroutine's finally, then OnDisable): every list is emptied.
-    // The light on the floor while it is built (TableLevelRevealSettings.revealLight): a wide spot from above and a
-    // little toward the viewer, so the outer walls facing the room are lit as well as the floors.
-    Light revealLight;
-    float revealIntensity;
-    void MakeRevealLight(TableLevelRevealSettings settings, float width, float depth, Vector3 viewer)
+    // TableLevelData.hideStartWallInReveal: the starting room's wall on the viewer's side, hidden until arrival. The
+    // walls are merged into static chunks (several walls each), so every chunk holding a piece of that wall is hidden whole.
+    readonly List<Renderer> splitChunks = new(), hiddenCeiling = new();
+    void HideStartWall(Vector3 viewer)
     {
-        if (!settings.revealLight || settings.revealLightIntensity <= 0f || dungeon == null) return;
-        float span = new Vector2(width, depth).magnitude, height = Mathf.Max(6f, span * .9f);
-        var go = new GameObject("Reveal light");
-        go.transform.SetParent(transform, false);
-        var centre = dungeon.transform.position;
+        var data = dungeon.LevelData;
+        if (data == null || !data.hideStartWallInReveal || dungeon.Layout == null) return;
+        int start = dungeon.Layout.RoomAt(dungeon.CellOf(dungeon.SpawnPoint));
+        if (start < 0) return;
+        float cell = data.cellSize;
+        // The room's cells: its middle, and its extent toward the viewer and to each side.
+        var cells = new List<Vector3>();
+        for (int x = 0; x < data.width; x++) for (int z = 0; z < data.depth; z++)
+        { var p = new Vector2Int(x, z); if (dungeon.Layout.InRoom(start, p)) cells.Add(dungeon.Cell(p)); }
+        if (cells.Count == 0) return;
+        var centre = Vector3.zero; foreach (var c in cells) centre += c; centre /= cells.Count;
         var toViewer = viewer - centre; toViewer.y = 0f;
-        var at = centre + Vector3.up * height + (toViewer.sqrMagnitude > .01f ? toViewer.normalized * height * .8f : Vector3.zero);
-        go.transform.SetPositionAndRotation(at, Quaternion.LookRotation(centre - at));
-        revealLight = go.AddComponent<Light>();
-        revealLight.type = LightType.Spot;
-        revealLight.color = settings.revealLightColor;
-        revealLight.range = height * 2.2f;
-        revealLight.spotAngle = Mathf.Clamp(2f * Mathf.Atan(span * .55f / height) * Mathf.Rad2Deg, 30f, 150f);
-        revealLight.innerSpotAngle = revealLight.spotAngle * .6f;
-        revealLight.shadows = LightShadows.None;
-        revealLight.intensity = 0f;
-        // Light falls off with the square of distance: scale so the floor gets about the same light at any size.
-        float distance = Vector3.Distance(at, centre);
-        revealIntensity = settings.revealLightIntensity * distance * distance * .02f;
+        if (toViewer.sqrMagnitude < .01f) return;
+        toViewer.Normalize();
+        var right = Vector3.Cross(Vector3.up, toViewer);
+        float reach = 0f, side = 0f;
+        foreach (var c in cells) { var d = c - centre; reach = Mathf.Max(reach, Vector3.Dot(d, toViewer)); side = Mathf.Max(side, Mathf.Abs(Vector3.Dot(d, right))); }
+        var area = new Bounds(centre, new Vector3(cell * 2f, 100f, cell * 2f));
+        foreach (var c in cells) area.Encapsulate(new Bounds(c, new Vector3(cell * 3f, 100f, cell * 3f)));
+        bool NearWall(Bounds b)
+        {
+            var d = b.center - centre;
+            float along = Vector3.Dot(d, toViewer), across = Mathf.Abs(Vector3.Dot(d, right));
+            return b.size.y > .1f && along > reach + cell * .25f && along < reach + cell * 1.5f && across < side + cell * 1.2f;
+        }
+        // The starting room's ceiling stays off too until arrival, so the room reads from above.
+        if (dungeon.Ceilings != null)
+            foreach (var r in dungeon.Ceilings.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r == null || r.forceRenderingOff) continue;
+                var c = r.bounds.center; bool over = false;
+                foreach (var cellCentre in cells) if (Mathf.Abs(c.x - cellCentre.x) < cell * .8f && Mathf.Abs(c.z - cellCentre.z) < cell * .8f) { over = true; break; }
+                if (!over) continue;
+                r.forceRenderingOff = true; hiddenCeiling.Add(r);
+            }
+        var all = dungeon.GetComponentsInChildren<Renderer>(true);
+        // Only the pieces merged away into chunks count: the reveal has every other renderer switched off for now.
+        var revealed = new HashSet<Renderer>();
+        foreach (var piece in pieces) revealed.Add(piece.renderer);
+        int count = pieces.Count;
+        for (int i = 0; i < count; i++)
+        {
+            var chunk = pieces[i].renderer;
+            if (chunk == null || chunk.name != "Static chunk" || chunk.bounds.size.y < 1f || !chunk.bounds.Intersects(area)) continue;
+            if (dungeon.Ceilings != null && chunk.transform.IsChildOf(dungeon.Ceilings)) continue;
+            // A chunk that holds a piece of the near wall is hidden whole (only looked at, nothing is switched on).
+            var box = chunk.bounds; box.Expand(.3f);
+            bool near = false;
+            foreach (var r in all)
+            {
+                if (r == null || r.enabled || revealed.Contains(r) || r.name == "Static chunk" || r.transform.parent != chunk.transform.parent || !box.Contains(r.bounds.center)) continue;
+                if (r.bounds.size.y > 1f && NearWall(r.bounds)) { near = true; break; }
+            }
+            if (!near) continue;
+            chunk.forceRenderingOff = true; splitChunks.Add(chunk);
+        }
     }
 
-    IEnumerator FadeRevealLight(float seconds)
+    // The hidden chunks and ceiling show again.
+    void ShowStartWall()
     {
-        float from = revealLight != null ? revealLight.intensity : 0f;
-        for (float t = 0f; t < seconds && revealLight != null; t += Time.deltaTime)
-        {
-            revealLight.intensity = Mathf.Lerp(from, 0f, t / seconds);
-            yield return null;
-        }
-        if (revealLight != null) revealLight.intensity = 0f;
+        foreach (var r in splitChunks) if (r != null) r.forceRenderingOff = false;
+        foreach (var r in hiddenCeiling) if (r != null) r.forceRenderingOff = false;
+        splitChunks.Clear(); hiddenCeiling.Clear();
     }
 
     void Restore()
     {
-        if (revealLight != null) Destroy(revealLight.gameObject);
-        revealLight = null;
         RestorePieces();
+        ShowStartWall();
         foreach (var entry in handRenderers) if (entry.renderer != null) entry.renderer.forceRenderingOff = entry.forcedOff;
         handRenderers.Clear();
         foreach (var entry in roomRenderers) if (entry.renderer != null) entry.renderer.forceRenderingOff = entry.forcedOff;

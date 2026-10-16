@@ -10,10 +10,6 @@ public class TableLevelRevealSettings : ScriptableObject
     [Min(.1f)] public float settleSeconds = .4f;
     [Min(.1f)] public float cameraTransitionSeconds = .65f;
     [Min(.1f), Tooltip("Camera flight from the assembled table into first person.")] public float approachSeconds = 1.25f;
-    [Tooltip("A soft light hangs over the floor while it is built, so walls and floors read from the room instead of sitting black until the player arrives (the player's own lights then take over). It fades out during the flight in.")]
-    public bool revealLight = true;
-    public Color revealLightColor = new Color(1f, .9f, .75f);
-    [Min(0)] public float revealLightIntensity = 6f;
     public bool allowSkip = true;
     [Header("Assembly")]
     [Min(0)] public float liftDistance = 2.5f;
