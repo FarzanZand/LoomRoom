@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 
 // Tools > LoomRoom > Characters > Animation Workbench: make and edit the table player's animation clips while seeing
@@ -13,6 +14,8 @@ using UnityEngine;
 // - Edit keys in Unity's Animation window: Select rig, then pick the clip there and press record. Both views follow
 //   every change and the Animation window's time; the clip is an ordinary .anim asset.
 // - The blade's path through the clip can be traced in both views; animation events show as marks on the timeline.
+// - The Scene view buttons (and Shift+Alt+O, E, F) put the Scene view's camera on the edited body: as the outside view,
+//   from the eyes, or framing it, to pose bones there while recording.
 // - New clip makes a copy of the current one to start from; Add to controller puts it in FirstPersonTable on a layer
 //   with its own trigger. In Play mode, Fire sets any trigger on the table player to try it in the game.
 public partial class AnimationWorkbench : EditorWindow
@@ -162,6 +165,14 @@ public partial class AnimationWorkbench : EditorWindow
             if (GUILayout.Button("Back", EditorStyles.miniButtonMid)) { orbitYaw = 0f; orbitPitch = 12f; }
             if (GUILayout.Button("Above", EditorStyles.miniButtonRight)) { orbitYaw = 200f; orbitPitch = 60f; }
         }
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            GUILayout.Label(new GUIContent("Scene view", "Puts the Scene view's camera on the edited body (it lies far below the world), to pose bones there while recording."), GUILayout.Width(90));
+            if (GUILayout.Button(new GUIContent("Like the outside view", "Shift+Alt+O"), EditorStyles.miniButtonLeft)) SceneViewLikeOutside();
+            if (GUILayout.Button(new GUIContent("From the eyes", "Shift+Alt+E: the first-person camera's place and field of view, on the body itself"), EditorStyles.miniButtonMid)) SceneViewFromEyes();
+            if (GUILayout.Button(new GUIContent("Frame the rig", "Shift+Alt+F"), EditorStyles.miniButtonRight)) SceneViewFrame();
+            GUILayout.FlexibleSpace();
+        }
         Timeline();
         Options();
         NewClipGUI();
@@ -309,6 +320,57 @@ public partial class AnimationWorkbench : EditorWindow
         var target = outsideRoot.transform.position + Vector3.up * 1.1f;
         var turn = Quaternion.Euler(orbitPitch, orbitYaw, 0f);
         cam.transform.SetPositionAndRotation(target - turn * Vector3.forward * orbitDistance, turn);
+    }
+
+    // ── The Scene view on the edited body ────────────────────────────
+
+    [Shortcut("Animation Workbench/Scene View Like The Outside View", KeyCode.O, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
+    static void ShortcutOutside() { if (Open(out var w)) w.SceneViewLikeOutside(); }
+    [Shortcut("Animation Workbench/Scene View From The Eyes", KeyCode.E, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
+    static void ShortcutEyes() { if (Open(out var w)) w.SceneViewFromEyes(); }
+    [Shortcut("Animation Workbench/Scene View Frame The Rig", KeyCode.F, ShortcutModifiers.Shift | ShortcutModifiers.Alt)]
+    static void ShortcutFrame() { if (Open(out var w)) w.SceneViewFrame(); }
+
+    static bool Open(out AnimationWorkbench window)
+    {
+        window = HasOpenInstances<AnimationWorkbench>() ? GetWindow<AnimationWorkbench>(false, null, false) : null;
+        return window != null && window.RigReady;
+    }
+
+    // The Scene view's camera at `position` looking along `rotation`, with this field of view.
+    static void PlaceSceneView(Vector3 position, Quaternion rotation, float fieldOfView, float focus)
+    {
+        var view = SceneView.lastActiveSceneView;
+        if (view == null) return;
+        view.orthographic = false;
+        view.cameraSettings.fieldOfView = fieldOfView;
+        // The Scene view keeps its camera `size / sin(half the field of view)` behind the pivot.
+        float size = focus * Mathf.Sin(fieldOfView * .5f * Mathf.Deg2Rad);
+        view.LookAtDirect(position + rotation * Vector3.forward * focus, rotation, size);
+        view.Repaint();
+    }
+
+    public void SceneViewLikeOutside()
+    {
+        if (!RigReady) return;
+        var turn = Quaternion.Euler(orbitPitch, orbitYaw, 0f);
+        var target = body.transform.position + Vector3.up * 1.1f;
+        PlaceSceneView(target - turn * Vector3.forward * orbitDistance, turn, 40f, orbitDistance);
+    }
+
+    public void SceneViewFromEyes()
+    {
+        if (!RigReady) return;
+        PlaceSceneView(body.transform.position + Vector3.up * EyeHeight, body.transform.rotation * Quaternion.Euler(lookPitch, 0f, 0f), cameraFov, .5f);
+    }
+
+    public void SceneViewFrame()
+    {
+        if (!RigReady) return;
+        var view = SceneView.lastActiveSceneView;
+        if (view == null) return;
+        var bounds = new Bounds(body.transform.position + Vector3.up, Vector3.one * 2f);
+        view.Frame(bounds, false);
     }
 
     public void SetClip(AnimationClip c)

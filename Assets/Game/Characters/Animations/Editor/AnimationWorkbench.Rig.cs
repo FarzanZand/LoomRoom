@@ -250,10 +250,13 @@ public partial class AnimationWorkbench
     void RefreshHeld()
     {
         if (!RigReady) return;
-        foreach (var socket in new[] { fpRight, fpLeft, outsideRight, outsideLeft })
+        // The edited body holds them too, so posing in the Scene view shows the blade.
+        bodyBones.TryGetValue("RightHand_Socket", out var bodyRight);
+        bodyBones.TryGetValue("LeftHand_Socket", out var bodyLeft);
+        foreach (var socket in new[] { fpRight, fpLeft, outsideRight, outsideLeft, bodyRight, bodyLeft })
             if (socket != null) for (int i = socket.childCount - 1; i >= 0; i--) DestroyImmediate(socket.GetChild(i).gameObject);
-        Hold(rightItem, fpRight); Hold(rightItem, outsideRight);
-        Hold(leftItem, fpLeft); Hold(leftItem, outsideLeft);
+        Hold(rightItem, fpRight); Hold(rightItem, outsideRight); Hold(rightItem, bodyRight);
+        Hold(leftItem, fpLeft); Hold(leftItem, outsideLeft); Hold(leftItem, bodyLeft);
         Prepare(fpRoot); Prepare(outsideRoot);
         tipLocal = BladeTip(fpRight);
         trace.Clear();
