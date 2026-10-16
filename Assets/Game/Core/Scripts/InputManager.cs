@@ -58,6 +58,10 @@ public class InputManager : Singleton<InputManager>
     // The mouse for picking things in the world while the cursor is free (ClassFigures).
     public Vector2 PointerPosition => Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
     public bool PointerClicked => Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+    // Moves a Dungeon Master line on (DungeonMaster, in the Dialogue state): click, Space, Enter or gamepad South.
+    public bool SkipLinePressed => PointerClicked
+        || (Keyboard.current != null && (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.enterKey.wasPressedThisFrame))
+        || (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame);
 
     protected override void Awake()
     {

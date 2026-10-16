@@ -107,6 +107,7 @@ public sealed class TableLevelReveal : MonoBehaviour
                 holes.Add((hole, Vector3.Distance(at, dungeon.SpawnPoint) / range * .72f)); hole.Open = false;
             }
             BuildBlueprint(settings);
+            MakeRevealLight(settings, width, depth, overview);
             if (settings.dustPrefab != null)
             {
                 dust = Instantiate(settings.dustPrefab, dungeon.transform.position + Vector3.up * .2f, Quaternion.identity, transform);
@@ -136,6 +137,7 @@ public sealed class TableLevelReveal : MonoBehaviour
                     piece.renderer.transform.position = piece.position - Vector3.up * settings.liftDistance * (1 - settings.rise.Evaluate(t));
                 }
                 foreach (var entry in lights) if (entry.light != null) entry.light.enabled = entry.enabled && build > entry.delay + .25f;
+                if (revealLight != null) revealLight.intensity = revealIntensity * Mathf.Clamp01(elapsed / .5f);
                 foreach (var entry in holes) entry.hole.Open = build > entry.delay;
                 foreach (var entry in effects)
                 {
@@ -187,6 +189,7 @@ public sealed class TableLevelReveal : MonoBehaviour
             var target = targetCamera.State;
             var targetProjection = Matrix4x4.Perspective(target.Lens.FieldOfView, output.aspect, target.Lens.NearClipPlane, target.Lens.FarClipPlane);
             beginEntry?.Invoke();
+            if (revealLight != null) StartCoroutine(FadeRevealLight(SkipRequested ? .3f : settings.approachSeconds));
             // Fly over the entrance and descend through its temporarily open roof.
             yield return MoveCamera(target.GetFinalPosition(), target.GetFinalOrientation(), targetProjection,
                 SkipRequested ? .3f : settings.approachSeconds, true, targetCamera);
@@ -312,8 +315,48 @@ public sealed class TableLevelReveal : MonoBehaviour
         if (fade) outlines.Add(line);
     }
     // Safe to call more than once (the coroutine's finally, then OnDisable): every list is emptied.
+    // The light on the floor while it is built (TableLevelRevealSettings.revealLight): a wide spot from above and a
+    // little toward the viewer, so the outer walls facing the room are lit as well as the floors.
+    Light revealLight;
+    float revealIntensity;
+    void MakeRevealLight(TableLevelRevealSettings settings, float width, float depth, Vector3 viewer)
+    {
+        if (!settings.revealLight || settings.revealLightIntensity <= 0f || dungeon == null) return;
+        float span = new Vector2(width, depth).magnitude, height = Mathf.Max(6f, span * .9f);
+        var go = new GameObject("Reveal light");
+        go.transform.SetParent(transform, false);
+        var centre = dungeon.transform.position;
+        var toViewer = viewer - centre; toViewer.y = 0f;
+        var at = centre + Vector3.up * height + (toViewer.sqrMagnitude > .01f ? toViewer.normalized * height * .8f : Vector3.zero);
+        go.transform.SetPositionAndRotation(at, Quaternion.LookRotation(centre - at));
+        revealLight = go.AddComponent<Light>();
+        revealLight.type = LightType.Spot;
+        revealLight.color = settings.revealLightColor;
+        revealLight.range = height * 2.2f;
+        revealLight.spotAngle = Mathf.Clamp(2f * Mathf.Atan(span * .55f / height) * Mathf.Rad2Deg, 30f, 150f);
+        revealLight.innerSpotAngle = revealLight.spotAngle * .6f;
+        revealLight.shadows = LightShadows.None;
+        revealLight.intensity = 0f;
+        // Light falls off with the square of distance: scale so the floor gets about the same light at any size.
+        float distance = Vector3.Distance(at, centre);
+        revealIntensity = settings.revealLightIntensity * distance * distance * .02f;
+    }
+
+    IEnumerator FadeRevealLight(float seconds)
+    {
+        float from = revealLight != null ? revealLight.intensity : 0f;
+        for (float t = 0f; t < seconds && revealLight != null; t += Time.deltaTime)
+        {
+            revealLight.intensity = Mathf.Lerp(from, 0f, t / seconds);
+            yield return null;
+        }
+        if (revealLight != null) revealLight.intensity = 0f;
+    }
+
     void Restore()
     {
+        if (revealLight != null) Destroy(revealLight.gameObject);
+        revealLight = null;
         RestorePieces();
         foreach (var entry in handRenderers) if (entry.renderer != null) entry.renderer.forceRenderingOff = entry.forcedOff;
         handRenderers.Clear();

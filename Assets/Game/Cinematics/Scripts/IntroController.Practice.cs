@@ -107,8 +107,12 @@ public partial class IntroController
     {
         finale = true; endedByFinale = true;
         if (Coop.IsHost && MultiplayerManager.HasInstance) MultiplayerManager.Instance.SendFinale(fromStairs);
-        yield return SayAll(new[] { enough });
-        yield return new WaitForSeconds(.6f);
+        // An empty "enough" line is left out: the killer's line alone starts the finale.
+        if (enough != null && !enough.IsEmpty)
+        {
+            yield return SayAll(new[] { enough });
+            yield return new WaitForSeconds(.6f);
+        }
         yield return SayAll(new[] { killerComing });
         yield return EndPractice();
     }

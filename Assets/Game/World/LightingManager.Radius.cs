@@ -24,6 +24,11 @@ public sealed partial class LightingManager
     [ShowIf(nameof(lightRadius)), Tooltip("The table player's own lights (the fill over the head and the key light) also fade out by the radius plus its edge, so the dark starts where the radius says (a circle of light). Off, they reach as far as they are set to (about 12 m) and the radius only takes the faint ambient out of the far dark.")]
     public bool radiusDimsPlayerLights = true;
 
+    [ShowIf(nameof(lightRadius)), Min(0f), Tooltip("Seconds the radius takes to close in once the table player has the view (from the room it is wide open, so the table reveal shows the floor lit).")]
+    public float radiusBlendSeconds = 1.2f;
+    const float RoomViewRadius = 400f;
+    float radiusBlend;
+
     // How far the table player's carried lights may reach across the floor now (metres; 0 = as authored).
     public static float CarriedLightReach { get; private set; }
 
@@ -95,6 +100,10 @@ public sealed partial class LightingManager
         // Gear that lights the way (LightRadius on the table player).
         var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         if (table != null && table.Stats != null) radius += Mathf.Max(0f, table.Stats.GetFinal(StatType.LightRadius));
+        // Seen from the room (the table reveal, the flight in), the radius around a far camera would leave the floor's
+        // outer walls black and then light them up on arrival: it closes in only once the table player has the view.
+        radiusBlend = Mathf.MoveTowards(radiusBlend, table != null && table.IsActive ? 1f : 0f, Time.deltaTime / Mathf.Max(.05f, radiusBlendSeconds));
+        radius = Mathf.Lerp(RoomViewRadius, radius, radiusBlend * radiusBlend);
         var centre = RadiusCentre ?? cam.transform.position;
         if (RadiusCentre.HasValue) radius *= Mathf.Max(.1f, RadiusScale);
         // The room the player is in may pull the light in (a dark room) or open it out (DungeonRoomMood).

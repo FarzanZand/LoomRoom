@@ -27,8 +27,8 @@ MonoBehaviour:
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
   gearByFloor:
   - fromFloor: 1
-    tier1: 100
-    tier2: 0
+    tier1: 70
+    tier2: 30
     tier3: 0
     tier4: 0
     upgradeChance: 0
@@ -39,14 +39,14 @@ MonoBehaviour:
     tier4: 0
     upgradeChance: 0
   - fromFloor: 3
-    tier1: 25
-    tier2: 75
+    tier1: 30
+    tier2: 70
     tier3: 0
     tier4: 0
     upgradeChance: 0
   - fromFloor: 4
-    tier1: 0
-    tier2: 100
+    tier1: 15
+    tier2: 85
     tier3: 0
     tier4: 0
     upgradeChance: 0

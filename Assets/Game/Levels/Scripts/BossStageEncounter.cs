@@ -17,6 +17,7 @@ public partial class BossStageEncounter : MonoBehaviour
     DungeonExit exit;
     Character boss;
     EnemyBrain brain;
+    Vector3 bossHome;   // where he set the boss down: it kneels there during his beam
     DungeonMasterHand hand;
     DungeonMasterBeam beam;
     DungeonMasterSeat seat;
@@ -182,6 +183,7 @@ public partial class BossStageEncounter : MonoBehaviour
         if (brain != null) brain.Wary = true;
         boss.Died += OnBossDied;
         yield return Carry(boss, spot, fight != null ? fight.placeSeconds : 2f);
+        if (boss != null) bossHome = boss.transform.position;
         // Said once the boss is down and the room is dark, where it can be read.
         BossBlessing.Announce();
         yield return new WaitForSeconds(fight != null ? fight.wakeDelay : 1f);
@@ -305,6 +307,13 @@ public partial class BossStageEncounter : MonoBehaviour
 
     IEnumerator Beam(Player player)
     {
+        // As he starts to charge, the boss goes back to its place and kneels to him until the beam is over.
+        System.Func<bool> kneel = () => Kneel(true);
+        if (brain != null && fight.beamKneel)
+        {
+            brain.MovementOverride = kneel;
+            for (float t = 0; t < fight.beamKneelLead && !Kneeling; t += Time.deltaTime) yield return null;
+        }
         // On the next beat of the music, so it lands with it.
         if (fight.beamOnBeat && musicStart >= 0f)
         {
@@ -315,13 +324,42 @@ public partial class BossStageEncounter : MonoBehaviour
         bool? held = null;
         // The boss gives way while the DM pours: it backs off and waits, so the player can face him and hold.
         System.Func<bool> giveWay = () => GiveWay(player);
-        if (brain != null && fight.beamGiveWay > 0f) brain.MovementOverride = giveWay;
+        if (brain != null && fight.beamGiveWay > 0f && !fight.beamKneel) brain.MovementOverride = giveWay;
         yield return beam.Fire(player, fight, ok => held = ok);
         if (brain != null && brain.MovementOverride == giveWay) brain.MovementOverride = null;
+        if (brain != null && brain.MovementOverride == kneel) { brain.MovementOverride = null; Kneel(false); if (boss != null && boss.IsAlive) brain.Alert(); }
         if (held == true) { Comment(fight.beamBlocked, true); if (fight.beamBlockedSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(fight.beamBlockedSound, fight.beamVolume); }
         else if (held == false) Comment(fight.beamHit, true);
         beamRun = null;
     }
+
+    // The boss during the beam: back to the spot he set it down on, then facing the table and kneeling (a swing already
+    // under way finishes first). Kneel(false) gets it up again.
+    bool Kneel(bool on)
+    {
+        if (boss == null || brain == null) return false;
+        var anim = boss.Animator;
+        bool hasKneel = anim != null && Character.HasParameter(anim, "Kneel", AnimatorControllerParameterType.Bool);
+        if (!on || !boss.IsAlive) { if (hasKneel) anim.SetBool("Kneel", false); brain.Motor.ResetSpeed(); return false; }
+        var toHome = bossHome - boss.transform.position; toHome.y = 0;
+        // Close enough is home: the player or the stage's pillars can stand in the way of the exact spot.
+        if (toHome.magnitude > 1.8f || toHome.magnitude > .5f && !brain.Motor.ReachedDestination(.6f))
+        {
+            if (hasKneel) anim.SetBool("Kneel", false);
+            brain.Motor.SetSpeed(brain.Data != null && brain.Data.Behaviour.useChaseSpeed ? brain.Data.Behaviour.chaseSpeed : 3.5f);
+            brain.Motor.MoveTo(bossHome);
+            return true;
+        }
+        brain.Motor.Stop();
+        var dm = TableManager.HasInstance && TableManager.Instance.DM != null ? TableManager.Instance.DM.transform.position : boss.transform.position + boss.transform.forward;
+        // Turned here, every frame, so nothing else steering the boss (a hit, a spell's aim) turns it back.
+        brain.Motor.LookAt(dm, 300f);
+        brain.Motor.Face(dm, 300f);
+        if (hasKneel && brain.Motor.IsFacing(dm, 12f)) anim.SetBool("Kneel", true);
+        return true;
+    }
+
+    bool Kneeling => boss != null && boss.Animator != null && Character.HasParameter(boss.Animator, "Kneel", AnimatorControllerParameterType.Bool) && boss.Animator.GetBool("Kneel");
 
     // The boss during the beam: back to a few metres from the player, facing them, no attacks (a swing already under
     // way finishes first: EnemyBrain only asks while it isn't swinging).

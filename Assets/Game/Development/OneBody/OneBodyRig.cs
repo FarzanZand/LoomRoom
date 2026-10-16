@@ -180,8 +180,12 @@ public class OneBodyRig : MonoBehaviour
     // its place around the shoulder turned down by armDrop and pulled in by armTuck (forward) and armTuckSide (out to the side), the elbow bent to reach it (a
     // two-bone solve that keeps the elbow on the side it was on), and the hand turned down with it so the blade swings
     // the same way. Timing and direction come from the clip; only where the arm is changes.
-    void Reach(Transform[] arm)
+    void Reach(Transform[] arm) => Reach(arm, transform, armDrop, armTuck, armTuckSide);
+
+    // The same for any body (the Animation Workbench's outside view): arm = upper arm, forearm, hand; body = the body's root.
+    public static void Reach(Transform[] arm, Transform body, float armDrop, float armTuck, float armTuckSide)
     {
+        var transform = body;
         Transform upper = arm[0], fore = arm[1], hand = arm[2];
         Vector3 s = upper.position, e = fore.position, h = hand.position;
         float a = Vector3.Distance(s, e), b = Vector3.Distance(e, h);
@@ -266,7 +270,7 @@ public class OneBodyRig : MonoBehaviour
     }
 
     // The triangles of a skinned mesh that belong to the arms and hands (more than half their weight on arm bones).
-    static Mesh ArmsOf(SkinnedMeshRenderer r)
+    public static Mesh ArmsOf(SkinnedMeshRenderer r)
     {
         var mesh = r.sharedMesh;
         var arm = new HashSet<int>();
@@ -294,7 +298,7 @@ public class OneBodyRig : MonoBehaviour
             any |= keep.Count > 0;
         }
         if (any) return cut;
-        Destroy(cut);
+        if (Application.isPlaying) Destroy(cut); else DestroyImmediate(cut);
         return null;
     }
 
