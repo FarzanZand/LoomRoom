@@ -219,7 +219,15 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
 - Ramps only from visible, lit texels (the painter's black undersides dragged ramps to black). Accents (moss, nails)
   only when the painting has a real patch of them: 31 near-black "green" texels became black moss on the crate.
   Clumped dirt reads as a checker on thin legs: wear bands must be solid.
-- Not for stone or organic props (tombs, altars, statues, bones, sacks): those are still open.
+- Stone, bone and books: `Tools/prop_organic.py --material stone|bone|book` (2026-10-17; gargoyle, skull pile and the
+  room books). Every texel starts from the Synty original's own colour, sampled per texel by the G-buffer bake (so
+  detail Synty draws in its texture, a skull's sockets and teeth or a spine's bands, comes through; one colour per
+  triangle lost them), then rules per material: stone gets speckled grain, cracks and moss in upward hollows; bone
+  thin cracks, drawn features widened (`--grow 1`) so sockets read; books keep each book's colour flat, edges and
+  scuffs lighter, page fibres (`--covers` gives a stack's books their own colours by height when Synty gives them one).
+  No wood grain on anything that isn't wood.
+- A smooth-shaded restyled mesh hides a low-poly model's shape (the skull pile read as a heap of eggs): flat-shade it
+  (each triangle its own vertices and face normal, every UV channel kept) so its facets catch the light like Synty's.
 
 **Meshy models (the bed)**
 - A Meshy model's texture atlas is cut into hundreds of small patches at different sizes and angles. Never try to
