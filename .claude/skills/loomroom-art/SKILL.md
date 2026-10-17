@@ -273,3 +273,15 @@ they will repeat (a strip of 6-8 wall tiles with the variants in place, the floo
   hand-drawn marks and soot) or as halves cut on mortar lines.
 - **Pixel size.** Painted pixels must stay square and the material's texels exactly 128 per unit (tiling = tile x 128 /
   texture size); never stretch a painting to a different aspect.
+- **No obvious repetition (user, 2026-10-17).** The same base tile next to itself is fine, and rare low-weighted variants
+  break it up (Church3's ratio: base weight 10, variants 0.5 to 1.5, wall variants 256x384, floor variants 256x256). What
+  must not happen is a sign the player can clearly see on a tile: any mark, blotch, bright accent or odd shape in the base
+  that the eye picks out shows on every tile and gives the repeat away. The base is even detail of one density; anything
+  that stands out goes on a rare variant. Check it on a 4x3 (walls) or 4x4 (floors) layout of the base at full size, then
+  in game across a whole room.
+- **Natural surfaces (caves, earth, bark, foliage): `Tools/style_tiles.py`.** One painting (16:9, ~340 x 190 painted
+  pixels) is smaller than a tile; a crop would repeat inside it. The tool brings the painting down to one texel per painted
+  pixel and quilts the tile from overlapping patches of it (joined along their least visible cut, wrapping so the tile is
+  seamless, no painting spot used twice), then levels the light drift. Every texel stays a painted one. Wall tiles are
+  quilted at 256x384, floor and ceiling tiles at 256x256 (the Church3 sizes and tilings above). Not for coursed masonry
+  (blocks and mortar lines must line up; build those as the Church styles were).

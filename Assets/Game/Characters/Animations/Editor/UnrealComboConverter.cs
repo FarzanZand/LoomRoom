@@ -133,9 +133,12 @@ public static partial class UnrealComboConverter
                         t.AddCondition(AnimatorConditionMode.Equals, set, "ComboSet");
             }
         HeavyFromCombo(machine, sets);
+        EnsureSwingCameraParameters(controller);
         EditorUtility.SetDirty(controller);
         AssetDatabase.SaveAssets();
-        return $"{added} combo states added to RightArm";
+        var clips = new List<AnimationClip>();
+        foreach (var set in sets) foreach (var name in set.Item2) clips.Add(AssetDatabase.LoadAssetAtPath<AnimationClip>($"{set.Item1}/{name}.anim"));
+        return $"{added} combo states added to RightArm, " + WriteSwingCamera(clips);
     }
 
     public static string Convert(string sourceName, string clipName)

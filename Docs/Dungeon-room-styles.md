@@ -19,3 +19,16 @@ Every wall tile and floor cell draws its material from the style's own material 
 ## Corridors
 
 **Corridors Copy Connected Room Style** (level, Architecture tab) is on for Dungeon1. A corridor section then copies the whole style of a directly connected room. Junction-only sections search outward along corridor connections for the nearest room; ties are broken by the dungeon seed. A room on level defaults passes those on. The search never crosses a doorway that has a door; if every route to a room does, the section uses level defaults. Opening a door in play does not restyle anything. Turn the option off to use the weighted Corridor Styles list instead (its contents are kept).
+
+## Natural styles (Cave1, Cave2, Nature1, Nature2)
+
+Four styles in `Styles/` (materials and textures in `Styles/HighRes Materials/<Style>`), in no level yet:
+
+- **Cave1**: damp grey rock walls, packed earth floor, dark rock ceiling. Variants: glowing mushrooms (foot of the wall), a water trickle running the whole wall; floor mushrooms, a damp patch.
+- **Cave2**: rough red rock walls and ceiling (muted to the dungeon palette), dusty red earth floor with stones. Variants: amber crystals, pale roots through a crack; floor crystals, a damp patch.
+- **Nature1**: packed earth held by roots, grass and moss floor, root tangle ceiling. Variants: hanging ivy, small red mushrooms; floor mushrooms, a damp patch.
+- **Nature2**: old bark walls, leaf litter floor, leaf canopy ceiling. Variants: shelf fungi, glowing moss; floor glowing moss, a damp patch.
+
+Each uses one wall material for every row (the tile wraps, so there is no seam at the tile line) and hides trims (natural rock and earth have no cornices). Variants follow Church3's ratio: base weight 10, variants 0.6 to 1.2, one feature each.
+
+Built from Meshy paintings (`Temp/Styles/gen`) with `Tools/style_tiles.py` (the painting brought down to one texel per painted pixel and quilted into a seamless 256 x 384 wall or 256 x 256 floor tile, marks that would show as a repeat kept out with `--exclude` boxes, light drift levelled) and `Tools/style_variants.py` (each variant is the base with one feature cut from the style's feature sheet). Materials are copies of Church3's (tiling 1.5 x 1 walls, 1.5 x 1.5 floors and ceilings, offset 0.5).

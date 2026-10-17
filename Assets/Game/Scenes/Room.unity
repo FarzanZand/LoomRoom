@@ -288931,7 +288931,7 @@ MonoBehaviour:
     text: 'Try your shield bash: hold {block} and press {attack}.'
   startingPlayer: 0
   skipWakeUp: 0
-  startAt: 1
+  startAt: 0
   initialFlags: []
 --- !u!23 &5835774047401790171
 MeshRenderer:
@@ -308297,6 +308297,7 @@ MonoBehaviour:
   comboFirstHitSpeed: 1
   comboSecondHitSpeed: 1
   comboFinisherSpeed: 1
+  comboCameraStrength: 1
   comboHitCooldown: 0.5
   comboFinisherCooldown: 0.9
   comboSlashLines: 0

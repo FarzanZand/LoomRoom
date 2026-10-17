@@ -194,6 +194,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     // hitbox opens; a landed hit kicks again (CombatManager.PresentImpact). Heavy swings do both harder.
     Vector3 kick;
     public Vector3 CameraKick => kick;
+    // The playing combo hit's camera curves (pitch, yaw, roll in degrees; zero when none play).
+    Vector3 ComboCamera() => new(AnimatorHelper.GetFloat(armsAnimator, "SwingCamPitch"), AnimatorHelper.GetFloat(armsAnimator, "SwingCamYaw"), AnimatorHelper.GetFloat(armsAnimator, "SwingCamRoll"));
     public void Kick(Vector3 degrees) { if (degrees.sqrMagnitude > kick.sqrMagnitude) kick = degrees; }
 
     void OnStrike()
@@ -210,7 +212,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             }
         float scale = Combo ? (HeavySwing ? t.comboFinisherStrikeScale : t.comboStrikeScale) : heavy || HeavySwing ? t.heavyStrikeScale : 1f;
         var k = t.strikeKick * scale;
-        Kick(alternate ? new Vector3(k.x, -k.y, -k.z) : k);
+        // A combo hit kicks the way its own camera curves are moving the view.
+        var own = Combo ? ComboCamera() : Vector3.zero;
+        if (own.sqrMagnitude > .01f) Kick(own.normalized * k.magnitude);
+        else Kick(alternate ? new Vector3(k.x, -k.y, -k.z) : k);
         if (t.strikeLunge > 0f && player.Motor != null)
         {
             var yaw = player.Look != null ? player.Look.YawTransform : transform;
@@ -582,6 +587,13 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     public Vector3 SwingCameraRotation(CombatManager tuning)
     {
         if (!isActiveAndEnabled || !player.IsActive || !WeaponHeld || !AnimatorHelper.Ready(armsAnimator)) return Vector3.zero;
+        // Combo hits carry their own camera motion as curves in their clips (the charged attack's clips have none and
+        // fall through to the settings below).
+        if (Combo)
+        {
+            var own = ComboCamera() * tuning.comboCameraStrength;
+            if (own.sqrMagnitude > .0001f) return own;
+        }
         for (int layer = 0; layer < armsAnimator.layerCount; layer++)
         {
             var current = CameraRotationForState(armsAnimator.GetCurrentAnimatorStateInfo(layer), tuning);

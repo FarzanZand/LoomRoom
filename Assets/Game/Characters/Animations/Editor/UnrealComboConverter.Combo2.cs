@@ -6,10 +6,11 @@ using UnityEngine;
 // one continuous, bigger blow for the combo, without touching those clips. Every frame is a pose of theirs:
 // - windup: the windup played through, then carried on the way it was going (higher, the blade further back), easing
 //   into the top;
-// - strike: the strike's cut from its start to past the low point, the windup's extra height let go of as it falls;
-// - follow-through: carried a little past the strike's own end, slowing;
+// - strike: the strike's cut from its start to its low point, the windup's extra height let go of as it falls;
+// - follow-through: carried on the way the cut was going, slowing;
 // - recovery: straight back to the arms' resting pose (the strike's own recovery bounces up and down again, cut);
-// - framing: the combo's (the other combo hits' view curves), so the arms don't swing across the view going in and out.
+// - framing: the combo's (the other combo hits' view curves) at both ends, so going in and out doesn't jump, and the
+//   Simple swing's through the cut, so it crosses the view as it does there.
 // Timed in real seconds at Play Speed (Combo Speed x the attack speed stat, as it plays), written in clip time.
 public static partial class UnrealComboConverter
 {
@@ -17,11 +18,11 @@ public static partial class UnrealComboConverter
     const float ChopPlaySpeed = .64f;
     const float ChopFps = 60f;
     // Real seconds: windup, held at the top, the cut, the follow-through, back to rest.
-    const float ChopWindup = .24f, ChopTop = .04f, ChopCut = .15f, ChopThrough = .12f, ChopRecover = .33f;
+    const float ChopWindup = .19f, ChopTop = .02f, ChopCut = .14f, ChopThrough = .11f, ChopRecover = .34f;
     // Windup seconds carried on past the clip's end (as far as its last .13 s went again, times this share).
     const float ChopWindupMore = .12f;
-    // How far the follow-through goes on past the strike's frame .233 (1 = not at all).
-    const float ChopThroughMore = 1.3f;
+    // How far the follow-through goes on past the cut's low point, the way its fastest stretch went (1 = not at all).
+    const float ChopThroughMore = 1.5f;
 
     public static string MakeCombo2Chop()
     {
@@ -73,7 +74,8 @@ public static partial class UnrealComboConverter
             var windupBack = Pose(windupClip, windupEnd - back);
             Quaternion[] Windup(float s) => s <= windupEnd ? Pose(windupClip, s) : Lerp(windupBack, windupLast, 1f + (s - windupEnd) / back);
             var top = Windup(windupEnd + ChopWindupMore + .02f);
-            const float cutFrom = .033f, cutTo = .233f, beforeEnd = .2f;
+            // The cut ends at its low point (.175): past it the strike rises and drops again (its bounce).
+            const float cutFrom = .033f, cutTo = .175f, beforeEnd = .133f;
             var cutStart = Pose(strikeClip, cutFrom);
             var throughA = Pose(strikeClip, beforeEnd);
             var throughB = Pose(strikeClip, cutTo);
@@ -105,7 +107,7 @@ public static partial class UnrealComboConverter
                     pose = Lerp(throughB, throughEnd, Mathf.Sin(u * Mathf.PI * .5f));
                     if (hitClose < 0f && u >= .25f) hitClose = clipTime;
                 }
-                else pose = Lerp(throughEnd, idle, Smoother(Mathf.Clamp01((r - tRecover) / ChopRecover)));
+                else { float u = Mathf.Clamp01((r - tRecover) / ChopRecover); pose = Lerp(throughEnd, idle, u * u * (3f - 2f * u)); }
                 for (int i = 0; i < bones.Count; i++) keys[bones[i]].Add((clipTime, pose[i]));
             }
 
@@ -116,11 +118,16 @@ public static partial class UnrealComboConverter
             clip.frameRate = ChopFps;
             foreach (var pair in keys) Keys(clip, body, pair.Key, pair.Value);
             float length = frames / ChopFps;
+            // Framing: the combo's at both ends (the hits before and after keep theirs, no jump), the Simple swing's
+            // (none) from the top of the windup to the start of the recovery, so the cut crosses the view as it does there.
+            float plain = (tTop - .04f) * ChopPlaySpeed, framedBack = (tRecover + ChopRecover * .25f) * ChopPlaySpeed;
             foreach (var name in OneBodyRig.ViewCurves)
             {
                 var source = AnimationUtility.GetEditorCurve(framing, EditorCurveBinding.FloatCurve("", typeof(Animator), name));
-                AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve("", typeof(Animator), name),
-                    AnimationCurve.Constant(0f, length, source != null ? source.Evaluate(0f) : 0f));
+                float v = source != null ? source.Evaluate(0f) : 0f;
+                var curve = new AnimationCurve(new Keyframe(0f, v), new Keyframe(plain, 0f), new Keyframe(framedBack, 0f), new Keyframe(length, v));
+                for (int k = 0; k < curve.length; k++) { AnimationUtility.SetKeyLeftTangentMode(curve, k, AnimationUtility.TangentMode.ClampedAuto); AnimationUtility.SetKeyRightTangentMode(curve, k, AnimationUtility.TangentMode.ClampedAuto); }
+                AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve("", typeof(Animator), name), curve);
             }
             clip.EnsureQuaternionContinuity();
             AnimationUtility.SetAnimationEvents(clip, new[]

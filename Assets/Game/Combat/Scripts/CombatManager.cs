@@ -96,6 +96,9 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
     [Range(.3f, 2f), Tooltip("Speed of the combo's third hit (the finisher), times Combo Speed.")]
     public float comboFinisherSpeed = 1f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Range(0f, 3f), Tooltip("How much the view moves with each combo hit, times the camera curves in its clip (SwingCamPitch, SwingCamYaw, SwingCamRoll: worked out from the hand's motion by UnrealComboConverter, so a left swing turns and leans the view left, a right one right, a stab nods it, a chop drops it; edit them in the Animation window). 0 = none. Also sets which way each hit's strike kick goes.")]
+    public float comboCameraStrength = 1f;
     public float ComboHitSpeed(int hit) => hit <= 0 ? comboFirstHitSpeed : hit == 1 ? comboSecondHitSpeed : comboFinisherSpeed;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
     [FormerlySerializedAs("comboChainAfter"), Min(0f), Tooltip("Seconds from the start of a combo hit before the next one can start (a press before then waits for it). Plain seconds: attack speed and Combo Speed don't change it.")]

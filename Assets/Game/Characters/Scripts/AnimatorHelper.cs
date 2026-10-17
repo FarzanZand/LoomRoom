@@ -31,6 +31,10 @@ public static class AnimatorHelper
 
     // ── Safe parameter writes ─────────────────────────────────────────
 
+    // A float parameter's value, or 0 when the controller has none by that name.
+    public static float GetFloat(Animator anim, string name) =>
+        Character.HasParameter(anim, name, AnimatorControllerParameterType.Float) ? anim.GetFloat(name) : 0f;
+
     public static void SetFloat(Animator anim, string name, float value)
     {
         if (Character.HasParameter(anim, name, AnimatorControllerParameterType.Float)) anim.SetFloat(name, value);
