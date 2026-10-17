@@ -5,6 +5,8 @@ public class DebugDungeonSettings : ScriptableObject
     [Tooltip("The test arena: an authored level with one big open room.")]
     public TableLevelData level;
     public AdventurerClass startingClass;
+    [Tooltip("Put in the table player's bag once the arena is built, on top of the class's own (to try other weapons).")]
+    public ItemData[] startingItems = new ItemData[0];
     [Tooltip("Spawned in an arc in front of the player, each just outside its own detection radius.")]
     public GameObject[] enemies = new GameObject[0];
     [Min(0f), Tooltip("Extra distance beyond each enemy's detection radius.")]

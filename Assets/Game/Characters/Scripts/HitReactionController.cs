@@ -71,7 +71,9 @@ public class HitReactionController : MonoBehaviour
         // Enemies reel the way the blade travelled, as hard as Hit Impact Strength says, and lean away with it.
         bool impact = character.IsEnemy && Tuning != null;
         var direction = impact ? Tuning.ImpactDirection(hit) : hit.Direction;
-        float strength = (heavy ? Tuning.heavyRecoilMultiplier : 1f) * (impact ? Tuning.hitImpactStrength : 1f);
+        // ... and as hard as the weapon type's Stagger Strength says (CombatManager.StaggerStrengthFor).
+        float strength = (heavy ? Tuning.heavyRecoilMultiplier : 1f) * (impact ? Tuning.hitImpactStrength * Tuning.StaggerStrengthFor(hit.Weapon) : 1f);
+        if (strength <= 0f) return;
         float duration = heavy ? Tuning.heavyRecoilDurationMultiplier : 1f;
         ReactToHit(hit.HitPoint, direction, strength, duration);
         if (impact && sway != null) Lean(direction, Tuning.impactBodySway * strength, duration);

@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DebugDungeonSettings
   level: {fileID: 11400000, guid: c34217f8c5bd90843a39c1c6c0a0956c, type: 2}
   startingClass: {fileID: 11400000, guid: 720138e1d8556ba48b73655c9111a72d, type: 2}
+  startingItems:
+  - {fileID: 11400000, guid: 6fc213fd8195b2c48a8426320b3e6011, type: 2}
   enemies:
   - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
   - {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}

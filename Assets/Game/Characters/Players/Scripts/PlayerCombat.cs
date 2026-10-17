@@ -287,11 +287,12 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     void UpdateCombo(bool gameplay, bool primary)
     {
         if (!Combo) { comboPressPending = comboHeavy = false; return; }
-        // Held past comboHoldForHeavy: the simple charged attack instead of a combo hit (the combo starts over after it).
-        if (comboPressPending && primary && Time.time - comboPressAt >= CombatManager.Instance.comboHoldForHeavy)
+        // Held past comboHoldForHeavy: the simple charged attack instead of a combo hit. Not before the current hit's
+        // cooldown is over (the windup could not start yet: a long click mid-combo stays a combo hit); the windup then
+        // takes over from the combo hit (FirstPersonTable: every combo state goes to Attack_Windup on AttackHeld).
+        if (comboPressPending && primary && Time.time - comboPressAt >= CombatManager.Instance.comboHoldForHeavy && Time.time >= ComboReadyAt)
         {
             comboPressPending = false; comboHeavy = true; comboQueuedUntil = -1f;
-            comboIndex = -1; comboStartedAt = -10f;
         }
         if (comboHeavy && !primary && !IsAttacking && Time.time - comboPressAt > .3f) comboHeavy = false;
         if (comboAfterHeavy && !IsAttacking) comboAfterHeavy = false;
@@ -301,15 +302,16 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             (player.Equipment != null && player.Equipment.IsUsingItem)) { comboQueuedUntil = -1f; return; }
         var tuning = CombatManager.Instance;
         float speed = Mathf.Max(.1f, tuning.comboSpeed * (player.Stats != null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f));
-        AnimatorHelper.SetFloat(armsAnimator, comboSpeedParam, speed);
-        AnimatorHelper.SetInteger(armsAnimator, "ComboSet", tuning.swingSet == CombatManager.SwingSet.Classic ? 1 : tuning.swingSet == CombatManager.SwingSet.Classic2 ? 2 : 0);
+        var set = tuning.swingSet;
+        AnimatorHelper.SetInteger(armsAnimator, "ComboSet", set == CombatManager.SwingSet.Classic ? 1 : set == CombatManager.SwingSet.Classic2 ? 2 : set == CombatManager.SwingSet.Combo2 ? 3 : 0);
         if (Time.time < ComboReadyAt) return;
         comboIndex = Time.time - comboStartedAt > tuning.comboResetTime / speed ? 0 : (comboIndex + 1) % ComboHits;
         comboStartedAt = Time.time;
         comboQueuedUntil = -1f;
         AnimatorHelper.SetInteger(armsAnimator, comboIndexParam, comboIndex);
+        // Each hit plays at its own speed (CombatManager Combo First Hit / Second Hit / Finisher Speed).
+        AnimatorHelper.SetFloat(armsAnimator, comboSpeedParam, speed * tuning.ComboHitSpeed(comboIndex));
         AnimatorHelper.SetTrigger(armsAnimator, comboTrigger);
-       
     }
 
     void OnPrimaryPressed()
@@ -341,10 +343,22 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     void OnPrimaryReleased()
     {
         // A tap in a combo set: the next combo hit.
-        if (Combo)
         if (Combo && comboPressPending) { comboPressPending = false; charging = false; QueueCombo(); return; }
-        // The charged attack is let go: from here presses are combo hits again (they wait for its swing to end).
-        if (Combo && comboHeavy) { comboHeavy = false; comboAfterHeavy = true; }
+        if (Combo && comboHeavy)
+        {
+            comboHeavy = false;
+            // Let go before the charge was full: a combo hit after all (the windup is dropped), so a long click
+            // never breaks the combo or plays the simple light swing.
+            if (Time.time - pressedAt < CombatManager.Instance.heavyChargeTime)
+            {
+                if (!IsReleasing) { CancelWindup(); cancelling = false; }
+                heldThroughCancel = false; charging = false;
+                QueueCombo();
+                return;
+            }
+            // The charged attack is let go: the combo starts over after it, and presses meanwhile wait for its swing to end.
+            comboAfterHeavy = true; comboIndex = -1; comboStartedAt = -10f;
+        }
         if (!charging) return;
         charging = false;
         if (!player.IsActive || !WeaponHeld || !IsAttacking || !CombatManager.HasInstance) return;
@@ -405,7 +419,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         // A new swing can't start sooner than swingInterval after the last one began.
         // Only the start is held back: a windup in progress keeps reading the button for the charge.
         bool startingSwing = !attackingNow || IsReleasing;
-        bool intervalReady = !startingSwing || Time.time - lastSwingAt >= SwingInterval;
+        // (Combo sets keep their own cooldowns.)
+        bool intervalReady = !startingSwing || Combo || Time.time - lastSwingAt >= SwingInterval;
         // The animator picks the windup (forehand or backhand) from SwingIndex as the swing starts, so it
         // holds the next swing's index before then; AttackBegin confirms it.
         if (startingSwing && !windingUp) AnimatorHelper.SetInteger(armsAnimator, swingIndexParam, NextSwingIndex);

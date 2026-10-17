@@ -62,6 +62,17 @@ public class DebugDungeonSession : MonoBehaviour
         if (settings != null && settings.startingClass != null) player.GetComponent<AdventurerProgress>().selectedClass = settings.startingClass;
         loader.Load(level);
         if (CurrentMode == Mode.Boss) yield return OntoStage(loader, player);
+        if (CurrentMode == Mode.Arena) yield return GiveStartingItems(loader, player);
+    }
+
+    // Arena: once the floor is built (the run has handed out the class's kit), the settings' extra items go in the bag.
+    IEnumerator GiveStartingItems(TableLevelLoader loader, Player player)
+    {
+        if (settings == null || settings.startingItems == null || settings.startingItems.Length == 0) yield break;
+        for (float t = 0; t < 10f && (loader.Busy || loader.Dungeon == null); t += Time.deltaTime) yield return null;
+        yield return null;
+        foreach (var item in settings.startingItems)
+            if (item != null && player.Bag != null && !player.Bag.TryAdd(item)) Debug.LogWarning($"Debug arena: no room in the bag for {item.itemName}.");
     }
 
     static TableLevelData BossLevel

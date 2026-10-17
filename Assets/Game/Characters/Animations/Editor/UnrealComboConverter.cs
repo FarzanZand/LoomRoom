@@ -59,6 +59,27 @@ public static partial class UnrealComboConverter
     // The combo's states on FirstPersonTable's RightArm layer (CombatManager.swingSet Combo plays them through PlayerCombat):
     // one per hit, entered from Any State on ComboStrike with its ComboIndex (so a hit cuts the one before short), back
     // to Idle when it ends, tagged as releases so the game counts them as attacking. Kept as they are when they exist.
+    // Holding attack in a combo set does the simple charged attack (PlayerCombat raises AttackHeld only then): its windup
+    // takes over from any combo hit, as Attack_Release does for the next simple swing.
+    static void HeavyFromCombo(AnimatorStateMachine machine, List<(string, string[])> sets)
+    {
+        AnimatorState windup = null;
+        foreach (var st in machine.states) if (st.state.name == "Attack_Windup") windup = st.state;
+        if (windup == null) return;
+        foreach (var set in sets)
+            foreach (var name in set.Item2)
+            {
+                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{set.Item1}/{name}.anim");
+                AnimatorState state = null;
+                foreach (var st in machine.states) if (clip != null && st.state.motion == clip) state = st.state;
+                if (state == null || System.Array.Exists(state.transitions, t => t.destinationState == windup)) continue;
+                var t = state.AddTransition(windup);
+                t.hasExitTime = false; t.duration = .08f;
+                t.AddCondition(AnimatorConditionMode.If, 0f, "AttackHeld");
+                t.AddCondition(AnimatorConditionMode.If, 0f, "SimpleSwings");
+            }
+    }
+
     public static string Wire()
     {
         var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
@@ -73,10 +94,10 @@ public static partial class UnrealComboConverter
         if (System.Array.FindIndex(controller.parameters, p => p.name == "ComboSet") < 0) controller.AddParameter("ComboSet", AnimatorControllerParameterType.Int);
         string[] tags = { "AttackReleaseAlt", "AttackRelease", "AttackRelease" };
         int added = 0;
-        // Two sets of three hits: ComboSet 0 the converted combo, 1 the Classic copies (PlayerCombat sets it).
         // ComboSet 0 the converted combo, 1 Classic, 2 Classic 2.
         var sets = new List<(string, string[])> { (Output, System.Array.ConvertAll(Clips, c => c.clip)) };
         foreach (var style in Styles) sets.Add((style.folder, System.Array.ConvertAll(ComboNames, c => StyleClip(style, c))));
+        sets.Add((Combo2Folder, Combo2Names));   // ComboSet 3: Combo 2
         for (int set = 0; set < sets.Count; set++)
             for (int i = 0; i < 3; i++)
             {
@@ -111,6 +132,8 @@ public static partial class UnrealComboConverter
                     if (t.destinationState == state && System.Array.FindIndex(t.conditions, c => c.parameter == "ComboSet") < 0)
                         t.AddCondition(AnimatorConditionMode.Equals, set, "ComboSet");
             }
+        Combo2Windup(machine, idle);
+        HeavyFromCombo(machine, sets);
         EditorUtility.SetDirty(controller);
         AssetDatabase.SaveAssets();
         return $"{added} combo states added to RightArm";

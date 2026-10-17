@@ -3604,7 +3604,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -5026,7 +5026,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: constitution
+  m_text: Constitution
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -5749,14 +5749,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -10011,7 +10011,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 101985148}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -10024,7 +10024,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 93ae97ff5e5eb8d4c88fae0c12de0dcf, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -10704,7 +10704,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 9742a1b9d11c2ed4395a27bdc490884d, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -11141,7 +11141,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '?'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -11320,7 +11320,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 128498387}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -11333,7 +11333,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 665feea7fd5b7b94d8b11b1cf07a2fed, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -12020,7 +12020,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -15523,7 +15523,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '?'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -17683,7 +17683,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -17693,7 +17693,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -19227,14 +19227,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -19611,7 +19611,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 3759841264514d145989f462e118c95b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 1cee42a3175c13d4c9b79d366987cc2f, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -21728,7 +21728,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -21738,7 +21738,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -24516,7 +24516,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: strength
+  m_text: Strength
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -27684,7 +27684,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '?'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -28203,7 +28203,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -29018,14 +29018,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -29634,7 +29634,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '?'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -30859,14 +30859,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -31319,7 +31319,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 49b2306901838ed47b7e94652a64959a, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -31506,7 +31506,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '?'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -38555,7 +38555,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -43606,7 +43606,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -43616,7 +43616,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -45412,7 +45412,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 866a26423d74dde469bf1d4438496bd2, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -48353,7 +48353,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 600234223}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -48366,7 +48366,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: e36d67b393157c94a945587edffbb3dd, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -48955,7 +48955,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '?'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -51235,7 +51235,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -54255,14 +54255,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -54714,7 +54714,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -57489,14 +57489,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -72432,7 +72432,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '?'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -78473,7 +78473,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -78483,7 +78483,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -82725,7 +82725,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -82735,7 +82735,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -85625,7 +85625,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -85957,7 +85957,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -91808,7 +91808,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -91818,7 +91818,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -101090,7 +101090,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -102303,7 +102303,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 985cdd15537bbc94694839ad045b843e, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -102690,7 +102690,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -102700,7 +102700,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -107388,7 +107388,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: +0 health
+  m_text: +0 damage
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
   m_sharedMaterial: {fileID: -7708394129502214064, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
@@ -108405,7 +108405,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -109269,7 +109269,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 3151a4f7b65c5ba4db2f589e5d050f06, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -114768,14 +114768,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -114850,7 +114850,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -117216,7 +117216,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -117226,7 +117226,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -118036,7 +118036,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -122056,7 +122056,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 55b4010105dd8f64badc3925d87f252c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 56f594a20781aab4c95fc3c10a1525e1, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -124712,7 +124712,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -125135,7 +125135,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: dbc2f2430bb941c45997e1fa0868ac4e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 032124d0b9881ae49b2a61e9fb84cf64, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -125645,7 +125645,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: intelligence
+  m_text: Intelligence
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -126404,7 +126404,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: +0 health
+  m_text: +0 mana
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
   m_sharedMaterial: {fileID: -7708394129502214064, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
@@ -135439,14 +135439,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -137674,14 +137674,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -138301,7 +138301,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -138422,14 +138422,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -138774,7 +138774,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -138784,7 +138784,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -140944,14 +140944,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.17, g: 0.15, b: 0.14, a: 1}
+  m_Color: {r: 0.58, g: 0.16, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a0d5fd4123a1aaf4bad13aef891f8621, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -141120,7 +141120,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1650917678}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -141133,7 +141133,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 681ec8be9f8b4a54ea9aa2d47d7a98ee, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -142334,7 +142334,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1664380689}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -142347,7 +142347,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 3151a4f7b65c5ba4db2f589e5d050f06, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -146042,7 +146042,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -147309,7 +147309,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -147319,7 +147319,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -167784,7 +167784,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Buy 16
+  m_text: Train 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -167794,7 +167794,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.58, g: 0.16, b: 0.12, a: 1}
+  m_fontColor: {r: 0.6, g: 0.58, b: 0.55, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -169006,7 +169006,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1947560915}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -169019,7 +169019,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 02f3131e614723748b7aef625832a8e0, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -173445,7 +173445,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2000818275}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -173458,7 +173458,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 4345c96bd34f64546ae95654d1130956, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -179079,7 +179079,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 41a54f65ec2d1d74f972f70c4bb1dd90, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 16e13e5f8a086ec43984b101770b31f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -181031,7 +181031,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '?'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -181948,7 +181948,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: ad36d064dc484d64facfd26145025132, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -183182,7 +183182,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2130706163}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -183195,7 +183195,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: a8349bd2793955c4a9d6546bd65394b4, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -183382,7 +183382,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 156fc773e41e65d499f7401d262fc06e, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -184222,7 +184222,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 867f85d7401393c41b04f6d697a7ef5e, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -288667,7 +288667,7 @@ MonoBehaviour:
   - boss: {fileID: -8644375173445383690, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
     item: {fileID: 11400000, guid: c8c0daea26038644da47464013264bfb, type: 2}
     worth: 25
-  firstPrice: 16
+  firstPrice: 10
   priceMultiplier: 1.5
   tracks:
   - id: blocking
@@ -288675,7 +288675,7 @@ MonoBehaviour:
     kind: 0
     skill: 2
     attribute: 0
-    icon: {fileID: 21300000, guid: ad36d064dc484d64facfd26145025132, type: 3}
+    icon: {fileID: 21300000, guid: 5735d881105f7284c805ae926da19908, type: 3}
     givenLevels: 2
     levels: 10
     perLevel: 5
@@ -288686,7 +288686,7 @@ MonoBehaviour:
     - value: 15
       unlock: Shield bash
       description: 'Shield up, then attack: dash into the enemy ahead and stun it.'
-      icon: {fileID: 21300000, guid: 4345c96bd34f64546ae95654d1130956, type: 3}
+      icon: {fileID: 21300000, guid: 4f96369d9f16cff4c89b498a47060ee0, type: 3}
       trophy: {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}
     - value: 50
       unlock: '?'
@@ -288698,7 +288698,7 @@ MonoBehaviour:
     kind: 0
     skill: 0
     attribute: 0
-    icon: {fileID: 21300000, guid: 9433a5ca94182da42a0382452727c847, type: 3}
+    icon: {fileID: 21300000, guid: 9742a1b9d11c2ed4395a27bdc490884d, type: 3}
     givenLevels: 2
     levels: 10
     perLevel: 5
@@ -288709,7 +288709,7 @@ MonoBehaviour:
     - value: 25
       unlock: Riposte
       description: The first sword swing after a block hits 50% harder.
-      icon: {fileID: 21300000, guid: 0f582b2186aa8b840a27267502e06b25, type: 3}
+      icon: {fileID: 21300000, guid: 681ec8be9f8b4a54ea9aa2d47d7a98ee, type: 3}
       trophy: {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
     - value: 50
       unlock: '?'
@@ -288721,7 +288721,7 @@ MonoBehaviour:
     kind: 0
     skill: 1
     attribute: 0
-    icon: {fileID: 21300000, guid: 0323defcc7204924787491d8a559435e, type: 3}
+    icon: {fileID: 21300000, guid: 985cdd15537bbc94694839ad045b843e, type: 3}
     givenLevels: 2
     levels: 10
     perLevel: 5
@@ -288733,7 +288733,7 @@ MonoBehaviour:
       unlock: Crush
       description: A heavy mace hit knocks 10 armour off the target for the rest
         of the fight, up to 5 times.
-      icon: {fileID: 21300000, guid: f1ed4db51803b9f4887153344cf3a682, type: 3}
+      icon: {fileID: 21300000, guid: a8349bd2793955c4a9d6546bd65394b4, type: 3}
       trophy: {fileID: 11400000, guid: b1a6850fe492d4643b2c79564b88c087, type: 2}
     - value: 50
       unlock: '?'
@@ -288745,7 +288745,7 @@ MonoBehaviour:
     kind: 0
     skill: 3
     attribute: 0
-    icon: {fileID: 21300000, guid: 446f79a07be0d954c947088f20f4403e, type: 3}
+    icon: {fileID: 21300000, guid: 156fc773e41e65d499f7401d262fc06e, type: 3}
     givenLevels: 2
     levels: 10
     perLevel: 5
@@ -288757,7 +288757,7 @@ MonoBehaviour:
       unlock: Burning
       description: 'Fireball sets what it hits on fire: a fifth of the hit again
         every second for 3 seconds.'
-      icon: {fileID: 21300000, guid: a71af6f4ed9937544b05dbbfe2b295ee, type: 3}
+      icon: {fileID: 21300000, guid: 665feea7fd5b7b94d8b11b1cf07a2fed, type: 3}
       trophy: {fileID: 11400000, guid: 90fcb602aa103114bba5a2c00f5127d6, type: 2}
     - value: 50
       unlock: '?'
@@ -288769,7 +288769,7 @@ MonoBehaviour:
     kind: 0
     skill: 4
     attribute: 0
-    icon: {fileID: 21300000, guid: e578053d3f67fd246a11d97606107e5f, type: 3}
+    icon: {fileID: 21300000, guid: 866a26423d74dde469bf1d4438496bd2, type: 3}
     givenLevels: 2
     levels: 10
     perLevel: 5
@@ -288780,7 +288780,7 @@ MonoBehaviour:
     - value: 25
       unlock: Mending
       description: 'Heal keeps healing: half as much again over 4 seconds.'
-      icon: {fileID: 21300000, guid: b61b9a099ca04674cb987f8f43997087, type: 3}
+      icon: {fileID: 21300000, guid: 93ae97ff5e5eb8d4c88fae0c12de0dcf, type: 3}
       trophy: {fileID: 11400000, guid: 38526901aa689654ea34e6a6200e56be, type: 2}
     - value: 50
       unlock: '?'
@@ -288792,7 +288792,7 @@ MonoBehaviour:
     kind: 0
     skill: 5
     attribute: 0
-    icon: {fileID: 21300000, guid: feb16e39c94558c439c4c0a781b4529e, type: 3}
+    icon: {fileID: 21300000, guid: 49b2306901838ed47b7e94652a64959a, type: 3}
     givenLevels: 2
     levels: 10
     perLevel: 5
@@ -288803,7 +288803,7 @@ MonoBehaviour:
     - value: 25
       unlock: Sprint
       description: You can sprint.
-      icon: {fileID: 21300000, guid: 3abb8a93864023c4ba6278d569f39081, type: 3}
+      icon: {fileID: 21300000, guid: e36d67b393157c94a945587edffbb3dd, type: 3}
       trophy: {fileID: 11400000, guid: 0fa67589586481d43b0d3147311b842c, type: 2}
     - value: 50
       unlock: '?'
@@ -288815,7 +288815,7 @@ MonoBehaviour:
     kind: 0
     skill: 7
     attribute: 0
-    icon: {fileID: 21300000, guid: cd103f6bc8443aa4faf7649efe999363, type: 3}
+    icon: {fileID: 21300000, guid: 3151a4f7b65c5ba4db2f589e5d050f06, type: 3}
     givenLevels: 2
     levels: 10
     perLevel: 5
@@ -288826,7 +288826,7 @@ MonoBehaviour:
     - value: 25
       unlock: Ambush
       description: A backstab is a critical hit as well.
-      icon: {fileID: 21300000, guid: cd103f6bc8443aa4faf7649efe999363, type: 3}
+      icon: {fileID: 21300000, guid: 3151a4f7b65c5ba4db2f589e5d050f06, type: 3}
       trophy: {fileID: 11400000, guid: 4c4a17a16a14b5a49bd9466ac8e9b724, type: 2}
     - value: 50
       unlock: '?'
@@ -288838,7 +288838,7 @@ MonoBehaviour:
     kind: 0
     skill: 6
     attribute: 0
-    icon: {fileID: 21300000, guid: a4b5f30bd57565a459e49d70d505fb28, type: 3}
+    icon: {fileID: 21300000, guid: 867f85d7401393c41b04f6d697a7ef5e, type: 3}
     givenLevels: 2
     levels: 10
     perLevel: 5
@@ -288849,7 +288849,7 @@ MonoBehaviour:
     - value: 25
       unlock: Keen eye
       description: Merchants offer Fine and Masterwork gear twice as often.
-      icon: {fileID: 21300000, guid: 90fc2f9c33a16df49be87051ba30b016, type: 3}
+      icon: {fileID: 21300000, guid: 02f3131e614723748b7aef625832a8e0, type: 3}
       trophy: {fileID: 11400000, guid: ef5f66e3c2c30c4439c9bfe0a2653800, type: 2}
     - value: 50
       unlock: '?'
@@ -288861,7 +288861,7 @@ MonoBehaviour:
     kind: 1
     skill: 0
     attribute: 0
-    icon: {fileID: 21300000, guid: 55b4010105dd8f64badc3925d87f252c, type: 3}
+    icon: {fileID: 21300000, guid: 56f594a20781aab4c95fc3c10a1525e1, type: 3}
     givenLevels: 0
     levels: 8
     perLevel: 5
@@ -288874,7 +288874,7 @@ MonoBehaviour:
     kind: 1
     skill: 0
     attribute: 1
-    icon: {fileID: 21300000, guid: 3759841264514d145989f462e118c95b, type: 3}
+    icon: {fileID: 21300000, guid: 1cee42a3175c13d4c9b79d366987cc2f, type: 3}
     givenLevels: 0
     levels: 8
     perLevel: 5
@@ -288887,7 +288887,7 @@ MonoBehaviour:
     kind: 1
     skill: 0
     attribute: 2
-    icon: {fileID: 21300000, guid: dbc2f2430bb941c45997e1fa0868ac4e, type: 3}
+    icon: {fileID: 21300000, guid: 032124d0b9881ae49b2a61e9fb84cf64, type: 3}
     givenLevels: 0
     levels: 8
     perLevel: 5
@@ -308289,14 +308289,20 @@ MonoBehaviour:
   releaseSpeed: 1.25
   heavyReleaseSpeed: 0.95
   enemyHurtAnimationSpeed: 1.3
-  swingSet: 2
+  swordSwingSet: 2
+  maceSwingSet: 2
+  swordStaggerStrength: 1
+  maceStaggerStrength: 2
   comboSpeed: 0.6
+  comboFirstHitSpeed: 1
+  comboSecondHitSpeed: 1
+  comboFinisherSpeed: 1
   comboHitCooldown: 0.5
   comboFinisherCooldown: 0.9
   comboSlashLines: 0
   comboFinisherHeavy: 1
   comboFinisherDamage: 1.3
-  comboHoldForHeavy: 0.2
+  comboHoldForHeavy: 0.12
   comboHitStop: 0
   comboHitStopDuration: 0.065
   comboFinisherHitStop: 0.13

@@ -12,15 +12,41 @@ public static partial class MetaProgressionSetup
     const string MetaSprites = "Assets/Game/UI/Sprites/Meta/";
     static readonly Color Ink = new(.17f, .15f, .14f), Pen = new(.58f, .16f, .12f), Faint = new(.47f, .45f, .42f);
 
+    // The sheet's shapes drawn smooth at four times their old size (Tools/meta_sheet_smooth.py): imported at four times
+    // the pixels per unit with bilinear filtering and mipmaps, so they keep their size and stay crisp; the paper is
+    // smooth too; anything else stays point-filtered.
+    static readonly string[] SmoothShapes = { "Bubble outline", "Bubble filled", "Bubble dashed", "Ring", "Ring mask", "Icon frame", "Crest", "Pen frame" };
+
     static Sprite MetaSprite(string name, Vector4 border = default)
     {
         string path = MetaSprites + name + ".png";
+        bool smooth = System.Array.IndexOf(SmoothShapes, name) >= 0, paper = name == "Paper";
+        float ppu = smooth ? 200f : 50f;
+        if (smooth) border *= 4f;
+        var filter = smooth || paper ? FilterMode.Bilinear : FilterMode.Point;
         var importer = AssetImporter.GetAtPath(path) as TextureImporter;
-        if (importer != null && (importer.textureType != TextureImporterType.Sprite || importer.filterMode != FilterMode.Point || importer.spriteBorder != border || !Mathf.Approximately(importer.spritePixelsPerUnit, 50)))
+        if (importer != null && (importer.textureType != TextureImporterType.Sprite || importer.filterMode != filter || importer.spriteBorder != border || !Mathf.Approximately(importer.spritePixelsPerUnit, ppu)))
         {
             importer.textureType = TextureImporterType.Sprite; importer.spriteImportMode = SpriteImportMode.Single;
-            importer.filterMode = FilterMode.Point; importer.textureCompression = TextureImporterCompression.Uncompressed;
-            importer.mipmapEnabled = false; importer.spritePixelsPerUnit = 50; importer.spriteBorder = border; importer.alphaIsTransparency = true;
+            importer.filterMode = filter; importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.mipmapEnabled = smooth || paper; importer.spritePixelsPerUnit = ppu; importer.spriteBorder = border; importer.alphaIsTransparency = true;
+            importer.SaveAndReimport();
+        }
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    // A pixel icon's smooth copy for the sheet (Sheet icons/, Tools/meta_sheet_smooth.py), or the icon itself.
+    public static Sprite SheetIcon(Sprite pixel)
+    {
+        if (pixel == null) return null;
+        string path = MetaSprites + "Sheet icons/" + System.IO.Path.GetFileName(AssetDatabase.GetAssetPath(pixel));
+        var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null) return pixel;
+        if (importer.textureType != TextureImporterType.Sprite || importer.filterMode != FilterMode.Bilinear || !importer.mipmapEnabled)
+        {
+            importer.textureType = TextureImporterType.Sprite; importer.spriteImportMode = SpriteImportMode.Single;
+            importer.filterMode = FilterMode.Bilinear; importer.mipmapEnabled = true; importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.spritePixelsPerUnit = 128; importer.alphaIsTransparency = true;
             importer.SaveAndReimport();
         }
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
@@ -135,7 +161,7 @@ public static partial class MetaProgressionSetup
             var bubbles = new List<Image>();
             for (int k = 0; k < 8; k++) bubbles.Add(Img($"{attributes[i]} level {k + 1}", p, new Vector2(-672 + k * 26, y - 22), new Vector2(20, 20), MetaSprite("Bubble outline"), Ink, Image.Type.Simple, true));
             row.bubbles = bubbles.ToArray();
-            row.buy = PenButton($"{attributes[i]} buy", p, new Vector2(-412, y - 22), new Vector2(104, 36), "Buy 16", 22, out row.buyLabel);
+            row.buy = PenButton($"{attributes[i]} buy", p, new Vector2(-412, y - 22), new Vector2(104, 36), "Train 10", 18, out row.buyLabel);
             rows.Add(row);
         }
         Img("Divider", p, new Vector2(-350, 0), new Vector2(2, 780), null, new Color(Ink.r, Ink.g, Ink.b, .35f));
@@ -185,7 +211,7 @@ public static partial class MetaProgressionSetup
                 x += size + 12;
             }
             row.bubbles = bubbles.ToArray(); row.milestoneIcons = icons.ToArray(); row.milestoneMarks = marks.ToArray();
-            row.buy = PenButton($"{id} buy", p, new Vector2(685, y), new Vector2(150, 48), "Buy 16", 28, out row.buyLabel);
+            row.buy = PenButton($"{id} buy", p, new Vector2(685, y), new Vector2(150, 48), "Train 10", 28, out row.buyLabel);
             if (i < order.Length - 1) Img($"{id} rule", p, new Vector2(230, y - 43), new Vector2(1060, 2), null, new Color(Ink.r, Ink.g, Ink.b, .12f));
             rows.Add(row);
         }
@@ -242,7 +268,7 @@ public static partial class MetaProgressionSetup
         Debug.Log("Meta: character sheet built under UI/Canvas");
     }
 
-    static Sprite AttributeIcon(string id) => AssetDatabase.LoadAssetAtPath<Sprite>(SkillIcons + (id == "constitution" ? "102_Passive_Male_Vitality.png" : id == "intelligence" ? "157_Mastery_Staff.png" : "134_Strength.png"));
+    static Sprite AttributeIcon(string id) => SheetIcon(AssetDatabase.LoadAssetAtPath<Sprite>(SkillIcons + (id == "constitution" ? "102_Passive_Male_Vitality.png" : id == "intelligence" ? "157_Mastery_Staff.png" : "134_Strength.png")));
 
     static void BuildKeyItems(Transform canvas)
     {

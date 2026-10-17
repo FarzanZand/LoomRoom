@@ -72,7 +72,7 @@ public partial class ProgressionManager
     [TabGroup("Meta progression/Tabs", "Spoils"), ListDrawerSettings(ShowFoldout = true), Tooltip("Bosses always drop their own spoils.")]
     public List<BossSpoils> bossSpoils = new();
 
-    [TabGroup("Meta progression/Tabs", "Tracks"), Min(1), Tooltip("The first level bought on any track.")] public int firstPrice = 16;
+    [TabGroup("Meta progression/Tabs", "Tracks"), Min(1), Tooltip("The spoils the first level costs on any track.")] public int firstPrice = 10;
     [TabGroup("Meta progression/Tabs", "Tracks"), Min(1), Tooltip("Each level costs this much more than the one before.")] public float priceMultiplier = 1.5f;
     [TabGroup("Meta progression/Tabs", "Tracks"), ListDrawerSettings(ShowFoldout = true, ListElementLabelName = "displayName")]
     public List<MetaTrack> tracks = new();

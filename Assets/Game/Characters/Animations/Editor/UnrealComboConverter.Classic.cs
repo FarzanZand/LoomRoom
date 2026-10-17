@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEngine;
 
 // Tools > LoomRoom > Characters > Make Classic Swings: the Classic and Classic 2 swing sets (CombatManager.SwingSet), made
@@ -93,8 +94,82 @@ public static partial class UnrealComboConverter
             System.IO.Directory.CreateDirectory(style.folder);
             foreach (var combo in ComboNames) log.Append(MakeClassic(style, combo)).Append(" | ");
         }
+        log.Append(MakeCombo2()).Append(" | ");
         log.Append(Wire());
         return log.ToString();
+    }
+
+    // Combo 2 (CombatManager.SwingSet.Combo2, for maces): the Combo's two swings, then the Simple set's light swing as
+    // the third hit, played as Simple plays it: its windup (Attack_Windup_Feel at WindupSpeed, the hand pulled back),
+    // then its strike (Attack_Swing_A Strike at ReleaseSpeed), back to Idle like Attack_Release (Combo2Windup). Copies,
+    // so its states stand apart from the others' and can be edited on their own. Rebuilt in place on each run.
+    public const string Combo2Folder = "Assets/Game/Characters/Animations/FirstPersonPlayer/Combo2";
+    public static readonly string[] Combo2Names = { "Combo2 swing left", "Combo2 swing right", "Combo2 strike" };
+    const string Combo2WindupName = "Combo2 windup";
+
+    public static string MakeCombo2()
+    {
+        System.IO.Directory.CreateDirectory(Combo2Folder);
+        const string fp = "Assets/Game/Characters/Animations/FirstPersonPlayer";
+        var sources = new[] { $"{Output}/Combo swing left.anim", $"{Output}/Combo swing right.anim", $"{fp}/Attack_Swing_A Strike.anim", $"{fp}/Attack_Windup_Feel.anim" };
+        var names = new[] { Combo2Names[0], Combo2Names[1], Combo2Names[2], Combo2WindupName };
+        for (int i = 0; i < 4; i++)
+        {
+            var source = AssetDatabase.LoadAssetAtPath<AnimationClip>(sources[i]);
+            if (source == null) return "Combo2: missing " + sources[i];
+            string path = $"{Combo2Folder}/{names[i]}.anim";
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+            if (clip == null) { clip = Object.Instantiate(source); AssetDatabase.CreateAsset(clip, path); }
+            else EditorUtility.CopySerialized(source, clip);
+            clip.name = names[i];
+            // Every hit starts with AttackBegin: the swings and the windup have it, the strike (which follows the windup) doesn't.
+            var events = new List<AnimationEvent>(AnimationUtility.GetAnimationEvents(clip));
+            events.RemoveAll(e => e.functionName == "AttackBegin");
+            if (i != 2) events.Insert(0, new AnimationEvent { functionName = "AttackBegin", time = 0f });
+            AnimationUtility.SetAnimationEvents(clip, events.ToArray());
+            EditorUtility.SetDirty(clip);
+        }
+        AssetDatabase.SaveAssets();
+        return "Combo2: 4 clips";
+    }
+
+    // Combo 2's third hit as Simple's tap: ComboStrike (ComboSet 3, ComboIndex 2) enters the windup, which goes on into
+    // the strike as Attack_Windup does into Attack_Release; the strike goes back to Idle as Attack_Release does. Run by
+    // Wire after its loop (which gives every combo state ComboSpeed), so this timing wins.
+    static void Combo2Windup(AnimatorStateMachine machine, AnimatorState idle)
+    {
+        var strikeClip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{Combo2Folder}/{Combo2Names[2]}.anim");
+        var windupClip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{Combo2Folder}/{Combo2WindupName}.anim");
+        if (strikeClip == null || windupClip == null) return;
+        AnimatorState strike = null, windup = null;
+        Vector3 at = Vector3.zero;
+        foreach (var st in machine.states)
+        {
+            if (st.state.motion == strikeClip) { strike = st.state; at = st.position; }
+            if (st.state.motion == windupClip) windup = st.state;
+        }
+        if (strike == null) return;
+        if (windup == null)
+        {
+            windup = machine.AddState(Combo2WindupName, at + new Vector3(0f, 70f, 0f));
+            windup.motion = windupClip;
+        }
+        windup.tag = "Attack";
+        windup.speedParameterActive = true; windup.speedParameter = "WindupSpeed";
+        strike.tag = "AttackRelease";
+        strike.speedParameterActive = true; strike.speedParameter = "ReleaseSpeed";
+        // The combo's entry for the third hit leads to the windup instead of the strike.
+        foreach (var t in machine.anyStateTransitions)
+            if (t.destinationState == strike) t.destinationState = windup;
+        foreach (var t in windup.transitions) windup.RemoveTransition(t);
+        var on = windup.AddTransition(strike);
+        on.hasExitTime = true; on.exitTime = .9f; on.duration = .03f;
+        foreach (var t in strike.transitions) strike.RemoveTransition(t);
+        if (idle != null)
+        {
+            var back = strike.AddTransition(idle);
+            back.hasExitTime = true; back.exitTime = .5f; back.duration = .15f;
+        }
     }
 
     static string MakeClassic(Style style, string comboName)

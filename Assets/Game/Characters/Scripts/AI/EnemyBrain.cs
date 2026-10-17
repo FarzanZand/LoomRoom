@@ -358,18 +358,19 @@ public class EnemyBrain : MonoBehaviour
         if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null && (Time.time >= staggerImmuneUntil || maceHeavy))
         {
             var trainee = info.Source != null ? info.Source.Adventurer : null;
-            float duration = Tuning.heavyStaggerDuration * (trainee != null ? trainee.StaggerMultiplier(info.Weapon) : 1);
+            float duration = Tuning.heavyStaggerDuration * Tuning.StaggerStrengthFor(info.Weapon) * (trainee != null ? trainee.StaggerMultiplier(info.Weapon) : 1);
             if (IsSwinging) attackRunner.QueueStagger(duration);
             else            BeginRecovery(duration);
             staggerImmuneUntil = Time.time + duration + Tuning.enemyStaggerImmunity;
         }
-        if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null)
+        // A weapon type with no Stagger Strength makes no hurt reaction either.
+        if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null && (Tuning == null || Tuning.StaggerStrengthFor(info.Weapon) > 0f))
         {
             // Which stagger plays (HumanoidController: Hurt, Hurt Left, Hurt Right, Hurt Heavy): the way the blow throws
             // the body, or the heavy one.
             AnimatorHelper.SetInteger(Character.Animator, "HurtDir", HurtDirection(info));
             Character.TriggerAnimation(Character.data.hurtTrigger);
-            if (!info.Heavy && Tuning != null) BeginRecovery(Tuning.lightFlinchDuration);
+            if (!info.Heavy && Tuning != null) BeginRecovery(Tuning.lightFlinchDuration * Tuning.StaggerStrengthFor(info.Weapon));
         }
 
         bool inCombat = State == EnemyState.Chase || State == EnemyState.Attack;

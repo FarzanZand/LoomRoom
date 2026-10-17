@@ -304,7 +304,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (r.buy != null) r.buy.interactable = price >= 0;
         if (r.buyLabel != null)
         {
-            r.buyLabel.text = price < 0 ? "MAX" : $"Buy {price}";
+            r.buyLabel.text = price < 0 ? "MAX" : $"Train {price}";
             r.buyLabel.color = price < 0 ? faint : locked || meta.Spoils < price ? poor : pen;
         }
         if (r.buyIcon != null) r.buyIcon.enabled = price >= 0;
