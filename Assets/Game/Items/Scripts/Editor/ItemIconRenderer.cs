@@ -6,7 +6,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// Inventory icons rendered from the items' own models, Diablo style: each icon is the item's bag footprint
+// Inventory icons rendered from the items' own models: each icon is the item's bag footprint
 // (ItemData.GridSize) at ItemIconSettings.cellPixels per cell. The model is posed in an empty preview scene, lit by a
 // key and a fill light, rendered `supersample` times larger, averaged down, cut at `alphaCut` coverage and outlined.
 // Worn gear without a model is cut from a Synty outfit (ItemIconRenderer.Outfits.cs).

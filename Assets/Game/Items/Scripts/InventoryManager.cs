@@ -54,7 +54,7 @@ public class InventoryManager : Singleton<InventoryManager>
         new RarityStep { rarity = ItemRarity.Superior, properties = new(2, 2), baseBonus = .4f, priceMultiplier = 2.5f, chance = .15f, chancePerFloor = 0f },
         new RarityStep { rarity = ItemRarity.Masterwork, properties = new(3, 3), baseBonus = .6f, priceMultiplier = 4f, chance = .08f, chancePerFloor = 0f },
     };
-    [Min(0), Tooltip("Times every rarity chance for a merchant's gear (a better pick than the floor's loot; its price follows the rarity).")] public float merchantRarity = 2f;
+    [Min(0), Tooltip("Times every rarity chance for a merchant's gear (a better pick than the floor's loot; its price follows the rarity).")] public float merchantRarity = 1.3f;
 
     [ShowInInspector, ReadOnly, MultiLineProperty(4), LabelText("Chests by floor"), Tooltip("Rarity of chest gear on each floor, with the whole-game multiplier.")]
     string RarityPreview
@@ -65,12 +65,14 @@ public class InventoryManager : Singleton<InventoryManager>
             float scale = rarityChanceMultiplier * (chestDrops != null ? chestDrops.rarityMultiplier : 1f);
             for (int floor = 1; floor <= 4; floor++)
             {
-                float rest = 1f; string parts = "";
+                float rest = 1f, total = 0f; string parts = "";
+                foreach (var s in rarities) if (s != null) total += s.ChanceOn(floor) * scale;
+                float fit = total > 1f ? 1f / total : 1f;
                 for (int i = rarities.Count - 1; i >= 0; i--)
                 {
                     var step = rarities[i];
                     if (step == null) continue;
-                    float p = Mathf.Min(rest, step.ChanceOn(floor) * scale); rest -= p;
+                    float p = Mathf.Min(rest, step.ChanceOn(floor) * scale * fit); rest -= p;
                     parts = $"  {step.rarity} {p * 100f:0.#}%" + parts;
                 }
                 lines.Add($"Floor {floor}: Plain {rest * 100f:0.#}%" + parts);
@@ -105,12 +107,16 @@ public class InventoryManager : Singleton<InventoryManager>
     public ItemRarity RollRarity(System.Random random, int floor, float scale)
     {
         double roll = random.NextDouble();
+        // Boosted chances that add up past 100% share it in their own proportions (no rarity is crowded out).
+        float total = 0f;
+        foreach (var step in rarities) if (step != null) total += step.ChanceOn(floor) * scale;
+        float fit = total > 1f ? 1f / total : 1f;
         float sum = 0f;
         for (int i = rarities.Count - 1; i >= 0; i--)
         {
             var step = rarities[i];
             if (step == null) continue;
-            sum += step.ChanceOn(floor) * scale;
+            sum += step.ChanceOn(floor) * scale * fit;
             if (roll < sum) return step.rarity;
         }
         return ItemRarity.Plain;
@@ -119,7 +125,7 @@ public class InventoryManager : Singleton<InventoryManager>
     [Header("Loot balance (whole game)")]
     [Min(0), Tooltip("Times every chance of gear coming out above Plain, in every loot source and merchant (the shrine's raise is not affected). 1 = as set under Rarity.")]
     public float rarityChanceMultiplier = 1f;
-    [Min(0), Tooltip("Times every chance of an item dropping at all: gear and recovery chances of loot profiles, an enemy's drop chance and pool chances of hand-listed tables. 1 = as set on each table.")]
+    [Min(0), Tooltip("Times every chance of an item dropping from enemies and breakables: gear and recovery chances of loot profiles, an enemy's drop chance and pool chances of hand-listed tables. Chests keep their own. 1 = as set on each table.")]
     public float dropChanceMultiplier = 1f;
     [Min(0), Tooltip("Times the chance of an enemy dropping an item (gear and recovery from every biome's loot profile and hand-listed tables), on top of Drop Chance Multiplier. 0 = enemies drop no items (gold and spoils still drop). 1 = as set on each table.")]
     public float enemyDropMultiplier = 1f;
@@ -130,7 +136,10 @@ public class InventoryManager : Singleton<InventoryManager>
     public static float RarityChanceScale => HasInstance ? Instance.rarityChanceMultiplier : 1f;
     public static float DropChanceScale => HasInstance ? Instance.dropChanceMultiplier : 1f;
     // The drop multiplier for one loot source: the whole-game one, times the enemy one for kills.
-    public static float DropChanceFor(DungeonLootSource source) => DropChanceScale * (source == DungeonLootSource.Enemy && HasInstance ? Instance.enemyDropMultiplier : 1f);
+    // Drop Chance Multiplier reaches what enemies and breakables drop; chests (the boss's reward too) keep their own chances.
+    public static float DropChanceFor(DungeonLootSource source) =>
+        (source == DungeonLootSource.Enemy || source == DungeonLootSource.Barrel ? DropChanceScale : 1f)
+        * (source == DungeonLootSource.Enemy && HasInstance ? Instance.enemyDropMultiplier : 1f);
     public static float GoldScale => HasInstance ? Instance.goldMultiplier : 1f;
 
     [Header("Drop")]

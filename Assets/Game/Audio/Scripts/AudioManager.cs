@@ -244,6 +244,18 @@ public partial class AudioManager : Singleton<AudioManager>
         }
     }
 
+    // Where there is no AudioManager (the main menu): the remembered volumes, read and written straight, with an event
+    // for whatever plays sound there (MainMenuUI's music).
+    public static float StoredVolume(Channel channel) => PlayerPrefs.GetFloat(Key(channel), channel == Channel.Music ? .8f : 1f);
+    public static void StoreVolume(Channel channel, float linear)
+    {
+        PlayerPrefs.SetFloat(Key(channel), Mathf.Clamp01(linear));
+        VolumeStored?.Invoke();
+    }
+    public static event System.Action VolumeStored;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetVolumeStored() => VolumeStored = null;
+    static string Key(Channel channel) => channel switch { Channel.Master => K_MASTER, Channel.Music => K_MUSIC, Channel.Sfx => K_SFX, _ => K_UI };
+
     // ── Internals ──────────────────────────────────────────────────────────────
     void SetupMusicSources()
     {

@@ -223,13 +223,13 @@ public static partial class MetaProgressionSetup
                 Skill(AdventureSkill.Athletics, "?", "?", "Armor", "Leather Boots", "Armor", "Iron Boots");
                 Skill(AdventureSkill.Stealth, "?", "?", "_Archive", "Knife", "_Archive", "Notched knife");
                 Skill(AdventureSkill.Trading, "?", "?", "Trinkets", "Copper ring", "Trinkets", "Iron band");
-                void Attribute(MetaAttribute a, string file, float perPoint, string unit, float second = 0, string secondUnit = null) =>
+                void Attribute(MetaAttribute a, string file, float perPoint, string unit, float second = 0, string secondUnit = null, float third = 0, string thirdUnit = null) =>
                     pm.tracks.Add(new ProgressionManager.MetaTrack { id = a.ToString().ToLowerInvariant(), displayName = a.ToString(), kind = MetaTrackKind.Attribute, attribute = a, icon = Icon(file),
-                        givenLevels = 0, levels = 8, baseScore = 8, bonusPerPoint = perPoint, unit = unit, secondBonusPerPoint = second, secondUnit = secondUnit });
-                Attribute(MetaAttribute.Strength, "134_Strength.png", 1, "damage");
+                        givenLevels = 0, levels = 8, baseScore = 8, bonusPerPoint = perPoint, unit = unit, secondBonusPerPoint = second, secondUnit = secondUnit, thirdBonusPerPoint = third, thirdUnit = thirdUnit });
+                Attribute(MetaAttribute.Strength, "134_Strength.png", 5, "% damage");
                 Attribute(MetaAttribute.Dexterity, "139_Critical_Male_Sword.png", 5, "% critical chance");
                 Attribute(MetaAttribute.Constitution, "102_Passive_Male_Vitality.png", 5, "health", 5, "stamina");
-                Attribute(MetaAttribute.Intelligence, "157_Mastery_Staff.png", 5, "mana", .05f, "mana/s");
+                Attribute(MetaAttribute.Intelligence, "157_Mastery_Staff.png", 5, "mana", .05f, "mana/s", 3.5f, "% spell power");
             }
             PrefabUtility.SaveAsPrefabAsset(root, ManagerPrefab);
         }

@@ -6,11 +6,11 @@
 
 **A first-person roguelike dungeon crawler about fighting, finding better equipment, and growing a character through a long descent.**
 
-Barony is the reference for the dungeon loop, classes, and baseline equipment stats. Around 90% of play happens in the dungeon. The miniature table, Dungeon Master, and room provide an Inscryption-like setting and a small supporting layer between runs.
+The dungeon loop, classes, and baseline equipment stats come first. Around 90% of play happens in the dungeon. The miniature table, Dungeon Master, and room provide a dim tabletop setting and a small supporting layer between runs.
 
 Start with a small set of mechanics and make them feel good. The current combat scope is one-handed slashing weapons, one-handed bludgeoning weapons, shields, Fireball, and Heal. Loot and skills support those mechanics.
 
-The rules below define the intended design. Numerical values are initial tuning proposals, not a statement of what is already implemented or an exact copy of Barony's formulas.
+The rules below define the intended design. Numerical values are initial tuning proposals, not a statement of what is already implemented.
 
 ## The run and dungeon structure
 
@@ -51,7 +51,7 @@ Generate each floor from authored rooms with branches, loops, recognizable landm
 
 Use the available one-handed animations for light and heavy attacks. No two-handed weapons, bows, ammunition, polearms, throwing weapons, or third physical weapon category in the current scope. Weapon differences come from base Attack, reach, animation timing, and stamina cost. Those handling values are authored per weapon rather than randomly rolled affixes.
 
-The right hand holds a one-handed weapon. The left hand holds either a shield or an equipped spell. Any class can use either weapon and either left-hand option. As in Barony, Swords and Maces are separate skills: each weapon trains and scales with its own skill, so switching to a new weapon type means starting that skill lower.
+The right hand holds a one-handed weapon. The left hand holds either a shield or an equipped spell. Any class can use either weapon and either left-hand option. Swords and Maces are separate skills: each weapon trains and scales with its own skill, so switching to a new weapon type means starting that skill lower.
 
 ### Core actions
 
@@ -90,9 +90,9 @@ No ammunition, one-use scrolls, tools, crafting materials, or consumable keys in
 
 Use the existing equipment slots where suitable. Do not add slots just to expand the loot pool. Ordinary items improve their core value; special items initially add a clear attribute bonus. Avoid triggered effects, elaborate affix combinations, item sets, and custom loot mechanics until the baseline feels right.
 
-### Barony stat baseline
+### Stat baseline
 
-Attributes are kept in the data but are not shown in the menus for now, since they only nudge a few numbers. Use Barony's recognizable attribute vocabulary and core equipment values: **Attack, Armor Class, STR, DEX, CON, INT, PER, and CHR**. Attack and Armor Class are derived combat values; the six attributes describe the character and can receive gear bonuses. Gear does not need to display or roll every stat.
+Attributes are kept in the data but are not shown in the menus for now, since they only nudge a few numbers. Use a familiar attribute vocabulary and core equipment values: **Attack, Armor Class, STR, DEX, CON, INT, PER, and CHR**. Attack and Armor Class are derived combat values; the six attributes describe the character and can receive gear bonuses. Gear does not need to display or roll every stat.
 
 | Stat | Initial LoomRoom use |
 |---|---|
@@ -105,7 +105,7 @@ Attributes are kept in the data but are not shown in the menus for now, since th
 | Perception (PER) | Improves visibility range in dark areas, with a readability cap |
 | Charisma (CHR) | Improves merchant prices, with limits that prevent buying and reselling for profit |
 
-These names and the ATK/AC foundation follow Barony. The mappings above are the proposed reduced LoomRoom implementation; exact coefficients need tuning against our combat. Do not claim numerical parity with Barony. Health, mana, and stamina remain visible resources; stamina supports the existing combat design.
+The mappings above are the proposed reduced LoomRoom implementation; exact coefficients need tuning against our combat. Health, mana, and stamina remain visible resources; stamina supports the existing combat design.
 
 Examples: a sword displays its category and Attack; a breastplate displays AC; a ring might display +1 INT. A stronger sword should first mean better Attack, not an unrelated special effect. Show the resulting equipped character values in comparison tooltips.
 
@@ -135,7 +135,7 @@ Begin with **Warrior, Wizard, and Cleric**, all available from the start. This r
 | Wizard | Weak sword, robes | INT | Sorcery 50, Thaumaturgy 15, Swords 5 | Fireball Tome (in hand) |
 | Cleric | Mace, shield, light armor | CON and INT | Thaumaturgy 40, Maces 25, Blocking 10, Trading 10 | Heal Tome (on the hotbar) |
 
-Unlisted skills start at 0. Class assets define starting attributes, resource values, equipment, and proficiencies. The Wizard has the largest mana reserve; the Warrior has stronger physical resources; the Cleric sits between them. Exact starting values are listed in Corrected Barony starting stats below.
+Unlisted skills start at 0. Class assets define starting attributes, resource values, equipment, and proficiencies. The Wizard has the largest mana reserve; the Warrior has stronger physical resources; the Cleric sits between them. Exact starting values are listed in Starting stats below.
 
 All classes can use every supported weapon and train every skill. Spells are found in the dungeon as tomes; only the classes built around a spell start with one. Class identity comes from starting competence, gear, and resources.
 
@@ -153,7 +153,7 @@ Both character level and skills reset for a new run. There is no permanent train
 
 **Spells are equipped in the left hand instead of a shield.** Fireball and Heal are two choices for that same slot; only one can be equipped at a time. The right-hand weapon stays equipped. A visible spell effect in the left hand communicates the active spell.
 
-**Spells are tomes, like Barony's spellbooks.** A tome is an ordinary item: found in chests and on enemies, kept on the hotbar, dropped or sold like anything else. Selecting a tome puts it in the left hand, and the left-hand action casts its spell. Selecting the shield puts the shield back. There are no separate spell keys. (Barony also lets a strong enough character learn a spell from a book; that is not in this version.)
+**Spells are tomes.** A tome is an ordinary item: found in chests and on enemies, kept on the hotbar, dropped or sold like anything else. Selecting a tome puts it in the left hand, and the left-hand action casts its spell. Selecting the shield puts the shield back. There are no separate spell keys. (Learning a spell from a book for good is not in this version.)
 
 
 Holding the left-hand action blocks with a shield; pressing it casts an equipped spell once. No casting through an equipped shield and no blocking while a spell is equipped.
@@ -186,9 +186,9 @@ Insufficient mana gives a clear HUD response and a short sound without trapping 
 
 Restore mana through mana potions and occasional dungeon fountains. No passive mana regeneration initially, so waiting in safety cannot supply unlimited Fireballs and healing. Tune potion and fountain availability across all biomes so magic is sustainable through exploration. Fountains have limited uses; casting alone never creates a net gain of mana.
 
-## Skills (Barony style)
+## Skills (raised by use)
 
-Seven skills cover the current mechanics. Each runs from **0 to 100** and rises **one point at a time, by chance, when the player successfully does what the skill is about**. There are no experience bars and no skill points to spend. Ranks carry Barony's tier names: None (0), Novice (1-19), Basic (20-39), Skilled (40-59), Expert (60-79), Master (80-99) and Legendary (100). Each skill gives a continuous bonus that grows with its rank, and a Legendary bonus at 100.
+Seven skills cover the current mechanics. Each runs from **0 to 100** and rises **one point at a time, by chance, when the player successfully does what the skill is about**. There are no experience bars and no skill points to spend. Ranks carry tier names: None (0), Novice (1-19), Basic (20-39), Skilled (40-59), Expert (60-79), Master (80-99) and Legendary (100). Each skill gives a continuous bonus that grows with its rank, and a Legendary bonus at 100.
 
 | Skill | Stat | Practised by (chance per success) | Bonus at 100 | Legendary |
 |---|---|---|---|---|
@@ -214,7 +214,7 @@ The player must be able to understand their build without a wiki. Use a unified 
 
 ### Skills tab
 
-Laid out like Barony's sheet: a level plate with the class, level and an XP bar; every skill as a row with its icon, rank (coloured by tier) and name; and a detail panel for the hovered skill, which clicking pins. The panel shows the tier and rank, the associated stat, what the skill does, the current bonus, how it is practised (with its chances), and the Legendary bonus. Attributes, Attack and AC sit under the skills; spells beneath the detail panel.
+Laid out as a sheet: a level plate with the class, level and an XP bar; every skill as a row with its icon, rank (coloured by tier) and name; and a detail panel for the hovered skill, which clicking pins. The panel shows the tier and rank, the associated stat, what the skill does, the current bonus, how it is practised (with its chances), and the Legendary bonus. Attributes, Attack and AC sit under the skills; spells beneath the detail panel.
 
 ### Equipment and stats
 
@@ -271,12 +271,12 @@ Keep item stats, class starts/growth, spell values, skill practice chances and b
 
 ## References
 
-[Barony character attributes](https://barony.wiki.gg/wiki/Category:Character_Attributes) and [armor](https://barony.wiki.gg/wiki/Armor) provide the reference stat vocabulary. [The official combat update](https://www.baronygame.com/blog/qod-update-launched) explains the distinction between passive armor and active defense. LoomRoom's reduced mechanics, class balance, spells, and perk values above are its own initial implementation proposal.
+The stat vocabulary is the familiar tabletop one. Armor is passive defense and blocking is active defense; the two are kept apart. LoomRoom's reduced mechanics, class balance, spells, and perk values above are its own initial implementation proposal.
 
 
-## Corrected Barony starting stats
+## Starting stats
 
-Attribute order: STR / DEX / CON / INT / PER / CHR. These are the starting baselines from the official Barony class tables.
+Attribute order: STR / DEX / CON / INT / PER / CHR. These are the starting baselines for each class.
 
 | Class | HP | MP | Attributes | Starting skills |
 |---|---:|---:|---|---|
@@ -285,7 +285,4 @@ Attribute order: STR / DEX / CON / INT / PER / CHR. These are the starting basel
 | Cleric | 30 | 30 | 0 / -1 / 1 / 0 / 1 / 0 | Thaumaturgy 40, Maces 25, Blocking 10, Trading 10 |
 | Arcanist | 25 | 40 | -1 / 1 / -1 / 1 / 1 / -1 | Sorcery 30, Swords 20, Athletics 10 |
 
-Unlisted skills start at zero. Swords, Maces, Blocking, Sorcery, Thaumaturgy and Trading are Barony's own skills; Athletics stands in for Barony's old Swimming skill and also covers running. Unsupported skills are not redistributed. Negative attributes remain negative, and CON/INT do not inflate starting HP/MP. The one-handed equipment, two spells, stamina, the Athletics skill, attribute effects and level-growth sequence remain LoomRoom adaptations. Stable save IDs and the class unlock flag are preserved.
-
-Sources: [Warrior](https://barony.wiki.gg/wiki/Warrior), [Wizard](https://barony.wiki.gg/wiki/Wizard), [Cleric](https://barony.wiki.gg/wiki/Cleric), [Arcanist](https://barony.wiki.gg/wiki/Arcanist).
-
+Unlisted skills start at zero. The skills are Swords, Maces, Blocking, Sorcery, Thaumaturgy, Trading and Athletics; Athletics also covers running. Unsupported skills are not redistributed. Negative attributes remain negative, and CON/INT do not inflate starting HP/MP. The one-handed equipment, two spells, stamina, the Athletics skill, attribute effects and level-growth sequence remain LoomRoom adaptations. Stable save IDs and the class unlock flag are preserved.

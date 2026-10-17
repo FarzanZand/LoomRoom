@@ -1,4 +1,4 @@
-"""Paints the HUD bar fill (Assets/Game/UI/Sprites/Diablo/Plain bar fill.png): a 48 x 20 greyscale strip that the bar's
+"""Paints the HUD bar fill (Assets/Game/UI/Sprites/Inventory/Plain bar fill.png): a 48 x 20 greyscale strip that the bar's
 colour tints. A bright top edge, a shaded bottom, and grain in between like the inventory's grey slots, so the bars
 aren't flat. Imported as a Tiled sprite (border top 2, bottom 3): the edges stay put and the grain repeats at its own
 size however long the bar is.
@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image
 
 W, H = 48, 20
-OUT = Path(__file__).resolve().parent.parent / "Assets/Game/UI/Sprites/Diablo/Plain bar fill.png"
+OUT = Path(__file__).resolve().parent.parent / "Assets/Game/UI/Sprites/Inventory/Plain bar fill.png"
 
 
 def main():

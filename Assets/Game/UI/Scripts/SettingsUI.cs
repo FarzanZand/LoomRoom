@@ -1,9 +1,12 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Volume, mouse, field of view, pixelation and key bindings. Values apply immediately
-// and persist in PlayerPrefs through AudioManager, UserSettings, ScreenManager and InputManager.
+// Volume, mouse, field of view, display and key bindings. Values apply immediately and persist in PlayerPrefs through
+// AudioManager, UserSettings, ScreenManager and InputManager. One prefab (UI/Prefabs/Settings screen) serves the pause
+// menu and the main menu; the main menu has no AudioManager or ScreenManager, so volumes and pixelation are then read
+// and written straight to PlayerPrefs (the game picks them up when it loads).
 public class SettingsUI : MonoBehaviour
 {
     [SerializeField] GameObject root;
@@ -21,14 +24,23 @@ public class SettingsUI : MonoBehaviour
     [Header("Display")]
     [SerializeField] Slider pixelation;
     [SerializeField] TMP_Text pixelationValue;
+    [Tooltip("Click to switch between Fullscreen and Windowed.")]
+    [SerializeField] Button windowMode;
+    [Tooltip("Click for the next resolution the screen offers.")]
+    [SerializeField] Button resolution;
+    [SerializeField] Button vsync;
+    [SerializeField] Slider brightness;
+    [SerializeField] TMP_Text brightnessValue;
     [SerializeField] Button backButton;
 
-    // Slider index -> ScreenManager pixel lines (-1 authored, 0 off). Left is sharpest.
-    static readonly int[] PixelSteps = { 0, 720, 480, 360, 320, 240, 180, -1 };
+    // Slider index -> ScreenManager pixel lines (-1 authored, 0 off). Like field of view, the leftmost position is the
+    // default; then from the sharpest picture to the chunkiest.
+    static readonly int[] PixelSteps = { -1, 0, 720, 480, 360, 320, 240, 180 };
     const float FovDefaultSlot = 49f; // leftmost slider position means "authored lens"
 
     bool loading, loaded;
     public bool IsOpen => root != null && root.activeSelf;
+    public event System.Action Closed;
 
     void Awake()
     {
@@ -36,6 +48,7 @@ public class SettingsUI : MonoBehaviour
         if (pixelation != null) { pixelation.wholeNumbers = true; pixelation.minValue = 0; pixelation.maxValue = PixelSteps.Length - 1; }
         if (fieldOfView != null) { fieldOfView.wholeNumbers = true; fieldOfView.minValue = FovDefaultSlot; fieldOfView.maxValue = 110; }
         if (sensitivity != null) { sensitivity.minValue = .1f; sensitivity.maxValue = 4f; }
+        if (brightness != null) { brightness.minValue = -1f; brightness.maxValue = 1f; }
         Hook(masterVolume, v => SetVolume(AudioManager.Channel.Master, v));
         Hook(musicVolume, v => SetVolume(AudioManager.Channel.Music, v));
         Hook(sfxVolume, v => SetVolume(AudioManager.Channel.Sfx, v));
@@ -43,9 +56,15 @@ public class SettingsUI : MonoBehaviour
         Hook(fieldOfView, v => { UserSettings.FieldOfView = v <= FovDefaultSlot ? 0f : v; Labels(); });
         Hook(pixelation, v =>
         {
-            if (ScreenManager.HasInstance) ScreenManager.Instance.SetUserPixelLines(PixelStep(v));
+            int lines = PixelStep(v);
+            if (ScreenManager.HasInstance) ScreenManager.Instance.SetUserPixelLines(lines);
+            else PlayerPrefs.SetInt(ScreenManager.PixelLinesPref, lines);
             Labels();
         });
+        Hook(brightness, v => { UserSettings.Brightness = v; Labels(); });
+        windowMode?.onClick.AddListener(() => { UserSettings.SetDisplay(!UserSettings.Fullscreen, Screen.width, Screen.height); Labels(); });
+        resolution?.onClick.AddListener(NextResolution);
+        vsync?.onClick.AddListener(() => { UserSettings.VSync = !UserSettings.VSync; Labels(); });
         resetBindings?.onClick.AddListener(() =>
         {
             if (InputManager.HasInstance) InputManager.Instance.ResetBindings();
@@ -66,6 +85,33 @@ public class SettingsUI : MonoBehaviour
     static void SetVolume(AudioManager.Channel channel, float v)
     {
         if (AudioManager.HasInstance) AudioManager.Instance.SetVolume(channel, v);
+        else AudioManager.StoreVolume(channel, v);
+    }
+
+    static float GetVolume(AudioManager.Channel channel) =>
+        AudioManager.HasInstance ? AudioManager.Instance.GetVolume(channel) : AudioManager.StoredVolume(channel);
+
+    // The screen's sizes, each once, smallest first.
+    static List<Vector2Int> Resolutions()
+    {
+        var list = new List<Vector2Int>();
+        foreach (var r in Screen.resolutions)
+        {
+            var size = new Vector2Int(r.width, r.height);
+            if (!list.Contains(size)) list.Add(size);
+        }
+        if (list.Count == 0) list.Add(new Vector2Int(Screen.width, Screen.height));
+        list.Sort((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y));
+        return list;
+    }
+
+    void NextResolution()
+    {
+        var list = Resolutions();
+        int current = list.IndexOf(new Vector2Int(Screen.width, Screen.height));
+        var next = list[(current + 1) % list.Count];
+        UserSettings.SetDisplay(UserSettings.Fullscreen, next.x, next.y);
+        Labels(next);
     }
 
     public void Open()
@@ -73,35 +119,41 @@ public class SettingsUI : MonoBehaviour
         if (root == null) return;
         root.SetActive(true);
         loading = true;
-        if (AudioManager.HasInstance)
-        {
-            if (masterVolume != null) masterVolume.value = AudioManager.Instance.GetVolume(AudioManager.Channel.Master);
-            if (musicVolume != null) musicVolume.value = AudioManager.Instance.GetVolume(AudioManager.Channel.Music);
-            if (sfxVolume != null) sfxVolume.value = AudioManager.Instance.GetVolume(AudioManager.Channel.Sfx);
-        }
+        if (masterVolume != null) masterVolume.value = GetVolume(AudioManager.Channel.Master);
+        if (musicVolume != null) musicVolume.value = GetVolume(AudioManager.Channel.Music);
+        if (sfxVolume != null) sfxVolume.value = GetVolume(AudioManager.Channel.Sfx);
         if (sensitivity != null) sensitivity.value = UserSettings.MouseSensitivity;
         if (fieldOfView != null) fieldOfView.value = UserSettings.FieldOfView <= 0f ? FovDefaultSlot : UserSettings.FieldOfView;
         if (pixelation != null)
         {
-            int current = ScreenManager.HasInstance ? ScreenManager.Instance.UserPixelLines : -1;
+            int current = ScreenManager.HasInstance ? ScreenManager.Instance.UserPixelLines : PlayerPrefs.GetInt(ScreenManager.PixelLinesPref, -1);
             int index = System.Array.IndexOf(PixelSteps, current);
-            pixelation.value = index < 0 ? PixelSteps.Length - 1 : index;
+            pixelation.value = index < 0 ? 0 : index;
         }
+        if (brightness != null) brightness.value = UserSettings.Brightness;
         loading = false;
         loaded = true;
         Labels();
         RefreshBindings();
+        // The key list starts at its top (Move forward).
+        var list = root.GetComponentInChildren<ScrollRect>(true);
+        if (list != null) { Canvas.ForceUpdateCanvases(); list.verticalNormalizedPosition = 1f; }
         masterVolume?.Select();
     }
 
     public void Close()
     {
         if (InputManager.HasInstance) InputManager.Instance.CancelRebind();
+        bool was = IsOpen;
         loaded = false;
         if (root != null) root.SetActive(false);
+        if (was) Closed?.Invoke();
     }
 
-    void Labels()
+    void Labels() => Labels(new Vector2Int(Screen.width, Screen.height));
+
+    // shownSize: the resolution just asked for (Screen.width only changes on the next frame).
+    void Labels(Vector2Int shownSize)
     {
         if (sensitivityValue != null && sensitivity != null) sensitivityValue.text = $"{sensitivity.value:0.00}x";
         if (fieldOfViewValue != null && fieldOfView != null) fieldOfViewValue.text = fieldOfView.value <= FovDefaultSlot ? "Default" : $"{fieldOfView.value:0} deg";
@@ -110,6 +162,17 @@ public class SettingsUI : MonoBehaviour
             int lines = PixelStep(pixelation.value);
             pixelationValue.text = lines < 0 ? "Default" : lines == 0 ? "Off" : $"{lines} lines";
         }
+        if (brightnessValue != null && brightness != null)
+            brightnessValue.text = Mathf.Abs(brightness.value) < .01f ? "Default" : $"{brightness.value * 100f:+0;-0}%";
+        SetLabel(windowMode, UserSettings.Fullscreen ? "Fullscreen" : "Windowed");
+        SetLabel(resolution, $"{shownSize.x} x {shownSize.y}");
+        SetLabel(vsync, UserSettings.VSync ? "On" : "Off");
+    }
+
+    static void SetLabel(Button button, string text)
+    {
+        var label = button != null ? button.GetComponentInChildren<TMP_Text>(true) : null;
+        if (label != null) label.text = text;
     }
 
     void RefreshBindings()

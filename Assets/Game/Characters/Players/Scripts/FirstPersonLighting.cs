@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Barony-style light around the player without hot spots. The world light hangs well above the
+// Even light around the player without hot spots. The world light hangs well above the
 // player's head (it casts no shadows, so ceilings don't block it), which keeps nearby enemies and
 // floors from blowing out while still reaching far; a matching light below the floor lights only
 // ceilings (their own rendering layer). The first-person arms and held items sit on a third layer

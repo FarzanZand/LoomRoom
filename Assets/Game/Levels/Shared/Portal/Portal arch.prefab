@@ -79,15 +79,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PortalArch
   mode: 0
+  wayBack: 0
   room: {fileID: 0}
   pocketLevel: {fileID: 11400000, guid: ed3fbab93d28e9f4fb93056fa5eb0a20, type: 2}
   biome: {fileID: 0}
   opening: {x: 2, y: 2.8}
   shimmer: {r: 0.35, g: 0.65, b: 1, a: 1}
+  shimmerMaterial: {fileID: 2100000, guid: 3d4f44e5d4508744fb1ca42240ed2ac8, type: 2}
+  scrollSpeed: 0.25
   lightIntensity: 3
   pocketDistance: 400
   enterLine:
     text: Go on. See what's on the other side.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  wayBackLine:
+    text: There. Your way out.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

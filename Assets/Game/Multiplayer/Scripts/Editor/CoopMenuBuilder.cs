@@ -241,20 +241,30 @@ public static class CoopMenuBuilder
         float step = 70f;
         var panelRect = (RectTransform)panel;
         panelRect.sizeDelta += new Vector2(0, step);
+        // The title goes up and the hint down half a step; the buttons are laid out again in order, Co-op under Settings.
         foreach (RectTransform child in panel)
         {
-            if (child == (RectTransform)coop.transform) continue;
-            // Pieces stretched over the panel (its background) grow with it and stay where they are.
-            if (child.anchorMin != child.anchorMax) continue;
-            var p = child.anchoredPosition;
-            // Everything above Co-op goes up half a step, everything below down half a step.
-            bool above = p.y > (settings != null ? ((RectTransform)settings).anchoredPosition.y - 1 : 0);
-            child.anchoredPosition = p + Vector2.up * (above ? step * .5f : -step * .5f);
+            if (child.anchorMin != child.anchorMax || child.GetComponent<Button>() != null) continue;   // stretched pieces grow with the panel
+            child.anchoredPosition += Vector2.up * (child.anchoredPosition.y > 0 ? step * .5f : -step * .5f);
         }
-        var settingsY = settings != null ? ((RectTransform)settings).anchoredPosition.y : 0;
-        ((RectTransform)coop.transform).anchoredPosition = new Vector2(0, settingsY - step);
+        LayOutPauseButtons(panel, (RectTransform)coop.transform, settings, step);
         so.FindProperty("coopButton").objectReferenceValue = button;
         so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    // The pause menu's shown buttons one under another at step, from the top one's place (half a step higher, as the
+    // panel grew), Co-op right under Settings; hidden ones keep their place.
+    public static void LayOutPauseButtons(Transform panel, RectTransform coop, Transform settings, float step = 70f)
+    {
+        var buttons = new System.Collections.Generic.List<RectTransform>();
+        foreach (RectTransform child in panel)
+            if (child != coop && child.GetComponent<Button>() != null && child.gameObject.activeSelf) buttons.Add(child);
+        if (buttons.Count == 0) return;
+        buttons.Sort((x, y) => y.anchoredPosition.y.CompareTo(x.anchoredPosition.y));
+        float top = buttons[0].anchoredPosition.y + step * .5f;
+        int at = settings != null ? buttons.IndexOf((RectTransform)settings) + 1 : 1;
+        if (coop != null) buttons.Insert(Mathf.Clamp(at, 0, buttons.Count), coop);
+        for (int i = 0; i < buttons.Count; i++) buttons[i].anchoredPosition = new Vector2(buttons[i].anchoredPosition.x, top - i * step);
     }
 
     // The other players' rows at the top left, made from the HUD's own health bar.

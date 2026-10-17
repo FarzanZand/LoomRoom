@@ -303,7 +303,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         }
 
         float armor = info.Magic ? 0 : ResolveStat(StatType.Armor, info.Blocked) * CombatManager.ArmorPerPoint;
-        // Barony: armor comes off the effective share of the hit; the rest always lands. A block uses all of it.
+        // Armor comes off the effective share of the hit; the rest always lands. A block uses all of it.
         float effective = info.Blocked ? 1f : CombatManager.HasInstance ? CombatManager.Instance.armorEffectiveness : .75f;
         float actual  = Mathf.Max(0f, effective * info.Amount - armor) + (1f - effective) * info.Amount;
         // Legendary Blocking: nothing gets through a successful block.

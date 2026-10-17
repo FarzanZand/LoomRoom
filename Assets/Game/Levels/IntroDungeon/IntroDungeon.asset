@@ -105,6 +105,7 @@ MonoBehaviour:
     shape: {fileID: 11400000, guid: b83f1b9ea222f1f4690c0e00502d6342, type: 2}
     weight: 0.6
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  pocket: 0
   startingChestConsumable: {fileID: 0}
   authoredMap: '##############################
 
@@ -265,10 +266,8 @@ MonoBehaviour:
   windowJamb: 0.45
   defaultStyle: {fileID: 11400000, guid: 3ed247dad4868cf4eb56e62b707f908e, type: 2}
   roomStyles:
-  - style: {fileID: 11400000, guid: b70b907d7c9124648b6e11dfdb34ca5f, type: 2}
-    weight: 2
-  - style: {fileID: 11400000, guid: 5e6a07315aa79734498dcba82c591e34, type: 2}
-    weight: 3
+  - style: {fileID: 11400000, guid: 45f2ff5c0d2776645bb1e6d731a0534e, type: 2}
+    weight: 1
   corridorsCopyConnectedRoomStyle: 1
   corridorStyles:
   - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}

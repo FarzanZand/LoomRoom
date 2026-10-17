@@ -232,6 +232,7 @@ MonoBehaviour:
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
   enterLines:
+  - A party. Don't spoil it.
   - Oh. You found the party.
   - They don't get many guests.
   - Mind your manners. They're dancing.
@@ -286,11 +287,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkeletonParty
   danceClip: {fileID: 7400000, guid: edb3a746d0413f948bfbb5a48380d7ff, type: 2}
   danceSpeed: 1
-  enterLine:
-    text: A party. Don't spoil it.
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 0
   spoiledLine:
     text: You had to ruin it, didn't you.
     voice: {fileID: 0}

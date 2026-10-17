@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// Barony's skeleton deaths: the body bursts into its own bones. At death the skinned mesh is baked and split by the
+// Skeleton deaths: the body bursts into its own bones. At death the skinned mesh is baked and split by the
 // bone each triangle follows (head, chest, hips, upper and lower arms and legs), each part becomes a small physics
 // piece thrown out from the killing blow, and held or worn props (weapon, helmet) come loose too. The pieces stay on
 // the floor, frozen once they settle. Replaces EnemyRagdoll on this character.

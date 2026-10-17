@@ -43,6 +43,7 @@ public class ExperienceBarUI : MonoBehaviour
     }
 
     AdventurerProgress progress;
+    CanvasGroup popupHolder;
     float shown;
     // The table player and its progress, looked up only when the player changes.
     Player progressOwner;
@@ -70,7 +71,13 @@ public class ExperienceBarUI : MonoBehaviour
         var current = player != null ? ownerProgress : null;
         if (current != progress) Bind(current);
         bool visible = progress != null && progress.InRun && player.IsActive && progress.selectedClass != null;
-        if (bar != null) bar.alpha = visible ? 1 : 0;
+        if (bar != null) bar.alpha = visible && !HudCanvas.BehindMenu ? 1 : 0;
+        // The skill popup sits over the middle of the screen: out of the way of the shop, sheet and recap.
+        if (popup != null)
+        {
+            popupHolder ??= popup.transform.parent != null ? (popup.transform.parent.TryGetComponent<CanvasGroup>(out var g) ? g : popup.transform.parent.gameObject.AddComponent<CanvasGroup>()) : null;
+            if (popupHolder != null) popupHolder.alpha = HudCanvas.BehindMenu ? 0f : 1f;
+        }
         if (!visible) { popupRoutine?.Kill(); popupRoutine = null; activeGain = null; raises.Clear(); if (popup != null) popup.alpha = 0; return; }
         float target = progress.NextLevelXp > 0 ? Mathf.Clamp01(progress.Experience / progress.NextLevelXp) : 0;
         shown = target < shown ? target : Mathf.MoveTowards(shown, target, Time.unscaledDeltaTime * fillSpeed);

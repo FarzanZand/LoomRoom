@@ -36,8 +36,9 @@ public class AdventureSave : MonoBehaviour
     // missing from an older file keeps its default here (lootLevel 1, empty memorial and flag lists).
     [Serializable] public class Data
     {
-        public const int Current = 4;   // 2: Barony skills (seven ranks, no partial training). 3: Stealth skill (eight ranks). 4: Diablo bag grid (items stored at their top-left cell)
-        public int version = Current;
+        public const int Current = 4;   // 2: skills raised by use (seven ranks, no partial training). 3: Stealth skill (eight ranks). 4: bag grid (items stored at their top-left cell)
+        // 0 for a file written before versions existed (it then keeps no checkpoint); Write stamps Current.
+        public int version;
         public Checkpoint checkpoint;
         public List<Memorial> memorials = new();
         public List<ProgressionManager.FlagEntry> flags = new();
@@ -47,7 +48,8 @@ public class AdventureSave : MonoBehaviour
     [Tooltip("In the Unity editor, every Play session starts as a new game: the save file is neither read nor written. Turn off to test saving and continuing.")]
     [SerializeField] bool freshStartInEditor = true;
     // Built games always save; the editor only when Fresh Start In Editor is off.
-    bool UsesFile => !(Application.isEditor && freshStartInEditor && !CustomFolder);
+    bool UsesFile => !(Application.isEditor && freshStartInEditor && !CustomFolder) && !fileLocked;
+    bool fileLocked;
     public bool HasCheckpoint => Saved.checkpoint != null;
     public event Action Changed;
     Player player; AdventurerProgress progress;
@@ -142,7 +144,10 @@ public class AdventureSave : MonoBehaviour
     // Removes a save for good (its backup too).
     public static void DeleteSlot(int slot)
     {
-        foreach (var path in new[] { SlotPath(slot), SlotPath(slot) + ".bak", SlotPath(slot) + ".tmp" })
+        var paths = new List<string> { SlotPath(slot), SlotPath(slot) + ".bak", SlotPath(slot) + ".tmp" };
+        // Unreadable copies set aside earlier (KeepCorrupt) go with the save.
+        try { var dir = Path.GetDirectoryName(SlotPath(slot)); if (Directory.Exists(dir)) paths.AddRange(Directory.GetFiles(dir, Path.GetFileName(SlotPath(slot)) + "*.corrupt-*")); } catch (Exception) { }
+        foreach (var path in paths)
             try { if (File.Exists(path)) File.Delete(path); } catch (Exception e) { Debug.LogError($"Could not delete save {path}: {e.Message}"); }
     }
 
@@ -263,6 +268,9 @@ public class AdventureSave : MonoBehaviour
                 // Read from the backup: set the broken save aside, or the next write would move it over the good backup.
                 if (unreadable) KeepCorrupt(FilePath);
                 Saved = data; return true; }
+            // A file that is there but can't be opened (locked by a virus scanner or cloud sync) isn't broken: leave it,
+            // and don't write over it this session.
+            catch (IOException e) { fileLocked = true; Debug.LogWarning($"Adventure save is locked, not used this session: {e.Message}"); return false; }
             catch (Exception e) { unreadable = true; Debug.LogWarning($"Could not read adventure save: {e.Message}"); }
         }
         if (unreadable) KeepCorrupt(FilePath, FilePath + ".bak");
@@ -288,6 +296,7 @@ public class AdventureSave : MonoBehaviour
         // adds what was earned when the game ends).
         // Their own meta progression (spoils, the sheet, the trophies) is still written at once (GuestSaveFlags).
         if (!UsesFile) { Changed?.Invoke(); return; }
+        Saved.version = Data.Current;
         if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave)
         {
             var own = MultiplayerManager.Instance.GuestSaveFlags();
@@ -328,19 +337,22 @@ public class AdventureSave : MonoBehaviour
     public bool CanRestore(Checkpoint checkpoint)
     {
         if (checkpoint == null || checkpoint.bag == null || checkpoint.hotbar == null || checkpoint.equipped == null || checkpoint.ranks?.Length != AdventureSkills.Count || checkpoint.growth?.Length != AdventurerProgress.StatNames.Length || checkpoint.floor < 1 || progress.rules == null || !progress.rules.classes.Any(x => x != null && x.id == checkpoint.classId)) return false;
-        var catalog = InventoryManager.Instance.itemCatalog;
-        return checkpoint.equipped.All(id => ItemData.FromSaveId(id, catalog) != null) && checkpoint.bag.Concat(checkpoint.hotbar).All(x => x == null || x.count <= 0 || ItemData.FromSaveId(x.item, catalog) != null);
+        // Items that no longer exist (retired to _Archive, dropped from the catalog) don't block the run: Restore leaves them out.
+        return true;
     }
     public void Restore(Checkpoint checkpoint)
     {
         progress.selectedClass = progress.rules.classes.First(x => x != null && x.id == checkpoint.classId);
         player.Equipment.UnequipAll(); player.Bag.Clear(); player.Hotbar.Clear();
         // Fine and Masterwork gear is saved with its rolls ("<saveId>~2:...") and comes back as the same copy; the "+1" of retired Honed gear is dropped on load.
-        ItemData Item(string id) => ItemData.FromSaveId(id, InventoryManager.Instance.itemCatalog);
-        void Fill(Inventory inventory, Stack[] stacks) { for (int i = 0; i < stacks.Length && i < inventory.SlotCount; i++) if (stacks[i] != null && stacks[i].count > 0) inventory.Set(i, new ItemStack(Item(stacks[i].item), stacks[i].count)); }
+        // An item that no longer resolves (retired since the save) is left out and logged; the rest of the run comes back.
+        var missing = new List<string>();
+        ItemData Item(string id) { var item = ItemData.FromSaveId(id, InventoryManager.Instance.itemCatalog); if (item == null) missing.Add(id); return item; }
+        void Fill(Inventory inventory, Stack[] stacks) { for (int i = 0; i < stacks.Length && i < inventory.SlotCount; i++) if (stacks[i] != null && stacks[i].count > 0 && Item(stacks[i].item) is ItemData item) inventory.Set(i, new ItemStack(item, stacks[i].count)); }
         Fill(player.Bag, checkpoint.bag); Fill(player.Hotbar, checkpoint.hotbar);
-        foreach (var id in checkpoint.equipped) player.Equipment.Equip(Item(id), false, grant: true);
-        progress.Restore(checkpoint.characterLevel, checkpoint.xp, (int[])checkpoint.ranks.Clone(), (int[])checkpoint.growth.Clone(), checkpoint.skillExperience, checkpoint.attributePoints, checkpoint.unspentPoints);
+        foreach (var id in checkpoint.equipped) if (Item(id) is ItemData worn) player.Equipment.Equip(worn, false, grant: true);
+        if (missing.Count > 0) Debug.LogWarning("[AdventureSave] Left out items that no longer exist: " + string.Join(", ", missing));
+        progress.Restore(checkpoint.characterLevel, checkpoint.xp, (int[])checkpoint.ranks.Clone(), (int[])checkpoint.growth.Clone(), checkpoint.skillExperience, (int[])checkpoint.attributePoints?.Clone(), checkpoint.unspentPoints);
         player.Stats.RemoveAllFromSource(RunManager.BlessingSource);
         if (checkpoint.blessings != null) foreach(var b in checkpoint.blessings) player.Stats.AddModifier(new StatModifier(b.stat,b.value,b.type,RunManager.BlessingSource,b.duration));
         player.Stats.ClearFood();

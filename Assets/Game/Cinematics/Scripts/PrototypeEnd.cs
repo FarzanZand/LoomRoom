@@ -11,7 +11,7 @@ public class PrototypeEnd : MonoBehaviour
     [SerializeField] CanvasGroup card;
     [SerializeField, Min(0)] float fadeSeconds = 1.5f, cardSeconds = 6f;
 
-    bool ownsCutscene;
+    bool ownsDialogue;
 
     public bool Running { get; private set; }
     public static bool Won => ProgressionManager.HasInstance && ProgressionManager.Instance.GetFlag(EndingController.WinsFlag) > 0;
@@ -23,8 +23,8 @@ public class PrototypeEnd : MonoBehaviour
 
     void OnDisable()
     {
-        if (ownsCutscene && GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
-        ownsCutscene = false;
+        if (ownsDialogue && GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+        ownsDialogue = false;
         Running = false;
     }
 
@@ -39,14 +39,16 @@ public class PrototypeEnd : MonoBehaviour
     IEnumerator Play()
     {
         Running = true;
-        if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Cutscene); ownsCutscene = true; }
+        // Dialogue, not Cutscene: the player holds still and the HUD (with the DM's line) stays up.
+        if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); ownsDialogue = true; }
         if (DungeonMaster.HasInstance && thanks != null && !string.IsNullOrEmpty(thanks.text))
         {
             DungeonMaster.Say(thanks);
+            // The line types out, then stays a moment to be read before the fade.
             yield return new WaitForSecondsRealtime(.5f);
             float until = Time.unscaledTime + 12f;
             while (DungeonMaster.Instance.Speaking && Time.unscaledTime < until) yield return null;
-            yield return new WaitForSecondsRealtime(1f);
+            yield return new WaitForSecondsRealtime(2.5f);
         }
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeToBlack(fadeSeconds);
         yield return new WaitForSecondsRealtime(fadeSeconds + .3f);
@@ -60,8 +62,8 @@ public class PrototypeEnd : MonoBehaviour
             card.gameObject.SetActive(false);
         }
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(fadeSeconds);
-        if (ownsCutscene && GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
-        ownsCutscene = false;
+        if (ownsDialogue && GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+        ownsDialogue = false;
         Running = false;
     }
 }

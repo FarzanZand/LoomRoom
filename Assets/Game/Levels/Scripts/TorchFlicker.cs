@@ -22,7 +22,7 @@ public class TorchFlicker : MonoBehaviour
     }
 
     // Tinted or dimmed after spawning (room profiles): flicker around the new values.
-    public void Rebase() { baseIntensity = torch.intensity; baseRange = torch.range; }
+    public void Rebase() { if (torch == null) torch = GetComponent<Light>(); baseIntensity = torch.intensity; baseRange = torch.range; }
 
     void Update()
     {

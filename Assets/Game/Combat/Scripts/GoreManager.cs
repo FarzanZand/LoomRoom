@@ -245,7 +245,8 @@ public class GoreManager : Singleton<GoreManager>
     static Mesh[] lumps;
     static Mesh Lump(int index)
     {
-        if (lumps == null)
+        // Made at run time: a mesh from an earlier Play session is gone, so they are made again.
+        if (lumps == null || lumps[0] == null)
         {
             lumps = new Mesh[4];
             var rng = new System.Random(17);

@@ -15,7 +15,7 @@ public enum MessageKind
     Pickup  = 8,   // picking things up (shown by PickupFeedUI when it is on screen)
 }
 
-// The Barony-style text feed. Owns the history and the colours; MessageLogUI only
+// The message feed. Owns the history and the colours; MessageLogUI only
 // draws it. Most lines come from here too: the log listens to the table player's
 // hits, deaths and pickups and narrates them, so combat code never formats text.
 // Anything else posts with MessageLog.Post("...").

@@ -144,7 +144,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 2
-    baseValue: 22
+    baseValue: 12
     min: 0
     max: 0
   - stat: 1
@@ -349,4 +349,4 @@ MonoBehaviour:
       homing: 0
   closesIn: 1
   spellGap: 4
-  experience: 0
+  experience: 120

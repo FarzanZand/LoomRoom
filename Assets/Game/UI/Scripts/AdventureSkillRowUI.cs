@@ -127,7 +127,7 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
         }
     }
 
-    // Barony-like progression of colours: grey for untrained through gold for Legendary.
+    // Progression of colours: grey for untrained through gold for Legendary.
     public static Color TierColour(int rank) =>
         rank >= 100 ? new Color(1f, .82f, .35f) : rank >= 80 ? new Color(.86f, .6f, 1f) : rank >= 60 ? new Color(.45f, .7f, 1f)
         : rank >= 40 ? new Color(.5f, .9f, .55f) : rank >= 20 ? new Color(.93f, .9f, .82f) : rank >= 1 ? new Color(.7f, .66f, .6f) : new Color(.42f, .39f, .35f);

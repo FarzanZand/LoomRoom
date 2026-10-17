@@ -40,7 +40,7 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField, Tooltip("Inside each strip: space from its left and right edges (x) and its top and bottom (y).")] Vector2 stripPadding = new(14, 10);
     [SerializeField, Min(0)] float stripGap = 4;
 
-    [Header("The ledger (built by Tools > LoomRoom > UI > Build Recap Spoils Showcase)")]
+    [Header("The ledger (built by RunRecapShowcase.Build, run from an eval)")]
     [SerializeField, Tooltip("The big picture of the most valuable spoil brought back.")] Image showcaseIcon;
     [SerializeField, Tooltip("The rows, written in one after another: the spoils (label, value, showcase, strip), the kills, the total (with its rule), what there is to spend.")]
     GameObject[] spoilsRow, killsRow, totalRow, bankRow;
@@ -65,7 +65,7 @@ public class RunRecapUI : MonoBehaviour
         new() { text = "Slim pickings." },
     };
 
-    // UI Library keys (Tools > LoomRoom > UI > Set Up Recap Tally Sounds): one plain recorded sound a row.
+    // UI Library keys (RunRecapShowcase.AddSounds): one plain recorded sound a row.
     const string SpoilsKey = "tallySpoils", KillsKey = "tallyKills", TotalKey = "tallyTotal", BankKey = "tallyBank";
 
     bool open, wakes, won;
@@ -275,6 +275,15 @@ public class RunRecapUI : MonoBehaviour
             icon.sizeDelta = size;
             icon.anchoredPosition = new Vector2(stripPadding.x + size.x * .5f + column * step, top - size.y * .5f - row * rowStep);
         }
+    }
+
+    // Switched off while open (the scene going): give the Menu state back, nothing else.
+    void OnDisable()
+    {
+        if (!open) return;
+        open = false;
+        DungeonMaster.OverMenus = false;
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
     }
 
     public void Hide()

@@ -53,9 +53,26 @@ public partial class DungeonGenerator
             var chunk = pooledTemplates[i] != null ? pooledTemplates[i].GetComponent<DungeonRoomTemplate>() : null;
             if (chunk != null && chunk.HasFootprint && Layout.RoomCells(i).Count < chunk.Footprint().FloorCount * .9f) pooledTemplates[i] = null;
         }
-        // A shop room that did not fit leaves the floor without a merchant.
         MerchantRoom = System.Array.IndexOf(placed, merchant);
+        // A shop room that did not fit the grid: the merchant sets up in a placed quiet room with no interior of its
+        // own instead (no shop template there, its shape wasn't made for it), so every floor that rolls one has one.
+        shopInPlainRoom = false;
+        if (merchant >= 0 && MerchantRoom < 0)
+        {
+            var quiet = new System.Collections.Generic.List<int>();
+            for (int i = 1; i < placed.Length; i++)
+                if ((Roles[i] == RoomRole.Rest || Roles[i] == RoomRole.Storage || Roles[i] == RoomRole.Treasure) && RequestedTemplate(i, Roles[i], profiles[i]) == null) quiet.Add(i);
+            // No quiet room left: any plain room but the exit (the merchant's room gets no enemies).
+            if (quiet.Count == 0)
+                for (int i = 1; i < placed.Length; i++) if (Roles[i] != RoomRole.Exit && RequestedTemplate(i, Roles[i], profiles[i]) == null) quiet.Add(i);
+            if (quiet.Count > 0)
+            {
+                MerchantRoom = quiet[new System.Random(unchecked(seed + 52361)).Next(quiet.Count)];
+                shopInPlainRoom = true;
+            }
+        }
     }
+    bool shopInPlainRoom;
 
     // The first floor of the run and of every new biome opens in the level's Starting room.
     bool UsesStartingRoom => data.startingRoom != null && !Authored

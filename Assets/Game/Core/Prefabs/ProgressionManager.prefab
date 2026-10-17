@@ -81,6 +81,8 @@ MonoBehaviour:
     unit: health
     secondBonusPerPoint: 0
     secondUnit: 
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones:
     - value: 15
       unlock: Shield bash
@@ -106,6 +108,8 @@ MonoBehaviour:
     unit: health
     secondBonusPerPoint: 0
     secondUnit: 
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones:
     - value: 25
       unlock: Riposte
@@ -131,6 +135,8 @@ MonoBehaviour:
     unit: health
     secondBonusPerPoint: 0
     secondUnit: 
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones:
     - value: 25
       unlock: Crush
@@ -157,6 +163,8 @@ MonoBehaviour:
     unit: health
     secondBonusPerPoint: 0
     secondUnit: 
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones:
     - value: 25
       unlock: Burning
@@ -183,6 +191,8 @@ MonoBehaviour:
     unit: health
     secondBonusPerPoint: 0
     secondUnit: 
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones:
     - value: 25
       unlock: Mending
@@ -208,6 +218,8 @@ MonoBehaviour:
     unit: health
     secondBonusPerPoint: 0
     secondUnit: 
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones:
     - value: 25
       unlock: Sprint
@@ -233,6 +245,8 @@ MonoBehaviour:
     unit: health
     secondBonusPerPoint: 0
     secondUnit: 
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones:
     - value: 25
       unlock: Ambush
@@ -258,6 +272,8 @@ MonoBehaviour:
     unit: health
     secondBonusPerPoint: 0
     secondUnit: 
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones:
     - value: 25
       unlock: Keen eye
@@ -283,6 +299,8 @@ MonoBehaviour:
     unit: health
     secondBonusPerPoint: 5
     secondUnit: stamina
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones: []
   - id: intelligence
     displayName: Intelligence
@@ -298,6 +316,8 @@ MonoBehaviour:
     unit: mana
     secondBonusPerPoint: 0.05
     secondUnit: mana/s
+    thirdBonusPerPoint: 3.5
+    thirdUnit: '% spell power'
     milestones: []
   - id: strength
     displayName: Strength
@@ -309,10 +329,12 @@ MonoBehaviour:
     levels: 8
     perLevel: 5
     baseScore: 8
-    bonusPerPoint: 1
-    unit: damage
+    bonusPerPoint: 5
+    unit: '% damage'
     secondBonusPerPoint: 0
     secondUnit: 
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones: []
   - id: dexterity
     displayName: Dexterity
@@ -328,6 +350,8 @@ MonoBehaviour:
     unit: '% critical chance'
     secondBonusPerPoint: 0
     secondUnit: 
+    thirdBonusPerPoint: 0
+    thirdUnit: 
     milestones: []
   lessonIntro:
     text: There's a sheet on the little table by the wall. Have a look.

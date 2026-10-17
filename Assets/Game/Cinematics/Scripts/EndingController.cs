@@ -74,7 +74,9 @@ public class EndingController : MonoBehaviour
     {
         if (!Running || leaving || exit == null || !PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind != PlayerKind.Room) return;
         if (!GameManager.HasInstance || GameManager.Instance.State != GameState.Explore) return;
-        var p = PlayerManager.Instance.Active.transform.position;
+        var active = PlayerManager.Instance.Active;
+        if (active == null) return;
+        var p = active.transform.position;
         bool atExit = Vector2.Distance(new Vector2(p.x, p.z), new Vector2(exit.position.x, exit.position.z)) < exitRadius;
         // Fallen out of the world somehow: end it anyway rather than leave the player falling.
         bool lost = p.y < exit.position.y - 50f;

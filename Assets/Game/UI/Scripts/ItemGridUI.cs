@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// Diablo bag: draws each item once across the cells it takes, over the grid of ItemSlotUI cells, and while an
+// Bag grid: draws each item once across the cells it takes, over the grid of ItemSlotUI cells, and while an
 // item is dragged over the grid tints the cells it would land on (green fits, red doesn't). The item view is
 // authored in the scene (template, inactive); this clones it per item and lays it over the cells.
 public class ItemGridUI : MonoBehaviour
@@ -105,7 +105,7 @@ public class ItemGridUI : MonoBehaviour
     }
 
     // Item icons are drawn on the diagonal (a sword from bottom left to top right). In a tall, narrow
-    // footprint the icon is turned upright and sized to the height, like Diablo's long weapons.
+    // footprint the icon is turned upright and sized to the height.
     public static void UprightIcon(RectTransform icon, Vector2 area, Vector2Int cells)
     {
         bool tall = cells.x == 1 && cells.y >= 2;

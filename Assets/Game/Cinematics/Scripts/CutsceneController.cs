@@ -31,6 +31,8 @@ public class CutsceneController : MonoBehaviour
         if (director != null) director.stopped += OnDirectorStopped;
     }
 
+    bool pushedCutscene;
+
     protected virtual void OnDisable()
     {
         if (director != null) director.stopped -= OnDirectorStopped;
@@ -44,7 +46,9 @@ public class CutsceneController : MonoBehaviour
         IsPlaying = true;
 
         SetCameraPriority(true);
-        if (freezePlayer && GameManager.HasInstance) GameManager.Instance.Push(GameState.Cutscene);
+        // Remembered, so the Pop matches this Push even if Freeze Player changes while it plays.
+        pushedCutscene = freezePlayer && GameManager.HasInstance;
+        if (pushedCutscene) GameManager.Instance.Push(GameState.Cutscene);
 
         onStarted?.Invoke();
         OnPlay();
@@ -69,7 +73,7 @@ public class CutsceneController : MonoBehaviour
         IsPlaying = false;
         SetCameraPriority(false);
         OnFinished();
-        if (freezePlayer && GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
+        if (pushedCutscene) { pushedCutscene = false; if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene); }
         onFinished?.Invoke();
     }
 

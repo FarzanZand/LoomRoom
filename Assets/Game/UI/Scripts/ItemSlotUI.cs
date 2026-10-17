@@ -25,11 +25,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     [SerializeField] bool useAuthoredAppearance;
     [SerializeField] Color frameColor = new Color(.5f,.57f,.55f);
     [SerializeField] Color equippedFrameColor = new Color(1,.83f,.35f);
-    [Tooltip("Authored appearance: tint of a cell an item covers (Diablo's blue-grey).")]
+    [Tooltip("Authored appearance: tint of a cell an item covers (blue-grey).")]
 
     public Inventory Container { get; private set; }
     public int       Index     { get; private set; }
-    // In a Diablo grid every cell an item covers answers for it: its anchor (top-left) holds the stack.
+    // In a bag grid every cell an item covers answers for it: its anchor (top-left) holds the stack.
     public int       Anchor    => Container == null ? -1 : Container.IsGrid ? Container.OwnerAt(Index) : Index;
     public ItemData  Item      => Container != null && Anchor >= 0 ? Container.ItemAt(Anchor) : null;
     // A grid draws its items across their cells (ItemGridUI); the cell itself only shows that it is taken.
@@ -106,7 +106,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         // The Rugged HUD (UIManager.hudStyle) draws the slot as the inventory's grey cell: its own colours, not the tint.
         bool rugged = Rugged;
         if (background != null && !useAuthoredAppearance) background.color = PreviewTint ?? (rugged ? Color.white : item != null ? filledColor : emptyColor);
-        // Authored cells (the Diablo bag) keep their sprite as it is, taken or not (the item's rarity floor marks it);
+        // Authored cells (the bag grid) keep their sprite as it is, taken or not (the item's rarity floor marks it);
         // only the drag footprint tints it.
         else if (background != null && GridCell) background.color = PreviewTint ?? Color.white;
         // The hotbar shows no rarity floor (the bag grid and the equipment slots do): its slots stay as they are.

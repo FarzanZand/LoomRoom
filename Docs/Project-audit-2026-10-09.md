@@ -113,7 +113,7 @@ Lower-priority bugs: torch placement ignores the floor seed (`DungeonGenerator.G
 | Root clutter | | `Assets/New Terrain.asset` (3.4 MB), `Assets/Settings` URP template leftovers (Mobile/PC RP assets, Readme, TutorialInfo), empty folders `Items/Data/Generic`, `Items/Data/Keys`, `World/Props`. |
 | Small leftovers | | Unused `Audio/Data/Poof`, `Weapon_Swing_Default`, five `UI/Audio/*.asset`, `UI/Resources/UIFeedback rows.asset`, `Items/Effects/LogMessage`, `Bronze Shield/Sword` prefabs, `Heal Potion` pickup, `Adventure option`, `Skill Row` prefabs, `Loomy Dungeons Darkened` theme, `PIXEARG_OUT`/`SDFUnderlay` fonts (check TMP fallbacks), `TableArmsMesh*` prefabs, `_Archive/Green Slime`. |
 
-**Licensing:** a Baldur's Gate 3 soundtrack track is reachable from the scene (would ship in a build) and a YouTube rip (Tom Cardy) is committed. Paid Synty packs are in the repo: keep the GitHub repo private.
+**Licensing:** a track from another game's soundtrack is reachable from the scene (would ship in a build) and a YouTube rip (Tom Cardy) is committed. Paid Synty packs are in the repo: keep the GitHub repo private.
 
 ## 8. Git
 

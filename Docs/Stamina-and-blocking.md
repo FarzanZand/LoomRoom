@@ -1,6 +1,6 @@
 # Stamina and blocking
 
-The Table player cannot sprint: `PlayerData.canSprint` is off on the TablePlayer prefab (Barony has no sprint), so the sprint input does nothing and stamina is spent only on blocking, heavy attacks and jumping. Turn it back on in the prefab's data (Movement tab) to bring sprinting back; the sprint drain and recovery settings are still there.
+The Table player cannot sprint: `PlayerData.canSprint` is off on the TablePlayer prefab, so the sprint input does nothing and stamina is spent only on blocking, heavy attacks and jumping. Turn it back on in the prefab's data (Movement tab) to bring sprinting back; the sprint drain and recovery settings are still there.
 
 Edit the TablePlayer prefab's data (`Assets/Game/Characters/Players/Table/TablePlayer.prefab`, Character component):
 

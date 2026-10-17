@@ -22,6 +22,27 @@ public partial class ItemData
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetVariants() => variants.Clear();
 
+    // At each run start the rolled copies nobody holds any more (the last run's drops, shop stock and bags) are destroyed,
+    // so the cache doesn't grow with every drop for the whole session. Held means in a bag, hotbar or hand, lying on the
+    // floor, carried by an enemy or on a merchant's table.
+    public static int PruneVariants()
+    {
+        if (variants.Count == 0) return 0;
+        var held = new HashSet<ItemData>();
+        foreach (var inventory in FindObjectsByType<Inventory>(FindObjectsInactive.Include))
+            for (int i = 0; i < inventory.SlotCount; i++) if (inventory.ItemAt(i) is ItemData item) held.Add(item);
+        foreach (var equipment in FindObjectsByType<Equipment>(FindObjectsInactive.Include))
+            foreach (var item in equipment.EquippedItems) if (item != null) held.Add(item);
+        foreach (var lying in FindObjectsByType<WorldItem>(FindObjectsInactive.Include)) if (lying.Item != null) held.Add(lying.Item);
+        foreach (var drop in FindObjectsByType<DungeonLootDrop>(FindObjectsInactive.Include)) if (drop.carriedItem != null) held.Add(drop.carriedItem);
+        foreach (var merchant in FindObjectsByType<Merchant>(FindObjectsInactive.Include)) merchant.AddStockTo(held);
+        var gone = new List<string>();
+        foreach (var pair in variants) if (pair.Value == null || !held.Contains(pair.Value)) gone.Add(pair.Key);
+        int destroyed = 0;
+        foreach (var key in gone) { var copy = variants[key]; variants.Remove(key); if (copy != null) { Destroy(copy); destroyed++; } }
+        return destroyed;
+    }
+
     // The same item rolled to a rarity with these properties.
     public ItemData Rolled(ItemRarity rarityTo, RolledProperty[] properties) => Variant(BaseItem, rarityTo, properties);
 

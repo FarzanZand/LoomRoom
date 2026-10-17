@@ -56,7 +56,7 @@ Enemy attacks, hurt and death use `Assets/Game/Characters/Animations/HumanoidCon
 
 Defaults below are the values on `Combat/Prefabs/CombatManager.prefab`.
 
-- `playerAttackSpeed` (1.12), `windupSpeed` (1.45), `releaseSpeed` (1.25), `heavyReleaseSpeed` (0.95): Animator playback timing, multiplied by the character AttackSpeed stat.
+- `playerAttackSpeed` (0.85), `windupSpeed` (1.45), `releaseSpeed` (1.25), `heavyReleaseSpeed` (0.95): Animator playback timing, multiplied by the character AttackSpeed stat.
 - `swingInterval` (0.6): shortest time between the starts of two light swings. `attackInputBuffer` (0.4): how long a click is remembered.
 - `attackFromBlock` (on), `simpleSwings` (on), `ikSwingCameraRotation`, `ikSwingCameraCurve`: see above.
 - `weaponSweepSteps` (12): samples per frame along the weapon's path.
@@ -69,7 +69,7 @@ Defaults below are the values on `Combat/Prefabs/CombatManager.prefab`.
 - `hitReactionAngle` (35), `hitReactionAttackSpeed`, `hitReactionDamping`, `hitReactionInfluenceDepth`, `hitReactionParentFalloff`: size, speed and spread of the directional bone overlay.
 - `hitStopEnabled` (off), `hitStopOnPlayerHurt` (off), `lightHitStopDuration`, `lightHitStopTimeScale`, `heavyHitStopDuration`, `heavyHitStopTimeScale`: hit stop, if it is turned back on.
 - `hitParticlePrefabs` (the contact flash), audio references: impact feedback.
-- `enemyKnockbackScale` (1.4), `playerKnockbackSpeedLimit`, `playerKnockbackDecay`, `knockbackForceMultiplier`: bounded horizontal knockback.
+- `enemyKnockbackScale` (0.25), `playerKnockbackSpeedLimit`, `playerKnockbackDecay`, `knockbackForceMultiplier`: bounded horizontal knockback.
 - `ragdollImpulse` (5.5), `ragdollUpwardImpulse` (3): how far kills are thrown (speeds in m/s).
 - `hurtScreenAlpha` (0.6), `hurtScreenHold` (0.1), `hurtScreenDuration` (0.4), `hurtScreenColor`: the red screen when hurt.
 

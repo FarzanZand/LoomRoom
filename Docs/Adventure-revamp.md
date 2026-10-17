@@ -32,7 +32,7 @@ Keep item save IDs unchanged when tuning or renaming items.
 
 ## Gear baseline
 
-Tiers are 1 Leather/Bronze, 2 Iron, 3 Steel, 4 Crystal. Swords deal 5/7/9/12, maces 6/8/10/13. Shields and body armour give 2/3/4/5 armour; helms, gloves, boots and leggings 1/2/3/4. Armour works as in Barony: it comes off 75% of a physical hit and the rest always lands (`CombatManager.armorEffectiveness`).
+Tiers are 1 Leather/Bronze, 2 Iron, 3 Steel, 4 Crystal. Swords deal 5/7/9/12, maces 6/8/10/13. Shields and body armour give 2/3/4/5 armour; helms, gloves, boots and leggings 1/2/3/4. Armour takes a share of each physical hit: it comes off 75% of a physical hit and the rest always lands (`CombatManager.armorEffectiveness`).
 
 Each biome's loot profile sets which tiers drop: the low tier is most common on the biome's first floor and the high tier on its last. Condition, identification, curses and durability are not in the game.
 
@@ -44,7 +44,7 @@ Reaching floor 3 for the first time finds the clue "Shield, flame, hand." (`Adve
 
 ## Classes
 
-Attribute order: STR / DEX / CON / INT / PER / CHR. Health, mana and attributes follow the Barony class tables; skill ranks are LoomRoom's.
+Attribute order: STR / DEX / CON / INT / PER / CHR. Health, mana, attributes and skill ranks are LoomRoom's.
 
 | Class | HP | MP | Attributes | Starting skills |
 |---|---:|---:|---|---|
@@ -53,7 +53,7 @@ Attribute order: STR / DEX / CON / INT / PER / CHR. Health, mana and attributes 
 | Cleric | 30 | 30 | 0 / -1 / 1 / 0 / 1 / 0 | Maces 25, Blocking 10, Thaumaturgy 40, Trading 10 |
 | Arcanist | 25 | 40 | -1 / 1 / -1 / 1 / 1 / -1 | Swords 20, Sorcery 30, Athletics 10 |
 
-Sources: [Warrior](https://barony.wiki.gg/wiki/Warrior), [Wizard](https://barony.wiki.gg/wiki/Wizard), [Cleric](https://barony.wiki.gg/wiki/Cleric), [Arcanist](https://barony.wiki.gg/wiki/Arcanist). The class assets are the source of truth; check them if this table and the game disagree.
+The class assets are the source of truth; check them if this table and the game disagree.
 
 ## UI and audio
 

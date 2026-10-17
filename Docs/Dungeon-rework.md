@@ -117,5 +117,5 @@ After each step: play the Debug Dungeon and a generated Dungeon1 floor, take scr
 
 1. **Chunks replace Grown for Dungeon1** (Grown stays in the code for other levels), or chunks only for some rooms inside a Grown layout. Recommendation: full chunks, since that is where the look comes from.
 2. **Art direction**: the kit keeps the pixel look (my assumption above), or follows the reference's painted look.
-3. **Light radius size**: small and Diablo-tight (about 4-5 m), or larger.
+3. **Light radius size**: small and tight (about 4-5 m), or larger.
 4. **Where kit pieces come from**: Synty restyled where it fits, Blender for the rest (recommended), or all custom.

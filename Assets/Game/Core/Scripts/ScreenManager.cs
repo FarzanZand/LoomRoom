@@ -13,7 +13,7 @@ public class ScreenManager : Singleton<ScreenManager>
 
     [Header("Rendering effects")]
     [Tooltip("Used while the Room player is active. Applies during Play mode.")]
-    public ScreenEffectSettings roomEffects = ScreenEffectSettings.Inscryption();
+    public ScreenEffectSettings roomEffects = ScreenEffectSettings.RoomLook();
     [Tooltip("Used while the Table player is active. Applies during Play mode.")]
     public ScreenEffectSettings tableEffects = new();
     [Min(0), Tooltip("Seconds to crossfade between the room and table effects when the active player changes.")]
@@ -25,7 +25,7 @@ public class ScreenManager : Singleton<ScreenManager>
     public float pixelationStrength = 1f;
     [FoldoutGroup("Retro pixel grid"), ShowInInspector, ReadOnly, Tooltip("Player's choice from the settings menu. -1 = use the authored values, 0 = off.")]
     public int UserPixelLines { get; private set; } = -1;
-    const string PixelLinesPref = "pixel_lines";
+    public const string PixelLinesPref = "pixel_lines";   // public: the settings screen writes it straight in the main menu
 
     [FoldoutGroup("Camera filter"), LabelText("Filter")]
     [Tooltip("The whole screen's look. Standard is the game's own; the others are the looks below (Rendering/Filters), drawn after the world and its post-processing and under the UI. Switches at once in Play mode. Not saved as a player setting.")]
@@ -60,8 +60,8 @@ public class ScreenManager : Singleton<ScreenManager>
     [FoldoutGroup("Renderer features"), Tooltip("The Desktop Renderer's full-screen pass using Hidden/LoomRoom/Retro Screen (pixelate and colour banding).")]
     public ScriptableRendererFeature retroScreenFeature;
 
-    [Button("Reset Room to Inscryption preset")]
-    void ResetRoomEffects() => roomEffects = ScreenEffectSettings.Inscryption();
+    [Button("Reset Room to cabin preset")]
+    void ResetRoomEffects() => roomEffects = ScreenEffectSettings.RoomLook();
 
     static readonly int PixelLinesId  = Shader.PropertyToID("_RetroPixelLines");
     static readonly int ColorLevelsId = Shader.PropertyToID("_RetroColorLevels");

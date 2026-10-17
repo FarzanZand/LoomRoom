@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Barony-style floppy deaths. While alive nothing exists: the ragdoll is built from the
+// Floppy deaths. While alive nothing exists: the ragdoll is built from the
 // humanoid skeleton at the moment of death, so it never interferes with animation,
 // hitboxes or navigation. Non-humanoid bodies tumble as one rigid body,
 // or play their death clip (deathAnimationInstead).

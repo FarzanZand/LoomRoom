@@ -11,6 +11,7 @@ using UnityEngine.Profiling;
 public class ScreenFilterCapture : MonoBehaviour
 {
     public static bool Busy { get; private set; }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetBusy() => Busy = false;
     static readonly string[] PassNames = { "Retro Screen", "FullScreenPassRendererFeature", "Blit Retro Screen" };
 
     public static void Run(string shot, int timingFrames = 60)

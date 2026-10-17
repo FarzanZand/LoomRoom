@@ -93,8 +93,8 @@ public static class DevConsoleBuilder
         return Path;
     }
 
-    // loadtemplate's list for development builds (the Editor finds the templates itself).
-    [MenuItem("Tools/LoomRoom/Dev/Refresh Dev Console Templates")]
+    // loadtemplate's list for development builds (the Editor finds the templates itself). Build fills it too; run this
+    // from an eval after adding templates (DevConsoleBuilder.RefreshTemplates()).
     public static string RefreshTemplates()
     {
         var root = PrefabUtility.LoadPrefabContents(Path);

@@ -51,9 +51,9 @@ Keep the user's readable-lighting preference. Use palette, architectural silhoue
 
 ## References and their application
 
-- [Barony's Quality of Death update](https://www.baronygame.com/blog/qod-update-launched) describes roughly 1,000 added rooms including combat gauntlets, puzzles, mazes, traps and ambushes. The useful lesson is variety of authored situations, not simply increasing room count.
-- [Barony's Instruments of Destruction release](https://www.baronygame.com/blog/iodrelease) describes protected vaults with rewards that change with depth. Apply this as optional risk/reward branches; do not put essential progression behind an unreliable random lock.
-- [Grimrock's editor documentation](https://www.grimrock.net/modding/inspector-and-connectors/) exposes monster behavior and connections between dungeon objects to creators. Apply that designer-facing approach to door sockets, triggers, rewards and encounter settings.
+- Many hand-made rooms, including combat gauntlets, puzzles, mazes, traps and ambushes. The useful lesson is variety of authored situations, not simply increasing room count.
+- Protected vaults with rewards that change with depth. Apply this as optional risk/reward branches; do not put essential progression behind an unreliable random lock.
+- A designer-facing editor that shows monster behaviour and the connections between dungeon objects. Apply that approach to door sockets, triggers, rewards and encounter settings.
 
 ## Proposed next pass
 

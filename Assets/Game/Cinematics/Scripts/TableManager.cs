@@ -15,6 +15,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
     [SerializeField] string prompt = "Play";
     [SerializeField, Tooltip("Said when the table is used before the player has talked to the Dungeon Master.")]
     DungeonMaster.Line talkFirst;
+    [SerializeField, Tooltip("Said when the table is used during the win ending, while the door stands open.")]
+    DungeonMaster.Line endingLine = new() { text = "Not now. The door's open. Go and get some air." };
 
     [Header("At the table")]
     [SerializeField, Min(.1f), Tooltip("Seconds for the view to turn to the Dungeon Master.")] float sitSeconds = 1.1f;
@@ -61,8 +63,9 @@ public class TableManager : Singleton<TableManager>, IInteractable
         && player.IsAlive && PlayerManager.HasInstance && PlayerManager.Instance.Active == player
         && (loader == null || !loader.Busy) && sitting == null
         && !(Coop.Running && MultiplayerManager.Instance.LocalInRun)
-        && !PixelCrushers.DialogueSystem.DialogueManager.isConversationActive
-        && !(WorldManager.HasInstance && WorldManager.Instance.ending != null && WorldManager.Instance.ending.Running);
+        && !PixelCrushers.DialogueSystem.DialogueManager.isConversationActive;
+    // The win ending is playing (the morning walk to the open door): the table only points the player out.
+    public static bool EndingRunning => WorldManager.HasInstance && WorldManager.Instance.ending != null && WorldManager.Instance.ending.Running;
     protected override void Awake()
     {
         base.Awake();
@@ -74,6 +77,11 @@ public class TableManager : Singleton<TableManager>, IInteractable
     public void Interact(Character who)
     {
         if (!CanInteract(who)) return;
+        if (EndingRunning)
+        {
+            if (endingLine != null && !endingLine.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(endingLine);
+            return;
+        }
         // The tabletop intro: the Dungeon Master is waiting for the player to sit down.
         if (IntroController.HasInstance && IntroController.Instance.TakeSeat()) return;
         // The whole dungeon won: the prototype's thank-you instead of a new run.
@@ -89,7 +97,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
     // False when the table cannot be used now (busy loader, no active room player, a conversation...).
     public bool Play(TableLevelData level = null, AdventurerClass only = null, DungeonMaster.Line prompt = null, bool showCard = true)
     {
-        if (loader == null || !PlayerManager.HasInstance || !CanInteract(PlayerManager.Instance.Active)) return false;
+        if (loader == null || !PlayerManager.HasInstance || EndingRunning || !CanInteract(PlayerManager.Instance.Active)) return false;
         if (GameManager.HasInstance)
         {
             sittingPlayer = PlayerManager.Instance.Active;

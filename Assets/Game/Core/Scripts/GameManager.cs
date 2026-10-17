@@ -30,7 +30,7 @@ public class GameManager : Singleton<GameManager>
 
     public GameState State => stack.Count > 0 ? stack[stack.Count - 1] : GameState.Explore;
     public bool GameplayActive => State == GameState.Explore;
-    // Enemies, regen and projectiles keep running while the inventory is open (Barony style).
+    // Enemies, regen and projectiles keep running while the inventory is open.
     public bool SimulationActive => State == GameState.Explore || State == GameState.Inventory;
 
     public event Action<bool>      HudVisibilityChanged;

@@ -50,7 +50,9 @@ public static class MainMenuSaves
         var load = FindOrCopy(column, play, "Load game");
         var coop = FindOrCopy(column, play, "Co-op");
         play.name = "Continue"; Label(play).text = "Continue";
-        Button[] order = { play, newGame, load, coop, quit };
+        // Settings (when the scene has it) just above Quit.
+        var settingsButton = so.FindProperty("settingsButton")?.objectReferenceValue as Button;
+        Button[] order = settingsButton != null ? new[] { play, newGame, load, coop, settingsButton, quit } : new[] { play, newGame, load, coop, quit };
         for (int i = 0; i < order.Length; i++) { order[i].transform.SetParent(column, false); order[i].transform.SetSiblingIndex(i); }
         // Skip intro moved into the New game choice.
         foreach (var stray in new[] { column.Find("Skip intro"), canvas.Find("Skip intro") }) if (stray != null) Object.DestroyImmediate(stray.gameObject);

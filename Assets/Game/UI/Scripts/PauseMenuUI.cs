@@ -1,21 +1,32 @@
+using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 // Escape during gameplay: time stops, the cursor frees. Resume, settings, the adventure
-// menu (table player only) or quit. Escape again, or Resume, returns to the game.
+// menu (table player only), the main menu or quit; leaving and quitting ask first, saying what a run loses.
+// Escape again, or Resume, returns to the game.
 public class PauseMenuUI : MonoBehaviour
 {
     [SerializeField] GameObject root;
     [SerializeField] Button resumeButton;
     [SerializeField] Button settingsButton;
     [SerializeField] Button adventuresButton;
+    [SerializeField] Button mainMenuButton;
     [SerializeField] Button quitButton;
     [Tooltip("Opens the co-op screen (CoopMenuUI): host, join, leave.")]
     [SerializeField] Button coopButton;
-    Vector2? quitHome;
     [SerializeField] SettingsUI settings;
     [Tooltip("Hidden while settings are open so the two panels never overlap.")]
     [SerializeField] GameObject pausePanel;
+    [Header("Are you sure? (Main menu, Quit)")]
+    [SerializeField] GameObject confirmPanel;
+    [SerializeField] TMP_Text confirmText;
+    [SerializeField] Button confirmYes, confirmNo;
+    [SerializeField] string mainMenuScene = "Main Menu";
+    [SerializeField, Tooltip("Said under the question while a run is on: what leaving costs.")]
+    string runLoss = "Your run picks up at the start of this floor.";
+    System.Action confirmed;
 
     bool open;
     // The time scale when the menu opened (a hit stop may be slowing time); restored on close.
@@ -31,7 +42,11 @@ public class PauseMenuUI : MonoBehaviour
         resumeButton?.onClick.AddListener(Close);
         settingsButton?.onClick.AddListener(OpenSettings);
         adventuresButton?.onClick.AddListener(Adventures);
-        quitButton?.onClick.AddListener(Quit);
+        mainMenuButton?.onClick.AddListener(() => Ask("Leave for the main menu?", ToMainMenu));
+        quitButton?.onClick.AddListener(() => Ask("Quit the game?", Quit));
+        confirmYes?.onClick.AddListener(() => { var go = confirmed; CloseConfirm(); go?.Invoke(); });
+        confirmNo?.onClick.AddListener(CloseConfirm);
+        if (confirmPanel != null) confirmPanel.SetActive(false);
         coopButton?.onClick.AddListener(OpenCoop);
     }
 
@@ -72,16 +87,48 @@ public class PauseMenuUI : MonoBehaviour
         if (!Coop.Running) Time.timeScale = 0f;
         root.SetActive(true);
         settings?.Close();
+        CloseConfirm();
         if (pausePanel != null) pausePanel.SetActive(true);
         bool table = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
-        if (adventuresButton != null) adventuresButton.gameObject.SetActive(table && Loader != null && !Loader.Busy && !(RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended));
-        // Quit moves up into the adventures slot when that button is hidden, so the list has no gap.
-        if (adventuresButton != null && quitButton != null && quitButton.transform is RectTransform quitRect && adventuresButton.transform is RectTransform advRect)
-        {
-            quitHome ??= quitRect.anchoredPosition;
-            quitRect.anchoredPosition = adventuresButton.gameObject.activeSelf ? quitHome.Value : advRect.anchoredPosition;
-        }
+        // The buttons sit in a vertical layout, so a hidden one leaves no gap.
+        if (adventuresButton != null) adventuresButton.gameObject.SetActive(table && Loader != null && !Loader.Busy && !InRun);
         resumeButton?.Select();
+    }
+
+    static bool InRun => RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;
+
+    // The question over the pause buttons, with what a run loses under it; Yes runs the action.
+    void Ask(string question, System.Action action)
+    {
+        if (confirmPanel == null) { action?.Invoke(); return; }
+        confirmed = action;
+        if (confirmText != null) confirmText.text = InRun && !string.IsNullOrEmpty(runLoss) ? $"{question}\n<size=75%><color=#A3A3A3>{runLoss}</color></size>" : question;
+        if (pausePanel != null) pausePanel.SetActive(false);
+        confirmPanel.SetActive(true);
+        confirmNo?.Select();
+    }
+
+    void CloseConfirm()
+    {
+        confirmed = null;
+        if (confirmPanel == null || !confirmPanel.activeSelf) return;
+        confirmPanel.SetActive(false);
+        if (open && pausePanel != null) pausePanel.SetActive(true);
+    }
+
+    void ToMainMenu()
+    {
+        Close();
+        StartCoroutine(LoadMainMenu());
+    }
+
+    IEnumerator LoadMainMenu()
+    {
+        Time.timeScale = 1f;
+        if (ScreenManager.HasInstance) { ScreenManager.Instance.FadeToBlack(.4f); yield return new WaitForSecondsRealtime(.45f); }
+        // Through the co-op manager: it leaves a session and drops the Network Manager (kept across scene loads).
+        if (MultiplayerManager.HasInstance) MultiplayerManager.Instance.ToMainMenu();
+        else UnityEngine.SceneManagement.SceneManager.LoadScene(mainMenuScene);
     }
 
     public void Close()
@@ -98,6 +145,7 @@ public class PauseMenuUI : MonoBehaviour
     {
         if (!open) return;
         if (InputManager.HasInstance && InputManager.Instance.IsRebinding) return;
+        if (confirmPanel != null && confirmPanel.activeSelf) { CloseConfirm(); return; }
         if (settings != null && settings.IsOpen) { CloseSettings(); return; }
         Close();
     }
@@ -112,7 +160,7 @@ public class PauseMenuUI : MonoBehaviour
     // Settings' own Back button closes it; bring the pause panel back either way.
     void Update()
     {
-        if (open && pausePanel != null && !pausePanel.activeSelf && (settings == null || !settings.IsOpen)) CloseSettings();
+        if (open && pausePanel != null && !pausePanel.activeSelf && (settings == null || !settings.IsOpen) && (confirmPanel == null || !confirmPanel.activeSelf)) CloseSettings();
     }
 
     void CloseSettings()

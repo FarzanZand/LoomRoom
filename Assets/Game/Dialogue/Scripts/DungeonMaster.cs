@@ -6,7 +6,7 @@ using TMPro;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-// The on-screen message feed, the way Barony does it: what just happened in white (kills in orange),
+// The on-screen message feed: what just happened in white (kills in orange),
 // and the Dungeon Master's voice in its own colour (the quoted line, with a recorded clip or a
 // short gibberish mumble). Lines appear whole in the lower
 // middle (or bottom left) and fade. Damage lines stay out: floating numbers show those.
@@ -20,7 +20,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     {
         [TextArea] public string text;
         [Tooltip("Recorded voice. Empty uses the mumble if Mumble is on.")] public AudioData voice;
-        [Tooltip("Barony-style gibberish when the line appears.")] public bool mumble = true;
+        [Tooltip("Gibberish mumble when the line appears.")] public bool mumble = true;
         [Tooltip("Said across the table in the room: paced for reading, and the seated DM gestures.")] public bool inPerson;
 
         // The line with its text changed (a name filled in), keeping voice and delivery.
@@ -36,6 +36,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Tooltip("Also show message log lines (pickups, doors, kills). Combat damage is always left out.")] bool showEvents = true;
     [SerializeField, Min(8)] float fontSize = 30;
     [SerializeField, Range(0, 1)] float outline = .12f;
+    [SerializeField, Range(0, 1), Tooltip("A soft dark halo behind the letters, so the lines read on pale stone too (0: none).")] float backing = .7f;
     [SerializeField, Min(0), Tooltip("Screen pixels per em of the pixel font (PixelOperator: 16). The size snaps so each font pixel covers whole screen pixels, which keeps the letters crisp at any resolution. 0: no snapping.")]
     float pixelGrid = 16;
     [SerializeField, Min(0), Tooltip("Seconds a line stays before fading.")] float hold = 6f;
@@ -82,7 +83,19 @@ public class DungeonMaster : Singleton<DungeonMaster>
         label.color = Color.white;
         label.textWrappingMode = TextWrappingModes.Normal;
         label.raycastTarget = false;
-        if (Application.isPlaying) { label.outlineWidth = outline; label.outlineColor = Color.black; }
+        if (!Application.isPlaying) return;
+        label.outlineWidth = outline; label.outlineColor = Color.black;
+        var m = label.fontMaterial;   // the label's own copy
+        if (backing > 0f)
+        {
+            m.EnableKeyword(ShaderUtilities.Keyword_Underlay);
+            m.SetColor(ShaderUtilities.ID_UnderlayColor, new Color(0f, 0f, 0f, backing));
+            m.SetFloat(ShaderUtilities.ID_UnderlayDilate, .7f);
+            m.SetFloat(ShaderUtilities.ID_UnderlaySoftness, .8f);
+            m.SetFloat(ShaderUtilities.ID_UnderlayOffsetX, 0f);
+            m.SetFloat(ShaderUtilities.ID_UnderlayOffsetY, 0f);
+        }
+        else m.DisableKeyword(ShaderUtilities.Keyword_Underlay);
     }
 
     public static void Say(string text, AudioClip clip = null, bool mumble = false) => Say(new Line { text = text, mumble = mumble }, clip);

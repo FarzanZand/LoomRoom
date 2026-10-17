@@ -12,7 +12,7 @@ public partial class IntroController
     void OnRunStarted()
     {
         if (!running || !PracticeRunning) return;
-        StopAllCoroutines();
+        StopAllCoroutines(); PopDialogue();   // a stopped scene gives its Dialogue back (the next one takes it again)
         teaching = StartCoroutine(Teach());
     }
 
@@ -132,7 +132,7 @@ public partial class IntroController
     public bool StairsReached()
     {
         if (!running || !PracticeRunning) return false;
-        if (!finale) { fromStairs = true; StopAllCoroutines(); StartCoroutine(Finale()); }
+        if (!finale) { fromStairs = true; StopAllCoroutines(); PopDialogue(); StartCoroutine(Finale()); }
         return true;
     }
 
@@ -281,7 +281,7 @@ public partial class IntroController
     public bool TakeOverDeath()
     {
         if (!running || !PracticeRunning) return false;
-        StopAllCoroutines();
+        StopAllCoroutines(); PopDialogue();   // a stopped scene gives its Dialogue back (the next one takes it again)
         Unlisten();
         StartCoroutine(AfterPracticeDeath());
         return true;

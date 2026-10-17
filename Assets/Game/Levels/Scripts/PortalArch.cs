@@ -23,6 +23,10 @@ public class PortalArch : MonoBehaviour
     [Tooltip("The shimmer's size: the archway's opening, width and height.")]
     public Vector2 opening = new(2f, 2.8f);
     public Color shimmer = new(.35f, .65f, 1f, 1f);
+    [Tooltip("The shimmer's material (Levels/Shared/Portal/Portal shimmer: a small point-filtered pixel texture on the additive beam shader). Copied per arch and scrolled upward.")]
+    public Material shimmerMaterial;
+    [Tooltip("How fast the shimmer's texture scrolls up (texture heights a second).")]
+    public float scrollSpeed = .25f;
     [Min(0f)] public float lightIntensity = 3f;
     [Tooltip("How far from the floor it is built, in metres along the floor's right (kept clear of the table and the room).")]
     public float pocketDistance = 400f;
@@ -56,18 +60,16 @@ public class PortalArch : MonoBehaviour
         sheet.transform.SetParent(transform, false);
         sheet.transform.localPosition = Vector3.up * opening.y * .5f;
         sheet.transform.localScale = new Vector3(opening.x, opening.y, 1f);
-        material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-        material.SetFloat("_Surface", 1f); material.SetFloat("_Blend", 1f);
-        material.SetOverrideTag("RenderType", "Transparent");
-        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
-        material.SetInt("_ZWrite", 0);
-        material.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
-        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-        material.renderQueue = 3000;
-        var renderer = sheet.GetComponent<MeshRenderer>();
-        renderer.sharedMaterial = material;
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        // A referenced material (never a shader found by name: that can be stripped from a build and leave the gate
+        // invisible), copied so each arch pulses on its own.
+        if (shimmerMaterial == null) { Debug.LogWarning($"{name}: Portal arch has no Shimmer Material.", this); Destroy(sheet); }
+        else material = new Material(shimmerMaterial);
+        if (material != null)
+        {
+            var renderer = sheet.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
         var lightGo = new GameObject("Portal light");
         lightGo.transform.SetParent(transform, false);
         lightGo.transform.localPosition = Vector3.up * opening.y * .5f + Vector3.forward * .4f;
@@ -86,8 +88,10 @@ public class PortalArch : MonoBehaviour
         float t = Time.time;
         float pulse = .55f + .25f * Mathf.Sin(t * 2.3f) + .1f * Mathf.Sin(t * 5.1f);
         var c = Color.Lerp(shimmer, Color.white, .15f + .1f * Mathf.Sin(t * 1.7f));
-        c.a = pulse * .6f;
+        c.a = pulse * .9f;
         material.SetColor("_BaseColor", c);
+        // The pixel texture drifts upward, wrapping (the texture tiles vertically).
+        material.SetTextureOffset("_BaseMap", new Vector2(0f, Mathf.Repeat(-t * scrollSpeed, 1f)));
         if (glow != null) glow.intensity = lightIntensity * (.8f + .3f * Mathf.Sin(t * 2.3f));
     }
 

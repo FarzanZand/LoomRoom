@@ -10,7 +10,7 @@ public class PlayerData : CharacterData
 
     [TabGroup(InspectorTabs, "Movement", Order = 10), Title("Speeds (m/s)", HorizontalLine = false)]
     public float walkSpeed   = 3f;
-    [TabGroup(InspectorTabs, "Movement"), Tooltip("Off: the sprint input does nothing (Barony has no sprint).")]
+    [TabGroup(InspectorTabs, "Movement"), Tooltip("Off: the sprint input does nothing (the table player has no sprint).")]
     public bool canSprint = true;
     [TabGroup(InspectorTabs, "Movement")]
     public float sprintSpeed = 6f;
@@ -20,7 +20,7 @@ public class PlayerData : CharacterData
     public float accelerationTime = .1f;
     [TabGroup(InspectorTabs, "Movement"), Min(0), Tooltip("Seconds from full speed to a stop when the keys are let go. 0: instant.")]
     public float stopTime = .07f;
-    [TabGroup(InspectorTabs, "Movement"), Range(.1f, 1f), Tooltip("Share of the speed kept while moving backwards. Barony backs off at half speed, so attacks can't simply be outwalked.")]
+    [TabGroup(InspectorTabs, "Movement"), Range(.1f, 1f), Tooltip("Share of the speed kept while moving backwards. At half speed, attacks can't simply be outwalked.")]
     public float backwardSpeed = 1f;
     [TabGroup(InspectorTabs, "Movement"), Title("Jump & gravity", HorizontalLine = false), Tooltip("Off: the jump input does nothing (the room player).")]
     public bool canJump = true;

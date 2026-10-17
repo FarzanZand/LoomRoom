@@ -33,7 +33,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     // Scales every walking speed on top of the MoveSpeed stat (a co-op ghost moves faster, CoopGhost).
     public float SpeedScale  { get; set; } = 1f;
 
-    // Enemies block like Barony's monsters: walking toward one inside the personal space goes nowhere.
+    // Enemies block like walls: walking toward one inside the personal space goes nowhere.
     void KeepPersonalSpace()
     {
         float space = CombatManager.HasInstance ? CombatManager.Instance.personalSpace : 1.1f;

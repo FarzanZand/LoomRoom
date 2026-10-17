@@ -9,8 +9,8 @@ using UnityEngine.UI;
 // Safe to run again; it only touches UI under UI/Canvas in the open scene.
 public static class PlainUIStyle
 {
-    const string Frame = "Assets/Game/UI/Sprites/Diablo/Plain frame grey.png";
-    const string Slot = "Assets/Game/UI/Sprites/Diablo/Plain slot grey.png";
+    const string Frame = "Assets/Game/UI/Sprites/Inventory/Plain frame grey.png";
+    const string Slot = "Assets/Game/UI/Sprites/Inventory/Plain slot grey.png";
     static readonly Color FrameTint = new(1f, .839f, .827f);     // as the inventory panels
     static readonly Color TitleGold = new(.859f, .698f, .38f);  // as the inventory titles
     static readonly Color OldTitleGrey = new(.639f, .639f, .639f);
@@ -80,7 +80,7 @@ public static class PlainUIStyle
 
     // The right-click menu (ContextMenuUI): its panel the plain grey frame, its button template a plain grey slot that
     // tints on hover, with a gold PixelOperator-Bold label, as the pause menu's buttons. Safe to run again.
-    [MenuItem("Tools/LoomRoom/UI/Plain Style Context Menu")]
+    // Apply runs it; on its own from an eval: PlainUIStyle.StyleContextMenu().
     public static string StyleContextMenu()
     {
         var menu = Object.FindAnyObjectByType<ContextMenuUI>(FindObjectsInactive.Include);

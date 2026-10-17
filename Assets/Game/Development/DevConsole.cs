@@ -30,7 +30,7 @@ public class DevConsole : MonoBehaviour
     [SerializeField, Tooltip("Shown while there are suggestions (their backing); empty = the suggestions text itself.")] GameObject suggestionBox;
     [SerializeField, Min(4)] int lines = 14;
     [SerializeField, Min(1)] int suggestionLines = 8;
-    [SerializeField, Tooltip("Every room template prefab, for loadtemplate in development builds (the Editor finds them itself). Filled by Tools > LoomRoom > Dev > Build Dev Console and Refresh Dev Console Templates.")]
+    [SerializeField, Tooltip("Every room template prefab, for loadtemplate in development builds (the Editor finds them itself). Filled by Tools > LoomRoom > Dev > Build Dev Console (and DevConsoleBuilder.RefreshTemplates from an eval).")]
     GameObject[] templates = new GameObject[0];
 
     static readonly string[] Commands = { "god", "ghost", "revive", "loadtemplate", "help", "clear" };
@@ -57,6 +57,9 @@ public class DevConsole : MonoBehaviour
     void Awake()
     {
         panel.SetActive(false);
+        // It lives across scenes: open when a scene goes, it closes there, so its Menu push isn't popped on the next
+        // scene's GameManager.
+        UnityEngine.SceneManagement.SceneManager.sceneUnloaded += CloseOnUnload;
         // The key that opens it must not end up in the line, whatever it types on this keyboard layout: nothing typed on
         // the frame it opens counts, nor the characters that key gives on common layouts.
         input.onValidateInput = (text, index, c) =>
@@ -187,8 +190,11 @@ public class DevConsole : MonoBehaviour
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
     }
 
+    void CloseOnUnload(UnityEngine.SceneManagement.Scene scene) { if (open) Close(); }
+
     void OnDestroy()
     {
+        UnityEngine.SceneManagement.SceneManager.sceneUnloaded -= CloseOnUnload;
         if (open && GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
         if (open) RunManager.HoldDeath = false;
     }
