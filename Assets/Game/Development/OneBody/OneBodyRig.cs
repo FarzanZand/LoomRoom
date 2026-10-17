@@ -41,6 +41,15 @@ public class OneBodyRig : MonoBehaviour
     // A second camera that renders as the owner's eyes (the capture harness's first-person-only render).
     public static Camera AlsoOwner;
 
+    // First-person framing a clip can ask for through animator curves of these names (all 0 for every other clip):
+    // the first-person arms moved (ArmsViewX, Y, Z) in the view, metres, turned (ArmsViewPitch, Yaw, Roll) degrees,
+    // and drawn through ArmsViewFov degrees more than the view model's own field of view (read by PlayerViewPresentation). The converted Unreal combo
+    // uses them to see the arms as the Unreal camera did (UnrealComboConverter). The body others see doesn't move.
+    public static readonly string[] ViewCurves = { "ArmsViewY", "ArmsViewZ", "ArmsViewPitch", "ArmsViewFov", "ArmsViewX", "ArmsViewYaw", "ArmsViewRoll" };
+    static readonly int[] ViewHashes = System.Array.ConvertAll(ViewCurves, Animator.StringToHash);
+    bool hasViewCurves;
+    public float ViewFovOffset { get; private set; }
+
     static readonly string[] ArmBones = { "Clavicle_", "Shoulder_", "Elbow_", "Hand_", "Finger", "Thumb", "IndexFinger" };
 
     Transform[] spine;
@@ -81,6 +90,7 @@ public class OneBodyRig : MonoBehaviour
         armWritten = new Quaternion[arms.Length][];
         armAnimated = new Quaternion[arms.Length][];
         for (int i = 0; i < arms.Length; i++) { armWritten[i] = new Quaternion[3]; armAnimated[i] = new Quaternion[3]; }
+        foreach (var p in animator.parameters) if (p.nameHash == ViewHashes[0]) hasViewCurves = true;
         bones.TryGetValue("RightHand_Socket", out bodyRight);
         bones.TryGetValue("LeftHand_Socket", out bodyLeft);
 
@@ -143,6 +153,12 @@ public class OneBodyRig : MonoBehaviour
                 if (arms[a][b].localRotation == armWritten[a][b]) arms[a][b].localRotation = armAnimated[a][b];
         // The first-person arms take the animation's pose this frame, before the look turns the body.
         foreach (var (from, to) in pose) to.SetLocalPositionAndRotation(from.localPosition, from.localRotation);
+        if (hasViewCurves && firstPersonArms != null)
+        {
+            firstPersonArms.SetLocalPositionAndRotation(new Vector3(animator.GetFloat(ViewHashes[4]), animator.GetFloat(ViewHashes[0]), animator.GetFloat(ViewHashes[1])),
+                Quaternion.Euler(animator.GetFloat(ViewHashes[2]), animator.GetFloat(ViewHashes[5]), animator.GetFloat(ViewHashes[6])));
+            ViewFovOffset = animator.GetFloat(ViewHashes[3]);
+        }
         if (HeldSignature() != heldSignature) MirrorHeld();
         // A class or gear change (a body mesh switched on or off or swapped): the arms are cut again, at once.
         if (BodySignature() != bodySignature) RefreshArms();

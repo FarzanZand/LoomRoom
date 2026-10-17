@@ -365,6 +365,9 @@ public class EnemyBrain : MonoBehaviour
         }
         if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null)
         {
+            // Which stagger plays (HumanoidController: Hurt, Hurt Left, Hurt Right, Hurt Heavy): the way the blow throws
+            // the body, or the heavy one.
+            AnimatorHelper.SetInteger(Character.Animator, "HurtDir", HurtDirection(info));
             Character.TriggerAnimation(Character.data.hurtTrigger);
             if (!info.Heavy && Tuning != null) BeginRecovery(Tuning.lightFlinchDuration);
         }
@@ -377,6 +380,15 @@ public class EnemyBrain : MonoBehaviour
         else if (Profile.aggressionMode != AggressionMode.Passive)
             // A hit with no attacker (spikes, a fall) has nothing to follow: look where it hurt, not at an old noise.
             StartInvestigate(info.Source != null && Perception.HasStimulus ? Perception.StimulusPosition : info.HitPoint != Vector3.zero ? info.HitPoint : transform.position);
+    }
+
+    // 0 straight back, 1 thrown to its left, 2 thrown to its right, 3 heavy.
+    int HurtDirection(DamageInfo info)
+    {
+        if (info.Heavy) return 3;
+        var throwDir = Tuning != null ? Tuning.ImpactDirection(info) : info.Direction;
+        float side = Vector3.Dot(throwDir, transform.right);
+        return Mathf.Abs(side) < .35f ? 0 : side > 0f ? 2 : 1;
     }
 
     void CancelAttack() => attackRunner?.Cancel();

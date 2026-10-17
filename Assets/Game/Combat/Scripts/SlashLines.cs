@@ -113,7 +113,8 @@ public class SlashLines : MonoBehaviour
     {
         if (blade == null || material == null) return;
         if (hitbox.Active) lastActive = Time.time;
-        bool show = Time.time - lastActive <= linger;
+        bool show = Time.time - lastActive <= linger &&
+            !(CombatManager.HasInstance && CombatManager.Instance.comboAttack && !CombatManager.Instance.comboSlashLines);
         if (hitbox.Active)
         {
             // The capsule's axis is the blade.

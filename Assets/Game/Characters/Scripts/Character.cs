@@ -95,7 +95,12 @@ public class Character : MonoBehaviour
         }
 
         if (!info.Blocked && info.Amount > 0f && info.KnockbackForce > 0f && info.Direction != Vector3.zero)
-            Knockback?.ApplyKnockback(info.Direction, info.KnockbackForce);
+        {
+            // An enemy reels the way the blow throws it, as hard as Hit Impact Strength says.
+            if (IsEnemy && CombatManager.HasInstance)
+                Knockback?.ApplyKnockback(CombatManager.Instance.ImpactDirection(info), info.KnockbackForce * CombatManager.Instance.hitImpactStrength);
+            else Knockback?.ApplyKnockback(info.Direction, info.KnockbackForce);
+        }
 
         Damaged?.Invoke(info);
     }

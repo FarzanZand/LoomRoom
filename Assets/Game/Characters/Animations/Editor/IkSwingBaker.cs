@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-// Bakes the IK light swings (CombatManager.simpleSwings off) into ordinary .anim clips in
+// Bakes the IK light swings (CombatManager.swingSet IK Swings) into ordinary .anim clips in
 // Characters/Animations/FirstPersonPlayer/IK swings, then wires them into FirstPersonTable.controller.
 // The poses come from a blade path written below in camera space (x right, y up, z forward, metres,
 // before the view-model widening): the right arm is solved toward each key with two-bone IK, every
@@ -271,7 +271,7 @@ public static partial class IkSwingBaker
     // ── Controller ────────────────────────────────────────────────────
 
     // Adds the IK swing states to the RightArm layer beside the original swings. The animator's SimpleSwings
-    // bool (set from CombatManager.simpleSwings) picks which set a new swing uses; SwingIndex picks H1 or H2.
+    // bool (set from CombatManager.swingSet) picks which set a new swing uses; SwingIndex picks H1 or H2.
     // Safe to run again: the IK swing states are rebuilt, the original ones only gain a SimpleSwings condition.
     [MenuItem("Tools/LoomRoom/Combat/Wire IK Swings")]
     public static void Wire()

@@ -61,7 +61,7 @@ public class PlayerFX : CharacterFX
     {
         base.NotifyHitLanded(info);
         Kick(CombatManager.HasInstance ? CombatManager.Instance.landedCameraKick : .65f,info);
-        if (player != null && player.Combat != null && player.Combat.HeavySwing && CombatManager.HasInstance)
+        if (player != null && player.Combat != null && player.Combat.HeavySwing && CombatManager.HasInstance && !CombatManager.Instance.comboAttack)
             player.Combat.Shudder(CombatManager.Instance.heavyImpactShudder);
     }
 

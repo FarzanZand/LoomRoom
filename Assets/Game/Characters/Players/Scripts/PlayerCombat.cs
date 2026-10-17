@@ -35,6 +35,9 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField] string attackSpeedParam       = "AttackSpeed";
     [SerializeField] string simpleSwingsParam      = "SimpleSwings";
     [SerializeField] string swingSpeedParam        = "SwingSpeed";
+    [SerializeField, Tooltip("Combo attack (CombatManager.swingSet Combo): the trigger that starts the next hit, and which hit (0, 1, 2).")]
+    string comboTrigger = "ComboStrike", comboIndexParam = "ComboIndex", comboSpeedParam = "ComboSpeed";
+    const int ComboHits = 3;
 
     [Header("Charge feel")]
     [Tooltip("0..1 charge toward a heavy strike, for the animator.")]
@@ -177,7 +180,9 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         queuedPresses = Mathf.Max(0, queuedPresses - 1);
         windingUp = true;
         // Cleared here, not on press: a press during a heavy release must not turn its hit light.
-        HeavySwing = false;
+        // The combo's last hit is a heavy one (CombatManager.comboFinisherHeavy).
+        ComboFinisher = Combo && !comboHeavy && comboIndex == ComboHits - 1;
+        HeavySwing = ComboFinisher && CombatManager.Instance.comboFinisherHeavy;
         // Alternate the light swing per actual swing; a pause restarts the sequence.
         swingIndex = NextSwingIndex;
         lastSwingAt = Time.time;
@@ -203,7 +208,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
                 heavy |= AnimatorHelper.HasTag(info, heavyReleaseHash);
                 alternate |= AnimatorHelper.HasTag(info, alternateReleaseHash);
             }
-        float scale = heavy ? t.heavyStrikeScale : 1f;
+        float scale = Combo ? (HeavySwing ? t.comboFinisherStrikeScale : t.comboStrikeScale) : heavy || HeavySwing ? t.heavyStrikeScale : 1f;
         var k = t.strikeKick * scale;
         Kick(alternate ? new Vector3(k.x, -k.y, -k.z) : k);
         if (t.strikeLunge > 0f && player.Motor != null)
@@ -257,6 +262,56 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         releasingHeavyZoom = false;
     }
 
+    // ── Combo attack ──
+    static bool Combo => CombatManager.HasInstance && CombatManager.Instance.comboAttack;
+    int comboIndex = -1;
+    // The hit in progress is the combo's last (its own damage multiplier, CombatManager.comboFinisherDamage).
+    public bool ComboFinisher { get; private set; }
+    // Combo sets: a press waits to see whether it is a tap (a combo hit, on release) or a hold (the simple charged
+    // attack, from comboHoldForHeavy on: the windup, hold and heavy release of the simple swing set).
+    bool comboPressPending, comboHeavy;
+    // A charged attack let go: combo hits pressed meanwhile wait (queued) until its swing has played out.
+    bool comboAfterHeavy;
+    float comboPressAt;
+    float comboStartedAt = -10f, comboQueuedUntil = -1f;
+
+    // A press queues the next hit; it starts once the current hit's cooldown is over (UpdateCombo), and stays queued
+    // until then plus the input buffer.
+    void QueueCombo() => comboQueuedUntil = Mathf.Max(Time.time, ComboReadyAt) + (CombatManager.HasInstance ? CombatManager.Instance.attackInputBuffer : .22f);
+
+    // When the next combo hit may start: Combo Hit Cooldown after a hit began, Combo Finisher Cooldown after the
+    // finisher began (both in seconds, whatever the attack speed).
+    float ComboReadyAt => comboStartedAt + (!CombatManager.HasInstance ? .4f
+        : comboIndex == ComboHits - 1 ? CombatManager.Instance.comboFinisherCooldown : CombatManager.Instance.comboHitCooldown);
+
+    void UpdateCombo(bool gameplay, bool primary)
+    {
+        if (!Combo) { comboPressPending = comboHeavy = false; return; }
+        // Held past comboHoldForHeavy: the simple charged attack instead of a combo hit (the combo starts over after it).
+        if (comboPressPending && primary && Time.time - comboPressAt >= CombatManager.Instance.comboHoldForHeavy)
+        {
+            comboPressPending = false; comboHeavy = true; comboQueuedUntil = -1f;
+            comboIndex = -1; comboStartedAt = -10f;
+        }
+        if (comboHeavy && !primary && !IsAttacking && Time.time - comboPressAt > .3f) comboHeavy = false;
+        if (comboAfterHeavy && !IsAttacking) comboAfterHeavy = false;
+        if (comboHeavy || Time.time > comboQueuedUntil) return;
+        if (comboAfterHeavy) { comboQueuedUntil = Mathf.Max(comboQueuedUntil, Time.time + .05f); return; }
+        if (!gameplay || !WeaponHeld || (spells != null && spells.Busy) || (bash != null && bash.Busy) ||
+            (player.Equipment != null && player.Equipment.IsUsingItem)) { comboQueuedUntil = -1f; return; }
+        var tuning = CombatManager.Instance;
+        float speed = Mathf.Max(.1f, tuning.comboSpeed * (player.Stats != null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f));
+        AnimatorHelper.SetFloat(armsAnimator, comboSpeedParam, speed);
+        AnimatorHelper.SetInteger(armsAnimator, "ComboSet", tuning.swingSet == CombatManager.SwingSet.Classic ? 1 : tuning.swingSet == CombatManager.SwingSet.Classic2 ? 2 : 0);
+        if (Time.time < ComboReadyAt) return;
+        comboIndex = Time.time - comboStartedAt > tuning.comboResetTime / speed ? 0 : (comboIndex + 1) % ComboHits;
+        comboStartedAt = Time.time;
+        comboQueuedUntil = -1f;
+        AnimatorHelper.SetInteger(armsAnimator, comboIndexParam, comboIndex);
+        AnimatorHelper.SetTrigger(armsAnimator, comboTrigger);
+       
+    }
+
     void OnPrimaryPressed()
     {
         if (!player.IsActive || (spells != null && spells.Busy)) return;
@@ -271,6 +326,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         }
         if (InputManager.Instance.SecondaryHeld && !AttackFromBlock) return;
         heldThroughCancel = false;
+        if (Combo) { comboPressPending = true; comboPressAt = Time.time; }
         pressedAt = Time.time;
         charging = true;
         chargeAnnounced = false;
@@ -284,6 +340,11 @@ public class PlayerCombat : MonoBehaviour, IBlocker
 
     void OnPrimaryReleased()
     {
+        // A tap in a combo set: the next combo hit.
+        if (Combo)
+        if (Combo && comboPressPending) { comboPressPending = false; charging = false; QueueCombo(); return; }
+        // The charged attack is let go: from here presses are combo hits again (they wait for its swing to end).
+        if (Combo && comboHeavy) { comboHeavy = false; comboAfterHeavy = true; }
         if (!charging) return;
         charging = false;
         if (!player.IsActive || !WeaponHeld || !IsAttacking || !CombatManager.HasInstance) return;
@@ -327,6 +388,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         }
 
         TrackStrike();
+        UpdateCombo(gameplay, primary);
         // An unconsumed cancel (the swing moved on that same frame) must not cancel the next windup.
         if (cancelSetAt > 0f && Time.time - cancelSetAt > .1f) { AnimatorHelper.ResetTrigger(armsAnimator, attackCancelParam); cancelSetAt = -10f; }
         // Block pressed (not held from before) while the swing is still winding up: cancel it.
@@ -349,7 +411,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (startingSwing && !windingUp) AnimatorHelper.SetInteger(armsAnimator, swingIndexParam, NextSwingIndex);
         if (!primary) heldThroughCancel = false;
         AnimatorHelper.SetBool(armsAnimator, attackHeldParam,
-            !heldThroughCancel && (primary || buffered) && WeaponHeld && (!secondary || AttackFromBlock) && intervalReady && (bash == null || !bash.Busy));
+            (!Combo || comboHeavy) && !heldThroughCancel && (primary || (buffered && !Combo)) && WeaponHeld && (!secondary || AttackFromBlock) && intervalReady && (bash == null || !bash.Busy));
         if (secondary && !blockLocked && ShieldHeld && player.Stats != null &&
             player.Stats.HasStat(StatType.MaxStamina) && (player.Stats.IsExhausted || player.Stats.CurrentStamina <= 0))
             player.Stats.ReportInsufficientStamina();

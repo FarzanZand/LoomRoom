@@ -194,7 +194,12 @@ public class Hitbox : MonoBehaviour
         if (CombatManager.HasInstance) force = CombatManager.Instance.ScaleKnockback(force);
 
         if(heavy && CombatManager.HasInstance)
-        { baseDamage*=CombatManager.Instance.heavyDamageMultiplier; force*=CombatManager.Instance.heavyKnockbackMultiplier; }
+        {
+            // The combo's finisher has its own multiplier (CombatManager.comboFinisherDamage); a charged heavy attack keeps the heavy one.
+            bool finisher = owner is Player striker && striker.Combat != null && striker.Combat.ComboFinisher;
+            baseDamage *= finisher ? CombatManager.Instance.comboFinisherDamage : CombatManager.Instance.heavyDamageMultiplier;
+            force *= CombatManager.Instance.heavyKnockbackMultiplier;
+        }
         var weapon = owner is Player wielder && wielder.Equipment != null ? wielder.Equipment.Get(EquipmentSlot.RightHand) : null;
         // The weapon's damage range: each hit lands anywhere within its spread (5-9 for a 7 with 2).
         if (weapon != null && weapon.damageSpread > 0) baseDamage = Mathf.Max(1f, baseDamage + UnityEngine.Random.Range(-weapon.damageSpread, weapon.damageSpread + 1));

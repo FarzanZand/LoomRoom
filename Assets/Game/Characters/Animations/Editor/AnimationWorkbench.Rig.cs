@@ -89,6 +89,7 @@ public partial class AnimationWorkbench
         Strip(visuals.gameObject, keepAnimator: false);
         fpVisuals = visuals;
         var armsMesh = Find(visuals, "TableArmsMesh");
+        fpArms = armsMesh;
         var fpBones = new Dictionary<string, Transform>();
         foreach (var t in armsMesh.GetComponentsInChildren<Transform>(true)) fpBones.TryAdd(t.name, t);
         foreach (var r in body.GetComponentsInChildren<SkinnedMeshRenderer>(false))
@@ -312,6 +313,7 @@ public partial class AnimationWorkbench
         foreach (var p in layerClips) if (p.IsValid() && p.GetAnimationClip() != clip) p.SetTime(0.0);
         if (layerClips.Count > 0) layerClips[^1].SetTime(time);
         graph.Evaluate(0f);
+        sampledTime = time;
         PoseViews();
     }
 
@@ -375,11 +377,28 @@ public partial class AnimationWorkbench
     {
         foreach (var (from, to) in fpPose) to.SetLocalPositionAndRotation(from.localPosition, from.localRotation);
         foreach (var (from, to) in outsidePose) to.SetLocalPositionAndRotation(from.localPosition, from.localRotation);
+        // Preview scenes don't run the skinning update by themselves: without this a mesh could draw a stale pose
+        // (the right arm went missing in renders).
+        foreach (var root in new[] { fpRoot, outsideRoot })
+            foreach (var r in root.GetComponentsInChildren<SkinnedMeshRenderer>()) { r.forceMatrixRecalculationPerRender = true; }
         if (naturalArms && outsideArms != null)
             foreach (var arm in outsideArms) OneBodyRig.Reach(arm, outsideRoot.transform, armDrop, armTuck, armTuckSide);
-        // The eyes look where the pitch slider says; the view model is squashed to its own field of view.
+        // The eyes look where the pitch slider says; the view model is squashed to its own field of view. A clip's
+        // view curves (OneBodyRig.ViewCurves) place the arms in the view and change that field of view, as in the game.
         fpVisuals.localRotation = Quaternion.Euler(lookPitch, 0f, 0f);
-        float k = Mathf.Tan(cameraFov * .5f * Mathf.Deg2Rad) / Mathf.Tan(viewModelFov * .5f * Mathf.Deg2Rad);
+        if (fpArms != null) fpArms.SetLocalPositionAndRotation(new Vector3(ViewCurve(4), ViewCurve(0), ViewCurve(1)), Quaternion.Euler(ViewCurve(2), ViewCurve(5), ViewCurve(6)));
+        float model = viewModelFov + ViewCurve(3);
+        float k = Mathf.Tan(cameraFov * .5f * Mathf.Deg2Rad) / Mathf.Tan(model * .5f * Mathf.Deg2Rad);
         fpVisuals.localScale = new Vector3(k, k, 1f);
+    }
+
+    float sampledTime;
+    Transform fpArms;
+
+    float ViewCurve(int index)
+    {
+        if (clip == null) return 0f;
+        var curve = AnimationUtility.GetEditorCurve(clip, EditorCurveBinding.FloatCurve("", typeof(Animator), OneBodyRig.ViewCurves[index]));
+        return curve != null ? curve.Evaluate(sampledTime) : 0f;
     }
 }
