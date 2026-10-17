@@ -226,6 +226,7 @@ public partial class IntroController : Singleton<IntroController>
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(1.5f, .8f);
         yield return new WaitForSeconds(2.3f);
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(IntroFlag);
+        CloseRoomQuests();
         // Killed by the rat or the slime before the end: that is remarked on first.
         if (endedByFinale) yield return SayAll(new[] { diedAtEnd });
         else if (diedEarly != null)
@@ -291,6 +292,7 @@ public partial class IntroController : Singleton<IntroController>
         if (ProgressionManager.HasInstance)
         {
             ProgressionManager.Instance.SetFlag(IntroFlag);
+            CloseRoomQuests();
             ProgressionManager.Instance.SetFlag(DungeonMasterRemarks.SatFlag);
             ProgressionManager.Instance.SetFlag(RoomOpenFlag);
         }

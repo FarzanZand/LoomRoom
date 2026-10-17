@@ -87,6 +87,14 @@ public partial class IntroController
         foreach (var q in roomQuests) if (q != null && !string.IsNullOrEmpty(q.id)) meta.CompleteQuest(q.id);
     }
 
+    // Every room quest of the practice run is closed when the intro ends: the finale stops the coroutines (the watcher
+    // above among them) before it could close them itself.
+    void CloseRoomQuests()
+    {
+        if (roomQuests == null || !ProgressionManager.HasInstance) return;
+        foreach (var q in roomQuests) if (q != null && !string.IsNullOrEmpty(q.id)) ProgressionManager.Instance.CompleteQuest(q.id);
+    }
+
     IEnumerator SayDone(TutorialStep step)
     {
         if (step.doneLine != null && !string.IsNullOrEmpty(step.doneLine.text)) yield return SayAll(new[] { step.doneLine });
@@ -130,7 +138,7 @@ public partial class IntroController
     public bool StairsReached()
     {
         if (!running || !PracticeRunning) return false;
-        if (!finale) { fromStairs = true; StopAllCoroutines(); PopDialogue(); StartCoroutine(Finale()); }
+        if (!finale) { fromStairs = true; StopAllCoroutines(); PopDialogue(); CloseRoomQuests(); StartCoroutine(Finale()); }
         return true;
     }
 
