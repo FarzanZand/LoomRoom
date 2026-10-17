@@ -172,6 +172,8 @@ public partial class IntroController : Singleton<IntroController>
     // Called by WorldManager on the first frame. False: the normal wake-up plays.
     public bool TryPlay()
     {
+        // Co-op: the host's intro already started here (PlayShared, the moment the lobby ended).
+        if (running) return true;
         if (Application.isEditor && skipInEditor && !CoopEditorTesting.NewGame) return false;
         if (!PlayerManager.HasInstance || seat == null) return false;
         room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);

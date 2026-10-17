@@ -215,8 +215,11 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         menuHost = StartFromMenu == MenuStart.Host;
         menuJoin = StartFromMenu == MenuStart.Join && !string.IsNullOrWhiteSpace(MenuJoinCode) ? MenuJoinCode.Trim() : null;
         StartFromMenu = MenuStart.None; MenuJoinCode = null;
-        MenuLobby = menuHost || menuJoin != null;
+        MenuLobby = fromMenuLobby = menuHost || menuJoin != null;
     }
+
+    // This game was opened from the main menu's co-op menu: its lobby came first, so a new game's intro asks nothing more.
+    bool fromMenuLobby;
 
     // A game opened from the main menu's co-op menu waits in the lobby before anything happens: the co-op screen over
     // a blank backdrop (CoopMenuUI), no wake-up and no one in the room (WorldManager waits), until the host's Begin
@@ -1076,6 +1079,14 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         }
         if (CoopEditorTesting.Requested) yield break;
 #endif
+        // Opened from the main menu's co-op menu: the lobby there is the choice. The host's Begin starts the intro for
+        // everyone; a guest plays the host's when it starts.
+        if (fromMenuLobby)
+        {
+            while (MenuLobby || LocalInLobby) yield return null;
+            if (Connected && IsHost) BeginSharedIntro();
+            yield break;
+        }
         // A plain new game goes straight to its intro; the choice is only for one started from the menu's Co-op
         // button (or a build started with -host or -join).
         if (!CoopFromMenu && !CommandLineCoop && !Connected && !Starting && !(network != null && network.IsListening)) yield break;

@@ -299,6 +299,8 @@ public class CoopAvatar : MonoBehaviour
             if (prm.type == AnimatorControllerParameterType.Trigger) continue;
             if (i >= values.Length) break;
             float v = values[i++];
+            // Driven by the clips' own curves here as on the sender: setting one only warns.
+            if (animator.IsParameterControlledByCurve(prm.nameHash)) continue;
             if (prm.type == AnimatorControllerParameterType.Float) animator.SetFloat(prm.nameHash, v);
             else if (prm.type == AnimatorControllerParameterType.Int) animator.SetInteger(prm.nameHash, Mathf.RoundToInt(v));
             else animator.SetBool(prm.nameHash, v > .5f);

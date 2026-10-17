@@ -168,6 +168,10 @@ public static class CoopMenuBuilder
     {
         var box = ui.transform.Find("Co-op screen/Panel");
         if (box == null) { Debug.LogWarning("[Coop] The co-op screen has no Co-op screen/Panel."); return; }
+        // The pause panel it was copied from lays its buttons out in a column; this screen places its own.
+        foreach (var c in box.GetComponents<LayoutGroup>()) Object.DestroyImmediate(c);
+        foreach (var c in box.GetComponents<ContentSizeFitter>()) Object.DestroyImmediate(c);
+        foreach (Transform child in box) foreach (var c in child.GetComponents<LayoutElement>()) Object.DestroyImmediate(c);
         ((RectTransform)box).sizeDelta = new Vector2(620, 700);
         var game = box.Find("Game page");
         var body = box.GetComponentsInChildren<TMP_Text>(true).FirstOrDefault(t => t.name == "Status");
@@ -271,15 +275,16 @@ public static class CoopMenuBuilder
     static void PartyHud(Transform canvas)
     {
         var existing = Object.FindAnyObjectByType<PartyHudUI>(FindObjectsInactive.Include);
-        if (existing != null) { JoinCodeLabel(existing); return; }
+        // A half-built set (a failed build) is made again.
+        if (existing != null && existing.transform.childCount < 3) { Object.DestroyImmediate(existing.gameObject); existing = null; }
+        if (existing != null) { PlaceParty((RectTransform)existing.transform); JoinCodeLabel(existing); return; }
         var vitals = canvas.Find("PlayerVitals");
         var health = vitals != null ? vitals.Find("Health") : null;
         if (health == null) { Debug.LogWarning("[Coop] No Canvas/PlayerVitals/Health to make the party rows from."); return; }
         var party = new GameObject("Party", typeof(RectTransform));
         party.transform.SetParent(canvas, false);
         var rt = (RectTransform)party.transform;
-        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0, 1);
-        rt.anchoredPosition = new Vector2(32, -40); rt.sizeDelta = new Vector2(240, 180);
+        PlaceParty(rt);
         var ui = party.AddComponent<PartyHudUI>();
         var so = new SerializedObject(ui);
         var list = so.FindProperty("rows");
@@ -293,7 +298,10 @@ public static class CoopMenuBuilder
             br.anchorMin = br.anchorMax = new Vector2(0, 1); br.pivot = new Vector2(0, 1);
             br.anchoredPosition = new Vector2(0, -50 - i * 56); br.sizeDelta = new Vector2(220, 18);
             var trail = bar.transform.Find("Trail"); if (trail != null) Object.DestroyImmediate(trail.gameObject);
-            var label = bar.transform.Find("HEALTH").GetComponent<TMP_Text>();
+            // The bar's own label (gone from the newer health bar: then a copy of its value text).
+            var labelT = bar.transform.Find("HEALTH");
+            if (labelT == null) { labelT = Object.Instantiate(bar.transform.Find("Value").gameObject, bar.transform).transform; ((RectTransform)labelT).anchorMin = ((RectTransform)labelT).anchorMax = ((RectTransform)labelT).pivot = new Vector2(0, 0); ((RectTransform)labelT).anchoredPosition = new Vector2(0, 20); ((RectTransform)labelT).sizeDelta = new Vector2(220, 24); labelT.GetComponent<TMP_Text>().alignment = TextAlignmentOptions.Left; }
+            var label = labelT.GetComponent<TMP_Text>();
             label.gameObject.name = "Name"; label.text = $"Player {i + 2}";
             label.gameObject.SetActive(true);   // the health bar's own label is hidden
             if (bodyFont != null) label.font = bodyFont;
@@ -309,6 +317,13 @@ public static class CoopMenuBuilder
         }
         so.ApplyModifiedPropertiesWithoutUndo();
         JoinCodeLabel(ui);
+    }
+
+    // Lower left above the player's own bars (the quest log has the top left).
+    static void PlaceParty(RectTransform rt)
+    {
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0, 0);
+        rt.anchoredPosition = new Vector2(32, 150); rt.sizeDelta = new Vector2(240, 180);
     }
 
     // The host's join code, a line above the rows (from the first row's name label).
