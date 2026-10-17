@@ -120,6 +120,33 @@ public partial class DungeonGenerator
         return cells;
     }
 
+    // A turned or smaller room can put a doorway where the template had a wall: any prop the template set down that
+    // stands in a way in or out is taken out, so it can never cut the room off (a barrel
+    // stack in the shop did on about one floor in sixteen). Kit pieces, sockets and characters are left alone.
+    static readonly Collider[] openingHits=new Collider[32];
+    void ClearOpenings(GameObject instance,int room)
+    {
+        Physics.SyncTransforms();
+        var gone=new System.Collections.Generic.HashSet<GameObject>();
+        foreach(var cell in Layout.RoomCells(room))
+        {
+            bool doorway=false;
+            foreach(var d in DungeonLayout.Neighbours){var o=cell+d;if(Layout.InBounds(o) && Layout.floor[o.x,o.y] && !Layout.InRoom(room,o))doorway=true;}
+            if(!doorway)continue;
+            int n=Physics.OverlapBoxNonAlloc(Cell(cell)+Vector3.up*1f,new Vector3(.5f,.6f,.5f),openingHits,Quaternion.identity,~0,QueryTriggerInteraction.Ignore);
+            for(int i=0;i<n;i++)
+            {
+                var t=openingHits[i].transform;
+                if(!t.IsChildOf(instance.transform) || t==instance.transform)continue;
+                while(t.parent!=instance.transform)t=t.parent;
+                if(t.GetComponentInChildren<DungeonKitBlock>(true)!=null || t.GetComponentInChildren<DungeonKitPiece>(true)!=null
+                   || t.GetComponentInChildren<DungeonSocket>(true)!=null || t.GetComponentInChildren<Character>(true)!=null || t.GetComponentInChildren<DungeonFloorCut>(true)!=null)continue;
+                gone.Add(t.gameObject);
+            }
+        }
+        foreach(var go in gone)DestroyImmediate(go); // navigation is baked this frame
+    }
+
     // A taller room (Height Tiles over 1): what hangs from a one-tile ceiling (a hanging chain) is lifted by the extra
     // height so it still hangs from the ceiling, and a moonlit room's patch of night sky stays above the ceiling.
     void HangFromCeiling(GameObject instance,DungeonRoomTemplate template)
@@ -159,6 +186,7 @@ public partial class DungeonGenerator
             if(!Layout.InRoom(index,cell) || (piece.removeIfBlocking && lanes.Contains(cell)))
                 DestroyImmediate(piece.gameObject); // navigation is baked this frame
         }
+        ClearOpenings(instance,index);
         // Pits and sunken courts take their floor out first.
         BuildCuts(instance,index);
         // The floor's damage and prices on the room's own traps, shrines and pits (DungeonRoomFeatures).

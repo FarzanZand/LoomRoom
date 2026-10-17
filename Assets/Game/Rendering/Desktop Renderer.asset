@@ -106,7 +106,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c05f96456c87f04ab19f30f8bf011df, type: 3}
   m_Name: Pixel Objects
   m_EditorClassIdentifier: Assembly-CSharp::PixelObjectFeature
-  m_Active: 1
+  m_Active: 0
   compositeShader: {fileID: 4800000, guid: 40f9320acc9b0934a83af85dea47a38e, type: 3}
 --- !u!114 &7833122117494664109
 MonoBehaviour:
