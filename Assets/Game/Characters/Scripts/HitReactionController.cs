@@ -14,6 +14,7 @@ public class HitReactionController : MonoBehaviour
     [SerializeField] float attackSpeed = 60f;
     Character character;
     readonly HashSet<Transform> bones = new();
+    Transform sway;   // the bone the upper body leans from (Spine; the whole model for other rigs)
     readonly List<Reaction> reactions = new();
     CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
 
@@ -38,7 +39,7 @@ public class HitReactionController : MonoBehaviour
             Transform model = null;
             foreach (Transform child in animator.transform)
                 if (child.GetComponentInChildren<Renderer>() != null && child.GetComponent<Character>() == null) { model = child; break; }
-            if (model != null && model != animator.transform && model.GetComponent<Character>() == null) bones.Add(model);
+            if (model != null && model != animator.transform && model.GetComponent<Character>() == null) { bones.Add(model); sway = model; }
             return;
         }
         // Exclude hips/root, fingers and helper transforms so recoil cannot propel or twist the actor.
@@ -52,6 +53,7 @@ public class HitReactionController : MonoBehaviour
             var bone = animator.GetBoneTransform(id);
             if (bone != null) bones.Add(bone);
         }
+        sway = animator.GetBoneTransform(HumanBodyBones.Spine);
     }
     void OnEnable()
     {
@@ -65,9 +67,16 @@ public class HitReactionController : MonoBehaviour
     void OnDamaged(DamageInfo hit)
     {
         bool heavy = hit.Heavy && character.IsEnemy && Tuning != null;
-        if (character.IsAlive && !hit.Blocked && hit.Amount > 0)
-            ReactToHit(hit.HitPoint, hit.Direction, heavy ? Tuning.heavyRecoilMultiplier : 1f,
-                heavy ? Tuning.heavyRecoilDurationMultiplier : 1f);
+        if (!character.IsAlive || hit.Blocked || hit.Amount <= 0) return;
+        // Enemies reel the way the blade travelled, as hard as Hit Impact Strength says, and lean away with it.
+        bool impact = character.IsEnemy && Tuning != null;
+        var direction = impact ? Tuning.ImpactDirection(hit) : hit.Direction;
+        // ... and as hard as the weapon type's Stagger Strength says (CombatManager.StaggerStrengthFor).
+        float strength = (heavy ? Tuning.heavyRecoilMultiplier : 1f) * (impact ? Tuning.hitImpactStrength * Tuning.StaggerStrengthFor(hit.Weapon) : 1f);
+        if (strength <= 0f) return;
+        float duration = heavy ? Tuning.heavyRecoilDurationMultiplier : 1f;
+        ReactToHit(hit.HitPoint, direction, strength, duration);
+        if (impact && sway != null) Lean(direction, Tuning.impactBodySway * strength, duration);
     }
     public void ReactToHit(Vector3 point, Vector3 direction, float intensity = 1f, float durationScale = 1f)
     {
@@ -87,7 +96,7 @@ public class HitReactionController : MonoBehaviour
             var axis=Vector3.Cross(point-pivot,direction.normalized);
             if (axis.sqrMagnitude < .0001f) axis=Vector3.Cross(Vector3.up,direction);
             if (axis.sqrMagnitude < .0001f) axis=closest.right;
-            float angle=Mathf.Clamp((Tuning != null ? Tuning.hitReactionAngle : reactionAngle)*intensity,0,45)*strength;
+            float angle=Mathf.Clamp((Tuning != null ? Tuning.hitReactionAngle : reactionAngle)*intensity,0,60)*strength;
             var reaction = Find(closest);
             if (reaction == null) { reaction = new Reaction { bone = closest }; reactions.Add(reaction); }
             reaction.durationScale = Mathf.Max(1f, durationScale);
@@ -96,6 +105,18 @@ public class HitReactionController : MonoBehaviour
             closest=closest.parent;
         }
     }
+    // The upper body (or a non-humanoid's whole model) tips away along the blow, from the Spine.
+    void Lean(Vector3 direction, float angle, float durationScale)
+    {
+        if (!isActiveAndEnabled || angle <= 0f || direction.sqrMagnitude < .0001f) return;
+        var axis = Vector3.Cross(Vector3.up, direction.normalized);
+        if (axis.sqrMagnitude < .0001f) return;
+        var reaction = Find(sway);
+        if (reaction == null) { reaction = new Reaction { bone = sway }; reactions.Add(reaction); }
+        reaction.durationScale = Mathf.Max(reaction.durationScale, durationScale);
+        reaction.target = Quaternion.RotateTowards(Quaternion.identity, Quaternion.AngleAxis(Mathf.Min(angle, 35f), axis.normalized) * reaction.target, 45f);
+    }
+
     Reaction Find(Transform bone)
     {
         foreach (var r in reactions) if (r.bone == bone) return r;

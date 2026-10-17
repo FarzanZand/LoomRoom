@@ -123,6 +123,22 @@ public class Hitbox : MonoBehaviour
             matrix.SetColumn(3, matrix.GetColumn(3) + (Vector4)(extension * (reach - 1f)));
             count = Overlap(matrix, rotation);
             for(int i=0;i<count;i++) ProcessHit(overlapBuffer[i]);
+            // The player's reach is the same for every swing and weapon: out from the chest to playerMeleeReach, the
+            // way the blade is sweeping now.
+            if (owner is Player && CombatManager.HasInstance && CombatManager.Instance.playerMeleeReach > 0f)
+            {
+                var tuning = CombatManager.Instance;
+                var chest = owner.transform.position + Vector3.up * 1.1f;
+                var way = queryCenter - chest; way.y = 0f;
+                if (way.sqrMagnitude > .0001f)
+                {
+                    way.Normalize();
+                    var near = chest + way * tuning.playerMeleeReachRadius;
+                    var far = chest + way * Mathf.Max(tuning.playerMeleeReachRadius, tuning.playerMeleeReach - tuning.playerMeleeReachRadius);
+                    count = Physics.OverlapCapsuleNonAlloc(near, far, tuning.playerMeleeReachRadius, overlapBuffer, hitMask, QueryTriggerInteraction.Ignore);
+                    for(int i=0;i<count;i++) ProcessHit(overlapBuffer[i]);
+                }
+            }
         }
         previousPosition=t.position; previousRotation=t.rotation;
     }
@@ -194,7 +210,12 @@ public class Hitbox : MonoBehaviour
         if (CombatManager.HasInstance) force = CombatManager.Instance.ScaleKnockback(force);
 
         if(heavy && CombatManager.HasInstance)
-        { baseDamage*=CombatManager.Instance.heavyDamageMultiplier; force*=CombatManager.Instance.heavyKnockbackMultiplier; }
+        {
+            // The combo's finisher has its own multiplier (CombatManager.comboFinisherDamage); a charged heavy attack keeps the heavy one.
+            bool finisher = owner is Player striker && striker.Combat != null && striker.Combat.ComboFinisher;
+            baseDamage *= finisher ? CombatManager.Instance.comboFinisherDamage : CombatManager.Instance.heavyDamageMultiplier;
+            force *= CombatManager.Instance.heavyKnockbackMultiplier;
+        }
         var weapon = owner is Player wielder && wielder.Equipment != null ? wielder.Equipment.Get(EquipmentSlot.RightHand) : null;
         // The weapon's damage range: each hit lands anywhere within its spread (5-9 for a 7 with 2).
         if (weapon != null && weapon.damageSpread > 0) baseDamage = Mathf.Max(1f, baseDamage + UnityEngine.Random.Range(-weapon.damageSpread, weapon.damageSpread + 1));

@@ -174,6 +174,8 @@ public class TableLevelData : ScriptableObject
     public DungeonShapeChoice[] roomShapes = DefaultShapes();
     [TabGroup(Tabs, Layout), ShowIf(D), AssetsOnly, Tooltip("Room template prefab the player starts in on the first floor and on the first floor of each new biome. Give its footprint one door cell: the only way out, which the player faces from the centre. Empty uses an ordinary entrance room.")]
     public GameObject startingRoom;
+    [TabGroup(Tabs, Layout), ShowIf(D), Tooltip("A pocket: a room reached through a portal (PortalArch), built beside the floor the player came from. No ladder in and no stairs out; its own portal gate leads back.")]
+    public bool pocket;
     [TabGroup(Tabs, Layout), ShowIf(D), AssetsOnly, Tooltip("The starting room's chest always holds two things: one piece of gear rolled from the floor's loot, and this (a potion). Its chest is never trapped. Empty: an ordinary chest.")]
     public ItemData startingChestConsumable;
 
@@ -449,5 +451,6 @@ public class TableLevelData : ScriptableObject
         return guardian != null && guardian.enabled && guardian.boss != null && floorInBiome == biomeFloors ? guardian : null;
     }
 
-    public float MerchantChance(int floor) { var biome = Biome(floor); return biome != null ? biome.merchantChance : 0; }
+    // A pocket (one room behind a portal) never has a merchant.
+    public float MerchantChance(int floor) { var biome = Biome(floor); return pocket || biome == null ? 0 : biome.merchantChance; }
 }

@@ -24,12 +24,6 @@ public static class BossKneelSetup
         "Left Arm Down-Up:=-0.8;Left Arm Front-Back:=0.6;Left Forearm Stretch:=0.3;" +
         "Right Arm Down-Up:=-0.85;Right Arm Front-Back:=0.2;Right Forearm Stretch:=0.7";
 
-    [MenuItem("Tools/LoomRoom/Characters/Set Up Boss Kneel")]
-    public static void SetUpMenu() => Debug.Log("[BossKneelSetup] " + SetUp(false));
-
-    [MenuItem("Tools/LoomRoom/Characters/Set Up Boss Kneel (Rewrite Clip)")]
-    public static void RewriteMenu() => Debug.Log("[BossKneelSetup] " + SetUp(true));
-
     public static string SetUp(bool rewriteClip, string pose = null)
     {
         var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(ClipPath);

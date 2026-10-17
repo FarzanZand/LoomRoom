@@ -45,6 +45,13 @@ public static class CoopWorld
         CharacterStats.NetworkIntercept = Intercept;
         Perception.ChooseTarget = ChooseTarget;
         Character.Spawned += OnCharacterSpawned;
+        SkeletonParty.AnySpoiled += OnPartySpoiled;
+    }
+
+    static void OnPartySpoiled(SkeletonParty party)
+    {
+        if (Applying || !Coop.Running || party == null) return;
+        Send(new CoopEvent { kind = CoopEventKind.PartySpoiled, position = party.transform.position });
     }
 
     public static void Unhook()
@@ -54,6 +61,7 @@ public static class CoopWorld
         CharacterStats.NetworkIntercept = null;
         Perception.ChooseTarget = null;
         Character.Spawned -= OnCharacterSpawned;
+        SkeletonParty.AnySpoiled -= OnPartySpoiled;
         Clear();
     }
 
@@ -586,7 +594,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: return;
+            case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: return;
         }
         history.Add(e);
     }
@@ -662,6 +670,21 @@ public static class CoopWorld
         if (Coop.IsHost && sender != NetworkManager.ServerClientId && e.kind != CoopEventKind.RoomDoor) { CoopMessages.ToGuests(CoopMessages.Event, e, NetworkDelivery.ReliableSequenced, sender); Record(e); }
         if (e.kind == CoopEventKind.AtExit) { if (Coop.IsHost) MultiplayerManager.Instance.PlayerAtExit(e.slot); return; }
         if (e.kind == CoopEventKind.Ping) { if (e.floorKey == FloorKey) CoopPing.Show(e.slot, e.position, e.item.ToString()); return; }
+        if (e.kind == CoopEventKind.PartySpoiled)
+        {
+            if (e.floorKey != FloorKey) return;
+            SkeletonParty nearest = null; float best = 9f;
+            foreach (var party in Object.FindObjectsByType<SkeletonParty>(FindObjectsSortMode.None))
+            {
+                float d = Vector3.Distance(party.transform.position, e.position);
+                if (d < best) { best = d; nearest = party; }
+            }
+            if (nearest == null) return;
+            Applying = true;
+            try { nearest.SpoilFromNetwork(); }
+            finally { Applying = false; }
+            return;
+        }
         if (e.kind == CoopEventKind.RoomDoor)
         {
             if (Coop.IsHost && sender != NetworkManager.ServerClientId) CoopMessages.ToGuests(CoopMessages.Event, e, NetworkDelivery.ReliableSequenced, sender);

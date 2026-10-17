@@ -17,10 +17,19 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
     [TextArea] public string clueFoundMessage = "You found a note: shield, flame, hand. It matches the tiles on the table in the room.";
     public string[] symbols = { "Shield", "Flame", "Hand" };
     public int[] solution = { 0, 1, 2 };
+    [Header("Missing tile")]
+    [Tooltip("The symbol whose tile is missing until the player brings it back from the dungeon (ProgressionManager > Missing tile). -1: none missing.")]
+    public int missingSymbol = 1;
+    [Tooltip("That symbol's button (hidden until the tile is placed).")]
+    public GameObject missingButton;
+    public string missingMessage = "One tile is missing. It must be somewhere down there.";
+    public string placedMessage = "You put the tile in its place.";
 
     int step;
 
-    public bool Revealed => ProgressionManager.HasInstance && ProgressionManager.Instance.GetFlag(progressFlag) >= revealFloor;
+    public bool Revealed => ProgressionManager.HasInstance && (ProgressionManager.Instance.GetFlag(progressFlag) >= revealFloor || ProgressionManager.Instance.TileState > 0);
+    // The missing tile is in (or nothing is missing).
+    bool Complete => missingSymbol < 0 || !ProgressionManager.HasInstance || ProgressionManager.Instance.missingTile == null || ProgressionManager.Instance.TileState == 2;
     public bool Solved => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(unlockFlag);
     public string Prompt => Solved ? $"{unlockedClassName} unlocked" : "Puzzle";
 
@@ -35,12 +44,13 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
     void OnFlag(string key, int value)
     {
         if (key == progressFlag && value == revealFloor && !Solved) MessageLog.Post(clueFoundMessage, MessageKind.Lore);
-        if (key == progressFlag || key == unlockFlag) Refresh();
+        if (key == progressFlag || key == unlockFlag || key == ProgressionManager.TileFlag) Refresh();
     }
 
     void Refresh()
     {
         if (puzzleContents != null) puzzleContents.SetActive(Revealed);
+        if (missingButton != null) missingButton.SetActive(Complete);
         if (inscription != null) inscription.text = Solved ? unlockedClassName.ToUpperInvariant() : Revealed ? $"{step} / {solution.Length}" : "";
     }
 
@@ -49,7 +59,15 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
     public void Interact(Character who)
     {
         if (!CanInteract(who)) return;
-        string text = Solved ? $"{unlockedClassName} is unlocked." : clue;
+        // Carrying the tile: it goes in.
+        if (!Solved && ProgressionManager.Instance.TileState == 1)
+        {
+            ProgressionManager.Instance.PlaceTile();
+            NotificationUI.Show(placedMessage);
+            MessageLog.Post(placedMessage, MessageKind.Good);
+            return;
+        }
+        string text = Solved ? $"{unlockedClassName} is unlocked." : Complete ? clue : clue + " " + missingMessage;
         NotificationUI.Show(text);
         MessageLog.Post(text, MessageKind.Lore);
     }
@@ -57,6 +75,7 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
     public void Press(int symbol)
     {
         if (!Revealed || Solved || solution.Length == 0) return;
+        if (!Complete) { NotificationUI.Show(missingMessage); return; }
         if (solution[step] != symbol) { step = 0; Refresh(); NotificationUI.Show("Wrong order. Start again."); return; }
         step++;
         Refresh();

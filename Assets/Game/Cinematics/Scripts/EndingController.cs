@@ -57,7 +57,8 @@ public class EndingController : MonoBehaviour
     {
         Running = true; leaving = false;
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.AddToFlag(WinsFlag, 1);
-        if (dungeonMaster != null) dungeonMaster.SetActive(false);
+        // The DM stays in his chair through the ending (the user's call): the table still needs him (PrototypeEnd).
+        if (dungeonMaster != null) dungeonMaster.SetActive(true);
         if (lighting == null) lighting = LightingManager.Instance;
         if (lighting != null) { night = lighting.Capture(); if (mood != null) lighting.BlendToMood(mood, 0f); }
         if (WorldManager.HasInstance)
@@ -104,7 +105,6 @@ public class EndingController : MonoBehaviour
             WorldManager.Instance.SetRoomExit(exitBefore);
         }
         if (lighting != null) lighting.Restore(night, 0f);
-        if (dungeonMaster != null) dungeonMaster.SetActive(true);
         Running = false;
         yield return new WaitForSecondsRealtime(1f);
         if (ownsCutscene)

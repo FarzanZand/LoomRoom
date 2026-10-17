@@ -11,8 +11,13 @@ public class PlayerViewPresentation : MonoBehaviour
     [Tooltip("The arms and held items are drawn as if through this field of view, whatever the world camera uses (the usual first-person view model). 0 = the camera's own.")]
     [Range(0, 120)] public float viewModelFieldOfView = 70f;
     Player player;
+    OneBodyRig body;
 
-    void Awake() => player = GetComponentInParent<Player>();
+    void Awake()
+    {
+        player = GetComponentInParent<Player>();
+        body = player != null ? player.GetComponentInChildren<OneBodyRig>(true) : null;
+    }
     void OnEnable() => CinemachineCore.CameraUpdatedEvent.AddListener(FollowCamera);
     void OnDisable() => CinemachineCore.CameraUpdatedEvent.RemoveListener(FollowCamera);
 
@@ -38,8 +43,10 @@ public class PlayerViewPresentation : MonoBehaviour
     void FitViewModel(Camera output)
     {
         float k = 1f;
-        if (viewModelFieldOfView > 0f && output.fieldOfView > 0f && !output.orthographic)
-            k = Mathf.Tan(output.fieldOfView * .5f * Mathf.Deg2Rad) / Mathf.Tan(viewModelFieldOfView * .5f * Mathf.Deg2Rad);
+        // A clip can widen or narrow it (OneBodyRig.ViewFovOffset, the converted Unreal combo).
+        float viewModel = viewModelFieldOfView > 0f && body != null ? viewModelFieldOfView + body.ViewFovOffset : viewModelFieldOfView;
+        if (viewModel > 0f && output.fieldOfView > 0f && !output.orthographic)
+            k = Mathf.Tan(output.fieldOfView * .5f * Mathf.Deg2Rad) / Mathf.Tan(viewModel * .5f * Mathf.Deg2Rad);
         transform.localScale = new Vector3(k, k, 1f);
     }
 

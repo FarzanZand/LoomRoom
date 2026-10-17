@@ -82,19 +82,6 @@ MonoBehaviour:
   - Well played. Shall we go deeper?
   - Take the stairs down when you are ready.
   - That one hit hard. You should drink something.
-  mixer: {fileID: 24100000, guid: 171c2312a45918546ad66f788389635e, type: 2}
-  sfxPoolSize: 48
-  uiPoolSize: 8
-  maxSameClip: 3
-  sameClipGap: 0.05
-  logCutSounds: 1
-  sfxMinDistance: 3.5
-  sfxMaxDistance: 40
-  defaultMasterVolume: 1
-  defaultMusicVolume: 0.8
-  defaultSfxVolume: 1
-  defaultUiVolume: 1
-  defaultFadeDuration: 1.5
   sfxLibrary:
   - key: groundhog
     clip: {fileID: 8300000, guid: cc780e136a3526e4fa8acbc0a20585af, type: 3}
@@ -151,9 +138,9 @@ MonoBehaviour:
     pitch: 1
   - key: levelUp
     source: 0
-    clip: {fileID: 8300000, guid: 85c19deaf97648e41ad99a308d860bd0, type: 3}
+    clip: {fileID: 8300000, guid: b11ec1361e37a524f91ffdad18092b02, type: 3}
     data: {fileID: 0}
-    volume: 0.8
+    volume: 0.9
     pitch: 1
   - key: shopTrade
     source: 0
@@ -167,4 +154,41 @@ MonoBehaviour:
     data: {fileID: 11400000, guid: bcdd07d533031f047aae4c29c037f61b, type: 2}
     volume: 1
     pitch: 1
+  - key: tallyTotal
+    source: 1
+    clip: {fileID: 0}
+    data: {fileID: 11400000, guid: 92adb4722dd2e7942ad974d6f34f4fb3, type: 2}
+    volume: 1
+    pitch: 1
+  - key: tallyBank
+    source: 1
+    clip: {fileID: 0}
+    data: {fileID: 11400000, guid: 6f8a2d581f773484988e485ccb902921, type: 2}
+    volume: 1
+    pitch: 1
+  - key: tallySpoils
+    source: 1
+    clip: {fileID: 0}
+    data: {fileID: 11400000, guid: 879689542510df943926a85e6d58fb82, type: 2}
+    volume: 1
+    pitch: 1
+  - key: tallyKills
+    source: 1
+    clip: {fileID: 0}
+    data: {fileID: 11400000, guid: 20cee5f253cb39b45be195b341b740ea, type: 2}
+    volume: 1
+    pitch: 1
+  mixer: {fileID: 24100000, guid: 171c2312a45918546ad66f788389635e, type: 2}
+  sfxPoolSize: 48
+  uiPoolSize: 8
+  maxSameClip: 3
+  sameClipGap: 0.05
+  logCutSounds: 1
+  sfxMinDistance: 3.5
+  sfxMaxDistance: 40
+  defaultMasterVolume: 1
+  defaultMusicVolume: 0.8
+  defaultSfxVolume: 1
+  defaultUiVolume: 1
+  defaultFadeDuration: 1.5
   ambienceFadeDuration: 2

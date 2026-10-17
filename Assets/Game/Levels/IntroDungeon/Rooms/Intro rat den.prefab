@@ -48,6 +48,7 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &3462669108684496043
@@ -98,6 +99,7 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   archer: 0
+  faceWall: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &8832094108586682034
@@ -174,7 +176,7 @@ MonoBehaviour:
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
-  roomEvent: 3
+  roomEvent: 1
   replaceGeneratedTorches: 1
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -228,6 +230,7 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &9171616304162710813
@@ -278,6 +281,7 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   archer: 0
+  faceWall: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1001 &675972584411326207

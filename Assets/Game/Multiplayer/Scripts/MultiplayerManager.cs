@@ -205,6 +205,10 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         // Every co-op window keeps playing while another one has the focus.
         Application.runInBackground = true;
         if (network == null) network = FindAnyObjectByType<NetworkManager>();
+        // Room in the transport's queues for four players' snapshots, arms and events at once (128 filled up once,
+        // on a guest while a floor was loading).
+        var transport = network != null ? network.GetComponent<UnityTransport>() : null;
+        if (transport != null && transport.MaxPacketQueueSize < 512) transport.MaxPacketQueueSize = 512;
         SyncRules();
         CommandLine();
         // Read here like the command line, so a new game's intro knows to wait for the connection.
@@ -482,7 +486,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (!network.StartClient()) Fail("Could not join.");
     }
 
-    const int JoinRetries = 3;
+    const int JoinRetries = 4;
     IEnumerator RetryJoin()
     {
         Debug.Log($"[Coop] The connection failed; trying again ({joinRetries}/{JoinRetries}).");

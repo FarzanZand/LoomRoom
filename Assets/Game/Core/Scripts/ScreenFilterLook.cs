@@ -4,8 +4,8 @@ using UnityEngine.Rendering;
 
 // One camera filter (ScreenFilter) as ScreenManager draws it: settings for the Retro Screen pass (Rendering/RetroScreen.shader)
 // and an optional volume profile laid over the scene's own. Runs after the world and its post-processing and before the
-// UI, so materials, pixel lighting, texel sizes and the HUD are never touched. Made by Tools > LoomRoom > Rendering >
-// Build Screen Filters (keeps existing assets); tune the numbers here freely.
+// UI, so materials, pixel lighting, texel sizes and the HUD are never touched. Made once by ScreenFilterSetup;
+// tune the numbers here freely.
 [CreateAssetMenu(menuName = "LoomRoom/Screen Filter Look", fileName = "Screen filter")]
 public class ScreenFilterLook : ScriptableObject
 {

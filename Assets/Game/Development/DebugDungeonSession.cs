@@ -64,6 +64,17 @@ public class DebugDungeonSession : MonoBehaviour
         if (settings != null && settings.startingClass != null) player.GetComponent<AdventurerProgress>().selectedClass = settings.startingClass;
         loader.Load(level);
         if (CurrentMode == Mode.Boss) yield return OntoStage(loader, player);
+        if (CurrentMode == Mode.Arena) yield return GiveStartingItems(loader, player);
+    }
+
+    // Arena: once the floor is built (the run has handed out the class's kit), the settings' extra items go in the bag.
+    IEnumerator GiveStartingItems(TableLevelLoader loader, Player player)
+    {
+        if (settings == null || settings.startingItems == null || settings.startingItems.Length == 0) yield break;
+        for (float t = 0; t < 10f && (loader.Busy || loader.Dungeon == null); t += Time.deltaTime) yield return null;
+        yield return null;
+        foreach (var item in settings.startingItems)
+            if (item != null && player.Bag != null && !player.Bag.TryAdd(item)) Debug.LogWarning($"Debug arena: no room in the bag for {item.itemName}.");
     }
 
     static TableLevelData BossLevel
@@ -140,14 +151,32 @@ public class DebugDungeonSession : MonoBehaviour
         }
     }
 
+    // The settings' portal 5 m behind the player, facing them, leading to the settings' room (the Skeleton Party room).
+    static void PlacePortal(DungeonGenerator dungeon)
+    {
+        if (settings.portal == null || settings.portalRoom == null) return;
+        var back = dungeon.SpawnRotation * Vector3.back;
+        var pos = dungeon.SpawnPoint + back * 5f;
+        if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) pos = hit.position;
+        var go = Instantiate(settings.portal, pos, Quaternion.LookRotation(-back), dungeon.transform);
+        // A kit arch outside a generated room: its painted model stands in for its blocks.
+        foreach (var piece in go.GetComponentsInChildren<DungeonKitPiece>(true)) piece.Choose(true, 3f);
+        foreach (var preview in go.GetComponentsInChildren<Transform>(true)) if (preview != null && preview.name == "Kit preview") Destroy(preview.gameObject);
+        var portal = go.GetComponent<PortalArch>();
+        portal.room = settings.portalRoom;
+        portal.wayBack = settings.portalWayBack;
+    }
+
     // The arena brings no enemies of its own: the settings' list stands in an arc in front of the player,
     // each just outside its detection radius, and stays put until it notices them.
     public static void ConfigureEnemies(DungeonGenerator dungeon)
     {
-        if (!Active || CurrentMode != Mode.Arena || dungeon == null) return;
+        // Only the arena itself: a floor loaded later in the session (the dev console's loadtemplate) keeps its own.
+        if (!Active || CurrentMode != Mode.Arena || dungeon == null || dungeon.LevelData != settings.level) return;
         foreach (var generated in dungeon.GetComponentsInChildren<EnemyBrain>()) { generated.gameObject.SetActive(false); Destroy(generated.gameObject); }
         var level = settings.level;
         PlaceChests(dungeon);
+        PlacePortal(dungeon);
         var spawned = settings.enemies.Where(p => p != null).ToArray();
         for (int i = 0; i < spawned.Length; i++)
         {
@@ -167,6 +196,45 @@ public class DebugDungeonSession : MonoBehaviour
             profile.defaultState = EnemyState.Idle;
             if (settings.retaliateOnly) profile.aggressionMode = AggressionMode.AggressiveWhenHit;
             enemy.SetBehaviourOverride(profile);
+        }
+        PlaceRow(dungeon, settings.fightBackRow, -1f, AggressionMode.AggressiveWhenHit, 0f);
+        PlaceRow(dungeon, settings.dummyRow, 1f, AggressionMode.Passive, settings.dummyHealth);
+    }
+
+    // A row to one side of the player (side -1 left, 1 right), along their view, each facing them and idle.
+    static void PlaceRow(DungeonGenerator dungeon, GameObject[] row, float side, AggressionMode aggression, float health)
+    {
+        if (row == null) return;
+        var right = dungeon.SpawnRotation * Vector3.right;
+        var forward = dungeon.SpawnRotation * Vector3.forward;
+        var prefabs = row.Where(p => p != null).ToArray();
+        for (int i = 0; i < prefabs.Length; i++)
+        {
+            var pos = dungeon.SpawnPoint + right * side * settings.rowDistance + forward * ((i - (prefabs.Length - 1) * .5f) * settings.rowSpacing + 2f);
+            if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) pos = hit.position;
+            var look = dungeon.SpawnPoint + forward * 2f - pos; look.y = 0f;
+            var go = Instantiate(prefabs[i], pos, look.sqrMagnitude > .01f ? Quaternion.LookRotation(look) : Quaternion.identity, dungeon.transform);
+            if (settings.level.balance != null && go.TryGetComponent<Character>(out var balanced)) settings.level.balance.Apply(balanced, 1);
+            var enemy = go.GetComponent<EnemyBrain>();
+            if (enemy != null)
+            {
+                var profile = new EnemyBehaviourSettings();
+                profile.CopyFrom(enemy.Profile);
+                profile.defaultState = EnemyState.Idle;
+                profile.aggressionMode = aggression;
+                enemy.SetBehaviourOverride(profile);
+            }
+            // A test dummy: lots of health, topped up as it is hit hard, so it never dies by accident.
+            if (health > 0f && go.TryGetComponent<Character>(out var dummy) && dummy.Stats != null)
+            {
+                // Percent bonuses (the level's balance) scale a flat amount too: measure by how much, then add the rest.
+                float before = dummy.Stats.MaxHealth, flat = health - before;
+                dummy.Stats.AddModifier(new StatModifier(StatType.MaxHealth, flat, ModifierType.Flat, "debug dummy"));
+                float scale = (dummy.Stats.MaxHealth - before) / flat;
+                if (scale > .01f && Mathf.Abs(dummy.Stats.MaxHealth - health) > .5f)
+                    dummy.Stats.AddModifier(new StatModifier(StatType.MaxHealth, (health - dummy.Stats.MaxHealth) / scale, ModifierType.Flat, "debug dummy"));
+                dummy.Stats.RestorePools(health, dummy.Stats.CurrentMana, dummy.Stats.CurrentStamina);
+            }
         }
     }
 }

@@ -49,6 +49,16 @@ public class EnemyBrain : MonoBehaviour
     public bool IsAlerted => State == EnemyState.Chase || State == EnemyState.Attack;
     // Never caught unaware (a boss set down on the stage, watching the player from the start): no backstab while idle.
     public bool Wary { get; set; }
+    // Entranced (a skeleton party's dancers): it notices nothing and stays where it is until Provoke.
+    public bool Entranced { get; set; }
+
+    // Out of a trance and after the player (or at least to where it happened).
+    public void Provoke(Vector3 at)
+    {
+        Entranced = false;
+        Alert();
+        if (State != EnemyState.Chase && State != EnemyState.Attack && State != EnemyState.Dead) StartInvestigate(at);
+    }
     // Backing away from its target into something it can't get past, just now (HandleSpacing).
     public bool Cornered => Time.time < corneredUntil;
     float corneredUntil = -1f, backStuckSince = -1f;
@@ -386,25 +396,38 @@ public class EnemyBrain : MonoBehaviour
         if (info.Heavy && !info.Blocked && info.Amount > 0f && Tuning != null && (Time.time >= staggerImmuneUntil || maceHeavy))
         {
             var trainee = info.Source != null ? info.Source.Adventurer : null;
-            float duration = Tuning.heavyStaggerDuration * (trainee != null ? trainee.StaggerMultiplier(info.Weapon) : 1);
+            float duration = Tuning.heavyStaggerDuration * Tuning.StaggerStrengthFor(info.Weapon) * (trainee != null ? trainee.StaggerMultiplier(info.Weapon) : 1);
             if (IsSwinging) attackRunner.QueueStagger(duration);
             else            BeginRecovery(duration);
             staggerImmuneUntil = Time.time + duration + Tuning.enemyStaggerImmunity;
         }
-        if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null)
+        // A weapon type with no Stagger Strength makes no hurt reaction either.
+        if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null && (Tuning == null || Tuning.StaggerStrengthFor(info.Weapon) > 0f))
         {
+            // Which stagger plays (HumanoidController: Hurt, Hurt Left, Hurt Right, Hurt Heavy): the way the blow throws
+            // the body, or the heavy one.
+            AnimatorHelper.SetInteger(Character.Animator, "HurtDir", HurtDirection(info));
             Character.TriggerAnimation(Character.data.hurtTrigger);
-            if (!info.Heavy && Tuning != null) BeginRecovery(Tuning.lightFlinchDuration);
+            if (!info.Heavy && Tuning != null) BeginRecovery(Tuning.lightFlinchDuration * Tuning.StaggerStrengthFor(info.Weapon));
         }
 
         bool inCombat = State == EnemyState.Chase || State == EnemyState.Attack;
-        if (inCombat) return;
+        if (inCombat || Entranced) return;
 
         if (Profile.aggressionMode == AggressionMode.AggressiveWhenHit && Perception.Target != null)
             EnterCombat();
         else if (Profile.aggressionMode != AggressionMode.Passive)
             // A hit with no attacker (spikes, a fall) has nothing to follow: look where it hurt, not at an old noise.
             StartInvestigate(info.Source != null && Perception.HasStimulus ? Perception.StimulusPosition : info.HitPoint != Vector3.zero ? info.HitPoint : transform.position);
+    }
+
+    // 0 straight back, 1 thrown to its left, 2 thrown to its right, 3 heavy.
+    int HurtDirection(DamageInfo info)
+    {
+        if (info.Heavy) return 3;
+        var throwDir = Tuning != null ? Tuning.ImpactDirection(info) : info.Direction;
+        float side = Vector3.Dot(throwDir, transform.right);
+        return Mathf.Abs(side) < .35f ? 0 : side > 0f ? 2 : 1;
     }
 
     void CancelAttack() => attackRunner?.Cancel();
@@ -437,8 +460,10 @@ public class EnemyBrain : MonoBehaviour
 
     bool TryNoticeTarget()
     {
+        if (Entranced) return true;
         if (CanEnterCombat() && Perception.TargetVisible) { EnterCombat(); return true; }
-        if (Perception.HasStimulus && Profile.aggressionMode != AggressionMode.Passive)
+        // Only an aggressive enemy goes to look at a noise: one that waits to be hit (or never fights) stays where it is.
+        if (Perception.HasStimulus && Profile.aggressionMode == AggressionMode.Aggressive)
         {
             StartInvestigate(Perception.StimulusPosition);
             return true;
@@ -725,7 +750,9 @@ public class EnemyBrain : MonoBehaviour
             float statMul = Character.Stats != null ? Character.Stats.GetMultiplier(StatType.AttackSpeed) : 1f;
             anim.SetFloat("AttackSpeed", (Tuning != null ? Tuning.enemyAttackAnimationSpeed : 1.35f) * statMul);
         }
-        SetHoldingBow(IsArcher && State != EnemyState.Attack);
+        // The bow goes back to the side as soon as the arrow is away, while the release still plays: one blend, not the
+        // release blending to the idle arms and then the bow hold blending in a moment later (the arm swung twice).
+        SetHoldingBow(IsArcher && (State != EnemyState.Attack || attackRunner != null && attackRunner.ArrowLoosed));
         Motor.UpdateLocomotionAnimator(anim, true, 0.08f);
     }
 

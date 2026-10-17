@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a12eead55650357439207b4be50e015f, type: 3}
   m_Name: Crypt Lord fight
   m_EditorClassIdentifier: Assembly-CSharp::BossFight
-  music: {fileID: 8300000, guid: 76dc339a34a6caf46a8811c68d8f510c, type: 3}
+  music: {fileID: 8300000, guid: ad8b2ddb027ec3847aaf00ce543f4e92, type: 3}
   musicVolume: 0.8
-  bpm: 129.2
-  firstBeat: 0.743
+  bpm: 152
+  firstBeat: 0.07
   musicFade: 1.2
   openingLine:
     text: You came all this way for him. Very well.

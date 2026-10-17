@@ -27,8 +27,8 @@ public partial class IntroController
         while (loader.Busy) yield return null;
         yield return new WaitForSeconds(firstStepDelay);
         Vector3 last = table.transform.position;
-        // Co-op: the host's practice decides when it ends (RemoteFinale); its lessons are each player's own.
-        if (finaleRoom >= 0 && !Coop.IsGuest) StartCoroutine(WatchFinaleRoom());
+        if (finaleRoom >= 0 && RunsFinale) StartCoroutine(WatchFinaleRoom());
+        StartCoroutine(WatchRoomQuests());
         foreach (var step in steps)
         {
             if (step == null) continue;
@@ -56,8 +56,36 @@ public partial class IntroController
             }
             if (Met(step)) yield return SayDone(step);
         }
-        if (Coop.IsGuest) yield break;
+        if (!RunsFinale) yield break;
         yield return Finale();
+    }
+
+    // Each room's quest in the log: given when the player walks in, done once they reach a later room (whether or not
+    // its enemies fell) or when the practice ends.
+    IEnumerator WatchRoomQuests()
+    {
+        if (roomQuests == null || roomQuests.Length == 0 || !ProgressionManager.HasInstance) yield break;
+        var meta = ProgressionManager.Instance;
+        foreach (var q in roomQuests)
+            if (q != null && !string.IsNullOrEmpty(q.id) && meta.FindQuest(q.id) == null)
+                meta.quests.Add(new ProgressionManager.Quest { id = q.id, text = q.text });
+        int reached = -1;
+        while (PracticeRunning && table != null && table.IsAlive)
+        {
+            int room = PlayerRoom();
+            if (room > reached)
+            {
+                reached = room;
+                foreach (var q in roomQuests)
+                {
+                    if (q == null || string.IsNullOrEmpty(q.id)) continue;
+                    if (q.room < reached) meta.CompleteQuest(q.id);
+                    else if (q.room == reached) meta.GiveQuest(q.id);
+                }
+            }
+            yield return null;
+        }
+        foreach (var q in roomQuests) if (q != null && !string.IsNullOrEmpty(q.id)) meta.CompleteQuest(q.id);
     }
 
     IEnumerator SayDone(TutorialStep step)
@@ -85,28 +113,10 @@ public partial class IntroController
         }
     }
 
-    // Co-op: anyone of the party in that room.
-    bool PartyInRoom(int roomIndex)
-    {
-        var dungeon = loader != null ? loader.Dungeon : null;
-        if (!Coop.Running || dungeon == null || dungeon.Layout == null) return false;
-        foreach (var c in CoopWorld.Party()) if (dungeon.Layout.RoomAt(dungeon.CellOf(c.transform.position)) == roomIndex) return true;
-        return false;
-    }
-
-    // Co-op guests: the host's practice reached its end.
-    public void RemoteFinale(bool stairs)
-    {
-        if (!running || !PracticeRunning || finale) return;
-        fromStairs = stairs;
-        StopAllCoroutines();
-        StartCoroutine(Finale());
-    }
-
     IEnumerator Finale()
     {
         finale = true; endedByFinale = true;
-        if (Coop.IsHost && MultiplayerManager.HasInstance) MultiplayerManager.Instance.SendFinale(fromStairs);
+        FinaleStarted();
         // An empty "enough" line is left out: the killer's line alone starts the finale.
         if (enough != null && !enough.IsEmpty)
         {
@@ -190,13 +200,6 @@ public partial class IntroController
         table.Stats.TakeDamage(info);
     }
 
-    const float TeammateFallenEnds = 3f;
-    static bool TeammateFell()
-    {
-        if (!Coop.Running || !MultiplayerManager.HasInstance) return false;
-        foreach (var p in MultiplayerManager.Instance.Players) if (p != null && !p.IsOwner && p.Current.inRun && !p.Current.alive) return true;
-        return false;
-    }
 
     // The killer stops, raises its hand and lets the homing volley go.
     IEnumerator KillerVolley(Character hunter)
@@ -216,7 +219,7 @@ public partial class IntroController
     Character SpawnKiller()
     {
         // Co-op: the host's killer comes for everyone (guests get it as one of the host's enemies).
-        if (killer == null || loader.Dungeon == null || Coop.IsGuest) return null;
+        if (killer == null || loader.Dungeon == null || !RunsFinale) return null;
         // Up the stairs, when the player has come to them: out of the stairwell's mouth, not inside its stone
         // housing (a board's exit is a solid stairwell, and the exit point is its middle).
         if (fromStairs && StairsMouth(out var stairs))

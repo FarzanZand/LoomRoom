@@ -23,6 +23,8 @@ public class DungeonSocket : MonoBehaviour
     bool IsEnemy => type == DungeonSocketType.Enemy;
     [ShowIf(nameof(IsEnemy)), Tooltip("An archer from the biome's enemies (a ledge or gallery). Rooms with one are left out when the level switches Archer Ledges off.")]
     public bool archer;
+    [ShowIf(nameof(IsEnemy)), Tooltip("The enemy stands close to the nearest wall, facing it, unaware: a back to sneak up on (the intro's backstab lesson).")]
+    public bool faceWall;
     bool IsLight => type == DungeonSocketType.WallLight;
     bool ShowLightColor => IsLight && overrideLightColor;
     [ShowIf(nameof(IsLight)), Tooltip("Recolour this light, over the room's and the biome's colours.")]

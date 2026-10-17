@@ -35,7 +35,38 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField] TMP_Text killsValue, healthLine, healthValue, totalValue, bankValue, helpLine;
     [SerializeField, Tooltip("The short line of floor, gold and time under the tally.")] TMP_Text summaryLine;
     [SerializeField, Min(0)] int maxSkulls = 64, maxSpoilIcons = 24;
-    [SerializeField, Min(.01f)] float spoilPopSeconds = .09f, skullPopSeconds = .025f, countSeconds = .7f;
+    [SerializeField, Min(1), Tooltip("Rows of icons each strip holds (each icon its template's size); past that the icons of a row overlap so they all fit.")]
+    int stripRows = 3;
+    [SerializeField, Tooltip("Inside each strip: space from its left and right edges (x) and its top and bottom (y).")] Vector2 stripPadding = new(14, 10);
+    [SerializeField, Min(0)] float stripGap = 4;
+
+    [Header("The ledger (built by Tools > LoomRoom > UI > Build Recap Spoils Showcase)")]
+    [SerializeField, Tooltip("The big picture of the most valuable spoil brought back.")] Image showcaseIcon;
+    [SerializeField, Tooltip("The rows, written in one after another: the spoils (label, value, showcase, strip), the kills, the total (with its rule), what there is to spend.")]
+    GameObject[] spoilsRow, killsRow, totalRow, bankRow;
+    [SerializeField, Min(0), Tooltip("Seconds before the first row and between rows.")] float rowGap = .4f;
+    [SerializeField, Min(.01f), Tooltip("Seconds each row takes to fade in.")] float rowFade = .3f;
+
+    [Header("The Dungeon Master's closing line (said in his feed, over the recap)")]
+    [SerializeField, Tooltip("A total of at least this is a good haul.")] int goodHaul = 25;
+    [SerializeField, Tooltip("After a win.")] DungeonMaster.Line[] victoryLines =
+    {
+        new() { text = "You beat the Crypt Lord. I didn't think you would." },
+        new() { text = "A win. Spend it well." },
+    };
+    [SerializeField, Tooltip("A death with a good haul.")] DungeonMaster.Line[] goodHaulLines =
+    {
+        new() { text = "Not a bad haul, for someone who died." },
+        new() { text = "You got a lot out. Not yourself, though." },
+    };
+    [SerializeField, Tooltip("A death with little to show.")] DungeonMaster.Line[] poorHaulLines =
+    {
+        new() { text = "That's all? Go deeper next time." },
+        new() { text = "Slim pickings." },
+    };
+
+    // UI Library keys (Tools > LoomRoom > UI > Set Up Recap Tally Sounds): one plain recorded sound a row.
+    const string SpoilsKey = "tallySpoils", KillsKey = "tallyKills", TotalKey = "tallyTotal", BankKey = "tallyBank";
 
     bool open, wakes, won;
     Coroutine counting;
@@ -108,80 +139,143 @@ public class RunRecapUI : MonoBehaviour
         (wakes ? returnButton : newRunButton)?.Select();
     }
 
-    // The tally counts up row by row: the spoils pop into their strip, the kills fill theirs, their health turns into
-    // spoils, then the total goes into what there is to spend.
+    // The ledger: the rows are written in one after another, each whole and with one quiet sound (what was carried out,
+    // what was killed, the total, what there is to spend), then the Dungeon Master has the last word.
     IEnumerator Count(RunSummary s)
     {
         var t = s.tally;
         Clear(spoilsStrip, spoilsIconTemplate); Clear(killsStrip, skullTemplate);
-        SetText(spoilsValue, "0"); SetText(killsValue, "0"); SetText(healthValue, "0"); SetText(totalValue, "0");
         // The health line is gone from the recap (the user's call); the spoils it gives still count in the total.
         if (healthLine != null) healthLine.gameObject.SetActive(false);
         if (healthValue != null) healthValue.gameObject.SetActive(false);
-        SetText(bankValue, t.before.ToString());
-        SetText(helpLine, "");
-        yield return Wait(.45f);
-        int worth = 0, icons = 0;
+        SetText(spoilsValue, t.carriedWorth.ToString());
+        SetText(killsValue, t.kills.ToString());
+        SetText(totalValue, t.total.ToString());
+        SetText(bankValue, t.after.ToString());
+        // The spoils, cheapest first; the showcase shows the most valuable one.
+        Sprite best = null;
+        int icons = 0;
         if (t.carried != null)
             foreach (var (item, count) in t.carried)
-                for (int i = 0; i < count; i++)
-                {
-                    worth += Meta != null ? Meta.WorthOf(item) : 0;
-                    SetText(spoilsValue, worth.ToString());
-                    if (icons++ < maxSpoilIcons) Pop(spoilsStrip, spoilsIconTemplate, item.icon);
-                    Tick();
-                    yield return Wait(spoilPopSeconds);
-                }
-        SetText(spoilsValue, t.carriedWorth.ToString());
-        yield return Wait(.3f);
-        for (int i = 0; i < t.kills; i++)
+            {
+                if (item.icon != null) best = item.icon;
+                for (int i = 0; i < count && icons < maxSpoilIcons; i++, icons++) Add(spoilsStrip, spoilsIconTemplate, item.icon);
+            }
+        if (showcaseIcon != null) { showcaseIcon.sprite = best; showcaseIcon.preserveAspect = true; showcaseIcon.enabled = best != null; }
+        for (int i = 0; i < Mathf.Min(t.kills, maxSkulls); i++) Add(killsStrip, skullTemplate, null);
+        Arrange(spoilsStrip, spoilsIconTemplate);
+        Arrange(killsStrip, skullTemplate);
+
+        var rows = new[] { (spoilsRow, SpoilsKey), (killsRow, KillsKey), (totalRow, TotalKey), (bankRow, BankKey) };
+        foreach (var (row, _) in rows) SetAlpha(row, 0f);
+        SetText(helpLine, "");
+        foreach (var (row, key) in rows)
         {
-            if (i < maxSkulls) Pop(killsStrip, skullTemplate, null);
-            SetText(killsValue, (i + 1).ToString());
-            if (i < maxSkulls) yield return Wait(skullPopSeconds);
+            yield return Wait(rowGap);
+            FadeIn(row);
+            Sound(key);
         }
-        yield return Wait(.25f);
-        yield return Wait(.1f);
-        yield return CountUp(totalValue, 0, t.total, v => v.ToString());
-        if (t.sharedWith > 1) SetText(helpLine, $"Shared between {t.sharedWith}");
-        // Co-op: the party's kills, everyone's (the spoils are each player's own unless shared).
-        if (Coop.Running && MultiplayerManager.Instance.Players.Count > 1)
-        {
-            var party = new System.Collections.Generic.List<string>();
-            foreach (var p in MultiplayerManager.Instance.Players)
-                if (p != null) party.Add($"{p.DisplayName} {(p.IsOwner ? (RunManager.HasInstance ? RunManager.Instance.Kills : 0) : p.Current.kills)}");
-            if (party.Count > 1) SetText(helpLine, (t.sharedWith > 1 ? $"Shared between {t.sharedWith}.   " : "") + "Kills: " + string.Join(",  ", party));
-        }
-        if (t.toppedUp > 0) SetText(helpLine, $"+{t.toppedUp} from the Dungeon Master");
-        yield return Wait(.25f);
-        yield return CountUp(bankValue, t.before, t.after, v => v.ToString());
+        yield return Wait(rowGap * 1.5f);
+        ClosingLine(s);
+        PartyLine(s);
         counting = null;
     }
     static ProgressionManager Meta => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
     static void SetText(TMP_Text text, string value) { if (text != null) text.text = value; }
     static object Wait(float seconds) => new WaitForSecondsRealtime(seconds);
-    IEnumerator CountUp(TMP_Text text, int from, int to, System.Func<int, string> format)
+
+    // The Dungeon Master's word on the run, said in his own feed over the recap: a win, a good haul or a poor one. After
+    // the lesson's top-up the help line says what he added instead (he explains it himself once back in the room).
+    // Co-op: under the tally, how the spoils were shared and everyone's kills (unless the lesson's top-up has the line).
+    void PartyLine(RunSummary s)
     {
-        if (text == null) yield break;
-        for (float e = 0; e < countSeconds; e += Time.unscaledDeltaTime) { text.text = format(Mathf.RoundToInt(Mathf.Lerp(from, to, e / countSeconds))); yield return null; }
-        text.text = format(to);
+        if (helpLine == null || s.tally.toppedUp > 0 || !Coop.Running || MultiplayerManager.Instance.Players.Count < 2) return;
+        var party = new System.Collections.Generic.List<string>();
+        foreach (var p in MultiplayerManager.Instance.Players)
+            if (p != null) party.Add($"{p.DisplayName} {(p.IsOwner ? (RunManager.HasInstance ? RunManager.Instance.Kills : 0) : p.Current.kills)}");
+        helpLine.text = (s.tally.sharedWith > 1 ? $"Shared between {s.tally.sharedWith}.   " : "") + "Kills: " + string.Join(",  ", party);
+        var group = Group(helpLine.gameObject);
+        group.alpha = 0f;
+        group.DOFade(1f, rowFade * 2f).SetUpdate(true).SetLink(helpLine.gameObject);
+    }
+
+    void ClosingLine(RunSummary s)
+    {
+        if (s.tally.toppedUp > 0)
+        {
+            if (helpLine == null) return;
+            helpLine.text = $"+{s.tally.toppedUp} from the Dungeon Master";
+            var group = Group(helpLine.gameObject);
+            group.alpha = 0f;
+            group.DOFade(1f, rowFade * 2f).SetUpdate(true).SetLink(helpLine.gameObject);
+            return;
+        }
+        var lines = s.victory ? victoryLines : s.tally.total >= goodHaul ? goodHaulLines : poorHaulLines;
+        var line = lines != null && lines.Length > 0 ? lines[Random.Range(0, lines.Length)] : null;
+        if (line == null || string.IsNullOrWhiteSpace(line.text)) return;
+        DungeonMaster.OverMenus = true;
+        DungeonMaster.Say(line);
+    }
+
+    static CanvasGroup Group(GameObject go) => go.TryGetComponent<CanvasGroup>(out var g) ? g : go.AddComponent<CanvasGroup>();
+
+    static void SetAlpha(GameObject[] row, float alpha)
+    {
+        if (row == null) return;
+        foreach (var go in row) if (go != null) { var g = Group(go); g.DOKill(); g.alpha = alpha; }
+    }
+
+    void FadeIn(GameObject[] row)
+    {
+        if (row == null) return;
+        foreach (var go in row) if (go != null) Group(go).DOFade(1f, rowFade).SetUpdate(true).SetLink(go);
+    }
+
+    static void Sound(string key)
+    {
+        if (AudioManager.HasInstance && AudioManager.Instance.HasUI(key)) AudioManager.Instance.PlayUI(key);
     }
     static void Clear(RectTransform strip, Image template)
     {
         if (strip == null) return;
-        for (int i = strip.childCount - 1; i >= 0; i--) { var c = strip.GetChild(i); if (template == null || c != template.transform) Destroy(c.gameObject); }
+        for (int i = strip.childCount - 1; i >= 0; i--) { var c = strip.GetChild(i); if (template == null || c != template.transform) { c.gameObject.SetActive(false); Destroy(c.gameObject); } }
         if (template != null) template.gameObject.SetActive(false);
     }
-    static void Pop(RectTransform strip, Image template, Sprite sprite)
+    // One more icon in its strip (laid out by Arrange).
+    static void Add(RectTransform strip, Image template, Sprite sprite)
     {
         if (strip == null || template == null) return;
         var img = Instantiate(template, strip);
         img.gameObject.SetActive(true);
         if (sprite != null) { img.sprite = sprite; img.preserveAspect = true; }
-        img.transform.localScale = Vector3.zero;
-        img.transform.DOScale(1f, .18f).SetEase(Ease.OutBack).SetUpdate(true).SetLink(img.gameObject);
     }
-    static void Tick() { if (AudioManager.HasInstance && AudioManager.Instance.HasUI("tallyTick")) AudioManager.Instance.PlayUI("tallyTick"); }
+
+    // Lays a strip's icons out left to right in up to stripRows rows (the rows in use centred in the strip); once all
+    // the rows are full, each row takes an equal share and its icons close up and overlap until they fit.
+    void Arrange(RectTransform strip, Image template)
+    {
+        if (strip.TryGetComponent<LayoutGroup>(out var group)) group.enabled = false;   // placed here instead
+        var icons = new System.Collections.Generic.List<RectTransform>();
+        foreach (RectTransform child in strip) if (child != template.transform && child.gameObject.activeSelf) icons.Add(child);
+        if (icons.Count == 0) return;
+        var size = template.rectTransform.rect.size;
+        var area = strip.rect.size - stripPadding * 2f;
+        int fits = Mathf.Max(1, Mathf.FloorToInt((area.x + stripGap) / (size.x + stripGap)));
+        int rows = Mathf.Clamp(Mathf.CeilToInt(icons.Count / (float)fits), 1, Mathf.Max(1, stripRows));
+        int perRow = Mathf.Max(fits, Mathf.CeilToInt(icons.Count / (float)rows));   // rows fill one by one until all are full
+        float step = perRow <= fits ? size.x + stripGap : (area.x - size.x) / Mathf.Max(1, perRow - 1);
+        float rowStep = size.y + stripGap;
+        float top = (rows * size.y + (rows - 1) * stripGap) * .5f;   // the rows in use, centred
+        for (int i = 0; i < icons.Count; i++)
+        {
+            int row = i / perRow, column = i % perRow;
+            var icon = icons[i];
+            icon.anchorMin = icon.anchorMax = new Vector2(0f, .5f);
+            icon.pivot = new Vector2(.5f, .5f);
+            icon.sizeDelta = size;
+            icon.anchoredPosition = new Vector2(stripPadding.x + size.x * .5f + column * step, top - size.y * .5f - row * rowStep);
+        }
+    }
 
     public void Hide()
     {
@@ -189,6 +283,7 @@ public class RunRecapUI : MonoBehaviour
         open = false;
         if (counting != null) { StopCoroutine(counting); counting = null; }
         fade?.Kill();
+        DungeonMaster.OverMenus = false;
         if (root != null) root.SetActive(false);
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
         if (RunManager.HasInstance) RunManager.Instance.RecapClosed();

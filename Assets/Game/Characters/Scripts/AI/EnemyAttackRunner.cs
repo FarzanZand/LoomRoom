@@ -43,6 +43,8 @@ public class EnemyAttackRunner
     static float RecoveryTime => Tuning != null ? Tuning.enemyRecoveryTime : 0.18f;
 
     public bool IsSwinging => current != null;
+    // A bow shot whose arrow is already away (the release is playing out).
+    public bool ArrowLoosed => current != null && current.IsBowShot && !fallbackHitPending;
 
     bool SwingLive => brain.isActiveAndEnabled && Character.IsAlive && brain.State == EnemyState.Attack && current != null
         && (!GameManager.HasInstance || GameManager.Instance.SimulationActive);

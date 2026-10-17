@@ -7,7 +7,7 @@ using UnityEngine;
 // What a skill or attribute track is. Serialized by integer: append only.
 public enum MetaTrackKind { Skill = 0, Attribute = 1 }
 // What an attribute's points above its base give. Serialized by integer: append only.
-public enum MetaAttribute { Constitution = 0, Intelligence = 1, Strength = 2 }
+public enum MetaAttribute { Constitution = 0, Intelligence = 1, Strength = 2, Dexterity = 3 }
 
 // Meta progression: spoils carried out of runs, counted at the tally and spent on the character sheet at the hobby
 // table for starting skill levels and attributes. Every milestone bought gives a trophy for the wall, and a mounted
@@ -56,8 +56,10 @@ public partial class ProgressionManager
         [Min(1), Tooltip("All levels, given ones included.")] public int levels = 10;
         [Min(1), ShowIf("@kind == MetaTrackKind.Skill"), Tooltip("Skill points per level.")] public int perLevel = 5;
         [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("The score with nothing bought.")] public int baseScore = 8;
-        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives: health, mana or damage.")] public float bonusPerPoint = 5;
+        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to the attribute's first stat (AttributeStats): health, mana, damage or critical chance in percent.")] public float bonusPerPoint = 5;
         [ShowIf("@kind == MetaTrackKind.Attribute")] public string unit = "health";
+        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to its second stat, if it has one: Constitution's stamina, Intelligence's mana per second.")] public float secondBonusPerPoint;
+        [ShowIf("@kind == MetaTrackKind.Attribute")] public string secondUnit;
         [ShowIf("@kind == MetaTrackKind.Skill"), ListDrawerSettings(ShowFoldout = true)] public List<Milestone> milestones = new();
     }
 
@@ -72,7 +74,7 @@ public partial class ProgressionManager
     [TabGroup("Meta progression/Tabs", "Spoils"), ListDrawerSettings(ShowFoldout = true), Tooltip("Bosses always drop their own spoils.")]
     public List<BossSpoils> bossSpoils = new();
 
-    [TabGroup("Meta progression/Tabs", "Tracks"), Min(1), Tooltip("The first level bought on any track.")] public int firstPrice = 16;
+    [TabGroup("Meta progression/Tabs", "Tracks"), Min(1), Tooltip("The spoils the first level costs on any track.")] public int firstPrice = 10;
     [TabGroup("Meta progression/Tabs", "Tracks"), Min(1), Tooltip("Each level costs this much more than the one before.")] public float priceMultiplier = 1.5f;
     [TabGroup("Meta progression/Tabs", "Tracks"), ListDrawerSettings(ShowFoldout = true, ListElementLabelName = "displayName")]
     public List<MetaTrack> tracks = new();
@@ -123,8 +125,37 @@ public partial class ProgressionManager
 
     // The skill a run starts from, before the class adds its own.
     public int BaseRank(AdventureSkill skill) { var t = Track(skill); return t != null ? Value(t) : 0; }
-    // What the attributes add to a run: (health, mana, damage).
-    public float MetaBonus(MetaAttribute attribute) => AttributeBonus(Track(attribute));
+    // An attribute's score at the start of a run: the sheet's (its base outside the meta game, e.g. the intro's practice run).
+    public int AttributeScore(MetaAttribute attribute) { var t = Track(attribute); return t == null ? 8 : MetaActive ? Value(t) : t.baseScore; }
+
+    // The stats an attribute's points above its base raise: the first by bonusPerPoint, the second by secondBonusPerPoint.
+    // The sheet, the character panel and the run's stats (AdventurerProgress.ApplyStats) all read these, so they match.
+    static readonly StatType[] ConstitutionStats = { StatType.MaxHealth, StatType.MaxStamina }, IntelligenceStats = { StatType.MaxMana, StatType.ManaRegen },
+        StrengthStats = { StatType.AttackDamage }, DexterityStats = { StatType.CriticalChance };
+    public static StatType[] AttributeStats(MetaAttribute a) => a switch
+    {
+        MetaAttribute.Constitution => ConstitutionStats, MetaAttribute.Intelligence => IntelligenceStats, MetaAttribute.Dexterity => DexterityStats, _ => StrengthStats,
+    };
+    // Critical chance is written in percent on the track and kept as a fraction in the stats.
+    public static float StatScale(StatType stat) => stat == StatType.CriticalChance ? .01f : 1f;
+    // What this many points above the base give, as the stats take it: (stat, amount) per stat the attribute raises.
+    public static IEnumerable<(StatType stat, float amount)> AttributeGains(MetaTrack t, float points)
+    {
+        if (t == null || points == 0) yield break;
+        var stats = AttributeStats(t.attribute);
+        if (stats.Length > 0 && t.bonusPerPoint != 0) yield return (stats[0], points * t.bonusPerPoint * StatScale(stats[0]));
+        if (stats.Length > 1 && t.secondBonusPerPoint != 0) yield return (stats[1], points * t.secondBonusPerPoint * StatScale(stats[1]));
+    }
+    // "+5 health, +5 stamina": what this many points give, in the track's own words. lineBreak puts each on its own line.
+    public static string AttributeEffects(MetaTrack t, float points, bool lineBreak = false)
+    {
+        if (t == null) return "";
+        static string Number(float v) => Mathf.Approximately(v, Mathf.Round(v)) ? Mathf.RoundToInt(v).ToString() : v.ToString("0.##");
+        static string Unit(string unit) => unit != null && unit.StartsWith("%") ? unit : " " + unit;   // "+5% critical chance"
+        string first = $"+{Number(points * t.bonusPerPoint)}{Unit(t.unit)}";
+        if (t.secondBonusPerPoint == 0 || string.IsNullOrEmpty(t.secondUnit)) return first;
+        return first + (lineBreak ? "\n" : ", ") + $"+{Number(points * t.secondBonusPerPoint)}{Unit(t.secondUnit)}";
+    }
 
     public string TrophyKey(MetaTrack t, Milestone m) => $"{TrophyPrefix}{t.id}.{m.value}";
     public TrophyState Trophy(MetaTrack t, Milestone m) => t == null || m == null ? TrophyState.None : (TrophyState)Mathf.Clamp(GetFlag(TrophyKey(t, m)), 0, 3);
@@ -298,6 +329,8 @@ public partial class ProgressionManager
         SetFlag(SpoilsFlag, Spoils + tally.total);
         // The carried spoils are spent into the bank: they leave the bag.
         if (player != null) foreach (var inv in new[] { player.Bag, player.Hotbar }) if (inv != null) for (int i = 0; i < inv.SlotCount; i++) if (inv.ItemAt(i) != null && inv.ItemAt(i).itemType == ItemType.Spoils) inv.RemoveAt(i);
+        // The puzzle's missing tile, if found, comes home too.
+        CarryTileHome(player);
         // The first run that ends (normally a death) starts the lesson: the DM points to the sheet back in the room and,
         // after a death, tops the spoils up to Blocking's price.
         if (!HasFlag(LedgerIntroFlag))
@@ -318,7 +351,9 @@ public partial class ProgressionManager
     Coroutine lessonRoutine;
     void Update()
     {
-        if (!Application.isPlaying || lessonRoutine != null) return;
+        if (!Application.isPlaying) return;
+        UpdateSheetQuest();
+        if (lessonRoutine != null) return;
         if (HasFlag(LedgerIntroFlag) && !HasFlag(LedgerSaidFlag) && RoomPlayerFree) lessonRoutine = StartCoroutine(SayLesson());
     }
     IEnumerator SayLesson()

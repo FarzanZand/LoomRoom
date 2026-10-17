@@ -12,7 +12,6 @@ public class AdventureRules : ScriptableObject
     [Min(1)] public float sneakPractiseRange = 4f;
     [Header("Character growth")]
     public float xpPerEnemy = 15, xpPerFloor = 35, levelXp = 70, levelXpGrowth = 35;
-    public float healthPerLevel = 3, manaPerLevel = 2;
     [Header("Skills")]
     [Tooltip("Metres of new ground sprinted per Athletics XP award.")]
     public float athleticsMetres = 12;

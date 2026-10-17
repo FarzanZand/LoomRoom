@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48e1a08511ae4bb89e9a2ba01ad45eb5, type: 3}
+  m_Name: Cave2
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomStyle
+  bottomWall: {fileID: 2100000, guid: e98d73fb813a93a4b8f677212644f7f2, type: 2}
+  upperWall: {fileID: 2100000, guid: e98d73fb813a93a4b8f677212644f7f2, type: 2}
+  floor: {fileID: 2100000, guid: a9317b99fe25a1748ac0dcb0e3534a6a, type: 2}
+  ceiling: {fileID: 2100000, guid: 0e6d7810a3524fe45a2ed01f4aff6461, type: 2}
+  hideTrims: 1
+  trim: {fileID: 0}
+  wood: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
+  metal: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
+  wallBaseWeight: 10
+  wallVariants:
+  - material: {fileID: 2100000, guid: 7cbb59623c340204aab4f5aefa49322f, type: 2}
+    weight: 1
+    rows: 1
+  - material: {fileID: 2100000, guid: 08fbfbcbf1be40c4a8816dd046751892, type: 2}
+    weight: 0.6
+    rows: 0
+  floorBaseWeight: 10
+  floorVariants:
+  - material: {fileID: 2100000, guid: 9714d7e0e5398d345ab17b9e65ebe8bd, type: 2}
+    weight: 0.8
+    rows: 0
+  - material: {fileID: 2100000, guid: 1fb5b18bc7b43b249be5d476251222e2, type: 2}
+    weight: 1.2
+    rows: 0
+  wallDecor: []
+  wallDecorPerTenFaces: 0
+  corridorDressing: {fileID: 0}
+  dressingSpacing: 3
+  stretchDressingToCeiling: 1

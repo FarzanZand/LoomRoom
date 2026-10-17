@@ -34,23 +34,112 @@ public class CombatManager : Singleton<CombatManager>
     [Min(0f), Tooltip("Seconds after the shield comes up before it stops hits (0 = at once). Raise it if swing-block-swing feels too safe.")]
     public float blockRaiseDelay = 0f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
-    [Min(.1f)] public float windupSpeed = 1.2f;
+    [Min(.1f), Tooltip("Speed of the windup before a swing (light or charged), 1 = as the clip. Times the attack speed stat.")] public float windupSpeed = 1.2f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
-    [Min(.1f)] public float releaseSpeed = 1.25f;
+    [Min(.1f), Tooltip("Speed of a light swing's strike (Simple swing set), 1 = as the clip. Times the attack speed stat.")] public float releaseSpeed = 1.25f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
-    [Min(.1f)] public float heavyReleaseSpeed = .95f;
+    [Min(.1f), Tooltip("Speed of the charged strike (the heavy swing once let go), 1 = as the clip, higher is faster. Times the attack speed stat and Heavy Release Speed Curve.")] public float heavyReleaseSpeed = .95f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Attacks")]
     [Min(.1f)] public float enemyHurtAnimationSpeed = 1.3f;
 
     // ── Player: Swing set ──
+    // Which light attack the player has (serialized by number, append only).
+    public enum SwingSet { Simple = 0, IkSwings = 1, Combo = 2, Classic = 3, Classic2 = 4, Combo2 = 5 }
+    // One swing set per weapon type: the held weapon's category picks it (SwingSetFor).
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), FormerlySerializedAs("swingSet")]
+    [Tooltip("For swords. Simple: the original light swings (Attack_Swing_A/B), with charge and heavy swings. IK Swings: the baked IK " +
+        "set (FirstPersonPlayer/IK swings): a visible windup, a strike in a few frames and a held follow-through, " +
+        "forehand and backhand. Combo: the three-hit combo converted from the Unreal game (Combo swing left, swing right, " +
+        "stab; FirstPersonPlayer/Combo), one hit per press, no charge or heavy swing. Classic: the same combo with its " +
+        "left and right swings reworked into horizontal blows with a held windup (FirstPersonPlayer/Classic). Classic 2: " +
+        "fast, low, flat swipes from screen edge to screen edge with no visible windup (FirstPersonPlayer/Classic2). Combo 2: " +
+        "the Combo's two swings, then the Simple light swing as the third hit (FirstPersonPlayer/Combo2).")]
+    public SwingSet swordSwingSet = SwingSet.Combo;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
-    [Tooltip("On: the original light swings (Attack_Swing_A/B). Off: the IK swings (FirstPersonPlayer/IK swings): " +
-        "a visible windup, a strike in a few frames and a held follow-through, alternating forehand and backhand.")]
-    public bool simpleSwings = false;
+    [Tooltip("For maces (the same sets as for swords).")]
+    public SwingSet maceSwingSet = SwingSet.Simple;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
+    [Min(0f), Tooltip("How hard a sword's hits make an enemy flinch: times its body's recoil and lean (Hits > Impact) and how long it is held (Heavy Stagger Duration, Light Flinch Duration); the push is not changed. 1 = as those say, 0 = no flinch (no recoil or hurt animation).")]
+    public float swordStaggerStrength = 1f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
+    [Min(0f), Tooltip("The same for maces.")]
+    public float maceStaggerStrength = 1f;
+
+    static bool IsMace(ItemData weapon) => weapon != null && weapon.IsWeapon && weapon.weaponCategory == WeaponCategory.Mace;
+    public float StaggerStrengthFor(ItemData weapon) => weapon == null || !weapon.IsWeapon ? 1f : IsMace(weapon) ? maceStaggerStrength : swordStaggerStrength;
+
+    public SwingSet SwingSetFor(ItemData weapon) => IsMace(weapon) ? maceSwingSet : swordSwingSet;
+    // The table player's swing set now: the one for the weapon in their right hand.
+    public SwingSet swingSet
+    {
+        get
+        {
+            var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) as Player : null;
+            return SwingSetFor(player != null && player.Equipment != null ? player.Equipment.Get(EquipmentSlot.RightHand) : null);
+        }
+    }
+    static bool IsCombo(SwingSet set) => set == SwingSet.Combo || set == SwingSet.Classic || set == SwingSet.Classic2 || set == SwingSet.Combo2;
+    public bool simpleSwings => swingSet != SwingSet.IkSwings;
+    public bool comboAttack => IsCombo(swingSet);
+    // For the inspector: show the combo and IK settings when any weapon type uses them.
+    bool AnyCombo => IsCombo(swordSwingSet) || IsCombo(maceSwingSet);
+    bool AnyIk => swordSwingSet == SwingSet.IkSwings || maceSwingSet == SwingSet.IkSwings;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Range(.3f, 1.5f), Tooltip("How fast the combo's hits play (1 = as in the Unreal clips). The attack speed stat multiplies it.")]
+    public float comboSpeed = .7f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Range(.3f, 2f), Tooltip("Speed of the combo's first hit, times Combo Speed (1 = as Combo Speed).")]
+    public float comboFirstHitSpeed = 1f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Range(.3f, 2f), Tooltip("Speed of the combo's second hit, times Combo Speed.")]
+    public float comboSecondHitSpeed = 1f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Range(.3f, 2f), Tooltip("Speed of the combo's third hit (the finisher), times Combo Speed.")]
+    public float comboFinisherSpeed = 1f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Range(0f, 3f), Tooltip("How much the view moves with each combo hit, times the camera curves in its clip (SwingCamPitch, SwingCamYaw, SwingCamRoll: worked out from the hand's motion by UnrealComboConverter, so a left swing turns and leans the view left, a right one right, a stab nods it, a chop drops it; edit them in the Animation window). 0 = none. Also sets which way each hit's strike kick goes.")]
+    public float comboCameraStrength = 1f;
+    public float ComboHitSpeed(int hit) => hit <= 0 ? comboFirstHitSpeed : hit == 1 ? comboSecondHitSpeed : comboFinisherSpeed;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [FormerlySerializedAs("comboChainAfter"), Min(0f), Tooltip("Seconds from the start of a combo hit before the next one can start (a press before then waits for it). Plain seconds: attack speed and Combo Speed don't change it.")]
+    public float comboHitCooldown = .43f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Min(0f), Tooltip("Seconds from the start of the finisher (the third hit) before the combo can start again.")]
+    public float comboFinisherCooldown = .9f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Tooltip("The thin streaks (SlashLines) along the blade during combo hits. Off: they looked like a rake on the long combo arcs.")]
+    public bool comboSlashLines = false;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Tooltip("The combo's last hit (the stab) lands as a heavy hit: heavy damage, a heavy stagger, a harder push, the heavy swing sound, a longer pause and a bigger camera kick.")]
+    public bool comboFinisherHeavy = true;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Min(1f), Tooltip("Damage multiplier of the combo's finisher (instead of Heavy Damage Multiplier, which charged heavy attacks keep).")]
+    public float comboFinisherDamage = 1.3f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Min(.05f), Tooltip("A press released within this many seconds is a combo hit; held longer, it becomes the simple swing set's charged attack (windup, hold, heavy release after Heavy Charge Time).")]
+    public float comboHoldForHeavy = .12f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Tooltip("A short pause when a combo hit lands on an enemy, so the blade is felt to bite (whatever Hit Stop Enabled says).")]
+    public bool comboHitStop = true;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Min(0f), Tooltip("Seconds of the pause for the combo's first two hits.")]
+    public float comboHitStopDuration = .065f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Min(0f), Tooltip("Seconds of the pause for the finisher.")]
+    public float comboFinisherHitStop = .13f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Min(0f), Tooltip("Times the strike lunge and camera kicks for combo hits: the body follows the swing.")]
+    public float comboStrikeScale = 1.8f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Min(0f), Tooltip("Times the strike lunge and camera kicks for the finisher (it was Heavy Strike Scale x Combo Strike Scale, which shook the view too hard). Its pause shakes like a light hit and it has no heavy impact shudder.")]
+    public float comboFinisherStrikeScale = 2f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
+    [Min(0f), Tooltip("A pause this long after a hit starts the combo again from its first hit.")]
+    public float comboResetTime = 1.1f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyIk))]
     [Tooltip("Camera turn (pitch, yaw, roll in degrees) at the peak of an IK forehand; the backhand mirrors yaw and roll.")]
     public Vector3 ikSwingCameraRotation = new Vector3(.4f, -1.2f, .6f);
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyIk))]
     [Tooltip("IK swing camera motion over the release clip: peaks with the strike, eases off through the follow-through.")]
     public AnimationCurve ikSwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.12f, 1f), new Keyframe(.6f, .35f), new Keyframe(1f, 0f));
 
@@ -335,6 +424,12 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
     [Min(1f), Tooltip("Thickness multiplier for melee hit queries; also widens fallback enemy hit arcs.")]
     public float meleeWidthMultiplier = 1.25f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
+    [Min(0f), Tooltip("Player swings: every swing also hits anything out to this far from the player's chest, in the direction the blade is sweeping, so every swing and every weapon reaches the same distance. 0 = only where the blade goes.")]
+    public float playerMeleeReach = 2.5f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
+    [Min(.05f), Tooltip("Thickness of that reach (radius of the capsule out from the chest).")]
+    public float playerMeleeReachRadius = .35f;
 
     // ── Hits: Critical hits and backstabs ──
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
@@ -359,9 +454,7 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
     [Range(-1f, 1f), Tooltip("A hit counts as from behind when dot(victim forward, attack direction) is above this.")]
     public float backstabBehindDot = .35f;
-    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
-    [Tooltip("Also backstab alert enemies when struck from behind. Off: only unaware enemies.")]
-    public bool backstabAlertFromBehind = true;
+
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
     [Min(1f)] public float backstabHitStopScale = 3f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
@@ -424,6 +517,28 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit reaction")]
     [Tooltip("Fraction of strength passed to each successive parent bone.")]
     [Range(0f, 1f)] public float hitReactionParentFalloff = 0.45f;
+
+    // ── Hits: Impact ──
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact")]
+    [Range(0f, 3f), Tooltip("How hard a hit lands on an enemy: scales its bone recoil, its body lean and the push it takes (1 = as before).")]
+    public float hitImpactStrength = 1.6f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact")]
+    [Range(0f, 1f), Tooltip("How much the blade's travel decides which way the enemy reels (0 = straight away from the attacker, 1 = along the swing): a swing from the left throws it to the right.")]
+    public float impactFromSwing = .65f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact")]
+    [Range(0f, 30f), Tooltip("Degrees the enemy's upper body leans away with the blow, whatever part was struck (times Hit Impact Strength).")]
+    public float impactBodySway = 9f;
+
+    // Which way a hit throws its victim: away from the attacker, turned toward the blade's travel (Impact From Swing).
+    public Vector3 ImpactDirection(DamageInfo info)
+    {
+        var away = Vector3.ProjectOnPlane(info.Direction, Vector3.up).normalized;
+        var swing = Vector3.ProjectOnPlane(info.SwingDirection, Vector3.up).normalized;
+        if (swing == Vector3.zero) return away;
+        if (away == Vector3.zero) return swing;
+        var d = Vector3.Slerp(away, swing, impactFromSwing);
+        return d.sqrMagnitude > .0001f ? d.normalized : away;
+    }
 
     // ── Hits: Hit flash ──
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Hit flash")]
@@ -529,7 +644,9 @@ public class CombatManager : Singleton<CombatManager>
         if (backstabsEnabled && brain != null)
         {
             bool behind = info.Direction.sqrMagnitude > .001f && Vector3.Dot(target.transform.forward, info.Direction) > backstabBehindDot;
-            if ((!brain.IsAlerted && !brain.Wary) || (backstabAlertFromBehind && behind))
+            // A backstab is a blow from behind, whether the enemy knows the player is there or not, and never from the
+            // front. A stage boss standing ready (Wary) can't be backstabbed.
+            if (behind && !brain.Wary)
             {
                 info.Backstab = true;
                 info.Amount *= backstabMultiplier * (1f + GearStat(info.Source, StatType.BackstabDamage));
@@ -586,7 +703,10 @@ public class CombatManager : Singleton<CombatManager>
         // The player's camera kicks when their swing lands (Strike feel).
         if(!(victim is Player) && !info.Blocked && info.Source is Player striker && striker.Combat != null)
             striker.Combat.Kick(info.Heavy ? hitKick * heavyStrikeScale : hitKick);
-        if(!(victim is Player) || hitStopOnPlayerHurt)
+        // Combo hits bite: a short pause of their own, longer for the finisher.
+        if(!(victim is Player) && !info.Blocked && info.Source is Player && comboAttack && comboHitStop)
+            PauseOnHit(info.Heavy ? comboFinisherHitStop : comboHitStopDuration, info.Heavy ? heavyHitStopTimeScale : lightHitStopTimeScale, false, victim);
+        else if(!(victim is Player) || hitStopOnPlayerHurt)
             RequestHitStop(info.Heavy, (profile != null ? profile.hitStopScale : 1f) * (info.Blocked ? blockHitStopScale
                 : info.Backstab ? backstabHitStopScale : info.Critical ? critHitStopScale : 1f), victim);
     }
@@ -612,9 +732,12 @@ public class CombatManager : Singleton<CombatManager>
     public void RequestHitStop(bool heavy, float scale = 1f, Character victim = null)
     {
         if (!hitStopEnabled) return;
-        float duration = (heavy ? heavyHitStopDuration : lightHitStopDuration) * Mathf.Max(0f, scale);
+        PauseOnHit((heavy ? heavyHitStopDuration : lightHitStopDuration) * Mathf.Max(0f, scale), heavy ? heavyHitStopTimeScale : lightHitStopTimeScale, heavy, victim);
+    }
+
+    void PauseOnHit(float duration, float timeScale, bool heavy, Character victim)
+    {
         if (duration <= 0f) return;
-        float timeScale = heavy ? heavyHitStopTimeScale : lightHitStopTimeScale;
 
         float end = Time.unscaledTime + duration;
         AddShake(victim, heavy);

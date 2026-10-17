@@ -93,6 +93,22 @@ public class DungeonRoomTemplate : MonoBehaviour
     [ShowIf(nameof(overrideLightColor))]
     public Color lightColor = new Color(1f, .6f, .3f);
 
+    [Title("Dungeon Master")]
+    [TextArea(1, 3), Tooltip("Said when the table player first walks in. One is picked at random. Empty: nothing.")]
+    public string[] enterLines = new string[0];
+    [Range(0, 1), Tooltip("Chance a line is said.")]
+    public float enterChance = 1f;
+    [Tooltip("Said across the table, without the \"voice inside your head\" lead-in.")]
+    public bool enterInPerson;
+
+    // A random entry line, or null.
+    public DungeonMaster.Line PickEnterLine()
+    {
+        if (enterLines == null || enterLines.Length == 0 || Random.value > enterChance) return null;
+        var text = enterLines[Random.Range(0, enterLines.Length)];
+        return string.IsNullOrWhiteSpace(text) ? null : new DungeonMaster.Line { text = text, inPerson = enterInPerson, mumble = true };
+    }
+
     [Title("Preview")]
     [Tooltip("Level whose materials, cell size and wall torch the Prefab Mode preview uses.")]
     public TableLevelData previewLevel;

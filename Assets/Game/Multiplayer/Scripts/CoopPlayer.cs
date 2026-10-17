@@ -172,7 +172,8 @@ public class CoopPlayer : NetworkBehaviour
     // once, reliably) and the animator's parameters and the look's pitch ten times a second (unreliably), so a teammate's
     // body plays the very clips the owner's first person plays, from the same moment.
     readonly int[] sentStates = new int[15];
-    float nextArms;
+    float nextArms, lastArmsSent;
+    ArmsPose lastArms;
 
     void SendArms(Player table)
     {
@@ -203,8 +204,10 @@ public class CoopPlayer : NetworkBehaviour
             pitch = Mathf.DeltaAngle(0f, (Quaternion.Inverse(yaw) * table.Look.PitchTransform.rotation).eulerAngles.x);
         }
         var pose = new ArmsPose { states = states, values = values, pitch = pitch };
-        if (changed) ArmsRpc(pose);
-        else ArmsTickRpc(pose);
+        if (changed) { ArmsRpc(pose); lastArms = pose; lastArmsSent = Time.unscaledTime; return; }
+        // The tick only when something moved (a parameter or the look), and once a second anyway.
+        if (Mathf.Abs(Mathf.DeltaAngle(pose.pitch, lastArms.pitch)) < .5f && pose.values.Equals(lastArms.values) && Time.unscaledTime - lastArmsSent < 1f) return;
+        ArmsTickRpc(pose); lastArms = pose; lastArmsSent = Time.unscaledTime;
     }
 
     [Rpc(SendTo.NotOwner)] void ArmsRpc(ArmsPose pose) => Avatar.ApplyArms(pose);

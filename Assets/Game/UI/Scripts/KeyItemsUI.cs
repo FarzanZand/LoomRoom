@@ -36,7 +36,7 @@ public class KeyItemsUI : MonoBehaviour
         int hash = 17;
         foreach (var (track, milestone) in ProgressionManager.Instance.TrophiesIn(ProgressionManager.TrophyState.Carried))
             hash = hash * 31 + ((track?.id ?? "").GetHashCode() ^ milestone.value);
-        return hash;
+        return hash * 31 + ProgressionManager.Instance.TileState;
     }
 
     void Rebuild()
@@ -64,6 +64,20 @@ public class KeyItemsUI : MonoBehaviour
                 img.preserveAspect = true;
                 img.enabled = img.sprite != null;
             }
+            shown.Add(slot);
+        }
+        // The puzzle's missing tile, carried home and not yet placed.
+        var meta = ProgressionManager.Instance;
+        if (meta.missingTile != null && meta.TileState == 1)
+        {
+            var slot = Instantiate(template, template.parent);
+            slot.gameObject.SetActive(true);
+            slot.name = meta.missingTile.itemName;
+            slot.anchoredPosition = template.anchoredPosition - new Vector2(0, i++ * (template.rect.height + 10));
+            Image img = null;
+            if (templateIcon != null) foreach (var candidate in slot.GetComponentsInChildren<Image>(true)) if (candidate.name == templateIcon.name) { img = candidate; break; }
+            if (img == null) img = slot.GetComponent<Image>();
+            if (img != null) { img.sprite = meta.missingTile.icon; img.preserveAspect = true; img.enabled = img.sprite != null; }
             shown.Add(slot);
         }
     }

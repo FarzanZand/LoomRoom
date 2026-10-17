@@ -148,6 +148,9 @@ public class PlayerManager : Singleton<PlayerManager>
         if (InputManager.HasInstance)
             InputManager.Instance.SetGameplayMap(kind);
 
+        // Back in the room: no spell from the table is left hanging or burning there (a volley's balls, a fire circle).
+        if (kind == PlayerKind.Room) { FireballVolley.ClearAll(); SpellProjectile.ClearAll(); GroundAreaSpell.ClearAll(); }
+
         PlayerSwapped?.Invoke(Active);
     }
 }

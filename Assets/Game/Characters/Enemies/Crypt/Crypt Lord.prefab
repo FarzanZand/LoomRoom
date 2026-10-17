@@ -140,7 +140,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 0
-    baseValue: 190
+    baseValue: 285
     min: 0
     max: 0
   - stat: 2

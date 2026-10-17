@@ -25,6 +25,17 @@ public class SpellProjectile : MonoBehaviour
     public float HomingTurn { get; set; } = 540f;
     public string SourceName { get; set; }
 
+    // Every one in flight, so going back to the room can clear them (PlayerManager: a ball hung in the air by a volley
+    // when the player died stayed in the room otherwise).
+    static readonly HashSet<SpellProjectile> live = new();
+    void OnEnable() => live.Add(this);
+    void OnDisable() => live.Remove(this);
+    public static void ClearAll()
+    {
+        foreach (var x in new List<SpellProjectile>(live)) if (x != null) Destroy(x.gameObject);
+        live.Clear();
+    }
+
     Character owner;
     SpellDefinition spell;
     AdventurerProgress progress;

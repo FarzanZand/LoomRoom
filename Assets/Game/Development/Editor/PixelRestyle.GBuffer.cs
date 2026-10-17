@@ -21,6 +21,9 @@ public static partial class PixelRestyle
         for (int i = 0; i < width * height; i++) buf[i * GB] = -1f;
         // The model's own colour per triangle.
         var triCol = new Color[t.Length / 3];
+        // Synty's own texture per texel (its swatch atlas also holds drawn detail: a skull's eye sockets, nose and
+        // teeth are drawn across triangles, and one colour per triangle lost them).
+        Texture2D syntyPal = null; Vector2[] syntyUv = null; int[] syntyTri = null; Color syntyTint = Color.white; Vector3[] syntyV = null;
         var plain = plainMeshPath != null ? AssetDatabase.LoadAssetAtPath<Mesh>(plainMeshPath) : null;
         Texture2D plainTex = null;
         if (plainTexPath != null) { plainTex = new Texture2D(2, 2); plainTex.LoadImage(File.ReadAllBytes(plainTexPath)); }
@@ -38,7 +41,8 @@ public static partial class PixelRestyle
                 var u = (suv[st[f * 3]] + suv[st[f * 3 + 1]] + suv[st[f * 3 + 2]]) / 3f;
                 triCol[f] = (pal != null ? Sample(pal, u) : Color.white) * tint;
             }
-            foreach (var c in cache.Values) Object.DestroyImmediate(c);
+            if (pal != null && st.Length == t.Length) { syntyPal = pal; syntyUv = suv.ToArray(); syntyTri = st; syntyTint = tint; syntyV = sMesh.vertices; }
+            foreach (var c in cache.Values) if (c != syntyPal) Object.DestroyImmediate(c);
         }
         else if (plain != null && plainTex != null)
         {
@@ -87,11 +91,24 @@ public static partial class PixelRestyle
                     buf[k] = f / 3; buf[k + 1] = fn.x; buf[k + 2] = fn.y; buf[k + 3] = fn.z;
                     buf[k + 4] = (p.x - b.min.x) / Mathf.Max(1e-6f, b.size.x); buf[k + 5] = (p.y - b.min.y) / Mathf.Max(1e-6f, b.size.y); buf[k + 6] = (p.z - b.min.z) / Mathf.Max(1e-6f, b.size.z);
                     buf[k + 7] = ao; buf[k + 8] = 1f;
-                    var tc = triCol[f / 3]; buf[k + 9] = tc.r; buf[k + 10] = tc.g; buf[k + 11] = tc.b;
+                    var tc = triCol[f / 3];
+                    if (syntyPal != null)
+                    {
+                        // Each corner's Synty UV by position: the restyle can start a triangle at another corner,
+                        // which turned the drawn detail inside it (a skull's teeth ran up its side).
+                        Vector2 U(int corner)
+                        {
+                            var at = v[t[f + corner]]; int best = 0; float bd = float.MaxValue;
+                            for (int q = 0; q < 3; q++) { float dq = (syntyV[syntyTri[f + q]] - at).sqrMagnitude; if (dq < bd) { bd = dq; best = q; } }
+                            return syntyUv[syntyTri[f + best]];
+                        }
+                        tc = Sample(syntyPal, U(0) * w1 + U(1) * w2 + U(2) * w3) * syntyTint;
+                    }
+                    buf[k + 9] = tc.r; buf[k + 10] = tc.g; buf[k + 11] = tc.b;
                 }
             }
         }
-        finally { Object.DestroyImmediate(probe); if (plainTex != null) Object.DestroyImmediate(plainTex); }
+        finally { Object.DestroyImmediate(probe); if (plainTex != null) Object.DestroyImmediate(plainTex); if (syntyPal != null) Object.DestroyImmediate(syntyPal); }
         var bytes = new byte[buf.Length * 4]; System.Buffer.BlockCopy(buf, 0, bytes, 0, bytes.Length);
         Directory.CreateDirectory(Path.GetDirectoryName(outFile));
         File.WriteAllBytes(outFile, bytes);

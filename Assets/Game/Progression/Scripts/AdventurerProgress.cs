@@ -21,6 +21,11 @@ public class AdventurerProgress : MonoBehaviour
     public event Action<AdventureSkill, float, float, float, int> SkillExperienceGained;
     public float SkillProgress(AdventureSkill skill) => Ranks[(int)skill] >= 100 ? 1 : SkillExperience[(int)skill] / (Definition(skill)?.ExperienceRequired(Ranks[(int)skill]) ?? 100);
     public int[] Growth { get; private set; } = new int[StatNames.Length];
+    // Attribute points put in this run, by MetaAttribute, on top of the character sheet's scores; and the points from
+    // levels not put anywhere yet (one per level, spent on the character panel).
+    public int[] AttributePoints { get; private set; } = new int[AttributeCount];
+    public int UnspentPoints { get; private set; }
+    public const int AttributeCount = 4;
     public float NextLevelXp => rules != null ? rules.levelXp + (Level - 1) * rules.levelXpGrowth : 100;
     public bool InRun => RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;
 
@@ -193,7 +198,7 @@ public class AdventurerProgress : MonoBehaviour
     {
         if (rules == null || rules.classes == null || rules.classes.Length == 0) return;
         if (selectedClass == null || !selectedClass.Unlocked) selectedClass = rules.classes[0];
-        Level = 1; Experience = 0; Growth = new int[StatNames.Length];
+        Level = 1; Experience = 0; Growth = new int[StatNames.Length]; AttributePoints = new int[AttributeCount]; UnspentPoints = 0;
         SkillExperience = new float[AdventureSkills.Count];
         Ranks = new int[AdventureSkills.Count];
         // A run starts from the base bought on the character sheet (ProgressionManager) plus the class.
@@ -224,20 +229,24 @@ public class AdventurerProgress : MonoBehaviour
         stats.RemoveAllFromSource(source);
         void Add(StatType stat, float value, ModifierType kind = ModifierType.Flat) => stats.AddModifier(new StatModifier(stat, value, kind, source));
         for (int i = 0; i < StatNames.Length; i++) Add(StatType.Strength + i, (i < selectedClass.attributes.Length ? selectedClass.attributes[i] : 0) + Growth[i]);
-        Add(StatType.MaxHealth, selectedClass.health - stats.GetBase(StatType.MaxHealth) + (Level - 1) * rules.healthPerLevel);
-        Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + (Level - 1) * rules.manaPerLevel);
+        Add(StatType.MaxHealth, selectedClass.health - stats.GetBase(StatType.MaxHealth) + 0);
+        Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + 0);
         // Legendary Athletics: a deeper well of stamina.
         Add(StatType.MaxStamina, selectedClass.stamina - stats.GetBase(StatType.MaxStamina) + (Legendary(AdventureSkill.Athletics) ? rules.legendaryStamina : 0));
         // Athletics: faster on your feet, and a little more stamina every rank.
         if (Bonus(AdventureSkill.Athletics) > 0) Add(StatType.MoveSpeed, Bonus(AdventureSkill.Athletics), ModifierType.PercentAdd);
         if (Extra(AdventureSkill.Athletics) > 0) Add(StatType.MaxStamina, Extra(AdventureSkill.Athletics));
-        // The character sheet's attributes: each point above the base adds health, mana or damage.
-        if (ProgressionManager.HasInstance && ProgressionManager.MetaActive)
+        // Strength, Dexterity, Constitution and Intelligence: the sheet's score plus this run's points; each point above
+        // the base gives what its track says (ProgressionManager.AttributeGains).
+        if (ProgressionManager.HasInstance)
         {
             var meta = ProgressionManager.Instance;
-            if (meta.MetaBonus(MetaAttribute.Constitution) != 0) Add(StatType.MaxHealth, meta.MetaBonus(MetaAttribute.Constitution));
-            if (meta.MetaBonus(MetaAttribute.Intelligence) != 0) Add(StatType.MaxMana, meta.MetaBonus(MetaAttribute.Intelligence));
-            if (meta.MetaBonus(MetaAttribute.Strength) != 0) Add(StatType.AttackDamage, meta.MetaBonus(MetaAttribute.Strength));
+            for (int a = 0; a < AttributeCount; a++)
+            {
+                var track = meta.Track((MetaAttribute)a);
+                if (track == null) continue;
+                foreach (var (stat, amount) in ProgressionManager.AttributeGains(track, Score((MetaAttribute)a) - track.baseScore)) Add(stat, amount);
+            }
         }
         stats.RestorePools(health, mana, stamina);
         Changed?.Invoke();
@@ -251,17 +260,39 @@ public class AdventurerProgress : MonoBehaviour
         while (Experience >= NextLevelXp && Level < 100)
         {
             Experience -= NextLevelXp; Level++;
-            var growth = selectedClass.growth;
-            int raised = growth != null && growth.Length > 0 ? Mathf.Clamp(growth[(Level - 2) % growth.Length], 0, 5) : -1;
-            if (raised >= 0) Growth[raised]++;
-            ApplyStats();
+            // Each level gives one attribute point, put where the player likes on the character panel.
+            UnspentPoints++;
             if (AudioManager.HasInstance) AudioManager.Instance.PlayLevelUp();
             MessageLog.Post($"You are now level {Level}.", MessageKind.Good);
+            var gains = new System.Collections.Generic.List<string> { "+1 attribute point" };
+            LeveledUp?.Invoke(Level, gains);
         }
         Changed?.Invoke();
     }
 
+    // An attribute's score now: the character sheet's plus the points put in this run.
+    public int Score(MetaAttribute attribute)
+    {
+        int sheet = ProgressionManager.HasInstance ? ProgressionManager.Instance.AttributeScore(attribute) : 8;
+        int i = (int)attribute;
+        return sheet + (i >= 0 && i < AttributePoints.Length ? AttributePoints[i] : 0);
+    }
+
+    // Puts one of the level's points into an attribute; false when there is none to put.
+    public bool SpendPoint(MetaAttribute attribute)
+    {
+        int i = (int)attribute;
+        if (!InRun || UnspentPoints <= 0 || i < 0 || i >= AttributePoints.Length) return false;
+        UnspentPoints--; AttributePoints[i]++;
+        ApplyStats();
+        if (AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
+        return true;
+    }
+
     public static readonly string[] StatNames = { "STR", "DEX", "CON", "INT", "PER", "CHR" };
+    public static readonly string[] StatFullNames = { "Strength", "Dexterity", "Constitution", "Intelligence", "Perception", "Charisma" };
+    // A level gained in a run: the new level and what it gave, one line each ("+3 Health"), for LevelUpUI.
+    public event Action<int, System.Collections.Generic.List<string>> LeveledUp;
 
     public void ReachedFloor()
     {
@@ -308,7 +339,8 @@ public class AdventurerProgress : MonoBehaviour
         }
     }
 
-    public void Restore(int level, float xp, int[] ranks, int[] growth, float[] skillExperience = null)
+    // attributePoints and unspent: the points from levels, as saved (null: none, a checkpoint from before them).
+    public void Restore(int level, float xp, int[] ranks, int[] growth, float[] skillExperience = null, int[] attributePoints = null, int unspent = 0)
     {
         Level = Mathf.Clamp(level, 1, 100); Experience = Mathf.Max(0, xp);
         Ranks = ranks != null && ranks.Length == AdventureSkills.Count ? ranks : new int[AdventureSkills.Count];
@@ -321,6 +353,8 @@ public class AdventurerProgress : MonoBehaviour
         }
         taught.Clear();
         Growth = growth != null && growth.Length == StatNames.Length ? growth : new int[StatNames.Length];
+        AttributePoints = attributePoints != null && attributePoints.Length == AttributeCount ? attributePoints : new int[AttributeCount];
+        UnspentPoints = Mathf.Max(0, unspent);
         ApplyStats();
     }
 }

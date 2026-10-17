@@ -101,12 +101,13 @@ public class TableLevelLoader : MonoBehaviour
         Initialize();
         if(!Busy) menu.Show(title);
     }
-    public void Load(TableLevelData level)
+    // skipReveal: straight in behind a fade, as the debug sessions do (the dev console's loadtemplate).
+    public void Load(TableLevelData level, bool skipReveal=false)
     {
         if(Busy || level==null) return;
         // Co-op: the table is played together; a run starts from the figures (CoopLoad), never from a menu here.
         if(Coop.Running) { NotificationUI.Show("In co-op, sit down at the table to play"); return; }
-        Initialize(); StartCoroutine(LoadRoutine(level));
+        Initialize(); StartCoroutine(LoadRoutine(level,false,skipReveal));
     }
     AdventureSave.Checkpoint pendingResume;
     // The current run was continued from a save, not started fresh.
@@ -137,7 +138,7 @@ public class TableLevelLoader : MonoBehaviour
         if(Busy || !HasNextFloor || player==null || !player.IsAlive)return;
         StartCoroutine(LoadRoutine(Current,true));
     }
-    IEnumerator LoadRoutine(TableLevelData level, bool descending=false)
+    IEnumerator LoadRoutine(TableLevelData level, bool descending=false, bool skipReveal=false)
     {
         Busy=true; menu.Hide();
         // Loading from the room: the table player may never have been active yet.
@@ -155,7 +156,7 @@ public class TableLevelLoader : MonoBehaviour
         GameManager.Instance.Push(GameState.Cutscene);
         RememberRoom();
         var revealSettings = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
-        bool useReveal = !DebugDungeonSession.Active && !descending && level.IsDungeon && revealSettings != null;
+        bool useReveal = !DebugDungeonSession.Active && !skipReveal && !descending && level.IsDungeon && revealSettings != null;
         bool faded=false, completed=false;
         TableLevelReveal reveal=null;
         // C# forbids yield in try/catch, so only Prepare is caught; the finally always releases the cutscene and fade.

@@ -155,7 +155,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         if (Item == null) return;
         if (e.button == PointerEventData.InputButton.Left && !e.dragging && Keyboard.current != null && Keyboard.current.shiftKey.isPressed) { QuickMove(); return; }
-        if (e.button == PointerEventData.InputButton.Right) { if (!ToggleEquip()) ShowContextMenu(); }
+        // Right-click: a consumable is used at once, gear goes on or off, anything else gets the actions menu.
+        if (e.button == PointerEventData.InputButton.Right) { if (Item.IsConsumable) ActivateItem(); else if (!ToggleEquip()) ShowContextMenu(); }
         else if (e.button == PointerEventData.InputButton.Left && !e.dragging && e.clickCount == 2)
             ActivateItem();
     }

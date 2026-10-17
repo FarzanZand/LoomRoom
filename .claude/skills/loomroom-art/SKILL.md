@@ -11,7 +11,12 @@ low-resolution, chunky, **dirty** pixel art painted by an image model, never pro
 
 ## Tools: what to use and what never to use
 
-- **Images: Meshy's image generator only** (`python Tools/meshy.py concept ...`). It made every approved creature.
+- **No Meshy unless the user asks for it (user, 2026-10-17).** Its paintings read as AI-made (the gargoyle, skull pile,
+  barrels and books were sent back for that). By default make art by hand-made rules from the model itself: colours from
+  the Synty swatches, shading from the geometry (creases, edges, faces), placed pixels (`Tools/prop_structure.py` for
+  wood and metal, `Tools/prop_organic.py` for stone, bone and other organic props), and hand edits. Use the Meshy steps
+  below only when the user asks for Meshy by name for that piece of work.
+- **Images (only when the user asks for Meshy): Meshy's image generator** (`python Tools/meshy.py concept ...`). It made every approved creature.
   It costs **9 Meshy credits per image** (the user's Meshy Pro account, not Claude tokens); check the balance with
   `python Tools/meshy.py balance` and say what a batch will cost before a big run.
 - **Never Meshy retexture** (it scrambles the Synty models) and **no procedural/noise texture painting** (rejected).
@@ -214,7 +219,15 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
 - Ramps only from visible, lit texels (the painter's black undersides dragged ramps to black). Accents (moss, nails)
   only when the painting has a real patch of them: 31 near-black "green" texels became black moss on the crate.
   Clumped dirt reads as a checker on thin legs: wear bands must be solid.
-- Not for stone or organic props (tombs, altars, statues, bones, sacks): those are still open.
+- Stone, bone and books: `Tools/prop_organic.py --material stone|bone|book` (2026-10-17; gargoyle, skull pile and the
+  room books). Every texel starts from the Synty original's own colour, sampled per texel by the G-buffer bake (so
+  detail Synty draws in its texture, a skull's sockets and teeth or a spine's bands, comes through; one colour per
+  triangle lost them), then rules per material: stone gets speckled grain, cracks and moss in upward hollows; bone
+  thin cracks, drawn features widened (`--grow 1`) so sockets read; books keep each book's colour flat, edges and
+  scuffs lighter, page fibres (`--covers` gives a stack's books their own colours by height when Synty gives them one).
+  No wood grain on anything that isn't wood.
+- A smooth-shaded restyled mesh hides a low-poly model's shape (the skull pile read as a heap of eggs): flat-shade it
+  (each triangle its own vertices and face normal, every UV channel kept) so its facets catch the light like Synty's.
 
 **Meshy models (the bed)**
 - A Meshy model's texture atlas is cut into hundreds of small patches at different sizes and angles. Never try to
@@ -273,3 +286,15 @@ they will repeat (a strip of 6-8 wall tiles with the variants in place, the floo
   hand-drawn marks and soot) or as halves cut on mortar lines.
 - **Pixel size.** Painted pixels must stay square and the material's texels exactly 128 per unit (tiling = tile x 128 /
   texture size); never stretch a painting to a different aspect.
+- **No obvious repetition (user, 2026-10-17).** The same base tile next to itself is fine, and rare low-weighted variants
+  break it up (Church3's ratio: base weight 10, variants 0.5 to 1.5, wall variants 256x384, floor variants 256x256). What
+  must not happen is a sign the player can clearly see on a tile: any mark, blotch, bright accent or odd shape in the base
+  that the eye picks out shows on every tile and gives the repeat away. The base is even detail of one density; anything
+  that stands out goes on a rare variant. Check it on a 4x3 (walls) or 4x4 (floors) layout of the base at full size, then
+  in game across a whole room.
+- **Natural surfaces (caves, earth, bark, foliage): `Tools/style_tiles.py`.** One painting (16:9, ~340 x 190 painted
+  pixels) is smaller than a tile; a crop would repeat inside it. The tool brings the painting down to one texel per painted
+  pixel and quilts the tile from overlapping patches of it (joined along their least visible cut, wrapping so the tile is
+  seamless, no painting spot used twice), then levels the light drift. Every texel stays a painted one. Wall tiles are
+  quilted at 256x384, floor and ceiling tiles at 256x256 (the Church3 sizes and tilings above). Not for coursed masonry
+  (blocks and mortar lines must line up; build those as the Church styles were).

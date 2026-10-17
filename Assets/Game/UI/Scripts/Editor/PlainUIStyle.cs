@@ -70,8 +70,68 @@ public static class PlainUIStyle
             text.color = TitleGold; titles++;
             if (PrefabUtility.IsPartOfPrefabInstance(text)) PrefabUtility.RecordPrefabInstancePropertyModifications(text);
         }
+        StyleContextMenu();
         EditorSceneManager.MarkSceneDirty(canvas.scene);
         Debug.Log($"[Plain UI] {panels} panels, {buttons} buttons and insets, {titles} titles restyled.");
+    }
+
+    const string LabelFont = "Assets/Game/UI/Fonts/PixelOperator-Bold.asset";
+    static readonly Color LabelGold = new(.91f, .78f, .48f);   // as the pause menu's buttons
+
+    // The right-click menu (ContextMenuUI): its panel the plain grey frame, its button template a plain grey slot that
+    // tints on hover, with a gold PixelOperator-Bold label, as the pause menu's buttons. Safe to run again.
+    [MenuItem("Tools/LoomRoom/UI/Plain Style Context Menu")]
+    public static string StyleContextMenu()
+    {
+        var menu = Object.FindAnyObjectByType<ContextMenuUI>(FindObjectsInactive.Include);
+        if (menu == null) return "no ContextMenuUI in the open scene";
+        var so = new SerializedObject(menu);
+        var panel = so.FindProperty("panel").objectReferenceValue as RectTransform;
+        var template = so.FindProperty("buttonTemplate").objectReferenceValue as Button;
+        var frame = AssetDatabase.LoadAssetAtPath<Sprite>(Frame);
+        var slot = AssetDatabase.LoadAssetAtPath<Sprite>(Slot);
+        var font = AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>(LabelFont);
+        if (panel == null || template == null || frame == null || slot == null) return "context menu pieces or sprites missing";
+
+        var panelImage = panel.GetComponent<Image>();
+        Undo.RecordObject(panelImage, "Plain context menu");
+        panelImage.sprite = frame; panelImage.type = Image.Type.Tiled; panelImage.pixelsPerUnitMultiplier = 1f;
+        panelImage.color = FrameTint; panelImage.material = null;
+        foreach (var outline in panel.GetComponents<Outline>()) { Undo.RecordObject(outline, "Plain context menu"); outline.enabled = false; }
+        var layout = panel.GetComponent<VerticalLayoutGroup>();
+        if (layout != null) { Undo.RecordObject(layout, "Plain context menu"); layout.padding = new RectOffset(14, 14, 14, 14); layout.spacing = 4; }
+
+        var image = template.GetComponent<Image>();
+        Undo.RecordObject(image, "Plain context menu");
+        image.sprite = slot; image.type = Image.Type.Sliced; image.pixelsPerUnitMultiplier = 1f; image.color = Color.white; image.material = null;
+        foreach (var outline in template.GetComponents<Outline>()) { Undo.RecordObject(outline, "Plain context menu"); outline.enabled = false; }
+        Undo.RecordObject(template, "Plain context menu");
+        template.transition = Selectable.Transition.ColorTint;
+        template.spriteState = default;
+        var colours = template.colors;
+        colours.normalColor = new Color(.82f, .82f, .82f);
+        colours.highlightedColor = Color.white;
+        colours.selectedColor = new Color(.82f, .82f, .82f);   // a clicked entry must not stay lit on the next opening
+        colours.pressedColor = new Color(.62f, .62f, .62f);
+        colours.disabledColor = new Color(.5f, .5f, .5f, .6f);
+        colours.colorMultiplier = 1f; colours.fadeDuration = .06f;
+        template.colors = colours;
+        template.targetGraphic = image;
+        var element = template.GetComponent<LayoutElement>();
+        if (element != null) { Undo.RecordObject(element, "Plain context menu"); element.preferredHeight = 46; }
+
+        var label = template.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+        if (label != null)
+        {
+            Undo.RecordObject(label, "Plain context menu");
+            Undo.RecordObject(label.rectTransform, "Plain context menu");
+            if (font != null) { label.font = font; label.fontSharedMaterial = font.material; }
+            label.fontSize = 22; label.color = LabelGold;
+            label.alignment = TMPro.TextAlignmentOptions.MidlineLeft;
+            label.rectTransform.offsetMin = new Vector2(16, 2); label.rectTransform.offsetMax = new Vector2(-12, -2);
+        }
+        EditorSceneManager.MarkSceneDirty(menu.gameObject.scene);
+        return "context menu restyled";
     }
 
     static bool Similar(Color a, Color b) => Mathf.Abs(a.r - b.r) < .03f && Mathf.Abs(a.g - b.g) < .03f && Mathf.Abs(a.b - b.b) < .03f;
