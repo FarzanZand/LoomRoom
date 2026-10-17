@@ -95,9 +95,13 @@ public class AdventurerProgress : MonoBehaviour
 
     public float SpellPower(AdventureSkill school)
     {
-        float intelligence = Mathf.Max(0, Attribute(StatType.Intelligence)) * (rules != null ? rules.intelligenceSpell : .035f);
-        // Thaumaturgy draws on Constitution as well, as in Barony.
-        if (school == AdventureSkill.Thaumaturgy) intelligence += Mathf.Max(0, Attribute(StatType.Constitution)) * (rules != null ? rules.intelligenceSpell * .5f : .0175f);
+        // Intelligence points above the base (the sheet's and this run's) raise every spell; Thaumaturgy draws on
+        // Constitution as well, at half.
+        // The per-point share is the Intelligence track's third gain (shown on the sheet and panel), else the rules'.
+        var intTrack = ProgressionManager.HasInstance ? ProgressionManager.Instance.Track(MetaAttribute.Intelligence) : null;
+        float perPoint = intTrack != null && intTrack.thirdBonusPerPoint > 0 ? intTrack.thirdBonusPerPoint * .01f : rules != null ? rules.intelligenceSpell : .035f;
+        float intelligence = Mathf.Max(0, PointsAbove(MetaAttribute.Intelligence)) * perPoint;
+        if (school == AdventureSkill.Thaumaturgy) intelligence += Mathf.Max(0, PointsAbove(MetaAttribute.Constitution)) * perPoint * .5f;
         return (1 + Bonus(school)) * (1 + intelligence * (Legendary(school) ? 1.4f : 1));
     }
     public float SpellCastTime(AdventureSkill school) => Legendary(school) ? .5f : Mathf.Max(.5f, 1 - Extra(school));
@@ -160,6 +164,8 @@ public class AdventurerProgress : MonoBehaviour
     const float CrushArmor = 10f;
     const int CrushStacks = 5;
     static readonly System.Collections.Generic.Dictionary<Character, int> crushed = new();
+    // Emptied at every run start and floor change (the enemies it counted are gone) and between Play sessions.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetCrushed() => crushed.Clear();
     static readonly object crushSource = new();
     static void Crush(Character target)
     {
@@ -204,7 +210,7 @@ public class AdventurerProgress : MonoBehaviour
         // A run starts from the base bought on the character sheet (ProgressionManager) plus the class.
         bool meta = ProgressionManager.HasInstance && ProgressionManager.MetaActive;
         foreach (var skill in AdventureSkills.All) Ranks[(int)skill] = Mathf.Clamp((meta ? ProgressionManager.Instance.BaseRank(skill) : 0) + selectedClass.StartingRank(skill), 0, 100);
-        taught.Clear(); visited.Clear(); sprintDistance = healCredit = 0; lastPosition = transform.position;
+        taught.Clear(); crushed.Clear(); visited.Clear(); sprintDistance = healCredit = 0; lastPosition = transform.position;
         player.Equipment.UnequipAll(); player.Bag.Clear(); player.Hotbar.Clear();
         ApplyStats();
         foreach (var item in selectedClass.equipment)
@@ -228,7 +234,8 @@ public class AdventurerProgress : MonoBehaviour
         float health = stats.CurrentHealth, mana = stats.CurrentMana, stamina = stats.CurrentStamina;
         stats.RemoveAllFromSource(source);
         void Add(StatType stat, float value, ModifierType kind = ModifierType.Flat) => stats.AddModifier(new StatModifier(stat, value, kind, source));
-        for (int i = 0; i < StatNames.Length; i++) Add(StatType.Strength + i, (i < selectedClass.attributes.Length ? selectedClass.attributes[i] : 0) + Growth[i]);
+        // The classes' old six attributes (AdventurerClass.attributes) are retired: nothing adds them, so the stats they
+        // fed (CharacterStats' derived damage, armour, speed; Charisma prices, Perception light) stay at their own values.
         Add(StatType.MaxHealth, selectedClass.health - stats.GetBase(StatType.MaxHealth) + 0);
         Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + 0);
         // Legendary Athletics: a deeper well of stamina.
@@ -245,7 +252,7 @@ public class AdventurerProgress : MonoBehaviour
             {
                 var track = meta.Track((MetaAttribute)a);
                 if (track == null) continue;
-                foreach (var (stat, amount) in ProgressionManager.AttributeGains(track, Score((MetaAttribute)a) - track.baseScore)) Add(stat, amount);
+                foreach (var (stat, amount, kind) in ProgressionManager.AttributeGains(track, Score((MetaAttribute)a) - track.baseScore)) Add(stat, amount, kind);
             }
         }
         stats.RestorePools(health, mana, stamina);
@@ -263,7 +270,7 @@ public class AdventurerProgress : MonoBehaviour
             // Each level gives one attribute point, put where the player likes on the character panel.
             UnspentPoints++;
             if (AudioManager.HasInstance) AudioManager.Instance.PlayLevelUp();
-            MessageLog.Post($"You are now level {Level}.", MessageKind.Good);
+            // The level-up panel (LeveledUp) says it; the feed doesn't say it again.
             var gains = new System.Collections.Generic.List<string> { "+1 attribute point" };
             LeveledUp?.Invoke(Level, gains);
         }
@@ -276,6 +283,13 @@ public class AdventurerProgress : MonoBehaviour
         int sheet = ProgressionManager.HasInstance ? ProgressionManager.Instance.AttributeScore(attribute) : 8;
         int i = (int)attribute;
         return sheet + (i >= 0 && i < AttributePoints.Length ? AttributePoints[i] : 0);
+    }
+
+    // An attribute's points above its track's base score (what its bonuses count).
+    public int PointsAbove(MetaAttribute attribute)
+    {
+        var track = ProgressionManager.HasInstance ? ProgressionManager.Instance.Track(attribute) : null;
+        return Score(attribute) - (track != null ? track.baseScore : 8);
     }
 
     // Puts one of the level's points into an attribute; false when there is none to put.
@@ -296,6 +310,8 @@ public class AdventurerProgress : MonoBehaviour
 
     public void ReachedFloor()
     {
+        // The last floor's enemies are gone: their per-enemy training and crush counts with them.
+        taught.Clear(); crushed.Clear();
         visited.Clear(); sprintDistance = 0; lastPosition = transform.position;
         GainExperience(rules != null ? rules.xpPerFloor : 0);
     }

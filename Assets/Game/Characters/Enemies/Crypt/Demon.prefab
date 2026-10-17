@@ -105,15 +105,15 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 0
-    baseValue: 30
+    baseValue: 40
     min: 0
     max: 0
   - stat: 2
-    baseValue: 7
+    baseValue: 9
     min: 0
     max: 0
   - stat: 1
-    baseValue: 5
+    baseValue: 6
     min: 0
     max: 0
   audio:
@@ -242,4 +242,4 @@ MonoBehaviour:
   spells: []
   closesIn: 0
   spellGap: 4
-  experience: 18
+  experience: 24

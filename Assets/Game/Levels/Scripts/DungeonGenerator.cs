@@ -101,7 +101,7 @@ public partial class DungeonGenerator : MonoBehaviour
         Biome = level.BiomeAt(floorNumber, out int floorInBiome, out int biomeFloors);
         FloorInBiome = floorInBiome; BiomeFloors = biomeFloors;
         Milestone = level.Milestone(floorNumber);
-        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); MerchantRoom = -1;
+        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); MerchantRoom = -1; shopInPlainRoom = false;
         BeginDressing(seed);
         System.Collections.Generic.List<(Vector2Int, Vector2Int)> authoredDoors = null;
         if (level.layoutMode == DungeonLayoutMode.Authored)
@@ -375,7 +375,9 @@ public partial class DungeonGenerator : MonoBehaviour
         gameObject.AddComponent<DungeonHud>().Initialize(this);
         if (Board) gameObject.AddComponent<BoardReveal>().Initialize(this);
         watch.Stop();GenerationMilliseconds=watch.Elapsed.TotalMilliseconds;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"Dungeon seed {seed}, floor {floorNumber}: {Layout.rooms.Count} rooms, {Layout.Connections.Count} connections, generated in {GenerationMilliseconds:F0} ms.",this);
+#endif
     }
 
     // A walkable point somewhere inside the room, for spawns whose usual spot is blocked.
@@ -534,7 +536,7 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     // Supply spots, breakables, features and props. A room with a template gets the template instead.
-    // No lights here: they come from wall torches (PlaceTorches) and the player, like Barony.
+    // No lights here: they come from wall torches (PlaceTorches) and the player.
     void DecorateRoom(int index)
     {
         if (templates[index] != null) { PlaceTemplate(index); return; }
@@ -623,9 +625,20 @@ public partial class DungeonGenerator : MonoBehaviour
         if(rooms.Count==0)return;
         var rng=new System.Random(Scramble(unchecked(seed0+104723)));
         int room=rooms[rng.Next(rooms.Count)];
-        var at=Cell(Layout.RoomCenter(room));
-        if(NavMesh.SamplePosition(at,out var hit,2f,NavMesh.AllAreas))at=hit.position;
-        DungeonPickup.Spawn(ProgressionManager.Instance.missingTile,at+Vector3.up*.2f,transform);
+        // The room's middle, or the nearest floor cell to it that isn't a pit or sunken floor, is walkable and has room
+        // to stand (a pillar or fountain can fill the middle; the tile must never lie in a hole).
+        var centre=Layout.RoomCenter(room); var rect=Layout.rooms[room];
+        Vector3? spot=null; float best=float.MaxValue;
+        for(int x=rect.xMin;x<rect.xMax;x++)for(int z=rect.yMin;z<rect.yMax;z++)
+        {
+            var c=new Vector2Int(x,z);
+            if(!Layout.InBounds(c) || !Layout.floor[x,z] || !Layout.InRoom(room,c) || cutCells.Contains(c))continue;
+            float d=(c-centre).sqrMagnitude;
+            if(d>=best || !NavMesh.SamplePosition(Cell(c),out var hit,data.cellSize*.5f,NavMesh.AllAreas) || cutCells.Contains(CellOf(hit.position)) || !RoomForBody(hit.position,.25f))continue;
+            best=d; spot=hit.position;
+        }
+        if(spot==null){Debug.LogWarning($"[Dungeon] No free floor for the missing tile in room {room}.",this);return;}
+        DungeonPickup.Spawn(ProgressionManager.Instance.missingTile,spot.Value+Vector3.up*.2f,transform);
     }
 
     // Chests in the room the player starts in open toward them: their front (+Z, the latch) faces the spawn.

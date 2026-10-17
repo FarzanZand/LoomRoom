@@ -366,6 +366,7 @@ MonoBehaviour:
   openAngle: 100
   degreesPerSecond: 140
   startsOpen: 0
+  locked: 0
   obstructionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -384,6 +385,16 @@ MonoBehaviour:
     item: {fileID: 0}
     count: 1
     audio: {fileID: 11400000, guid: d69b1f051ae9dd343b3e972189ae2c0c, type: 2}
+    flag: 
+    flagValue: 1
+    conversation: 
+    amount: 10
+    custom: {fileID: 0}
+  lockedEffect:
+    type: 1
+    item: {fileID: 0}
+    count: 1
+    audio: {fileID: 0}
     flag: 
     flagValue: 1
     conversation: 
@@ -1188,7 +1199,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7680112582464935607}
-  m_Mesh: {fileID: 4300002, guid: b7b2e98bb7ded31409cfa2a2ad18c706, type: 3}
+  m_Mesh: {fileID: 4300000, guid: d9eba2f56fc11c946a094fa7b893fec1, type: 2}
 --- !u!23 &5547639747140077423
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1214,7 +1225,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 28646867ddcf90a4989276acd313ea43, type: 2}
+  - {fileID: 2100000, guid: 615f1979039be2e468acee50aea9740c, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

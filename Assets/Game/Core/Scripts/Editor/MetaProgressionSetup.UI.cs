@@ -152,16 +152,16 @@ public static partial class MetaProgressionSetup
             var row = new CharacterSheetUI.Row { trackId = attributes[i] };
             var crest = Img($"{attributes[i]} crest", p, new Vector2(-735, y), new Vector2(64, 72), MetaSprite("Crest"), Color.white);
             row.value = Text("Score", crest.transform, new Vector2(0, 6), new Vector2(64, 40), "8", bold, 32, Ink, TextAlignmentOptions.Center);
-            row.unit = Text($"{attributes[i]} bonus", p, new Vector2(-520, y - 50), new Vector2(304, 24), "+0 health", body, 18, Faint, TextAlignmentOptions.Left);
+            row.unit = Text($"{attributes[i]} bonus", p, new Vector2(-520, y - 50), new Vector2(304, 24), "+0", body, 20, Faint, TextAlignmentOptions.Left);   // filled at runtime
             row.icon = crest;
             var attrIcon = Img($"{attributes[i]} icon", p, new Vector2(-670, y + 18), new Vector2(32, 32), AttributeIcon(attributes[i]), Color.white);
             attrIcon.preserveAspect = true;
-            row.title = Text($"{attributes[i]} name", p, new Vector2(-532, y + 18), new Vector2(230, 36), attributes[i], bold, 28, Ink);
+            row.title = Text($"{attributes[i]} name", p, new Vector2(-532, y + 18), new Vector2(230, 36), char.ToUpperInvariant(attributes[i][0]) + attributes[i].Substring(1), bold, 28, Ink);
             row.title.raycastTarget = true;
             var bubbles = new List<Image>();
             for (int k = 0; k < 8; k++) bubbles.Add(Img($"{attributes[i]} level {k + 1}", p, new Vector2(-672 + k * 26, y - 22), new Vector2(20, 20), MetaSprite("Bubble outline"), Ink, Image.Type.Simple, true));
             row.bubbles = bubbles.ToArray();
-            row.buy = PenButton($"{attributes[i]} buy", p, new Vector2(-412, y - 22), new Vector2(104, 36), "Train 10", 18, out row.buyLabel);
+            row.buy = PenButton($"{attributes[i]} buy", p, new Vector2(-426, y - 22), new Vector2(100, 36), "Train 10", 18, out row.buyLabel);   // clear of the divider
             rows.Add(row);
         }
         Img("Divider", p, new Vector2(-350, 0), new Vector2(2, 780), null, new Color(Ink.r, Ink.g, Ink.b, .35f));
@@ -270,7 +270,7 @@ public static partial class MetaProgressionSetup
 
     static Sprite AttributeIcon(string id) => SheetIcon(AssetDatabase.LoadAssetAtPath<Sprite>(SkillIcons + (id == "constitution" ? "102_Passive_Male_Vitality.png" : id == "intelligence" ? "157_Mastery_Staff.png" : id == "dexterity" ? "139_Critical_Male_Sword.png" : "134_Strength.png")));
     // Four attribute rows under the name, 90 apart; the bonus line sits under each row's bubbles.
-    public static float AttributeRowY(int i) => -80 - i * 90;
+    public static float AttributeRowY(int i) => -80 - i * 98;
 
     static void BuildKeyItems(Transform canvas)
     {
@@ -280,7 +280,7 @@ public static partial class MetaProgressionSetup
         column.anchorMin = Vector2.zero; column.anchorMax = Vector2.one; column.sizeDelta = Vector2.zero;
         Undo.RegisterCreatedObjectUndo(column.gameObject, "Key items");
         var ui = column.gameObject.AddComponent<KeyItemsUI>();
-        var slotSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Diablo/Plain slot grey.png");
+        var slotSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Inventory/Plain slot grey.png");
         var slot = Rect("Key item", column, new Vector2(-70, -260), new Vector2(92, 92), new Vector2(1, 1));
         var bg = slot.gameObject.AddComponent<Image>(); bg.sprite = slotSprite; bg.type = Image.Type.Sliced; bg.raycastTarget = false; bg.pixelsPerUnitMultiplier = 1f;
         var icon = Img("Icon", slot, Vector2.zero, new Vector2(72, 72), null, Color.white);
@@ -311,7 +311,7 @@ public static partial class MetaProgressionSetup
         Undo.RegisterCreatedObjectUndo(tally.gameObject, "Build tally");
         var body = Font("PixelOperator"); var bold = Font("PixelOperator-Bold"); var title = Font("PixelOperator-Bold");   // one font everywhere
         var gold = new Color(.86f, .7f, .38f); var text = new Color(.9f, .88f, .84f); var dim = new Color(.6f, .64f, .68f);
-        var slotSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Diablo/Plain slot grey.png");
+        var slotSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Inventory/Plain slot grey.png");
         TMP_Text Label(string n, float y, string s, Color c, TMP_FontAsset f, float size, bool right = false) =>
             Text(n, tally, new Vector2(right ? 380 : -380, y), new Vector2(560, 40), s, f, size, c, right ? TextAlignmentOptions.Right : TextAlignmentOptions.Left).Pivot(right ? 1 : 0);
         Label("Spoils label", 225, "Spoils carried", gold, bold, 30);

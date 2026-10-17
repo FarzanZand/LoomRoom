@@ -12,9 +12,10 @@ like a skull's eye sockets, nose and teeth, comes through).
   * stone: grain (speckles a step up or down, by place on the model), more cracks, and moss in clumps on enclosed
     upward faces (--moss)
 
+  * cloth: folds and seams shaded, a coarse weave, dirt at the base; non-cloth parts keep their colour
   * book: each book keeps its own colour, flat; edges and scuffs a step lighter, creases darker, page fibres
 
-    python Tools/prop_organic.py <gbuffer.bin> <width> <height> <out.png> --material bone|stone|book [--moss 0.3] [--sat 0.7]
+    python Tools/prop_organic.py <gbuffer.bin> <width> <height> <out.png> --material bone|stone|book|cloth [--moss 0.3] [--sat 0.7]
 """
 import argparse
 import colorsys
@@ -71,10 +72,46 @@ def book(a, H, W, cov, nrm, ao, own):
     print(f'{a.out}: book, {int(page.sum())} page texels')
 
 
+def cloth(a, H, W, cov, nrm, ao, own):
+    """Sacking and cloth: Synty's colour stepped into a few shades by how enclosed it is (folds dark, open bulges a
+    step lighter), a coarse weave (a faint 2-texel checker a step apart), darker seams where the normal turns
+    sharply, a dirty band at the base. Parts that aren't cloth (apples, rope) keep their own colour, only shaded."""
+    hsv = np.zeros_like(own)
+    for y, x in zip(*np.nonzero(cov)):
+        hsv[y, x] = colorsys.rgb_to_hsv(*own[y, x])
+    pos = np.fromfile(a.gbuffer, dtype=np.float32).reshape(H, W, 12)[::-1][..., 4:7]
+    clothy = cov & (hsv[..., 1] < .45)
+    delta = np.zeros((H, W))
+    delta[ao < .55] -= 1
+    delta[ao < .35] -= 1
+    delta[(ao > .8) & (nrm[..., 1] > .2)] += 1
+    seam = np.zeros_like(cov)
+    for dy, dx in ((1, 0), (0, 1)):
+        nn = np.roll(np.roll(nrm, dy, 0), dx, 1); nc = np.roll(np.roll(cov, dy, 0), dx, 1)
+        seam |= nc & ((nrm * nn).sum(axis=2) < .55)
+    delta[seam & clothy] -= 1
+    yy, xx = np.mgrid[0:H, 0:W]
+    weave = ((yy // 2 + xx // 2) % 2 == 0) & clothy
+    delta[weave] += .5
+    delta[clothy & (pos[..., 1] < .12)] -= 1
+    for y, x in zip(*np.nonzero(clothy & (ao > .5))):
+        if h(x // 2, y // 2, 31) < .03: delta[y, x] -= 1      # small dirt specks
+    out = np.zeros((H, W, 3))
+    for y, x in zip(*np.nonzero(cov)):
+        hh, ss, vv = hsv[y, x]
+        vv = np.clip(vv * (1 + .13 * delta[y, x]) * a.bright, 0, 1)
+        out[y, x] = colorsys.hsv_to_rgb(hh, min(1, ss * a.sat), vv)
+    if (~cov).any():
+        _, ind = ndimage.distance_transform_edt(~cov, return_indices=True)
+        out = out[ind[0], ind[1]]
+    Image.fromarray((np.clip(out, 0, 1) * 255).astype(np.uint8)).save(a.out)
+    print(f'{a.out}: cloth, {int(clothy.sum())} cloth texels')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('gbuffer'); ap.add_argument('width', type=int); ap.add_argument('height', type=int); ap.add_argument('out')
-    ap.add_argument('--material', choices=['bone', 'stone', 'book'], required=True)
+    ap.add_argument('--material', choices=['bone', 'stone', 'book', 'cloth'], required=True)
     ap.add_argument('--sat', type=float, default=.7, help='colour strength against the Synty colours')
     ap.add_argument('--bright', type=float, default=.9, help='overall brightness against the Synty colours')
     ap.add_argument('--moss', type=float, default=0, help='0-1 (stone): share of enclosed upward faces with moss')
@@ -88,6 +125,9 @@ def main():
     cov = g[..., 8] > .5; nrm = g[..., 1:4]; pos = g[..., 4:7]; ao = np.clip(g[..., 7], 0, 1); own = np.clip(g[..., 9:12], 0, 1)
     up = nrm[..., 1]
 
+    if a.material == 'cloth':
+        cloth(a, H, W, cov, nrm, ao, own)
+        return
     if a.material == 'book':
         book(a, H, W, cov, nrm, ao, own)
         return

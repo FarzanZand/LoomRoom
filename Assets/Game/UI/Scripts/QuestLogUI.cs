@@ -3,8 +3,9 @@ using TMPro;
 using UnityEngine;
 
 // The quest log on the HUD: the open quests (ProgressionManager > Quests), one line each under a title. A quest that is
-// done turns green and crossed out, stays a moment, then fades; the log hides when nothing is open and while the inventory
-// is open. Authored in the scene
+// done turns green and crossed out, stays a moment, then fades; the log hides when nothing is open and whenever the game
+// is not plain exploring (inventory, shop, pause, sheet, recap, cutscenes), during a boss fight and while the win ending
+// plays. Authored in the scene
 // (made once by QuestLogSetup); this binds the title and clones the row template.
 public class QuestLogUI : MonoBehaviour
 {
@@ -86,10 +87,12 @@ public class QuestLogUI : MonoBehaviour
         }
         if (group != null)
         {
-            // Out of the way while the inventory is open: it sits where the character panel's title is.
-            bool inventory = GameManager.HasInstance && GameManager.Instance.State == GameState.Inventory;
-            float target = rows.Count > 0 && !inventory ? 1f : 0f;
-            group.alpha = inventory ? 0f : Mathf.MoveTowards(group.alpha, target, Time.unscaledDeltaTime / fadeSeconds);
+            // Out of the way of every menu (it sits where the character panel's title and the sheet's portrait are), of
+            // a boss fight and of the ending's walk to the door.
+            bool hidden = (GameManager.HasInstance && GameManager.Instance.State != GameState.Explore)
+                || BossStageEncounter.Current != null || TableManager.EndingRunning;
+            float target = rows.Count > 0 && !hidden ? 1f : 0f;
+            group.alpha = hidden ? 0f : Mathf.MoveTowards(group.alpha, target, Time.unscaledDeltaTime / fadeSeconds);
         }
     }
 }

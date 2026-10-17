@@ -349,4 +349,4 @@ MonoBehaviour:
       homing: 0
   closesIn: 1
   spellGap: 4
-  experience: 0
+  experience: 120

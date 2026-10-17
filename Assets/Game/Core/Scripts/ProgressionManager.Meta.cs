@@ -60,6 +60,8 @@ public partial class ProgressionManager
         [ShowIf("@kind == MetaTrackKind.Attribute")] public string unit = "health";
         [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to its second stat, if it has one: Constitution's stamina, Intelligence's mana per second.")] public float secondBonusPerPoint;
         [ShowIf("@kind == MetaTrackKind.Attribute")] public string secondUnit;
+        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("A third gain that isn't a stat: Intelligence's spell power in percent (AdventurerProgress.SpellPower reads it).")] public float thirdBonusPerPoint;
+        [ShowIf("@kind == MetaTrackKind.Attribute")] public string thirdUnit;
         [ShowIf("@kind == MetaTrackKind.Skill"), ListDrawerSettings(ShowFoldout = true)] public List<Milestone> milestones = new();
     }
 
@@ -136,15 +138,17 @@ public partial class ProgressionManager
     {
         MetaAttribute.Constitution => ConstitutionStats, MetaAttribute.Intelligence => IntelligenceStats, MetaAttribute.Dexterity => DexterityStats, _ => StrengthStats,
     };
-    // Critical chance is written in percent on the track and kept as a fraction in the stats.
-    public static float StatScale(StatType stat) => stat == StatType.CriticalChance ? .01f : 1f;
-    // What this many points above the base give, as the stats take it: (stat, amount) per stat the attribute raises.
-    public static IEnumerable<(StatType stat, float amount)> AttributeGains(MetaTrack t, float points)
+    // Critical chance and Strength's damage are written in percent on the track and kept as fractions in the stats;
+    // Strength's damage is a share of the player's damage (weapon included), not a flat amount.
+    public static float StatScale(MetaAttribute a, StatType stat) => stat == StatType.CriticalChance || a == MetaAttribute.Strength && stat == StatType.AttackDamage ? .01f : 1f;
+    public static ModifierType StatKind(MetaAttribute a, StatType stat) => a == MetaAttribute.Strength && stat == StatType.AttackDamage ? ModifierType.PercentAdd : ModifierType.Flat;
+    // What this many points above the base give, as the stats take it: (stat, amount, kind) per stat the attribute raises.
+    public static IEnumerable<(StatType stat, float amount, ModifierType kind)> AttributeGains(MetaTrack t, float points)
     {
         if (t == null || points == 0) yield break;
         var stats = AttributeStats(t.attribute);
-        if (stats.Length > 0 && t.bonusPerPoint != 0) yield return (stats[0], points * t.bonusPerPoint * StatScale(stats[0]));
-        if (stats.Length > 1 && t.secondBonusPerPoint != 0) yield return (stats[1], points * t.secondBonusPerPoint * StatScale(stats[1]));
+        if (stats.Length > 0 && t.bonusPerPoint != 0) yield return (stats[0], points * t.bonusPerPoint * StatScale(t.attribute, stats[0]), StatKind(t.attribute, stats[0]));
+        if (stats.Length > 1 && t.secondBonusPerPoint != 0) yield return (stats[1], points * t.secondBonusPerPoint * StatScale(t.attribute, stats[1]), StatKind(t.attribute, stats[1]));
     }
     // "+5 health, +5 stamina": what this many points give, in the track's own words. lineBreak puts each on its own line.
     public static string AttributeEffects(MetaTrack t, float points, bool lineBreak = false)
@@ -153,8 +157,10 @@ public partial class ProgressionManager
         static string Number(float v) => Mathf.Approximately(v, Mathf.Round(v)) ? Mathf.RoundToInt(v).ToString() : v.ToString("0.##");
         static string Unit(string unit) => unit != null && unit.StartsWith("%") ? unit : " " + unit;   // "+5% critical chance"
         string first = $"+{Number(points * t.bonusPerPoint)}{Unit(t.unit)}";
-        if (t.secondBonusPerPoint == 0 || string.IsNullOrEmpty(t.secondUnit)) return first;
-        return first + (lineBreak ? "\n" : ", ") + $"+{Number(points * t.secondBonusPerPoint)}{Unit(t.secondUnit)}";
+        string gap = lineBreak ? "\n" : ", ";
+        if (t.secondBonusPerPoint != 0 && !string.IsNullOrEmpty(t.secondUnit)) first += gap + $"+{Number(points * t.secondBonusPerPoint)}{Unit(t.secondUnit)}";
+        if (t.thirdBonusPerPoint != 0 && !string.IsNullOrEmpty(t.thirdUnit)) first += gap + $"+{Number(points * t.thirdBonusPerPoint)}{Unit(t.thirdUnit)}";
+        return first;
     }
 
     string TrophyKey(MetaTrack t, Milestone m) => $"{TrophyPrefix}{t.id}.{m.value}";
@@ -359,8 +365,9 @@ public partial class ProgressionManager
         DungeonMaster.Say(lessonIntro);
         lessonRoutine = null;
     }
+    // Not during the win ending either: the DM points at the door then, not at the sheet.
     static bool RoomPlayerFree => PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Room
-        && GameManager.HasInstance && GameManager.Instance.State == GameState.Explore;
+        && GameManager.HasInstance && GameManager.Instance.State == GameState.Explore && !TableManager.EndingRunning;
 
     // ── Debug ─────────────────────────────────────────────────────────
 

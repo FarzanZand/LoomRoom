@@ -20,7 +20,7 @@ public partial class DungeonGenerator
     // The hand-built interior for a room: the starting room, the shop, a milestone arena or the profile's template.
     GameObject TemplatePrefab(int i) =>
         Authored ? (data.authoredRooms!=null && i<data.authoredRooms.Length && data.authoredRooms[i]?.template!=null ? data.authoredRooms[i].template : i==0 ? data.startingRoom : null)
-        : RequestedTemplate(i,Roles[i],profiles[i],MerchantRoom);
+        : RequestedTemplate(i,Roles[i],profiles[i],shopInPlainRoom ? -1 : MerchantRoom);
     // Generated layouts; also used before the rooms are placed, when i is the requested room.
     GameObject RequestedTemplate(int i,RoomRole role,DungeonRoomProfile profile,int merchantRoom=-1) =>
         i==0 && UsesStartingRoom ? data.startingRoom
@@ -421,23 +421,60 @@ public partial class DungeonGenerator
     }
 
     // Close to the nearest wall, facing it (DungeonSocket.faceWall).
+    // A guard set facing the wall (DungeonSocket.faceWall), its back to the way in: the player comes in behind it. The
+    // way in is the room's opening nearest the starting room; it turns to the room's real wall away from that (pillars,
+    // arches and props don't count), steps up to it and faces it.
     void FaceWall(Character enemy)
     {
-        var chest=enemy.transform.position+Vector3.up*1.2f;
-        Vector3 best=Vector3.zero; float near=float.MaxValue;
-        for(int k=0;k<8;k++)
+        var at=enemy.transform.position;
+        int room=Layout.RoomAt(CellOf(at));
+        var away=enemy.transform.forward;
+        if(room>=0)
         {
-            var dir=Quaternion.Euler(0,k*45f,0)*Vector3.forward;
-            if(Physics.Raycast(chest,dir,out var wall,6f,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore) && wall.collider.GetComponentInParent<Character>()==null && wall.distance<near){near=wall.distance;best=dir;}
+            var start=Cell(Layout.RoomCenter(0));
+            Vector3 door=Vector3.zero; float nearest=float.MaxValue;
+            foreach(var cell in Openings(room)){var c=Cell(cell);float d=(c-start).sqrMagnitude;if(d<nearest){nearest=d;door=c;}}
+            if(nearest<float.MaxValue){away=at-door;away.y=0f;}
+        }
+        if(away.sqrMagnitude<.01f)away=enemy.transform.forward;
+        away.Normalize();
+        var chest=at+Vector3.up*1.2f;
+        Vector3 best=Vector3.zero; float bestScore=float.MaxValue, bestDistance=0f;
+        for(int k=-2;k<=2;k++)
+        {
+            var dir=Quaternion.Euler(0,k*30f,0)*away;
+            float distance=WallDistance(chest,dir,9f);
+            if(distance<0f)continue;
+            // The straight-away wall first; a turned one only when it is much nearer.
+            float score=distance+Mathf.Abs(k)*1.5f;
+            if(score<bestScore){bestScore=score;best=dir;bestDistance=distance;}
         }
         if(best==Vector3.zero)return;
-        var spot=enemy.transform.position+best*Mathf.Max(0f,near-.75f);
-        if(NavMesh.SamplePosition(spot,out var hit,.6f,NavMesh.AllAreas))
+        var spot=at+best*Mathf.Max(0f,bestDistance-.75f);
+        if(NavMesh.SamplePosition(spot,out var hit,.6f,NavMesh.AllAreas) && RoomForBody(hit.position))
         {
             var agent=enemy.GetComponent<NavMeshAgent>();
             if(agent!=null && agent.enabled && agent.isOnNavMesh)agent.Warp(hit.position); else enemy.transform.position=hit.position;
         }
         enemy.transform.rotation=Quaternion.LookRotation(best);
+        if(enemy.TryGetComponent<Perception>(out var perception))perception.NoCloseAwareness=true;
+    }
+
+    // How far along dir the room's own wall is, skipping characters and furnishing (kit pieces, template pieces,
+    // breakables); -1 if none within range.
+    static readonly RaycastHit[] wallHits=new RaycastHit[16];
+    float WallDistance(Vector3 from,Vector3 dir,float range)
+    {
+        int n=Physics.RaycastNonAlloc(from,dir,wallHits,range,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+        float nearest=-1f;
+        for(int i=0;i<n;i++)
+        {
+            var c=wallHits[i].collider;
+            if(c.GetComponentInParent<Character>()!=null || c.GetComponentInParent<DungeonKitPiece>()!=null || c.GetComponentInParent<DungeonKitBlock>()!=null
+               || c.GetComponentInParent<DungeonTemplatePiece>()!=null || c.GetComponentInParent<DungeonDestructible>()!=null)continue;
+            if(nearest<0f || wallHits[i].distance<nearest)nearest=wallHits[i].distance;
+        }
+        return nearest;
     }
 
     Character SpawnEnemyAt(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewards,bool boss=false)

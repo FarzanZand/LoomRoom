@@ -125,6 +125,8 @@ public class DungeonMasterBeam : MonoBehaviour
         return ps;
     }
 
+    void OnDestroy() { if (flareInstance != null) Destroy(flareInstance); }
+
     // The burst on the shield: a quad turned to the camera every frame.
     Transform MakeFlare()
     {

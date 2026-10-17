@@ -13,7 +13,7 @@ using UnityEngine.UI;
 // what exists, makes the attribute cells once and rebuilds the markers.
 public static class CharacterPanelLayout
 {
-    const string Slot = "Assets/Game/UI/Sprites/Diablo/Plain slot grey.png";
+    const string Slot = "Assets/Game/UI/Sprites/Inventory/Plain slot grey.png";
     const int Markers = 2;   // each skill has two milestones
 
     public static string Layout()

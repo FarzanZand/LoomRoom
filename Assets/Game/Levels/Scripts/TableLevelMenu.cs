@@ -10,6 +10,8 @@ public class TableLevelMenu : MonoBehaviour
     TableAdventureMenuView root;
     Button firstOption;
     Tween fade, scale;
+    // Menu is held by this flag, not by whether the panel is on screen: popped exactly once whatever hides the panel.
+    bool ownsMenu;
     public void Show(string heading)
     {
         if (IsOpen) { root.heading.text = heading; return; }
@@ -48,9 +50,10 @@ public class TableLevelMenu : MonoBehaviour
         }
         root.returnToRoom.onClick.AddListener(loader.ReturnToRoom);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
-        if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Menu);
+        if (GameManager.HasInstance && !ownsMenu) { GameManager.Instance.Push(GameState.Menu); ownsMenu = true; }
         if (InputManager.HasInstance)
         {
+            InputManager.Instance.CancelPressed -= OnCancel; InputManager.Instance.NavigatePressed -= OnNavigate;
             InputManager.Instance.CancelPressed += OnCancel;
             InputManager.Instance.NavigatePressed += OnNavigate;
         }
@@ -71,11 +74,11 @@ public class TableLevelMenu : MonoBehaviour
             InputManager.Instance.CancelPressed -= OnCancel;
             InputManager.Instance.NavigatePressed -= OnNavigate;
         }
+        if (ownsMenu) { ownsMenu = false; if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu); }
         if (!IsOpen) return;
         fade?.Kill(); scale?.Kill();
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
         if (root != null) root.gameObject.SetActive(false);
-        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
     }
     void OnCancel()
     {

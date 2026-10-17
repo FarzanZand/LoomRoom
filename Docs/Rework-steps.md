@@ -2,7 +2,7 @@
 
 Every change from `Combat-rework.md` and `Dungeon-rework.md`, cut into steps that can be built and tested on their own. Each step lists what changes, how to test it, and the questions to answer before it starts. **Rec** is my recommendation if you just want to say "go".
 
-Test bed for everything unless noted: the Debug Dungeon (toolbar **Debug**), then a generated Dungeon1 floor (toolbar **Dungeon**). Each step that lands updates CLAUDE.md and the matching doc, so a rule we change (Barony pace, no stunlock, "less is more") is rewritten when its step lands, not before.
+Test bed for everything unless noted: the Debug Dungeon (toolbar **Debug**), then a generated Dungeon1 floor (toolbar **Dungeon**). Each step that lands updates CLAUDE.md and the matching doc, so a rule we change (the slower pace, no stunlock, "less is more") is rewritten when its step lands, not before.
 
 ## Status (2026-10-12)
 
@@ -155,7 +155,7 @@ Quick tests on the current generator first (9.1-9.3), then the move to hand-made
 |---|---|---|---|---|
 | 13.1 | Not started | Stat sheet: STR, DEX, CON, INT shown, and every stat's tooltip breaks it down (base, items, skills) | Open the inventory | Which stats to show? |
 | 13.2 | Partly: type line, damage and swing speed up front, comparison; no Shift-compare or Ctrl+click | Item tooltips: type line ("Two-Handed Mace"), attack speed in words, Shift to compare, Ctrl+click to drop | Hover items | Compare only with Shift  or always (ours)? |
-| 13.3 | Not started | Attribute points: +N per level to spend, instead of the automatic class growth | Level up | Replace Barony's automatic growth? How many points per level? Skills stay use-based? |
+| 13.3 | Not started | Attribute points: +N per level to spend, instead of the automatic class growth | Level up | Replace the automatic growth? How many points per level? Skills stay use-based? |
 | 13.4 | Not started | Each item becomes its own instance (needed for 13.5 and 13.8); the save format changes | Save and load a run | OK that old checkpoints are dropped (memorials and flags stay)? |
 | 13.5 | Not started | Durability, and repair at the merchant | Fight until gear wears | Does broken gear break for good or stop working until repaired? |
 | 13.6 | Done: 10 x 4 grid, paper doll (the inventory setup tool) | A grid bag where items take several cells | Fill the bag | Grid size? Rec: 10x4. |

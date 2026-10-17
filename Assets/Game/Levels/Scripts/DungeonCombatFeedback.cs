@@ -123,7 +123,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     [SerializeField,Min(0),Tooltip("Metres per second a damage number drifts up from where the hit landed.")] float numberRise=.3f;
     [SerializeField,Min(.1f),Tooltip("Seconds an ordinary damage number stays (criticals 1.3).")] float numberLifetime=.9f;
     [SerializeField,Tooltip("The line in the middle of the screen for each hit (×, CRITICAL, BLOCKED, −n). Off by default.")] bool resultLine=false;
-    [SerializeField,Tooltip("Barony style: one enemy bar with its name at the top of the screen, for the enemy last hit (or aimed at), instead of bars over heads.")] bool topBar=true;
+    [SerializeField,Tooltip("One enemy bar with its name at the top of the screen, for the enemy last hit (or aimed at), instead of bars over heads.")] bool topBar=true;
     [SerializeField,Min(0),Tooltip("Top bar: distance from the top of the screen.")] float topBarOffset=96;
     [SerializeField,Min(.1f),Tooltip("Top bar: size against the bar over a head.")] float topBarScale=1.8f;
     void LateUpdate()

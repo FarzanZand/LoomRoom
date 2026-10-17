@@ -12,7 +12,6 @@ public class SkeletonParty : MonoBehaviour
     public AnimationClip danceClip;
     [Range(.5f, 2f), Tooltip("Each dancer's speed varies a little around this, so they aren't in lockstep.")]
     public float danceSpeed = 1f;
-    public DungeonMaster.Line enterLine = new() { text = "A party. Don't spoil it." };
     public DungeonMaster.Line spoiledLine = new() { text = "You had to ruin it, didn't you." };
     public DungeonMaster.Line chestLine = new() { text = "Greedy. They noticed." };
 
@@ -20,7 +19,7 @@ public class SkeletonParty : MonoBehaviour
     int room = -1;
     readonly List<EnemyBrain> dancers = new();
     readonly List<PlayableGraph> graphs = new();
-    bool entered, spoiled;
+    bool spoiled;
 
     readonly HashSet<EnemyBrain> seen = new();
     readonly HashSet<DungeonContainer> chests = new();
@@ -67,28 +66,24 @@ public class SkeletonParty : MonoBehaviour
     {
         if (room < 0 || dungeon == null || spoiled) return;
         if (Time.time >= nextGather) { nextGather = Time.time + .5f; Gather(); }
-        if (entered || !PlayerManager.HasInstance) return;
-        var player = PlayerManager.Instance.ActiveKind == PlayerKind.Table ? PlayerManager.Instance.Active : null;
-        if (player == null || dungeon.Layout.RoomAt(dungeon.CellOf(player.transform.position)) != room) return;
-        entered = true;
-        if (enterLine != null && !string.IsNullOrEmpty(enterLine.text)) DungeonMaster.Say(enterLine);
     }
 
     // The music stops mattering: every dancer still standing comes for the player.
     void Spoil(DungeonMaster.Line line)
     {
         if (spoiled) return;
+        // The dance ends either way (a last dancer killed in one blow must not dance on as a body).
+        spoiled = true;
+        StopDancing();
+        var music = GetComponent<RoomMusic>();
+        if (music != null) music.enabled = false;
         bool anyone = false;
         foreach (var d in dancers) if (d != null && d.Character.IsAlive) anyone = true;
         if (!anyone) return;
-        spoiled = true;
-        StopDancing();
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
         var at = player != null ? player.transform.position : transform.position;
         foreach (var d in dancers) if (d != null && d.Character.IsAlive) d.Provoke(at);
         if (line != null && !string.IsNullOrEmpty(line.text)) DungeonMaster.Say(line);
-        var music = GetComponent<RoomMusic>();
-        if (music != null) music.enabled = false;
     }
 
     void StopDancing()

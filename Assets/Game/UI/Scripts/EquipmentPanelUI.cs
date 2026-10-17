@@ -5,7 +5,7 @@ public class EquipmentPanelUI : MonoBehaviour
 {
     public EquipmentSlotUI[] slots;
     public TMP_Text health,mana,stamina,damage,armor,food;
-    [Tooltip("Optional: name, class and level (Diablo's header).")] public TMP_Text identity;
+    [Tooltip("Optional: name, class and level (the panel's header).")] public TMP_Text identity;
     [Tooltip("Optional: Strength, Dexterity, Constitution, Intelligence, Perception, Charisma, one per line.")] public TMP_Text attributes;
     [Tooltip("The skills with their ranks; hovering one shows what it does per point and now.")] public AdventureSkillRowUI[] skills;
     [Tooltip("Optional: the line of gear bonuses (critical chance, kill heal...) under armor; hovering it lists them all.")] public GearBonusesUI gearBonuses;
@@ -15,7 +15,9 @@ public class EquipmentPanelUI : MonoBehaviour
     const string ValueColumn="<pos=34%>";
     static string Line(string label,string value)=>$"<color={ItemData.DimColor}>{label}</color>{ValueColumn}{value}";
     // A status bar colour lifted for text on the dark panel.
-    static string Status(Color c)=>"#"+ColorUtility.ToHtmlStringRGB(Color.Lerp(c,Color.white,.35f));
+    // The bar's colour made bright enough to read on the dark panel, keeping its hue (blending toward white turned the
+    // dark stamina green into tan).
+    static string Status(Color c){Color.RGBToHSV(c,out float h,out float s,out float v);return "#"+ColorUtility.ToHtmlStringRGB(Color.HSVToRGB(h,s*.8f,Mathf.Max(v,.85f)));}
     // The held weapon's spread makes damage a range (5-9).
     string DamageText(CharacterStats s){var held=player.Equipment!=null?player.Equipment.Get(EquipmentSlot.RightHand):null;int spread=held!=null && held.IsWeapon?held.damageSpread:0;float dmg=s.GetFinal(StatType.AttackDamage);return spread>0?$"{Mathf.Max(1f,dmg-spread):0}-{dmg+spread:0}":$"{dmg:0.#}";}
 
@@ -41,7 +43,7 @@ public class EquipmentPanelUI : MonoBehaviour
                 return true;
             case StatTooltipUI.Kind.Damage:
             {
-                float crit=(CombatManager.HasInstance?CombatManager.Instance.critChance:.08f)+s.GetFinal(StatType.CriticalChance);
+                float crit=Mathf.Min(CombatManager.HasInstance?CombatManager.Instance.critChanceCap:.6f,(CombatManager.HasInstance?CombatManager.Instance.critChance:.08f)+s.GetFinal(StatType.CriticalChance));
                 title="Damage";subtitle=DamageText(s);
                 body=$"Before the enemy's armor.\n\n<color={dim}>Critical chance</color><pos=60%><color={good}>{crit*100f:0.#}%</color>";
                 return true;

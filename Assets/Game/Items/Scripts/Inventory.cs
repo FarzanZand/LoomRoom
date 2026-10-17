@@ -7,7 +7,7 @@ public enum InventoryRole { Bag = 0, Hotbar = 1 }
 // A fixed grid of item stacks living on a player. The hotbar is just a second
 // Inventory with fewer slots and a type filter, so every move/swap/merge rule is
 // written once. Save-friendly: the whole state is slots[] of (item, count).
-// With a grid width (the bag) it is a Diablo grid: an item takes ItemData.GridSize cells and its stack is
+// With a grid width (the bag) it is a grid: an item takes ItemData.GridSize cells and its stack is
 // stored at its top-left cell (the anchor); the cells it covers stay empty in slots[] but are taken.
 public class Inventory : MonoBehaviour
 {
@@ -17,7 +17,7 @@ public class Inventory : MonoBehaviour
     [SerializeField, Min(1)] int slotCount = 24;
     [Tooltip("Item types this container accepts.")]
     [SerializeField] ItemTypeMask allowedTypes = ItemTypeMask.All;
-    [Tooltip("Cells per row for a Diablo grid (items take several cells). 0: plain slots, one item each (the hotbar).")]
+    [Tooltip("Cells per row for a bag grid (items take several cells). 0: plain slots, one item each (the hotbar).")]
     [SerializeField, Min(0)] int gridWidth;
 
     ItemStack[] storedSlots;
@@ -103,7 +103,7 @@ public class Inventory : MonoBehaviour
         return list;
     }
 
-    // Where a new item goes: column by column from the top left, so tall things line up (Diablo).
+    // Where a new item goes: column by column from the top left, so tall things line up.
     public int FindSpot(ItemData item, int ignore = -1)
     {
         if (!IsGrid) return FirstEmpty();

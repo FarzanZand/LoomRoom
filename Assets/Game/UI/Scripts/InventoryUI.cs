@@ -15,7 +15,7 @@ public class InventoryUI : MonoBehaviour
     public bool IsOpen=>isOpen;
     public RectTransform inventoryPanel,statsPanel;
     public EquipmentPanelUI equipmentPanel;
-    [Tooltip("Draws grid items across their cells (Diablo bag).")]
+    [Tooltip("Draws grid items across their cells (the bag grid).")]
     public ItemGridUI itemGrid;
     public UIFeedbackSettings feedback;
     Sequence transition;

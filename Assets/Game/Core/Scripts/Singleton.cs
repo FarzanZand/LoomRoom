@@ -10,6 +10,8 @@ using UnityEngine;
 // manager placed in the open scene, so editor tools can read and change its settings.
 public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 {
+    // Domain reload is off: each type's cached instance and failed-lookup flag are cleared at the start of every Play session.
+    static Singleton() { SingletonReset.Reset += () => { _instance = null; _lookupFailed = false; }; }
     private static T _instance;
     // Set when a Play-mode lookup finds nothing, so a missing manager is logged and searched
     // for once instead of on every access; cleared when an instance registers in Awake.
@@ -86,4 +88,12 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
         _applicationIsQuitting = true;
 #endif
     }
+}
+
+// Clears every Singleton<T>'s static state at the start of a Play session (generic classes can't take
+// RuntimeInitializeOnLoadMethod themselves).
+static class SingletonReset
+{
+    public static event System.Action Reset;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void Run() => Reset?.Invoke();
 }

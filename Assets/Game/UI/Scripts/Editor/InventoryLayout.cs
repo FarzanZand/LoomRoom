@@ -4,13 +4,13 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Lays the inventory screen out like Diablo II: the character's stats framed on the left, and on the right one tall
+// Lays the inventory screen out: the character's stats framed on the left, and on the right one tall
 // framed panel with the equipment paper doll on top and the bag grid below. The frames, cell sockets and slot frames
-// are painted pixel art (UI/Sprites/Diablo, loomroom-art pipeline), drawn at 2 canvas units per art pixel.
+// are painted pixel art (UI/Sprites/Inventory, loomroom-art pipeline), drawn at 2 canvas units per art pixel.
 // Lays out the 40 bag cells already in the scene. Safe to run again.
-public static class DiabloInventoryLayout
+public static class InventoryLayout
 {
-    const string Art = "Assets/Game/UI/Sprites/Diablo";
+    const string Art = "Assets/Game/UI/Sprites/Inventory";
     const float Cell = 64f, Gap = 4f, Unit = 56f, UnitGap = 4f;
     static readonly Color Gold = new(.86f, .7f, .38f), Bone = new(.84f, .84f, .82f), Dim = new(.6f, .6f, .62f);   // grey panels, gold titles (the user's call)
 
@@ -65,7 +65,7 @@ public static class DiabloInventoryLayout
     };
     static readonly Color SilhouetteColor = new(.82f, .82f, .86f, .1f);
 
-    // A flat white shape from the icon's alpha (the Image's colour dims it), saved to UI/Sprites/Diablo/Silhouettes the
+    // A flat white shape from the icon's alpha (the Image's colour dims it), saved to UI/Sprites/Inventory/Silhouettes the
     // first time; an existing file is kept as it is.
     static Sprite Silhouette(EquipmentSlot slot)
     {
@@ -91,7 +91,7 @@ public static class DiabloInventoryLayout
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
-    [MenuItem("Tools/LoomRoom/UI/Diablo Inventory Layout")]
+    [MenuItem("Tools/LoomRoom/UI/Inventory Layout")]
     public static string Run()
     {
         var log = new System.Text.StringBuilder();
@@ -113,14 +113,14 @@ public static class DiabloInventoryLayout
         foreach (var name in new[] { "InventoryTitle" }) { var t = inv.Find(name); if (t != null) t.gameObject.SetActive(false); }
         Label(inv, "Title", "INVENTORY", 30, Gold, new Vector2(0f, -44f), new Vector2(W - 80f, 40f), TextAlignmentOptions.Center, title);
 
-        // The doll: equipment slots moved in from the stats panel, in Diablo II's arrangement.
+        // The doll: equipment slots moved in from the stats panel.
         var doll = inv.Find("Doll");
         if (doll == null) { doll = new GameObject("Doll", typeof(RectTransform)).transform; doll.SetParent(inv, false); }
         const float dollH = 492f;
         Place(doll, new Vector2(.5f, 1f), new Vector2(0f, -78f - dollH * .5f), new Vector2(W - 80f, dollH));
         float S(int n) => n * Unit + (n - 1) * UnitGap;
-        // Diablo II's arrangement: helm on top; weapon, body armour and shield in a row with their bottoms level; under
-        // them one row of gloves, ring, leggings (D2's belt), ring, boots. The side columns stand far enough out to
+        // The arrangement: helm on top; weapon, body armour and shield in a row with their bottoms level; under
+        // them one row of gloves, ring, leggings, ring, boots. The side columns stand far enough out to
         // leave room for the rings.
         const float Ring = 64f;
         float side = S(2) * .5f + 12f + Ring + 12f + S(2) * .5f;   // centre of the side columns
@@ -159,7 +159,7 @@ public static class DiabloInventoryLayout
                     case "Honed fill": child.sizeDelta = size - Vector2.one * 10f; child.anchoredPosition = Vector2.zero; break;
                     case "Item icon": child.sizeDelta = size - Vector2.one * 14f; child.anchoredPosition = Vector2.zero; break;
                     case "Slot label":
-                        // Diablo shows no slot names; an empty slot is just its frame.
+                        // No slot names; an empty slot is just its frame.
                         child.gameObject.SetActive(false); break;
                 }
                 Record(child); Record(child.gameObject);

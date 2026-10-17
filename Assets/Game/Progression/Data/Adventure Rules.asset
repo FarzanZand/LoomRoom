@@ -34,9 +34,7 @@ MonoBehaviour:
   xpPerEnemy: 15
   xpPerFloor: 35
   levelXp: 100
-  levelXpGrowth: 50
-  healthPerLevel: 3
-  manaPerLevel: 2
+  levelXpGrowth: 150
   athleticsMetres: 12
   legendaryAttack: 5
   legendaryStamina: 20

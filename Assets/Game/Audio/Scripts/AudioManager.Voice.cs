@@ -5,7 +5,7 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-// The Dungeon Master's mumble: Barony-style gibberish under lines that have no recorded voice.
+// The Dungeon Master's mumble: gibberish under lines that have no recorded voice.
 // Syllables plays a UI Library sound once per syllable; every other voice is a set of phrases of rising
 // length (Old from Tools/dm_babble.py, the rest from Tools/dm_voices.py <dir> <seed> <voice>), of which
 // the one nearest the line's length plays.

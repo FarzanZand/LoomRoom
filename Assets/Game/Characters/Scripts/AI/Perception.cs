@@ -10,6 +10,9 @@ public class Perception : MonoBehaviour
 
     [ShowInInspector, ReadOnly] public Character Target                  { get; private set; }
     [ShowInInspector, ReadOnly] public bool      TargetVisible           { get; private set; }
+    // A guard facing the wall (DungeonSocket.faceWall): lost in thought, it has no close awareness behind it, so a
+    // player who creeps up quietly gets the blow from behind. Its eyes and ears still work; a hit ends it.
+    public bool NoCloseAwareness { get; set; }
     [ShowInInspector, ReadOnly] public Vector3   LastKnownTargetPosition { get; private set; }
     [ShowInInspector, ReadOnly] public bool      HasStimulus             { get; private set; }
     public Vector3 StimulusPosition { get; private set; }
@@ -50,7 +53,7 @@ public class Perception : MonoBehaviour
         float closeScale = 1, sightScale = 1;
         if (!trackingTarget && CombatManager.HasInstance) CombatManager.Instance.StealthScales(target, out closeScale, out sightScale);
         if (dist > Profile.detectionRadius * sightScale) return false;
-        bool close = HorizontalDist(transform.position, target.position) <= Profile.closeDetectionRadius * closeScale;
+        bool close = !NoCloseAwareness && HorizontalDist(transform.position, target.position) <= Profile.closeDetectionRadius * closeScale;
         if (!trackingTarget && !close && Vector3.Angle(transform.forward, toTarget) > Profile.fieldOfView * 0.5f) return false;
 
         // Close awareness bypasses the view cone, never walls. Ignore both character bodies.

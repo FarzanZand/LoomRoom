@@ -82,12 +82,7 @@ public class InteractUI : MonoBehaviour
         if (trigger != null && promptText != null)
         {
             string key = "E";
-            if (InputManager.HasInstance && PlayerManager.HasInstance && PlayerManager.Instance.Active != null)
-            {
-                var actions = InputManager.Instance.Actions;
-                var action = PlayerManager.Instance.Active.kind == PlayerKind.Table ? actions.Table.Interact : actions.Room.Interact;
-                key = action.GetBindingDisplayString();
-            }
+            if (InputManager.HasInstance) key = InputManager.Instance.BindingDisplay("Interact");
             string message = trigger.WorldItem != null && trigger.WorldItem.Item != null
                 ? "Pick up " + trigger.WorldItem.Item.itemName : trigger.PromptMessage;
             promptText.text = "<b>[" + key + "]</b>  " + message;

@@ -27,8 +27,8 @@ MonoBehaviour:
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
   gearByFloor:
   - fromFloor: 1
-    tier1: 70
-    tier2: 30
+    tier1: 100
+    tier2: 0
     tier3: 0
     tier4: 0
     upgradeChance: 0
@@ -39,14 +39,14 @@ MonoBehaviour:
     tier4: 0
     upgradeChance: 0
   - fromFloor: 3
-    tier1: 0
+    tier1: 25
     tier2: 75
-    tier3: 25
+    tier3: 0
     tier4: 0
     upgradeChance: 0
   - fromFloor: 4
-    tier1: 15
-    tier2: 85
+    tier1: 0
+    tier2: 100
     tier3: 0
     tier4: 0
     upgradeChance: 0
@@ -131,6 +131,7 @@ MonoBehaviour:
     shape: {fileID: 11400000, guid: b83f1b9ea222f1f4690c0e00502d6342, type: 2}
     weight: 0.6
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  pocket: 0
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   authoredMap: 
   authoredContent: 

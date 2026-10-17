@@ -114,6 +114,7 @@ public class RunManager : Singleton<RunManager>
         }
         recap?.Hide();
         player?.GetComponent<AdventurerProgress>()?.Begin();
+        ItemData.PruneVariants();
         RunStarted?.Invoke();
     }
 
@@ -164,6 +165,7 @@ public class RunManager : Singleton<RunManager>
     // Set by the dev console: DeferDeath once it has been opened (a death waits for the recap before it is banked),
     // HoldDeath while it is open (the death moment waits too). Never set in a release build.
     public static bool DeferDeath, HoldDeath;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetDeathHolds() => DeferDeath = HoldDeath = false;
     bool deathPending;
 
     void CommitDeath()
@@ -244,7 +246,7 @@ public class RunManager : Singleton<RunManager>
     public RunSummary Summarize(bool victory) => new RunSummary
     {
         victory = victory,
-        levelName = Level != null ? Level.displayName : "the dungeon",
+        levelName = PlaceName(),
         killer = Killer,
         floor = Floor,
         floors = Level != null ? Level.FloorCount : 1,
@@ -257,6 +259,16 @@ public class RunManager : Singleton<RunManager>
         adventurer = Adventurer(out var skills),
         skills = skills,
     };
+
+    // Where the run ended, for the recap's sentence ("You conquered the Crypt.", "on floor 2 of the Cellars"): the
+    // floor's biome, else the level's name. A leading "The" is lowered so it reads mid-sentence.
+    string PlaceName()
+    {
+        var biome = Level != null ? Level.Biome(Mathf.Max(1, Floor)) : null;
+        string name = biome != null && !string.IsNullOrWhiteSpace(biome.displayName) ? biome.displayName.Trim()
+            : Level != null && !string.IsNullOrWhiteSpace(Level.displayName) ? Level.displayName.Trim() : "the dungeon";
+        return name.StartsWith("The ") ? "the " + name.Substring(4) : name;
+    }
 
     // "Level 4 Wizard" and the three best skills, for the recap.
     string Adventurer(out string skills)

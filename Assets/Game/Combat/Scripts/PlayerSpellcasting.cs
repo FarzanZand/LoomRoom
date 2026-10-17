@@ -12,6 +12,8 @@ public class PlayerSpellcasting : MonoBehaviour
     [Tooltip("Palm of the left hand. Held effects and projectiles start here.")]
     public Transform castOrigin;
     public string spellLayer = "Left Hand Spell";
+    [Tooltip("The state on the spell layer the hand comes up in when a spell is equipped.")]
+    public string raiseState = "Spell Raise";
     public string castParameter = "SpellCast", releaseParameter = "SpellRelease", cancelParameter = "SpellCancel";
     public string equippedParameter = "SpellEquipped", typeParameter = "SpellType", speedParameter = "SpellSpeed";
     [Tooltip("Raising or lowering the hand when switching between shield and spell.")]
@@ -86,7 +88,7 @@ public class PlayerSpellcasting : MonoBehaviour
         {
             SetInt(typeParameter, selected.animation);
             // From one spell to another: raise the hand again rather than snapping between poses.
-            if (shown != null) arms.CrossFadeInFixedTime("Spell Raise", .08f, layer, 0);
+            if (shown != null) arms.CrossFadeInFixedTime(raiseState, .08f, layer, 0);
         }
         shown = selected;
         ShowHeld();

@@ -3,7 +3,7 @@ using UnityEngine;
 
 // Offer gold, receive a blessing. The price grows with depth; each altar answers a
 // limited number of prayers. Outcomes use DungeonBoon, so blessings last the whole run.
-// (Barony's altars also identify items; identification is not in the game yet.)
+// (Altars could also identify items; identification is not in the game yet.)
 public class DungeonAltar : MonoBehaviour, IInteractable
 {
     [Min(0)] public int baseOffering = 20;

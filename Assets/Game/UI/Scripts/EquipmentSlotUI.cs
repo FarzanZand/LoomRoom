@@ -15,7 +15,7 @@ public class EquipmentSlotUI : MonoBehaviour,IPointerClickHandler,IPointerEnterH
     [Tooltip("Shown behind the icon in the worn item's rarity colour.")]
     [UnityEngine.Serialization.FormerlySerializedAs("honedFill")] public Image rarityFill;
     public void Refresh(){var item=player?.Equipment?.Get(slot);if(icon!=null){icon.sprite=item!=null?item.icon:null;icon.enabled=item!=null;
-        // A long weapon stands upright in a tall slot (Diablo); everything else fills the slot.
+        // A long weapon stands upright in a tall slot; everything else fills the slot.
         var area=((RectTransform)transform).rect.size-Vector2.one*12f;
         ItemGridUI.UprightIcon(icon.rectTransform,area,item!=null && item.GridSize.x==1 && area.y>area.x*1.5f ? new Vector2Int(1,item.GridSize.y) : Vector2Int.one);}if(title!=null)title.text=Display(slot);
         if(silhouette!=null)silhouette.enabled=item==null && silhouette.sprite!=null;

@@ -8,8 +8,8 @@ using UnityEngine.UI;
 // already have one, so hand edits survive; safe to run again.
 public static class HudStyleSetup
 {
-    const string Slot = "Assets/Game/UI/Sprites/Diablo/Plain slot grey.png";
-    const string SlotFrame = "Assets/Game/UI/Sprites/Diablo/Plain slot frame.png";
+    const string Slot = "Assets/Game/UI/Sprites/Inventory/Plain slot grey.png";
+    const string SlotFrame = "Assets/Game/UI/Sprites/Inventory/Plain slot frame.png";
     static readonly string[] Roots = { "UI/Canvas/HotbarUI", "UI/Canvas/PlayerVitals", "UI/Canvas/Experience", "UI/Canvas/Left Hand HUD" };
     static readonly Color Gold = new(.86f, .7f, .38f);
 
@@ -60,14 +60,14 @@ public static class HudStyleSetup
         "Hud slot selected" => new HudStyleImage.Look { sprite = slotFrame, type = Image.Type.Sliced, pixelsPerUnitMultiplier = 1f, setColor = true, color = Gold },
         "Hotbar frame" => new HudStyleImage.Look { sprite = slotFrame, type = Image.Type.Sliced, pixelsPerUnitMultiplier = 1f },
         "Hud bar frame" or "Inset" => new HudStyleImage.Look { sprite = slot, type = Image.Type.Sliced, pixelsPerUnitMultiplier = 2f },
-        // Bar fills: the grainy bar strip, tinted by the bar's colour (Texture Bars).
+        // Bar fills: the grainy bar strip, tinted by the bar's colour (TextureBars).
         "Hud bar fill" or "Bar" => BarFill(type),
         _ => null,
     };
 
     // ── Bar texture ──────────────────────────────────────────────────
 
-    const string BarFillPath = "Assets/Game/UI/Sprites/Diablo/Plain bar fill.png";   // painted by Tools/hud_bar_texture.py
+    const string BarFillPath = "Assets/Game/UI/Sprites/Inventory/Plain bar fill.png";   // painted by Tools/hud_bar_texture.py
     const string EnemyBarPath = "Assets/Game/UI/Prefabs/Dungeon/Enemy health bar.prefab";
 
     // A bar fill's Rugged look: the strip, tiled so its grain keeps its size however full the bar is. A Filled bar
@@ -99,7 +99,7 @@ public static class HudStyleSetup
 
     // The vitals bars (health, mana, stamina) and the enemy bar get the grainy strip instead of a flat fill; the enemy
     // bar also gets the inventory's grey slot as its frame. Safe to run again.
-    [MenuItem("Tools/LoomRoom/UI/Texture Bars")]
+    // Run from an eval: HudStyleSetup.TextureBars().
     public static string TextureBars()
     {
         var bar = BarSprite();

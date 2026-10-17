@@ -3,7 +3,8 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
-// Short line in the middle of the screen: a skill or level going up. Queues when several arrive together.
+// Short line in the middle of the screen (the boss blessing, the dev toggles). Queues when several arrive together, and
+// waits while the level-up panel is up, which uses the same spot.
 public class AnnouncementUI : Singleton<AnnouncementUI>
 {
     [SerializeField] CanvasGroup group;
@@ -37,6 +38,8 @@ public class AnnouncementUI : Singleton<AnnouncementUI>
     {
         routine = null;
         if (group == null || queue.Count == 0) return;
+        // The level-up panel takes the same middle of the screen: wait until it has gone.
+        if (LevelUpShowing) { routine = DOTween.Sequence().SetUpdate(true).AppendInterval(.25f).OnComplete(Next); return; }
         var (text, sub, holdFor) = queue.Dequeue();
         float stay = holdFor > 0f ? holdFor : hold;
         if (title != null) title.text = text;
@@ -49,6 +52,17 @@ public class AnnouncementUI : Singleton<AnnouncementUI>
             .AppendInterval(queue.Count > 0 ? stay * .6f : stay)
             .Append(group.DOFade(0, fadeOut))
             .OnComplete(Next);
+    }
+
+    CanvasGroup levelUp;
+    bool levelUpLooked;
+    bool LevelUpShowing
+    {
+        get
+        {
+            if (!levelUpLooked) { levelUpLooked = true; var ui = FindAnyObjectByType<LevelUpUI>(FindObjectsInactive.Include); levelUp = ui != null ? ui.GetComponent<CanvasGroup>() : null; }
+            return levelUp != null && levelUp.isActiveAndEnabled && levelUp.alpha > .05f;
+        }
     }
 
     void OnDisable() { routine?.Kill(); routine = null; queue.Clear(); if (group != null) group.alpha = 0; }

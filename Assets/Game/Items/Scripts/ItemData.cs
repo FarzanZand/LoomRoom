@@ -25,7 +25,7 @@ public partial class ItemData : ScriptableObject
     public Color RarityColour => UIManager.RarityColor(rarity);
     public string RarityTextColour => "#" + ColorUtility.ToHtmlStringRGB(Color.Lerp(RarityColour, Color.white, .45f));
     // The faint floor behind the item in a bag, hotbar, equipment or shop slot: only items with a rarity above Plain (a
-    // Plain item's slot looks like an empty one). The floor sprite (UI/Sprites/Diablo/Rarity floor, 9-sliced) carries
+    // Plain item's slot looks like an empty one). The floor sprite (UI/Sprites/Inventory/Rarity floor, 9-sliced) carries
     // the shape: a stepped band at the edges, nearly clear behind the icon; this is its colour.
     public bool HasSlotFill => HasRarityColour;
     public Color SlotFillColour { get { var c = RarityColour; c.a = 1f; return c; } }
@@ -61,7 +61,7 @@ public partial class ItemData : ScriptableObject
 
     [Min(1)] public int maxStackSize = 1;
 
-    [Tooltip("Cells it takes in the bag grid (Diablo style), width x height. 0 x 0 picks by kind: swords and maces 1x3, " +
+    [Tooltip("Cells it takes in the bag grid, width x height. 0 x 0 picks by kind: swords and maces 1x3, " +
         "knives 1x2, shields 2x2, body armour 2x3, helm, gloves, boots and leggings 2x2, the rest 1x1.")]
     public Vector2Int gridSize;
     public Vector2Int GridSize
@@ -228,7 +228,7 @@ public partial class ItemData : ScriptableObject
         ItemEffectProcessor.Fire(this, EffectTrigger.OnUse, EffectContext.For(user, this));
     }
 
-    // Rich-text tooltip body shared by the in-game tooltip and the Item Database preview, Diablo's order: the main
+    // Rich-text tooltip body shared by the in-game tooltip and the Item Database preview, in this order: the main
     // number big (a weapon's damage and how fast it swings, a shield's block armor, worn armor), the other stats,
     // effects and spell, the change against what the player
     // is wearing in that slot (only while a player exists), then the description as flavour and the price.
@@ -399,7 +399,7 @@ public partial class ItemData : ScriptableObject
     }
 
     // One stat in words. Attack speed reads as slower or faster swings, not a fraction.
-    // blocking: the stat only counts on a block (a shield's armor, as in Barony).
+    // blocking: the stat only counts on a block (a shield's armor).
     public static string StatLine(StatType stat, ModifierType type, float value, bool blocking = false)
     {
         if (stat == StatType.AttackSpeed && type == ModifierType.Flat)

@@ -67,7 +67,7 @@ Templates: `Starting room` (the level's `startingRoom`), `Merchant shop` (the le
 
 ## Not included
 
-Item identification (the altar blesses; Barony's identify needs unknown items first).
+Item identification (the altar blesses; identifying needs unknown items first).
 
 ## Room events, heights and room light
 

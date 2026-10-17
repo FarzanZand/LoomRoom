@@ -33,13 +33,13 @@ Goal: table combat that feels like the reference (a reference gameplay trailer),
 
 These go against settled rules in CLAUDE.md and memory, so they need a yes before work starts:
 
-1. **Barony pace** becomes the reference pace (slower cadence, faster strike). The CLAUDE.md combat row and `Docs/CombatFeel.md` get rewritten.
+1. **A slower pace** becomes the reference pace (slower cadence, faster strike). The CLAUDE.md combat row and `Docs/CombatFeel.md` get rewritten.
 2. **No stunlock rule** (light hits never flinch, never interrupt a swing) becomes "every hit flinches, a hit early in a windup interrupts it, at most once per enemy attack".
 3. **Hit stop** goes away (or down to one frame on kills only).
 4. **"Less is more" VFX** gives way to gore: blood, decals, bursts.
 5. **The charged heavy** has no the reference equivalent. Recommendation: keep it, since it costs stamina and is optional, but strip its hit stop and charge zoom down to match. Alternative: remove it and its tension layer.
 6. **Art style**: keep the pixel look and take the reference's colours and lighting, or drop the pixel look (still open from the first comparison). Blood decals and the blade stain must be made for whichever wins.
-7. **Inventory**: Diablo-style rework (Phase 9) or keep ours. It's the largest piece and independent of the combat feel.
+7. **Inventory**: a grid bag rework (Phase 9) or keep ours. It's the largest piece and independent of the combat feel.
 
 ## Phase 1: tuning only (no new art, playable in an hour)
 
@@ -132,7 +132,7 @@ What the reference has that we don't, and what it costs here:
 - **Two weapon sets (I / II)** with a swap key; a **belt row** for potions and scrolls feeding the hotbar.
 - **3D character preview** in the inventory, wearing your gear. The table player is arms only, so this needs a full-body player model. That same body would show your legs when you look down, as in the reference.
 - **Stat sheet** with per-stat tooltips (base, items, skills); `CharacterStats.Modifiers` already has the sources. STR/DEX/CON/INT exist but are not shown anywhere today.
-- **Attribute points** (+5 per level, spent with + buttons) would replace the automatic class growth on level-up; skills can stay use-based (Barony) or become points.
+- **Attribute points** (+5 per level, spent with + buttons) would replace the automatic class growth on level-up; skills can stay use-based or become points.
 - **Item tooltips**: type line ("Two-Handed Mace"), attack speed in words, durability, requirements in red when unmet, Shift to compare (ours always compares), Ctrl+click to drop.
 - **Durability, repair and identify**: repair at the merchant; unidentified magic items and Identify scrolls; a Town Portal scroll would need a reason to exist in our room loop.
 
@@ -146,4 +146,4 @@ What the reference has that we don't, and what it costs here:
 6. Phase 7, then 8.
 7. Phase 9 only if you decide to.
 
-After each phase: update CLAUDE.md (combat row, hit feel line, Barony pace) and `Docs/CombatFeel.md`; play the Debug Dungeon; record a take and compare at 0.033 s per frame against the reference sheets.
+After each phase: update CLAUDE.md (combat row, hit feel line, pace) and `Docs/CombatFeel.md`; play the Debug Dungeon; record a take and compare at 0.033 s per frame against the reference sheets.

@@ -97,7 +97,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 349595018930584026}
-  m_Mesh: {fileID: 1326711422270241061, guid: 11e3f9371f81464448c0fe7f4b661742, type: 3}
+  m_Mesh: {fileID: 4300000, guid: b677d3f3a130d604d83e8a3c96590fee, type: 2}
 --- !u!23 &529907498124856032
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -123,7 +123,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: e9e43f7f18e02bb40a6993e7f1cf4a53, type: 2}
+  - {fileID: 2100000, guid: 65ee5aff8fa2e3343ac832ced43ebe0b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -591,7 +591,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1255907958204897369}
-  m_Mesh: {fileID: -5709802312607337794, guid: 2b82ed91838d1634aa6aa0e477a53bff, type: 3}
+  m_Mesh: {fileID: 4300000, guid: b7809563ece616b469165b0059ef5360, type: 2}
 --- !u!23 &5526028193257786459
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -617,7 +617,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: e9e43f7f18e02bb40a6993e7f1cf4a53, type: 2}
+  - {fileID: 2100000, guid: db024f69f454ff94ead1ae75c683d63d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1617,6 +1617,8 @@ MonoBehaviour:
   groundedParam: Grounded
   freeFallParam: FreeFall
   jumpParam: Jump
+  moveXParam: MoveX
+  moveZParam: MoveZ
 --- !u!1 &3522871130730397753
 GameObject:
   m_ObjectHideFlags: 0
@@ -1674,7 +1676,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: e9e43f7f18e02bb40a6993e7f1cf4a53, type: 2}
+  - {fileID: 2100000, guid: 71fa7c55adf656c479775b3e1a92f9ad, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1701,7 +1703,7 @@ SkinnedMeshRenderer:
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
   m_SkinnedMotionVectors: 1
-  m_Mesh: {fileID: -7060046050507783601, guid: 0dcad412e4df7364880958fbda1ede6b, type: 3}
+  m_Mesh: {fileID: 4300000, guid: 7db28d33b90369b4d875265a95e75d86, type: 2}
   m_Bones:
   - {fileID: 2038793232493527812}
   - {fileID: 3510193793661072601}
@@ -3380,7 +3382,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: e9e43f7f18e02bb40a6993e7f1cf4a53, type: 2}
+  - {fileID: 2100000, guid: 5f17d30ed5b7c714e805da21f665d8a7, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -3407,7 +3409,7 @@ SkinnedMeshRenderer:
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
   m_SkinnedMotionVectors: 1
-  m_Mesh: {fileID: -5135552210324372693, guid: 0dcad412e4df7364880958fbda1ede6b, type: 3}
+  m_Mesh: {fileID: 4300000, guid: 0a1d0f4877f64d64e9a0bce7b2c4ef4f, type: 2}
   m_Bones:
   - {fileID: 7346877066210897801}
   - {fileID: 4346708129753642663}
@@ -3586,6 +3588,8 @@ MonoBehaviour:
   canSprint: 1
   sprintSpeed: 60
   crouchSpeed: 1
+  accelerationTime: 0.1
+  stopTime: 0.07
   backwardSpeed: 0.45
   canJump: 0
   jumpForce: 12

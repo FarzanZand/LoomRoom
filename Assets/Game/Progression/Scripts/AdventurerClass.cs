@@ -11,7 +11,7 @@ public static class AdventureSkills
     public const int Count = 8;
     public static readonly AdventureSkill[] All = (AdventureSkill[])Enum.GetValues(typeof(AdventureSkill));
 
-    // Barony's proficiency tiers.
+    // Proficiency tiers.
     public static string Tier(int rank) => rank >= 100 ? "Legendary" : rank >= 80 ? "Master" : rank >= 60 ? "Expert"
         : rank >= 40 ? "Skilled" : rank >= 20 ? "Basic" : rank >= 1 ? "Novice" : "None";
 

@@ -86,6 +86,12 @@ public class TableLevelLoader : MonoBehaviour
             if(tableBounds.Contains(item.transform.position)) townObjects.TryAdd(item.gameObject,item.gameObject.activeSelf);
         SetTown(false);
     }
+    // The loading cutscene is held by a flag, so it is popped exactly once, also when the load stops part way (the
+    // object disabled or destroyed: Unity stops the coroutine without running its finally).
+    bool ownsCutscene;
+    void HoldCutscene() { if (ownsCutscene || !GameManager.HasInstance) return; GameManager.Instance.Push(GameState.Cutscene); ownsCutscene = true; }
+    void ReleaseCutscene() { if (!ownsCutscene) return; ownsCutscene = false; if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene); }
+    void OnDisable() { if (ownsCutscene) { ReleaseCutscene(); Busy = false; } }
     void OnDestroy()
     {
         if(PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped-=OnPlayerSwapped;
@@ -134,9 +140,8 @@ public class TableLevelLoader : MonoBehaviour
         var resume = pendingResume; pendingResume = null;
         if (!descending) Resumed = resume != null;
         if (resume != null) { FloorNumber = resume.floor; runSeed = resume.seed; }
-        GameManager.Instance.Pop(GameState.Dead);
-        GameManager.Instance.Push(GameState.Cutscene);
-        RememberRoom();
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
+        HoldCutscene();
         var revealSettings = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
         bool useReveal = !DebugDungeonSession.Active && !skipReveal && !descending && level.IsDungeon && revealSettings != null;
         bool faded=false, completed=false;
@@ -144,6 +149,7 @@ public class TableLevelLoader : MonoBehaviour
         // C# forbids yield in try/catch, so only Prepare is caught; the finally always releases the cutscene and fade.
         try
         {
+            RememberRoom();
             if (useReveal) ScreenManager.Instance.ClearFade();
             else if (!DebugDungeonSession.Active)
             {
@@ -230,7 +236,7 @@ public class TableLevelLoader : MonoBehaviour
         {
             if (reveal != null) Destroy(reveal);
             if (faded && ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.6f);
-            if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
+            ReleaseCutscene();
             Busy=false;
             if(!completed) ShowSelection("Could not load that level");
             // The biome's Dungeon Master line, a moment after the player is actually standing in it.
@@ -429,9 +435,9 @@ public class TableLevelLoader : MonoBehaviour
     IEnumerator ReturnRoutine(Action whileDark)
     {
         Busy=true;
-        menu.Hide();GameManager.Instance.Pop(GameState.Dead);
+        menu.Hide(); if(GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
         if(RunManager.HasInstance) RunManager.Instance.Abandon();
-        GameManager.Instance.Push(GameState.Cutscene);
+        HoldCutscene();
         bool fade=ScreenManager.HasInstance;
         try
         {
@@ -445,7 +451,7 @@ public class TableLevelLoader : MonoBehaviour
         finally
         {
             if(fade && ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.6f);
-            if(GameManager.HasInstance) GameManager.Instance.Pop(GameState.Cutscene);
+            ReleaseCutscene();
             Busy=false;
         }
     }

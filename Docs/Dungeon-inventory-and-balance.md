@@ -18,7 +18,7 @@ Paths are under `Assets/Game`.
 
 Tab opens and closes the inventory. The cursor is freed and player movement and attacks stop, while enemies, damage and regeneration carry on. The inventory never changes time scale. Death, player swap, rapid toggles and closing clean up menu state and drag visuals.
 
-The table player's bag is a Diablo grid, 10 x 4 cells (`Inventory.gridWidth`). An item takes `ItemData.GridSize` cells (set `gridSize`, or leave it 0 x 0 to pick by kind: swords and maces 1x3, knives 1x2, shields 2x2, body armour 2x3, helm, gloves, boots and leggings 2x2, the rest 1x1); its stack is stored at its top-left cell. New items fill column by column from the top left. Dropping an item on one other item merges a stack or swaps them; dropping it across two items is refused. While dragging, the cells it would take turn green or red (`ItemGridUI`). The hotbar stays plain slots. `Tools > LoomRoom > UI > Set Up Diablo Inventory` lays out the grid and the paper-doll equipment slots. Checkpoints from before the grid (save version 3) are dropped.
+The table player's bag is a grid, 10 x 4 cells (`Inventory.gridWidth`). An item takes `ItemData.GridSize` cells (set `gridSize`, or leave it 0 x 0 to pick by kind: swords and maces 1x3, knives 1x2, shields 2x2, body armour 2x3, helm, gloves, boots and leggings 2x2, the rest 1x1); its stack is stored at its top-left cell. New items fill column by column from the top left. Dropping an item on one other item merges a stack or swaps them; dropping it across two items is refused. While dragging, the cells it would take turn green or red (`ItemGridUI`). The hotbar stays plain slots. The inventory layout tool under `Tools > LoomRoom > UI` lays out the grid and the paper-doll equipment slots. Checkpoints from before the grid (save version 3) are dropped.
 
 Click bag gear or drag it onto a matching equipment slot to equip. Click an occupied equipment slot to unequip. Right-click an item for context actions. Hand items (weapon, shield) stay in the hotbar while held: equipping from the bag moves the item into the old hand item's hotbar slot or an empty one, and a full hotbar with no slot to swap refuses the equip without deleting anything. Worn items (armour, leggings, trinkets) leave the bag while equipped and return on unequip.
 
@@ -28,7 +28,7 @@ Equippable consumables must be held first. `AnimationOnUse = Eat` keeps the item
 
 ## Damage
 
-Armour works as in Barony: it comes off `CombatManager.armorEffectiveness` (0.75) of a physical hit and the rest always lands; a successful block lets armour take the whole hit. Magic ignores armour. Shield armour counts only for blocked hits. Gear values by tier are listed in [Adventure revamp](Adventure-revamp.md#gear-baseline).
+Armour takes a share of each physical hit: it comes off `CombatManager.armorEffectiveness` (0.75) of a physical hit and the rest always lands; a successful block lets armour take the whole hit. Magic ignores armour. Shield armour counts only for blocked hits. Gear values by tier are listed in [Adventure revamp](Adventure-revamp.md#gear-baseline).
 
 ## Food
 

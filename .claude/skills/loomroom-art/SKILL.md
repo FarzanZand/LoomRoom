@@ -225,7 +225,11 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
   triangle lost them), then rules per material: stone gets speckled grain, cracks and moss in upward hollows; bone
   thin cracks, drawn features widened (`--grow 1`) so sockets read; books keep each book's colour flat, edges and
   scuffs lighter, page fibres (`--covers` gives a stack's books their own colours by height when Synty gives them one).
-  No wood grain on anything that isn't wood.
+  No wood grain on anything that isn't wood. `--material cloth` (sacks): folds and seams shaded, a coarse weave, dirt at
+  the base; parts that aren't cloth (apples) keep their colour. A painted prop's faces turned away from the view it was
+  painted from (normal more than ~37 degrees off) streak: rebuild just those texels with these rules, colour-matched to the
+  painting's clean texels (the portal arch, 2026-10-17). A metal part Synty colours grey can be found from the G-buffer's
+  own colour and its normal (the barrel's bands: grey and facing sideways; the grey lids face up).
 - A smooth-shaded restyled mesh hides a low-poly model's shape (the skull pile read as a heap of eggs): flat-shade it
   (each triangle its own vertices and face normal, every UV channel kept) so its facets catch the light like Synty's.
 

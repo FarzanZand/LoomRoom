@@ -118,8 +118,9 @@ public class ShopUI : Singleton<ShopUI>
         Map(player.Bag);
         for (int i = 0; i < (packSlots?.Length ?? 0); i++)
         {
-            if (i >= packMap.Count) { packSlots[i].gameObject.SetActive(false); continue; }
+            // Every cell shows, empty ones too, so the pack keeps the inventory grid's shape.
             packSlots[i].gameObject.SetActive(true);
+            if (i >= packMap.Count) { packSlots[i].Clear(); continue; }
             var (container, slot) = packMap[i];
             var item = container.ItemAt(slot);
             if (item == null) { packSlots[i].Clear(); continue; }
@@ -136,7 +137,7 @@ public class ShopUI : Singleton<ShopUI>
     void Map(Inventory container)
     {
         if (container == null) return;
-        // A Diablo bag lists its items (at their top-left cells), not every cell.
+        // A bag grid lists its items (at their top-left cells), not every cell.
         for (int i = 0; i < container.SlotCount; i++)
             if (!container.IsGrid || container.ItemAt(i) != null) packMap.Add((container, i));
     }

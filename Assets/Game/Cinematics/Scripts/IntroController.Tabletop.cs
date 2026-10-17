@@ -112,7 +112,7 @@ public partial class IntroController
     {
         if (!running || !waitingForSeat) return false;
         waitingForSeat = false;
-        StopAllCoroutines();
+        StopAllCoroutines(); PopDialogue();   // a stopped scene gives its Dialogue back (the next one takes it again)
         StartCoroutine(TabletopSeated());
         return true;
     }

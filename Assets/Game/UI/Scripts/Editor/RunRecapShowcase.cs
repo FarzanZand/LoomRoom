@@ -9,7 +9,7 @@ using UnityEngine.UI;
 // run again.
 public static class RunRecapShowcase
 {
-    const string Slot = "Assets/Game/UI/Sprites/Diablo/Plain slot grey.png";
+    const string Slot = "Assets/Game/UI/Sprites/Inventory/Plain slot grey.png";
     const string Library = "Assets/Game/Audio/Library/_Sound Effects Library/";
     const string DataFolder = "Assets/Game/Audio/Data/";
     const string AudioPrefab = "Assets/Game/Core/Prefabs/AudioManager.prefab";
@@ -33,7 +33,7 @@ public static class RunRecapShowcase
         ("bankRow", new[] { "Bank label", "Bank value" }),
     };
 
-    [MenuItem("Tools/LoomRoom/UI/Build Recap Spoils Showcase")]
+    // Run from an eval: RunRecapShowcase.Build().
     public static string Build()
     {
         var recap = Object.FindAnyObjectByType<RunRecapUI>(FindObjectsInactive.Include);
@@ -97,7 +97,7 @@ public static class RunRecapShowcase
 
     // Each tally sound is an AudioData asset in Audio/Data (made once; edit it freely after), keyed in the UI Library on
     // the AudioManager prefab and on the scene's AudioManager when it keeps its own list.
-    [MenuItem("Tools/LoomRoom/UI/Set Up Recap Tally Sounds")]
+    // Build runs it; on its own from an eval: RunRecapShowcase.AddSounds().
     public static string AddSounds()
     {
         var data = new System.Collections.Generic.Dictionary<string, AudioData>();

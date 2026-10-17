@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Diablo-style floor loot: a pillar of light rises from an item lying on the floor, coloured by what it is
+// Floor loot: a pillar of light rises from an item lying on the floor, coloured by what it is
 // (normal, a rarity, consumable), so loot reads from across a dark room. Added by WorldItem when
 // InventoryManager.lootBeams is on; LootLabelsUI shows the item's name over the nearest ones.
 public class LootBeam : MonoBehaviour

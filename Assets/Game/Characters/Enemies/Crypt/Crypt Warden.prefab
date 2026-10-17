@@ -237,7 +237,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 1
-    baseValue: 15
+    baseValue: 10
     min: 0
     max: 0
   audio:

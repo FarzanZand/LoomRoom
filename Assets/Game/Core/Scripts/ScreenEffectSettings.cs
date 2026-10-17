@@ -40,8 +40,8 @@ public class ScreenEffectSettings
     [ShowIf("colorGrading")] public Color colorFilter = Color.white;
     [ShowIf("colorGrading")] public float postExposure;
 
-    // Dark, grainy, low-res cabin look in the style of Inscryption.
-    public static ScreenEffectSettings Inscryption() => new()
+    // Dark, grainy, low-res cabin look.
+    public static ScreenEffectSettings RoomLook() => new()
     {
         ambientOcclusion = true,
         filmGrain = true, grainType = FilmGrainLookup.Medium3, filmGrainIntensity = .45f, filmGrainResponse = .7f,

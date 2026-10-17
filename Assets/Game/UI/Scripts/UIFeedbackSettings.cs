@@ -12,7 +12,9 @@ public class UIFeedbackSettings : ScriptableObject
     public string openKey="inventoryOpen", closeKey="inventoryClose", hoverKey="uiHover", equipKey="equipItem", invalidKey="uiUnavailable";
     static UIFeedbackSettings cached;
     public static UIFeedbackSettings Shared=>cached!=null?cached:cached=Resources.Load<UIFeedbackSettings>("UIFeedback");
-    static float lastHover;
+    static float lastHover = -1f;
+    // Time starts at 0 each Play session (domain reload is off): a stale stamp would silence hover sounds.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetHover() => lastHover = -1f;
     public void Play(string key){if(!string.IsNullOrEmpty(key) && AudioManager.HasInstance)AudioManager.Instance.PlayUI(key);}
     public void Hover(){if(Time.unscaledTime-lastHover<.08f)return;lastHover=Time.unscaledTime;Play(hoverKey);}
 }

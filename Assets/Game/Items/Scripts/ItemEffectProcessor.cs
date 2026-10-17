@@ -102,6 +102,7 @@ public static class ItemEffectProcessor
                     Vector3 pos = ctx.Point;
                     var go = Object.Instantiate(e.prefab, pos, Quaternion.identity);
                     if (e.attachToUser && user != null) go.transform.SetParent(user.transform, true);
+                    if (e.duration > 0f) Object.Destroy(go, e.duration);   // removed after Duration (0 keeps it)
                 }
                 break;
 

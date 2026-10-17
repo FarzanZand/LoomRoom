@@ -42,7 +42,7 @@ public class EffectEntry
     [ShowIf("@type == EffectType.TimedStatBuff")]
     public ModifierType modifierType = ModifierType.Flat;
 
-    [ShowIf("@type == EffectType.TimedStatBuff || type == EffectType.FoodRegen")]
+    [ShowIf("@type == EffectType.TimedStatBuff || type == EffectType.FoodRegen || type == EffectType.SpawnPrefab")]
     [Tooltip("Seconds the buff lasts. 0 or less = permanent: OnEquip buffs end on unequip, other triggers never end (avoid on OnHitLanded/OnHurt).")]
     public float duration = 10f;
 

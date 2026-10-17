@@ -31,7 +31,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     public bool  IsGrounded  => Controller != null && Controller.isGrounded;
     public float Speed       { get; private set; }
 
-    // Enemies block like Barony's monsters: walking toward one inside the personal space goes nowhere.
+    // Enemies block like walls: walking toward one inside the personal space goes nowhere.
     void KeepPersonalSpace()
     {
         float space = CombatManager.HasInstance ? CombatManager.Instance.personalSpace : 1.1f;

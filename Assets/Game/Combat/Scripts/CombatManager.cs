@@ -436,6 +436,7 @@ public class CombatManager : Singleton<CombatManager>
     public bool criticalHitsEnabled = true;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
     [Range(0f, 1f)] public float critChance = .08f;
+    [Range(0f, 1f), Tooltip("The most a critical chance can be, whatever gear, Dexterity and skills add.")] public float critChanceCap = .6f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
     [Min(1f)] public float critMultiplier = 1.75f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
@@ -465,7 +466,7 @@ public class CombatManager : Singleton<CombatManager>
 
     // ── Hits: Armor ──
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Armor")]
-    [Tooltip("Barony's armor effectiveness: armor is taken off this share of a hit, the rest always lands, so armor never makes anyone untouchable. A successful block uses the full hit (1).")]
+    [Tooltip("Armor effectiveness: armor is taken off this share of a hit, the rest always lands, so armor never makes anyone untouchable. A successful block uses the full hit (1).")]
     [Range(0f, 1f)] public float armorEffectiveness = .75f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Armor")]
     [Min(0f), Tooltip("Damage one point of armour stops. Armour numbers are five times what they were before 2026-10-15 (a Leather Helm is 5), so 0.2 keeps the old balance and each rarity step's +20% shows as whole points.")]
@@ -661,7 +662,7 @@ public class CombatManager : Singleton<CombatManager>
                 return;
             }
         }
-        if (criticalHitsEnabled && Random.value < critChance + GearStat(info.Source, StatType.CriticalChance))
+        if (criticalHitsEnabled && Random.value < Mathf.Min(critChanceCap, critChance + GearStat(info.Source, StatType.CriticalChance)))
         {
             info.Critical = true;
             info.Amount *= critMultiplier;

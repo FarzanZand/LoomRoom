@@ -355,6 +355,7 @@ public class EnemyBrain : MonoBehaviour
     {
         if (State == EnemyState.Dead || !Character.IsAlive) return;
         if (Asleep) Wake(.6f);
+        Perception.NoCloseAwareness = false;   // a wall-facing guard snaps out of it
         if (info.Source != null) { wasProvoked = true; Perception.NotifyAttackedFrom(info.Source.transform.position); }
 
         // Flinch only when not mid-swing: a swing is never interrupted by the player's hits, unless

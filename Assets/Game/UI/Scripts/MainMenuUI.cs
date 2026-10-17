@@ -12,7 +12,8 @@ using UnityEngine.UI;
 // Continue plays the newest save, New game asks for the player's name (the save is known by it) and whether to play
 // the intro or skip it (starting on the first morning, right after the intro dungeon) and starts in a free slot (or
 // asks which save to replace when all are taken),
-// Load game lists the saves to play or delete. Playing fades to black and loads the game's scene. The set, buttons,
+// Load game lists the saves to play or delete, Settings opens the game's settings screen (its InputManager is here
+// only for rebinding keys). Playing fades to black and loads the game's scene. The set, buttons,
 // save list, title and fade are authored in the scene (Tools > LoomRoom > UI > Build Main Menu Saves); this binds them. The menu is drawn smooth, not pixel-lit, and the
 // scene has no managers, so this switches pixel lighting off, frees the cursor and reads the music volume itself.
 public class MainMenuUI : MonoBehaviour
@@ -32,6 +33,9 @@ public class MainMenuUI : MonoBehaviour
     [Tooltip("Opens the save list. Hidden while there is no save.")]
     [SerializeField] Button loadButton;
     [SerializeField] Button quitButton;
+    [Tooltip("Opens the game's settings screen (the same prefab as the pause menu's).")]
+    [SerializeField] Button settingsButton;
+    [SerializeField] SettingsUI settings;
     [Tooltip("The column of menu buttons, hidden while the save list is open.")]
     [SerializeField] GameObject buttons;
 
@@ -93,9 +97,13 @@ public class MainMenuUI : MonoBehaviour
         SetEyes(1f);
         if (music != null)
         {
-            music.volume *= PlayerPrefs.GetFloat(AudioManager.K_MASTER, 1f) * PlayerPrefs.GetFloat(AudioManager.K_MUSIC, .8f);
+            musicBase = music.volume;
+            SetMusicVolume();
+            AudioManager.VolumeStored += SetMusicVolume;   // the settings screen's sliders, live
             if (!music.isPlaying) music.Play();
         }
+        settingsButton?.onClick.AddListener(OpenSettings);
+        if (settings != null) settings.Closed += CloseSettings;
         AdventureSave.NewCharacterName = null;   // a name typed earlier but never played
         ProgressionManager.SkipIntroRequested = false;
         AdventureSave.MigrateOldSaves();   // saves from before the rename, brought over once
@@ -130,6 +138,31 @@ public class MainMenuUI : MonoBehaviour
         if (fade != null) StartCoroutine(Fade(1f, 0f, null));
     }
 
+    float musicBase = 1f;
+    void SetMusicVolume()
+    {
+        if (music != null) music.volume = musicBase * AudioManager.StoredVolume(AudioManager.Channel.Master) * AudioManager.StoredVolume(AudioManager.Channel.Music);
+    }
+
+    void OnDestroy()
+    {
+        AudioManager.VolumeStored -= SetMusicVolume;
+        if (settings != null) settings.Closed -= CloseSettings;
+    }
+
+    void OpenSettings()
+    {
+        if (settings == null || leaving) return;
+        if (buttons != null) buttons.SetActive(false);
+        settings.Open();
+    }
+
+    void CloseSettings()
+    {
+        if (buttons != null) buttons.SetActive(true);
+        settingsButton?.Select();
+    }
+
     void Update()
     {
         if (eyePulse > 0f) SetEyes(1f + (Mathf.PerlinNoise(Time.unscaledTime * .45f, 7.1f) - .5f) * 2f * eyePulse);
@@ -149,7 +182,8 @@ public class MainMenuUI : MonoBehaviour
         bool back = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame || Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame;
         if (back && !leaving)
         {
-            if (confirmPanel != null && confirmPanel.activeSelf) CloseConfirm();
+            if (settings != null && settings.IsOpen) { if (!InputManager.HasInstance || !InputManager.Instance.IsRebinding) settings.Close(); }
+            else if (confirmPanel != null && confirmPanel.activeSelf) CloseConfirm();
             else if (savesPanel != null && savesPanel.activeSelf) CloseSaves();
             else if (newGamePanel != null && newGamePanel.activeSelf) CloseNewGame();
         }

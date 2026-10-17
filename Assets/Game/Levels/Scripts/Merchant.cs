@@ -83,6 +83,8 @@ public class Merchant : MonoBehaviour, IInteractable
     }
 
     readonly List<Ware> wares = new();
+    // What is on the table now, without stocking it (ItemData.PruneVariants keeps these).
+    public void AddStockTo(HashSet<ItemData> items) { foreach (var w in wares) if (w.item != null) items.Add(w.item); }
     bool stocked;
     public IReadOnlyList<Ware> Wares { get { EnsureStock(); foreach (var w in wares) w.price=PriceOf(w.item); return wares; } }
     public string Currency => CurrencyManager.HasInstance ? CurrencyManager.Instance.currencyName : "gold";
@@ -134,7 +136,7 @@ public class Merchant : MonoBehaviour, IInteractable
             }
         }
         // The merchant's gear rolls its own rarity, from the plain item, at InventoryManager's Merchant Rarity times the floor's chances.
-        float boost = InventoryManager.HasInstance ? InventoryManager.Instance.merchantRarity : 2f;
+        float boost = InventoryManager.HasInstance ? InventoryManager.Instance.merchantRarity : 1.3f;
         // Keen eye (Trading 25): Fine and Masterwork gear twice as often again.
         var buyer = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         var trader = buyer != null ? buyer.GetComponent<AdventurerProgress>() : null;

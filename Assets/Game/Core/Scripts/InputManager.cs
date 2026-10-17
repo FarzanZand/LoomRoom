@@ -191,11 +191,17 @@ public class InputManager : Singleton<InputManager>
     InputAction TableAction(string name) => actions.Table.Get().FindAction(name);
     InputAction RoomAction(string name) => actions.Room.Get().FindAction(name);
 
+    // Keys are named by the key itself ("Space", "Left Shift"), not by the Windows keyboard language (which would say
+    // "Blanksteg" on a Swedish layout); mouse buttons keep their short names (LMB, RMB).
     public string BindingDisplay(string actionName, string part = null)
     {
         var action = TableAction(actionName) ?? RoomAction(actionName);
         int index = FindBinding(action, part);
-        return index < 0 ? "-" : action.GetBindingDisplayString(index, InputBinding.DisplayStringOptions.DontIncludeInteractions);
+        if (index < 0) return "-";
+        string path = action.bindings[index].effectivePath ?? "";
+        if (path.StartsWith("<Keyboard>"))
+            return InputControlPath.ToHumanReadableString(path, InputControlPath.HumanReadableStringOptions.OmitDevice);
+        return action.GetBindingDisplayString(index, InputBinding.DisplayStringOptions.DontIncludeInteractions);
     }
 
     // Listens for the next key or mouse button. Escape cancels. onDone runs either way.

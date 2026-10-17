@@ -281,4 +281,4 @@ MonoBehaviour:
       homing: 0
   closesIn: 0
   spellGap: 4
-  experience: 0
+  experience: 20
