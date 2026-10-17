@@ -145,14 +145,14 @@ public static partial class MetaProgressionSetup
         Text("Name label", p, new Vector2(-580, -28), new Vector2(340, 26), "NAME", body, 20, Faint, TextAlignmentOptions.Center);
 
         var rows = new List<CharacterSheetUI.Row>();
-        string[] attributes = { "constitution", "intelligence", "strength" };
+        string[] attributes = { "strength", "dexterity", "constitution", "intelligence" };
         for (int i = 0; i < attributes.Length; i++)
         {
-            float y = -120 - i * 105;
+            float y = AttributeRowY(i);
             var row = new CharacterSheetUI.Row { trackId = attributes[i] };
             var crest = Img($"{attributes[i]} crest", p, new Vector2(-735, y), new Vector2(64, 72), MetaSprite("Crest"), Color.white);
             row.value = Text("Score", crest.transform, new Vector2(0, 6), new Vector2(64, 40), "8", bold, 32, Ink, TextAlignmentOptions.Center);
-            row.unit = Text($"{attributes[i]} bonus", p, new Vector2(-735, y - 48), new Vector2(140, 24), "+0 health", body, 20, Faint, TextAlignmentOptions.Center);
+            row.unit = Text($"{attributes[i]} bonus", p, new Vector2(-520, y - 50), new Vector2(304, 24), "+0 health", body, 18, Faint, TextAlignmentOptions.Left);
             row.icon = crest;
             var attrIcon = Img($"{attributes[i]} icon", p, new Vector2(-670, y + 18), new Vector2(32, 32), AttributeIcon(attributes[i]), Color.white);
             attrIcon.preserveAspect = true;
@@ -268,7 +268,9 @@ public static partial class MetaProgressionSetup
         Debug.Log("Meta: character sheet built under UI/Canvas");
     }
 
-    static Sprite AttributeIcon(string id) => SheetIcon(AssetDatabase.LoadAssetAtPath<Sprite>(SkillIcons + (id == "constitution" ? "102_Passive_Male_Vitality.png" : id == "intelligence" ? "157_Mastery_Staff.png" : "134_Strength.png")));
+    static Sprite AttributeIcon(string id) => SheetIcon(AssetDatabase.LoadAssetAtPath<Sprite>(SkillIcons + (id == "constitution" ? "102_Passive_Male_Vitality.png" : id == "intelligence" ? "157_Mastery_Staff.png" : id == "dexterity" ? "139_Critical_Male_Sword.png" : "134_Strength.png")));
+    // Four attribute rows under the name, 90 apart; the bonus line sits under each row's bubbles.
+    public static float AttributeRowY(int i) => -80 - i * 90;
 
     static void BuildKeyItems(Transform canvas)
     {

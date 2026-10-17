@@ -149,14 +149,32 @@ public class DebugDungeonSession : MonoBehaviour
         }
     }
 
+    // The settings' portal 5 m behind the player, facing them, leading to the settings' room (the Skeleton Party room).
+    static void PlacePortal(DungeonGenerator dungeon)
+    {
+        if (settings.portal == null || settings.portalRoom == null) return;
+        var back = dungeon.SpawnRotation * Vector3.back;
+        var pos = dungeon.SpawnPoint + back * 5f;
+        if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) pos = hit.position;
+        var go = Instantiate(settings.portal, pos, Quaternion.LookRotation(-back), dungeon.transform);
+        // A kit arch outside a generated room: its painted model stands in for its blocks.
+        foreach (var piece in go.GetComponentsInChildren<DungeonKitPiece>(true)) piece.Choose(true, 3f);
+        foreach (var preview in go.GetComponentsInChildren<Transform>(true)) if (preview != null && preview.name == "Kit preview") Destroy(preview.gameObject);
+        var portal = go.GetComponent<PortalArch>();
+        portal.room = settings.portalRoom;
+        portal.wayBack = settings.portalWayBack;
+    }
+
     // The arena brings no enemies of its own: the settings' list stands in an arc in front of the player,
     // each just outside its detection radius, and stays put until it notices them.
     public static void ConfigureEnemies(DungeonGenerator dungeon)
     {
-        if (!Active || CurrentMode != Mode.Arena || dungeon == null) return;
+        // Only the arena itself: a floor loaded later in the session (the dev console's loadtemplate) keeps its own.
+        if (!Active || CurrentMode != Mode.Arena || dungeon == null || dungeon.LevelData != settings.level) return;
         foreach (var generated in dungeon.GetComponentsInChildren<EnemyBrain>()) { generated.gameObject.SetActive(false); Destroy(generated.gameObject); }
         var level = settings.level;
         PlaceChests(dungeon);
+        PlacePortal(dungeon);
         var spawned = settings.enemies.Where(p => p != null).ToArray();
         for (int i = 0; i < spawned.Length; i++)
         {

@@ -79,6 +79,8 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 5
     unit: health
+    secondBonusPerPoint: 0
+    secondUnit: 
     milestones:
     - value: 15
       unlock: Shield bash
@@ -102,6 +104,8 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 5
     unit: health
+    secondBonusPerPoint: 0
+    secondUnit: 
     milestones:
     - value: 25
       unlock: Riposte
@@ -125,6 +129,8 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 5
     unit: health
+    secondBonusPerPoint: 0
+    secondUnit: 
     milestones:
     - value: 25
       unlock: Crush
@@ -149,6 +155,8 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 5
     unit: health
+    secondBonusPerPoint: 0
+    secondUnit: 
     milestones:
     - value: 25
       unlock: Burning
@@ -173,6 +181,8 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 5
     unit: health
+    secondBonusPerPoint: 0
+    secondUnit: 
     milestones:
     - value: 25
       unlock: Mending
@@ -196,6 +206,8 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 5
     unit: health
+    secondBonusPerPoint: 0
+    secondUnit: 
     milestones:
     - value: 25
       unlock: Sprint
@@ -219,6 +231,8 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 5
     unit: health
+    secondBonusPerPoint: 0
+    secondUnit: 
     milestones:
     - value: 25
       unlock: Ambush
@@ -242,6 +256,8 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 5
     unit: health
+    secondBonusPerPoint: 0
+    secondUnit: 
     milestones:
     - value: 25
       unlock: Keen eye
@@ -265,6 +281,8 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 5
     unit: health
+    secondBonusPerPoint: 5
+    secondUnit: stamina
     milestones: []
   - id: intelligence
     displayName: Intelligence
@@ -278,6 +296,8 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 5
     unit: mana
+    secondBonusPerPoint: 0.05
+    secondUnit: mana/s
     milestones: []
   - id: strength
     displayName: Strength
@@ -291,6 +311,23 @@ MonoBehaviour:
     baseScore: 8
     bonusPerPoint: 1
     unit: damage
+    secondBonusPerPoint: 0
+    secondUnit: 
+    milestones: []
+  - id: dexterity
+    displayName: Dexterity
+    kind: 1
+    skill: 0
+    attribute: 3
+    icon: {fileID: 21300000, guid: 0f582b2186aa8b840a27267502e06b25, type: 3}
+    givenLevels: 0
+    levels: 8
+    perLevel: 5
+    baseScore: 8
+    bonusPerPoint: 5
+    unit: '% critical chance'
+    secondBonusPerPoint: 0
+    secondUnit: 
     milestones: []
   lessonIntro:
     text: There's a sheet on the little table by the wall. Have a look.
@@ -326,6 +363,8 @@ MonoBehaviour:
   quests:
   - id: shieldBash
     text: 'Try your shield bash: hold {block} and press {attack}.'
+  missingTile: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
+  tileFloor: 2
   startingPlayer: 1
   skipWakeUp: 1
   startAt: 0

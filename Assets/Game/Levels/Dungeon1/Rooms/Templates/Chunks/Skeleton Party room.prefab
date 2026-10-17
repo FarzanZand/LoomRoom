@@ -1,0 +1,719 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1174884618904646570
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5279221762150864958}
+  - component: {fileID: 4546172920458631300}
+  m_Layer: 0
+  m_Name: Dancer 3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5279221762150864958
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1174884618904646570}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.1564345, z: -0, w: 0.98768836}
+  m_LocalPosition: {x: 0.9888546, y: 0, z: -3.0433812}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 394978706156355094}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4546172920458631300
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1174884618904646570}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 0
+  chance: 1
+  overridePrefab: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  archer: 0
+  faceWall: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+--- !u!1 &1708689293967348048
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3657450975635262762}
+  - component: {fileID: 7992102808523120373}
+  m_Layer: 0
+  m_Name: Party chest
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3657450975635262762
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708689293967348048}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6130411148241043603}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7992102808523120373
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708689293967348048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 1
+  chance: 1
+  overridePrefab: {fileID: 0}
+  archer: 0
+  faceWall: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+--- !u!1 &4613236131251349743
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1757560597511924569}
+  - component: {fileID: 4723409853172353138}
+  m_Layer: 0
+  m_Name: Dancer 1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1757560597511924569
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4613236131251349743}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.98768836, z: -0, w: -0.15643449}
+  m_LocalPosition: {x: 0.9888545, y: 0, z: 3.0433807}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 394978706156355094}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4723409853172353138
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4613236131251349743}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 0
+  chance: 1
+  overridePrefab: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  archer: 0
+  faceWall: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+--- !u!1 &5364221619945644165
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6130411148241043603}
+  - component: {fileID: 4966928727450764236}
+  - component: {fileID: 5871339890619786785}
+  - component: {fileID: 8178713127600320815}
+  - component: {fileID: 5133322518671636260}
+  m_Layer: 0
+  m_Name: Skeleton Party room
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6130411148241043603
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5364221619945644165}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2972289776143007817}
+  - {fileID: 5512266492112320481}
+  - {fileID: 2117552321737884714}
+  - {fileID: 2323642993253468871}
+  - {fileID: 394978706156355094}
+  - {fileID: 3657450975635262762}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4966928727450764236
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5364221619945644165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  paintFootprint: 1
+  footprint: {fileID: 0}
+  allowRotation: 1
+  width: 5
+  height: 5
+  rows:
+  - '##+##'
+  - '#####'
+  - +#*##
+  - '#####'
+  - '##+##'
+  minimumCells: {x: 6, y: 6}
+  style: {fileID: 0}
+  heightTiles: 2
+  openCeiling: 1
+  ceilingFrame: 0.3
+  skylightRadius: 1
+  replaceGeneratedProps: 0
+  addFurnishing: 0
+  replaceGeneratedEnemies: 1
+  roomEvent: 1
+  replaceGeneratedTorches: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  previewLevel: {fileID: 0}
+  previewCellSize: 2
+--- !u!114 &5871339890619786785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5364221619945644165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0aaa09d695ceddc4abf38951813711aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomMood
+  kind: 3
+  dungeon: {fileID: 0}
+  room: -1
+--- !u!114 &8178713127600320815
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5364221619945644165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c794b347ada32874c9e13b39dd8ad0c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoomMusic
+  music: {fileID: 0}
+  volume: 1
+  fade: 1.5
+--- !u!114 &5133322518671636260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5364221619945644165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7eee34b4d83897c4ab051ecc638c7ed5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SkeletonParty
+  danceClip: {fileID: 0}
+  danceSpeed: 1
+  enterLine:
+    text: A party. Don't spoil it.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  spoiledLine:
+    text: You had to ruin it, didn't you.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  chestLine:
+    text: Greedy. They noticed.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+--- !u!1 &6676549144639257178
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2323642993253468871}
+  - component: {fileID: 6847657458904489597}
+  m_Layer: 0
+  m_Name: WallLight socket
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2323642993253468871
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6676549144639257178}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: -0.00000004371139}
+  m_LocalPosition: {x: -4, y: 0, z: -4}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6130411148241043603}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6847657458904489597
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6676549144639257178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 6
+  chance: 1
+  overridePrefab: {fileID: 0}
+  archer: 0
+  faceWall: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+--- !u!1 &6732567734491143388
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3736664469452908546}
+  - component: {fileID: 2324306446535155597}
+  m_Layer: 0
+  m_Name: Dancer 5
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3736664469452908546
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6732567734491143388}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.8910065, z: 0, w: 0.45399058}
+  m_LocalPosition: {x: -2.5888546, y: 0, z: 1.8809124}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 394978706156355094}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2324306446535155597
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6732567734491143388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 0
+  chance: 1
+  overridePrefab: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  archer: 0
+  faceWall: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+--- !u!1 &7086400089661664614
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3918006624433059941}
+  - component: {fileID: 7630558943930585065}
+  m_Layer: 0
+  m_Name: Dancer 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3918006624433059941
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7086400089661664614}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 3.1999998, y: 0, z: 0.00000019073487}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 394978706156355094}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7630558943930585065
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7086400089661664614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 0
+  chance: 1
+  overridePrefab: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  archer: 0
+  faceWall: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+--- !u!1 &7960197558594796056
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2912229929389397953}
+  - component: {fileID: 4736761741696028704}
+  m_Layer: 0
+  m_Name: Dancer 4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2912229929389397953
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7960197558594796056}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.4539904, z: 0, w: 0.8910066}
+  m_LocalPosition: {x: -2.588854, y: 0, z: -1.8809136}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 394978706156355094}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4736761741696028704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7960197558594796056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
+  type: 0
+  chance: 1
+  overridePrefab: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  archer: 0
+  faceWall: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+--- !u!1 &7969575359792673765
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 394978706156355094}
+  m_Layer: 0
+  m_Name: Dancers
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &394978706156355094
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7969575359792673765}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1757560597511924569}
+  - {fileID: 3918006624433059941}
+  - {fileID: 5279221762150864958}
+  - {fileID: 2912229929389397953}
+  - {fileID: 3736664469452908546}
+  m_Father: {fileID: 6130411148241043603}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &4505814217217344051
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6130411148241043603}
+    m_Modifications:
+    - target: {fileID: 5099884599044513661, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_Name
+      value: Candle cluster
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 4.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+--- !u!4 &5512266492112320481 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+  m_PrefabInstance: {fileID: 4505814217217344051}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8042111295207256568
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6130411148241043603}
+    m_Modifications:
+    - target: {fileID: 5099884599044513661, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_Name
+      value: Candle cluster
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 4.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.25881907
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.9659258
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+--- !u!4 &2117552321737884714 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8284475981985592786, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+  m_PrefabInstance: {fileID: 8042111295207256568}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8362982085677305681
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6130411148241043603}
+    m_Modifications:
+    - target: {fileID: 6283102951991403270, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_Name
+      value: Moonlight
+      objectReference: {fileID: 0}
+    - target: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+--- !u!4 &2972289776143007817 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6715137697868402456, guid: f7a889e9147fc1d47946bed9d026e61c, type: 3}
+  m_PrefabInstance: {fileID: 8362982085677305681}
+  m_PrefabAsset: {fileID: 0}

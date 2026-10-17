@@ -18,7 +18,8 @@ public partial class ProgressionManager
         [TextArea, Tooltip("What the log says. {attack} and {block} are replaced by the player's own keys.")] public string text;
     }
 
-    public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", SheetQuest = "checkSheet";
+    public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", SheetQuest = "checkSheet",
+        SpendQuest = "spendSpoils", TableQuest = "backToTable", TrophyQuest = "hangTrophies";
 
     [FoldoutGroup("Quests"), ListDrawerSettings(ShowFoldout = true)]
     public List<Quest> quests = BuiltInQuests();
@@ -28,6 +29,10 @@ public partial class ProgressionManager
     {
         new Quest { id = SheetQuest, text = "Look at the character sheet on the little table by the wall." },
         new Quest { id = ShieldBashQuest, text = "Try your shield bash: hold {block} and press {attack}." },
+        new Quest { id = SpendQuest, text = "Spend your spoils on the sheet: train Blocking." },
+        new Quest { id = TableQuest, text = "Sit down at the table for the next run." },
+        new Quest { id = TrophyQuest, text = "Hang your trophies on the wall by the hobby table." },
+        new Quest { id = TileQuest, text = "Put the missing tile into the symbol puzzle in the room." },
     };
 
     void EnsureBuiltInQuests()
@@ -35,13 +40,25 @@ public partial class ProgressionManager
         foreach (var q in BuiltInQuests()) if (FindQuest(q.id) == null) quests.Add(q);
     }
 
-    // The sheet quest follows the lesson's flags: given once the DM has pointed at the sheet, done once it is opened.
+    // The room's quests after a run, from the lesson's flags: look at the sheet (once the first run has ended), spend
+    // the spoils there (done with the first Blocking level), then back to the table (done when a run starts); and hang
+    // the trophies whenever some are carried (done when none are). The trophy quest can come back after later buys.
     void UpdateSheetQuest()
     {
-        int state = QuestState(SheetQuest);
         bool opened = HasFlag(CharacterSheetTable.OpenedFlag);
-        if (state == 0 && HasFlag(LedgerSaidFlag) && !opened) GiveQuest(SheetQuest);
-        else if (state == 1 && opened) CompleteQuest(SheetQuest);
+        int sheet = QuestState(SheetQuest);
+        if (sheet == 0 && HasFlag(LedgerIntroFlag) && !opened && (HasFlag(LedgerSaidFlag) || RoomPlayerFree)) GiveQuest(SheetQuest);
+        else if (sheet == 1 && opened) CompleteQuest(SheetQuest);
+
+        int spend = QuestState(SpendQuest);
+        if (spend == 0 && opened && HasFlag(LedgerIntroFlag) && !BlockingTaught) GiveQuest(SpendQuest);
+        else if (spend == 1 && BlockingTaught) { CompleteQuest(SpendQuest); GiveQuest(TableQuest); }
+
+        if (Time.frameCount % 15 != 0) return;   // the trophy count builds a list: a few times a second is plenty
+        bool carrying = TrophiesIn(TrophyState.Carried).Count > 0;
+        int trophy = QuestState(TrophyQuest);
+        if (carrying && trophy != 1) SetFlag(QuestFlag(TrophyQuest), 1);   // given again for each new lot
+        else if (!carrying && trophy == 1) CompleteQuest(TrophyQuest);
     }
 
     public static string QuestFlag(string id) => QuestPrefix + id;
@@ -91,7 +108,11 @@ public partial class ProgressionManager
         if (RunManager.HasInstance) RunManager.Instance.RunStarted -= OfferQuestsForRun;
     }
 
-    void OfferQuestsForRun() { if (isActiveAndEnabled) StartCoroutine(OfferWhenRunReady()); }
+    void OfferQuestsForRun()
+    {
+        CompleteQuest(TableQuest);
+        if (isActiveAndEnabled) StartCoroutine(OfferWhenRunReady());
+    }
 
     // A frame later, so the run's ranks are in (AdventurerProgress.Begin).
     IEnumerator OfferWhenRunReady()

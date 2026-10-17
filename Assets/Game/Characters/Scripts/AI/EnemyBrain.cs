@@ -49,6 +49,16 @@ public class EnemyBrain : MonoBehaviour
     public bool IsAlerted => State == EnemyState.Chase || State == EnemyState.Attack;
     // Never caught unaware (a boss set down on the stage, watching the player from the start): no backstab while idle.
     public bool Wary { get; set; }
+    // Entranced (a skeleton party's dancers): it notices nothing and stays where it is until Provoke.
+    public bool Entranced { get; set; }
+
+    // Out of a trance and after the player (or at least to where it happened).
+    public void Provoke(Vector3 at)
+    {
+        Entranced = false;
+        Alert();
+        if (State != EnemyState.Chase && State != EnemyState.Attack && State != EnemyState.Dead) StartInvestigate(at);
+    }
     // Backing away from its target into something it can't get past, just now (HandleSpacing).
     public bool Cornered => Time.time < corneredUntil;
     float corneredUntil = -1f, backStuckSince = -1f;
@@ -374,7 +384,7 @@ public class EnemyBrain : MonoBehaviour
         }
 
         bool inCombat = State == EnemyState.Chase || State == EnemyState.Attack;
-        if (inCombat) return;
+        if (inCombat || Entranced) return;
 
         if (Profile.aggressionMode == AggressionMode.AggressiveWhenHit && Perception.Target != null)
             EnterCombat();
@@ -422,6 +432,7 @@ public class EnemyBrain : MonoBehaviour
 
     bool TryNoticeTarget()
     {
+        if (Entranced) return true;
         if (CanEnterCombat() && Perception.TargetVisible) { EnterCombat(); return true; }
         // Only an aggressive enemy goes to look at a noise: one that waits to be hit (or never fights) stays where it is.
         if (Perception.HasStimulus && Profile.aggressionMode == AggressionMode.Aggressive)
@@ -711,7 +722,9 @@ public class EnemyBrain : MonoBehaviour
             float statMul = Character.Stats != null ? Character.Stats.GetMultiplier(StatType.AttackSpeed) : 1f;
             anim.SetFloat("AttackSpeed", (Tuning != null ? Tuning.enemyAttackAnimationSpeed : 1.35f) * statMul);
         }
-        SetHoldingBow(IsArcher && State != EnemyState.Attack);
+        // The bow goes back to the side as soon as the arrow is away, while the release still plays: one blend, not the
+        // release blending to the idle arms and then the bow hold blending in a moment later (the arm swung twice).
+        SetHoldingBow(IsArcher && (State != EnemyState.Attack || attackRunner != null && attackRunner.ArrowLoosed));
         Motor.UpdateLocomotionAnimator(anim, true, 0.08f);
     }
 

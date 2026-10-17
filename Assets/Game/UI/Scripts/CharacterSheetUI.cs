@@ -271,9 +271,8 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (r.value != null) { r.value.text = meta.Value(t).ToString(); r.value.color = bought > 0 ? pen : ink; }
         if (r.unit != null && t.kind == MetaTrackKind.Attribute)
         {
-            float bonus = meta.AttributeBonus(t);
-            r.unit.text = $"+{(Mathf.Approximately(bonus, Mathf.Round(bonus)) ? Mathf.RoundToInt(bonus).ToString() : bonus.ToString("0.#"))} {t.unit}";
-            r.unit.color = bonus > 0 ? pen : faint;
+            r.unit.text = ProgressionManager.AttributeEffects(t, levels);
+            r.unit.color = levels > 0 ? pen : faint;
         }
         for (int i = 0; i < r.bubbles.Length; i++)
         {
@@ -318,9 +317,9 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         string body;
         if (t.kind == MetaTrackKind.Attribute)
         {
-            float bonus = meta.AttributeBonus(t);
-            body = $"+{t.bonusPerPoint:0.#} {t.unit} per point.";
-            if (bonus > 0) body += $"\nNow: +{bonus:0.#} {t.unit}.";
+            body = $"{ProgressionManager.AttributeEffects(t, 1)} per point above {t.baseScore}.";
+            if (meta.Levels(t) > 0) body += $"\nNow: {ProgressionManager.AttributeEffects(t, meta.Levels(t))}.";
+            body += "\nEach level in a dungeon gives a point to add on top.";
         }
         else body = SkillBonus(t, meta.Value(t));
         ShowCard($"{t.displayName}  <color=#{ColorUtility.ToHtmlStringRGB(pen)}>{meta.Value(t)}</color>", body, near);

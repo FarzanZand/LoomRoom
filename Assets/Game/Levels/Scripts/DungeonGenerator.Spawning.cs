@@ -420,9 +420,40 @@ public partial class DungeonGenerator
         return go;
     }
 
+    // Close to the nearest wall, facing it (DungeonSocket.faceWall).
+    void FaceWall(Character enemy)
+    {
+        var chest=enemy.transform.position+Vector3.up*1.2f;
+        Vector3 best=Vector3.zero; float near=float.MaxValue;
+        for(int k=0;k<8;k++)
+        {
+            var dir=Quaternion.Euler(0,k*45f,0)*Vector3.forward;
+            if(Physics.Raycast(chest,dir,out var wall,6f,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore) && wall.collider.GetComponentInParent<Character>()==null && wall.distance<near){near=wall.distance;best=dir;}
+        }
+        if(best==Vector3.zero)return;
+        var spot=enemy.transform.position+best*Mathf.Max(0f,near-.75f);
+        if(NavMesh.SamplePosition(spot,out var hit,.6f,NavMesh.AllAreas))
+        {
+            var agent=enemy.GetComponent<NavMeshAgent>();
+            if(agent!=null && agent.enabled && agent.isOnNavMesh)agent.Warp(hit.position); else enemy.transform.position=hit.position;
+        }
+        enemy.transform.rotation=Quaternion.LookRotation(best);
+    }
+
     Character SpawnEnemyAt(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewards,bool boss=false)
     {
         if(prefab==null || !NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas))return null;
+        // A socket's spot inside a prop or stair: the nearest clear floor around it instead.
+        if(!boss && !RoomForBody(hit.position))
+        {
+            bool found=false;
+            for(int k=0;k<12 && !found;k++)
+            {
+                var around=hit.position+Quaternion.Euler(0,k*30f,0)*Vector3.forward*(.6f+.25f*(k/4));
+                if(NavMesh.SamplePosition(around,out var near,.6f,NavMesh.AllAreas) && RoomForBody(near.position)){hit=near;found=true;}
+            }
+            if(!found)return null;
+        }
         return SetUpEnemy(Instantiate(prefab,hit.position,rotation,transform),extraRandom,rewards,boss);
     }
 
@@ -475,7 +506,9 @@ public partial class DungeonGenerator
                             points.Add(t.position);
                             break;
                         }
-                        JoinPack(room,SpawnEnemyAt(prefab,t.position,t.rotation,profiles[room]!=null ? profiles[room].rewards : null));
+                        var placed=SpawnEnemyAt(prefab,t.position,t.rotation,profiles[room]!=null ? profiles[room].rewards : null);
+                        if(placed!=null && socket.faceWall)FaceWall(placed);
+                        JoinPack(room,placed);
                         break;
                     }
                     case DungeonSocketType.Boss:

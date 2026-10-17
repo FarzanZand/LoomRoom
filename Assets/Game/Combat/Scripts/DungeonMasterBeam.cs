@@ -351,13 +351,14 @@ public class DungeonMasterBeam : MonoBehaviour
         return Vector3.Lerp(bone.position, fingers, .5f);
     }
 
-    // Where the beam ends, fixed on the player's screen: on the shield, lower left (or the bottom of the view when it gets
+    // Where the beam ends, fixed on the player's screen: on the shield's face, in the middle of the view a little low (the block clips hold it there
+    // since 2026-10-17; or the bottom of the view when it gets
     // through). Ending on the line of sight to his palm would hide the beam: it would be seen end-on, a stub.
     static Vector3 EndPoint(Player p, Vector3 origin, bool shield)
     {
         var cam = p.CameraRig != null && p.CameraRig.Camera != null ? p.CameraRig.Camera.transform : p.transform;
         var eye = p.CameraRig != null && p.CameraRig.Camera != null ? cam.position : p.transform.position + Vector3.up * 1.6f;
-        return shield ? eye + cam.forward * .85f - cam.right * .7f - cam.up * .4f
+        return shield ? eye + cam.forward * .85f - cam.right * .06f - cam.up * .19f
                       : eye + cam.forward * .7f - cam.right * .1f - cam.up * .55f;
     }
 

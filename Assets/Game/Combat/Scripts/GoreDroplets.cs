@@ -16,6 +16,8 @@ public class GoreDroplets : MonoBehaviour
     {
         if (Color.a <= 0f || !GoreManager.HasInstance || other.GetComponentInParent<Character>() != null) return;
         int count = ps.GetCollisionEvents(other, events);
-        for (int i = 0; i < count; i++) GoreManager.Instance.Stain(events[i].intersection, events[i].normal, Color);
+        // A stain on a barrel or crate goes with it when it breaks.
+        var breakable = other.GetComponentInParent<DungeonDestructible>();
+        for (int i = 0; i < count; i++) GoreManager.Instance.Stain(events[i].intersection, events[i].normal, Color, breakable != null ? breakable.transform : null);
     }
 }

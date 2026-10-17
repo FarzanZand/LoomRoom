@@ -22,4 +22,10 @@ public class DebugDungeonSettings : ScriptableObject
     [Min(1f), Tooltip("Metres between enemies in a row.")] public float rowSpacing = 3f;
     [Tooltip("Chests set down a few metres to the player's right, one beside the other (wood, iron, gold), each with the biome's loot.")]
     public GameObject[] chests = new GameObject[0];
+    [Tooltip("A Portal arch set down behind the player, leading to Portal Room (empty: no portal).")]
+    public GameObject portal;
+    [Tooltip("The room template the arena's portal leads to.")]
+    public GameObject portalRoom;
+    [Tooltip("When the way back shows in the portal's room.")]
+    public PortalArch.WayBack portalWayBack = PortalArch.WayBack.AtStart;
 }

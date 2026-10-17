@@ -75,6 +75,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
         if (!CanInteract(who)) return;
         // The tabletop intro: the Dungeon Master is waiting for the player to sit down.
         if (IntroController.HasInstance && IntroController.Instance.TakeSeat()) return;
+        // The whole dungeon won: the prototype's thank-you instead of a new run.
+        if (TryGetComponent<PrototypeEnd>(out var end) && end.TryPlay()) return;
         if (DungeonMasterSeat.Introduced) EnterTable();
         else if (talkFirst != null && !talkFirst.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(talkFirst);
     }

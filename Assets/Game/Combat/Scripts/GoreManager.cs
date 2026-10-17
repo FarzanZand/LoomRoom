@@ -43,6 +43,9 @@ public class GoreManager : Singleton<GoreManager>
     readonly Queue<GameObject> chunks = new();
     [System.NonSerialized] Mesh[] stainMeshes;
     MaterialPropertyBlock block;
+    // Stains share a few tinted copies of the stain material (three shades per colour) instead of a property block each:
+    // a property block keeps the SRP Batcher from drawing them together (measured: 260 stains cost 500+ SetPass calls).
+    readonly Dictionary<Color32, Material> stainShades = new();
     Transform levelRoot;
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
@@ -111,8 +114,9 @@ public class GoreManager : Singleton<GoreManager>
 
     // ── Stains ────────────────────────────────────────────────────────
 
-    // A drop landed: a stain flat on the surface, in the creature's colour, kept for the floor.
-    public void Stain(Vector3 point, Vector3 normal, Color color)
+    // A drop landed: a stain flat on the surface, in the creature's colour, kept for the floor. On a breakable (`on`) it
+    // is that object's child, so it goes when the object breaks.
+    public void Stain(Vector3 point, Vector3 normal, Color color, Transform on = null)
     {
         if (stainMaterial == null || color.a <= 0f || Random.value > stainChance) return;
         var root = LevelRoot();
@@ -120,7 +124,9 @@ public class GoreManager : Singleton<GoreManager>
         if (stainMeshes == null || stainMeshes.Length == 0) stainMeshes = BuildStainMeshes();
         block ??= new MaterialPropertyBlock();
         GameObject stain;
-        if (stains.Count >= maxStains) { stain = stains.Dequeue(); if (stain == null) return; }
+        // Stains that went with a broken barrel are gone from the queue's front: skip them.
+        while (stains.Count > 0 && stains.Peek() == null) stains.Dequeue();
+        if (stains.Count >= maxStains) stain = stains.Dequeue();
         else
         {
             stain = new GameObject("Blood stain", typeof(MeshFilter), typeof(MeshRenderer));
@@ -135,9 +141,23 @@ public class GoreManager : Singleton<GoreManager>
         float size = Mathf.Lerp(stainSize.x, stainSize.y, Random.value * (.4f + .6f * floor));
         stain.transform.SetPositionAndRotation(point + normal * .006f, Quaternion.LookRotation(-normal) * Quaternion.Euler(0f, 0f, Random.Range(0f, 360f)));
         stain.transform.localScale = Vector3.one * size;
-        block.SetColor(BaseColorId, Color.Lerp(color, color * .75f, Random.value));
-        stain.GetComponent<MeshRenderer>().SetPropertyBlock(block);
+        if (on != null) stain.transform.SetParent(on, true);
+        var renderer = stain.GetComponent<MeshRenderer>();
+        renderer.SetPropertyBlock(null);
+        renderer.sharedMaterial = StainShade(color, Random.Range(0, 3));
         stains.Enqueue(stain);
+    }
+
+    Material StainShade(Color color, int shade)
+    {
+        Color32 key = Color.Lerp(color, color * .75f, shade / 2f);
+        if (!stainShades.TryGetValue(key, out var material) || material == null)
+        {
+            material = new Material(stainMaterial) { name = stainMaterial.name + " " + key };
+            material.SetColor(BaseColorId, (Color)key);
+            stainShades[key] = material;
+        }
+        return material;
     }
 
     // Stains belong to the floor that is loaded: they go with it.

@@ -22,7 +22,7 @@ MonoBehaviour:
     floors: 2
     boss: 0
   - biome: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
-    floors: 2
+    floors: 1
     boss: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
   gearByFloor:
@@ -39,9 +39,9 @@ MonoBehaviour:
     tier4: 0
     upgradeChance: 0
   - fromFloor: 3
-    tier1: 30
-    tier2: 70
-    tier3: 0
+    tier1: 0
+    tier2: 75
+    tier3: 25
     tier4: 0
     upgradeChance: 0
   - fromFloor: 4
@@ -147,6 +147,7 @@ MonoBehaviour:
   boardVerticality: 1
   boardTileTaps: []
   boardRevealAll: 0
+  hideStartWallInReveal: 0
   boardDoorPosts: []
   boardMoundProps: []
   furnishEntranceRims: 0

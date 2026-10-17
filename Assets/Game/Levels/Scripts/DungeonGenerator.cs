@@ -330,18 +330,24 @@ public partial class DungeonGenerator : MonoBehaviour
         var ladderAt = SpawnPoint - forward * 1.1f;
         var ladderCell = CellOf(ladderAt);
         if (!Layout.InBounds(ladderCell) || !Layout.floor[ladderCell.x, ladderCell.y]) { ladderAt = SpawnPoint; SpawnPoint += forward * 1.2f; }
-        MakeExit(ladderAt - Vector3.up * .12f, true).transform.rotation = SpawnRotation;
-        // On a stage the way on appears on the platform once the boss falls (BossStageEncounter shows it).
-        if (StageRoom >= 0) ExitPoint = StageExitPoint();
-        var exitStair = MakeExit(ExitPoint, false, StageRoom >= 0);
-        if (StageRoom >= 0) exitStair.gameObject.SetActive(false);
+        // A pocket (reached through a portal) has no way in or out but its own portal back.
+        DungeonExit exitStair = null;
+        if (!data.pocket)
+        {
+            MakeExit(ladderAt - Vector3.up * .12f, true).transform.rotation = SpawnRotation;
+            // On a stage the way on appears on the platform once the boss falls (BossStageEncounter shows it).
+            if (StageRoom >= 0) ExitPoint = StageExitPoint();
+            exitStair = MakeExit(ExitPoint, false, StageRoom >= 0);
+            if (StageRoom >= 0) exitStair.gameObject.SetActive(false);
+        }
         // Spawn after navigation exists. The first room is always safe. An authored map brings its own.
         if (Authored) SpawnAuthoredContent();
         else for (int i=1;i<Layout.rooms.Count;i++)
         {
             // Treasure and storage rooms always have a guard; rest rooms stay safe.
             bool guarded=Roles[i]==RoomRole.Treasure || Roles[i]==RoomRole.Storage;
-            if(Roles[i]!=RoomRole.Combat && Roles[i]!=RoomRole.Exit && !guarded)continue;
+            // The exit room (the stairs down) stays clear; a guardian is placed on its own.
+            if(Roles[i]!=RoomRole.Combat && !guarded)continue;
             int count=guarded ? 1 : random.Next(MinEnemiesPerRoom,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
             // A hand-built room's own Enemy sockets count toward the roll; generated enemies make up the rest.
             count=Mathf.Max(0,count-SocketEnemies(i));
@@ -354,13 +360,16 @@ public partial class DungeonGenerator : MonoBehaviour
                 var pos = Cell(Layout.RoomCenter(i)) + Vector3.right*((j%3)-1)*1.1f+Vector3.forward*(j/3)*1.2f;
                 // A fountain or pillar in the middle can hide the floor near the centre; search the rest of the room
                 // before giving up, so a combat room never ends up empty by accident.
-                if (!NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas) && !FindRoomFloor(i,random,out hit)) continue;
+                // Never inside a pillar, a stair or a prop: the spot must leave room for a body, else another spot in the room.
+                if ((!NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas) || !RoomForBody(hit.position)) && !FindRoomFloor(i,random,out hit)) continue;
                 var enemy = Instantiate(prefab,hit.position,Quaternion.Euler(0,random.Next(360),0),transform);
                 JoinPack(i,SetUpEnemy(enemy,random,profiles[i]!=null ? profiles[i].rewards : null));
             }
         }
         SpawnSocketActors(exitStair);
         StockStartingChest();
+        FaceStartingChests();
+        HideMissingTile();
         FinishRoomEvents();
         gameObject.AddComponent<DungeonAmbience>().Initialize(Biome);
         gameObject.AddComponent<DungeonHud>().Initialize(this);
@@ -385,10 +394,21 @@ public partial class DungeonGenerator : MonoBehaviour
         {
             var cell = new Vector2Int(rng.Next(rect.xMin, rect.xMax), rng.Next(rect.yMin, rect.yMax));
             if (!Layout.InBounds(cell) || !Layout.floor[cell.x, cell.y]) continue;
-            if (NavMesh.SamplePosition(Cell(cell), out hit, data.cellSize, NavMesh.AllAreas)) return true;
+            if (NavMesh.SamplePosition(Cell(cell), out hit, data.cellSize, NavMesh.AllAreas) && RoomForBody(hit.position)) return true;
         }
         hit = default;
         return false;
+    }
+
+    // Room for a standing body here: nothing solid (a pillar, a stair, a prop) in a capsule from just above the floor
+    // to head height. Characters and triggers don't count.
+    static readonly Collider[] bodyHits = new Collider[16];
+    public static bool RoomForBody(Vector3 feet, float radius = .35f)
+    {
+        int n = Physics.OverlapCapsuleNonAlloc(feet + Vector3.up * (radius + .15f), feet + Vector3.up * 1.7f, radius, bodyHits, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < n; i++)
+            if (bodyHits[i] != null && bodyHits[i].GetComponentInParent<Character>() == null) return false;
+        return true;
     }
 
     void CopyConnectedRoomStyles(int seed)
@@ -593,16 +613,45 @@ public partial class DungeonGenerator : MonoBehaviour
 
     // A breakable's pick and turn come from the extra stream, but its loot seed (like a chest's or a
     // barrel's) from the main one: one main draw per supply spot, whatever stands there.
+    // The room puzzle's missing tile (ProgressionManager.HidesTile): on the middle of a room away from the start and the
+    // exit, as a floor pickup.
+    void HideMissingTile()
+    {
+        if (data.pocket || Layout==null || !ProgressionManager.HasInstance || !ProgressionManager.Instance.HidesTile(FloorNumber))return;
+        var rooms=new System.Collections.Generic.List<int>();
+        for(int i=1;i<Layout.rooms.Count-1;i++)if(i!=MerchantRoom)rooms.Add(i);
+        if(rooms.Count==0)return;
+        var rng=new System.Random(Scramble(unchecked(seed0+104723)));
+        int room=rooms[rng.Next(rooms.Count)];
+        var at=Cell(Layout.RoomCenter(room));
+        if(NavMesh.SamplePosition(at,out var hit,2f,NavMesh.AllAreas))at=hit.position;
+        DungeonPickup.Spawn(ProgressionManager.Instance.missingTile,at+Vector3.up*.2f,transform);
+    }
+
+    // Chests in the room the player starts in open toward them: their front (+Z, the latch) faces the spawn.
+    void FaceStartingChests()
+    {
+        if(Layout==null)return;
+        foreach(var chest in GetComponentsInChildren<DungeonContainer>(true))
+        {
+            if(chest==null || !chest.chest || Layout.RoomAt(CellOf(chest.transform.position))!=0)continue;
+            var toSpawn=SpawnPoint-chest.transform.position; toSpawn.y=0f;
+            if(toSpawn.sqrMagnitude>.01f)chest.transform.rotation=Quaternion.LookRotation(toSpawn);
+        }
+    }
+
     // In the starting room (room 0 built from the level's Starting Room template).
     bool InStartingRoom(Vector3 pos) => !Authored && data.startingRoom!=null && Layout!=null && TemplatePrefab(0)==data.startingRoom && Layout.RoomAt(CellOf(pos))==0;
 
     // The starting room's chest: one piece of gear and the level's potion, always (DungeonContainer.startingKit).
     void StockStartingChest()
     {
-        if(data.startingChestConsumable==null)return;
         foreach(var chest in GetComponentsInChildren<DungeonContainer>(true))
         {
             if(chest==null || !chest.chest || !InStartingRoom(chest.transform.position))continue;
+            // Only the run's first floor has it; the starting room on a new biome's first floor is bare.
+            if(FloorNumber>1){DestroyImmediate(chest.gameObject);continue;}
+            if(data.startingChestConsumable==null)continue;
             chest.startingKit=true;
             chest.extraRolls=0; chest.rareRollFloors=0;
             if(!chest.guaranteedItems.Contains(data.startingChestConsumable))chest.guaranteedItems.Add(data.startingChestConsumable);

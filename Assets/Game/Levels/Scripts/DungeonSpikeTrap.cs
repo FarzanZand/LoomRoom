@@ -42,7 +42,7 @@ public class DungeonSpikeTrap : MonoBehaviour
         var player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         if (player == null || !player.isActiveAndEnabled || !player.IsAlive) return;
         var local = transform.InverseTransformPoint(player.transform.position);
-        if (Mathf.Abs(local.x) < hurtSize.x * .5f && Mathf.Abs(local.z) < hurtSize.z * .5f && local.y > -.3f && local.y < 1f) Spring();
+        if (Mathf.Abs(local.x) < hurtSize.x * .5f && Mathf.Abs(local.z) < hurtSize.z * .5f && local.y > -.3f && local.y < FootClearance) Spring();
     }
 
     void Play(AudioClip clip) { if (clip != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(clip, transform.position, volume, .05f); }
@@ -77,6 +77,9 @@ public class DungeonSpikeTrap : MonoBehaviour
         busy = false;
     }
 
+    // How far above the plate's floor a character's feet may be and still be on it.
+    const float FootClearance = .25f;
+
     void Hurt()
     {
         var centre = transform.position + Vector3.up * hurtSize.y * .5f;
@@ -86,6 +89,8 @@ public class DungeonSpikeTrap : MonoBehaviour
         {
             var c = hits[i].GetComponentInParent<Character>();
             if (c == null || !c.IsAlive || c.Stats == null || !struck.Add(c)) continue;
+            // Only feet on the plate: someone standing on stones or a crate over it is out of reach.
+            if (c.transform.position.y - transform.position.y > FootClearance) continue;
             float amount = c is Player p ? Mathf.Max(1f, p.Stats.MaxHealth * playerDamage) : enemyDamage;
             c.Stats.TakeDamage(new DamageInfo
             {

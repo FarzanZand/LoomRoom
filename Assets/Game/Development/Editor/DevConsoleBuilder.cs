@@ -61,15 +61,62 @@ public static class DevConsoleBuilder
         input.lineType = TMP_InputField.LineType.SingleLine;
         input.restoreOriginalTextOnEscape = false;
 
+        // The suggestions hang under the band, left-aligned with the typed line, as tall as their lines.
+        var box = new GameObject("Suggestions", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        box.transform.SetParent(panel.transform, false);
+        var br = (RectTransform)box.transform;
+        br.anchorMin = new Vector2(0, 0); br.anchorMax = new Vector2(0, 0); br.pivot = new Vector2(0, 1);
+        br.anchoredPosition = new Vector2(16, 0); br.sizeDelta = new Vector2(760, 0);
+        box.GetComponent<Image>().color = new Color(0, 0, 0, .82f);
+        var layout = box.GetComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(14, 14, 8, 10); layout.childControlWidth = layout.childControlHeight = true; layout.childForceExpandHeight = false;
+        box.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        var hintGo = new GameObject("Text", typeof(RectTransform));
+        hintGo.transform.SetParent(box.transform, false);
+        var hint = hintGo.AddComponent<TextMeshProUGUI>();
+        hint.font = font; hint.fontSize = 26; hint.color = new Color(.6f, .75f, .6f); hint.alignment = TextAlignmentOptions.TopLeft;
+        hint.textWrappingMode = TextWrappingModes.NoWrap; hint.raycastTarget = false;
+        box.SetActive(false);
+
         var console = root.AddComponent<DevConsole>();
         var so = new SerializedObject(console);
         so.FindProperty("panel").objectReferenceValue = panel;
         so.FindProperty("input").objectReferenceValue = input;
         so.FindProperty("log").objectReferenceValue = log;
+        so.FindProperty("suggestions").objectReferenceValue = hint;
+        so.FindProperty("suggestionBox").objectReferenceValue = box;
         so.ApplyModifiedPropertiesWithoutUndo();
+        FillTemplates(console);
 
         PrefabUtility.SaveAsPrefabAsset(root, Path);
         Object.DestroyImmediate(root);
         return Path;
+    }
+
+    // loadtemplate's list for development builds (the Editor finds the templates itself).
+    [MenuItem("Tools/LoomRoom/Dev/Refresh Dev Console Templates")]
+    public static string RefreshTemplates()
+    {
+        var root = PrefabUtility.LoadPrefabContents(Path);
+        try
+        {
+            var console = root.GetComponent<DevConsole>();
+            if (console == null) return "No DevConsole on " + Path;
+            int count = FillTemplates(console);
+            PrefabUtility.SaveAsPrefabAsset(root, Path);
+            return $"{count} room templates";
+        }
+        finally { PrefabUtility.UnloadPrefabContents(root); }
+    }
+
+    static int FillTemplates(DevConsole console)
+    {
+        var found = DevConsole.FindTemplatePrefabs();
+        var so = new SerializedObject(console);
+        var list = so.FindProperty("templates");
+        list.arraySize = found.Length;
+        for (int i = 0; i < found.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = found[i];
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return found.Length;
     }
 }

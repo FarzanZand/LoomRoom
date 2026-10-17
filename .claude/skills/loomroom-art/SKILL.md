@@ -11,7 +11,12 @@ low-resolution, chunky, **dirty** pixel art painted by an image model, never pro
 
 ## Tools: what to use and what never to use
 
-- **Images: Meshy's image generator only** (`python Tools/meshy.py concept ...`). It made every approved creature.
+- **No Meshy unless the user asks for it (user, 2026-10-17).** Its paintings read as AI-made (the gargoyle, skull pile,
+  barrels and books were sent back for that). By default make art by hand-made rules from the model itself: colours from
+  the Synty swatches, shading from the geometry (creases, edges, faces), placed pixels (`Tools/prop_structure.py` for
+  wood and metal, `Tools/prop_organic.py` for stone, bone and other organic props), and hand edits. Use the Meshy steps
+  below only when the user asks for Meshy by name for that piece of work.
+- **Images (only when the user asks for Meshy): Meshy's image generator** (`python Tools/meshy.py concept ...`). It made every approved creature.
   It costs **9 Meshy credits per image** (the user's Meshy Pro account, not Claude tokens); check the balance with
   `python Tools/meshy.py balance` and say what a batch will cost before a big run.
 - **Never Meshy retexture** (it scrambles the Synty models) and **no procedural/noise texture painting** (rejected).

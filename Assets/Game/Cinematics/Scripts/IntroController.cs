@@ -62,6 +62,16 @@ public partial class IntroController : Singleton<IntroController>
     [Tooltip("Said once the practice figure is down.")] public DungeonMaster.Line takeIt;
     [Min(0), Tooltip("Seconds after arriving before the first step.")] public float firstStepDelay = 2f;
     public TutorialStep[] steps = new TutorialStep[0];
+
+    [System.Serializable]
+    public class RoomQuest
+    {
+        [Tooltip("The room on the practice board's floor plan.")] public int room;
+        [Tooltip("Stable quest id (flag quest.<id>).")] public string id;
+        [TextArea, Tooltip("What the quest log says. {attack} and {block} are the player's keys.")] public string text;
+    }
+    [Tooltip("A quest per room for the quest log: given when the player walks in, done when they reach a later room or the practice ends.")]
+    public RoomQuest[] roomQuests = new RoomQuest[0];
     [Tooltip("Said once if the player stands still for Idle Seconds during the practice.")] public DungeonMaster.Line idleLine;
     [Min(5)] public float idleSeconds = 22f;
     [Tooltip("Said the first time the practice figure gets hurt.")] public DungeonMaster.Line hurtLine;

@@ -123,6 +123,22 @@ public class Hitbox : MonoBehaviour
             matrix.SetColumn(3, matrix.GetColumn(3) + (Vector4)(extension * (reach - 1f)));
             count = Overlap(matrix, rotation);
             for(int i=0;i<count;i++) ProcessHit(overlapBuffer[i]);
+            // The player's reach is the same for every swing and weapon: out from the chest to playerMeleeReach, the
+            // way the blade is sweeping now.
+            if (owner is Player && CombatManager.HasInstance && CombatManager.Instance.playerMeleeReach > 0f)
+            {
+                var tuning = CombatManager.Instance;
+                var chest = owner.transform.position + Vector3.up * 1.1f;
+                var way = queryCenter - chest; way.y = 0f;
+                if (way.sqrMagnitude > .0001f)
+                {
+                    way.Normalize();
+                    var near = chest + way * tuning.playerMeleeReachRadius;
+                    var far = chest + way * Mathf.Max(tuning.playerMeleeReachRadius, tuning.playerMeleeReach - tuning.playerMeleeReachRadius);
+                    count = Physics.OverlapCapsuleNonAlloc(near, far, tuning.playerMeleeReachRadius, overlapBuffer, hitMask, QueryTriggerInteraction.Ignore);
+                    for(int i=0;i<count;i++) ProcessHit(overlapBuffer[i]);
+                }
+            }
         }
         previousPosition=t.position; previousRotation=t.rotation;
     }

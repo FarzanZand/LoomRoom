@@ -424,6 +424,12 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
     [Min(1f), Tooltip("Thickness multiplier for melee hit queries; also widens fallback enemy hit arcs.")]
     public float meleeWidthMultiplier = 1.25f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
+    [Min(0f), Tooltip("Player swings: every swing also hits anything out to this far from the player's chest, in the direction the blade is sweeping, so every swing and every weapon reaches the same distance. 0 = only where the blade goes.")]
+    public float playerMeleeReach = 2.5f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
+    [Min(.05f), Tooltip("Thickness of that reach (radius of the capsule out from the chest).")]
+    public float playerMeleeReachRadius = .35f;
 
     // ── Hits: Critical hits and backstabs ──
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]

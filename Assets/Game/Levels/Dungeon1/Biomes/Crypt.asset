@@ -99,11 +99,11 @@ MonoBehaviour:
     rooms: 2
     fromFloor: 1
     maxPerFloor: 2
-  - template: {fileID: 2905052129233018909, guid: e2dd0276adf10484b99a8b5a7f935de4, type: 3}
+  - template: {fileID: 5364221619945644165, guid: 067bf0dd530bc014388f2bb19a01d038, type: 3}
     weight: 0.8
     rooms: 18
     fromFloor: 1
-    maxPerFloor: 2
+    maxPerFloor: 1
   - template: {fileID: 1496800822693357786, guid: 7ded13c34f709a942aebf739d5108c8d, type: 3}
     weight: 1
     rooms: 2
@@ -134,6 +134,11 @@ MonoBehaviour:
     rooms: 6
     fromFloor: 1
     maxPerFloor: 2
+  - template: {fileID: 7553172351964380955, guid: fcbc162bfbf65db469e063d14079ed8b, type: 3}
+    weight: 0.45
+    rooms: 30
+    fromFloor: 1
+    maxPerFloor: 1
   templateChance: 1
   overrideDungeonSettings: 0
   roomFeatures:
@@ -208,7 +213,7 @@ MonoBehaviour:
   maxEnemiesPerRoom: 3
   features: []
   loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
-  merchantChance: 0.5
+  merchantChance: 1
   guardian:
     enabled: 1
     boss: {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}

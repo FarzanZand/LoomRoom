@@ -1,11 +1,11 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-// One stat line of the character panel (health, stamina, mana, damage, armour): hovering it explains what the number
+// One stat line of the character panel (health, stamina, mana, damage, armour, an attribute): hovering it explains what the number
 // does, with the player's own numbers (EquipmentPanelUI.Explain).
 public class StatTooltipUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    public enum Kind { Health = 0, Stamina = 1, Mana = 2, Damage = 3, Armor = 4 }
+    public enum Kind { Health = 0, Stamina = 1, Mana = 2, Damage = 3, Armor = 4, Strength = 5, Dexterity = 6, Constitution = 7, Intelligence = 8 }
     public EquipmentPanelUI panel;
     public Kind kind;
     bool hovering;
