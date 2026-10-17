@@ -358,7 +358,7 @@ public class DungeonMasterBeam : MonoBehaviour
     {
         var cam = p.CameraRig != null && p.CameraRig.Camera != null ? p.CameraRig.Camera.transform : p.transform;
         var eye = p.CameraRig != null && p.CameraRig.Camera != null ? cam.position : p.transform.position + Vector3.up * 1.6f;
-        return shield ? eye + cam.forward * .85f - cam.right * .06f - cam.up * .19f
+        return shield ? eye + cam.forward * .85f - cam.up * .25f
                       : eye + cam.forward * .7f - cam.right * .1f - cam.up * .55f;
     }
 

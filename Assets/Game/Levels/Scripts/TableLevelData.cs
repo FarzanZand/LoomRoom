@@ -451,5 +451,6 @@ public class TableLevelData : ScriptableObject
         return guardian != null && guardian.enabled && guardian.boss != null && floorInBiome == biomeFloors ? guardian : null;
     }
 
-    public float MerchantChance(int floor) { var biome = Biome(floor); return biome != null ? biome.merchantChance : 0; }
+    // A pocket (one room behind a portal) never has a merchant.
+    public float MerchantChance(int floor) { var biome = Biome(floor); return pocket || biome == null ? 0 : biome.merchantChance; }
 }

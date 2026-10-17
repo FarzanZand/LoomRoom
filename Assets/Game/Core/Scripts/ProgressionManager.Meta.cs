@@ -151,9 +151,10 @@ public partial class ProgressionManager
     {
         if (t == null) return "";
         static string Number(float v) => Mathf.Approximately(v, Mathf.Round(v)) ? Mathf.RoundToInt(v).ToString() : v.ToString("0.##");
-        string first = $"+{Number(points * t.bonusPerPoint)} {t.unit}";
+        static string Unit(string unit) => unit != null && unit.StartsWith("%") ? unit : " " + unit;   // "+5% critical chance"
+        string first = $"+{Number(points * t.bonusPerPoint)}{Unit(t.unit)}";
         if (t.secondBonusPerPoint == 0 || string.IsNullOrEmpty(t.secondUnit)) return first;
-        return first + (lineBreak ? "\n" : ", ") + $"+{Number(points * t.secondBonusPerPoint)} {t.secondUnit}";
+        return first + (lineBreak ? "\n" : ", ") + $"+{Number(points * t.secondBonusPerPoint)}{Unit(t.secondUnit)}";
     }
 
     string TrophyKey(MetaTrack t, Milestone m) => $"{TrophyPrefix}{t.id}.{m.value}";

@@ -129,11 +129,11 @@ public static class SkeletonPartySetup
         so.FindProperty("pocket").boolValue = true;
         var mode = so.FindProperty("layoutMode");
         mode.enumValueIndex = System.Array.IndexOf(mode.enumNames, "Authored");
-        // A 5 x 5 room in the middle of the smallest map the generator takes (14 x 14), with a little alcove
-        // off it (an authored map needs two rooms; a pocket has no exit, so the alcove stays empty).
+        // A 7 x 7 room on the smallest map the generator takes (14 x 14), with a 3 x 3 side room off it through a
+        // short passage: the way back stands there (an authored map needs two rooms; a pocket has no exit).
         var rows = new List<string>();
         for (int y = 0; y < 14; y++)
-            rows.Add(y == 7 ? "#####00000.11#" : y == 6 || y == 8 ? "#####00000#11#" : y >= 5 && y < 10 ? "#####00000####" : "##############");
+            rows.Add(y == 7 ? "##0000000.111#" : y == 6 || y == 8 ? "##0000000#111#" : y >= 4 && y < 11 ? "##0000000#####" : "##############");
         so.FindProperty("authoredMap").stringValue = string.Join("\n", rows);
         so.FindProperty("authoredContent").stringValue = "";
         var rooms = so.FindProperty("authoredRooms");

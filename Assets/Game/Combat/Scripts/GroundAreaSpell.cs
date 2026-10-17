@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // A spell that lands on the ground (SpellDefinition.groundArea): the spot is marked (optional), and after Area Delay it
@@ -13,6 +14,17 @@ public class GroundAreaSpell : MonoBehaviour
     float power, elapsed;
     GameObject marker;
     Transform fill;
+
+    // Every one in flight, so going back to the room can clear them (PlayerManager: a ball hung in the air by a volley
+    // when the player died stayed in the room otherwise).
+    static readonly HashSet<GroundAreaSpell> live = new();
+    void OnEnable() => live.Add(this);
+    void OnDisable() => live.Remove(this);
+    public static void ClearAll()
+    {
+        foreach (var x in new List<GroundAreaSpell>(live)) if (x != null) Destroy(x.gameObject);
+        live.Clear();
+    }
 
     // point: where it lands (on the ground). skills: the player's progress, null for enemies.
     public static GroundAreaSpell Cast(Character source, SpellDefinition definition, float damage, Vector3 point, AdventurerProgress skills)

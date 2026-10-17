@@ -3,20 +3,34 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Builds the run recap's spoils showcase in the open Room scene: a box left of the spoils strip with turning light rays
-// (Tools/recap_rays.py) and the big picture of the spoil being counted, the effects layer the flying spoils and sparks
-// are drawn on, and the tally sounds (Tools/tally_sounds.py) as UI Library keys on the AudioManager. RunRecapUI plays it
-// all. Keeps what exists, so hand edits survive; safe to run again.
+// Builds the run recap's ledger in the open Room scene: a box left of the spoils strip with the big picture of the most
+// valuable spoil, the rows RunRecapUI writes in one after another, and the tally sounds (recorded library clips as
+// AudioData in Audio/Data) as UI Library keys on the AudioManager. Keeps what exists, so hand edits survive; safe to
+// run again.
 public static class RunRecapShowcase
 {
-    const string Rays = "Assets/Game/UI/Sprites/Meta/Spoils rays.png";
     const string Slot = "Assets/Game/UI/Sprites/Diablo/Plain slot grey.png";
-    const string Sounds = "Assets/Game/Audio/Clips/Tally/";
+    const string Library = "Assets/Game/Audio/Library/_Sound Effects Library/";
+    const string DataFolder = "Assets/Game/Audio/Data/";
     const string AudioPrefab = "Assets/Game/Core/Prefabs/AudioManager.prefab";
-    static readonly (string key, string file, float volume)[] Keys =
+    // One plain recorded sound a row, kept quiet: gold set down, a few things moved, a book shut, a coin pouch.
+    static readonly (string key, string asset, string[] clips, float volume, float variance)[] Keys =
     {
-        ("tallyTick", "tally tick.wav", .5f), ("tallySkull", "tally skull.wav", .45f),
-        ("tallyTotal", "tally total.wav", .8f), ("tallyBank", "tally bank.wav", .6f),
+        ("tallySpoils", "Tally spoils", new[] { "Items/Itm_Gold_Down_01.wav", "Items/Itm_Gold_Down_02.wav" }, .5f, .03f),
+        ("tallyKills", "Tally kills", new[] { "Inventory/Inv_Move_Items_01.wav", "Inventory/Inv_Move_Items_02.wav" }, .35f, .03f),
+        ("tallyTotal", "Tally total", new[] { "Items/Itm_Book_Close_01.wav", "Items/Itm_Book_Close_02.wav" }, .6f, .02f),
+        ("tallyBank", "Tally bank", new[] { "Items/Itm_Coinpouch_Down_02.wav" }, .55f, 0f),
+    };
+    // Keys of the earlier, busier tally, taken out of the library.
+    static readonly string[] Retired = { "tallyTick", "tallyBigSpoil", "tallySkull" };
+
+    // Each row's pieces, by name under the tally.
+    static readonly (string field, string[] names)[] Rows =
+    {
+        ("spoilsRow", new[] { "Spoils label", "Spoils value", "Spoils showcase", "Spoils strip" }),
+        ("killsRow", new[] { "Kills label", "Kills value", "Kills strip" }),
+        ("totalRow", new[] { "Rule", "Total label", "Total value" }),
+        ("bankRow", new[] { "Bank label", "Bank value" }),
     };
 
     [MenuItem("Tools/LoomRoom/UI/Build Recap Spoils Showcase")]
@@ -28,8 +42,6 @@ public static class RunRecapShowcase
         var strip = so.FindProperty("spoilsStrip").objectReferenceValue as RectTransform;
         if (strip == null) return "The recap has no spoils strip.";
         var tally = (RectTransform)strip.parent;
-        var panel = (RectTransform)tally.parent;
-        var rays = SpriteAt(Rays, FilterMode.Point);
         var slot = AssetDatabase.LoadAssetAtPath<Sprite>(Slot);
 
         // The strip makes room on its left for the showcase.
@@ -38,7 +50,7 @@ public static class RunRecapShowcase
         {
             Undo.RecordObject(strip, "Recap showcase");
             float left = strip.anchoredPosition.x - strip.sizeDelta.x * .5f;
-            const float box = 200f, gap = 10f, height = 200f;   // the spoil drawn at twice its icon's 88 px, rays round it
+            const float box = 200f, gap = 10f, height = 200f;   // the spoil drawn at twice its icon's 88 px
             strip.sizeDelta = new Vector2(strip.sizeDelta.x - box - gap, height);
             strip.anchoredPosition = new Vector2(left + box + gap + strip.sizeDelta.x * .5f, strip.anchoredPosition.y);
 
@@ -48,11 +60,6 @@ public static class RunRecapShowcase
             showcase.SetSiblingIndex(strip.GetSiblingIndex());
             var frame = showcase.gameObject.AddComponent<Image>();
             frame.sprite = slot; frame.type = Image.Type.Sliced; frame.raycastTarget = false;
-            showcase.gameObject.AddComponent<RectMask2D>();
-
-            var rayImage = New("Rays", showcase).gameObject.AddComponent<Image>();
-            rayImage.rectTransform.sizeDelta = new Vector2(320, 320);
-            rayImage.sprite = rays; rayImage.color = new Color(1f, .78f, .3f, .3f); rayImage.raycastTarget = false;
 
             var icon = New("Spoil", showcase).gameObject.AddComponent<Image>();
             icon.rectTransform.sizeDelta = new Vector2(176, 176);
@@ -60,23 +67,23 @@ public static class RunRecapShowcase
             Undo.RegisterCreatedObjectUndo(showcase.gameObject, "Recap showcase");
         }
 
-        var effects = panel.Find("Tally effects") as RectTransform;
-        if (effects == null)
-        {
-            effects = New("Tally effects", panel);
-            effects.anchorMin = Vector2.zero; effects.anchorMax = Vector2.one; effects.offsetMin = effects.offsetMax = Vector2.zero;
-            Undo.RegisterCreatedObjectUndo(effects.gameObject, "Recap showcase");
-        }
-        effects.SetAsLastSibling();
-
         so.FindProperty("showcaseIcon").objectReferenceValue = showcase.Find("Spoil").GetComponent<Image>();
-        so.FindProperty("showcaseRays").objectReferenceValue = showcase.Find("Rays").GetComponent<Image>();
-        so.FindProperty("effects").objectReferenceValue = effects;
-        so.FindProperty("shakeTarget").objectReferenceValue = panel;
+        string missing = "";
+        foreach (var (field, names) in Rows)
+        {
+            var list = so.FindProperty(field);
+            list.arraySize = names.Length;
+            for (int i = 0; i < names.Length; i++)
+            {
+                var piece = tally.Find(names[i]);
+                if (piece == null) missing += names[i] + ", ";
+                list.GetArrayElementAtIndex(i).objectReferenceValue = piece != null ? piece.gameObject : null;
+            }
+        }
         so.ApplyModifiedProperties();
         EditorSceneManager.MarkSceneDirty(recap.gameObject.scene);
 
-        return "Showcase built; " + AddSounds();
+        return "Ledger built" + (missing.Length > 0 ? " (missing: " + missing.TrimEnd(',', ' ') + ")" : "") + "; " + AddSounds();
     }
 
     static RectTransform New(string name, Transform parent)
@@ -88,60 +95,62 @@ public static class RunRecapShowcase
         return rect;
     }
 
-    static Sprite SpriteAt(string path, FilterMode filter)
+    // Each tally sound is an AudioData asset in Audio/Data (made once; edit it freely after), keyed in the UI Library on
+    // the AudioManager prefab and on the scene's AudioManager when it keeps its own list.
+    [MenuItem("Tools/LoomRoom/UI/Set Up Recap Tally Sounds")]
+    public static string AddSounds()
     {
-        var importer = (TextureImporter)AssetImporter.GetAtPath(path);
-        if (importer != null && (importer.textureType != TextureImporterType.Sprite || importer.filterMode != filter))
+        var data = new System.Collections.Generic.Dictionary<string, AudioData>();
+        foreach (var (key, asset, clips, volume, variance) in Keys)
         {
-            importer.textureType = TextureImporterType.Sprite; importer.spriteImportMode = SpriteImportMode.Single;
-            importer.filterMode = filter; importer.mipmapEnabled = false; importer.alphaIsTransparency = true;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
-            importer.SaveAndReimport();
+            string path = DataFolder + asset + ".asset";
+            var d = AssetDatabase.LoadAssetAtPath<AudioData>(path);
+            if (d == null)
+            {
+                d = ScriptableObject.CreateInstance<AudioData>();
+                d.clips = System.Array.ConvertAll(clips, c => AssetDatabase.LoadAssetAtPath<AudioClip>(Library + c));
+                d.volume = volume; d.pitchVariance = variance;
+                AssetDatabase.CreateAsset(d, path);
+            }
+            data[key] = d;
         }
-        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
-    }
-
-    // The tally keys go on the AudioManager prefab, and on the scene's AudioManager when it keeps its own list.
-    static string AddSounds()
-    {
-        int added = 0;
+        AssetDatabase.SaveAssets();
+        int set;
         var root = PrefabUtility.LoadPrefabContents(AudioPrefab);
         try
         {
-            added += AddKeys(root.GetComponent<AudioManager>());
+            set = SetKeys(root.GetComponent<AudioManager>(), data);
             PrefabUtility.SaveAsPrefabAsset(root, AudioPrefab);
         }
         finally { PrefabUtility.UnloadPrefabContents(root); }
         var inScene = Object.FindAnyObjectByType<AudioManager>(FindObjectsInactive.Include);
-        int scene = inScene != null ? AddKeys(inScene) : 0;
-        if (scene > 0) EditorSceneManager.MarkSceneDirty(inScene.gameObject.scene);
-        return $"{added} tally sounds added to the AudioManager prefab, {scene} to the scene's";
+        int scene = inScene != null ? SetKeys(inScene, data) : 0;
+        if (inScene != null) EditorSceneManager.MarkSceneDirty(inScene.gameObject.scene);
+        return $"{set} tally sounds set on the AudioManager prefab, {scene} on the scene's";
     }
 
-    static int AddKeys(AudioManager manager)
+    static int SetKeys(AudioManager manager, System.Collections.Generic.Dictionary<string, AudioData> data)
     {
         if (manager == null) return 0;
         var so = new SerializedObject(manager);
         var list = so.FindProperty("uiLibrary");
-        int added = 0;
-        foreach (var (key, file, volume) in Keys)
+        for (int i = list.arraySize - 1; i >= 0; i--)
+            if (System.Array.IndexOf(Retired, list.GetArrayElementAtIndex(i).FindPropertyRelative("key").stringValue) >= 0) list.DeleteArrayElementAtIndex(i);
+        int set = 0;
+        foreach (var (key, d) in data)
         {
-            bool has = false;
-            for (int i = 0; i < list.arraySize; i++) if (list.GetArrayElementAtIndex(i).FindPropertyRelative("key").stringValue == key) has = true;
-            if (has) continue;
-            var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(Sounds + file);
-            if (clip == null) { Debug.LogWarning($"[Recap] {Sounds + file} is missing: run Tools/tally_sounds.py."); continue; }
-            list.arraySize++;
-            var e = list.GetArrayElementAtIndex(list.arraySize - 1);
+            SerializedProperty e = null;
+            for (int i = 0; i < list.arraySize; i++) if (list.GetArrayElementAtIndex(i).FindPropertyRelative("key").stringValue == key) e = list.GetArrayElementAtIndex(i);
+            if (e == null) { list.arraySize++; e = list.GetArrayElementAtIndex(list.arraySize - 1); }
             e.FindPropertyRelative("key").stringValue = key;
-            e.FindPropertyRelative("source").enumValueIndex = 0;
-            e.FindPropertyRelative("clip").objectReferenceValue = clip;
-            e.FindPropertyRelative("data").objectReferenceValue = null;
-            e.FindPropertyRelative("volume").floatValue = volume;
+            e.FindPropertyRelative("source").enumValueIndex = 1;
+            e.FindPropertyRelative("clip").objectReferenceValue = null;
+            e.FindPropertyRelative("data").objectReferenceValue = d;
+            e.FindPropertyRelative("volume").floatValue = 1f;
             e.FindPropertyRelative("pitch").floatValue = 1f;
-            added++;
+            set++;
         }
         so.ApplyModifiedPropertiesWithoutUndo();
-        return added;
+        return set;
     }
 }

@@ -131,17 +131,33 @@ public class PortalArch : MonoBehaviour
         busy = false;
     }
 
-    // A copy of this arch as the way back, in a corner of the pocket's room, facing its middle: never on the paths
-    // between the room's doors and its middle.
+    // A copy of this arch as the way back. With a side room off the pocket's room (room 1), it stands at that room's
+    // far side facing the way in; otherwise in a corner of the pocket's room, facing its middle (never on the paths
+    // between the room's doors and its middle).
     void PlaceWayBack(DungeonGenerator pocket)
     {
         if (pocket.Layout == null || pocket.Layout.rooms.Count == 0) return;
-        var rect = pocket.Layout.rooms[0];
-        var corner = pocket.Cell(new Vector2Int(rect.xMin, rect.yMin));
-        var middle = pocket.Cell(pocket.Layout.RoomCenter(0));
-        var face = middle - corner; face.y = 0f;
+        Vector3 at, face;
+        if (pocket.Layout.rooms.Count > 1)
+        {
+            var side = pocket.Layout.rooms[1];
+            Vector2 from = pocket.Layout.RoomCenter(0), mid = side.center - Vector2.one * .5f;
+            var away = mid - from;
+            var cell = Mathf.Abs(away.x) >= Mathf.Abs(away.y)
+                ? new Vector2Int(away.x > 0 ? side.xMax - 1 : side.xMin, Mathf.FloorToInt(mid.y + .5f))
+                : new Vector2Int(Mathf.FloorToInt(mid.x + .5f), away.y > 0 ? side.yMax - 1 : side.yMin);
+            at = pocket.Cell(cell);
+            face = pocket.Cell(Vector2Int.RoundToInt(from)) - at;
+            face = Mathf.Abs(face.x) >= Mathf.Abs(face.z) ? new Vector3(Mathf.Sign(face.x), 0, 0) : new Vector3(0, 0, Mathf.Sign(face.z));
+        }
+        else
+        {
+            var rect = pocket.Layout.rooms[0];
+            at = pocket.Cell(new Vector2Int(rect.xMin, rect.yMin));
+            face = pocket.Cell(pocket.Layout.RoomCenter(0)) - at; face.y = 0f;
+        }
         // Built from this arch's own pieces before its shimmer existed: copy, then strip what Start added here.
-        var copy = Instantiate(gameObject, corner, face.sqrMagnitude > .01f ? Quaternion.LookRotation(face) : Quaternion.identity, pocket.transform);
+        var copy = Instantiate(gameObject, at, face.sqrMagnitude > .01f ? Quaternion.LookRotation(face) : Quaternion.identity, pocket.transform);
         copy.name = "Way back";
         var gate = copy.GetComponent<PortalArch>();
         gate.mode = Mode.Return;

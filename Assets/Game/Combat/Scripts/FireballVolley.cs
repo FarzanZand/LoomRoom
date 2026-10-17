@@ -48,6 +48,16 @@ public class FireballVolley : MonoBehaviour
 
     readonly List<SpellProjectile> balls = new();
 
+    // Every volley running, so going back to the room can clear them with their hanging balls (PlayerManager).
+    static readonly HashSet<FireballVolley> live = new();
+    void OnEnable() => live.Add(this);
+    void OnDisable() => live.Remove(this);
+    public static void ClearAll()
+    {
+        foreach (var v in new List<FireballVolley>(live)) if (v != null) Destroy(v.gameObject);
+        live.Clear();
+    }
+
     IEnumerator Run(SpellDefinition spell, Character owner, System.Func<Vector3> origin, Character target, float damage, Settings s,
         Character only, string sourceName, System.Action done, Vector3? hangAt)
     {

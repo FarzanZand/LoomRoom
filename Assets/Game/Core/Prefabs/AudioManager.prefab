@@ -154,29 +154,29 @@ MonoBehaviour:
     data: {fileID: 11400000, guid: bcdd07d533031f047aae4c29c037f61b, type: 2}
     volume: 1
     pitch: 1
-  - key: tallyTick
-    source: 0
-    clip: {fileID: 8300000, guid: 0fc050205dc5e0d4aa09a12fc3813c47, type: 3}
-    data: {fileID: 0}
-    volume: 0.5
-    pitch: 1
-  - key: tallySkull
-    source: 0
-    clip: {fileID: 8300000, guid: 001a00247d0149746bcc8c920bf85836, type: 3}
-    data: {fileID: 0}
-    volume: 0.45
-    pitch: 1
   - key: tallyTotal
-    source: 0
-    clip: {fileID: 8300000, guid: 432f7b3f177f7f149a9619b67ed32b3a, type: 3}
-    data: {fileID: 0}
-    volume: 0.8
+    source: 1
+    clip: {fileID: 0}
+    data: {fileID: 11400000, guid: 92adb4722dd2e7942ad974d6f34f4fb3, type: 2}
+    volume: 1
     pitch: 1
   - key: tallyBank
-    source: 0
-    clip: {fileID: 8300000, guid: 8073db3d62faf3f42afe596ee345619c, type: 3}
-    data: {fileID: 0}
-    volume: 0.6
+    source: 1
+    clip: {fileID: 0}
+    data: {fileID: 11400000, guid: 6f8a2d581f773484988e485ccb902921, type: 2}
+    volume: 1
+    pitch: 1
+  - key: tallySpoils
+    source: 1
+    clip: {fileID: 0}
+    data: {fileID: 11400000, guid: 879689542510df943926a85e6d58fb82, type: 2}
+    volume: 1
+    pitch: 1
+  - key: tallyKills
+    source: 1
+    clip: {fileID: 0}
+    data: {fileID: 11400000, guid: 20cee5f253cb39b45be195b341b740ea, type: 2}
+    volume: 1
     pitch: 1
   mixer: {fileID: 24100000, guid: 171c2312a45918546ad66f788389635e, type: 2}
   sfxPoolSize: 48

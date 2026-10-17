@@ -22,39 +22,52 @@ public class SkeletonParty : MonoBehaviour
     readonly List<PlayableGraph> graphs = new();
     bool entered, spoiled;
 
+    readonly HashSet<EnemyBrain> seen = new();
+    readonly HashSet<DungeonContainer> chests = new();
+    float nextGather;
+
     void Start()
     {
         dungeon = GetComponentInParent<DungeonGenerator>();
         if (dungeon == null || dungeon.Layout == null) return;
         room = dungeon.Layout.RoomAt(dungeon.CellOf(transform.position));
-        if (room < 0) return;
-        var centre = transform.position;
-        int i = 0;
+        Gather();
+    }
+
+    // Everyone in the room joins the dance; checked again for a while, since bodies set up their health after this
+    // starts (and a late spawn should dance too).
+    void Gather()
+    {
+        if (room < 0 || spoiled) return;
         foreach (var brain in dungeon.GetComponentsInChildren<EnemyBrain>())
         {
-            if (brain == null || !brain.Character.IsAlive || dungeon.Layout.RoomAt(dungeon.CellOf(brain.transform.position)) != room) continue;
+            if (brain == null || seen.Contains(brain) || brain.State == EnemyState.Dead || dungeon.Layout.RoomAt(dungeon.CellOf(brain.transform.position)) != room) continue;
+            seen.Add(brain);
             brain.Entranced = true;
             dancers.Add(brain);
             brain.Character.Damaged += _ => Spoil(spoiledLine);
             // Facing the middle of the room, each a little out of step with the others.
-            var toMiddle = centre - brain.transform.position; toMiddle.y = 0f;
+            var toMiddle = transform.position - brain.transform.position; toMiddle.y = 0f;
             if (toMiddle.sqrMagnitude > .01f) brain.transform.rotation = Quaternion.LookRotation(toMiddle);
             if (danceClip != null && brain.Character.Animator != null)
             {
+                int i = dancers.Count - 1;
                 var playable = AnimationPlayableUtilities.PlayClip(brain.Character.Animator, danceClip, out var graph);
                 playable.SetSpeed(danceSpeed * (.9f + .05f * (i % 5)));
                 playable.SetTime(danceClip.length * (i * .37f % 1f));
                 graphs.Add(graph);
             }
-            i++;
         }
         foreach (var chest in dungeon.GetComponentsInChildren<DungeonContainer>())
-            if (chest != null && dungeon.Layout.RoomAt(dungeon.CellOf(chest.transform.position)) == room) chest.Opened += _ => Spoil(chestLine);
+            if (chest != null && !chests.Contains(chest) && dungeon.Layout.RoomAt(dungeon.CellOf(chest.transform.position)) == room)
+            { chests.Add(chest); chest.Opened += _ => Spoil(chestLine); }
     }
 
     void Update()
     {
-        if (entered || spoiled || room < 0 || dungeon == null || !PlayerManager.HasInstance) return;
+        if (room < 0 || dungeon == null || spoiled) return;
+        if (Time.time >= nextGather) { nextGather = Time.time + .5f; Gather(); }
+        if (entered || !PlayerManager.HasInstance) return;
         var player = PlayerManager.Instance.ActiveKind == PlayerKind.Table ? PlayerManager.Instance.Active : null;
         if (player == null || dungeon.Layout.RoomAt(dungeon.CellOf(player.transform.position)) != room) return;
         entered = true;

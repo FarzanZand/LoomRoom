@@ -107,6 +107,20 @@ public class DungeonMaster : Singleton<DungeonMaster>
         if (running != null) { StopCoroutine(running); running = null; }
     }
 
+    // Lines show over full-screen menus while this is on (the run recap's closing line). Turning it on also drops what
+    // was said or waiting from before, so only what is said from then on shows.
+    public static bool OverMenus
+    {
+        get => overMenus;
+        set
+        {
+            if (value && !overMenus && HasInstance) { Instance.Silence(); Instance.lines.Clear(); Instance.dirty = true; }
+            overMenus = value;
+        }
+    }
+    static bool overMenus;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetOverMenus() => overMenus = false;
+
     AudioClip pendingClip;
     void Enqueue(Line line, AudioClip clip, float delay)
     {
@@ -192,9 +206,9 @@ public class DungeonMaster : Singleton<DungeonMaster>
         SnapSize();
         float now = Time.unscaledTime;
         while (lines.Count > 0 && now - lines[0].shown > hold + fadeOut) { lines.RemoveAt(0); dirty = true; }
-        // Full-screen menus (the run recap shares this canvas) are not written over, and a conversation
-        // has its own subtitles and choices in the same spot.
-        if ((GameManager.HasInstance && (GameManager.Instance.State == GameState.Menu || GameManager.Instance.State == GameState.Paused))
+        // Full-screen menus (the run recap shares this canvas) are not written over unless one asks for it (OverMenus),
+        // and a conversation has its own subtitles and choices in the same spot.
+        if ((GameManager.HasInstance && !overMenus && (GameManager.Instance.State == GameState.Menu || GameManager.Instance.State == GameState.Paused))
             || PixelCrushers.DialogueSystem.DialogueManager.isConversationActive)
         {
             if (!blanked) { label.text = ""; blanked = true; }

@@ -15,6 +15,7 @@ public class RoomMusic : MonoBehaviour
     AudioClip floorMusic;
     float floorMusicTime, floorMusicVolume;
     bool floorMusicLoops;
+    float retakeAt;
 
     void Start()
     {
@@ -29,6 +30,8 @@ public class RoomMusic : MonoBehaviour
         bool inside = player != null && player.IsAlive && dungeon.Layout.RoomAt(dungeon.CellOf(player.transform.position)) == room;
         if (inside && !playing) Begin();
         else if (!inside && playing) End();
+        // Something else changed the track while the player is here (a merchant fading back as they left it): take it back.
+        else if (inside && AudioManager.Instance.CurrentMusic != music && Time.time >= retakeAt) { retakeAt = Time.time + fade + .5f; AudioManager.Instance.CrossfadeMusic(music, true, fade, volume); }
     }
 
     void OnDisable() { if (playing) End(); }

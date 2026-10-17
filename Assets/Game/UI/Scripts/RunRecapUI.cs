@@ -40,30 +40,33 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField, Tooltip("Inside each strip: space from its left and right edges (x) and its top and bottom (y).")] Vector2 stripPadding = new(14, 10);
     [SerializeField, Min(0)] float stripGap = 4;
 
-    [Header("Spoils showcase (built by Tools > LoomRoom > UI > Build Recap Spoils Showcase)")]
-    [SerializeField, Tooltip("The big picture of the spoil being counted; it grows from Showcase Start Scale to 1 as the spoils come in.")] Image showcaseIcon;
-    [SerializeField, Tooltip("Light rays behind it, turning slowly and flaring with each spoil.")] Image showcaseRays;
-    [SerializeField, Range(.1f, 1f)] float showcaseStartScale = .65f;
-    [SerializeField, Tooltip("Where flying icons and sparks are drawn, over the tally.")] RectTransform effects;
-    [SerializeField, Tooltip("Shaken when the total lands.")] RectTransform shakeTarget;
-    [SerializeField, Tooltip("Gaps between spoils: the first, how much each next one shrinks, the shortest.")] float spoilFirstGap = .2f;
-    [SerializeField, Range(.5f, 1f)] float spoilGapShrink = .9f;
-    [SerializeField, Min(.03f)] float spoilMinGap = .06f;
-    [SerializeField, Tooltip("Gaps between skulls: the first, how much each next one shrinks, the shortest.")] float skullFirstGap = .07f;
-    [SerializeField, Range(.5f, 1f)] float skullGapShrink = .95f;
-    [SerializeField, Min(.02f)] float skullMinGap = .03f;
-    [SerializeField, Min(.05f)] float flySeconds = .26f;
-    [SerializeField, Tooltip("Each tick's pitch: the first, the rise per tick, the highest.")] float tickPitch = .9f;
-    [SerializeField] float tickPitchStep = .035f, tickPitchMax = 2f;
-    [SerializeField] Color sparkGold = new(1f, .82f, .35f), sparkWhite = new(1f, .97f, .85f);
-    [SerializeField, Min(0)] int totalSparks = 36;
-    [SerializeField, Tooltip("A spoil worth at least this gets a moment of its own: a pause before it, a big flare, sparks and a clink.")] int bigSpoilWorth = 10;
-    [SerializeField, Min(8)] float worthTextSize = 34;
+    [Header("The ledger (built by Tools > LoomRoom > UI > Build Recap Spoils Showcase)")]
+    [SerializeField, Tooltip("The big picture of the most valuable spoil brought back.")] Image showcaseIcon;
+    [SerializeField, Tooltip("The rows, written in one after another: the spoils (label, value, showcase, strip), the kills, the total (with its rule), what there is to spend.")]
+    GameObject[] spoilsRow, killsRow, totalRow, bankRow;
+    [SerializeField, Min(0), Tooltip("Seconds before the first row and between rows.")] float rowGap = .4f;
+    [SerializeField, Min(.01f), Tooltip("Seconds each row takes to fade in.")] float rowFade = .3f;
 
-    const string TickKey = "tallyTick", SkullKey = "tallySkull", TotalKey = "tallyTotal", BankKey = "tallyBank";
-    Color spoilsColour, killsColour, totalColour, bankColour;
-    bool coloursRead;
-    [SerializeField, Min(.01f), Tooltip("How long the total and the bank take to count up.")] float countSeconds = .9f;
+    [Header("The Dungeon Master's closing line (said in his feed, over the recap)")]
+    [SerializeField, Tooltip("A total of at least this is a good haul.")] int goodHaul = 25;
+    [SerializeField, Tooltip("After a win.")] DungeonMaster.Line[] victoryLines =
+    {
+        new() { text = "You beat the Crypt Lord. I didn't think you would." },
+        new() { text = "A win. Spend it well." },
+    };
+    [SerializeField, Tooltip("A death with a good haul.")] DungeonMaster.Line[] goodHaulLines =
+    {
+        new() { text = "Not a bad haul, for someone who died." },
+        new() { text = "You got a lot out. Not yourself, though." },
+    };
+    [SerializeField, Tooltip("A death with little to show.")] DungeonMaster.Line[] poorHaulLines =
+    {
+        new() { text = "That's all? Go deeper next time." },
+        new() { text = "Slim pickings." },
+    };
+
+    // UI Library keys (Tools > LoomRoom > UI > Set Up Recap Tally Sounds): one plain recorded sound a row.
+    const string SpoilsKey = "tallySpoils", KillsKey = "tallyKills", TotalKey = "tallyTotal", BankKey = "tallyBank";
 
     bool open, wakes, won;
     Coroutine counting;
@@ -136,309 +139,87 @@ public class RunRecapUI : MonoBehaviour
         (wakes ? returnButton : newRunButton)?.Select();
     }
 
-    // The tally counts up row by row: the spoils pop into their strip, the kills fill theirs, their health turns into
-    // spoils, then the total goes into what there is to spend.
-    // Each spoil shows big in the showcase (which grows as they come in), then flies down into its place in the strip,
-    // the count jumping and a tick rising in pitch with every one, faster and faster. The skulls follow the same way,
-    // the total counts up and lands with a flash, sparks and a shake, then it rolls into the bank.
+    // The ledger: the rows are written in one after another, each whole and with one quiet sound (what was carried out,
+    // what was killed, the total, what there is to spend), then the Dungeon Master has the last word.
     IEnumerator Count(RunSummary s)
     {
         var t = s.tally;
-        ReadColours();
-        ClearEffects();
         Clear(spoilsStrip, spoilsIconTemplate); Clear(killsStrip, skullTemplate);
-        SetText(spoilsValue, "0"); SetText(killsValue, "0"); SetText(healthValue, "0"); SetText(totalValue, "0");
         // The health line is gone from the recap (the user's call); the spoils it gives still count in the total.
         if (healthLine != null) healthLine.gameObject.SetActive(false);
         if (healthValue != null) healthValue.gameObject.SetActive(false);
-        SetText(bankValue, t.before.ToString());
-        SetText(helpLine, "");
-        int spoilCount = 0;
-        if (t.carried != null) foreach (var (_, count) in t.carried) spoilCount += count;
-        ResetShowcase(spoilCount > 0 && t.carried.Count > 0 ? t.carried[0].item.icon : null);
-        yield return Wait(.45f);
-        int worth = 0, icons = 0, n = 0;
-        float gap = spoilFirstGap;
+        SetText(spoilsValue, t.carriedWorth.ToString());
+        SetText(killsValue, t.kills.ToString());
+        SetText(totalValue, t.total.ToString());
+        SetText(bankValue, t.after.ToString());
+        // The spoils, cheapest first; the showcase shows the most valuable one.
+        Sprite best = null;
+        int icons = 0;
         if (t.carried != null)
             foreach (var (item, count) in t.carried)
-                for (int i = 0; i < count; i++)
-                {
-                    int each = Meta != null ? Meta.WorthOf(item) : 0;
-                    bool big = each >= bigSpoilWorth;
-                    if (big) yield return Wait(.3f);   // a breath before a valuable one
-                    worth += each;
-                    n++;
-                    SetText(spoilsValue, worth.ToString());
-                    Punch(spoilsValue, spoilsColour, big ? .6f : .3f);
-                    Showcase(item.icon, spoilCount > 1 ? (n - 1f) / (spoilCount - 1f) : 1f, big);
-                    FloatWorth(each, big);
-                    if (icons++ < maxSpoilIcons) Fly(Pop(spoilsStrip, spoilsIconTemplate, item.icon, false), item.icon);
-                    Sound(TickKey, Mathf.Min(tickPitchMax, tickPitch + tickPitchStep * (n - 1)));
-                    if (big) Sound(BankKey, 1.15f);
-                    yield return Wait(big ? Mathf.Max(gap, .4f) : gap);
-                    gap = Mathf.Max(spoilMinGap, gap * spoilGapShrink);
-                }
-        SetText(spoilsValue, t.carriedWorth.ToString());
-        yield return Wait(.35f);
-        gap = skullFirstGap;
-        for (int i = 0; i < t.kills; i++)
-        {
-            if (i < maxSkulls) Pop(killsStrip, skullTemplate, null, true);
-            SetText(killsValue, (i + 1).ToString());
-            Punch(killsValue, killsColour, .25f);
-            if (i < maxSkulls)
             {
-                Sound(SkullKey, Mathf.Min(tickPitchMax, .9f + .02f * i));
-                yield return Wait(gap);
-                gap = Mathf.Max(skullMinGap, gap * skullGapShrink);
+                if (item.icon != null) best = item.icon;
+                for (int i = 0; i < count && icons < maxSpoilIcons; i++, icons++) Add(spoilsStrip, spoilsIconTemplate, item.icon);
             }
+        if (showcaseIcon != null) { showcaseIcon.sprite = best; showcaseIcon.preserveAspect = true; showcaseIcon.enabled = best != null; }
+        for (int i = 0; i < Mathf.Min(t.kills, maxSkulls); i++) Add(killsStrip, skullTemplate, null);
+        Arrange(spoilsStrip, spoilsIconTemplate);
+        Arrange(killsStrip, skullTemplate);
+
+        var rows = new[] { (spoilsRow, SpoilsKey), (killsRow, KillsKey), (totalRow, TotalKey), (bankRow, BankKey) };
+        foreach (var (row, _) in rows) SetAlpha(row, 0f);
+        SetText(helpLine, "");
+        foreach (var (row, key) in rows)
+        {
+            yield return Wait(rowGap);
+            FadeIn(row);
+            Sound(key);
         }
-        yield return Wait(.35f);
-        yield return CountUp(totalValue, 0, t.total, v => v.ToString(), TickKey, 1.2f);
-        Slam(totalValue, totalColour);
-        if (t.toppedUp > 0) SetText(helpLine, $"+{t.toppedUp} from the Dungeon Master");
-        yield return Wait(.6f);
-        yield return CountUp(bankValue, t.before, t.after, v => v.ToString(), TickKey, 1.5f);
-        Punch(bankValue, bankColour, .45f);
-        if (bankValue != null) { Flash(bankValue.rectTransform.position, 1.8f); Sparks(bankValue.rectTransform.position, 16, 110f, 1.3f); }
-        Sound(BankKey, 1f);
+        yield return Wait(rowGap * 1.5f);
+        ClosingLine(s);
         counting = null;
     }
     static ProgressionManager Meta => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
     static void SetText(TMP_Text text, string value) { if (text != null) text.text = value; }
     static object Wait(float seconds) => new WaitForSecondsRealtime(seconds);
-    // Counts a number up over countSeconds, ticking (rising from startPitch) as it goes.
-    IEnumerator CountUp(TMP_Text text, int from, int to, System.Func<int, string> format, string tick = null, float startPitch = 1f)
+
+    // The Dungeon Master's word on the run, said in his own feed over the recap: a win, a good haul or a poor one. After
+    // the lesson's top-up the help line says what he added instead (he explains it himself once back in the room).
+    void ClosingLine(RunSummary s)
     {
-        if (text == null) yield break;
-        int shown = from, ticks = 0;
-        for (float e = 0; e < countSeconds; e += Time.unscaledDeltaTime)
+        if (s.tally.toppedUp > 0)
         {
-            int v = Mathf.RoundToInt(Mathf.Lerp(from, to, Mathf.SmoothStep(0, 1, e / countSeconds)));
-            if (v != shown)
-            {
-                shown = v;
-                text.text = format(v);
-                if (tick != null && ticks++ % 2 == 0) Sound(tick, Mathf.Min(tickPitchMax + .3f, startPitch + .9f * e / countSeconds));
-            }
-            yield return null;
+            if (helpLine == null) return;
+            helpLine.text = $"+{s.tally.toppedUp} from the Dungeon Master";
+            var group = Group(helpLine.gameObject);
+            group.alpha = 0f;
+            group.DOFade(1f, rowFade * 2f).SetUpdate(true).SetLink(helpLine.gameObject);
+            return;
         }
-        text.text = format(to);
+        var lines = s.victory ? victoryLines : s.tally.total >= goodHaul ? goodHaulLines : poorHaulLines;
+        var line = lines != null && lines.Length > 0 ? lines[Random.Range(0, lines.Length)] : null;
+        if (line == null || string.IsNullOrWhiteSpace(line.text)) return;
+        DungeonMaster.OverMenus = true;
+        DungeonMaster.Say(line);
     }
 
-    // ── Feel ─────────────────────────────────────────────────────────
+    static CanvasGroup Group(GameObject go) => go.TryGetComponent<CanvasGroup>(out var g) ? g : go.AddComponent<CanvasGroup>();
 
-    void ReadColours()
+    static void SetAlpha(GameObject[] row, float alpha)
     {
-        if (coloursRead) return;
-        coloursRead = true;
-        spoilsColour = spoilsValue != null ? spoilsValue.color : Color.white;
-        killsColour = killsValue != null ? killsValue.color : Color.white;
-        totalColour = totalValue != null ? totalValue.color : Color.white;
-        bankColour = bankValue != null ? bankValue.color : Color.white;
+        if (row == null) return;
+        foreach (var go in row) if (go != null) { var g = Group(go); g.DOKill(); g.alpha = alpha; }
     }
 
-    // A number jumps and flashes white, then settles back to its own colour.
-    static void Punch(TMP_Text text, Color colour, float strength)
+    void FadeIn(GameObject[] row)
     {
-        if (text == null) return;
-        var t = text.transform;
-        t.DOKill(true);
-        t.localScale = Vector3.one;
-        t.DOPunchScale(Vector3.one * strength, .2f, 5, .6f).SetUpdate(true).SetLink(text.gameObject);
-        text.DOKill();
-        text.color = Color.white;
-        text.DOColor(colour, .25f).SetUpdate(true).SetLink(text.gameObject);
+        if (row == null) return;
+        foreach (var go in row) if (go != null) Group(go).DOFade(1f, rowFade).SetUpdate(true).SetLink(go);
     }
 
-    // The total lands: it slams down from big, flashes, throws sparks and shakes the panel.
-    void Slam(TMP_Text text, Color colour)
+    static void Sound(string key)
     {
-        Sound(TotalKey, 1f);
-        if (text == null) return;
-        var t = text.transform;
-        t.DOKill(true);
-        t.localScale = Vector3.one * 1.9f;
-        t.DOScale(1f, .32f).SetEase(Ease.OutBack, 2.5f).SetUpdate(true).SetLink(text.gameObject);
-        text.DOKill();
-        text.color = Color.white;
-        text.DOColor(colour, .6f).SetDelay(.1f).SetUpdate(true).SetLink(text.gameObject);
-        Flash(text.rectTransform.position, 3.2f);
-        Sparks(text.rectTransform.position, totalSparks, 240f, 1.7f);
-        if (shakeTarget != null)
-        {
-            shakeTarget.DOKill(true);
-            shakeTarget.DOShakeAnchorPos(.35f, 12f, 30, 90f, false, true).SetUpdate(true).SetLink(shakeTarget.gameObject);
-        }
-    }
-
-    void ResetShowcase(Sprite first)
-    {
-        if (showcaseIcon != null)
-        {
-            showcaseIcon.gameObject.SetActive(first != null);
-            if (first != null) showcaseIcon.sprite = first;
-            showcaseIcon.preserveAspect = true;
-            showcaseIcon.transform.DOKill();
-            showcaseIcon.transform.localScale = Vector3.one * showcaseStartScale;
-            showcaseIcon.transform.localRotation = Quaternion.identity;
-        }
-        if (showcaseRays != null)
-        {
-            showcaseRays.gameObject.SetActive(first != null);
-            var rays = showcaseRays.transform;
-            rays.DOKill();
-            rays.localScale = Vector3.one * showcaseStartScale;
-            var c = showcaseRays.color; c.a = .25f; showcaseRays.color = c;
-            rays.DOLocalRotate(new Vector3(0, 0, -360), 14f, RotateMode.FastBeyond360).SetEase(Ease.Linear).SetLoops(-1).SetUpdate(true).SetLink(rays.gameObject);
-        }
-    }
-
-    // The spoil being counted fills the showcase, which grows toward full size as the count goes on (share 0 to 1); a
-    // big one flares harder and throws sparks.
-    void Showcase(Sprite sprite, float share, bool big)
-    {
-        float size = Mathf.Lerp(showcaseStartScale, 1f, share);
-        if (big && showcaseIcon != null) { Flash(showcaseIcon.rectTransform.position, 2.2f); Sparks(showcaseIcon.rectTransform.position, 22, 170f, 1.3f); }
-        if (showcaseIcon != null)
-        {
-            if (sprite != null) showcaseIcon.sprite = sprite;
-            var t = showcaseIcon.transform;
-            t.DOKill(true);
-            t.localScale = Vector3.one * size * (big ? 1.45f : 1.18f);
-            t.localRotation = Quaternion.Euler(0, 0, Random.Range(-6f, 6f));
-            t.DOScale(size, .2f).SetEase(Ease.OutBack, 3f).SetUpdate(true).SetLink(t.gameObject);
-            t.DOLocalRotate(Vector3.zero, .25f).SetEase(Ease.OutBack).SetUpdate(true).SetLink(t.gameObject);
-        }
-        if (showcaseRays != null)
-        {
-            var rays = showcaseRays.transform;
-            rays.DOScale(size * (big ? 1.5f : 1.1f), .2f).SetUpdate(true).SetLink(showcaseRays.gameObject);
-            if (big) rays.DOScale(size * 1.1f, .5f).SetDelay(.2f).SetUpdate(true).SetLink(showcaseRays.gameObject);
-            showcaseRays.DOKill();
-            var c = showcaseRays.color; c.a = big ? 1f : .85f; showcaseRays.color = c;
-            showcaseRays.DOFade(.3f, big ? .7f : .35f).SetUpdate(true).SetLink(showcaseRays.gameObject);
-        }
-    }
-
-    // "+N" rises out of the showcase and fades: what that spoil was worth.
-    void FloatWorth(int worth, bool big)
-    {
-        if (effects == null || showcaseIcon == null || worth <= 0) return;
-        var label = new GameObject("Worth", typeof(RectTransform)).AddComponent<TextMeshProUGUI>();
-        label.transform.SetParent(effects, false);
-        label.raycastTarget = false;
-        if (spoilsValue != null) { label.font = spoilsValue.font; label.fontSharedMaterial = spoilsValue.fontSharedMaterial; }
-        label.fontSize = worthTextSize * (big ? 1.5f : 1f);
-        label.alignment = TextAlignmentOptions.Center;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.text = "+" + worth;
-        label.color = big ? sparkGold : sparkWhite;
-        label.rectTransform.sizeDelta = new Vector2(160, 60);
-        float s = effects.lossyScale.y;
-        // It stays over the showcase: from its middle up to just under its top edge.
-        var start = showcaseIcon.rectTransform.position + new Vector3(Random.Range(-24f, 24f) * s, -10f * s, 0);
-        label.rectTransform.position = start;
-        label.transform.localScale = Vector3.one * .6f;
-        var seq = DOTween.Sequence().SetUpdate(true).SetLink(label.gameObject);
-        seq.Append(label.transform.DOScale(1f, .15f).SetEase(Ease.OutBack, 3f));
-        seq.Join(label.rectTransform.DOMove(start + Vector3.up * (big ? 70f : 55f) * s, big ? .9f : .55f).SetEase(Ease.OutCubic));
-        seq.Insert(big ? .5f : .25f, label.DOFade(0f, big ? .4f : .3f));
-        seq.OnComplete(() => Destroy(label.gameObject));
-    }
-
-    // A copy of the spoil leaves the showcase and lands in its place in the strip, which then pops in with a few sparks.
-    void Fly(Image slot, Sprite sprite)
-    {
-        if (slot == null) return;
-        if (effects == null || showcaseIcon == null) { Reveal(slot, false); return; }
-        var flyer = new GameObject("Flying spoil", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-        flyer.transform.SetParent(effects, false);
-        flyer.raycastTarget = false;
-        flyer.sprite = sprite; flyer.preserveAspect = true;
-        flyer.rectTransform.sizeDelta = slot.rectTransform.rect.size;
-        var from = showcaseIcon.rectTransform.position;
-        var to = slot.rectTransform.position;
-        flyer.rectTransform.position = from;
-        flyer.transform.localScale = Vector3.one * 2.2f;
-        // A little hop up before it drops into place.
-        var mid = Vector3.Lerp(from, to, .5f) + Vector3.up * 60f * effects.lossyScale.y;
-        var seq = DOTween.Sequence().SetUpdate(true).SetLink(flyer.gameObject);
-        seq.Append(flyer.rectTransform.DOPath(new[] { mid, to }, flySeconds, PathType.CatmullRom).SetEase(Ease.InQuad));
-        seq.Join(flyer.transform.DOScale(1f, flySeconds).SetEase(Ease.InQuad));
-        seq.OnComplete(() =>
-        {
-            Destroy(flyer.gameObject);
-            Reveal(slot, true);
-        });
-    }
-
-    void Reveal(Image slot, bool sparks)
-    {
-        if (slot == null) return;
-        slot.enabled = true;
-        slot.transform.localScale = Vector3.one * 1.5f;
-        slot.transform.DOScale(1f, .16f).SetEase(Ease.OutBack).SetUpdate(true).SetLink(slot.gameObject);
-        if (sparks) Sparks(slot.rectTransform.position, 5, 45f);
-    }
-
-    // A burst of the showcase's rays behind a point, opening out and fading.
-    void Flash(Vector3 at, float scale)
-    {
-        if (effects == null || showcaseRays == null) return;
-        var flash = new GameObject("Flash", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-        flash.transform.SetParent(effects, false);
-        flash.transform.SetAsFirstSibling();   // under the sparks
-        flash.raycastTarget = false;
-        flash.sprite = showcaseRays.sprite;
-        flash.color = sparkGold;
-        flash.rectTransform.sizeDelta = new Vector2(160, 160);
-        flash.rectTransform.position = at;
-        flash.transform.localScale = Vector3.one * .4f;
-        var seq = DOTween.Sequence().SetUpdate(true).SetLink(flash.gameObject);
-        seq.Append(flash.transform.DOScale(scale, .55f).SetEase(Ease.OutCubic));
-        seq.Join(flash.transform.DOLocalRotate(new Vector3(0, 0, -50), .55f));
-        seq.Join(flash.DOFade(0f, .55f).SetEase(Ease.InQuad));
-        seq.OnComplete(() => Destroy(flash.gameObject));
-    }
-
-    // Little square sparks thrown out from a point, falling a little as they fade.
-    void Sparks(Vector3 at, int count, float reach, float sizeScale = 1f)
-    {
-        if (effects == null) return;
-        float scale = effects.lossyScale.x;
-        for (int i = 0; i < count; i++)
-        {
-            var spark = new GameObject("Spark", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-            spark.transform.SetParent(effects, false);
-            spark.raycastTarget = false;
-            spark.color = Random.value < .6f ? sparkGold : sparkWhite;
-            float size = Random.Range(4f, 9f) * sizeScale;
-            spark.rectTransform.sizeDelta = new Vector2(size, size);
-            spark.rectTransform.position = at;
-            var dir = Random.insideUnitCircle.normalized;
-            float distance = Random.Range(.35f, 1f) * reach * scale;
-            float seconds = Random.Range(.45f, .8f);
-            var end = at + (Vector3)(dir * distance) + Vector3.down * reach * .35f * scale;
-            var seq = DOTween.Sequence().SetUpdate(true).SetLink(spark.gameObject);
-            seq.Append(spark.rectTransform.DOMove(end, seconds).SetEase(Ease.OutCubic));
-            seq.Join(spark.DOFade(0f, seconds).SetEase(Ease.InQuad));
-            seq.Join(spark.transform.DOScale(.3f, seconds));
-            seq.OnComplete(() => Destroy(spark.gameObject));
-        }
-    }
-
-    void ClearEffects()
-    {
-        if (effects == null) return;
-        for (int i = effects.childCount - 1; i >= 0; i--) Destroy(effects.GetChild(i).gameObject);
-    }
-
-    static void Sound(string key, float pitch)
-    {
-        if (!AudioManager.HasInstance || !AudioManager.Instance.HasUI(key)) return;
-        var source = AudioManager.Instance.PlayUI(key);
-        if (source != null) source.pitch *= pitch;
+        if (AudioManager.HasInstance && AudioManager.Instance.HasUI(key)) AudioManager.Instance.PlayUI(key);
     }
     static void Clear(RectTransform strip, Image template)
     {
@@ -446,19 +227,13 @@ public class RunRecapUI : MonoBehaviour
         for (int i = strip.childCount - 1; i >= 0; i--) { var c = strip.GetChild(i); if (template == null || c != template.transform) { c.gameObject.SetActive(false); Destroy(c.gameObject); } }
         if (template != null) template.gameObject.SetActive(false);
     }
-    // A new icon in its strip; shown: pops in now, otherwise it waits hidden for whatever reveals it (Fly).
-    Image Pop(RectTransform strip, Image template, Sprite sprite, bool shown)
+    // One more icon in its strip (laid out by Arrange).
+    static void Add(RectTransform strip, Image template, Sprite sprite)
     {
-        if (strip == null || template == null) return null;
+        if (strip == null || template == null) return;
         var img = Instantiate(template, strip);
         img.gameObject.SetActive(true);
         if (sprite != null) { img.sprite = sprite; img.preserveAspect = true; }
-        Arrange(strip, template);
-        img.enabled = shown;
-        if (!shown) return img;
-        img.transform.localScale = Vector3.zero;
-        img.transform.DOScale(1f, .18f).SetEase(Ease.OutBack).SetUpdate(true).SetLink(img.gameObject);
-        return img;
     }
 
     // Lays a strip's icons out left to right in up to stripRows rows (the rows in use centred in the strip); once all
@@ -493,9 +268,8 @@ public class RunRecapUI : MonoBehaviour
         if (!open) return;
         open = false;
         if (counting != null) { StopCoroutine(counting); counting = null; }
-        ClearEffects();
-        if (showcaseRays != null) showcaseRays.transform.DOKill();
         fade?.Kill();
+        DungeonMaster.OverMenus = false;
         if (root != null) root.SetActive(false);
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
         if (RunManager.HasInstance) RunManager.Instance.RecapClosed();
