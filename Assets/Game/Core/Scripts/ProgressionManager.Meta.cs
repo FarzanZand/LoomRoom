@@ -313,7 +313,9 @@ public partial class ProgressionManager
     Coroutine lessonRoutine;
     void Update()
     {
-        if (!Application.isPlaying || lessonRoutine != null) return;
+        if (!Application.isPlaying) return;
+        UpdateSheetQuest();
+        if (lessonRoutine != null) return;
         if (HasFlag(LedgerIntroFlag) && !HasFlag(LedgerSaidFlag) && RoomPlayerFree) lessonRoutine = StartCoroutine(SayLesson());
     }
     IEnumerator SayLesson()

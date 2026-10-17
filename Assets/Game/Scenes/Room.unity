@@ -60797,7 +60797,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &732139894
 RectTransform:
   m_ObjectHideFlags: 0
@@ -308290,7 +308290,7 @@ MonoBehaviour:
   heavyReleaseSpeed: 0.95
   enemyHurtAnimationSpeed: 1.3
   swordSwingSet: 2
-  maceSwingSet: 2
+  maceSwingSet: 5
   swordStaggerStrength: 1
   maceStaggerStrength: 2
   comboSpeed: 0.6

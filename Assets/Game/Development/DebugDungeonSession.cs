@@ -177,5 +177,44 @@ public class DebugDungeonSession : MonoBehaviour
             if (settings.retaliateOnly) profile.aggressionMode = AggressionMode.AggressiveWhenHit;
             enemy.SetBehaviourOverride(profile);
         }
+        PlaceRow(dungeon, settings.fightBackRow, -1f, AggressionMode.AggressiveWhenHit, 0f);
+        PlaceRow(dungeon, settings.dummyRow, 1f, AggressionMode.Passive, settings.dummyHealth);
+    }
+
+    // A row to one side of the player (side -1 left, 1 right), along their view, each facing them and idle.
+    static void PlaceRow(DungeonGenerator dungeon, GameObject[] row, float side, AggressionMode aggression, float health)
+    {
+        if (row == null) return;
+        var right = dungeon.SpawnRotation * Vector3.right;
+        var forward = dungeon.SpawnRotation * Vector3.forward;
+        var prefabs = row.Where(p => p != null).ToArray();
+        for (int i = 0; i < prefabs.Length; i++)
+        {
+            var pos = dungeon.SpawnPoint + right * side * settings.rowDistance + forward * ((i - (prefabs.Length - 1) * .5f) * settings.rowSpacing + 2f);
+            if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) pos = hit.position;
+            var look = dungeon.SpawnPoint + forward * 2f - pos; look.y = 0f;
+            var go = Instantiate(prefabs[i], pos, look.sqrMagnitude > .01f ? Quaternion.LookRotation(look) : Quaternion.identity, dungeon.transform);
+            if (settings.level.balance != null && go.TryGetComponent<Character>(out var balanced)) settings.level.balance.Apply(balanced, 1);
+            var enemy = go.GetComponent<EnemyBrain>();
+            if (enemy != null)
+            {
+                var profile = new EnemyBehaviourSettings();
+                profile.CopyFrom(enemy.Profile);
+                profile.defaultState = EnemyState.Idle;
+                profile.aggressionMode = aggression;
+                enemy.SetBehaviourOverride(profile);
+            }
+            // A test dummy: lots of health, topped up as it is hit hard, so it never dies by accident.
+            if (health > 0f && go.TryGetComponent<Character>(out var dummy) && dummy.Stats != null)
+            {
+                // Percent bonuses (the level's balance) scale a flat amount too: measure by how much, then add the rest.
+                float before = dummy.Stats.MaxHealth, flat = health - before;
+                dummy.Stats.AddModifier(new StatModifier(StatType.MaxHealth, flat, ModifierType.Flat, "debug dummy"));
+                float scale = (dummy.Stats.MaxHealth - before) / flat;
+                if (scale > .01f && Mathf.Abs(dummy.Stats.MaxHealth - health) > .5f)
+                    dummy.Stats.AddModifier(new StatModifier(StatType.MaxHealth, (health - dummy.Stats.MaxHealth) / scale, ModifierType.Flat, "debug dummy"));
+                dummy.Stats.RestorePools(health, dummy.Stats.CurrentMana, dummy.Stats.CurrentStamina);
+            }
+        }
     }
 }

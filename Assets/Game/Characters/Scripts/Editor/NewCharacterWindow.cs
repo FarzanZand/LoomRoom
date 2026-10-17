@@ -26,7 +26,7 @@ public class NewCharacterWindow : EditorWindow
     [MenuItem("Assets/Create/LoomRoom/Character Variant", true)]
     static bool FromSelectionValid() => IsTemplate(Selection.activeGameObject);
 
-    static void Open(bool enemy, GameObject selected)
+    public static void Open(bool enemy, GameObject selected)
     {
         var window = GetWindow<NewCharacterWindow>(true, enemy ? "New Enemy" : "New NPC");
         window.minSize = window.maxSize = new Vector2(440, 230);

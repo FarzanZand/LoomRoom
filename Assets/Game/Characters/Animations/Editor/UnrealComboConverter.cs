@@ -132,7 +132,6 @@ public static partial class UnrealComboConverter
                     if (t.destinationState == state && System.Array.FindIndex(t.conditions, c => c.parameter == "ComboSet") < 0)
                         t.AddCondition(AnimatorConditionMode.Equals, set, "ComboSet");
             }
-        Combo2Windup(machine, idle);
         HeavyFromCombo(machine, sets);
         EditorUtility.SetDirty(controller);
         AssetDatabase.SaveAssets();

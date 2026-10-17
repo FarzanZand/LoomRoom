@@ -9,9 +9,6 @@ public static class QuestLogSetup
 {
     static readonly Color Gold = new(.93f, .76f, .38f);
 
-    [MenuItem("Tools/LoomRoom/UI/Build Quest Log")]
-    public static void BuildMenu() => Debug.Log("[QuestLogSetup] " + Build());
-
     public static string Build()
     {
         var hud = Object.FindAnyObjectByType<HudCanvas>(FindObjectsInactive.Include);

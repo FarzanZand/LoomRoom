@@ -19,7 +19,7 @@ public class ItemDatabaseWindow : EditorWindow
     static readonly string[] Types = new[] { "All types" }.Concat(Enum.GetNames(typeof(ItemType))).ToArray();
     static readonly string[] Slots = new[] { "All slots" }.Concat(Enum.GetNames(typeof(EquipmentSlot))).ToArray();
 
-    [MenuItem("Tools/LoomRoom/Item Database")]
+    [MenuItem("Tools/Item Database", false, 0)]
     public static void ShowWindow()
     {
         var window = GetWindow<ItemDatabaseWindow>("Item Database");

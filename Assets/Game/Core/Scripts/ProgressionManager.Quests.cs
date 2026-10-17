@@ -7,7 +7,8 @@ using UnityEngine;
 // Quests: short tasks the quest log shows (UI/Scripts/QuestLogUI.cs, under the HUD) until they are done. A quest is the
 // flag "quest.<id>" (0 not given, 1 open, 2 done), so AdventureSave keeps it with the other flags and the log follows
 // FlagChanged. The first one: once Shield bash is unlocked, the next run asks the player to try it, and the first bash
-// completes it (ShieldBash).
+// completes it (ShieldBash). Before that, after the first death the DM's word about the sheet gives "look at the sheet",
+// done when the sheet is opened (CharacterSheetTable).
 public partial class ProgressionManager
 {
     [Serializable]
@@ -17,10 +18,31 @@ public partial class ProgressionManager
         [TextArea, Tooltip("What the log says. {attack} and {block} are replaced by the player's own keys.")] public string text;
     }
 
-    public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash";
+    public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", SheetQuest = "checkSheet";
 
     [FoldoutGroup("Quests"), ListDrawerSettings(ShowFoldout = true)]
-    public List<Quest> quests = new() { new Quest { id = ShieldBashQuest, text = "Try your shield bash: hold {block} and press {attack}." } };
+    public List<Quest> quests = BuiltInQuests();
+
+    // The quests the game's own code gives; a scene saved before one existed gets it added at Play (EnsureBuiltInQuests).
+    static List<Quest> BuiltInQuests() => new()
+    {
+        new Quest { id = SheetQuest, text = "Look at the character sheet on the little table by the wall." },
+        new Quest { id = ShieldBashQuest, text = "Try your shield bash: hold {block} and press {attack}." },
+    };
+
+    void EnsureBuiltInQuests()
+    {
+        foreach (var q in BuiltInQuests()) if (FindQuest(q.id) == null) quests.Add(q);
+    }
+
+    // The sheet quest follows the lesson's flags: given once the DM has pointed at the sheet, done once it is opened.
+    void UpdateSheetQuest()
+    {
+        int state = QuestState(SheetQuest);
+        bool opened = HasFlag(CharacterSheetTable.OpenedFlag);
+        if (state == 0 && HasFlag(LedgerSaidFlag) && !opened) GiveQuest(SheetQuest);
+        else if (state == 1 && opened) CompleteQuest(SheetQuest);
+    }
 
     public static string QuestFlag(string id) => QuestPrefix + id;
     public int QuestState(string id) => GetFlag(QuestFlag(id));
@@ -59,6 +81,7 @@ public partial class ProgressionManager
 
     void Start()
     {
+        EnsureBuiltInQuests();
         if (RunManager.HasInstance) RunManager.Instance.RunStarted += OfferQuestsForRun;
     }
 

@@ -14,12 +14,6 @@ public static class ScreenFilterSetup
     const string Prefab = "Assets/Game/Core/Prefabs/ScreenManager.prefab";
     const string GhostProfile = "Assets/Game/Multiplayer/Ghost look.asset";
 
-    [MenuItem("Tools/LoomRoom/Rendering/Build Screen Filters")]
-    public static void BuildMenu() => Debug.Log("[ScreenFilterSetup] " + Build(false));
-
-    [MenuItem("Tools/LoomRoom/Rendering/Build Screen Filters (Overwrite)")]
-    public static void OverwriteMenu() => Debug.Log("[ScreenFilterSetup] " + Build(true));
-
     public static string Build(bool overwrite)
     {
         if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/Game/Rendering", "Filters");

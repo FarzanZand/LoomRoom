@@ -30,7 +30,7 @@ public class ScreenManager : Singleton<ScreenManager>
     [FoldoutGroup("Camera filter"), LabelText("Filter")]
     [Tooltip("The whole screen's look. Standard is the game's own; the others are the looks below (Rendering/Filters), drawn after the world and its post-processing and under the UI. Switches at once in Play mode. Not saved as a player setting.")]
     public ScreenFilter cameraFilter = ScreenFilter.Standard;
-    [FoldoutGroup("Camera filter"), LabelText("Looks"), Tooltip("One look per filter (Tools > LoomRoom > Rendering > Build Screen Filters). A filter without a look shows Standard.")]
+    [FoldoutGroup("Camera filter"), LabelText("Looks"), Tooltip("One look per filter (Rendering/Filters). A filter without a look shows Standard.")]
     public ScreenFilterLook[] filterLooks = new ScreenFilterLook[0];
     [FoldoutGroup("Camera filter"), LabelText("F5 cycle"), Tooltip("Drag looks here: F5 in Play mode (Dev map, Editor and development builds) steps through Standard and these, in this order.")]
     public ScreenFilterLook[] cycleLooks = new ScreenFilterLook[0];

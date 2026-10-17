@@ -15,9 +15,6 @@ public static class CharacterPanelLayout
     const string Slot = "Assets/Game/UI/Sprites/Diablo/Plain slot grey.png";
     const int Markers = 3;
 
-    [MenuItem("Tools/LoomRoom/UI/Character Panel Layout")]
-    public static void LayoutMenu() => Debug.Log("[CharacterPanelLayout] " + Layout());
-
     public static string Layout()
     {
         var panel = Object.FindAnyObjectByType<EquipmentPanelUI>(FindObjectsInactive.Include);

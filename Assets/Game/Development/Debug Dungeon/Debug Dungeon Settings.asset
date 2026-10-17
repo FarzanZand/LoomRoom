@@ -21,8 +21,20 @@ MonoBehaviour:
   - {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   - {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
   - {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
+  - {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
   margin: 3
-  retaliateOnly: 0
+  retaliateOnly: 1
+  fightBackRow:
+  - {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+  - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  - {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
+  dummyRow:
+  - {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+  - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  - {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
+  dummyHealth: 1000
+  rowDistance: 8
+  rowSpacing: 3
   chests:
   - {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
   - {fileID: 1158012699065434100, guid: ca994bbeef0e8874083ac3908c046c31, type: 3}

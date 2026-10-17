@@ -423,7 +423,8 @@ public class EnemyBrain : MonoBehaviour
     bool TryNoticeTarget()
     {
         if (CanEnterCombat() && Perception.TargetVisible) { EnterCombat(); return true; }
-        if (Perception.HasStimulus && Profile.aggressionMode != AggressionMode.Passive)
+        // Only an aggressive enemy goes to look at a noise: one that waits to be hit (or never fights) stays where it is.
+        if (Perception.HasStimulus && Profile.aggressionMode == AggressionMode.Aggressive)
         {
             StartInvestigate(Perception.StimulusPosition);
             return true;
