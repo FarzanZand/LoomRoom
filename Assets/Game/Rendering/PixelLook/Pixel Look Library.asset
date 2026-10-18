@@ -876,6 +876,7 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 9306adf2f1236ff4ca294689aa9b98a4, type: 2}
   - {fileID: 2100000, guid: 155aba3918af1324fa9edc486dfe3ef1, type: 2}
   - {fileID: 2100000, guid: 7bc0ab2ef4f209f4685e7a77f2a10528, type: 2}
+  - {fileID: 2100000, guid: 76fedf948f8bd234eb3dd7d55c6a819e, type: 2}
   lighting:
   - material: {fileID: 2100000, guid: 7b3a493ac7c0045449d96033a9ea3ac4, type: 2}
     original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
