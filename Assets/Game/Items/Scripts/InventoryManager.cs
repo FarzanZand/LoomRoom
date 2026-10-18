@@ -53,6 +53,8 @@ public class InventoryManager : Singleton<InventoryManager>
         new RarityStep { rarity = ItemRarity.Fine, properties = new(1, 1), baseBonus = .2f, priceMultiplier = 1.6f, chance = .25f, chancePerFloor = 0f },
         new RarityStep { rarity = ItemRarity.Superior, properties = new(2, 2), baseBonus = .4f, priceMultiplier = 2.5f, chance = .15f, chancePerFloor = 0f },
         new RarityStep { rarity = ItemRarity.Masterwork, properties = new(3, 3), baseBonus = .6f, priceMultiplier = 4f, chance = .08f, chancePerFloor = 0f },
+        // Legendary: the highest, never rolled by chance; only given (the weeping witch, the Skeleton Party's chest).
+        new RarityStep { rarity = ItemRarity.Legendary, properties = new(4, 4), baseBonus = .8f, priceMultiplier = 6f, chance = 0f, chancePerFloor = 0f },
     };
     [Min(0), Tooltip("Times every rarity chance for a merchant's gear (a better pick than the floor's loot; its price follows the rarity).")] public float merchantRarity = 1.3f;
 
@@ -89,14 +91,41 @@ public class InventoryManager : Singleton<InventoryManager>
         return null;
     }
 
-    // The next rarity up from this one (the shrine's raise), or Plain when there is none.
+    // The next rarity up from this one (the shrine's raise), or Plain when there is none. Legendary is never reached
+    // this way: it is only given.
     public static ItemRarity NextRarity(ItemRarity rarity)
+    {
+        var next = NextStep(rarity);
+        return next == ItemRarity.Legendary ? ItemRarity.Plain : next;
+    }
+    static ItemRarity NextStep(ItemRarity rarity)
     {
         if (!HasInstance || Instance.rarities == null) return ItemRarity.Plain;
         var list = Instance.rarities;
         if (rarity == ItemRarity.Plain) return list.Count > 0 && list[0] != null ? list[0].rarity : ItemRarity.Plain;
         for (int i = 0; i < list.Count - 1; i++) if (list[i] != null && list[i].rarity == rarity && list[i + 1] != null) return list[i + 1].rarity;
         return ItemRarity.Plain;
+    }
+
+    // A random piece of gear from the catalog (weapon, shield or armour, tier 1 to Max Tier, by loot weight) rolled at this
+    // rarity for the floor: a given reward (the weeping witch's Legendary, the Skeleton Party's chest). Null without a catalog.
+    public static ItemData GivenGear(ItemRarity rarity, int maxTier, int floor, System.Random random)
+    {
+        if (!HasInstance || Instance.itemCatalog == null) return null;
+        bool Fits(ItemData i) => i != null && i.tier > 0 && i.tier <= maxTier && i.rarity == ItemRarity.Plain && i.IsGear && Instance.CanDropLoot(i);
+        float total = 0f;
+        foreach (var i in Instance.itemCatalog) if (Fits(i)) total += Mathf.Max(.01f, i.lootWeight);
+        if (total <= 0f) return null;
+        double roll = random.NextDouble() * total;
+        ItemData gear = null;
+        foreach (var i in Instance.itemCatalog)
+        {
+            if (!Fits(i)) continue;
+            gear = i;
+            if ((roll -= Mathf.Max(.01f, i.lootWeight)) < 0) break;
+        }
+        var table = ItemPropertyTable.Current;
+        return gear == null || table == null || rarity == ItemRarity.Plain ? gear : gear.Rolled(rarity, table.Roll(gear, rarity, Mathf.Max(1, floor), random));
     }
 
     // The rarity multiplier of a loot source (Drops by source).

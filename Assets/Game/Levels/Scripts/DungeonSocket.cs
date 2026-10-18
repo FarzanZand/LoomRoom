@@ -27,6 +27,9 @@ public class DungeonSocket : MonoBehaviour
     public bool faceWall;
     [ShowIf("@IsEnemy && faceWall"), Min(.5f), Tooltip("How far from the wall it stands, in metres (a little more puts it between pillars that stand off the wall).")]
     public float wallGap = .75f;
+    // An enemy dragged straight into a room template: the generator turns it into this socket and keeps the enemy itself
+    // (switched off until the NavMesh is built) to put down here instead of a pick from the pool.
+    [System.NonSerialized] public GameObject placedEnemy;
     bool IsLight => type == DungeonSocketType.WallLight;
     bool ShowLightColor => IsLight && overrideLightColor;
     [ShowIf(nameof(IsLight)), Tooltip("Recolour this light, over the room's and the biome's colours.")]

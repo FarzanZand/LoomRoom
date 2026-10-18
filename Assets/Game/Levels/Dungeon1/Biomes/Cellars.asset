@@ -15,7 +15,9 @@ MonoBehaviour:
   displayName: The Cellars
   entryMessage: You climb down into the cellars.
   roomStyles:
-  - style: {fileID: 0}
+  - style: {fileID: 11400000, guid: 5e6a07315aa79734498dcba82c591e34, type: 2}
+    weight: 1
+  - style: {fileID: 11400000, guid: eddc5d2c046762d428fcbe2c400d8569, type: 2}
     weight: 1
   corridorStyles: []
   roomShapes: []
@@ -67,7 +69,7 @@ MonoBehaviour:
     fromFloor: 1
     maxPerFloor: 1
   - template: {fileID: 273876934562634629, guid: dbc080642f13a354e8633ec6c83b9348, type: 3}
-    weight: 0.8
+    weight: 2
     rooms: 10
     fromFloor: 1
     maxPerFloor: 2

@@ -53,6 +53,13 @@ public class EnemyBrain : MonoBehaviour
     public bool Entranced { get; set; }
 
     // Out of a trance and after the player (or at least to where it happened).
+    // Its next attack is this spell of its own (EnemyData.spells), ready or not: how a fight opens.
+    public void OpenWith(EnemySpell spell)
+    {
+        attackRunner ??= new EnemyAttackRunner(this);
+        attackRunner.Opener = spell != null && spell.spell != null ? spell.Attack : null;
+    }
+
     public void Provoke(Vector3 at)
     {
         Entranced = false;

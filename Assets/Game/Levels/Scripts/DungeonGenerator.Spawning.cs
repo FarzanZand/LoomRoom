@@ -158,6 +158,33 @@ public partial class DungeonGenerator
             pair.Key.position+=new Vector3(step.x,0,step.y)*data.cellSize;
         }
     }
+    // Enemies dragged straight into a template become Enemy sockets that keep that enemy: it counts toward the room's
+    // pack like a socket, gets floor scaling and loot, joins its pack, marks a wave point in an ambush room, and is
+    // switched off until the NavMesh is built (a body standing there would punch a hole in it).
+    void TakePlacedEnemies(GameObject instance,int room)
+    {
+        // Enemy Spawners are Enemy sockets with one field: their enemy, or the room's or biome's pick.
+        foreach(var spawner in instance.GetComponentsInChildren<EnemySpawner>(true))
+        {
+            var socket=spawner.gameObject.AddComponent<DungeonSocket>();
+            socket.type=DungeonSocketType.Enemy;
+            socket.overridePrefab=spawner.enemy;
+        }
+        foreach(var brain in instance.GetComponentsInChildren<EnemyBrain>(true))
+        {
+            var enemy=brain.gameObject;
+            // Outside a smaller room it would stand in a wall.
+            if(!Layout.InRoom(room,CellOf(enemy.transform.position))){DestroyImmediate(enemy);continue;}
+            var socket=new GameObject("Placed "+enemy.name).AddComponent<DungeonSocket>();
+            socket.transform.SetParent(instance.transform,false);
+            socket.transform.SetPositionAndRotation(enemy.transform.position,enemy.transform.rotation);
+            socket.type=DungeonSocketType.Enemy;
+            socket.placedEnemy=enemy;
+            enemy.SetActive(false);
+            enemy.transform.SetParent(transform,true);
+        }
+    }
+
     // An empty node holding several props: a template's dressing group, never a prop of its own.
     static bool IsGroup(Transform t) => t.childCount>1 && t.GetComponents<Component>().Length==1;
     static bool Has<T>(Transform t) where T : Component => t.GetComponentInChildren<T>(true)!=null || t.GetComponentInParent<T>(true)!=null;
@@ -232,6 +259,7 @@ public partial class DungeonGenerator
             }
             MaybeTrap(chest);
         }
+        TakePlacedEnemies(instance,index);
         var openings=Openings(index);
         foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))
         {
@@ -523,11 +551,16 @@ public partial class DungeonGenerator
         return nearest;
     }
 
-    Character SpawnEnemyAt(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewards,bool boss=false)
+    Character SpawnEnemyAt(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewards,bool boss=false,bool anywhere=false)
     {
-        if(prefab==null || !NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas))return null;
+        if(prefab==null)return null;
+        if(!NavMesh.SamplePosition(pos,out var hit,2,NavMesh.AllAreas))
+        {
+            if(!anywhere)return null;
+            hit=new NavMeshHit{position=pos};
+        }
         // A socket's spot inside a prop or stair: the nearest clear floor around it instead.
-        if(!boss && !RoomForBody(hit.position))
+        if(!boss && !anywhere && !RoomForBody(hit.position))
         {
             bool found=false;
             for(int k=0;k<12 && !found;k++)
@@ -555,6 +588,19 @@ public partial class DungeonGenerator
         // Each one rolls its own loot: from the floor's seed, its place and how many came before (the old float-to-int
         // hash overflowed at the table's position, so every ambusher rolled the same).
         return SetUpEnemy(go,new System.Random(Scramble(unchecked(PlacedSeed(pos)^seed0*31^++ambushersSpawned*486187739))));
+    }
+
+    // A hand-placed enemy (TakePlacedEnemies) on the floor where its author put it, switched on. Its loot seed comes from
+    // its place, so the level's draw order is the same as without it.
+    Character PutDownPlacedEnemy(DungeonSocket socket,LootSource rewards)
+    {
+        var go=socket.placedEnemy; var t=socket.transform;
+        var pos=NavMesh.SamplePosition(t.position,out var hit,2f,NavMesh.AllAreas) ? hit.position : t.position;
+        go.transform.SetPositionAndRotation(pos,t.rotation);
+        go.SetActive(true);
+        var agent=go.GetComponent<NavMeshAgent>();
+        if(agent!=null && agent.enabled && !agent.isOnNavMesh)agent.Warp(pos);
+        return SetUpEnemy(go,new System.Random(Scramble(unchecked(PlacedSeed(t.position)^seed0*31))),rewards);
     }
 
     Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null,bool boss=false)
@@ -593,15 +639,32 @@ public partial class DungeonGenerator
                 {
                     case DungeonSocketType.Enemy:
                     {
-                        var prefab=socket.overridePrefab!=null ? socket.overridePrefab : socket.archer ? ChooseArcher(room,extraRandom) : ChooseEnemy(room,extraRandom);
                         // An ambush room starts empty: its sockets are where the waves come from.
                         if(EventOf(room)==RoomEvent.Ambush)
                         {
                             if(!ambushPoints.TryGetValue(room,out var points))ambushPoints[room]=points=new();
                             points.Add(t.position);
+                            if(socket.placedEnemy!=null)DestroyImmediate(socket.placedEnemy);
                             break;
                         }
+                        if(socket.placedEnemy!=null)
+                        {
+                            var hand=PutDownPlacedEnemy(socket,profiles[room]!=null ? profiles[room].rewards : null);
+                            if(hand!=null && socket.faceWall)FaceWall(hand,socket.wallGap);
+                            JoinPack(room,hand);
+                            break;
+                        }
+                        var prefab=socket.overridePrefab!=null ? socket.overridePrefab : socket.archer ? ChooseArcher(room,extraRandom) : ChooseEnemy(room,extraRandom);
                         var placed=SpawnEnemyAt(prefab,t.position,t.rotation,profiles[room]!=null ? profiles[room].rewards : null);
+                        // A socket's own enemy (a set piece such as the court's witch) is put down even where the floor
+                        // check finds no room for a body: the template's author placed it there on purpose.
+                        if(placed==null && socket.overridePrefab!=null)
+                        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                            Debug.LogWarning($"[Sockets] {prefab.name} found no clear floor at {t.position} (room {room}); placed there anyway.",this);
+#endif
+                            placed=SpawnEnemyAt(prefab,t.position,t.rotation,profiles[room]!=null ? profiles[room].rewards : null,false,true);
+                        }
                         if(placed!=null && socket.faceWall)FaceWall(placed,socket.wallGap);
                         JoinPack(room,placed);
                         break;

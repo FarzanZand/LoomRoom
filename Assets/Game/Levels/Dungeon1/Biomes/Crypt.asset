@@ -14,7 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonTheme
   displayName: The Crypt
   entryMessage: The cellars give way to an old crypt.
-  roomStyles: []
+  roomStyles:
+  - style: {fileID: 11400000, guid: 45f2ff5c0d2776645bb1e6d731a0534e, type: 2}
+    weight: 1
+  - style: {fileID: 11400000, guid: 84bca820ca702834eb6776d5bd842dd5, type: 2}
+    weight: 1
   corridorStyles: []
   roomShapes: []
   props: []
@@ -65,7 +69,7 @@ MonoBehaviour:
     fromFloor: 1
     maxPerFloor: 1
   - template: {fileID: 273876934562634629, guid: dbc080642f13a354e8633ec6c83b9348, type: 3}
-    weight: 0.8
+    weight: 2
     rooms: 10
     fromFloor: 1
     maxPerFloor: 2

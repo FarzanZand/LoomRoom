@@ -5,7 +5,7 @@ using System;
 // How rare an item is. Gear goes Plain, Fine, Superior, Masterwork (the steps on InventoryManager > Rarity: properties
 // rolled from ItemPropertyTable, a bonus on the main number, chances), then Relic (hand-made assets). Rare is the spell
 // tomes' bronze. Each has its colour on UIManager: slot fill, loot beam and name. Superior came last, so its number is 6.
-public enum ItemRarity { Plain = 0, Rare = 1, Fine = 2, Masterwork = 3, Relic = 4, Spoils = 5, Superior = 6 }
+public enum ItemRarity { Plain = 0, Rare = 1, Fine = 2, Masterwork = 3, Relic = 4, Spoils = 5, Superior = 6, Legendary = 7 }
 
 // Gear slots a rolled property can appear on (ItemPropertyTable).
 [Flags]

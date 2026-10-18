@@ -12,6 +12,10 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     public System.Collections.Generic.List<ItemData> guaranteedItems = new();
     [Min(0), Tooltip("Gold on top of what the loot rolls (a boss chest's Bonus Gold).")]
     public int bonusGold;
+    [Tooltip("Only its Guaranteed Items and Bonus Gold: no rolled loot and no spoils (the Skeleton Party's chest).")]
+    public bool onlyGuaranteed;
+    [Min(1), Tooltip("Its gold comes out as this many piles (1 = one pile).")]
+    public int goldPiles = 1;
     public Material debrisMaterial;
     public AudioClip openAudio;
     // AudioManager SFX Library key every chest opens with (its Open Audio is the fallback).
@@ -85,7 +89,7 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         CoopWorld.BeginLoot(this);
         if(guaranteedItem!=null)DungeonPickup.Spawn(guaranteedItem,dropPosition,transform.parent);
         var source=chest ? DungeonLootSource.Chest:DungeonLootSource.Barrel;
-        var (drops,gold)=DungeonLootDrop.Roll(loot,rng,floorNumber,source);
+        var (drops,gold)=DungeonLootDrop.Roll(onlyGuaranteed ? null : loot,rng,floorNumber,source);
         if(startingKit)
         {
             // One piece of gear, rolled until one comes out; the potion comes with the guaranteed items below.
@@ -96,9 +100,9 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
             drops=gear;
         }
         // A chest is never empty: reroll the items a few times, then fall back to a little gold.
-        for(int i=0;chest && drops.Count==0 && guaranteedItem==null && loot!=null && i<4;i++) drops=loot.RollDrops(rng,floorNumber,source);
+        for(int i=0;chest && !onlyGuaranteed && drops.Count==0 && guaranteedItem==null && loot!=null && i<4;i++) drops=loot.RollDrops(rng,floorNumber,source);
         // Better chests: more rolls, and one roll from deeper floors (its best item only).
-        if(chest && loot!=null && !startingKit)
+        if(chest && loot!=null && !startingKit && !onlyGuaranteed)
         {
             for(int i=0;i<extraRolls;i++) drops.AddRange(loot.RollDrops(rng,floorNumber,source));
             if(rareRollFloors>0)
@@ -110,11 +114,24 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
         }
         if(guaranteedItems!=null)foreach(var item in guaranteedItems)if(item!=null)drops.Add(new LootSource.Drop(item,1));
         // Spoils for the tally (ProgressionManager): chests only, at their own chance.
-        if(chest && !startingKit && ProgressionManager.HasInstance){var spoils=ProgressionManager.Instance.RollSpoils(seed,floorNumber,true);if(spoils!=null)drops.Add(new LootSource.Drop(spoils,1));}
+        if(chest && !startingKit && !onlyGuaranteed && ProgressionManager.HasInstance){var spoils=ProgressionManager.Instance.RollSpoils(seed,floorNumber,true);if(spoils!=null)drops.Add(new LootSource.Drop(spoils,1));}
         gold+=bonusGold;
         if(chest && drops.Count==0 && guaranteedItem==null && gold<=0) gold=3+rng.Next(0,3)+floorNumber*2;
         // A chest glows gold as it opens and its loot jumps out.
         var mouth=transform.position+Vector3.up*.55f;
+        // Many piles: the gold is shared out over them, each spilled round the front of the chest.
+        if(goldPiles>1 && gold>0 && CurrencyManager.HasInstance)
+        {
+            int piles=Mathf.Min(goldPiles,gold);
+            for(int i=0;i<piles;i++)
+            {
+                int share=gold/piles+(i<gold%piles ? 1 : 0);
+                float angle=(i/(float)piles-.5f)*Mathf.PI*1.2f;
+                var spot=dropPosition+(transform.right*Mathf.Sin(angle)+transform.forward*Mathf.Cos(angle))*(.4f+.35f*(i%3));
+                CurrencyManager.Instance.SpawnCoins(share,spot,transform.parent);
+            }
+            gold=0;
+        }
         DungeonLootDrop.Spill(drops,gold,dropPosition,transform.parent,chest ? mouth : (Vector3?)null);
         CoopWorld.EndLoot();
         if(chest)Glow(mouth);
