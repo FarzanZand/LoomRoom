@@ -103,12 +103,35 @@ public class PortalArch : MonoBehaviour
         if (glow != null) glow.intensity = lightIntensity * (.8f + .3f * Mathf.Sin(t * 2.3f));
     }
 
-    void OnTriggerEnter(Collider other)
+    void OnTriggerEnter(Collider other) => TryUse(other);
+
+    // The way back stands just behind where players arrive, so a blow can knock one into it: it takes a player only
+    // once they have not been hit for a moment, and then still while they stand in it (walking on into it).
+    void OnTriggerStay(Collider other) { if (mode == Mode.Return) TryUse(other); }
+
+    void TryUse(Collider other)
     {
         if (busy) return;
         var player = other.GetComponentInParent<Player>();
         if (player == null || player.kind != PlayerKind.Table || !player.IsAlive) return;
+        if (mode == Mode.Return && Time.time - lastHurt < hurtGrace) return;
         StartCoroutine(mode == Mode.Enter ? Enter(player) : Return(player));
+    }
+
+    [Min(0f), Tooltip("The way back takes no one hit less than this many seconds ago (a blow can knock a player into it).")]
+    public float hurtGrace = 1.5f;
+    static float lastHurt = -99f;
+    static Character watched;
+    static void OnWatchedHurt(DamageInfo info) => lastHurt = Time.time;
+
+    // This machine's player in a pocket: its hits are watched for the way back.
+    static void Watch(Player player)
+    {
+        var c = player != null ? player.GetComponent<Character>() : null;
+        if (watched == c) return;
+        if (watched != null) watched.Damaged -= OnWatchedHurt;
+        watched = c;
+        if (watched != null) watched.Damaged += OnWatchedHurt;
     }
 
     // Every Enter portal on a new floor builds its pocket now, from the floor's seed and the portal's place among the
@@ -172,6 +195,7 @@ public class PortalArch : MonoBehaviour
             var beside = arrive + MultiplayerManager.Instance.SpawnOffset(facing);
             if (UnityEngine.AI.NavMesh.SamplePosition(beside, out var near, 1f, UnityEngine.AI.NavMesh.AllAreas)) arrive = near.position;
         }
+        Watch(player);
         player.Warp(arrive, facing);
         if (player.Look != null) player.Look.SetYaw(facing.eulerAngles.y);
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.5f);
