@@ -25,6 +25,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         public Button buy;
         public TMP_Text buyLabel;
         public Image buyIcon;
+        [System.NonSerialized] public float buyLabelSize, buyLabelSpacing;   // the label's own size and line spacing, kept while the lesson text auto-sizes
     }
 
     [SerializeField] GameObject root;
@@ -342,10 +343,16 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (r.buy != null) r.buy.interactable = price >= 0;
         if (r.buyLabel != null)
         {
-            r.buyLabel.text = price < 0 ? "MAX" : $"Train {price}";
-            r.buyLabel.color = price < 0 ? faint : locked || meta.Spoils < price ? poor : pen;
+            // Before the Blocking lesson every other row says so on its button.
+            r.buyLabel.text = price < 0 ? "MAX" : locked ? "Blocking" + "\n" + "first" : $"Train {price}";
+            // The lesson text is two short lines, sized to fit inside the tag (the small attribute tags most of all).
+            if (r.buyLabelSize <= 0f) { r.buyLabelSize = r.buyLabel.fontSize; r.buyLabelSpacing = r.buyLabel.lineSpacing; }
+            r.buyLabel.enableAutoSizing = locked;
+            if (locked) { r.buyLabel.fontSizeMax = r.buyLabelSize * .8f; r.buyLabel.fontSizeMin = r.buyLabelSize * .4f; r.buyLabel.enableWordWrapping = false; r.buyLabel.lineSpacing = -20f; }
+            else { r.buyLabel.fontSize = r.buyLabelSize; r.buyLabel.lineSpacing = r.buyLabelSpacing; }
+            r.buyLabel.color = price < 0 || locked ? faint : meta.Spoils < price ? poor : pen;
         }
-        if (r.buyIcon != null) r.buyIcon.enabled = price >= 0;
+        if (r.buyIcon != null) r.buyIcon.enabled = price >= 0 && !locked;
     }
 
     // What the track gives now: a skill's bonus at its value, an attribute's bonus per point.

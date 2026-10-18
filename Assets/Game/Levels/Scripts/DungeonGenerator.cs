@@ -631,11 +631,30 @@ public partial class DungeonGenerator : MonoBehaviour
 
     // A breakable's pick and turn come from the extra stream, but its loot seed (like a chest's or a
     // barrel's) from the main one: one main draw per supply spot, whatever stands there.
-    // The room puzzle's missing tile (ProgressionManager.HidesTile): on the middle of a room away from the start and the
-    // exit, as a floor pickup.
+    // The room puzzle's missing tile (ProgressionManager.HidesTile): always in a chest of the floor (one away from the
+    // starting room, a treasure room's first), so opening chests finds it; with no chest, on the middle of a room away
+    // from the start and the exit, as a floor pickup.
     void HideMissingTile()
     {
         if (data.pocket || Layout==null || !ProgressionManager.HasInstance || !ProgressionManager.Instance.HidesTile(FloorNumber))return;
+        var tile=ProgressionManager.Instance.missingTile;
+        var chests=new System.Collections.Generic.List<DungeonContainer>();
+        foreach(var c in GetComponentsInChildren<DungeonContainer>(true))
+        {
+            if(c==null || !c.chest || InStartingRoom(c.transform.position))continue;
+            int r=Layout.RoomAt(CellOf(c.transform.position));
+            // Not the shop, and not a room whose own script restocks its chest (the Skeleton Party's prize).
+            if(r==MerchantRoom || (TemplateOf(r) is DungeonRoomTemplate t && t.GetComponent<SkeletonParty>()!=null))continue;
+            chests.Add(c);
+        }
+        if(chests.Count>0)
+        {
+            var pick=new System.Random(Scramble(unchecked(seed0+104729)));
+            var treasure=chests.FindAll(c=>{int r=Layout.RoomAt(CellOf(c.transform.position));return r>=0 && r<Roles.Length && Roles[r]==RoomRole.Treasure;});
+            var chosen=treasure.Count>0 ? treasure[pick.Next(treasure.Count)] : chests[pick.Next(chests.Count)];
+            if(!chosen.guaranteedItems.Contains(tile))chosen.guaranteedItems.Add(tile);
+            return;
+        }
         var rooms=new System.Collections.Generic.List<int>();
         for(int i=1;i<Layout.rooms.Count-1;i++)if(i!=MerchantRoom)rooms.Add(i);
         if(rooms.Count==0)return;
@@ -654,7 +673,7 @@ public partial class DungeonGenerator : MonoBehaviour
             best=d; spot=hit.position;
         }
         if(spot==null){Debug.LogWarning($"[Dungeon] No free floor for the missing tile in room {room}.",this);return;}
-        DungeonPickup.Spawn(ProgressionManager.Instance.missingTile,spot.Value+Vector3.up*.2f,transform);
+        DungeonPickup.Spawn(tile,spot.Value+Vector3.up*.2f,transform);
     }
 
     // Chests in the room the player starts in open toward them: their front (+Z, the latch) faces the spawn.

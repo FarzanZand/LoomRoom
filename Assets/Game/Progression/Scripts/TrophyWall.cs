@@ -26,6 +26,9 @@ public class TrophyWall : MonoBehaviour, IInteractable
     [Tooltip("How far in front of the mount's face (its backing) a trophy's back rests.")] public float restGap = .3f;
     [Tooltip("SFX Library key played as the trophies go up.")] public string hangKey = "trophyHang";
     public AudioClip hangClip;
+    [Tooltip("UI Library key played for each trophy as it goes up, one after another.")] public string trophyKey = "equipItem";
+    [Tooltip("A short burst on each new trophy (Items/Effects/Chest burst), scaled up to the room.")] public GameObject trophyEffect;
+    [Min(.1f), Tooltip("The burst is made for the dungeon (1 unit to the metre); the room is ~22 units to the metre.")] public float trophyEffectScale = 20f;
 
     public string Prompt => "Hang the trophies";
     public bool CanInteract(Character who) => who is Player p && p.kind == PlayerKind.Room && Carried > 0;
@@ -39,16 +42,34 @@ public class TrophyWall : MonoBehaviour, IInteractable
         Refresh();
         if (AudioManager.HasInstance && (AudioManager.Instance.PlayFirstSFX(transform.position, hangKey) == null) && hangClip != null)
             AudioManager.Instance.PlaySFX(hangClip, transform.position, .9f, .05f);
-        // Each new trophy settles onto its bracket.
+        // Each new trophy settles onto its bracket, with a sound and a burst, one after another.
+        int n = 0;
         foreach (var (t, m) in hung)
         {
             var mount = mounts.Find(x => x.trackId == t.id && x.value == m.value);
             if (mount?.model == null) continue;
             var tr = mount.model.transform;
             var scale = tr.localScale;
+            float delay = n++ * .18f;
             tr.localScale = scale * .85f;
-            tr.DOScale(scale, .35f).SetEase(Ease.OutBack).SetLink(mount.model);
+            tr.DOScale(scale, .35f).SetEase(Ease.OutBack).SetDelay(delay).SetLink(mount.model);
+            var centre = Measure(mount.model.GetComponentsInChildren<Renderer>(true)) is Bounds b ? b.center : tr.position;
+            var forward = mount.anchor != null && mount.anchor.parent != null ? mount.anchor.parent.forward : transform.forward;
+            DOVirtual.DelayedCall(delay, () =>
+            {
+                if (AudioManager.HasInstance && !string.IsNullOrEmpty(trophyKey)) AudioManager.Instance.PlayUI(trophyKey);
+                if (trophyEffect != null) Burst(centre + forward * restGap * 2f, forward);
+            }).SetLink(gameObject);
         }
+    }
+
+    // The burst sized for the room: every particle system scales with its transform.
+    void Burst(Vector3 at, Vector3 forward)
+    {
+        var fx = Instantiate(trophyEffect, at, Quaternion.LookRotation(forward));
+        fx.transform.localScale = trophyEffect.transform.localScale * trophyEffectScale;
+        foreach (var ps in fx.GetComponentsInChildren<ParticleSystem>(true)) { var main = ps.main; main.scalingMode = ParticleSystemScalingMode.Hierarchy; }
+        Destroy(fx, 4f);
     }
 
     void Start()

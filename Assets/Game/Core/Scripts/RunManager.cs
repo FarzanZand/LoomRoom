@@ -197,6 +197,20 @@ public class RunManager : Singleton<RunManager>
         return true;
     }
 
+    // Back on your feet after dying, the run going on: the dev console's revive and the recap's Revive (debug) button.
+    // Run: a run was going on; counted: its death had already been banked (see ReviveRun).
+    public static bool RevivePlayer(Player player, out bool run, out bool counted)
+    {
+        run = counted = false;
+        if (player == null || player.IsAlive) return false;
+        run = HasInstance && Instance.ReviveRun(out counted);
+        player.Stats.Revive();
+        var animator = player.Animator;
+        if (animator != null && Character.HasParameter(animator, "Dead", AnimatorControllerParameterType.Bool)) animator.SetBool("Dead", false);
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
+        return true;
+    }
+
     public void Abandon()
     {
         CommitDeath();

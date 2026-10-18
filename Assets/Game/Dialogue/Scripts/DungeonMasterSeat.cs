@@ -85,6 +85,15 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
             animator.CrossFadeInFixedTime(leanState, leanBlend, 0);
     }
 
+    // While he pours his beam he straightens up from the lean (his standing idle, still at the table), so his raised palm
+    // is high above the stage and the beam pours down onto the player; then he leans in again. Only while focused.
+    public void Straighten(bool up)
+    {
+        if (!focusAt.HasValue || animator == null || !animator.isActiveAndEnabled) return;
+        var state = up ? standingState : leanState;
+        if (animator.HasState(0, Animator.StringToHash(state))) animator.CrossFadeInFixedTime(state, leanBlend, 0);
+    }
+
     public void Unfocus()
     {
         if (focusAt.HasValue)

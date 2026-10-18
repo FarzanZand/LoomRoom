@@ -341,12 +341,7 @@ public class DevConsole : MonoBehaviour
         var player = Active;
         if (player == null) { Print("No player."); return; }
         if (player.IsAlive) { Print("You're not dead."); return; }
-        bool counted = false;
-        bool run = RunManager.HasInstance && RunManager.Instance.ReviveRun(out counted);
-        player.Stats.Revive();
-        var animator = player.Animator;
-        if (animator != null && Character.HasParameter(animator, "Dead", AnimatorControllerParameterType.Bool)) animator.SetBool("Dead", false);
-        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
+        RunManager.RevivePlayer(player, out bool run, out bool counted);
         Print(!run ? "Revived." : counted
             ? "Revived. The run goes on, but that death was already counted: it is in the save and the run's spoils were banked."
             : "Revived. The run goes on; the death was not counted.");

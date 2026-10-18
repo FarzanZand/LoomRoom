@@ -15,9 +15,9 @@ MonoBehaviour:
   displayName: The Crypt
   entryMessage: The cellars give way to an old crypt.
   roomStyles:
-  - style: {fileID: 11400000, guid: 45f2ff5c0d2776645bb1e6d731a0534e, type: 2}
+  - style: {fileID: 11400000, guid: b70b907d7c9124648b6e11dfdb34ca5f, type: 2}
     weight: 1
-  - style: {fileID: 11400000, guid: 84bca820ca702834eb6776d5bd842dd5, type: 2}
+  - style: {fileID: 11400000, guid: 83954e88cfe4842438abc20062997e41, type: 2}
     weight: 1
   corridorStyles: []
   roomShapes: []

@@ -48,7 +48,7 @@ MonoBehaviour:
   equipOnPickup: 0
   statModifiers:
   - stat: 1
-    value: 20
+    value: 16
     type: 0
   - stat: 0
     value: 10
