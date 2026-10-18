@@ -33,10 +33,12 @@ public class SettingsUI : MonoBehaviour
     [SerializeField] TMP_Text brightnessValue;
     [SerializeField] Button backButton;
 
-    // Slider index -> ScreenManager pixel lines (-1 authored, 0 off). Like field of view, the leftmost position is the
-    // default; then from the sharpest picture to the chunkiest.
+    // Slider index -> ScreenManager pixel lines (-1 authored, 0 off). The leftmost position is the default; then from the
+    // sharpest picture to the chunkiest.
     static readonly int[] PixelSteps = { -1, 0, 720, 480, 360, 320, 240, 180 };
-    const float FovDefaultSlot = 49f; // leftmost slider position means "authored lens"
+    // Field of view runs 50-110; its Default is where the table camera's own lens is (85): there each camera keeps its
+    // authored lens, and moving off it goes on smoothly from there.
+    const float FovDefaultSlot = 85f;
 
     bool loading, loaded;
     public bool IsOpen => root != null && root.activeSelf;
@@ -46,14 +48,14 @@ public class SettingsUI : MonoBehaviour
     {
         if (root != null) root.SetActive(false);
         if (pixelation != null) { pixelation.wholeNumbers = true; pixelation.minValue = 0; pixelation.maxValue = PixelSteps.Length - 1; }
-        if (fieldOfView != null) { fieldOfView.wholeNumbers = true; fieldOfView.minValue = FovDefaultSlot; fieldOfView.maxValue = 110; }
+        if (fieldOfView != null) { fieldOfView.wholeNumbers = true; fieldOfView.minValue = 50; fieldOfView.maxValue = 110; }
         if (sensitivity != null) { sensitivity.minValue = .1f; sensitivity.maxValue = 4f; }
         if (brightness != null) { brightness.minValue = -1f; brightness.maxValue = 1f; }
         Hook(masterVolume, v => SetVolume(AudioManager.Channel.Master, v));
         Hook(musicVolume, v => SetVolume(AudioManager.Channel.Music, v));
         Hook(sfxVolume, v => SetVolume(AudioManager.Channel.Sfx, v));
         Hook(sensitivity, v => { UserSettings.MouseSensitivity = v; Labels(); });
-        Hook(fieldOfView, v => { UserSettings.FieldOfView = v <= FovDefaultSlot ? 0f : v; Labels(); });
+        Hook(fieldOfView, v => { UserSettings.FieldOfView = Mathf.Approximately(v, FovDefaultSlot) ? 0f : v; Labels(); });
         Hook(pixelation, v =>
         {
             int lines = PixelStep(v);
@@ -62,7 +64,14 @@ public class SettingsUI : MonoBehaviour
             Labels();
         });
         Hook(brightness, v => { UserSettings.Brightness = v; Labels(); });
-        windowMode?.onClick.AddListener(() => { UserSettings.SetDisplay(!UserSettings.Fullscreen, Screen.width, Screen.height); Labels(); });
+        windowMode?.onClick.AddListener(() =>
+        {
+            // Fullscreen fills the desktop at its own size; a window keeps the size it has now.
+            bool full = !UserSettings.Fullscreen;
+            var size = full ? new Vector2Int(Screen.currentResolution.width, Screen.currentResolution.height) : new Vector2Int(Screen.width, Screen.height);
+            UserSettings.SetDisplay(full, size.x, size.y);
+            Labels();
+        });
         resolution?.onClick.AddListener(NextResolution);
         vsync?.onClick.AddListener(() => { UserSettings.VSync = !UserSettings.VSync; Labels(); });
         resetBindings?.onClick.AddListener(() =>
@@ -108,7 +117,10 @@ public class SettingsUI : MonoBehaviour
     void NextResolution()
     {
         var list = Resolutions();
-        int current = list.IndexOf(new Vector2Int(Screen.width, Screen.height));
+        var now = new Vector2Int(Screen.width, Screen.height);
+        int current = list.IndexOf(now);
+        // A window dragged to a size that isn't listed goes to the next listed size above it.
+        if (current < 0) current = list.FindLastIndex(r => r.x < now.x || (r.x == now.x && r.y < now.y));
         var next = list[(current + 1) % list.Count];
         UserSettings.SetDisplay(UserSettings.Fullscreen, next.x, next.y);
         Labels(next);
@@ -156,7 +168,7 @@ public class SettingsUI : MonoBehaviour
     void Labels(Vector2Int shownSize)
     {
         if (sensitivityValue != null && sensitivity != null) sensitivityValue.text = $"{sensitivity.value:0.00}x";
-        if (fieldOfViewValue != null && fieldOfView != null) fieldOfViewValue.text = fieldOfView.value <= FovDefaultSlot ? "Default" : $"{fieldOfView.value:0} deg";
+        if (fieldOfViewValue != null && fieldOfView != null) fieldOfViewValue.text = Mathf.Approximately(fieldOfView.value, FovDefaultSlot) ? "Default" : $"{fieldOfView.value:0} deg";
         if (pixelationValue != null && pixelation != null)
         {
             int lines = PixelStep(pixelation.value);

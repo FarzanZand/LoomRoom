@@ -55,6 +55,11 @@ public class OneBodyRig : MonoBehaviour
     static readonly int[] ViewHashes = System.Array.ConvertAll(ViewCurves, Animator.StringToHash);
     bool hasViewCurves;
     public float ViewFovOffset { get; private set; }
+    // A raised shield fades the swing's framing out (a block late in a combo swing would otherwise be pulled in close).
+    [Tooltip("Seconds for a raised shield to fade a swing's first-person framing out, and back in when lowered.")]
+    [Min(0f)] public float framingFadeOnBlock = .12f;
+    float framing = 1f;
+    PlayerCombat combat;
 
     static readonly string[] ArmBones = { "Clavicle_", "Shoulder_", "Elbow_", "Hand_", "Finger", "Thumb", "IndexFinger" };
 
@@ -162,9 +167,12 @@ public class OneBodyRig : MonoBehaviour
         foreach (var (from, to) in pose) to.SetLocalPositionAndRotation(from.localPosition, from.localRotation);
         if (hasViewCurves && firstPersonArms != null)
         {
-            firstPersonArms.SetLocalPositionAndRotation(new Vector3(animator.GetFloat(ViewHashes[4]), animator.GetFloat(ViewHashes[0]), animator.GetFloat(ViewHashes[1])),
-                Quaternion.Euler(animator.GetFloat(ViewHashes[2]), animator.GetFloat(ViewHashes[5]), animator.GetFloat(ViewHashes[6])));
-            ViewFovOffset = animator.GetFloat(ViewHashes[3]);
+            if (combat == null) combat = player.GetComponent<PlayerCombat>();
+            bool guarding = combat != null && combat.IsGuarding;
+            framing = framingFadeOnBlock <= 0f ? (guarding ? 0f : 1f) : Mathf.MoveTowards(framing, guarding ? 0f : 1f, Time.deltaTime / framingFadeOnBlock);
+            firstPersonArms.SetLocalPositionAndRotation(framing * new Vector3(animator.GetFloat(ViewHashes[4]), animator.GetFloat(ViewHashes[0]), animator.GetFloat(ViewHashes[1])),
+                Quaternion.Euler(framing * animator.GetFloat(ViewHashes[2]), framing * animator.GetFloat(ViewHashes[5]), framing * animator.GetFloat(ViewHashes[6])));
+            ViewFovOffset = framing * animator.GetFloat(ViewHashes[3]);
         }
         if (HeldSignature() != heldSignature) MirrorHeld();
         // A class or gear change (a body mesh switched on or off or swapped): the arms are cut again, at once.

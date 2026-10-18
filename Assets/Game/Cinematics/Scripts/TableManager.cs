@@ -17,6 +17,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
     DungeonMaster.Line talkFirst;
     [SerializeField, Tooltip("Said when the table is used during the win ending, while the door stands open.")]
     DungeonMaster.Line endingLine = new() { text = "Not now. The door's open. Go and get some air." };
+    [SerializeField, Tooltip("Said when the table is used while the spend-spoils quest is open (Blocking first).")]
+    DungeonMaster.Line learnFirstLine = new() { text = "Not yet. Learn the shield bash at the sheet first." };
 
     [Header("At the table")]
     [SerializeField, Min(.1f), Tooltip("Seconds for the view to turn to the Dungeon Master.")] float sitSeconds = 1.1f;
@@ -58,7 +60,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
     Coroutine sitting;
     Player sittingPlayer;
     bool ownsDialogue; // this pushed GameState.Dialogue and has not popped it yet
-    public string Prompt => IntroController.WaitingForSeat ? "Sit down" : prompt;
+    public string Prompt => IntroController.WaitingForSeat ? "Sit down"
+        : ProgressionManager.HasInstance && ProgressionManager.Instance.QuestState(ProgressionManager.SpendQuest) == 1 ? "Train Blocking at the sheet first" : prompt;
     public bool CanInteract(Character who) => who is Player player && player.kind == PlayerKind.Room
         && player.IsAlive && PlayerManager.HasInstance && PlayerManager.Instance.Active == player
         && (loader == null || !loader.Busy) && sitting == null
@@ -84,6 +87,12 @@ public class TableManager : Singleton<TableManager>, IInteractable
         }
         // The tabletop intro: the Dungeon Master is waiting for the player to sit down.
         if (IntroController.HasInstance && IntroController.Instance.TakeSeat()) return;
+        // The lesson: no run until Blocking is trained at the sheet (the spend-spoils quest).
+        if (ProgressionManager.HasInstance && ProgressionManager.Instance.QuestState(ProgressionManager.SpendQuest) == 1)
+        {
+            if (learnFirstLine != null && !learnFirstLine.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(learnFirstLine);
+            return;
+        }
         // The whole dungeon won: the prototype's thank-you instead of a new run.
         // Not in co-op: the others would wait at the table for a player who never sits down.
         if (!Coop.Running && TryGetComponent<PrototypeEnd>(out var end) && end.TryPlay()) return;
@@ -98,6 +107,12 @@ public class TableManager : Singleton<TableManager>, IInteractable
     public bool Play(TableLevelData level = null, AdventurerClass only = null, DungeonMaster.Line prompt = null, bool showCard = true)
     {
         if (loader == null || !PlayerManager.HasInstance || EndingRunning || !CanInteract(PlayerManager.Instance.Active)) return false;
+        // "Let's play." in the DM's conversation comes here too: Blocking first.
+        if (ProgressionManager.HasInstance && ProgressionManager.Instance.QuestState(ProgressionManager.SpendQuest) == 1)
+        {
+            if (learnFirstLine != null && !learnFirstLine.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(learnFirstLine);
+            return false;
+        }
         if (GameManager.HasInstance)
         {
             sittingPlayer = PlayerManager.Instance.Active;

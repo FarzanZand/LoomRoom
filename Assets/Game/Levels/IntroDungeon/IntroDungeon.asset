@@ -266,7 +266,7 @@ MonoBehaviour:
   windowJamb: 0.45
   defaultStyle: {fileID: 11400000, guid: 3ed247dad4868cf4eb56e62b707f908e, type: 2}
   roomStyles:
-  - style: {fileID: 11400000, guid: 45f2ff5c0d2776645bb1e6d731a0534e, type: 2}
+  - style: {fileID: 11400000, guid: 5e6a07315aa79734498dcba82c591e34, type: 2}
     weight: 1
   corridorsCopyConnectedRoomStyle: 1
   corridorStyles:

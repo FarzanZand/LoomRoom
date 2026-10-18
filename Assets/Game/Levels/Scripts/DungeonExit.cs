@@ -4,7 +4,7 @@ public class DungeonExit : MonoBehaviour, IInteractable
 {
     public bool entrance;
     TableLevelLoader Loader => TableManager.Loader;
-    public string Prompt => !entrance && Sealed ? "Blocked" : entrance ? "No way back" : Loader!=null && Loader.HasNextFloor ? "Descend to floor "+(Loader.FloorNumber+1) : "Complete dungeon and return";
+    public string Prompt => !entrance && Sealed ? "Blocked" : entrance ? "No way back" : IntroController.PracticeRunning ? "Climb out" : Loader!=null && Loader.HasNextFloor ? "Descend to floor "+(Loader.FloorNumber+1) : "Complete dungeon and return";
     // A living boss seals the way down (see DungeonBossEncounter).
     public bool Sealed { get => isSealed; set { isSealed = value; if (grate != null) grate.SetActive(value); } }
     bool isSealed;

@@ -31,6 +31,9 @@ public class ShieldBash : MonoBehaviour
 
     // Winding up, dashing or recovering: the player neither swings nor guards.
     public bool Busy => phase != Phase.None;
+    // Only the windup and the dash hold the weapon back: the moment the bash lands the player can swing (the recovery
+    // still keeps the shield down).
+    public bool HoldsAttacks => phase == Phase.Windup || phase == Phase.Dash;
     public bool Dashing => phase == Phase.Dash;
     public float CooldownLeft => Mathf.Max(0f, readyAt - Time.time);
     bool ShieldHeld => player.Equipment != null && player.Equipment.Get(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
@@ -51,6 +54,8 @@ public class ShieldBash : MonoBehaviour
     {
         get
         {
+            // Never in the intro's practice run (it teaches the block).
+            if (IntroController.PracticeRunning) return false;
             if (!ProgressionManager.HasInstance || !ProgressionManager.MetaActive) return true;
             var progress = GetComponent<AdventurerProgress>();
             return ProgressionManager.Instance.Unlocked(AdventureSkill.Blocking, 0, progress != null ? progress.Rank(AdventureSkill.Blocking) : 0);

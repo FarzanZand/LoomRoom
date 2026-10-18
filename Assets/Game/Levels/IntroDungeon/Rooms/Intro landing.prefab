@@ -48,6 +48,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &8838567264804559929
@@ -98,6 +100,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1001 &2239606763891358542
@@ -779,7 +783,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.2
+      value: 2.1
       objectReference: {fileID: 0}
     - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
       propertyPath: m_LocalPosition.y
@@ -787,7 +791,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -2.8
+      value: 3.3
       objectReference: {fileID: 0}
     - target: {fileID: 1733819074635656640, guid: a3f935b8a5116744c81458439dead315, type: 3}
       propertyPath: m_LocalRotation.w

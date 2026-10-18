@@ -2137,7 +2137,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMotor
   normalCharConHeight: 1.8
-  crouchCharConHeight: 1.2
+  crouchCharConHeight: 1.5
   crouchingCharConSmoothTime: 2.75
   uncrouchBlockLayers:
     serializedVersion: 2
@@ -2163,7 +2163,7 @@ MonoBehaviour:
   lateralSmoothTime: 5
   lateralReturnTime: 7
   normalCameraHeight: 1
-  crouchCameraHeight: 0.1
+  crouchCameraHeight: 0.55
   crouchingCameraSmoothTime: 5
 --- !u!114 &6410106278017950678
 MonoBehaviour:
@@ -9232,6 +9232,7 @@ MonoBehaviour:
   armTuck: 0.25
   armTuckSide: 0.4
   naturalArms: 1
+  framingFadeOnBlock: 0.12
 --- !u!1 &8780052235873741840
 GameObject:
   m_ObjectHideFlags: 0
@@ -9540,6 +9541,7 @@ MonoBehaviour:
     idle: []
     alert: []
     pain: []
+    painAudio: {fileID: 0}
     death: []
     footsteps: []
     impact: []

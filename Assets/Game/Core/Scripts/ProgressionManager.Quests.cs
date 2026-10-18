@@ -19,7 +19,8 @@ public partial class ProgressionManager
     }
 
     public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", SheetQuest = "checkSheet",
-        SpendQuest = "spendSpoils", TableQuest = "backToTable", TrophyQuest = "hangTrophies";
+        SpendQuest = "spendSpoils", TableQuest = "backToTable", TrophyQuest = "hangTrophies", InventoryQuest = "openInventory";
+    public const string InventoryOpenedFlag = "story.inventoryOpened";
 
     [FoldoutGroup("Quests"), ListDrawerSettings(ShowFoldout = true)]
     public List<Quest> quests = BuiltInQuests();
@@ -29,6 +30,7 @@ public partial class ProgressionManager
     {
         new Quest { id = SheetQuest, text = "Look at the character sheet on the little table by the wall." },
         new Quest { id = ShieldBashQuest, text = "Try your shield bash: hold {block} and press {attack}." },
+        new Quest { id = InventoryQuest, text = "Open your inventory with {inventory} or Tab." },   // Tab is the fixed second binding
         new Quest { id = SpendQuest, text = "Spend your spoils on the sheet: train Blocking." },
         new Quest { id = TableQuest, text = "Sit down at the table for the next run." },
         new Quest { id = TrophyQuest, text = "Hang your trophies on the wall by the hobby table." },
@@ -52,13 +54,15 @@ public partial class ProgressionManager
 
         int spend = QuestState(SpendQuest);
         if (spend == 0 && opened && HasFlag(LedgerIntroFlag) && !BlockingTaught) GiveQuest(SpendQuest);
-        else if (spend == 1 && BlockingTaught) { CompleteQuest(SpendQuest); GiveQuest(TableQuest); }
+        else if (spend == 1 && BlockingTaught) CompleteQuest(SpendQuest);
 
         if (Time.frameCount % 15 != 0) return;   // the trophy count builds a list: a few times a second is plenty
         bool carrying = TrophiesIn(TrophyState.Carried).Count > 0;
         int trophy = QuestState(TrophyQuest);
         if (carrying && trophy != 1) SetFlag(QuestFlag(TrophyQuest), 1);   // given again for each new lot
         else if (!carrying && trophy == 1) CompleteQuest(TrophyQuest);
+        // Back to the table only once the trophies are on the wall (none still to be handed over or carried).
+        if (QuestState(SpendQuest) == 2 && QuestState(TableQuest) == 0 && !carrying && TrophiesIn(TrophyState.Earned).Count == 0) GiveQuest(TableQuest);
     }
 
     public static string QuestFlag(string id) => QuestPrefix + id;
@@ -90,6 +94,8 @@ public partial class ProgressionManager
         {
             text = text.Replace("{attack}", KeyName(InputManager.Instance.BindingDisplay("PrimaryAction")));
             text = text.Replace("{block}", KeyName(InputManager.Instance.BindingDisplay("SecondaryAction")));
+            text = text.Replace("{inventory}", KeyName(InputManager.Instance.BindingDisplay("Inventory")));
+            text = text.Replace("{crouch}", KeyName(InputManager.Instance.BindingDisplay("Crouch")));
         }
         return text;
     }
@@ -108,9 +114,19 @@ public partial class ProgressionManager
         if (RunManager.HasInstance) RunManager.Instance.RunStarted -= OfferQuestsForRun;
     }
 
+    // The first time the inventory opens: its quest is done for good.
+    public void InventoryOpened()
+    {
+        if (HasFlag(InventoryOpenedFlag)) return;
+        SetFlag(InventoryOpenedFlag);
+        CompleteQuest(InventoryQuest);
+    }
+
     void OfferQuestsForRun()
     {
         CompleteQuest(TableQuest);
+        // Until the player has opened the inventory once, every run starts by saying how (the intro's included).
+        if (!HasFlag(InventoryOpenedFlag) && QuestState(InventoryQuest) == 0) GiveQuest(InventoryQuest);
         if (isActiveAndEnabled) StartCoroutine(OfferWhenRunReady());
     }
 

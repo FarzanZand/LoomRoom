@@ -3,7 +3,7 @@ using UnityEngine;
 
 // The prototype's last word: once the whole dungeon has been won (EndingController.WinsFlag), using the table again
 // has the Dungeon Master thank the player for playing, then fades to a thank-you card. On the TableManager, which asks
-// it first (TableManager.Interact). Afterwards the room is as it was and the table works as usual until the next use.
+// it first (TableManager.Interact). It plays once per save (ThankedFlag); afterwards the table plays runs as before.
 public class PrototypeEnd : MonoBehaviour
 {
     public DungeonMaster.Line thanks = new() { text = "That's all I have for now. Thank you for playing the prototype." };
@@ -14,7 +14,10 @@ public class PrototypeEnd : MonoBehaviour
     bool ownsDialogue;
 
     public bool Running { get; private set; }
+    public const string ThankedFlag = "story.prototypeThanked";
     public static bool Won => ProgressionManager.HasInstance && ProgressionManager.Instance.GetFlag(EndingController.WinsFlag) > 0;
+    // Once per save: after the thanks the table plays runs as before.
+    static bool Thanked => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(ThankedFlag);
 
     void Awake()
     {
@@ -28,10 +31,12 @@ public class PrototypeEnd : MonoBehaviour
         Running = false;
     }
 
-    // True when it took the table's use.
+    // True when it took the table's use (also while it plays, so the table doesn't seat the player mid-thanks).
     public bool TryPlay()
     {
-        if (Running || !Won) return false;
+        if (Running) return true;
+        if (!Won || Thanked) return false;
+        ProgressionManager.Instance.SetFlag(ThankedFlag);
         StartCoroutine(Play());
         return true;
     }

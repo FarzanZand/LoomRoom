@@ -4,8 +4,9 @@ using UnityEngine;
 // A stone archway with a blue shimmer in it (prefab Levels/Shared/Portal/Portal arch): put it in any room template and
 // set Room to a room template; walking through takes the table player to a pocket, that one room built on its own
 // beside the floor (Pocket Level gives the map and the rest; Biome gives its stone and enemies, e.g. a later biome as
-// a taste of what's to come). The pocket gets a copy of the arch in a corner as the way back; stepping through it
-// returns the player to where they went in and takes the pocket down.
+// a taste of what's to come). The pocket gets a copy of the arch as the way back (in its side room, else a corner), and
+// the player arrives just in front of it facing into the room; stepping through it returns the player to where they
+// went in and takes the pocket down.
 public class PortalArch : MonoBehaviour
 {
     public enum Mode { Enter = 0, Return = 1 }
@@ -30,6 +31,8 @@ public class PortalArch : MonoBehaviour
     [Min(0f)] public float lightIntensity = 3f;
     [Tooltip("How far from the floor it is built, in metres along the floor's right (kept clear of the table and the room).")]
     public float pocketDistance = 400f;
+    [Min(.5f), Tooltip("The player arrives this far in front of the pocket's way back, facing into the room.")]
+    public float arriveDistance = 1.8f;
     public DungeonMaster.Line enterLine = new() { text = "Go on. See what's on the other side." };
     [Tooltip("When Room Cleared: said as the way back appears.")]
     public DungeonMaster.Line wayBackLine = new() { text = "There. Your way out." };
@@ -130,8 +133,16 @@ public class PortalArch : MonoBehaviour
         if (wayBack == WayBack.AtStart) PlaceWayBack(activePocket);
         else StartCoroutine(WayBackWhenCleared(activePocket));
 
-        player.Warp(activePocket.SpawnPoint, activePocket.SpawnRotation);
-        if (player.Look != null) player.Look.SetYaw(activePocket.SpawnRotation.eulerAngles.y);
+        // The player arrives just in front of the way back (where it stands or will stand), facing into the pocket's room.
+        var arrive = activePocket.SpawnPoint; var facing = activePocket.SpawnRotation;
+        if (WayBackSpot(activePocket, out var gateAt, out var gateFace))
+        {
+            arrive = gateAt + gateFace * arriveDistance;
+            if (UnityEngine.AI.NavMesh.SamplePosition(arrive, out var hit, 1.5f, UnityEngine.AI.NavMesh.AllAreas)) arrive = hit.position;
+            facing = Quaternion.LookRotation(gateFace);
+        }
+        player.Warp(arrive, facing);
+        if (player.Look != null) player.Look.SetYaw(facing.eulerAngles.y);
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.5f);
         if (enterLine != null && !string.IsNullOrEmpty(enterLine.text)) DungeonMaster.Say(enterLine);
         busy = false;
@@ -142,8 +153,21 @@ public class PortalArch : MonoBehaviour
     // between the room's doors and its middle).
     void PlaceWayBack(DungeonGenerator pocket)
     {
-        if (pocket.Layout == null || pocket.Layout.rooms.Count == 0) return;
-        Vector3 at, face;
+        if (!WayBackSpot(pocket, out var at, out var face)) return;
+        // Built from this arch's own pieces before its shimmer existed: copy, then strip what Start added here.
+        var copy = Instantiate(gameObject, at, face.sqrMagnitude > .01f ? Quaternion.LookRotation(face) : Quaternion.identity, pocket.transform);
+        copy.name = "Way back";
+        var gate = copy.GetComponent<PortalArch>();
+        gate.mode = Mode.Return;
+        foreach (Transform child in copy.transform) if (child.name == "Shimmer" || child.name == "Portal light") Destroy(child.gameObject);
+        foreach (var box in copy.GetComponents<BoxCollider>()) if (box.isTrigger) Destroy(box);
+    }
+
+    // Where the way back stands and the way it faces (into the pocket's room).
+    static bool WayBackSpot(DungeonGenerator pocket, out Vector3 at, out Vector3 face)
+    {
+        at = face = Vector3.zero;
+        if (pocket.Layout == null || pocket.Layout.rooms.Count == 0) return false;
         if (pocket.Layout.rooms.Count > 1)
         {
             var side = pocket.Layout.rooms[1];
@@ -161,14 +185,9 @@ public class PortalArch : MonoBehaviour
             var rect = pocket.Layout.rooms[0];
             at = pocket.Cell(new Vector2Int(rect.xMin, rect.yMin));
             face = pocket.Cell(pocket.Layout.RoomCenter(0)) - at; face.y = 0f;
+            face = face.sqrMagnitude > .01f ? face.normalized : Vector3.forward;
         }
-        // Built from this arch's own pieces before its shimmer existed: copy, then strip what Start added here.
-        var copy = Instantiate(gameObject, at, face.sqrMagnitude > .01f ? Quaternion.LookRotation(face) : Quaternion.identity, pocket.transform);
-        copy.name = "Way back";
-        var gate = copy.GetComponent<PortalArch>();
-        gate.mode = Mode.Return;
-        foreach (Transform child in copy.transform) if (child.name == "Shimmer" || child.name == "Portal light") Destroy(child.gameObject);
-        foreach (var box in copy.GetComponents<BoxCollider>()) if (box.isTrigger) Destroy(box);
+        return true;
     }
 
     // The way back appears with a puff once nothing in the pocket is left alive.

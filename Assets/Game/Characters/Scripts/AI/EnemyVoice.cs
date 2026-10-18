@@ -106,7 +106,8 @@ public class EnemyVoice : MonoBehaviour
     {
         if (entry == null || info.Blocked || info.Amount <= 0f || !character.IsAlive || Time.time < nextPain) return;
         nextPain = Time.time + entry.painCooldown;
-        Play(entry.pain, entry.voiceVolume);
+        if (entry.painAudio != null) PlayData(entry.painAudio);
+        else Play(entry.pain, entry.voiceVolume);
     }
 
     void OnDied()
@@ -117,6 +118,14 @@ public class EnemyVoice : MonoBehaviour
     void Play(AudioClip[] clips, float volume)
     {
         entry?.PlayAt(clips, transform.position + Vector3.up, volume);
+    }
+
+    // An AudioData voice: its own volume and distances, its pitch times the creature's (a big one stays deep).
+    void PlayData(AudioData data)
+    {
+        var clip = data.GetClip();
+        if (clip == null || !AudioManager.HasInstance) return;
+        AudioManager.Instance.PlaySFX(clip, transform.position + Vector3.up, data.volume, entry.pitch * data.pitch, data.pitchVariance, data.minDistance, data.maxDistance);
     }
 
     bool PlayerCanSee()

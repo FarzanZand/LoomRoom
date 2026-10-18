@@ -191,6 +191,18 @@ public partial class DungeonMasterBeam : MonoBehaviour
         sparks.Play(); spray.Play();
         flare.gameObject.SetActive(true); shieldLight.enabled = true;
         float tick = 0, impact = impactInterval;
+        bool lastCovered = false, lastBlocking = false; var lastEnd = Vector3.zero;
+        // One tick's worth (the seconds since the last): nothing behind cover, stamina on a held shield, a burn otherwise.
+        void Pay()
+        {
+            if (lastCovered) return;
+            if (lastBlocking)
+            {
+                if (fight.beamStaminaPerSecond > 0f && target.Stats != null && !target.Stats.TryUseStamina(fight.beamStaminaPerSecond * tick, .6f)) { held = false; Burn(target, fight, tick, lastEnd); }
+                impulse.GenerateImpulseWithForce(blockedShake);
+            }
+            else { held = false; Burn(target, fight, tick, lastEnd); impulse.GenerateImpulseWithForce(hitShake); }
+        }
         for (float t = 0; t < fight.beamSeconds && Alive(target) && !cancelled; t += Time.deltaTime)
         {
             var origin = Palm();
@@ -221,19 +233,12 @@ public partial class DungeonMasterBeam : MonoBehaviour
                 if (blocking && blockSparks != null) Destroy(Instantiate(blockSparks, burst, Quaternion.LookRotation(origin - end)), 2f);
             }
             State = $"guard {(target.Combat != null && target.Combat.IsGuarding)} dot {FacingDot(target, origin):F2} blocking {blocking} covered {covered}";
-            if (tick >= damageTick)
-            {
-                if (covered) { }   // behind cover: nothing reaches the player
-                else if (blocking)
-                {
-                    if (fight.beamStaminaPerSecond > 0f && target.Stats != null && !target.Stats.TryUseStamina(fight.beamStaminaPerSecond * tick, .6f)) { held = false; Burn(target, fight, tick, end); }
-                    impulse.GenerateImpulseWithForce(blockedShake);
-                }
-                else { held = false; Burn(target, fight, tick, end); impulse.GenerateImpulseWithForce(hitShake); }
-                tick = 0;
-            }
+            lastCovered = covered; lastBlocking = blocking; lastEnd = end;
+            if (tick >= damageTick) { Pay(); tick = 0; }
             yield return null;
         }
+        // The time since the last tick is paid as the pour ends, so a full pour deals Damage Per Second x Beam Seconds.
+        if (!cancelled && Alive(target) && tick > 0f) { Pay(); tick = 0; }
 
         sparks.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         spray.Stop(true, ParticleSystemStopBehavior.StopEmitting);

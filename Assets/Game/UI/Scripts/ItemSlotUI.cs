@@ -119,7 +119,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (equippedHighlight != null)
         {
             var eq = Owner != null ? Owner.Equipment : null;
-            equippedHighlight.gameObject.SetActive(!rugged && item != null && !GridCell && HeldSlot(eq, Container, Index).HasValue);
+            // What is in hand (weapon, shield, readied spell) gets the highlight in either HUD style (Rugged: its gold frame).
+            equippedHighlight.gameObject.SetActive(item != null && !GridCell && HeldSlot(eq, Container, Index).HasValue);
         }
         if(!useAuthoredAppearance && dungeonStyled && dungeonFrame!=null)
         {

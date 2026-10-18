@@ -19,11 +19,19 @@ public static class UserSettings
     static float sensitivity = 1f, fov, brightness;
     static bool vsync = true;
     static LiftGammaGain brightnessGrade;
+    // DontSave objects outlive Play mode in the editor, so the last session's are destroyed when the next starts.
+    static GameObject brightnessObject; static VolumeProfile brightnessProfile;
 
     public static event Action Changed;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetStatics() { loaded = false; Changed = null; brightnessGrade = null; }
+    static void ResetStatics()
+    {
+        loaded = false; Changed = null; brightnessGrade = null;
+        if (brightnessObject != null) UnityEngine.Object.DestroyImmediate(brightnessObject);
+        if (brightnessProfile != null) UnityEngine.Object.DestroyImmediate(brightnessProfile);
+        brightnessObject = null; brightnessProfile = null;
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void ApplyDisplay()
@@ -74,13 +82,13 @@ public static class UserSettings
     {
         if (brightnessGrade == null)
         {
-            var go = new GameObject("User brightness");
+            var go = brightnessObject = new GameObject("User brightness");
             UnityEngine.Object.DontDestroyOnLoad(go);
             go.hideFlags = HideFlags.DontSave;
             var volume = go.AddComponent<Volume>();
             volume.isGlobal = true;
             volume.priority = 20000;   // over every look, the death effect included
-            var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            var profile = brightnessProfile = ScriptableObject.CreateInstance<VolumeProfile>();
             profile.hideFlags = HideFlags.DontSave;
             volume.sharedProfile = profile;
             brightnessGrade = profile.Add<LiftGammaGain>();

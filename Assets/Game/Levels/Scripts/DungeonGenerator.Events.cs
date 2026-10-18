@@ -247,7 +247,56 @@ public partial class DungeonGenerator
         chest.guaranteedItems = new List<ItemData>(m.chestItems ?? new List<ItemData>());
         chest.bonusGold = m.bonusGold;
         if (chest.openAudio == null) chest.openAudio = data.chestOpenAudio;
+        ClearChestSpot(go.transform);
         return chest;
+    }
+
+    // What the boss left where it fell would sit inside or on top of the chest that comes out there: its drops (spoils,
+    // gear, gold) and the loose pieces of its body (DeathBurst parts, ragdoll limbs, a knocked-off helmet). They are moved
+    // to the chest's side, spread a little, on the floor; checked again for a moment for anything still falling.
+    void ClearChestSpot(Transform chest) => StartCoroutine(ClearChestSpotFor(chest, 2.5f));
+    System.Collections.IEnumerator ClearChestSpotFor(Transform chest, float seconds)
+    {
+        int moved = 0;
+        for (float t = 0f; t <= seconds && chest != null; t += .25f)
+        {
+            Physics.SyncTransforms();
+            MoveOffChest(chest, ref moved);
+            yield return new WaitForSeconds(.25f);
+        }
+    }
+    void MoveOffChest(Transform chest, ref int moved)
+    {
+        const float footprint = 1.1f;
+        var spot = chest.position;
+        int i = moved;
+        Vector3 Beside() => spot + chest.right * (1.4f + .35f * (i / 3)) + chest.forward * (.45f * (i % 3 - 1));
+        bool Over(Vector3 p) { var flat = p - spot; flat.y = 0; return flat.magnitude <= footprint; }
+        void Place(Transform t, float lift)
+        {
+            var to = Beside();
+            if (UnityEngine.AI.NavMesh.SamplePosition(to, out var hit, 1f, UnityEngine.AI.NavMesh.AllAreas)) to = hit.position;
+            t.position = to + Vector3.up * lift; i++;
+        }
+        foreach (var pickup in FindObjectsByType<WorldItem>())   // the body may not sit under the floor
+            if (Over(pickup.transform.position) && !pickup.transform.IsChildOf(chest)) Place(pickup.transform, pickup.transform.position.y - spot.y);
+        foreach (var coin in FindObjectsByType<CoinPickup>())
+            if (Over(coin.transform.position)) Place(coin.transform, coin.transform.position.y - spot.y);
+        // Loose body pieces: free rigidbodies that are not a living character, the player or part of the chest.
+        var done = new HashSet<Transform>();
+        foreach (var body in FindObjectsByType<Rigidbody>())
+        {
+            if (body.isKinematic || !Over(body.position) || body.transform.IsChildOf(chest)) continue;
+            if (body.GetComponentInParent<CharacterController>() != null || body.GetComponentInParent<WorldItem>() != null) continue;
+            var owner = body.GetComponentInParent<Character>();
+            if (owner != null && owner.IsAlive) continue;
+            // A ragdoll's limbs are jointed: the dead body moves as a whole; burst pieces (no owner) one by one.
+            var piece = owner != null ? owner.transform : body.transform;
+            if (!done.Add(piece)) continue;
+            Place(piece, .3f);
+            foreach (var part in piece.GetComponentsInChildren<Rigidbody>()) if (!part.isKinematic) { part.linearVelocity = Vector3.zero; part.angularVelocity = Vector3.zero; }
+        }
+        moved = i;
     }
 
     GameObject Rarer(GameObject a, GameObject b)

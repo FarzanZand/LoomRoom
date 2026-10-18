@@ -431,7 +431,7 @@ public class MainMenuUI : MonoBehaviour
             var row = slotRows[i]; int slot = i + 1;
             var save = AdventureSave.Summarize(slot);
             bool startHere = !save.exists && mode == SavesMode.Coop;   // co-op: an empty slot starts a new game
-            if (row.title != null) row.title.text = !save.exists ? "Empty" : Name(save);
+            if (row.title != null) row.title.text = !save.exists ? "Empty" : Name(save, slot);
             if (row.details != null) row.details.text = startHere ? (coopStart == MultiplayerManager.MenuStart.Join ? "Start a new save here" : "Start a new game here") : !save.exists ? "" : !save.readable ? "This save can't be read" : Details(save);
             if (row.time != null) row.time.text = save.exists ? save.lastPlayed.ToString("d MMM, HH:mm") : "";
             if (row.button != null)
@@ -476,10 +476,10 @@ public class MainMenuUI : MonoBehaviour
         else CloseSaves();
     });
 
-    static string SaveName(int slot) => Name(AdventureSave.Summarize(slot));
+    static string SaveName(int slot) => Name(AdventureSave.Summarize(slot), slot);
 
-    // A save is known by the player's name; saves from before names were asked for may have none.
-    static string Name(AdventureSave.Summary save) => string.IsNullOrWhiteSpace(save.name) ? "Unnamed" : save.name;
+    // A save is known by the player's name; saves from before names were asked for have none and go by their slot.
+    static string Name(AdventureSave.Summary save, int slot) => string.IsNullOrWhiteSpace(save.name) ? $"Save {slot}" : save.name;
 
     void Ask(string question, System.Action yes)
     {

@@ -28,5 +28,7 @@ public class DungeonBalance : ScriptableObject
         enemy.Stats.AddModifier(new StatModifier(StatType.AttackDamage,damageGrowthPerFloor*depth,ModifierType.PercentAdd,this));
         if(!boss)enemy.Stats.AddModifier(new StatModifier(StatType.MaxHealth,healthGrowthPerFloor*depth,ModifierType.PercentAdd,this));
         enemy.Stats.AddModifier(new StatModifier(StatType.Armor,armorPerFloor*depth,ModifierType.Flat,this));
+        // The game-wide group multipliers (ProgressionManager > Balance).
+        if(ProgressionManager.HasInstance)ProgressionManager.Instance.ApplyEnemyBase(enemy);
     }
 }

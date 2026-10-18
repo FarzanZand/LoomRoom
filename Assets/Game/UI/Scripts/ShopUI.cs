@@ -4,7 +4,10 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // The merchant screen. Left: the merchant's wares, supplies (consumables) above equipment. Right: the
-// player's pack as a grid like the inventory (hotbar row first, then the bag). Below: the hovered item.
+// player's pack like the inventory: the hotbar row, then the bag's whole grid, each bag item drawn once across the
+// cells it takes (bagItemTemplate, cloned per item, like ItemGridUI). Below: the hovered item. A ware is bought with
+// either mouse button or by dragging it onto the pack; a pack item is sold with a right click or by dragging it onto
+// the wares (the drop zones are the areas the rows and the cells cover).
 // Rows and cells are authored in the scene; this only fills them.
 public class ShopUI : Singleton<ShopUI>
 {
@@ -23,7 +26,12 @@ public class ShopUI : Singleton<ShopUI>
     [SerializeField] ShopRowUI[] gearRows;
     [SerializeField] GameObject gearEmpty;
     [Header("Pack")]
+    [Tooltip("The hotbar's cells, then the bag's cells row by row (its grid width across).")]
     [SerializeField] ShopSlotUI[] packSlots;
+    [SerializeField, Min(0), Tooltip("How many of Pack Slots are the hotbar row.")] int hotbarCells = 6;
+    [SerializeField, Tooltip("A bag item over its cells (inactive; children Icon, Honed fill, Stack). Empty: each item's icon sits in its top-left cell.")]
+    RectTransform bagItemTemplate;
+    [SerializeField, Min(0)] float iconPadding = 4f;
     [Tooltip("Price line of a ware the player can't afford.")]
     [SerializeField] Color tooDearColor = new(.69f, .353f, .306f);
 
@@ -31,6 +39,7 @@ public class ShopUI : Singleton<ShopUI>
     Player player;
     bool open;
     readonly List<(Inventory container, int slot)> packMap = new();
+    readonly List<RectTransform> bagViews = new();
     public bool IsOpen => open;
 
     protected override void Awake()
@@ -113,33 +122,92 @@ public class ShopUI : Singleton<ShopUI>
         if (suppliesEmpty != null) suppliesEmpty.SetActive(supply == 0);
         if (gearEmpty != null) gearEmpty.SetActive(gear == 0);
 
+        // Each cell answers for the item over it: the hotbar slot, or the bag item whose footprint covers the cell.
         packMap.Clear();
-        Map(player.Hotbar);
-        Map(player.Bag);
+        var bag = player.Bag;
         for (int i = 0; i < (packSlots?.Length ?? 0); i++)
+        {
+            if (i < hotbarCells) packMap.Add((player.Hotbar, player.Hotbar != null && i < player.Hotbar.SlotCount ? i : -1));
+            else { int cell = i - hotbarCells; packMap.Add((bag, bag != null && cell < bag.SlotCount ? bag.OwnerAt(cell) : -1)); }
+        }
+        bool drawBag = bagItemTemplate != null && bag != null && bag.IsGrid;
+        for (int i = 0; i < packMap.Count; i++)
         {
             // Every cell shows, empty ones too, so the pack keeps the inventory grid's shape.
             packSlots[i].gameObject.SetActive(true);
-            if (i >= packMap.Count) { packSlots[i].Clear(); continue; }
             var (container, slot) = packMap[i];
-            var item = container.ItemAt(slot);
+            var item = container != null && slot >= 0 ? container.ItemAt(slot) : null;
             if (item == null) { packSlots[i].Clear(); continue; }
             int index = i;
-            packSlots[i].Bind(item, container.CountAt(slot), merchant.CanSell(player, item, out _), () => Sell(index), hovered => ShowDetails(hovered, false));
+            // Bag items are drawn over their cells (DrawBag); the cells only take the clicks.
+            bool inBag = i >= hotbarCells;
+            packSlots[i].Bind(item, container.CountAt(slot), merchant.CanSell(player, item, out _), () => Sell(index), hovered => ShowDetails(hovered, false),
+                drawItem: !(inBag && drawBag) && (!inBag || slot == i - hotbarCells));
         }
+        DrawBag(drawBag);
+    }
+
+    // One view per bag item, from its top-left cell to its bottom-right cell (ItemGridUI.Place does the same in the bag).
+    void DrawBag(bool draw)
+    {
+        int used = 0;
+        if (draw)
+        {
+            var bag = player.Bag;
+            bagItemTemplate.gameObject.SetActive(false);
+            var parent = (RectTransform)bagItemTemplate.parent;
+            if (packSlots.Length > hotbarCells && packSlots[hotbarCells].transform.parent is RectTransform grid) LayoutRebuilder.ForceRebuildLayoutImmediate(grid);
+            for (int anchor = 0; anchor < bag.SlotCount && hotbarCells + anchor < packSlots.Length; anchor++)
+            {
+                var stack = bag[anchor];
+                if (stack == null || stack.IsEmpty) continue;
+                var size = bag.SizeOf(stack.item);
+                var at = bag.CellOf(anchor);
+                int last = Mathf.Min(bag.SlotCount - 1, (at.y + size.y - 1) * bag.GridWidth + at.x + size.x - 1);
+                last = Mathf.Min(last, packSlots.Length - 1 - hotbarCells);
+                var first = (RectTransform)packSlots[hotbarCells + anchor].transform;
+                var end = (RectTransform)packSlots[hotbarCells + last].transform;
+                Vector3 a = parent.InverseTransformPoint(first.TransformPoint(first.rect.min)), b = parent.InverseTransformPoint(first.TransformPoint(first.rect.max));
+                Vector3 c = parent.InverseTransformPoint(end.TransformPoint(end.rect.min)), d = parent.InverseTransformPoint(end.TransformPoint(end.rect.max));
+                float left = Mathf.Min(a.x, c.x), right = Mathf.Max(b.x, d.x), bottom = Mathf.Min(a.y, c.y), top = Mathf.Max(b.y, d.y);
+                var view = BagView(used++);
+                view.anchorMin = view.anchorMax = view.pivot = new Vector2(.5f, .5f);
+                view.anchoredPosition = new Vector2((left + right) * .5f, (bottom + top) * .5f) - parent.rect.center;
+                view.sizeDelta = new Vector2(right - left, top - bottom);
+                bool available = merchant.CanSell(player, stack.item, out _);
+                var icon = view.Find("Icon")?.GetComponent<Image>();
+                if (icon != null)
+                {
+                    icon.sprite = stack.item.icon; icon.enabled = icon.sprite != null; icon.preserveAspect = true;
+                    icon.color = available ? Color.white : new Color(1, 1, 1, .4f);
+                    ItemGridUI.UprightIcon(icon.rectTransform, view.sizeDelta - Vector2.one * iconPadding * 2f, size);
+                }
+                var fill = view.Find("Honed fill")?.GetComponent<Image>();
+                if (fill != null) { ItemData.ShowSlotFill(fill, stack.item); fill.rectTransform.sizeDelta = view.sizeDelta - Vector2.one * 4f; }
+                var count = view.Find("Stack")?.GetComponent<TMP_Text>();
+                if (count != null) { count.text = stack.count > 1 ? $"x{stack.count}" : ""; count.gameObject.SetActive(stack.count > 1); }
+            }
+        }
+        for (int i = used; i < bagViews.Count; i++) bagViews[i].gameObject.SetActive(false);
+    }
+
+    RectTransform BagView(int index)
+    {
+        while (bagViews.Count <= index)
+        {
+            var view = Instantiate(bagItemTemplate, bagItemTemplate.parent);
+            view.name = "Item " + bagViews.Count;
+            // The cells under it take the clicks and the hover.
+            foreach (var g in view.GetComponentsInChildren<Graphic>(true)) g.raycastTarget = false;
+            bagViews.Add(view);
+        }
+        bagViews[index].gameObject.SetActive(true);
+        return bagViews[index];
     }
 
     static void ClearFrom(ShopRowUI[] rows, int from)
     {
         for (int i = from; i < (rows?.Length ?? 0); i++) rows[i].Clear();
-    }
-
-    void Map(Inventory container)
-    {
-        if (container == null) return;
-        // A bag grid lists its items (at their top-left cells), not every cell.
-        for (int i = 0; i < container.SlotCount; i++)
-            if (!container.IsGrid || container.ItemAt(i) != null) packMap.Add((container, i));
     }
 
     void Buy(int index)
@@ -155,6 +223,7 @@ public class ShopUI : Singleton<ShopUI>
     {
         if (merchant == null || index >= packMap.Count) return;
         var (container, slot) = packMap[index];
+        if (container == null || slot < 0) return;
         merchant.Sell(player, container, slot, out string message);
         Say(message);
         ShowDetails(container.ItemAt(slot), false);
@@ -166,13 +235,51 @@ public class ShopUI : Singleton<ShopUI>
         if (feedback != null && !string.IsNullOrEmpty(message)) feedback.text = message;
     }
 
+    // ── Dragging between the wares and the pack ─────────────────────
+
+    public enum DropZone { None, Wares, Pack }
+    readonly Vector3[] corners = new Vector3[4];
+
+    // The ghost follows the pointer (ItemDragHandler's, as in the inventory); false when there is no shop open.
+    public bool BeginDrag(ItemData item, Image from)
+    {
+        if (!open || item == null) return false;
+        var size = from != null ? from.rectTransform.rect.size : new Vector2(64, 64);
+        if (ItemDragHandler.HasInstance) ItemDragHandler.Instance.BeginGhost(item, size);
+        return true;
+    }
+
+    public DropZone EndDrag(Vector2 screen)
+    {
+        if (ItemDragHandler.HasInstance) ItemDragHandler.Instance.End();
+        if (!open) return DropZone.None;
+        if (Covers(packSlots, screen)) return DropZone.Pack;
+        if (Covers(supplyRows, screen) || Covers(gearRows, screen)) return DropZone.Wares;
+        return DropZone.None;
+    }
+
+    // Inside the box round every element (empty rows and cells count: the zone keeps its shape), with a margin.
+    bool Covers<T>(T[] parts, Vector2 screen) where T : Component
+    {
+        if (parts == null) return false;
+        float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
+        foreach (var p in parts)
+        {
+            if (p == null) continue;
+            ((RectTransform)p.transform).GetWorldCorners(corners);
+            foreach (var c in corners) { minX = Mathf.Min(minX, c.x); minY = Mathf.Min(minY, c.y); maxX = Mathf.Max(maxX, c.x); maxY = Mathf.Max(maxY, c.y); }
+        }
+        const float margin = 24f;
+        return screen.x >= minX - margin && screen.x <= maxX + margin && screen.y >= minY - margin && screen.y <= maxY + margin;
+    }
+
     // The hovered item: big icon, name, its tooltip, and what it costs or fetches here.
     void ShowDetails(ItemData item, bool ware = false)
     {
         bool any = item != null;
         if (detailsIcon != null) { detailsIcon.sprite = any ? item.icon : null; detailsIcon.enabled = detailsIcon.sprite != null; }
         if (detailsName != null) detailsName.text = any ? item.itemName : "";
-        if (details != null) details.text = any ? item.BuildTooltip() : "Hover over an item to see it. Click a ware to buy it, or something in your pack to sell it.";
+        if (details != null) details.text = any ? item.BuildTooltip() : "Hover over an item to see it. Click a ware or drag it to your pack to buy it. Right click something in your pack or drag it to the wares to sell it.";
         if (detailsPrice == null || merchant == null) return;
         if (!any) { detailsPrice.text = ""; return; }
         if (ware)

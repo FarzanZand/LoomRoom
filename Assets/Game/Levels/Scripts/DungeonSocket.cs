@@ -25,6 +25,8 @@ public class DungeonSocket : MonoBehaviour
     public bool archer;
     [ShowIf(nameof(IsEnemy)), Tooltip("The enemy stands close to the nearest wall, facing it, unaware: a back to sneak up on (the intro's backstab lesson).")]
     public bool faceWall;
+    [ShowIf("@IsEnemy && faceWall"), Min(.5f), Tooltip("How far from the wall it stands, in metres (a little more puts it between pillars that stand off the wall).")]
+    public float wallGap = .75f;
     bool IsLight => type == DungeonSocketType.WallLight;
     bool ShowLightColor => IsLight && overrideLightColor;
     [ShowIf(nameof(IsLight)), Tooltip("Recolour this light, over the room's and the biome's colours.")]

@@ -65,6 +65,7 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
 
     // A chest or barrel opening (a trapped chest springs its spikes).
     public event System.Action<DungeonContainer> Opened;
+    public bool IsOpen => opened;
 
     // Co-op: another player opened it.
     public void OpenFromNetwork() => Open();

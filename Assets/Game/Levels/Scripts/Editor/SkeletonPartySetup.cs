@@ -6,11 +6,12 @@ using UnityEngine;
 // - Levels/Shared/Portal/Portal arch: the kit arch with a PortalArch on it. Put it in any room template and set its Room.
 // - Levels/Pockets/Pocket: the level a portal's pocket is built from (its room 0 takes the portal's Room; Crypt stone
 //   unless the portal names a biome).
-// - Rooms/Templates/Chunks/Skeleton Party room: the Moonlit fountain room (open skylight) without its fountain, a ring
-//   of skeleton dancers (Enemy sockets, Crypt Soldier), a chest in the middle, RoomMusic and SkeletonParty on the root.
+// - Rooms/Templates/Chunks/Skeleton Party room: the Moonlit fountain room (open skylight) without its fountain, four
+//   skeleton dancers in a square round a chest in the middle (Enemy sockets, Crypt Soldier; Socket Enemies Only, so the
+//   floor adds none), RoomMusic and SkeletonParty on the root.
 // - Rooms/Templates/Chunks/Portal hall: the Gate hall with its first arch swapped for a Portal arch to the party room.
-// - Cellars and Crypt: the Cell block's place in the room pools goes to the Skeleton Party room, and the Portal hall
-//   joins at most once a floor.
+// - Cellars and Crypt: the Portal hall joins the room pools (at most once a floor); the party room itself is only
+//   behind the portal, never in the pools.
 // Edit the prefabs freely afterwards (the dance clip and the party's track go on the room's root).
 public static class SkeletonPartySetup
 {
@@ -23,6 +24,7 @@ public static class SkeletonPartySetup
     const string PortalArchPrefab = PortalFolder + "/Portal arch.prefab";
     const string Dancer = "Assets/Game/Characters/Enemies/Crypt/Crypt Soldier.prefab";
     const string Arch = "Assets/Game/Levels/Dungeon1/Rooms/Kit/Arch.prefab";
+    const float DancerSpread = 2.2f;   // each dancer this far from the middle along both axes: a square round the chest, inside the four pillars (at 4)
 
     public static string Build()
     {
@@ -62,19 +64,21 @@ public static class SkeletonPartySetup
             {
                 var ring = new GameObject("Dancers").transform;
                 ring.SetParent(root.transform, false);
-                for (int i = 0; i < 5; i++)
+                for (int i = 0; i < 4; i++)
                 {
                     var spot = new GameObject("Dancer " + (i + 1)).transform;
                     spot.SetParent(ring, false);
-                    var dir = Quaternion.Euler(0, i * 72f + 18f, 0) * Vector3.forward;
-                    spot.localPosition = dir * 3.2f;
-                    spot.localRotation = Quaternion.LookRotation(-dir);
+                    var corner = new Vector3(i % 2 == 0 ? -1f : 1f, 0f, i < 2 ? 1f : -1f);
+                    spot.localPosition = corner * DancerSpread;
+                    spot.localRotation = Quaternion.LookRotation(-corner);
                     var socket = spot.gameObject.AddComponent<DungeonSocket>();
                     socket.type = DungeonSocketType.Enemy;
                     socket.overridePrefab = dancer;
                 }
-                log.AppendLine("Added 5 dancers");
+                log.AppendLine("Added 4 dancers");
             }
+            // The four dancers are the whole party: the floor adds no generated enemies to the room.
+            if (template != null) template.socketEnemiesOnly = true;
             if (root.transform.Find("Party chest") == null)
             {
                 var chest = new GameObject("Party chest").transform;
@@ -195,6 +199,8 @@ public static class SkeletonPartySetup
         finally { PrefabUtility.UnloadPrefabContents(root); }
     }
 
+    // The party is only behind the portal (never in the pools: an older build's entry goes back to the Cell block it
+    // replaced); the Portal hall joins each biome's pool at most once a floor.
     static void UpdatePools(System.Text.StringBuilder log)
     {
         var party = AssetDatabase.LoadAssetAtPath<GameObject>(Party);
@@ -205,14 +211,12 @@ public static class SkeletonPartySetup
         {
             var biome = AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
             var list = new List<DungeonBiome.RoomTemplateChoice>(biome.roomTemplates ?? new DungeonBiome.RoomTemplateChoice[0]);
-            bool hasParty = list.Exists(c => c != null && c.template == party), hasPortal = list.Exists(c => c != null && c.template == portal);
             foreach (var c in list)
-                if (c != null && c.template == cell && !hasParty) { c.template = party; c.maxPerFloor = 1; hasParty = true; log.AppendLine(biome.name + ": Cell block -> Skeleton Party room"); }
-            if (!hasParty) { list.Add(new DungeonBiome.RoomTemplateChoice { template = party, weight = 1, rooms = DungeonRoomRoles.Combat, maxPerFloor = 1 }); log.AppendLine(biome.name + ": added Skeleton Party room"); }
-            if (!hasPortal)
+                if (c != null && c.template == party && cell != null) { c.template = cell; c.maxPerFloor = 2; log.AppendLine(biome.name + ": Skeleton Party room -> Cell block (the party is portal-only)"); }
+            if (!list.Exists(c => c != null && c.template == portal))
             {
                 var like = list.Find(c => c != null && c.template == gateHall);
-                list.Add(new DungeonBiome.RoomTemplateChoice { template = portal, weight = like != null ? like.weight * .5f : .5f, rooms = like != null ? like.rooms : DungeonRoomRoles.Combat | DungeonRoomRoles.Rest, maxPerFloor = 1 });
+                list.Add(new DungeonBiome.RoomTemplateChoice { template = portal, weight = 2f, rooms = like != null ? like.rooms : DungeonRoomRoles.Combat | DungeonRoomRoles.Rest, maxPerFloor = 1 });
                 log.AppendLine(biome.name + ": added Portal hall");
             }
             biome.roomTemplates = list.ToArray();

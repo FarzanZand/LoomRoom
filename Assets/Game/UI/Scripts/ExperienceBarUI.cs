@@ -126,9 +126,17 @@ public class ExperienceBarUI : MonoBehaviour
         if (popupRoutine == null || !popupRoutine.IsActive()) NextPopup();
     }
 
+    // Taking turns with the level-up panel (LevelUpUI): a waiting level-up goes before the next popup, and no popup
+    // starts while it shows (it calls Resume when done).
+    static ExperienceBarUI current;
+    public static bool Playing => current != null && current.popupRoutine != null && current.popupRoutine.IsActive();
+    public static void Resume() { if (current != null && !Playing) current.NextPopup(); }
+
     void NextPopup()
     {
         popupRoutine = null; activeGain = null;
+        current = this;
+        if (LevelUpUI.PlayWaiting() || LevelUpUI.Showing) return;
         if (popup == null || raises.Count == 0 || progress == null) return;
         int index = raises.FindIndex(x => x.ranks > 0);
         if (index < 0) index = 0;

@@ -117,6 +117,8 @@ def main():
     ap.add_argument('--moss', type=float, default=0, help='0-1 (stone): share of enclosed upward faces with moss')
     ap.add_argument('--cracks', type=float, default=1, help='how many cracks (1 = the default number for the material)')
     ap.add_argument('--steps', type=int, default=5)
+    ap.add_argument('--dirt', type=float, default=0, help='stone: 0-1, patches a shade up or down by place on the model (cells about a block wide), grime rising from the base')
+    ap.add_argument('--grain', type=float, default=1, help='stone: how many speckles (1 = default; below 1 calmer, for cut stone)')
     ap.add_argument('--covers', default='', help='book: cover colours by height band, bottom to top, as r,g,b;r,g,b;... (a stack whose books Synty gives one colour)')
     ap.add_argument('--grow', type=int, default=0, help='texels to widen drawn dark features by (sockets, teeth)')
     a = ap.parse_args()
@@ -167,8 +169,18 @@ def main():
         cell = np.floor(pos * 140).astype(int)
         for y, x in zip(*np.nonzero(cov)):
             r = h(cell[y, x, 0], cell[y, x, 1], cell[y, x, 2], 5)
-            if r < .16: step[y, x] -= 1
-            elif r > .9: step[y, x] += 1
+            if r < .16 * a.grain: step[y, x] -= 1
+            elif r > 1 - .1 * a.grain: step[y, x] += 1
+    if a.material == 'stone' and a.dirt > 0:
+        # Dirt the way a pixel artist lays it: whole patches a shade darker or lighter (not per-texel noise), more of
+        # them and darker low down, where damp and grime collect.
+        big = np.floor(pos * 9).astype(int)
+        for y, x in zip(*np.nonzero(cov)):
+            r = h(big[y, x, 0], big[y, x, 1], big[y, x, 2], 17)
+            low = 1 - pos[y, x, 1]
+            if r < a.dirt * (.25 + .45 * low): step[y, x] -= 1
+            elif r > 1 - a.dirt * .12: step[y, x] += 1
+            if pos[y, x, 1] < .18 * a.dirt and h(x // 2, y // 2, 19) < .6: step[y, x] -= 1
     n_cracks = int((cov.sum() / 900) * (1.5 if a.material == 'stone' else .8) * a.cracks)
     ys, xs = np.nonzero(cov & (ao > .55))
     crack = np.zeros_like(cov)

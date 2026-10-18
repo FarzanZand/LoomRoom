@@ -47,8 +47,6 @@ MonoBehaviour:
   items:
   - item: {fileID: 11400000, guid: 350b9609139fc204eaefa247d0f8faa5, type: 2}
     weight: 1
-  - item: {fileID: 11400000, guid: a3f9c9f5592415f419c8a144c5d1c8c8, type: 2}
-    weight: 1.5
   - item: {fileID: 11400000, guid: d8e0969c57b7e9c428bc2a0c1f595eb5, type: 2}
     weight: 1.2
   chance: 0.6

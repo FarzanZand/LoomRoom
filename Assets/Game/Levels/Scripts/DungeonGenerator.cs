@@ -355,6 +355,7 @@ public partial class DungeonGenerator : MonoBehaviour
             count=Mathf.Max(0,count-SocketEnemies(i));
             // Co-op: bigger packs for a bigger party (added after the draw, so the room rolls the same).
             if(!guarded)count=Mathf.Min(8,count+Coop.ExtraEnemies);
+            if(TemplateOf(i) is DungeonRoomTemplate cast && cast.socketEnemiesOnly)count=0;   // a set piece: its sockets are the whole cast
             if(i==MerchantRoom)count=0;
             if(EventOf(i)==RoomEvent.Ambush)count=0;
             for(int j=0;j<count;j++)
@@ -382,6 +383,17 @@ public partial class DungeonGenerator : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         Debug.Log($"Dungeon seed {seed}, floor {floorNumber}: {Layout.rooms.Count} rooms, {Layout.Connections.Count} connections, generated in {GenerationMilliseconds:F0} ms.",this);
 #endif
+    }
+
+    // Once the floor is in play (after the table reveal, which lifts each small chunk as one piece): walls, floors and
+    // ceilings merged again into big squares for fewer draw calls (DungeonStaticGeometry.Coarsen). Once per floor.
+    bool coarsened;
+    public void MergeForPlay()
+    {
+        if (coarsened || !TryGetComponent<DungeonStaticGeometry>(out var batching)) return;
+        coarsened = true;
+        if (!Board) batching.Coarsen(transform.Find("Architecture"), data.cellSize * 32);
+        batching.Coarsen(Ceilings, data.cellSize * 32);
     }
 
     // A walkable point somewhere inside the room, for spawns whose usual spot is blocked.
@@ -531,7 +543,7 @@ public partial class DungeonGenerator : MonoBehaviour
                     // In line with the room walls either side, which sit behind the edge on the corridor side.
                     var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(Board ? 0 : WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
                         WallMaterial(Layout.RegionIds[p.x,p.y],y), Board ? door.transform : transform);
-                    Destroy(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
+                    DestroyImmediate(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
                 }
                 if (Board) BoardDoorFrame(gate, p, n, pos.y + top);
             }

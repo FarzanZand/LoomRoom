@@ -58,7 +58,7 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Beam"), Min(0), Tooltip("Seconds of warning: his hand glows and a thin line finds the player before the beam starts.")]
     public float beamWarning = 1.2f;
     [TabGroup(Tabs, "Beam"), Min(0), Tooltip("Damage a second while the beam lands on a player who is not blocking it.")]
-    public float beamDamagePerSecond = 12f;
+    public float beamDamagePerSecond = 22f / 3f;
     [TabGroup(Tabs, "Beam"), Min(0), Tooltip("Stamina a second it costs to hold it off with the shield (0: holding block is enough).")]
     public float beamStaminaPerSecond = 0f;
     [TabGroup(Tabs, "Beam"), Range(-1, 1), Tooltip("How squarely the player must face the DM to block it (dot of the view and the direction to him).")]

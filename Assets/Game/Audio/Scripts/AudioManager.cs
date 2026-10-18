@@ -77,7 +77,7 @@ public partial class AudioManager : Singleton<AudioManager>
     [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Default volumes"), Sirenix.OdinInspector.LabelText("Master")]
     [SerializeField, Range(0f, 1f), Tooltip("Until the player sets their own in Settings.")] private float defaultMasterVolume = 1f;
     [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Default volumes"), Sirenix.OdinInspector.LabelText("Music")]
-    [SerializeField, Range(0f, 1f)] private float defaultMusicVolume  = 0.8f;
+    [SerializeField, Range(0f, 1f), Tooltip("Keep it at MusicDefault: the main menu (no AudioManager) starts the music there.")] private float defaultMusicVolume  = MusicDefault;
     [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Default volumes"), Sirenix.OdinInspector.LabelText("SFX")]
     [SerializeField, Range(0f, 1f)] private float defaultSfxVolume    = 1f;
     [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Default volumes"), Sirenix.OdinInspector.LabelText("UI")]
@@ -246,7 +246,10 @@ public partial class AudioManager : Singleton<AudioManager>
 
     // Where there is no AudioManager (the main menu): the remembered volumes, read and written straight, with an event
     // for whatever plays sound there (MainMenuUI's music).
-    public static float StoredVolume(Channel channel) => PlayerPrefs.GetFloat(Key(channel), channel == Channel.Music ? .8f : 1f);
+    // The music's volume until the player sets one: the same in the menu and the game (the game's AudioManager also
+    // holds it as defaultMusicVolume, on the prefab and in Room.unity).
+    public const float MusicDefault = .374f;
+    public static float StoredVolume(Channel channel) => PlayerPrefs.GetFloat(Key(channel), channel == Channel.Music ? MusicDefault : 1f);
     public static void StoreVolume(Channel channel, float linear)
     {
         PlayerPrefs.SetFloat(Key(channel), Mathf.Clamp01(linear));

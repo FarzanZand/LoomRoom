@@ -69,12 +69,20 @@ public sealed partial class DungeonLayout
         }
         if (!ExitPlacedAt)
         {
-            // The exit grows off the room furthest from the entrance, trying nearer ones if it will not fit.
-            var distance = Distances(Start);
-            var anchors = new List<int>();
-            for (int i = 0; i < rooms.Count; i++) anchors.Add(i);
-            anchors.Sort((a, b) => distance[roomCenters[b].x, roomCenters[b].y].CompareTo(distance[roomCenters[a].x, roomCenters[a].y]));
-            if (!TryGrow(requests[last], anchors)) throw new InvalidOperationException("The exit room does not fit the grid. Increase width/depth or reduce room count or size.");
+            // The exit grows off the room furthest from the entrance, trying nearer ones if it will not fit. On a full
+            // grid the last grown rooms give up their place for it, one at a time (only then, so every floor that
+            // fitted before is unchanged).
+            for (int tries = 0; ; tries++)
+            {
+                var distance = Distances(Start);
+                var anchors = new List<int>();
+                for (int i = 0; i < rooms.Count; i++) anchors.Add(i);
+                anchors.Sort((a, b) => distance[roomCenters[b].x, roomCenters[b].y].CompareTo(distance[roomCenters[a].x, roomCenters[a].y]));
+                if (TryGrow(requests[last], anchors)) break;
+                if (tries >= 3 || placed.Count <= 1) throw new InvalidOperationException("The exit room does not fit the grid. Increase width/depth or reduce room count or size.");
+                RemoveLastRoom();
+                placed.RemoveAt(placed.Count - 1);
+            }
         }
         placed.Add(last);
         if (placed.Count < requests.Count)
@@ -214,6 +222,20 @@ public sealed partial class DungeonLayout
         roomCells.Add(cells); roomCenters.Add(origin + s.center);
         placedShapes.Add(s); degree.Add(0); doorAnchors.Add(anchors);
         return index;
+    }
+
+    // Takes back the newest grown room and the corridor dug to it (nothing has grown off it yet: it is the last).
+    void RemoveLastRoom()
+    {
+        int index = rooms.Count - 1, owner = nextCorridor - 1;
+        var link = Connections[Connections.Count - 1];
+        Connections.RemoveAt(Connections.Count - 1);
+        degree[link.x]--;
+        int width = floor.GetLength(0), depth = floor.GetLength(1);
+        for (int x = 0; x < width; x++) for (int y = 0; y < depth; y++)
+            if (occupant[x, y] == CorridorCell && corridorOwners[x, y] == owner) { occupant[x, y] = EmptyCell; floor[x, y] = false; corridorOwners[x, y] = -1; }
+        nextCorridor--;
+        Unplace(index);
     }
 
     void Unplace(int index)

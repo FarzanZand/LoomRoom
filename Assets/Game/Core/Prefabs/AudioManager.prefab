@@ -187,7 +187,7 @@ MonoBehaviour:
   sfxMinDistance: 3.5
   sfxMaxDistance: 40
   defaultMasterVolume: 1
-  defaultMusicVolume: 0.8
+  defaultMusicVolume: 0.374
   defaultSfxVolume: 1
   defaultUiVolume: 1
   defaultFadeDuration: 1.5

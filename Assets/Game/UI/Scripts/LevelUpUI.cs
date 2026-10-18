@@ -23,12 +23,30 @@ public class LevelUpUI : MonoBehaviour
     [SerializeField, Min(.05f)] float titleFade = .7f;
 
     readonly List<TMP_Text> lines = new();
+    readonly HashSet<TMP_Text> gone = new();   // lines whose fade-out has finished
     readonly List<string> pending = new();
     AdventurerProgress progress;
     Sequence show;
 
+    // Taking turns with the skill rank popup (ExperienceBarUI): a level-up waits for a popup that is already showing,
+    // then goes ahead of any popups still queued; those wait until it is done.
+    static LevelUpUI current;
+    int waitingLevel;   // a level-up waiting for the skill popup on screen to finish (0: none)
+    public static bool Showing => current != null && current.show != null && current.show.IsActive();
+    // Called by the skill popup when it is about to show its next one: a waiting level-up goes first.
+    public static bool PlayWaiting()
+    {
+        if (current == null || current.waitingLevel == 0) return false;
+        int level = current.waitingLevel; current.waitingLevel = 0;
+        current.Clear();
+        current.Play(level, Merge(current.pending));
+        current.pending.Clear();
+        return true;
+    }
+
     void Awake()
     {
+        current = this;
         if (statTemplate != null) statTemplate.gameObject.SetActive(false);
         if (group != null) group.alpha = 0f;
     }
@@ -56,11 +74,14 @@ public class LevelUpUI : MonoBehaviour
 
     void LeveledUp(int level, List<string> gains)
     {
-        // Still showing the last level: its lines that haven't faded yet stay in the list.
-        if (show != null && show.IsActive()) { show.Kill(); foreach (var l in lines) if (l != null && l.alpha > .05f) pending.Add(l.text); }
+        // A skill popup on screen finishes first; it hands over when it is done (PlayWaiting).
+        if (!Showing && (waitingLevel > 0 || ExperienceBarUI.Playing)) { waitingLevel = level; pending.AddRange(gains); return; }
+        // Still showing the last level (or two in one go): every line not yet faded out stays in the list, those still
+        // to come in included, and points from several levels are summed ("+2 attribute points").
+        if (show != null && show.IsActive()) { show.Kill(); foreach (var l in lines) if (l != null && !gone.Contains(l)) pending.Add(l.text); }
         Clear();
         pending.AddRange(gains);
-        Play(level, new List<string>(pending));
+        Play(level, Merge(pending));
         pending.Clear();
     }
 
@@ -88,18 +109,30 @@ public class LevelUpUI : MonoBehaviour
             show.InsertCallback(at, () => { if (statSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(statSound, statVolume); });
             show.Insert(at, line.DOFade(1f, .2f));
             show.Insert(at, DOTween.To(() => 0f, x => rect.localScale = Vector3.one * (1.25f - .25f * x), 1f, .25f).SetEase(Ease.OutQuad));
-            show.Insert(at + statHold, line.DOFade(0f, statFade));
+            show.Insert(at + statHold, line.DOFade(0f, statFade).OnComplete(() => gone.Add(line)));
             lastGone = at + statHold + statFade;
             at += statGap;
         }
         float titleGoes = Mathf.Max(lastGone, firstStatDelay + statHold) + titleHold;
         show.Insert(titleGoes, title.DOFade(0f, titleFade));
         if (levelLine != null) show.Insert(titleGoes, levelLine.DOFade(0f, titleFade));
-        show.OnComplete(() => { Clear(); group.alpha = 0f; show = null; });
+        show.OnComplete(() => { Clear(); group.alpha = 0f; show = null; ExperienceBarUI.Resume(); });
+    }
+
+    // "+1 attribute point" twice becomes "+2 attribute points"; other lines stay as they are, in order.
+    static List<string> Merge(List<string> gains)
+    {
+        const string point = "+1 attribute point";
+        int points = 0;
+        var merged = new List<string>();
+        foreach (var g in gains) { if (g == point) points++; else merged.Add(g); }
+        if (points > 0) merged.Insert(0, points == 1 ? point : $"+{points} attribute points");
+        return merged;
     }
 
     void Clear()
     {
+        gone.Clear();
         foreach (var l in lines) if (l != null) Destroy(l.gameObject);
         lines.Clear();
     }

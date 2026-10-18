@@ -24,7 +24,7 @@ public partial class ItemData
 
     // At each run start the rolled copies nobody holds any more (the last run's drops, shop stock and bags) are destroyed,
     // so the cache doesn't grow with every drop for the whole session. Held means in a bag, hotbar or hand, lying on the
-    // floor, carried by an enemy or on a merchant's table.
+    // floor, carried by an enemy, on a merchant's table or in the bag kept for the way back to the town.
     public static int PruneVariants()
     {
         if (variants.Count == 0) return 0;
@@ -36,6 +36,7 @@ public partial class ItemData
         foreach (var lying in FindObjectsByType<WorldItem>(FindObjectsInactive.Include)) if (lying.Item != null) held.Add(lying.Item);
         foreach (var drop in FindObjectsByType<DungeonLootDrop>(FindObjectsInactive.Include)) if (drop.carriedItem != null) held.Add(drop.carriedItem);
         foreach (var merchant in FindObjectsByType<Merchant>(FindObjectsInactive.Include)) merchant.AddStockTo(held);
+        foreach (var loader in FindObjectsByType<TableLevelLoader>(FindObjectsInactive.Include)) loader.AddTownItemsTo(held);
         var gone = new List<string>();
         foreach (var pair in variants) if (pair.Value == null || !held.Contains(pair.Value)) gone.Add(pair.Key);
         int destroyed = 0;
