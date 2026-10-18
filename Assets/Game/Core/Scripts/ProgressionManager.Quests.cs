@@ -90,6 +90,7 @@ public partial class ProgressionManager
         {
             text = text.Replace("{attack}", KeyName(InputManager.Instance.BindingDisplay("PrimaryAction")));
             text = text.Replace("{block}", KeyName(InputManager.Instance.BindingDisplay("SecondaryAction")));
+            text = text.Replace("{crouch}", KeyName(InputManager.Instance.BindingDisplay("Crouch")));
         }
         return text;
     }

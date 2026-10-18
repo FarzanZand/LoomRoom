@@ -41,7 +41,8 @@ public partial class IntroController
                 yield return null;
             }
             if (Met(step)) continue;
-            yield return SayAll(new[] { step.line });
+            // A key named in the line ("{Crouch}") is said as the player's own binding.
+            yield return SayAll(new[] { step.line != null && step.line.text != null && step.line.text.Contains("{") ? step.line.With(Hint(step.line.text)) : step.line });
             var hint = Hint(step.hint);
             bool hinted = string.IsNullOrEmpty(hint);
             float started = Time.time;
@@ -59,8 +60,9 @@ public partial class IntroController
         yield return Finale();
     }
 
-    // Each room's quest in the log: given when the player walks in, done once they reach a later room (whether or not
-    // its enemies fell) or when the practice ends.
+    // Each room's quest in the log: given when the player walks in, done when the room is dealt with (its enemies all
+    // fallen, or for a room without enemies its chest opened) or when the player leaves it, whichever comes first, and
+    // all of them when the practice ends.
     IEnumerator WatchRoomQuests()
     {
         if (roomQuests == null || roomQuests.Length == 0 || !ProgressionManager.HasInstance) yield break;
@@ -68,7 +70,10 @@ public partial class IntroController
         foreach (var q in roomQuests)
             if (q != null && !string.IsNullOrEmpty(q.id) && meta.FindQuest(q.id) == null)
                 meta.quests.Add(new ProgressionManager.Quest { id = q.id, text = q.text });
+        roomEnemies.Clear();
         int reached = -1;
+        RoomQuest current = null;
+        float nextCheck = 0f;
         while (PracticeRunning && table != null && table.IsAlive)
         {
             int room = PlayerRoom();
@@ -79,12 +84,43 @@ public partial class IntroController
                 {
                     if (q == null || string.IsNullOrEmpty(q.id)) continue;
                     if (q.room < reached) meta.CompleteQuest(q.id);
-                    else if (q.room == reached) meta.GiveQuest(q.id);
+                    else if (q.room == reached) { meta.GiveQuest(q.id); current = q; }
                 }
+            }
+            if (current != null && meta.QuestState(current.id) == 1)
+            {
+                // Walked out of the room (into a corridor or another room): done.
+                if (room != current.room) { meta.CompleteQuest(current.id); current = null; }
+                else if (Time.time >= nextCheck) { nextCheck = Time.time + .25f; if (RoomDealtWith(current.room)) { meta.CompleteQuest(current.id); current = null; } }
             }
             yield return null;
         }
         foreach (var q in roomQuests) if (q != null && !string.IsNullOrEmpty(q.id)) meta.CompleteQuest(q.id);
+    }
+
+    // A room with enemies is dealt with once none of them stands; one without, once its chest is open (a room with
+    // neither is never "dealt with": leaving it closes its quest).
+    // The enemies first seen in each room: the room is cleared when all of them are dead or gone, wherever they ran.
+    readonly System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<EnemyBrain>> roomEnemies = new();
+    bool RoomDealtWith(int room)
+    {
+        var dungeon = loader != null ? loader.Dungeon : null;
+        if (dungeon == null || dungeon.Layout == null) return false;
+        if (!roomEnemies.TryGetValue(room, out var enemies))
+        {
+            enemies = new System.Collections.Generic.List<EnemyBrain>();
+            foreach (var enemy in dungeon.GetComponentsInChildren<EnemyBrain>(true))
+                if (enemy != null && dungeon.Layout.RoomAt(dungeon.CellOf(enemy.transform.position)) == room) enemies.Add(enemy);
+            roomEnemies[room] = enemies;
+        }
+        if (enemies.Count > 0)
+        {
+            foreach (var enemy in enemies) if (enemy != null && enemy.Character != null && enemy.Character.IsAlive) return false;
+            return true;
+        }
+        foreach (var chest in dungeon.GetComponentsInChildren<DungeonContainer>(true))
+            if (chest != null && chest.IsOpen && dungeon.Layout.RoomAt(dungeon.CellOf(chest.transform.position)) == room) return true;
+        return false;
     }
 
     // Every room quest of the practice run is closed when the intro ends: the finale stops the coroutines (the watcher

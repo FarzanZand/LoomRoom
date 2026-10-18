@@ -158804,8 +158804,8 @@ MonoBehaviour:
     room: 2
     amount: 3
     line:
-      text: A guard, facing the wall. He hasn't seen you. Crouch, creep up and stab
-        him in the back.
+      text: A guard, facing the wall. He hasn't seen you. Crouch with {Crouch}, creep
+        up and stab him in the back.
       voice: {fileID: 0}
       mumble: 1
       inPerson: 0
@@ -158842,7 +158842,7 @@ MonoBehaviour:
     text: Kill the two rats. Block with {block}.
   - room: 2
     id: intro.guard
-    text: Sneak up on the guard and stab him in the back.
+    text: Crouch with {crouch}, sneak up on the guard and stab him in the back.
   - room: 3
     id: intro.ladder
     text: Find the ladder out.

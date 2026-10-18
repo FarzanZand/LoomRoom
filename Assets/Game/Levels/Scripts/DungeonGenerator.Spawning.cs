@@ -452,7 +452,7 @@ public partial class DungeonGenerator
     // A guard set facing the wall (DungeonSocket.faceWall), its back to the way in: the player comes in behind it. The
     // way in is the room's opening nearest the starting room; it turns to the room's real wall away from that (pillars,
     // arches and props don't count), steps up to it and faces it.
-    void FaceWall(Character enemy)
+    void FaceWall(Character enemy,float gap=.75f)
     {
         var at=enemy.transform.position;
         int room=Layout.RoomAt(CellOf(at));
@@ -478,7 +478,7 @@ public partial class DungeonGenerator
             if(score<bestScore){bestScore=score;best=dir;bestDistance=distance;}
         }
         if(best==Vector3.zero)return;
-        var spot=at+best*Mathf.Max(0f,bestDistance-.75f);
+        var spot=at+best*Mathf.Max(0f,bestDistance-gap);
         if(NavMesh.SamplePosition(spot,out var hit,.6f,NavMesh.AllAreas) && RoomForBody(hit.position))
         {
             var agent=enemy.GetComponent<NavMeshAgent>();
@@ -572,7 +572,7 @@ public partial class DungeonGenerator
                             break;
                         }
                         var placed=SpawnEnemyAt(prefab,t.position,t.rotation,profiles[room]!=null ? profiles[room].rewards : null);
-                        if(placed!=null && socket.faceWall)FaceWall(placed);
+                        if(placed!=null && socket.faceWall)FaceWall(placed,socket.wallGap);
                         JoinPack(room,placed);
                         break;
                     }
