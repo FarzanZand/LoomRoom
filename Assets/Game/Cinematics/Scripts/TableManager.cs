@@ -94,8 +94,9 @@ public class TableManager : Singleton<TableManager>, IInteractable
             return;
         }
         // The whole dungeon won: the prototype's thank-you instead of a new run.
-        // Not in co-op: the others would wait at the table for a player who never sits down.
-        if (!Coop.Running && TryGetComponent<PrototypeEnd>(out var end) && end.TryPlay()) return;
+        // In co-op each player gets their own (once per save); a teammate already seated waits the card out, then this
+        // player uses the table again to sit.
+        if (TryGetComponent<PrototypeEnd>(out var end) && end.TryPlay()) return;
         if (DungeonMasterSeat.Introduced) EnterTable();
         else if (talkFirst != null && !talkFirst.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(talkFirst);
     }
