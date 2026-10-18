@@ -27,7 +27,7 @@ public static class CharacterPanelLayout
 
         const float W = 520f;
         Top(root, "Title", -48f, W, 40f, 28f);
-        Top(root, "Identity", -118f, W, 64f, 24f);
+        Top(root, "Identity", -114f, W, 64f, 24f);
         Divider(root, 1, -156f, W);
         Top(root, "Health", -182f, W, 32f, 24f);
         Top(root, "Stamina", -214f, W, 32f, 24f);
@@ -125,8 +125,37 @@ public static class CharacterPanelLayout
             }
         }
         Attributes(panel, root, W);
+        LevelLine(panel, root);
         EditorSceneManager.MarkSceneDirty(panel.gameObject.scene);
         return $"character panel laid out: 600 x 930, {rows} skill rows with {Markers} milestone markers each (save the scene)";
+    }
+
+    // A thin line under "LEVEL n", filled toward the next level like the skill rows' lines (EquipmentPanelUI.levelProgress).
+    static void LevelLine(EquipmentPanelUI panel, RectTransform root)
+    {
+        var frame = root.Find("Level progress") as RectTransform;
+        if (frame == null)
+        {
+            var go = new GameObject("Level progress", typeof(RectTransform));
+            Undo.RegisterCreatedObjectUndo(go, "Level progress");
+            go.layer = root.gameObject.layer;
+            frame = (RectTransform)go.transform;
+            frame.SetParent(root, false);
+            var track = new GameObject("Track", typeof(RectTransform), typeof(Image));
+            track.layer = go.layer; track.transform.SetParent(frame, false);
+            var tr = (RectTransform)track.transform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero;
+            var trackImage = track.GetComponent<Image>(); trackImage.color = new Color(1f, 1f, 1f, .08f); trackImage.raycastTarget = false;
+            var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fill.layer = go.layer; fill.transform.SetParent(frame, false);
+            var fr = (RectTransform)fill.transform; fr.anchorMin = Vector2.zero; fr.anchorMax = new Vector2(0f, 1f); fr.offsetMin = fr.offsetMax = Vector2.zero;
+            fill.GetComponent<Image>().raycastTarget = false;
+        }
+        frame.anchorMin = frame.anchorMax = new Vector2(.5f, 1f);
+        frame.anchoredPosition = new Vector2(0f, -150f);
+        frame.sizeDelta = new Vector2(150f, 3f);
+        var so = new SerializedObject(panel);
+        so.FindProperty("levelProgress").objectReferenceValue = frame.Find("Fill").GetComponent<Image>();
+        so.ApplyModifiedProperties();
     }
 
     // The attributes header and two rows of two cells: icon, name, score and a small + button (made once, placed every run).

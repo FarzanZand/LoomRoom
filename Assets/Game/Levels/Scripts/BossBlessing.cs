@@ -18,7 +18,7 @@ public static class BossBlessing
     {
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
         if (player == null || player.Stats == null || !player.Stats.BlockBlessing) return;
-        MessageLog.Post("You are blessed: your blocks stop all damage in this fight.", MessageKind.Good);
+        // Said once, as the centre announcement (the feed would repeat it).
         AnnouncementUI.Show("Blessed", "Your blocks stop all damage in this fight", 3f);
     }
 

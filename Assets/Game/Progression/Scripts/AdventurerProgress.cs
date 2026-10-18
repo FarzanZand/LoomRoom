@@ -210,6 +210,8 @@ public class AdventurerProgress : MonoBehaviour
         // A run starts from the base bought on the character sheet (ProgressionManager) plus the class.
         bool meta = ProgressionManager.HasInstance && ProgressionManager.MetaActive;
         foreach (var skill in AdventureSkills.All) Ranks[(int)skill] = Mathf.Clamp((meta ? ProgressionManager.Instance.BaseRank(skill) : 0) + selectedClass.StartingRank(skill), 0, 100);
+        // The intro's practice run teaches the block, not the shield bash: no Blocking ranks there.
+        if (IntroController.PracticeRunning) Ranks[(int)AdventureSkill.Blocking] = 0;
         taught.Clear(); crushed.Clear(); visited.Clear(); sprintDistance = healCredit = 0; lastPosition = transform.position;
         player.Equipment.UnequipAll(); player.Bag.Clear(); player.Hotbar.Clear();
         ApplyStats();
@@ -257,6 +259,38 @@ public class AdventurerProgress : MonoBehaviour
         }
         stats.RestorePools(health, mana, stamina);
         Changed?.Invoke();
+    }
+
+    // Health, mana and stamina a run with this class starts at (the class card shows them): the class's numbers, the
+    // character sheet's attributes and Athletics, and the flat bonuses of its starting kit, as Begin and ApplyStats add them.
+    public (float health, float mana, float stamina) StartingPools(AdventurerClass c)
+    {
+        if (c == null) return (0, 0, 0);
+        float health = c.health, mana = c.mana, stamina = c.stamina;
+        void Add(StatType stat, float value)
+        {
+            if (stat == StatType.MaxHealth) health += value;
+            else if (stat == StatType.MaxMana) mana += value;
+            else if (stat == StatType.MaxStamina) stamina += value;
+        }
+        var meta = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+        if (meta != null)
+        {
+            for (int a = 0; a < AttributeCount; a++)
+            {
+                var track = meta.Track((MetaAttribute)a);
+                if (track == null) continue;
+                foreach (var (stat, amount, kind) in ProgressionManager.AttributeGains(track, meta.AttributeScore((MetaAttribute)a) - track.baseScore))
+                    if (kind == ModifierType.Flat) Add(stat, amount);
+            }
+            int athletics = (ProgressionManager.MetaActive ? meta.BaseRank(AdventureSkill.Athletics) : 0) + c.StartingRank(AdventureSkill.Athletics);
+            stamina += Definition(AdventureSkill.Athletics)?.ExtraAt(Mathf.Clamp(athletics, 0, 100)) ?? 0;
+        }
+        if (c.equipment != null)
+            foreach (var item in c.equipment)
+                if (item != null && item.statModifiers != null)
+                    foreach (var m in item.statModifiers) if (m != null && m.type == ModifierType.Flat) Add(m.stat, m.value);
+        return (health, mana, stamina);
     }
 
     public void GainExperience(float amount)

@@ -381,6 +381,17 @@ public partial class DungeonGenerator : MonoBehaviour
 #endif
     }
 
+    // Once the floor is in play (after the table reveal, which lifts each small chunk as one piece): walls, floors and
+    // ceilings merged again into big squares for fewer draw calls (DungeonStaticGeometry.Coarsen). Once per floor.
+    bool coarsened;
+    public void MergeForPlay()
+    {
+        if (coarsened || !TryGetComponent<DungeonStaticGeometry>(out var batching)) return;
+        coarsened = true;
+        if (!Board) batching.Coarsen(transform.Find("Architecture"), data.cellSize * 32);
+        batching.Coarsen(Ceilings, data.cellSize * 32);
+    }
+
     // A walkable point somewhere inside the room, for spawns whose usual spot is blocked.
     // Enemy sockets of the room's template that rolled to be filled.
     int SocketEnemies(int room)
@@ -528,7 +539,7 @@ public partial class DungeonGenerator : MonoBehaviour
                     // In line with the room walls either side, which sit behind the edge on the corridor side.
                     var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(Board ? 0 : WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
                         WallMaterial(Layout.RegionIds[p.x,p.y],y), Board ? door.transform : transform);
-                    Destroy(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
+                    DestroyImmediate(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
                 }
                 if (Board) BoardDoorFrame(gate, p, n, pos.y + top);
             }

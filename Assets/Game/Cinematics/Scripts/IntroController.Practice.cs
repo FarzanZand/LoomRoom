@@ -71,6 +71,8 @@ public partial class IntroController
             if (q != null && !string.IsNullOrEmpty(q.id) && meta.FindQuest(q.id) == null)
                 meta.quests.Add(new ProgressionManager.Quest { id = q.id, text = q.text });
         roomEnemies.Clear();
+        // Each quest room's enemies are listed now, before any of them wanders out of its room.
+        foreach (var q in roomQuests) if (q != null && q.room >= 0) RoomDealtWith(q.room);
         int reached = -1;
         RoomQuest current = null;
         float nextCheck = 0f;
@@ -89,8 +91,8 @@ public partial class IntroController
             }
             if (current != null && meta.QuestState(current.id) == 1)
             {
-                // Walked out of the room (into a corridor or another room): done.
-                if (room != current.room) { meta.CompleteQuest(current.id); current = null; }
+                // Walked on into another room: done (a step back into the corridor mid-fight doesn't count).
+                if (room >= 0 && room != current.room) { meta.CompleteQuest(current.id); current = null; }
                 else if (Time.time >= nextCheck) { nextCheck = Time.time + .25f; if (RoomDealtWith(current.room)) { meta.CompleteQuest(current.id); current = null; } }
             }
             yield return null;

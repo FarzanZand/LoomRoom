@@ -300,7 +300,7 @@ public partial class DungeonGenerator
             if (data.boardGridMaterial != null)
             {
                 var grid = GameObject.CreatePrimitive(PrimitiveType.Quad); grid.name = "Printed grid";
-                Destroy(grid.GetComponent<Collider>());
+                DestroyImmediate(grid.GetComponent<Collider>());
                 grid.transform.SetParent(cell, false);
                 grid.transform.position = centre + Vector3.up * (elevation[x, z] + t + .006f);
                 grid.transform.rotation = Quaternion.Euler(90, 0, 0);

@@ -73,6 +73,7 @@ public partial class AnimationWorkbench
         Strip(bodyRig.gameObject, keepAnimator: true);
         body = bodyRig.GetComponent<Animator>();
         body.applyRootMotion = false;
+        body.fireEvents = false;   // its scripts are stripped: clip events (AttackBegin...) would find no receiver
         // The first-person skeleton copy (its own meshes are made from the body below).
         visuals.SetParent(null, false);
         DestroyImmediate(copy);

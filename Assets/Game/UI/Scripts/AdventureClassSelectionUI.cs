@@ -17,6 +17,8 @@ public class AdventureClassSelectionUI : MonoBehaviour
     public Button previous, next;
     // One figure only (the intro's practice figure): no arrows, pips or hidden-class hint.
     public bool Single { get; set; }
+    // The classes the arrows page through (ClassFigures: the figures on the table). Empty: every unlocked class.
+    public System.Collections.Generic.IReadOnlyList<AdventurerClass> Choices { get; set; }
     [Tooltip("One pip per class, filled for the shown one, dim for locked classes.")]
     public Image[] pips;
     public Color pipOn = new(.87f, .72f, .4f), pipOff = new(.35f, .3f, .25f), pipLocked = new(.18f, .16f, .14f);
@@ -44,7 +46,7 @@ public class AdventureClassSelectionUI : MonoBehaviour
     public void Cycle(int delta)
     {
         if (progress == null || progress.InRun) return;
-        var classes = progress.rules.classes;
+        var classes = Choices != null && Choices.Count > 0 ? Choices.ToArray() : progress.rules.classes;
         int index = System.Array.IndexOf(classes, progress.selectedClass);
         for (int i = 0; i < classes.Length; i++)
         {
@@ -64,7 +66,9 @@ public class AdventureClassSelectionUI : MonoBehaviour
         portrait.sprite = c.portrait; portrait.enabled = c.portrait != null;
         className.text = c.displayName;
         description.text = c.description;
-        resources.text = $"<color=#{Hex(healthColor)}>HP</color> {c.health:0}    <color=#{Hex(manaColor)}>MP</color> {c.mana:0}    <color=#{Hex(staminaColor)}>SP</color> {c.stamina:0}";
+        // What the run starts with: the class's numbers plus its kit and the character sheet (AdventurerProgress.StartingPools).
+        var (hp, mp, sp) = progress.StartingPools(c);
+        resources.text = $"<color=#{Hex(healthColor)}>HP</color> {hp:0}    <color=#{Hex(manaColor)}>MP</color> {mp:0}    <color=#{Hex(staminaColor)}>SP</color> {sp:0}";
 
 
 
@@ -91,7 +95,7 @@ public class AdventureClassSelectionUI : MonoBehaviour
 
         for (int i = 0; i < pips.Length; i++)
         {
-            bool exists = i < classes.Length && classes[i] != null;
+            bool exists = i < classes.Length && classes[i] != null && (Choices == null || Choices.Count == 0 || Choices.Contains(classes[i]));
             pips[i].gameObject.SetActive(exists && !Single);
             if (!exists) continue;
             pips[i].color = classes[i] == c ? pipOn : classes[i].Unlocked ? pipOff : pipLocked;

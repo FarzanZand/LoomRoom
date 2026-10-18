@@ -19,6 +19,11 @@ public class LootBeam : MonoBehaviour
     float glowWidth;
     Renderer body;
     float phase;
+    Gradient[] gradients;
+    float shownFade = 1f;
+    // Close to the eye a beam would be a wide blur across the view (over the hotbar when the item lies at the
+    // player's feet): it fades out inside these distances from the camera.
+    const float HideWithin = .9f, FadeOver = .9f;
 
     public static Color ColorFor(ItemData item, InventoryManager config)
     {
@@ -44,6 +49,7 @@ public class LootBeam : MonoBehaviour
         core = Line("Beam core", config.beamMaterial, config.beamWidth * .3f, Color.Lerp(Color, Color.white, .35f));
         glowWidth = config.beamWidth;
         lines = new[] { glow, core };
+        gradients = new[] { glow.colorGradient, core.colorGradient };
         phase = Random.value * 6f;
         foreach (var r in item.GetComponentsInChildren<Renderer>()) if (!(r is LineRenderer) && !(r is ParticleSystemRenderer)) { body = r; break; }
     }
@@ -86,6 +92,29 @@ public class LootBeam : MonoBehaviour
         {
             line.SetPosition(0, Base);
             line.SetPosition(1, Base + Vector3.up * Height);
+        }
+        var eye = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
+        float fade = 1f;
+        if (eye != null)
+        {
+            // Distance from the camera to the beam's line, not its foot: standing over the item counts as close.
+            Vector3 p = eye.transform.position;
+            Vector3 closest = new(Base.x, Mathf.Clamp(p.y, Base.y, Base.y + Height), Base.z);
+            fade = Mathf.Clamp01((Vector3.Distance(p, closest) - HideWithin) / FadeOver);
+        }
+        if (Mathf.Abs(fade - shownFade) > .02f || (fade == 0f) != (shownFade == 0f) || (fade == 1f && shownFade != 1f)) Fade(fade);
+    }
+
+    void Fade(float fade)
+    {
+        shownFade = fade;
+        for (int i = 0; i < lines.Length; i++)
+        {
+            lines[i].enabled = fade > 0f;
+            var source = gradients[i].alphaKeys;
+            var keys = new GradientAlphaKey[source.Length];
+            for (int k = 0; k < keys.Length; k++) keys[k] = new GradientAlphaKey(source[k].alpha * fade, source[k].time);
+            lines[i].colorGradient = new Gradient { colorKeys = gradients[i].colorKeys, alphaKeys = keys };
         }
     }
 }

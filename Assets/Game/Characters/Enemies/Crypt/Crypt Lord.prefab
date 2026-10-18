@@ -157,7 +157,8 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 535c1d90f1a9dd842a37b49b18f6d181, type: 3}
     alert:
     - {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
-    pain: []
+    pain:
+    - {fileID: 8300000, guid: 9eceb61b211954f40b2c1d028d5052ba, type: 3}
     death:
     - {fileID: 8300000, guid: a98a95988280b2d45974c610bcddde25, type: 3}
     footsteps:

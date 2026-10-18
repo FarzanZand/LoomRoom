@@ -41,9 +41,13 @@ public class ClassFigures : MonoBehaviour
     public bool ResumeChosen { get; private set; }
     [Tooltip("Said when a figure is taken.")]
     public DungeonMaster.Line taken;
+    [Tooltip("Asks before a new run replaces the saved one (HUD panel: a question, Yes and No).")]
+    public GameObject confirmPanel;
+    public TMPro.TMP_Text confirmText;
+    public UnityEngine.UI.Button confirmYes, confirmNo;
 
     readonly List<ClassFigure> figures = new();
-    ClassFigure highlighted, chosen, lastUnder;
+    ClassFigure highlighted, chosen, lastUnder, asking;
     bool choosing, cancelled, canCancel = true;
     AdventurerProgress progress;
 
@@ -66,7 +70,11 @@ public class ClassFigures : MonoBehaviour
     void Awake()
     {
         ShowCard(false);
-        if (pick != null) pick.onClick.AddListener(() => Take(highlighted));
+        // Pick takes the class the card shows (its figure), else the highlighted one.
+        if (pick != null) pick.onClick.AddListener(() => Take(FigureOf(progress != null ? progress.selectedClass : null) ?? highlighted));
+        if (confirmPanel != null) confirmPanel.SetActive(false);
+        if (confirmYes != null) confirmYes.onClick.AddListener(() => { var f = asking; CloseConfirm(); chosen = f; });
+        if (confirmNo != null) confirmNo.onClick.AddListener(CloseConfirm);
     }
 
     bool showCard = true;
@@ -116,8 +124,9 @@ public class ClassFigures : MonoBehaviour
         DungeonMaster.Say(promptOverride != null && !promptOverride.IsEmpty ? promptOverride : saved != null && resumePrompt != null && !resumePrompt.IsEmpty ? resumePrompt
             : suggested != null && suggestedPrompt != null && !suggestedPrompt.IsEmpty ? suggestedPrompt.With(suggestedPrompt.text.Replace("{class}", suggested.displayName)) : prompt);
 
+        // The card's arrows page only through the figures on the table (the first morning sets out two of three).
+        if (card != null) { card.Single = only != null; card.Choices = classes; }
         Highlight(figures.Find(f => f.adventurer == (saved != null ? saved : suggested != null ? suggested : progress.selectedClass)) ?? figures[0]);
-        if (card != null) card.Single = only != null;
         ShowCard(true);
         // Without the card there is no hint on it: say it in the feed.
         if (!showCard) MessageLog.Post(only != null ? "Click the figure to take it." : "Click a figure to take it.", MessageKind.Info);
@@ -140,6 +149,7 @@ public class ClassFigures : MonoBehaviour
             yield return null;
         }
         choosing = false;
+        CloseConfirm();
         if (InputManager.HasInstance)
         {
             InputManager.Instance.NavigatePressed -= OnNavigate;
@@ -147,6 +157,7 @@ public class ClassFigures : MonoBehaviour
             InputManager.Instance.CancelPressed -= OnCancel;
         }
         ShowCard(false);
+        if (card != null) card.Choices = null;
         var result = chosen != null ? chosen.adventurer : null;
         ResumeChosen = result != null && result == saved;
         if (how != null && howDefault != null) how.text = howDefault;
@@ -211,7 +222,7 @@ public class ClassFigures : MonoBehaviour
         if (how != null)
         {
             howDefault ??= how.text;
-            how.text = saved != null && figure.adventurer == saved ? $"Click to continue your run: {savedDetail}." : saved != null ? "Click to start a new run. Your saved run is lost. Esc to step back."
+            how.text = saved != null && figure.adventurer == saved ? $"Click to continue your run: {savedDetail}." : saved != null ? "Click to start a new run instead of your saved one. Esc to step back."
                 : !canCancel ? "Click a figure to take it." : howDefault;
         }
         if (choosing && UIFeedbackSettings.Shared != null) UIFeedbackSettings.Shared.Hover();
@@ -223,20 +234,41 @@ public class ClassFigures : MonoBehaviour
         Highlight(figure);
         // The card's arrows can leave the selection on a class that has no figure out.
         if (progress != null && !progress.InRun && progress.selectedClass != figure.adventurer) progress.SelectClass(figure.adventurer);
+        // A new run over a saved one asks first: the saved run would be gone.
+        if (saved != null && figure.adventurer != saved && confirmPanel != null) { Ask(figure); return; }
         chosen = figure;
+    }
+
+    public ClassFigure FigureOf(AdventurerClass c) => c != null ? figures.Find(f => f != null && f.adventurer == c) : null;
+
+    bool Asking => asking != null;
+
+    void Ask(ClassFigure figure)
+    {
+        asking = figure;
+        if (confirmText != null) confirmText.text = $"Start a new run as the {figure.adventurer.displayName}? Your saved run ({savedDetail}) will be lost.";
+        confirmPanel.SetActive(true);
+        confirmNo?.Select();
+    }
+
+    void CloseConfirm()
+    {
+        asking = null;
+        if (confirmPanel != null && confirmPanel.activeSelf) confirmPanel.SetActive(false);
     }
 
     void OnNavigate()
     {
-        if (!choosing || figures.Count == 0 || !InputManager.HasInstance) return;
+        if (!choosing || Asking || figures.Count == 0 || !InputManager.HasInstance) return;
         float x = InputManager.Instance.Actions.UI.Navigate.ReadValue<Vector2>().x;
         if (Mathf.Abs(x) < .5f) return;
         int i = Mathf.Max(0, figures.IndexOf(highlighted));
         Highlight(figures[(i + (x > 0 ? 1 : -1) + figures.Count) % figures.Count]);
     }
 
-    void OnSubmit() { if (choosing) Take(highlighted); }
-    void OnCancel() { if (choosing && canCancel) cancelled = true; }
+    // While the question is up, its own buttons answer it (Submit presses the selected one); Esc answers No.
+    void OnSubmit() { if (choosing && !Asking) Take(highlighted); }
+    void OnCancel() { if (Asking) CloseConfirm(); else if (choosing && canCancel) cancelled = true; }
 
     readonly RaycastHit[] hits = new RaycastHit[32];
 
@@ -258,7 +290,7 @@ public class ClassFigures : MonoBehaviour
 
     void Update()
     {
-        if (choosing && InputManager.HasInstance)
+        if (choosing && !Asking && InputManager.HasInstance)
         {
             bool overUI = UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
             var under = overUI ? null : UnderPointer();

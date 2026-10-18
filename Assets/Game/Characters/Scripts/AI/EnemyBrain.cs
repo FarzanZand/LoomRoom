@@ -493,6 +493,7 @@ public class EnemyBrain : MonoBehaviour
     void EnterCombat()
     {
         if (Perception.Target == null) return;
+        Perception.NoCloseAwareness = false;   // a wall-facing guard that has found the player stays aware of them
         wasProvoked    = true;
         loseSightTimer = Profile.loseSightGracePeriod;
         giveUpTimer    = -1f;

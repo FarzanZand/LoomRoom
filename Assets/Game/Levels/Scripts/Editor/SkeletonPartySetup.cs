@@ -10,8 +10,8 @@ using UnityEngine;
 //   skeleton dancers in a square round a chest in the middle (Enemy sockets, Crypt Soldier; Socket Enemies Only, so the
 //   floor adds none), RoomMusic and SkeletonParty on the root.
 // - Rooms/Templates/Chunks/Portal hall: the Gate hall with its first arch swapped for a Portal arch to the party room.
-// - Cellars and Crypt: the Cell block's place in the room pools goes to the Skeleton Party room, and the Portal hall
-//   joins at most once a floor.
+// - Cellars and Crypt: the Portal hall joins the room pools (at most once a floor); the party room itself is only
+//   behind the portal, never in the pools.
 // Edit the prefabs freely afterwards (the dance clip and the party's track go on the room's root).
 public static class SkeletonPartySetup
 {
@@ -199,6 +199,8 @@ public static class SkeletonPartySetup
         finally { PrefabUtility.UnloadPrefabContents(root); }
     }
 
+    // The party is only behind the portal (never in the pools: an older build's entry goes back to the Cell block it
+    // replaced); the Portal hall joins each biome's pool at most once a floor.
     static void UpdatePools(System.Text.StringBuilder log)
     {
         var party = AssetDatabase.LoadAssetAtPath<GameObject>(Party);
@@ -209,14 +211,12 @@ public static class SkeletonPartySetup
         {
             var biome = AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
             var list = new List<DungeonBiome.RoomTemplateChoice>(biome.roomTemplates ?? new DungeonBiome.RoomTemplateChoice[0]);
-            bool hasParty = list.Exists(c => c != null && c.template == party), hasPortal = list.Exists(c => c != null && c.template == portal);
             foreach (var c in list)
-                if (c != null && c.template == cell && !hasParty) { c.template = party; c.maxPerFloor = 1; hasParty = true; log.AppendLine(biome.name + ": Cell block -> Skeleton Party room"); }
-            if (!hasParty) { list.Add(new DungeonBiome.RoomTemplateChoice { template = party, weight = 1, rooms = DungeonRoomRoles.Combat, maxPerFloor = 1 }); log.AppendLine(biome.name + ": added Skeleton Party room"); }
-            if (!hasPortal)
+                if (c != null && c.template == party && cell != null) { c.template = cell; c.maxPerFloor = 2; log.AppendLine(biome.name + ": Skeleton Party room -> Cell block (the party is portal-only)"); }
+            if (!list.Exists(c => c != null && c.template == portal))
             {
                 var like = list.Find(c => c != null && c.template == gateHall);
-                list.Add(new DungeonBiome.RoomTemplateChoice { template = portal, weight = like != null ? like.weight * .5f : .5f, rooms = like != null ? like.rooms : DungeonRoomRoles.Combat | DungeonRoomRoles.Rest, maxPerFloor = 1 });
+                list.Add(new DungeonBiome.RoomTemplateChoice { template = portal, weight = 2f, rooms = like != null ? like.rooms : DungeonRoomRoles.Combat | DungeonRoomRoles.Rest, maxPerFloor = 1 });
                 log.AppendLine(biome.name + ": added Portal hall");
             }
             biome.roomTemplates = list.ToArray();

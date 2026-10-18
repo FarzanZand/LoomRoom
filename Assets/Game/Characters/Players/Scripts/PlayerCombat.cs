@@ -80,6 +80,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     Hitbox weaponHitbox;
     bool strikeOpened, strikeClosed;   // this swing's hitbox has opened / opened and closed again
     bool secondaryWasHeld;
+    bool attackAfterBash;   // pressed while the shield bash held the weapon back
     float guardRaisedAt = -10f;
     bool wasGuarding;
     bool ShieldKeptDown => IsAttacking && !cancelling && AttackProgress() < BlockFromAttackAt;
@@ -320,7 +321,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (comboAfterHeavy && !IsAttacking) comboAfterHeavy = false;
         if (comboHeavy || Time.time > comboQueuedUntil) return;
         if (comboAfterHeavy) { comboQueuedUntil = Mathf.Max(comboQueuedUntil, Time.time + .05f); return; }
-        if (!gameplay || !WeaponHeld || (spells != null && spells.Busy) || (bash != null && bash.Busy) ||
+        if (!gameplay || !WeaponHeld || (spells != null && spells.Busy) || (bash != null && bash.HoldsAttacks) ||
             (player.Equipment != null && player.Equipment.IsUsingItem)) { comboQueuedUntil = -1f; return; }
         var tuning = CombatManager.Instance;
         float speed = Mathf.Max(.1f, tuning.comboSpeed * (player.Stats != null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f));
@@ -339,7 +340,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     void OnPrimaryPressed()
     {
         if (!player.IsActive || (spells != null && spells.Busy)) return;
-        if (bash != null && bash.Busy) return;
+        // Pressed while the bash winds up or dashes: the swing comes the moment it lands (Update).
+        if (bash != null && bash.HoldsAttacks) { attackAfterBash = true; return; }
         // Eating or drinking (Equipment.IsUsingItem): no swing, no shield bash until it is done.
         if (player.Equipment != null && player.Equipment.IsUsingItem) return;
         // Block held: a ready shield bash takes the press; the button then starts nothing until pressed again.
@@ -362,6 +364,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
 
     void OnPrimaryReleased()
     {
+        // Let go during the bash: the press and this release are played together once it lands (Update).
+        if (attackAfterBash) return;
         // A tap in a combo set: the next combo hit.
         if (Combo && comboPressPending) { comboPressPending = false; charging = false; QueueCombo(); return; }
         if (Combo && comboHeavy)
@@ -398,6 +402,16 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (kick.sqrMagnitude > 0f)
             kick = Vector3.Lerp(kick, Vector3.zero, 1f - Mathf.Exp(-(CombatManager.HasInstance ? CombatManager.Instance.kickRecovery : 14f) * Time.deltaTime));
         if (!AnimatorHelper.Ready(armsAnimator)) return;
+        // A press during the bash's windup or dash swings as soon as it has landed.
+        if (attackAfterBash && (bash == null || !bash.HoldsAttacks))
+        {
+            attackAfterBash = false;
+            if (bash == null || bash.Busy)
+            {
+                OnPrimaryPressed();
+                if (InputManager.HasInstance && !InputManager.Instance.PrimaryHeld) OnPrimaryReleased();   // a tap
+            }
+        }
 
         bool gameplay = !GameManager.HasInstance || GameManager.Instance.GameplayActive;
         bool primary   = gameplay && (spells == null || !spells.Busy) && (player.Equipment == null || !player.Equipment.IsUsingItem) && InputManager.HasInstance && InputManager.Instance.PrimaryHeld;
@@ -446,7 +460,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (startingSwing && !windingUp) AnimatorHelper.SetInteger(armsAnimator, swingIndexParam, NextSwingIndex);
         if (!primary) heldThroughCancel = false;
         AnimatorHelper.SetBool(armsAnimator, attackHeldParam,
-            (!Combo || comboHeavy) && !heldThroughCancel && (primary || (buffered && !Combo)) && WeaponHeld && (!secondary || AttackFromBlock) && intervalReady && (bash == null || !bash.Busy));
+            (!Combo || comboHeavy) && !heldThroughCancel && (primary || (buffered && !Combo)) && WeaponHeld && (!secondary || AttackFromBlock) && intervalReady && (bash == null || !bash.HoldsAttacks));
         if (secondary && !blockLocked && ShieldHeld && player.Stats != null &&
             player.Stats.HasStat(StatType.MaxStamina) && (player.Stats.IsExhausted || player.Stats.CurrentStamina <= 0))
             player.Stats.ReportInsufficientStamina();

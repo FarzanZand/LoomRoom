@@ -15,6 +15,9 @@ public class CreatureAudio
     public AudioClip[] alert = new AudioClip[0];
     [TabGroup("AudioSettings", "Clips"), ListDrawerSettings(ShowPaging = true, NumberOfItemsPerPage = 4)]
     public AudioClip[] pain = new AudioClip[0];
+    [Tooltip("The hurt sound as an AudioData (its own clips, volume, pitch and distances; the creature's pitch still applies). Set: it plays instead of Pain.")]
+    [TabGroup("AudioSettings", "Clips")]
+    public AudioData painAudio;
     [TabGroup("AudioSettings", "Clips"), ListDrawerSettings(ShowPaging = true, NumberOfItemsPerPage = 4)]
     public AudioClip[] death = new AudioClip[0];
     [TabGroup("AudioSettings", "Clips"), ListDrawerSettings(ShowPaging = true, NumberOfItemsPerPage = 4)]

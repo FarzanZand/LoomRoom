@@ -43,7 +43,7 @@ MonoBehaviour:
     inPerson: 0
   beamSeconds: 3
   beamWarning: 1.2
-  beamDamagePerSecond: 12
+  beamDamagePerSecond: 7.3333335
   beamStaminaPerSecond: 0
   beamFacing: 0.2
   beamOnBeat: 1
@@ -142,7 +142,7 @@ MonoBehaviour:
     count: 1
     shake: 1
     spell: {fileID: 11400000, guid: 97ab782aa2e5c9545b64aafe17d3c498, type: 2}
-    damage: 8
+    damage: 4
     volley:
       count: 3
       spawnInterval: 1

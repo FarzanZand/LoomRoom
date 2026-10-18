@@ -121,13 +121,18 @@ public partial class DungeonGenerator
     }
 
     // A turned or smaller room can put a doorway where the template had a wall: any prop the template set down that
-    // stands in a way in or out is taken out, so it can never cut the room off (a barrel
-    // stack in the shop did on about one floor in sixteen). Kit pieces, sockets and characters are left alone.
+    // stands in a way in or out is taken out, so it can never cut the room off (a barrel stack in the shop did on
+    // about one floor in sixteen). Only the prop itself goes, never the group it sits in (a template's "Dressing"):
+    // the unit is the hit object's ancestor just under the template or under a plain grouping node. Kit pieces,
+    // sockets, characters and floor cuts are left alone; a portal, shrine, chest or merchant is moved a cell into
+    // the room instead of deleted.
     static readonly Collider[] openingHits=new Collider[32];
     void ClearOpenings(GameObject instance,int room)
     {
         Physics.SyncTransforms();
         var gone=new System.Collections.Generic.HashSet<GameObject>();
+        var moved=new System.Collections.Generic.Dictionary<Transform,Vector2Int>();
+        var centre=Layout.RoomCenter(room);
         foreach(var cell in Layout.RoomCells(room))
         {
             bool doorway=false;
@@ -138,14 +143,27 @@ public partial class DungeonGenerator
             {
                 var t=openingHits[i].transform;
                 if(!t.IsChildOf(instance.transform) || t==instance.transform)continue;
-                while(t.parent!=instance.transform)t=t.parent;
-                if(t.GetComponentInChildren<DungeonKitBlock>(true)!=null || t.GetComponentInChildren<DungeonKitPiece>(true)!=null
-                   || t.GetComponentInChildren<DungeonSocket>(true)!=null || t.GetComponentInChildren<Character>(true)!=null || t.GetComponentInChildren<DungeonFloorCut>(true)!=null)continue;
+                while(t.parent!=instance.transform && !IsGroup(t.parent))t=t.parent;
+                if(Kept(t))continue;
+                if(Moves(t)){if(!moved.ContainsKey(t))moved[t]=cell;continue;}
                 gone.Add(t.gameObject);
             }
         }
         foreach(var go in gone)DestroyImmediate(go); // navigation is baked this frame
+        foreach(var pair in moved)
+        {
+            var inward=centre-pair.Value;
+            var step=Mathf.Abs(inward.x)>=Mathf.Abs(inward.y) ? new Vector2Int((int)Mathf.Sign(inward.x),0) : new Vector2Int(0,(int)Mathf.Sign(inward.y));
+            if(inward==Vector2Int.zero || !Layout.InRoom(room,pair.Value+step))continue;
+            pair.Key.position+=new Vector3(step.x,0,step.y)*data.cellSize;
+        }
     }
+    // An empty node holding several props: a template's dressing group, never a prop of its own.
+    static bool IsGroup(Transform t) => t.childCount>1 && t.GetComponents<Component>().Length==1;
+    static bool Has<T>(Transform t) where T : Component => t.GetComponentInChildren<T>(true)!=null || t.GetComponentInParent<T>(true)!=null;
+    static bool Kept(Transform t) => Has<DungeonKitBlock>(t) || Has<DungeonKitPiece>(t) || Has<DungeonSocket>(t) || Has<Character>(t)
+        || Has<DungeonFloorCut>(t) || Has<DungeonSpikeTrap>(t) || Has<DungeonStage>(t) || Has<DungeonAmbush>(t);
+    static bool Moves(Transform t) => Has<PortalArch>(t) || Has<DungeonShrine>(t) || Has<DungeonContainer>(t) || Has<Merchant>(t);
 
     // A taller room (Height Tiles over 1): what hangs from a one-tile ceiling (a hanging chain) is lifted by the extra
     // height so it still hangs from the ceiling, and a moonlit room's patch of night sky stays above the ceiling.

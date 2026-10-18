@@ -16,6 +16,7 @@ public class RoomMusic : MonoBehaviour
     float floorMusicTime, floorMusicVolume;
     bool floorMusicLoops;
     float retakeAt;
+    bool silenced;   // Silence(): no music here; the floor's track comes back once the player is out (or the pocket goes)
 
     void Start()
     {
@@ -25,16 +26,36 @@ public class RoomMusic : MonoBehaviour
 
     void Update()
     {
+        // A pocket finishes laying out after this starts: find the room once its layout exists.
+        if (room < 0 && dungeon != null && dungeon.Layout != null) room = dungeon.Layout.RoomAt(dungeon.CellOf(transform.position));
         if (music == null || room < 0 || dungeon == null || !AudioManager.HasInstance || !PlayerManager.HasInstance) return;
         var player = PlayerManager.Instance.ActiveKind == PlayerKind.Table ? PlayerManager.Instance.Active : null;
         bool inside = player != null && player.IsAlive && dungeon.Layout.RoomAt(dungeon.CellOf(player.transform.position)) == room;
+        if (silenced)
+        {
+            // In a pocket the silence lasts until the player goes back through the way back (the pocket is then taken down).
+            bool pocket = dungeon.LevelData != null && dungeon.LevelData.pocket;
+            if (!inside && !pocket) { silenced = false; End(); }
+            return;
+        }
         if (inside && !playing) Begin();
         else if (!inside && playing) End();
         // Something else changed the track while the player is here (a merchant fading back as they left it): take it back.
         else if (inside && AudioManager.Instance.CurrentMusic != music && Time.time >= retakeAt) { retakeAt = Time.time + fade + .5f; AudioManager.Instance.CrossfadeMusic(music, true, fade, volume); }
     }
 
-    void OnDisable() { if (playing) End(); }
+    void OnDisable() { if (playing || silenced) { silenced = false; End(); } }
+
+    // The music stops at once (and a sting plays over the silence); the floor's track returns as the player leaves.
+    public void Silence(AudioClip sting, float stingVolume = 1f)
+    {
+        if (!AudioManager.HasInstance) return;
+        var audio = AudioManager.Instance;
+        if (!playing) { floorMusic = audio.CurrentMusic; floorMusicTime = audio.CurrentMusicTime; floorMusicVolume = audio.CurrentMusicVolume; floorMusicLoops = audio.CurrentMusicLoops; }
+        playing = false; silenced = true;
+        audio.StopMusic(0f);
+        if (sting != null) audio.PlaySFX2D(sting, stingVolume);
+    }
 
     void Begin()
     {

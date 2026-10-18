@@ -229,6 +229,7 @@ public class TableLevelLoader : MonoBehaviour
                 else if (music != AudioManager.Instance.CurrentMusic) AudioManager.Instance.CrossfadeMusic(music, level.loopMusic, level.musicFadeSeconds, musicVolume);
             }
             completed=ready;
+            if (ready && Dungeon != null) Dungeon.MergeForPlay();   // the reveal is over: big chunks for play
             var floorSave = ready && level.IsDungeon ? player.GetComponent<AdventureSave>() : null;
             if (floorSave != null) floorSave.CaptureFloor();
         }
@@ -444,6 +445,9 @@ public class TableLevelLoader : MonoBehaviour
             if(fade) { ScreenManager.Instance.FadeToBlack(.45f); yield return new WaitForSecondsRealtime(.5f); }
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
             RestoreRoom(.6f);
+            // The run is over: its floor leaves the table under the black (after a death and after the win, so the
+            // ending's morning has a clear table). Its holes in the table close with it.
+            if(environment!=null) { Destroy(environment); environment=null; Dungeon=null; }
             yield return null;
             if(whileDark!=null) { fade=false; whileDark(); }
             if(fade) { ScreenManager.Instance.FadeFromBlack(.6f); fade=false; yield return new WaitForSecondsRealtime(.65f); }
@@ -484,6 +488,14 @@ public class TableLevelLoader : MonoBehaviour
         townBag=Capture(player.Bag);townHotbar=Capture(player.Hotbar);townEquipment.Clear();
         foreach(var item in player.Equipment.EquippedItems) townEquipment.Add(item);
         townSaved=true;
+    }
+    // What the town snapshot holds, so ItemData.PruneVariants keeps those rolled copies for the way back.
+    public void AddTownItemsTo(HashSet<ItemData> items)
+    {
+        if(!townSaved)return;
+        foreach(var s in townBag)if(s?.item!=null)items.Add(s.item);
+        foreach(var s in townHotbar)if(s?.item!=null)items.Add(s.item);
+        foreach(var item in townEquipment)if(item!=null)items.Add(item);
     }
     static ItemStack[] Capture(Inventory inv)
     {

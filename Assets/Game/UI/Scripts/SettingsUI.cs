@@ -64,7 +64,14 @@ public class SettingsUI : MonoBehaviour
             Labels();
         });
         Hook(brightness, v => { UserSettings.Brightness = v; Labels(); });
-        windowMode?.onClick.AddListener(() => { UserSettings.SetDisplay(!UserSettings.Fullscreen, Screen.width, Screen.height); Labels(); });
+        windowMode?.onClick.AddListener(() =>
+        {
+            // Fullscreen fills the desktop at its own size; a window keeps the size it has now.
+            bool full = !UserSettings.Fullscreen;
+            var size = full ? new Vector2Int(Screen.currentResolution.width, Screen.currentResolution.height) : new Vector2Int(Screen.width, Screen.height);
+            UserSettings.SetDisplay(full, size.x, size.y);
+            Labels();
+        });
         resolution?.onClick.AddListener(NextResolution);
         vsync?.onClick.AddListener(() => { UserSettings.VSync = !UserSettings.VSync; Labels(); });
         resetBindings?.onClick.AddListener(() =>
@@ -110,7 +117,10 @@ public class SettingsUI : MonoBehaviour
     void NextResolution()
     {
         var list = Resolutions();
-        int current = list.IndexOf(new Vector2Int(Screen.width, Screen.height));
+        var now = new Vector2Int(Screen.width, Screen.height);
+        int current = list.IndexOf(now);
+        // A window dragged to a size that isn't listed goes to the next listed size above it.
+        if (current < 0) current = list.FindLastIndex(r => r.x < now.x || (r.x == now.x && r.y < now.y));
         var next = list[(current + 1) % list.Count];
         UserSettings.SetDisplay(UserSettings.Fullscreen, next.x, next.y);
         Labels(next);

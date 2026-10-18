@@ -247,7 +247,27 @@ public partial class DungeonGenerator
         chest.guaranteedItems = new List<ItemData>(m.chestItems ?? new List<ItemData>());
         chest.bonusGold = m.bonusGold;
         if (chest.openAudio == null) chest.openAudio = data.chestOpenAudio;
+        ClearChestSpot(go.transform);
         return chest;
+    }
+
+    // What the boss dropped where it fell (its spoils, gold) would sit inside the chest that comes out there: it is
+    // moved to the chest's side, spread a little, on the floor.
+    void ClearChestSpot(Transform chest)
+    {
+        const float footprint = 1.1f;
+        var spot = chest.position;
+        int i = 0;
+        void Move(Transform t)
+        {
+            var flat = t.position - spot; flat.y = 0;
+            if (flat.magnitude > footprint) return;
+            var to = spot + chest.right * (1.4f + .35f * (i / 3)) + chest.forward * (.45f * (i % 3 - 1));
+            if (UnityEngine.AI.NavMesh.SamplePosition(to, out var hit, 1f, UnityEngine.AI.NavMesh.AllAreas)) to = hit.position + Vector3.up * (t.position.y - spot.y);
+            t.position = to; i++;
+        }
+        foreach (var pickup in FindObjectsByType<WorldItem>()) Move(pickup.transform);   // the body may not sit under the floor
+        foreach (var coin in FindObjectsByType<CoinPickup>()) Move(coin.transform);
     }
 
     GameObject Rarer(GameObject a, GameObject b)

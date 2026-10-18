@@ -18,7 +18,7 @@ public partial class DungeonGenerator
         void Lip(Vector3 at, Vector3 scale)
         {
             var lipBox = Box("Skylight trim", at, scale, trim, ceiling);
-            Destroy(lipBox.GetComponent<Collider>());
+            DestroyImmediate(lipBox.GetComponent<Collider>());   // also in Edit-mode builds; before the NavMesh bake
         }
         if (l) { Strip(center + new Vector3(-halfX + fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x - halfX + fx + lip * .5f, lipY, center.z), new Vector3(lip, lipHeight, size.z)); }
         if (r) { Strip(center + new Vector3(halfX - fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x + halfX - fx - lip * .5f, lipY, center.z), new Vector3(lip, lipHeight, size.z)); }
@@ -42,14 +42,14 @@ public partial class DungeonGenerator
         GameObject Piece(string name, Vector3 at, Vector3 scale, Material material)
         {
             var go = ArchitectureBox(name, at, scale, material, geometry);
-            Destroy(go.GetComponent<Collider>());
+            DestroyImmediate(go.GetComponent<Collider>());
             return go;
         }
         if (sill > .01f) { var (c, s) = WallPiece(cell, dir, 0, 0, sill, sill * .5f); Piece("Window sill wall", c, s, lower); }
         { var (c, s) = WallPiece(cell, dir, height - lintel, 0, lintel, height - lintel * .5f); Piece("Window lintel", c, s, upper); }
         var (ledgeCenter, ledgeScale) = WallPiece(cell, dir, sill, TrimDepth * 3, .1f, sill + .05f);
         var ledge = Box("Window ledge", ledgeCenter, ledgeScale, trim, geometry);
-        Destroy(ledge.GetComponent<Collider>());
+        DestroyImmediate(ledge.GetComponent<Collider>());
         // Jambs where the neighbouring cell along the wall has no window facing the same way.
         var end = dir.x != 0 ? Vector2Int.up : Vector2Int.right;
         var along = new Vector3(end.x, 0, end.y);

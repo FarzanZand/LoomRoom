@@ -269,8 +269,9 @@ public static partial class MetaProgressionSetup
     }
 
     static Sprite AttributeIcon(string id) => SheetIcon(AssetDatabase.LoadAssetAtPath<Sprite>(SkillIcons + (id == "constitution" ? "102_Passive_Male_Vitality.png" : id == "intelligence" ? "157_Mastery_Staff.png" : id == "dexterity" ? "139_Critical_Male_Sword.png" : "134_Strength.png")));
-    // Four attribute rows under the name, 90 apart; the bonus line sits under each row's bubbles.
-    public static float AttributeRowY(int i) => -80 - i * 98;
+    // Four attribute rows under the name, 92 apart; the bonus line sits under each row's bubbles, the last one clear of the
+    // paper's border.
+    public static float AttributeRowY(int i) => -74 - i * 92;
 
     static void BuildKeyItems(Transform canvas)
     {
