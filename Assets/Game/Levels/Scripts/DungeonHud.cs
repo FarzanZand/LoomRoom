@@ -6,7 +6,7 @@ public class DungeonHud : MonoBehaviour
     DungeonGenerator dungeon;
     GameObject canvasRoot;
     Texture2D map;
-    bool[,] shop;
+    bool[,] shop, exitRoom;
     RawImage mapImage;
     bool[,] explored;
     float next;
@@ -40,15 +40,20 @@ public class DungeonHud : MonoBehaviour
         int px=Mathf.RoundToInt((player.transform.position.x-origin.x)/cell),py=Mathf.RoundToInt((player.transform.position.z-origin.z)/cell);
         if(shop==null)
         {
-            shop=new bool[w,h];
+            shop=new bool[w,h];exitRoom=new bool[w,h];
             if(dungeon.MerchantRoom>=0)foreach(var c in dungeon.Layout.RoomCells(dungeon.MerchantRoom))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)shop[c.x,c.y]=true;
+            int exit=dungeon.Layout.RoomAt(dungeon.Layout.Exit);
+            if(exit<0 && dungeon.Roles!=null)exit=System.Array.IndexOf(dungeon.Roles,DungeonGenerator.RoomRole.Exit);
+            if(exit>=0)foreach(var c in dungeon.Layout.RoomCells(exit))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)exitRoom[c.x,c.y]=true;
         }
         for(int x=0;x<w;x++)for(int y=0;y<h;y++)
         {
             if(Mathf.Abs(x-px)<=3 && Mathf.Abs(y-py)<=3)explored[x,y]=true;
             Color color=new Color(.025f,.035f,.04f,.85f);
             if(explored[x,y] && dungeon.Layout.floor[x,y])color=shop[x,y] ? new Color(.36f,.68f,.34f,.95f) : new Color(.46f,.48f,.43f,.92f); // the shop room shows green
-            if(explored[x,y] && new Vector2Int(x,y)==dungeon.Layout.Exit)color=new Color(.4f,.85f,.6f);
+            // The exit room shows red, its stairs a brighter red.
+            if(explored[x,y] && dungeon.Layout.floor[x,y] && exitRoom[x,y])color=new Color(.72f,.2f,.17f,.95f);
+            if(explored[x,y] && new Vector2Int(x,y)==dungeon.Layout.Exit)color=new Color(1f,.35f,.28f);
             if(x==px && y==py)color=new Color(1,.8f,.33f);
             map.SetPixel(x,y,color);
         }

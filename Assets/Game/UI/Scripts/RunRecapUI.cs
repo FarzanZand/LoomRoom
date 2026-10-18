@@ -18,6 +18,16 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField] Button newRunButton;
     [SerializeField] Button adventuresButton;
     [SerializeField] Button returnButton;
+    [SerializeField, Tooltip("Revive (debug), after a death in the Editor and development builds: back on your feet where you fell, the run going on (RunManager.RevivePlayer).")]
+    Button reviveButton;
+    [SerializeField, Tooltip("The Dungeon Master mocks a revive: one at random.")]
+    DungeonMaster.Line[] reviveLines =
+    {
+        new() { text = "Fine. I didn't see that." },
+        new() { text = "Dead people don't get up. You did. Cheater." },
+        new() { text = "Again? I'll pretend that didn't happen." },
+        new() { text = "Back so soon? Try not dying this time." },
+    };
     [SerializeField, Min(.05f)] float fadeSeconds = .8f;
     [SerializeField] Color deathColor = new Color(.85f, .22f, .18f);
     [SerializeField] Color victoryColor = new Color(1f, .8f, .35f);
@@ -82,6 +92,7 @@ public class RunRecapUI : MonoBehaviour
         newRunButton?.onClick.AddListener(NewRun);
         adventuresButton?.onClick.AddListener(Adventures);
         returnButton?.onClick.AddListener(ReturnToRoom);
+        reviveButton?.onClick.AddListener(Revive);
     }
 
     public void Show(RunSummary s)
@@ -136,7 +147,28 @@ public class RunRecapUI : MonoBehaviour
             returnPosition ??= rect.anchoredPosition;
             rect.anchoredPosition = wakes ? new Vector2(0f, returnPosition.Value.y) : returnPosition.Value;
         }
+        if (reviveButton != null) reviveButton.gameObject.SetActive(DebugRevive && !s.victory);
         (wakes ? returnButton : newRunButton)?.Select();
+    }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    static bool DebugRevive => true;
+#else
+    static bool DebugRevive => false;
+#endif
+
+    // Revive (debug): up again where you fell, the run going on, and the Dungeon Master has something to say about it.
+    void Revive()
+    {
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if (player == null || player.IsAlive) { Hide(); return; }
+        RunManager.RevivePlayer(player, out _, out _);
+        Hide();
+        if (reviveLines != null && reviveLines.Length > 0)
+        {
+            var line = reviveLines[Random.Range(0, reviveLines.Length)];
+            if (line != null && !line.IsEmpty) DOVirtual.DelayedCall(.6f, () => DungeonMaster.Say(line)).SetLink(gameObject);
+        }
     }
 
     // The ledger: the rows are written in one after another, each whole and with one quiet sound (what was carried out,

@@ -272,13 +272,6 @@ MonoBehaviour:
     perRoom: {x: 0, y: 1}
     chance: 0.6
     rooms: 62
-  - prefab: {fileID: 7031266832873680660, guid: 1f667104e11df4e4bac6a5b04aabcccb, type: 3}
-    placement: 3
-    footprint: {x: 1, y: 1}
-    perTenCells: 0.2
-    perRoom: {x: 0, y: 2}
-    chance: 1
-    rooms: 62
   chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
   chestTiers:
   - prefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}

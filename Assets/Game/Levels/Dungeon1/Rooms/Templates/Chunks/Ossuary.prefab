@@ -48,6 +48,8 @@ MonoBehaviour:
   chance: 0.6
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &1748081608568493510
@@ -98,6 +100,8 @@ MonoBehaviour:
   chance: 0.5
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &3178244929582337461
@@ -148,6 +152,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &3267954939203509888
@@ -198,6 +204,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &3461685986081367546
@@ -248,6 +256,8 @@ MonoBehaviour:
   chance: 0.8
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &4460869870367765385
@@ -298,6 +308,8 @@ MonoBehaviour:
   chance: 0.8
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &7053966936112705594
@@ -400,17 +412,21 @@ MonoBehaviour:
   - '###+###'
   minimumCells: {x: 6, y: 6}
   style: {fileID: 0}
-  heightTiles: 2
+  heightTiles: 1
   openCeiling: 0
   ceilingFrame: 0.3
   skylightRadius: 0
   replaceGeneratedProps: 0
   addFurnishing: 0
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
   roomEvent: 3
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 0}
   previewCellSize: 2
 --- !u!114 &534579796632238811

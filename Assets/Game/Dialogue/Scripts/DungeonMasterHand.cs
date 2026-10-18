@@ -257,6 +257,10 @@ public class DungeonMasterHand : MonoBehaviour
         flat = flat.sqrMagnitude > .01f ? flat.normalized : transform.forward;
         var outside = Vector3.Cross(flat, Vector3.up);   // his left
         float reach = ArmLength(HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand);
+        // Leaning over the table on his forearms (the boss fight) brings his shoulder down to the table's edge: the hand
+        // is raised to just under his face instead, so the beam pours down from up high, not along the table top.
+        var head = animator != null ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        if (head != null) origin.y = Mathf.Max(origin.y, head.position.y - reach * .3f);
         leftTarget = origin + (flat * aimReach + outside * .14f - Vector3.up * .12f) * reach;
         // The elbow low and a little out, so the forearm stands up from it.
         leftHint = origin + (-Vector3.up * .55f + outside * .3f + flat * .1f) * reach;

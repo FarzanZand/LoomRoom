@@ -48,6 +48,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 2628686250012602643, guid: 8605074f6c2806a418b4153f5c861b1f, type: 3}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &2725274092798982271
@@ -98,6 +100,8 @@ MonoBehaviour:
   chance: 0.8
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &4211455228085355787
@@ -148,6 +152,8 @@ MonoBehaviour:
   chance: 0.6
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &4220209251211369141
@@ -198,6 +204,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &4840789205612836124
@@ -248,6 +256,8 @@ MonoBehaviour:
   chance: 0.35
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &5093385131922137139
@@ -298,6 +308,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &6677342515095218943
@@ -348,6 +360,8 @@ MonoBehaviour:
   chance: 0.8
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &8951085660305356992
@@ -430,17 +444,21 @@ MonoBehaviour:
   - '#########'
   minimumCells: {x: 6, y: 6}
   style: {fileID: 0}
-  heightTiles: 2
+  heightTiles: 1
   openCeiling: 0
   ceilingFrame: 0.3
   skylightRadius: 0
   replaceGeneratedProps: 0
   addFurnishing: 0
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
   roomEvent: 0
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 0}
   previewCellSize: 2
 --- !u!114 &8889877419301648582

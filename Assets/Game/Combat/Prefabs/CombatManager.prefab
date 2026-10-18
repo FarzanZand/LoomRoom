@@ -300,8 +300,8 @@ MonoBehaviour:
   chargeReadyKick: 0.3
   chargeReadyAudio: {fileID: 0}
   blockFrontalDot: -0.3
-  blockStaminaCost: 6
-  shieldStaminaPerSecond: 2
+  blockStaminaCost: 12
+  shieldStaminaPerSecond: 4
   enableShieldBash: 1
   shieldBashCooldown: 5
   shieldBashSpeed: 15

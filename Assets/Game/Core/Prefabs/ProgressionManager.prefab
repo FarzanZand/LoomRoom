@@ -44,6 +44,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c04dd86de740594b8c77051febff8db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressionManager
+  enemyBaseDamage: 1.15
+  enemyBaseHealth: 1
   spoils:
   - item: {fileID: 11400000, guid: 0fc4ea10ef14e314f8e3503aadcfb21c, type: 2}
     worth: 1
