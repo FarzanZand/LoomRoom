@@ -896,18 +896,20 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         {
             while (Connected && !cancelled)
             {
-                string waiting = null; int seated = 1, total = 1;
+                string waiting = null; bool training = false; int seated = 1, total = 1;
                 foreach (var p in players)
                 {
                     if (p == null || p.IsOwner || p.Current.inRun || p.Current.inLobby) continue;
                     total++;
-                    if (p.Current.atTable) seated++; else if (waiting == null) waiting = p.DisplayName;
+                    if (p.Current.atTable) seated++; else if (waiting == null) { waiting = p.DisplayName; training = p.Current.mustTrain; }
                 }
                 if (waiting == null) break;
                 if (Time.unscaledTime >= nextNote)
                 {
                     nextNote = Time.unscaledTime + 4f;
-                    NotificationUI.Show($"Waiting for {waiting} to sit down ({seated}/{total}). Esc stands up.");
+                    // The sheet lesson keeps them from the table until they train Blocking: say so, it isn't a wait for nothing.
+                    NotificationUI.Show(training ? $"Waiting for {waiting} to train Blocking at the sheet ({seated}/{total}). Esc stands up."
+                        : $"Waiting for {waiting} to sit down ({seated}/{total}). Esc stands up.");
                 }
                 yield return null;
             }
