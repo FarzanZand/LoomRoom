@@ -333,6 +333,8 @@ public class TableLevelLoader : MonoBehaviour
         if(previousEnvironment!=null){previousEnvironment.SetActive(false);Destroy(previousEnvironment);}
         SetTown(level.kind==TableLevelKind.Town);
         Current=level;
+        // Portal pockets are built with the floor from its seed, so every co-op machine has the same ones.
+        if(level.IsDungeon) PortalArch.PrebuildAll(Dungeon,unchecked(runSeed+(FloorNumber-1)*104729));
         if(level.IsDungeon) CoopWorld.FloorBuilt(Dungeon,CoopWorld.KeyFor(runSeed,FloorNumber));
         // Co-op: each player starts beside the others.
         if(Coop.Running && level.IsDungeon) {

@@ -81,17 +81,23 @@ public static class CoopWorld
         if (!Coop.Running || generator == null) return;
         Clear();
         Floor = generator; FloorKey = floorKey;
-        foreach (var brain in generator.GetComponentsInChildren<EnemyBrain>(true)) AddEnemy(brain.GetComponent<Character>());
-        containers.AddRange(generator.GetComponentsInChildren<DungeonContainer>(true));
-        destructibles.AddRange(generator.GetComponentsInChildren<DungeonDestructible>(true));
-        doors.AddRange(generator.GetComponentsInChildren<DungeonDoor>(true));
-        foreach (var door in doors) door.Opened += OnDoorOpened;
-        spikes.AddRange(generator.GetComponentsInChildren<DungeonSpikeTrap>(true));
-        ambushes.AddRange(generator.GetComponentsInChildren<DungeonAmbush>(true));
-        foreach (var chest in containers) chest.Opened += OnContainerOpened;
+        // The floor and its portals' pockets (built with it, the same on every machine), in that order.
+        var roots = new List<DungeonGenerator> { generator };
+        roots.AddRange(PortalArch.PocketsOf(generator));
         int index = 0;
-        foreach (var item in generator.GetComponentsInChildren<WorldItem>(true)) Tag(item.gameObject, (GeneratedScope + index++) * 64);
-        foreach (var coins in generator.GetComponentsInChildren<CoinPickup>(true)) Tag(coins.gameObject, (GeneratedScope + index++) * 64);
+        foreach (var root in roots)
+        {
+            foreach (var brain in root.GetComponentsInChildren<EnemyBrain>(true)) AddEnemy(brain.GetComponent<Character>());
+            containers.AddRange(root.GetComponentsInChildren<DungeonContainer>(true));
+            destructibles.AddRange(root.GetComponentsInChildren<DungeonDestructible>(true));
+            doors.AddRange(root.GetComponentsInChildren<DungeonDoor>(true));
+            spikes.AddRange(root.GetComponentsInChildren<DungeonSpikeTrap>(true));
+            ambushes.AddRange(root.GetComponentsInChildren<DungeonAmbush>(true));
+            foreach (var item in root.GetComponentsInChildren<WorldItem>(true)) Tag(item.gameObject, (GeneratedScope + index++) * 64);
+            foreach (var coins in root.GetComponentsInChildren<CoinPickup>(true)) Tag(coins.gameObject, (GeneratedScope + index++) * 64);
+        }
+        foreach (var door in doors) door.Opened += OnDoorOpened;
+        foreach (var chest in containers) chest.Opened += OnContainerOpened;
 
         int hash = Hash();
         if (Coop.IsGuest) CoopMessages.ToHost(CoopMessages.FloorHash, new CoopInt { a = floorKey, b = hash });
