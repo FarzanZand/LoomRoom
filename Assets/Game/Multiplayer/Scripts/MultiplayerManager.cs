@@ -954,6 +954,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (IsHost) HostRun();
         TeammateNews();
         TickCountdown();
+        // A ghost on its feet again (the debug revive, or anything else that brings the table player back): no ghost now.
+        if (Ghost && PlayerManager.HasInstance && PlayerManager.Instance.GetPlayer(PlayerKind.Table) is Player t && t != null && t.IsAlive) EndGhost();
     }
 
     // What happens to the others in a run goes in the feed: one of them dies, or is back on the next floor. A change

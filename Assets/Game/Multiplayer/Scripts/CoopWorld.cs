@@ -93,7 +93,7 @@ public static class CoopWorld
             doors.AddRange(root.GetComponentsInChildren<DungeonDoor>(true));
             spikes.AddRange(root.GetComponentsInChildren<DungeonSpikeTrap>(true));
             ambushes.AddRange(root.GetComponentsInChildren<DungeonAmbush>(true));
-            foreach (var item in root.GetComponentsInChildren<WorldItem>(true)) Tag(item.gameObject, (GeneratedScope + index++) * 64);
+            foreach (var item in root.GetComponentsInChildren<WorldItem>(true)) if (!Personal(item.gameObject)) Tag(item.gameObject, (GeneratedScope + index++) * 64);
             foreach (var coins in root.GetComponentsInChildren<CoinPickup>(true)) Tag(coins.gameObject, (GeneratedScope + index++) * 64);
         }
         foreach (var door in doors) door.Opened += OnDoorOpened;
@@ -455,8 +455,16 @@ public static class CoopWorld
     // DungeonPickup.Spawn and CurrencyManager.SpawnCoins: a key for each piece of loot.
     public static void Spawned(GameObject piece)
     {
-        if (!Coop.Running || piece == null || lootScope < 0) return;
+        if (!Coop.Running || piece == null || lootScope < 0 || Personal(piece)) return;
         Tag(piece, lootScope * 64 + Mathf.Min(63, lootCounter++));
+    }
+
+    // The room puzzle's missing tile: hidden by each player's own save (ProgressionManager.HidesTile), so it lies only on
+    // the machines of players still looking for it. Never numbered or shared: it stays that player's own.
+    static bool Personal(GameObject piece)
+    {
+        var item = piece != null ? piece.GetComponent<WorldItem>() : null;
+        return item != null && ProgressionManager.HasInstance && item.Item != null && item.Item == ProgressionManager.Instance.missingTile;
     }
 
     static void Tag(GameObject piece, int key)

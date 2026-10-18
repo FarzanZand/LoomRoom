@@ -147,7 +147,8 @@ public class RunRecapUI : MonoBehaviour
             returnPosition ??= rect.anchoredPosition;
             rect.anchoredPosition = wakes ? new Vector2(0f, returnPosition.Value.y) : returnPosition.Value;
         }
-        if (reviveButton != null) reviveButton.gameObject.SetActive(DebugRevive && !s.victory);
+        // Not in co-op: this recap means everyone has fallen, and the run can't go on for one player alone.
+        if (reviveButton != null) reviveButton.gameObject.SetActive(DebugRevive && !s.victory && !Coop.Running);
         (wakes ? returnButton : newRunButton)?.Select();
     }
 
