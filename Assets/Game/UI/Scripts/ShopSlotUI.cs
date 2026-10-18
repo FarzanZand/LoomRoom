@@ -7,7 +7,7 @@ using UnityEngine.UI;
 // One cell of the player's pack in the shop, laid out like the inventory grid. Hover (or a left click) shows the
 // item and its sell price; a right click (or Submit on a pad or keyboard) sells one. Empty cells stay visible so the
 // grid keeps its shape.
-public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IPointerClickHandler, ISubmitHandler
+public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IPointerClickHandler, ISubmitHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [SerializeField] Image background;
     [SerializeField] Image icon;
@@ -44,5 +44,19 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, I
     }
     public void OnSubmit(BaseEventData eventData) => Sell();
     void Sell() { if (button == null || button.interactable) click?.Invoke(); }
+
+    // Dragged onto the wares, it sells (ShopUI).
+    bool dragging;
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        dragging = item != null && eventData.button == PointerEventData.InputButton.Left && ShopUI.HasInstance && ShopUI.Instance.BeginDrag(item, icon);
+    }
+    public void OnDrag(PointerEventData eventData) { }
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (!dragging) return;
+        dragging = false;
+        if (ShopUI.Instance.EndDrag(eventData.position) == ShopUI.DropZone.Wares) Sell();
+    }
     public void OnSelect(BaseEventData eventData) => hover?.Invoke(item);
 }

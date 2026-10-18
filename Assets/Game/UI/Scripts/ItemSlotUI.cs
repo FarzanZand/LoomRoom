@@ -25,8 +25,6 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     [SerializeField] bool useAuthoredAppearance;
     [SerializeField] Color frameColor = new Color(.5f,.57f,.55f);
     [SerializeField] Color equippedFrameColor = new Color(1,.83f,.35f);
-    [SerializeField, Tooltip("Rugged HUD: the slot of a held item (weapon, shield, readied spell) is tinted this, so what is in hand stands out.")]
-    Color ruggedHeldTint = new Color(1f, .82f, .45f);
     [Tooltip("Authored appearance: tint of a cell an item covers (blue-grey).")]
 
     public Inventory Container { get; private set; }
@@ -107,8 +105,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         }
         // The Rugged HUD (UIManager.hudStyle) draws the slot as the inventory's grey cell: its own colours, not the tint.
         bool rugged = Rugged;
-        bool held = item != null && !GridCell && HeldSlot(Owner != null ? Owner.Equipment : null, Container, Index).HasValue;
-        if (background != null && !useAuthoredAppearance) background.color = PreviewTint ?? (rugged ? held ? ruggedHeldTint : Color.white : item != null ? filledColor : emptyColor);
+        if (background != null && !useAuthoredAppearance) background.color = PreviewTint ?? (rugged ? Color.white : item != null ? filledColor : emptyColor);
         // Authored cells (the bag grid) keep their sprite as it is, taken or not (the item's rarity floor marks it);
         // only the drag footprint tints it.
         else if (background != null && GridCell) background.color = PreviewTint ?? Color.white;
@@ -122,7 +119,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (equippedHighlight != null)
         {
             var eq = Owner != null ? Owner.Equipment : null;
-            equippedHighlight.gameObject.SetActive(!rugged && item != null && !GridCell && HeldSlot(eq, Container, Index).HasValue);
+            // What is in hand (weapon, shield, readied spell) gets the highlight in either HUD style (Rugged: its gold frame).
+            equippedHighlight.gameObject.SetActive(item != null && !GridCell && HeldSlot(eq, Container, Index).HasValue);
         }
         if(!useAuthoredAppearance && dungeonStyled && dungeonFrame!=null)
         {

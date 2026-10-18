@@ -159,6 +159,7 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
     pain:
     - {fileID: 8300000, guid: 9eceb61b211954f40b2c1d028d5052ba, type: 3}
+    painAudio: {fileID: 11400000, guid: 046f5e62dbe184348b02923e56872320, type: 2}
     death:
     - {fileID: 8300000, guid: a98a95988280b2d45974c610bcddde25, type: 3}
     footsteps:

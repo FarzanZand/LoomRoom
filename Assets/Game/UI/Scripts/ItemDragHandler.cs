@@ -43,6 +43,12 @@ public class ItemDragHandler : Singleton<ItemDragHandler>
         BeginDrag(source, source.Container, sourceIndex >= 0 ? sourceIndex : source.Index, null, source.Item, size, cell, grab);
     }
 
+    // From the shop (ShopUI): only the ghost; the shop decides what a drop does.
+    public void BeginGhost(ItemData item, Vector2 size)
+    {
+        BeginDrag(null, null, -1, null, item, size, size, Vector2Int.zero);
+    }
+
     // From the paper doll: a hand item is dragged out of its hotbar slot, a worn item out of its equipment slot.
     public void BeginEquipped(Inventory container, int index, EquipmentSlot? worn, ItemData item, Vector2 size)
     {

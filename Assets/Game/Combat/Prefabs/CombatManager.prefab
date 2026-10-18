@@ -50,13 +50,33 @@ MonoBehaviour:
   swingInterval: 0.6
   attackFromBlock: 1
   blockCancelsWindup: 0
-  blockCutsRecovery: 1
+  blockFromAttackAt: 0.75
   blockRaiseDelay: 0
   windupSpeed: 1.45
   releaseSpeed: 1.25
   heavyReleaseSpeed: 0.95
   enemyHurtAnimationSpeed: 1.3
-  simpleSwings: 1
+  swordSwingSet: 2
+  maceSwingSet: 0
+  swordStaggerStrength: 1
+  maceStaggerStrength: 1
+  comboSpeed: 0.7
+  comboFirstHitSpeed: 1
+  comboSecondHitSpeed: 1
+  comboFinisherSpeed: 1
+  comboCameraStrength: 1
+  comboHitCooldown: 0.43
+  comboFinisherCooldown: 0.9
+  comboSlashLines: 0
+  comboFinisherHeavy: 1
+  comboFinisherDamage: 1.3
+  comboHoldForHeavy: 0.12
+  comboHitStop: 1
+  comboHitStopDuration: 0.065
+  comboFinisherHitStop: 0.13
+  comboStrikeScale: 1.8
+  comboFinisherStrikeScale: 2
+  comboResetTime: 1.1
   ikSwingCameraRotation: {x: 0.4, y: -1.2, z: 0.6}
   ikSwingCameraCurve:
     serializedVersion: 2
@@ -279,7 +299,6 @@ MonoBehaviour:
   chargeShake: 0.45
   chargeReadyKick: 0.3
   chargeReadyAudio: {fileID: 0}
-  blockCancelWindow: 0.18
   blockFrontalDot: -0.3
   blockStaminaCost: 6
   shieldStaminaPerSecond: 2
@@ -341,8 +360,11 @@ MonoBehaviour:
   knockbackDuration: 0.22
   meleeReachMultiplier: 1.2
   meleeWidthMultiplier: 1.25
+  playerMeleeReach: 2.5
+  playerMeleeReachRadius: 0.35
   criticalHitsEnabled: 1
   critChance: 0.08
+  critChanceCap: 0.6
   critMultiplier: 1.75
   critHitStopScale: 2.5
   critAudio: {fileID: 11400000, guid: c6a2858c4e28f704bad62aba7cdb9f3d, type: 2}
@@ -350,11 +372,10 @@ MonoBehaviour:
   fireCircleOnHit: {fileID: 11400000, guid: 09cafb216649d504bb5720e749d48439, type: 2}
   backstabMultiplier: 2.5
   backstabBehindDot: 0.35
-  backstabAlertFromBehind: 1
   backstabHitStopScale: 3
   backstabAudio: {fileID: 11400000, guid: fd765cee151cf714891777d45a481eea, type: 2}
   critNumberScale: 2
-  armorEffectiveness: 0.75
+  armorEffectiveness: 0.65
   armorPerPoint: 0.2
   hitStopEnabled: 0
   lightHitStopDuration: 0.045
@@ -370,6 +391,9 @@ MonoBehaviour:
   hitReactionDamping: 9
   hitReactionInfluenceDepth: 2
   hitReactionParentFalloff: 0.35
+  hitImpactStrength: 1.6
+  impactFromSwing: 0.65
+  impactBodySway: 9
   hitFlashEnabled: 1
   hitFlashColor: {r: 2.4, g: 1.9, b: 1.45, a: 1}
   hitFlashDuration: 0.1

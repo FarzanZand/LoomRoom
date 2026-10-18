@@ -4,8 +4,9 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// One ware in the shop: icon, name, a short info line, count and price. Hover shows details; click buys.
-public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler
+// One ware in the shop: icon, name, a short info line, count and price. Hover shows details; a left or right click
+// buys, and so does dragging it onto the pack (ShopUI).
+public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [SerializeField] Image icon;
     [Tooltip("The ware's rarity floor behind its icon (the inventory's), shown for Fine, Masterwork and other coloured items.")]
@@ -45,4 +46,25 @@ public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler
 
     public void OnPointerEnter(PointerEventData eventData) => hover?.Invoke(item);
     public void OnSelect(BaseEventData eventData) => hover?.Invoke(item);
+
+    // The left button is the Button's own click; the right one buys too.
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button == PointerEventData.InputButton.Right) Buy();
+    }
+
+    void Buy() { if (button == null || button.interactable) click?.Invoke(); }
+
+    bool dragging;
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        dragging = item != null && eventData.button == PointerEventData.InputButton.Left && ShopUI.HasInstance && ShopUI.Instance.BeginDrag(item, icon);
+    }
+    public void OnDrag(PointerEventData eventData) { }
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (!dragging) return;
+        dragging = false;
+        if (ShopUI.Instance.EndDrag(eventData.position) == ShopUI.DropZone.Pack) Buy();
+    }
 }

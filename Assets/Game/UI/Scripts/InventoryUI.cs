@@ -116,6 +116,7 @@ public class InventoryUI : MonoBehaviour
         }
         isOpen = true;
         if (panel != null) panel.SetActive(true);
+        if (ProgressionManager.HasInstance) ProgressionManager.Instance.InventoryOpened();
         var style=feedback!=null?feedback:UIFeedbackSettings.Shared;style?.Play(style.openKey);Animate(true);
         Refresh();
     }

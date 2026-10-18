@@ -45,6 +45,12 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     [SerializeField] Sprite bubbleFilled, bubbleOutline, bubbleDashed, portraitPlaceholder;
     [SerializeField] Color ink = new(.17f, .15f, .14f), pen = new(.58f, .16f, .12f), faint = new(.47f, .45f, .42f), poor = new(.6f, .58f, .55f);
     [SerializeField, Min(.5f)] float feedbackSeconds = 3f;
+    [Header("Quest")]
+    [SerializeField, Tooltip("While the spend-spoils quest is open: its line on the paper (the HUD's quest note hides in menus).")]
+    TMP_Text questNote;
+    [SerializeField, Tooltip("A pen ring drawn round the Train button that quest asks for; it pulses.")]
+    Image questRing;
+    [SerializeField, Min(0)] Vector2 questRingPadding = new(26, 18);
 
     bool open;
     float feedbackUntil;
@@ -140,6 +146,13 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     void Update()
     {
         if (open && feedback != null && feedback.text.Length > 0 && Time.unscaledTime > feedbackUntil) feedback.text = "";
+        // The quest's ring breathes so the eye finds it.
+        if (open && questRing != null && questRing.gameObject.activeSelf)
+        {
+            float k = .5f + .5f * Mathf.Sin(Time.unscaledTime * 3.2f);
+            var c = pen; c.a = Mathf.Lerp(.55f, 1f, k); questRing.color = c;
+            questRing.rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, 1.06f, k);
+        }
     }
 
     void ShowFeedback(string text) { if (feedback == null) return; feedback.text = text; feedbackUntil = Time.unscaledTime + feedbackSeconds; }
@@ -258,6 +271,32 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (portrait != null) { portrait.sprite = cls != null && cls.sheetPortrait != null ? cls.sheetPortrait : portraitPlaceholder; portrait.preserveAspect = true; }
         if (portraitLabel != null) portraitLabel.text = portraits.Count > 0 ? $"Portrait {Mathf.Clamp(meta.PortraitIndex, 0, portraits.Count - 1) + 1} of {portraits.Count}" : "";
         foreach (var r in rows) RefreshRow(meta, r);
+        RefreshQuest(meta);
+    }
+
+    // The spend-spoils quest (ProgressionManager.SpendQuest): its line at the foot of the paper, the Blocking row's name
+    // in pen and a pen ring round its Train button, until it is done.
+    Row questRow;
+    void RefreshQuest(ProgressionManager meta)
+    {
+        bool open = meta.QuestState(ProgressionManager.SpendQuest) == 1;
+        var blocking = meta.Track(AdventureSkill.Blocking);
+        questRow = open && blocking != null ? rows.Find(r => r.trackId == blocking.id) : null;
+        if (questNote != null)
+        {
+            questNote.gameObject.SetActive(questRow != null);
+            if (questRow != null) questNote.text = "Quest: " + meta.QuestText(meta.FindQuest(ProgressionManager.SpendQuest));
+        }
+        foreach (var r in rows) if (r.title != null && Track(r)?.kind == MetaTrackKind.Skill) r.title.color = r == questRow ? pen : ink;
+        if (questRing == null) return;
+        questRing.gameObject.SetActive(questRow != null && questRow.buy != null);
+        if (questRow == null || questRow.buy == null) return;
+        var target = (RectTransform)questRow.buy.transform;
+        var ring = questRing.rectTransform;
+        ring.position = target.TransformPoint(target.rect.center);
+        ring.sizeDelta = target.rect.size + questRingPadding;
+        questRing.color = pen;
+        questRing.raycastTarget = false;
     }
 
     void RefreshRow(ProgressionManager meta, Row r)

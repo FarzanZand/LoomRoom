@@ -55,7 +55,7 @@ public class EquipmentPanelUI : MonoBehaviour
             case StatTooltipUI.Kind.Intelligence: return ExplainAttribute(MetaAttribute.Intelligence,out title,out subtitle,out body);
             case StatTooltipUI.Kind.Armor:
             {
-                float per=CombatManager.ArmorPerPoint,share=CombatManager.HasInstance?CombatManager.Instance.armorEffectiveness:.75f;
+                float per=CombatManager.ArmorPerPoint,share=CombatManager.HasInstance?CombatManager.Instance.armorEffectiveness:.65f;
                 float armorNow=s.ArmorWithoutShield,block=s.BlockArmor;
                 title="Armor";subtitle=block>0?$"{armorNow:0.#}  (+{block:0.#} blocking)":$"{armorNow:0.#}";
                 body=$"<color={dim}>Per hit</color><pos=60%><color={good}>-{armorNow*per:0.#}</color>";

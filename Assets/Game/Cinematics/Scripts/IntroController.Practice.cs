@@ -57,7 +57,9 @@ public partial class IntroController
             }
             if (Met(step)) yield return SayDone(step);
         }
-        yield return Finale();
+        // With a finale room the killer comes only when the player walks into it (WatchFinaleRoom), never on a timer
+        // behind them; a level without one ends here.
+        if (finaleRoom < 0) yield return Finale();
     }
 
     // Each room's quest in the log: given when the player walks in, done when the room is dealt with (its enemies all

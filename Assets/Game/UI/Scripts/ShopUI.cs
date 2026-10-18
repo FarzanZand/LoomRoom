@@ -5,7 +5,9 @@ using UnityEngine.UI;
 
 // The merchant screen. Left: the merchant's wares, supplies (consumables) above equipment. Right: the
 // player's pack like the inventory: the hotbar row, then the bag's whole grid, each bag item drawn once across the
-// cells it takes (bagItemTemplate, cloned per item, like ItemGridUI). Below: the hovered item.
+// cells it takes (bagItemTemplate, cloned per item, like ItemGridUI). Below: the hovered item. A ware is bought with
+// either mouse button or by dragging it onto the pack; a pack item is sold with a right click or by dragging it onto
+// the wares (the drop zones are the areas the rows and the cells cover).
 // Rows and cells are authored in the scene; this only fills them.
 public class ShopUI : Singleton<ShopUI>
 {
@@ -233,13 +235,51 @@ public class ShopUI : Singleton<ShopUI>
         if (feedback != null && !string.IsNullOrEmpty(message)) feedback.text = message;
     }
 
+    // ── Dragging between the wares and the pack ─────────────────────
+
+    public enum DropZone { None, Wares, Pack }
+    readonly Vector3[] corners = new Vector3[4];
+
+    // The ghost follows the pointer (ItemDragHandler's, as in the inventory); false when there is no shop open.
+    public bool BeginDrag(ItemData item, Image from)
+    {
+        if (!open || item == null) return false;
+        var size = from != null ? from.rectTransform.rect.size : new Vector2(64, 64);
+        if (ItemDragHandler.HasInstance) ItemDragHandler.Instance.BeginGhost(item, size);
+        return true;
+    }
+
+    public DropZone EndDrag(Vector2 screen)
+    {
+        if (ItemDragHandler.HasInstance) ItemDragHandler.Instance.End();
+        if (!open) return DropZone.None;
+        if (Covers(packSlots, screen)) return DropZone.Pack;
+        if (Covers(supplyRows, screen) || Covers(gearRows, screen)) return DropZone.Wares;
+        return DropZone.None;
+    }
+
+    // Inside the box round every element (empty rows and cells count: the zone keeps its shape), with a margin.
+    bool Covers<T>(T[] parts, Vector2 screen) where T : Component
+    {
+        if (parts == null) return false;
+        float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
+        foreach (var p in parts)
+        {
+            if (p == null) continue;
+            ((RectTransform)p.transform).GetWorldCorners(corners);
+            foreach (var c in corners) { minX = Mathf.Min(minX, c.x); minY = Mathf.Min(minY, c.y); maxX = Mathf.Max(maxX, c.x); maxY = Mathf.Max(maxY, c.y); }
+        }
+        const float margin = 24f;
+        return screen.x >= minX - margin && screen.x <= maxX + margin && screen.y >= minY - margin && screen.y <= maxY + margin;
+    }
+
     // The hovered item: big icon, name, its tooltip, and what it costs or fetches here.
     void ShowDetails(ItemData item, bool ware = false)
     {
         bool any = item != null;
         if (detailsIcon != null) { detailsIcon.sprite = any ? item.icon : null; detailsIcon.enabled = detailsIcon.sprite != null; }
         if (detailsName != null) detailsName.text = any ? item.itemName : "";
-        if (details != null) details.text = any ? item.BuildTooltip() : "Hover over an item to see it. Click a ware to buy it; right-click something in your pack to sell it.";
+        if (details != null) details.text = any ? item.BuildTooltip() : "Hover over an item to see it. Click a ware or drag it to your pack to buy it. Right click something in your pack or drag it to the wares to sell it.";
         if (detailsPrice == null || merchant == null) return;
         if (!any) { detailsPrice.text = ""; return; }
         if (ware)
