@@ -15,7 +15,7 @@ MonoBehaviour:
   displayName: Intro cellar
   entryMessage: 
   roomStyles:
-  - style: {fileID: 0}
+  - style: {fileID: 11400000, guid: 5e6a07315aa79734498dcba82c591e34, type: 2}
     weight: 1
   corridorStyles: []
   roomShapes: []
@@ -52,7 +52,7 @@ MonoBehaviour:
     moonlitRooms: 1
     eerieRooms: 1
     eerieChance: 0.06
-  lightRadius: 8
+  lightRadius: 0
   filmicLook: 1
   shadowTint: {r: 0.55, g: 0.85, b: 1, a: 1}
   lampTint: {r: 1.06, g: 0.97, b: 0.86, a: 1}
@@ -72,7 +72,7 @@ MonoBehaviour:
     color: {r: 1, g: 0.9380054, b: 0.8915094, a: 1}
   overrideTorchColor: 0
   torchColor: {r: 1, g: 0.6, b: 0.3, a: 1}
-  torchBrightness: 1.5
+  torchBrightness: 1
   enemies:
   - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
     weight: 2

@@ -59,8 +59,21 @@ public class SkeletonParty : MonoBehaviour
         }
         foreach (var chest in dungeon.GetComponentsInChildren<DungeonContainer>())
             if (chest != null && !chests.Contains(chest) && dungeon.Layout.RoomAt(dungeon.CellOf(chest.transform.position)) == room)
-            { chests.Add(chest); chest.Opened += _ => Spoil(chestLine); }
+            {
+                chests.Add(chest); chest.Opened += _ => Spoil(chestLine);
+                // Its front (the lid's opening) toward the player, who comes in from where they are now: the portal's
+                // side room in a pocket, the way they will walk in on a floor.
+                var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+                if (player != null)
+                {
+                    var toPlayer = player.transform.position - chest.transform.position; toPlayer.y = 0f;
+                    if (toPlayer.sqrMagnitude > .01f) chest.transform.rotation = Quaternion.LookRotation(SnapToAxis(toPlayer));
+                }
+            }
     }
+
+    // The nearest of the four room axes, so the chest sits square to the walls.
+    static Vector3 SnapToAxis(Vector3 v) => Mathf.Abs(v.x) >= Mathf.Abs(v.z) ? new Vector3(Mathf.Sign(v.x), 0f, 0f) : new Vector3(0f, 0f, Mathf.Sign(v.z));
 
     void Update()
     {

@@ -71,19 +71,36 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     bool IsReleasing => AnyLayerReleasing();
     // With CombatManager.attackFromBlock the shield is lowered for the whole swing and comes back up after it.
     static bool AttackFromBlock => CombatManager.HasInstance && CombatManager.Instance.attackFromBlock;
-    static bool BlockCutsRecovery => CombatManager.HasInstance && CombatManager.Instance.blockCutsRecovery;
+    static float BlockFromAttackAt => CombatManager.HasInstance ? CombatManager.Instance.blockFromAttackAt : .75f;
     static bool BlockCancelsWindup => CombatManager.HasInstance && CombatManager.Instance.blockCancelsWindup;
 
     // A swing has three parts: windup (until the blade swings), strike (until its hitbox closes) and recovery. The
-    // shield is kept down through the windup and the strike; once the hitbox has closed, block raises it at once.
+    // shield is kept down until CombatManager.blockFromAttackAt of the attack's animation has played (ShieldKeptDown).
     // A block press during the windup cancels the swing (BlockCancelsWindup).
     Hitbox weaponHitbox;
     bool strikeOpened, strikeClosed;   // this swing's hitbox has opened / opened and closed again
     bool secondaryWasHeld;
     float guardRaisedAt = -10f;
     bool wasGuarding;
-    bool InRecovery => strikeClosed;
-    bool Committed => IsAttacking && !InRecovery && !cancelling;
+    bool ShieldKeptDown => IsAttacking && !cancelling && AttackProgress() < BlockFromAttackAt;
+    // How much of the attack's animation has played: the strike's own progress (a windup still being held counts as 0).
+    // It only counts up within a swing (its last state handing over to the next must not lower the shield again).
+    float progressSeen; int progressFrame = -1;
+    float AttackProgress()
+    {
+        if (!AnimatorHelper.Ready(armsAnimator)) return 1f;
+        if (progressFrame == Time.frameCount) return progressSeen;
+        progressFrame = Time.frameCount;
+        if (!IsAttacking) return progressSeen = 0f;
+        float most = progressSeen;
+        for (int layer = 0; layer < armsAnimator.layerCount; layer++)
+        {
+            var info = armsAnimator.IsInTransition(layer) ? armsAnimator.GetNextAnimatorStateInfo(layer) : armsAnimator.GetCurrentAnimatorStateInfo(layer);
+            if (AnimatorHelper.HasTag(info, releaseHash) || AnimatorHelper.HasTag(info, alternateReleaseHash) || AnimatorHelper.HasTag(info, heavyReleaseHash))
+                most = Mathf.Max(most, Mathf.Clamp01(info.normalizedTime));
+        }
+        return progressSeen = most;
+    }
     bool cancelling;   // a cancelled windup blending out: already harmless, the shield may rise
     [SerializeField] string attackCancelParam = "AttackCancel";
 
@@ -111,7 +128,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     float cancelSetAt = -10f;
     bool heldThroughCancel;   // the attack button still down from the cancelled swing: it starts nothing until pressed anew
     public bool IsGuarding => player != null && player.IsActive && ShieldHeld && (bash == null || !bash.Busy) &&
-        !(BlockCutsRecovery ? Committed : AttackFromBlock && IsAttacking) &&
+        !ShieldKeptDown &&
         (!CombatManager.HasInstance || Time.time - guardRaisedAt >= CombatManager.Instance.blockRaiseDelay) &&
         (!GameManager.HasInstance || GameManager.Instance.GameplayActive) &&
         InputManager.HasInstance && InputManager.Instance.SecondaryHeld && Time.time >= blockLockUntil &&
@@ -175,7 +192,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     int queuedPresses;   // presses not yet turned into a windup, capped so spam can't bank swings
     void OnAttackStarted()
     {
-        if (AttackFromBlock && !BlockCutsRecovery) blockLockUntil = Time.time + (CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f);
+        progressSeen = 0f; progressFrame = -1;
         strikeOpened = strikeClosed = false;
         queuedPresses = Mathf.Max(0, queuedPresses - 1);
         windingUp = true;
@@ -341,8 +358,6 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         queuedPresses = Mathf.Min(queuedPresses + 1, 2);
         // A press stays valid at least until the swing interval lets the next swing start, so a tap is never eaten.
         attackBufferedUntil = Mathf.Max(Time.time + (CombatManager.HasInstance ? CombatManager.Instance.attackInputBuffer : .22f), lastSwingAt + SwingInterval + .05f);
-        // Without attack-from-block a press locks the shield out at once; with it, only a swing that starts does (OnAttackStarted).
-        if (!AttackFromBlock && !BlockCutsRecovery) blockLockUntil = Time.time + (CombatManager.HasInstance ? CombatManager.Instance.blockCancelWindow : 0.5f);
     }
 
     void OnPrimaryReleased()
@@ -435,7 +450,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (secondary && !blockLocked && ShieldHeld && player.Stats != null &&
             player.Stats.HasStat(StatType.MaxStamina) && (player.Stats.IsExhausted || player.Stats.CurrentStamina <= 0))
             player.Stats.ReportInsufficientStamina();
-        bool raising = secondary && ShieldHeld && !(BlockCutsRecovery ? Committed : AttackFromBlock && IsAttacking);
+        bool raising = secondary && ShieldHeld && !ShieldKeptDown;
         if (raising && !wasGuarding) guardRaisedAt = Time.time;
         wasGuarding = raising;
         bool guarding = IsGuarding;

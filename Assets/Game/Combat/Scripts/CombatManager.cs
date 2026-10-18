@@ -28,8 +28,8 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Pressing block during a windup (before the blade can hit) cancels the swing: no damage, the shield comes up at once. The next swing still waits for Swing Interval. Off (the user found it odd): a swing once started always strikes.")]
     public bool blockCancelsWindup = false;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
-    [Tooltip("The shield is locked out only while the blade can hit (the swing's strike, until its hitbox closes); in the recovery after it, block raises the shield at once. Off: block waits for the whole swing to play out (Block Cancel Window applies).")]
-    public bool blockCutsRecovery = true;
+    [Range(0f, 1f), Tooltip("How much of an attack's animation plays before block can raise the shield again (0.75 = the last quarter). 1 = only once the swing is over.")]
+    public float blockFromAttackAt = .75f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
     [Min(0f), Tooltip("Seconds after the shield comes up before it stops hits (0 = at once). Raise it if swing-block-swing feels too safe.")]
     public float blockRaiseDelay = 0f;
@@ -244,9 +244,6 @@ public class CombatManager : Singleton<CombatManager>
     public AudioData chargeReadyAudio;
 
     // ── Player: Block ──
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
-    [Tooltip("Seconds after attacking that block is locked out. Set to just under your attack windup length.")]
-    public float blockCancelWindow = 0.5f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
     [Tooltip("Dot product threshold: a hit is frontal (blockable) when dot(facing, hitDir) is below this.")]
     [Range(-1f, 1f)] public float blockFrontalDot = -0.3f;

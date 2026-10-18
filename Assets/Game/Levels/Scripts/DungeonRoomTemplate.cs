@@ -61,6 +61,8 @@ public class DungeonRoomTemplate : MonoBehaviour
     // Retired: a room's Enemy sockets always count toward its roll now (generated enemies only make up the rest, so a
     // generated room stays at DungeonGenerator.MaxGeneratedPerRoom or fewer unless its sockets hold more).
     [HideInInspector] public bool replaceGeneratedEnemies = true;
+    [Tooltip("Only this room's own Enemy sockets: the floor never adds generated enemies to make up its roll (a set piece with an exact cast, like the Skeleton Party room).")]
+    public bool socketEnemiesOnly;
     [Tooltip("Combat rooms: Rolled lets the floor roll an ambush or a sleeping pack like any room; Ambush and Sleeping Pack make it one (when the level allows it); None never.")]
     public DungeonRoomEvent roomEvent;
 

@@ -158,3 +158,5 @@ AvatarMask:
     m_Weight: 0
   - m_Path: SM_Chr_Witch_Female_01
     m_Weight: 0
+  - m_Path: Root/Hips/Spine_01/Spine_02/Spine_03/Clavicle_L/Shoulder_L/Elbow_L/Hand_L/LeftHand_Socket
+    m_Weight: 1

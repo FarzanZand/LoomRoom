@@ -351,6 +351,7 @@ public partial class DungeonGenerator : MonoBehaviour
             int count=guarded ? 1 : random.Next(MinEnemiesPerRoom,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
             // A hand-built room's own Enemy sockets count toward the roll; generated enemies make up the rest.
             count=Mathf.Max(0,count-SocketEnemies(i));
+            if(TemplateOf(i) is DungeonRoomTemplate cast && cast.socketEnemiesOnly)count=0;   // a set piece: its sockets are the whole cast
             if(i==MerchantRoom)count=0;
             if(EventOf(i)==RoomEvent.Ambush)count=0;
             for(int j=0;j<count;j++)
