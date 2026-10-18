@@ -15,7 +15,7 @@ MonoBehaviour:
   displayName: The Catacombs
   entryMessage: You go down into the catacombs.
   roomStyles:
-  - style: {fileID: 11400000, guid: 45f2ff5c0d2776645bb1e6d731a0534e, type: 2}
+  - style: {fileID: 11400000, guid: eddc5d2c046762d428fcbe2c400d8569, type: 2}
     weight: 1
   - style: {fileID: 11400000, guid: 84bca820ca702834eb6776d5bd842dd5, type: 2}
     weight: 1

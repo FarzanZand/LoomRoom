@@ -107,6 +107,9 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
             }
         }
         if(guaranteedItems!=null)foreach(var item in guaranteedItems)if(item!=null)drops.Add(new LootSource.Drop(item,1));
+        // The room puzzle's missing tile: every chest after the starting room's holds it until it is picked up.
+        if(chest && ProgressionManager.HasInstance && ProgressionManager.Instance.TileDueFromChest(startingKit))
+        { ProgressionManager.Instance.ClearLooseTiles(); drops.Add(new LootSource.Drop(ProgressionManager.Instance.missingTile,1)); }
         // Spoils for the tally (ProgressionManager): chests only, at their own chance.
         if(chest && !startingKit && !onlyGuaranteed && ProgressionManager.HasInstance){var spoils=ProgressionManager.Instance.RollSpoils(seed,floorNumber,true);if(spoils!=null)drops.Add(new LootSource.Drop(spoils,1));}
         gold+=bonusGold;
