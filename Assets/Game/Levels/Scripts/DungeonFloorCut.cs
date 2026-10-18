@@ -119,7 +119,7 @@ public class DungeonFloorCut : MonoBehaviour
             HitPoint = brain.transform.position + Vector3.up, Direction = dir.normalized, SwingDirection = dir.normalized + Vector3.down * .4f,
         };
         brain.Character.Stats.TakeDamage(info);
-        MessageLog.Post($"The {brain.Character.DisplayName} falls into the pit.", MessageKind.Combat);
+        MessageLog.Post($"{brain.Character.TheNameCap} falls into the pit.", MessageKind.Combat);
     }
 
     void OnDrawGizmos()

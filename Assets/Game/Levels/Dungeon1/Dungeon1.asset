@@ -19,7 +19,10 @@ MonoBehaviour:
   environmentPrefab: {fileID: 0}
   stages:
   - biome: {fileID: 11400000, guid: 6b190885359363a4ba347cab4be462eb, type: 2}
-    floors: 2
+    floors: 1
+    boss: 0
+  - biome: {fileID: 11400000, guid: 5ee85df962efbc140ad726eaefcfd87b, type: 2}
+    floors: 1
     boss: 0
   - biome: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
     floors: 1
@@ -162,11 +165,7 @@ MonoBehaviour:
   windowLintel: 0.75
   windowJamb: 0.45
   defaultStyle: {fileID: 11400000, guid: 3ed247dad4868cf4eb56e62b707f908e, type: 2}
-  roomStyles:
-  - style: {fileID: 11400000, guid: 45f2ff5c0d2776645bb1e6d731a0534e, type: 2}
-    weight: 2
-  - style: {fileID: 11400000, guid: 5e6a07315aa79734498dcba82c591e34, type: 2}
-    weight: 2
+  roomStyles: []
   corridorsCopyConnectedRoomStyle: 1
   corridorStyles:
   - style: {fileID: 11400000, guid: 8fa09f6c77b44c298826710df956c647, type: 2}

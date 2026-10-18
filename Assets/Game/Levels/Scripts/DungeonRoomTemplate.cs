@@ -164,7 +164,7 @@ public class DungeonRoomTemplate : MonoBehaviour
         float cellSize = CellSize;
         foreach (Transform child in GetComponentsInChildren<Transform>())
         {
-            if (child == transform || (child.GetComponent<DungeonSocket>() == null && child.GetComponent<DungeonTemplatePiece>() == null)) continue;
+            if (child == transform || (child.GetComponent<DungeonSocket>() == null && child.GetComponent<DungeonTemplatePiece>() == null && child.GetComponent<EnemySpawner>() == null)) continue;
             var p = child.localPosition;
             float half = cellSize * .5f;
             float Snap1(float v, int cells) => (cells % 2 == 0 ? Mathf.Round((v - half) / cellSize) * cellSize + half : Mathf.Round(v / cellSize) * cellSize);
@@ -174,6 +174,25 @@ public class DungeonRoomTemplate : MonoBehaviour
     }
 
 #if UNITY_EDITOR
+    // ── Enemy spawners ────────────────────────────────────────────────
+
+    const string SpawnerPrefab = "Assets/Game/Characters/Enemies/Enemy Spawner.prefab";
+
+    // An Enemy Spawner in the room, a cell from the last one so they don't stack; selected, so it can be moved and
+    // given an enemy at once (empty = the room's or biome's pick).
+    [Button("Add enemy spawner"), PropertyTooltip("Adds an Enemy Spawner to this room and selects it. Leave its Enemy empty for one from the biome, or set one.")]
+    void AddEnemySpawner()
+    {
+        var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(SpawnerPrefab);
+        if (prefab == null) { Debug.LogWarning($"No Enemy Spawner prefab at {SpawnerPrefab}.", this); return; }
+        int n = GetComponentsInChildren<EnemySpawner>(true).Length;
+        var go = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(prefab, transform);
+        UnityEditor.Undo.RegisterCreatedObjectUndo(go, "Add enemy spawner");
+        float c = CellSize;
+        go.transform.localPosition = new Vector3(((n % 3) - 1) * c, 0f, (n / 3 + 1) * c);
+        UnityEditor.Selection.activeGameObject = go;
+    }
+
     // ── Footprint painter ─────────────────────────────────────────────
 
     [OnInspectorGUI, PropertyOrder(-1), ShowIf(nameof(paintFootprint))]

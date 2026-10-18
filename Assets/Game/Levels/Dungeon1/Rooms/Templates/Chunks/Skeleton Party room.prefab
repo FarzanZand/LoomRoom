@@ -302,7 +302,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   chestMusicStop: {fileID: 8300000, guid: b5117b351f5102f45b89205a39cf7533, type: 3}
-  chestMusicStopVolume: 1
+  chestMusicStopVolume: 0.5
   chestStare: 3
   stareTurnSpeed: 360
 --- !u!1 &6676549144639257178

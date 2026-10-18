@@ -1,0 +1,355 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &7832125193726786742
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 364927142459675572, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1041758593921466744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2558251755797722474, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3965925828561663029, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4493560535401515221, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: data
+      value: 
+      objectReference: {fileID: -1049044730049950158}
+    - target: {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_Name
+      value: Not a witch
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680819086186657364, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680819086186657364, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680819086186657364, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680819086186657364, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680819086186657364, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680819086186657364, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680819086186657364, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680819086186657364, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680819086186657364, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680819086186657364, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7371746886780524076}
+  m_SourcePrefab: {fileID: 100100000, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+--- !u!1 &3313456664254303774 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+  m_PrefabInstance: {fileID: 7832125193726786742}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7371746886780524076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3313456664254303774}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26ebdd7e0197eac43a58100e98825444, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeepingEnemy
+  weeping: {fileID: 8300000, guid: e642853b992f62c419d5c4e210eb26f0, type: 3}
+  weepingVolume: 0.8
+  weepingRange: 18
+  wakeScream: {fileID: 0}
+  wakeLine:
+    text: You shouldn't have done that.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  openWithVolley: 1
+  maxTier: 2
+  spoils: {fileID: 0}
+  spoilsCount: 1
+--- !u!114 &-1049044730049950158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fe21949aa936544fa1740287c279a2a, type: 3}
+  m_Name: Not a witch
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterData
+  portrait: {fileID: 0}
+  characterName: Not a witch
+  properName: 1
+  faction: 2
+  description: She kneels in the moonlight and weeps. Leave her be.
+  creatureKind: 1
+  stats:
+  - stat: 6
+    baseValue: 1
+    min: 0
+    max: 0
+  - stat: 7
+    baseValue: 1
+    min: 0
+    max: 0
+  - stat: 0
+    baseValue: 80
+    min: 0
+    max: 0
+  - stat: 2
+    baseValue: 7
+    min: 0
+    max: 0
+  - stat: 1
+    baseValue: 4
+    min: 0
+    max: 0
+  audio:
+    idle:
+    - {fileID: 8300000, guid: d1a332b63479f9d47b9d98330d69b641, type: 3}
+    - {fileID: 8300000, guid: cca8f9ceb0da2e748a5f0816001ccd03, type: 3}
+    - {fileID: 8300000, guid: 735fee94ee583a34db94a4529d984050, type: 3}
+    - {fileID: 8300000, guid: 834796c7aab09a542adbd1234f756fcf, type: 3}
+    - {fileID: 8300000, guid: 3e5b020ebc233bf4fa7ed272fc529852, type: 3}
+    alert:
+    - {fileID: 8300000, guid: 31de1cccf148f0747b9a3d3353af3fd5, type: 3}
+    pain:
+    - {fileID: 8300000, guid: 9eceb61b211954f40b2c1d028d5052ba, type: 3}
+    painAudio: {fileID: 11400000, guid: 046f5e62dbe184348b02923e56872320, type: 2}
+    death:
+    - {fileID: 8300000, guid: d7b847c2faea56048a132bffb57f95f9, type: 3}
+    footsteps:
+    - {fileID: 8300000, guid: badf5acfcf64f77489f701c8cdc6b1f5, type: 3}
+    - {fileID: 8300000, guid: 869818a031ae8094388e923cbbd68881, type: 3}
+    - {fileID: 8300000, guid: 44a4a1908f87a7547b5306ca6f9e5e8d, type: 3}
+    - {fileID: 8300000, guid: 59e465d6da0164b4ba31dc8e39a9a502, type: 3}
+    - {fileID: 8300000, guid: e2211ab21cd762e4a9f11f5b8c402207, type: 3}
+    impact:
+    - {fileID: 8300000, guid: 1fb51b981956d7543a9899449b265042, type: 3}
+    - {fileID: 8300000, guid: b716211feea6460478ec3add51400d9d, type: 3}
+    - {fileID: 8300000, guid: dfb30afbfd26c0e4694cf5c9501ca820, type: 3}
+    - {fileID: 8300000, guid: fb8cfd63c9e610347a25369a6ed70158, type: 3}
+    voiceVolume: 0.9
+    footstepVolume: 0.55
+    impactVolume: 0.45
+    pitch: 0.85
+    pitchVariance: 0.08
+    minDistance: 2
+    maxDistance: 26
+    idleInterval: {x: 6, y: 14}
+    walkStepInterval: 0.55
+    runStepInterval: 0.34
+    painCooldown: 0.6
+  gore:
+    kind: 1
+    color: {r: 0.72, g: 0.05, b: 0.04, a: 1}
+    amount: 1
+    burstOnDeath: 0
+    killSound: {fileID: 11400000, guid: b56fdf616de73c24fafa0d20de2d326b, type: 2}
+  hurtTrigger: Hurt
+  deathTrigger: Death
+  deathDisableDelay: 8
+  behaviour: {fileID: 0}
+  behaviourSettings:
+    defaultState: 0
+    aggressionMode: 0
+    wanderRadius: 3
+    minWanderDistance: 2
+    minIdleTime: 2
+    maxIdleTime: 6
+    wanderZoneRadius: 4
+    detectionRadius: 12
+    fieldOfView: 140
+    eyeHeight: 1.6
+    closeDetectionRadius: 2.5
+    obstacleMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    investigateNoise: 1
+    hearingRadius: 6
+    investigateTime: 4
+    loseSightGracePeriod: 3
+    maxSearchTime: 5
+    useChaseSpeed: 1
+    chaseSpeed: 4.2
+    useWanderSpeed: 1
+    wanderSpeed: 0.7
+    acceleration: 30
+    preferredRangeFraction: 0.7
+    circleTarget: 1
+    circleSpeedFraction: 0.22
+    circleSwitchInterval: {x: 0.9, y: 2}
+    spacingSpeedFraction: 0.8
+    passiveAngularSpeed: 360
+    chaseAngularSpeed: 720
+    attackFaceSpeed: 900
+    windupTrackSpeed: 240
+  attacks:
+  - name: Bite / strike
+    weight: 1
+    animatorTrigger: Attack
+    minRange: 0
+    maxRange: 1.65
+    cooldown: 1.4
+    facingAngle: 45
+    hitboxIndex: 0
+    fallbackHitDelay: 0.45
+    hit:
+      useDefaultEffects: 1
+      hitAudio: {fileID: 0}
+      swingAudio: {fileID: 0}
+      heavySwingAudio: {fileID: 0}
+      hitParticle: {fileID: 0}
+      damageMultiplier: 1
+      knockbackForce: -1
+      hitStopScale: 1
+  archer: 0
+  archery:
+    bow: {fileID: 0}
+    arrow: {fileID: 0}
+    animatorTrigger: BowShot
+    minRange: 3
+    maxRange: 14
+    cooldown: 2.2
+    aimTrackSpeed: 300
+    fallbackReleaseTime: 1.3
+    maxHeightDifference: 4
+    arrowSpeed: 22
+    spread: 2.5
+    leadTarget: 0.5
+    hit:
+      useDefaultEffects: 1
+      hitAudio: {fileID: 0}
+      swingAudio: {fileID: 0}
+      heavySwingAudio: {fileID: 0}
+      hitParticle: {fileID: 0}
+      damageMultiplier: 1
+      knockbackForce: 1.5
+      hitStopScale: 0.5
+    pullAudio: {fileID: 0}
+    fireAudio: {fileID: 0}
+  caster: 1
+  spells:
+  - spell: {fileID: 11400000, guid: 97ab782aa2e5c9545b64aafe17d3c498, type: 2}
+    weight: 2
+    handEffect: {fileID: 6658911669708422142, guid: 916fb89ef926e444ab27adab792c11fa, type: 3}
+    minRange: 3
+    maxRange: 12
+    cooldown: 4.9
+    animatorTrigger: CastSpell
+    releaseTime: 1.35
+    aimTrackSpeed: 0
+    maxHeightDifference: 4
+    damageMultiplier: 0.42000002
+    spread: 2
+    leadTarget: 0.4
+    volley: 0
+    volleySettings:
+      count: 3
+      spawnInterval: 1
+      rise: 1.2
+      spread: 1.3
+      riseSeconds: 0.5
+      holdSeconds: 1
+      launchInterval: 1
+      rampSeconds: 0.7
+      scale: 1.3
+      homing: 0
+  - spell: {fileID: 11400000, guid: 09cafb216649d504bb5720e749d48439, type: 2}
+    weight: 1
+    handEffect: {fileID: 6658911669708422142, guid: 916fb89ef926e444ab27adab792c11fa, type: 3}
+    minRange: 3
+    maxRange: 10
+    cooldown: 9.8
+    animatorTrigger: CastSpell
+    releaseTime: 1.35
+    aimTrackSpeed: 0
+    maxHeightDifference: 4
+    damageMultiplier: 0.6
+    spread: 2
+    leadTarget: 0.3
+    volley: 0
+    volleySettings:
+      count: 3
+      spawnInterval: 1
+      rise: 1.2
+      spread: 1.3
+      riseSeconds: 0.5
+      holdSeconds: 1
+      launchInterval: 1
+      rampSeconds: 0.7
+      scale: 1.3
+      homing: 0
+  - spell: {fileID: 11400000, guid: 97ab782aa2e5c9545b64aafe17d3c498, type: 2}
+    weight: 1.5
+    handEffect: {fileID: 6658911669708422142, guid: 916fb89ef926e444ab27adab792c11fa, type: 3}
+    minRange: 4
+    maxRange: 14
+    cooldown: 14
+    animatorTrigger: CastSpell
+    releaseTime: 1.35
+    aimTrackSpeed: 0
+    maxHeightDifference: 4
+    damageMultiplier: 0.42000002
+    spread: 2
+    leadTarget: 0.4
+    volley: 1
+    volleySettings:
+      count: 3
+      spawnInterval: 1
+      rise: 0.9
+      spread: 0.9
+      riseSeconds: 0.5
+      holdSeconds: 1
+      launchInterval: 1
+      rampSeconds: 0.7
+      scale: 1.1
+      homing: 0
+  closesIn: 1
+  spellGap: 4
+  experience: 60

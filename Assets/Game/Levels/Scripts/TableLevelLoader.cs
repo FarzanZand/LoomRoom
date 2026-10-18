@@ -315,6 +315,8 @@ public class TableLevelLoader : MonoBehaviour
         if(previousEnvironment!=null){previousEnvironment.SetActive(false);Destroy(previousEnvironment);}
         SetTown(level.kind==TableLevelKind.Town);
         Current=level;
+        // Portal pockets are built with the floor from its seed (each portal keeps its own until the floor goes).
+        if(level.IsDungeon) PortalArch.PrebuildAll(Dungeon,unchecked(runSeed+(FloorNumber-1)*104729));
         if(lighting!=null && !deferPlayerSwitch) {
             if(level.IsBoard) lighting.BlendToMood(level.BoardLighting(lighting,FloorNumber),0);
             else if(level.IsDungeon) lighting.BlendToMood(level.DungeonLighting(FloorNumber),0);

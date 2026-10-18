@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Warrior
   description: Sword, shield and good armor. Tough, but bad at magic.
   portrait: {fileID: 21300000, guid: b0ce9cefd7c61b146ad5a11324c3a8af, type: 3}
-  sheetPortrait: {fileID: 0}
+  sheetPortrait: {fileID: 21300000, guid: 81b5f8bf36e816c4d925f991e68d4c24, type: 3}
   miniature: {fileID: 1153340145165615227, guid: 108c08a331d94194691faf3e8ddfd646, type: 3}
   unlockFlag: 
   equipment:

@@ -6,7 +6,8 @@ using UnityEngine;
 // beside the floor (Pocket Level gives the map and the rest; Biome gives its stone and enemies, e.g. a later biome as
 // a taste of what's to come). The pocket gets a copy of the arch as the way back (in its side room, else a corner), and
 // the player arrives just in front of it facing into the room; stepping through it returns the player to where they
-// went in and takes the pocket down.
+// went in. The pocket is built with the floor (PrebuildAll, from the floor's seed), so every player in co-op has the
+// same one and its enemies are indexed with the floor's; it stays up until the floor goes.
 public class PortalArch : MonoBehaviour
 {
     public enum Mode { Enter = 0, Return = 1 }
@@ -37,11 +38,15 @@ public class PortalArch : MonoBehaviour
     [Tooltip("When Room Cleared: said as the way back appears.")]
     public DungeonMaster.Line wayBackLine = new() { text = "There. Your way out." };
 
-    static DungeonGenerator activePocket;
-    static TableLevelData activeLevel;
+    // This machine's own player: where it went in.
     static Vector3 cameFrom;
     static Quaternion cameFromFacing;
-    static PortalArch entered;
+
+    // An Enter portal's pocket (built with the floor), or a way back's own portal.
+    DungeonGenerator pocket;
+    TableLevelData pocketCopy;
+    PortalArch owner;
+    public DungeonGenerator Pocket => pocket;
 
     Material material;
     Light glow;
@@ -50,7 +55,7 @@ public class PortalArch : MonoBehaviour
     void Start()
     {
         // A Return gate is only ever made by an Enter portal, in its pocket.
-        if (mode == Mode.Return && activePocket == null) { gameObject.SetActive(false); return; }
+        if (mode == Mode.Return && owner == null) { gameObject.SetActive(false); return; }
         BuildShimmer();
     }
 
@@ -98,47 +103,93 @@ public class PortalArch : MonoBehaviour
         if (glow != null) glow.intensity = lightIntensity * (.8f + .3f * Mathf.Sin(t * 2.3f));
     }
 
-    void OnTriggerEnter(Collider other)
+    void OnTriggerEnter(Collider other) => TryUse(other);
+
+    // The way back stands just behind where players arrive, so a blow can knock one into it: it takes a player only
+    // once they have not been hit for a moment, and then still while they stand in it (walking on into it).
+    void OnTriggerStay(Collider other) { if (mode == Mode.Return) TryUse(other); }
+
+    void TryUse(Collider other)
     {
         if (busy) return;
         var player = other.GetComponentInParent<Player>();
         if (player == null || player.kind != PlayerKind.Table || !player.IsAlive) return;
+        if (mode == Mode.Return && Time.time - lastHurt < hurtGrace) return;
         StartCoroutine(mode == Mode.Enter ? Enter(player) : Return(player));
+    }
+
+    [Min(0f), Tooltip("The way back takes no one hit less than this many seconds ago (a blow can knock a player into it).")]
+    public float hurtGrace = 1.5f;
+    static float lastHurt = -99f;
+    static Character watched;
+    static void OnWatchedHurt(DamageInfo info) => lastHurt = Time.time;
+
+    // This machine's player in a pocket: its hits are watched for the way back.
+    static void Watch(Player player)
+    {
+        var c = player != null ? player.GetComponent<Character>() : null;
+        if (watched == c) return;
+        if (watched != null) watched.Damaged -= OnWatchedHurt;
+        watched = c;
+        if (watched != null) watched.Damaged += OnWatchedHurt;
+    }
+
+    // Every Enter portal on a new floor builds its pocket now, from the floor's seed and the portal's place among the
+    // floor's portals, so every machine builds the same pockets (TableLevelLoader, before co-op indexes the floor).
+    public static void PrebuildAll(DungeonGenerator floor, int floorSeed)
+    {
+        if (floor == null) return;
+        int index = 0;
+        foreach (var portal in floor.GetComponentsInChildren<PortalArch>(true))
+            if (portal.mode == Mode.Enter && portal.pocket == null) { index++; portal.Build(floor, unchecked(floorSeed * 486187739 + 7919 * index), index); }
+    }
+
+    // The pockets of a floor's portals (co-op indexes their enemies, chests and loot with the floor's).
+    public static System.Collections.Generic.IEnumerable<DungeonGenerator> PocketsOf(DungeonGenerator floor)
+    {
+        if (floor == null) yield break;
+        foreach (var portal in floor.GetComponentsInChildren<PortalArch>(true))
+            if (portal.mode == Mode.Enter && portal.pocket != null) yield return portal.pocket;
+    }
+
+    void Build(DungeonGenerator floor, int seed, int index)
+    {
+        if (room == null || pocketLevel == null) return;
+        // A runtime copy of the pocket level with this portal's room (and biome) in it.
+        pocketCopy = Instantiate(pocketLevel);
+        pocketCopy.name = pocketLevel.name + ": " + room.name;
+        if (pocketCopy.authoredRooms != null && pocketCopy.authoredRooms.Length > 0) pocketCopy.authoredRooms[0].template = room;
+        if (biome != null && pocketCopy.stages != null && pocketCopy.stages.Length > 0) pocketCopy.stages[0].biome = biome;
+
+        var go = new GameObject("Pocket: " + room.name);
+        // Each portal's pocket in its own place, well apart from the others.
+        go.transform.position = (floor != null ? floor.transform.position : transform.position) + Vector3.right * pocketDistance + Vector3.forward * (index - 1) * 120f;
+        pocket = go.AddComponent<DungeonGenerator>();
+        pocket.Build(pocketCopy, seed, floor != null ? floor.FloorNumber : 1);
+        if (wayBack == WayBack.AtStart) PlaceWayBack(pocket);
+        else StartCoroutine(WayBackWhenCleared(pocket));
     }
 
     IEnumerator Enter(Player player)
     {
-        if (room == null || pocketLevel == null || activePocket != null) yield break;
+        // A portal set down after the floor was built (the Debug arena's) builds its pocket on first use.
+        if (pocket == null) Build(GetComponentInParent<DungeonGenerator>(), Random.Range(1, 99999), 1);
+        if (pocket == null) yield break;
         busy = true;
-        var floor = GetComponentInParent<DungeonGenerator>();
         cameFrom = transform.position + transform.forward * 1.4f;
         cameFromFacing = Quaternion.LookRotation(transform.forward);
-        entered = this;
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeToBlack(.35f);
         yield return new WaitForSeconds(.4f);
 
-        // A runtime copy of the pocket level with this portal's room (and biome) in it.
-        activeLevel = Instantiate(pocketLevel);
-        activeLevel.name = pocketLevel.name + ": " + room.name;
-        if (activeLevel.authoredRooms != null && activeLevel.authoredRooms.Length > 0) activeLevel.authoredRooms[0].template = room;
-        if (biome != null && activeLevel.stages != null && activeLevel.stages.Length > 0) activeLevel.stages[0].biome = biome;
-
-        var go = new GameObject("Pocket: " + room.name);
-        go.transform.position = (floor != null ? floor.transform.position : transform.position) + Vector3.right * pocketDistance;
-        activePocket = go.AddComponent<DungeonGenerator>();
-        int seed = floor != null ? floor.GetHashCode() ^ 7919 : Random.Range(1, 99999);
-        activePocket.Build(activeLevel, seed, floor != null ? floor.FloorNumber : 1);
-        if (wayBack == WayBack.AtStart) PlaceWayBack(activePocket);
-        else StartCoroutine(WayBackWhenCleared(activePocket));
-
         // The player arrives just in front of the way back (where it stands or will stand), facing into the pocket's room.
-        var arrive = activePocket.SpawnPoint; var facing = activePocket.SpawnRotation;
-        if (WayBackSpot(activePocket, out var gateAt, out var gateFace))
+        var arrive = pocket.SpawnPoint; var facing = pocket.SpawnRotation;
+        if (WayBackSpot(pocket, out var gateAt, out var gateFace))
         {
             arrive = gateAt + gateFace * arriveDistance;
             if (UnityEngine.AI.NavMesh.SamplePosition(arrive, out var hit, 1.5f, UnityEngine.AI.NavMesh.AllAreas)) arrive = hit.position;
             facing = Quaternion.LookRotation(gateFace);
         }
+        Watch(player);
         player.Warp(arrive, facing);
         if (player.Look != null) player.Look.SetYaw(facing.eulerAngles.y);
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.5f);
@@ -156,7 +207,7 @@ public class PortalArch : MonoBehaviour
         var copy = Instantiate(gameObject, at, face.sqrMagnitude > .01f ? Quaternion.LookRotation(face) : Quaternion.identity, pocket.transform);
         copy.name = "Way back";
         var gate = copy.GetComponent<PortalArch>();
-        gate.mode = Mode.Return;
+        gate.mode = Mode.Return; gate.owner = this; gate.pocket = null; gate.pocketCopy = null;
         foreach (Transform child in copy.transform) if (child.name == "Shimmer" || child.name == "Portal light") Destroy(child.gameObject);
         foreach (var box in copy.GetComponents<BoxCollider>()) if (box.isTrigger) Destroy(box);
     }
@@ -192,7 +243,7 @@ public class PortalArch : MonoBehaviour
     IEnumerator WayBackWhenCleared(DungeonGenerator pocket)
     {
         yield return new WaitForSeconds(1f);
-        while (pocket != null && activePocket == pocket)
+        while (pocket != null && this.pocket == pocket)
         {
             bool anyone = false;
             foreach (var enemy in pocket.GetComponentsInChildren<EnemyBrain>())
@@ -200,36 +251,36 @@ public class PortalArch : MonoBehaviour
             if (!anyone) break;
             yield return new WaitForSeconds(.5f);
         }
-        if (pocket == null || activePocket != pocket) yield break;
+        if (pocket == null || this.pocket != pocket) yield break;
         yield return new WaitForSeconds(1f);
         PlaceWayBack(pocket);
-        if (wayBackLine != null && !string.IsNullOrEmpty(wayBackLine.text)) DungeonMaster.Say(wayBackLine);
+        // Said only to a player inside the pocket (in co-op the others may be anywhere on the floor).
+        var me = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        bool inside = me != null && Vector3.Distance(me.transform.position, pocket.transform.position) < pocketDistance * .5f;
+        if (inside && wayBackLine != null && !string.IsNullOrEmpty(wayBackLine.text)) DungeonMaster.Say(wayBackLine);
     }
 
     IEnumerator Return(Player player)
     {
-        if (activePocket == null) yield break;
         busy = true;
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeToBlack(.35f);
         yield return new WaitForSeconds(.4f);
-        player.Warp(cameFrom, cameFromFacing);
-        if (player.Look != null) player.Look.SetYaw(cameFromFacing.eulerAngles.y);
+        // Back where this player went in, else in front of the portal. The pocket stays up (others may be in it).
+        var portal = owner != null ? owner.transform : null;
+        var to = cameFrom; var facing = cameFromFacing;
+        if (portal != null && (to - portal.position).sqrMagnitude > 9f) { to = portal.position + portal.forward * 1.4f; facing = Quaternion.LookRotation(portal.forward); }
+        player.Warp(to, facing);
+        if (player.Look != null) player.Look.SetYaw(facing.eulerAngles.y);
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.5f);
-        // The pocket goes once the player is out (this gate goes with it).
-        Clear();
+        busy = false;
     }
 
     void OnDestroy()
     {
         if (material != null) Destroy(material);
         // The floor this portal stood on is gone (the next floor, a death): its pocket goes too.
-        if (entered == this) { entered = null; Clear(); }
-    }
-
-    public static void Clear()
-    {
-        if (activePocket != null) Destroy(activePocket.gameObject);
-        if (activeLevel != null) Destroy(activeLevel);
-        activePocket = null; activeLevel = null;
+        if (pocket != null) Destroy(pocket.gameObject);
+        if (pocketCopy != null) Destroy(pocketCopy);
+        pocket = null; pocketCopy = null;
     }
 }

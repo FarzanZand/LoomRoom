@@ -59,7 +59,7 @@ public class DungeonGrave : MonoBehaviour, IInteractable
         {
             var prefab = occupants[rng.Next(occupants.Length)];
             var risen = DungeonFeatureUtility.SpawnEnemy(prefab, transform.position, transform.parent);
-            MessageLog.Post(risen != null ? $"The {risen.DisplayName} rises from the grave!" : "Something stirs below, then falls still.", MessageKind.Bad);
+            MessageLog.Post(risen != null ? $"{risen.TheNameCap} rises from the grave!" : "Something stirs below, then falls still.", MessageKind.Bad);
             if (!lootEvenIfWoken) yield break;
         }
         var table = loot != null ? loot : fallbackLoot;

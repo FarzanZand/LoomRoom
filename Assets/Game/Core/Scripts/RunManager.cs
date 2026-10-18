@@ -48,7 +48,7 @@ public class RunManager : Singleton<RunManager>
     public static string KillerWithArticle(string killer, bool lowerName = false)
     {
         if (string.IsNullOrEmpty(killer)) return "the dungeon";
-        if (killer.StartsWith("the ") || killer.StartsWith("a ") || killer.StartsWith("an ")) return killer;
+        if (killer.StartsWith("the ") || killer.StartsWith("a ") || killer.StartsWith("an ") || Character.ProperNames.Contains(killer)) return killer;
         return ("aeiouAEIOU".IndexOf(killer[0]) >= 0 ? "an " : "a ") + (lowerName ? killer.ToLower() : killer);
     }
 

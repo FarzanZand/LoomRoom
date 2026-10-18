@@ -413,7 +413,7 @@ public class BossStageEncounter : MonoBehaviour
         if (finished) return;
         Comment(fight != null ? fight.victory : null, true);
         if (RunManager.HasInstance) RunManager.Instance.NoteBossSlain();
-        MessageLog.Post($"The {boss.DisplayName} falls! The way on is open.", MessageKind.Good);
+        MessageLog.Post($"{boss.TheNameCap} falls! The way on is open.", MessageKind.Good);
         Finish(true);
     }
 

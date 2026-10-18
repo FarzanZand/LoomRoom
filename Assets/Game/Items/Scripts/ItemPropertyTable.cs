@@ -99,7 +99,7 @@ public class ItemPropertyTable : ScriptableObject
             foreach (var p in pool) { roll -= p.weight; if (roll < 0) { pick = p; break; } }
             pool.Remove(pick);
             pool.RemoveAll(p => p.stat == pick.stat);
-            int step = floor - 1 - (random.NextDouble() < lowerChance ? 1 : 0) + (rarity == ItemRarity.Masterwork && i == 0 ? 1 : 0);
+            int step = floor - 1 - (random.NextDouble() < lowerChance ? 1 : 0) + (rarity == ItemRarity.Masterwork && i == 0 ? 1 : 0) + (rarity == ItemRarity.Legendary && i < 2 ? 1 : 0);
             rolled.Add(new RolledProperty(pick.id, pick.ValueAt(Mathf.Max(0, step))));
         }
         return rolled.ToArray();

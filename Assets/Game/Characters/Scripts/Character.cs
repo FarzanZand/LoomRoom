@@ -24,6 +24,11 @@ public class Character : MonoBehaviour
     public IKnockbackReceiver Knockback { get; private set; }
 
     public string DisplayName => data != null && !string.IsNullOrEmpty(data.characterName) ? data.characterName : name;
+    // The name as a sentence uses it: "the Crypt Rat", or a proper name as it is (CharacterData.properName).
+    public string TheName => data != null && data.properName ? DisplayName : "the " + DisplayName;
+    public string TheNameCap => data != null && data.properName ? DisplayName : "The " + DisplayName;
+    // Proper names seen this session, so text built from a name alone (the killer line) leaves the article off.
+    public static readonly System.Collections.Generic.HashSet<string> ProperNames = new();
     public bool   IsAlive     => Stats == null || Stats.IsAlive;
 
     public Faction Faction => data != null ? data.faction : Faction.Neutral;
@@ -47,6 +52,7 @@ public class Character : MonoBehaviour
     protected virtual void Awake()
     {
         if (animator == null) animator = GetComponentInChildren<Animator>();
+        if (data != null && data.properName && !string.IsNullOrEmpty(data.characterName)) ProperNames.Add(data.characterName);
         Stats     = GetComponent<CharacterStats>();
         FX        = GetComponentInChildren<CharacterFX>(true);
         Knockback = GetComponent<IKnockbackReceiver>();

@@ -134,8 +134,8 @@ public class MessageLog : Singleton<MessageLog>
         if (InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp -= OnPickedUp;
     }
 
-    static string The(Character c) => c == null ? "something" : "the " + c.DisplayName;
-    static string TheCap(Character c) => c == null ? "Something" : "The " + c.DisplayName;
+    static string The(Character c) => c == null ? "something" : c.TheName;
+    static string TheCap(Character c) => c == null ? "Something" : c.TheNameCap;
     static string Cap(string s) => char.ToUpperInvariant(s[0]) + s.Substring(1);
     static int Round(float amount) => Mathf.Max(0, Mathf.CeilToInt(amount));
 

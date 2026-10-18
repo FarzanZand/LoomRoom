@@ -135,8 +135,12 @@ public class EnemyAttackRunner
 
     // ── Picking and starting ──────────────────────────────────────────
 
+    // Its next attack, whatever its cooldown or least range (a weeping enemy opens its fight with its volley).
+    public EnemyAttack Opener;
+
     public EnemyAttack PickAttack(float dist)
     {
+        if (Opener != null && Attacks.Contains(Opener) && dist <= Opener.EffectiveMaxRange) return Opener;
         var attacks = Attacks;
         float totalWeight = 0f;
         for (int i = 0; i < attacks.Count; i++)
@@ -176,6 +180,7 @@ public class EnemyAttackRunner
 
     public void StartAttack(EnemyAttack attack)
     {
+        if (attack == Opener) Opener = null;
         current = attack;
         attackStartedAt = Time.time;
         currentUninterruptible = nextUninterruptible;

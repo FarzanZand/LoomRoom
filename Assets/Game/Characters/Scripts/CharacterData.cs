@@ -14,6 +14,8 @@ public class CharacterData : ScriptableObject
     public Sprite portrait;
     [VerticalGroup("Identity/Right"), LabelWidth(90)]
     public string characterName;
+    [VerticalGroup("Identity/Right"), LabelWidth(90), Tooltip("The name is said as it is, with no \"the\" or \"a\" in front (\"Not a witch hits you\").")]
+    public bool properName;
     [VerticalGroup("Identity/Right"), LabelWidth(90), Tooltip("Who this character is hostile to.")]
     public Faction faction = Faction.Neutral;
     [VerticalGroup("Identity/Right"), LabelWidth(90), TextArea(2, 4)]

@@ -23,6 +23,12 @@ public class SkeletonParty : MonoBehaviour
     public float chestStare = 3f;
     [Tooltip("Degrees a second the dancers turn to face the player while they stare.")]
     public float stareTurnSpeed = 360f;
+    [Tooltip("The chest in the middle holds only a random piece of gear rolled Legendary and Prize Gold.")]
+    public bool legendaryInChest = true;
+    [Range(1, 4), Tooltip("The highest gear tier the Legendary prize is picked from (the demo's gear is tiers 1 and 2).")]
+    public int prizeMaxTier = 2;
+    [Min(0), Tooltip("Gold in the chest with the Legendary.")] public int prizeGold = 80;
+    [Min(1), Tooltip("How many piles that gold comes out in.")] public int prizeGoldPiles = 10;
 
     DungeonGenerator dungeon;
     int room = -1;
@@ -70,6 +76,15 @@ public class SkeletonParty : MonoBehaviour
             if (chest != null && !chests.Contains(chest) && dungeon.Layout.RoomAt(dungeon.CellOf(chest.transform.position)) == room)
             {
                 chests.Add(chest); chest.Opened += _ => Spoil(chestLine, true);
+                // The party's prize: one random piece of gear, Legendary, and a heap of gold, nothing else.
+                if (legendaryInChest)
+                {
+                    chest.onlyGuaranteed = true; chest.guaranteedItem = null; chest.guaranteedItems.Clear();
+                    chest.bonusGold = prizeGold; chest.goldPiles = prizeGoldPiles;
+                    var floor = TableManager.Loader != null ? Mathf.Max(1, TableManager.Loader.FloorNumber) : 1;
+                    var prize = InventoryManager.GivenGear(ItemRarity.Legendary, prizeMaxTier, floor, new System.Random(System.Environment.TickCount));
+                    if (prize != null) chest.guaranteedItems.Add(prize);
+                }
                 // Its front (the lid's opening) toward the player, who comes in from where they are now: the portal's
                 // side room in a pocket, the way they will walk in on a floor.
                 var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;

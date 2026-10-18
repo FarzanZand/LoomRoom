@@ -40,8 +40,8 @@ public partial class ItemData : ScriptableObject
         if (border != null) border.enabled = false;
     }
     // The name with a rolled rarity in front, for text without colour (the message log): "Masterwork Iron Sword".
-    public string DisplayName => rarity == ItemRarity.Fine || rarity == ItemRarity.Superior || rarity == ItemRarity.Masterwork ? $"{RarityName} {itemName}" : itemName;
-    public string RarityName => rarity switch { ItemRarity.Fine => "Fine", ItemRarity.Superior => "Superior", ItemRarity.Masterwork => "Masterwork", ItemRarity.Relic => "Relic", ItemRarity.Rare => "Rare", ItemRarity.Spoils => "Spoils", _ => "Plain" };
+    public string DisplayName => rarity == ItemRarity.Fine || rarity == ItemRarity.Superior || rarity == ItemRarity.Masterwork || rarity == ItemRarity.Legendary ? $"{RarityName} {itemName}" : itemName;
+    public string RarityName => rarity switch { ItemRarity.Fine => "Fine", ItemRarity.Superior => "Superior", ItemRarity.Masterwork => "Masterwork", ItemRarity.Legendary => "Legendary", ItemRarity.Relic => "Relic", ItemRarity.Rare => "Rare", ItemRarity.Spoils => "Spoils", _ => "Plain" };
     [TextArea] public string description;
     [HorizontalGroup("IconRow")]
     [Tooltip("Bag icon, sized to the item's footprint. Generated from the item's model (Icon Source) unless custom.")]

@@ -101,6 +101,8 @@ public class UIManager : Singleton<UIManager>
     public static readonly Color DefaultSuperior = new(.09f, .42f, .29f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Masterwork gear (bronze-gold, the best rolled step).")] public Color masterwork = DefaultMasterwork;
     public static readonly Color DefaultMasterwork = new(.52f, .34f, .06f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Legendary gear (red, the highest step; never rolled, only given).")] public Color legendary = DefaultLegendary;
+    public static readonly Color DefaultLegendary = new(.75f, .08f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Relics (hand-made items).")] public Color relic = DefaultRelic;
     public static readonly Color DefaultRelic = new(.58f, .17f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of spoils (the meta currency: monster parts and baubles).")] public Color spoils = DefaultSpoils;
@@ -116,6 +118,7 @@ public class UIManager : Singleton<UIManager>
             ItemRarity.Fine => ui != null ? ui.fine : DefaultFine,
             ItemRarity.Superior => ui != null ? ui.superior : DefaultSuperior,
             ItemRarity.Masterwork => ui != null ? ui.masterwork : DefaultMasterwork,
+            ItemRarity.Legendary => ui != null ? ui.legendary : DefaultLegendary,
             ItemRarity.Relic => ui != null ? ui.relic : DefaultRelic,
             ItemRarity.Spoils => ui != null ? ui.spoils : DefaultSpoils,
             _ => ui != null ? ui.plain : DefaultPlain,
