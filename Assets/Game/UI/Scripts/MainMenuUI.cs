@@ -9,9 +9,8 @@ using UnityEngine.UI;
 // haze, his eyes burning, one hand held out over a little ruin with a pewter figure in it, fog rolling across the table
 // (UI/Main Menu: pose clip, ruins, fog shader, look profile; Tools > LoomRoom > UI > Rebuild Main Menu Ruins), the
 // painted title, and Continue / New game / Load game / Quit. There are three save slots (AdventureSave.Slot):
-// Continue plays the newest save, New game asks for the player's name (the save is known by it) and whether to play
-// the intro or skip it (starting on the first morning, right after the intro dungeon) and starts in a free slot (or
-// asks which save to replace when all are taken),
+// Continue plays the newest save, New game asks for the player's name (the save is known by it) and starts with the
+// intro in a free slot (or asks which save to replace when all are taken),
 // Load game lists the saves to play or delete, Settings opens the game's settings screen (its InputManager is here
 // only for rebinding keys). Playing fades to black and loads the game's scene. The set, buttons,
 // save list, title and fade are authored in the scene (Tools > LoomRoom > UI > Build Main Menu Saves); this binds them.
@@ -46,13 +45,11 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] GameObject buttons;
 
     [Header("New game")]
-    [Tooltip("Asked when New game is pressed: the player's name, then play the intro or skip it.")]
+    [Tooltip("Asked when New game is pressed: the player's name, then Play the intro.")]
     [SerializeField] GameObject newGamePanel;
-    [Tooltip("The player's name: the new save is known by it (AdventureSave.NewCharacterName). Play the intro and Skip intro wait for one.")]
+    [Tooltip("The player's name: the new save is known by it (AdventureSave.NewCharacterName).")]
     [SerializeField] TMP_InputField nameField;
     [SerializeField] Button playIntroButton;
-    [Tooltip("Starts on the first morning, as if the intro dungeon had just been played (ProgressionManager.SkipIntroRequested).")]
-    [SerializeField] Button skipIntroButton;
     [SerializeField] Button newGameBack;
 
     [Header("Saves")]
@@ -96,7 +93,6 @@ public class MainMenuUI : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => skippedForCommandLine = false;
     enum SavesMode { Load, Replace, Coop }
     SavesMode mode;
-    bool replaceSkipsIntro;
     bool coop;            // the save list and the new game question are for co-op
     MultiplayerManager.MenuStart coopStart;   // host, or join coopJoinCode
     string coopJoinCode;
@@ -131,8 +127,7 @@ public class MainMenuUI : MonoBehaviour
         playButton?.onClick.AddListener(Continue);
         newGameButton?.onClick.AddListener(OpenNewGame);
         loadButton?.onClick.AddListener(() => OpenSaves(SavesMode.Load));
-        playIntroButton?.onClick.AddListener(() => NewGame(false));
-        skipIntroButton?.onClick.AddListener(() => NewGame(true));
+        playIntroButton?.onClick.AddListener(NewGame);
         newGameBack?.onClick.AddListener(CloseNewGame);
         if (nameField != null)
         {
@@ -325,7 +320,7 @@ public class MainMenuUI : MonoBehaviour
         coop = true; coopStart = MultiplayerManager.MenuStart.Join; coopJoinCode = code;
         if (coopPanel != null) coopPanel.SetActive(false);
         if (AdventureSave.SaveExists) OpenSaves(SavesMode.Coop);
-        else StartNew(AdventureSave.FreeSlot, false);
+        else StartNew(AdventureSave.FreeSlot);
     }
 
     void CoopStatus(string text, bool error)
@@ -350,7 +345,7 @@ public class MainMenuUI : MonoBehaviour
         if (buttons != null) buttons.SetActive(false);
         if (savesPanel != null) savesPanel.SetActive(false);
         if (newGamePanel != null) newGamePanel.SetActive(true);
-        else { NewGame(false); return; }
+        else { NewGame(); return; }
         // Co-op: the name typed in the co-op menu is the new save's too, unless changed here.
         nameField?.SetTextWithoutNotify(coop ? CoopName : "");
         SelectFirst();
@@ -385,18 +380,17 @@ public class MainMenuUI : MonoBehaviour
     }
 
     // A new game goes in the first free slot; with every slot taken the player picks one to replace.
-    void NewGame(bool skipIntro)
+    void NewGame()
     {
         if (leaving) return;
         int slot = newGameSlot > 0 ? newGameSlot : AdventureSave.FreeSlot;
-        if (slot == 0) { replaceSkipsIntro = skipIntro; if (newGamePanel != null) newGamePanel.SetActive(false); OpenSaves(SavesMode.Replace); return; }
-        StartNew(slot, skipIntro);
+        if (slot == 0) { if (newGamePanel != null) newGamePanel.SetActive(false); OpenSaves(SavesMode.Replace); return; }
+        StartNew(slot);
     }
 
-    void StartNew(int slot, bool skipIntro)
+    void StartNew(int slot)
     {
         AdventureSave.DeleteSlot(slot);   // nothing there, or the save the player chose to replace
-        ProgressionManager.SkipIntroRequested = skipIntro;
         // A guest's new save (no New game question) is named after the player.
         bool joining = coop && coopStart == MultiplayerManager.MenuStart.Join;
         AdventureSave.NewCharacterName = joining ? (CoopName.Length > 0 ? CoopName : AdventureSave.DefaultName) : nameField != null ? ChosenName : null;
@@ -462,11 +456,11 @@ public class MainMenuUI : MonoBehaviour
         if (mode == SavesMode.Coop)
         {
             if (AdventureSave.SlotExists(slot)) Play(slot);
-            else if (coopStart == MultiplayerManager.MenuStart.Join) StartNew(slot, false);   // the host's game decides what is played
+            else if (coopStart == MultiplayerManager.MenuStart.Join) StartNew(slot);   // the host's game decides what is played
             else { newGameSlot = slot; OpenNewGame(); }
             return;
         }
-        Ask($"Replace {SaveName(slot)}? It will be gone for good.", () => StartNew(slot, replaceSkipsIntro));
+        Ask($"Replace {SaveName(slot)}? It will be gone for good.", () => StartNew(slot));
     }
 
     void AskDelete(int slot) => Ask($"Delete {SaveName(slot)}? It will be gone for good.", () =>
