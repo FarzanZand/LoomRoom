@@ -222,7 +222,7 @@ MonoBehaviour:
   - '#######'
   - '###+###'
   minimumCells: {x: 6, y: 6}
-  style: {fileID: 0}
+  style: {fileID: 11400000, guid: b70b907d7c9124648b6e11dfdb34ca5f, type: 2}
   heightTiles: 2
   openCeiling: 1
   ceilingFrame: 0.3
@@ -305,6 +305,10 @@ MonoBehaviour:
   chestMusicStopVolume: 0.5
   chestStare: 3
   stareTurnSpeed: 360
+  legendaryInChest: 1
+  prizeMaxTier: 2
+  prizeGold: 80
+  prizeGoldPiles: 10
 --- !u!1 &6676549144639257178
 GameObject:
   m_ObjectHideFlags: 0
