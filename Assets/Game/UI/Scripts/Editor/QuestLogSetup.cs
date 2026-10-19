@@ -35,7 +35,7 @@ public static class QuestLogSetup
         var heading = Text("Title", rect, title, 22f, Gold);
         heading.text = "QUEST";
         var row = Text("Row template", rect, body, 26f, Color.white);
-        row.text = "Try your shield bash: hold right mouse and press left mouse.";
+        row.text = "Hold your shield up against an arrow or a spell to send it back.";
         row.textWrappingMode = TextWrappingModes.Normal;
         row.gameObject.SetActive(false);
 

@@ -1,8 +1,8 @@
 using UnityEngine;
 
 // F8 (Dev input map) or the dev console's "god" (Editor and development builds only): god mode. While it is on, both
-// players take no damage and are kept at full health, stamina and mana every frame, so a fight can be watched or tested
-// without dying.
+// players still take every hit (blocks, hurt screen, knockback, hit reactions) but lose no health, and are kept at full
+// stamina and mana every frame, so a fight can be watched or tested without dying.
 public class DevGodMode : MonoBehaviour
 {
     public static bool On { get; private set; }

@@ -77,12 +77,27 @@ public class SpellProjectile : MonoBehaviour
             if (hit.transform.IsChildOf(transform)) continue;
             // A sphere cast that starts overlapping reports a zero point; use the cast origin.
             var point = hit.distance <= 0 ? transform.position : hit.point;
+            // Deflect: off a raised shield, back at its caster (or straight back), now the defender's spell.
+            var struckPlayer = hit.collider.GetComponentInParent<Player>();
+            if (struckPlayer != null && struckPlayer != owner && struckPlayer.Combat != null && struckPlayer.Combat.Deflects(transform.forward)) { Deflect(struckPlayer, point); return; }
             if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform)) DungeonMasterRemarks.SpellHit(owner);
             var normal = hit.distance <= 0 ? -transform.forward : hit.normal;
             Explode(point, normal);
             return;
         }
         transform.position += transform.forward * distance;
+    }
+
+    void Deflect(Player defender, Vector3 point)
+    {
+        var caster = owner;
+        var aim = caster != null && caster.IsAlive ? caster.transform.position + Vector3.up * 1.2f - point : -transform.forward;
+        owner = defender; progress = null; age = 0f; RampSeconds = 0f;
+        if (ProgressionManager.HasInstance) ProgressionManager.Instance.Deflected();
+        if (defender.Combat != null) defender.Combat.PlayDeflect(point);
+        HomingTarget = caster != null && caster.IsAlive ? caster : null;
+        transform.position = point + aim.normalized * .4f;
+        transform.rotation = Quaternion.LookRotation(aim);
     }
 
     void Explode(Vector3 point, Vector3 normal)

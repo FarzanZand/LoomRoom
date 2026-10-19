@@ -6,7 +6,7 @@ using UnityEngine;
 
 // Quests: short tasks the quest log shows (UI/Scripts/QuestLogUI.cs, under the HUD) until they are done. A quest is the
 // flag "quest.<id>" (0 not given, 1 open, 2 done), so AdventureSave keeps it with the other flags and the log follows
-// FlagChanged. The first one: once Shield bash is unlocked, the next run asks the player to try it, and the first bash
+// FlagChanged. The first one: once Deflect (Blocking's first milestone) is unlocked, the next run asks the player to send a shot back, and the first deflect
 // completes it (ShieldBash). Before that, after the first death the DM's word about the sheet gives "look at the sheet",
 // done when the sheet is opened (CharacterSheetTable).
 public partial class ProgressionManager
@@ -18,7 +18,7 @@ public partial class ProgressionManager
         [TextArea, Tooltip("What the log says. {attack} and {block} are replaced by the player's own keys.")] public string text;
     }
 
-    public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", SheetQuest = "checkSheet",
+    public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", DeflectQuest = "deflect", SheetQuest = "checkSheet",
         SpendQuest = "spendSpoils", TableQuest = "backToTable", TrophyQuest = "hangTrophies", InventoryQuest = "openInventory";
     public const string InventoryOpenedFlag = "story.inventoryOpened";
 
@@ -29,7 +29,8 @@ public partial class ProgressionManager
     static List<Quest> BuiltInQuests() => new()
     {
         new Quest { id = SheetQuest, text = "Look at the character sheet on the little table by the wall." },
-        new Quest { id = ShieldBashQuest, text = "Try your shield bash: hold {block} and press {attack}." },
+        new Quest { id = ShieldBashQuest, text = "Try your shield bash: hold {block} and press {attack}." },   // retired: the bash is there from the start
+        new Quest { id = DeflectQuest, text = "Hold your shield up against an arrow or a spell to send it back." },
         new Quest { id = InventoryQuest, text = "Open your inventory with {inventory} or Tab." },   // Tab is the fixed second binding
         new Quest { id = SpendQuest, text = "Train Blocking on the sheet first. The other rows open after it." },
         new Quest { id = TableQuest, text = "Sit down at the table for the next run." },
@@ -134,9 +135,17 @@ public partial class ProgressionManager
     IEnumerator OfferWhenRunReady()
     {
         yield return null;
-        if (!MetaActive || QuestState(ShieldBashQuest) != 0 || !PlayerManager.HasInstance) yield break;
+        // An older save's open bash quest closes: the bash is there from the start now.
+        if (QuestState(ShieldBashQuest) == 1) CompleteQuest(ShieldBashQuest);
+        if (!MetaActive || QuestState(DeflectQuest) != 0 || !PlayerManager.HasInstance) yield break;
         var table = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         var progress = table != null ? table.GetComponent<AdventurerProgress>() : null;
-        if (Unlocked(AdventureSkill.Blocking, 0, progress != null ? progress.Rank(AdventureSkill.Blocking) : 0)) GiveQuest(ShieldBashQuest);
+        if (Unlocked(AdventureSkill.Blocking, 0, progress != null ? progress.Rank(AdventureSkill.Blocking) : 0)) GiveQuest(DeflectQuest);
+    }
+
+    // A shot sent back off the shield (ArrowProjectile, SpellProjectile).
+    public void Deflected()
+    {
+        if (QuestState(DeflectQuest) == 1) CompleteQuest(DeflectQuest);
     }
 }

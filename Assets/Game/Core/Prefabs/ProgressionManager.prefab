@@ -87,8 +87,9 @@ MonoBehaviour:
     thirdUnit: 
     milestones:
     - value: 15
-      unlock: Shield bash
-      description: 'Shield up, then attack: dash into the enemy ahead and stun it.'
+      unlock: Deflect
+      description: 'Shield up toward an arrow or a spell: it flies back at whoever
+        sent it.'
       icon: {fileID: 21300000, guid: 4f96369d9f16cff4c89b498a47060ee0, type: 3}
       trophy: {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}
     - value: 50
@@ -381,7 +382,8 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   shieldBashMounted:
-    text: Next time down there, hold the shield up and press attack.
+    text: Hold your shield up against arrows and fire now. They go back where they
+      came from.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -390,7 +392,6 @@ MonoBehaviour:
   - id: shieldBash
     text: 'Try your shield bash: hold {block} and press {attack}.'
   missingTile: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
-  tileFloor: 2
   startingPlayer: 1
   skipWakeUp: 1
   startAt: 0
