@@ -6083,8 +6083,6 @@ MonoBehaviour:
   title: {fileID: 1080273092}
   levelLine: {fileID: 751769829}
   statTemplate: {fileID: 1305598759}
-  statSound: {fileID: 8300000, guid: 3d4f4998ad164964e96906d828306f6c, type: 3}
-  statVolume: 0.6
   firstStatDelay: 0.7
   statGap: 0.45
   statHold: 2.2

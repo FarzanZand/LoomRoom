@@ -108,6 +108,13 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
 
 ## Review before calling it done
 
+**Always look at the thing you made before saying it is done** (user, 2026-10-19: "From now on, always look at the
+thing you create before saying you are done"). Capture it in game, crop and enlarge the part you changed, and look at
+it yourself: gaps, steps the player can't walk onto, sizes, texel size against its neighbours, how it reads from where
+the player stands. A measurement or a test script passing is not a look: on the stairs down I reported "fixed" three
+times from numbers while the picture plainly showed a gap, a landing too long and stretched textures. Say what still
+looks wrong, too.
+
 - **Every built model, from every side, up close.** Render `PixelRestyle.RenderPropTurntable(prefab, "Temp/Paint/turn/<Name>.png")`
   (eight sides, two high three-quarter views, straight down and from below, each zoomed to the model) and then crop and
   enlarge the views to at least 4 screen pixels per texel before judging: at the size a whole sheet is shown, streaks
