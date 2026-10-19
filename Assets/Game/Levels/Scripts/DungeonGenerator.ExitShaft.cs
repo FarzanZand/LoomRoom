@@ -23,7 +23,7 @@ public partial class DungeonGenerator
         // Every neighbour must be floor of the same room, so the kerb stands on floor all round.
         foreach (var d in DungeonLayout.Neighbours) if (!Layout.InRoom(region, cell + d)) return;
         float floorY = Cell(cell).y, size = data.cellSize;
-        float depth = Mathf.Min(2.6f, TableCut.SolidDepth(CellRect(cell), floorY) - .24f - .1f);
+        float depth = Mathf.Min(2f, TableCut.SolidDepth(CellRect(cell), floorY) - .24f - .1f);
         if (depth < 1.2f) return;
 
         // Open toward the room's way in (the doorway cell nearest the shaft).
@@ -107,20 +107,21 @@ public partial class DungeonGenerator
             }
         }
 
-        // The newel and the spiral: steps round it, each lower and further round, darker the deeper.
+        // The spiral starts at the mouth: the first step runs from the newel out to the mouth's edge, its top level with
+        // the floor, so the player walks straight onto it; the rest go on round the newel and down, each step wider
+        // than the gap to the next and reaching from the newel to the wall, darker the deeper.
         float newelR = .22f;
-        Part("Newel", new Vector3(0, -depth * .5f + .1f, .15f), new Vector3(newelR * 2f, depth + .2f, newelR * 2f), stone, .8f);
-        Part("Newel cap", new Vector3(0, .15f, .15f), new Vector3(newelR * 2f + .1f, .1f, newelR * 2f + .1f), stone);
-        int steps = 13; float turn = 330f / steps;
-        var axis = new Vector3(0, 0, .15f);
+        Part("Newel", new Vector3(0, -depth * .5f + .1f, 0), new Vector3(newelR * 2f, depth + .2f, newelR * 2f), stone, .8f);
+        Part("Newel cap", new Vector3(0, .15f, 0), new Vector3(newelR * 2f + .1f, .1f, newelR * 2f + .1f), stone);
+        int steps = 11; float start = 0f, turn = 330f / steps;
+        float rise = (depth - .3f) / (steps - 1), reach = half - .03f - newelR, r = newelR + reach * .5f;
+        float width = 2f * Mathf.PI * (newelR + reach) * (turn / 360f) + .08f;   // the outer edge overlaps the next step
         for (int i = 0; i < steps; i++)
         {
-            float a = -90f + i * turn, rad = a * Mathf.Deg2Rad;      // from the mouth side round the back
-            float y = -(i + 1) * (depth / (steps + .5f));
-            float r = newelR + (half - .08f - newelR) * .5f;
-            var at = axis + new Vector3(Mathf.Sin(rad) * r, y, -Mathf.Cos(rad) * r);
-            var s = Part("Spiral step", at, new Vector3(.42f, .1f, (half - .08f - newelR) + .04f), stone, Mathf.Lerp(.75f, .05f, i / (steps - 1f)), 0f, null, true);
-            // Each step's length runs out from the newel.
+            float a = start + i * turn, rad = a * Mathf.Deg2Rad;
+            float top = -i * rise;
+            var at = new Vector3(Mathf.Sin(rad) * r, top - .06f, -Mathf.Cos(rad) * r);
+            var s = Part("Spiral step", at, new Vector3(width, .12f, reach), stone, Mathf.Lerp(1f, .4f, i / (steps - 1f)), 0f, null, true);
             s.transform.rotation = root.rotation * Quaternion.LookRotation(new Vector3(Mathf.Sin(rad), 0f, -Mathf.Cos(rad)));
         }
         // Far below: a warm glow, as if a lamp burns on the next floor.

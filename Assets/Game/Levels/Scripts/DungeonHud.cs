@@ -7,6 +7,7 @@ public class DungeonHud : MonoBehaviour
     GameObject canvasRoot;
     Texture2D map;
     bool[,] shop, exitRoom;
+    bool pocket;
     RawImage mapImage;
     bool[,] explored;
     float next;
@@ -47,8 +48,10 @@ public class DungeonHud : MonoBehaviour
         {
             shop=new bool[w,h];exitRoom=new bool[w,h];
             if(dungeon.MerchantRoom>=0)foreach(var c in dungeon.Layout.RoomCells(dungeon.MerchantRoom))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)shop[c.x,c.y]=true;
-            int exit=dungeon.Layout.RoomAt(dungeon.Layout.Exit);
-            if(exit<0 && dungeon.Roles!=null)exit=System.Array.IndexOf(dungeon.Roles,DungeonGenerator.RoomRole.Exit);
+            // A pocket (the Skeleton Party) has no exit: its last room is where the portal back stands.
+            pocket=dungeon.LevelData!=null && dungeon.LevelData.pocket;
+            int exit=pocket ? -1 : dungeon.Layout.RoomAt(dungeon.Layout.Exit);
+            if(exit<0 && !pocket && dungeon.Roles!=null)exit=System.Array.IndexOf(dungeon.Roles,DungeonGenerator.RoomRole.Exit);
             if(exit>=0)foreach(var c in dungeon.Layout.RoomCells(exit))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)exitRoom[c.x,c.y]=true;
         }
         for(int x=0;x<w;x++)for(int y=0;y<h;y++)
@@ -58,7 +61,7 @@ public class DungeonHud : MonoBehaviour
             if(explored[x,y] && dungeon.Layout.floor[x,y])color=shop[x,y] ? new Color(.36f,.68f,.34f,.95f) : new Color(.46f,.48f,.43f,.92f); // the shop room shows green
             // The exit room shows red, its stairs a brighter red.
             if(explored[x,y] && dungeon.Layout.floor[x,y] && exitRoom[x,y])color=new Color(.72f,.2f,.17f,.95f);
-            if(explored[x,y] && new Vector2Int(x,y)==dungeon.Layout.Exit)color=new Color(1f,.35f,.28f);
+            if(!pocket && explored[x,y] && new Vector2Int(x,y)==dungeon.Layout.Exit)color=new Color(1f,.35f,.28f);
             if(x==px && y==py)color=new Color(1,.8f,.33f);
             map.SetPixel(x,y,color);
         }

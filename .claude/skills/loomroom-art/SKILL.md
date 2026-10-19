@@ -261,6 +261,15 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
   `PixelRestyle.TexelsPerUnit(renderer, material)` (per material, so per submesh) and correct the UVs until it reads
   the target. Painted textures look blockier than their texels; matching that look by eye gave a door knob half the
   door's density (2026-10-14). When you change a tile's size, change its UV scale with it.
+- **Generated geometry uses the architecture's UVs, never a plain cube's.** Anything built in code from boxes (kerbs,
+  posts, caps, steps, platforms, stairs) with a wall, floor or trim material goes through `ArchitectureBox` (UVs in
+  world metres per architecture tile, so its texels match the walls and floor around it), never `Box` /
+  `CreatePrimitive` alone, which stretches the whole texture over each face: on the 2026-10-19 stairs down the kerb's
+  bricks were squeezed, its caps smeared into planks and the posts' bricks squashed, and the user saw it at once.
+- **Before showing anything built next to existing walls or floors, compare it with them in the same shot, zoomed:**
+  are its bricks the size of the wall's bricks, its flagstones the size of the floor's, its pixels the size of the
+  pixels beside it? Shape and light looking right is not a review; check the texel size against the neighbours every
+  time, and fix it before the user sees it.
 
 **Room surfaces**
 - Wall/ceiling paint from the concept's own wall (crop it as the reference). Scatter the painting's marks (flakes,

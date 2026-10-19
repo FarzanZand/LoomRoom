@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 
 // The level up at the top middle of the screen: "LEVEL UP" lands big with the level under it, then what the level
-// gave comes in one line at a time with a soft tick ("+3 Health"), each line fading away a while after it came, the
+// gave comes in one line at a time ("+3 Health"), each line fading away a while after it came, the
 // title last. A second level while it shows starts it again with the new level and both levels' lines. Authored under
 // the HUD canvas: a group, the title, the level line and one stat line template (switched off, cloned per line).
 // The level up sting itself is AudioManager's levelUp key (AdventurerProgress plays it).
@@ -14,8 +14,6 @@ public class LevelUpUI : MonoBehaviour
     [SerializeField] TMP_Text title;
     [SerializeField] TMP_Text levelLine;
     [SerializeField, Tooltip("One stat line, switched off; cloned per line.")] TMP_Text statTemplate;
-    [SerializeField] AudioClip statSound;
-    [SerializeField, Range(0f, 1f)] float statVolume = .6f;
     [SerializeField, Min(0f), Tooltip("From the title landing to the first stat line, then between lines.")] float firstStatDelay = .7f, statGap = .45f;
     [SerializeField, Min(0f), Tooltip("How long each stat line stays before it fades.")] float statHold = 2.2f;
     [SerializeField, Min(.05f)] float statFade = .8f;
@@ -106,7 +104,6 @@ public class LevelUpUI : MonoBehaviour
             line.alpha = 0f;
             lines.Add(line);
             var rect = line.rectTransform;
-            show.InsertCallback(at, () => { if (statSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(statSound, statVolume); });
             show.Insert(at, line.DOFade(1f, .2f));
             show.Insert(at, DOTween.To(() => 0f, x => rect.localScale = Vector3.one * (1.25f - .25f * x), 1f, .25f).SetEase(Ease.OutQuad));
             show.Insert(at + statHold, line.DOFade(0f, statFade).OnComplete(() => gone.Add(line)));
