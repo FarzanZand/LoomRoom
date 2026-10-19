@@ -303,8 +303,14 @@ public class AdventureSave : MonoBehaviour
         // An item that no longer resolves (retired since the save) is left out and logged; the rest of the run comes back.
         var missing = new List<string>();
         ItemData Item(string id) { var item = ItemData.FromSaveId(id, InventoryManager.Instance.itemCatalog); if (item == null) missing.Add(id); return item; }
-        void Fill(Inventory inventory, Stack[] stacks) { for (int i = 0; i < stacks.Length && i < inventory.SlotCount; i++) if (stacks[i] != null && stacks[i].count > 0 && Item(stacks[i].item) is ItemData item) inventory.Set(i, new ItemStack(item, stacks[i].count)); }
+        // An item whose bag footprint grew since the save (tomes became 2x2) and no longer fits at its cell goes to the
+        // first free spot afterwards, then the hotbar, then the floor, so nothing overlaps and nothing is lost.
+        var homeless = new List<ItemStack>();
+        void Fill(Inventory inventory, Stack[] stacks) { for (int i = 0; i < stacks.Length && i < inventory.SlotCount; i++) if (stacks[i] != null && stacks[i].count > 0 && Item(stacks[i].item) is ItemData item) { if (!inventory.IsGrid || inventory.Fits(item, i)) inventory.Set(i, new ItemStack(item, stacks[i].count)); else homeless.Add(new ItemStack(item, stacks[i].count)); } }
         Fill(player.Bag, checkpoint.bag); Fill(player.Hotbar, checkpoint.hotbar);
+        foreach (var stack in homeless)
+            if (!player.Bag.TryAdd(stack.item, stack.count) && !player.Hotbar.TryAdd(stack.item, stack.count))
+                for (int n = 0; n < stack.count; n++) InventoryManager.Instance.DropFromPlayer(stack.item, player);
         foreach (var id in checkpoint.equipped) if (Item(id) is ItemData worn) player.Equipment.Equip(worn, false, grant: true);
         if (missing.Count > 0) Debug.LogWarning("[AdventureSave] Left out items that no longer exist: " + string.Join(", ", missing));
         progress.Restore(checkpoint.characterLevel, checkpoint.xp, (int[])checkpoint.ranks.Clone(), (int[])checkpoint.growth.Clone(), checkpoint.skillExperience, (int[])checkpoint.attributePoints?.Clone(), checkpoint.unspentPoints);

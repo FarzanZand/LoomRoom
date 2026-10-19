@@ -37,6 +37,8 @@ public class PlayerLook : MonoBehaviour
     float   pitch;
     Vector3 cameraHeight;
 
+    const float MouseDegreesPerCount = .055f, StickDegreesPerSecond = 180f;
+
     void Awake()
     {
         player = GetComponent<Player>();
@@ -50,7 +52,9 @@ public class PlayerLook : MonoBehaviour
         var input    = InputManager.HasInstance ? InputManager.Instance : null;
 
         // ── Look input ──
-        float sensitivity = (settings != null ? settings.mouseSensitivity : 1f) * UserSettings.MouseSensitivity / 5f;
+        // At 1x a mouse turns the view MouseDegreesPerCount a count (a full turn is about 21 cm at 800 DPI, a little
+        // quicker than the usual first-person default); a stick held all the way turns StickDegreesPerSecond.
+        float sensitivity = (settings != null ? settings.mouseSensitivity : 1f) * UserSettings.MouseSensitivity;
 
         // The lock check is read only: it also catches the Editor's Esc and a lost window focus,
         // which unlock the cursor without GameManager knowing.
@@ -60,7 +64,7 @@ public class PlayerLook : MonoBehaviour
         if (settings != null && settings.invertLook) raw.y = -raw.y;
 
         // Applied as is: the view turns with the mouse, no smoothing.
-        Vector2 look = raw * sensitivity;
+        Vector2 look = raw * sensitivity * (input != null && input.LookIsStick ? StickDegreesPerSecond * Time.deltaTime : MouseDegreesPerCount);
 
         // ── Rotation ──
         float yaw = YawTransform.eulerAngles.y + look.x;

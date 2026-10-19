@@ -10,7 +10,7 @@ using UnityEngine.Rendering.Universal;
 // main menu as well as the game.
 public static class UserSettings
 {
-    const string SensitivityKey = "mouse_sensitivity";
+    const string SensitivityKey = "mouse_sensitivity_2";   // a new key: 1x got 4.5 times slower on 2026-10-19, so old choices start over
     const string FovKey = "field_of_view";
     const string VSyncKey = "vsync";
     const string BrightnessKey = "brightness";
