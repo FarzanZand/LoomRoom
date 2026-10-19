@@ -120,6 +120,22 @@ public class BossStageEncounter : MonoBehaviour
         dmLight = paintingLight = null;
     }
 
+    // The fight starts once the player is up on the stage and well onto it: most of its top, not just the middle
+    // (DungeonStage.startRadius is the least it reaches). The stair up is lower, so it doesn't count.
+    float StartReach
+    {
+        get
+        {
+            float reach = dungeon.Stage.startRadius;
+            if (dungeon.StageRoom >= 0 && dungeon.StageRoom < dungeon.Layout.rooms.Count)
+            {
+                var r = dungeon.Layout.rooms[dungeon.StageRoom];
+                reach = Mathf.Max(reach, Mathf.Min(r.width, r.height) * dungeon.LevelData.cellSize * .5f * .8f);
+            }
+            return reach;
+        }
+    }
+
     void Update()
     {
         if (dmLight != null || paintingLight != null) UpdateRoomLights();
@@ -131,7 +147,7 @@ public class BossStageEncounter : MonoBehaviour
             if (player == null || !player.IsAlive) return;
             var centre = dungeon.StageCentre;
             var flat = player.transform.position - centre; flat.y = 0;
-            if (flat.magnitude <= dungeon.Stage.startRadius && Mathf.Abs(player.transform.position.y - centre.y) < 1.2f) StartCoroutine(Open(player));
+            if (flat.magnitude <= StartReach && Mathf.Abs(player.transform.position.y - centre.y) < 1.2f) StartCoroutine(Open(player));
             return;
         }
         if (player != null && !player.IsAlive) { Defeat(); return; }

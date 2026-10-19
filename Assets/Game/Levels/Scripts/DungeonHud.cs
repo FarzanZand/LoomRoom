@@ -9,13 +9,14 @@ public class DungeonHud : MonoBehaviour
     bool[,] shop, exitRoom;
     bool pocket;
     RawImage mapImage;
-    bool[,] explored;
+    bool[,] explored, walked, door;
+    int lastRoom=-2;
     float next;
     public void Initialize(DungeonGenerator generator)
     {
         dungeon=generator;
         int w=dungeon.Layout.floor.GetLength(0),h=dungeon.Layout.floor.GetLength(1);
-        explored=new bool[w,h];map=new Texture2D(w,h,TextureFormat.RGBA32,false);map.filterMode=FilterMode.Point;
+        explored=new bool[w,h];walked=new bool[w,h];map=new Texture2D(w,h,TextureFormat.RGBA32,false);map.filterMode=FilterMode.Point;
         canvasRoot=new GameObject("Dungeon HUD",typeof(RectTransform),typeof(Canvas),typeof(CanvasScaler));
         canvasRoot.SetActive(false); // Never render an uninitialized map during level construction.
         canvasRoot.transform.SetParent(transform,false);
@@ -54,6 +55,30 @@ public class DungeonHud : MonoBehaviour
             if(exit<0 && !pocket && dungeon.Roles!=null)exit=System.Array.IndexOf(dungeon.Roles,DungeonGenerator.RoomRole.Exit);
             if(exit>=0)foreach(var c in dungeon.Layout.RoomCells(exit))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)exitRoom[c.x,c.y]=true;
         }
+        if(door==null)
+        {
+            // Doorways: passage cells beside a room's floor. Each shows a light blue dot until the player has walked
+            // through it, so the ways not taken yet stand out.
+            door=new bool[w,h];
+            for(int x=0;x<w;x++)for(int y=0;y<h;y++)
+            {
+                if(!dungeon.Layout.floor[x,y] || dungeon.Layout.RoomAt(new Vector2Int(x,y))>=0)continue;
+                foreach(var d in DungeonLayout.Neighbours)
+                {
+                    var n=new Vector2Int(x+d.x,y+d.y);
+                    if(n.x>=0 && n.y>=0 && n.x<w && n.y<h && dungeon.Layout.floor[n.x,n.y] && dungeon.Layout.RoomAt(n)>=0){door[x,y]=true;break;}
+                }
+            }
+        }
+        // Walking into a room shows all of it at once.
+        int room=dungeon.Layout.RoomAt(new Vector2Int(px,py));
+        if(room!=lastRoom){lastRoom=room;if(room>=0)foreach(var c in dungeon.Layout.RoomCells(room))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)explored[c.x,c.y]=true;}
+        // A doorway counts as taken once stood in; the other half of a two-cell passage goes with it.
+        if(px>=0 && py>=0 && px<w && py<h)
+        {
+            walked[px,py]=true;
+            if(door[px,py])foreach(var d in DungeonLayout.Neighbours){int x=px+d.x,y=py+d.y;if(x>=0 && y>=0 && x<w && y<h && door[x,y])walked[x,y]=true;}
+        }
         for(int x=0;x<w;x++)for(int y=0;y<h;y++)
         {
             if(Mathf.Abs(x-px)<=3 && Mathf.Abs(y-py)<=3)explored[x,y]=true;
@@ -62,6 +87,7 @@ public class DungeonHud : MonoBehaviour
             // The exit room shows red, its stairs a brighter red.
             if(explored[x,y] && dungeon.Layout.floor[x,y] && exitRoom[x,y])color=new Color(.72f,.2f,.17f,.95f);
             if(!pocket && explored[x,y] && new Vector2Int(x,y)==dungeon.Layout.Exit)color=new Color(1f,.35f,.28f);
+            if(explored[x,y] && door[x,y] && !walked[x,y])color=new Color(.55f,.85f,1f,1f);
             if(x==px && y==py)color=new Color(1,.8f,.33f);
             map.SetPixel(x,y,color);
         }

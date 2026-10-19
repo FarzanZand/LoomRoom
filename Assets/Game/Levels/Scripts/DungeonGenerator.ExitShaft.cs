@@ -4,13 +4,19 @@ using UnityEngine;
 // a pit) and a spiral stair winds down round a stone newel into the dark, a warm glow far below. A low stone kerb rings
 // the mouth, open on the side the room is entered from, with a post and a torch either side of the opening; an iron
 // grate lies over the hole while the floor's guardian lives. Walking onto the first steps goes down (DungeonExit).
-// Boards, boss stages, pockets, the last floor and exit rooms built from a template keep the stone stairwell.
+// On a boss stage the shaft goes down through the stage's own block instead (PlanStageShaft), covered by a plain stage
+// block until the boss falls and the exit shows. Boards, pockets, the last floor and exit rooms built from a template
+// keep the stone stairwell.
 public partial class DungeonGenerator
 {
     // The exit cell's shaft, when this floor has one: its facing (toward the room's way in) and depth.
     bool exitShaft;
     Vector2Int exitShaftFacing;
     float exitShaftDepth;
+    // The boss stage's shaft cell, the block standing over it until the exit shows, and the stage's side stone.
+    Vector2Int stageShaftCell = new Vector2Int(-1, -1);
+    GameObject stageShaftCover;
+    Material stageShaftSide;
 
     // Before the room is furnished and the floor combined: take the exit cell's flagstone away and line the hole.
     void CutExitShaft()
@@ -26,18 +32,7 @@ public partial class DungeonGenerator
         float depth = Mathf.Min(2f, TableCut.SolidDepth(CellRect(cell), floorY) - .24f - .1f);
         if (depth < 1.2f) return;
 
-        // Open toward the room's way in (the doorway cell nearest the shaft).
-        Vector2Int facing = Vector2Int.down; float best = float.MaxValue;
-        foreach (var c in Layout.RoomCells(region))
-            foreach (var d in DungeonLayout.Neighbours)
-            {
-                var o = c + d;
-                if (!Layout.InBounds(o) || !Layout.floor[o.x, o.y] || Layout.InRoom(region, o)) continue;
-                var to = c - cell; float dist = to.sqrMagnitude;
-                if (dist >= best || to == Vector2Int.zero) continue;
-                best = dist;
-                facing = Mathf.Abs(to.x) >= Mathf.Abs(to.y) ? new Vector2Int(System.Math.Sign(to.x), 0) : new Vector2Int(0, System.Math.Sign(to.y));
-            }
+        var facing = FacingToDoor(region, cell);
 
         for (int i = geometry.childCount - 1; i >= 0; i--)
         {
@@ -60,12 +55,52 @@ public partial class DungeonGenerator
         exitShaft = true; exitShaftFacing = facing; exitShaftDepth = depth;
     }
 
+    // Open toward the room's way in (the doorway cell nearest the shaft).
+    Vector2Int FacingToDoor(int region, Vector2Int cell)
+    {
+        Vector2Int facing = Vector2Int.down; float best = float.MaxValue;
+        foreach (var c in Layout.RoomCells(region))
+            foreach (var d in DungeonLayout.Neighbours)
+            {
+                var o = c + d;
+                if (!Layout.InBounds(o) || !Layout.floor[o.x, o.y] || Layout.InRoom(region, o)) continue;
+                var to = c - cell; float dist = to.sqrMagnitude;
+                if (dist >= best || to == Vector2Int.zero) continue;
+                best = dist;
+                facing = Mathf.Abs(to.x) >= Mathf.Abs(to.y) ? new Vector2Int(System.Math.Sign(to.x), 0) : new Vector2Int(0, System.Math.Sign(to.y));
+            }
+        return facing;
+    }
+
+    // The boss stage's way on (from BuildStage, before the stage is built): the shaft goes down inside the stage's own
+    // block, so the table is not cut. Its cell is the template's exit spot's when it has one, else out from the middle
+    // toward the Dungeon Master with two cells of stage left between it and his edge; stage all round it (not a stair).
+    // The stage blocks round it are the shaft's sides; returns the cell, or null to keep the stone stairwell.
+    Vector2Int? PlanStageShaft(int index, float h, System.Collections.Generic.HashSet<Vector2Int> stairs, Material side)
+    {
+        var cell = CellOf(StageExitPoint());
+        if (Stage.exitSpot == null)
+        {
+            var toDm = DungeonMasterPosition() - Cell(cell);
+            var d = Mathf.Abs(toDm.x) >= Mathf.Abs(toDm.z) ? new Vector2Int(System.Math.Sign(toDm.x), 0) : new Vector2Int(0, System.Math.Sign(toDm.z));
+            while (d != Vector2Int.zero && Layout.InRoom(index, cell + d * 3)) cell += d;
+        }
+        if (!Layout.InRoom(index, cell) || stairs.Contains(cell)) return null;
+        foreach (var d in DungeonLayout.Neighbours) if (!Layout.InRoom(index, cell + d) || stairs.Contains(cell + d)) return null;
+        float depth = Mathf.Min(2f, h - .4f);
+        if (depth < 1.2f) return null;
+        exitShaft = true; exitShaftFacing = FacingToDoor(index, cell); exitShaftDepth = depth;
+        stageShaftCell = cell; stageShaftSide = side;
+        return cell;
+    }
+
     void BuildExitShaft(Transform root, DungeonExit exit)
     {
         var cell = CellOf(root.position);
         int region = Layout.RegionIds[cell.x, cell.y];
         var stone = FloorMaterial(region, cell.x, cell.y);
-        var walls = WallSurface(region, 0f, cell.x, cell.y, -exitShaftFacing);
+        // On the stage the shaft's sides are the stage blocks' own stone, so the steps' sides match them.
+        var walls = cell == stageShaftCell && stageShaftSide != null ? stageShaftSide : WallSurface(region, 0f, cell.x, cell.y, -exitShaftFacing);
         // The caps are the room's floor stone: the style's trim (often timber) read as wooden bars round a stone hole.
         var trim = stone;
         float size = data.cellSize, depth = exitShaftDepth, half = size * .5f;

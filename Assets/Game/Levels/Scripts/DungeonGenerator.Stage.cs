@@ -81,13 +81,26 @@ public partial class DungeonGenerator
                 runs.Add((c, -d, length));
             }
 
+        // The way on: a spiral shaft down through the stage (DungeonGenerator.ExitShaft). Its cell gets only the shaft's
+        // floor; the block and top that stand over it during the fight are built apart from the stage (they are not
+        // merged with it) and go when the exit shows (DungeonExit.cover).
+        var shaft = PlanStageShaft(index, h, stairs, side);
         foreach (var c in Layout.RoomCells(index))
         {
             if (stairs.Contains(c)) continue;
             var p = Cell(c);
+            var parent = root;
+            if (c == shaft)
+            {
+                float floorTop = h - exitShaftDepth;
+                ArchitectureBox("Shaft block", p + Vector3.up * (floorTop - .12f) * .5f, new Vector3(size, floorTop - .12f, size), side, root);
+                ArchitectureBox("Shaft floor", p + Vector3.up * (floorTop - .06f), new Vector3(size, .12f, size), FloorMaterial(index, c.x, c.y), root);
+                stageShaftCover = new GameObject("Stage exit cover"); stageShaftCover.transform.SetParent(transform, false);
+                parent = stageShaftCover.transform;
+            }
             // The block stops where the top slab starts: their sides overlapping in one plane flickered (z-fighting).
-            ArchitectureBox("Stage block", p + Vector3.up * (h - .12f) * .5f, new Vector3(size, h - .12f, size), side, root);
-            ArchitectureBox("Stage top", p + Vector3.up * (h - .06f), new Vector3(size, .12f, size), FloorMaterial(index, c.x, c.y), root);
+            ArchitectureBox("Stage block", p + Vector3.up * (h - .12f) * .5f, new Vector3(size, h - .12f, size), side, parent);
+            ArchitectureBox("Stage top", p + Vector3.up * (h - .06f), new Vector3(size, .12f, size), FloorMaterial(index, c.x, c.y), parent);
         }
         foreach (var (door, inward, length) in runs)
         {
@@ -121,10 +134,12 @@ public partial class DungeonGenerator
             }
     }
 
-    // Where the exit stairs stand on the stage (shown when the boss falls).
+    // Where the exit stands on the stage (shown when the boss falls).
     Vector3 StageExitPoint()
     {
         if (Stage == null) return ExitPoint;
+        // The spiral shaft's cell, once planned (PlanStageShaft).
+        if (exitShaft && Layout.InRoom(StageRoom, stageShaftCell)) return Cell(stageShaftCell) + Vector3.up * Stage.height;
         if (Stage.exitSpot != null) return Stage.exitSpot.position;
         return Cell(Layout.RoomCenter(StageRoom)) + Vector3.up * Stage.height;
     }
