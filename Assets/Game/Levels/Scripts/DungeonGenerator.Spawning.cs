@@ -48,13 +48,17 @@ public partial class DungeonGenerator
             if (!allowed.TryGetValue(t, out bool ok)) { var tpl = t.GetComponent<DungeonRoomTemplate>(); allowed[t] = ok = tpl == null || features.AllowsAll(tpl.Requires()); }
             return ok;
         }
+        // No room template comes up twice on one floor (the Sunken court's witch, the event rooms): a profile's own
+        // template counts as used too. maxPerFloor can only lower that (0 or 1 both mean once).
+        for (int i = 0; i < roles.Length && i < chosen.Length; i++)
+            if (chosen[i] != null && chosen[i].roomTemplate != null) used[chosen[i].roomTemplate] = 1;
         for (int i = 0; i < roles.Length; i++)
         {
             double roll = rng.NextDouble();
             if ((i == 0 && UsesStartingRoom) || (chosen[i] != null && chosen[i].roomTemplate != null) || roll >= Biome.templateChance) continue;
             var role = Mask(roles[i]);
             var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor && Allowed(c.template)
-                && (c.maxPerFloor <= 0 || !used.TryGetValue(c.template, out var had) || had < c.maxPerFloor)
+                && !used.ContainsKey(c.template)
                 ? c.weight / (1f + 2f * (used.TryGetValue(c.template, out var n) ? n : 0)) : 0, rng);
             if (pick == null) continue;
             pool[i] = pick.template;

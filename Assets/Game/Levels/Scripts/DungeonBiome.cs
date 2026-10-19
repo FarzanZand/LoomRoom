@@ -45,7 +45,7 @@ public class DungeonBiome : ScriptableObject
         [Min(0)] public float weight = 1;
         [Tooltip("The kinds of room it may become.")] public DungeonRoomRoles rooms = DungeonRoomRoles.Combat | DungeonRoomRoles.Treasure | DungeonRoomRoles.Rest | DungeonRoomRoles.Storage;
         [Min(1), Tooltip("First floor of this biome it can appear on.")] public int fromFloor = 1;
-        [Min(0), Tooltip("Most copies of this room on one floor (0: no limit).")] public int maxPerFloor = 2;
+        [Min(0), Tooltip("Unused: no room template comes up more than once on a floor (DungeonGenerator.PoolTemplates).")] public int maxPerFloor = 1;
     }
     [TabGroup(RoomsTab), Tooltip("Hand-built rooms (chunks) this biome's floors are made of: each room of a suitable kind is built from one of these by chance (Template Chance), the rest are generated. A room profile's own template comes first.")]
     public RoomTemplateChoice[] roomTemplates = new RoomTemplateChoice[0];
