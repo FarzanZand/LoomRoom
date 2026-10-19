@@ -71731,6 +71731,11 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
+  lookFirstLine:
+    text: Not yet. Have a look at the sheet first.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
   sitSeconds: 1.1
   figureViewDistance: 28
   figureZoom: -14
@@ -267156,6 +267161,10 @@ MonoBehaviour:
   swingIndexParam: SwingIndex
   swingSequenceReset: 1.2
   attackCancelParam: AttackCancel
+  deflectSparkSize: 0.45
+  deflectSparkCount: 3
+  deflectSparkDistance: 0.55
+  deflectSparkScale: 2
 --- !u!33 &4020232276080472713
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -317055,7 +317064,7 @@ MonoBehaviour:
   swingInterval: 0.6
   attackFromBlock: 1
   blockCancelsWindup: 0
-  blockFromAttackAt: 0.75
+  blockFromAttackAt: 0.6
   blockRaiseDelay: 0
   windupSpeed: 1.45
   releaseSpeed: 1.25
