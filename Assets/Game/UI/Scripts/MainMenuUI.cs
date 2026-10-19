@@ -45,7 +45,7 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] GameObject buttons;
 
     [Header("New game")]
-    [Tooltip("Asked when New game is pressed: the player's name, then Play the intro.")]
+    [Tooltip("Asked when New game is pressed: the player's name, then Begin (the intro).")]
     [SerializeField] GameObject newGamePanel;
     [Tooltip("The player's name: the new save is known by it (AdventureSave.NewCharacterName).")]
     [SerializeField] TMP_InputField nameField;
