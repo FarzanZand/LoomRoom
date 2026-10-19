@@ -33,7 +33,7 @@ public partial class BossStageEncounter
         if (c == null || !c.IsAlive) return false;
         var centre = dungeon.StageCentre;
         var flat = c.transform.position - centre; flat.y = 0;
-        return flat.magnitude <= dungeon.Stage.startRadius && Mathf.Abs(c.transform.position.y - centre.y) < 1.2f;
+        return flat.magnitude <= StartReach && Mathf.Abs(c.transform.position.y - centre.y) < 1.2f;
     }
 
     static bool AnyoneAlive() { foreach (var _ in CoopWorld.Party()) return true; return false; }
