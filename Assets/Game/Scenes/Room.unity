@@ -267536,6 +267536,7 @@ MonoBehaviour:
     postExposure: -0.2
   ambientOcclusionFeature: {fileID: 7833122117494664109, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
   retroScreenFeature: {fileID: 6238588630179067837, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
+  sceneOpenFade: 0.35
   filmicVolume: {fileID: 508513323}
   filmicBlendSeconds: 1.5
   colourSplit: 1

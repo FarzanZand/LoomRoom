@@ -39,6 +39,8 @@ public class Equipment : MonoBehaviour
 
     // Eating or drinking: attacks, spells and other items wait until it is done.
     public bool IsUsingItem => consuming.Busy;
+    // The item being eaten or drunk already made its sound (as the hand reached the face).
+    public bool UseSounded => consuming.Busy && consuming.Sounded;
 
     // Uses a consumable the way its ItemData asks: Instant at once, Eat or Drink in the right hand with the arm's clip
     // (ConsumableUse); use runs when it takes effect (it takes the item from the inventory and applies it). False when

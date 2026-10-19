@@ -11,6 +11,8 @@ public class ConsumableUse
 {
     // How far through the clip the item takes effect: the last bite or the last swallow.
     const float UseAt = .72f;
+    // How far through each clip the hand reaches the mouth: the eat or drink sound plays then (measured on the clips).
+    const float EatSoundAt = .2f, DrinkSoundAt = .2f;
     // A swing or a spell still going after this long: the request is dropped.
     const float WaitLimit = 2f;
 
@@ -21,7 +23,10 @@ public class ConsumableUse
     Animator arms;
     GameObject shown, hidden;
     float asked, started = -1f, length;
-    bool used;
+    bool used, sounded;
+
+    // The item's use sound already played (the use itself then plays none).
+    public bool Sounded => sounded;
 
     public bool Busy => item != null;
     public ItemData Item => item;
@@ -30,7 +35,7 @@ public class ConsumableUse
     {
         if (Busy || owner == null || by == null || what == null) return false;
         equipment = owner; player = by; item = what; use = onUse;
-        asked = Time.time; started = -1f; used = false;
+        asked = Time.time; started = -1f; used = false; sounded = false;
         return true;
     }
 
@@ -45,6 +50,7 @@ public class ConsumableUse
             return;
         }
         float t = (Time.time - started) / length;
+        if (!sounded && t >= (item.AnimationOnUse == ItemUseAnimation.Drink ? DrinkSoundAt : EatSoundAt)) { sounded = true; item.PlayUseSound(); }
         if (!used && t >= UseAt) { used = true; use?.Invoke(); }
         if (t >= 1f) End();
     }
