@@ -59,4 +59,5 @@ MonoBehaviour:
   - _go: {fileID: 0}
     globalId:
       globalObjectIdString: GlobalObjectId_V1-2-99c9720ab356a0642a771bea13969a05-1276211948-0
-  bookmarkedScenePaths: []
+  bookmarkedScenePaths:
+  - Assets/Game/Scenes/Main Menu.unity
