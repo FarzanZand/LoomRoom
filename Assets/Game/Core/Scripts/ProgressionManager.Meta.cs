@@ -91,8 +91,8 @@ public partial class ProgressionManager
     public DungeonMaster.Line handOverOne = new() { text = "Here. Hang it on the wall." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Handing over several trophies at once.")]
     public DungeonMaster.Line handOverMany = new() { text = "Here, all of them. On the wall they go." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("After Shield bash's trophy is mounted for the first time.")]
-    public DungeonMaster.Line shieldBashMounted = new() { text = "Next time down there, hold the shield up and press attack." };
+    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("After Blocking's first trophy (Deflect) is mounted for the first time.")]
+    public DungeonMaster.Line shieldBashMounted = new() { text = "Hold your shield up against arrows and fire now. They go back where they came from." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Min(0), Tooltip("Seconds after the room player is free before the lesson's first line.")] public float lessonDelay = 2.5f;
 
     // Story flags of the lesson; meta.* flags hold the state.

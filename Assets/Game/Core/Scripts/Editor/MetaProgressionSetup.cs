@@ -215,7 +215,7 @@ public static partial class MetaProgressionSetup
                     t.milestones.Add(new ProgressionManager.Milestone { value = 50, unlock = second, trophy = Item(trophyFolder2, trophy2) });
                     pm.tracks.Add(t);
                 }
-                Skill(AdventureSkill.Blocking, "Shield bash", "?", "Shields", "Bronze Shield", "Shields", "Iron Shield");
+                Skill(AdventureSkill.Blocking, "Deflect", "?", "Shields", "Bronze Shield", "Shields", "Iron Shield");
                 Skill(AdventureSkill.Swords, "?", "?", "Weapons", "Bronze Sword", "Weapons", "Iron Sword");
                 Skill(AdventureSkill.Maces, "?", "?", "Weapons", "Bronze Mace", "Weapons", "Iron Mace");
                 Skill(AdventureSkill.Sorcery, "?", "?", "Trinkets", "Bone charm", "Trinkets", "Garnet ring");

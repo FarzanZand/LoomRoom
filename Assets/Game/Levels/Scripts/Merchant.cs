@@ -54,7 +54,12 @@ public class Merchant : MonoBehaviour, IInteractable
         else if (shopMusicOn && distance > musicLeaveRadius) StopShopMusic();
     }
 
-    void OnDisable() { if (shopMusicOn) StopShopMusic(); }
+    // As with RoomMusic: the floor's track only comes back while the player is still on the table.
+    void OnDisable()
+    {
+        if (!shopMusicOn) return;
+        if (PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table) StopShopMusic(); else shopMusicOn = false;
+    }
 
     void StartShopMusic()
     {

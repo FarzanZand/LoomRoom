@@ -44,7 +44,15 @@ public class RoomMusic : MonoBehaviour
         else if (inside && AudioManager.Instance.CurrentMusic != music && Time.time >= retakeAt) { retakeAt = Time.time + fade + .5f; AudioManager.Instance.CrossfadeMusic(music, true, fade, volume); }
     }
 
-    void OnDisable() { if (playing || silenced) { silenced = false; End(); } }
+    // Gone with its floor: the floor's track only comes back while the player is still on the table (after a death or
+    // the end of a run the room's own music is already playing, and this must not start the dungeon's again over it).
+    void OnDisable()
+    {
+        if (!playing && !silenced) return;
+        silenced = false;
+        if (OnTable) End(); else playing = false;
+    }
+    static bool OnTable => PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
 
     // The music stops at once (and a sting plays over the silence); the floor's track returns as the player leaves.
     public void Silence(AudioClip sting, float stingVolume = 1f)

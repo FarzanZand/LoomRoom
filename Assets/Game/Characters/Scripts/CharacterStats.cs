@@ -279,7 +279,8 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
     // ── Damage ────────────────────────────────────────────────────────
 
-    // Damage this returns true for is ignored (the dev console's god mode). Null in normal play.
+    // Who this returns true for still takes every hit (blocks, hurt screen, knockback, hit reactions, sounds) but loses no
+    // health, so can't die (god mode, DevGodMode). Null in normal play.
     public static System.Func<CharacterStats, bool> Invulnerable;
 
     // The boss arena's blessing (BossBlessing): a successful block stops all of a hit's damage, spells included.
@@ -288,7 +289,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public void TakeDamage(DamageInfo info)
     {
         if (!IsAlive) return;
-        if (Invulnerable != null && Invulnerable(this)) return;
+        bool spared = Invulnerable != null && Invulnerable(this);
         info.Target = Character;
 
         bool blessed = BlockBlessing;
@@ -310,7 +311,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         else if (info.Blocked && adventurer != null) actual *= adventurer.BlockedDamageMultiplier;
         info.Amount   = actual;
 
-        CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
+        if (!spared) CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
         HealthChanged?.Invoke();
         Damaged?.Invoke(info);
 

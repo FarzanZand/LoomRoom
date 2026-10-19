@@ -56,6 +56,8 @@ public class ArrowProjectile : MonoBehaviour
             {
                 // Friends and corpses are flown past.
                 if (!victim.IsAlive || (owner != null && !FactionRules.IsHostile(owner.Faction, victim.Faction))) continue;
+                // Deflect: off a raised shield, back at whoever shot it, now the defender's arrow.
+                if (victim is Player defender && defender.Combat != null && defender.Combat.Deflects(velocity)) { Deflect(defender, point); return; }
                 Strike(victim.GetComponent<IDamageable>(), point);
                 Destroy(gameObject);
                 return;
@@ -70,6 +72,19 @@ public class ArrowProjectile : MonoBehaviour
 
         transform.position += step;
         transform.rotation = Quaternion.LookRotation(velocity);
+    }
+
+    void Deflect(Player defender, Vector3 point)
+    {
+        var shooter = owner;
+        float speed = velocity.magnitude;
+        var aim = shooter != null && shooter.IsAlive ? shooter.transform.position + Vector3.up * 1.2f - point : -velocity;
+        owner = defender; age = 0f;
+        if (ProgressionManager.HasInstance) ProgressionManager.Instance.Deflected();
+        transform.position = point + aim.normalized * .3f;
+        velocity = aim.normalized * speed;
+        transform.rotation = Quaternion.LookRotation(velocity);
+        if (defender.Combat != null) defender.Combat.PlayDeflect(point);
     }
 
     void Strike(IDamageable target, Vector3 point)

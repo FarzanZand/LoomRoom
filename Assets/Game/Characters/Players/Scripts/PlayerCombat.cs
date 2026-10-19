@@ -128,6 +128,17 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     }
     float cancelSetAt = -10f;
     bool heldThroughCancel;   // the attack button still down from the cancelled swing: it starts nothing until pressed anew
+    // Deflect (Blocking's first milestone): a raised shield facing a shot sends an arrow or a spell back the way it came.
+    public bool Deflects(Vector3 travel)
+    {
+        if (!IsGuarding || !ProgressionManager.HasInstance) return false;
+        var progress = GetComponent<AdventurerProgress>();
+        if (!ProgressionManager.Instance.Unlocked(AdventureSkill.Blocking, 0, progress != null ? progress.Rank(AdventureSkill.Blocking) : 0)) return false;
+        Vector3 facing = player.Look != null ? player.Look.YawTransform.forward : transform.forward;
+        facing.y = 0f; travel.y = 0f;
+        return facing.sqrMagnitude > .001f && travel.sqrMagnitude > .001f && Vector3.Dot(facing.normalized, -travel.normalized) > .3f;
+    }
+
     public bool IsGuarding => player != null && player.IsActive && ShieldHeld && (bash == null || !bash.Busy) &&
         !ShieldKeptDown &&
         (!CombatManager.HasInstance || Time.time - guardRaisedAt >= CombatManager.Instance.blockRaiseDelay) &&
@@ -503,6 +514,16 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     {
         if (!IsGuarding || IsAttacking) return;
         AnimatorHelper.SetTrigger(armsAnimator, blockHitTrigger);
+    }
+
+    // A shot sent back off the raised shield (Deflect): the blocked hit's jolt, sound and sparks where it bounced.
+    public void PlayDeflect(Vector3 point)
+    {
+        ShieldJolt();
+        if (!CombatManager.HasInstance) return;
+        var cm = CombatManager.Instance;
+        if (cm.blockAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(cm.blockAudio, point);
+        if (cm.blockParticlePrefab != null) PoolManager.SpawnOrInstantiate(cm.blockParticlePrefab, point, Quaternion.identity, 2f);
     }
 
     // The raised shield held against something that keeps pushing (the Dungeon Master's beam): the arms shake in the

@@ -219,7 +219,7 @@ public static partial class MetaProgressionSetup
         var close = PenButton("Put down", p, new Vector2(680, -392), new Vector2(170, 46), "Put down", 26, out _);
         var banner = Img("Unlock banner", p, new Vector2(230, 20), new Vector2(480, 96), MetaSprite("Pen frame", new Vector4(3, 3, 3, 3)), Pen, Image.Type.Sliced);
         var bannerFill = Img("Fill", banner.transform, Vector2.zero, new Vector2(472, 88), null, new Color(.985f, .978f, .955f, .97f));
-        var unlockTitle = Text("Title", banner.transform, new Vector2(0, 12), new Vector2(460, 44), "Unlocked: Shield bash", title, 34, Pen, TextAlignmentOptions.Center);
+        var unlockTitle = Text("Title", banner.transform, new Vector2(0, 12), new Vector2(460, 44), "Unlocked: Deflect", title, 34, Pen, TextAlignmentOptions.Center);
         var unlockSub = Text("Sub", banner.transform, new Vector2(0, -24), new Vector2(460, 28), "A trophy for the wall", body, 22, Ink, TextAlignmentOptions.Center);
         banner.gameObject.SetActive(false);
 

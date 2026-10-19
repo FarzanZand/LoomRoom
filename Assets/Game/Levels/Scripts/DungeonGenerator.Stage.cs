@@ -85,7 +85,8 @@ public partial class DungeonGenerator
         {
             if (stairs.Contains(c)) continue;
             var p = Cell(c);
-            ArchitectureBox("Stage block", p + Vector3.up * (h - .06f) * .5f, new Vector3(size, h - .06f, size), side, root);
+            // The block stops where the top slab starts: their sides overlapping in one plane flickered (z-fighting).
+            ArchitectureBox("Stage block", p + Vector3.up * (h - .12f) * .5f, new Vector3(size, h - .12f, size), side, root);
             ArchitectureBox("Stage top", p + Vector3.up * (h - .06f), new Vector3(size, .12f, size), FloorMaterial(index, c.x, c.y), root);
         }
         foreach (var (door, inward, length) in runs)
