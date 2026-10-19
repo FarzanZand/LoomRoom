@@ -14,6 +14,9 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     [SerializeField] Image           iconImage;
     [SerializeField] Image           background;
     [SerializeField] Image           equippedHighlight;
+    [SerializeField, Tooltip("Hotbar: a dark sweep over the shield in hand while its shield bash recharges (a filled, radial image).")]
+    Image cooldownFill;
+    [SerializeField, Tooltip("Hotbar: the seconds left of that recharge.")] TextMeshProUGUI cooldownLabel;
     [Tooltip("Shown behind the icon in the item's rarity colour.")]
     [SerializeField, UnityEngine.Serialization.FormerlySerializedAs("honedFill")] Image rarityFill;
     [SerializeField] TextMeshProUGUI keyLabel;
@@ -90,6 +93,31 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (keyLabel != null && container != null && container.role == InventoryRole.Hotbar)
             keyLabel.text = (index + 1).ToString();
         Refresh();
+    }
+
+    // The shield bash recharging: the held shield's hotbar slot shows how long is left.
+    void Update()
+    {
+        if (cooldownFill == null) return;
+        float k = 0f, left = 0f;
+        var item = Item;
+        if (item != null && item.itemType == ItemType.Shield && Container != null && !Container.IsGrid)
+        {
+            var owner = Owner;
+            if (owner != null && HeldSlot(owner.Equipment, Container, Index) == EquipmentSlot.LeftHand && owner.GetComponentInChildren<ShieldBash>() is { } bash)
+            {
+                left = bash.CooldownLeft;
+                if (bash.CooldownTotal > 0f) k = Mathf.Clamp01(left / bash.CooldownTotal);
+            }
+        }
+        bool on = k > 0f;
+        if (cooldownFill.enabled != on) cooldownFill.enabled = on;
+        if (on) cooldownFill.fillAmount = k;
+        if (cooldownLabel != null)
+        {
+            if (cooldownLabel.enabled != on) cooldownLabel.enabled = on;
+            if (on) cooldownLabel.text = Mathf.CeilToInt(left).ToString();
+        }
     }
 
     public void Refresh()

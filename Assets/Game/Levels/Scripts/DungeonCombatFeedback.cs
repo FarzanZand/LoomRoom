@@ -84,6 +84,8 @@ public class DungeonCombatFeedback : MonoBehaviour
         string amount=Mathf.CeilToInt(info.Amount).ToString();
         // The number appears where the blade struck; criticals say so above a bigger number that grows in.
         Vector3 at=info.HitPoint!=Vector3.zero && !info.Blocked ? info.HitPoint:Head(view.character);
+        // A shield bash lands nose to nose: its hit point sits low under the view, so its number goes over the head.
+        if(info.Weapon!=null && info.Weapon.itemType==ItemType.Shield)at=Head(view.character);
         ShowNumber(view.character.transform,at,info.Blocked ? "BLOCK":info.Backstab ? "<size=55%>BACKSTAB!</size>\n"+amount:info.Critical ? "<size=55%>CRITICAL!</size>\n"+amount:amount,
             info.Blocked ? new Color(.53f,.85f,1):info.Backstab ? new Color(1,.42f,.3f):info.Critical ? new Color(1,.6f,.2f):info.Heavy ? new Color(1,.85f,.45f):Color.white,scale,special);
     }

@@ -61,3 +61,4 @@ MonoBehaviour:
       globalObjectIdString: GlobalObjectId_V1-2-99c9720ab356a0642a771bea13969a05-1276211948-0
   bookmarkedScenePaths:
   - Assets/Game/Scenes/Main Menu.unity
+  - Assets/Game/Scenes/Room.unity
