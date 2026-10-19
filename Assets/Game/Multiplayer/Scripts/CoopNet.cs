@@ -116,6 +116,7 @@ public enum CoopEventKind : byte
     BossStageOpened = 17, // the stage fight began (position = who stepped up)
     BossBeam = 18,      // the Dungeon Master's beam (target = at whom)
     BossVolley = 19,    // the Dungeon Master's fireball volley (target = at whom, amount = its event in the fight)
+    AttackTell = 22,    // an enemy's windup began: its warning glow and sound (id = the enemy)
     PartySpoiled = 21, // a Skeleton Party's dance broke up (position = the party's room spot)
     Ping = 20,          // a player pointed at something (position = where, item = what it is called; CoopPing)
 }

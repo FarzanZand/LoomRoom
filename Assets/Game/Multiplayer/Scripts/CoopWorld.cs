@@ -579,6 +579,13 @@ public static class CoopWorld
     }
 
     // Host: an enemy's whoosh (its attack's swing sound) for the guests, whose puppets never swing for real.
+    // Host: an enemy's attack began (EnemyAttackRunner's tell): guests show the same warning on their copy.
+    public static void EnemyTell(Character enemy)
+    {
+        if (!Coop.IsHost || !TryEnemyId(enemy, out var id)) return;
+        Send(new CoopEvent { kind = CoopEventKind.AttackTell, id = id });
+    }
+
     public static void EnemySwung(Character enemy, int attack)
     {
         if (!Coop.IsHost || !TryEnemyId(enemy, out var id)) return;
@@ -648,7 +655,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: return;
+            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: return;
         }
         history.Add(e);
     }
@@ -811,6 +818,15 @@ public static class CoopWorld
             case CoopEventKind.AmbushOpened:
                 if (e.id >= 0 && e.id < ambushes.Count && ambushes[e.id] != null) ambushes[e.id].OpenedOnHost();
                 break;
+            case CoopEventKind.AttackTell:
+            {
+                var enemy = Enemy(e.id);
+                var tuning = CombatManager.HasInstance ? CombatManager.Instance : null;
+                if (enemy == null || !enemy.IsAlive || tuning == null || !tuning.enemyAttackTell) break;
+                if (enemy.FX != null) enemy.FX.Tell(tuning.enemyTellColor, tuning.enemyTellDuration);
+                if (tuning.enemyTellAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(tuning.enemyTellAudio, enemy.transform.position + Vector3.up);
+                break;
+            }
             case CoopEventKind.EnemySwing:
             {
                 var enemy = Enemy(e.id);

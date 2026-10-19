@@ -208,6 +208,7 @@ public class EnemyAttackRunner
         {
             if (Character.FX != null) Character.FX.Tell(Tuning.enemyTellColor, Tuning.enemyTellDuration);
             if (Tuning.enemyTellAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(Tuning.enemyTellAudio, brain.transform.position + Vector3.up);
+            CoopWorld.EnemyTell(Character);   // co-op: guests see the same warning
         }
 
         // A bow shot is loosed by the release clip's OnAttackHit event (or a late fallback).
