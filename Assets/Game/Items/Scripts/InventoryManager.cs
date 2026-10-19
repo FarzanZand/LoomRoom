@@ -262,7 +262,7 @@ public class InventoryManager : Singleton<InventoryManager>
         if (taken) container.Consume(index);
         if (!taken) taken = player.Hotbar != null && player.Hotbar.RemoveOne(item);
         if (!taken) taken = player.Bag != null && player.Bag.RemoveOne(item);
-        if (taken) item.Use(player);
+        if (taken) item.Use(player, !player.Equipment.UseSounded);
     }
 
     // A hotbar key: gear is taken in hand or put away again, a consumable that can't be held is used.
@@ -297,7 +297,7 @@ public class InventoryManager : Singleton<InventoryManager>
         bool consumed=player.Hotbar!=null && player.Hotbar.RemoveOne(item);
         if(!consumed)consumed=player.Bag!=null && player.Bag.RemoveOne(item);
         player.Equipment.Unequip(slot);
-        if(consumed)item.Use(player);
+        if(consumed)item.Use(player, !player.Equipment.UseSounded);
     }
 
     // ── Spawn / drop ──────────────────────────────────────────────────

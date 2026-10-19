@@ -219,11 +219,14 @@ public partial class ItemData : ScriptableObject
         return false;
     }
 
+    public void PlayUseSound() => PlayItemAudio(useAudioSource, useAudio, useClip, useClipVolume, useAudioKey);
+
     // Consume: fire OnUse effects for the user.
-    public void Use(Character user)
+    // sound off: the eat or drink sound already played as the hand reached the face (ConsumableUse).
+    public void Use(Character user, bool sound = true)
     {
         if (!IsConsumable) return;
-        PlayItemAudio(useAudioSource, useAudio, useClip, useClipVolume, useAudioKey);
+        if (sound) PlayUseSound();
         if (user is Player p && p.kind == PlayerKind.Table)
             MessageLog.Post(string.IsNullOrWhiteSpace(useMessage) ? $"You use the {itemName}." : useMessage.Trim(), MessageKind.Info);
         ItemEffectProcessor.Fire(this, EffectTrigger.OnUse, EffectContext.For(user, this));

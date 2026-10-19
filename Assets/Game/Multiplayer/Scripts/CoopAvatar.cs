@@ -400,6 +400,9 @@ public class CoopAvatar : MonoBehaviour
     // right arm's Eat or Drink clip fitted to the same time.
     public void Use(string saveId, bool drink, float seconds)
     {
+        // Heard where the body is, as the hand reaches the mouth (ConsumableUse plays the owner's own at the same point).
+        StopCoroutine(nameof(UseSound));
+        StartCoroutine(UseSound(Coop.Item(saveId), Mathf.Max(.2f, seconds) * .2f));
         // The one body plays the owner's Eat or Drink itself (ApplyArms); the item is shown in the hand meanwhile.
         if (builtOneBody)
         {
@@ -421,6 +424,20 @@ public class CoopAvatar : MonoBehaviour
         usedVisual = Attach(Coop.Item(saveId), HumanBodyBones.RightHand, MultiplayerManager.Instance.weaponGrip);
         if (usedVisual == null) usedVisual = new GameObject("Used item");   // nothing to show: still times the weapon's return
         useEnds = Time.time + seconds;
+    }
+
+    System.Collections.IEnumerator UseSound(ItemData item, float delay)
+    {
+        if (item == null) yield break;
+        yield return new WaitForSeconds(delay);
+        if (!AudioManager.HasInstance) yield break;
+        var at = transform.position + Vector3.up * 1.6f * builtScale;
+        switch (item.useAudioSource)
+        {
+            case ItemAudioSource.AudioData: if (item.useAudio != null) AudioManager.Instance.PlaySFXData(item.useAudio, at); break;
+            case ItemAudioSource.AudioClip: if (item.useClip != null) AudioManager.Instance.PlaySFX(item.useClip, at, item.useClipVolume); break;
+            default: if (!string.IsNullOrEmpty(item.useAudioKey)) AudioManager.Instance.PlaySFX(item.useAudioKey, at); break;
+        }
     }
 
     void EndUse()

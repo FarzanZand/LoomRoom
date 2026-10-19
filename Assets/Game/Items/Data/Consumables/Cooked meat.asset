@@ -74,7 +74,7 @@ MonoBehaviour:
     customEffect: {fileID: 0}
   useAudioSource: 1
   useAudio: {fileID: 11400000, guid: e6a7065719906794d894b99b7267a15c, type: 2}
-  useClip: {fileID: 8300000, guid: 116bb17b3fe754f489ba1c318df3b5a9, type: 3}
+  useClip: {fileID: 8300000, guid: 3c7531fa347f03f46bea95645c07c48d, type: 3}
   useClipVolume: 1
   useAudioKey: 
   useMessage: You eat the meat. Best not to ask what it was.

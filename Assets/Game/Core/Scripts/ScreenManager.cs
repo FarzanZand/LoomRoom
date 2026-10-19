@@ -152,7 +152,21 @@ public class ScreenManager : Singleton<ScreenManager>
             canvas.overrideSorting = true;
             canvas.sortingOrder = 1000;
         }
-        SetAlpha(0f);
+        // The scene opens black: whatever starts it (the intro, a wake-up, a run, a guest joining) takes the fade over
+        // in its first frames; if nothing does, it fades in (OpenWhenUnclaimed). So the lit room never shows for a
+        // few frames before an opening that starts in the dark.
+        SetAlpha(1f);
+    }
+
+    bool fadeClaimed;
+    [SerializeField, Min(0f), Tooltip("When nothing starts a fade as the scene opens, the black lifts over this long.")]
+    float sceneOpenFade = .35f;
+
+    IEnumerator OpenWhenUnclaimed()
+    {
+        yield return null;
+        yield return null;
+        if (!fadeClaimed) FadeFromBlack(sceneOpenFade);
     }
 
     void OnEnable()
@@ -179,6 +193,7 @@ public class ScreenManager : Singleton<ScreenManager>
     bool pixelLightingAtStart;
     void Start()
     {
+        StartCoroutine(OpenWhenUnclaimed());
         pixelLightingAtStart = pixelLighting;
         ApplyPixelLighting();
         if (InputManager.HasInstance) { InputManager.Instance.DebugPixelLightingToggled += TogglePixelLighting; InputManager.Instance.DebugScreenFilterCycled += CycleFilter; }
@@ -464,6 +479,7 @@ public class ScreenManager : Singleton<ScreenManager>
 
     public void ClearFade()
     {
+        fadeClaimed = true;
         if (fadeRoutine != null) StopCoroutine(fadeRoutine);
         fadeRoutine = null;
         SetAlpha(0f);
@@ -471,6 +487,7 @@ public class ScreenManager : Singleton<ScreenManager>
 
     Coroutine RunFade(IEnumerator routine)
     {
+        fadeClaimed = true;
         if (fadeRoutine != null) StopCoroutine(fadeRoutine);
         fadeRoutine = StartCoroutine(Tracked(routine));
         return fadeRoutine;
