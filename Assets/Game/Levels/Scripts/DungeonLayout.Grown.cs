@@ -35,15 +35,30 @@ public sealed partial class DungeonLayout
     {
         if (requests == null || requests.Count < 2) throw new ArgumentException("Dungeon requires at least two rooms.");
         var layout = new DungeonLayout(width, depth, seed);
-        layout.GrowRooms(requests, settings, exitAt);
+        layout.GrowRooms(requests, settings, exitAt, false);
+        // Rooms lost: grown again with no hand-built room (its doorways marked, often a single one)
+        // until a plain room with free walls stands. Otherwise the starting room's one door can lead into a one-door
+        // chunk and leave nothing to grow from (a floor of just the start and the exit). The layout with more rooms is
+        // kept; floors that placed every room are untouched.
+        if (layout.PlacedRequests.Length < requests.Count)
+        {
+            var again = new DungeonLayout(width, depth, seed);
+            again.GrowRooms(requests, settings, exitAt, true);
+            if (again.PlacedRequests.Length > layout.PlacedRequests.Length) layout = again;
+        }
+        if (layout.PlacedRequests.Length < requests.Count)
+            Debug.LogWarning($"Dungeon seed {seed}: {requests.Count - layout.PlacedRequests.Length} of {requests.Count} rooms did not fit the {width}x{depth} grid. Reduce room count or size, or enlarge the grid.");
         return layout;
     }
 
     // The exit stands where it was asked to (a stage): it has one way in, so no loop or spur is cut into it.
     public bool ExitPlacedAt { get; private set; }
 
-    void GrowRooms(IList<DungeonShape> requests, DungeonGrowthSettings settings, Vector2Int? exitAt)
+    bool plainFirst;
+
+    void GrowRooms(IList<DungeonShape> requests, DungeonGrowthSettings settings, Vector2Int? exitAt, bool plainFirst)
     {
+        this.plainFirst = plainFirst;
         int width = floor.GetLength(0), depth = floor.GetLength(1);
         growth = settings;
         growth.spacing = new Vector2Int(Mathf.Clamp(settings.spacing.x, 1, 8), Mathf.Clamp(Mathf.Max(settings.spacing.x, settings.spacing.y), 1, 8));
@@ -85,8 +100,6 @@ public sealed partial class DungeonLayout
             }
         }
         placed.Add(last);
-        if (placed.Count < requests.Count)
-            Debug.LogWarning($"Dungeon seed {seed}: {requests.Count - placed.Count} of {requests.Count} rooms did not fit the {width}x{depth} grid. Reduce room count or size, or enlarge the grid.");
         PlacedRequests = placed.ToArray();
         Shapes = placedShapes.ToArray();
 
@@ -117,6 +130,7 @@ public sealed partial class DungeonLayout
     {
         foreach (var s in Fallbacks(shape))
         {
+            if (plainFirst && s.HasDoorMarks && !doorAnchors.Exists(a => a == null)) continue;
             int attempts = anchorOrder != null ? anchorOrder.Count * 20 : 90;
             for (int attempt = 0; attempt < attempts; attempt++)
             {
