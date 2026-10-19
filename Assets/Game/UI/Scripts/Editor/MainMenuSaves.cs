@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Builds the main menu's save pieces in the open Main Menu scene: the button column (Continue, New game, Load game,
-// Quit), the New game choice (the player's name, Play the intro, Skip intro, Back), the save list (three slot rows, each with a Delete
+// Quit), the New game choice (the player's name, Play the intro, Back), the save list (three slot rows, each with a Delete
 // button, and Back) and the question asked before a save is deleted or replaced, all in the menu's painted gold
 // frames and Lilita One, and binds them on MainMenuUI. Safe to run again: the panels are rebuilt, the buttons kept.
 public static class MainMenuSaves
@@ -50,20 +50,20 @@ public static class MainMenuSaves
         play.name = "Continue"; Label(play).text = "Continue";
         Button[] order = { play, newGame, load, quit };
         for (int i = 0; i < order.Length; i++) { order[i].transform.SetParent(column, false); order[i].transform.SetSiblingIndex(i); }
-        // Skip intro moved into the New game choice.
+        // A Skip intro button from an older build of the menu goes (a new game always plays the intro).
         foreach (var stray in new[] { column.Find("Skip intro"), canvas.Find("Skip intro") }) if (stray != null) Object.DestroyImmediate(stray.gameObject);
 
         // ── The New game choice ─────────────────────────────────────
         var oldChoice = canvas.Find("New game choice"); if (oldChoice != null) Object.DestroyImmediate(oldChoice.gameObject);
         var choice = New("New game choice", canvas);
         choice.anchorMin = choice.anchorMax = Vector2.zero; choice.pivot = Vector2.zero;
-        choice.anchoredPosition = new Vector2(102f, 33.5f); choice.sizeDelta = new Vector2(900f, 456f);
+        choice.anchoredPosition = new Vector2(102f, 33.5f); choice.sizeDelta = new Vector2(900f, 380f);
         var choiceTitle = Text("Title", choice, Label(play), 34f, Gold, TextAlignmentOptions.BottomLeft);
-        Place(choiceTitle.rectTransform, 0f, 376f, 700f, 60f);
+        Place(choiceTitle.rectTransform, 0f, 300f, 700f, 60f);
         choiceTitle.text = "New game";
         // The player's name, in the menu's frame: the new save is known by it.
         var nameRect = New("Name", choice);
-        Place(nameRect, 0f, 304f, 440f, 61f);   // wide enough for the longest name (AdventureSave.NameLength)
+        Place(nameRect, 0f, 228f, 440f, 61f);   // wide enough for the longest name (AdventureSave.NameLength)
         var nameFrame = nameRect.gameObject.AddComponent<Image>();
         nameFrame.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(Frame); nameFrame.type = Image.Type.Sliced; nameFrame.pixelsPerUnitMultiplier = 2f;
         var nameArea = New("Text Area", nameRect);
@@ -83,13 +83,11 @@ public static class MainMenuSaves
         var hover = nameInput.spriteState; hover.highlightedSprite = hover.selectedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(FrameHover);
         nameInput.transition = Selectable.Transition.SpriteSwap; nameInput.spriteState = hover;
         var nameNote = Text("Name note", choice, Label(play), 22f, Label(play).color, TextAlignmentOptions.Left);
-        Place(nameNote.rectTransform, 464f, 304f, 480f, 61f);
+        Place(nameNote.rectTransform, 464f, 228f, 480f, 61f);
         nameNote.text = "Your save is called by this name.";
         var playIntro = Copy(play, choice, "Play the intro"); Label(playIntro).text = "Play the intro";
-        Place((RectTransform)playIntro.transform, 0f, 228f, 326f, 61f);
-        var skipIntro = Copy(play, choice, "Skip intro"); Label(skipIntro).text = "Skip intro";
-        Place((RectTransform)skipIntro.transform, 0f, 152f, 326f, 61f);
-        foreach (var (note, y, text) in new[] { ("Play the intro note", 228f, "Starts at the table, at night."), ("Skip intro note", 152f, "Starts on the first morning, after the intro dungeon.") })
+        Place((RectTransform)playIntro.transform, 0f, 152f, 326f, 61f);
+        foreach (var (note, y, text) in new[] { ("Play the intro note", 152f, "Starts at the table, at night.") })
         {
             var t = Text(note, choice, Label(play), 22f, Label(play).color, TextAlignmentOptions.Left);   // full brightness: it sits over the lit ruins
             Place(t.rectTransform, 350f, y, 560f, 61f);
@@ -173,7 +171,6 @@ public static class MainMenuSaves
         so.FindProperty("newGamePanel").objectReferenceValue = choice.gameObject;
         so.FindProperty("nameField").objectReferenceValue = nameInput;
         so.FindProperty("playIntroButton").objectReferenceValue = playIntro;
-        so.FindProperty("skipIntroButton").objectReferenceValue = skipIntro;
         so.FindProperty("newGameBack").objectReferenceValue = choiceBack;
         so.FindProperty("loadButton").objectReferenceValue = load;
         so.FindProperty("playLabel").objectReferenceValue = Label(play);

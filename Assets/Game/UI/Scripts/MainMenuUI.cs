@@ -9,9 +9,8 @@ using UnityEngine.UI;
 // haze, his eyes burning, one hand held out over a little ruin with a pewter figure in it, fog rolling across the table
 // (UI/Main Menu: pose clip, ruins, fog shader, look profile; Tools > LoomRoom > UI > Rebuild Main Menu Ruins), the
 // painted title, and Continue / New game / Load game / Quit. There are three save slots (AdventureSave.Slot):
-// Continue plays the newest save, New game asks for the player's name (the save is known by it) and whether to play
-// the intro or skip it (starting on the first morning, right after the intro dungeon) and starts in a free slot (or
-// asks which save to replace when all are taken),
+// Continue plays the newest save, New game asks for the player's name (the save is known by it) and starts with the
+// intro in a free slot (or asks which save to replace when all are taken),
 // Load game lists the saves to play or delete, Settings opens the game's settings screen (its InputManager is here
 // only for rebinding keys). Playing fades to black and loads the game's scene. The set, buttons,
 // save list, title and fade are authored in the scene (Tools > LoomRoom > UI > Build Main Menu Saves); this binds them. The menu is drawn smooth, not pixel-lit, and the
@@ -40,13 +39,11 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] GameObject buttons;
 
     [Header("New game")]
-    [Tooltip("Asked when New game is pressed: the player's name, then play the intro or skip it.")]
+    [Tooltip("Asked when New game is pressed: the player's name, then Play the intro.")]
     [SerializeField] GameObject newGamePanel;
-    [Tooltip("The player's name: the new save is known by it (AdventureSave.NewCharacterName). Play the intro and Skip intro wait for one.")]
+    [Tooltip("The player's name: the new save is known by it (AdventureSave.NewCharacterName).")]
     [SerializeField] TMP_InputField nameField;
     [SerializeField] Button playIntroButton;
-    [Tooltip("Starts on the first morning, as if the intro dungeon had just been played (ProgressionManager.SkipIntroRequested).")]
-    [SerializeField] Button skipIntroButton;
     [SerializeField] Button newGameBack;
 
     [Header("Saves")]
@@ -80,7 +77,6 @@ public class MainMenuUI : MonoBehaviour
     bool leaving;
     enum SavesMode { Load, Replace }
     SavesMode mode;
-    bool replaceSkipsIntro;
     System.Action confirmed;
 
     void Start()
@@ -111,8 +107,7 @@ public class MainMenuUI : MonoBehaviour
         playButton?.onClick.AddListener(Continue);
         newGameButton?.onClick.AddListener(OpenNewGame);
         loadButton?.onClick.AddListener(() => OpenSaves(SavesMode.Load));
-        playIntroButton?.onClick.AddListener(() => NewGame(false));
-        skipIntroButton?.onClick.AddListener(() => NewGame(true));
+        playIntroButton?.onClick.AddListener(NewGame);
         newGameBack?.onClick.AddListener(CloseNewGame);
         if (nameField != null)
         {
@@ -230,7 +225,7 @@ public class MainMenuUI : MonoBehaviour
         if (leaving) return;
         if (buttons != null) buttons.SetActive(false);
         if (newGamePanel != null) newGamePanel.SetActive(true);
-        else { NewGame(false); return; }
+        else { NewGame(); return; }
         nameField?.SetTextWithoutNotify("");
         SelectFirst();
     }
@@ -262,18 +257,17 @@ public class MainMenuUI : MonoBehaviour
     }
 
     // A new game goes in the first free slot; with every slot taken the player picks one to replace.
-    void NewGame(bool skipIntro)
+    void NewGame()
     {
         if (leaving) return;
         int slot = AdventureSave.FreeSlot;
-        if (slot == 0) { replaceSkipsIntro = skipIntro; if (newGamePanel != null) newGamePanel.SetActive(false); OpenSaves(SavesMode.Replace); return; }
-        StartNew(slot, skipIntro);
+        if (slot == 0) { if (newGamePanel != null) newGamePanel.SetActive(false); OpenSaves(SavesMode.Replace); return; }
+        StartNew(slot);
     }
 
-    void StartNew(int slot, bool skipIntro)
+    void StartNew(int slot)
     {
         AdventureSave.DeleteSlot(slot);   // nothing there, or the save the player chose to replace
-        ProgressionManager.SkipIntroRequested = skipIntro;
         AdventureSave.NewCharacterName = nameField != null ? ChosenName : null;
         Play(slot);
     }
@@ -332,7 +326,7 @@ public class MainMenuUI : MonoBehaviour
     {
         if (leaving) return;
         if (mode == SavesMode.Load) { Play(slot); return; }
-        Ask($"Replace {SaveName(slot)}? It will be gone for good.", () => StartNew(slot, replaceSkipsIntro));
+        Ask($"Replace {SaveName(slot)}? It will be gone for good.", () => StartNew(slot));
     }
 
     void AskDelete(int slot) => Ask($"Delete {SaveName(slot)}? It will be gone for good.", () =>
