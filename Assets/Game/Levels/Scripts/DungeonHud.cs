@@ -31,13 +31,18 @@ public class DungeonHud : MonoBehaviour
         // Runtime layout and exploration arrays do not survive an editor domain reload.
         if(canvasRoot==null || dungeon==null || dungeon.Layout==null || map==null || explored==null)return;
         var players=PlayerManager.HasInstance ? PlayerManager.Instance : null;
-        bool show=players!=null && players.ActiveKind==PlayerKind.Table && GameManager.HasInstance && GameManager.Instance.GameplayActive;
+        bool show=players!=null && players.ActiveKind==PlayerKind.Table && GameManager.HasInstance && GameManager.Instance.GameplayActive && players.Active!=null;
+        var player=show ? players.Active : null;
+        int w=map.width,h=map.height,px=0,py=0;
+        if(show)
+        {
+            var origin=dungeon.Cell(Vector2Int.zero);float cell=(dungeon.Cell(Vector2Int.right)-origin).x;
+            px=Mathf.RoundToInt((player.transform.position.x-origin.x)/cell);py=Mathf.RoundToInt((player.transform.position.z-origin.z)/cell);
+            // Only the map of the floor the player stands in: a pocket (the Skeleton Party) is built beside the floor with
+            // a map of its own, and both drew in the same corner, the pocket's over the floor's.
+            show=Standing(px,py);
+        }
         canvasRoot.SetActive(show);if(!show || Time.time<next)return;next=Time.time+.15f;
-        var player=players.Active;
-        if(player==null)return;
-        int w=map.width,h=map.height;
-        var origin=dungeon.Cell(Vector2Int.zero);float cell=(dungeon.Cell(Vector2Int.right)-origin).x;
-        int px=Mathf.RoundToInt((player.transform.position.x-origin.x)/cell),py=Mathf.RoundToInt((player.transform.position.z-origin.z)/cell);
         if(shop==null)
         {
             shop=new bool[w,h];exitRoom=new bool[w,h];
@@ -58,6 +63,18 @@ public class DungeonHud : MonoBehaviour
             map.SetPixel(x,y,color);
         }
         map.Apply(false);
+    }
+
+    // On (or next to) a floor cell of this layout.
+    bool Standing(int px,int py)
+    {
+        var floor=dungeon.Layout.floor;
+        for(int dx=-1;dx<=1;dx++)for(int dy=-1;dy<=1;dy++)
+        {
+            int x=px+dx,y=py+dy;
+            if(x>=0 && y>=0 && x<floor.GetLength(0) && y<floor.GetLength(1) && floor[x,y])return true;
+        }
+        return false;
     }
 
     void OnDestroy(){if(map!=null)Destroy(map);}

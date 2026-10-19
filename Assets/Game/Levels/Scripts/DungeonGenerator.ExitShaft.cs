@@ -66,14 +66,20 @@ public partial class DungeonGenerator
         int region = Layout.RegionIds[cell.x, cell.y];
         var stone = FloorMaterial(region, cell.x, cell.y);
         var walls = WallSurface(region, 0f, cell.x, cell.y, -exitShaftFacing);
-        var trim = data.trimMaterial;
+        // The caps are the room's floor stone: the style's trim (often timber) read as wooden bars round a stone hole.
+        var trim = stone;
         float size = data.cellSize, depth = exitShaftDepth, half = size * .5f;
         root.rotation = Quaternion.LookRotation(new Vector3(-exitShaftFacing.x, 0, -exitShaftFacing.y));
         var block = new MaterialPropertyBlock();
-        GameObject Part(string name, Vector3 local, Vector3 scale, Material material, float shade = 1f, float yaw = 0f, Transform parent = null)
+        GameObject Part(string name, Vector3 local, Vector3 scale, Material material, float shade = 1f, float yaw = 0f, Transform parent = null, bool free = false)
         {
-            var g = Box(name, root.TransformPoint(local), scale, material, parent != null ? parent : root);
-            g.transform.rotation = root.rotation * Quaternion.Euler(0, yaw, 0);
+            // Built like the walls (ArchitectureBox): texture laid in world metres per architecture tile, so its pixels are
+            // the same size as the room's. The root only turns in quarter turns: a box keeps no rotation of its own, its
+            // size is turned instead.
+            bool across = Mathf.Abs((root.rotation * Vector3.forward).x) > .5f;
+            var worldSize = across && !free ? new Vector3(scale.z, scale.y, scale.x) : scale;
+            var g = ArchitectureBox(name, root.TransformPoint(local), worldSize, material, parent != null ? parent : root);
+            if (yaw != 0f) { g.transform.localScale = scale; g.transform.rotation = root.rotation * Quaternion.Euler(0, yaw, 0); }
             if (shade < 1f)
             {
                 var r = g.GetComponent<Renderer>(); r.GetPropertyBlock(block);
@@ -96,16 +102,15 @@ public partial class DungeonGenerator
             var torch = WallLights != null && WallLights.Length > 0 && WallLights[0] != null ? WallLights[0].prefab : null;
             if (torch != null)
             {
-                var t = Instantiate(torch, root.TransformPoint(new Vector3(x * (half + thick * .5f), 1.25f, -half - thick - .02f)), root.rotation * Quaternion.Euler(0, 180f, 0), root);
+                var t = Instantiate(torch, root.TransformPoint(new Vector3(x * (half + thick * .5f), 1.2f, -half - thick - .12f)), root.rotation * Quaternion.Euler(0, 180f, 0), root);
                 t.name = "Shaft torch";
             }
         }
-        // The front lip: one step down from the floor into the mouth.
-        Part("Lip", new Vector3(0, -.06f, -half + .2f), new Vector3(size - .1f, .12f, .4f), trim);
 
         // The newel and the spiral: steps round it, each lower and further round, darker the deeper.
         float newelR = .22f;
-        Part("Newel", new Vector3(0, -depth * .5f, .15f), new Vector3(newelR * 2f, depth + .02f, newelR * 2f), walls, .5f);
+        Part("Newel", new Vector3(0, -depth * .5f + .1f, .15f), new Vector3(newelR * 2f, depth + .2f, newelR * 2f), stone, .8f);
+        Part("Newel cap", new Vector3(0, .15f, .15f), new Vector3(newelR * 2f + .1f, .1f, newelR * 2f + .1f), stone);
         int steps = 13; float turn = 330f / steps;
         var axis = new Vector3(0, 0, .15f);
         for (int i = 0; i < steps; i++)
@@ -114,7 +119,7 @@ public partial class DungeonGenerator
             float y = -(i + 1) * (depth / (steps + .5f));
             float r = newelR + (half - .08f - newelR) * .5f;
             var at = axis + new Vector3(Mathf.Sin(rad) * r, y, -Mathf.Cos(rad) * r);
-            var s = Part("Spiral step", at, new Vector3(.42f, .1f, (half - .08f - newelR) + .04f), stone, Mathf.Lerp(.75f, .05f, i / (steps - 1f)));
+            var s = Part("Spiral step", at, new Vector3(.42f, .1f, (half - .08f - newelR) + .04f), stone, Mathf.Lerp(.75f, .05f, i / (steps - 1f)), 0f, null, true);
             // Each step's length runs out from the newel.
             s.transform.rotation = root.rotation * Quaternion.LookRotation(new Vector3(Mathf.Sin(rad), 0f, -Mathf.Cos(rad)));
         }
@@ -122,7 +127,7 @@ public partial class DungeonGenerator
         var glow = new GameObject("Glow below").AddComponent<Light>();
         glow.transform.SetParent(root, false);
         glow.transform.localPosition = new Vector3(0, -depth + .3f, 0);
-        glow.type = LightType.Point; glow.color = new Color(1f, .55f, .25f); glow.range = depth + .8f; glow.intensity = 1.6f; glow.shadows = LightShadows.None;
+        glow.type = LightType.Point; glow.color = new Color(1f, .55f, .25f); glow.range = depth + 1.2f; glow.intensity = 5f; glow.shadows = LightShadows.None;
         // The grate over the hole while the guardian lives.
         var gate = new GameObject("Grate"); gate.transform.SetParent(root, false);
         for (int i = -3; i <= 3; i++) Part("Bar", new Vector3(i * (size / 7f), .03f, 0), new Vector3(.06f, .06f, size + .1f), data.metalMaterial, 1f, 0f, gate.transform);
