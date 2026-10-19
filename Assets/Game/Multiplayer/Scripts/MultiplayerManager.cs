@@ -668,8 +668,17 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         CoopMessages.Register<CoopInt>(CoopMessages.Finale, (s, m) => { if (!network.IsServer && IntroController.HasInstance) IntroController.Instance.RemoteFinale(m.a != 0); });
         CoopMessages.Register<CoopInt>(CoopMessages.FloorHash, (s, m) =>
         {
-            if (!network.IsServer) return;
-            if (m.a == HostFloorHash.key && m.b != HostFloorHash.hash) Debug.LogWarning($"[Coop] Client {s} built floor {m.a} differently (hash {m.b:X8}, host {HostFloorHash.hash:X8}).");
+            // A guest: the host found this floor built differently here.
+            if (!network.IsServer) { if (m.b == -1) NotificationUI.Show("Your floor is different from the host's: your game is out of date. Restart or update it, then join again."); return; }
+            if (m.a == HostFloorHash.key && m.b != HostFloorHash.hash)
+            {
+                Debug.LogWarning($"[Coop] Client {s} built floor {m.a} differently (hash {m.b:X8}, host {HostFloorHash.hash:X8}).");
+                // Said on screen, to both: a different floor means enemies and loot that only one side can see. Its cause is
+                // game files that differ (an older build, or an editor clone that missed changes).
+                var who = players.Find(p => p != null && p.OwnerClientId == s);
+                NotificationUI.Show($"{(who != null ? who.DisplayName : "A player")}'s floor is different from yours. Their game is out of date: they should restart or update it.");
+                CoopMessages.ToClient(CoopMessages.FloorHash, s, new CoopInt { a = m.a, b = -1 });
+            }
             else if (m.a == HostFloorHash.key) Debug.Log($"[Coop] Client {s} built the same floor ({m.b:X8}).");
         });
         // A guest finished loading a floor (its reveal included): bring it up to date with what already happened there.

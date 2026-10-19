@@ -230,6 +230,7 @@ public static class CoopWorld
                 var hit = NetDamage.From(info);
                 hit.enemy = source;
                 hit.slot = (byte)Mathf.Clamp(coopPlayer.SlotIndex, 0, 254);
+                if (hit.hitPoint == Vector3.zero) hit.hitPoint = target.transform.position + Vector3.up;
                 coopPlayer.HitRpc(hit);
             }
             return true;
@@ -299,10 +300,37 @@ public static class CoopWorld
         var player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         if (player == null || !player.IsAlive || PlayerManager.Instance.ActiveKind != PlayerKind.Table) return;
         var info = hit.ToInfo(Enemy(hit.enemy));
+        ReportOddHit(hit, player);
         Coop.ApplyingRemote = true;
         try { player.Stats.TakeDamage(info); }
         finally { Coop.ApplyingRemote = false; }
     }
+
+    // A hit from an enemy this player can't see where the host says it struck: its copy here is missing, off, dead or
+    // far away, or the host put the blow far from where this player stands. Logged with what each side had, so a
+    // report of "hit by enemies I couldn't see" can be traced.
+    static void ReportOddHit(NetDamage hit, Player player)
+    {
+        var src = Enemy(hit.enemy);
+        Vector3 me = player.transform.position;
+        float toPoint = hit.hitPoint != Vector3.zero ? Vector3.Distance(Flat(hit.hitPoint), Flat(me)) : 0f;
+        string why = null;
+        if (src == null) why = "no such enemy here";
+        else if (!src.gameObject.activeInHierarchy) why = "its copy here is switched off";
+        else if (!src.IsAlive) why = "its copy here is dead";
+        else
+        {
+            float d = Vector3.Distance(Flat(src.transform.position), Flat(me));
+            var data = src.GetComponent<EnemyBrain>() is { } brain ? brain.Data : null;
+            bool ranged = (hit.flags & 8) != 0 || data != null && (data.archer || data.caster);
+            if (d > 6f && !ranged) why = $"its copy here is {d:0.0} m away";
+        }
+        if (toPoint > 4f) why = (why != null ? why + "; " : "") + $"the host's hit point is {toPoint:0.0} m from me";
+        if (why == null) return;
+        Debug.LogWarning($"[Coop][Odd hit] Enemy #{hit.enemy} {(src != null ? src.DisplayName : "?")} hit me for {hit.amount:0}: {why}. " +
+            $"Me {me:F1}, its copy {(src != null ? src.transform.position.ToString("F1") : "-")}, host hit point {hit.hitPoint:F1}, floor {FloorKey}.");
+    }
+    static Vector3 Flat(Vector3 v) => new(v.x, 0f, v.z);
 
     // ── Snapshots ─────────────────────────────────────────────────────
 
