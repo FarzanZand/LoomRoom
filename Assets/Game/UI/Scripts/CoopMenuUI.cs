@@ -51,7 +51,7 @@ public class CoopMenuUI : MonoBehaviour
     // A new game's choice: true once the host pressed Begin (or the player chose to play alone).
     public bool Began { get; private set; }
 
-    enum Page { None, Start, Host, Guest }
+    enum Page { None, Start, Host, Guest, Waiting }
     Page shown;
     bool pushed;
     Color statusColor;
@@ -83,7 +83,13 @@ public class CoopMenuUI : MonoBehaviour
         Wire(sharedSpoilsButton, () => Toggle(ref MultiplayerManager.Instance.sharedSpoils));
     }
 
-    void Start() { if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel; }
+    void Start()
+    {
+        if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel;
+        // Opened from the main menu's co-op menu: the screen and its backdrop cover the room from the first frame, while
+        // the connection starts (MultiplayerManager.OpenFromMenu would open it a moment later, after the room showed).
+        if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.MenuLobby) Open(Mode.Pause);
+    }
 
     void OnDestroy()
     {
@@ -96,13 +102,15 @@ public class CoopMenuUI : MonoBehaviour
     void CloseOrMenu()
     {
         if (Current == Mode.NewGame && shown == Page.Start && MultiplayerManager.HasInstance) { Close(); MultiplayerManager.Instance.ToMainMenu(); return; }
+        // Still starting the game the main menu asked for: the way out is the main menu, never the room behind.
+        if (shown == Page.Waiting && MultiplayerManager.HasInstance) { Close(); MultiplayerManager.Instance.ToMainMenu(); return; }
         Close();
     }
 
     // The lobby can't be left with Esc: the host begins or stops hosting, a waiting guest leaves.
     static bool InLobby => MultiplayerManager.HasInstance && (MultiplayerManager.Instance.HostInLobby || MultiplayerManager.Instance.LocalInLobby);
 
-    void OnCancel() { if (IsOpen && Current == Mode.Pause && !Typing && !InLobby) Close(); }
+    void OnCancel() { if (IsOpen && Current == Mode.Pause && !Typing && !InLobby && shown != Page.Waiting) Close(); }
 
     bool Typing => (address != null && address.isFocused) || (playerName != null && playerName.isFocused);
 
@@ -192,20 +200,24 @@ public class CoopMenuUI : MonoBehaviour
         if (manager == null) return;
         bool running = Coop.Running, host = Coop.IsHost, starting = manager.Connecting;
         var page = !running ? Page.Start : host ? Page.Host : Page.Guest;
+        // From the main menu, while the game is being hosted or joined: just that, no Host and Join choices again.
+        bool waiting = !running && manager.MenuLobby && (manager.MenuHosting || manager.MenuJoining) && string.IsNullOrEmpty(manager.LastError);
+        if (waiting) page = Page.Waiting;
         bool newGame = Current == Mode.NewGame;
         var hostPlayer = manager.PlayerInSlot(0);
         string hostName = hostPlayer != null ? hostPlayer.DisplayName : "the host";
 
         if (lobbyBackdrop != null && lobbyBackdrop.activeSelf != (manager.MenuLobby || IntroController.Seated && newGame)) lobbyBackdrop.SetActive(manager.MenuLobby || IntroController.Seated && newGame);
         if (startPage != null) startPage.SetActive(page == Page.Start);
-        if (gamePage != null) gamePage.SetActive(page != Page.Start);
+        if (gamePage != null) gamePage.SetActive(page == Page.Host || page == Page.Guest);
         if (title != null)
         {
             // One line: a long host name shrinks the title instead of wrapping it over the line below.
             if (titleSize <= 0f) titleSize = title.fontSize;
             title.textWrappingMode = TextWrappingModes.NoWrap;
             title.enableAutoSizing = true; title.fontSizeMax = titleSize; title.fontSizeMin = titleSize * .35f;
-            title.text = page == Page.Host ? "Your game" : page == Page.Guest ? $"{hostName}'s game" : newGame ? "New game" : "Co-op";
+            title.text = page == Page.Host ? "Your game" : page == Page.Guest ? $"{hostName}'s game"
+                : page == Page.Waiting ? (manager.MenuHosting ? "Your game" : "Joining") : newGame ? "New game" : "Co-op";
         }
 
         // The status line: what went wrong, what is happening, or what to do.
@@ -216,6 +228,7 @@ public class CoopMenuUI : MonoBehaviour
         {
             status.color = error ? errorColor : statusColor;
             status.text = error ? manager.LastError
+                : page == Page.Waiting ? (manager.MenuHosting ? "Starting your game..." : "Joining your friend's game...")
                 : starting ? "Connecting..."
                 : page == Page.Start && soloRun ? "Finish or leave your run to play together."
                 : page == Page.Start ? (newGame ? "Start the new game alone, or play it with friends." : "Play this game with friends, or join theirs.")
@@ -226,7 +239,7 @@ public class CoopMenuUI : MonoBehaviour
         if (hostButton != null) hostButton.interactable = !starting && !soloRun;
         if (joinButton != null) joinButton.interactable = !starting && !soloRun;
 
-        if (page != Page.Start)
+        if (page == Page.Host || page == Page.Guest)
         {
             if (codeGroup != null) codeGroup.SetActive(page == Page.Host);
             bool relay = !string.IsNullOrEmpty(manager.JoinCode);
@@ -257,6 +270,7 @@ public class CoopMenuUI : MonoBehaviour
         // The bottom row: one centred button, or two side by side.
         Button left, right = null;
         if (page == Page.Start) { left = newGame ? aloneButton : closeButton; if (newGame) right = closeButton; }
+        else if (page == Page.Waiting) left = closeButton;
         else if (page == Page.Host) { bool lobby = newGame || manager.HostInLobby; left = lobby ? beginButton : closeButton; right = newGame ? aloneButton : leaveButton; }
         else if (manager.LocalInLobby) { left = leaveButton; }
         else { left = closeButton; right = leaveButton; }
@@ -265,7 +279,7 @@ public class CoopMenuUI : MonoBehaviour
         Place(left, right != null ? -bottomSpread : 0f);
         Place(right, bottomSpread);
         SetLabel(leaveButton, page == Page.Host ? "Stop hosting" : "Leave the game");
-        SetLabel(closeButton, newGame && page == Page.Start ? "Main menu" : "Back");
+        SetLabel(closeButton, newGame && page == Page.Start || page == Page.Waiting ? "Main menu" : "Back");
 
         // A new page: the keyboard and gamepad start on its main button.
         if (page != shown)

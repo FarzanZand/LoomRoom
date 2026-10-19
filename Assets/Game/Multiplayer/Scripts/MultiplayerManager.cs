@@ -220,6 +220,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     // This game was opened from the main menu's co-op menu: its lobby came first, so a new game's intro asks nothing more.
     bool fromMenuLobby;
+    // Opened from the main menu to host, or to join a code: the co-op screen says so while the connection starts.
+    public bool MenuHosting => menuHost;
+    public bool MenuJoining => menuJoin != null;
 
     // A game opened from the main menu's co-op menu waits in the lobby before anything happens: the co-op screen over
     // a blank backdrop (CoopMenuUI), no wake-up and no one in the room (WorldManager waits), until the host's Begin
