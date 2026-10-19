@@ -5,7 +5,8 @@ using UnityEngine;
 public partial class DungeonGenerator
 {
     bool Descends=>FloorNumber<data.FloorCount;
-    // stage: the exit on a boss stage, always the stone stairwell (there is no ceiling for a ladder to reach).
+    // stage: the exit on a boss stage, the spiral shaft down through the stage when it fits, else the stone stairwell
+    // (there is no ceiling for a ladder to reach).
     DungeonExit MakeExit(Vector3 pos,bool entrance,bool stage=false)
     {
         bool descending=!entrance && (Descends || stage);
@@ -14,7 +15,13 @@ public partial class DungeonGenerator
         var col=go.AddComponent<BoxCollider>(); col.isTrigger=true;
         // On a board the way on is always the stone stairwell, and there is no ladder to climb in by.
         // A walled floor that goes on: a spiral stair down a shaft cut into the table (DungeonGenerator.ExitShaft).
-        if(descending && !stage && exitShaft && CellOf(pos)==Layout.Exit){ BuildExitShaft(go.transform,exit); col.center=new Vector3(0,-.7f,0); col.size=new Vector3(data.cellSize-.3f,1.5f,data.cellSize-.3f); }
+        // On a boss stage the same shaft goes down through the stage, under a block that goes when the exit shows.
+        var shaftCell=stage ? stageShaftCell : Layout.Exit;
+        if(descending && exitShaft && CellOf(pos)==shaftCell)
+        {
+            if(stage){ go.transform.position=Cell(shaftCell)+Vector3.up*Stage.height; exit.cover=stageShaftCover; exit.coverHalf=data.cellSize*.5f+.3f; }
+            BuildExitShaft(go.transform,exit); col.center=new Vector3(0,-.7f,0); col.size=new Vector3(data.cellSize-.3f,1.5f,data.cellSize-.3f);
+        }
         else if(descending || (Board && !entrance)){ BuildStairwell(go.transform,exit); col.center=new Vector3(0,1f,.3f); col.size=new Vector3(1.1f,1.6f,1f); }
         else { if(!Board) BuildLadder(go.transform); col.center=new Vector3(0,1,0); col.size=new Vector3(1.2f,2,1.2f); }
         go.AddComponent<InteractableTrigger>();

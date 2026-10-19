@@ -19,7 +19,7 @@ public class DungeonStage : MonoBehaviour
     public float edgeHeight = 3f;
     [Tooltip("Stone for the stage's sides and the steps. Empty uses the level's trim.")]
     public Material sideMaterial;
-    [Min(.5f), Tooltip("The fight begins when the player comes this close (metres) to the middle of the stage.")]
+    [Min(.5f), Tooltip("The fight begins when the player is up on the stage within this many metres of its middle, or within most of the stage when that is larger (BossStageEncounter.StartReach).")]
     public float startRadius = 2f;
     [Tooltip("Where the Dungeon Master sets the boss down. Empty: between the middle and his side of the stage.")]
     public Transform bossSpot;
