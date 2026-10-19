@@ -79,7 +79,18 @@ public class DungeonHud : MonoBehaviour
         }
         // Walking into a room shows all of it at once.
         int room=dungeon.Layout.RoomAt(new Vector2Int(px,py));
-        if(room!=lastRoom){lastRoom=room;if(room>=0)foreach(var c in dungeon.Layout.RoomCells(room))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)explored[c.x,c.y]=true;}
+        // Its doorways too: they lie just outside the room, so the dots show at once (the starting room's door is out of
+        // the near reveal's reach from the middle of the room).
+        if(room!=lastRoom)
+        {
+            lastRoom=room;
+            if(room>=0)foreach(var c in dungeon.Layout.RoomCells(room))
+            {
+                if(c.x<0 || c.y<0 || c.x>=w || c.y>=h)continue;
+                explored[c.x,c.y]=true;
+                foreach(var d in DungeonLayout.Neighbours){int x=c.x+d.x,y=c.y+d.y;if(x>=0 && y>=0 && x<w && y<h && door[x,y])explored[x,y]=true;}
+            }
+        }
         // A doorway counts as taken once stood in; the other half of a two-cell passage goes with it.
         if(px>=0 && py>=0 && px<w && py<h)
         {

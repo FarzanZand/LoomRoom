@@ -223,6 +223,9 @@ looks wrong, too.
   from the painting's blotches. Flat faces = planks/bands; materials from Synty's own swatch colours (grey = metal);
   a 5-shade ramp per material with the painting's hues; light top edges, dark bottom edges, grain along each plank,
   rivets and sparse rust on metal, a solid darker band at the very base. Originals in `Temp/Paint/Dungeon/backup`.
+  With no Meshy at all: write the G-buffer's own Synty colours (channels 9-11) out as an image and pass that as the
+  painting (the altar table, 2026-10-19: Meshy had painted a second skull and gold trinkets onto its top). Small props on
+  it (skull, candles) go through `prop_organic.py --material bone` (`--cracks 0` for wax; `--sat 1.15 --bright 1` keeps brass).
 - Ramps only from visible, lit texels (the painter's black undersides dragged ramps to black). Accents (moss, nails)
   only when the painting has a real patch of them: 31 near-black "green" texels became black moss on the crate.
   Clumped dirt reads as a checker on thin legs: wear bands must be solid.

@@ -76,7 +76,7 @@ MonoBehaviour:
   offeringPerFloor: 2
   prayers: 1
   activeGlow: {fileID: 8988220335454980029}
-  prayClip: {fileID: 8300000, guid: 8c58b14774bc97046830afe67ee25aa4, type: 3}
+  prayClip: {fileID: 8300000, guid: 13cf5db06583a834e874b1dc6b75846b, type: 3}
   prayVolume: 0.9
   outcomes:
   - label: Blessing of the blade

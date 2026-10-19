@@ -150,7 +150,8 @@ public partial class DungeonGenerator
         // The newel throws no shadow: from the player's own light it laid a dark wedge across the first step that read
         // as a crack in it.
         foreach (var n in new[] {
-            Part("Newel", new Vector3(0, -depth * .5f + .1f, 0), new Vector3(newelR * 2f, depth + .2f, newelR * 2f), stone, .8f),
+            // The newel stops inside its cap: with both tops at one height they flickered (z-fighting).
+            Part("Newel", new Vector3(0, (-depth + .14f) * .5f, 0), new Vector3(newelR * 2f, depth + .14f, newelR * 2f), stone, .8f),
             Part("Newel cap", new Vector3(0, .15f, 0), new Vector3(newelR * 2f + .1f, .1f, newelR * 2f + .1f), stone) })
             n.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         // Steps a quarter metre high, so the stair gets down in two thirds of a turn: the last step is one step above
