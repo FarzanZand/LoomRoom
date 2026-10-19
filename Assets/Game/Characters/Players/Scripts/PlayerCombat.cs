@@ -359,10 +359,12 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (bash != null && bash.HoldsAttacks) { attackAfterBash = true; return; }
         // Eating or drinking (Equipment.IsUsingItem): no swing, no shield bash until it is done.
         if (player.Equipment != null && player.Equipment.IsUsingItem) return;
-        // Block held: a ready shield bash takes the press; the button then starts nothing until pressed again.
-        if (InputManager.Instance.SecondaryHeld && bash != null && !IsAttacking && bash.TryStart())
+        // Block held: a ready shield bash takes the press; the button then starts nothing until pressed again. Late in a
+        // swing the shield is already back up (past blockFromAttackAt), so the bash goes then too instead of the next swing.
+        if (InputManager.Instance.SecondaryHeld && bash != null && (!IsAttacking || !ShieldKeptDown) && bash.TryStart())
         {
             heldThroughCancel = true; queuedPresses = 0; charging = false; attackBufferedUntil = -1f;
+            comboPressPending = false; comboQueuedUntil = -1f;   // no combo hit queued from the swing before goes after it
             return;
         }
         if (InputManager.Instance.SecondaryHeld && !AttackFromBlock) return;

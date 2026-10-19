@@ -36,6 +36,7 @@ public class ShieldBash : MonoBehaviour
     public bool HoldsAttacks => phase == Phase.Windup || phase == Phase.Dash;
     public bool Dashing => phase == Phase.Dash;
     public float CooldownLeft => Mathf.Max(0f, readyAt - Time.time);
+    public float CooldownTotal => Tuning != null ? Tuning.shieldBashCooldown : 0f;
     bool ShieldHeld => player.Equipment != null && player.Equipment.Get(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
 
     void Awake()

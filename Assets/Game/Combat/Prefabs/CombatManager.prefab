@@ -309,8 +309,8 @@ MonoBehaviour:
   shieldBashWindup: 0.06
   shieldBashRecovery: 0.3
   shieldBashAngle: 35
-  shieldBashDamage: 6
-  shieldBashDamagePerArmor: 1.5
+  shieldBashDamage: 3
+  shieldBashDamagePerArmor: 0
   shieldBashStun: 1
   shieldBashKnockback: 1.5
   shieldBashStaminaCost: 10
