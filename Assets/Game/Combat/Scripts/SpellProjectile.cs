@@ -100,6 +100,7 @@ public class SpellProjectile : MonoBehaviour
         var player = defender as Player;
         if (player != null && ProgressionManager.HasInstance) ProgressionManager.Instance.Deflected();
         if (player != null && player.Combat != null) player.Combat.PlayDeflect(point);
+        else CoopWorld.StandInDeflected(point, aim);
         HomingTarget = caster != null && caster.IsAlive ? caster : null;
         transform.position = point + aim.normalized * .4f;
         transform.rotation = Quaternion.LookRotation(aim);

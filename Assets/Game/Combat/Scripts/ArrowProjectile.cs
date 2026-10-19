@@ -89,6 +89,7 @@ public class ArrowProjectile : MonoBehaviour
         velocity = aim.normalized * speed;
         transform.rotation = Quaternion.LookRotation(velocity);
         if (player != null && player.Combat != null) player.Combat.PlayDeflect(point);
+        else CoopWorld.StandInDeflected(point, velocity);
     }
 
     void Strike(IDamageable target, Vector3 point)

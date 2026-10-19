@@ -19,6 +19,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
     DungeonMaster.Line endingLine = new() { text = "Not now. The door's open. Go and get some air." };
     [SerializeField, Tooltip("Said when the table is used while the spend-spoils quest is open (Blocking first).")]
     DungeonMaster.Line learnFirstLine = new() { text = "Not yet. Train Blocking at the sheet first." };
+    [SerializeField, Tooltip("Said instead while the lesson holds runs and the sheet has not been opened yet.")]
+    DungeonMaster.Line lookFirstLine = new() { text = "Not yet. Have a look at the sheet first." };
 
     [Header("At the table")]
     [SerializeField, Min(.1f), Tooltip("Seconds for the view to turn to the Dungeon Master.")] float sitSeconds = 1.1f;
@@ -61,7 +63,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
     Player sittingPlayer;
     bool ownsDialogue; // this pushed GameState.Dialogue and has not popped it yet
     public string Prompt => IntroController.WaitingForSeat ? "Sit down"
-        : ProgressionManager.HasInstance && ProgressionManager.Instance.QuestState(ProgressionManager.SpendQuest) == 1 ? "Train Blocking at the sheet first" : prompt;
+        : ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns
+            ? (ProgressionManager.Instance.HasFlag(CharacterSheetTable.OpenedFlag) ? "Train Blocking at the sheet first" : "Look at the character sheet first") : prompt;
     public bool CanInteract(Character who) => who is Player player && player.kind == PlayerKind.Room
         && player.IsAlive && PlayerManager.HasInstance && PlayerManager.Instance.Active == player
         && (loader == null || !loader.Busy) && sitting == null
@@ -88,9 +91,9 @@ public class TableManager : Singleton<TableManager>, IInteractable
         // The tabletop intro: the Dungeon Master is waiting for the player to sit down.
         if (IntroController.HasInstance && IntroController.Instance.TakeSeat()) return;
         // The lesson: no run until Blocking is trained at the sheet (the spend-spoils quest).
-        if (ProgressionManager.HasInstance && ProgressionManager.Instance.QuestState(ProgressionManager.SpendQuest) == 1)
+        if (ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns)
         {
-            if (learnFirstLine != null && !learnFirstLine.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(learnFirstLine);
+            SayLessonLine();
             return;
         }
         // The whole dungeon won: the prototype's thank-you instead of a new run.
@@ -102,6 +105,14 @@ public class TableManager : Singleton<TableManager>, IInteractable
     }
     public void EnterTable() => Play();
 
+    // The lesson's refusal: look at the sheet until it has been opened, then train Blocking there.
+    void SayLessonLine()
+    {
+        bool opened = ProgressionManager.Instance.HasFlag(CharacterSheetTable.OpenedFlag);
+        var line = !opened && lookFirstLine != null && !lookFirstLine.IsEmpty ? lookFirstLine : learnFirstLine;
+        if (line != null && !line.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(line);
+    }
+
     // level: where the figure goes (empty: Figure Level). only: set out just this figure (the intro's
     // practice board), with prompt said instead of the figures' own line.
     // False when the table cannot be used now (busy loader, no active room player, a conversation...).
@@ -109,9 +120,9 @@ public class TableManager : Singleton<TableManager>, IInteractable
     {
         if (loader == null || !PlayerManager.HasInstance || EndingRunning || !CanInteract(PlayerManager.Instance.Active)) return false;
         // "Let's play." in the DM's conversation comes here too: Blocking first.
-        if (ProgressionManager.HasInstance && ProgressionManager.Instance.QuestState(ProgressionManager.SpendQuest) == 1)
+        if (ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns)
         {
-            if (learnFirstLine != null && !learnFirstLine.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(learnFirstLine);
+            SayLessonLine();
             return false;
         }
         if (GameManager.HasInstance)

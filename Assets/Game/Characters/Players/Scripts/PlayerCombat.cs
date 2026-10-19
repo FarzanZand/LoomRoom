@@ -527,8 +527,39 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (!CombatManager.HasInstance) return;
         var cm = CombatManager.Instance;
         if (cm.blockAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(cm.blockAudio, point);
-        if (cm.blockParticlePrefab != null) PoolManager.SpawnOrInstantiate(cm.blockParticlePrefab, point, Quaternion.identity, 2f);
+        if (cm.blockParticlePrefab == null) return;
+        // The sparks go just in front of the shield as the player sees it (the body's hit point is behind the shield
+        // frame in first person), turned to the view and made bigger, so they read.
+        var cam = player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : null;
+        var at = cam != null ? cam.position + cam.forward * deflectSparkDistance - cam.up * .05f : point;
+        // Its own copy (not the pool's: a blocked hit's sparks keep their size).
+        var sparks = Instantiate(cm.blockParticlePrefab, at, cam != null ? Quaternion.LookRotation(-cam.forward) : Quaternion.identity);
+        sparks.transform.localScale = Vector3.one * deflectSparkScale;
+        foreach (var ps in sparks.GetComponentsInChildren<ParticleSystem>())
+        {
+            var main = ps.main; main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+            // Finer pixels, more of them, each a slightly different shade of the spark's own colour.
+            main.startSizeMultiplier *= deflectSparkSize;
+            var c = main.startColor.mode == ParticleSystemGradientMode.TwoColors ? main.startColor.colorMax : main.startColor.color;
+            main.startColor = new ParticleSystem.MinMaxGradient(Shade(c, .65f), Shade(c, 1.2f));
+            var emission = ps.emission;
+            emission.rateOverTimeMultiplier *= deflectSparkCount;
+            var bursts = new ParticleSystem.Burst[emission.burstCount]; emission.GetBursts(bursts);
+            for (int i = 0; i < bursts.Length; i++)
+            {
+                var n = bursts[i].count;
+                bursts[i].count = n.mode == ParticleSystemCurveMode.TwoConstants ? new ParticleSystem.MinMaxCurve(n.constantMin * deflectSparkCount, n.constantMax * deflectSparkCount) : new ParticleSystem.MinMaxCurve(n.constant * deflectSparkCount);
+            }
+            emission.SetBursts(bursts);
+            if (main.maxParticles < 200) main.maxParticles = 200;
+        }
+        Destroy(sparks, 2f);
     }
+    static Color Shade(Color c, float k) => new Color(Mathf.Clamp01(c.r * k), Mathf.Clamp01(c.g * k), Mathf.Clamp01(c.b * k), c.a);
+    [SerializeField, Range(.1f, 1f), Tooltip("Deflect sparks: each pixel's size against a blocked hit's.")] float deflectSparkSize = .45f;
+    [SerializeField, Min(1f), Tooltip("Deflect sparks: how many more of them than a blocked hit's.")] float deflectSparkCount = 3f;
+    [SerializeField, Min(.1f), Tooltip("Deflect sparks: metres in front of the eyes they burst (in front of the raised shield).")] float deflectSparkDistance = .26f;
+    [SerializeField, Min(.1f), Tooltip("Deflect sparks: how much bigger than a blocked hit's.")] float deflectSparkScale = 1.2f;
 
     // The raised shield held against something that keeps pushing (the Dungeon Master's beam): the arms shake in the
     // BlockStrain state until it is switched off.

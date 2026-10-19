@@ -21,6 +21,8 @@ public partial class ProgressionManager
     public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", DeflectQuest = "deflect", SheetQuest = "checkSheet",
         SpendQuest = "spendSpoils", TableQuest = "backToTable", TrophyQuest = "hangTrophies", InventoryQuest = "openInventory";
     public const string InventoryOpenedFlag = "story.inventoryOpened";
+    // Quests the log shows only while the table player is in a dungeon (the shield bash guide).
+    public static bool DungeonOnly(string id) => id == ShieldBashQuest;
 
     [FoldoutGroup("Quests"), ListDrawerSettings(ShowFoldout = true)]
     public List<Quest> quests = BuiltInQuests();
@@ -29,7 +31,7 @@ public partial class ProgressionManager
     static List<Quest> BuiltInQuests() => new()
     {
         new Quest { id = SheetQuest, text = "Look at the character sheet on the little table by the wall." },
-        new Quest { id = ShieldBashQuest, text = "Try your shield bash: hold {block} and press {attack}." },   // retired: the bash is there from the start
+        new Quest { id = ShieldBashQuest, text = "Try your shield bash: hold {block} and press {attack}." },
         new Quest { id = DeflectQuest, text = "Hold your shield up against an arrow or a spell to send it back." },
         new Quest { id = InventoryQuest, text = "Open your inventory with {inventory} or Tab." },   // Tab is the fixed second binding
         new Quest { id = SpendQuest, text = "Train Blocking on the sheet first. The other rows open after it." },
@@ -65,6 +67,10 @@ public partial class ProgressionManager
         // Back to the table only once the trophies are on the wall (none still to be handed over or carried).
         if (QuestState(SpendQuest) == 2 && QuestState(TableQuest) == 0 && !carrying && TrophiesIn(TrophyState.Earned).Count == 0) GiveQuest(TableQuest);
     }
+
+    // The lesson after the first run: no new run until Blocking is trained at the sheet, from the moment the run ends
+    // (the sheet quest, before the sheet is even opened) until the spend-spoils quest is done (TableManager).
+    public bool LessonHoldsRuns => HasFlag(LedgerIntroFlag) && !BlockingTaught;
 
     public static string QuestFlag(string id) => QuestPrefix + id;
     public int QuestState(string id) => GetFlag(QuestFlag(id));
@@ -107,12 +113,25 @@ public partial class ProgressionManager
     {
         EnsureBuiltInQuests();
         if (RunManager.HasInstance) RunManager.Instance.RunStarted += OfferQuestsForRun;
+        if (PlayerManager.HasInstance)
+        {
+            PlayerManager.Instance.PlayerSwapped += WithdrawDungeonQuests;
+            if (PlayerManager.Instance.Active != null) WithdrawDungeonQuests(PlayerManager.Instance.Active);
+        }
     }
 
     protected override void OnDestroy()
     {
         base.OnDestroy();
         if (RunManager.HasInstance) RunManager.Instance.RunStarted -= OfferQuestsForRun;
+        if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped -= WithdrawDungeonQuests;
+    }
+
+    // The inventory quest is a dungeon one: in the apartment it is taken back (not done), and the next run offers it again.
+    void WithdrawDungeonQuests(Player player)
+    {
+        if (player == null || player.kind != PlayerKind.Room) return;
+        if (QuestState(InventoryQuest) == 1) SetFlag(QuestFlag(InventoryQuest), 0);
     }
 
     // The first time the inventory opens: its quest is done for good.
@@ -128,6 +147,8 @@ public partial class ProgressionManager
         CompleteQuest(TableQuest);
         // Until the player has opened the inventory once, every run starts by saying how (the intro's included).
         if (!HasFlag(InventoryOpenedFlag) && QuestState(InventoryQuest) == 0) GiveQuest(InventoryQuest);
+        // The shield bash guide, from the first run (the intro's included) until the first bash (ShieldBash completes it).
+        if (QuestState(ShieldBashQuest) == 0) GiveQuest(ShieldBashQuest);
         if (isActiveAndEnabled) StartCoroutine(OfferWhenRunReady());
     }
 
@@ -135,8 +156,6 @@ public partial class ProgressionManager
     IEnumerator OfferWhenRunReady()
     {
         yield return null;
-        // An older save's open bash quest closes: the bash is there from the start now.
-        if (QuestState(ShieldBashQuest) == 1) CompleteQuest(ShieldBashQuest);
         if (!MetaActive || QuestState(DeflectQuest) != 0 || !PlayerManager.HasInstance) yield break;
         var table = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         var progress = table != null ? table.GetComponent<AdventurerProgress>() : null;

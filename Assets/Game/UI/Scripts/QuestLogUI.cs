@@ -56,7 +56,7 @@ public class QuestLogUI : MonoBehaviour
         {
             if (q == null || string.IsNullOrEmpty(q.id)) continue;
             int state = progression.QuestState(q.id);
-            bool show = state == 1 || doneAt.ContainsKey(q.id);
+            bool show = (state == 1 || doneAt.ContainsKey(q.id)) && (!ProgressionManager.DungeonOnly(q.id) || InDungeon);
             if (!show) { if (rows.TryGetValue(q.id, out var gone)) { Destroy(gone.gameObject); rows.Remove(q.id); } continue; }
             if (!rows.TryGetValue(q.id, out var row))
             {
@@ -70,9 +70,14 @@ public class QuestLogUI : MonoBehaviour
         }
     }
 
+    // The table player is the one being played: in a dungeon (dungeon-only quests show).
+    static bool InDungeon => PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
+    bool shownInDungeon;
+
     void Update()
     {
         if (progression == null) Connect();
+        if (InDungeon != shownInDungeon) { shownInDungeon = InDungeon; Rebuild(); }
         if (doneAt.Count > 0)
         {
             var finished = new List<string>();

@@ -344,6 +344,16 @@ public static class CoopWorld
         return facing.sqrMagnitude > .001f && travel.sqrMagnitude > .001f && Vector3.Dot(facing.normalized, -travel.normalized) > .3f;
     }
 
+    // A shot sent back off a teammate's stand-in here: the block's sound and sparks where it bounced, as the defender
+    // gets them on their own screen (PlayerCombat.PlayDeflect).
+    public static void StandInDeflected(Vector3 point, Vector3 back)
+    {
+        if (!CombatManager.HasInstance) return;
+        var cm = CombatManager.Instance;
+        if (cm.blockAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(cm.blockAudio, point);
+        if (cm.blockParticlePrefab != null) Object.Destroy(Object.Instantiate(cm.blockParticlePrefab, point, back.sqrMagnitude > .001f ? Quaternion.LookRotation(back) : Quaternion.identity), 2f);
+    }
+
     // ── Snapshots ─────────────────────────────────────────────────────
 
     public static void Tick()

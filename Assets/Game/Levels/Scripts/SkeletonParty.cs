@@ -103,6 +103,24 @@ public class SkeletonParty : MonoBehaviour
     {
         if (room < 0 || dungeon == null || spoiled) return;
         if (Time.time >= nextGather) { nextGather = Time.time + .5f; Gather(); }
+        FaceChestsToPlayer();
+    }
+
+    // Until the player walks in, the chest keeps its front (the latch) square to the side they will come from: set once
+    // at the start it could end up turned away (it is placed and turned again as the floor or pocket finishes).
+    bool playerInside;
+    void FaceChestsToPlayer()
+    {
+        if (playerInside || chests.Count == 0 || !PlayerManager.HasInstance) return;
+        var player = PlayerManager.Instance.ActiveKind == PlayerKind.Table ? PlayerManager.Instance.Active : null;
+        if (player == null) return;
+        if (dungeon.Layout.RoomAt(dungeon.CellOf(player.transform.position)) == room) { playerInside = true; return; }
+        foreach (var chest in chests)
+        {
+            if (chest == null || chest.IsOpen) continue;
+            var toPlayer = player.transform.position - chest.transform.position; toPlayer.y = 0f;
+            if (toPlayer.sqrMagnitude > .01f) chest.transform.rotation = Quaternion.LookRotation(SnapToAxis(toPlayer));
+        }
     }
 
     // The music stops mattering: every dancer still standing comes for the player; after the chest, only once they
