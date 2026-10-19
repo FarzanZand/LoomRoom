@@ -39,7 +39,45 @@ public static class UserSettings
         Load();
         QualitySettings.vSyncCount = vsync ? 1 : 0;
         ApplyBrightness();
+        MoveToMainScreen();
     }
+
+    // A build opens on the main screen (Windows' primary display), not wherever Unity last left it: Unity remembers the
+    // last monitor and position, so a game once on a second screen kept opening there, fullscreen too. Unity can't
+    // tell which display is primary, so Windows is asked: if the game's window isn't on the primary monitor, it moves
+    // to the display that matches it (with two screens, simply the other one).
+    static void MoveToMainScreen()
+    {
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+        var window = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
+        if (window == System.IntPtr.Zero) return;
+        var primary = MonitorFromPoint(new POINT(), 1 /* MONITOR_DEFAULTTOPRIMARY */);
+        if (MonitorFromWindow(window, 2 /* MONITOR_DEFAULTTONEAREST */) == primary) return;
+        var info = new MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<MONITORINFO>() };
+        if (!GetMonitorInfo(primary, ref info)) return;
+        int pw = info.rcMonitor.right - info.rcMonitor.left, ph = info.rcMonitor.bottom - info.rcMonitor.top;
+        var layout = new System.Collections.Generic.List<DisplayInfo>();
+        Screen.GetDisplayLayout(layout);
+        var here = Screen.mainWindowDisplayInfo;
+        DisplayInfo target = default; bool found = false;
+        foreach (var d in layout) if (!d.Equals(here) && d.width == pw && d.height == ph) { target = d; found = true; break; }
+        if (!found) foreach (var d in layout) if (!d.Equals(here)) { target = d; found = true; break; }
+        if (!found) return;
+        var at = Screen.fullScreenMode == FullScreenMode.Windowed
+            ? new Vector2Int(Mathf.Max(0, (target.width - Screen.width) / 2), Mathf.Max(0, (target.height - Screen.height) / 2))
+            : Vector2Int.zero;
+        Debug.Log($"[Display] Moving from {here.name} to the main screen ({target.name}).");
+        Screen.MoveMainWindowTo(target, at);
+#endif
+    }
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)] struct POINT { public int x, y; }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)] struct RECT { public int left, top, right, bottom; }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)] struct MONITORINFO { public int cbSize; public RECT rcMonitor, rcWork; public uint dwFlags; }
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern System.IntPtr MonitorFromPoint(POINT pt, uint flags);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern System.IntPtr MonitorFromWindow(System.IntPtr hwnd, uint flags);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool GetMonitorInfo(System.IntPtr monitor, ref MONITORINFO info);
+#endif
 
     static void Load()
     {
