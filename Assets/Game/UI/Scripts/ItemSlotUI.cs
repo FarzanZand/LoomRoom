@@ -100,8 +100,10 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
         if (iconImage != null)
         {
-            iconImage.sprite  = item != null ? item.icon : null;
-            iconImage.enabled = item != null && item.icon != null && !GridCell;
+            // On the hotbar a spell tome shows its spell (what the key casts); everywhere else it is the tome itself.
+            var sprite = item == null ? null : item.spell != null && item.spell.icon != null && Container != null && !Container.IsGrid ? item.spell.icon : item.icon;
+            iconImage.sprite  = sprite;
+            iconImage.enabled = sprite != null && !GridCell;
         }
         // The Rugged HUD (UIManager.hudStyle) draws the slot as the inventory's grey cell: its own colours, not the tint.
         bool rugged = Rugged;
@@ -173,7 +175,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         bool fromHotbar = Container == owner.Hotbar;
         var to = fromHotbar ? owner.Bag : owner.Hotbar;
         if (to == null) return;
-        if (fromHotbar && HeldSlot(owner.Equipment, Container, Anchor).HasValue) { Refuse("Put it away first"); return; }
+        // A held item goes out of the hand and into the bag (it stays on the hotbar when the bag is full).
+        if (fromHotbar && HeldSlot(owner.Equipment, Container, Anchor) is EquipmentSlot heldHand) { owner.Equipment.TryUnequip(heldHand); return; }
         if (!to.Accepts(item)) { Refuse(fromHotbar ? null : "That doesn't go on the hotbar"); return; }
         int spot = to.IsGrid ? to.FindSpot(item) : to.FirstEmpty();
         if (spot < 0 || !Inventory.Move(Container, Anchor, to, spot)) { Refuse(fromHotbar ? "Inventory full" : "The hotbar is full"); return; }
@@ -372,9 +375,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (src == null || src == dst) return true;
         if (HeldSlot(eq, src, drag.SourceIndex) is EquipmentSlot hand)
         {
-            // Only a swap for another item of the same hand; a stack of the same thing would merge it out of the hotbar.
+            // A swap for another item of the same hand, or a free spot in the bag (it comes out of the hand); a stack of
+            // the same thing would merge it out of the hotbar.
             var hit = dst.Overlaps(item, to, ignore);
             if (hit.Count == 1 && dst.ItemAt(hit[0]) != item && eq.Fits(dst.ItemAt(hit[0]), hand)) return true;
+            if (hit.Count == 0 && dst != src && dst.role != InventoryRole.Hotbar && dst.Accepts(item) && dst.Fits(item, to)) return true;
             reason = PutAwayFirst;
             return false;
         }
@@ -399,6 +404,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             {
                 var eq = Owner != null ? Owner.Equipment : null;
                 if (eq == null || !eq.UnequipInto(drag.WornSlot.Value, Container, to)) Refuse(null);
+            }
+            else if (Owner != null && HeldSlot(Owner.Equipment, drag.SourceContainer, drag.SourceIndex) is EquipmentSlot hand
+                     && Container.role != InventoryRole.Hotbar && Container.Overlaps(drag.Item, to).Count == 0)
+            {
+                if (!Owner.Equipment.UnequipHandInto(hand, Container, to)) Refuse(null);
             }
             else if (drag.SourceContainer != null && !(drag.SourceContainer == Container && drag.SourceIndex == to) &&
                      !Inventory.Move(drag.SourceContainer, drag.SourceIndex, Container, to))

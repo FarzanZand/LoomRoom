@@ -21,6 +21,8 @@ public class InputManager : Singleton<InputManager>
     // ── Continuous state ──────────────────────────────────────────────
     public Vector2 Move { get; private set; }
     public Vector2 Look { get; private set; }
+    // Look comes from a stick (a held direction, turned per second) rather than the mouse (counts moved this frame).
+    public bool LookIsStick { get; private set; }
     public bool SprintHeld    { get; private set; }
     public bool CrouchHeld    { get; private set; }
     public bool LeanLeftHeld  { get; private set; }
@@ -116,7 +118,11 @@ public class InputManager : Singleton<InputManager>
     {
         move.performed += ctx => Move = ctx.ReadValue<Vector2>();
         move.canceled  += _   => Move = Vector2.zero;
-        look.performed += ctx => Look = gameplayEnabled && Time.frameCount > discardLookThroughFrame ? ctx.ReadValue<Vector2>() : Vector2.zero;
+        look.performed += ctx =>
+        {
+            LookIsStick = ctx.control != null && ctx.control.device is UnityEngine.InputSystem.Gamepad;
+            Look = gameplayEnabled && Time.frameCount > discardLookThroughFrame ? ctx.ReadValue<Vector2>() : Vector2.zero;
+        };
         look.canceled  += _   => Look = Vector2.zero;
         jump.performed += _ => JumpPressed?.Invoke();
         sprint.performed += _ => { SprintHeld = true;  SprintPressed?.Invoke(); };

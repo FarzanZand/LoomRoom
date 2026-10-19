@@ -18,9 +18,9 @@ MonoBehaviour:
   spell: {fileID: 11400000, guid: b8ae3872aac7c474a82ca91162f9a632, type: 2}
   rarity: 1
   description: Hold it in your left hand to heal yourself.
-  icon: {fileID: 21300000, guid: 3ff4d37375fe3c54c9dda24f0f2070ce, type: 3}
+  icon: {fileID: 21300000, guid: 4491ac96366b2bd48bbff098e61c0a0c, type: 3}
   iconSource:
-    custom: 1
+    custom: 0
     model: {fileID: 0}
     outfit: 
     turn: {x: 0, y: 0, z: 0}

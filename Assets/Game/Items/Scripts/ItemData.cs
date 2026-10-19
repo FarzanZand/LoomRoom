@@ -73,6 +73,7 @@ public partial class ItemData : ScriptableObject
             {
                 case ItemType.Weapon: return itemName != null && itemName.IndexOf("Knife", System.StringComparison.OrdinalIgnoreCase) >= 0 ? new Vector2Int(1, 2) : new Vector2Int(1, 3);
                 case ItemType.Shield: return new Vector2Int(2, 2);
+                case ItemType.Spell: return new Vector2Int(2, 2);   // a spell tome is a big book
                 case ItemType.Tool: return new Vector2Int(1, 2);
                 case ItemType.Equipment:
                     if (!canBeEquipped) return Vector2Int.one;

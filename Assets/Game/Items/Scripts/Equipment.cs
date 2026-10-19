@@ -253,6 +253,19 @@ public class Equipment : MonoBehaviour
         return true;
     }
 
+    // A held item dragged from its hotbar slot (or the doll's hand) onto a free spot in the bag: it comes out of the
+    // hand and moves there.
+    public bool UnequipHandInto(EquipmentSlot slot, Inventory container, int index)
+    {
+        var item = Get(slot);
+        if (item == null || !IsHand(slot) || Character is not Player p || container == null || container == p.Hotbar
+            || !container.Accepts(item) || !container.Fits(item, index)) return false;
+        int at = HeldIndex(slot);
+        if (at < 0) return false;
+        Unequip(slot, false);
+        return Inventory.Move(p.Hotbar, at, container, index);
+    }
+
     // toBag: a worn item returns to the bag (at returnAt when it fits there), or drops at the player's feet
     // when it is full.
     ItemData Unequip(EquipmentSlot slot, bool toBag, int returnAt = -1)
