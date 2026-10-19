@@ -18,8 +18,12 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField] Button newRunButton;
     [SerializeField] Button adventuresButton;
     [SerializeField] Button returnButton;
-    [SerializeField, Tooltip("Revive (debug), after a death in the Editor and development builds: back on your feet where you fell, the run going on (RunManager.RevivePlayer).")]
+    [SerializeField, Tooltip("Revive, after a death: back on your feet where you fell, the run going on (RunManager.RevivePlayer). Always there in the Editor and development builds; in a release build only once the save has Revive After Deaths deaths.")]
     Button reviveButton;
+    [SerializeField, Min(0), Tooltip("Deaths in the save (RunManager.DeathsFlag) before Revive shows on the death screen in a release build.")]
+    int reviveAfterDeaths = 3;
+    [SerializeField, Tooltip("The Dungeon Master, on the death screen where Revive first shows.")]
+    DungeonMaster.Line reviveUnlockedLine = new() { text = "Revive skill added, use it to make it to the boss, but I will mock you." };
     [SerializeField, Tooltip("The Dungeon Master mocks a revive: one at random.")]
     DungeonMaster.Line[] reviveLines =
     {
@@ -147,17 +151,25 @@ public class RunRecapUI : MonoBehaviour
             returnPosition ??= rect.anchoredPosition;
             rect.anchoredPosition = wakes ? new Vector2(0f, returnPosition.Value.y) : returnPosition.Value;
         }
-        if (reviveButton != null) reviveButton.gameObject.SetActive(DebugRevive && !s.victory);
+        bool unlocked = ProgressionManager.HasInstance && ProgressionManager.Instance.GetFlag(RunManager.DeathsFlag) >= reviveAfterDeaths;
+        if (reviveButton != null) reviveButton.gameObject.SetActive((DebugRevive || unlocked) && !s.victory);
+        // The death that unlocks it: he says so, once per save.
+        if (unlocked && !s.victory && ProgressionManager.Instance.GetFlag(ReviveUnlockedFlag) == 0)
+        {
+            ProgressionManager.Instance.SetFlag(ReviveUnlockedFlag);
+            if (reviveUnlockedLine != null && !reviveUnlockedLine.IsEmpty) DOVirtual.DelayedCall(1.2f, () => DungeonMaster.Say(reviveUnlockedLine)).SetUpdate(true).SetLink(gameObject);
+        }
         (wakes ? returnButton : newRunButton)?.Select();
     }
 
+    const string ReviveUnlockedFlag = "story.reviveUnlocked";
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     static bool DebugRevive => true;
 #else
     static bool DebugRevive => false;
 #endif
 
-    // Revive (debug): up again where you fell, the run going on, and the Dungeon Master has something to say about it.
+    // Revive: up again where you fell, the run going on, and the Dungeon Master mocks it (every time, any build).
     void Revive()
     {
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;

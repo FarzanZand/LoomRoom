@@ -31,12 +31,43 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
     // The missing tile is in (or nothing is missing).
     bool Complete => missingSymbol < 0 || !ProgressionManager.HasInstance || ProgressionManager.Instance.missingTile == null || ProgressionManager.Instance.TileState == 2;
     public bool Solved => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(unlockFlag);
-    public string Prompt => Solved ? $"{unlockedClassName} unlocked" : "Puzzle";
+    public string Prompt => Solved ? $"{unlockedClassName} unlocked" : TileReady ? PlacePrompt : "Puzzle";
+    // Carrying the tile home: anything on the memorial table (the symbols, the figures) puts it in.
+    public bool TileReady => !Solved && ProgressionManager.HasInstance && ProgressionManager.Instance.TileState == 1;
+    public const string PlacePrompt = "Put the tile in";
+
+    [Header("Quest light")]
+    [Tooltip("Pulses over the puzzle while the tile is carried (its quest is open). Empty: a copy of the character sheet's hint light is made at start.")]
+    public Light hint;
+    [Min(0)] public float hintIntensity = 140f;
 
     void Start()
     {
+        if (hint == null) hint = CopySheetHint();
+        if (hint != null) hint.enabled = false;
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged += OnFlag;
         Refresh();
+    }
+
+    // The sheet's hint light, set the same height above the puzzle as it is above the sheet (a prop's light is its child).
+    Light CopySheetHint()
+    {
+        var sheet = FindAnyObjectByType<CharacterSheetTable>();
+        if (sheet == null || sheet.hint == null) return null;
+        var light = Instantiate(sheet.hint, transform);
+        light.name = "Quest light";
+        light.transform.position = transform.position + Vector3.up * Mathf.Max(0f, sheet.hint.transform.position.y - sheet.transform.position.y);
+        hintIntensity = sheet.hintIntensity;
+        return light;
+    }
+
+    // Brighter and quicker than a plain hint, like the sheet's while its quest holds the run back.
+    void Update()
+    {
+        if (hint == null) return;
+        bool on = TileReady;
+        if (hint.enabled != on) hint.enabled = on;
+        if (on) hint.intensity = hintIntensity * 1.4f * (.65f + .35f * Mathf.Sin(Time.time * 3f));
     }
 
     void OnDestroy() { if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= OnFlag; }

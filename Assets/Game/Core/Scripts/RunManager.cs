@@ -156,6 +156,7 @@ public class RunManager : Singleton<RunManager>
         if (!Running || Ended || recap == null) return false;
         Ended = true;
         deathPending = true;
+        CountDeath();
         if (!DeferDeath) CommitDeath();
         StopDeathMoment();
         deathRoutine = StartCoroutine(DeathMoment());
@@ -167,6 +168,16 @@ public class RunManager : Singleton<RunManager>
     public static bool DeferDeath, HoldDeath;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetDeathHolds() => DeferDeath = HoldDeath = false;
     bool deathPending;
+
+    // Deaths over the whole save, in its flags (not the intro's practice run): the death screen's Revive button unlocks
+    // after RunRecapUI.reviveAfterDeaths of them.
+    public const string DeathsFlag = "story.deaths";
+    static void CountDeath()
+    {
+        if (!ProgressionManager.HasInstance || !ProgressionManager.MetaActive) return;
+        var progression = ProgressionManager.Instance;
+        progression.SetFlag(DeathsFlag, progression.GetFlag(DeathsFlag) + 1);
+    }
 
     void CommitDeath()
     {
