@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Builds the main menu's save pieces in the open Main Menu scene: the button column (Continue, New game, Load game,
-// Quit), the New game choice (the player's name, Play the intro, Back), the save list (three slot rows, each with a Delete
+// Quit), the New game choice (the player's name, Begin, Back), the save list (three slot rows, each with a Delete
 // button, and Back) and the question asked before a save is deleted or replaced, all in the menu's painted gold
 // frames and Lilita One, and binds them on MainMenuUI. Safe to run again: the panels are rebuilt, the buttons kept.
 public static class MainMenuSaves
@@ -85,14 +85,8 @@ public static class MainMenuSaves
         var nameNote = Text("Name note", choice, Label(play), 22f, Label(play).color, TextAlignmentOptions.Left);
         Place(nameNote.rectTransform, 464f, 228f, 480f, 61f);
         nameNote.text = "Your save is called by this name.";
-        var playIntro = Copy(play, choice, "Play the intro"); Label(playIntro).text = "Play the intro";
+        var playIntro = Copy(play, choice, "Begin"); Label(playIntro).text = "Begin";
         Place((RectTransform)playIntro.transform, 0f, 152f, 326f, 61f);
-        foreach (var (note, y, text) in new[] { ("Play the intro note", 152f, "Starts at the table, at night.") })
-        {
-            var t = Text(note, choice, Label(play), 22f, Label(play).color, TextAlignmentOptions.Left);   // full brightness: it sits over the lit ruins
-            Place(t.rectTransform, 350f, y, 560f, 61f);
-            t.text = text;
-        }
         var choiceBack = Copy(quit, choice, "Back"); Label(choiceBack).text = "Back";
         Place((RectTransform)choiceBack.transform, 0f, 0f, 326f, 61f);
         choice.gameObject.SetActive(false);
