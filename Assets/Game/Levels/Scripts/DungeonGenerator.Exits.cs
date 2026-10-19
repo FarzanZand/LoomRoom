@@ -13,7 +13,9 @@ public partial class DungeonGenerator
         var exit=go.AddComponent<DungeonExit>(); exit.entrance=entrance;
         var col=go.AddComponent<BoxCollider>(); col.isTrigger=true;
         // On a board the way on is always the stone stairwell, and there is no ladder to climb in by.
-        if(descending || (Board && !entrance)){ BuildStairwell(go.transform,exit); col.center=new Vector3(0,1f,.3f); col.size=new Vector3(1.1f,1.6f,1f); }
+        // A walled floor that goes on: a spiral stair down a shaft cut into the table (DungeonGenerator.ExitShaft).
+        if(descending && !stage && exitShaft && CellOf(pos)==Layout.Exit){ BuildExitShaft(go.transform,exit); col.center=new Vector3(0,-.7f,0); col.size=new Vector3(data.cellSize-.3f,1.5f,data.cellSize-.3f); }
+        else if(descending || (Board && !entrance)){ BuildStairwell(go.transform,exit); col.center=new Vector3(0,1f,.3f); col.size=new Vector3(1.1f,1.6f,1f); }
         else { if(!Board) BuildLadder(go.transform); col.center=new Vector3(0,1,0); col.size=new Vector3(1.2f,2,1.2f); }
         go.AddComponent<InteractableTrigger>();
         return exit;

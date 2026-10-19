@@ -21,7 +21,10 @@ public class AdventureMemorial : MonoBehaviour, IInteractable
     GameObject figure;
     string shownId;
 
-    public string Prompt => record == null ? "" : Describe(record);
+    public string Prompt => Puzzle != null && Puzzle.TileReady ? AdventureRoomPuzzle.PlacePrompt : record == null ? "" : Describe(record);
+    // The symbol puzzle on the same table: while the tile is carried, the figures put it in too, so it is easy to place.
+    AdventureRoomPuzzle puzzle; bool puzzleLooked;
+    AdventureRoomPuzzle Puzzle { get { if (!puzzleLooked) { puzzleLooked = true; puzzle = transform.root.GetComponentInChildren<AdventureRoomPuzzle>(true); } return puzzle; } }
 
     void Start()
     {
@@ -70,11 +73,12 @@ public class AdventureMemorial : MonoBehaviour, IInteractable
     // A forgotten figure (from a new save) is just its class.
     static string Describe(AdventureSave.Memorial r) => r.forgotten ? r.className : $"{r.className}, level {r.level}, reached floor {r.floor}";
 
-    public bool CanInteract(Character who) => record != null && who is Player player && player.kind == PlayerKind.Room;
+    public bool CanInteract(Character who) => (record != null || Puzzle != null && Puzzle.TileReady) && who is Player player && player.kind == PlayerKind.Room;
 
     public void Interact(Character who)
     {
         if (!CanInteract(who)) return;
+        if (Puzzle != null && Puzzle.TileReady) { Puzzle.Interact(who); return; }
         string killer = record.forgotten || string.IsNullOrEmpty(record.killer) ? "" : $" Killed by {record.killer}.";
         MessageLog.Post($"{Describe(record)}.{killer}", MessageKind.Lore);
         Inspected?.Invoke(record);

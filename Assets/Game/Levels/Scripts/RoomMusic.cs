@@ -33,15 +33,23 @@ public class RoomMusic : MonoBehaviour
         bool inside = player != null && player.IsAlive && dungeon.Layout.RoomAt(dungeon.CellOf(player.transform.position)) == room;
         if (silenced)
         {
-            // In a pocket the silence lasts until the player goes back through the way back (the pocket is then taken down).
+            // In a pocket the silence lasts until the player goes back through the way back. Pockets are built with the
+            // floor and kept until it goes, so leaving is told by the player no longer standing on the pocket's floor.
             bool pocket = dungeon.LevelData != null && dungeon.LevelData.pocket;
-            if (!inside && !pocket) { silenced = false; End(); }
+            if (!(pocket ? InPocket(player) : inside)) { silenced = false; End(); }
             return;
         }
         if (inside && !playing) Begin();
         else if (!inside && playing) End();
         // Something else changed the track while the player is here (a merchant fading back as they left it): take it back.
         else if (inside && AudioManager.Instance.CurrentMusic != music && Time.time >= retakeAt) { retakeAt = Time.time + fade + .5f; AudioManager.Instance.CrossfadeMusic(music, true, fade, volume); }
+    }
+
+    bool InPocket(Player player)
+    {
+        if (player == null || !player.IsAlive) return false;
+        var cell = dungeon.CellOf(player.transform.position);
+        return dungeon.Layout.InBounds(cell) && dungeon.Layout.floor[cell.x, cell.y];
     }
 
     // Gone with its floor: the floor's track only comes back while the player is still on the table (after a death or

@@ -296,6 +296,7 @@ public partial class DungeonGenerator : MonoBehaviour
         }
         ChooseTemplates();
         ChooseRoomEvents();
+        CutExitShaft();
         for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(i);
         DecorateWalls();
         PlaceTorches();

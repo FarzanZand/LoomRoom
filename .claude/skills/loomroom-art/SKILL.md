@@ -108,6 +108,13 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
 
 ## Review before calling it done
 
+**Always look at the thing you made before saying it is done** (user, 2026-10-19: "From now on, always look at the
+thing you create before saying you are done"). Capture it in game, crop and enlarge the part you changed, and look at
+it yourself: gaps, steps the player can't walk onto, sizes, texel size against its neighbours, how it reads from where
+the player stands. A measurement or a test script passing is not a look: on the stairs down I reported "fixed" three
+times from numbers while the picture plainly showed a gap, a landing too long and stretched textures. Say what still
+looks wrong, too.
+
 - **Every built model, from every side, up close.** Render `PixelRestyle.RenderPropTurntable(prefab, "Temp/Paint/turn/<Name>.png")`
   (eight sides, two high three-quarter views, straight down and from below, each zoomed to the model) and then crop and
   enlarge the views to at least 4 screen pixels per texel before judging: at the size a whole sheet is shown, streaks
@@ -261,6 +268,15 @@ can be fixed (crop, re-lay, colour match), regenerate what can't, and only then 
   `PixelRestyle.TexelsPerUnit(renderer, material)` (per material, so per submesh) and correct the UVs until it reads
   the target. Painted textures look blockier than their texels; matching that look by eye gave a door knob half the
   door's density (2026-10-14). When you change a tile's size, change its UV scale with it.
+- **Generated geometry uses the architecture's UVs, never a plain cube's.** Anything built in code from boxes (kerbs,
+  posts, caps, steps, platforms, stairs) with a wall, floor or trim material goes through `ArchitectureBox` (UVs in
+  world metres per architecture tile, so its texels match the walls and floor around it), never `Box` /
+  `CreatePrimitive` alone, which stretches the whole texture over each face: on the 2026-10-19 stairs down the kerb's
+  bricks were squeezed, its caps smeared into planks and the posts' bricks squashed, and the user saw it at once.
+- **Before showing anything built next to existing walls or floors, compare it with them in the same shot, zoomed:**
+  are its bricks the size of the wall's bricks, its flagstones the size of the floor's, its pixels the size of the
+  pixels beside it? Shape and light looking right is not a review; check the texel size against the neighbours every
+  time, and fix it before the user sees it.
 
 **Room surfaces**
 - Wall/ceiling paint from the concept's own wall (crop it as the reference). Scatter the painting's marks (flakes,

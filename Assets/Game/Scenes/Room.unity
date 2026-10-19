@@ -6499,8 +6499,6 @@ MonoBehaviour:
   title: {fileID: 1080273092}
   levelLine: {fileID: 751769829}
   statTemplate: {fileID: 1305598759}
-  statSound: {fileID: 8300000, guid: 3d4f4998ad164964e96906d828306f6c, type: 3}
-  statVolume: 0.6
   firstStatDelay: 0.7
   statGap: 0.45
   statHold: 2.2
@@ -185077,6 +185075,12 @@ MonoBehaviour:
   adventuresButton: {fileID: 1824861000}
   returnButton: {fileID: 893233700}
   reviveButton: {fileID: 734843210}
+  reviveAfterDeaths: 3
+  reviveUnlockedLine:
+    text: Revive skill added, use it to make it to the boss, but I will mock you.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
   reviveLines:
   - text: Fine. I didn't see that.
     voice: {fileID: 0}
@@ -300004,6 +300008,8 @@ MonoBehaviour:
   missingButton: {fileID: 2418269867878313285}
   missingMessage: One tile is missing. It must be somewhere down there.
   placedMessage: You put the tile in its place.
+  hint: {fileID: 0}
+  hintIntensity: 140
 --- !u!114 &4804833978166367768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -318701,7 +318707,7 @@ MonoBehaviour:
     pitch: 1
   - key: levelUp
     source: 0
-    clip: {fileID: 8300000, guid: 00fa5bf9ad061264f85651a8bc17563a, type: 3}
+    clip: {fileID: 8300000, guid: 27dc53d94f406194fa82f30ca2eb5b7d, type: 3}
     data: {fileID: 0}
     volume: 0.9
     pitch: 1
