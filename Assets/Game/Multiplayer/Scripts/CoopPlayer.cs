@@ -110,6 +110,10 @@ public class CoopPlayer : NetworkBehaviour
         bool onTable = s.place == CoopPlace.Table && table != null;
         var bash = onTable ? table.GetComponent<ShieldBash>() : null;
         s.blocking = onTable && table.Combat != null && table.Combat.IsGuarding;
+        // A shot straight at the face: true when the shield is up and Deflect is learned (the others bounce shots off
+        // this player's stand-in with it, facing checked there).
+        var lookAhead = table != null && table.Look != null ? table.Look.YawTransform.forward : Vector3.forward;
+        s.deflects = s.blocking && table.Combat.Deflects(-lookAhead);
         int release = onTable && table.Combat != null ? table.Combat.ReleaseShown : 0;
         s.charging = onTable && table.Combat != null && table.Combat.IsAttacking && release == 0;
         s.airborne = active != null && active.Motor != null && !active.Motor.IsGrounded && active.Motor.AirborneTime > .15f;

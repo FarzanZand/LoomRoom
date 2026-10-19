@@ -58,6 +58,8 @@ public class ArrowProjectile : MonoBehaviour
                 if (!victim.IsAlive || (owner != null && !FactionRules.IsHostile(owner.Faction, victim.Faction))) continue;
                 // Deflect: off a raised shield, back at whoever shot it, now the defender's arrow.
                 if (victim is Player defender && defender.Combat != null && defender.Combat.Deflects(velocity)) { Deflect(defender, point); return; }
+                // Co-op: off a teammate's raised shield too (their stand-in here).
+                if (CoopWorld.StandInDeflects(victim, velocity)) { Deflect(victim, point); return; }
                 Strike(victim.GetComponent<IDamageable>(), point);
                 Destroy(gameObject);
                 return;
@@ -74,17 +76,19 @@ public class ArrowProjectile : MonoBehaviour
         transform.rotation = Quaternion.LookRotation(velocity);
     }
 
-    void Deflect(Player defender, Vector3 point)
+    void Deflect(Character defender, Vector3 point)
     {
         var shooter = owner;
         float speed = velocity.magnitude;
         var aim = shooter != null && shooter.IsAlive ? shooter.transform.position + Vector3.up * 1.2f - point : -velocity;
         owner = defender; age = 0f;
-        if (ProgressionManager.HasInstance) ProgressionManager.Instance.Deflected();
+        // The deflecting player's own: a teammate's stand-in trains nothing here (their own copy did it there).
+        var player = defender as Player;
+        if (player != null && ProgressionManager.HasInstance) ProgressionManager.Instance.Deflected();
         transform.position = point + aim.normalized * .3f;
         velocity = aim.normalized * speed;
         transform.rotation = Quaternion.LookRotation(velocity);
-        if (defender.Combat != null) defender.Combat.PlayDeflect(point);
+        if (player != null && player.Combat != null) player.Combat.PlayDeflect(point);
     }
 
     void Strike(IDamageable target, Vector3 point)

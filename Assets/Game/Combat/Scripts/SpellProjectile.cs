@@ -80,6 +80,9 @@ public class SpellProjectile : MonoBehaviour
             // Deflect: off a raised shield, back at its caster (or straight back), now the defender's spell.
             var struckPlayer = hit.collider.GetComponentInParent<Player>();
             if (struckPlayer != null && struckPlayer != owner && struckPlayer.Combat != null && struckPlayer.Combat.Deflects(transform.forward)) { Deflect(struckPlayer, point); return; }
+            // Co-op: off a teammate's raised shield too (their stand-in here).
+            var struck = hit.collider.GetComponentInParent<Character>();
+            if (struck != null && struck != owner && CoopWorld.StandInDeflects(struck, transform.forward)) { Deflect(struck, point); return; }
             if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform)) DungeonMasterRemarks.SpellHit(owner);
             var normal = hit.distance <= 0 ? -transform.forward : hit.normal;
             Explode(point, normal);
@@ -88,13 +91,15 @@ public class SpellProjectile : MonoBehaviour
         transform.position += transform.forward * distance;
     }
 
-    void Deflect(Player defender, Vector3 point)
+    void Deflect(Character defender, Vector3 point)
     {
         var caster = owner;
         var aim = caster != null && caster.IsAlive ? caster.transform.position + Vector3.up * 1.2f - point : -transform.forward;
         owner = defender; progress = null; age = 0f; RampSeconds = 0f;
-        if (ProgressionManager.HasInstance) ProgressionManager.Instance.Deflected();
-        if (defender.Combat != null) defender.Combat.PlayDeflect(point);
+        // The deflecting player's own: a teammate's stand-in trains nothing here (their own copy did it there).
+        var player = defender as Player;
+        if (player != null && ProgressionManager.HasInstance) ProgressionManager.Instance.Deflected();
+        if (player != null && player.Combat != null) player.Combat.PlayDeflect(point);
         HomingTarget = caster != null && caster.IsAlive ? caster : null;
         transform.position = point + aim.normalized * .4f;
         transform.rotation = Quaternion.LookRotation(aim);

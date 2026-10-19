@@ -241,7 +241,7 @@ public static class CoopWorld
         if (target.IsEnemy)
         {
             // Only this player's own blows go to the host; spikes, falls and the like hurt enemies on the host already.
-            bool mine = info.Source is Player p && p.kind == PlayerKind.Table;
+            bool mine = info.Source is Player p && p.kind == PlayerKind.Table && info.Amount > 0f;
             if (mine && TryEnemyId(target, out var id))
             {
                 var strike = NetDamage.From(info);
@@ -331,6 +331,18 @@ public static class CoopWorld
             $"Me {me:F1}, its copy {(src != null ? src.transform.position.ToString("F1") : "-")}, host hit point {hit.hitPoint:F1}, floor {FloorKey}.");
     }
     static Vector3 Flat(Vector3 v) => new(v.x, 0f, v.z);
+
+    // Deflect for another player's stand-in: their shield is up with Deflect learned (they say so) and faces the shot
+    // (the stand-in turns with their look), as PlayerCombat.Deflects judges it for the player themselves. The host's
+    // real shot goes back and hurts; a guest's copy bounces the same way, so everyone sees it.
+    public static bool StandInDeflects(Character victim, Vector3 travel)
+    {
+        if (!Coop.Running || victim == null) return false;
+        var cp = victim.GetComponent<CoopPlayer>();
+        if (cp == null || cp.IsOwner || !cp.Current.deflects) return false;
+        Vector3 facing = cp.transform.forward; facing.y = 0f; travel.y = 0f;
+        return facing.sqrMagnitude > .001f && travel.sqrMagnitude > .001f && Vector3.Dot(facing.normalized, -travel.normalized) > .3f;
+    }
 
     // ── Snapshots ─────────────────────────────────────────────────────
 
