@@ -35,6 +35,7 @@ public class CoopGhost : MonoBehaviour
     void Apply(Color colour, float intensity, float range, float speed, UnityEngine.Rendering.VolumeProfile profile, float fade)
     {
         Active = true;
+        PlayerLook.LookWhileDead = true;   // a ghost looks about; a plain dead player can't
         // Fighting, casting, the bash and using things.
         foreach (var b in new Behaviour[] { player.Combat, player.GetComponent<PlayerSpellcasting>(), player.GetComponent<ShieldBash>(), player.GetComponentInChildren<InteractController>(true) })
             if (b != null && b.enabled) { b.enabled = false; switchedOff.Add(b); }
@@ -88,6 +89,7 @@ public class CoopGhost : MonoBehaviour
     public void End()
     {
         Active = false;
+        PlayerLook.LookWhileDead = false;
         foreach (var b in switchedOff) if (b != null) b.enabled = true;
         switchedOff.Clear();
         foreach (var g in hidden) if (g != null) g.SetActive(true);
@@ -102,6 +104,7 @@ public class CoopGhost : MonoBehaviour
     void OnDestroy()
     {
         if (Active && switchedOff.Count > 0) Active = false;
+        PlayerLook.LookWhileDead = false;
         DropLook();
         if (player != null && player.Motor != null) player.Motor.SpeedScale = 1f;
     }
