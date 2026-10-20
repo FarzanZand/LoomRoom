@@ -39,6 +39,10 @@ public class PlayerLook : MonoBehaviour
 
     const float MouseDegreesPerCount = .055f, StickDegreesPerSecond = 180f;
 
+    // Set while a dead player may still look about (a co-op ghost).
+    public static bool LookWhileDead;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => LookWhileDead = false;
+
     void Awake()
     {
         player = GetComponent<Player>();
@@ -58,8 +62,11 @@ public class PlayerLook : MonoBehaviour
 
         // The lock check is read only: it also catches the Editor's Esc and a lost window focus,
         // which unlock the cursor without GameManager knowing.
+        // A dead player can't turn the view, whatever state the game is in around it (a death while the shop was open
+        // left gameplay running); a co-op ghost sets LookWhileDead.
         bool canLook = Cursor.lockState == CursorLockMode.Locked && input != null &&
-            (!GameManager.HasInstance || GameManager.Instance.GameplayActive);
+            (!GameManager.HasInstance || GameManager.Instance.GameplayActive) &&
+            (player == null || player.IsAlive || LookWhileDead);
         Vector2 raw = canLook ? input.Look : Vector2.zero;
         if (settings != null && settings.invertLook) raw.y = -raw.y;
 
