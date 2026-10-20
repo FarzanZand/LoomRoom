@@ -119,6 +119,7 @@ public enum CoopEventKind : byte
     AttackTell = 22,    // an enemy's windup began: its warning glow and sound (id = the enemy)
     PartySpoiled = 21, // a Skeleton Party's dance broke up (position = the party's room spot)
     Ping = 20,          // a player pointed at something (position = where, item = what it is called; CoopPing)
+    NpcProvoked = 23,   // a provokable character was struck (id = it on the floor, amount = its hits so far; ProvokableNpc)
 }
 
 // The owner's arm animation for a teammate's one body (CoopPlayer.SendArms, CoopAvatar.ApplyArms): each layer's state,

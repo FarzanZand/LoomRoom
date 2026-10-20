@@ -18,6 +18,8 @@ public class PlayerDeathFall : CinemachineExtension
         if (player == null) { player = GetComponentInParent<Player>(); arms = player != null ? player.GetComponentInChildren<PlayerViewPresentation>(true) : null; }
         var tuning = CombatManager.HasInstance ? CombatManager.Instance : null;
         bool falling = player != null && !player.IsAlive && tuning != null && tuning.playerDeathFall;
+        // Co-op: a dead player gets up as a ghost (under the fade to black) and looks about again.
+        if (falling && Coop.Running && MultiplayerManager.HasInstance && MultiplayerManager.Instance.Ghost) falling = false;
         if (!falling)
         {
             if (diedAt >= 0f) { diedAt = -1f; if (arms != null) arms.LowerBy = 0f; }

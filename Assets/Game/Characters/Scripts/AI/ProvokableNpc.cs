@@ -65,6 +65,7 @@ public class ProvokableNpc : MonoBehaviour
         if (Turned || by == null) return;
         if (Hits > 0 && Time.time - firstHitAt < calmSeconds) return;
         Hits++;
+        CoopWorld.Provoked(this, Hits);
         if (brain != null) brain.SnapRotationTowards(by.transform.position);
         if (character != null && character.data != null) character.TriggerAnimation(character.data.hurtTrigger);
         if (Hits == 1)
@@ -76,6 +77,14 @@ public class ProvokableNpc : MonoBehaviour
         }
         Turned = true;
         StartCoroutine(Turn(by));
+    }
+
+    // Co-op: another player struck him (CoopWorld). Their count stands, whatever the calm time here.
+    public void ProvokeFromNetwork(int hits, Character by)
+    {
+        if (Turned || hits <= Hits) return;
+        Hits = hits - 1; firstHitAt = -100f;
+        Provoke(by != null ? by : character);
     }
 
     IEnumerator Turn(Character by)

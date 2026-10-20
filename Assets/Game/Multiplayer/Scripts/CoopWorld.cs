@@ -21,6 +21,7 @@ public static class CoopWorld
     static readonly List<DungeonDoor> doors = new();
     static readonly List<DungeonSpikeTrap> spikes = new();
     static readonly List<DungeonAmbush> ambushes = new();
+    static readonly List<ProvokableNpc> provokables = new();
     static readonly Dictionary<int, GameObject> loot = new();
     static readonly Dictionary<GameObject, int> lootKeys = new();
     static readonly HashSet<Character> networkSpawned = new();
@@ -68,7 +69,7 @@ public static class CoopWorld
     public static void Clear()
     {
         Floor = null; FloorKey = 0;
-        enemies.Clear(); enemyIds.Clear(); containers.Clear(); destructibles.Clear(); doors.Clear(); spikes.Clear(); ambushes.Clear();
+        enemies.Clear(); enemyIds.Clear(); containers.Clear(); destructibles.Clear(); doors.Clear(); spikes.Clear(); ambushes.Clear(); provokables.Clear();
         loot.Clear(); lootKeys.Clear(); networkSpawned.Clear(); pendingHealth.Clear(); history.Clear(); spawnHistory.Clear(); waiting.Clear();
         lootScope = -1; lootCounter = 0; dropCounter = 0;
     }
@@ -93,6 +94,7 @@ public static class CoopWorld
             doors.AddRange(root.GetComponentsInChildren<DungeonDoor>(true));
             spikes.AddRange(root.GetComponentsInChildren<DungeonSpikeTrap>(true));
             ambushes.AddRange(root.GetComponentsInChildren<DungeonAmbush>(true));
+            provokables.AddRange(root.GetComponentsInChildren<ProvokableNpc>(true));
             foreach (var item in root.GetComponentsInChildren<WorldItem>(true)) if (!Personal(item.gameObject)) Tag(item.gameObject, (GeneratedScope + index++) * 64);
             foreach (var coins in root.GetComponentsInChildren<CoinPickup>(true)) Tag(coins.gameObject, (GeneratedScope + index++) * 64);
         }
@@ -550,6 +552,16 @@ public static class CoopWorld
 
     // ── Floor events ──────────────────────────────────────────────────
 
+    // The merchant was struck (ProvokableNpc): every machine counts the same hits, so he glares or turns everywhere at
+    // once. The host's Wrathful merchant is the real one and reaches the guests as a mid-floor spawn; a guest's own copy
+    // is removed (OnCharacterSpawned).
+    public static void Provoked(ProvokableNpc npc, int hits)
+    {
+        if (Applying || !Coop.Running) return;
+        int id = provokables.IndexOf(npc);
+        if (id >= 0) Send(new CoopEvent { kind = CoopEventKind.NpcProvoked, id = id, amount = hits });
+    }
+
     static void OnContainerOpened(DungeonContainer chest)
     {
         if (Applying || !Coop.Running) return;
@@ -790,6 +802,9 @@ public static class CoopWorld
         {
             case CoopEventKind.ContainerOpened:
                 if (e.id >= 0 && e.id < containers.Count && containers[e.id] != null) containers[e.id].OpenFromNetwork();
+                break;
+            case CoopEventKind.NpcProvoked:
+                if (e.id >= 0 && e.id < provokables.Count && provokables[e.id] != null) provokables[e.id].ProvokeFromNetwork(e.amount, CharacterOf(e.slot));
                 break;
             case CoopEventKind.DestructibleBroken:
                 if (e.id >= 0 && e.id < destructibles.Count && destructibles[e.id] != null) destructibles[e.id].Break(e.direction);
