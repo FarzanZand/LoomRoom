@@ -88,6 +88,7 @@ MonoBehaviour:
   - {fileID: 3313456664254303774, guid: 6f7038d9258e35042b9a729c4c9edd16, type: 3}
   - {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
   - {fileID: 5746219887415064482, guid: ae52da96cec3d1d4db895d43de610fd3, type: 3}
+  - {fileID: 4756031280637954703, guid: 7cad916ed64e5034dbe682e5bfa31b73, type: 3}
   partnerLightColor: {r: 1, g: 0.78, b: 0.5, a: 1}
   partnerLightIntensity: 1.6
   partnerLightRange: 4
