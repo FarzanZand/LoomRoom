@@ -47,7 +47,7 @@ public static class OneBodyBuilder
             PrefabUtility.SaveAsPrefabAsset(prefab, TablePlayer);
         }
         finally { PrefabUtility.UnloadPrefabContents(prefab); }
-        foreach (var player in Object.FindObjectsByType<Player>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        foreach (var player in Object.FindObjectsByType<Player>(FindObjectsInactive.Include))
         {
             if (player.kind != PlayerKind.Table || PrefabUtility.IsPartOfPrefabAsset(player) || player.transform.parent == null) continue;
             var root = player.transform.parent.gameObject;

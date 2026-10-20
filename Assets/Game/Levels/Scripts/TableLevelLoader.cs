@@ -22,6 +22,7 @@ public class TableLevelLoader : MonoBehaviour
     public int GenerationLevel => generationLevel;
     public bool HasNextFloor => Current!=null && Current.IsDungeon && FloorNumber<Current.FloorCount;
     int runSeed;
+    public int RunSeed => runSeed;
     TableLevelMenu menu;
     Player player;
     Vector3 townPosition;

@@ -210,6 +210,16 @@ public class DevConsole : MonoBehaviour
         Run(text);
     }
 
+    // A command from code (Asset Studio's "Play from this room"), printed in the log as if typed.
+    public static bool RunCommand(string line)
+    {
+        var console = FindAnyObjectByType<DevConsole>();
+        if (console == null) return false;
+        console.Print("> " + line);
+        console.Run(line);
+        return true;
+    }
+
     void Run(string line)
     {
         var parts = line.ToLowerInvariant().Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);

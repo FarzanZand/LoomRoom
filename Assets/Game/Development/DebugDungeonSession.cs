@@ -17,6 +17,11 @@ public class DebugDungeonSession : MonoBehaviour
     // Both dungeon modes skip the room (no intro, wake-up or reveal) and save to loomroom-debug.json.
     // Arena: the authored test arena with the settings' enemies. Dungeon: the level picked in the toolbar's dropdown (SelectedDungeon), generated as in a real run.
     public static bool Active { get; private set; }
+    public const string StudioEnemyKey = "LoomRoom.Studio.ArenaEnemy";
+#if UNITY_EDITOR
+    static GameObject studioEnemy;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ForgetStudioEnemy() => studioEnemy = null;
+#endif
     public static Mode CurrentMode { get; private set; }
     // The Room button: an ordinary morning in the room with the normal save, nothing played first (ProgressionManager applies it).
     public static bool RoomStart { get; private set; }
@@ -122,6 +127,10 @@ public class DebugDungeonSession : MonoBehaviour
                 if (UnityEditor.AssetDatabase.AssetPathToGUID(UnityEditor.AssetDatabase.GetAssetPath(level)) == picked) return level;
 #endif
             }
+#if UNITY_EDITOR
+            // A level picked from Asset Studio need not be on WorldManager's list.
+            if (picked.Length > 0 && UnityEditor.AssetDatabase.LoadAssetAtPath<TableLevelData>(UnityEditor.AssetDatabase.GUIDToAssetPath(picked)) is TableLevelData any) return any;
+#endif
             return first;
         }
     }
@@ -176,6 +185,17 @@ public class DebugDungeonSession : MonoBehaviour
         PlaceChests(dungeon);
         PlacePortal(dungeon);
         var spawned = settings.enemies.Where(p => p != null).ToArray();
+#if UNITY_EDITOR
+        // Asset Studio's "Fight it in the arena": this run only, the one enemy picked there instead of the settings' list.
+        // The arena can be set up more than once in a session: the pick is kept until Play stops (statics reset then).
+        string only = UnityEditor.SessionState.GetString(StudioEnemyKey, "");
+        if (only.Length > 0)
+        {
+            UnityEditor.SessionState.EraseString(StudioEnemyKey);
+            studioEnemy = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(UnityEditor.AssetDatabase.GUIDToAssetPath(only));
+        }
+        if (studioEnemy != null) spawned = new[] { studioEnemy };
+#endif
         for (int i = 0; i < spawned.Length; i++)
         {
             var prefabBrain = spawned[i].GetComponent<EnemyBrain>();
@@ -195,6 +215,9 @@ public class DebugDungeonSession : MonoBehaviour
             if (settings.retaliateOnly) profile.aggressionMode = AggressionMode.AggressiveWhenHit;
             enemy.SetBehaviourOverride(profile);
         }
+#if UNITY_EDITOR
+        if (studioEnemy != null) return;   // just the picked enemy: no side rows
+#endif
         PlaceRow(dungeon, settings.fightBackRow, -1f, AggressionMode.AggressiveWhenHit, 0f);
         PlaceRow(dungeon, settings.dummyRow, 1f, AggressionMode.Passive, settings.dummyHealth);
     }

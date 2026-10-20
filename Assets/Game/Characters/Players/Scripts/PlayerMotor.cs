@@ -169,7 +169,9 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         bool holdToCrouch = settings == null || settings.holdToCrouch;
         bool holdToSprint = settings == null || settings.holdToSprint;
         bool autoUnSprint = settings == null || settings.autoUnSprint;
-        bool crouchHeld   = input != null && input.CrouchHeld;
+        bool canCrouch    = player == null || player.PlayerData == null || player.PlayerData.canCrouch;
+        bool crouchHeld   = canCrouch && input != null && input.CrouchHeld;
+        if (!canCrouch) { crouchToggleRequested = false; if (IsCrouching && CanUncrouch()) IsCrouching = false; }
         bool sprintHeld   = input != null && input.SprintHeld;
 
         // CROUCH

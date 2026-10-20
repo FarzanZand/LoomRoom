@@ -235,7 +235,7 @@ public static class MainMenuSetTools
     public static void Render(Camera camera, string path, int width = 1280, int height = 720)
     {
         // Skinned meshes otherwise draw with the bones as they were when the frame was skinned, not as just posed.
-        var skinned = Object.FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None);
+        var skinned = Object.FindObjectsByType<SkinnedMeshRenderer>();
         foreach (var s in skinned) s.forceMatrixRecalculationPerRender = true;
         var rt = RenderTexture.GetTemporary(new RenderTextureDescriptor(width, height, RenderTextureFormat.ARGB32, 24) { sRGB = true, msaaSamples = 4 });
         var previous = camera.targetTexture;

@@ -49,7 +49,10 @@ public static class ItemDatabaseAuthoring
         var names = new HashSet<string>(All().Where(i => i != copy).Select(i => i.itemName), StringComparer.OrdinalIgnoreCase);
         string name = source.itemName + " copy"; int suffix = 2;
         while (names.Contains(name)) name = source.itemName + " copy " + suffix++;
-        copy.itemName = name; EditorUtility.SetDirty(copy); Save();
+        copy.itemName = name;
+        // Its own save ID (an item's save ID is its asset GUID): a copy keeping the source's would load as the source.
+        copy.saveId = AssetDatabase.AssetPathToGUID(path);
+        EditorUtility.SetDirty(copy); Save();
         if (ItemIconRenderer.IsGenerated(copy.icon)) ItemIconRenderer.Generate(copy); // its own icon file, not the source's
         return copy;
     }
