@@ -24,10 +24,8 @@ public static class CoopBodyAnimations
     const string BodyPath = "Assets/Game/Multiplayer/Bodies/Warrior body.prefab";
     const float BakeRate = 30f;
 
-    [MenuItem("Tools/LoomRoom/Multiplayer/Build Body Animations")]
     public static void Build() => Run(false);
 
-    [MenuItem("Tools/LoomRoom/Multiplayer/Build Body Animations (Overwrite Clips)")]
     public static void BuildOverwrite() => Run(true);
 
     enum Side { Right, Left, Both }

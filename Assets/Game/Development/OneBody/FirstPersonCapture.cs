@@ -48,7 +48,7 @@ public class FirstPersonCapture : MonoBehaviour
                 if (mb != null && mb.GetType().Name == "OneBodyRig") arms = mb.GetType().GetField("animator").GetValue(mb) as Animator;
         if (arms == null) { Debug.LogWarning("[FirstPersonCapture] No first-person animator."); return null; }
         var capture = new GameObject("First person capture").AddComponent<FirstPersonCapture>();
-        foreach (var c in FindObjectsByType<Character>(FindObjectsSortMode.None))
+        foreach (var c in FindObjectsByType<Character>())
         {
             if (c is Player) continue;
             var who = c;

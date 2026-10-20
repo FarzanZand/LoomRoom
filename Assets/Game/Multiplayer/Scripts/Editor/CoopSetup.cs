@@ -32,10 +32,8 @@ public static class CoopSetup
         ("spellblade", "SM_Chr_Witch_Female_01"),
     };
 
-    [MenuItem("Tools/LoomRoom/Multiplayer/Set Up Co-op")]
     public static void SetUp() => Run(false);
 
-    [MenuItem("Tools/LoomRoom/Multiplayer/Set Up Co-op (Rebuild Bodies)")]
     public static void SetUpRebuild() => Run(true);
 
     static void Run(bool rebuildBodies)
@@ -57,7 +55,6 @@ public static class CoopSetup
     // ── Assets ────────────────────────────────────────────────────────
 
     // The grips again from the table player's sockets, on the manager prefab and the scene's manager.
-    [MenuItem("Tools/LoomRoom/Multiplayer/Refresh Body Grips")]
     public static void RefreshGrips()
     {
         var weapon = FirstPersonGrip(WeaponGripPath, "RightHand_Socket");

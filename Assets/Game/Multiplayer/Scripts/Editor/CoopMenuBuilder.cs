@@ -23,7 +23,6 @@ public static class CoopMenuBuilder
         Screen(pause, screen, panel, resume);
     }
 
-    [MenuItem("Tools/LoomRoom/Multiplayer/Rebuild Co-op Screen")]
     public static void Rebuild()
     {
         var old = Object.FindAnyObjectByType<CoopMenuUI>(FindObjectsInactive.Include);
@@ -155,7 +154,6 @@ public static class CoopMenuBuilder
 
     // The game page's layout, top to bottom with room between every row: a small title in the body font, the status,
     // the join code with Copy beside it, the players on one line, the four rules, then the bottom row. Safe to run again.
-    [MenuItem("Tools/LoomRoom/Multiplayer/Lay Out Co-op Screen")]
     public static void LayOut()
     {
         var ui = Object.FindAnyObjectByType<CoopMenuUI>(FindObjectsInactive.Include);

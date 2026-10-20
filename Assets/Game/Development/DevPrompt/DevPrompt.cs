@@ -180,7 +180,8 @@ public class DevPrompt : MonoBehaviour
         open = IsOpen = true;
         openedFrame = Time.frameCount;
         timeScaleBefore = Time.timeScale;
-        Time.timeScale = 0f;
+        // Co-op: only this player's screen and input stop; time runs on, or the host's world would freeze for everyone.
+        if (!Coop.Running) Time.timeScale = 0f;
         if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Menu);
         panel.SetActive(true);
         thumbnail.texture = markup.Composed;
@@ -196,7 +197,7 @@ public class DevPrompt : MonoBehaviour
         CloseMarkup();
         open = IsOpen = false;
         panel.SetActive(false);
-        Time.timeScale = timeScaleBefore;
+        if (!Coop.Running) Time.timeScale = timeScaleBefore;
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
     }
 

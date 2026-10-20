@@ -30,7 +30,7 @@ public partial class ProgressionManager
     public void ClearLooseTiles()
     {
         if (missingTile == null) return;
-        foreach (var w in FindObjectsByType<WorldItem>(FindObjectsSortMode.None)) if (w != null && w.Item == missingTile) Destroy(w.gameObject);
+        foreach (var w in FindObjectsByType<WorldItem>()) if (w != null && w.Item == missingTile) Destroy(w.gameObject);
     }
 
     // At the run's end: a tile in the bag or hotbar comes home (out of the bag, into the key items) with its quest.

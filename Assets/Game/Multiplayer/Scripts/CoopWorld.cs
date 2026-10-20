@@ -710,7 +710,7 @@ public static class CoopWorld
     static List<HingedDoor> RoomDoors()
     {
         if (roomDoors != null && !roomDoors.Exists(d => d == null)) return roomDoors;
-        roomDoors = new List<HingedDoor>(Object.FindObjectsByType<HingedDoor>(FindObjectsInactive.Include, FindObjectsSortMode.None));
+        roomDoors = new List<HingedDoor>(Object.FindObjectsByType<HingedDoor>(FindObjectsInactive.Include));
         roomDoors.Sort((a, b) => string.CompareOrdinal(PathOf(a.transform), PathOf(b.transform)));
         return roomDoors;
     }
@@ -745,7 +745,7 @@ public static class CoopWorld
         {
             if (e.floorKey != FloorKey) return;
             SkeletonParty nearest = null; float best = 9f;
-            foreach (var party in Object.FindObjectsByType<SkeletonParty>(FindObjectsSortMode.None))
+            foreach (var party in Object.FindObjectsByType<SkeletonParty>())
             {
                 float d = Vector3.Distance(party.transform.position, e.position);
                 if (d < best) { best = d; nearest = party; }
