@@ -16,7 +16,6 @@ public static partial class MetaProgressionSetup
     // The south wall's face (z) and the floor (y), measured in the room; the wall runs between the two plants.
     const float WallZ = 238.53f, FloorY = .5f, WallCentreX = -372.6f;
 
-    [MenuItem("Tools/LoomRoom/Meta/Build Trophy Wall and Hobby Table", priority = 314)]
     public static void BuildRoom()
     {
         var furnishings = GameObject.Find(Furnishings);

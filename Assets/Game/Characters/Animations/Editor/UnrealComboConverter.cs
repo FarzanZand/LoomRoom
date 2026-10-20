@@ -47,7 +47,6 @@ public static partial class UnrealComboConverter
         ("StabForward", "Combo stab"),
     };
 
-    [MenuItem("Tools/LoomRoom/Characters/Convert Unreal Sword Combo")]
     public static void ConvertAll()
     {
         var log = new System.Text.StringBuilder();

@@ -35,7 +35,6 @@ public static class OneBodyBuilder
         return t;
     }
 
-    [MenuItem("Tools/LoomRoom/R&D/One Body/Build One-Body Table Player")]
     public static string Build()
     {
         var log = new System.Text.StringBuilder();

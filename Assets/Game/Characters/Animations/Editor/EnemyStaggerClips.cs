@@ -14,7 +14,6 @@ public static class EnemyStaggerClips
     const string Dir = "Assets/Game/Characters/Animations/ThirdPerson/Combat";
     const string ControllerPath = "Assets/Game/Characters/Animations/HumanoidController.controller";
 
-    [MenuItem("Tools/LoomRoom/Combat/Make Enemy Stagger Clips")]
     public static void MakeMenu() => Debug.Log("[Stagger] " + Make());
 
     public static string Make()

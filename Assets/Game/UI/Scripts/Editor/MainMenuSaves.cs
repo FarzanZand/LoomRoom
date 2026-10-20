@@ -13,7 +13,6 @@ public static class MainMenuSaves
     const string Frame = "Assets/Game/UI/Main Menu/Textures/Menu button.png", FrameHover = "Assets/Game/UI/Main Menu/Textures/Menu button hover.png";
     static readonly Color Dim = new(.68f, .65f, .58f), Gold = new(.93f, .76f, .38f);
 
-    [MenuItem("Tools/LoomRoom/UI/Build Main Menu Saves")]
     public static void Build()
     {
         var menu = Object.FindAnyObjectByType<MainMenuUI>(FindObjectsInactive.Include);

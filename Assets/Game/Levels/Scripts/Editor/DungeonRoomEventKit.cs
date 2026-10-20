@@ -17,9 +17,7 @@ public static class DungeonRoomEventKit
     const string Library = "Assets/Game/Audio/Library/_Sound Effects Library";
     static bool overwrite;
 
-    [MenuItem("Tools/LoomRoom/Dungeon/Build Room Event Props")]
     public static string Run() => Run(false);
-    [MenuItem("Tools/LoomRoom/Dungeon/Build Room Event Props (Overwrite)")]
     public static string RunOverwrite() => Run(true);
 
     public static string Run(bool replace)

@@ -29,6 +29,7 @@ public static class DebugDungeonToolbar
     [MainToolbarElement("LoomRoom/Debug", defaultDockPosition = MainToolbarDockPosition.Middle, defaultDockIndex = 1)]
     public static IEnumerable<MainToolbarElement> Buttons() => new MainToolbarElement[]
     {
+        new MainToolbarButton(new MainToolbarContent("Asset Studio", "Open Asset Studio: the game's whole content library, previews, painting, inspectors and requests to Main."), () => AssetStudioWindow.Open().Focus()),
         new MainToolbarButton(new MainToolbarContent("Debug", "Start the test arena: one open room, enemies from Debug Dungeon Settings standing just outside detection range."), StartDebug),
         new MainToolbarButton(new MainToolbarContent("Dungeon", "Generate the level picked in the dropdown next to it and play it straight away, skipping the room."), StartDungeon),
         new MainToolbarDropdown(new MainToolbarContent(DungeonLabel(), "The level the Dungeon button plays (WorldManager's Debug Dungeons)."), ShowDungeonMenu),

@@ -342,6 +342,6 @@ public class InventoryManager : Singleton<InventoryManager>
 #if UNITY_EDITOR
     // The editor assembly owns the sync (ItemDatabaseAuthoring.SyncCatalog); runtime code cannot reference it.
     [Button("Populate Catalog From Project")]
-    void PopulateCatalog() => UnityEditor.EditorApplication.ExecuteMenuItem("Tools/LoomRoom/Sync Item Catalog");
+    void PopulateCatalog() => System.Type.GetType("ItemDatabaseAuthoring, Assembly-CSharp-Editor")?.GetMethod("SyncCatalog", System.Type.EmptyTypes)?.Invoke(null, null);
 #endif
 }

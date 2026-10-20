@@ -20,7 +20,6 @@ public static class BossStageSetup
     const string Brazier = "Assets/Game/Levels/Dungeon1/Prefabs/Furnishing/Brazier.prefab";
     const string Sounds = "Assets/Game/Audio/Library/_Sound Effects Library/";
 
-    [MenuItem("Tools/LoomRoom/Dungeon/Set Up Boss Stage")]
     public static void SetUpMenu() => Debug.Log("[Boss stage] " + SetUp());
 
     public static string SetUp()

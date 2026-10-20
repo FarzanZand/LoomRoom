@@ -15,7 +15,6 @@ public static class PlainUIStyle
     static readonly Color TitleGold = new(.859f, .698f, .38f);  // as the inventory titles
     static readonly Color OldTitleGrey = new(.639f, .639f, .639f);
 
-    [MenuItem("Tools/LoomRoom/UI/Apply Plain Style")]
     public static void Apply()
     {
         var frame = AssetDatabase.LoadAssetAtPath<Sprite>(Frame);

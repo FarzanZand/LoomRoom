@@ -348,7 +348,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             // The lesson text is two short lines, sized to fit inside the tag (the small attribute tags most of all).
             if (r.buyLabelSize <= 0f) { r.buyLabelSize = r.buyLabel.fontSize; r.buyLabelSpacing = r.buyLabel.lineSpacing; }
             r.buyLabel.enableAutoSizing = locked;
-            if (locked) { r.buyLabel.fontSizeMax = r.buyLabelSize * .8f; r.buyLabel.fontSizeMin = r.buyLabelSize * .4f; r.buyLabel.enableWordWrapping = false; r.buyLabel.lineSpacing = -20f; }
+            if (locked) { r.buyLabel.fontSizeMax = r.buyLabelSize * .8f; r.buyLabel.fontSizeMin = r.buyLabelSize * .4f; r.buyLabel.textWrappingMode = TMPro.TextWrappingModes.NoWrap; r.buyLabel.lineSpacing = -20f; }
             else { r.buyLabel.fontSize = r.buyLabelSize; r.buyLabel.lineSpacing = r.buyLabelSpacing; }
             r.buyLabel.color = price < 0 || locked ? faint : meta.Spoils < price ? poor : pen;
         }

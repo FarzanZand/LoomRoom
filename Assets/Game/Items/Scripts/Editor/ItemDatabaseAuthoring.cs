@@ -110,7 +110,6 @@ public static class ItemDatabaseAuthoring
     }
     public static void Save() => AssetDatabase.SaveAssets();
     // InventoryManager's catalog button runs this by menu path.
-    [MenuItem("Tools/LoomRoom/Sync Item Catalog")]
     static void SyncCatalogFromMenu() => Debug.Log($"[ItemDatabase] Catalog updated: {SyncCatalog()} items. Save the scene.");
     public static int SyncCatalog()
     {

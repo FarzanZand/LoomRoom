@@ -13,10 +13,8 @@ public static class ShieldStrainSetup
     const string ControllerPath = "Assets/Game/Characters/Animations/FirstPersonTable.controller";
     const string Param = "BlockStrain";
 
-    [MenuItem("Tools/LoomRoom/Combat/Set Up Shield Strain")]
     public static void SetUpMenu() => Debug.Log("[ShieldStrain] " + SetUp());
 
-    [MenuItem("Tools/LoomRoom/Combat/Set Up Shield Strain (Bake Clip)")]
     public static void RebakeMenu() { Debug.Log("[ShieldStrain] " + BakeClip()); SetUp(); }
 
     public static string SetUp()

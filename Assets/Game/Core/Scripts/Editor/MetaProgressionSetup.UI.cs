@@ -101,7 +101,6 @@ public static partial class MetaProgressionSetup
 
     // ── The character sheet ───────────────────────────────────────────
 
-    [MenuItem("Tools/LoomRoom/Meta/Build Character Sheet", priority = 312)]
     public static void BuildCharacterSheet()
     {
         var canvas = HudCanvas();
@@ -295,7 +294,6 @@ public static partial class MetaProgressionSetup
 
     // ── The tally rows on the run recap ───────────────────────────────
 
-    [MenuItem("Tools/LoomRoom/Meta/Build Tally", priority = 313)]
     public static void BuildTally()
     {
         var recap = Object.FindAnyObjectByType<RunRecapUI>(FindObjectsInactive.Include);

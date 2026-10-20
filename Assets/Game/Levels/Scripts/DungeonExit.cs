@@ -30,8 +30,8 @@ public class DungeonExit : MonoBehaviour, IInteractable
         int n = 0;
         for (float t = 0f; t < 4f; t += .25f)
         {
-            foreach (var item in FindObjectsByType<WorldItem>(FindObjectsSortMode.None)) Move(item.transform);
-            foreach (var coin in FindObjectsByType<CoinPickup>(FindObjectsSortMode.None)) Move(coin.transform);
+            foreach (var item in FindObjectsByType<WorldItem>()) Move(item.transform);
+            foreach (var coin in FindObjectsByType<CoinPickup>()) Move(coin.transform);
             yield return new WaitForSeconds(.25f);
         }
         void Move(Transform t)

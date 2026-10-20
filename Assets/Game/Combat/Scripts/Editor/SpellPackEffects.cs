@@ -34,7 +34,6 @@ public static class SpellPackEffects
         public float maxScreen;   // largest a particle may be on screen, as a share of the screen (0: the renderer's own); keeps a hit at point blank from filling the view
     }
 
-    [MenuItem("Tools/LoomRoom/Combat/Rebuild Spell Effects (Spells Pack)")]
     public static void Rebuild()
     {
         var arts = new[]

@@ -38,17 +38,14 @@ public static class PixelLookBuilder
         (new[] { "plaster", "wall", "white", "limestone", "ceiling" }, "Plaster", .7f),
     };
 
-    [MenuItem("Tools/LoomRoom/Pixel Look/Build Materials")]
     public static void Build() => Run(false);
 
-    [MenuItem("Tools/LoomRoom/Pixel Look/Build Materials (Reset Tuning)")]
     public static void BuildReset()
     {
         if (EditorUtility.DisplayDialog("Pixel Look", "Re-apply the default rules to every Pixel Lit material? Hand tuning on them is lost.", "Reset", "Cancel"))
             Run(true);
     }
 
-    [MenuItem("Tools/LoomRoom/Pixel Look/Select Library")]
     public static void SelectLibrary() => Selection.activeObject = LoadOrCreateLibrary();
 
     public static string Run(bool resetTuning)

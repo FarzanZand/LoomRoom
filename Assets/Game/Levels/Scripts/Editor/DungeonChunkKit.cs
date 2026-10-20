@@ -25,10 +25,8 @@ public static class DungeonChunkKit
     static readonly Dictionary<string, GameObject> kit = new();
     static bool overwrite;
 
-    [MenuItem("Tools/LoomRoom/Dungeon/Build Kit and Chunks")]
     public static string Run() => Run(false);
 
-    [MenuItem("Tools/LoomRoom/Dungeon/Build Kit and Chunks (Overwrite)")]
     public static string RunOverwrite() => Run(true);
 
     public static string Run(bool replaceExisting)
@@ -48,7 +46,6 @@ public static class DungeonChunkKit
     }
 
     // Shows every kit block's shape in the editor (prefab thumbnails, Prefab Mode): for prefabs made before previews existed.
-    [MenuItem("Tools/LoomRoom/Dungeon/Refresh Kit Previews")]
     public static string RefreshPreviews()
     {
         int n = 0;
@@ -621,7 +618,6 @@ public static class DungeonChunkKit
     // A blank hand-built room: a painted 7 x 7 footprint with its centre and one door, opened in Prefab Mode. Paint the
     // footprint in the inspector, drag pieces from Rooms/Kit (they take the room's stone when it is built) and sockets in,
     // then add it to a biome's Room Templates.
-    [MenuItem("Tools/LoomRoom/Dungeon/New Room Template")]
     public static void NewRoomTemplate()
     {
         if (!AssetDatabase.IsValidFolder(ChunkFolder)) AssetDatabase.CreateFolder(Rooms + "/Templates", "Chunks");

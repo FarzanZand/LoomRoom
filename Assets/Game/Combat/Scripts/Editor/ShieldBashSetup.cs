@@ -18,7 +18,6 @@ public static class ShieldBashSetup
     const string ManagerPath = "Assets/Game/Combat/Prefabs/CombatManager.prefab";
     const string Sounds = "Assets/Game/Audio/Library/_Sound Effects Library/";
 
-    [MenuItem("Tools/LoomRoom/Combat/Set Up Shield Bash")]
     public static void SetUpMenu() => Debug.Log("[ShieldBash] " + SetUp());
 
     public static string SetUp()

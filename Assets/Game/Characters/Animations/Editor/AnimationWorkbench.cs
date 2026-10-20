@@ -23,7 +23,6 @@ public partial class AnimationWorkbench : EditorWindow
     const string ControllerPath = "Assets/Game/Characters/Animations/FirstPersonTable.controller";
     const float Fps = 30f;
 
-    [MenuItem("Tools/LoomRoom/Characters/Animation Workbench")]
     static void Open() => GetWindow<AnimationWorkbench>("Animation Workbench");
 
     AnimatorController controller;
