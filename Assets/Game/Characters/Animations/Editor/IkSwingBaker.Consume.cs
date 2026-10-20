@@ -21,7 +21,6 @@ public static partial class IkSwingBaker
     public static Vector3 DrinkLips = new(.03f, -.11f, .28f), DrinkTipped = new(.02f, -.03f, .3f);
     public static Vector3 DrinkUp = new(-.1f, .8f, -.6f), DrinkTippedUp = new(-.05f, -.45f, -.9f);
 
-    [MenuItem("Tools/LoomRoom/Items/Bake Eat and Drink")]
     public static void BakeConsume()
     {
         var rig = BuildRig();
@@ -109,7 +108,6 @@ public static partial class IkSwingBaker
         EditorUtility.SetDirty(ctrl);
     }
 
-    [MenuItem("Tools/LoomRoom/Items/Preview Eat and Drink")]
     public static void PreviewConsume()
     {
         RenderSheets(new[] { "Eat" }, ConsumeFolder, AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Game/Items/Data/Consumables/Apple.asset"), "Temp/Consume", 4);

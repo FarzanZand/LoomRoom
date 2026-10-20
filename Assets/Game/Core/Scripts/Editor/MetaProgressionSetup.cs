@@ -13,7 +13,6 @@ public static partial class MetaProgressionSetup
     const string ManagerPrefab = "Assets/Game/Core/Prefabs/ProgressionManager.prefab";
     const string SkillIcons = "Assets/Game/Art/PixelItems/Skills/Singles/";
 
-    [MenuItem("Tools/LoomRoom/Meta/Build Everything", priority = 300)]
     public static void BuildEverything()
     {
         CreateSpoils();
@@ -40,7 +39,6 @@ public static partial class MetaProgressionSetup
                     new Piece { mesh = "SM_Prop_Sack_01", at = new Vector3(-.24f, .02f, .12f), scale = .45f } }),
     };
 
-    [MenuItem("Tools/LoomRoom/Meta/Create Spoils Items", priority = 310)]
     public static void CreateSpoils() => CreateSpoils(false);
     public static void CreateSpoils(bool rebuildModels)
     {
@@ -84,7 +82,7 @@ public static partial class MetaProgressionSetup
             var item = AssetDatabase.LoadAssetAtPath<ItemData>($"{SpoilsData}/{kind.name}.asset");
             if (item != null && (rebuildModels || item.icon == null || ItemIconRenderer.NeedsUpdate(item))) ItemIconRenderer.Generate(item);
         }
-        EditorApplication.ExecuteMenuItem("Tools/LoomRoom/Sync Item Catalog");
+        ItemDatabaseAuthoring.SyncCatalog();
         AssetDatabase.SaveAssets();
         Debug.Log("Meta: spoils items ready in " + SpoilsData);
     }
@@ -181,7 +179,6 @@ public static partial class MetaProgressionSetup
 
     // ── The Progression Manager's tracks and spoils ───────────────────
 
-    [MenuItem("Tools/LoomRoom/Meta/Fill Progression Manager", priority = 311)]
     public static void FillManager()
     {
         var root = PrefabUtility.LoadPrefabContents(ManagerPrefab);

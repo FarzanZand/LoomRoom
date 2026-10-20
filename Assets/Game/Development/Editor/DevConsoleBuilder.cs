@@ -12,7 +12,6 @@ public static class DevConsoleBuilder
     const string Path = Folder + "/Dev Console.prefab";
     const string Font = "Assets/Game/UI/Fonts/PixelOperator.asset";
 
-    [MenuItem("Tools/LoomRoom/Dev/Build Dev Console")]
     public static string Build()
     {
         if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/Game/Development", "Resources");

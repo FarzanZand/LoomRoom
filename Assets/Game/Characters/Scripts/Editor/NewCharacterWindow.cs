@@ -15,9 +15,7 @@ public class NewCharacterWindow : EditorWindow
     string folder;
     bool enemy;
 
-    [MenuItem("Tools/LoomRoom/New Enemy")]
     static void NewEnemy() => Open(true, Selection.activeGameObject);
-    [MenuItem("Tools/LoomRoom/New NPC")]
     static void NewNpc() => Open(false, Selection.activeGameObject);
 
     // Right-click an enemy or NPC prefab: Create > LoomRoom > Character Variant.

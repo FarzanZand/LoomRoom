@@ -91,7 +91,6 @@ public static class InventoryLayout
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
-    [MenuItem("Tools/LoomRoom/UI/Inventory Layout")]
     public static string Run()
     {
         var log = new System.Text.StringBuilder();

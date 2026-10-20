@@ -7,14 +7,12 @@ using UnityEngine;
 // the main editor window is on. Unity can't place a window exactly on a monitor whose scaling differs from
 // the main one, and its popups sit under the taskbar, so once open the window is snapped to the monitor's
 // pixels and kept topmost through the Windows API. The Fullscreen toggle on the main toolbar (next to Debug) opens it on every Play, like a fourth
-// play mode; F11 (Tools > LoomRoom > Fullscreen Game View) opens and closes it by hand. It closes when
+// play mode; F11 (a shortcut, no menu entry) opens and closes it by hand. It closes when
 // Play mode ends.
 [InitializeOnLoad]
 public static class FullscreenGameView
 {
     const string OnPlayKey = "LoomRoom.FullscreenGameView.OnPlay";
-    const string MenuToggle = "Tools/LoomRoom/Fullscreen Game View _F11";
-    const string MenuOnPlay = "Tools/LoomRoom/Fullscreen On Play";
     const string Title = "LoomRoom Fullscreen";
     static EditorWindow window;
 
@@ -29,7 +27,7 @@ public static class FullscreenGameView
         };
     }
 
-    [MenuItem(MenuToggle, priority = 200)]
+    [UnityEditor.ShortcutManagement.Shortcut("LoomRoom/Fullscreen Game View", KeyCode.F11)]
     static void Toggle()
     {
         if (Find() != null) Close();
@@ -63,24 +61,14 @@ public static class FullscreenGameView
         return null;
     }
 
-    [MenuItem(MenuOnPlay, priority = 201)]
-    static void ToggleOnPlay() => SetOnPlay(!OnPlay);
-
     public static bool OnPlay => EditorPrefs.GetBool(OnPlayKey, false);
 
-    // From the toolbar toggle or the menu. Switched during Play, it takes effect at once.
+    // From the toolbar toggle. Switched during Play, it takes effect at once.
     public static void SetOnPlay(bool on)
     {
         EditorPrefs.SetBool(OnPlayKey, on);
         if (EditorApplication.isPlaying) { if (on) Open(); else Close(); }
         UnityEditor.Toolbars.MainToolbar.Refresh("LoomRoom/Debug");
-    }
-
-    [MenuItem(MenuOnPlay, true)]
-    static bool ToggleOnPlayCheck()
-    {
-        Menu.SetChecked(MenuOnPlay, EditorPrefs.GetBool(OnPlayKey, false));
-        return true;
     }
 
     static void Open()

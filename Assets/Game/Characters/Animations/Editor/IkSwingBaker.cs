@@ -254,7 +254,6 @@ public static partial class IkSwingBaker
             false, new[] { Event("PlaySwingAudio", 0f), Event("EnableHitbox", swing.hitOpen), Event("DisableHitbox", swing.hitClose) });
     }
 
-    [MenuItem("Tools/LoomRoom/Combat/Bake IK Swings")]
     public static void Bake()
     {
         var rig = BuildRig();
@@ -273,7 +272,6 @@ public static partial class IkSwingBaker
     // Adds the IK swing states to the RightArm layer beside the original swings. The animator's SimpleSwings
     // bool (set from CombatManager.swingSet) picks which set a new swing uses; SwingIndex picks H1 or H2.
     // Safe to run again: the IK swing states are rebuilt, the original ones only gain a SimpleSwings condition.
-    [MenuItem("Tools/LoomRoom/Combat/Wire IK Swings")]
     public static void Wire()
     {
         var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(Controller);
@@ -379,7 +377,6 @@ public static partial class IkSwingBaker
     // ── Previews ──────────────────────────────────────────────────────
 
     // Renders the baked clips from the player's eye into PNG strips in Temp/IkSwings, to check the poses.
-    [MenuItem("Tools/LoomRoom/Combat/Preview IK Swings")]
     public static void Preview() => RenderSheets(new[] { "Attack_Windup_H1", "Attack_Release_H1", "Attack_Windup_H2", "Attack_Release_H2" }, Folder,
         AssetDatabase.LoadAssetAtPath<ItemData>("Assets/Game/Items/Data/Weapons/Bronze Sword.asset"), "Temp/IkSwings");
 

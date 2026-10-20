@@ -82,7 +82,6 @@ public static partial class UnrealComboConverter
     static readonly string[] ComboNames = { "Combo swing left", "Combo swing right", "Combo stab" };
     static string StyleClip(Style style, string combo) => style.prefix + combo.Substring("Combo".Length);
 
-    [MenuItem("Tools/LoomRoom/Characters/Make Classic Swings")]
     public static void MakeClassicMenu() => Debug.Log("[Classic] " + MakeClassic());
 
     public static string MakeClassic()

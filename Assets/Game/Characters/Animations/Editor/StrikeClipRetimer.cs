@@ -28,10 +28,8 @@ public static class StrikeClipRetimer
         new Plan { clip = "Attack_Swing_Heavy", state = "Attack_HeavyRelease", from = .18f, to = .34f, newTo = .50f, swing = .14f, open = .21f, close = .47f },
     };
 
-    [MenuItem("Tools/LoomRoom/Combat/Make Strike Clips")]
     public static void MakeMenu() => Debug.Log("[StrikeClips] " + Make());
 
-    [MenuItem("Tools/LoomRoom/Combat/Use Original Swing Clips")]
     public static void OriginalMenu() => Debug.Log("[StrikeClips] " + Assign(false));
 
     public static string Make()

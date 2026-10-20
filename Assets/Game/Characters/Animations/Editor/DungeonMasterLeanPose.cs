@@ -22,7 +22,6 @@ public static class DungeonMasterLeanPose
         "LeftHand.Thumb.1 Stretched:=.2;LeftHand.Index.1 Stretched:=.2;LeftHand.Index.2 Stretched:=.2;LeftHand.Index.3 Stretched:=.2;LeftHand.Middle.1 Stretched:=.2;LeftHand.Middle.2 Stretched:=.2;LeftHand.Middle.3 Stretched:=.2";
     public static float Breathe = .03f;
 
-    [MenuItem("Tools/LoomRoom/Characters/Make DM Lean Pose")]
     public static void MakeMenu() => Debug.Log("[DM lean] " + Make());
 
     public static string Make()

@@ -21,7 +21,6 @@ public static class MainMenuRuins
     const float TextureWidth = 256f, TextureHeight = 192f, CourseTexels = 32f;
     static float Course => CourseTexels / Texels;
 
-    [MenuItem("Tools/LoomRoom/UI/Rebuild Main Menu Ruins")]
     static void RebuildMenu()
     {
         var set = GameObject.Find("Set");

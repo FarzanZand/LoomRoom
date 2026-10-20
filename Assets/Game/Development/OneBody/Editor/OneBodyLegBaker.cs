@@ -39,7 +39,6 @@ public static class OneBodyLegBaker
         new Take { name = "Legs In Air", source = "JumpInAir", loop = true },
     };
 
-    [MenuItem("Tools/LoomRoom/R&D/One Body/Bake Legs")]
     public static string Bake()
     {
         var log = new System.Text.StringBuilder();

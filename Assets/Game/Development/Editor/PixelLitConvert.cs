@@ -13,7 +13,6 @@ public static class PixelLitConvert
     const string LibraryPath = "Assets/Game/Rendering/PixelLook/Pixel Look Library.asset";
     static readonly string[] Convertible = { "Universal Render Pipeline/Lit", "Universal Render Pipeline/Simple Lit", "Synty/Generic_Basic", "Universal Render Pipeline/Baked Lit" };
 
-    [MenuItem("Tools/LoomRoom/Pixel Look/Register Pixel Lighting Materials")]
     public static void RegisterMenu() => Debug.Log("[PixelLitConvert] " + Register());
 
     public static string Register()
@@ -57,7 +56,6 @@ public static class PixelLitConvert
     // (_BaseTexels) as give its world's density (the library's Texel size settings) where it is used, measured on every
     // renderer in the scene and in the game's prefabs. Only ever coarser, never sharper than the texture; materials
     // used nowhere it can see (the dungeon walls, built at run time) and non-square textures keep all their texels.
-    [MenuItem("Tools/LoomRoom/Pixel Look/Even Out Texel Sizes")]
     public static void EvenOutMenu() => Debug.Log("[PixelLitConvert] " + EvenOut());
 
     public static string EvenOut()

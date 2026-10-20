@@ -73,15 +73,11 @@ public static class ClipRecorder
         return LastFile;
     }
 
-    [MenuItem("Tools/LoomRoom/Recording/Start Vertical Clip (1080x1920)")]
     static void StartVertical() => Begin("Clip");
 
-    [MenuItem("Tools/LoomRoom/Recording/Start Wide Clip (1920x1080)")]
     static void StartWide() => Begin("Clip", 1920, 1080);
 
-    [MenuItem("Tools/LoomRoom/Recording/Stop Clip")]
     static void Stop() => End();
 
-    [MenuItem("Tools/LoomRoom/Recording/Open Videos Folder")]
     static void OpenFolder() { Directory.CreateDirectory(Folder); EditorUtility.RevealInFinder(Folder); }
 }

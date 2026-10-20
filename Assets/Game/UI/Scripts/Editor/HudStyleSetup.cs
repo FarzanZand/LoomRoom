@@ -13,7 +13,6 @@ public static class HudStyleSetup
     static readonly string[] Roots = { "UI/Canvas/HotbarUI", "UI/Canvas/PlayerVitals", "UI/Canvas/Experience", "UI/Canvas/Left Hand HUD" };
     static readonly Color Gold = new(.86f, .7f, .38f);
 
-    [MenuItem("Tools/LoomRoom/UI/Set Up HUD Styles")]
     public static void SetUp()
     {
         var frameImporter = (TextureImporter)AssetImporter.GetAtPath(SlotFrame);

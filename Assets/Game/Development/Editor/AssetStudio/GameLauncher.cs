@@ -20,7 +20,6 @@ public static class GameLauncher
         if (SessionState.GetBool(PlayWhenReadyKey, false)) EditorApplication.update += PlayWhenReady;
         // A toolbar layout saved before the button existed keeps it hidden: show it once per machine (hiding it by
         // hand afterwards sticks).
-        if (!EditorPrefs.GetBool(ToolbarShownKey, false)) EditorApplication.delayCall += ShowToolbarButtonOnce;
         EditorApplication.update += RunPending;
     }
 
@@ -113,21 +112,6 @@ public static class GameLauncher
         DebugDungeonToolbar.StartDungeon();
         return $"Generating {level.name} floor 1.";
     }
-
-    const string ToolbarShownKey = "LoomRoom.Launcher.ToolbarButtonShown";
-    static void ShowToolbarButtonOnce()
-    {
-        var show = typeof(MainToolbar).GetMethod("SetDisplayedAll", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
-        if (show == null) return;
-        show.Invoke(null, new object[] { "LoomRoom/Asset Studio", true });
-        EditorPrefs.SetBool(ToolbarShownKey, true);
-    }
-
-    [MainToolbarElement("LoomRoom/Asset Studio", defaultDockPosition = MainToolbarDockPosition.Middle, defaultDockIndex = 0)]
-    public static IEnumerable<MainToolbarElement> ToolbarButton() => new MainToolbarElement[]
-    {
-        new MainToolbarButton(new MainToolbarContent("Asset Studio", "Open Asset Studio: the game's whole content library, previews, inspectors and requests to Main."), () => AssetStudioWindow.Open()),
-    };
 
     // Plays the game: Room.unity open (asking to save other open changes first), then Play.
     public static void Play()
