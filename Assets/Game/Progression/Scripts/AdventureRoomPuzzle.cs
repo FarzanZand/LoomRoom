@@ -45,6 +45,9 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
     {
         if (hint == null) hint = CopySheetHint();
         if (hint != null) hint.enabled = false;
+        hintIntensity = CharacterSheetTable.ReachDown(hint, transform, hintIntensity);
+        // The puzzle lies on the memorial table: the outline goes round the table, which reads from across the room.
+        glow = (transform.parent != null ? transform.parent.gameObject : gameObject).AddComponent<QuestGlow>();
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged += OnFlag;
         Refresh();
     }
@@ -61,11 +64,14 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
         return light;
     }
 
+    QuestGlow glow;
+
     // Brighter and quicker than a plain hint, like the sheet's while its quest holds the run back.
     void Update()
     {
-        if (hint == null) return;
         bool on = TileReady;
+        if (glow != null) glow.Show(on);
+        if (hint == null) return;
         if (hint.enabled != on) hint.enabled = on;
         if (on) hint.intensity = hintIntensity * 1.4f * (.65f + .35f * Mathf.Sin(Time.time * 3f));
     }
@@ -103,14 +109,40 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
         MessageLog.Post(text, MessageKind.Lore);
     }
 
+    // The tiles on the table, each told how a press went (AdventurePuzzleButton: a push, green when right, a red flash
+    // and every lit tile dark again when wrong).
+    AdventurePuzzleButton[] buttons;
+    AdventurePuzzleButton[] Buttons
+    {
+        get
+        {
+            if (buttons == null || buttons.Length == 0)
+                buttons = System.Array.FindAll(FindObjectsByType<AdventurePuzzleButton>(FindObjectsInactive.Include), b => b.puzzle == this);
+            return buttons;
+        }
+    }
+    AdventurePuzzleButton ButtonFor(int symbol) => System.Array.Find(Buttons, b => b.symbol == symbol && b.gameObject.activeInHierarchy);
+
     public void Press(int symbol)
     {
         if (!Revealed || Solved || solution.Length == 0) return;
+        var pressed = ButtonFor(symbol);
+        if (pressed != null) pressed.Pulse();
         if (!Complete) { NotificationUI.Show(missingMessage); return; }
-        if (solution[step] != symbol) { step = 0; Refresh(); NotificationUI.Show("Wrong order. Start again."); return; }
+        if (solution[step] != symbol)
+        {
+            step = 0;
+            Refresh();
+            foreach (var b in Buttons) if (b != pressed) b.Light(false);
+            if (pressed != null) pressed.Wrong();
+            NotificationUI.Show("Wrong order. Start again.");
+            return;
+        }
         step++;
         Refresh();
+        if (pressed != null) pressed.Light(true);
         if (step < solution.Length) { NotificationUI.Show($"{symbols[symbol]}  {step} / {solution.Length}"); return; }
+        foreach (var b in Buttons) b.Light(true);
         ProgressionManager.Instance.SetFlag(unlockFlag);
         NotificationUI.Show($"{unlockedClassName} unlocked");
         MessageLog.Post($"{unlockedClassName} unlocked. You can pick it at the table.", MessageKind.Good);
