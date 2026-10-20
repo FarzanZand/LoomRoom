@@ -590,6 +590,26 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Seconds before a corpse is removed. 0 keeps corpses for the whole floor.")]
     [Min(0)] public float corpseLifetime = 0f;
 
+    // ── Death: Player death ──
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Player death")]
+    [Tooltip("The player's death seen from the eyes: the view drops to the floor and tips onto one side, the arms fall out of view (PlayerDeathFall).")]
+    public bool playerDeathFall = true;
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Player death")]
+    [Tooltip("Real seconds from the killing blow to lying on the floor (the death's slow motion doesn't stretch it).")]
+    [Min(.05f)] public float deathFallSeconds = .9f;
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Player death")]
+    [Tooltip("Height of the eyes above the feet once fallen (metres).")]
+    [Min(0)] public float deathFallEyeHeight = .28f;
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Player death")]
+    [Tooltip("Degrees the view tips onto its side (left or right at random).")]
+    public float deathFallRoll = 72f;
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Player death")]
+    [Tooltip("Degrees the view tips down toward the floor as it falls (negative looks up).")]
+    public float deathFallPitch = 0f;
+    [TabGroup("Tabs", "Death"), FoldoutGroup("Tabs/Death/Player death")]
+    [Tooltip("Metres the arms and held items drop out of view.")]
+    [Min(0)] public float deathFallArmsDrop = 1.2f;
+
     readonly RaycastHit[] obstructionHits = new RaycastHit[64];
     public bool HasMeleeLineOfSight(Character source,Character victim,Vector3 contact) =>
         HasMeleeLineOfSight(source,victim!=null ? victim.transform : null,contact);

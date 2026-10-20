@@ -118,6 +118,17 @@ public class DungeonMaster : Singleton<DungeonMaster>
     {
         queue.Clear(); pendingClip = null;
         if (running != null) { StopCoroutine(running); running = null; }
+        StopVoice();
+    }
+
+    // The voice clip or mumble of the line being said, stopped when the line is skipped or dropped.
+    AudioSource voiceSource;
+    AudioClip voiceClip;
+    public void StopVoice()
+    {
+        if (voiceSource != null && voiceSource.isPlaying && voiceSource.clip == voiceClip) voiceSource.Stop();
+        voiceSource = null; voiceClip = null;
+        if (AudioManager.HasInstance) AudioManager.Instance.StopMumble();
     }
 
     // Lines show over full-screen menus while this is on (the run recap's closing line). Turning it on also drops what
@@ -157,7 +168,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
             // gamepad South moves on to the next line.
             for (float t = 0f; t < pause; t += Time.unscaledDeltaTime)
             {
-                if (t > .2f && Skippable && InputManager.HasInstance && InputManager.Instance.SkipLinePressed) break;
+                if (t > .2f && Skippable && InputManager.HasInstance && InputManager.Instance.SkipLinePressed) { StopVoice(); break; }
                 yield return null;
             }
         }
@@ -181,9 +192,11 @@ public class DungeonMaster : Singleton<DungeonMaster>
         float speaking = .5f;
         if (AudioManager.HasInstance)
         {
+            StopVoice();   // a new line never talks over the last one's voice
             AudioSource voice = null;
             if (line.voice != null) voice = AudioManager.Instance.PlayUIData(line.voice);
             else if (pendingClip != null) { voice = AudioManager.Instance.PlayUI(pendingClip); pendingClip = null; }
+            if (voice != null) { voiceSource = voice; voiceClip = voice.clip; }
             if (voice != null && voice.clip != null) speaking = voice.clip.length;
             else if (line.mumble) speaking = Mumble(line.text);
         }
@@ -255,5 +268,5 @@ public class DungeonMaster : Singleton<DungeonMaster>
         Show(MessageLog.Format(entry), entry.kind == MessageKind.Kill ? killColor : eventColor);
     }
 
-    void OnDisable() { if (MessageLog.HasInstance) MessageLog.Instance.Posted -= OnLog; if (running != null) StopCoroutine(running); running = null; queue.Clear(); lines.Clear(); dirty = true; if (label != null) label.text = ""; }
+    void OnDisable() { if (MessageLog.HasInstance) MessageLog.Instance.Posted -= OnLog; if (running != null) StopCoroutine(running); running = null; queue.Clear(); lines.Clear(); dirty = true; if (label != null) label.text = ""; StopVoice(); }
 }

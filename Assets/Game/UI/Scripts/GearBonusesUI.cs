@@ -15,7 +15,7 @@ public class GearBonusesUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     {
         StatType.CriticalChance, StatType.BackstabDamage, StatType.KillHeal, StatType.DamageToSkeletons, StatType.DamageToBeasts,
         StatType.DamageToSlimes, StatType.FireCircleOnHit, StatType.SpellDamage, StatType.ShieldBashDamage, StatType.LightRadius,
-        StatType.QuietSteps, StatType.GoldFind, StatType.SwordsSkill, StatType.MacesSkill, StatType.BlockingSkill,
+        StatType.GoldFind, StatType.SwordsSkill, StatType.MacesSkill, StatType.BlockingSkill,
         StatType.MoveSpeed, StatType.AttackSpeed, StatType.ManaRegen,
     };
 

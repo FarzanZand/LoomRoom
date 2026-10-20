@@ -175,6 +175,7 @@ public partial class IntroController
         {
             // No line before a roll: the attribute's name is on the sheet, the dice are thrown straight away.
             yield return WaitForRoll(i == 0);
+            ClearDice();   // the last throw's dice stay in view while he talks, until the next throw
             int total = 0;
             yield return Roll(3, t => total = t);
             rolls[i] = total;
@@ -183,10 +184,13 @@ public partial class IntroController
             if (pool.Length > 0)
             {
                 var line = pool[Random.Range(0, pool.Length)];
-                if (line != null && !line.IsEmpty) yield return SayAll(new[] { line.With(line.text.Replace("{n}", total.ToString())) });
+                // He comments, but the next throw doesn't wait for him to finish: his line stays up while the player rolls on.
+                if (line != null && !line.IsEmpty) yield return SayAll(new[] { line.With(line.text.Replace("{n}", total.ToString())) }, false);
             }
-            ClearDice();
         }
+        // The last throw's dice stay on the table through the figures until the dungeon is built (or the player stands up).
+        if (diceTray != null) diceTray.SetActive(false);
+        if (RunManager.HasInstance) { RunManager.Instance.RunStarted -= ClearDiceForRun; RunManager.Instance.RunStarted += ClearDiceForRun; }
         if (InputManager.HasInstance) InputManager.Instance.SubmitPressed -= OnSubmit;
         PickFigures();
         // The figures come out while the closing line is up.
@@ -249,6 +253,7 @@ public partial class IntroController
     // The player leaves the table (a run starts, or they stand up): the sheet is put away.
     public void EndSheetAtTable()
     {
+        ClearDice();
         if (!sheetAtTable) return;
         sheetAtTable = false;
         if (sheet != null) sheet.Hide();
@@ -368,6 +373,12 @@ public partial class IntroController
             yield return new WaitForSeconds(delay);
             AudioManager.Instance.PlaySFX2D(diceSounds[Random.Range(0, diceSounds.Length)], .35f, .1f);
         }
+    }
+
+    void ClearDiceForRun()
+    {
+        if (RunManager.HasInstance) RunManager.Instance.RunStarted -= ClearDiceForRun;
+        ClearDice();
     }
 
     // The dice are scooped up: each shrinks away in turn.

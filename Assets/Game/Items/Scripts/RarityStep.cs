@@ -2,12 +2,12 @@ using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// One gear rarity above Plain (InventoryManager > Rarity): how many properties it rolls, how much it adds to the
+// One gear rarity above Common (InventoryManager > Rarity): how many properties it rolls, how much it adds to the
 // item's main number, its price, and how likely gear comes out this rarity by floor of the run.
 [Serializable]
 public class RarityStep
 {
-    [HorizontalGroup("Top"), HideLabel] public ItemRarity rarity = ItemRarity.Fine;
+    [HorizontalGroup("Top"), HideLabel] public ItemRarity rarity = ItemRarity.Uncommon;
     [HorizontalGroup("Top"), LabelWidth(70), MinMaxSlider(0, 6, true), Tooltip("How many properties it rolls (ItemPropertyTable).")]
     public Vector2Int properties = new(1, 1);
     [Range(0, 2), Tooltip("Added to the item's main number (a weapon's damage, a shield's or armour's armour), as a share of the plain item's: 0.15 = +15%, rounded up. Whole numbers stay whole.")]

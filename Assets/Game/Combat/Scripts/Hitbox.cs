@@ -186,8 +186,14 @@ public class Hitbox : MonoBehaviour
         var target = other.GetComponentInParent<Character>();
         if (target != null)
         {
+            if (owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction))
+            {
+                // A friendly character takes no damage, but the player can still provoke one (the merchant, who has
+                // no health of his own, so this comes before the IsAlive check).
+                if (ProvokableNpc.TryProvoke(target, owner)) hitThisSwing.Add(damageable);
+                return;
+            }
             if (!target.IsAlive) return;
-            if (owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction)) return;
         }
 
         // Where the blade meets the body: the point on the blade's line nearest the body, then the body's surface there.

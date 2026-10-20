@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
-// Variants of an item asset: a rarity with its rolled properties (Fine, Superior, Masterwork), on one runtime copy of the asset.
+// Variants of an item asset: a rarity with its rolled properties (Uncommon, Rare, Unique), on one runtime copy of the asset.
 // Each distinct variant is one shared object, so the bag, hotbar and equipment treat it like any other item. It is saved
 // as its id: "iron_sword" or "iron_sword~3:crit=7,speed=11".
 public partial class ItemData
@@ -118,7 +118,10 @@ public partial class ItemData
         if (roll == null) return root;
 
         int colon = roll.IndexOf(':');
-        var rarity = colon > 0 && int.TryParse(roll.Substring(0, colon), out int r) && System.Enum.IsDefined(typeof(ItemRarity), r) ? (ItemRarity)r : root.rarity;
+        // Retired numbers from older saves: 1 (the tomes' old Rare) is Rare, 7 (Legendary) is Unique.
+        int r = -1;
+        if (colon > 0 && int.TryParse(roll.Substring(0, colon), out r)) r = r == 1 ? (int)ItemRarity.Rare : r == 7 ? (int)ItemRarity.Unique : r;
+        var rarity = System.Enum.IsDefined(typeof(ItemRarity), r) ? (ItemRarity)r : root.rarity;
         var properties = new List<RolledProperty>();
         if (colon >= 0 && colon < roll.Length - 1)
             foreach (var part in roll.Substring(colon + 1).Split(','))

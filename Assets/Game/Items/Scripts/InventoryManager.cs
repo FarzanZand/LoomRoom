@@ -46,15 +46,13 @@ public class InventoryManager : Singleton<InventoryManager>
     [Header("Rarity")]
     [Tooltip("The properties rolled gear can have, their slots and their values by floor (Items/Data/Item Properties).")]
     public ItemPropertyTable itemProperties;
-    [Tooltip("Gear rarities above Plain, worst first: properties, bonus on the main number, price, and chance by floor. Plain is whatever is left. Every loot source and merchant rolls from here.")]
+    [Tooltip("Gear rarities above Common, worst first: properties, bonus on the main number, price, and chance by floor. Common is whatever is left. Every loot source and merchant rolls from here.")]
     [ListDrawerSettings(ShowFoldout = false, ListElementLabelName = "rarity")]
     public List<RarityStep> rarities = new()
     {
-        new RarityStep { rarity = ItemRarity.Fine, properties = new(1, 1), baseBonus = .2f, priceMultiplier = 1.6f, chance = .25f, chancePerFloor = 0f },
-        new RarityStep { rarity = ItemRarity.Superior, properties = new(2, 2), baseBonus = .4f, priceMultiplier = 2.5f, chance = .15f, chancePerFloor = 0f },
-        new RarityStep { rarity = ItemRarity.Masterwork, properties = new(3, 3), baseBonus = .6f, priceMultiplier = 4f, chance = .08f, chancePerFloor = 0f },
-        // Legendary: the highest, never rolled by chance; only given (the weeping witch, the Skeleton Party's chest).
-        new RarityStep { rarity = ItemRarity.Legendary, properties = new(4, 4), baseBonus = .8f, priceMultiplier = 6f, chance = 0f, chancePerFloor = 0f },
+        new RarityStep { rarity = ItemRarity.Uncommon, properties = new(1, 1), baseBonus = .2f, priceMultiplier = 1.6f, chance = .25f, chancePerFloor = 0f },
+        new RarityStep { rarity = ItemRarity.Rare, properties = new(2, 2), baseBonus = .4f, priceMultiplier = 2.5f, chance = .15f, chancePerFloor = 0f },
+        new RarityStep { rarity = ItemRarity.Unique, properties = new(3, 3), baseBonus = .6f, priceMultiplier = 4f, chance = .08f, chancePerFloor = 0f },
     };
     [Min(0), Tooltip("Times every rarity chance for a merchant's gear (a better pick than the floor's loot; its price follows the rarity).")] public float merchantRarity = 1.3f;
 
@@ -77,13 +75,13 @@ public class InventoryManager : Singleton<InventoryManager>
                     float p = Mathf.Min(rest, step.ChanceOn(floor) * scale * fit); rest -= p;
                     parts = $"  {step.rarity} {p * 100f:0.#}%" + parts;
                 }
-                lines.Add($"Floor {floor}: Plain {rest * 100f:0.#}%" + parts);
+                lines.Add($"Floor {floor}: Common {rest * 100f:0.#}%" + parts);
             }
             return string.Join("\n", lines);
         }
     }
 
-    // A rarity's step, or null for Plain and the rarities that are not rolled (tomes, Relics, spoils).
+    // A rarity's step, or null for Common and the rarities that are not rolled (tomes, Relics, spoils).
     public static RarityStep StepFor(ItemRarity rarity)
     {
         if (!HasInstance || Instance.rarities == null) return null;
@@ -91,28 +89,22 @@ public class InventoryManager : Singleton<InventoryManager>
         return null;
     }
 
-    // The next rarity up from this one (the shrine's raise), or Plain when there is none. Legendary is never reached
-    // this way: it is only given.
+    // The next rarity up from this one (the shrine's raise), or Common when there is none (Unique is the top).
     public static ItemRarity NextRarity(ItemRarity rarity)
     {
-        var next = NextStep(rarity);
-        return next == ItemRarity.Legendary ? ItemRarity.Plain : next;
-    }
-    static ItemRarity NextStep(ItemRarity rarity)
-    {
-        if (!HasInstance || Instance.rarities == null) return ItemRarity.Plain;
+        if (!HasInstance || Instance.rarities == null) return ItemRarity.Common;
         var list = Instance.rarities;
-        if (rarity == ItemRarity.Plain) return list.Count > 0 && list[0] != null ? list[0].rarity : ItemRarity.Plain;
+        if (rarity == ItemRarity.Common) return list.Count > 0 && list[0] != null ? list[0].rarity : ItemRarity.Common;
         for (int i = 0; i < list.Count - 1; i++) if (list[i] != null && list[i].rarity == rarity && list[i + 1] != null) return list[i + 1].rarity;
-        return ItemRarity.Plain;
+        return ItemRarity.Common;
     }
 
     // A random piece of gear from the catalog (weapon, shield or armour, tier 1 to Max Tier, by loot weight) rolled at this
-    // rarity for the floor: a given reward (the weeping witch's Legendary, the Skeleton Party's chest). Null without a catalog.
+    // rarity for the floor: a given reward (the weeping witch's Unique, the Skeleton Party's chest). Null without a catalog.
     public static ItemData GivenGear(ItemRarity rarity, int maxTier, int floor, System.Random random)
     {
         if (!HasInstance || Instance.itemCatalog == null) return null;
-        bool Fits(ItemData i) => i != null && i.tier > 0 && i.tier <= maxTier && i.rarity == ItemRarity.Plain && i.IsGear && Instance.CanDropLoot(i);
+        bool Fits(ItemData i) => i != null && i.tier > 0 && i.tier <= maxTier && i.rarity == ItemRarity.Common && i.IsGear && Instance.CanDropLoot(i);
         float total = 0f;
         foreach (var i in Instance.itemCatalog) if (Fits(i)) total += Mathf.Max(.01f, i.lootWeight);
         if (total <= 0f) return null;
@@ -125,7 +117,7 @@ public class InventoryManager : Singleton<InventoryManager>
             if ((roll -= Mathf.Max(.01f, i.lootWeight)) < 0) break;
         }
         var table = ItemPropertyTable.Current;
-        return gear == null || table == null || rarity == ItemRarity.Plain ? gear : gear.Rolled(rarity, table.Roll(gear, rarity, Mathf.Max(1, floor), random));
+        return gear == null || table == null || rarity == ItemRarity.Common ? gear : gear.Rolled(rarity, table.Roll(gear, rarity, Mathf.Max(1, floor), random));
     }
 
     // The rarity multiplier of a loot source (Drops by source).
@@ -148,11 +140,11 @@ public class InventoryManager : Singleton<InventoryManager>
             sum += step.ChanceOn(floor) * scale * fit;
             if (roll < sum) return step.rarity;
         }
-        return ItemRarity.Plain;
+        return ItemRarity.Common;
     }
 
     [Header("Loot balance (whole game)")]
-    [Min(0), Tooltip("Times every chance of gear coming out above Plain, in every loot source and merchant (the shrine's raise is not affected). 1 = as set under Rarity.")]
+    [Min(0), Tooltip("Times every chance of gear coming out above Common, in every loot source and merchant (the shrine's raise is not affected). 1 = as set under Rarity.")]
     public float rarityChanceMultiplier = 1f;
     [Min(0), Tooltip("Times every chance of an item dropping from enemies and breakables: gear and recovery chances of loot profiles, an enemy's drop chance and pool chances of hand-listed tables. Chests keep their own. 1 = as set on each table.")]
     public float dropChanceMultiplier = 1f;
@@ -191,7 +183,7 @@ public class InventoryManager : Singleton<InventoryManager>
         if (!filtered) return true;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         if (player == null) return true;
-        // Any variant (Fine, Masterwork) of the item counts as owning it.
+        // Any variant (Uncommon, Unique) of the item counts as owning it.
         bool Owns(Inventory inventory) { if (inventory == null) return false; for (int i = 0; i < inventory.SlotCount; i++) { var stack = inventory[i]; if (stack != null && !stack.IsEmpty && stack.item.BaseItem == item.BaseItem) return true; } return false; }
         if (Owns(player.Bag) || Owns(player.Hotbar)) return false;
         if (player.Equipment != null)

@@ -24,7 +24,7 @@ public class ItemPropertyDef
     public float statPerPoint = 1f;
     public GearSlots slots;
     [Min(0)] public float weight = 1f;
-    [Tooltip("The rolled value on floors 1, 2, 3 and 4 of a run (Masterworks roll one of theirs a floor deeper).")]
+    [Tooltip("The rolled value on floors 1, 2, 3 and 4 of a run (Uniques roll one of theirs a floor deeper).")]
     public float[] byFloor = { 1, 2, 3, 4 };
     [Tooltip("Added for each floor past the last value, for longer dungeons.")]
     public float growthPerFloor;
@@ -40,11 +40,11 @@ public class ItemPropertyDef
     }
 }
 
-// Every property rolled gear (Fine, Superior, Masterwork) can roll (Items/Data/Item Properties). Lives on InventoryManager.
+// Every property rolled gear (Uncommon, Rare, Unique) can roll (Items/Data/Item Properties). Lives on InventoryManager.
 [CreateAssetMenu(menuName = "Items/Item Property Table")]
 public class ItemPropertyTable : ScriptableObject
 {
-    // How many properties each rarity rolls and its price are on InventoryManager > Rarity. A Masterwork's first property is a floor deeper.
+    // How many properties each rarity rolls and its price are on InventoryManager > Rarity. A Unique's first property is a floor deeper.
     [Range(0, 1), Tooltip("Chance each property rolls one floor lower than the floor it drops on.")] public float lowerChance = .3f;
     [ListDrawerSettings(ShowFoldout = false, ListElementLabelName = "id")]
     public List<ItemPropertyDef> properties = new();
@@ -76,7 +76,7 @@ public class ItemPropertyTable : ScriptableObject
         };
     }
 
-    // The properties of one Fine or Masterwork drop on a floor, drawn from the random the loot uses (seeded).
+    // The properties of one Uncommon, Rare or Unique drop on a floor, drawn from the random the loot uses (seeded).
     public RolledProperty[] Roll(ItemData gear, ItemRarity rarity, int floor, System.Random random)
     {
         var slot = SlotOf(gear);
@@ -99,7 +99,7 @@ public class ItemPropertyTable : ScriptableObject
             foreach (var p in pool) { roll -= p.weight; if (roll < 0) { pick = p; break; } }
             pool.Remove(pick);
             pool.RemoveAll(p => p.stat == pick.stat);
-            int step = floor - 1 - (random.NextDouble() < lowerChance ? 1 : 0) + (rarity == ItemRarity.Masterwork && i == 0 ? 1 : 0) + (rarity == ItemRarity.Legendary && i < 2 ? 1 : 0);
+            int step = floor - 1 - (random.NextDouble() < lowerChance ? 1 : 0) + (rarity == ItemRarity.Unique && i == 0 ? 1 : 0);
             rolled.Add(new RolledProperty(pick.id, pick.ValueAt(Mathf.Max(0, step))));
         }
         return rolled.ToArray();

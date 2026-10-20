@@ -66,13 +66,31 @@ public partial class AudioManager
 
     public float Mumble(string text, MumbleVoice voice)
     {
+        StopMumble();
         float seconds = PlanMumble(text, voice, mumbleSteps);
         List<MumbleStep> later = null;
         foreach (var step in mumbleSteps)
-            if (step.at <= 0f) PlayUI(step.clip, step.volume, step.pitch);
+            if (step.at <= 0f) Mumbled(PlayUI(step.clip, step.volume, step.pitch), step.clip);
             else (later ??= new List<MumbleStep>()).Add(step);
-        if (later != null) StartCoroutine(PlayLater(later));
+        if (later != null) mumbleLater = StartCoroutine(PlayLater(later));
         return seconds;
+    }
+
+    // A skipped or dropped line takes its mumble with it: the syllables still to come and what is playing now.
+    public void StopMumble()
+    {
+        if (mumbleLater != null) { StopCoroutine(mumbleLater); mumbleLater = null; }
+        foreach (var (source, clip) in mumblePlaying)
+            if (source != null && source.isPlaying && source.clip == clip) source.Stop();
+        mumblePlaying.Clear();
+    }
+
+    Coroutine mumbleLater;
+    readonly List<(AudioSource source, AudioClip clip)> mumblePlaying = new();
+    void Mumbled(AudioSource source, AudioClip clip)
+    {
+        mumblePlaying.RemoveAll(p => p.source == null || !p.source.isPlaying || p.source.clip != p.clip);
+        if (source != null) mumblePlaying.Add((source, clip));
     }
 
     IEnumerator PlayLater(List<MumbleStep> steps)
@@ -81,8 +99,9 @@ public partial class AudioManager
         foreach (var step in steps)
         {
             while (Time.unscaledTime - start < step.at) yield return null;
-            PlayUI(step.clip, step.volume, step.pitch);
+            Mumbled(PlayUI(step.clip, step.volume, step.pitch), step.clip);
         }
+        mumbleLater = null;
     }
 
     // Fills steps with what to play and when; returns the seconds of speech (.5 when there is nothing to play).

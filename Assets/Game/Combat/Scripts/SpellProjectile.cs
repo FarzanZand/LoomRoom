@@ -148,8 +148,13 @@ public class SpellProjectile : MonoBehaviour
             var target = col.GetComponentInParent<Character>();
             if (target != null)
             {
-                if (target == owner || !target.IsAlive || !seen.Add(target)) continue;
-                if (only != null ? target != only : owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction)) continue;
+                if (target == owner || !seen.Add(target)) continue;
+                if (only != null ? target != only : owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction))
+                {
+                    if (only == null) ProvokableNpc.TryProvoke(target, owner);   // a spell on the merchant provokes him too (he has no health)
+                    continue;
+                }
+                if (!target.IsAlive) continue;
                 var aim = col.bounds.center;
                 if (Blocked(centre, aim, target.transform, mask)) continue;
                 target.Stats.TakeDamage(new DamageInfo { Amount = power, Source = owner, SourceName = sourceName, Magic = true, HitPoint = aim, Direction = Flat(aim - centre) });
