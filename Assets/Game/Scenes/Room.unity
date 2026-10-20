@@ -295527,6 +295527,7 @@ MonoBehaviour:
   uncommon: {r: 0.09, g: 0.42, b: 0.29, a: 1}
   rare: {r: 0.12, g: 0.3, b: 0.64, a: 1}
   unique: {r: 0.52, g: 0.34, b: 0.06, a: 1}
+  legendary: {r: 0.75, g: 0.08, b: 0.06, a: 1}
   relic: {r: 0.58, g: 0.17, b: 0.06, a: 1}
   spoils: {r: 0.58, g: 0.22, b: 0.86, a: 1}
 --- !u!114 &5441364035704603308
@@ -301895,6 +301896,12 @@ MonoBehaviour:
     baseBonus: 0.45
     priceMultiplier: 4
     chance: 0.08
+    chancePerFloor: 0
+  - rarity: 7
+    properties: {x: 4, y: 4}
+    baseBonus: 0.75
+    priceMultiplier: 6
+    chance: 0
     chancePerFloor: 0
   merchantRarity: 1.3
   rarityChanceMultiplier: 1

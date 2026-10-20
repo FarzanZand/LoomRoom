@@ -53,6 +53,8 @@ public class InventoryManager : Singleton<InventoryManager>
         new RarityStep { rarity = ItemRarity.Uncommon, properties = new(1, 1), baseBonus = .2f, priceMultiplier = 1.6f, chance = .25f, chancePerFloor = 0f },
         new RarityStep { rarity = ItemRarity.Rare, properties = new(2, 2), baseBonus = .4f, priceMultiplier = 2.5f, chance = .15f, chancePerFloor = 0f },
         new RarityStep { rarity = ItemRarity.Unique, properties = new(3, 3), baseBonus = .6f, priceMultiplier = 4f, chance = .08f, chancePerFloor = 0f },
+        // Legendary: the highest, never rolled by chance; only given (the weeping witch, the Skeleton Party's chest).
+        new RarityStep { rarity = ItemRarity.Legendary, properties = new(4, 4), baseBonus = .75f, priceMultiplier = 6f, chance = 0f, chancePerFloor = 0f },
     };
     [Min(0), Tooltip("Times every rarity chance for a merchant's gear (a better pick than the floor's loot; its price follows the rarity).")] public float merchantRarity = 1.3f;
 
@@ -89,8 +91,14 @@ public class InventoryManager : Singleton<InventoryManager>
         return null;
     }
 
-    // The next rarity up from this one (the shrine's raise), or Common when there is none (Unique is the top).
+    // The next rarity up from this one (the shrine's raise), or Common when there is none. Legendary is never reached
+    // this way: it is only given, so the shrine stops at Unique.
     public static ItemRarity NextRarity(ItemRarity rarity)
+    {
+        var next = NextStep(rarity);
+        return next == ItemRarity.Legendary ? ItemRarity.Common : next;
+    }
+    static ItemRarity NextStep(ItemRarity rarity)
     {
         if (!HasInstance || Instance.rarities == null) return ItemRarity.Common;
         var list = Instance.rarities;
@@ -100,7 +108,7 @@ public class InventoryManager : Singleton<InventoryManager>
     }
 
     // A random piece of gear from the catalog (weapon, shield or armour, tier 1 to Max Tier, by loot weight) rolled at this
-    // rarity for the floor: a given reward (the weeping witch's Unique, the Skeleton Party's chest). Null without a catalog.
+    // rarity for the floor: a given reward (the weeping witch's Legendary, the Skeleton Party's chest). Null without a catalog.
     public static ItemData GivenGear(ItemRarity rarity, int maxTier, int floor, System.Random random)
     {
         if (!HasInstance || Instance.itemCatalog == null) return null;
@@ -183,7 +191,7 @@ public class InventoryManager : Singleton<InventoryManager>
         if (!filtered) return true;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         if (player == null) return true;
-        // Any variant (Uncommon, Unique) of the item counts as owning it.
+        // Any variant (Uncommon, Legendary) of the item counts as owning it.
         bool Owns(Inventory inventory) { if (inventory == null) return false; for (int i = 0; i < inventory.SlotCount; i++) { var stack = inventory[i]; if (stack != null && !stack.IsEmpty && stack.item.BaseItem == item.BaseItem) return true; } return false; }
         if (Owns(player.Bag) || Owns(player.Hotbar)) return false;
         if (player.Equipment != null)

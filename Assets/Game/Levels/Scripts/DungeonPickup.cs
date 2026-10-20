@@ -37,6 +37,7 @@ public static class DungeonPickup
         ItemRarity.Uncommon => "itemDropFine",
         ItemRarity.Rare => "itemDropRare",
         ItemRarity.Unique => "itemDropMasterwork",
+        ItemRarity.Legendary => "itemDropLegendary",
         ItemRarity.Relic => "itemDropRelic",
         ItemRarity.Spoils => "itemDropSpoils",
         _ => DropKey,
@@ -46,8 +47,8 @@ public static class DungeonPickup
     {
         if (!AudioManager.HasInstance) return;
         // The keys keep their old names (Uncommon was Fine, Unique was Masterwork; Rare is the spell tomes' old sound). Rare falls
-        // back to Uncommon's before the plain one.
-        string own = DropKeyFor(item), step = item != null && item.rarity == ItemRarity.Rare ? "itemDropFine" : DropKey;
+        // back to Uncommon's and Legendary to Unique's before the plain one.
+        string own = DropKeyFor(item), step = item != null && item.rarity == ItemRarity.Rare ? "itemDropFine" : item != null && item.rarity == ItemRarity.Legendary ? "itemDropMasterwork" : DropKey;
         if (delay <= 0f) { AudioManager.Instance.PlayFirstSFX(at, own, step, DropKey); return; }
         DOVirtual.DelayedCall(delay, () => { if (AudioManager.HasInstance) AudioManager.Instance.PlayFirstSFX(at, own, step, DropKey); });
     }

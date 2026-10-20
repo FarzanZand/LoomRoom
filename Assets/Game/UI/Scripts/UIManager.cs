@@ -93,15 +93,17 @@ public class UIManager : Singleton<UIManager>
     public HudStyle hudStyle = HudStyle.Rugged;
     public static HudStyle CurrentHudStyle => HasInstance ? Instance.hudStyle : HudStyle.Rugged;
     // Gear rarities, renamed 2026-10-20 (Plain, Fine, Superior, Masterwork, Legendary): the colours follow the usual ladder,
-    // white, green, blue, gold.
+    // white, green, blue, gold, then Legendary in red.
     [PropertyOrder(2), FormerlySerializedAs("plain"), Tooltip("Slot fill and border of Common gear and consumables: a faint white (names stay white).")] public Color common = DefaultCommon;
     public static readonly Color DefaultCommon = new(.9f, .88f, .84f);
     [PropertyOrder(2), FormerlySerializedAs("superior"), Tooltip("Slot fill, loot beam and name of Uncommon gear (green, the first step above Common).")] public Color uncommon = DefaultUncommon;
     public static readonly Color DefaultUncommon = new(.09f, .42f, .29f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Rare gear and spell tomes (blue, between Uncommon and Unique).")] public Color rare = DefaultRare;
     public static readonly Color DefaultRare = new(.12f, .3f, .64f);
-    [PropertyOrder(2), FormerlySerializedAs("masterwork"), Tooltip("Slot fill, loot beam and name of Unique gear (gold, the best step).")] public Color unique = DefaultUnique;
+    [PropertyOrder(2), FormerlySerializedAs("masterwork"), Tooltip("Slot fill, loot beam and name of Unique gear (gold, the best rolled step).")] public Color unique = DefaultUnique;
     public static readonly Color DefaultUnique = new(.52f, .34f, .06f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Legendary gear (red, the highest step; never rolled, only given).")] public Color legendary = DefaultLegendary;
+    public static readonly Color DefaultLegendary = new(.75f, .08f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Relics (hand-made items).")] public Color relic = DefaultRelic;
     public static readonly Color DefaultRelic = new(.58f, .17f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of spoils (the meta currency: monster parts and baubles).")] public Color spoils = DefaultSpoils;
@@ -116,6 +118,7 @@ public class UIManager : Singleton<UIManager>
             ItemRarity.Uncommon => ui != null ? ui.uncommon : DefaultUncommon,
             ItemRarity.Rare => ui != null ? ui.rare : DefaultRare,
             ItemRarity.Unique => ui != null ? ui.unique : DefaultUnique,
+            ItemRarity.Legendary => ui != null ? ui.legendary : DefaultLegendary,
             ItemRarity.Relic => ui != null ? ui.relic : DefaultRelic,
             ItemRarity.Spoils => ui != null ? ui.spoils : DefaultSpoils,
             _ => ui != null ? ui.common : DefaultCommon,

@@ -14,7 +14,7 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Stable save identifier; do not change after shipping.")] public string saveId;
     public WeaponCategory weaponCategory;
     [Tooltip("Makes this item a spell tome: held in the left hand, it casts this spell.")] public SpellDefinition spell;
-    [Tooltip("Gear drops Common and is rolled Uncommon, Rare or Unique by the loot (ItemPropertyTable); set Relic on a hand-made item. " +
+    [Tooltip("Gear drops Common and is rolled Uncommon, Rare or Unique by the loot (Legendary is only given) (ItemPropertyTable); set Relic on a hand-made item. " +
         "Spell tomes are Rare. Each rarity has its colour on its slot, loot beam and name (UIManager).")]
     public ItemRarity rarity;
 
@@ -40,8 +40,8 @@ public partial class ItemData : ScriptableObject
         if (border != null) border.enabled = false;
     }
     // The name with a rolled rarity in front, for text without colour (the message log): "Unique Iron Sword".
-    public string DisplayName => IsGear && (rarity == ItemRarity.Uncommon || rarity == ItemRarity.Rare || rarity == ItemRarity.Unique) ? $"{RarityName} {itemName}" : itemName;
-    public string RarityName => rarity switch { ItemRarity.Uncommon => "Uncommon", ItemRarity.Rare => "Rare", ItemRarity.Unique => "Unique", ItemRarity.Relic => "Relic", ItemRarity.Spoils => "Spoils", _ => "Common" };
+    public string DisplayName => IsGear && (rarity == ItemRarity.Uncommon || rarity == ItemRarity.Rare || rarity == ItemRarity.Unique || rarity == ItemRarity.Legendary) ? $"{RarityName} {itemName}" : itemName;
+    public string RarityName => rarity switch { ItemRarity.Uncommon => "Uncommon", ItemRarity.Rare => "Rare", ItemRarity.Unique => "Unique", ItemRarity.Legendary => "Legendary", ItemRarity.Relic => "Relic", ItemRarity.Spoils => "Spoils", _ => "Common" };
     [TextArea] public string description;
     [HorizontalGroup("IconRow")]
     [Tooltip("Bag icon, sized to the item's footprint. Generated from the item's model (Icon Source) unless custom.")]
@@ -264,7 +264,7 @@ public partial class ItemData : ScriptableObject
             lines.Add($"<size=140%><color={TextColor}>{mainText}</color></size>  <color={DimColor}>{mainLabel}</color>");
             if (IsWeapon) lines.Add($"<color={DimColor}>{SwingSpeedWord(SwingSpeed)} swings</color>");
         }
-        // The item's own stats in white, the rolled properties of an Uncommon, Rare or Unique item in blue.
+        // The item's own stats in white, the rolled properties of an Uncommon, Rare, Unique or Legendary item in blue.
         if (canBeEquipped && statModifiers != null)
             for (int i = 0; i < statModifiers.Length; i++)
             {

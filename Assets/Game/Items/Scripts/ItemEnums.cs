@@ -2,12 +2,12 @@ using System;
 
 // All values are serialized as integers. Never renumber, never reuse a retired value.
 
-// How rare an item is. Gear goes Common, Uncommon, Rare, Unique (the steps on InventoryManager > Rarity: properties
-// rolled from ItemPropertyTable, a bonus on the main number, chances), then Relic (hand-made assets). Spell tomes are Rare.
-// Each has its colour on UIManager: slot fill, loot beam and name. The numbers are the old ones (renamed 2026-10-20:
-// Plain 0 = Common, Fine 2 = Uncommon, Superior 6 = Rare, Masterwork 3 = Unique). Retired: 1 (the tomes' old Rare, now 6)
-// and 7 (Legendary, now Unique); ItemData.FromSaveId reads them back as Rare and Unique. Never reuse 1 or 7.
-public enum ItemRarity { Common = 0, Uncommon = 2, Unique = 3, Relic = 4, Spoils = 5, Rare = 6 }
+// How rare an item is. Gear goes Common, Uncommon, Rare, Unique, Legendary (the steps on InventoryManager > Rarity:
+// properties rolled from ItemPropertyTable, a bonus on the main number, chances; Legendary, the red one, is never rolled,
+// only given), then Relic (hand-made assets). Spell tomes are Rare. Each has its colour on UIManager: slot fill, loot beam
+// and name. The numbers are the old ones (renamed 2026-10-20: Plain 0 = Common, Fine 2 = Uncommon, Superior 6 = Rare,
+// Masterwork 3 = Unique). Retired: 1 (the tomes' old Rare, now 6); ItemData.FromSaveId reads it back as Rare. Never reuse 1.
+public enum ItemRarity { Common = 0, Uncommon = 2, Unique = 3, Relic = 4, Spoils = 5, Rare = 6, Legendary = 7 }
 
 // Gear slots a rolled property can appear on (ItemPropertyTable).
 [Flags]
