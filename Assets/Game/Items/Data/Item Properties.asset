@@ -158,18 +158,6 @@ MonoBehaviour:
     - 6
     - 8
     growthPerFloor: 0.5
-  - id: quiet
-    enabled: 1
-    stat: 23
-    statPerPoint: 0.01
-    slots: 100
-    weight: 1
-    byFloor:
-    - 10
-    - 15
-    - 20
-    - 25
-    growthPerFloor: 2
   - id: light
     enabled: 1
     stat: 22

@@ -236,8 +236,9 @@ public partial class DungeonGenerator
         LightUnlitRooms(torchRandom, parent);
     }
 
-    // Every room but a dark one has at least one light: a template that replaces the generated torches without
-    // lighting itself, or a room whose walls were all furnished or beside openings, gets one on any wall it has.
+    // Every room has at least one light: a template that replaces the generated torches without lighting itself, or a
+    // room whose walls were all furnished or beside openings, gets one on any wall it has; a dark room gets the level's
+    // dim Dark Room Light on the floor by a wall instead of a torch.
     void LightUnlitRooms(System.Random rng, Transform parent)
     {
         if (Board) return;
@@ -250,7 +251,8 @@ public partial class DungeonGenerator
         }
         for (int room = 0; room < Layout.rooms.Count; room++)
         {
-            if (lit.Contains(room) || LightOf(room) == DungeonRoomLight.Dark) continue;
+            bool dark = LightOf(room) == DungeonRoomLight.Dark;
+            if (lit.Contains(room) || (dark && data.darkRoomLight == null)) continue;
             (Vector2Int cell, Vector2Int dir)? best = null;
             int bestScore = -1;
             foreach (var (cell, dir, region) in wallFaces)
@@ -260,8 +262,21 @@ public partial class DungeonGenerator
                 if (score > bestScore || (score == bestScore && rng.Next(3) == 0)) { best = (cell, dir); bestScore = score; }
                 if (bestScore == 3 && rng.Next(4) == 0) break;
             }
-            if (best.HasValue) SpawnTorch(best.Value.cell, best.Value.dir, room, parent, rng);
+            if (!best.HasValue) continue;
+            if (dark) SpawnDarkRoomLight(best.Value.cell, best.Value.dir, parent);
+            else SpawnTorch(best.Value.cell, best.Value.dir, room, parent, rng);
         }
+    }
+
+    // The dark room's one light: on the floor against the wall, facing into the room, dimmed.
+    void SpawnDarkRoomLight(Vector2Int cell, Vector2Int dir, Transform parent)
+    {
+        var outward = new Vector3(dir.x, 0, dir.y);
+        var at = Cell(cell) + outward * Mathf.Max(0f, data.cellSize * .5f - .45f);
+        var go = Instantiate(data.darkRoomLight, at, Quaternion.LookRotation(-outward), parent);
+        foreach (var l in go.GetComponentsInChildren<Light>(true)) { l.intensity *= data.darkRoomLightStrength; l.range *= Mathf.Lerp(.6f, 1f, data.darkRoomLightStrength); }
+        foreach (var flicker in go.GetComponentsInChildren<TorchFlicker>(true)) flicker.Rebase();
+        furnished.Add(cell);
     }
 
     // Colour, most specific first: the socket, the room template, the room profile, the light entry, the biome's torch colour.

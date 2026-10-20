@@ -104,6 +104,8 @@ MonoBehaviour:
     shape: {fileID: 11400000, guid: b83f1b9ea222f1f4690c0e00502d6342, type: 2}
     weight: 0.6
   startingRoom: {fileID: 0}
+  pocket: 0
+  startingChestConsumable: {fileID: 0}
   authoredMap: '########################################
 
     ########################################
@@ -189,6 +191,7 @@ MonoBehaviour:
   boardVerticality: 1
   boardTileTaps: []
   boardRevealAll: 0
+  hideStartWallInReveal: 0
   boardDoorPosts: []
   boardMoundProps: []
   furnishEntranceRims: 0
@@ -218,6 +221,8 @@ MonoBehaviour:
     color: {r: 1, g: 0.6, b: 0.3, a: 1}
   torchesPerRoom: {x: 1, y: 2}
   litRoomChance: 0.7
+  darkRoomLight: {fileID: 5099884599044513661, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+  darkRoomLightStrength: 0.6
   corridorTorchChance: 0.3
   propRules:
   - prefab: {fileID: 1026660711950778362, guid: 337fb5179aa668747b05b0ca7fa0d18b, type: 3}
@@ -300,6 +305,7 @@ MonoBehaviour:
     sleepChance: 0.2
     maxSleepingPacks: 3
     pits: 1
+    playerFallsInPits: 0
     pitFallDamage: 0.25
     sunkenFloors: 1
     archerLedges: 1

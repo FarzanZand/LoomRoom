@@ -94,15 +94,15 @@ public class DungeonLootProfile : LootSource
         return max;
     }
 
-    // Plain gear comes out Fine, Superior or Masterwork by the chances on InventoryManager > Rarity for the floor, with
+    // Common gear comes out Uncommon, Rare or Unique by the chances on InventoryManager > Rarity for the floor, with
     // properties rolled for the floor (Relics are hand-made and stay as they are). sourceScale: the loot source's or the
     // merchant's multiplier, on top of the whole-game Rarity Chance Multiplier.
     public static ItemData RollRarity(ItemData gear, System.Random random, int floor, float sourceScale = 1f)
     {
         var table = ItemPropertyTable.Current;
-        if (gear == null || table == null || !gear.IsGear || gear.rarity != ItemRarity.Plain || !InventoryManager.HasInstance) return gear;
+        if (gear == null || table == null || !gear.IsGear || gear.rarity != ItemRarity.Common || !InventoryManager.HasInstance) return gear;
         var rarity = InventoryManager.Instance.RollRarity(random, Mathf.Max(1, floor), InventoryManager.RarityChanceScale * sourceScale);
-        if (rarity == ItemRarity.Plain) return gear;
+        if (rarity == ItemRarity.Common) return gear;
         return gear.Rolled(rarity, table.Roll(gear, rarity, Mathf.Max(1, floor), random));
     }
 

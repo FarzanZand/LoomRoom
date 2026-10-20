@@ -118,7 +118,6 @@ MonoBehaviour:
   alwaysTome: 1
   stockTable: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
   priceMultiplier: 1.2
-  rarityChanceBoost: 2
   pricePerFloor: 0.1
   buysItems: 1
   tradeClip: {fileID: 0}
@@ -376,19 +375,64 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 659157486100547264, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8793584568294199554}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 957184423342700410, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8962526679350255622}
   m_SourcePrefab: {fileID: 100100000, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
 --- !u!4 &6017122584947272833 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 659157486100547264, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
   m_PrefabInstance: {fileID: 6531575302073821761}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &6335521276860554555 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 957184423342700410, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
+  m_PrefabInstance: {fileID: 6531575302073821761}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8962526679350255622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6335521276860554555}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5848c68f50fa8ad438118c0b63ed1007, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProvokableNpc
+  provokedLines:
+  - text: I would not do that again.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: He has been down here longer than you. Leave him be.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  wrathLines:
+  - text: I did warn you.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: You had to try it twice.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  provokedMessage: '{Name} glares at you.'
+  wrathMessage: '{Name} drops his wares and draws a blade.'
+  wrathPrefab: {fileID: 4756031280637954703, guid: 7cad916ed64e5034dbe682e5bfa31b73, type: 3}
+  turnEffect: {fileID: 7742265850632592593, guid: 2878e923afe61984b95532101d7ab02e, type: 3}
+  calmSeconds: 0.8
+  turnDelay: 0.35
+  turnShake: 0.5
 --- !u!114 &8740748507874765247 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2587794438410830846, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
   m_PrefabInstance: {fileID: 6531575302073821761}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 6335521276860554555}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4f022b6e2d4ec644e95224a63c51706a, type: 3}
@@ -408,6 +452,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   portrait: {fileID: 0}
   characterName: Wandering Merchant
+  properName: 0
   faction: 0
   description: 
   creatureKind: 0
@@ -416,6 +461,7 @@ MonoBehaviour:
     idle: []
     alert: []
     pain: []
+    painAudio: {fileID: 0}
     death: []
     footsteps: []
     impact: []

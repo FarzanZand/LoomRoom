@@ -110,3 +110,7 @@ Tools/__pycache__/
 
 # Build folders of outside tools (pitch decks and the like)
 .codex-build/
+
+# Developer prompt outbox (local requests to the Main session)
+/DevReports/
+/ArtRevisions/

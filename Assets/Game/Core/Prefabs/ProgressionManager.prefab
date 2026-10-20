@@ -280,7 +280,7 @@ MonoBehaviour:
     milestones:
     - value: 25
       unlock: Keen eye
-      description: Merchants offer Fine and Masterwork gear twice as often.
+      description: Merchants offer Uncommon, Rare and Unique gear twice as often.
       icon: {fileID: 21300000, guid: 02f3131e614723748b7aef625832a8e0, type: 3}
       trophy: {fileID: 11400000, guid: ef5f66e3c2c30c4439c9bfe0a2653800, type: 2}
     - value: 50

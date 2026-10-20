@@ -550,7 +550,6 @@ public static partial class PixelRestyle
             var c = sample(v, pp);
             if (ColourScore(c, want) < .8f) return c;
         }
-        float bestScore = float.MaxValue; Color best = want;
         // Nothing fits: the expected colour, varied a little per texel so it isn't a flat patch.
         // One step per texel (6.4 a world unit in the room) so the variation reads as pixels, not noise.
         int hx = Mathf.FloorToInt(pp.x * RoomTexelsPerUnit), hy = Mathf.FloorToInt(pp.y * RoomTexelsPerUnit), hz = Mathf.FloorToInt(pp.z * RoomTexelsPerUnit);

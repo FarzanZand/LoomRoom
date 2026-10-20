@@ -209,6 +209,8 @@ MonoBehaviour:
     color: {r: 1, g: 0.6, b: 0.3, a: 1}
   torchesPerRoom: {x: 1, y: 2}
   litRoomChance: 0.7
+  darkRoomLight: {fileID: 5099884599044513661, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+  darkRoomLightStrength: 0.6
   corridorTorchChance: 0.3
   propRules:
   - prefab: {fileID: 1026660711950778362, guid: 337fb5179aa668747b05b0ca7fa0d18b, type: 3}

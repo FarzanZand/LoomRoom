@@ -2,7 +2,7 @@ using UnityEngine;
 
 // A shrine bargain (DungeonRoomFeatures.shrineBargains): bleed on it and it raises what you fight with, once. It takes a
 // share of your health and lifts the weapon in your hand (or, failing that, your shield, then your body armour) one
-// rarity: Plain to Fine, Fine to Masterwork, with new properties rolled for the floor the way loot rolls them
+// rarity: Common to Uncommon, Uncommon to Rare, Rare to Unique, with new properties rolled for the floor the way loot rolls them
 // (ItemPropertyTable). It won't take more blood than you have.
 public class DungeonShrine : MonoBehaviour, IInteractable
 {
@@ -19,7 +19,7 @@ public class DungeonShrine : MonoBehaviour, IInteractable
 
     static Player Table => PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
 
-    // The slot the shrine would raise: the first in Order that holds gear below Masterwork.
+    // The slot the shrine would raise: the first in Order that holds gear below Unique.
     static bool Target(Player player, out EquipmentSlot slot, out ItemData item)
     {
         slot = EquipmentSlot.RightHand; item = null;
@@ -27,14 +27,14 @@ public class DungeonShrine : MonoBehaviour, IInteractable
         foreach (var s in Order)
         {
             var i = player.Equipment.Get(s);
-            if (i == null || !i.IsGear || InventoryManager.NextRarity(i.rarity) == ItemRarity.Plain) continue;
+            if (i == null || !i.IsGear || InventoryManager.NextRarity(i.rarity) == ItemRarity.Common) continue;
             slot = s; item = i;
             return true;
         }
         return false;
     }
 
-    // One rarity up, with new properties rolled for this floor (Fine keeps none of its old rolls: it is made anew).
+    // One rarity up, with new properties rolled for this floor (Uncommon keeps none of its old rolls: it is made anew).
     static ItemData Raise(ItemData item)
     {
         var table = ItemPropertyTable.Current;

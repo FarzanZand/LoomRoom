@@ -12,6 +12,8 @@ public class PlayerViewPresentation : MonoBehaviour
     [Range(0, 120)] public float viewModelFieldOfView = 70f;
     Player player;
     OneBodyRig body;
+    // Metres the arms and held items sit below the camera (PlayerDeathFall drops them out of view).
+    public float LowerBy { get; set; }
 
     void Awake()
     {
@@ -54,7 +56,8 @@ public class PlayerViewPresentation : MonoBehaviour
     {
         if (player == null || !player.IsActive || brain.OutputCamera == null ||
             !PlayerManager.HasInstance || brain.OutputCamera != PlayerManager.Instance.OutputCamera) return;
-        transform.SetPositionAndRotation(brain.OutputCamera.transform.position, brain.OutputCamera.transform.rotation);
+        var view = brain.OutputCamera.transform;
+        transform.SetPositionAndRotation(LowerBy != 0f ? view.TransformPoint(0f, -LowerBy, 0f) : view.position, view.rotation);
         FitViewModel(brain.OutputCamera);
     }
 }

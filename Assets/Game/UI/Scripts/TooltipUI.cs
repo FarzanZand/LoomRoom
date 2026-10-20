@@ -84,7 +84,7 @@ public class TooltipUI : Singleton<TooltipUI>
         if (equipped != null && comparePanel != null) ShowCompare(equipped);
     }
 
-    // The name in its rarity colour (Plain stays white); the type line says the rarity and what it is ("FINE  ·  HELM").
+    // The name in its rarity colour (Common stays white); the type line says the rarity and what it is ("UNCOMMON  ·  HELM").
     static string Title(ItemData item) => item.HasRarityColour ? $"<color={item.RarityTextColour}>{item.itemName}</color>" : item.itemName;
 
     static string Kind(ItemData item)

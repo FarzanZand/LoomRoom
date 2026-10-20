@@ -14,18 +14,18 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Stable save identifier; do not change after shipping.")] public string saveId;
     public WeaponCategory weaponCategory;
     [Tooltip("Makes this item a spell tome: held in the left hand, it casts this spell.")] public SpellDefinition spell;
-    [Tooltip("Gear drops Plain and is rolled Fine or Masterwork by the loot (ItemPropertyTable); set Relic on a hand-made item. " +
+    [Tooltip("Gear drops Common and is rolled Uncommon, Rare or Unique by the loot (Legendary is only given) (ItemPropertyTable); set Relic on a hand-made item. " +
         "Spell tomes are Rare. Each rarity has its colour on its slot, loot beam and name (UIManager).")]
     public ItemRarity rarity;
 
     // Gear that takes a rarity: weapons, shields, worn armour and trinkets (not spell tomes).
     public bool IsGear => spell == null && (itemType == ItemType.Weapon || itemType == ItemType.Shield || itemType == ItemType.Equipment && canBeEquipped);
-    // A name, beam and pickup line in colour: any rarity above Plain.
-    public bool HasRarityColour => rarity != ItemRarity.Plain;
+    // A name, beam and pickup line in colour: any rarity above Common.
+    public bool HasRarityColour => rarity != ItemRarity.Common;
     public Color RarityColour => UIManager.RarityColor(rarity);
     public string RarityTextColour => "#" + ColorUtility.ToHtmlStringRGB(Color.Lerp(RarityColour, Color.white, .45f));
     // The faint floor behind the item in a bag, hotbar, equipment or shop slot: only items with a rarity above Plain (a
-    // Plain item's slot looks like an empty one). The floor sprite (UI/Sprites/Inventory/Rarity floor, 9-sliced) carries
+    // Common item's slot looks like an empty one). The floor sprite (UI/Sprites/Inventory/Rarity floor, 9-sliced) carries
     // the shape: a stepped band at the edges, nearly clear behind the icon; this is its colour.
     public bool HasSlotFill => HasRarityColour;
     public Color SlotFillColour { get { var c = RarityColour; c.a = 1f; return c; } }
@@ -39,9 +39,9 @@ public partial class ItemData : ScriptableObject
         var border = fill != null ? fill.transform.Find("Rarity border")?.GetComponent<UnityEngine.UI.Image>() : null;
         if (border != null) border.enabled = false;
     }
-    // The name with a rolled rarity in front, for text without colour (the message log): "Masterwork Iron Sword".
-    public string DisplayName => rarity == ItemRarity.Fine || rarity == ItemRarity.Superior || rarity == ItemRarity.Masterwork || rarity == ItemRarity.Legendary ? $"{RarityName} {itemName}" : itemName;
-    public string RarityName => rarity switch { ItemRarity.Fine => "Fine", ItemRarity.Superior => "Superior", ItemRarity.Masterwork => "Masterwork", ItemRarity.Legendary => "Legendary", ItemRarity.Relic => "Relic", ItemRarity.Rare => "Rare", ItemRarity.Spoils => "Spoils", _ => "Plain" };
+    // The name with a rolled rarity in front, for text without colour (the message log): "Unique Iron Sword".
+    public string DisplayName => IsGear && (rarity == ItemRarity.Uncommon || rarity == ItemRarity.Rare || rarity == ItemRarity.Unique || rarity == ItemRarity.Legendary) ? $"{RarityName} {itemName}" : itemName;
+    public string RarityName => rarity switch { ItemRarity.Uncommon => "Uncommon", ItemRarity.Rare => "Rare", ItemRarity.Unique => "Unique", ItemRarity.Legendary => "Legendary", ItemRarity.Relic => "Relic", ItemRarity.Spoils => "Spoils", _ => "Common" };
     [TextArea] public string description;
     [HorizontalGroup("IconRow")]
     [Tooltip("Bag icon, sized to the item's footprint. Generated from the item's model (Icon Source) unless custom.")]
@@ -264,7 +264,7 @@ public partial class ItemData : ScriptableObject
             lines.Add($"<size=140%><color={TextColor}>{mainText}</color></size>  <color={DimColor}>{mainLabel}</color>");
             if (IsWeapon) lines.Add($"<color={DimColor}>{SwingSpeedWord(SwingSpeed)} swings</color>");
         }
-        // The item's own stats in white, the rolled properties of a Fine or Masterwork item in blue.
+        // The item's own stats in white, the rolled properties of an Uncommon, Rare, Unique or Legendary item in blue.
         if (canBeEquipped && statModifiers != null)
             for (int i = 0; i < statModifiers.Length; i++)
             {

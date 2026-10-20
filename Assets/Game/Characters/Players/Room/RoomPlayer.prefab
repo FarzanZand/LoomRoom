@@ -3592,6 +3592,7 @@ MonoBehaviour:
   stopTime: 0.07
   backwardSpeed: 0.45
   canJump: 0
+  canCrouch: 0
   jumpForce: 12
   gravityMultiplier: 2.5
   sprintStaminaPerSecond: 0

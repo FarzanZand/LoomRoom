@@ -102,6 +102,9 @@ public class DungeonHud : MonoBehaviour
             if(Mathf.Abs(x-px)<=3 && Mathf.Abs(y-py)<=3)explored[x,y]=true;
             foreach(var m in mates)if(Mathf.Abs(x-m.x)<=3 && Mathf.Abs(y-m.y)<=3)explored[x,y]=true;
             Color color=new Color(.025f,.035f,.04f,.85f);
+            // The way on: unexplored floor touching explored floor shows as a dim pixel, so a passage running off the
+            // edge of what has been seen doesn't look like a dead end.
+            if(!explored[x,y] && dungeon.Layout.floor[x,y] && Frontier(x,y,w,h))color=new Color(.27f,.29f,.26f,.9f);
             if(explored[x,y] && dungeon.Layout.floor[x,y])color=shop[x,y] ? new Color(.36f,.68f,.34f,.95f) : new Color(.46f,.48f,.43f,.92f); // the shop room shows green
             // The exit room shows red, its stairs a brighter red.
             if(explored[x,y] && dungeon.Layout.floor[x,y] && exitRoom[x,y])color=new Color(.72f,.2f,.17f,.95f);
@@ -112,6 +115,16 @@ public class DungeonHud : MonoBehaviour
             map.SetPixel(x,y,color);
         }
         map.Apply(false);
+    }
+
+    bool Frontier(int x,int y,int w,int h)
+    {
+        foreach(var d in DungeonLayout.Neighbours)
+        {
+            int nx=x+d.x,ny=y+d.y;
+            if(nx>=0 && ny>=0 && nx<w && ny<h && explored[nx,ny] && dungeon.Layout.floor[nx,ny])return true;
+        }
+        return false;
     }
 
     // On (or next to) a floor cell of this layout.

@@ -313,8 +313,12 @@ public class TableLevelData : ScriptableObject
     public DungeonWallLight[] lightingPrefabs = new DungeonWallLight[0];
     [TabGroup(Tabs, Rooms), ShowIf(D), MinMaxSlider(1, 4, true), Tooltip("Torches in a room that rolls its full count (at least one).")]
     public Vector2Int torchesPerRoom = new Vector2Int(1, 2);
-    [TabGroup(Tabs, Rooms), ShowIf(D), Range(0, 1), LabelText("Full Torch Chance"), Tooltip("Chance a room gets its Torches Per Room; the others get one. The entrance and exit always get the full count. Every room but a dark one has at least one light.")]
+    [TabGroup(Tabs, Rooms), ShowIf(D), Range(0, 1), LabelText("Full Torch Chance"), Tooltip("Chance a room gets its Torches Per Room; the others get one. The entrance and exit always get the full count. Every room has at least one light (a dark one only Dark Room Light).")]
     public float litRoomChance = .75f;
+    [TabGroup(Tabs, Rooms), ShowIf(D), Tooltip("The one light a dark room gets instead of torches (a candle cluster on the floor by a wall), so no room is without a light; it stays dim. Empty = dark rooms have no light at all.")]
+    public GameObject darkRoomLight;
+    [TabGroup(Tabs, Rooms), ShowIf(D), Range(0, 1), Tooltip("Dark Room Light's brightness against the prefab's own (its lights' intensity and range).")]
+    public float darkRoomLightStrength = .6f;
     [TabGroup(Tabs, Rooms), ShowIf(D), Range(0, 1), Tooltip("Chance of a torch on each stretch of corridor wall (about every 8 cells).")]
     public float corridorTorchChance = .3f;
     [TabGroup(Tabs, Rooms), ShowIf(D), LabelText("Furnishing"), Tooltip("Props placed by rule and scaled by floor area: against walls, in corners, in the middle. Shared by every biome; a biome's rules are added, a room profile's replace them. Rules win over the plain Props list.")]

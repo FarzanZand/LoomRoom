@@ -34,10 +34,9 @@ public static class DungeonPickup
     public const string DropKey = "itemDrop";
     public static string DropKeyFor(ItemData item) => item == null ? DropKey : item.rarity switch
     {
+        ItemRarity.Uncommon => "itemDropFine",
         ItemRarity.Rare => "itemDropRare",
-        ItemRarity.Fine => "itemDropFine",
-        ItemRarity.Superior => "itemDropSuperior",
-        ItemRarity.Masterwork => "itemDropMasterwork",
+        ItemRarity.Unique => "itemDropMasterwork",
         ItemRarity.Legendary => "itemDropLegendary",
         ItemRarity.Relic => "itemDropRelic",
         ItemRarity.Spoils => "itemDropSpoils",
@@ -47,8 +46,9 @@ public static class DungeonPickup
     static void DropSound(ItemData item, Vector3 at, float delay)
     {
         if (!AudioManager.HasInstance) return;
-        // Superior and Legendary have no sound of their own yet: they fall back to Fine's and Masterwork's before the plain one.
-        string own = DropKeyFor(item), step = item != null && item.rarity == ItemRarity.Superior ? "itemDropFine" : item != null && item.rarity == ItemRarity.Legendary ? "itemDropMasterwork" : DropKey;
+        // The keys keep their old names (Uncommon was Fine, Unique was Masterwork; Rare is the spell tomes' old sound). Rare falls
+        // back to Uncommon's and Legendary to Unique's before the plain one.
+        string own = DropKeyFor(item), step = item != null && item.rarity == ItemRarity.Rare ? "itemDropFine" : item != null && item.rarity == ItemRarity.Legendary ? "itemDropMasterwork" : DropKey;
         if (delay <= 0f) { AudioManager.Instance.PlayFirstSFX(at, own, step, DropKey); return; }
         DOVirtual.DelayedCall(delay, () => { if (AudioManager.HasInstance) AudioManager.Instance.PlayFirstSFX(at, own, step, DropKey); });
     }

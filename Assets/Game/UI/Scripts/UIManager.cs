@@ -1,6 +1,7 @@
 using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 // Named UI colours in one place. Everything is opt-in:
 // - Kit art (panels, frames, buttons) follows the Theme when its Image uses the Kit material.
@@ -88,19 +89,19 @@ public class UIManager : Singleton<UIManager>
     [PropertyOrder(2)] public Color bossHealth = new(.722f, .122f, .122f);
     [PropertyOrder(2), Tooltip("The small bar over enemies you aim at or hit.")] public Color enemyHealth = new(.698f, .22f, .09f);
     [PropertyOrder(2)] public Color recentDamage = new(.949f, .62f, .298f);
-    [PropertyOrder(2), Tooltip("Slot background, loot beam and name of Rare items (spell tomes). Not part of the theme.")] public Color rare = DefaultRare;
-    public static readonly Color DefaultRare = new(.34f, .19f, .07f);
     [PropertyOrder(-1), Tooltip("The hotbar, health, mana, stamina and XP bars and buff frames: Pixel (the old pixel kit) or Rugged (the inventory's grey stone frames). Switches live, also outside Play mode (HudStyleImage).")]
     public HudStyle hudStyle = HudStyle.Rugged;
     public static HudStyle CurrentHudStyle => HasInstance ? Instance.hudStyle : HudStyle.Rugged;
-    [PropertyOrder(2), Tooltip("Slot fill and border of Plain gear and consumables: a faint white (names stay white).")] public Color plain = DefaultPlain;
-    public static readonly Color DefaultPlain = new(.9f, .88f, .84f);
-    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Fine gear (blue, the first step above Plain).")] public Color fine = DefaultFine;
-    public static readonly Color DefaultFine = new(.12f, .3f, .64f);
-    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Superior gear (green, between Fine and Masterwork).")] public Color superior = DefaultSuperior;
-    public static readonly Color DefaultSuperior = new(.09f, .42f, .29f);
-    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Masterwork gear (bronze-gold, the best rolled step).")] public Color masterwork = DefaultMasterwork;
-    public static readonly Color DefaultMasterwork = new(.52f, .34f, .06f);
+    // Gear rarities, renamed 2026-10-20 (Plain, Fine, Superior, Masterwork, Legendary): the colours follow the usual ladder,
+    // white, green, blue, gold, then Legendary in red.
+    [PropertyOrder(2), FormerlySerializedAs("plain"), Tooltip("Slot fill and border of Common gear and consumables: a faint white (names stay white).")] public Color common = DefaultCommon;
+    public static readonly Color DefaultCommon = new(.9f, .88f, .84f);
+    [PropertyOrder(2), FormerlySerializedAs("superior"), Tooltip("Slot fill, loot beam and name of Uncommon gear (green, the first step above Common).")] public Color uncommon = DefaultUncommon;
+    public static readonly Color DefaultUncommon = new(.09f, .42f, .29f);
+    [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Rare gear and spell tomes (blue, between Uncommon and Unique).")] public Color rare = DefaultRare;
+    public static readonly Color DefaultRare = new(.12f, .3f, .64f);
+    [PropertyOrder(2), FormerlySerializedAs("masterwork"), Tooltip("Slot fill, loot beam and name of Unique gear (gold, the best rolled step).")] public Color unique = DefaultUnique;
+    public static readonly Color DefaultUnique = new(.52f, .34f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Legendary gear (red, the highest step; never rolled, only given).")] public Color legendary = DefaultLegendary;
     public static readonly Color DefaultLegendary = new(.75f, .08f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Relics (hand-made items).")] public Color relic = DefaultRelic;
@@ -108,20 +109,19 @@ public class UIManager : Singleton<UIManager>
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of spoils (the meta currency: monster parts and baubles).")] public Color spoils = DefaultSpoils;
     public static readonly Color DefaultSpoils = new(.58f, .22f, .86f);
 
-    // A rarity's colour, from the UIManager when there is one (Plain: the faint fill).
+    // A rarity's colour, from the UIManager when there is one (Common: the faint fill).
     public static Color RarityColor(ItemRarity rarity)
     {
         var ui = HasInstance ? Instance : null;
         return rarity switch
         {
+            ItemRarity.Uncommon => ui != null ? ui.uncommon : DefaultUncommon,
             ItemRarity.Rare => ui != null ? ui.rare : DefaultRare,
-            ItemRarity.Fine => ui != null ? ui.fine : DefaultFine,
-            ItemRarity.Superior => ui != null ? ui.superior : DefaultSuperior,
-            ItemRarity.Masterwork => ui != null ? ui.masterwork : DefaultMasterwork,
+            ItemRarity.Unique => ui != null ? ui.unique : DefaultUnique,
             ItemRarity.Legendary => ui != null ? ui.legendary : DefaultLegendary,
             ItemRarity.Relic => ui != null ? ui.relic : DefaultRelic,
             ItemRarity.Spoils => ui != null ? ui.spoils : DefaultSpoils,
-            _ => ui != null ? ui.plain : DefaultPlain,
+            _ => ui != null ? ui.common : DefaultCommon,
         };
     }
 

@@ -4,7 +4,7 @@ using UnityEngine;
 // Values are explicit and must never be reused or renumbered — Unity serializes
 // enums as integers, so changing a value re-points every authored asset.
 // Retired: 3 (CritChance), 4 (CritMultiplier), 5 (DodgeChance), 8 (Experience),
-// 9 (ExperienceToNextLevel). Leave those numbers unused forever.
+// 9 (ExperienceToNextLevel), 23 (QuietSteps, removed 2026-10-20). Leave those numbers unused forever.
 public enum StatType
 {
     MaxHealth    = 0,
@@ -26,7 +26,6 @@ public enum StatType
     CriticalChance = 20,     // added to CombatManager.critChance
     BackstabDamage = 21,     // backstabs deal (1 + this) times more
     LightRadius = 22,        // metres added to the light radius on dark floors
-    QuietSteps = 23,         // footsteps carry this much less far (1 = silent)
     SpellDamage = 24,        // spells hit and heal (1 + this) times harder
     KillHeal = 25,           // health back on every kill
     GoldFind = 26,           // gold picked up is (1 + this) times more
@@ -84,7 +83,6 @@ public class StatModifierEntry
                 case StatType.CriticalChance: return $"{sign}{value * 100f:0.#}% critical chance";
                 case StatType.BackstabDamage: return $"{sign}{value * 100f:0.#}% backstab damage";
                 case StatType.LightRadius: return $"{sign}{value:0.#} m light radius";
-                case StatType.QuietSteps: return value >= 1f ? "Silent steps" : $"{value * 100f:0}% quieter steps";
                 case StatType.SpellDamage: return $"{sign}{value * 100f:0.#}% spell damage";
                 case StatType.KillHeal: return $"Kills heal {value:0.#}";
                 case StatType.GoldFind: return $"{sign}{value * 100f:0.#}% gold found";

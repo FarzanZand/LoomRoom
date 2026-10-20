@@ -24,6 +24,8 @@ public class PlayerData : CharacterData
     public float backwardSpeed = 1f;
     [TabGroup(InspectorTabs, "Movement"), Title("Jump & gravity", HorizontalLine = false), Tooltip("Off: the jump input does nothing (the room player).")]
     public bool canJump = true;
+    [TabGroup(InspectorTabs, "Movement"), Tooltip("Off: the crouch input does nothing (the room player).")]
+    public bool canCrouch = true;
     [TabGroup(InspectorTabs, "Movement")]
     public float jumpForce = 8f;
     [TabGroup(InspectorTabs, "Movement"), Tooltip("Multiplier on gravity. Higher values make jumps shorter and falls faster.")]
