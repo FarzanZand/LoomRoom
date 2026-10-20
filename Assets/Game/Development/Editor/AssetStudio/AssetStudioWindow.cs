@@ -47,7 +47,6 @@ public class AssetStudioWindow : EditorWindow
 
     // Preview state
     AssetStudioPreview preview;
-    Editor inspector;
     UnityEngine.Object inspected;
 
     const float CategoryWidth = 200, ListWidth = 320, InspectorWidth = 500, Pad = 8;
@@ -72,7 +71,6 @@ public class AssetStudioWindow : EditorWindow
         EditorApplication.update -= Tick;
         preview?.Dispose();
         preview = null;
-        if (inspector != null) DestroyImmediate(inspector);
         AssetStudioPreview.StopAudio();
     }
 
@@ -131,16 +129,11 @@ public class AssetStudioWindow : EditorWindow
         AssetStudioPreview.StopAudio();
         if (e != null) { recent.Remove(e.id); recent.Insert(0, e.id); if (recent.Count > 20) recent.RemoveAt(recent.Count - 1); EditorPrefs.SetString(RecentKey, string.Join("|", recent)); }
         usedBy = null; usedByFor = null;
-        if (e == null) { preview?.SetTarget(null); return; }
+        if (e == null) { preview?.SetTarget(null); inspected = null; return; }
         var asset = e.Load();
         preview?.SetTarget(asset);
         var target = InspectorTarget(e, asset);
-        if (target != inspected || inspector == null && target != null)
-        {
-            if (inspector != null) DestroyImmediate(inspector);
-            inspected = target;
-            inspector = target != null ? Editor.CreateEditor(target) : null;
-        }
+        inspected = target;
         Repaint();
     }
 
@@ -178,7 +171,9 @@ public class AssetStudioWindow : EditorWindow
         DrawCategories(catRect);
         DrawList(listRect);
         DrawPreview(previewRect);
+        inspectorWanted = null;
         DrawInspector(inspRect);
+        if (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout) PlaceInspector();
         int total = categories.Sum(c => c.entries.Count);
         GUI.Label(new Rect(Pad, full.height - 22, full.width - Pad * 2, 18),
             EditorApplication.timeSinceStartup < noticeUntil ? notice : $"{shown.Count} shown · {total} entries in the library · The Table Waits", dim);
@@ -334,29 +329,40 @@ public class AssetStudioWindow : EditorWindow
 
         GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "INSPECTOR", gold); y += 18;
         var area = new Rect(r.x + 4, y, r.width - 8, r.yMax - y - 4);
-        GUILayout.BeginArea(area);
-        inspectorScroll = EditorGUILayout.BeginScrollView(inspectorScroll);
-        if (inspector != null)
-        {
-            // Narrow column: labels take a third of it, so side-by-side fields (Odin groups) keep room for their values.
-            EditorGUIUtility.labelWidth = Mathf.Round(area.width * .3f);
-            // As Unity's own Inspector does: without wide mode, fields with Min or Range draw their value under the
-            // label without making room for it, and the next field lands on top.
-            EditorGUIUtility.wideMode = true;
-            EditorGUIUtility.hierarchyMode = true;
-            // The inspector thinks it is as wide as the whole window otherwise: Unity's drawers for Min and Range
-            // fields (called through Odin) then size their rows for that width and the rows land on each other.
-            OverriddenViewWidth.SetValue(null, area.width - 16);
-            EditorGUILayout.BeginVertical(GUILayout.Width(area.width - 18));
-            try { inspector.OnInspectorGUI(); } catch (ExitGUIException) { throw; } catch (Exception ex) { EditorGUILayout.HelpBox(ex.Message, MessageType.Warning); }
-            finally { OverriddenViewWidth.SetValue(null, -1f); }
-            EditorGUILayout.EndVertical();
-        }
-        EditorGUILayout.EndScrollView();
-        GUILayout.EndArea();
+        // Unity's own inspector element, laid over this spot: it draws every field exactly as the Inspector window
+        // does (drawing the editor by hand here put Min and Range fields on top of each other).
+        inspectorWanted = inspected != null ? area : (Rect?)null;
     }
 
-    static readonly System.Reflection.FieldInfo OverriddenViewWidth = typeof(EditorGUIUtility).GetField("s_OverriddenViewWidth", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+    // ── The hosted inspector (UI Toolkit, over the IMGUI panel) ──
+    UnityEngine.UIElements.ScrollView inspectorHost;
+    UnityEngine.Object inspectorBound;
+    Rect? inspectorWanted;
+
+    void PlaceInspector()
+    {
+        if (inspectorHost == null)
+        {
+            inspectorHost = new UnityEngine.UIElements.ScrollView(UnityEngine.UIElements.ScrollViewMode.Vertical);
+            inspectorHost.style.position = UnityEngine.UIElements.Position.Absolute;
+            rootVisualElement.Add(inspectorHost);
+        }
+        var want = showingRequests ? null : inspectorWanted;
+        if (want == null) { if (inspectorHost.style.display != UnityEngine.UIElements.DisplayStyle.None) inspectorHost.style.display = UnityEngine.UIElements.DisplayStyle.None; return; }
+        if (inspectorBound != inspected || inspectorHost.childCount == 0)
+        {
+            inspectorHost.Clear();
+            inspectorBound = inspected;
+            if (inspected != null) inspectorHost.Add(new UnityEditor.UIElements.InspectorElement(inspected));
+            inspectorHost.scrollOffset = Vector2.zero;
+        }
+        var a = want.Value;
+        if (inspectorHost.style.display != UnityEngine.UIElements.DisplayStyle.Flex) inspectorHost.style.display = UnityEngine.UIElements.DisplayStyle.Flex;
+        if (inspectorHost.style.left.value.value != a.x) inspectorHost.style.left = a.x;
+        if (inspectorHost.style.top.value.value != a.y) inspectorHost.style.top = a.y;
+        if (inspectorHost.style.width.value.value != a.width) inspectorHost.style.width = a.width;
+        if (inspectorHost.style.height.value.value != a.height) inspectorHost.style.height = a.height;
+    }
 
     // What can be done with this kind of asset in the game, and where it is used. Returns the next free y.
     float DrawActions(Rect r, float y)

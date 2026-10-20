@@ -26,6 +26,7 @@ public class AssetStudioPainter
         public Vector2[] uvs;
         public int[][] triangles;      // per submesh
         public Sheet[] sheets;         // per submesh: what is painted there (null: nothing paintable)
+        public bool[] twoSided;        // per submesh: its material draws both faces (otherwise back faces are culled)
     }
 
     public class Sheet
@@ -34,6 +35,8 @@ public class AssetStudioPainter
         public Texture2D texture;      // the editable copy, at the file's own size
         public Color32[] original;     // as the file was when painting began
         public bool dirty;
+        public Vector3[] pos, nrm;     // per texel: where it sits on the model and which way it faces there
+        public bool[] covered;         // texels some triangle shows
         public int width => texture.width;
         public int height => texture.height;
     }
@@ -50,6 +53,39 @@ public class AssetStudioPainter
     public int size = 1;               // texels across
     public bool round;
     public readonly List<Color32> swatches = new();
+    public readonly List<Color32> palette = new();   // the model's 16 most used colours
+
+    // The model's 16 main colours: texels the model shows (not unused texture space) are counted in small colour boxes,
+    // and the most used boxes are taken while each is clearly different from those already taken.
+    void BuildPalette()
+    {
+        palette.Clear();
+        var counts = new Dictionary<int, int>();
+        var sums = new Dictionary<int, Vector3>();
+        foreach (var sheet in sheets.Values)
+            for (int i = 0; i < sheet.original.Length; i++)
+            {
+                var c = sheet.original[i];
+                if (c.a < 128 || sheet.covered != null && !sheet.covered[i]) continue;
+                int key = (c.r >> 3) | (c.g >> 3) << 5 | (c.b >> 3) << 10;
+                counts[key] = counts.TryGetValue(key, out var n) ? n + 1 : 1;
+                sums[key] = (sums.TryGetValue(key, out var v) ? v : Vector3.zero) + new Vector3(c.r, c.g, c.b);
+            }
+        foreach (var minDistance in new[] { 40f, 24f, 12f, 0f })
+        {
+            foreach (var kv in counts.OrderByDescending(kv => kv.Value))
+            {
+                if (palette.Count >= 16) break;
+                var m = sums[kv.Key] / kv.Value;
+                var c = new Color32((byte)m.x, (byte)m.y, (byte)m.z, 255);
+                if (palette.Any(p => Mathf.Abs(p.r - c.r) + Mathf.Abs(p.g - c.g) + Mathf.Abs(p.b - c.b) < minDistance * 1.7f || p.r == c.r && p.g == c.g && p.b == c.b)) continue;
+                palette.Add(c);
+            }
+            if (palette.Count >= 16) break;
+        }
+        // Dark to light, so it reads as a ramp.
+        palette.Sort((a, b) => (a.r * 3 + a.g * 6 + a.b).CompareTo(b.r * 3 + b.g * 6 + b.b));
+    }
 
     public bool Active => parts.Count > 0;
     public int Changed => sheets.Values.Count(s => s.dirty);
@@ -90,11 +126,13 @@ public class AssetStudioPainter
             part.triangles = Enumerable.Range(0, mesh.subMeshCount).Select(i => mesh.GetTriangles(i)).ToArray();
             var mats = r.sharedMaterials;
             part.sheets = new Sheet[mesh.subMeshCount];
+            part.twoSided = new bool[mesh.subMeshCount];
             var copies = new Material[mats.Length];
             for (int i = 0; i < mats.Length; i++)
             {
                 var m = mats[i];
                 if (m == null) continue;
+                if (i < part.twoSided.Length) part.twoSided[i] = m.HasProperty("_Cull") && m.GetFloat("_Cull") < .5f || m.HasProperty("_CullMode") && m.GetFloat("_CullMode") < .5f;
                 var copy = new Material(m) { hideFlags = HideFlags.HideAndDontSave };
                 materialCopies.Add(copy);
                 copies[i] = copy;
@@ -108,6 +146,8 @@ public class AssetStudioPainter
             r.sharedMaterials = copies;
             if (part.sheets.Any(s => s != null)) parts.Add(part);
         }
+        if (parts.Count > 0) MapSurface();
+        BuildPalette();
         if (parts.Count == 0)
             Problem = skipped.Count > 0 ? "Nothing here can be painted: " + string.Join(", ", skipped.Take(3)) : "This model has no texture to paint.";
         else if (skipped.Count > 0) Problem = "Not paintable here: " + string.Join(", ", skipped.Take(3));
@@ -138,11 +178,12 @@ public class AssetStudioPainter
         foreach (var m in materialCopies) if (m != null) UnityEngine.Object.DestroyImmediate(m);
         materialCopies.Clear();
         undo.Clear(); redo.Clear(); strokeBefore = null;
+        ReleasePick();
     }
 
     // ── Hitting the model ──
 
-    public struct Hit { public Sheet sheet; public Vector2 uv; public Vector3 point; public float distance; public float worldPerUv; }
+    public struct Hit { public Sheet sheet; public Vector2 uv; public Vector3 point; public float distance; public float worldPerUv; public Vector3 normal; }
 
     public bool Raycast(Ray ray, out Hit hit)
     {
@@ -151,6 +192,7 @@ public class AssetStudioPainter
         foreach (var part in parts)
         {
             var o = part.toLocal.MultiplyPoint3x4(ray.origin);
+            bool mirrored = part.toWorld.determinant < 0;   // a mirrored model turns its faces' winding round
             var d = part.toLocal.MultiplyVector(ray.direction);
             for (int sm = 0; sm < part.triangles.Length; sm++)
             {
@@ -160,6 +202,9 @@ public class AssetStudioPainter
                 for (int i = 0; i < tris.Length; i += 3)
                 {
                     var a = part.vertices[tris[i]]; var b = part.vertices[tris[i + 1]]; var c = part.vertices[tris[i + 2]];
+                    // Only faces the camera sees: the GPU culls back faces, and on a curved or layered model a back face
+                    // can lie in front of the visible surface (the paint then landed somewhere else).
+                    if (!part.twoSided[sm] && Vector3.Dot(Vector3.Cross(b - a, c - a), d) * (mirrored ? -1 : 1) >= 0) continue;
                     if (!Intersect(o, d, a, b, c, out float t, out float u, out float v)) continue;
                     var world = part.toWorld.MultiplyPoint3x4(o + d * t);
                     float dist = Vector3.Distance(ray.origin, world);
@@ -169,7 +214,8 @@ public class AssetStudioPainter
                     var ua = part.uvs[tris[i]]; var ub = part.uvs[tris[i + 1]]; var uc = part.uvs[tris[i + 2]];
                     float uvArea = Mathf.Abs((ub.x - ua.x) * (uc.y - ua.y) - (uc.x - ua.x) * (ub.y - ua.y));
                     float worldArea = Vector3.Cross(part.toWorld.MultiplyVector(b - a), part.toWorld.MultiplyVector(c - a)).magnitude;
-                    hit = new Hit { sheet = sheet, uv = uv, point = world, distance = dist, worldPerUv = uvArea > 1e-12f ? Mathf.Sqrt(worldArea / uvArea) : 0 };
+                    var wn = Vector3.Cross(part.toWorld.MultiplyVector(b - a), part.toWorld.MultiplyVector(c - a)).normalized;
+                    hit = new Hit { sheet = sheet, uv = uv, point = world, distance = dist, worldPerUv = uvArea > 1e-12f ? Mathf.Sqrt(worldArea / uvArea) : 0, normal = wn };
                 }
             }
         }
@@ -195,10 +241,191 @@ public class AssetStudioPainter
 
     public static Vector2Int TexelAt(Hit h) => Texel(h.sheet, h.uv);
 
+    // Where in the texture a UV falls, in texels (not rounded).
+    static Vector2 TexelPoint(Sheet s, Vector2 uv) => new((uv.x - Mathf.Floor(uv.x)) * s.width, (uv.y - Mathf.Floor(uv.y)) * s.height);
+
+    public static Color32 Sample(Hit h) { var t = Texel(h.sheet, h.uv); return h.sheet.texture.GetPixel(t.x, t.y); }
+
     static Vector2Int Texel(Sheet s, Vector2 uv)
     {
         float x = uv.x - Mathf.Floor(uv.x), y = uv.y - Mathf.Floor(uv.y);
         return new Vector2Int(Mathf.Clamp((int)(x * s.width), 0, s.width - 1), Mathf.Clamp((int)(y * s.height), 0, s.height - 1));
+    }
+
+    // ── Where each texel sits on the model ──
+    // Every texel a triangle covers gets the surface point and facing there, and a spatial grid finds the texels near a
+    // point. A brush then paints the texels within its reach on the surface, wherever they sit in the texture: across
+    // UV seams, and never onto another part of the model that merely lies next to it in the texture.
+
+    readonly Dictionary<Vector3Int, List<(Sheet sheet, int texel)>> grid = new();
+    float cell = .01f;
+
+    void MapSurface()
+    {
+        grid.Clear();
+        var bounds = new Bounds();
+        bool any = false;
+        foreach (var part in parts)
+            foreach (var v in part.vertices) { var w = part.toWorld.MultiplyPoint3x4(v); if (!any) { bounds = new Bounds(w, Vector3.zero); any = true; } else bounds.Encapsulate(w); }
+        cell = Mathf.Max(bounds.size.magnitude / 160f, 1e-4f);
+        foreach (var s in sheets.Values) { s.pos = new Vector3[s.width * s.height]; s.nrm = new Vector3[s.width * s.height]; s.covered = new bool[s.width * s.height]; }
+        foreach (var part in parts)
+            for (int sm = 0; sm < part.triangles.Length; sm++)
+            {
+                var s = part.sheets[sm];
+                if (s == null) continue;
+                var tris = part.triangles[sm];
+                for (int i = 0; i + 2 < tris.Length; i += 3)
+                {
+                    Vector3 a = part.toWorld.MultiplyPoint3x4(part.vertices[tris[i]]), b = part.toWorld.MultiplyPoint3x4(part.vertices[tris[i + 1]]), c = part.toWorld.MultiplyPoint3x4(part.vertices[tris[i + 2]]);
+                    var n = Vector3.Cross(b - a, c - a).normalized;
+                    Vector2 ua = Scale(part.uvs[tris[i]], s), ub = Scale(part.uvs[tris[i + 1]], s), uc = Scale(part.uvs[tris[i + 2]], s);
+                    int x0 = Mathf.Max(0, Mathf.FloorToInt(Mathf.Min(ua.x, ub.x, uc.x))), x1 = Mathf.Min(s.width - 1, Mathf.CeilToInt(Mathf.Max(ua.x, ub.x, uc.x)));
+                    int y0 = Mathf.Max(0, Mathf.FloorToInt(Mathf.Min(ua.y, ub.y, uc.y))), y1 = Mathf.Min(s.height - 1, Mathf.CeilToInt(Mathf.Max(ua.y, ub.y, uc.y)));
+                    float den = (ub.y - uc.y) * (ua.x - uc.x) + (uc.x - ub.x) * (ua.y - uc.y);
+                    if (Mathf.Abs(den) < 1e-9f) continue;
+                    for (int y = y0; y <= y1; y++)
+                    for (int x = x0; x <= x1; x++)
+                    {
+                        float px = x + .5f, py = y + .5f;
+                        float wa = ((ub.y - uc.y) * (px - uc.x) + (uc.x - ub.x) * (py - uc.y)) / den;
+                        float wb = ((uc.y - ua.y) * (px - uc.x) + (ua.x - uc.x) * (py - uc.y)) / den;
+                        float wc = 1 - wa - wb;
+                        const float e = -.02f;   // a hair over the edge, so texels on a seam belong to both sides
+                        if (wa < e || wb < e || wc < e) continue;
+                        int idx = y * s.width + x;
+                        if (s.covered[idx]) continue;
+                        s.covered[idx] = true;
+                        var p = a * wa + b * wb + c * wc;
+                        s.pos[idx] = p; s.nrm[idx] = n;
+                        var key = Vector3Int.FloorToInt(p / cell);
+                        if (!grid.TryGetValue(key, out var list)) grid[key] = list = new List<(Sheet, int)>();
+                        list.Add((s, idx));
+                    }
+                }
+            }
+    }
+
+    static Vector2 Scale(Vector2 uv, Sheet s) => new((uv.x - Mathf.Floor(uv.x)) * s.width, (uv.y - Mathf.Floor(uv.y)) * s.height);
+
+    // The view's axes, set by the preview: a square brush is square on screen.
+    public Vector3 viewRight = Vector3.right, viewUp = Vector3.up, viewForward = Vector3.forward;
+
+    // Paints (or erases) the texels within the brush around a hit, measured on the surface. False if none were found.
+    bool PaintSurface(Hit hit)
+    {
+        float texelWorld = hit.worldPerUv > 0 ? hit.worldPerUv / Mathf.Sqrt(hit.sheet.width * hit.sheet.height) : cell;
+        float half = size * .5f * texelWorld;
+        int reach = Mathf.CeilToInt(half / cell);
+        var c0 = Vector3Int.FloorToInt(hit.point / cell);
+        var touched = new HashSet<Sheet>();
+        int painted = 0;
+        for (int x = -reach; x <= reach; x++)
+        for (int y = -reach; y <= reach; y++)
+        for (int z = -reach; z <= reach; z++)
+        {
+            if (!grid.TryGetValue(c0 + new Vector3Int(x, y, z), out var list)) continue;
+            foreach (var (s, idx) in list)
+            {
+                var d = s.pos[idx] - hit.point;
+                // The side facing the camera only: a thin blade's far face lies within reach too.
+                if (Vector3.Dot(s.nrm[idx], hit.normal) < .2f && Vector3.Dot(s.nrm[idx], -viewForward) < .1f) continue;
+                if (Mathf.Abs(Vector3.Dot(d, viewForward)) > half * 2 + texelWorld) continue;
+                float dx = Vector3.Dot(d, viewRight), dy = Vector3.Dot(d, viewUp);
+                bool inside = round ? dx * dx + dy * dy <= half * half : Mathf.Abs(dx) <= half && Mathf.Abs(dy) <= half;
+                if (!inside) continue;
+                if (!touched.Contains(s)) { Remember(s); touched.Add(s); }
+                int tx = idx % s.width, ty = idx / s.width;
+                s.texture.SetPixel(tx, ty, tool == Tool.Eraser ? (Color)s.original[idx] : (Color)colour);
+                painted++;
+            }
+        }
+        foreach (var s in touched) { s.texture.Apply(false); s.dirty = true; }
+        return painted > 0;
+    }
+
+    // ── Picking on the GPU ──
+    // The model drawn as texture coordinates (Studio Pick.shader) from the preview's own camera; the pixel under the
+    // mouse names the part, the material and the exact UV shown there. Where faces lie on top of each other, or the
+    // drawn mesh differs from what the CPU reads, a ray cast hit something else than what was on screen.
+
+    static Material pickMaterial;
+    RenderTexture pickTarget;
+    Texture2D pickPixel;
+    readonly MaterialPropertyBlock pickBlock = new();
+
+    public bool Pick(Camera cam, Rect r, Vector2 mouse, out Hit hit)
+    {
+        hit = default;
+        if (parts.Count == 0) return false;
+        if (pickMaterial == null)
+        {
+            var shader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Game/Development/Editor/AssetStudio/Studio Pick.shader");
+            if (shader == null) return false;
+            pickMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+        }
+        int w = Mathf.Max(1, Mathf.RoundToInt(r.width)), h = Mathf.Max(1, Mathf.RoundToInt(r.height));
+        if (pickTarget == null || pickTarget.width != w || pickTarget.height != h)
+        {
+            if (pickTarget != null) { pickTarget.Release(); UnityEngine.Object.DestroyImmediate(pickTarget); }
+            pickTarget = new RenderTexture(w, h, 24, RenderTextureFormat.ARGBFloat) { hideFlags = HideFlags.HideAndDontSave, filterMode = FilterMode.Point };
+            pickTarget.Create();
+        }
+        if (pickPixel == null) pickPixel = new Texture2D(1, 1, TextureFormat.RGBAFloat, false, true) { hideFlags = HideFlags.HideAndDontSave };
+
+        var cmd = new UnityEngine.Rendering.CommandBuffer { name = "Asset Studio pick" };
+        cmd.SetRenderTarget(pickTarget);
+        cmd.ClearRenderTarget(true, true, new Color(0, 0, 0, 0));
+        cmd.SetViewProjectionMatrices(cam.worldToCameraMatrix, Matrix4x4.Perspective(cam.fieldOfView, r.width / Mathf.Max(1, r.height), cam.nearClipPlane, cam.farClipPlane));
+        for (int pi = 0; pi < parts.Count; pi++)
+        {
+            var part = parts[pi];
+            for (int sm = 0; sm < part.sheets.Length; sm++)
+            {
+                pickBlock.Clear();
+                pickBlock.SetFloat("_Id", part.sheets[sm] != null ? pi * 64 + sm + 1 : -1);
+                pickBlock.SetFloat("_Cull", part.twoSided[sm] ? 0 : 2);
+                cmd.DrawMesh(part.mesh, part.toWorld, pickMaterial, sm, 0, pickBlock);
+            }
+        }
+        Graphics.ExecuteCommandBuffer(cmd);
+        cmd.Release();
+
+        int px = Mathf.Clamp(Mathf.FloorToInt(mouse.x - r.x), 0, w - 1);
+        int py = Mathf.Clamp(Mathf.FloorToInt(mouse.y - r.y), 0, h - 1);
+        var prev = RenderTexture.active;
+        RenderTexture.active = pickTarget;
+        // Render targets are read from the bottom row up.
+        pickPixel.ReadPixels(new Rect(px, h - 1 - py, 1, 1), 0, 0, false);
+        RenderTexture.active = prev;
+        var c = pickPixel.GetPixel(0, 0);
+        if (c.a < .5f || c.b < .5f) return false;
+        int id = Mathf.RoundToInt(c.b) - 1;
+        int partIndex = id / 64, sub = id % 64;
+        if (partIndex >= parts.Count || sub >= parts[partIndex].sheets.Length || parts[partIndex].sheets[sub] == null) return false;
+        var sheet = parts[partIndex].sheets[sub];
+        var uv = new Vector2(c.r, c.g);
+        var t = Texel(sheet, uv);
+        int idx = t.y * sheet.width + t.x;
+        hit = new Hit { sheet = sheet, uv = uv };
+        if (sheet.covered != null && sheet.covered[idx])
+        {
+            hit.point = sheet.pos[idx];
+            hit.normal = sheet.nrm[idx];
+            // A texel's width on the model, from the next texel along when it sits on the same face.
+            int n = t.x + 1 < sheet.width ? idx + 1 : idx - 1;
+            float step = sheet.covered[n] ? Vector3.Distance(sheet.pos[n], sheet.pos[idx]) : 0;
+            hit.worldPerUv = step > 0 && step < cell * 8 ? step * Mathf.Sqrt(sheet.width * sheet.height) : 0;
+        }
+        else hit.normal = -cam.transform.forward;
+        hit.distance = Vector3.Distance(cam.transform.position, hit.point);
+        return true;
+    }
+
+    void ReleasePick()
+    {
+        if (pickTarget != null) { pickTarget.Release(); UnityEngine.Object.DestroyImmediate(pickTarget); pickTarget = null; }
+        if (pickPixel != null) { UnityEngine.Object.DestroyImmediate(pickPixel); pickPixel = null; }
     }
 
     // ── Strokes ──
@@ -230,13 +457,17 @@ public class AssetStudioPainter
         if (tool == Tool.Eyedropper) { colour = s.texture.GetPixel(centre.x, centre.y); return false; }
         Remember(s);
         if (tool == Tool.Fill) { Fill(s, centre); s.texture.Apply(false); s.dirty = true; return true; }
-        int r0 = (size - 1) / 2, r1 = size / 2;
+        // Bigger brushes paint by reach on the surface (see MapSurface); one texel is the texel under the mouse.
+        if (size > 1 && PaintSurface(hit)) return true;
+        // The block of texels is centred on the exact point under the mouse (not on the texel it falls in), so the
+        // brush covers the same spot the outline under the mouse shows, whatever its size.
+        var t = TexelPoint(s, hit.uv);
+        int x0 = Mathf.RoundToInt(t.x - size * .5f), y0 = Mathf.RoundToInt(t.y - size * .5f);
         float radius = size * .5f;
-        for (int dx = -r0; dx <= r1; dx++)
-        for (int dy = -r0; dy <= r1; dy++)
+        for (int x = x0; x < x0 + size; x++)
+        for (int y = y0; y < y0 + size; y++)
         {
-            if (round && size > 2 && (dx + .5f - (r1 - r0) * .5f) * (dx + .5f - (r1 - r0) * .5f) + (dy + .5f - (r1 - r0) * .5f) * (dy + .5f - (r1 - r0) * .5f) > radius * radius) continue;
-            int x = centre.x + dx, y = centre.y + dy;
+            if (round && size > 2 && (x + .5f - t.x) * (x + .5f - t.x) + (y + .5f - t.y) * (y + .5f - t.y) > radius * radius) continue;
             if (x < 0 || y < 0 || x >= s.width || y >= s.height) continue;
             s.texture.SetPixel(x, y, tool == Tool.Eraser ? (Color)s.original[y * s.width + x] : (Color)colour);
         }
@@ -325,6 +556,23 @@ public class AssetStudioPainter
         }
         undo.Clear(); redo.Clear();
         return saved.Count == 0 ? "Nothing changed." : "Saved " + string.Join(", ", saved) + " (old copies in ArtRevisions).";
+    }
+
+    // Unsaved painting when the Studio closes or scripts reload (no dialog can be shown then): each changed texture is
+    // written to ArtRevisions/Unsaved, never over the real file, and the Console says where.
+    public string KeepUnsaved()
+    {
+        string folder = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "ArtRevisions", "Unsaved"));
+        Directory.CreateDirectory(folder);
+        var kept = new List<string>();
+        foreach (var s in sheets.Values.Where(x => x.dirty))
+        {
+            string file = Path.Combine(folder, Path.GetFileNameWithoutExtension(s.path) + " " + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".png");
+            File.WriteAllBytes(file, s.texture.EncodeToPNG());
+            kept.Add(file);
+        }
+        if (kept.Count > 0) Debug.Log("[Asset Studio] Unsaved painting kept (the textures are unchanged): " + string.Join(", ", kept));
+        return kept.Count > 0 ? "Unsaved painting kept in ArtRevisions/Unsaved." : null;
     }
 
     public void AddSwatch()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -42,7 +43,7 @@ public class AssetStudioPreview : IDisposable
     readonly AssetStudioPainter painter = new();
     public bool Painting { get; private set; }
     public bool CanPaint => mode == Mode.Model && instance != null;
-    public float ControlsHeight => Painting ? 150 : 86;
+    public float ControlsHeight => Painting ? 184 : 86;
     public AssetStudioPainter Painter => painter;
     string paintNote;
     Vector2 lastPaintMouse;
@@ -80,6 +81,12 @@ public class AssetStudioPreview : IDisposable
         util.camera.nearClipPlane = .01f;
         util.camera.farClipPlane = 2000f;
         util.camera.clearFlags = CameraClearFlags.SolidColor;
+        // The game's volumes (filmic grade, lens effects) are global and would reach this camera too: a lens effect
+        // bends the picture, so clicks miss what is under them. The preview shows the model plain.
+        var camData = util.camera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>() ?? util.camera.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+        camData.renderPostProcessing = false;
+        camData.volumeLayerMask = 0;
+        camData.antialiasing = UnityEngine.Rendering.Universal.AntialiasingMode.None;
         instance = UnityEngine.Object.Instantiate(prefab);
         instance.hideFlags = HideFlags.HideAndDontSave;
         foreach (var mb in instance.GetComponentsInChildren<MonoBehaviour>(true)) if (mb != null) mb.enabled = false;
@@ -156,6 +163,7 @@ public class AssetStudioPreview : IDisposable
 
     void ClearInstance()
     {
+        ClearLook();
         if (instance != null) UnityEngine.Object.DestroyImmediate(instance);
         if (ground != null) UnityEngine.Object.DestroyImmediate(ground);
         instance = null; ground = null;
@@ -164,7 +172,7 @@ public class AssetStudioPreview : IDisposable
 
     public void Dispose()
     {
-        StopPainting(true, false);
+        StopPainting(false, false, keepCopy: true);   // closing or a recompile: never a dialog
         ClearInstance();
         util?.Cleanup();
         util = null;
@@ -198,6 +206,8 @@ public class AssetStudioPreview : IDisposable
     void DrawModel(Rect r)
     {
         var e = Event.current;
+        // The view bar sits over the picture: it takes its clicks before painting or turning can.
+        if (e.type != EventType.Repaint) DrawViewBar(r);
         if (Painting) PaintInput(r, e);
         if (r.Contains(e.mousePosition))
         {
@@ -214,7 +224,190 @@ public class AssetStudioPreview : IDisposable
             var sizeText = $"{bounds.size.x:0.##} × {bounds.size.y:0.##} × {bounds.size.z:0.##} m";
             GUI.Label(new Rect(r.xMax - 212, r.y + 8, 200, 18), sizeText, new GUIStyle(EditorStyles.whiteMiniLabel) { alignment = TextAnchor.UpperRight });
             if (Painting) DrawPaintOverlay(r);
+            DrawViewBar(r);
         }
+    }
+
+    // ── How the model is drawn: shaded, shaded with its wireframe, wireframe; texel density over any of them ──
+
+    enum Look { Shaded, WireShaded, Wire }
+    static Look look;
+    static bool showDensity;
+    static float densityTarget = PixelRestyle.ItemTexelsPerUnit;
+    static readonly string[] LookNames = { "Shaded", "Wire + shaded", "Wireframe" };
+    readonly List<GameObject> wires = new();
+    readonly Dictionary<Renderer, Material[]> lookBase = new();   // each renderer's materials under the density view
+    readonly List<Material> densityMaterials = new();
+    Look shownLook = (Look)(-1);
+    bool shownDensity;
+    float shownTarget;
+    float averageDensity;
+    static Material wireMaterial;
+    static Shader densityShader;
+    const string StudioFolder = "Assets/Game/Development/Editor/AssetStudio/";
+    static readonly string[] BaseMaps = { "_BaseMap", "_MainTex", "_BaseColorMap", "_Albedo_Map" };
+
+    void DrawViewBar(Rect r)
+    {
+        var bar = new Rect(r.x + 8, r.y + 6, 255, 18);
+        look = (Look)GUI.Toolbar(bar, (int)look, LookNames, EditorStyles.miniButton);
+        var d = new Rect(bar.xMax + 6, bar.y, 86, 18);
+        showDensity = GUI.Toggle(d, showDensity, new GUIContent("Texel density", "Every texel as a checker square, tinted by texels per metre: green on the target, blue fewer, red more"), EditorStyles.miniButton);
+        if (!showDensity) return;
+        var line = new Rect(r.x + 8, bar.yMax + 4, 400, 18);
+        GUI.Label(new Rect(line.x, line.y, 44, 18), "Target", EditorStyles.whiteMiniLabel);
+        float nt = EditorGUI.DelayedFloatField(new Rect(line.x + 40, line.y + 1, 44, 16), densityTarget, EditorStyles.miniTextField);
+        if (nt > 0) densityTarget = nt;
+        GUI.Label(new Rect(line.x + 90, line.y, 300, 18), $"per metre · this model {averageDensity:0} per metre", EditorStyles.whiteMiniLabel);
+        if (Event.current.type == EventType.Repaint) DrawDensityKey(new Rect(r.x + 8, line.yMax + 4, 180, 8));
+    }
+
+    static Color DensityColour(float l)
+    {
+        var good = new Color(.25f, .85f, .3f);
+        return l < 0 ? Color.Lerp(good, new Color(.2f, .4f, 1), -l) : Color.Lerp(good, new Color(1, .25f, .2f), l);
+    }
+
+    static void DrawDensityKey(Rect k)
+    {
+        for (int i = 0; i < 18; i++)
+            EditorGUI.DrawRect(new Rect(k.x + i * k.width / 18, k.y, k.width / 18 + 1, k.height), DensityColour(i / 17f * 2 - 1));
+        var style = new GUIStyle(EditorStyles.whiteMiniLabel);
+        GUI.Label(new Rect(k.x, k.yMax, 60, 14), "x¼", style);
+        GUI.Label(new Rect(k.center.x - 30, k.yMax, 60, 14), "target", new GUIStyle(style) { alignment = TextAnchor.UpperCenter });
+        GUI.Label(new Rect(k.xMax - 30, k.yMax, 30, 14), "x4", new GUIStyle(style) { alignment = TextAnchor.UpperRight });
+    }
+
+    // Puts the chosen look on the preview copy, only when it changed. Called before each render.
+    void ApplyLook()
+    {
+        if (instance == null || look == shownLook && showDensity == shownDensity && (!showDensity || shownTarget == densityTarget)) return;
+        ClearLook();
+        var renderers = instance.GetComponentsInChildren<Renderer>(false).Where(x => x.enabled && (x is MeshRenderer || x is SkinnedMeshRenderer)).ToArray();
+        if (showDensity)
+        {
+            if (densityShader == null) densityShader = AssetDatabase.LoadAssetAtPath<Shader>(StudioFolder + "Studio Texel Density.shader");
+            float texels = 0, area = 0;
+            foreach (var rend in renderers)
+            {
+                var mats = rend.sharedMaterials;
+                lookBase[rend] = mats;
+                var swapped = new Material[mats.Length];
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    var m = new Material(densityShader) { hideFlags = HideFlags.HideAndDontSave };
+                    var tex = BaseMap(mats[i]);
+                    if (tex != null) m.SetTexture("_MainTex", tex);
+                    m.SetFloat("_Target", densityTarget);
+                    densityMaterials.Add(m);
+                    swapped[i] = m;
+                }
+                rend.sharedMaterials = swapped;
+                MeasureDensity(rend, mats, ref texels, ref area);
+            }
+            averageDensity = area > 0 ? Mathf.Sqrt(texels / area) : 0;
+        }
+        if (look != Look.Shaded)
+        {
+            if (wireMaterial == null)
+                wireMaterial = new Material(AssetDatabase.LoadAssetAtPath<Shader>(StudioFolder + "Studio Wire.shader")) { hideFlags = HideFlags.HideAndDontSave };
+            foreach (var rend in renderers)
+            {
+                var mesh = WorldMesh(rend);
+                if (mesh == null) continue;
+                var go = new GameObject("Studio wire") { hideFlags = HideFlags.HideAndDontSave };
+                go.AddComponent<MeshFilter>().sharedMesh = Lines(mesh);
+                go.AddComponent<MeshRenderer>().sharedMaterial = wireMaterial;
+                util.AddSingleGO(go);
+                wires.Add(go);
+                UnityEngine.Object.DestroyImmediate(mesh);
+                if (look == Look.Wire) rend.forceRenderingOff = true;
+            }
+            wireMaterial.color = look == Look.Wire ? new Color(.8f, .82f, .88f) : new Color(1f, .62f, .2f);
+        }
+        shownLook = look; shownDensity = showDensity; shownTarget = densityTarget;
+    }
+
+    static Texture BaseMap(Material m) => m == null ? null : BaseMaps.Where(m.HasProperty).Select(m.GetTexture).FirstOrDefault(x => x != null);
+
+    void ClearLook()
+    {
+        foreach (var w in wires) if (w != null) { UnityEngine.Object.DestroyImmediate(w.GetComponent<MeshFilter>().sharedMesh); UnityEngine.Object.DestroyImmediate(w); }
+        wires.Clear();
+        foreach (var kv in lookBase) if (kv.Key != null) kv.Key.sharedMaterials = kv.Value;
+        lookBase.Clear();
+        foreach (var m in densityMaterials) if (m != null) UnityEngine.Object.DestroyImmediate(m);
+        densityMaterials.Clear();
+        if (instance != null) foreach (var rend in instance.GetComponentsInChildren<Renderer>(true)) rend.forceRenderingOff = false;
+        shownLook = (Look)(-1); shownDensity = false;
+    }
+
+    // The renderer's mesh in world space as it stands (a skinned mesh baked). Null when it can't be read.
+    static Mesh WorldMesh(Renderer rend)
+    {
+        Mesh src; Matrix4x4 m;
+        if (rend is SkinnedMeshRenderer smr && smr.sharedMesh != null)
+        { src = new Mesh(); smr.BakeMesh(src, true); m = Matrix4x4.TRS(smr.transform.position, smr.transform.rotation, Vector3.one); }
+        else
+        {
+            var mf = rend.GetComponent<MeshFilter>();
+            if (mf == null || mf.sharedMesh == null) return null;
+            src = UnityEngine.Object.Instantiate(mf.sharedMesh); m = rend.transform.localToWorldMatrix;
+        }
+        src.hideFlags = HideFlags.HideAndDontSave;
+        try { var v = src.vertices; for (int i = 0; i < v.Length; i++) v[i] = m.MultiplyPoint3x4(v[i]); src.vertices = v; }
+        catch { UnityEngine.Object.DestroyImmediate(src); return null; }
+        return src;
+    }
+
+    // Each triangle edge once, as a line mesh (vertices split at UV seams are joined first, so a seam is one line).
+    static Mesh Lines(Mesh mesh)
+    {
+        var v = mesh.vertices;
+        var weld = new Dictionary<Vector3Int, int>(); var map = new int[v.Length]; var pts = new List<Vector3>();
+        for (int i = 0; i < v.Length; i++)
+        {
+            var k = Vector3Int.RoundToInt(v[i] * 1e4f);
+            if (!weld.TryGetValue(k, out map[i])) { map[i] = pts.Count; weld[k] = pts.Count; pts.Add(v[i]); }
+        }
+        var edges = new HashSet<long>(); var idx = new List<int>();
+        for (int sm = 0; sm < mesh.subMeshCount; sm++)
+        {
+            var t = mesh.GetTriangles(sm);
+            for (int i = 0; i + 2 < t.Length; i += 3)
+                for (int e = 0; e < 3; e++)
+                {
+                    int a = map[t[i + e]], b = map[t[i + (e + 1) % 3]];
+                    long key = (long)Mathf.Min(a, b) << 32 | (uint)Mathf.Max(a, b);
+                    if (a != b && edges.Add(key)) { idx.Add(a); idx.Add(b); }
+                }
+        }
+        var lines = new Mesh { hideFlags = HideFlags.HideAndDontSave, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        lines.SetVertices(pts);
+        lines.SetIndices(idx, MeshTopology.Lines, 0);
+        return lines;
+    }
+
+    // Adds the renderer's texel and world areas, for the model's average texels per metre.
+    static void MeasureDensity(Renderer rend, Material[] mats, ref float texels, ref float area)
+    {
+        var mesh = WorldMesh(rend);
+        if (mesh == null) return;
+        var v = mesh.vertices; var uv = mesh.uv;
+        if (uv.Length == v.Length)
+            for (int sm = 0; sm < mesh.subMeshCount && sm < mats.Length; sm++)
+            {
+                var tex = BaseMap(mats[sm]);
+                if (tex == null) continue;
+                var t = mesh.GetTriangles(sm);
+                for (int i = 0; i + 2 < t.Length; i += 3)
+                {
+                    var a = uv[t[i]]; var b = uv[t[i + 1]]; var c = uv[t[i + 2]];
+                    texels += Mathf.Abs((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y)) * .5f * tex.width * tex.height;
+                    area += Vector3.Cross(v[t[i + 1]] - v[t[i]], v[t[i + 2]] - v[t[i]]).magnitude * .5f;
+                }
+            }
+        UnityEngine.Object.DestroyImmediate(mesh);
     }
 
     // ── Painting ──
@@ -222,6 +415,7 @@ public class AssetStudioPreview : IDisposable
     public bool StartPainting()
     {
         if (!CanPaint) { paintNote = "Only a model can be painted (not a sound or a flat texture)."; return false; }
+        ClearLook();   // the painter takes the model's own materials; the look goes back on over its copies
         if (!painter.Begin(instance)) { paintNote = painter.Problem; return false; }
         Painting = true; spin = false; vfxPlaying = false;
         paintNote = painter.Problem;
@@ -230,9 +424,10 @@ public class AssetStudioPreview : IDisposable
 
     // Leaves painting. ask: with unsaved changes, asks whether to save them first. rebuild: show the model again as
     // the asset has it (the preview copy still wears the painter's material copies).
-    public void StopPainting(bool ask, bool rebuild = true)
+    public void StopPainting(bool ask, bool rebuild = true, bool keepCopy = false)
     {
         if (!Painting) return;
+        if (painter.Changed > 0 && keepCopy) paintNote = painter.KeepUnsaved();
         if (painter.Changed > 0 && ask && EditorUtility.DisplayDialog("Unsaved painting", $"{painter.Changed} texture(s) were painted and not saved.", "Save them", "Throw them away"))
             paintNote = painter.Save();
         painter.Revert();
@@ -249,20 +444,62 @@ public class AssetStudioPreview : IDisposable
         }
     }
 
+    // The preview camera is drawn with its projection set explicitly from the picture's own aspect: left to the
+    // preview, a tall picture was drawn with the wrong aspect (the model about 13% smaller than the camera's numbers
+    // say), so a click painted off toward the middle. The mouse ray and the GPU pick use the same projection.
+    void RenderWith(float aspect)
+    {
+        var cam = util.camera;
+        cam.projectionMatrix = Matrix4x4.Perspective(cam.fieldOfView, aspect, cam.nearClipPlane, cam.farClipPlane);
+        try { util.Render(true); }
+        finally { cam.ResetProjectionMatrix(); }
+    }
+
+    Matrix4x4 drawnViewProj;
+    Vector3 drawnCamPos;
+    float drawnFov, drawnAspect;
+    bool hasDrawn;
+    public string TestCamera => $"drawn fov {drawnFov} aspect {drawnAspect}; now fov {util?.camera.fieldOfView} aspect {util?.camera.aspect}";
+
     Ray MouseRay(Rect r, Vector2 mouse)
+    {
+        if (hasDrawn && util != null)
+        {
+            var cam0 = util.camera;
+            painter.viewRight = cam0.transform.right; painter.viewUp = cam0.transform.up; painter.viewForward = cam0.transform.forward;
+            var ndc = new Vector3((mouse.x - r.x) / r.width * 2 - 1, 1 - (mouse.y - r.y) / r.height * 2, 1);
+            var far = drawnViewProj.inverse.MultiplyPoint(ndc);
+            return new Ray(drawnCamPos, (far - drawnCamPos).normalized);
+        }
+        var rot = Quaternion.Euler(pitch, yaw, 0);
+        var cam = util.camera;
+        cam.transform.position = bounds.center + rot * new Vector3(0, 0, -distance);
+        cam.transform.rotation = rot;
+        cam.aspect = r.width / Mathf.Max(1, r.height);
+        painter.viewRight = cam.transform.right; painter.viewUp = cam.transform.up; painter.viewForward = cam.transform.forward;
+        return cam.ViewportPointToRay(new Vector3((mouse.x - r.x) / r.width, 1f - (mouse.y - r.y) / r.height, 0));
+    }
+
+    // What is under the mouse: the GPU pick says which texel is on screen there; the ray cast fills in where it is
+    // on the model when the pick can't (a texel no face covers whole).
+    bool FindHit(Rect r, Vector2 mouse, out AssetStudioPainter.Hit hit)
     {
         var rot = Quaternion.Euler(pitch, yaw, 0);
         var cam = util.camera;
         cam.transform.position = bounds.center + rot * new Vector3(0, 0, -distance);
         cam.transform.rotation = rot;
         cam.aspect = r.width / Mathf.Max(1, r.height);
-        return cam.ViewportPointToRay(new Vector3((mouse.x - r.x) / r.width, 1f - (mouse.y - r.y) / r.height, 0));
+        painter.viewRight = cam.transform.right; painter.viewUp = cam.transform.up; painter.viewForward = cam.transform.forward;
+        bool rayHit = painter.Raycast(cam.ViewportPointToRay(new Vector3((mouse.x - r.x) / r.width, 1f - (mouse.y - r.y) / r.height, 0)), out var rh);
+        if (!painter.Pick(cam, r, mouse, out hit)) { hit = rh; return rayHit; }
+        if (hit.worldPerUv <= 0 && rayHit) { hit.point = rh.point; hit.normal = rh.normal; hit.worldPerUv = rh.worldPerUv; hit.distance = rh.distance; }
+        return true;
     }
 
     void PaintInput(Rect r, Event e)
     {
         if (e.type == EventType.MouseMove || e.type == EventType.MouseDrag)
-            hover = r.Contains(e.mousePosition) && painter.Raycast(MouseRay(r, e.mousePosition), out var h) ? h : null;
+            hover = r.Contains(e.mousePosition) && FindHit(r, e.mousePosition, out var h) ? h : null;
         if (e.alt) return;
         if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(e.mousePosition))
         {
@@ -292,7 +529,7 @@ public class AssetStudioPreview : IDisposable
 
     void PaintAt(Rect r, Vector2 mouse)
     {
-        if (painter.Raycast(MouseRay(r, mouse), out var hit)) painter.Apply(hit);
+        if (FindHit(r, mouse, out var hit)) painter.Apply(hit);
     }
 
     void DrawPaintOverlay(Rect r)
@@ -303,20 +540,41 @@ public class AssetStudioPreview : IDisposable
             // The brush: a box about the size it covers on the model where the mouse is.
             var h = hover.Value;
             var cam = util.camera;
-            float worldPerTexel = h.worldPerUv > 0 ? h.worldPerUv / Mathf.Max(h.sheet.width, h.sheet.height) : .01f;
+            float worldPerTexel = h.worldPerUv > 0 ? h.worldPerUv / Mathf.Sqrt(h.sheet.width * h.sheet.height) : .01f;
             var a = cam.WorldToViewportPoint(h.point);
             var b = cam.WorldToViewportPoint(h.point + cam.transform.right * worldPerTexel * painter.size);
             float px = Mathf.Clamp(Mathf.Abs(b.x - a.x) * r.width, 4, 200);
             var box = new Rect(e.mousePosition.x - px / 2, e.mousePosition.y - px / 2, px, px);
             var c = painter.tool == AssetStudioPainter.Tool.Eraser ? Color.white : (Color)painter.colour;
-            Handles.BeginGUI();
-            Handles.DrawSolidRectangleWithOutline(new Rect(box.x - 1, box.y - 1, box.width + 2, box.height + 2), Color.clear, Color.black);
-            Handles.DrawSolidRectangleWithOutline(box, new Color(c.r, c.g, c.b, .35f), Color.white);
-            Handles.EndGUI();
+            EditorGUI.DrawRect(box, new Color(c.r, c.g, c.b, .4f));
+            Outline(new Rect(box.x - 1, box.y - 1, box.width + 2, box.height + 2), Color.black);
+            Outline(box, Color.white);
             var t = AssetStudioPainter.TexelAt(h);
             GUI.Label(new Rect(r.x + 12, r.yMax - 22, r.width - 24, 18), $"{System.IO.Path.GetFileName(h.sheet.path)} · texel {t.x}, {t.y} · {h.sheet.width} × {h.sheet.height}", EditorStyles.whiteMiniLabel);
         }
-        GUI.Label(new Rect(r.x + 12, r.y + 8, r.width - 24, 18), "PAINTING · left paints · right-drag or Alt-drag turns · wheel zooms", EditorStyles.whiteMiniLabel);
+    }
+
+    static string Hex(Color32 c) => $"#{c.r:X2}{c.g:X2}{c.b:X2}";
+
+    // A colour square that can be clicked; the current colour gets a white frame.
+    bool Swatch(Color32 c, float size)
+    {
+        var rr = GUILayoutUtility.GetRect(size, 18, GUILayout.Width(size), GUILayout.Height(18));
+        rr.y += 1; rr.height = 16;
+        bool current = c.r == painter.colour.r && c.g == painter.colour.g && c.b == painter.colour.b;
+        EditorGUI.DrawRect(rr, current ? Color.white : Color.black);
+        EditorGUI.DrawRect(new Rect(rr.x + 1, rr.y + 1, rr.width - 2, rr.height - 2), c);
+        GUI.Label(rr, new GUIContent("", Hex(c)));
+        if (Event.current.type == EventType.MouseDown && rr.Contains(Event.current.mousePosition)) { Event.current.Use(); return true; }
+        return false;
+    }
+
+    static void Outline(Rect b, Color c)
+    {
+        EditorGUI.DrawRect(new Rect(b.x, b.y, b.width, 1), c);
+        EditorGUI.DrawRect(new Rect(b.x, b.yMax - 1, b.width, 1), c);
+        EditorGUI.DrawRect(new Rect(b.x, b.y, 1, b.height), c);
+        EditorGUI.DrawRect(new Rect(b.xMax - 1, b.y, 1, b.height), c);
     }
 
     public bool HandlePaintKey(Event e)
@@ -328,7 +586,12 @@ public class AssetStudioPreview : IDisposable
         else if (ctrl && e.keyCode == KeyCode.S) paintNote = painter.Save();
         else if (ctrl) return false;
         else if (e.keyCode == KeyCode.B) painter.tool = AssetStudioPainter.Tool.Paint;
-        else if (e.keyCode == KeyCode.I) painter.tool = AssetStudioPainter.Tool.Eyedropper;
+        else if (e.keyCode == KeyCode.I)
+        {
+            // I takes the colour under the mouse at once and keeps the tool in hand; off the model it picks the tool.
+            if (hover.HasValue) { painter.colour = AssetStudioPainter.Sample(hover.Value); paintNote = "Picked " + Hex(painter.colour); }
+            else painter.tool = AssetStudioPainter.Tool.Eyedropper;
+        }
         else if (e.keyCode == KeyCode.E) painter.tool = AssetStudioPainter.Tool.Eraser;
         else if (e.keyCode == KeyCode.G) painter.tool = AssetStudioPainter.Tool.Fill;
         else if (e.keyCode == KeyCode.LeftBracket) painter.size = Mathf.Max(1, painter.size - 1);
@@ -341,37 +604,57 @@ public class AssetStudioPreview : IDisposable
 
     void DrawPaintControls()
     {
+        // Three short rows, so it fits the preview column: tools and colour, size and swatches, then undo and save.
         GUILayout.BeginHorizontal();
-        foreach (var (tool, label) in new[] { (AssetStudioPainter.Tool.Paint, "Brush (B)"), (AssetStudioPainter.Tool.Eyedropper, "Pick colour (I)"), (AssetStudioPainter.Tool.Eraser, "Eraser (E)"), (AssetStudioPainter.Tool.Fill, "Fill (G)") })
-            if (GUILayout.Toggle(painter.tool == tool, label, "Button", GUILayout.Width(tool == AssetStudioPainter.Tool.Eyedropper ? 105 : 80)) && painter.tool != tool) painter.tool = tool;
-        GUILayout.Space(8);
-        painter.colour = EditorGUILayout.ColorField(GUIContent.none, painter.colour, true, true, false, GUILayout.Width(70));
-        if (GUILayout.Button(new GUIContent("Keep", "Keep this colour in the row of swatches"), GUILayout.Width(44))) painter.AddSwatch();
-        foreach (var sw in painter.swatches.ToArray())
-        {
-            var rr = GUILayoutUtility.GetRect(18, 18, GUILayout.Width(18));
-            EditorGUI.DrawRect(rr, sw);
-            if (Event.current.type == EventType.MouseDown && rr.Contains(Event.current.mousePosition)) { painter.colour = sw; Event.current.Use(); }
-        }
+        foreach (var (tool, label, tip) in new[] {
+            (AssetStudioPainter.Tool.Paint, "Brush", "Paint with the colour (B)"),
+            (AssetStudioPainter.Tool.Eyedropper, "Pick", "Take the colour under the mouse (I)"),
+            (AssetStudioPainter.Tool.Eraser, "Erase", "Put the saved texture's pixels back (E)"),
+            (AssetStudioPainter.Tool.Fill, "Fill", "Fill the touching pixels of the same colour (G)") })
+            if (GUILayout.Toggle(painter.tool == tool, new GUIContent(label, tip), "Button", GUILayout.Width(58)) && painter.tool != tool) painter.tool = tool;
+        GUILayout.Space(6);
+        painter.colour = EditorGUILayout.ColorField(GUIContent.none, painter.colour, true, true, false, GUILayout.Width(64));
+        if (GUILayout.Button(new GUIContent("Keep", "Keep this colour in the swatches row"), GUILayout.Width(44))) painter.AddSwatch();
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
 
         GUILayout.BeginHorizontal();
-        GUILayout.Label(new GUIContent("Pixel size", "How many texels across the brush is ([ and ])"), GUILayout.Width(62));
-        painter.size = EditorGUILayout.IntSlider(painter.size, 1, 32, GUILayout.Width(200));
-        painter.round = GUILayout.Toggle(painter.round, "Round", "Button", GUILayout.Width(55));
-        GUILayout.Space(8);
-        GUI.enabled = painter.CanUndo; if (GUILayout.Button("Undo", GUILayout.Width(50))) painter.Undo();
-        GUI.enabled = painter.CanRedo; if (GUILayout.Button("Redo", GUILayout.Width(50))) painter.Redo();
-        GUI.enabled = true;
+        GUILayout.Label(new GUIContent("Size", "How many pixels across the brush is ([ and ])"), GUILayout.Width(30));
+        painter.size = EditorGUILayout.IntSlider(painter.size, 1, 32, GUILayout.Width(150));
+        painter.round = GUILayout.Toggle(painter.round, new GUIContent("Round", "A round brush instead of a square"), "Button", GUILayout.Width(52));
+        GUILayout.Space(6);
+        foreach (var sw in painter.swatches.ToArray())
+        {
+            var rr = GUILayoutUtility.GetRect(16, 16, GUILayout.Width(16), GUILayout.Height(18));
+            rr.y += 1; rr.height = 16;
+            EditorGUI.DrawRect(rr, Color.black);
+            EditorGUI.DrawRect(new Rect(rr.x + 1, rr.y + 1, rr.width - 2, rr.height - 2), sw);
+            if (Event.current.type == EventType.MouseDown && rr.Contains(Event.current.mousePosition)) { painter.colour = sw; painter.tool = AssetStudioPainter.Tool.Paint; Event.current.Use(); }
+        }
         GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
+
+        if (painter.palette.Count > 0)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(new GUIContent("Palette", "This model's 16 most used colours: click one to paint with it"), GUILayout.Width(44));
+            foreach (var c in painter.palette)
+                if (Swatch(c, 20)) { painter.colour = c; if (painter.tool != AssetStudioPainter.Tool.Fill) painter.tool = AssetStudioPainter.Tool.Paint; }
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
+
+        GUILayout.BeginHorizontal();
+        GUI.enabled = painter.CanUndo; if (GUILayout.Button(new GUIContent("Undo", "Ctrl+Z"), GUILayout.Width(50))) painter.Undo();
+        GUI.enabled = painter.CanRedo; if (GUILayout.Button(new GUIContent("Redo", "Ctrl+Y"), GUILayout.Width(50))) painter.Redo();
         GUI.enabled = painter.Changed > 0;
-        if (GUILayout.Button("Revert", GUILayout.Width(60))) painter.Revert();
-        GUI.backgroundColor = painter.Changed > 0 ? new Color(.5f, 1f, .5f) : Color.white;
-        if (GUILayout.Button(painter.Changed > 0 ? $"Save to texture ({painter.Changed})" : "Saved", GUILayout.Width(150))) paintNote = painter.Save();
+        if (GUILayout.Button(new GUIContent("Revert", "Throw away everything not saved"), GUILayout.Width(56))) painter.Revert();
+        GUILayout.FlexibleSpace();
+        GUI.backgroundColor = painter.Changed > 0 ? new Color(.55f, 1f, .55f) : Color.white;
+        if (GUILayout.Button(new GUIContent(painter.Changed > 0 ? "Save to texture" : "All saved", "Write the painting into the texture file (Ctrl+S); the old file is kept in ArtRevisions"), GUILayout.Width(110))) paintNote = painter.Save();
         GUI.backgroundColor = Color.white;
         GUI.enabled = true;
-        if (GUILayout.Button("Done", GUILayout.Width(55))) StopPainting(true);
+        if (GUILayout.Button(new GUIContent("Done", "Stop painting (Esc)"), GUILayout.Width(50))) StopPainting(true);
         GUILayout.EndHorizontal();
         if (!string.IsNullOrEmpty(paintNote)) GUILayout.Label(paintNote, EditorStyles.miniLabel);
     }
@@ -386,8 +669,15 @@ public class AssetStudioPreview : IDisposable
         util.lights[0].intensity = 1.6f; util.lights[0].transform.rotation = Quaternion.Euler(40f, yaw + 40f, 0);
         util.lights[1].intensity = .9f; util.lights[1].transform.rotation = Quaternion.Euler(-20f, yaw - 140f, 0);
         util.ambientColor = new Color(.5f, .5f, .53f);
+        ApplyLook();
         util.BeginPreview(r, GUIStyle.none);
-        util.Render(true);
+        RenderWith(r.width / Mathf.Max(1, r.height));
+        // The camera exactly as this frame was drawn: the mouse is turned into a ray through it (MouseRay), so a
+        // click hits what is on screen whatever the preview set up for the render.
+        drawnViewProj = Matrix4x4.Perspective(util.camera.fieldOfView, r.width / Mathf.Max(1, r.height), util.camera.nearClipPlane, util.camera.farClipPlane) * util.camera.worldToCameraMatrix;
+        drawnCamPos = util.camera.transform.position;
+        drawnFov = util.camera.fieldOfView; drawnAspect = util.camera.aspect;
+        hasDrawn = true;
         var tex = util.EndPreview();
         if (toScreen) GUI.DrawTexture(r, tex, ScaleMode.StretchToFill, false);
     }
@@ -495,8 +785,12 @@ public class AssetStudioPreview : IDisposable
             util.camera.transform.position = bounds.center + rot * new Vector3(0, 0, -distance);
             util.camera.transform.rotation = rot;
             util.camera.backgroundColor = Backgrounds[background];
+            ApplyLook();
+            util.lights[0].intensity = 1.6f; util.lights[0].transform.rotation = Quaternion.Euler(40f, yaw + 40f, 0);
+            util.lights[1].intensity = .9f; util.lights[1].transform.rotation = Quaternion.Euler(-20f, yaw - 140f, 0);
+            util.ambientColor = new Color(.5f, .5f, .53f);
             util.BeginStaticPreview(new Rect(0, 0, 960, 540));
-            util.Render(true);
+            RenderWith(960f / 540f);
             var still = util.EndStaticPreview();
             var png = still.EncodeToPNG();
             UnityEngine.Object.DestroyImmediate(still);
@@ -539,6 +833,8 @@ public class AssetStudioPreview : IDisposable
         return $"hit {hit.sheet.path} texel {t.x},{t.y} now {(Color32)hit.sheet.texture.GetPixel(t.x, t.y)} changed {painter.Changed} perUv {hit.worldPerUv:0.###}";
     }
     public void TestView(float y, float p) { yaw = y; pitch = p; spin = false; }
+    public static void TestLook(int l, bool density) { look = (Look)l; showDensity = density; }
+    public float TestDensity => averageDensity;
     public string TestMode => mode.ToString();
     public int TestParticles => particles.Length;
     public void TestPlayAudio() => PlayAudio(clip, false);

@@ -68,10 +68,21 @@ public static class DevPromptBuilder
         var ask = Text("Prompt", window, "What should Main look into?", 26, body, Cream, TextAlignmentOptions.TopLeft);
         Edges(ask.rectTransform, new Vector2(0, 1), new Vector2(1, 1), new Vector2(L, -160), new Vector2(R, -126));
 
+        // What kind of request: one of these goes in front of the message.
+        var kinds = new[] { "Bug", "Art", "Feel", "Idea" };
+        var kindButtons = new Button[kinds.Length];
+        for (int i = 0; i < kinds.Length; i++)
+        {
+            kindButtons[i] = ButtonAt("Kind " + kinds[i], window, kinds[i].ToUpperInvariant(), new Vector2(L + i * 128, 0), new Vector2(118, 42), Cream);
+            var kr = (RectTransform)kindButtons[i].transform;
+            kr.anchorMin = kr.anchorMax = new Vector2(0, 1); kr.pivot = new Vector2(0, 1); kr.anchoredPosition = new Vector2(L + i * 128, -168);
+            var kl = kindButtons[i].GetComponentInChildren<TMP_Text>(); if (kl != null) kl.fontSize = 22;
+        }
+
         var inputGo = TMP_DefaultControls.CreateInputField(new TMP_DefaultControls.Resources());
         inputGo.name = "Message";
         inputGo.transform.SetParent(window, false);
-        Edges((RectTransform)inputGo.transform, Vector2.zero, Vector2.one, new Vector2(L, 200), new Vector2(R, -170));
+        Edges((RectTransform)inputGo.transform, Vector2.zero, Vector2.one, new Vector2(L, 200), new Vector2(R, -222));
         var inputImage = inputGo.GetComponent<Image>();
         inputImage.sprite = slot; inputImage.type = Image.Type.Sliced; inputImage.color = new Color(.55f, .55f, .55f, 1f);
         var input = inputGo.GetComponent<TMP_InputField>();
@@ -168,6 +179,8 @@ public static class DevPromptBuilder
         so.FindProperty("redoButton").objectReferenceValue = redo;
         so.FindProperty("clearButton").objectReferenceValue = clear;
         so.FindProperty("doneButton").objectReferenceValue = done;
+        var kindProp = so.FindProperty("kindButtons"); kindProp.arraySize = kindButtons.Length;
+        for (int i = 0; i < kindButtons.Length; i++) kindProp.GetArrayElementAtIndex(i).objectReferenceValue = kindButtons[i];
         so.ApplyModifiedPropertiesWithoutUndo();
 
         if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/Game/Development", "Resources");

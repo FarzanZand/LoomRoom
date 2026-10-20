@@ -30,6 +30,10 @@ public class DevPrompt : MonoBehaviour
     [SerializeField] RawImage markupImage;
     [SerializeField] AspectRatioFitter markupAspect;
     [SerializeField] Button[] paletteButtons = new Button[0];
+    [Tooltip("What kind of request it is (Bug, Art, Feel, Idea): picked one goes in front of the message, so Main can route it.")]
+    [SerializeField] Button[] kindButtons = new Button[0];
+    static readonly string[] Kinds = { "Bug", "Art", "Feel", "Idea" };
+    int kind = -1;
     [SerializeField] Button undoButton, redoButton, clearButton, doneButton;
 
     const string CloseOnSendPref = "dev.prompt.closeOnSend";
@@ -75,6 +79,7 @@ public class DevPrompt : MonoBehaviour
         if (redoButton != null) redoButton.onClick.AddListener(() => { markup?.Redo(); ShowMarkup(); });
         if (clearButton != null) clearButton.onClick.AddListener(() => { markup?.Clear(); ShowMarkup(); });
         if (doneButton != null) doneButton.onClick.AddListener(CloseMarkup);
+        for (int i = 0; i < kindButtons.Length; i++) { int k = i; if (kindButtons[i] != null) kindButtons[i].onClick.AddListener(() => { kind = kind == k ? -1 : k; ShowKind(); message.ActivateInputField(); }); }
         if (markupImage != null)
         {
             var surface = markupImage.GetComponent<DevPromptDrawSurface>();
@@ -203,6 +208,7 @@ public class DevPrompt : MonoBehaviour
         var problem = DevReportStore.Validate(text);
         if (problem != null) { Status(problem); message.ActivateInputField(); return; }
         string id;
+        if (kind >= 0 && kind < Kinds.Length) text = $"[{Kinds[kind]}] " + text;
         try { id = DevReportStore.Save(text, markup != null ? markup.EncodePng() : null, stateJson, "game"); }
         catch (System.Exception e)
         {
@@ -212,9 +218,10 @@ public class DevPrompt : MonoBehaviour
             return;
         }
         message.text = "";
+        kind = -1; ShowKind();
         markup?.Release();
         markup = null;
-        Status($"Saved for Main ({id.Substring(0, 8)}). Main picks it up from DevReports.");
+        Status($"Saved for Main ({id.Substring(0, 8)}). Its status shows on the left.");
         RefreshRequests();
         if (CloseOnSend) { Close(); return; }
         // The next draft starts from an unmarked picture of the same moment.
@@ -303,6 +310,19 @@ public class DevPrompt : MonoBehaviour
             if (paletteButtons[i] != null && paletteButtons[i].TryGetComponent<Outline>(out var o)) o.enabled = i == c;
     }
 
+    // The picked kind is lit, its word gold; the others are dimmed.
+    void ShowKind()
+    {
+        for (int i = 0; i < kindButtons.Length; i++)
+        {
+            if (kindButtons[i] == null) continue;
+            var img = kindButtons[i].GetComponent<Image>();
+            if (img != null) img.color = i == kind ? Color.white : new Color(.5f, .5f, .5f, 1f);
+            var label = kindButtons[i].GetComponentInChildren<TMP_Text>();
+            if (label != null) label.color = i == kind ? new Color(1f, .82f, .4f) : new Color(.62f, .6f, .56f);
+        }
+    }
+
     void ShowMarkup()
     {
         if (markup == null) return;
@@ -320,6 +340,7 @@ public class DevPrompt : MonoBehaviour
     public void TestType(string text) => message.text = text;
     public void TestSend() { submitFrame = -10; Send(); }
     public void TestClose() => Close();
+    public void TestKind(int k) { kind = k; ShowKind(); }
     public void TestMark(Vector2Int from, Vector2Int to, int colour)
     {
         if (markup == null) return;
