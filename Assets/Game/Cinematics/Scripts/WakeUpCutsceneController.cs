@@ -19,6 +19,8 @@ public class WakeUpCutsceneController : CutsceneController
     {
         new(-1f, 1.2f), new(.55f, .9f), new(.95f, .22f), new(.3f, .7f), new(.85f, .14f), new(0f, .65f),
     };
+    [Tooltip("Play the music below when waking up (off: the user turned the wake-up music off on 2026-10-20).")]
+    [SerializeField] bool playMusic = false;
     [Tooltip("Music library key played after a short delay.")]
     [SerializeField] string musicKey = "groundhog";
     [SerializeField] float musicDelay    = 1f;
@@ -70,7 +72,7 @@ public class WakeUpCutsceneController : CutsceneController
             if (room != null) room.Warp(startPositionRoom.position, startPositionRoom.rotation);
         }
 
-        if (!string.IsNullOrEmpty(musicKey))
+        if (playMusic && !string.IsNullOrEmpty(musicKey))
         {
             if (music != null) StopCoroutine(music);
             music = StartCoroutine(MusicRoutine(brief ? 0f : musicDelay, brief ? briefMusicDuration : musicDuration));
