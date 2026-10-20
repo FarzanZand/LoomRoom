@@ -12,7 +12,6 @@ public static class ShareBuild
 {
     const string Product = "The Table Waits";
 
-    [MenuItem("Tools/LoomRoom/Build/Build To Share")]
     public static void Build()
     {
         string root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", Product + " builds"));
