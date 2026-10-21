@@ -16756,6 +16756,7 @@ MonoBehaviour:
   - {x: 0.3, y: 0.7}
   - {x: 0.85, y: 0.14}
   - {x: 0, y: 0.65}
+  playMusic: 0
   musicKey: groundhog
   musicDelay: 1
   musicDuration: 12
@@ -235734,6 +235735,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AdventurePuzzleButton
   puzzle: {fileID: 4791042183010110640}
   symbol: 1
+  litColour: {r: 0.35, g: 1, b: 0.45, a: 1}
+  wrongColour: {r: 1, g: 0.3, b: 0.25, a: 1}
 --- !u!4 &1546426376135037616
 Transform:
   m_ObjectHideFlags: 0
@@ -250435,6 +250438,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AdventurePuzzleButton
   puzzle: {fileID: 4791042183010110640}
   symbol: 0
+  litColour: {r: 0.35, g: 1, b: 0.45, a: 1}
+  wrongColour: {r: 1, g: 0.3, b: 0.25, a: 1}
 --- !u!222 &3309397239027597080
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -291718,6 +291723,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AdventurePuzzleButton
   puzzle: {fileID: 4791042183010110640}
   symbol: 2
+  litColour: {r: 0.35, g: 1, b: 0.45, a: 1}
+  wrongColour: {r: 1, g: 0.3, b: 0.25, a: 1}
 --- !u!222 &4665848423045059197
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -301933,7 +301940,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5b9f5f3f0e5c1c642939320cf3a3a55b, type: 2}
   - {fileID: 11400000, guid: 53f8ba85491f7e449a320f6aecceb4fa, type: 2}
   - {fileID: 11400000, guid: 8a3b5a4898dc4164a9797fd1e44f9c6b, type: 2}
-  - {fileID: 11400000, guid: d8e0969c57b7e9c428bc2a0c1f595eb5, type: 2}
   - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
   - {fileID: 11400000, guid: ab6f16f47978a9640aaf59e418d98b96, type: 2}
   - {fileID: 11400000, guid: ffebbd1e82a7438439df635551803fee, type: 2}
@@ -301957,6 +301963,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 88b9084b9e04dfb4091fe6bdaf6cc7ab, type: 2}
   - {fileID: 11400000, guid: 0fc4ea10ef14e314f8e3503aadcfb21c, type: 2}
   - {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
+  - {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
   - {fileID: 11400000, guid: e4e9de3d3ed801b44bcef84d0ed5ccc8, type: 2}
   - {fileID: 11400000, guid: c94488e517e3d7d4f9bb0817226b113b, type: 2}
   - {fileID: 11400000, guid: a8ed3e954e4716c4fb913da5c61cd4df, type: 2}
@@ -301967,9 +301974,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 536dd7828fd360c489ce345f2f4405b9, type: 2}
   - {fileID: 11400000, guid: 61c18dafe9b3ad248afea7b79da3806b, type: 2}
   - {fileID: 11400000, guid: 0c0d117275fce3a40a6fd1a62eb3aa2c, type: 2}
-  - {fileID: 11400000, guid: a3f9c9f5592415f419c8a144c5d1c8c8, type: 2}
   - {fileID: 11400000, guid: 38526901aa689654ea34e6a6200e56be, type: 2}
-  - {fileID: 11400000, guid: 350b9609139fc204eaefa247d0f8faa5, type: 2}
 --- !u!1 &6257437584548409673
 GameObject:
   m_ObjectHideFlags: 0
@@ -311360,7 +311365,7 @@ MonoBehaviour:
   musicLibrary:
   - key: groundhog
     clip: {fileID: 8300000, guid: cc780e136a3526e4fa8acbc0a20585af, type: 3}
-    volume: 0.516
+    volume: 0
   - key: shop
     clip: {fileID: 8300000, guid: 9ff16d7ddda0b6447965a2eb81729f78, type: 3}
     volume: 0.497
