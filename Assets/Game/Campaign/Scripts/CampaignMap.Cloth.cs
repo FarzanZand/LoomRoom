@@ -71,8 +71,8 @@ public partial class CampaignMap
         if (style != builtStyle) { foreach (var f in fogs.Values) if (f != null) f.go.GetComponent<MeshRenderer>().sharedMaterial = ClothMaterial(style); builtStyle = style; }
         shownAct = openAct;
         if (scatterAct.Count == 0 && scatter != null) foreach (Transform t in scatter) scatterAct[t] = (ActAt(t.localPosition), t.gameObject.activeSelf);
-        foreach (var p in Points) p.gameObject.SetActive(p.encounter == null || p.encounter.act <= openAct);
-        foreach (var path in Paths) path.gameObject.SetActive(path.Open(openAct));
+        foreach (var p in Points) p.gameObject.SetActive((p.encounter == null || p.encounter.act <= openAct) && !Hidden(p));
+        foreach (var path in Paths) path.gameObject.SetActive(path.Open(openAct) && !Hidden(path));
         for (int act = 1, last = MaxAct; act <= last; act++)
         {
             bool covered = cover && act > openAct;
@@ -110,8 +110,8 @@ public partial class CampaignMap
         foreach (var kv in scatterAct)
             if (kv.Key != null && kv.Value.on && kv.Value.act <= act && !UnderCloth(kv.Key.localPosition, act) && (kv.Value.act == act || !kv.Key.gameObject.activeSelf))
                 Add(kv.Key);
-        foreach (var p in Points) if (p.encounter != null && p.encounter.act == act) Add(p.transform);
-        foreach (var path in Paths) if (path.Open(act) && !path.Open(act - 1)) Add(path.transform);
+        foreach (var p in Points) if (p.encounter != null && p.encounter.act == act && !Hidden(p)) Add(p.transform);
+        foreach (var path in Paths) if (path.Open(act) && !path.Open(act - 1) && !Hidden(path)) Add(path.transform);
         foreach (var a in appearing) { a.t.localScale = Vector3.zero; a.t.gameObject.SetActive(true); }
         try
         {
@@ -133,6 +133,43 @@ public partial class CampaignMap
         finally { foreach (var a in appearing) if (a.t != null) a.t.localScale = a.scale; }
         if (cloth != null) cloth.go.SetActive(false);
         shownAct = Mathf.Max(shownAct, act);
+    }
+
+    // Places kept off the map though their act is open (CampaignEncounter.deathsToOpen, decided by CampaignManager), and
+    // the roads to them.
+    [NonSerialized] public Func<CampaignEncounter, bool> Shut;
+    bool Hidden(CampaignPoint p) => p != null && p.encounter != null && Shut != null && Shut(p.encounter);
+    bool Hidden(CampaignPath path) => Hidden(path.from) || Hidden(path.to);
+
+    // A place that was shut rises into view where it stands, with the open roads to it.
+    public IEnumerator PopIn(CampaignEncounter encounter, float seconds)
+    {
+        var point = PointFor(encounter);
+        if (point == null) yield break;
+        var appearing = new List<(Transform t, Vector3 scale, float at)>();
+        void Add(Transform t, float at)
+        {
+            if (!restScale.TryGetValue(t, out var rest)) restScale[t] = rest = t.localScale;
+            appearing.Add((t, rest, at));
+            t.localScale = Vector3.zero; t.gameObject.SetActive(true);
+        }
+        Add(point.transform, 0f);
+        foreach (var path in Paths) if ((path.from == point || path.to == point) && path.Open(shownAct) && !Hidden(path)) Add(path.transform, .35f);
+        try
+        {
+            for (float t = 0; t < seconds; t += Time.deltaTime)
+            {
+                foreach (var a in appearing)
+                {
+                    if (a.t == null) continue;
+                    float local = Mathf.Clamp01((t / seconds - a.at) / .4f);
+                    float s = local < 1 ? Mathf.Sin(local * Mathf.PI * .5f) * (1f + .15f * Mathf.Sin(local * Mathf.PI)) : 1f;
+                    a.t.localScale = a.scale * s;
+                }
+                yield return null;
+            }
+        }
+        finally { foreach (var a in appearing) if (a.t != null) a.t.localScale = a.scale; }
     }
 
     // Whether a cloth of an act above openAct lies over a spot (enough to hide what stands there).

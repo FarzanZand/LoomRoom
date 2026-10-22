@@ -53,8 +53,10 @@ public class ArenaFight : MonoBehaviour
         }
     }
 
-    // Dead by its brain or by its health (an enemy killed while its room was off the table never ran its death).
-    static bool Down(EnemyBrain b) => b == null || b.State == EnemyState.Dead || b.TryGetComponent<Character>(out var c) && !c.IsAlive;
+    // Dead by its brain or by its health (an enemy killed while its room was off the table never ran its death). One that
+    // never started (its room still behind a closed door) reads 0 health but stands: it counts as up.
+    static bool Down(EnemyBrain b) => b == null || b.State == EnemyState.Dead
+        || b.TryGetComponent<CharacterStats>(out var s) && s.Initialised && !s.IsAlive;
 
     void Gather()
     {

@@ -53,6 +53,8 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public float CurrentStamina { get; private set; }
     public float MaxStamina => GetFinal(StatType.MaxStamina);
     bool  initialised;
+    // Pools are filled in Start: before that (a body switched off since it was put down) health reads 0 though it never died.
+    public bool Initialised => initialised;
 
     // ── Lifecycle ─────────────────────────────────────────────────────
 

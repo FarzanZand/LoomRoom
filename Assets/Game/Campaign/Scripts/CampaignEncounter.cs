@@ -21,6 +21,14 @@ public class CampaignEncounter : ScriptableObject
     [Tooltip("Said when the player picks this place.")]
     public DungeonMaster.Line pickedLine;
 
+    [Title("Shut until", HorizontalLine = false), Min(0), Tooltip("The place stays off the map (its road too) until the player has died this many times playing Deaths In; then it rises into view the next time the map is seen. 0: it opens with its act.")]
+    public int deathsToOpen;
+    [ShowIf("@deathsToOpen > 0"), Tooltip("The place whose deaths count (campaign.deaths.<its id>).")]
+    public CampaignEncounter deathsIn;
+    [ShowIf("@deathsToOpen > 0"), Tooltip("Said as it rises into view.")]
+    public DungeonMaster.Line openedLine;
+    public bool Locked => deathsToOpen > 0 && deathsIn != null;
+
     public string KindName => kind switch
     {
         CampaignEncounterKind.Level => level != null && level.kind == TableLevelKind.Boardgame ? "Board" : "Dungeon",
