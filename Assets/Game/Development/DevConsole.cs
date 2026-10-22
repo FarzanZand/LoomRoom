@@ -340,6 +340,9 @@ public class DevConsole : MonoBehaviour
                 var biome = level.stages[i]?.biome;
                 if (biome != null && biome.roomTemplates != null && biome.roomTemplates.Any(c => c != null && c.template == template)) { stage = i; return level; }
             }
+            // A level without stages: its base biome's pool.
+            var own = !level.HasStages ? level.baseBiome : null;
+            if (own != null && own.roomTemplates != null && own.roomTemplates.Any(c => c != null && c.template == template)) return level;
         }
         var selected = DebugDungeonSession.SelectedDungeon;
         return candidates.FirstOrDefault(l => l == loader.Current)

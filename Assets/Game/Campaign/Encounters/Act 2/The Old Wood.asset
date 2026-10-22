@@ -16,10 +16,22 @@ MonoBehaviour:
   displayName: The Old Wood
   kind: 0
   level: {fileID: 11400000, guid: 37cdd2af1d1b0c74c9971dd3e4523547, type: 2}
-  act: 1
+  act: 2
   description: A board laid out among the trees.
   pickedLine:
     text: Into the wood, then.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
+  deathsToOpen: 0
+  deathsIn: {fileID: 0}
+  openedLine:
+    text: 
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  shutHint:
+    text: 
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0

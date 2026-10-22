@@ -99,6 +99,14 @@ MonoBehaviour:
   chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
   merchantPrefab: {fileID: 6335521276860554555, guid: 0b9bfb4bda23a524ba9567e96ba16304, type: 3}
   merchantStock: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
+  shrinePrefab: {fileID: 4918691259238688910, guid: 95eaa472282e09548be772b63ccb3f69, type: 3}
+  spikeTrapPrefab: {fileID: 3138678578384716066, guid: 36288a6c5c68c77488e69ba50d5f2a42, type: 3}
+  ambushGatePrefab: {fileID: 2864428667379184104, guid: 9503fcb8ccd0d25469525c989dafcf8e, type: 3}
+  ambushSpawnPuff: {fileID: 7742265850632592593, guid: 2878e923afe61984b95532101d7ab02e, type: 3}
+  ambushSlamAudio: {fileID: 8300000, guid: 391e97015c9ed124c8bd608885d584b5, type: 3}
+  ambushLiftAudio: {fileID: 8300000, guid: a12060e86d16cae45a745a7d132485fa, type: 3}
+  ambushSpawnAudio: {fileID: 8300000, guid: 3779d6189bc84204eba34bf53a79a2eb, type: 3}
+  sleepAudio: {fileID: 8300000, guid: 96a5ae5e34bf02d4f8c523f7edd884f3, type: 3}
   enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
   damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
   messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}

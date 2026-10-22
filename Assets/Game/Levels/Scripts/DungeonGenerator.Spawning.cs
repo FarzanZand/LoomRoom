@@ -4,8 +4,8 @@ using UnityEngine.AI;
 // Room templates and their sockets, breakables, features, enemies, the guardian and the merchant.
 public partial class DungeonGenerator
 {
-    DungeonWeightedPrefab[] Destructibles => Both(data.destructibles, Biome != null ? Biome.destructibles : null);
-    DungeonFeature[] Features => Both(data.features, Biome != null ? Biome.features : null);
+    DungeonWeightedPrefab[] Destructibles => Shared(data.destructibles, b => b.destructibles);
+    DungeonFeature[] Features => Shared(data.features, b => b.features);
     static bool IsFloorBreakable(GameObject prefab) { var d=prefab.GetComponent<DungeonDestructible>(); return d==null || d.placement==DestructiblePlacement.Floor; }
     static DungeonRoomRoles Mask(RoomRole role) => (DungeonRoomRoles)(1<<(int)role);
 

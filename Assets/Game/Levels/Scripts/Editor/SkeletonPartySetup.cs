@@ -127,6 +127,7 @@ public static class SkeletonPartySetup
         {
             AssetDatabase.CopyAsset("Assets/Game/Levels/Dungeon1/Dungeon1.asset", Pocket);
             pocket = AssetDatabase.LoadAssetAtPath<TableLevelData>(Pocket);
+            pocket.MakeBaseBiome();   // the copy's base biome, renamed for it (or made, from Dungeon1's old settings)
             log.AppendLine("Made the Party pocket level from Dungeon1");
         }
         var so = new SerializedObject(pocket);

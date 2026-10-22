@@ -205,6 +205,9 @@ public class PortalArch : MonoBehaviour
         pocketCopy.name = pocketLevel.name + ": " + room.name;
         if (pocketCopy.authoredRooms != null && pocketCopy.authoredRooms.Length > 0) pocketCopy.authoredRooms[0].template = room;
         if (biome != null && pocketCopy.stages != null && pocketCopy.stages.Length > 0) pocketCopy.stages[0].biome = biome;
+        // A pocket level without stages: the portal's biome as its one stage (the level's base biome still gives the rest).
+        else if (biome != null && !pocketCopy.HasStages)
+            pocketCopy.stages = new[] { new TableLevelData.BiomeStage { biome = biome, floors = Mathf.Max(1, pocketCopy.floors), boss = pocketCopy.bossOnLastFloor } };
 
         // Each portal's pocket in its own place, well apart from the others.
         var at = (floor != null ? floor.transform.position : transform.position) + Vector3.right * pocketDistance + Vector3.forward * (index - 1) * 120f;

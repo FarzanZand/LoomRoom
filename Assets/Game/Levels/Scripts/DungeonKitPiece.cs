@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // A kit piece (pillar, arch, rubble, gallery) that has a real model besides its blocks. When the level uses kit models
-// (TableLevelData.kitModels, on by default) the model is kept and the blocks it replaces are removed; otherwise the
+// (Kit Models on the level's base biome, TableLevelData.kitModels, on by default) the model is kept and the blocks it replaces are removed; otherwise the
 // model goes and the blocks are built of the room's stone as before. Pieces without a model are always blocks.
 public class DungeonKitPiece : MonoBehaviour
 {

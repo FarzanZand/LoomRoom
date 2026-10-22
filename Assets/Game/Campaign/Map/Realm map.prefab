@@ -558,7 +558,7 @@ Transform:
   m_GameObject: {fileID: 415639566668804592}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -17.25839, y: 3.45, z: 41.52971}
+  m_LocalPosition: {x: -8.687728, y: 5.340472, z: 3.7493353}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5036,7 +5036,7 @@ GameObject:
   - component: {fileID: 654488810706698508}
   - component: {fileID: 1585820216515759946}
   m_Layer: 0
-  m_Name: Road The Arena - The Old Wood
+  m_Name: Arena - Mill
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5127,7 +5127,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CampaignPath
   from: {fileID: 4641737455581526093}
-  to: {fileID: 2175193067239247637}
+  to: {fileID: 3912711534065765738}
   bend: 0.15
   width: 1.1
   wobble: 0.3

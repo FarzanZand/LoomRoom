@@ -6,7 +6,7 @@ using UnityEngine;
 // Hand-built rooms ("chunks") and the kit they are made of. Kit pieces are
 // DungeonKitBlocks (built of the room's own stone when the floor is generated); the pillar, broken pillar, arch and
 // gallery railing also carry a painted model (Rooms/Kit/Models, Synty Dark Fantasy pieces through the painted-prop
-// pipeline) that the level uses instead of those blocks while TableLevelData.kitModels is on (DungeonKitPiece).
+// pipeline) that the level uses instead of those blocks while its Kit Models is on (base biome, TableLevelData.kitModels; DungeonKitPiece).
 // Writes the kit to Levels/Dungeon1/Rooms/Kit, the chunks to Levels/Shared/Rooms (every Dungeon level shares them), and adds the chunks to Cellars' and
 // Crypt's room pools (DungeonBiome.roomTemplates). Only what doesn't exist yet is made: a kit piece or room you have
 // edited is never overwritten, and pool entries you changed or added stay (Build Kit and Chunks (Overwrite) rebuilds

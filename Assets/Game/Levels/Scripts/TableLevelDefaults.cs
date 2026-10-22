@@ -2,9 +2,9 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 
 // What every dungeon level shares (they all had the same here): chests and their sounds, the merchant, breakables,
-// features, wall lights, room shapes and the run's HUD pieces. One asset, Levels/Resources/Table level defaults, read by
-// every TableLevelData (its properties of the same names); a biome still adds its own breakables, features, wall
-// lights and shapes on top.
+// features, wall lights, room shapes, the room event pieces and the run's HUD pieces. One asset, Levels/Resources/Table
+// level defaults, read by every TableLevelData (its properties of the same names); a level's base biome and a stage's
+// biome still add their own breakables, features, wall lights and shapes on top.
 [CreateAssetMenu(menuName = "Table/Level Defaults", fileName = "Table level defaults")]
 public class TableLevelDefaults : ScriptableObject
 {
@@ -27,6 +27,17 @@ public class TableLevelDefaults : ScriptableObject
     public GameObject merchantPrefab;
     [TabGroup(Tabs, "Chests & shop"), LabelText("Stock"), Tooltip("Rolled for the merchant's wares (Chest source). Empty uses the biome's loot.")]
     public LootSource merchantStock;
+
+    [TabGroup(Tabs, "Room events"), AssetsOnly, Tooltip("The shrine set in quiet rooms (DungeonShrine).")]
+    public GameObject shrinePrefab;
+    [TabGroup(Tabs, "Room events"), AssetsOnly, Tooltip("A spike plate (DungeonSpikeTrap), laid around trapped chests.")]
+    public GameObject spikeTrapPrefab;
+    [TabGroup(Tabs, "Room events"), AssetsOnly, Tooltip("An ambush gate: its first child is the bars, raised to local y 0 and lowered under the floor.")]
+    public GameObject ambushGatePrefab;
+    [TabGroup(Tabs, "Room events"), AssetsOnly, Tooltip("The puff an ambusher (and the reward chest, and a boss's chest) comes out of.")]
+    public GameObject ambushSpawnPuff;
+    [TabGroup(Tabs, "Room events")] public AudioClip ambushSlamAudio, ambushLiftAudio, ambushSpawnAudio;
+    [TabGroup(Tabs, "Room events"), Tooltip("Now and then from a sleeping enemy.")] public AudioClip sleepAudio;
 
     [TabGroup(Tabs, "HUD")] public DungeonEnemyBar enemyBarPrefab;
     [TabGroup(Tabs, "HUD")] public TMPro.TMP_Text damageNumberPrefab;

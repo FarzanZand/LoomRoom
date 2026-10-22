@@ -107,8 +107,8 @@ public partial class DungeonGenerator
             if (template.HasFootprint) return template.FootprintShape(rng);
             return DungeonShape.Rectangle(Mathf.Max(w, template.minimumCells.x), Mathf.Max(h, template.minimumCells.y));
         }
-        // A room profile's own shapes replace the rest; otherwise the level's and the biome's together.
-        var choices = FirstList(profile != null ? profile.shapes : null, Both(data.roomShapes, Biome != null ? Biome.roomShapes : null));
+        // A room profile's own shapes replace the rest; otherwise the shared ones, the base biome's and the stage's together.
+        var choices = FirstList(profile != null ? profile.shapes : null, Shared(data.roomShapes, b => b.roomShapes));
         // Stairs stand beside the centre of the entrance and exit, so those need open floor there.
         bool needsOpenCentre = role == RoomRole.Entrance || role == RoomRole.Exit;
         for (int attempt = 0; attempt < 6; attempt++)
@@ -185,9 +185,19 @@ public partial class DungeonGenerator
     bool Open(Vector2Int p) => Layout.InBounds(p) && Layout.floor[p.x, p.y];
 
     // Wall torches: a few per lit room, spread apart, and the odd one along corridors.
-    // The floor's biome lights, or the level's when the biome lists none.
+    // The stage biome's lights, else the base biome's, else the ones every level shares.
     float TorchBrightness => Biome != null ? Biome.torchBrightness : 1f;
-    DungeonWallLight[] WallLights => Biome != null && DungeonWallLight.Any(Biome.lightingPrefabs) ? Biome.lightingPrefabs : data.lightingPrefabs;
+    DungeonWallLight[] WallLights
+    {
+        get
+        {
+            var stage = StageBiome;
+            if (stage != null && DungeonWallLight.Any(stage.lightingPrefabs)) return stage.lightingPrefabs;
+            var levelBase = data.baseBiome;
+            if (levelBase != null && DungeonWallLight.Any(levelBase.lightingPrefabs)) return levelBase.lightingPrefabs;
+            return data.lightingPrefabs;
+        }
+    }
 
     void PlaceTorches()
     {
@@ -386,10 +396,11 @@ public partial class DungeonGenerator
     {
         if (profile != null && profile.propRules != null && profile.propRules.Length > 0) return (profile.propRules, null);
         if (profile != null && profile.props != null && profile.props.Length > 0) return (null, profile.props);
-        // Level and biome together: furnishing rules when either has any, otherwise plain props.
-        var rules = Both(data.propRules, Biome != null ? Biome.propRules : null);
+        // Base biome (the level's) and stage biome together: furnishing rules when either has any, otherwise plain props.
+        var stage = StageBiome;
+        var rules = Both(data.propRules, stage != null ? stage.propRules : null);
         if (rules != null && rules.Length > 0) return (rules, null);
-        return (null, Both(data.roomPropPrefabs, Biome != null ? Biome.props : null));
+        return (null, Shared(data.roomPropPrefabs, b => b.props));
     }
 
     void PlaceRules(int index, List<Vector2Int> free, DungeonPropRule[] rules)

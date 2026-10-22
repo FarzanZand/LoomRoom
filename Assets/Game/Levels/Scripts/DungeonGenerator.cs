@@ -49,6 +49,16 @@ public partial class DungeonGenerator : MonoBehaviour
         level.CopyTo(all, 0); biome.CopyTo(all, level.Length);
         return all;
     }
+    // The floor's biome when it is a stage's own; null on a level without stages (the floor's biome is the base biome,
+    // whose lists the level already gives), so nothing is counted twice.
+    DungeonBiome StageBiome => data != null ? data.StageBiome(Biome) : Biome;
+    // A list every level shares (Table level defaults), then the base biome's, then the stage biome's.
+    T[] Shared<T>(T[] everyLevel, System.Func<DungeonBiome, T[]> list)
+    {
+        var levelBase = data != null ? data.baseBiome : null;
+        var stage = StageBiome;
+        return Both(Both(everyLevel, levelBase != null ? list(levelBase) : null), stage != null ? list(stage) : null);
+    }
     // The biome's loot answers for every source (enemy, chest, barrel); the source passed to its
     // rolls picks which of its rules applies.
     LootSource FloorLoot=>Biome!=null ? Biome.loot : null;
@@ -220,7 +230,8 @@ public partial class DungeonGenerator : MonoBehaviour
         for (int i = 0; i < CorridorHeightTiles.Length; i++) CorridorHeightTiles[i] = 1;
         RegionStyles = new DungeonRoomStyle[Layout.RegionCount];
         var styleRandom = new System.Random(unchecked(seed + 15485863));
-        var roomStyles = Both(level.roomStyles, Biome != null ? Biome.roomStyles : null); var corridorStyles = Both(level.corridorStyles, Biome != null ? Biome.corridorStyles : null);
+        var stageBiome = StageBiome;
+        var roomStyles = Both(level.roomStyles, stageBiome != null ? stageBiome.roomStyles : null); var corridorStyles = Both(level.corridorStyles, stageBiome != null ? stageBiome.corridorStyles : null);
         for (int i = 0; i < RegionStyles.Length; i++)
             RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? roomStyles : corridorStyles, styleRandom);
         for (int i=0;i<profiles.Length;i++)

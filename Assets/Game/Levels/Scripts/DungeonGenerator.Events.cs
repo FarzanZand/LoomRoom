@@ -7,7 +7,7 @@ using UnityEngine;
 public partial class DungeonGenerator
 {
     static readonly DungeonRoomFeatures DefaultFeatures = new();
-    // The room features of this floor: the biome's own when it overrides the level's.
+    // The room features of this floor: the stage biome's own when it overrides the level's (its base biome's).
     public DungeonRoomFeatures RoomFeatures => (Biome != null ? Biome.RoomFeatures(data) : data.roomFeatures) ?? DefaultFeatures;
 
     public enum RoomEvent { None = 0, Ambush = 1, SleepingPack = 2, Shrine = 3 }

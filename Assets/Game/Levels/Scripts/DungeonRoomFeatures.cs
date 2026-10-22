@@ -1,8 +1,8 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// What a dungeon's rooms may hold beyond walls and enemies: room events, heights and room lighting. Set on the level
-// (TableLevelData > Rooms > Room Features); a biome can replace the whole set for its floors (DungeonBiome > Rooms >
+// What a dungeon's rooms may hold beyond walls and enemies: room events, heights and room lighting. Set on the level's
+// base biome (its Rooms tab, TableLevelData.roomFeatures reads it); a stage's biome can replace the whole set for its floors (DungeonBiome > Rooms >
 // Override Dungeon Settings). A hand-built room that is built around something switched off (a chasm, a shrine) is left
 // out of the floor; one that only uses it on the side (candles, a sleeping pack) is built without it.
 [System.Serializable]

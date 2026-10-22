@@ -17,12 +17,17 @@ MonoBehaviour:
   cardArt: {fileID: 21300000, guid: 5dae8b473ac332a438d7555710ae1eda, type: 3}
   kind: 0
   stages: []
+  floors: 1
+  bossOnLastFloor: 1
   balance: {fileID: 0}
   gearByFloor: []
   startingRoom: {fileID: 0}
   startingChestConsumable: {fileID: 0}
   fixedSeed: 0
   pocket: 0
+  nextFloorMessage: You descend to floor {0}.
+  roomLighting: 0
+  mood: {fileID: 11400000, guid: d4f17c0d2b15de64593452a74b223d59, type: 2}
   layoutMode: 1
   width: 32
   depth: 42
@@ -34,70 +39,13 @@ MonoBehaviour:
   corridorWander: 1.2
   wideCorridorPercent: 15
   doorPrefab: {fileID: 0}
+  hideStartWallInReveal: 0
   mapTemplate: {fileID: 0}
   authoredMap: 
   authoredRooms: []
   authoredContent: 
   authoredMarkers: []
-  mood: {fileID: 11400000, guid: d4f17c0d2b15de64593452a74b223d59, type: 2}
-  moodLighting: 0
-  roomLighting: 0
-  boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
-  boardLightIntensity: 2600
+  baseBiome: {fileID: 0}
   backgroundMusic: {fileID: 0}
   backgroundMusicVolume: 1
-  defaultStyle: {fileID: 0}
-  roomStyles: []
-  corridorsCopyConnectedRoomStyle: 0
-  corridorStyles: []
-  kitModels: 1
-  hideStartWallInReveal: 0
-  boardEdgeMaterial: {fileID: 0}
-  boardGridMaterial: {fileID: 0}
-  boardPitMaterial: {fileID: 0}
-  boardVerticality: 1
-  boardTileTaps: []
-  boardDoorPosts: []
-  boardMoundProps: []
-  torchesPerRoom: {x: 1, y: 2}
-  litRoomChance: 0.75
-  corridorTorchChance: 0.3
-  darkRoomLight: {fileID: 0}
-  propRules: []
-  furnishEntranceRims: 0
-  destructiblesPerRoom: {x: 1, y: 3}
-  chestTiers: []
-  shopRoom: {fileID: 0}
-  roomFeatures:
-    shrineBargains: 1
-    shrineChance: 0.35
-    shrinePrice: 0.35
-    ambushes: 1
-    ambushChance: 0.12
-    maxAmbushes: 1
-    trappedTreasure: 1
-    trapChance: 0.3
-    spikeDamage: 0.2
-    sleepingPacks: 0
-    sleepChance: 0.2
-    maxSleepingPacks: 3
-    pits: 1
-    playerFallsInPits: 0
-    pitFallDamage: 0.25
-    sunkenFloors: 1
-    archerLedges: 1
-    darkRooms: 1
-    darkChance: 0.08
-    candlelitRooms: 1
-    moonlitRooms: 1
-    eerieRooms: 1
-    eerieChance: 0.06
-  shrinePrefab: {fileID: 0}
-  spikeTrapPrefab: {fileID: 0}
-  ambushGatePrefab: {fileID: 0}
-  ambushSpawnPuff: {fileID: 0}
-  ambushSlamAudio: {fileID: 0}
-  ambushLiftAudio: {fileID: 0}
-  ambushSpawnAudio: {fileID: 0}
-  sleepAudio: {fileID: 0}
   dialogue: []

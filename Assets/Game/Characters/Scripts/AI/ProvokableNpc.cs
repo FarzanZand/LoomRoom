@@ -36,6 +36,8 @@ public class ProvokableNpc : MonoBehaviour
     public float turnDelay = .35f;
     [Min(0), Tooltip("Camera shake when it turns (impulse force; 0 = none).")]
     public float turnShake = .5f;
+    [Min(0), Tooltip("Seconds it reels from a blow before it turns to glare at whoever struck it.")]
+    public float staggerSeconds = .45f;
 
     const int MerchantRule = 2;   // RuleManager's rule two, quoted on the first blow
 
@@ -45,6 +47,7 @@ public class ProvokableNpc : MonoBehaviour
 
     Character character;
     NpcBrain brain;
+    Coroutine glare;
 
     void Awake()
     {
@@ -67,8 +70,7 @@ public class ProvokableNpc : MonoBehaviour
         if (Turned || by == null) return;
         if (Hits > 0 && Time.time - firstHitAt < calmSeconds) return;
         Hits++;
-        if (brain != null) brain.SnapRotationTowards(by.transform.position);
-        if (character != null && character.data != null) character.TriggerAnimation(character.data.hurtTrigger);
+        Stagger(by, Hits > 1);
         if (Hits == 1)
         {
             firstHitAt = Time.time;
@@ -102,6 +104,29 @@ public class ProvokableNpc : MonoBehaviour
         var enemy = wrath.GetComponent<EnemyBrain>();
         if (enemy != null) enemy.Alert();
         Destroy(gameObject);
+    }
+
+    // It reels the way the blow pushed it (HumanoidController: Hurt, Hurt Left, Hurt Right, Hurt Heavy on HurtDir, as an
+    // enemy does), then turns to glare at whoever struck it.
+    void Stagger(Character by, bool heavy)
+    {
+        var animator = character != null ? character.Animator : null;
+        if (animator != null)
+        {
+            var push = Flat(transform.position - by.transform.position);
+            float side = push.sqrMagnitude > .0001f ? Vector3.Dot(push.normalized, transform.right) : 0f;
+            AnimatorHelper.SetInteger(animator, "HurtDir", heavy ? 3 : Mathf.Abs(side) < .35f ? 0 : side > 0f ? 2 : 1);
+            character.TriggerAnimation(character.data != null && !string.IsNullOrEmpty(character.data.hurtTrigger) ? character.data.hurtTrigger : "Hurt");
+        }
+        if (glare != null) StopCoroutine(glare);
+        glare = StartCoroutine(GlareAfter(by));
+    }
+
+    IEnumerator GlareAfter(Character by)
+    {
+        if (staggerSeconds > 0f) yield return new WaitForSeconds(staggerSeconds);
+        if (brain != null && by != null) brain.SnapRotationTowards(by.transform.position);
+        glare = null;
     }
 
     void Post(string text)

@@ -9,20 +9,22 @@ public enum TableLevelKind { Town = 0, Dungeon = 1, Boardgame = 2 }
 public enum RoomLighting { Normal = 0, Dim = 1, Dark = 2, Night = 3 }
 public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6, Darkness = 7, Standard = 8 }
 
+// A table level: its run (stages of biomes, or a number of floors on its base biome), its floor plan, and its base biome,
+// which is stored inside this asset and holds what every floor shares (styles, the board's pieces, torches, furnishing,
+// chests and the shop, room features). The old level fields of those names read through to the base biome.
 [CreateAssetMenu(menuName = "Table/Level", fileName = "TableLevel")]
-public class TableLevelData : ScriptableObject
+public partial class TableLevelData : ScriptableObject
 {
-    // Inspector layout only. Field names are unchanged: level assets keep their data.
+    // Inspector layout only.
     const string Tabs = "Tabs";
-    const string Run = "Run", Map = "Map", Look = "Look & Sound", Building = "Building", Contents = "Contents", Dialogue = "Dialogue";
+    const string Run = "Run", Map = "Map", Base = "Base biome", Sound = "Sound", Dialogue = "Dialogue";
     const string D = nameof(IsDungeon);
     // Dungeons and board-game dungeons: everything a run needs.
     public bool IsDungeon => kind != TableLevelKind.Town;
     public bool IsBoard => kind == TableLevelKind.Boardgame;
-    // With biomes, each biome sets its own lighting and torches; the level's lighting is only for biome-less dungeons.
-    // Board levels lie under the room's own light instead (Room Lighting and Room Tint).
-    bool HasBiomes => IsDungeon && stages != null && System.Array.Exists(stages, s => s != null && s.biome != null);
-    bool ShowLevelLighting => IsDungeon && !IsBoard && !HasBiomes;
+    // A level with stages runs each stage's biome in turn; one without runs Floors floors on its base biome.
+    public bool HasStages => IsDungeon && stages != null && System.Array.Exists(stages, s => s != null && s.biome != null);
+    bool NoStages => IsDungeon && !HasStages;
 
     // ── Level ─────────────────────────────────────────────────────────
     [Title("Level")]
@@ -42,25 +44,30 @@ public class TableLevelData : ScriptableObject
         [HorizontalGroup("Row", LabelWidth = 105), LabelText("Boss on last floor"), Tooltip("The biome's guardian (its Boss tab) waits on this stage's last floor. Off: no boss in this stage, whatever the biome has set up.")]
         public bool boss = true;
     }
-    [TabGroup(Tabs, Run), ShowIf(D), Title("Biomes", "In order from the top floor down. Each biome lasts its number of floors and its guardian waits on its last floor.", HorizontalLine = false)]
+    [TabGroup(Tabs, Run), ShowIf(D), Title("Biomes", "In order from the top floor down. Each biome lasts its number of floors and its guardian waits on its last floor. Empty: every floor is the base biome (a one-floor level needs no biome of its own).", HorizontalLine = false)]
     [ListDrawerSettings(ShowFoldout = true)]
     public BiomeStage[] stages = new BiomeStage[0];
+    [TabGroup(Tabs, Run), ShowIf(nameof(NoStages)), Min(1), Tooltip("How many floors a run has, every one on the base biome.")]
+    public int floors = 1;
+    [TabGroup(Tabs, Run), ShowIf(nameof(NoStages)), Tooltip("The base biome's guardian (its Guardian tab) waits on the last floor. Off: no boss, whatever the base biome has set up.")]
+    public bool bossOnLastFloor = true;
     [TabGroup(Tabs, Run), ShowIf(D), ShowInInspector, ReadOnly, LabelText("The run"), MultiLineProperty(2)]
     public string RunSummary
     {
         get
         {
-            if (!IsDungeon || stages == null) return "";
+            if (!IsDungeon) return "";
             var parts = new List<string>();
             int start = 1;
-            foreach (var stage in stages)
+            void Add(DungeonBiome biome, int count, bool boss)
             {
-                if (stage == null || stage.biome == null) continue;
-                int count = Mathf.Max(1, stage.floors), end = start + count - 1;
-                bool fight = stage.boss && stage.biome.guardian != null && stage.biome.guardian.enabled && stage.biome.guardian.boss != null;
-                parts.Add((count == 1 ? $"Floor {start}" : $"Floors {start}-{end}") + $" {stage.biome.name}" + (fight ? $" (boss on {end})" : ""));
+                int end = start + count - 1;
+                bool fight = boss && biome.guardian != null && biome.guardian.enabled && biome.guardian.boss != null;
+                parts.Add((count == 1 ? $"Floor {start}" : $"Floors {start}-{end}") + $" {biome.name}" + (fight ? $" (boss on {end})" : ""));
                 start = end + 1;
             }
+            if (!HasStages) { if (baseBiome != null) Add(baseBiome, Mathf.Max(1, floors), bossOnLastFloor); }
+            else foreach (var stage in stages) if (stage != null && stage.biome != null) Add(stage.biome, Mathf.Max(1, stage.floors), stage.boss);
             return string.Join(", ", parts);
         }
     }
@@ -69,8 +76,10 @@ public class TableLevelData : ScriptableObject
     {
         get
         {
+            if (!IsDungeon) return 1;
+            if (!HasStages) return Mathf.Max(1, floors);
             int total = 0;
-            if (IsDungeon && stages != null) foreach (var s in stages) if (s != null && s.biome != null) total += Mathf.Max(1, s.floors);
+            foreach (var s in stages) if (s != null && s.biome != null) total += Mathf.Max(1, s.floors);
             return Mathf.Max(1, total);
         }
     }
@@ -88,8 +97,12 @@ public class TableLevelData : ScriptableObject
     public int fixedSeed;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("A pocket: a room reached through a portal (PortalArch), built beside the floor the player came from. No ladder in and no stairs out; its own portal gate leads back.")]
     public bool pocket;
-    [TabGroup(Tabs, Run), ShowIf(D), Tooltip("Posted when the player reaches the next floor ({0} is the floor's number): a tower climbs.")]
+    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("Posted when the player reaches the next floor ({0} is the floor's number): a tower climbs.")]
     public string nextFloorMessage = "You descend to floor {0}.";
+    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("The room", HorizontalLine = false), Tooltip("The room while this level is played. Normal: as it was when you sat down, visible from the dungeon. Dim: its lights lowered. Dark: black, with only the lamp over the table lit (the intro's look).")]
+    public RoomLighting roomLighting;
+    [TabGroup(Tabs, Run), HideIf(nameof(IsDungeon)), Tooltip("The town's lighting.")]
+    public SceneMood mood;
 
     // The gear row for a floor: the last row starting on or before it (null when the table is empty).
     public LootFloorTiers GearAt(int floor)
@@ -131,6 +144,8 @@ public class TableLevelData : ScriptableObject
     public float wideCorridorPercent = 15;
     [TabGroup(Tabs, Map), ShowIf(D), Title("Doors", HorizontalLine = false), LabelText("Door Prefab"), Tooltip("Editable door prefab, one cell wide. Instantiated at selected room entrances.")]
     public GameObject doorPrefab;
+    [TabGroup(Tabs, Map), ShowIf(D), Title("Reveal", HorizontalLine = false), Tooltip("While the floor is built on the table, the starting room's wall on the viewer's side and its ceiling stay hidden (from the room they show only their dark outside), and come back when the player arrives. The intro uses it.")]
+    public bool hideStartWallInReveal;
 
     // ── Authored layout ───────────────────────────────────────────────
     [System.Serializable]
@@ -202,27 +217,97 @@ public class TableLevelData : ScriptableObject
         new DungeonShapeChoice { kind = DungeonShapeKind.Cave, weight = 1 },
     };
 
-    // ── Look & Sound ──────────────────────────────────────────────────
-    [TabGroup(Tabs, Look), HideIf(nameof(IsDungeon)), Tooltip("The town's lighting.")]
-    public SceneMood mood;
-    [TabGroup(Tabs, Look), ShowIf(nameof(ShowLevelLighting)), Title("Table", HorizontalLine = false), LabelText("Table Lighting")]
-    [Tooltip("Sky, sun and ambient colour on every floor (a dungeon without biomes only: each biome sets its own). On dark floors the Lighting Manager holds the ambient down (Dungeon darkness), so the torches give most of the light.")]
-    [UnityEngine.Serialization.FormerlySerializedAs("moodLightning")]
-    public DungeonMoodLighting moodLighting = DungeonMoodLighting.AmberCrypt;
-    [TabGroup(Tabs, Look), ShowIf(nameof(IsDungeon)), InfoBox("Table lighting and torches are set on each biome (its Look tab).", VisibleIf = nameof(HasBiomes)), Title("Room", HorizontalLine = false), Tooltip("The room while this level is played. Normal: as it was when you sat down, visible from the dungeon. Dim: its lights lowered. Dark: black, with only the lamp over the table lit (the intro's look).")]
-    public RoomLighting roomLighting;
-    [TabGroup(Tabs, Look), ShowIf(nameof(IsBoard)), Title("Board light", "The light hung over a board level, like a lamp over a gaming table: it lights every room.", HorizontalLine = false)]
-    [ColorUsage(false)] public Color boardLightColor = new Color(1f, .86f, .68f);
-    [TabGroup(Tabs, Look), ShowIf(nameof(IsBoard)), Min(0)] public float boardLightIntensity = 2600f;
-    [TabGroup(Tabs, Look), Title("Music", HorizontalLine = false)]
+    // ── Base biome ────────────────────────────────────────────────────
+    [TabGroup(Tabs, Base), InfoBox("What every floor of this level shares: its Level tab (styles, the board's pieces, torches, furnishing, chests and the shop), its room features and its lists (styles, shapes, props, furnishing, breakables, features, wall lights), which a stage's biome adds to. With no stages every floor is this biome: its enemies, loot, look, sound and guardian too. Kept inside this level's asset.")]
+    [ShowIf("@IsDungeon && baseBiome != null"), HideLabel, InlineEditor(InlineEditorObjectFieldModes.Hidden)]
+    public DungeonBiome baseBiome;
+#if UNITY_EDITOR
+    [TabGroup(Tabs, Base), ShowIf("@IsDungeon && baseBiome == null"), Button("Make the base biome", ButtonSizes.Large), PropertyTooltip("Makes this level's base biome inside its asset, with the level's own settings.")]
+    void MakeBaseBiomeButton() => MakeBaseBiome();
+
+    // Makes the base biome as a sub-asset of this level (named "<level> base"). An existing one is returned, renamed
+    // for this level (a copied level brings its original's along).
+    public DungeonBiome MakeBaseBiome()
+    {
+        if (baseBiome != null)
+        {
+            bool own = UnityEditor.AssetDatabase.GetAssetPath(baseBiome) == UnityEditor.AssetDatabase.GetAssetPath(this);
+            if (own && (baseBiome.name != name + " base" || !baseBiome.isLevelBase))
+            {
+                baseBiome.name = name + " base"; baseBiome.isLevelBase = true;
+                UnityEditor.EditorUtility.SetDirty(baseBiome); UnityEditor.EditorUtility.SetDirty(this);
+            }
+            return baseBiome;
+        }
+        string path = UnityEditor.AssetDatabase.GetAssetPath(this);
+        var biome = CreateInstance<DungeonBiome>();
+        biome.name = name + " base";
+        biome.isLevelBase = true;
+        if (!string.IsNullOrEmpty(path)) UnityEditor.AssetDatabase.AddObjectToAsset(biome, path);
+        baseBiome = biome;
+        UnityEditor.EditorUtility.SetDirty(biome);
+        UnityEditor.EditorUtility.SetDirty(this);
+        return biome;
+    }
+#endif
+
+    // ── Sound ─────────────────────────────────────────────────────────
+    [TabGroup(Tabs, Sound), Title("Music", HorizontalLine = false), Tooltip("The level's music; a biome with music of its own plays that instead on its floors.")]
     public AudioClip backgroundMusic;
-    [TabGroup(Tabs, Look), Range(0f, 1f), LabelText("Volume"), Tooltip("BGM volume for this level: 0 is silent, 1 is full volume. Still respects the AudioManager Music and Master mixer settings. Reload the level to apply changes.")]
+    [TabGroup(Tabs, Sound), Range(0f, 1f), LabelText("Volume"), Tooltip("BGM volume for this level: 0 is silent, 1 is full volume. Still respects the AudioManager Music and Master mixer settings. Reload the level to apply changes.")]
     public float backgroundMusicVolume = 1f;
 
-    // ── Building: styles and the board's pieces ───────────────────────
-    [TabGroup(Tabs, Building), ShowIf(D), Title("Default style", HorizontalLine = false), LabelText("Style"), InlineEditor(InlineEditorObjectFieldModes.Foldout)]
-    [Tooltip("The fallback. Rooms and corridors no style is picked for use this style; other styles take any material they leave empty from it. Its Wood and Metal make the exit hatch and gate.")]
-    public DungeonRoomStyle defaultStyle;
+    // ── Dialogue ──────────────────────────────────────────────────────
+    [TabGroup(Tabs, Dialogue), ShowIf(D), ListDrawerSettings(ShowFoldout = true), Tooltip("What the Dungeon Master says during a run here: a trigger, a chance, and lines to pick from. Never two within the remark gap set on the Dialogue Manager.")]
+    public DungeonDialogue[] dialogue = new DungeonDialogue[0];
+
+#if UNITY_EDITOR
+    // Under the tabs: what is no longer on a level because every level had the same.
+    [ShowIf(D), PropertyOrder(2), Button("Shared by every level: Table level defaults"), PropertyTooltip("The plain chest and its sounds, the merchant and his stock, breakables, features, wall lights, room shapes, the room event pieces (shrine, spike plate, ambush gate and sounds, snoring) and the run's HUD pieces are the same on every level: Levels/Resources/Table level defaults.")]
+    void SelectSharedDefaults() { if (Shared != null) UnityEditor.Selection.activeObject = Shared; }
+#endif
+
+    // ── On the base biome (its Level tab) ─────────────────────────────
+    // Read through to the base biome; without one, the defaults.
+    DungeonBiome B => baseBiome;
+    public DungeonRoomStyle defaultStyle => B != null ? B.defaultStyle : null;
+    public DungeonStyleChoice[] roomStyles => B != null ? B.roomStyles : new DungeonStyleChoice[0];
+    public bool corridorsCopyConnectedRoomStyle => B != null ? B.corridorsCopyConnectedRoomStyle : false;
+    public DungeonStyleChoice[] corridorStyles => B != null ? B.corridorStyles : new DungeonStyleChoice[0];
+    public bool kitModels => B != null ? B.kitModels : true;
+    public Material boardEdgeMaterial => B != null ? B.boardEdgeMaterial : null;
+    public Material boardGridMaterial => B != null ? B.boardGridMaterial : null;
+    public Material boardPitMaterial => B != null ? B.boardPitMaterial : null;
+    public float boardVerticality => B != null ? B.boardVerticality : 1f;
+    public AudioClip[] boardTileTaps => B != null ? B.boardTileTaps : new AudioClip[0];
+    public GameObject[] boardDoorPosts => B != null ? B.boardDoorPosts : new GameObject[0];
+    public GameObject[] boardMoundProps => B != null ? B.boardMoundProps : new GameObject[0];
+    public Color boardLightColor => B != null ? B.boardLightColor : new Color(1f, .86f, .68f);
+    public float boardLightIntensity => B != null ? B.boardLightIntensity : 2600f;
+    public Vector2Int torchesPerRoom => B != null ? B.torchesPerRoom : new Vector2Int(1, 2);
+    public float litRoomChance => B != null ? B.litRoomChance : .75f;
+    public float corridorTorchChance => B != null ? B.corridorTorchChance : .3f;
+    public GameObject darkRoomLight => B != null ? B.darkRoomLight : null;
+    public DungeonPropRule[] propRules => B != null ? B.propRules : new DungeonPropRule[0];
+    public bool furnishEntranceRims => B != null ? B.furnishEntranceRims : false;
+    public Vector2Int destructiblesPerRoom => B != null ? B.destructiblesPerRoom : new Vector2Int(1, 3);
+    public DungeonWeightedPrefab[] chestTiers => B != null ? B.chestTiers : new DungeonWeightedPrefab[0];
+    // Settable for the Asset Studio's room field: it writes the base biome's.
+    public GameObject shopRoom
+    {
+        get => B != null ? B.shopRoom : null;
+        set
+        {
+            if (B != null) B.shopRoom = value;
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(B != null ? B : this);
+#endif
+        }
+    }
+    public DungeonRoomFeatures roomFeatures => B != null ? B.roomFeatures : NoFeatures;
+    static readonly DungeonRoomFeatures NoFeatures = new();
+    // The intro's look sets its board light colour (on the base biome).
+    public void SetBoardLightColor(Color color) { if (B != null) B.boardLightColor = color; }
     // The default style's materials (null without one).
     public Material floorMaterial => defaultStyle != null ? defaultStyle.floor : null;
     public Material wallMaterial => defaultStyle != null ? defaultStyle.bottomWall : null;
@@ -231,72 +316,6 @@ public class TableLevelData : ScriptableObject
     public Material ceilingMaterial => defaultStyle != null ? defaultStyle.ceiling : null;
     public Material woodMaterial => defaultStyle != null ? defaultStyle.wood : null;
     public Material metalMaterial => defaultStyle != null ? defaultStyle.metal : null;
-    [TabGroup(Tabs, Building), ShowIf(D), Title("Styles", "Shared by every biome. A biome's own styles are added to these.", HorizontalLine = false), Tooltip("Weighted styles selected once per whole room. Empty or disabled entries use the Default Style.")]
-    public DungeonStyleChoice[] roomStyles = new DungeonStyleChoice[0];
-    [TabGroup(Tabs, Building), ShowIf(D), Tooltip("Copy a connected room's complete style without crossing a planned doorway. Search through open corridors if needed. If no room is reachable without crossing a door, use the Default Style. Selection is seeded; opening doors does not change styles.")]
-    public bool corridorsCopyConnectedRoomStyle;
-    [TabGroup(Tabs, Building), ShowIf(D), HideIf(nameof(corridorsCopyConnectedRoomStyle)), Tooltip("Weighted styles selected once per whole corridor section. Expand Style to edit its materials. Empty uses the Default Style.")]
-    public DungeonStyleChoice[] corridorStyles = new DungeonStyleChoice[0];
-    [TabGroup(Tabs, Building), ShowIf(D), Tooltip("Hand-built rooms use the kit's painted models (pillars, arches, rubble, railings) where a piece has one. Off: every kit piece is built of plain blocks in the room's own stone.")]
-    public bool kitModels = true;
-    [TabGroup(Tabs, Building), Tooltip("While the floor is built on the table, the starting room's wall on the viewer's side and its ceiling stay hidden (from the room they show only their dark outside), and come back when the player arrives. The intro uses it.")]
-    public bool hideStartWallInReveal;
-    [TabGroup(Tabs, Building), ShowIf(nameof(IsBoard)), Title("Board", "Board-game levels: the tiles' printed tops use the floor materials; these make the rest.", HorizontalLine = false), Tooltip("The cut edge of a ground-level tile: layers of card.")]
-    public Material boardEdgeMaterial;
-    [TabGroup(Tabs, Building), ShowIf(nameof(IsBoard)), Tooltip("Printed grid over each tile (transparent).")]
-    public Material boardGridMaterial;
-    [TabGroup(Tabs, Building), ShowIf(nameof(IsBoard)), Tooltip("The bottom of a pit on the board (a template's Pit floor cut): the tiles there are taken away down to the table and this dark card lies in the hole. Empty uses the edge material.")]
-    public Material boardPitMaterial;
-    [TabGroup(Tabs, Building), ShowIf(nameof(IsBoard)), Range(0, 8), Tooltip("How vertical the board is. The tallest room rises to its layer height times this; about half the other rooms keep their level, some dip lower and some climb part of the way. 1 keeps the layers as set, below 1 flattens. Rooms that would need too steep a stair are lifted to fit.")]
-    public float boardVerticality = 1f;
-    [TabGroup(Tabs, Building), ShowIf(nameof(IsBoard)), Tooltip("Soft taps played as tiles land when a room is revealed (Tools/board_tap.py makes them).")]
-    public AudioClip[] boardTileTaps = new AudioClip[0];
-    [TabGroup(Tabs, Building), ShowIf(nameof(IsBoard)), AssetsOnly, Tooltip("Board doors stand between two of these (trees, for a forest) instead of a stone arch with a beam. Empty builds the arch.")]
-    public GameObject[] boardDoorPosts = new GameObject[0];
-    [TabGroup(Tabs, Building), ShowIf(nameof(IsBoard)), AssetsOnly, Tooltip("Cells a room's shape leaves out inside it (between the columns of a pillar hall, the middle of a ring) become low mounds with one of these on top, instead of holes in the board. Empty leaves the holes.")]
-    public GameObject[] boardMoundProps = new GameObject[0];
-
-    // ── Contents: lights, furnishing, chests, room events ─────────────
-#if UNITY_EDITOR
-    // Under the tabs: what is no longer on a level because every level had the same.
-    [ShowIf(D), PropertyOrder(2), Button("Shared by every level: Table level defaults"), PropertyTooltip("The plain chest and its sounds, the merchant and his stock, breakables, features, wall lights, room shapes and the run's HUD pieces are the same on every level: Levels/Resources/Table level defaults.")]
-    void SelectSharedDefaults() { if (Shared != null) UnityEditor.Selection.activeObject = Shared; }
-#endif
-    [TabGroup(Tabs, Contents), ShowIf(D), InfoBox("A biome adds its own on top of these. The plain chest, the merchant, breakables, features and wall lights every level shares are on Table level defaults (the button under the tabs).")]
-    [Title("Torches", "The only lights in the dungeon besides the player's own.", HorizontalLine = false), MinMaxSlider(1, 4, true), Tooltip("Torches in a room that rolls its full count (at least one).")]
-    public Vector2Int torchesPerRoom = new Vector2Int(1, 2);
-    [TabGroup(Tabs, Contents), ShowIf(D), Range(0, 1), LabelText("Full Torch Chance"), Tooltip("Chance a room gets its Torches Per Room; the others get one. The entrance and exit always get the full count. Every room has at least one light (a dark one only Dark Room Light).")]
-    public float litRoomChance = .75f;
-    [TabGroup(Tabs, Contents), ShowIf(D), Range(0, 1), Tooltip("Chance of a torch on each stretch of corridor wall (about every 8 cells).")]
-    public float corridorTorchChance = .3f;
-    [TabGroup(Tabs, Contents), ShowIf(D), Tooltip("The one light a dark room gets instead of torches (a candle cluster on the floor by a wall), so no room is without a light; it stays dim. Empty = dark rooms have no light at all.")]
-    public GameObject darkRoomLight;
-    [TabGroup(Tabs, Contents), ShowIf(D), Title("Furnishing", HorizontalLine = false), LabelText("Furnishing"), Tooltip("Props placed by rule and scaled by floor area: against walls, in corners, in the middle. A biome's rules are added.")]
-    public DungeonPropRule[] propRules = new DungeonPropRule[0];
-    [TabGroup(Tabs, Contents), ShowIf(D), Tooltip("Furnish the rim of the entrance and exit rooms too (their middles stay clear). Off keeps both rooms bare.")]
-    public bool furnishEntranceRims;
-    [TabGroup(Tabs, Contents), ShowIf(D), LabelText("Extra Breakables Per Room"), Tooltip("Extra breakables scattered per room, on top of supply spots.")]
-    [MinMaxSlider(0, 8, true)] public Vector2Int destructiblesPerRoom = new Vector2Int(1, 3);
-    [TabGroup(Tabs, Contents), ShowIf(D), Title("Chests and the shop", HorizontalLine = false), Tooltip("Chest tiers picked by weight (wood, iron, gold: each prefab's DungeonContainer says what it gives). Empty uses the shared plain chest.")]
-    public DungeonWeightedPrefab[] chestTiers = new DungeonWeightedPrefab[0];
-    [TabGroup(Tabs, Contents), ShowIf(D), LabelText("Shop Room"), Tooltip("Room template the merchant's room is built from (a Merchant socket marks where he stands). Empty puts him in a quiet side room as it is.")]
-    public GameObject shopRoom;
-    [TabGroup(Tabs, Contents), ShowIf(D), Title("Room features", "Room events, heights and room light on every floor. A biome can replace them (its Rooms tab: Override Dungeon Settings).", HorizontalLine = false), InlineProperty, HideLabel]
-    public DungeonRoomFeatures roomFeatures = new();
-    [TabGroup(Tabs, Contents), ShowIf(D), Title("Room event pieces", HorizontalLine = false), AssetsOnly, Tooltip("The shrine set in quiet rooms (DungeonShrine).")]
-    public GameObject shrinePrefab;
-    [TabGroup(Tabs, Contents), ShowIf(D), AssetsOnly, Tooltip("A spike plate (DungeonSpikeTrap), laid around trapped chests.")]
-    public GameObject spikeTrapPrefab;
-    [TabGroup(Tabs, Contents), ShowIf(D), AssetsOnly, Tooltip("An ambush gate: its first child is the bars, raised to local y 0 and lowered under the floor.")]
-    public GameObject ambushGatePrefab;
-    [TabGroup(Tabs, Contents), ShowIf(D), AssetsOnly, Tooltip("The puff an ambusher (and the reward chest) comes out of.")]
-    public GameObject ambushSpawnPuff;
-    [TabGroup(Tabs, Contents), ShowIf(D)] public AudioClip ambushSlamAudio, ambushLiftAudio, ambushSpawnAudio;
-    [TabGroup(Tabs, Contents), ShowIf(D), Tooltip("Now and then from a sleeping enemy.")] public AudioClip sleepAudio;
-
-    // ── Dialogue ──────────────────────────────────────────────────────
-    [TabGroup(Tabs, Dialogue), ShowIf(D), ListDrawerSettings(ShowFoldout = true), Tooltip("What the Dungeon Master says during a run here: a trigger, a chance, and lines to pick from. Never two within the remark gap set on the Dialogue Manager.")]
-    public DungeonDialogue[] dialogue = new DungeonDialogue[0];
 
     // ── Shared by every level (Levels/Resources/Table level defaults) ─
     static TableLevelDefaults Shared => TableLevelDefaults.Shared;
@@ -312,6 +331,15 @@ public class TableLevelData : ScriptableObject
     public DungeonEnemyBar enemyBarPrefab => Shared != null ? Shared.enemyBarPrefab : null;
     public TMPro.TMP_Text damageNumberPrefab => Shared != null ? Shared.damageNumberPrefab : null;
     public TMPro.TMP_Text messagePrefab => Shared != null ? Shared.messagePrefab : null;
+    // The room event pieces; before the defaults have them, the level's old ones.
+    public GameObject shrinePrefab => Shared != null ? Shared.shrinePrefab : null;
+    public GameObject spikeTrapPrefab => Shared != null ? Shared.spikeTrapPrefab : null;
+    public GameObject ambushGatePrefab => Shared != null ? Shared.ambushGatePrefab : null;
+    public GameObject ambushSpawnPuff => Shared != null ? Shared.ambushSpawnPuff : null;
+    public AudioClip ambushSlamAudio => Shared != null ? Shared.ambushSlamAudio : null;
+    public AudioClip ambushLiftAudio => Shared != null ? Shared.ambushLiftAudio : null;
+    public AudioClip ambushSpawnAudio => Shared != null ? Shared.ambushSpawnAudio : null;
+    public AudioClip sleepAudio => Shared != null ? Shared.sleepAudio : null;
 
     // ── The same on every level ───────────────────────────────────────
     // Never changed on any level, so no longer on the asset: the value every level had.
@@ -348,28 +376,47 @@ public class TableLevelData : ScriptableObject
     public DungeonBiome Biome(int floor) => BiomeAt(floor, out _, out _);
 
     // The biome a floor belongs to, which of its floors this is (1-based) and how many it has.
-    // Floors past the plan stay on the last biome's deepest floor.
+    // Floors past the plan stay on the last biome's deepest floor. Without stages: the base biome.
     public DungeonBiome BiomeAt(int floor, out int floorInBiome, out int biomeFloors) => StageAt(floor, out floorInBiome, out biomeFloors)?.biome;
 
-    // The stage a floor belongs to (past the end: the last stage, on its last floor).
+    // The floor's biome when it is a stage's own, null when it is the base biome (or there is none): the base biome's
+    // lists are read once, a stage biome's are added to them.
+    public DungeonBiome StageBiome(DungeonBiome floorBiome) => floorBiome != null && floorBiome != baseBiome ? floorBiome : null;
+
+    // The biomes a run of this level goes through, in order: the stages', or the base biome alone.
+    public List<DungeonBiome> RunBiomes()
+    {
+        var list = new List<DungeonBiome>();
+        if (HasStages) { foreach (var s in stages) if (s != null && s.biome != null) list.Add(s.biome); }
+        else if (baseBiome != null) list.Add(baseBiome);
+        return list;
+    }
+
+    // The stage a floor belongs to (past the end: the last stage, on its last floor). Without stages: one stage of
+    // Floors floors on the base biome (null when there is none).
     BiomeStage StageAt(int floor, out int floorInBiome, out int biomeFloors)
     {
+        if (!HasStages)
+        {
+            biomeFloors = Mathf.Max(1, floors);
+            floorInBiome = Mathf.Clamp(floor, 1, biomeFloors);
+            return baseBiome != null ? new BiomeStage { biome = baseBiome, floors = biomeFloors, boss = bossOnLastFloor } : null;
+        }
         int start = 1;
         BiomeStage last = null;
-        if (stages != null)
-            foreach (var stage in stages)
-            {
-                if (stage == null || stage.biome == null) continue;
-                int count = Mathf.Max(1, stage.floors);
-                if (floor < start + count) { floorInBiome = Mathf.Max(1, floor - start + 1); biomeFloors = count; return stage; }
-                last = stage; start += count;
-            }
+        foreach (var stage in stages)
+        {
+            if (stage == null || stage.biome == null) continue;
+            int count = Mathf.Max(1, stage.floors);
+            if (floor < start + count) { floorInBiome = Mathf.Max(1, floor - start + 1); biomeFloors = count; return stage; }
+            last = stage; start += count;
+        }
         biomeFloors = last != null ? Mathf.Max(1, last.floors) : 1;
         floorInBiome = biomeFloors;
         return last;
     }
 
-    // The floor's biome decides; the level's own setting only applies to dungeons without biomes.
+    // The floor's biome decides (a stageless level's is its base biome).
     // Every dungeon floor is marked for the Lighting Manager's dungeon darkness unless its biome is Lit Throughout.
     public LightingManager.MoodState DungeonLighting(int floorNumber = 1)
     {
@@ -399,7 +446,8 @@ public class TableLevelData : ScriptableObject
             var themed = Resources.Load<SceneMood>("DungeonLighting/" + (DungeonMoodLighting)(int)biome.lighting);
             if (themed != null) return LightingManager.FromPreset(themed);
         }
-        var preset = Resources.Load<SceneMood>("DungeonLighting/" + moodLighting);
+        // No biome at all: the level's old table lighting, else the town's mood, else plain settings.
+        var preset = Resources.Load<SceneMood>("DungeonLighting/" + DungeonMoodLighting.Standard);
         if (preset == null) preset = mood;
         return preset != null ? LightingManager.FromPreset(preset) : new DungeonLightingSettings().ToState();
     }
@@ -412,7 +460,7 @@ public class TableLevelData : ScriptableObject
         return backgroundMusic;
     }
 
-    // The biome's guardian, on the stage's last floor (when the stage has its boss).
+    // The biome's guardian, on the stage's last floor (when the stage has its boss; without stages, Boss On Last Floor).
     public DungeonMilestone Milestone(int floor)
     {
         if (floor > FloorCount) return null;
