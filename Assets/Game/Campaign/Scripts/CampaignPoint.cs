@@ -110,7 +110,7 @@ public class CampaignPoint : MonoBehaviour
         unchecked
         {
             int h = 17;
-            foreach (char c in encounter != null ? encounter.id : name) h = h * 31 + c;
+            foreach (char c in encounter != null ? encounter.id ?? "" : name) h = h * 31 + c;
             return h;
         }
     }

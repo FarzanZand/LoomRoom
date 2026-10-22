@@ -443,6 +443,8 @@ public class TableLevelLoader : MonoBehaviour
         // player is already standing at the table when the view lands. The wake-up and the ending keep the fade.
         var exitSettings = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
         bool fly = whileDark==null && Dungeon!=null && exitSettings!=null && !DebugDungeonSession.Active && Current!=null && Current.IsDungeon;
+        // Only from the table's own floor: a portal's pocket lies far off the table (the flight would cross the house).
+        if(fly && player!=null) { var box=TableBox; box.Expand(new Vector3(2f,400f,2f)); fly=box.Contains(player.transform.position); }
         try
         {
             if(fly)

@@ -46,10 +46,12 @@ public class ArenaFight : MonoBehaviour
 
     IEnumerator Won()
     {
-        done = true;
-        if (!RunManager.HasInstance || !RunManager.Instance.Running || RunManager.Instance.Ended) yield break;
+        if (!RunManager.HasInstance || !RunManager.Instance.Running || RunManager.Instance.Ended) yield break;   // looked at again later
         if (wonLine != null && !wonLine.IsEmpty) DungeonMaster.Say(wonLine);
         yield return new WaitForSeconds(delay);
-        if (RunManager.Instance.Running && !RunManager.Instance.Ended && TableManager.Loader != null) TableManager.Loader.CompleteRun();
+        // Dead in the meantime: not won yet. A revive goes on with the run, and the win is checked again.
+        if (!RunManager.Instance.Running || RunManager.Instance.Ended || TableManager.Loader == null) yield break;
+        done = true;
+        TableManager.Loader.CompleteRun();
     }
 }

@@ -24,7 +24,7 @@ public class CampaignEvent : ScriptableObject
     public string title;
     [PreviewField(120), Tooltip("The picture that fills the screen behind the text.")] public Sprite art;
     [TextArea(4, 12)] public string text;
-    [Range(1, 4), Tooltip("Shown the first time the map is seen after this act opens.")] public int afterAct = 2;
+    [Min(1), Tooltip("Shown the first time the map is seen after this act opens.")] public int afterAct = 2;
     public Choice[] choices = Array.Empty<Choice>();
     [Tooltip("The button that closes the event after a choice.")] public string continueLabel = "Continue";
 }

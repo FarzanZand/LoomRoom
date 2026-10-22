@@ -73,7 +73,7 @@ public partial class CampaignMap
         if (scatterAct.Count == 0 && scatter != null) foreach (Transform t in scatter) scatterAct[t] = (ActAt(t.localPosition), t.gameObject.activeSelf);
         foreach (var p in Points) p.gameObject.SetActive(p.encounter == null || p.encounter.act <= openAct);
         foreach (var path in Paths) path.gameObject.SetActive(path.Open(openAct));
-        for (int act = 1; act <= 4; act++)
+        for (int act = 1, last = MaxAct; act <= last; act++)
         {
             bool covered = cover && act > openAct;
             if (covered && !fogs.ContainsKey(act)) fogs[act] = BuildCloth(act, style);
@@ -102,7 +102,9 @@ public partial class CampaignMap
         {
             var p = t.localPosition;
             float s = Vector2.Dot(new Vector2(p.x - fromLocal.x, p.z - fromLocal.z), pull);
-            appearing.Add((t, t.localScale, Mathf.Clamp01((s - sMin) / span)));
+            // Its own size, as first seen (a reveal cut short must not leave a piece shrunk for the next one).
+            if (!restScale.TryGetValue(t, out var rest)) restScale[t] = rest = t.localScale;
+            appearing.Add((t, rest, Mathf.Clamp01((s - sMin) / span)));
         }
         // This act's scatter, and earlier acts' scatter that only this cloth lay over.
         foreach (var kv in scatterAct)
@@ -111,21 +113,24 @@ public partial class CampaignMap
         foreach (var p in Points) if (p.encounter != null && p.encounter.act == act) Add(p.transform);
         foreach (var path in Paths) if (path.Open(act) && !path.Open(act - 1)) Add(path.transform);
         foreach (var a in appearing) { a.t.localScale = Vector3.zero; a.t.gameObject.SetActive(true); }
-        for (float t = 0; t < seconds; t += Time.deltaTime)
+        try
         {
-            float k = t / seconds;
-            float front = cloth != null ? RollCloth(cloth, k, fromLocal) : k;
-            foreach (var a in appearing)
+            for (float t = 0; t < seconds; t += Time.deltaTime)
             {
-                if (a.t == null) continue;
-                // Each piece pops up just after the roll has passed it.
-                float local = Mathf.Clamp01((front - a.at) / .12f);
-                float s = local < 1 ? Mathf.Sin(local * Mathf.PI * .5f) * (1f + .15f * Mathf.Sin(local * Mathf.PI)) : 1f;
-                a.t.localScale = a.scale * s;
+                float k = t / seconds;
+                float front = cloth != null ? RollCloth(cloth, k, fromLocal) : k;
+                foreach (var a in appearing)
+                {
+                    if (a.t == null) continue;
+                    // Each piece pops up just after the roll has passed it.
+                    float local = Mathf.Clamp01((front - a.at) / .12f);
+                    float s = local < 1 ? Mathf.Sin(local * Mathf.PI * .5f) * (1f + .15f * Mathf.Sin(local * Mathf.PI)) : 1f;
+                    a.t.localScale = a.scale * s;
+                }
+                yield return null;
             }
-            yield return null;
         }
-        foreach (var a in appearing) if (a.t != null) a.t.localScale = a.scale;
+        finally { foreach (var a in appearing) if (a.t != null) a.t.localScale = a.scale; }
         if (cloth != null) cloth.go.SetActive(false);
         shownAct = Mathf.Max(shownAct, act);
     }
@@ -193,6 +198,7 @@ public partial class CampaignMap
         var layer = new ClothLayer { cover = Coverage(act) };
         int w = gridX + 1;
         var drop = Drop;
+        if (drop != null && !dropPending) drop.KeepLastFrame();   // only its settled shape is needed (~8 MB less)
         var drape = drop == null ? (drapeCache ??= Drape()) : null;
         var verts = new Vector3[layer.cover.Length]; var uvs = new Vector2[layer.cover.Length]; var tris = new List<int>();
         for (int z = 0; z <= gridZ; z++)
@@ -248,6 +254,11 @@ public partial class CampaignMap
 
     CampaignClothDrop dropCache; bool dropRead;
     [System.NonSerialized] float[] drapeCache;
+    readonly Dictionary<Transform, Vector3> restScale = new();
+    // Set by the campaign while the first reveal (the drop) is still to come: its frames are kept until then.
+    [System.NonSerialized] public bool dropPending;
+    // The highest act any place belongs to (at least 4): the acts the cloths cover.
+    public int MaxAct { get { int m = 4; foreach (var p in Points) if (p.encounter != null) m = Mathf.Max(m, p.encounter.act); return m; } }
     CampaignClothDrop Drop { get { if (!dropRead) { dropRead = true; dropCache = CampaignClothDrop.Read(clothDropBake); } return dropCache; } }
 
     // The first reveal (after the first morning's dice): the simulated cloth falls onto the bare table, the land rises

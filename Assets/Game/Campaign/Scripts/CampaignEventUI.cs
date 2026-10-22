@@ -18,6 +18,7 @@ public class CampaignEventUI : MonoBehaviour
     public Button choiceTemplate;
     public RectTransform choiceRow;
     [Min(0)] public float fadeSeconds = .3f;
+    [Tooltip("The way out when no choice can be afforded.")] public string leaveLabel = "Leave";
 
     public bool Open { get; private set; }
     readonly List<Button> spawned = new();
@@ -59,17 +60,44 @@ public class CampaignEventUI : MonoBehaviour
                 }
             }
             else Add(e.continueLabel, null, () => closed = true);
+            // Nothing can be afforded: a way out all the same (no soft lock).
+            if (picked == null && !spawned.Exists(b => b != null && b.interactable)) Add(leaveLabel, null, () => { picked = new CampaignEvent.Choice(); closed = true; });
             // Nothing is pre-selected: Enter or Space pressed to skip a line must not buy anything.
             if (UnityEngine.EventSystems.EventSystem.current != null) UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
             acceptAfter = Time.unscaledTime + inputGrace;
         }
         if (e.choices == null || e.choices.Length == 0) { picked = new CampaignEvent.Choice(); Fill(); }
         else Fill();
-        for (float t = 0; t < fadeSeconds; t += Time.unscaledDeltaTime) { Fade(t / fadeSeconds); yield return null; }
-        Fade(1f);
-        while (picked == null) yield return null;
-        body.text = string.IsNullOrWhiteSpace(picked.outcome) ? e.text : picked.outcome;
-        while (!closed) yield return null;
+        // Keys and gamepad: Navigate steps through the buttons (the first press selects one; nothing is selected before,
+        // so a key pressed for something else can't buy), Submit presses it (the EventSystem), Cancel goes to the way
+        // out (the last choice before one is made, Continue after).
+        void OnNavigate()
+        {
+            var es = UnityEngine.EventSystems.EventSystem.current;
+            var live = spawned.FindAll(b => b != null && b.interactable && b.gameObject.activeInHierarchy);
+            if (es == null || live.Count == 0) return;
+            int at = live.FindIndex(b => b.gameObject == es.currentSelectedGameObject);
+            int step = InputManager.HasInstance ? InputManager.Instance.NavigateStep : 1;
+            at = at < 0 ? 0 : (at + step + live.Count) % live.Count;
+            es.SetSelectedGameObject(live[at].gameObject);
+        }
+        void OnCancel()
+        {
+            var es = UnityEngine.EventSystems.EventSystem.current;
+            var last = spawned.FindLast(b => b != null && b.interactable && b.gameObject.activeInHierarchy);
+            if (es != null && last != null) es.SetSelectedGameObject(last.gameObject);
+        }
+        var input = InputManager.HasInstance ? InputManager.Instance : null;
+        if (input != null) { input.NavigatePressed += OnNavigate; input.CancelPressed += OnCancel; }
+        try
+        {
+            for (float t = 0; t < fadeSeconds; t += Time.unscaledDeltaTime) { Fade(t / fadeSeconds); yield return null; }
+            Fade(1f);
+            while (picked == null) yield return null;
+            body.text = string.IsNullOrWhiteSpace(picked.outcome) ? e.text : picked.outcome;
+            while (!closed) yield return null;
+        }
+        finally { if (input != null) { input.NavigatePressed -= OnNavigate; input.CancelPressed -= OnCancel; } }
         for (float t = fadeSeconds; t > 0; t -= Time.unscaledDeltaTime) { Fade(t / fadeSeconds); yield return null; }
         Fade(0f);
         Clear();
@@ -86,6 +114,8 @@ public class CampaignEventUI : MonoBehaviour
         foreach (var t in texts) if (t.name == "Cost") t.gameObject.SetActive(!string.IsNullOrEmpty(cost));
         b.onClick.AddListener(() => { if (Time.unscaledTime < acceptAfter) return; UIFeedbackSettings.Shared?.Hover(); onClick(); });
         var nav = b.navigation; nav.mode = Navigation.Mode.None; b.navigation = nav;
+        // A button the keys selected shows it like a hovered one.
+        var colors = b.colors; colors.selectedColor = colors.highlightedColor; b.colors = colors;
         spawned.Add(b);
         return b;
     }

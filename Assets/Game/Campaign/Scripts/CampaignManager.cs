@@ -15,7 +15,7 @@ public class CampaignManager : Singleton<CampaignManager>
     public class Unlock
     {
         [Tooltip("Beating this place...")] public CampaignEncounter beaten;
-        [Range(1, 4), Tooltip("...opens this act (and every act before it).")] public int opensAct = 2;
+        [Min(1), Tooltip("...opens this act (and every act before it).")] public int opensAct = 2;
     }
 
     [TabGroup("Map"), Tooltip("The map prefab laid on the table. Off: the table works as before (figures, then the dungeon).")]
@@ -30,7 +30,7 @@ public class CampaignManager : Singleton<CampaignManager>
     [TabGroup("Rules"), Tooltip("Every place there is (their order is saved for where the figure stands: append only).")]
     public CampaignEncounter[] encounters = Array.Empty<CampaignEncounter>();
     [TabGroup("Rules"), Tooltip("What opens what.")] public Unlock[] unlocks = Array.Empty<Unlock>();
-    [TabGroup("Rules"), Range(1, 4), Tooltip("Acts open from the start.")] public int firstAct = 1;
+    [TabGroup("Rules"), Min(1), Tooltip("Acts open from the start.")] public int firstAct = 1;
     [TabGroup("Rules"), Tooltip("Winning a dungeon plays the old wake-up ending and the prototype's thank-you. Off: winning only grows the map.")]
     public bool playEndingOnWin;
     [TabGroup("Rules"), Tooltip("Said when a placeholder place is clicked.")]
@@ -102,8 +102,9 @@ public class CampaignManager : Singleton<CampaignManager>
     // ── Progress ──
 
     static ProgressionManager PM => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
-    int SavedAct => Mathf.Clamp(Mathf.Max(firstAct, PM != null ? PM.GetFlag(ActFlag) : 0), 1, 4);
-    public int OpenAct => openEverything ? 4 : SavedAct;
+    int MaxAct => Map != null ? Map.MaxAct : 4;
+    int SavedAct => Mathf.Clamp(Mathf.Max(firstAct, PM != null ? PM.GetFlag(ActFlag) : 0), 1, MaxAct);
+    public int OpenAct => openEverything ? MaxAct : SavedAct;
     // Revealed acts: the save's, or more this session while openEverything (debug) shows them without saving.
     int RevealedAct => Mathf.Max(firstAct, Mathf.Max(revealedNow, PM != null ? PM.GetFlag(RevealedFlag) : 0));
     int revealedNow;
@@ -113,7 +114,7 @@ public class CampaignManager : Singleton<CampaignManager>
     CampaignEncounter At
     {
         get { var all = AllEncounters; int i = PM != null ? PM.GetFlag(AtFlag) - 1 : -1; return i >= 0 && i < all.Length && all[i] != null ? all[i] : home; }
-        set { if (PM != null) PM.SetFlag(AtFlag, Array.IndexOf(AllEncounters, value) + 1); }
+        set { if (PM != null && !openEverything) PM.SetFlag(AtFlag, Array.IndexOf(AllEncounters, value) + 1); }
     }
 
     [NonSerialized] CampaignEncounter[] allEncounters;   // a run-time cache (kept out of the editor's reload backup)
@@ -140,10 +141,15 @@ public class CampaignManager : Singleton<CampaignManager>
     void CheckPlaces()
     {
         var seen = new Dictionary<string, CampaignPoint>();
+        var catalog = Resources.Load<TableLevelCatalog>("TableLevels");
         foreach (var p in Map.Points)
         {
             if (p.encounter == null) continue;
-            string id = string.IsNullOrEmpty(p.encounter.id) ? p.encounter.name : p.encounter.id;
+            if (string.IsNullOrEmpty(p.encounter.id)) { Debug.LogError($"[Campaign] {p.encounter.name} has no id: its beaten flag would be shared with every place without one. Give it an id.", p.encounter); continue; }
+            if (p.encounter.kind == CampaignEncounterKind.Level && p.encounter.level != null && catalog != null
+                && Array.IndexOf(catalog.levels, p.encounter.level) < 0)
+                Debug.LogWarning($"[Campaign] {p.encounter.name}'s level {p.encounter.level.name} is not in Levels/Resources/TableLevels.asset: a run saved there can't be continued.", p.encounter);
+            string id = p.encounter.id;
             if (seen.TryGetValue(id, out var other)) Debug.LogError($"[Campaign] places {other.name} and {p.name} share the encounter id '{id}': give the duplicate its own encounter.", p);
             else seen[id] = p;
         }
@@ -164,6 +170,7 @@ public class CampaignManager : Singleton<CampaignManager>
         if (progress != null) progress.Changed += RememberClass;
         RestoreClass();
         SpawnMap();
+        Map.dropPending = !Unveiled;
         // The map lies on the table once it has been revealed (after the first morning's dice); before that the table is bare.
         Map.gameObject.SetActive(Unveiled && !IntroController.SheetPending && !(RunManager.HasInstance && RunManager.Instance.Running));
         if (Map.gameObject.activeSelf) { ShowActs(); RefreshMarker(); }
@@ -246,6 +253,7 @@ public class CampaignManager : Singleton<CampaignManager>
         Map.name = "Campaign map";
         foreach (var p in Map.Points) p.EnsurePickCollider();
         CheckPlaces();
+        foreach (var ev in events) if (ev != null && string.IsNullOrEmpty(ev.id)) Debug.LogError($"[Campaign] the event {ev.name} has no id: it would share its seen flag with every event without one.", ev);
         restY = Map.transform.localPosition.y;
     }
 
@@ -351,17 +359,23 @@ public class CampaignManager : Singleton<CampaignManager>
         var t = Map.transform;
         t.localPosition = new Vector3(t.localPosition.x, restY, t.localPosition.z);
         MapLights(false);
-        for (float s = 0; s < riseSeconds; s += Time.deltaTime)
+        try
         {
-            float k = s / riseSeconds;
-            // Ease out with a small overshoot.
-            float c = 1.6f, e = 1f + (c + 1f) * Mathf.Pow(k - 1f, 3) + c * Mathf.Pow(k - 1f, 2);
-            t.localScale = new Vector3(1f, Mathf.Max(.01f, e), 1f);
-            yield return null;
+            for (float s = 0; s < riseSeconds; s += Time.deltaTime)
+            {
+                float k = s / riseSeconds;
+                // Ease out with a small overshoot.
+                float c = 1.6f, e = 1f + (c + 1f) * Mathf.Pow(k - 1f, 3) + c * Mathf.Pow(k - 1f, 2);
+                t.localScale = new Vector3(1f, Mathf.Max(.01f, e), 1f);
+                yield return null;
+            }
         }
-        t.localScale = Vector3.one;
-        MapLights(true);
-        rising = false;
+        finally
+        {
+            if (t != null) t.localScale = Vector3.one;
+            MapLights(true);
+            rising = false;
+        }
     }
 
     // The first reveal (after the first morning's dice): a cloth falls onto the bare table, the land rises under it
@@ -382,6 +396,7 @@ public class CampaignManager : Singleton<CampaignManager>
         finally { rising = false; MapLights(true); }
         revealedNow = Mathf.Max(revealedNow, 1);
         if (PM != null) PM.SetFlag(RevealedFlag, Mathf.Max(1, PM.GetFlag(RevealedFlag)));
+        Map.dropPending = false;
     }
 
     // A reveal or fold that was cut short (an error mid-way) leaves the map squashed, dark or marked as rising: put it
@@ -410,14 +425,20 @@ public class CampaignManager : Singleton<CampaignManager>
         var t = Map.transform;
         MapLights(false);
         float seconds = riseSeconds * .6f;
-        for (float s = 0; s < seconds; s += Time.deltaTime)
+        try
         {
-            t.localScale = new Vector3(1f, Mathf.Max(.01f, 1f - Mathf.SmoothStep(0, 1, s / seconds)), 1f);
-            yield return null;
+            for (float s = 0; s < seconds; s += Time.deltaTime)
+            {
+                t.localScale = new Vector3(1f, Mathf.Max(.01f, 1f - Mathf.SmoothStep(0, 1, s / seconds)), 1f);
+                yield return null;
+            }
+            Map.gameObject.SetActive(false);
         }
-        Map.gameObject.SetActive(false);
-        t.localScale = Vector3.one;
-        MapLights(true);
+        finally
+        {
+            if (t != null) t.localScale = Vector3.one;
+            MapLights(true);
+        }
     }
 
     // ── Runs: which place is being played, and what a win opens ──
@@ -460,7 +481,7 @@ public class CampaignManager : Singleton<CampaignManager>
     IEnumerator RunEvents()
     {
         CampaignEvent current = null;
-        if (eventScreen == null || PM == null) yield break;
+        if (eventScreen == null || PM == null || openEverything) yield break;   // debug: not shown (nor paid out)
         int shown = Mathf.Min(OpenAct, RevealedAct);
         foreach (var e in events)
         {
@@ -539,6 +560,7 @@ public class CampaignManager : Singleton<CampaignManager>
         var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         var save = table != null ? table.GetComponent<AdventureSave>() : null;
         if (save == null || !save.HasCheckpoint || !save.CanRestore(save.Saved.checkpoint)) return false;
+        if (loader != null && !loader.Busy && !loader.CanResumeAdventure()) return false;   // its level is gone from the catalog
         var c = save.Saved.checkpoint;
         foreach (var e in AllEncounters) if (e != null && e.level != null && e.level.name == c.level) { place = e; break; }
         var rules = table.GetComponent<AdventurerProgress>()?.rules;
@@ -566,7 +588,7 @@ public class CampaignManager : Singleton<CampaignManager>
         while (revealing) yield return null;
         bool firstReveal = !Map.gameObject.activeSelf && PM != null && !PM.HasFlag(SeenFlag);
         if (firstReveal) yield return StepToMap(player);
-        if (!Map.gameObject.activeSelf) yield return StartCoroutine(GuardedRoutine.Run(firstReveal ? BigReveal() : Rise(), _ => { rising = false; RepairMap(); }));
+        if (!Map.gameObject.activeSelf) yield return StartCoroutine(GuardedRoutine.Run(firstReveal ? BigReveal() : Rise(), _ => { rising = false; RepairMap(); ShowActs(); }));
         else ShowActs();
         PlaceFigure(At, firstReveal);
         if (!firstReveal) yield return StepToMap(player);
@@ -603,6 +625,7 @@ public class CampaignManager : Singleton<CampaignManager>
         void OnSubmit()
         {
             if (asking || MenuOpen() || eventScreen != null && eventScreen.Open || heroSelect != null && heroSelect.Open || changingClass) return;
+            if (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking) return;   // that press moves his line on
             if (keyPick >= 0) submitted = true;
         }
         if (InputManager.HasInstance) { InputManager.Instance.NavigatePressed += OnNavigate; InputManager.Instance.SubmitPressed += OnSubmit; }
@@ -737,7 +760,7 @@ public class CampaignManager : Singleton<CampaignManager>
             var picks = KeyPicks();
             if (keyPick >= picks.Count) keyPick = 0;
             under = picks.Count > 0 ? picks[keyPick] : null;
-            overFigure = under == null;
+            overFigure = under == null && figure != null;
         }
         else if (cam != null && InputManager.HasInstance && !OverUI() && !asking)
         {
@@ -779,15 +802,21 @@ public class CampaignManager : Singleton<CampaignManager>
 
     // The places the keys step through: the figure first (null), then every open place, nearest the player first.
     readonly List<CampaignPoint> keyPicks = new();
+    static readonly Comparer<CampaignPoint> NearFirst = Comparer<CampaignPoint>.Create((a, b) =>
+    {
+        var pa = a.transform.localPosition; var pb = b.transform.localPosition;
+        return pa.x != pb.x ? pa.x.CompareTo(pb.x) : pa.z.CompareTo(pb.z);
+    });
     int keyPick = -1;
     Vector2 lastMouse;
     List<CampaignPoint> KeyPicks()
     {
         keyPicks.Clear();
-        keyPicks.Add(null);
-        foreach (var p in Map.Points) if (p.isActiveAndEnabled && p.encounter != null && IsOpen(p.encounter)) keyPicks.Add(p);
-        keyPicks.Sort(1, keyPicks.Count - 1, Comparer<CampaignPoint>.Create((a, b) => a.transform.localPosition.x.CompareTo(b.transform.localPosition.x) != 0
-            ? a.transform.localPosition.x.CompareTo(b.transform.localPosition.x) : a.transform.localPosition.z.CompareTo(b.transform.localPosition.z)));
+        if (figure != null) keyPicks.Add(null);
+        int first = keyPicks.Count;
+        var points = Map.Points;
+        for (int i = 0; i < points.Count; i++) { var p = points[i]; if (p.isActiveAndEnabled && p.encounter != null && IsOpen(p.encounter)) keyPicks.Add(p); }
+        keyPicks.Sort(first, keyPicks.Count - first, NearFirst);
         return keyPicks;
     }
 
@@ -800,7 +829,7 @@ public class CampaignManager : Singleton<CampaignManager>
     // pop: the figure springs up in place (a new class chosen).
     void PlaceFigure(CampaignEncounter at, bool pop = false)
     {
-        if (figure != null) Destroy(figure);
+        if (figure != null) { Destroy(figure); figure = null; figureCollider = null; }
         var cls = progress != null ? progress.selectedClass : null;
         var point = Map.PointFor(at) ?? Map.PointFor(home);
         if (cls == null || cls.miniature == null || point == null) return;
@@ -947,10 +976,13 @@ public class CampaignManager : Singleton<CampaignManager>
         void Esc() => answer = false;
         if (InputManager.HasInstance) InputManager.Instance.CancelPressed += Esc;
         figures.confirmNo?.Select();
-        while (answer == null) yield return null;
-        if (InputManager.HasInstance) InputManager.Instance.CancelPressed -= Esc;
-        figures.confirmYes.onClick.RemoveListener(Yes); figures.confirmNo.onClick.RemoveListener(No);
-        CloseAsk();
+        try { while (answer == null) yield return null; }
+        finally
+        {
+            if (InputManager.HasInstance) InputManager.Instance.CancelPressed -= Esc;
+            figures.confirmYes.onClick.RemoveListener(Yes); figures.confirmNo.onClick.RemoveListener(No);
+            CloseAsk();
+        }
         yield return null;   // the click that answered is not also a click on the map
         result(answer == true);
     }
@@ -982,10 +1014,15 @@ public class CampaignManager : Singleton<CampaignManager>
         var flag = Resources.Load<GameObject>("Campaign run marker");
         if (flag == null) return;
         marker = Instantiate(flag, point.transform);
-        marker.transform.localPosition = new Vector3(0, point.radius * 1.4f, 0);
+        // Over the place's tallest prop (a tower would swallow it at a fixed height).
+        float top = point.radius * 1.4f;
+        foreach (var r in point.GetComponentsInChildren<Renderer>())
+            if (r.gameObject != marker && !r.transform.IsChildOf(marker.transform)) top = Mathf.Max(top, point.transform.InverseTransformPoint(r.bounds.max).y + 1f);
+        markerHeight = top;
+        marker.transform.localPosition = new Vector3(0, top, 0);
     }
 
-    float nextTableCheck;
+    float nextTableCheck, markerHeight = 3.4f;
     bool rising;
 
     // Once the campaign is open (after the first morning's sheet), the map always lies on the table when nothing else is
@@ -1008,7 +1045,7 @@ public class CampaignManager : Singleton<CampaignManager>
         }
         if (marker != null)
         {
-            marker.transform.localPosition = new Vector3(0, 3.4f + Mathf.Sin(Time.time * 2.4f) * .35f, 0);
+            marker.transform.localPosition = new Vector3(0, markerHeight + Mathf.Sin(Time.time * 2.4f) * .35f, 0);
             marker.transform.localRotation = Quaternion.Euler(0, Time.time * 40f, 0);
         }
     }
@@ -1059,8 +1096,10 @@ public class CampaignManager : Singleton<CampaignManager>
         var eye = player.Look.PitchTransform.position;
         float baseYaw = player.Look.YawTransform.eulerAngles.y;
         float minYaw = float.MaxValue, maxYaw = float.MinValue, minPitch = float.MaxValue, maxPitch = float.MinValue;
+        var shown = new List<Vector3>();
         void Take(Vector3 world)
         {
+            shown.Add(world);
             CameraEase.YawPitchTo(eye, world, out float y, out float p, baseYaw);
             float dy = Mathf.DeltaAngle(baseYaw, y);
             minYaw = Mathf.Min(minYaw, dy); maxYaw = Mathf.Max(maxYaw, dy);
@@ -1075,12 +1114,27 @@ public class CampaignManager : Singleton<CampaignManager>
             }
         var head = keepDungeonMasterInView ? DungeonMasterHead() : null;
         if (head != null) Take(head.position + Vector3.up * 1.5f);
-        // Room under the land for the hint line at the foot of the screen.
-        minPitch -= (maxPitch - minPitch) * bottomRoom;
-        float yawTo = baseYaw + (minYaw + maxYaw) * .5f, pitchTo = (minPitch + maxPitch) * .5f;
-        float midPitch = pitchTo * Mathf.Deg2Rad;
-        float hSpread = (maxYaw - minYaw) * Mathf.Cos(midPitch) * Mathf.Deg2Rad;
-        float vFov = Mathf.Max((maxPitch - minPitch) * 1.04f, 2f * Mathf.Atan(Mathf.Tan(hSpread * .52f) / Mathf.Max(.5f, cam.aspect)) * Mathf.Rad2Deg);
+        // The tightest view that holds every point: each point is projected through the view (a steep look down
+        // makes their angles a poor guide to the width), at every pitch between the lowest and the highest point, and
+        // the pitch that needs the narrowest field of view wins. Then room under the land for the hint line.
+        float yawTo = baseYaw + (minYaw + maxYaw) * .5f, aspect = Mathf.Max(.5f, cam.aspect);
+        float Needed(float pitch)
+        {
+            var inv = Quaternion.Inverse(Quaternion.Euler(-pitch, yawTo, 0f));
+            float t = 0f;
+            foreach (var w in shown)
+            {
+                var l = inv * (w - eye);
+                if (l.z < .01f) return 179f;
+                t = Mathf.Max(t, Mathf.Abs(l.y / l.z), Mathf.Abs(l.x / l.z) / aspect);
+            }
+            return 2f * Mathf.Atan(t) * Mathf.Rad2Deg;
+        }
+        float pitchTo = (minPitch + maxPitch) * .5f, vFov = Needed(pitchTo);
+        for (float p = minPitch; p <= maxPitch; p += .25f) { float v = Needed(p); if (v < vFov) { vFov = v; pitchTo = p; } }
+        vFov *= 1.04f;
+        pitchTo -= vFov * bottomRoom * .5f;
+        vFov *= 1f + bottomRoom;
         float baseFov = cam.fieldOfView - player.CameraRig.FovOffset;
         float zoom = Mathf.Clamp(vFov - baseFov, maxZoomIn, maxZoomOut);
         float startZoom = player.CameraRig.FovOffset, startPitch = player.Look.Pitch;

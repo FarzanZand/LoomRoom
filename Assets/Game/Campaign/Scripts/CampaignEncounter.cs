@@ -14,8 +14,8 @@ public class CampaignEncounter : ScriptableObject
     public CampaignEncounterKind kind = CampaignEncounterKind.Placeholder;
     [ShowIf(nameof(kind), CampaignEncounterKind.Level), Tooltip("The table level this place plays.")]
     public TableLevelData level;
-    [Tooltip("Which act of the campaign it belongs to (1 is home). Its act must be open for it to be picked.")]
-    [Range(1, 4)] public int act = 1;
+    [Min(1), Tooltip("Which act of the campaign it belongs to (1 is home; any number of acts). Its act must be open for it to be picked.")]
+    public int act = 1;
     [TextArea(2, 4), Tooltip("The card's line under the name.")]
     public string description;
     [Tooltip("Said when the player picks this place.")]

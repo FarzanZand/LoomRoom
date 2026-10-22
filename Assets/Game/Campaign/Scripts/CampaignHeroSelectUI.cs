@@ -46,6 +46,7 @@ public class CampaignHeroSelectUI : MonoBehaviour
     {
         progress = who;
         var before = progress != null ? progress.selectedClass : null;
+        classBefore = before;
         if (progress == null || classes == null || classes.Count == 0) { done?.Invoke(null); yield break; }
         foreach (var c in cards) if (c != null) Destroy(c.gameObject);
         cards.Clear();
@@ -98,10 +99,12 @@ public class CampaignHeroSelectUI : MonoBehaviour
     }
 
     // Shut from outside (the map view stopped while it was open): no handlers, nothing on screen.
+    AdventurerClass classBefore;
     public void Abort()
     {
         if (!Open) return;
         Unlisten();
+        if (progress != null && classBefore != null && progress.selectedClass != classBefore) progress.SelectClass(classBefore);
         Fade(0f);
         Open = false;
     }
