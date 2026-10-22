@@ -192,13 +192,6 @@ public class TableLevelLoader : MonoBehaviour
                 {
                     player.UseLevelLoadout();
                     player.Equipment.UnequipAll();player.Bag.Clear();player.Hotbar.Clear();
-                    if(level.startingItems!=null) foreach(var item in level.startingItems)
-                        InventoryManager.Instance.Pickup(item,player,preferHotbar: level.startingEquipment!=null && Array.IndexOf(level.startingEquipment,item)>=0,playSound:false,announcePickup:false);
-                    if(level.startingEquipment!=null) foreach(var item in level.startingEquipment) if(item!=null) {
-                        bool owned=player.Bag.IndexOf(item)>=0 || player.Hotbar.IndexOf(item)>=0;
-                        if(!owned)owned=InventoryManager.Instance.Pickup(item,player,preferHotbar:true,playSound:false,announcePickup:false);
-                        if(owned)player.Equipment.Equip(item,playSound:false);
-                    }
                 }
                 else if(level.kind==TableLevelKind.Town) RestoreTownInventory();
                 if(!descending) player.Stats.Revive();
@@ -285,15 +278,13 @@ public class TableLevelLoader : MonoBehaviour
                 // A layout can fail validation (a room cut off by props). Try the next derived seed
                 // rather than failing the floor; the sequence is fixed, so runs stay reproducible.
                 for(int attempt=0;;attempt++) {
-                    candidate=level.environmentPrefab!=null ? Instantiate(level.environmentPrefab) : new GameObject(level.displayName+" (generated)");
+                    candidate=new GameObject(level.displayName+" (generated)");
                     candidate.transform.position=new Vector3(bounds.center.x,bounds.max.y+.08f,bounds.center.z);
                     candidateDungeon=candidate.GetComponent<DungeonGenerator>();
                     if(candidateDungeon==null)candidateDungeon=candidate.AddComponent<DungeonGenerator>();
                     try {
                         candidateDungeon.Build(level,unchecked(seed+attempt*7907),FloorNumber,attempt>=7);
-                        // The level wants the player to start facing the Dungeon Master: keep looking for such a layout.
-                        if(!level.startFacingDungeonMaster || level.layoutMode==DungeonLayoutMode.Authored || FloorNumber>1 || attempt>=15 || FacesDungeonMaster(candidateDungeon)) break;
-                        candidate.SetActive(false);DestroyImmediate(candidate);candidate=null;
+                        break;
                     }
                     catch(InvalidOperationException e) when (attempt<7) {
                         Debug.LogWarning($"Floor {FloorNumber} layout rejected, trying another: {e.Message}");
@@ -301,7 +292,7 @@ public class TableLevelLoader : MonoBehaviour
                     }
                 }
                 spawn=candidateDungeon.SpawnPoint;rotation=candidateDungeon.SpawnRotation;
-            } else if(level.environmentPrefab!=null)candidate=Instantiate(level.environmentPrefab,transform.position,Quaternion.identity);
+            }
         } catch {
             if(candidate!=null){candidate.SetActive(false);Destroy(candidate);}
             if(previousEnvironment!=null)previousEnvironment.SetActive(true);
@@ -328,16 +319,6 @@ public class TableLevelLoader : MonoBehaviour
         controller.enabled=false;player.transform.SetPositionAndRotation(spawn,rotation);controller.enabled=true;
         player.SetSpawnPoint(spawn,rotation);if(player.Look!=null)player.Look.SetYaw(rotation.eulerAngles.y);player.SynchronizePresentation();
         Physics.SyncTransforms();
-    }
-    // The starting room's way out (and so the player's first view) points across the table at the Dungeon Master.
-    bool FacesDungeonMaster(DungeonGenerator dungeon)
-    {
-        var table = GetComponent<TableManager>();
-        var dm = table != null ? table.DM : null;
-        if(dm==null) return true;
-        var toDM = dm.transform.position - dungeon.SpawnPoint; toDM.y = 0;
-        var facing = dungeon.SpawnRotation * Vector3.forward; facing.y = 0;
-        return toDM.sqrMagnitude < .01f || Vector3.Angle(facing, toDM) < 45f;
     }
     void SetTown(bool active)
     {

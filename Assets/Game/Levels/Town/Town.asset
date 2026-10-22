@@ -16,117 +16,58 @@ MonoBehaviour:
   description: A small village. Brutes in the woods nearby.
   cardArt: {fileID: 21300000, guid: 5dae8b473ac332a438d7555710ae1eda, type: 3}
   kind: 0
-  environmentPrefab: {fileID: 0}
   stages: []
   balance: {fileID: 0}
   gearByFloor: []
+  startingRoom: {fileID: 0}
+  startingChestConsumable: {fileID: 0}
+  fixedSeed: 0
+  pocket: 0
+  layoutMode: 1
+  width: 32
+  depth: 42
+  roomCount: 12
+  roomSize: {x: 4, y: 9}
+  roomSpacing: {x: 1, y: 4}
+  loopPercent: 15
+  loopReach: 10
+  corridorWander: 1.2
+  wideCorridorPercent: 15
+  doorPrefab: {fileID: 0}
+  mapTemplate: {fileID: 0}
+  authoredMap: 
+  authoredRooms: []
+  authoredContent: 
+  authoredMarkers: []
   mood: {fileID: 11400000, guid: d4f17c0d2b15de64593452a74b223d59, type: 2}
   moodLighting: 0
-  overrideLighting: 0
-  lightingSettings:
-    skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
-    skyExposure: 0.8
-    lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
-    lightIntensity: 0.65
-    ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
-    ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
-    ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
-    fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   roomLighting: 0
-  roomTint: {r: 1, g: 1, b: 1, a: 1}
-  minimumAmbient: 0.07
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
   backgroundMusic: {fileID: 0}
   backgroundMusicVolume: 1
-  loopMusic: 1
-  musicFadeSeconds: 1.5
-  fixedSeed: 0
-  startFacingDungeonMaster: 0
-  width: 32
-  depth: 42
-  cellSize: 2
-  roomCount: 12
-  largeRoomPercent: 10
-  largeRoomScale: 1.6
-  loopPercent: 15
-  layoutMode: 1
-  roomSize: {x: 4, y: 9}
-  roomSpacing: {x: 1, y: 4}
-  corridorWander: 1.2
-  wideCorridorPercent: 15
-  deadEndPercent: 0
-  loopReach: 10
-  roomShapes:
-  - kind: 0
-    shape: {fileID: 0}
-    weight: 3
-  - kind: 1
-    shape: {fileID: 0}
-    weight: 2
-  - kind: 2
-    shape: {fileID: 0}
-    weight: 2
-  - kind: 3
-    shape: {fileID: 0}
-    weight: 1
-  - kind: 4
-    shape: {fileID: 0}
-    weight: 1
-  - kind: 5
-    shape: {fileID: 0}
-    weight: 2
-  - kind: 6
-    shape: {fileID: 0}
-    weight: 1
-  - kind: 7
-    shape: {fileID: 0}
-    weight: 1
-  - kind: 8
-    shape: {fileID: 0}
-    weight: 1
-  startingRoom: {fileID: 0}
-  authoredMap: 
-  authoredContent: 
-  authoredRooms: []
-  authoredMarkers: []
-  doorPrefab: {fileID: 0}
-  doorPercent: 65
-  boardEdgeMaterial: {fileID: 0}
-  boardGridMaterial: {fileID: 0}
-  boardPitMaterial: {fileID: 0}
-  boardTileThickness: 0.14
-  boardLayerHeight: 0.32
-  boardMaxRaise: 2
-  boardVerticality: 1
-  boardTileTaps: []
-  boardRevealAll: 0
-  boardDoorPosts: []
-  boardMoundProps: []
-  furnishEntranceRims: 0
-  architectureTileSize: 3
-  hideRoof: 0
-  hideRoofPercent: 100
-  skylightFrame: 0.9
-  hideEdges: 0
-  hideEdgesPercent: 100
-  windowSill: 0.55
-  windowLintel: 0.75
-  windowJamb: 0.45
   defaultStyle: {fileID: 0}
   roomStyles: []
   corridorsCopyConnectedRoomStyle: 0
   corridorStyles: []
-  roomProfiles: []
-  roomPropPrefabs: []
-  lightingPrefabs: []
+  kitModels: 1
+  hideStartWallInReveal: 0
+  boardEdgeMaterial: {fileID: 0}
+  boardGridMaterial: {fileID: 0}
+  boardPitMaterial: {fileID: 0}
+  boardVerticality: 1
+  boardTileTaps: []
+  boardDoorPosts: []
+  boardMoundProps: []
   torchesPerRoom: {x: 1, y: 2}
   litRoomChance: 0.75
   corridorTorchChance: 0.3
+  darkRoomLight: {fileID: 0}
   propRules: []
-  chestPrefab: {fileID: 0}
+  furnishEntranceRims: 0
+  destructiblesPerRoom: {x: 1, y: 3}
   chestTiers: []
-  kitModels: 1
+  shopRoom: {fileID: 0}
   roomFeatures:
     shrineBargains: 1
     shrineChance: 0.35
@@ -141,6 +82,7 @@ MonoBehaviour:
     sleepChance: 0.2
     maxSleepingPacks: 3
     pits: 1
+    playerFallsInPits: 0
     pitFallDamage: 0.25
     sunkenFloors: 1
     archerLedges: 1
@@ -158,17 +100,4 @@ MonoBehaviour:
   ambushLiftAudio: {fileID: 0}
   ambushSpawnAudio: {fileID: 0}
   sleepAudio: {fileID: 0}
-  containerBreakAudio: {fileID: 0}
-  chestOpenAudio: {fileID: 0}
-  destructibles: []
-  destructiblesPerRoom: {x: 1, y: 3}
-  features: []
-  startingItems: []
-  startingEquipment: []
-  merchantPrefab: {fileID: 0}
-  merchantStock: {fileID: 0}
-  shopRoom: {fileID: 0}
-  enemyBarPrefab: {fileID: 0}
-  damageNumberPrefab: {fileID: 0}
-  messagePrefab: {fileID: 0}
   dialogue: []
