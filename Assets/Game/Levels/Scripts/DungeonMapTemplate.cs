@@ -102,6 +102,9 @@ public class DungeonMapTemplate : MonoBehaviour
         return new Vector3((p.x - size.x * .5f) * c, 0f, (py - size.y * .5f) * c);
     }
 
+    // The editor preview's name, outside the editor block: the room checks skip it in builds too.
+    const string PreviewName = "Map preview (not saved)";
+
     void OnValidate()
     {
         width = Mathf.Clamp(width, 2, 48); depth = Mathf.Clamp(depth, 2, 48);
@@ -265,7 +268,6 @@ public class DungeonMapTemplate : MonoBehaviour
 
     // ── Prefab Mode preview: floors and walls of every room and passage ──
 
-    const string PreviewName = "Map preview (not saved)";
     const float WallThickness = .3f;
     bool InPrefabMode => this != null && UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(gameObject) != null;
 
