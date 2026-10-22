@@ -16,6 +16,7 @@ public class DungeonMapTemplate : MonoBehaviour
     public const char Rock = '#', Passage = '.', Door = '+';
     public const int MinGrid = 14;   // the generator's smallest grid; the map is padded with rock up to it
 
+    const string PreviewName = "Map preview (not saved)";   // the Prefab Mode preview's root (also skipped in builds' checks)
     [HideInInspector] public int width = 16, depth = 16;
     // rows[0] is the north (top) row, as in a level's text floor plan.
     [HideInInspector] public string[] rows;

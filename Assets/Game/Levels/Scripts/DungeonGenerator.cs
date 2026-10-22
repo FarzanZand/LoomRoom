@@ -373,6 +373,9 @@ public partial class DungeonGenerator : MonoBehaviour
             exitStair = MakeExit(ExitPoint, false, StageRoom >= 0);
             if (StageRoom >= 0) exitStair.gameObject.SetActive(false);
         }
+        // A room whose fight decides the run is watched from the floor (its room may be off the table for now; the watch
+        // keeps gathering the room's enemies as they are put down).
+        foreach (var fight in GetComponentsInChildren<ArenaFight>(true)) fight.Watch(this);
         // Spawn after navigation exists. The first room is always safe. An authored map brings its own.
         if (Authored) SpawnAuthoredContent();
         else for (int i=1;i<Layout.rooms.Count;i++)
