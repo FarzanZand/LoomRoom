@@ -39,7 +39,7 @@ public static class RuleSetup
             rule = ScriptableObject.CreateInstance<HouseRule>();
             rule.id = "rule1";
             rule.text = "Nobody leaves the table until I say so.";
-            rule.given = new DungeonMaster.Line { text = "One rule first. Nobody leaves the table until I say so.", inPerson = true, mumble = true };
+            rule.given = new DungeonMaster.Line { text = "The first rule. Nobody leaves the table until I say so.", inPerson = true, mumble = true };
             rule.quote = new DungeonMaster.Line { text = "Rule one.", mumble = true };
             rule.pinnedFromStart = true;
             AssetDatabase.CreateAsset(rule, path);
