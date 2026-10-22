@@ -18,12 +18,20 @@ public partial class AssetStudioWindow
         {
             case TableLevelData level when level.IsDungeon:
                 Add("Play this level", "Generate floor 1 of this level and play it.", () => GameLauncher.PlayLevel(level));
-                if (level.stages == null) break;
+                // No stages: one run on its base biome, and its boss when the base biome has a guardian on the last floor.
+                if (!level.HasStages)
+                {
+                    var b = level.baseBiome;
+                    Add("From floor 1", $"A run of {level.name} from its first floor, started from the Debug arena (a copy: nothing is changed).", () => GameLauncher.PlayStage(level, 0, false));
+                    if (level.bossOnLastFloor && AssetStudioWorld.HasGuardian(b))
+                        Add("Fight the boss", $"Straight to one floor where {b.guardian.boss.name} waits.", () => GameLauncher.PlayStage(level, 0, true));
+                    break;
+                }
                 int floor = 1;
                 for (int i = 0; i < level.stages.Length; i++)
                 {
                     var s = level.stages[i];
-                    if (s == null) continue;
+                    if (s == null || s.biome == null) continue;
                     string name = s.biome != null ? s.biome.name : "stage " + (i + 1);
                     int at = i;
                     if (i > 0) Add($"From floor {floor} ({name})", $"A run of {level.name} that starts at its {name} floors.", () => GameLauncher.PlayStage(level, at, false));
@@ -32,13 +40,22 @@ public partial class AssetStudioWindow
                     floor += Mathf.Max(1, s.floors);
                 }
                 break;
+            case DungeonBiome biome when AssetStudioWorld.OwnerOf(biome) is TableLevelData owner:
+                // A level's base biome: its level's run (it runs the floors only when the level has no stages).
+                if (owner.HasStages) { Add("Play " + owner.name, "Its base biome holds only level-wide settings (its stages run the floors): generate floor 1 of the level.", () => GameLauncher.PlayLevel(owner)); break; }
+                Add("Play this biome", $"A run of {owner.name}, whose floors run on this base biome.", () => GameLauncher.PlayStage(owner, 0, false));
+                if (owner.bossOnLastFloor && AssetStudioWorld.HasGuardian(biome))
+                    Add("Fight its boss", $"Straight to one floor where {biome.guardian.boss.name} waits.", () => GameLauncher.PlayStage(owner, 0, true));
+                break;
             case DungeonBiome biome:
                 Add("Play this biome", "A run that starts at this biome's floors: in a level that has it, else in the Dungeon button's pick with only this biome.", () => GameLauncher.PlayBiome(biome, false));
                 if (biome.guardian != null && biome.guardian.enabled && biome.guardian.boss != null)
                     Add("Fight its boss", $"Straight to the floor where {biome.guardian.boss.name} waits.", () => GameLauncher.PlayBiome(biome, true));
                 break;
             case BossFight fight:
-                foreach (var b in World.biomes.Where(b => b != null && b.guardian != null && b.guardian.enabled && b.guardian.fight == fight))
+                // Biome files and the levels' base biomes that run their floors.
+                var withFight = World.biomes.Concat(World.levels.Where(l => !l.tool && !l.Staged && l.data.baseBiome != null).Select(l => l.data.baseBiome));
+                foreach (var b in withFight.Where(b => b != null && b.guardian != null && b.guardian.enabled && b.guardian.fight == fight))
                     Add($"Fight it ({b.name})", $"Straight to {b.name}'s boss floor, where this fight plays.", () => GameLauncher.PlayBiome(b, true));
                 break;
             case CampaignEncounter place:

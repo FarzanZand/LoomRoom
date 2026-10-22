@@ -174,21 +174,24 @@ public static class GameLauncher
     }
 
     // A run of this level opening at one of its stages (0 = the first), from the Debug arena; boss: that stage cut to
-    // one floor, so its guardian waits on the first floor. The level itself is not changed (the run plays a copy).
+    // one floor, so its guardian waits on the first floor. A level without stages has one, its base biome (stage 0).
+    // The level itself is not changed (the run plays a copy).
     public static string PlayStage(TableLevelData level, int stage, bool boss)
     {
         if (level == null) return "No level.";
-        var biome = level.stages != null && stage >= 0 && stage < level.stages.Length ? level.stages[stage]?.biome : null;
+        var biome = !level.HasStages ? level.baseBiome : level.stages != null && stage >= 0 && stage < level.stages.Length ? level.stages[stage]?.biome : null;
+        if (!level.HasStages) stage = 0;
         if (!StartRun($"run|{Guid(level)}|{stage}|{(boss ? 1 : 0)}|")) return failure;
         string where = biome != null ? biome.name : "stage " + (stage + 1);
         return boss ? $"Starting {level.name} at the boss of {where}." : $"Starting {level.name} at {where}.";
     }
 
-    // A run of this biome alone: in a level that has it (from its stage), else in the Dungeon button's pick with just
-    // this biome. boss: straight to its guardian.
+    // A run of this biome alone: in a level that has it (from its stage; a base biome in its own level), else in the
+    // Dungeon button's pick with just this biome. boss: straight to its guardian.
     public static string PlayBiome(DungeonBiome biome, bool boss)
     {
         if (biome == null) return "No biome.";
+        if (AssetStudioWorld.OwnerOf(biome) is TableLevelData owner) return PlayStage(owner, 0, boss);
         foreach (var level in Levels())
             for (int i = 0; level.stages != null && i < level.stages.Length; i++)
                 if (level.stages[i] != null && level.stages[i].biome == biome) return PlayStage(level, i, boss);
@@ -309,10 +312,12 @@ public static class GameLauncher
         if (biome != null) stages.Add(new TableLevelData.BiomeStage { biome = biome, floors = 2, boss = biome.guardian != null && biome.guardian.enabled });
         else if (level.stages != null)
             foreach (var s in level.stages.Skip(Mathf.Max(0, stage)))
-                if (s != null) stages.Add(new TableLevelData.BiomeStage { biome = s.biome, floors = s.floors, boss = s.boss });
+                if (s != null && s.biome != null) stages.Add(new TableLevelData.BiomeStage { biome = s.biome, floors = s.floors, boss = s.boss });
         if (boss && stages.Count > 0) stages = new List<TableLevelData.BiomeStage> { new() { biome = stages[0].biome, floors = 1, boss = true } };
         if (stages.Count > 0) copy.stages = stages.ToArray();
-        var first = stages.Count > 0 ? stages[0].biome : null;
+        // No stages: its floors run on its base biome, so the boss test is one floor with the base biome's guardian on it.
+        else if (boss) { copy.floors = 1; copy.bossOnLastFloor = true; }
+        var first = stages.Count > 0 ? stages[0].biome : copy.baseBiome;
         Debug.Log($"[Asset Studio] Testing {(map != null ? map.name + " in " : "")}{level.name}{(first != null ? " from " + first.name : "")}{(boss ? ", boss floor" : "")}.");
         loader.Load(copy, skipReveal: true);
     }

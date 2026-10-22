@@ -74,6 +74,7 @@ public static class AssetStudioCatalog
     public static List<Category> Build()
     {
         var cats = NewCategories();
+        Levels.Forget();
         foreach (var path in Candidates()) Classify(cats, path);
         Sort(cats);
         shipped = InGame();
@@ -108,8 +109,9 @@ public static class AssetStudioCatalog
                         DescribeItem(e, i);
                         break;
                     case SpellDefinition s: e = Add(C("Spells"), guid, path, "Spell", s.displayName); break;
-                    case TableLevelData l: e = Add(C("Levels & biomes"), guid, path, $"Level · {l.kind}", l.name); break;
-                    case DungeonBiome b: e = Add(C("Levels & biomes"), guid, path, "Biome", b.name); break;
+                    // Levels by the act that plays them; board or walled is a word on the row.
+                    case TableLevelData l: e = Add(C("Levels & biomes"), guid, path, "Level · " + Levels.GroupOf(l, path), LevelLine(l)); break;
+                    case DungeonBiome b: e = Add(C("Levels & biomes"), guid, path, "Biome", Levels.BiomeLine(b)); break;
                     case BossFight f: e = Add(C("Levels & biomes"), guid, path, "Boss fight", f.name); break;
                     case TableLevelDefaults _: e = Add(C("Levels & biomes"), guid, path, "Level defaults", "Chests, the merchant, breakables, features, wall lights and HUD pieces every level shares."); break;
                     case AudioData d: e = Add(C("Sounds"), guid, path, "Sound data", d.name); break;
@@ -161,6 +163,69 @@ public static class AssetStudioCatalog
         return null;
     }
 
+    static string LevelLine(TableLevelData l)
+    {
+        string kind = l.kind == TableLevelKind.Town ? "town" : l.IsBoard ? "board" : "walled";
+        if (!l.IsDungeon) return kind;
+        var places = Levels.PlacesOf(l);
+        return $"{kind} · {l.FloorCount} floor{(l.FloorCount == 1 ? "" : "s")}" + (l.HasStages ? "" : " on its base biome") + (places.Length > 0 ? " · " + string.Join(", ", places) : "");
+    }
+
+    // What the level and biome rows need from the rest of the content (the places that play each level, the catalog,
+    // which levels run each biome), read once per build or update of the library.
+    static class Levels
+    {
+        static Dictionary<TableLevelData, int> acts;
+        static Dictionary<TableLevelData, List<string>> places;
+        static HashSet<TableLevelData> listed;
+        static Dictionary<DungeonBiome, List<TableLevelData>> users;
+
+        public static void Forget() { acts = null; places = null; listed = null; users = null; }
+
+        static void Read()
+        {
+            if (acts != null) return;
+            acts = new Dictionary<TableLevelData, int>(); places = new Dictionary<TableLevelData, List<string>>(); users = new Dictionary<DungeonBiome, List<TableLevelData>>();
+            foreach (var g in AssetDatabase.FindAssets("t:CampaignEncounter", new[] { AssetStudioWorld.EncountersRoot }))
+            {
+                var p = AssetDatabase.LoadAssetAtPath<CampaignEncounter>(AssetDatabase.GUIDToAssetPath(g));
+                if (p == null || p.kind != CampaignEncounterKind.Level || p.level == null) continue;
+                if (!acts.TryGetValue(p.level, out int a) || p.act < a) acts[p.level] = Mathf.Max(1, p.act);
+                if (!places.TryGetValue(p.level, out var names)) places[p.level] = names = new List<string>();
+                names.Add(p.displayName);
+            }
+            var catalog = AssetDatabase.LoadAssetAtPath<TableLevelCatalog>(AssetStudioWorld.CatalogPath);
+            listed = new HashSet<TableLevelData>(catalog != null && catalog.levels != null ? catalog.levels.Where(l => l != null) : Enumerable.Empty<TableLevelData>());
+            foreach (var g in AssetDatabase.FindAssets("t:TableLevelData", new[] { Root }))
+            {
+                var level = AssetDatabase.LoadAssetAtPath<TableLevelData>(AssetDatabase.GUIDToAssetPath(g));
+                if (level == null || level.stages == null || AssetStudioWorld.IsTool(level)) continue;
+                foreach (var s in level.stages)
+                    if (s != null && s.biome != null)
+                    {
+                        if (!users.TryGetValue(s.biome, out var list)) users[s.biome] = list = new List<TableLevelData>();
+                        if (!list.Contains(level)) list.Add(level);
+                    }
+            }
+        }
+
+        public static string GroupOf(TableLevelData l, string path)
+        {
+            Read();
+            if (acts.TryGetValue(l, out int act)) return "Act " + act;
+            return AssetStudioWorld.IsTool(l) || !listed.Contains(l) ? AssetStudioWorld.OtherGroup : AssetStudioWorld.NotOnMapGroup;
+        }
+
+        public static string[] PlacesOf(TableLevelData l) { Read(); return places.TryGetValue(l, out var n) ? n.ToArray() : Array.Empty<string>(); }
+
+        public static string BiomeLine(DungeonBiome b)
+        {
+            Read();
+            var list = users.TryGetValue(b, out var u) ? u : new List<TableLevelData>();
+            return list.Count == 0 ? "no level runs it" : list.Count == 1 ? list[0].name + "'s" : "shared: " + string.Join(", ", list.Select(x => x.name));
+        }
+    }
+
     // An item's row: its main number (damage or armour), slot and price first, for balancing.
     static void DescribeItem(Entry e, ItemData i)
     {
@@ -185,6 +250,10 @@ public static class AssetStudioCatalog
     {
         if (cats == null || paths.Count == 0) return;
         var all = cats.SelectMany(c => c.entries).ToList();
+        // A place, a level or a biome changed: every level and biome row is written again (their act, places, users).
+        Levels.Forget();
+        if (paths.Any(p => p.StartsWith(AssetStudioWorld.EncountersRoot + "/") || p.StartsWith(AssetStudioWorld.LevelsRoot + "/") && p.EndsWith(".asset")))
+            paths = paths.Concat(all.Where(e => e.kind.StartsWith("Level") || e.kind == "Biome").Select(e => e.path)).Distinct().ToList();
         foreach (var path in paths)
         {
             // The GUID only of a file that is there: a path moved or deleted can still answer with its old GUID, which

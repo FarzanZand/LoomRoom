@@ -12,7 +12,12 @@ using UnityEngine;
 // its biomes' pools and boss arenas, room prefabs nested in its map template, and rooms behind a portal in those),
 // never through folders, so the World view
 // always tells the truth and Tidy can move files to match it. Levels under Development (the debug arena) and the pocket
-// level are tools, not places: they don't make a room "shared".
+// level are tools, not places: they don't make a room "shared". Every level has a base biome inside its own file
+// (TableLevelData.baseBiome): a level without stages runs all its floors on it, so it is the level's one stage here; a
+// level with stages keeps only its level-wide settings there. A base biome is always its level's, never a biome of its
+// own (not in the biome list, never moved by Tidy, never unused). Levels are grouped by the act of the place that
+// plays them (the lowest when several do), then "Not on the map", then "Other" (test levels and levels the catalog
+// doesn't list, like the intro's).
 public static partial class AssetStudioWorld
 {
     public const string LevelsRoot = "Assets/Game/Levels", SharedRooms = LevelsRoot + "/Shared/Rooms", SharedBiomes = LevelsRoot + "/Shared/Biomes";
@@ -30,9 +35,10 @@ public static partial class AssetStudioWorld
 
     public class Stage
     {
-        public int index, firstFloor, lastFloor;
+        public int index, firstFloor, lastFloor;   // index -1: the level's base biome
         public DungeonBiome biome;
         public bool boss;
+        public bool IsBase => index < 0;
     }
 
     public class Level
@@ -43,12 +49,21 @@ public static partial class AssetStudioWorld
         public readonly List<Stage> stages = new();
         public readonly List<CampaignEncounter> places = new();
         public readonly List<string> problems = new();
+        // The base biome as a stage: the whole run of a level without stages, else only its level-wide settings.
+        public Stage baseStage;
+        public bool Staged => data != null && data.HasStages;
+        // What a run goes through: the stages, or the base biome alone.
+        public List<Stage> RunStages => Staged ? stages : baseStage != null ? new List<Stage> { baseStage } : new List<Stage>();
+        // The lowest act of a place that plays it (0: none) and that place's index in the campaign manager's list.
+        public int act, order = int.MaxValue;
+        public string Group => act > 0 ? "Act " + act : tool || !inCatalog ? OtherGroup : NotOnMapGroup;
     }
+    public const string NotOnMapGroup = "Not on the map", OtherGroup = "Other";
 
     public class Model
     {
         public readonly List<Level> levels = new();
-        public readonly List<DungeonBiome> biomes = new();
+        public readonly List<DungeonBiome> biomes = new();   // biome files (a level's base biome is not one)
         public readonly List<GameObject> rooms = new();
         public readonly List<DungeonMapTemplate> maps = new();
         public readonly Dictionary<DungeonMapTemplate, List<TableLevelData>> mapLevels = new();
@@ -58,6 +73,7 @@ public static partial class AssetStudioWorld
         public readonly List<CampaignEvent> events = new();
         public readonly HashSet<CampaignEncounter> listedPlaces = new(), placesOnMap = new();
         public readonly HashSet<CampaignEvent> listedEvents = new();
+        public readonly Dictionary<CampaignEncounter, int> placeOrder = new();   // index in the campaign manager's list
         public readonly List<string> campaignProblems = new();
 
         public Level LevelOf(TableLevelData d) => levels.FirstOrDefault(l => l.data == d);
@@ -65,9 +81,51 @@ public static partial class AssetStudioWorld
         // The real (non-tool) levels a room is in.
         public List<TableLevelData> LevelsOf(GameObject room) => UsesOf(room).Where(u => !IsTool(u.level)).Select(u => u.level).Distinct().ToList();
         public List<Level> LevelsOf(DungeonBiome b) => b != null && biomeLevels.TryGetValue(b, out var l) ? l : new List<Level>();
+        // The level groups in order (Act 1, Act 2, ..., Not on the map, Other), each with its levels in campaign order.
+        public List<(string group, List<Level> levels)> Groups(bool withTools)
+        {
+            var shown = levels.Where(l => withTools || !l.tool).ToList();
+            var list = new List<(string, List<Level>)>();
+            foreach (var act in shown.Where(l => l.act > 0).Select(l => l.act).Distinct().OrderBy(a => a))
+                list.Add(("Act " + act, shown.Where(l => l.act == act).OrderBy(l => l.order).ThenBy(l => l.data.name, StringComparer.OrdinalIgnoreCase).ToList()));
+            foreach (var g in new[] { NotOnMapGroup, OtherGroup })
+            {
+                var inGroup = shown.Where(l => l.act == 0 && l.Group == g).OrderBy(l => l.data.name, StringComparer.OrdinalIgnoreCase).ToList();
+                if (inGroup.Count > 0) list.Add((g, inGroup));
+            }
+            return list;
+        }
+        // Biome files that more than one real level runs, or none: the ones not shown under a single level.
+        public List<DungeonBiome> SharedBiomes => biomes.Where(b => LevelsOf(b).Count(l => !l.tool) != 1).ToList();
         public int Acts => Mathf.Max(4, Mathf.Max(places.Select(p => p.act).DefaultIfEmpty(1).Max(), events.Select(e => e.afterAct).DefaultIfEmpty(1).Max()));
         // The real (non-tool) levels that play a map template.
         public List<TableLevelData> MapLevels(DungeonMapTemplate map) => map != null && mapLevels.TryGetValue(map, out var l) ? l.Where(x => !IsTool(x)).ToList() : new List<TableLevelData>();
+    }
+
+    // A level's base biome (inside the level's file), never a biome file of its own.
+    public static bool IsBase(DungeonBiome b) => b != null && (b.isLevelBase || !AssetDatabase.IsMainAsset(b));
+    // The level whose file holds this base biome (null for a biome file).
+    public static TableLevelData OwnerOf(DungeonBiome b) => IsBase(b) ? AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GetAssetPath(b)) as TableLevelData : null;
+
+    // For each level, the lowest act of a place that plays it (read from the place files: for lists outside the World).
+    public static Dictionary<TableLevelData, int> LevelActs()
+    {
+        var acts = new Dictionary<TableLevelData, int>();
+        foreach (var p in All<CampaignEncounter>(EncountersRoot))
+            if (p.kind == CampaignEncounterKind.Level && p.level != null && (!acts.TryGetValue(p.level, out int a) || p.act < a)) acts[p.level] = Mathf.Max(1, p.act);
+        return acts;
+    }
+
+    // Every dungeon level (test levels left out) with its group: "Act N", Not on the map, Other; in group order, then by
+    // name. Reads the level and place files (for menus opened now and then, not for every repaint).
+    public static List<(string group, TableLevelData level)> DungeonsByGroup()
+    {
+        var acts = LevelActs();
+        var catalog = AssetDatabase.LoadAssetAtPath<TableLevelCatalog>(CatalogPath);
+        var listed = new HashSet<TableLevelData>(catalog != null && catalog.levels != null ? catalog.levels.Where(l => l != null) : Enumerable.Empty<TableLevelData>());
+        return All<TableLevelData>().Where(l => l.IsDungeon && !IsTool(l))
+            .Select(l => (group: acts.TryGetValue(l, out int a) ? "Act " + a : listed.Contains(l) ? NotOnMapGroup : OtherGroup, level: l, act: acts.TryGetValue(l, out int b) ? b : listed.Contains(l) ? 10000 : 10001))
+            .OrderBy(x => x.act).ThenBy(x => x.level.name, StringComparer.OrdinalIgnoreCase).Select(x => (x.group, x.level)).ToList();
     }
 
     public static bool IsTool(TableLevelData l) => l != null && (AssetDatabase.GetAssetPath(l).StartsWith("Assets/Game/Development/") || AssetDatabase.GetAssetPath(l).Contains("/Pockets/"));
@@ -90,7 +148,8 @@ public static partial class AssetStudioWorld
         }
         m.rooms.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
         m.maps.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
-        m.biomes.AddRange(All<DungeonBiome>().OrderBy(b => b.name));
+        // FindAssets finds the level files too (their base biomes): those are their levels', not biomes of their own.
+        m.biomes.AddRange(All<DungeonBiome>().Where(b => !IsBase(b)).OrderBy(b => b.name));
         var catalog = AssetDatabase.LoadAssetAtPath<TableLevelCatalog>(CatalogPath);
 
         foreach (var data in All<TableLevelData>().OrderBy(l => l.name))
@@ -119,6 +178,23 @@ public static partial class AssetStudioWorld
                     if (t != data.mapTemplate.transform && PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject) && PrefabUtility.GetCorrespondingObjectFromOriginalSource(t.gameObject) is GameObject source)
                         Use(source, null, "In its map");
             }
+            void Lives(DungeonBiome b)
+            {
+                if (!m.biomeLevels.TryGetValue(b, out var bl)) m.biomeLevels[b] = bl = new List<Level>();
+                if (!bl.Contains(level)) bl.Add(level);
+            }
+            // The base biome: always the level's; its pool and guardian only count when it runs the floors.
+            if (data.IsDungeon && data.baseBiome != null)
+            {
+                var b = data.baseBiome;
+                level.baseStage = new Stage { index = -1, biome = b, boss = data.bossOnLastFloor, firstFloor = 1, lastFloor = Mathf.Max(1, data.floors) };
+                Lives(b);
+                if (!data.HasStages)
+                {
+                    if (b.roomTemplates != null) foreach (var c in b.roomTemplates) if (c != null) Use(c.template, b, "Pool");
+                    if (b.guardian != null && b.guardian.enabled) Use(b.guardian.arena, b, "Boss arena");
+                }
+            }
             int floor = 1;
             if (data.stages != null)
                 for (int i = 0; i < data.stages.Length; i++)
@@ -129,8 +205,7 @@ public static partial class AssetStudioWorld
                     floor = stage.lastFloor + 1;
                     level.stages.Add(stage);
                     if (s.biome == null) continue;
-                    if (!m.biomeLevels.TryGetValue(s.biome, out var bl)) m.biomeLevels[s.biome] = bl = new List<Level>();
-                    if (!bl.Contains(level)) bl.Add(level);
+                    Lives(s.biome);
                     if (s.biome.roomTemplates != null) foreach (var c in s.biome.roomTemplates) if (c != null) Use(c.template, s.biome, "Pool");
                     if (s.biome.guardian != null && s.biome.guardian.enabled) Use(s.biome.guardian.arena, s.biome, "Boss arena");
                 }
@@ -142,13 +217,22 @@ public static partial class AssetStudioWorld
         var manager = AssetDatabase.LoadAssetAtPath<GameObject>(CampaignManagerPrefab)?.GetComponent<CampaignManager>();
         if (manager != null)
         {
-            if (manager.encounters != null) foreach (var e in manager.encounters) if (e != null) m.listedPlaces.Add(e);
+            if (manager.encounters != null)
+                for (int i = 0; i < manager.encounters.Length; i++)
+                    if (manager.encounters[i] != null) { m.listedPlaces.Add(manager.encounters[i]); m.placeOrder.TryAdd(manager.encounters[i], i); }
             if (manager.events != null) foreach (var e in manager.events) if (e != null) m.listedEvents.Add(e);
         }
         var map = AssetDatabase.LoadAssetAtPath<GameObject>(RealmMapPrefab);
         if (map != null) foreach (var p in map.GetComponentsInChildren<CampaignPoint>(true)) if (p.encounter != null) m.placesOnMap.Add(p.encounter);
         foreach (var p in m.places)
-            if (p.kind == CampaignEncounterKind.Level && p.level != null) m.LevelOf(p.level)?.places.Add(p);
+        {
+            if (p.kind != CampaignEncounterKind.Level || p.level == null || m.LevelOf(p.level) is not Level l) continue;
+            l.places.Add(p);
+            // Its group is the lowest act that plays it, in that act's campaign order.
+            int act = Mathf.Max(1, p.act), order = m.placeOrder.TryGetValue(p, out int o) ? o : int.MaxValue - 1;
+            if (l.act == 0 || act < l.act) { l.act = act; l.order = order; }
+            else if (act == l.act) l.order = Mathf.Min(l.order, order);
+        }
         foreach (var dup in m.places.Where(p => !string.IsNullOrEmpty(p.id)).GroupBy(p => p.id).Where(g => g.Count() > 1))
             m.campaignProblems.Add($"Two places share the id \"{dup.Key}\": {string.Join(", ", dup.Select(p => p.displayName))}.");
         foreach (var dup in m.events.Where(e => !string.IsNullOrEmpty(e.id)).GroupBy(e => e.id).Where(g => g.Count() > 1))
@@ -167,7 +251,18 @@ public static partial class AssetStudioWorld
         if (l.tool) return;
         if (!l.inCatalog) p.Add("Not in the level catalog (TableLevels): the game can't load it by name.");
         if (!d.IsDungeon) return;
-        if (l.stages.Count == 0) p.Add("No stages: add a biome on its Run tab.");
+        // No stages is fine: the floors run on the base biome, which then needs enemies and loot (an authored map can
+        // bring its own enemies). A base biome under stages only holds level-wide settings: nothing to flag there.
+        if (d.baseBiome == null) p.Add(l.stages.Count == 0 ? "No stages and no base biome: press Make the base biome on its Base biome tab." : "No base biome: press Make the base biome on its Base biome tab (the level-wide settings live there).");
+        else if (!d.HasStages)
+        {
+            var b = d.baseBiome;
+            if (d.layoutMode != DungeonLayoutMode.Authored && (b.enemies == null || !b.enemies.Any(e => e != null && e.enemy != null))) p.Add("Base biome: no enemies, and its floors run on it.");
+            if (b.loot == null) p.Add("Base biome: no loot source, and its floors run on it.");
+            int empty = b.roomTemplates == null ? 0 : b.roomTemplates.Count(c => c == null || c.template == null);
+            if (empty > 0) p.Add($"Base biome: {empty} empty entr{(empty == 1 ? "y" : "ies")} in its room pool.");
+            if (d.bossOnLastFloor && b.guardian != null && b.guardian.enabled && b.guardian.boss == null) p.Add("Base biome: its guardian is on but has no boss.");
+        }
         foreach (var s in l.stages)
         {
             if (s.biome == null) { p.Add($"Stage {s.index + 1} has no biome."); continue; }

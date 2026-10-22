@@ -3,13 +3,13 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Builds the class-unlocked card (ClassUnlockedUI) on the HUD canvas of the open scene: a gold glow and turning rays
-// behind a card in the inventory's grey frame, the class's sheet portrait on paper, "NEW CLASS" and the class name in
-// gold, and where to pick it. Adds the UI sound key "classUnlocked" to AudioManager's UI Library when it is missing.
-// Safe to run again: the card is rebuilt in place. Run from an eval: ClassUnlockedSetup.Build().
+// Builds the class-unlocked card (ClassUnlockedUI) on the HUD canvas of the open scene: the class cards' paper, "New
+// class", the class's sheet portrait, its name and where to pick it, in ink. Adds the UI sound key "classUnlocked" to
+// AudioManager's UI Library when it is missing. Safe to run again: the card is rebuilt in place. Run from an eval:
+// ClassUnlockedSetup.Build().
 public static class ClassUnlockedSetup
 {
-    static readonly Color Gold = new(.93f, .76f, .38f);
+    static readonly Color Ink = new(.24f, .17f, .1f), InkSoft = new(.36f, .28f, .19f);
     const string Sound = "Assets/Game/Audio/Library/Generic Fantasy UI/Fantasy_UI_Gen_New_Skill_Unlocked_stereo.wav";
 
     public static string Build()
@@ -23,10 +23,8 @@ public static class ClassUnlockedSetup
         var titleMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator-Bold Outline.mat");
         var body = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
         var bodyMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator Underlay.mat");
-        var frame = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Inventory/Plain frame grey.png");
-        var paper = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Meta/Paper.png");
-        var glowSprite = PointSprite("Assets/Game/UI/Sprites/Unlock/Unlock glow.png");
-        var raySprite = PointSprite("Assets/Game/UI/Sprites/Unlock/Unlock rays.png");
+        var cardSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Paper/Warm/Paper card.png");
+        var divider = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Paper/Warm/Paper divider.png");
 
         var root = new GameObject("Class unlocked", typeof(RectTransform), typeof(CanvasGroup), typeof(ClassUnlockedUI));
         Undo.RegisterCreatedObjectUndo(root, "Build class unlocked card");
@@ -38,34 +36,24 @@ public static class ClassUnlockedSetup
         var group = root.GetComponent<CanvasGroup>();
         group.alpha = 0f; group.blocksRaycasts = false; group.interactable = false;
 
-        var rays = Picture("Rays", rect, raySprite, new Vector2(860f, 860f), new Color(1f, 1f, 1f, .45f));
-        var glow = Picture("Glow", rect, glowSprite, new Vector2(720f, 720f), Color.white);
-
-        var card = new GameObject("Card", typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
-        card.gameObject.layer = root.layer;
-        card.SetParent(rect, false);
-        // The card itself is the gold edge; the grey panel and everything on it sit inside.
-        card.sizeDelta = new Vector2(452f, 612f);
-        var cardImage = card.GetComponent<Image>();
-        cardImage.color = Gold; cardImage.raycastTarget = false;
-        var panel = Picture("Panel", card, frame, new Vector2(440f, 600f), new Color(.16f, .16f, .18f, 1f));
-        if (frame != null) panel.type = Image.Type.Sliced;
-        var heading = Text("Heading", card, title, 34f, Gold, titleMaterial, new Vector2(0f, 250f), "NEW CLASS");
-        heading.characterSpacing = 8f;
-        var paperImage = Picture("Paper", card, paper, new Vector2(264f, 344f), Color.white);
-        paperImage.rectTransform.anchoredPosition = new Vector2(0f, 40f);
-        if (paper != null) paperImage.type = Image.Type.Sliced;
+        // The card: the class cards' paper, drawn in ink.
+        var card = Picture("Card", rect, cardSprite, new Vector2(411f, 645f), Color.white).rectTransform;
+        card.anchoredPosition = new Vector2(0f, 20f);
+        var heading = Text("Heading", card, title, 30f, Ink, null, new Vector2(0f, 262f), "New class");
+        heading.characterSpacing = 4f;
+        var top = Picture("Divider", card, divider, new Vector2(315f, 16f), Color.white);
+        top.rectTransform.anchoredPosition = new Vector2(0f, 228f);
         var portrait = Picture("Portrait", card, null, new Vector2(240f, 320f), Color.white);
-        portrait.rectTransform.anchoredPosition = new Vector2(0f, 40f);
+        portrait.rectTransform.anchoredPosition = new Vector2(0f, 45f);
         portrait.preserveAspect = true;
-        var name = Text("Class name", card, title, 64f, Gold, titleMaterial, new Vector2(0f, -185f), "ARCANIST");
-        var line = Text("Line", card, body, 30f, Color.white, bodyMaterial, new Vector2(0f, -250f), "Pick it at the table.");
+        var bottom = Picture("Divider 2", card, divider, new Vector2(315f, 16f), Color.white);
+        bottom.rectTransform.anchoredPosition = new Vector2(0f, -140f);
+        var name = Text("Class name", card, title, 58f, Ink, null, new Vector2(0f, -190f), "Arcanist");
+        var line = Text("Line", card, body, 28f, InkSoft, null, new Vector2(0f, -250f), "Pick it at the table.");
 
         var so = new SerializedObject(root.GetComponent<ClassUnlockedUI>());
         so.FindProperty("group").objectReferenceValue = group;
         so.FindProperty("card").objectReferenceValue = card;
-        so.FindProperty("glow").objectReferenceValue = glow;
-        so.FindProperty("rays").objectReferenceValue = rays;
         so.FindProperty("portrait").objectReferenceValue = portrait;
         so.FindProperty("heading").objectReferenceValue = heading;
         so.FindProperty("className").objectReferenceValue = name;
@@ -105,20 +93,6 @@ public static class ClassUnlockedSetup
         e.FindPropertyRelative("pitch").floatValue = 1f;
         so.ApplyModifiedProperties();
         return "added sound key classUnlocked";
-    }
-
-    static Sprite PointSprite(string path)
-    {
-        if (AssetImporter.GetAtPath(path) is TextureImporter importer && (importer.textureType != TextureImporterType.Sprite || importer.filterMode != FilterMode.Point))
-        {
-            importer.textureType = TextureImporterType.Sprite;
-            importer.spriteImportMode = SpriteImportMode.Single;
-            importer.filterMode = FilterMode.Point;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
-            importer.mipmapEnabled = false;
-            importer.SaveAndReimport();
-        }
-        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
     static Image Picture(string name, RectTransform parent, Sprite sprite, Vector2 size, Color color)
