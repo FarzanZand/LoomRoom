@@ -65,7 +65,7 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField, Tooltip("A total of at least this is a good haul.")] int goodHaul = 25;
     [SerializeField, Tooltip("After a win.")] DungeonMaster.Line[] victoryLines =
     {
-        new() { text = "You beat the Crypt Lord. I didn't think you would." },
+        new() { text = "You won. I didn't think you would." },
         new() { text = "A win. Spend it well." },
     };
     [SerializeField, Tooltip("A death with a good haul.")] DungeonMaster.Line[] goodHaulLines =
@@ -136,7 +136,8 @@ public class RunRecapUI : MonoBehaviour
         }
         // With the morning loop, a run has one way on: waking up in bed.
         wakes = wakeInBed && WorldManager.HasInstance && WorldManager.Instance.wakeUpCutscene != null;
-        won = s.victory;
+        // With the campaign, a win only grows the map: the player stands up at the table like after a death.
+        won = s.victory && !(CampaignManager.Active && !CampaignManager.Instance.playEndingOnWin);
         if (newRunButton != null) newRunButton.gameObject.SetActive(!wakes);
         if (adventuresButton != null) adventuresButton.gameObject.SetActive(!wakes);
         var label = returnButton != null ? returnButton.GetComponentInChildren<TMP_Text>(true) : null;

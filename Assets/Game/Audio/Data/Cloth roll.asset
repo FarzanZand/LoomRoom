@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: Cloth roll
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 3fdb608398cc090408189f398f2a1e9b, type: 3}
+  - {fileID: 8300000, guid: 2c935efc791d3064a8306352614d3d3a, type: 3}
+  - {fileID: 8300000, guid: fba42289043b92142a8264e3d933a7e9, type: 3}
+  - {fileID: 8300000, guid: 921760e7a72c99045959cb585fc5e88a, type: 3}
+  - {fileID: 8300000, guid: 5979990a4b570d648bc79dd4e7e8c0d8, type: 3}
+  - {fileID: 8300000, guid: 843fcf5b862f59a42af5aaf9c0e3a47f, type: 3}
+  - {fileID: 8300000, guid: 2be8be2a8608dc440a66d8a7c23f2418, type: 3}
+  - {fileID: 8300000, guid: 510f0eb979869ef4592672c3221a3fd9, type: 3}
+  - {fileID: 8300000, guid: 0f4317f26f49d0d4c88339a576a89e48, type: 3}
+  - {fileID: 8300000, guid: 484c1b9283b72ea49ad12d192c046c3a, type: 3}
+  volume: 0.55
+  pitch: 0.8
+  pitchVariance: 0.08
+  minDistance: 1
+  maxDistance: 500

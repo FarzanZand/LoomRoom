@@ -45,6 +45,7 @@ public class AdventureClassSelectionUI : MonoBehaviour
 
     public void Cycle(int delta)
     {
+        if (progress == null) Refresh();
         if (progress == null || progress.InRun) return;
         var classes = Choices != null && Choices.Count > 0 ? Choices.ToArray() : progress.rules.classes;
         int index = System.Array.IndexOf(classes, progress.selectedClass);
@@ -59,6 +60,8 @@ public class AdventureClassSelectionUI : MonoBehaviour
 
     public void Refresh()
     {
+        // Enabled before the table player existed (a panel that is always on, only faded): find it now.
+        if (progress == null && PlayerManager.HasInstance) progress = PlayerManager.Instance.GetPlayer(PlayerKind.Table)?.GetComponent<AdventurerProgress>();
         if (progress == null || progress.rules == null || progress.selectedClass == null) return;
         var c = progress.selectedClass;
         var classes = progress.rules.classes;

@@ -18,6 +18,9 @@ public static partial class PixelRestyle
     // Painted restyles pick each texel's view by its face's own facing instead of the smoothed vertex normal (room
     // furniture: smoothed normals on a box made a side face lean toward the front view and smear its edge column).
     public static bool PaintFaceNormals;
+    // The smallest texture a plain restyle makes (a tiny model at a low density would otherwise get more texels than its
+    // size allows: the campaign map's scatter sets 4; fewer texels than that and a model's UV islands share them).
+    public static int MinTextureSize = 16;
 
     public enum Kind { Auto = 0, Metal = 1, Stone = 2, Wood = 3, Bone = 4, Cloth = 5, Gold = 6, Painted = 7 }
 
@@ -48,7 +51,7 @@ public static partial class PixelRestyle
                 Vector2 a0 = newUv[tri[i]], a1 = newUv[tri[i + 1]], a2 = newUv[tri[i + 2]];
                 uvArea += Mathf.Abs((a1.x - a0.x) * (a2.y - a0.y) - (a2.x - a0.x) * (a1.y - a0.y)) * .5f;
             }
-            if (uvArea > 1e-6f) W = Mathf.Clamp(Mathf.RoundToInt(texelsPerUnit * Mathf.Sqrt(area / uvArea)), 16, 4096);
+            if (uvArea > 1e-6f) W = Mathf.Clamp(Mathf.RoundToInt(texelsPerUnit * Mathf.Sqrt(area / uvArea)), MinTextureSize, 4096);
         }
         var tags = new List<Vector4>(); mesh.GetUVs(7, tags);
         if (newUv.Count != mesh.vertexCount || tags.Count != mesh.vertexCount)

@@ -11,6 +11,10 @@ public class TableLevelRevealSettings : ScriptableObject
     [Min(.1f)] public float cameraTransitionSeconds = .65f;
     [Min(.1f), Tooltip("Camera flight from the assembled table into first person.")] public float approachSeconds = 1.25f;
     public bool allowSkip = true;
+    [Header("Way back (the entry in reverse)")]
+    [Min(.1f), Tooltip("Flight from the table player's eyes back into the room player's, after a run ends.")] public float exitSeconds = 1.1f;
+    [Min(0), Tooltip("How far the view rises out of the floor before it turns toward the room player.")] public float exitRise = 4f;
+    [Min(.05f), Tooltip("How long the floor takes to sink into the table once the view is back in the room.")] public float exitSinkSeconds = .45f;
     [Header("Assembly")]
     [Min(0)] public float liftDistance = 2.5f;
     [Range(.1f, 1f)] public float pieceDuration = .35f;
