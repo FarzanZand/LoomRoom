@@ -390,7 +390,7 @@ MonoBehaviour:
   lessonDelay: 2.5
   quests:
   - id: shieldBash
-    text: 'Try your shield bash: hold {block} and press {attack}.'
+    text: 'Shield bash: hold {block}, press {attack}.'
   missingTile: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
   startingPlayer: 1
   skipWakeUp: 1

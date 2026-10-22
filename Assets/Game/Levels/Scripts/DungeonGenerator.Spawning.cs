@@ -19,7 +19,7 @@ public partial class DungeonGenerator
 
     // The hand-built interior for a room: the starting room, the shop, a milestone arena or the profile's template.
     GameObject TemplatePrefab(int i) =>
-        Authored ? (data.authoredRooms!=null && i<data.authoredRooms.Length && data.authoredRooms[i]?.template!=null ? data.authoredRooms[i].template : i==0 ? data.startingRoom : null)
+        Authored ? (i<data.AuthoredRoomList.Length && data.AuthoredRoomList[i]?.template!=null ? data.AuthoredRoomList[i].template : i==0 ? data.startingRoom : null)
         : RequestedTemplate(i,Roles[i],profiles[i],shopInPlainRoom ? -1 : MerchantRoom);
     // Generated layouts; also used before the rooms are placed, when i is the requested room.
     GameObject RequestedTemplate(int i,RoomRole role,DungeonRoomProfile profile,int merchantRoom=-1) =>
@@ -88,6 +88,12 @@ public partial class DungeonGenerator
     // template's own settings apply; these are the first draws of the extra stream.
     int ChooseMerchantRoom(RoomRole[] roles,System.Func<int,bool> hasTemplate)
     {
+        // A painted layout can name the merchant's room itself (AuthoredRoom.merchant): always there, no roll.
+        if(Authored && data.merchantPrefab!=null)
+        {
+            var authoredRooms=data.AuthoredRoomList;
+            for(int i=0;i<authoredRooms.Length && i<roles.Length;i++)if(authoredRooms[i]!=null && authoredRooms[i].merchant)return i;
+        }
         if(data.merchantPrefab==null || extraRandom.NextDouble()>=data.MerchantChance(FloorNumber))return -1;
         var candidates=new System.Collections.Generic.List<int>();
         var plain=new System.Collections.Generic.List<int>();

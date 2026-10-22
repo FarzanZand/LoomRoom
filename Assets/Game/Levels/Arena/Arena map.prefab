@@ -1,0 +1,349 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2604209542640036097
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 573191069465951645}
+  - component: {fileID: 2830469939265587553}
+  - component: {fileID: 7609323592360848006}
+  m_Layer: 0
+  m_Name: Room 0 Landing
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &573191069465951645
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2604209542640036097}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1, y: 0, z: -16}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6156077357464852362}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2830469939265587553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2604209542640036097}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed492fe871693cd4abfe2882b07de9ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonMapRoom
+  room: 0
+  role: 0
+  raised: 0
+  merchant: 0
+  generated: 1
+--- !u!114 &7609323592360848006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2604209542640036097}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  paintFootprint: 0
+  footprint: {fileID: 0}
+  allowRotation: 1
+  width: 7
+  height: 7
+  rows: []
+  minimumCells: {x: 6, y: 6}
+  style: {fileID: 0}
+  heightTiles: 0
+  openCeiling: 0
+  ceilingFrame: 0.35
+  skylightRadius: 0
+  replaceGeneratedProps: 1
+  addFurnishing: 0
+  replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
+  roomEvent: 0
+  replaceGeneratedTorches: 0
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
+  previewLevel: {fileID: 11400000, guid: 49870adc04097c947a67a649fe40c570, type: 2}
+  previewCellSize: 2
+--- !u!1 &4479456036030216037
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6156077357464852362}
+  - component: {fileID: 7641791405145484976}
+  m_Layer: 0
+  m_Name: Arena map
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6156077357464852362
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4479456036030216037}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 573191069465951645}
+  - {fileID: 8169821517166621458}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7641791405145484976
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4479456036030216037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e85449803f7d6642a731b4b5aa5f268, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonMapTemplate
+  width: 17
+  depth: 22
+  rows:
+  - '#################'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '##1111111111111##'
+  - '########+########'
+  - '########.########'
+  - '######00000######'
+  - '######00000######'
+  - '######00000######'
+  - '######00000######'
+  - '######00000######'
+  - '#################'
+  previewLevel: {fileID: 11400000, guid: 49870adc04097c947a67a649fe40c570, type: 2}
+  previewCellSize: 2
+--- !u!1 &6791410146953602796
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8169821517166621458}
+  - component: {fileID: 4642590059069019560}
+  - component: {fileID: 6143669934746340696}
+  - component: {fileID: 7193940054363531098}
+  m_Layer: 0
+  m_Name: Room 1 Pit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8169821517166621458
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6791410146953602796}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1, y: 0, z: 6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4824461446678973461}
+  m_Father: {fileID: 6156077357464852362}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4642590059069019560
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6791410146953602796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed492fe871693cd4abfe2882b07de9ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonMapRoom
+  room: 1
+  role: 5
+  raised: 0
+  merchant: 0
+  generated: 0
+--- !u!114 &6143669934746340696
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6791410146953602796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  paintFootprint: 0
+  footprint: {fileID: 0}
+  allowRotation: 0
+  width: 13
+  height: 13
+  rows:
+  - '######+######'
+  - '#############'
+  - '#############'
+  - '#############'
+  - '#############'
+  - '#############'
+  - '######*######'
+  - '#############'
+  - '#############'
+  - '#############'
+  - '#############'
+  - '#############'
+  - '#############'
+  minimumCells: {x: 6, y: 6}
+  style: {fileID: 11400000, guid: b7beb5b39fafcdb4ba654624e3576450, type: 2}
+  heightTiles: 0
+  openCeiling: 0
+  ceilingFrame: 0.35
+  skylightRadius: 0
+  replaceGeneratedProps: 1
+  addFurnishing: 0
+  replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 1
+  roomEvent: 1
+  replaceGeneratedTorches: 1
+  overrideLightColor: 0
+  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines:
+  - The arena. One of you walks out of here. I'd like it to be you.
+  - Here's the arena. The crowd paid to see blood. Theirs or yours, they don't mind.
+  - Sand, stands and one very bored champion. Go and wake him up.
+  enterChance: 1
+  enterInPerson: 1
+  previewLevel: {fileID: 0}
+  previewCellSize: 2
+--- !u!114 &7193940054363531098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6791410146953602796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db92e1c4e76f1a04ea65d73513b426d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaFight
+  wonLine:
+    text: That's the fight. Take your bow.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  delay: 3.5
+--- !u!1001 &1961152536423531071
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 8169821517166621458}
+    m_Modifications:
+    - target: {fileID: 2756633592056712990, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_Name
+      value: Arena pit
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 1795048832488488091, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+    - {fileID: 8040007712855597415, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+--- !u!4 &4824461446678973461 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6468444260864593450, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
+  m_PrefabInstance: {fileID: 1961152536423531071}
+  m_PrefabAsset: {fileID: 0}

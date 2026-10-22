@@ -15,7 +15,7 @@ using UnityEngine;
 // Edit the prefabs freely afterwards (the dance clip and the party's track go on the room's root).
 public static class SkeletonPartySetup
 {
-    const string Chunks = "Assets/Game/Levels/Dungeon1/Rooms/Templates/Chunks/";
+    const string Chunks = "Assets/Game/Levels/Shared/Rooms/";
     const string Party = Chunks + "Skeleton Party room.prefab";
     const string Portal = Chunks + "Portal hall.prefab";
     const string PocketFolder = "Assets/Game/Levels/Pockets";
@@ -207,7 +207,7 @@ public static class SkeletonPartySetup
         var portal = AssetDatabase.LoadAssetAtPath<GameObject>(Portal);
         var cell = AssetDatabase.LoadAssetAtPath<GameObject>(Chunks + "Cell block.prefab");
         var gateHall = AssetDatabase.LoadAssetAtPath<GameObject>(Chunks + "Gate hall.prefab");
-        foreach (var path in new[] { "Assets/Game/Levels/Dungeon1/Biomes/Cellars.asset", "Assets/Game/Levels/Dungeon1/Biomes/Crypt.asset" })
+        foreach (var path in new[] { "Assets/Game/Levels/Shared/Biomes/Cellars.asset", "Assets/Game/Levels/Shared/Biomes/Crypt.asset" })
         {
             var biome = AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
             var list = new List<DungeonBiome.RoomTemplateChoice>(biome.roomTemplates ?? new DungeonBiome.RoomTemplateChoice[0]);

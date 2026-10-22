@@ -30,14 +30,14 @@ public partial class ProgressionManager
     // The quests the game's own code gives; a scene saved before one existed gets it added at Play (EnsureBuiltInQuests).
     static List<Quest> BuiltInQuests() => new()
     {
-        new Quest { id = SheetQuest, text = "Look at the character sheet on the little table by the wall." },
-        new Quest { id = ShieldBashQuest, text = "Try your shield bash: hold {block} and press {attack}." },
-        new Quest { id = DeflectQuest, text = "Hold your shield up against an arrow or a spell to send it back." },
-        new Quest { id = InventoryQuest, text = "Open your inventory with {inventory} or Tab." },   // Tab is the fixed second binding
-        new Quest { id = SpendQuest, text = "Train Blocking on the sheet first. The other rows open after it." },
-        new Quest { id = TableQuest, text = "Sit down at the table for the next run." },
-        new Quest { id = TrophyQuest, text = "Hang your trophies on the wall by the hobby table." },
-        new Quest { id = TileQuest, text = "Put the missing tile into the symbol puzzle in the room." },
+        new Quest { id = SheetQuest, text = "Look at the character sheet by the wall." },
+        new Quest { id = ShieldBashQuest, text = "Shield bash: hold {block}, press {attack}." },
+        new Quest { id = DeflectQuest, text = "Block an arrow or spell to send it back." },
+        new Quest { id = InventoryQuest, text = "Open your inventory ({inventory} or Tab)." },   // Tab is the fixed second binding
+        new Quest { id = SpendQuest, text = "Train Blocking on the character sheet." },
+        new Quest { id = TableQuest, text = "Sit down at the table." },
+        new Quest { id = TrophyQuest, text = "Hang your trophies on the wall." },
+        new Quest { id = TileQuest, text = "Put the missing tile in the symbol puzzle." },
     };
 
     void EnsureBuiltInQuests()

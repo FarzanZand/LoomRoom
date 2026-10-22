@@ -130,63 +130,10 @@ MonoBehaviour:
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
   pocket: 0
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
-  authoredMap: '#################
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ##1111111111111##
-
-    ########+########
-
-    ########.########
-
-    ######00000######
-
-    ######00000######
-
-    ######00000######
-
-    ######00000######
-
-    ######00000######
-
-    #################'
+  mapTemplate: {fileID: 7641791405145484976, guid: 59542db2491d39a4d9d06b61ff8e4c3e, type: 3}
+  authoredMap: 
   authoredContent: 
-  authoredRooms:
-  - label: Landing
-    role: 0
-    template: {fileID: 0}
-    turns: 0
-    height: 0
-    raised: 0
-  - label: Pit
-    role: 5
-    template: {fileID: 2756633592056712990, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
-    turns: 0
-    height: 0
-    raised: 0
+  authoredRooms: []
   authoredMarkers: []
   doorPrefab: {fileID: 7005205240093728226, guid: 7ae2a1d1f1163d043b9dddebfbe75f5e, type: 3}
   doorPercent: 65

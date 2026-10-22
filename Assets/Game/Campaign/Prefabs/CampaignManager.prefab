@@ -61,6 +61,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3552b3e1683d82e4bb2998f3cb7a83a9, type: 2}
   - {fileID: 11400000, guid: 922d8baabd8637a4b8861bda630a37f6, type: 2}
   - {fileID: 11400000, guid: dc69136424fa25f418b63bf90aa8c527, type: 2}
+  - {fileID: 11400000, guid: dcaf1826c48dc5244bfba3d29bbe9909, type: 2}
   unlocks:
   - beaten: {fileID: 11400000, guid: ffada713b3f1ff943955248d41bd14a9, type: 2}
     opensAct: 2
@@ -100,6 +101,7 @@ MonoBehaviour:
   frameOpenLand: 1
   frameMargin: 1.3
   maxZoomIn: -30
+  maxZoomOut: 14
   bottomRoom: 0.12
   keepDungeonMasterInView: 1
   standSlide: 0.55

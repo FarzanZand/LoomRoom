@@ -140,7 +140,7 @@ public static partial class ArenaSetup
     static DungeonBiome Biome(DungeonRoomStyle style, System.Text.StringBuilder log)
     {
         string path = Dir + "/Arena biome.asset";
-        if (AssetDatabase.LoadAssetAtPath<DungeonBiome>(path) == null) { AssetDatabase.CopyAsset("Assets/Game/Levels/Dungeon1/Biomes/Cellars.asset", path); log.Append("copied the Cellars as the Arena biome; "); }
+        if (AssetDatabase.LoadAssetAtPath<DungeonBiome>(path) == null) { AssetDatabase.CopyAsset("Assets/Game/Levels/Shared/Biomes/Cellars.asset", path); log.Append("copied the Cellars as the Arena biome; "); }
         var b = AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
         b.displayName = "The Arena";
         // Its own words (the copy came with the Cellars'): the pit's template has the Dungeon Master's lines on the way in.
@@ -342,14 +342,11 @@ public static partial class ArenaSetup
             "######00000######",
             "#################",
         };
-        level.authoredMap = string.Join("\n", rows);
+        // One map template holds both rooms (Arena map.prefab): the landing, furnished by the generator, and the pit.
+        level.mapTemplate = MapTemplate(rows, room, level);
+        level.authoredMap = ""; level.authoredRooms = new TableLevelData.AuthoredRoom[0];
         level.authoredContent = "";
-        level.width = rows[0].Length; level.depth = rows.Length;
-        level.authoredRooms = new[]
-        {
-            new TableLevelData.AuthoredRoom { label = "Landing", role = DungeonGenerator.RoomRole.Entrance },
-            new TableLevelData.AuthoredRoom { label = "Pit", role = DungeonGenerator.RoomRole.Exit, template = room },
-        };
+        level.SyncMapSize();
         level.authoredMarkers = new TableLevelData.AuthoredMarker[0];
         level.stages = new[] { new TableLevelData.BiomeStage { biome = biome, floors = 1, boss = false } };
         level.destructiblesPerRoom = Vector2Int.zero;

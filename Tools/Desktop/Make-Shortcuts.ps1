@@ -1,4 +1,4 @@
-# Puts the two LoomRoom shortcuts on the desktop: "Play The Table Waits" and "LoomRoom Asset Studio".
+# Puts the two LoomRoom shortcuts on the desktop: "Play The Table Awaits" and "LoomRoom Asset Studio".
 # Both run LoomRoomLaunch.ps1 with no console window. Safe to run again (it replaces them).
 $here = $PSScriptRoot
 $desktop = [Environment]::GetFolderPath('Desktop')
@@ -17,5 +17,5 @@ function Make($name, $mode, $icon, $description) {
     Write-Output (Join-Path $desktop "$name.lnk")
 }
 
-Make 'Play The Table Waits' 'Play' 'Play.ico' 'Play the game in the LoomRoom Editor (no build).'
+Make 'Play The Table Awaits' 'Play' 'Play.ico' 'Play the game in the LoomRoom Editor (no build).'
 Make 'LoomRoom Asset Studio' 'Studio' 'Asset Studio.ico' 'Open Asset Studio in the LoomRoom Editor.'
