@@ -75,6 +75,8 @@ public class SpellProjectile : MonoBehaviour
         {
             if (owner != null && hit.transform.IsChildOf(owner.transform)) continue;
             if (hit.transform.IsChildOf(transform)) continue;
+            // Dead bodies are flown past, as arrows do: a corpse in the way doesn't set the spell off.
+            if (DeathPhysics.IsCorpse(hit.collider)) continue;
             // A sphere cast that starts overlapping reports a zero point; use the cast origin.
             var point = hit.distance <= 0 ? transform.position : hit.point;
             // Deflect: off a raised shield, back at its caster (or straight back), now the defender's spell.

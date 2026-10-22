@@ -62,7 +62,21 @@ public class RuleManager : Singleton<RuleManager>
     static readonly string[] Words = { "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty" };
     public static string Word(int n) => n >= 0 && n < Words.Length ? Words[n] : n.ToString();
 
-    void OnEnable() { if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged += OnFlag; }
-    void OnDisable() { if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= OnFlag; }
+    // Also from Start: on the scene's first frame this OnEnable can run before the ProgressionManager's Awake, and the
+    // save's rule flags (read after) would then never redraw the sheet.
+    bool listening;
+    void OnEnable() => Listen();
+    void Start() { Listen(); Changed?.Invoke(); }
+    void Listen()
+    {
+        if (listening || !ProgressionManager.HasInstance) return;
+        ProgressionManager.Instance.FlagChanged += OnFlag;
+        listening = true;
+    }
+    void OnDisable()
+    {
+        if (listening && ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= OnFlag;
+        listening = false;
+    }
     void OnFlag(string key, int value) { if (key != null && key.StartsWith(FlagPrefix)) Changed?.Invoke(); }
 }

@@ -70,10 +70,18 @@ public partial class AssetStudioWindow
         EditorPrefs.SetString(WorldOpenKey, string.Join("|", worldOpen));
     }
 
-    // After a change: the World model is read again on the next draw (a few asset reads). The library's own list is only
-    // rebuilt when files were made, moved or deleted (RefreshLibrary; the World model with it).
+    // After a change: the World model is read again on the next draw (a few asset reads). After files were made, moved
+    // or deleted, the library sorts in just those (the watcher noted them; a moved folder builds it all again) and the
+    // World model is read again with it (RefreshLibrary). Refresh library still builds everything.
     void RefreshWorld() { world = null; Repaint(); }
-    void RefreshLibrary() { Refresh(false); Repaint(); }
+    void RefreshLibrary()
+    {
+        ApplyLibraryChanges();
+        world = null; tomes = null;
+        AssetStudioUsage.Forget();
+        usedBy = null; usedByFor = null;
+        Repaint();
+    }
 
     // ── The tree ─────────────────────────────────────────────────────
 
@@ -285,6 +293,9 @@ public partial class AssetStudioWindow
                 ev.Use();
             }
             if (ev.type == EventType.MouseDown && ev.button == 0 && row.Contains(ev.mousePosition)) { Pick(n); dragFrom = n; ev.Use(); }
+            // Right-click a row with an asset behind it: Show in Project, Copy ID, Delete...
+            if (ev.type == EventType.MouseDown && ev.button == 1 && row.Contains(ev.mousePosition) && n.asset != null && EditorUtility.IsPersistent(n.asset))
+            { AssetMenu(AssetDatabase.GetAssetPath(n.asset)); ev.Use(); }
             if (ev.type == EventType.MouseDrag && dragFrom == n && n.asset != null && (n.kind == WorldKind.Room || n.kind == WorldKind.Level) && row.Contains(ev.mousePosition))
             {
                 DragAndDrop.PrepareStartDrag();
@@ -428,6 +439,8 @@ public partial class AssetStudioWindow
     void PickedPane()
     {
         var n = worldPicked;
+        // Its asset deleted or undone since it was picked (elsewhere): nothing to show.
+        if (n != null && n.asset == null && !ReferenceEquals(n.asset, null)) { worldPicked = null; worldPickedKey = null; n = null; }
         var m = World;
         if (n == null)
         {

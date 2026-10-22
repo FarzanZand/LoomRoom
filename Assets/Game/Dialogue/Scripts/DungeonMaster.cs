@@ -126,7 +126,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
     AudioClip voiceClip;
     public void StopVoice()
     {
-        if (voiceSource != null && voiceSource.isPlaying && voiceSource.clip == voiceClip) voiceSource.Stop();
+        // A paused voice (the pause menu) reads as not playing, but is stopped all the same.
+        if (voiceSource != null && (voiceSource.isPlaying || voicePaused) && voiceSource.clip == voiceClip) voiceSource.Stop();
         voiceSource = null; voiceClip = null;
         if (AudioManager.HasInstance) AudioManager.Instance.StopMumble();
     }
@@ -169,8 +170,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
             // The pause menu holds the line (and its voice) where it is: whoever waits on it waits too.
             for (float t = 0f; t < pause; )
             {
-                if (Paused) { PauseVoice(true); yield return null; continue; }
-                PauseVoice(false);
+                if (Paused) { yield return null; continue; }
                 if (t > .2f && Skippable && InputManager.HasInstance && InputManager.Instance.SkipLinePressed) { StopVoice(); break; }
                 yield return null;
                 if (!Paused) t += Time.unscaledDeltaTime;
@@ -181,11 +181,14 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     static bool Skippable => GameManager.HasInstance && GameManager.Instance.State == GameState.Dialogue;
     static bool Paused => GameManager.HasInstance && GameManager.Instance.State == GameState.Paused;
+    // Held from Update, so a line said outside the queue (SayNow) is held too.
     bool voicePaused;
     void PauseVoice(bool pause)
     {
         if (pause == voicePaused) return;
         voicePaused = pause;
+        // A mumble is only sound under the line: it stops rather than waits (its syllables run on real time).
+        if (pause && AudioManager.HasInstance) AudioManager.Instance.StopMumble();
         if (voiceSource == null || voiceSource.clip != voiceClip) return;
         if (pause) voiceSource.Pause(); else voiceSource.UnPause();
     }
@@ -241,6 +244,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     void Update()
     {
+        PauseVoice(Paused);
         if (label == null) return;
         SnapSize();
         float now = Time.unscaledTime;

@@ -236,14 +236,31 @@ public class BossStageEncounter : MonoBehaviour
         for (int i = 0; i < colliders.Length; i++) { solid[i] = colliders[i].enabled; colliders[i].enabled = false; }
         var kinematic = new bool[bodies.Length];
         for (int i = 0; i < bodies.Length; i++) { kinematic[i] = bodies[i].isKinematic; bodies[i].isKinematic = true; }
+        // Set down: as he lets go, or at once on the spot if the fight is put away while it is still in his hand
+        // (Cleanup stops this coroutine; an add left there stayed frozen in the air, out of reach).
+        bool down = false;
+        System.Action<bool> setDown = null;
+        setDown = cut =>
+        {
+            if (down) return;
+            down = true;
+            inHand.Remove(setDown);
+            if (figure == null) return;
+            if (cut) figure.transform.position = spot;
+            for (int i = 0; i < bodies.Length; i++) if (bodies[i] != null) bodies[i].isKinematic = kinematic[i];
+            for (int i = 0; i < colliders.Length; i++) if (colliders[i] != null) colliders[i].enabled = solid[i];
+            if (motor != null) motor.enabled = true;
+            if (agent != null) { agent.enabled = true; agent.Warp(spot); if (agent.isOnNavMesh) { agent.ResetPath(); agent.velocity = Vector3.zero; } }
+            if (figureBrain != null && figure != boss) { figureBrain.enabled = true; figureBrain.Alert(); }
+        };
+        inHand.Add(setDown);
         if (hand != null) { yield return hand.Place(figure.transform, spot, seconds, TableTop(), () => Landed(figure, hand.LastPlacedAt)); spot = hand.LastPlacedAt; }
         else { figure.transform.position = spot; Landed(figure, spot); }
-        for (int i = 0; i < bodies.Length; i++) if (bodies[i] != null) bodies[i].isKinematic = kinematic[i];
-        for (int i = 0; i < colliders.Length; i++) if (colliders[i] != null) colliders[i].enabled = solid[i];
-        if (motor != null) motor.enabled = true;
-        if (agent != null) { agent.enabled = true; agent.Warp(spot); if (agent.isOnNavMesh) { agent.ResetPath(); agent.velocity = Vector3.zero; } }
-        if (figureBrain != null && figure != boss) { figureBrain.enabled = true; figureBrain.Alert(); }
+        setDown(false);
     }
+
+    // Figures he is carrying right now (Carry): set down at once if the fight is put away mid-carry.
+    readonly List<System.Action<bool>> inHand = new();
 
     float TableTop() => TableManager.HasInstance && TableManager.Instance.GetComponent<TableCut>() is { } cut && cut.Bounds.size != Vector3.zero ? cut.Bounds.max.y : dungeon.transform.position.y;
 
@@ -453,6 +470,30 @@ public class BossStageEncounter : MonoBehaviour
         Comment(fight != null ? fight.defeat : null, true);
         Finish(false);
         lost = true;
+        lostAt = Time.time;
+    }
+
+    float lostAt = -1f;
+
+    // The fight's clocks after the time the player was down: the seconds pick up where they stopped, and beats of the
+    // music that played on meanwhile are skipped (an event every N beats would otherwise fire once a frame until it
+    // caught up: volleys and adds all at once).
+    void CatchUpClocks()
+    {
+        if (lostAt >= 0f && fightStart >= 0f) fightStart += Time.time - lostAt;
+        lostAt = -1f;
+        if (fight == null || musicStart < 0f) return;
+        float now = Beat;
+        foreach (var e in fight.events)
+        {
+            if (e == null) continue;
+            if (e.when == BossEvent.When.AtBeat && e.startBeat <= now) done.Add(e);
+            else if (e.when == BossEvent.When.EveryBeats && nextBeat.TryGetValue(e, out float at) && at <= now)
+            {
+                float step = Mathf.Max(1f, e.beats);
+                nextBeat[e] = at + Mathf.Ceil((now - at + .001f) / step) * step;
+            }
+        }
     }
 
     // Back on their feet after falling here (RunManager.Revived): the fight goes on where it was. The room goes dark
@@ -476,6 +517,7 @@ public class BossStageEncounter : MonoBehaviour
             musicStart = Time.time;
             nextBeat.Clear();
         }
+        CatchUpClocks();
         DarkenRoom();
         LightRoom();
         if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title);
@@ -523,6 +565,7 @@ public class BossStageEncounter : MonoBehaviour
         if (beam != null) beam.Stop();
         foreach (var v in volleys) if (v != null) v.Stop();
         if (hand != null) hand.Release();
+        for (int i = inHand.Count - 1; i >= 0; i--) if (i < inHand.Count) inHand[i](true);
         if (seat != null) seat.Unfocus();
         ShutStair(false);
         DungeonMasterRemarks.Hold = false;

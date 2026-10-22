@@ -83,9 +83,30 @@ public class InputManager : Singleton<InputManager>
     // A pad's d-pad or an arrow key pressed: a menu with nothing selected selects something (not South, which would
     // press what was just selected).
     public static bool MenuInputStarted =>
-        Gamepad.current != null && Gamepad.current.dpad.ReadValue() != Vector2.zero
+        Gamepad.current != null && (Gamepad.current.dpad.ReadValue() != Vector2.zero || Gamepad.current.leftStick.ReadValue().sqrMagnitude > .25f)
         || Keyboard.current != null && (Keyboard.current.upArrowKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame
             || Keyboard.current.leftArrowKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame);
+    // The UI selection is empty or sits on something hidden (a menu closed with it selected): a menu selects again.
+    public static bool NothingSelected
+    {
+        get
+        {
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            if (events == null) return false;
+            var selected = events.currentSelectedGameObject;
+            return selected == null || !selected.activeInHierarchy;
+        }
+    }
+    // A text field has the keyboard (the letters typed are text, not keys for the game).
+    static bool Typing
+    {
+        get
+        {
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            var selected = events != null ? events.currentSelectedGameObject : null;
+            return selected != null && selected.TryGetComponent<TMPro.TMP_InputField>(out var field) && field.isFocused;
+        }
+    }
 
     // The mouse for picking things in the world while the cursor is free (ClassFigures). Never while paused: the click
     // is for the pause menu, not what lies under it.
@@ -124,7 +145,8 @@ public class InputManager : Singleton<InputManager>
         // The UI map is live in cutscenes, conversations and menus. A Pause action there (a pad's Start; not Escape,
         // which is Cancel) lets the pause menu open over a cutscene or a conversation. Found by name, so the map works without it.
         var uiPause = actions.UI.Get().FindAction("Pause");
-        if (uiPause != null) uiPause.performed += _ => PausePressed?.Invoke();
+        // P is a letter: typed into a text field (a name, the dev prompt over the pause menu) it is not a pause.
+        if (uiPause != null) uiPause.performed += ctx => { if (!(ctx.control?.device is Keyboard && Typing)) PausePressed?.Invoke(); };
         LoadBindingOverrides();
         // Paused: the screens under the pause menu don't move or confirm.
         actions.UI.Navigate.performed += _ => { if (!Paused) NavigatePressed?.Invoke(); };

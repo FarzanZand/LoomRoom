@@ -32,7 +32,8 @@ public class TrophyWall : MonoBehaviour, IInteractable
 
     public string Prompt => "Hang the trophies";
     public bool CanInteract(Character who) => who is Player p && p.kind == PlayerKind.Room && Carried > 0;
-    static int Carried => ProgressionManager.HasInstance ? ProgressionManager.Instance.TrophiesIn(ProgressionManager.TrophyState.Carried).Count : 0;
+    // Asked every frame the wall is looked at: counted without making a list.
+    static int Carried => ProgressionManager.HasInstance ? ProgressionManager.Instance.TrophyCount(ProgressionManager.TrophyState.Carried) : 0;
 
     public void Interact(Character who)
     {

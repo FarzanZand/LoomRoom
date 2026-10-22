@@ -88,6 +88,8 @@ public class TableLevelData : ScriptableObject
     public int fixedSeed;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("A pocket: a room reached through a portal (PortalArch), built beside the floor the player came from. No ladder in and no stairs out; its own portal gate leads back.")]
     public bool pocket;
+    [TabGroup(Tabs, Run), ShowIf(D), Tooltip("Posted when the player reaches the next floor ({0} is the floor's number): a tower climbs.")]
+    public string nextFloorMessage = "You descend to floor {0}.";
 
     // The gear row for a floor: the last row starting on or before it (null when the table is empty).
     public LootFloorTiers GearAt(int floor)

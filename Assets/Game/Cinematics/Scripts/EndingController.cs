@@ -89,14 +89,14 @@ public class EndingController : MonoBehaviour
         if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Cutscene); ownsCutscene = true; }
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeToBlack(fadeSeconds);
         if (AudioManager.HasInstance) AudioManager.Instance.StopMusic(fadeSeconds);
-        yield return new WaitForSecondsRealtime(fadeSeconds + .5f);
+        yield return GameManager.WaitCutscene(fadeSeconds + .5f);
 
         if (endCard != null)
         {
             endCard.gameObject.SetActive(true);
             endCard.alpha = 0f;
             yield return ScreenManager.FadeGroup(endCard, 1f, 1f);
-            yield return new WaitForSecondsRealtime(cardSeconds);
+            yield return GameManager.WaitCutscene(cardSeconds);
             yield return ScreenManager.FadeGroup(endCard, 0f, 1f);
             endCard.gameObject.SetActive(false);
         }
@@ -108,7 +108,7 @@ public class EndingController : MonoBehaviour
         }
         if (lighting != null) lighting.Restore(night, 0f);
         Running = false;
-        yield return new WaitForSecondsRealtime(1f);
+        yield return GameManager.WaitCutscene(1f);
         if (ownsCutscene)
         {
             ownsCutscene = false;

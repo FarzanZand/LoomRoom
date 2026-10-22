@@ -89,6 +89,8 @@ public partial class AssetStudioWindow : EditorWindow
         EditorApplication.projectChanged += OnProjectChanged;
         Undo.undoRedoPerformed += OnUndoRedo;
         ObjectChangeEvents.changesPublished += OnObjectChanges;
+        EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        UnityEditor.SceneManagement.EditorSceneManager.sceneOpened += OnSceneOpened;
     }
 
     void OnDisable()
@@ -99,6 +101,8 @@ public partial class AssetStudioWindow : EditorWindow
         EditorApplication.projectChanged -= OnProjectChanged;
         Undo.undoRedoPerformed -= OnUndoRedo;
         ObjectChangeEvents.changesPublished -= OnObjectChanges;
+        EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+        UnityEditor.SceneManagement.EditorSceneManager.sceneOpened -= OnSceneOpened;
         preview?.Dispose();
         preview = null;
         AssetStudioPreview.StopAudio();
@@ -122,6 +126,12 @@ public partial class AssetStudioWindow : EditorWindow
     void MarkStale() => staleAt = EditorApplication.timeSinceStartup + .4;
     void OnUndoRedo() { staleUndo = true; MarkStale(); }
     void OnProjectChanged() { staleProject = true; MarkStale(); }
+    // Play started or stopped, or a scene opened: the scene objects that held lines are other objects now.
+    void OnPlayModeChanged(PlayModeStateChange change)
+    {
+        if (change == PlayModeStateChange.EnteredEditMode || change == PlayModeStateChange.EnteredPlayMode) { staleScenes = true; MarkStale(); }
+    }
+    void OnSceneOpened(UnityEngine.SceneManagement.Scene scene, UnityEditor.SceneManagement.OpenSceneMode mode) { staleScenes = true; MarkStale(); }
 
     void OnObjectChanges(ref ObjectChangeEventStream stream)
     {
@@ -281,6 +291,66 @@ public partial class AssetStudioWindow : EditorWindow
 
     void Toast(string text) { notice = text; noticeUntil = EditorApplication.timeSinceStartup + 4; }
 
+    // ── Right-click on an asset (the library's lists, the World tree): Show in Project, Copy ID, Delete... ──
+
+    void AssetMenu(string path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
+        string guid = AssetDatabase.AssetPathToGUID(path);
+        var menu = new GenericMenu();
+        menu.AddItem(new GUIContent("Show in Project"), false, () => { var a = AssetDatabase.LoadMainAssetAtPath(path); Selection.activeObject = a; EditorGUIUtility.PingObject(a); });
+        menu.AddItem(new GUIContent("Copy ID"), false, () => { EditorGUIUtility.systemCopyBuffer = AssetStudioCatalog.IdFor(guid); Toast("Copied " + AssetStudioCatalog.IdFor(guid)); });
+        menu.AddSeparator("");
+        string blocked = DeleteBlocked(path);
+        if (blocked == null) menu.AddItem(new GUIContent("Delete..."), false, () => DeleteAsset(path));
+        else menu.AddDisabledItem(new GUIContent("Delete (" + blocked + ")"));   // no slash in the reason: it would make a submenu
+        menu.ShowAsContext();
+    }
+
+    // Paths named in code (a builder or a loader reads or writes them there), read once per compile.
+    [NonSerialized] HashSet<string> namedInCode;
+
+    // Why this file can't be deleted from here, or null. Only the game's own content: never anything outside Assets/Game
+    // (Synty, the packs, plugins), code, a scene in the build, what a Resources folder holds (code loads it by name:
+    // TableLevels, Table level defaults, DungeonLighting) or a file a tool names in code.
+    string DeleteBlocked(string path)
+    {
+        if (!path.StartsWith("Assets/Game/")) return "not the game's own content";
+        if (AssetDatabase.IsValidFolder(path)) return "a folder";
+        string ext = Path.GetExtension(path).ToLowerInvariant();
+        if (ext == ".cs" || ext == ".shader" || ext == ".hlsl" || ext == ".asmdef" || ext == ".dll") return "code";
+        if (EditorBuildSettings.scenes.Any(s => s.path == path)) return "a scene in the build";
+        if (path.Contains("/Resources/")) return "in a Resources folder, code loads it by name";
+        namedInCode ??= AssetStudioWorld.PinnedPaths();
+        if (namedInCode.Contains(path)) return "a tool names this file in code";
+        return null;
+    }
+
+    // Asks first (what uses it), then moves the file to the system's recycle bin (it can be got back from there).
+    void DeleteAsset(string path)
+    {
+        string why = DeleteBlocked(path);
+        if (why != null) { Toast("Not deleted: " + why + "."); return; }
+        string name = Path.GetFileNameWithoutExtension(path), guid = AssetDatabase.AssetPathToGUID(path);
+        var users = AssetStudioUsage.Find(guid, categories).Where(u => u.path != path).ToList();
+        string Name((string path, AssetStudioCatalog.Entry entry) u) => u.entry != null ? u.entry.name : Path.GetFileNameWithoutExtension(u.path);
+        string use = users.Count == 0 ? "Nothing else in the game uses it."
+            : $"Used by {users.Count} asset{(users.Count == 1 ? "" : "s")}: {string.Join(", ", users.Take(5).Select(u => Name(u)))}{(users.Count > 5 ? $" and {users.Count - 5} more" : "")}. {(users.Count == 1 ? "It" : "They")} will lose it.";
+        if (!EditorUtility.DisplayDialog("Delete " + name, $"{name}\n{path}\n\n{use}\n\nIt goes to the recycle bin, so it can be got back from there.", "Delete", "Cancel")) return;
+        CommitDialogue(true);
+        // Let go of it first: the preview's copy, a painting on it, the inspector.
+        if (selected != null && selected.path == path) Select(null);
+        if (inspected != null && AssetDatabase.GetAssetPath(inspected) == path) inspected = null;
+        if (!AssetDatabase.MoveAssetToTrash(path)) { Toast("Could not delete " + name + "."); return; }
+        AssetStudioCatalog.Apply(categories, new[] { path });
+        Filter();
+        world = null; tomes = null;
+        AssetStudioUsage.Forget();
+        usedBy = null; usedByFor = null;
+        Toast($"Moved {name} to the recycle bin.");
+        Repaint();
+    }
+
     void OnGUI()
     {
         Styles();
@@ -412,7 +482,12 @@ public partial class AssetStudioWindow : EditorWindow
             if (e.inGame) DrawCheck(new Rect(row.x + rowH - 18, row.y + rowH - 20, 15, 15));
             GUI.Label(new Rect(row.x + rowH + 2, row.y + 3, row.width - rowH, 18), e.name, EditorStyles.boldLabel);
             GUI.Label(new Rect(row.x + rowH + 2, row.y + 21, row.width - rowH, 16), (showingAll || showingRecent ? e.category + " · " : "") + e.kind + (string.IsNullOrEmpty(e.description) ? "" : " · " + e.description), dimLine);
-            if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition)) { Select(e); GUI.FocusControl(null); Event.current.Use(); }
+            if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
+            {
+                Select(e); GUI.FocusControl(null);
+                if (Event.current.button == 1) AssetMenu(e.path);   // right-click: Show in Project, Copy ID, Delete...
+                Event.current.Use();
+            }
         }
         if (shown.Count == 0) GUI.Label(new Rect(10, 10, view.width - 20, 40), search.Length > 0 ? "Nothing matches that search." : "Nothing in this category.", dim);
         GUI.EndScrollView();
@@ -538,7 +613,7 @@ public partial class AssetStudioWindow : EditorWindow
         {
             var copy = ItemDatabaseAuthoring.Duplicate(source);
             ItemDatabaseAuthoring.SyncCatalog();
-            Refresh();
+            ApplyLibraryChanges();   // the copy, sorted in from the watcher's notes (not the whole library again)
             var e = categories.SelectMany(c => c.entries).FirstOrDefault(x => x.path == AssetDatabase.GetAssetPath(copy));
             studioView = StudioView.Category; categoryIndex = categories.FindIndex(c => c.name == "Items"); kindFilter = 0; search = ""; Filter(); Select(e);
             Toast($"Made {copy.name}. Rename it in the inspector; its icon renders on its own.");

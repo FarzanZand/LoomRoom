@@ -105,7 +105,7 @@ public class RunManager : Singleton<RunManager>
     {
         StopDeathMoment();
         deathPending = false;
-        Running = true; Ended = false;
+        Running = true; Ended = false; won = false;
         Level = level; Seed = seed; Floor = 1;
         Kills = 0; GoldFound = 0; BossesSlain = 0; HealthSlain = 0; Seconds = 0f; Killer = null; LastTally = default;
         ListenToWallet();
@@ -143,7 +143,7 @@ public class RunManager : Singleton<RunManager>
     public void EndRunInVictory()
     {
         if (!Running || Ended) return;
-        Ended = true;
+        Ended = true; won = true;
         Settle(true);
         RunEnded?.Invoke(true);
         if (AudioManager.HasInstance && victorySting != null) AudioManager.Instance.PlaySFX2D(victorySting, victoryStingVolume);
@@ -171,6 +171,8 @@ public class RunManager : Singleton<RunManager>
     public static bool DeferDeath, HoldDeath;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetDeathHolds() => DeferDeath = HoldDeath = false;
     bool deathPending;
+    // The run ended in victory (EndRunInVictory), not a death.
+    bool won;
 
     // Deaths over the whole save, in its flags (not the intro's practice run): the death screen's Revive button unlocks
     // after RunRecapUI.reviveAfterDeaths of them.
@@ -196,7 +198,8 @@ public class RunManager : Singleton<RunManager>
     public bool ReviveRun(out bool counted)
     {
         counted = false;
-        if (!Running || !Ended) return false;
+        // A won run stays won: a player who falls after it (nothing on the floor stops) gets up without reopening it.
+        if (!Running || !Ended || won) return false;
         counted = !deathPending;
         deathPending = false;
         StopDeathMoment();

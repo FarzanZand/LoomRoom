@@ -146,10 +146,10 @@ public class TableManager : Singleton<TableManager>, IInteractable
             float waited = 0f;
             while (DMTalking && waited < maxSpeechWait)
             {
-                waited += Time.unscaledDeltaTime;
+                waited += GameManager.CutsceneDelta;
                 yield return null;
             }
-            yield return new WaitForSecondsRealtime(afterSpeech);
+            yield return GameManager.WaitCutscene(afterSpeech);
         }
         // The campaign: the world map on the table (CampaignManager). The first morning's sheet and dice still come
         // first, then its figures, and the class picked stands on the map.
@@ -177,7 +177,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
                         sitting = null; sittingPlayer = null;
                         yield break;
                     }
-                    yield return new WaitForSecondsRealtime(.6f);
+                    yield return GameManager.WaitCutscene(.6f);
                 }
                 if (IntroController.HasInstance) IntroController.Instance.EndSheetAtTable();
             }

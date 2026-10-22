@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4486656d5770a27458587aa7a245946f, type: 3}
   m_Name: Broken Keep balance
   m_EditorClassIdentifier: Assembly-CSharp::DungeonBalance
-  damageMultiplier: 1.6
+  damageMultiplier: 1.4
   separateBossDamage: 0
   bossDamageMultiplier: 1
-  healthMultiplier: 2.2
+  healthMultiplier: 1.8
   bossHealthMultiplier: 1.05
-  damageGrowthPerFloor: 0.2
-  healthGrowthPerFloor: 0.2
-  armorPerFloor: 1.25
+  damageGrowthPerFloor: 0.12
+  healthGrowthPerFloor: 0.15
+  armorPerFloor: 1

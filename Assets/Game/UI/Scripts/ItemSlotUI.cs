@@ -185,13 +185,28 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void OnPointerEnter(PointerEventData e) { if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item); }
     public void OnPointerExit(PointerEventData e)  { if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
 
-    // A pad or the arrow keys: selecting a cell shows its tooltip, Submit acts like a right click.
-    public void OnSelect(BaseEventData e) { selected = true; Refresh(); if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item); }
-    public void OnDeselect(BaseEventData e) { selected = false; Refresh(); if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
+    // A pad or the arrow keys: selecting a cell tints it and shows its tooltip beside it, Submit acts like a right click.
+    // A mouse click selects the cell too (its Button), which changes nothing: no tint, and Space or Enter after a click
+    // doesn't use the item.
+    public void OnSelect(BaseEventData e)
+    {
+        if (e is PointerEventData) return;
+        selected = true; Refresh();
+        if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item, (RectTransform)transform);
+    }
+    public void OnDeselect(BaseEventData e)
+    {
+        if (!selected) return;
+        selected = false; Refresh();
+        if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
+    }
     public void OnSubmit(BaseEventData e)
     {
-        if (Item == null) return;
-        if (Item.IsConsumable) ActivateItem(); else if (!ToggleEquip()) ShowContextMenu();
+        if (!selected || Item == null) return;
+        if (Item.IsConsumable) ActivateItem();
+        else if (!ToggleEquip()) { ShowContextMenu(); return; }
+        // What the cell holds now (used up, put on, taken off).
+        if (TooltipUI.HasInstance) { if (Item != null) TooltipUI.Instance.Show(Item, (RectTransform)transform); else TooltipUI.Instance.Hide(); }
     }
 
     public void OnPointerClick(PointerEventData e)
@@ -313,9 +328,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             }));
         }
 
-        // Opened from a pad (the cell is selected): next to the cell, not where the mouse was left.
+        // Opened from a pad or the keys (the cell is selected): next to the cell, not where the mouse was left, with its
+        // first option selected so Submit picks one.
         Vector2 at = selected ? (Vector2)RectTransformUtility.WorldToScreenPoint(null, transform.position) : Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
-        ContextMenuUI.Instance.Show(options, at);
+        if (selected && TooltipUI.HasInstance) TooltipUI.Instance.Hide();
+        ContextMenuUI.Instance.Show(options, at, select: selected);
     }
 
     // ── Drag & drop ───────────────────────────────────────────────────

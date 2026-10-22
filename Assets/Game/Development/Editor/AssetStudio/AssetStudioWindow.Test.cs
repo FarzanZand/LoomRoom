@@ -65,7 +65,8 @@ public partial class AssetStudioWindow
                     bool enemy = go.GetComponent<EnemyBrain>() != null;
                     Add(enemy ? "New enemy from this" : "New NPC from this", $"A variant of {go.name} with its own copy of its data: name it, then it opens here to edit.", () =>
                     {
-                        NewCharacterWindow.Open(enemy, go, made => { if (made != null) ShowInLibrary(AssetDatabase.GetAssetPath(made), $"Made {made.name}. Edit it on its Character component."); });
+                        // The studio may have been closed while the window was open: then there is nothing to show it in.
+                        NewCharacterWindow.Open(enemy, go, made => { if (made != null && this != null && categories != null) ShowInLibrary(AssetDatabase.GetAssetPath(made), $"Made {made.name}. Edit it on its Character component."); });
                         return "Name the new " + (enemy ? "enemy" : "NPC") + " in the window that opened.";
                     });
                 }

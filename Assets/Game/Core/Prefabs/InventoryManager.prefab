@@ -81,19 +81,19 @@ MonoBehaviour:
   rarities:
   - rarity: 2
     properties: {x: 1, y: 1}
-    baseBonus: 0.2
+    baseBonus: 0.15
     priceMultiplier: 1.6
     chance: 0.25
     chancePerFloor: 0
   - rarity: 6
     properties: {x: 2, y: 2}
-    baseBonus: 0.4
+    baseBonus: 0.3
     priceMultiplier: 2.5
     chance: 0.15
     chancePerFloor: 0
   - rarity: 3
     properties: {x: 3, y: 3}
-    baseBonus: 0.6
+    baseBonus: 0.45
     priceMultiplier: 4
     chance: 0.08
     chancePerFloor: 0

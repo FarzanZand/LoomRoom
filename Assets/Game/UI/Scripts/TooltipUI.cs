@@ -68,11 +68,15 @@ public class TooltipUI : Singleton<TooltipUI>
         if (panel != null && panel.activeSelf) FollowMouse();
     }
 
-    public void Show(ItemData item)
+    public void Show(ItemData item) => Show(item, null);
+
+    // at: the control a pad or the arrow keys picked (a bag cell): the tooltip sits beside it instead of at the mouse.
+    public void Show(ItemData item, RectTransform at)
     {
         if (panel == null || item == null) return;
         bool bars = mainBar.root != null && item.TryMainStat(out _, out _, out _);
-        ShowText(Title(item), Kind(item), item.BuildTooltip(!bars, footer == null));
+        anchor = at;
+        ShowLines(Title(item), Kind(item), item.BuildTooltip(!bars, footer == null));
         ShowHeader(item);
         var gear = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
         ShowFooter(footer, footerNote, footerPrice, item, gear != null && gear.IsEquipped(item) ? "Equipped" : "");
@@ -194,6 +198,12 @@ public class TooltipUI : Singleton<TooltipUI>
 
     public void ShowText(string title, string subtitle, string description)
     {
+        anchor = null;
+        ShowLines(title, subtitle, description);
+    }
+
+    void ShowLines(string title, string subtitle, string description)
+    {
         if (panel == null) return;
         HideCompare();
         HideItemParts();
@@ -212,6 +222,7 @@ public class TooltipUI : Singleton<TooltipUI>
 
     public void Hide()
     {
+        anchor = null;
         fade?.Kill();
         if (panel != null) panel.SetActive(false);
         HideCompare();
@@ -224,15 +235,26 @@ public class TooltipUI : Singleton<TooltipUI>
     }
 
     readonly Vector3[] corners = new Vector3[4];
+    // Shown for a selected control: placed beside it, not at the mouse (null: the mouse).
+    RectTransform anchor;
 
     void FollowMouse()
     {
-        if (rect == null || Mouse.current == null) return;
-        Vector2 mouse = Mouse.current.position.ReadValue();
+        if (rect == null || anchor == null && Mouse.current == null) return;
+        Vector2 mouse;
+        float halfWidth = 0f;
+        if (anchor != null)
+        {
+            // The control's middle, and half its width so the tooltip clears its side (the HUD is a screen space canvas).
+            anchor.GetWorldCorners(corners);
+            mouse = (corners[0] + corners[2]) * .5f;
+            halfWidth = (corners[2].x - corners[0].x) * .5f;
+        }
+        else mouse = Mouse.current.position.ReadValue();
         float pivotX = mouse.x < Screen.width  * 0.5f ? 0f : 1f;
         float pivotY = mouse.y < Screen.height * 0.5f ? 0f : 1f;
         rect.pivot = new Vector2(pivotX, pivotY);
-        float ox = pivotX == 0f ?  16f : -16f;
+        float ox = pivotX == 0f ?  16f + halfWidth : -16f - halfWidth;
         float oy = pivotY == 0f ?  16f : -16f;
         rect.position = new Vector3(mouse.x + ox, mouse.y + oy, 0f);
         rect.GetWorldCorners(corners);

@@ -623,12 +623,19 @@ public static partial class AssetStudioWorld
         public static void Folder(string path) { if (open != null && !AssetDatabase.IsValidFolder(path)) { open.created.Add(new Made { path = path }); Write(); } }
         public static void Moved(string from, string to) { if (open != null) { open.moved.Add(new MovedFile { from = from, to = to }); Write(); } }
 
-        // Right after the step's writes: the fingerprint of every file as the step left them.
+        // Right after the step's writes: the fingerprint of every file as the step left them. A step that changed
+        // nothing (the place was on the map already, listed already) is dropped, so Undo never offers it.
         public static void Commit()
         {
             if (open == null) return;
             foreach (var f in open.files) f.after = Fingerprint(f.path);
             foreach (var c in open.created) c.after = AssetDatabase.IsValidFolder(c.path) ? "folder" : Fingerprint(c.path);
+            if (open.created.Count == 0 && open.moved.Count == 0 && open.files.All(f => f.after == Fingerprint(f.before)))
+            {
+                Forget(open);
+                Steps.Remove(open);
+                open = null;
+            }
             Write();
         }
 
@@ -646,8 +653,15 @@ public static partial class AssetStudioWorld
             var steps = Steps;
             if (steps.Count == 0) return "Nothing to undo.";
             var step = steps[steps.Count - 1];
+            // A file no longer where the step left it (moved or deleted since) is not written there again: a copy at the
+            // old path would be a second asset with a new GUID, nothing pointing at it.
+            var gone = step.files.Where(f => !File.Exists(f.path)).Select(f => f.path).ToList();
             // A file changed since the step left it: putting it back loses those later changes.
-            var changed = step.files.Where(f => string.IsNullOrEmpty(f.after) || Fingerprint(f.path) != f.after).Select(f => f.path).ToList();
+            var changed = step.files.Where(f => !gone.Contains(f.path) && (string.IsNullOrEmpty(f.after) || Fingerprint(f.path) != f.after)).Select(f => f.path).ToList();
+            if (gone.Count > 0 && !EditorUtility.DisplayDialog("Undo: " + step.name,
+                    $"{Names(gone)} {(gone.Count == 1 ? "is" : "are")} no longer where this step left {(gone.Count == 1 ? "it" : "them")} (moved or deleted since), so {(gone.Count == 1 ? "it" : "they")} can't be put back. Undo the rest of the step?",
+                    "Undo the rest", "Cancel"))
+                return "Not undone: " + step.name + ".";
             if (changed.Count > 0 && !EditorUtility.DisplayDialog("Undo: " + step.name,
                     $"{Names(changed)} changed after this step (in the inspector, by hand or by another tool). Undoing puts {(changed.Count == 1 ? "it" : "them")} back as before the step, and those later changes are lost.",
                     "Undo anyway", "Cancel"))
@@ -665,23 +679,29 @@ public static partial class AssetStudioWorld
             }
             steps.RemoveAt(steps.Count - 1);
             open = null;
+            var problems = gone.Select(p => Path.GetFileNameWithoutExtension(p) + " is gone from " + Path.GetDirectoryName(p).Replace('\\', '/')).ToList();
+            // Each part on its own: one that fails (a file locked, a folder gone) doesn't stop the rest, and the step is
+            // taken off the list either way.
+            void Try(string what, Action act) { try { act(); } catch (Exception e) { problems.Add(what + ": " + e.Message); } }
             foreach (var f in step.files)
-                if (!string.IsNullOrEmpty(f.before) && File.Exists(f.before)) { File.Copy(f.before, f.path, true); AssetDatabase.ImportAsset(f.path, ImportAssetOptions.ForceUpdate); }
+                if (!gone.Contains(f.path) && !string.IsNullOrEmpty(f.before) && File.Exists(f.before))
+                    Try(Path.GetFileName(f.path), () => { File.Copy(f.before, f.path, true); AssetDatabase.ImportAsset(f.path, ImportAssetOptions.ForceUpdate); });
             for (int i = step.moved.Count - 1; i >= 0; i--)
             {
                 var mv = step.moved[i];
-                if (File.Exists(mv.to) && !File.Exists(mv.from)) AssetDatabase.MoveAsset(mv.to, mv.from);
+                if (File.Exists(mv.to) && !File.Exists(mv.from))
+                    Try(Path.GetFileName(mv.to), () => { string err = AssetDatabase.MoveAsset(mv.to, mv.from); if (!string.IsNullOrEmpty(err)) throw new Exception(err); });
             }
             for (int i = step.created.Count - 1; i >= 0; i--)
             {
                 string c = step.created[i].path;
-                if (AssetDatabase.IsValidFolder(c)) { if (Directory.Exists(c) && Directory.GetFileSystemEntries(c).Length == 0) AssetDatabase.DeleteAsset(c); }
-                else if (File.Exists(c) && !(keepEdited && edited.Contains(c))) AssetDatabase.DeleteAsset(c);
+                if (AssetDatabase.IsValidFolder(c)) { if (Directory.Exists(c) && Directory.GetFileSystemEntries(c).Length == 0) Try(c, () => AssetDatabase.DeleteAsset(c)); }
+                else if (File.Exists(c) && !(keepEdited && edited.Contains(c))) Try(Path.GetFileName(c), () => AssetDatabase.DeleteAsset(c));
             }
             Forget(step);
             Write();
             AssetDatabase.Refresh();
-            return "Undid: " + step.name + ".";
+            return "Undid: " + step.name + "." + (problems.Count > 0 ? " Left as it is: " + string.Join("; ", problems) + "." : "");
         }
     }
 

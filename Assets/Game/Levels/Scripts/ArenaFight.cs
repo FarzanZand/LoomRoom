@@ -64,7 +64,8 @@ public class ArenaFight : MonoBehaviour
     {
         if (scan)
         {
-            foreach (var exit in dungeon.GetComponentsInChildren<DungeonExit>(true)) if (exit != null && !exits.Contains(exit)) exits.Add(exit);
+            // Only the way on: the ladder the player came down stays in the landing (it leads nowhere).
+            foreach (var exit in dungeon.GetComponentsInChildren<DungeonExit>(true)) if (exit != null && !exit.entrance && !exits.Contains(exit)) exits.Add(exit);
             // Also the ones still off the table (behind the closed door): they count from the start.
             foreach (var brain in dungeon.GetComponentsInChildren<EnemyBrain>(true))
                 if (brain != null && !fighters.Contains(brain) && brain.State != EnemyState.Dead && dungeon.Layout.RoomAt(dungeon.CellOf(brain.transform.position)) == room)

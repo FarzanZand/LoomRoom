@@ -192,8 +192,8 @@ MonoBehaviour:
     healthMultiplier: 1
     damageMultiplier: 1
     arena: {fileID: 6094011178556838177, guid: 9a7f3c5c07f10b1438f42e22c46423d8, type: 3}
-    title: Lord of the Crypt
-    introMessage: Something rises from the throne.
+    title: Lord of the hollow
+    introMessage: Something rises in the hollow.
     introSting: {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
     stingVolume: 1
     bossMusic: {fileID: 0}
@@ -216,19 +216,15 @@ MonoBehaviour:
   musicVolume: 1
   entryLineChance: 0.7
   entryLines:
-  - text: The crypt now.
-    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
-    mumble: 0
+  - text: The hollow. Green fire, and something feeding it.
+    voice: {fileID: 0}
+    mumble: 1
     inPerson: 0
-  - text: The dead don't like visitors.
-    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
-    mumble: 0
+  - text: Keep to the light. Such as it is.
+    voice: {fileID: 0}
+    mumble: 1
     inPerson: 0
-  - text: Keep your shield up.
-    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
-    mumble: 0
-    inPerson: 0
-  - text: Not many get this far.
-    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
-    mumble: 0
+  - text: The witch's ground. Mind your step.
+    voice: {fileID: 0}
+    mumble: 1
     inPerson: 0

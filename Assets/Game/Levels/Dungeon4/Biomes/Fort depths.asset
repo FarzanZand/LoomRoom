@@ -218,8 +218,8 @@ MonoBehaviour:
     healthMultiplier: 1.8
     damageMultiplier: 1.2
     arena: {fileID: 0}
-    title: Guards the stairs
-    introMessage: A warden guards the stairs down.
+    title: 
+    introMessage: 
     introSting: {fileID: 0}
     stingVolume: 1
     bossMusic: {fileID: 0}

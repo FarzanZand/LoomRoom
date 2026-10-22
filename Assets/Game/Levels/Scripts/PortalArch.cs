@@ -123,6 +123,10 @@ public class PortalArch : MonoBehaviour
     public float hurtGrace = 1.5f;
     static float lastHurt = -99f;
     static Character watched;
+    // Play mode starts without a domain reload: a hit from the last session would hold the way back shut (Time.time
+    // starts again from 0).
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() { lastHurt = -99f; watched = null; cameFrom = Vector3.zero; cameFromFacing = Quaternion.identity; portalBuffer.Clear(); }
     static void OnWatchedHurt(DamageInfo info) => lastHurt = Time.time;
 
     // This machine's player in a pocket: its hits are watched for the way back.

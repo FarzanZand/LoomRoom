@@ -279,6 +279,8 @@ public static partial class AssetStudioWorld
     public static string MoveBack(List<(string from, string to)> done)
     {
         int back = 0; var errors = new List<string>();
+        // A folder emptied by the Tidy and removed since is made again first (not inside the batch, as in ApplyTidy).
+        foreach (var (from, to) in done) if (File.Exists(to) && !File.Exists(from)) EnsureFolder(Path.GetDirectoryName(from).Replace('\\', '/'));
         AssetDatabase.StartAssetEditing();
         try
         {

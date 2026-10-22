@@ -87,8 +87,7 @@ public class ShopUI : Singleton<ShopUI>
     // Nothing selected and a pad's d-pad or an arrow key pressed: select a ware.
     void Update()
     {
-        if (open && InputManager.MenuInputStarted && UnityEngine.EventSystems.EventSystem.current != null
-            && UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject == null) SelectStart();
+        if (open && InputManager.MenuInputStarted && InputManager.NothingSelected) SelectStart();
     }
 
     // The first ware, else the first pack cell, else Close, so Submit buys or sells.
@@ -132,6 +131,10 @@ public class ShopUI : Singleton<ShopUI>
             if (player.Hotbar != null) player.Hotbar.Changed -= Refresh;
             if (player.Wallet != null) player.Wallet.Changed -= OnGold;
         }
+        // A ware or cell left selected would stay selected while hidden.
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        if (events != null && root != null && events.currentSelectedGameObject != null && events.currentSelectedGameObject.transform.IsChildOf(root.transform)
+            && !events.alreadySelecting) events.SetSelectedGameObject(null);
         if (root != null) root.SetActive(false);
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
         merchant = null; player = null;

@@ -187,7 +187,9 @@ public static class AssetStudioCatalog
         var all = cats.SelectMany(c => c.entries).ToList();
         foreach (var path in paths)
         {
-            string guid = AssetDatabase.AssetPathToGUID(path);
+            // The GUID only of a file that is there: a path moved or deleted can still answer with its old GUID, which
+            // would take away the entry just made for the file's new place.
+            string guid = File.Exists(path) ? AssetDatabase.AssetPathToGUID(path) : "";
             var old = all.Where(e => e.path == path || guid.Length > 0 && e.guid == guid).ToList();
             foreach (var c in cats) c.entries.RemoveAll(e => old.Contains(e));
             if (!File.Exists(path)) continue;
@@ -208,14 +210,17 @@ public static class AssetStudioCatalog
     public static event Action Changed;
 
     // Called by the watcher: kept in SessionState, so the paths outlive the recompile that may follow an import.
-    public static void Note(IEnumerable<string> paths)
+    // imported: files made or saved (a new folder adds nothing by itself: its files come as imports of their own);
+    // gone: files and folders deleted or moved, from and to.
+    public static void Note(IEnumerable<string> imported, IEnumerable<string> gone)
     {
-        var list = paths.Where(Watched).ToList();
+        var goneList = gone.Where(Watched).ToList();
+        var list = imported.Where(p => Watched(p) && !IsFolderPath(p)).Concat(goneList).ToList();
         if (list.Count == 0) return;
         var pending = new HashSet<string>(SessionState.GetString(ChangedKey, "").Split('\n').Where(s => s.Length > 0));
         pending.UnionWith(list);
         // A folder moved or deleted, or a great many files: build it all again instead.
-        if (pending.Count > 400 || list.Any(IsFolderPath)) { SessionState.SetBool(RebuildKey, true); SessionState.EraseString(ChangedKey); }
+        if (pending.Count > 400 || goneList.Any(IsFolderPath)) { SessionState.SetBool(RebuildKey, true); SessionState.EraseString(ChangedKey); }
         else SessionState.SetString(ChangedKey, string.Join("\n", pending));
         Changed?.Invoke();
     }
@@ -280,6 +285,6 @@ class AssetStudioCatalogWatcher : AssetPostprocessor
 {
     static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
     {
-        AssetStudioCatalog.Note(importedAssets.Concat(deletedAssets).Concat(movedAssets).Concat(movedFromAssetPaths));
+        AssetStudioCatalog.Note(importedAssets, deletedAssets.Concat(movedAssets).Concat(movedFromAssetPaths));
     }
 }

@@ -214,8 +214,8 @@ MonoBehaviour:
   merchantChance: 1
   guardian:
     enabled: 1
-    boss: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
-    healthMultiplier: 3
+    boss: {fileID: 3913280292304150593, guid: c817904a3479ce046b3467fc691a1c0e, type: 3}
+    healthMultiplier: 5.5
     damageMultiplier: 1.3
     arena: {fileID: 0}
     title: Captain of the tower

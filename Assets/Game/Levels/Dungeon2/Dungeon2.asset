@@ -47,6 +47,7 @@ MonoBehaviour:
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   fixedSeed: 0
   pocket: 0
+  nextFloorMessage: You climb to floor {0}.
   layoutMode: 1
   width: 40
   depth: 54

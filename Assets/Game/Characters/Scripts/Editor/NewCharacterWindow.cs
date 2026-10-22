@@ -61,9 +61,12 @@ public class NewCharacterWindow : EditorWindow
                 if (at >= 0) folder = picked.Substring(at + 1);
             }
         }
-        string path = $"{folder}/{characterName}.prefab";
+        // The name as it is saved (spaces round it dropped), so the check below is about the file Create writes.
+        string name = (characterName ?? "").Trim();
+        string path = $"{folder}/{name}.prefab";
         bool templateIsEnemy = template != null && template.GetComponent<EnemyBrain>() != null;
-        string problem = string.IsNullOrWhiteSpace(characterName) ? "Enter a name."
+        string problem = name.Length == 0 ? "Enter a name."
+            : name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ? "The name can't hold / \\ : * ? \" < > or |."
             : !IsTemplate(template) ? "Pick an enemy or NPC prefab (or a base) as the template."
             : templateIsEnemy != enemy ? (enemy ? "That template is an NPC." : "That template is an enemy.")
             : !AssetDatabase.IsValidFolder(folder) ? "Folder does not exist."
@@ -73,7 +76,7 @@ public class NewCharacterWindow : EditorWindow
         using (new EditorGUI.DisabledScope(problem != null))
             if (GUILayout.Button(enemy ? "Create enemy" : "Create NPC", GUILayout.Height(30)))
             {
-                var created = Create(characterName.Trim(), template, path);
+                var created = Create(name, template, path);
                 Selection.activeObject = created;
                 EditorGUIUtility.PingObject(created);
                 var then = onCreated;

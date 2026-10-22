@@ -211,9 +211,9 @@ MonoBehaviour:
   merchantChance: 1
   guardian:
     enabled: 1
-    boss: {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
+    boss: {fileID: 3106414846958967852, guid: b50bbc792d8d15d4fb3842724b84568d, type: 3}
     healthMultiplier: 2.2
-    damageMultiplier: 1.4
+    damageMultiplier: 1
     arena: {fileID: 6594370429574986636, guid: 09de06c42b9da9749a27d5e2a90f794f, type: 3}
     title: Lord of the Black Fort
     introMessage: Something rises from the throne.

@@ -108,6 +108,16 @@ public static class AssetStudioDialogue
         return lines;
     }
 
+    // The lines of scene objects in the open scenes that aren't in the list yet (after a scene was opened again, or Play
+    // started or stopped: the objects are new ones).
+    public static void CollectScenes(List<Line> into)
+    {
+        var have = new HashSet<UnityEngine.Object>(into.Select(l => l.owner).Where(o => o != null));
+        foreach (var t in DialogueTypes().Where(t => typeof(MonoBehaviour).IsAssignableFrom(t)))
+            foreach (var c in UnityEngine.Object.FindObjectsByType(t, FindObjectsInactive.Include))
+                if (c != null && !EditorUtility.IsPersistent(c) && have.Add(c)) Collect(c, into);
+    }
+
     // Every line on one object, in declaration order.
     public static void Collect(UnityEngine.Object owner, List<Line> into)
     {

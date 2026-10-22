@@ -161,6 +161,10 @@ public class CampaignManager : Singleton<CampaignManager>
             if (p.encounter.kind == CampaignEncounterKind.Level && p.encounter.level != null && catalog != null
                 && Array.IndexOf(catalog.levels, p.encounter.level) < 0)
                 Debug.LogWarning($"[Campaign] {p.encounter.name}'s level {p.encounter.level.name} is not in Levels/Resources/TableLevels.asset: a run saved there can't be continued.", p.encounter);
+            if (p.encounter.deathsToOpen > 0 && p.encounter.deathsIn == null)
+                Debug.LogWarning($"[Campaign] {p.encounter.name} is shut until {p.encounter.deathsToOpen} deaths but has no Deaths In: it opens with its act.", p.encounter);
+            else if (p.encounter.Locked && (p.encounter.deathsIn == p.encounter || p.encounter.deathsIn.kind != CampaignEncounterKind.Level))
+                Debug.LogError($"[Campaign] {p.encounter.name} counts deaths in {p.encounter.deathsIn.name}, where no run can be played: it never opens.", p.encounter);
             string id = p.encounter.id;
             if (seen.TryGetValue(id, out var other)) Debug.LogError($"[Campaign] places {other.name} and {p.name} share the encounter id '{id}': give the duplicate its own encounter.", p);
             else seen[id] = p;
@@ -342,7 +346,7 @@ public class CampaignManager : Singleton<CampaignManager>
     // is taken to the map, unless something holds the table (the sheet lesson).
     IEnumerator BackToMap()
     {
-        yield return new WaitForSecondsRealtime(.3f);
+        yield return GameManager.WaitCutscene(.3f);
         for (float until = Time.unscaledTime + 8f; Time.unscaledTime < until; )
         {
             bool loading = loader != null && loader.Busy;
@@ -739,7 +743,9 @@ public class CampaignManager : Singleton<CampaignManager>
         {
             if (asking || MenuOpen() || eventScreen != null && eventScreen.Open || heroSelect != null && heroSelect.Open || changingClass) return;
             int count = KeyPicks().Count;
-            keyPick = keyPick < 0 ? (hovered != null ? Mathf.Max(0, keyPicks.IndexOf(hovered)) : 0) : (keyPick + InputManager.Instance.NavigateStep + count) % count;
+            // Nothing to step through (the map is being laid out again after a debug reset).
+            if (count == 0) { keyPick = -1; return; }
+            keyPick =keyPick < 0 ? (hovered != null ? Mathf.Max(0, keyPicks.IndexOf(hovered)) : 0) : (keyPick + InputManager.Instance.NavigateStep + count) % count;
         }
         void OnSubmit()
         {
@@ -803,6 +809,7 @@ public class CampaignManager : Singleton<CampaignManager>
                     if (frameOpenLand && Mathf.Min(OpenAct, RevealedAct) != shown) yield return Frame(player, .9f);
                     SayWonLine();
                     yield return RunEvents();
+                    submitted = false;   // a key pressed while it played is not a pick
                     continue;
                 }
                 if (clicked && !asking && !MenuOpen())

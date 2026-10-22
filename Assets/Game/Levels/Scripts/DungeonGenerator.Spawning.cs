@@ -359,7 +359,9 @@ public partial class DungeonGenerator
             breakable.seed=PlacedSeed(breakable.transform.position);breakable.floorNumber=FloorNumber;
         }
     }
-    public int PlacedSeed(Vector3 p)=>unchecked(Mathf.RoundToInt(p.x*100f)*73856093 ^ Mathf.RoundToInt(p.z*100f)*19349663 ^ FloorNumber*83492791 ^ Layout.rooms.Count*2654435);
+    // The floor's seed is in it too: a fixed map (a portal's pocket, an authored level) puts its chests in the same
+    // places every run, and their loot (the Skeleton Party's Legendary) was the same every run.
+    public int PlacedSeed(Vector3 p)=>unchecked(Mathf.RoundToInt(p.x*100f)*73856093 ^ Mathf.RoundToInt(p.z*100f)*19349663 ^ FloorNumber*83492791 ^ Layout.rooms.Count*2654435 ^ Layout.seed*1103515245);
 
     // A template's wall light: on the wall its socket faces, or the cell's nearest other wall.
     void SocketLight(DungeonSocket socket,int room)

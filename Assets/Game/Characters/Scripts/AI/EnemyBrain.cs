@@ -563,6 +563,9 @@ public class EnemyBrain : MonoBehaviour
             return;
         }
 
+        // Out of reach up a ledge: the way round, or wait off to the side (else the walk in and the backing off take turns).
+        if (HandleHeightGap(targetPos, dist)) return;
+
         // Approach. Look at the target once close so the run-in becomes a strafe-run.
         Motor.SetAutoBraking(false);
         Motor.SetStoppingDistance(PreferredDistance);
@@ -646,8 +649,10 @@ public class EnemyBrain : MonoBehaviour
 
     // The target stands too high or low for a melee blow (a ledge, a stair landing). If the NavMesh leads up to it,
     // walk the way round (up the stairs) instead of circling underneath; if nothing does, back off out of its reach
-    // and wait, facing it. Flyers, archers and casters keep the plain spacing. False when this doesn't apply.
-    const float MeleeHeightReach = 1f, LedgeStandOff = 3f;
+    // and wait, facing it (closer than LedgeStandOff it steps back, within LedgeHoldBand past that it stands, farther off
+    // it walks in as usual). Flyers, archers and casters keep the plain spacing, and a player in the air (a jump) is no
+    // ledge. False when this doesn't apply.
+    const float MeleeHeightReach = 1f, LedgeStandOff = 3f, LedgeHoldBand = 1.5f;
     float reachCheckedAt = -1f;
     bool targetReachable;
     Vector3 reachPoint;
@@ -658,6 +663,7 @@ public class EnemyBrain : MonoBehaviour
         if (Mathf.Abs(targetPos.y - transform.position.y) <= MeleeHeightReach) return false;
         var data = Data;
         if (data == null || data.archer || data.caster || flies || Motor.Agent == null || !Motor.Agent.isOnNavMesh) return false;
+        if (Perception.Target is Player jumper && jumper.Motor != null && !jumper.Motor.IsGrounded) return false;
 
         // A path query is costly: checked a few times a second.
         if (Time.time - reachCheckedAt > .5f)
@@ -687,6 +693,7 @@ public class EnemyBrain : MonoBehaviour
             return true;
         }
 
+        if (dist >= LedgeStandOff + LedgeHoldBand) return false;
         Motor.LookAt(targetPos, p.attackFaceSpeed);
         if (dist < LedgeStandOff)
         {

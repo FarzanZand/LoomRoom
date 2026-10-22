@@ -46,6 +46,8 @@ public static class GameLauncher
         // Given up after two minutes without the game getting there, or when Play stopped for good (a failed start).
         // A toolbar restart stops Play and starts it again a moment later: the action waits through that gap.
         if (EditorApplication.timeSinceStartup - SessionState.GetFloat(PendingSinceKey, 0) > 120) { SessionState.EraseString(PendingKey); return; }
+        // Never in the session a restart is stopping: the action is for the one that starts next.
+        if (DebugDungeonToolbar.RestartPending) return;
         if (!EditorApplication.isPlayingOrWillChangePlaymode)
         {
             if (!EditorApplication.isCompiling && !DebugDungeonToolbar.RestartPending) SessionState.EraseString(PendingKey);

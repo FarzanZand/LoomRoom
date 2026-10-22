@@ -50,19 +50,19 @@ public class PrototypeEnd : MonoBehaviour
         {
             DungeonMaster.Say(thanks);
             // The line types out, then stays a moment to be read before the fade.
-            yield return new WaitForSecondsRealtime(.5f);
+            yield return GameManager.WaitCutscene(.5f);
             float until = Time.unscaledTime + 12f;
             while (DungeonMaster.Instance.Speaking && Time.unscaledTime < until) yield return null;
-            yield return new WaitForSecondsRealtime(2.5f);
+            yield return GameManager.WaitCutscene(2.5f);
         }
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeToBlack(fadeSeconds);
-        yield return new WaitForSecondsRealtime(fadeSeconds + .3f);
+        yield return GameManager.WaitCutscene(fadeSeconds + .3f);
         if (card != null)
         {
             card.gameObject.SetActive(true);
             card.alpha = 0f;
             yield return ScreenManager.FadeGroup(card, 1f, 1f);
-            yield return new WaitForSecondsRealtime(cardSeconds);
+            yield return GameManager.WaitCutscene(cardSeconds);
             yield return ScreenManager.FadeGroup(card, 0f, 1f);
             card.gameObject.SetActive(false);
         }

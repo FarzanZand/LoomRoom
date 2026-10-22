@@ -82,18 +82,22 @@ public partial class AssetStudioWindow
     static string DialogueControl(AssetStudioDialogue.Line l) => "dlg " + LineId(l);
 
     // Lines read again for the owners that changed elsewhere (an inspector, Ctrl+Z, a saved asset): all, or those whose
-    // asset is in paths, and the open scenes' when scenes.
+    // asset is in paths, and the open scenes' when scenes. Scene objects gone (a scene closed or opened again, Play
+    // started or stopped) take their lines with them, and the open scenes are looked through again for the objects now
+    // there.
     void RecollectDialogue(bool all, ICollection<string> paths, bool scenes)
     {
         if (dialogue == null) return;
         var owners = dialogue.Select(l => l.owner).Distinct().Where(o => all || o == null
             || (EditorUtility.IsPersistent(o) ? paths != null && paths.Contains(AssetDatabase.GetAssetPath(o)) : scenes)).ToList();
-        if (owners.Count == 0) return;
+        bool lost = owners.Any(o => o == null);
+        if (owners.Count == 0 && !scenes) return;
         foreach (var owner in owners)
         {
             dialogue.RemoveAll(l => l.owner == owner);
             if (owner != null) AssetStudioDialogue.Collect(owner, dialogue);
         }
+        if (scenes || lost) AssetStudioDialogue.CollectScenes(dialogue);
         FilterDialogue();
     }
 

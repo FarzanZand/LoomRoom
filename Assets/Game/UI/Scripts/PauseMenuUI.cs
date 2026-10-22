@@ -33,7 +33,14 @@ public class PauseMenuUI : MonoBehaviour
     float resumeTimeScale = 1f;
     // The open conversation was paused by this menu (DialogueManager), so closing gives it its time back.
     bool pausedConversation;
+    // Its choices under the menu: their canvas's clicks switched off, and the panels' own focus keeping (which would pull
+    // a pad's or the keyboard's selection off Resume onto a choice) held while the menu is open.
+    GraphicRaycaster conversationRaycaster;
+    bool heldFocusKeeping;
     public bool IsOpen => open;
+    // Open over a cutscene: the HUD it hid stays out of sight behind the menu (HudCanvas).
+    public static bool OverCutscene { get; private set; }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => OverCutscene = false;
 
     static TableLevelLoader Loader => TableManager.Loader;
 
@@ -84,12 +91,14 @@ public class PauseMenuUI : MonoBehaviour
     {
         if (open || root == null || !GameManager.HasInstance || !CanPauseIn(GameManager.Instance.State)) return;
         open = true;
+        OverCutscene = GameManager.Instance.State == GameState.Cutscene;
         GameManager.Instance.Push(GameState.Paused);
         resumeTimeScale = Time.timeScale;
         Time.timeScale = 0f;
         // A conversation runs on its own clock (DialogueTime): stop it too.
         pausedConversation = PixelCrushers.DialogueSystem.DialogueManager.isConversationActive && !PixelCrushers.DialogueSystem.DialogueTime.isPaused;
         if (pausedConversation) PixelCrushers.DialogueSystem.DialogueManager.Pause();
+        if (PixelCrushers.DialogueSystem.DialogueManager.isConversationActive) HoldConversationUI(true);
         root.SetActive(true);
         settings?.Close();
         CloseConfirm();
@@ -101,6 +110,24 @@ public class PauseMenuUI : MonoBehaviour
     }
 
     static bool InRun => RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;
+
+    // A conversation's choices stay where they are under the menu: no click reaches them, and the Dialogue System's
+    // panels stop taking the selection back (with the Input Device Manager's Always Auto Focus they would, every fifth
+    // of a second, so Space, Enter or a pad's South picked a choice behind the menu).
+    void HoldConversationUI(bool hold)
+    {
+        if (hold)
+        {
+            if (!heldFocusKeeping) { heldFocusKeeping = PixelCrushers.UIPanel.monitorSelection; PixelCrushers.UIPanel.monitorSelection = false; }
+            var ui = PixelCrushers.DialogueSystem.DialogueManager.dialogueUI as Component;
+            var raycaster = ui != null ? ui.GetComponentInParent<GraphicRaycaster>() : null;
+            if (raycaster != null && raycaster.enabled && !transform.IsChildOf(raycaster.transform)) { raycaster.enabled = false; conversationRaycaster = raycaster; }
+            return;
+        }
+        if (heldFocusKeeping) { heldFocusKeeping = false; PixelCrushers.UIPanel.monitorSelection = true; }
+        if (conversationRaycaster != null) conversationRaycaster.enabled = true;
+        conversationRaycaster = null;
+    }
 
     // The question over the pause buttons, with what a run loses under it; Yes runs the action.
     void Ask(string question, System.Action action)
@@ -142,6 +169,8 @@ public class PauseMenuUI : MonoBehaviour
         if (root != null) root.SetActive(false);
         Time.timeScale = resumeTimeScale;
         if (pausedConversation) { pausedConversation = false; PixelCrushers.DialogueSystem.DialogueManager.Unpause(); }
+        HoldConversationUI(false);
+        OverCutscene = false;
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Paused);
         // The press that closed the menu doesn't also click or skip what is under it.
         if (InputManager.HasInstance) InputManager.Instance.HoldPresses();
