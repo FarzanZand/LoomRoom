@@ -51,7 +51,8 @@ public class DungeonHud : MonoBehaviour
             if(dungeon.MerchantRoom>=0)foreach(var c in dungeon.Layout.RoomCells(dungeon.MerchantRoom))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)shop[c.x,c.y]=true;
             // A pocket (the Skeleton Party) has no exit: its last room is where the portal back stands.
             pocket=dungeon.LevelData!=null && dungeon.LevelData.pocket;
-            int exit=pocket ? -1 : dungeon.Layout.RoomAt(dungeon.Layout.Exit);
+            // Where the stairs really stand (a merchant's stall or a boss stage can move them off the layout's exit).
+            int exit=pocket ? -1 : dungeon.Layout.RoomAt(dungeon.ExitCell);
             if(exit<0 && !pocket && dungeon.Roles!=null)exit=System.Array.IndexOf(dungeon.Roles,DungeonGenerator.RoomRole.Exit);
             if(exit>=0)foreach(var c in dungeon.Layout.RoomCells(exit))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)exitRoom[c.x,c.y]=true;
         }
@@ -100,7 +101,7 @@ public class DungeonHud : MonoBehaviour
             if(explored[x,y] && dungeon.Layout.floor[x,y])color=shop[x,y] ? new Color(.36f,.68f,.34f,.95f) : new Color(.46f,.48f,.43f,.92f); // the shop room shows green
             // The exit room shows red, its stairs a brighter red.
             if(explored[x,y] && dungeon.Layout.floor[x,y] && exitRoom[x,y])color=new Color(.72f,.2f,.17f,.95f);
-            if(!pocket && explored[x,y] && new Vector2Int(x,y)==dungeon.Layout.Exit)color=new Color(1f,.35f,.28f);
+            if(!pocket && explored[x,y] && x==dungeon.ExitCell.x && y==dungeon.ExitCell.y)color=new Color(1f,.35f,.28f);
             if(explored[x,y] && door[x,y] && !walked[x,y])color=new Color(.55f,.85f,1f,1f);
             if(x==px && y==py)color=new Color(1,.8f,.33f);
             map.SetPixel(x,y,color);

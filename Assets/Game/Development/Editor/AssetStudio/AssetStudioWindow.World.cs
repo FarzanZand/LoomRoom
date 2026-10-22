@@ -8,11 +8,12 @@ using UnityEngine;
 // events down to each level's stages, their biomes and the rooms in each biome's pool. Left of the preview, the tree with
 // a search and a Show filter; in the middle, what the picked thing is made of, with buttons to change it and New buttons
 // that make things already filed and linked; right, its inspector as everywhere else in the studio. Rooms can be dragged
-// from the tree (or the Project window) onto a biome to put them in its pool, and a level onto a place to have it play it.
+// from the tree (or the Project window) onto a biome to put them in its pool, enemy prefabs to have them live there, and
+// a level onto a place to have it play it.
 // Map templates (DungeonMapTemplate: a whole small map in one prefab) show under the levels that play them and in MAPS.
 public partial class AssetStudioWindow
 {
-    enum WorldKind { Header, Act, Place, Event, Level, Stage, Room, Note, Map }
+    enum WorldKind { Header, Act, Place, Event, Level, Stage, Room, Note, Map, Defaults }
     enum WorldPane { Picked, NewLevel, NewBiome, NewRoom, NewPlace, NewEvent, Tidy, NewMap }
 
     class WorldNode
@@ -48,6 +49,10 @@ public partial class AssetStudioWindow
     DungeonBiome formBiome;
     List<AssetStudioWorld.Move> tidyMoves;
     List<string> tidyKept;
+    // The last Tidy's moves, from and to, for Move back (kept through a recompile), and what it said.
+    [SerializeField] List<string> tidyFrom = new(), tidyTo = new();
+    [SerializeField] string tidyResult;
+    string worldRepick;   // a node key to pick again once the tree is built (after a recompile)
 
     AssetStudioWorld.Model World => world ??= AssetStudioWorld.Build();
 
@@ -66,9 +71,9 @@ public partial class AssetStudioWindow
     }
 
     // After a change: the World model is read again on the next draw (a few asset reads). The library's own list is only
-    // rebuilt when files were made, moved or deleted (RefreshLibrary).
+    // rebuilt when files were made, moved or deleted (RefreshLibrary; the World model with it).
     void RefreshWorld() { world = null; Repaint(); }
-    void RefreshLibrary() { RefreshWorld(); categories = AssetStudioCatalog.Build(); Filter(); }
+    void RefreshLibrary() { Refresh(false); Repaint(); }
 
     // ── The tree ─────────────────────────────────────────────────────
 
@@ -112,6 +117,7 @@ public partial class AssetStudioWindow
                     string problem = PlaceProblem(m, p);
                     if (worldShow == 1 && problem == null) continue;
                     string note = p.kind == CampaignEncounterKind.Home ? "home" : p.kind == CampaignEncounterKind.Placeholder ? "not made yet" : p.level != null ? "plays " + p.level.name : "no level";
+                    if (p.Locked) note = "shut: " + ShutText(p) + " · " + note;
                     Row(new WorldNode { key = "place:" + p.GetHashCode(), label = p.displayName, note = problem ?? note, warn = problem != null, kind = WorldKind.Place, asset = p, act = act, level = p.level, depth = 2 });
                 }
                 if (worldShow != 1) foreach (var e in events)
@@ -121,6 +127,9 @@ public partial class AssetStudioWindow
 
         // The levels: stages, biomes and rooms.
         Row(new WorldNode { key = "levels", label = "LEVELS", kind = WorldKind.Header, hasChildren = true });
+        var defaults = AssetDatabase.LoadAssetAtPath<TableLevelDefaults>(AssetStudioWorld.DefaultsPath);
+        if (Open("levels") && worldShow != 1)
+            Row(new WorldNode { key = "defaults", label = "Shared defaults", note = defaults != null ? "chests, merchant, breakables, features, wall lights, HUD: every level" : "missing: " + AssetStudioWorld.DefaultsPath, warn = defaults == null, kind = WorldKind.Defaults, asset = defaults, depth = 1 });
         if (Open("levels"))
             foreach (var l in m.levels.Where(l => worldShow == 3 || !l.tool))
             {
@@ -198,8 +207,19 @@ public partial class AssetStudioWindow
         if (!m.listedPlaces.Contains(p)) return "not in the campaign manager's list";
         if (p.kind == CampaignEncounterKind.Level && p.level == null) return "plays no level";
         if (string.IsNullOrEmpty(p.id)) return "no id";
+        // Shut until deaths somewhere (CampaignEncounter.deathsToOpen): that place must be one the player can die in.
+        if (p.deathsToOpen > 0)
+        {
+            if (p.deathsIn == null) return "shut until deaths, but Deaths In is empty: it opens with its act";
+            if (p.deathsIn == p) return "shut until deaths in itself: it can never open";
+            if (!m.placesOnMap.Contains(p.deathsIn)) return $"shut until deaths in {p.deathsIn.displayName}, which is not on the map";
+            if (!m.listedPlaces.Contains(p.deathsIn)) return $"shut until deaths in {p.deathsIn.displayName}, which the campaign manager doesn't list";
+            if (string.IsNullOrEmpty(p.deathsIn.id)) return $"shut until deaths in {p.deathsIn.displayName}, which has no id";
+        }
         return null;
     }
+
+    static string ShutText(CampaignEncounter p) => $"opens after {p.deathsToOpen} death{(p.deathsToOpen == 1 ? "" : "s")} in {(p.deathsIn != null ? p.deathsIn.displayName : "?")}";
 
     void DrawWorldTree(Rect r)
     {
@@ -230,6 +250,13 @@ public partial class AssetStudioWindow
         y += 30;
 
         if (Event.current.type == EventType.Layout || worldRows.Count == 0) BuildRows();
+        // After a recompile: the node picked before, found again by its key.
+        if (worldRepick != null && Event.current.type == EventType.Layout)
+        {
+            var again = worldRows.FirstOrDefault(n => n.key == worldRepick);
+            worldRepick = null;
+            if (again != null) { worldPicked = again; worldPane = WorldPane.Picked; ShowAsset(again.asset); }
+        }
         const float rowH = 22;
         var area = new Rect(r.x, y, r.width, r.yMax - y);
         var view = new Rect(0, 0, r.width - 16, Mathf.Max(worldRows.Count * rowH, area.height - 2));
@@ -274,7 +301,7 @@ public partial class AssetStudioWindow
 
     static bool Accepts(WorldNode n, UnityEngine.Object[] objects)
     {
-        if (n.kind == WorldKind.Stage && n.biome != null) return objects.Any(o => o is GameObject g && g.GetComponent<DungeonRoomTemplate>() != null);
+        if (n.kind == WorldKind.Stage && n.biome != null) return objects.Any(o => o is GameObject g && g.GetComponent<DungeonRoomTemplate>() != null || AssetStudioWorld.IsEnemy(o));
         if (n.kind == WorldKind.Place) return objects.Any(o => o is TableLevelData);
         return false;
     }
@@ -283,9 +310,10 @@ public partial class AssetStudioWindow
     {
         if (n.kind == WorldKind.Stage)
         {
-            int added = 0;
-            foreach (var o in objects) if (o is GameObject g && AssetStudioWorld.AddToPool(n.biome, g)) added++;
-            Toast(added > 0 ? $"Put {added} room{(added == 1 ? "" : "s")} in {n.biome.name}'s pool." : "Already in that pool.");
+            // Rooms go in its pool, enemies in what lives there.
+            int rooms = objects.Count(o => o is GameObject g && AssetStudioWorld.AddToPool(n.biome, g));
+            int enemies = objects.Count(o => o is GameObject g && AssetStudioWorld.AddEnemy(n.biome, g));
+            Toast(rooms + enemies == 0 ? "Already there." : (rooms > 0 ? $"Put {rooms} room{(rooms == 1 ? "" : "s")} in {n.biome.name}'s pool. " : "") + (enemies > 0 ? $"{enemies} enem{(enemies == 1 ? "y" : "ies")} now live in {n.biome.name}." : ""));
         }
         else if (n.kind == WorldKind.Place && objects.OfType<TableLevelData>().FirstOrDefault() is TableLevelData level)
         {
@@ -298,6 +326,7 @@ public partial class AssetStudioWindow
     void Pick(WorldNode n)
     {
         worldPicked = n;
+        worldPickedKey = n?.key;
         worldPane = WorldPane.Picked;
         worldPaneScroll = Vector2.zero;
         if (n.hasChildren && n.kind != WorldKind.Header && !n.open) ToggleOpen(n.key);
@@ -420,8 +449,17 @@ public partial class AssetStudioWindow
             case WorldKind.Stage: StagePane(m.LevelOf(n.level), n.stage); break;
             case WorldKind.Map: MapPane(((GameObject)n.asset).GetComponent<DungeonMapTemplate>()); break;
             case WorldKind.Note when n.asset is GameObject g && g.GetComponent<DungeonMapTemplate>() != null: MapPane(g.GetComponent<DungeonMapTemplate>()); break;
+            case WorldKind.Defaults: DefaultsPane(n.asset as TableLevelDefaults); break;
             default: Title(n.label, n.note); break;
         }
+    }
+
+    void DefaultsPane(TableLevelDefaults d)
+    {
+        Title("Shared defaults", "What every dungeon level shares: the plain chest and its sounds, the merchant and his stock, breakables, features, wall lights, room shapes and the run's HUD pieces. A biome adds its own breakables, features, wall lights and shapes on top.");
+        if (d == null) { GUILayout.Label($"<color=#e0a85a>Missing: {AssetStudioWorld.DefaultsPath}. Levels then have no chests, merchant, breakables or HUD pieces.</color>", new GUIStyle(dim) { richText = true, wordWrap = true }); return; }
+        GUILayout.Label("Merchant: " + (d.merchantPrefab != null ? d.merchantPrefab.name : "<color=#e0a85a>none (no level has a merchant)</color>") + "   ·   Plain chest: " + (d.chestPrefab != null ? d.chestPrefab.name : "<color=#e0a85a>none</color>"), new GUIStyle(dim) { richText = true });
+        GUILayout.Label("Edit it in the inspector on the right. A change here reaches every level at once.", dim);
     }
 
     void ActPane(int act)
@@ -432,7 +470,7 @@ public partial class AssetStudioWindow
         foreach (var p in m.places.Where(p => p.act == act))
         {
             string problem = PlaceProblem(m, p);
-            if (GUILayout.Button($"{p.displayName}   <color=#a9a49a>{(p.level != null ? p.level.name : p.kind.ToString())}</color>" + (problem != null ? $"   <color=#e0a85a>{problem}</color>" : ""), cell)) PickAsset(p);
+            if (GUILayout.Button($"{p.displayName}   <color=#a9a49a>{(p.level != null ? p.level.name : p.kind.ToString())}{(p.Locked ? " · shut: " + ShutText(p) : "")}</color>" + (problem != null ? $"   <color=#e0a85a>{problem}</color>" : ""), cell)) PickAsset(p);
         }
         if (Big("New place in Act " + act)) { StartForm(WorldPane.NewPlace); formAct = act; }
         Section("EVENTS");
@@ -450,12 +488,25 @@ public partial class AssetStudioWindow
         if (!m.listedPlaces.Contains(p) && Big("Add it to the campaign manager's list")) { AssetStudioWorld.ListInManager(p, null); Toast("Listed."); RefreshWorld(); }
         Section("WHAT IT IS");
         int act = Mathf.Max(1, EditorGUILayout.DelayedIntField(new GUIContent("Act", "Any act from 1: the map covers each act up to the highest a place has."), p.act));
-        if (act != p.act) { AssetStudioWorld.SetPlaceAct(p, act); RefreshWorld(); }
+        if (act != p.act)
+        {
+            AssetStudioWorld.SetPlaceAct(p, act);
+            // Its point and file can follow it to the new act.
+            if (m.placesOnMap.Contains(p) && EditorUtility.DisplayDialog("Move to Act " + act, $"Move {p.displayName} near the Act {act} places on the map, and its file to Campaign/Encounters/Act {act}? Its roads stay as they are: check them in the Realm map prefab.", "Move it", "Leave it where it is"))
+                Toast(AssetStudioWorld.MoveToAct(p));
+            RefreshWorld();
+            GUIUtility.ExitGUI();
+        }
         var levels = m.levels.Where(l => !l.tool && l.data.IsDungeon).Select(l => l.data).ToList();
+        GUILayout.BeginHorizontal();
         int at = levels.IndexOf(p.level) + 1;
         int pick = EditorGUILayout.Popup("Plays", at, new[] { "No level (not made yet)" }.Concat(levels.Select(l => l.name)).ToArray());
         if (pick != at) { AssetStudioWorld.SetPlaceLevel(p, pick == 0 ? null : levels[pick - 1]); RefreshWorld(); }
-        GUILayout.Label("Or drag a level from the tree onto this place. Its name, card line and the Dungeon Master's line are in the inspector.", dim);
+        var kind = (CampaignEncounterKind)EditorGUILayout.EnumPopup(p.kind, GUILayout.Width(100));
+        if (kind != p.kind) { AssetStudioWorld.SetPlaceKind(p, kind); RefreshWorld(); }
+        GUILayout.EndHorizontal();
+        GUILayout.Label("Or drag a level from the tree onto this place. Picking a level makes it a Level place, no level a placeholder. Its name, card line and the Dungeon Master's line are in the inspector.", dim);
+        ShutSection(p);
         Section("ON ITS DISC");
         int props = AssetStudioWorld.PropCount(p);
         GUILayout.Label(props < 0 ? "Not on the map yet." : props == 0 ? "No props yet: an empty base. Add some, or copy another place's." : $"{props} prop{(props == 1 ? "" : "s")}. Move them in the Realm map prefab (Points > {p.displayName}).", dim);
@@ -483,6 +534,34 @@ public partial class AssetStudioWindow
             if (Big("Open " + p.level.name)) PickLevel(p.level);
         }
         TestSection(p);
+    }
+
+    // Shut until deaths somewhere (CampaignEncounter.deathsToOpen): off the map, road and all, until the player has died
+    // often enough in another place, then it rises into view with its line; its hint is said once while it is still shut
+    // (shutHint). Edited through the asset's own properties (undoable).
+    void ShutSection(CampaignEncounter p)
+    {
+        Section("SHUT UNTIL");
+        var so = new SerializedObject(p);
+        so.Update();
+        var deaths = so.FindProperty("deathsToOpen");
+        if (deaths == null) return;
+        EditorGUILayout.PropertyField(deaths, new GUIContent("Deaths to open", "0: it opens with its act. Else it stays off the map (its road too) until the player has died this many times in the place below."));
+        if (deaths.intValue > 0)
+        {
+            if (so.FindProperty("deathsIn") is SerializedProperty inPlace) EditorGUILayout.PropertyField(inPlace, new GUIContent("Deaths in", "The place whose deaths count (campaign.deaths.<its id>)."));
+            if (so.FindProperty("openedLine") is SerializedProperty opened) EditorGUILayout.PropertyField(opened, new GUIContent("Said as it rises"), true);
+            if (so.FindProperty("shutHint") is SerializedProperty hint) EditorGUILayout.PropertyField(hint, new GUIContent("Hint while shut", "Said once, back in the room, after the first death counted toward it while it is still shut."), true);
+        }
+        if (so.ApplyModifiedProperties())
+        {
+            EditorUtility.SetDirty(p);
+            // Saved once typing in a line is done, at once for the numbers and the place.
+            if (!EditorGUIUtility.editingTextField) AssetDatabase.SaveAssetIfDirty(p);
+            RefreshWorld();
+        }
+        string state = p.Locked ? char.ToUpperInvariant(ShutText(p)[0]) + ShutText(p).Substring(1) + "." : p.deathsToOpen > 0 ? "No place to die in is set: it opens with its act." : "Opens with its act.";
+        GUILayout.Label(state, dim);
     }
 
     void EventPane(CampaignEvent e)
@@ -662,7 +741,7 @@ public partial class AssetStudioWindow
         if (template != null && template.GetComponent<DungeonRoomTemplate>() == null) { Toast(template.name + " is not a room template."); template = a.template; }
         Undo.RecordObject(d, "Authored room");
         a.label = label; a.role = role; a.template = template; a.merchant = merchant;
-        if (merchant && d.merchantPrefab == null) Toast("This level has no Merchant Prefab (Rules tab in the inspector): nobody will stand there.");
+        if (merchant && d.merchantPrefab == null) Toast($"No merchant prefab in the shared level defaults ({AssetStudioWorld.DefaultsPath.Replace("Assets/Game/", "")}, Chests & shop tab): nobody will stand there.");
         EditorUtility.SetDirty(d); AssetDatabase.SaveAssetIfDirty(d);
         RefreshWorld();
     }
@@ -726,17 +805,71 @@ public partial class AssetStudioWindow
         }
         if (Big("New room in this pool")) { StartForm(WorldPane.NewRoom); formLevel = l.data; formBiome = b; }
         GUILayout.EndHorizontal();
-        Section("WHAT LIVES HERE");
-        if (b.enemies != null) foreach (var e in b.enemies.Where(e => e != null && e.enemy != null)) GUILayout.Label($"{e.enemy.name}   <color=#a9a49a>weight {e.weight:0.##}, from floor {e.fromFloor}</color>", new GUIStyle(dim) { richText = true });
+        EnemyList(b);
+        Section("ALSO HERE");
         GUILayout.Label("Loot: " + (b.loot != null ? b.loot.name : "none") + (b.guardian != null && b.guardian.enabled && b.guardian.boss != null ? "   ·   Guardian: " + b.guardian.boss.name : ""), dim);
-        GUILayout.Label("Enemies, loot, look and the guardian are edited in the inspector on the right.", dim);
+        GUILayout.Label("Loot, look and the guardian are edited in the inspector on the right.", dim);
+    }
+
+    // What lives in a biome, edited like its room pool: weight, from floor, remove, and enemy prefabs dropped in (from
+    // the library's Enemies, the tree's stage rows take them too, or the Project window). Ctrl+Z undoes each change.
+    void EnemyList(DungeonBiome b)
+    {
+        Section("WHAT LIVES HERE (weight is how common; from floor is the biome's floor it first comes on)");
+        var spawns = b.enemies ?? Array.Empty<DungeonBiome.Spawn>();
+        for (int i = 0; i < spawns.Length; i++)
+        {
+            var s = spawns[i];
+            if (s == null) continue;
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button(s.enemy != null ? s.enemy.name : "<color=#e0a85a>empty</color>", cell, GUILayout.MinWidth(140)) && s.enemy != null) ShowAsset(s.enemy);
+            GUILayout.Label("weight", dim, GUILayout.Width(40));
+            float w = EditorGUILayout.DelayedFloatField(s.weight, GUILayout.Width(40));
+            GUILayout.Label("from floor", dim, GUILayout.Width(58));
+            int from = EditorGUILayout.DelayedIntField(s.fromFloor, GUILayout.Width(30));
+            if (GUILayout.Button("✕", GUILayout.Width(24))) { AssetStudioWorld.RemoveEnemy(b, i); RefreshWorld(); GUIUtility.ExitGUI(); }
+            GUILayout.EndHorizontal();
+            if (w != s.weight || from != s.fromFloor) { AssetStudioWorld.SetEnemy(b, i, w, from); RefreshWorld(); }
+        }
+        if (spawns.Length == 0) GUILayout.Label("<color=#e0a85a>Nothing lives here yet: its rooms stay empty.</color>", new GUIStyle(dim) { richText = true });
+        var drop = GUILayoutUtility.GetRect(10, 36, GUILayout.ExpandWidth(true));
+        GUI.Box(drop, "Drop enemy prefabs here (from the Project window)", new GUIStyle(EditorStyles.helpBox) { alignment = TextAnchor.MiddleCenter });
+        var ev = Event.current;
+        if (drop.Contains(ev.mousePosition) && (ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform) && DragAndDrop.objectReferences.Any(AssetStudioWorld.IsEnemy))
+        {
+            DragAndDrop.visualMode = DragAndDropVisualMode.Link;
+            if (ev.type == EventType.DragPerform)
+            {
+                DragAndDrop.AcceptDrag();
+                int n = DragAndDrop.objectReferences.Count(o => o is GameObject g && AssetStudioWorld.AddEnemy(b, g));
+                Toast(n > 0 ? $"{n} enem{(n == 1 ? "y" : "ies")} now live in {b.name}." : "Already there.");
+                RefreshWorld();
+            }
+            ev.Use();
+        }
+        if (Big("Add an enemy..."))
+        {
+            var menu = new GenericMenu();
+            var enemies = categories.Where(c => c.name == "Enemies").SelectMany(c => c.entries).ToList();
+            foreach (var e in enemies)
+            {
+                var go = e.Load() as GameObject;
+                if (go == null || spawns.Any(s => s != null && s.enemy == go)) continue;
+                string folder = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(e.path));
+                menu.AddItem(new GUIContent(folder + "/" + e.name), false, () => { AssetStudioWorld.AddEnemy(b, go); RefreshWorld(); });
+            }
+            if (menu.GetItemCount() == 0) menu.AddDisabledItem(new GUIContent("Every enemy in the library lives here already"));
+            menu.ShowAsContext();
+        }
     }
 
     void PickAsset(UnityEngine.Object asset)
     {
         var n = worldRows.FirstOrDefault(r => r.asset == asset) ?? new WorldNode { key = "asset:" + asset.GetHashCode(), label = asset.name, asset = asset,
             kind = asset is CampaignEncounter ? WorldKind.Place : asset is CampaignEvent ? WorldKind.Event : asset is TableLevelData ? WorldKind.Level
-                : asset is GameObject g && g.GetComponent<DungeonMapTemplate>() != null ? WorldKind.Map : asset is GameObject ? WorldKind.Room : WorldKind.Note,
+                : asset is GameObject g && g.GetComponent<DungeonMapTemplate>() != null ? WorldKind.Map
+                : asset is GameObject r && r.GetComponent<DungeonRoomTemplate>() != null ? WorldKind.Room
+                : asset is TableLevelDefaults ? WorldKind.Defaults : WorldKind.Note,
             level = asset as TableLevelData };
         Pick(n);
     }
@@ -882,7 +1015,31 @@ public partial class AssetStudioWindow
             GUILayout.EndHorizontal();
         }
         int on = tidyMoves.Count(x => x.on);
-        if (on > 0 && Big($"Move {on} file{(on == 1 ? "" : "s")}")) { Toast(AssetStudioWorld.ApplyTidy(tidyMoves)); RefreshLibrary(); tidyMoves = AssetStudioWorld.TidyPlan(World, out tidyKept); }
+        if (on > 0 && Big($"Move {on} file{(on == 1 ? "" : "s")}")
+            && EditorUtility.DisplayDialog("Tidy folders", $"Move {on} file{(on == 1 ? "" : "s")}? References are kept (Unity moves by GUID). Move back puts them where they were.", $"Move {on}", "Cancel"))
+        {
+            tidyResult = AssetStudioWorld.ApplyTidy(tidyMoves, out var done);
+            tidyFrom = done.Select(d => d.from).ToList(); tidyTo = done.Select(d => d.to).ToList();
+            Debug.Log("[Asset Studio] Tidy folders: " + tidyResult + "\n" + string.Join("\n", done.Select(d => d.from + " -> " + d.to)));
+            Toast(tidyResult);
+            RefreshLibrary(); tidyMoves = AssetStudioWorld.TidyPlan(World, out tidyKept);
+            GUIUtility.ExitGUI();
+        }
+        if (tidyFrom.Count > 0)
+        {
+            Section("LAST TIDY");
+            if (!string.IsNullOrEmpty(tidyResult)) GUILayout.Label(tidyResult, new GUIStyle(dim) { wordWrap = true });
+            if (Big($"Move back {tidyFrom.Count} file{(tidyFrom.Count == 1 ? "" : "s")}", "Every file the last Tidy moved goes back to where it was (one moved again since stays).")
+                && EditorUtility.DisplayDialog("Move back", $"Put the {tidyFrom.Count} file{(tidyFrom.Count == 1 ? "" : "s")} the last Tidy moved back where they were?", "Move back", "Cancel"))
+            {
+                var done = tidyFrom.Select((from, i) => (from, to: tidyTo[i])).ToList();
+                string back = AssetStudioWorld.MoveBack(done);
+                tidyFrom.Clear(); tidyTo.Clear(); tidyResult = null;
+                Toast(back);
+                RefreshLibrary(); tidyMoves = AssetStudioWorld.TidyPlan(World, out tidyKept);
+                GUIUtility.ExitGUI();
+            }
+        }
         if (tidyKept != null && tidyKept.Count > 0)
         {
             Section("LEFT WHERE THEY ARE");

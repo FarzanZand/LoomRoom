@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // A clear line between two points: a ray (or a thin sphere) that only the given roots'
-// own colliders may cross. Triggers never block, and a full hit buffer counts as blocked.
+// own colliders and dead bodies may cross. Triggers never block, and a full hit buffer counts as blocked.
 // Used by Perception (sight), EnemyAttackRunner (arrows) and EnemyVoice.
 public static class LineOfSight
 {
@@ -21,8 +21,18 @@ public static class LineOfSight
         {
             var t = hits[i].transform;
             if ((ignore != null && t.IsChildOf(ignore)) || (ignoreToo != null && t.IsChildOf(ignoreToo))) continue;
+            // Corpses never block: a dead body lying between two enemies doesn't hide the player.
+            if (IsCorpse(hits[i].collider)) continue;
             return false;
         }
         return true;
+    }
+
+    // A piece of a dead body, or a collider still on one (one that never started reads 0 health but stands).
+    static bool IsCorpse(Collider c)
+    {
+        if (DeathPhysics.IsCorpse(c)) return true;
+        var owner = c.GetComponentInParent<Character>();
+        return owner != null && owner.Stats != null && owner.Stats.Initialised && !owner.Stats.IsAlive;
     }
 }

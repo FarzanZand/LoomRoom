@@ -93,7 +93,7 @@ MonoBehaviour:
   - label: Entrance
     role: 0
     template: {fileID: 0}
-    turns: 0
+    turns: 1
     height: 0
     raised: 0
     merchant: 0

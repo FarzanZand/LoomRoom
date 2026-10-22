@@ -8,8 +8,8 @@ using UnityEngine;
 // Asset Studio's World: how the game's content hangs together, read from the assets themselves each refresh (nothing to
 // keep in sync). Campaign > act > places (CampaignEncounter) and events (CampaignEvent); a place plays a level; a level
 // (TableLevelData) runs stages, each a biome for some floors; a biome has a pool of hand-built rooms, enemies, loot and a
-// guardian. A room belongs to a level through the fields that name it (the level's starting, shop, authored and profile
-// rooms, its biomes' pools and boss arenas, room prefabs nested in its map template, and rooms behind a portal in those),
+// guardian. A room belongs to a level through the fields that name it (the level's starting, shop and authored rooms,
+// its biomes' pools and boss arenas, room prefabs nested in its map template, and rooms behind a portal in those),
 // never through folders, so the World view
 // always tells the truth and Tidy can move files to match it. Levels under Development (the debug arena) and the pocket
 // level are tools, not places: they don't make a room "shared".
@@ -18,12 +18,14 @@ public static partial class AssetStudioWorld
     public const string LevelsRoot = "Assets/Game/Levels", SharedRooms = LevelsRoot + "/Shared/Rooms", SharedBiomes = LevelsRoot + "/Shared/Biomes";
     public const string CampaignManagerPrefab = "Assets/Game/Campaign/Prefabs/CampaignManager.prefab", RealmMapPrefab = "Assets/Game/Campaign/Map/Realm map.prefab";
     public const string CatalogPath = LevelsRoot + "/Resources/TableLevels.asset", EncountersRoot = "Assets/Game/Campaign/Encounters";
+    // What every level shares (chests, the merchant, breakables, features, wall lights, the run's HUD pieces).
+    public const string DefaultsPath = LevelsRoot + "/Resources/Table level defaults.asset";
 
     public class RoomUse
     {
         public TableLevelData level;
         public DungeonBiome biome;      // null for the level's own rooms
-        public string role;             // "Pool", "Starting room", "Shop", "Boss arena", "Authored room", "Room profile", "Behind a portal"
+        public string role;             // "Pool", "Starting room", "Shop", "Boss arena", "Authored room", "In its map", "Behind a portal"
     }
 
     public class Stage
@@ -108,7 +110,6 @@ public static partial class AssetStudioWorld
             Use(data.startingRoom, null, "Starting room");
             Use(data.shopRoom, null, "Shop");
             if (data.authoredRooms != null) foreach (var a in data.authoredRooms) if (a != null) Use(a.template, null, "Authored room");
-            if (data.roomProfiles != null) foreach (var p in data.roomProfiles) if (p != null) Use(p.roomTemplate, null, "Room profile");
             if (data.mapTemplate != null)
             {
                 if (!m.mapLevels.TryGetValue(data.mapTemplate, out var ml)) m.mapLevels[data.mapTemplate] = ml = new List<TableLevelData>();
@@ -249,10 +250,12 @@ public static partial class AssetStudioWorld
         return moves;
     }
 
-    // Moves the files (Unity keeps every reference: they are by GUID). Returns how many moved and any errors.
-    public static string ApplyTidy(List<Move> moves)
+    // Moves the files (Unity keeps every reference: they are by GUID). Returns how many moved, any renames (a file of
+    // that name was already there) and any errors; done lists each move made, from and to, for Move back.
+    public static string ApplyTidy(List<Move> moves, out List<(string from, string to)> done)
     {
-        int moved = 0; var errors = new List<string>();
+        done = new List<(string from, string to)>();
+        var errors = new List<string>(); var renamed = new List<string>();
         // Folders first: one made inside the batch below isn't known to the moves yet.
         foreach (var mv in moves.Where(x => x.on)) EnsureFolder(Path.GetDirectoryName(mv.to).Replace('\\', '/'));
         AssetDatabase.StartAssetEditing();
@@ -262,11 +265,34 @@ public static partial class AssetStudioWorld
             {
                 string to = AssetDatabase.GenerateUniqueAssetPath(mv.to);
                 string err = AssetDatabase.MoveAsset(mv.from, to);
-                if (string.IsNullOrEmpty(err)) moved++; else errors.Add($"{mv.from}: {err}");
+                if (!string.IsNullOrEmpty(err)) { errors.Add($"{mv.from}: {err}"); continue; }
+                done.Add((mv.from, to));
+                if (to != mv.to) renamed.Add($"{Path.GetFileName(mv.from)} as {Path.GetFileName(to)}");
             }
         }
         finally { AssetDatabase.StopAssetEditing(); AssetDatabase.Refresh(); }
-        return $"Moved {moved} file{(moved == 1 ? "" : "s")}." + (errors.Count > 0 ? " Could not move: " + string.Join("; ", errors) : "");
+        return $"Moved {done.Count} file{(done.Count == 1 ? "" : "s")}." + (renamed.Count > 0 ? " Renamed (the name was taken): " + string.Join(", ", renamed) + "." : "")
+            + (errors.Count > 0 ? " Could not move: " + string.Join("; ", errors) : "");
+    }
+
+    // Puts files moved by ApplyTidy back where they were (each only while it is still where Tidy put it).
+    public static string MoveBack(List<(string from, string to)> done)
+    {
+        int back = 0; var errors = new List<string>();
+        AssetDatabase.StartAssetEditing();
+        try
+        {
+            for (int i = done.Count - 1; i >= 0; i--)
+            {
+                var (from, to) = done[i];
+                if (!File.Exists(to)) { errors.Add($"{Path.GetFileName(to)} is no longer in {Path.GetDirectoryName(to).Replace('\\', '/')}"); continue; }
+                if (File.Exists(from)) { errors.Add($"{from} is taken"); continue; }
+                string err = AssetDatabase.MoveAsset(to, from);
+                if (string.IsNullOrEmpty(err)) back++; else errors.Add($"{to}: {err}");
+            }
+        }
+        finally { AssetDatabase.StopAssetEditing(); AssetDatabase.Refresh(); }
+        return $"Moved {back} file{(back == 1 ? "" : "s")} back." + (errors.Count > 0 ? " Left: " + string.Join("; ", errors) : "");
     }
 
     public static void EnsureFolder(string folder)

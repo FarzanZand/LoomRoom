@@ -99,9 +99,16 @@ public partial class DungeonGenerator
         var plain=new System.Collections.Generic.List<int>();
         for(int i=1;i<roles.Length;i++)
             if(roles[i]==RoomRole.Rest || roles[i]==RoomRole.Storage || roles[i]==RoomRole.Treasure){candidates.Add(i);if(!hasTemplate(i))plain.Add(i);}
+        // No quiet room: a combat room but the exit (his room gets no enemies), never the entrance, where he would
+        // stand beside the spawn. Only a generated one: a room with no hand-built interior of its own, unless the shop's
+        // template replaces it. An authored map's combat rooms bring their own enemies, so it has no merchant then.
+        if(candidates.Count==0 && !Authored)
+            for(int i=1;i<roles.Length;i++)
+                if(roles[i]==RoomRole.Combat && (data.shopRoom!=null || !hasTemplate(i))){candidates.Add(i);if(!hasTemplate(i))plain.Add(i);}
         if(data.shopRoom!=null && plain.Count>0)candidates=plain;
-        if(candidates.Count==0)candidates.Add(0);
-        return candidates[extraRandom.Next(candidates.Count)];
+        // Drawn even when there is no room for him, so the stream stays in step.
+        int pick=extraRandom.Next(Mathf.Max(1,candidates.Count));
+        return candidates.Count>0 ? candidates[pick] : -1;
     }
 
     // Walkways inside a room: every doorway approach, and the centre cross or the routes to the centre.
@@ -122,8 +129,7 @@ public partial class DungeonGenerator
         foreach(var p in Layout.RoomCells(room))
             foreach(var d in DungeonLayout.Neighbours)
             {
-                var n=p+d;
-                if(!Layout.InBounds(n) || !Layout.floor[n.x,n.y] || Layout.InRoom(room,n))continue;
+                if(!Layout.IsOpening(room,p,d))continue;
                 cells.Add(p);
                 if(Layout.InRoom(room,p-d))cells.Add(p-d);
             }
@@ -146,7 +152,7 @@ public partial class DungeonGenerator
         foreach(var cell in Layout.RoomCells(room))
         {
             bool doorway=false;
-            foreach(var d in DungeonLayout.Neighbours){var o=cell+d;if(Layout.InBounds(o) && Layout.floor[o.x,o.y] && !Layout.InRoom(room,o))doorway=true;}
+            foreach(var d in DungeonLayout.Neighbours)if(Layout.IsOpening(room,cell,d))doorway=true;
             if(!doorway)continue;
             int n=Physics.OverlapBoxNonAlloc(Cell(cell)+Vector3.up*1f,new Vector3(.5f,.6f,.5f),openingHits,Quaternion.identity,~0,QueryTriggerInteraction.Ignore);
             for(int i=0;i<n;i++)

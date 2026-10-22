@@ -64,8 +64,8 @@ public partial class ItemData
         copy.rolls = properties ?? System.Array.Empty<RolledProperty>();
         copy.saveId = key;
 
-        // The rarity's bonus on the main number (a weapon's damage, a shield's or armour's armour): +15% a step by default,
-        // always rounded up (a 4-damage weapon +15% = 4.6 = 5), whole numbers to whole, others to a tenth. Then rolled properties join the item's stat modifiers after its own.
+        // The rarity's bonus on the main number (a weapon's damage, a shield's or armour's armour), RaisedMain. Then rolled
+        // properties join the item's stat modifiers after its own.
         var table = ItemPropertyTable.Current;
         var step = InventoryManager.StepFor(rarity);
         var modifiers = new List<StatModifierEntry>(copy.statModifiers ?? System.Array.Empty<StatModifierEntry>());
@@ -76,9 +76,7 @@ public partial class ItemData
             {
                 var m = modifiers[i];
                 if (m == null || m.stat != main.Value || m.type != ModifierType.Flat) continue;
-                float raised = m.value * (1f + step.baseBonus);
-                bool whole = Mathf.Abs(m.value - Mathf.Round(m.value)) < .001f;
-                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = whole ? Mathf.Ceil(raised - .001f) : Mathf.Ceil(raised * 10f - .001f) / 10f };
+                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = RaisedMain(m.value, rarity) };
             }
         foreach (var roll in copy.rolls)
         {
@@ -93,6 +91,28 @@ public partial class ItemData
         // Without the InventoryManager a rolled rarity has no bonus or price yet: don't keep that copy.
         else if (InventoryManager.HasInstance) variants[key] = copy;
         return copy;
+    }
+
+    // A main number raised to a rarity: plus the step's bonus share (InventoryManager > Rarity), rounded to the nearest,
+    // whole numbers to whole, others to a tenth. A whole number is also at least 1 above the step below it, so every
+    // rarity beats the last (a 4-damage sword: Uncommon 5, Rare 6, Unique 7, Legendary 8).
+    static float RaisedMain(float value, ItemRarity rarity)
+    {
+        bool whole = Mathf.Abs(value - Mathf.Round(value)) < .001f;
+        float Raise(RarityStep s) => whole ? Mathf.Floor(value * (1f + s.baseBonus) + .5f) : Mathf.Floor(value * (1f + s.baseBonus) * 10f + .5f) / 10f;
+        var steps = InventoryManager.HasInstance ? InventoryManager.Instance.rarities : null;
+        float below = value;
+        if (steps != null)
+            foreach (var s in steps)   // worst first
+            {
+                if (s == null || s.baseBonus <= 0f) continue;
+                float raised = Raise(s);
+                if (whole && value > 0f) raised = Mathf.Max(raised, below + 1f);
+                if (s.rarity == rarity) return raised;
+                below = raised;
+            }
+        var own = InventoryManager.StepFor(rarity);
+        return own != null ? Raise(own) : value;
     }
 
     static string RollKey(ItemRarity rarity, RolledProperty[] properties)

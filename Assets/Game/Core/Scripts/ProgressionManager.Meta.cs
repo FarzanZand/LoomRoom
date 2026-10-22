@@ -81,7 +81,7 @@ public partial class ProgressionManager
     [TabGroup("Meta progression/Tabs", "Tracks"), ListDrawerSettings(ShowFoldout = true, ListElementLabelName = "displayName")]
     public List<MetaTrack> tracks = new();
 
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Back in the room after the first death in a real dungeon.")]
+    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Back in the room after the first run that ends in a real dungeon.")]
     public DungeonMaster.Line lessonIntro = new() { text = "There's a sheet on the little table by the wall. Have a look." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Trying to buy anything but Blocking before the first Blocking level.")]
     public DungeonMaster.Line lessonBlockingFirst = new() { text = "Blocking first. Trust me." };
@@ -106,7 +106,7 @@ public partial class ProgressionManager
     // ── State ─────────────────────────────────────────────────────────
 
     public int Spoils => GetFlag(SpoilsFlag);
-    public void AddSpoils(int amount) { if (amount == 0) return; SetFlag(SpoilsFlag, Mathf.Max(0, Spoils + amount)); MetaChanged?.Invoke(); }
+    public void AddSpoils(int amount) { if (amount == 0) return; SetFlag(SpoilsFlag, Mathf.Max(0, Spoils + amount)); TopUpForLesson(); MetaChanged?.Invoke(); }
     public int PortraitIndex { get => GetFlag(PortraitFlag); set { SetFlag(PortraitFlag, value); MetaChanged?.Invoke(); } }
     public bool BlockingTaught => HasFlag(BlockingTaughtFlag);
 
@@ -163,7 +163,15 @@ public partial class ProgressionManager
         return first;
     }
 
-    string TrophyKey(MetaTrack t, Milestone m) => $"{TrophyPrefix}{t.id}.{m.value}";
+    // Each milestone's flag key, made once (the quest log and the key items count trophies several times a second).
+    readonly Dictionary<Milestone, (string id, int value, string key)> trophyKeys = new();
+    string TrophyKey(MetaTrack t, Milestone m)
+    {
+        if (trophyKeys.TryGetValue(m, out var k) && k.id == t.id && k.value == m.value) return k.key;
+        string key = $"{TrophyPrefix}{t.id}.{m.value}";
+        trophyKeys[m] = (t.id, m.value, key);
+        return key;
+    }
     public TrophyState Trophy(MetaTrack t, Milestone m) => t == null || m == null ? TrophyState.None : (TrophyState)Mathf.Clamp(GetFlag(TrophyKey(t, m)), 0, 3);
     void SetTrophy(MetaTrack t, Milestone m, TrophyState state) => SetFlag(TrophyKey(t, m), (int)state);
     public bool Reached(MetaTrack t, Milestone m) => t != null && m != null && Value(t) >= m.value;
@@ -177,8 +185,19 @@ public partial class ProgressionManager
     public List<(MetaTrack track, Milestone milestone)> TrophiesIn(TrophyState state)
     {
         var list = new List<(MetaTrack, Milestone)>();
-        foreach (var x in AllMilestones()) if (Trophy(x.track, x.milestone) == state) list.Add(x);
+        foreach (var t in tracks)
+            if (t != null && t.kind == MetaTrackKind.Skill && t.milestones != null)
+                foreach (var m in t.milestones) if (m != null && Trophy(t, m) == state) list.Add((t, m));
         return list;
+    }
+    // How many trophies are in this state, with no list made.
+    public int TrophyCount(TrophyState state)
+    {
+        int count = 0;
+        foreach (var t in tracks)
+            if (t != null && t.kind == MetaTrackKind.Skill && t.milestones != null)
+                foreach (var m in t.milestones) if (m != null && Trophy(t, m) == state) count++;
+        return count;
     }
 
     // An unlock is yours in this run when its trophy is mounted, or (after the first Blocking lesson) when this run's
@@ -216,6 +235,8 @@ public partial class ProgressionManager
                 if (m != null && Reached(t, m) && Trophy(t, m) == TrophyState.None) SetTrophy(t, m, TrophyState.Earned);
         if (t.kind == MetaTrackKind.Skill && t.skill == AdventureSkill.Blocking && !BlockingTaught && t.milestones != null && t.milestones.Count > 0 && Reached(t, t.milestones[0]))
             SetFlag(BlockingTaughtFlag);
+        // A Blocking level that doesn't reach the first milestone yet leaves the lesson on: the next one stays affordable.
+        TopUpForLesson();
         MetaChanged?.Invoke();
         return BuyResult.Bought;
     }
@@ -227,6 +248,7 @@ public partial class ProgressionManager
         foreach (var t in tracks) { if (t == null) continue; back += Spent(t); SetFlag(BoughtPrefix + t.id, 0); }
         if (back > 0) SetFlag(SpoilsFlag, Spoils + back);
         foreach (var (t, m) in AllMilestones()) if (!Reached(t, m) && Trophy(t, m) != TrophyState.None) SetTrophy(t, m, TrophyState.None);
+        TopUpForLesson();
         MetaChanged?.Invoke();
         return back;
     }
@@ -332,14 +354,13 @@ public partial class ProgressionManager
         if (player != null) foreach (var inv in new[] { player.Bag, player.Hotbar }) if (inv != null) for (int i = 0; i < inv.SlotCount; i++) if (inv.ItemAt(i) != null && inv.ItemAt(i).itemType == ItemType.Spoils) inv.RemoveAt(i);
         // The puzzle's missing tile, if found, comes home too.
         CarryTileHome(player);
-        // The first run that ends (normally a death) starts the lesson: the DM points to the sheet back in the room and,
-        // after a death, tops the spoils up to Blocking's price.
+        // The first run that ends (normally a death, sometimes a win) starts the lesson: the DM points to the sheet back
+        // in the room and tops the spoils up to Blocking's price, since no run starts until Blocking is bought.
         if (!HasFlag(LedgerIntroFlag))
         {
             SetFlag(LedgerIntroFlag);
-            var blocking = Track(AdventureSkill.Blocking);
-            int price = NextPrice(blocking);
-            if (!victory && !BlockingTaught && price > 0 && Spoils < price) { tally.toppedUp = price - Spoils; SetFlag(SpoilsFlag, price); DungeonMaster.Say(lessonTopUp); }
+            tally.toppedUp = TopUpForLesson();
+            if (tally.toppedUp > 0) DungeonMaster.Say(lessonTopUp);
         }
         tally.after = Spoils;
         tally.counted = true;
@@ -347,12 +368,27 @@ public partial class ProgressionManager
         return tally;
     }
 
+    // While the lesson holds runs (LessonHoldsRuns: Blocking first), the bank never stays below Blocking's next price,
+    // or no run could ever start again. Returns the spoils the DM added.
+    int TopUpForLesson()
+    {
+        if (!LessonHoldsRuns) return 0;
+        int price = NextPrice(Track(AdventureSkill.Blocking));
+        if (price <= 0 || Spoils >= price) return 0;
+        int added = price - Spoils;
+        SetFlag(SpoilsFlag, price);
+        return added;
+    }
+
     // ── The lesson's first line, back in the room ────────────────────
 
     Coroutine lessonRoutine;
+    bool lessonBankChecked;
     void Update()
     {
         if (!Application.isPlaying) return;
+        // Once, after the save is read: a save left in the lesson with too few spoils to buy Blocking is put right.
+        if (!lessonBankChecked) { lessonBankChecked = true; if (TopUpForLesson() > 0) MetaChanged?.Invoke(); }
         UpdateSheetQuest();
         if (lessonRoutine != null) return;
         if (HasFlag(LedgerIntroFlag) && !HasFlag(LedgerSaidFlag) && RoomPlayerFree) lessonRoutine = StartCoroutine(SayLesson());

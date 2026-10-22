@@ -314,9 +314,11 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     void QueueCombo() => comboQueuedUntil = Mathf.Max(Time.time, ComboReadyAt) + (CombatManager.HasInstance ? CombatManager.Instance.attackInputBuffer : .22f);
 
     // When the next combo hit may start: Combo Hit Cooldown after a hit began, Combo Finisher Cooldown after the
-    // finisher began (both in seconds, whatever the attack speed).
+    // finisher began, both divided by the player's attack speed (the same multiplier the combo clips play at), so a
+    // faster weapon strikes sooner and a slow mace waits longer.
     float ComboReadyAt => comboStartedAt + (!CombatManager.HasInstance ? .4f
-        : comboIndex == ComboHits - 1 ? CombatManager.Instance.comboFinisherCooldown : CombatManager.Instance.comboHitCooldown);
+        : comboIndex == ComboHits - 1 ? CombatManager.Instance.comboFinisherCooldown : CombatManager.Instance.comboHitCooldown) / AttackSpeedMultiplier;
+    float AttackSpeedMultiplier => Mathf.Max(.1f, player.Stats != null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f);
 
     void UpdateCombo(bool gameplay, bool primary)
     {

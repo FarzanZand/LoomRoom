@@ -167,7 +167,8 @@ public partial class IntroController : Singleton<IntroController>
 
     static bool Flag(string key) => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(key);
 
-    // Called by WorldManager on the first frame. False: the normal wake-up plays.
+    // Called by WorldManager on the first frame. False: the normal wake-up plays. True: the intro plays, or (an intro
+    // quit near its end) the first morning's wake-up was started here.
     public bool TryPlay()
     {
         if (Application.isEditor && skipInEditor) return false;
@@ -177,6 +178,19 @@ public partial class IntroController : Singleton<IntroController>
         // The flags come from the save; it may not have been read yet.
         var save = table != null ? table.GetComponent<AdventureSave>() : null;
         if (save != null) save.Initialize();
+        // Quit after the practice death but before the intro's end (the goodnight lines, OpenRoom): the room opens as
+        // the end would have opened it, and the first morning's wake-up plays (with its greeting, then the sheet and
+        // dice at the table on the Lamp opening).
+        if (room != null && Flag(IntroFlag) && !Flag(RoomOpenFlag) && ProgressionManager.HasInstance)
+        {
+            CloseRoomQuests();
+            ProgressionManager.Instance.SetFlag(DungeonMasterRemarks.SatFlag);
+            ProgressionManager.Instance.SetFlag(RoomOpenFlag);
+            BeginFirstMorning();
+            if (!WorldManager.HasInstance || WorldManager.Instance.wakeUpCutscene == null) return false;
+            WorldManager.Instance.wakeUpCutscene.Play(false);
+            return true;
+        }
         // Played once: a game that got as far as the practice death starts with the mornings.
         if (room == null || Flag(RoomOpenFlag) || Flag(IntroFlag)) return false;
         loader = TableManager.Loader;

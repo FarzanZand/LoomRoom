@@ -321,19 +321,35 @@ public class EnemyAttackRunner
         {
             var state = anim.GetCurrentAnimatorStateInfo(layer);
             if (!state.IsTag("Attack")) continue;
-            foreach (var info in anim.GetCurrentAnimatorClipInfo(layer))
+            anim.GetCurrentAnimatorClipInfo(layer, clipInfos);
+            foreach (var info in clipInfos)
             {
                 if (info.clip == null) continue;
-                foreach (var e in info.clip.events)
-                    if (e.functionName == "OnAttackHit" || e.functionName == "EnableHitbox")
-                    {
-                        float speed = Mathf.Max(.01f, Mathf.Abs(state.speed * state.speedMultiplier));
-                        float remaining = (e.time - state.normalizedTime * info.clip.length) / speed;
-                        return Mathf.Max(Time.time + remaining, attackStartedAt + MinWindup);
-                    }
+                float hitTime = HitEventTime(info.clip);
+                if (hitTime < 0f) continue;
+                float speed = Mathf.Max(.01f, Mathf.Abs(state.speed * state.speedMultiplier));
+                float remaining = (hitTime - state.normalizedTime * info.clip.length) / speed;
+                return Mathf.Max(Time.time + remaining, attackStartedAt + MinWindup);
             }
         }
         return -1f;
+    }
+
+    // Each clip's first OnAttackHit or EnableHitbox event time (-1 for none), read once: clip.events copies the array.
+    static readonly Dictionary<AnimationClip, float> hitTimes = new();
+    static readonly List<AnimatorClipInfo> clipInfos = new();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetHitTimes() => hitTimes.Clear();
+
+    static float HitEventTime(AnimationClip clip)
+    {
+        if (hitTimes.TryGetValue(clip, out float time)) return time;
+        time = -1f;
+        foreach (var e in clip.events)
+            if (e.functionName == "OnAttackHit" || e.functionName == "EnableHitbox") { time = e.time; break; }
+        hitTimes[clip] = time;
+        return time;
     }
 
     // ── Hit timing ────────────────────────────────────────────────────

@@ -16,7 +16,7 @@ public class DungeonBalance : ScriptableObject
     public float damageGrowthPerFloor=.15f;
     [Range(0,.5f), Tooltip("Health added per floor beyond the first, as a share of the enemy's health.")]
     public float healthGrowthPerFloor=.12f;
-    [Min(0), Tooltip("Armor added per floor beyond the first.")]
+    [Min(0), Tooltip("Armor added per floor beyond the first. Not the boss.")]
     public float armorPerFloor=.25f;
     public void Apply(Character enemy,int floor,bool boss=false){
         if(enemy==null || enemy.Stats==null)return;
@@ -27,7 +27,8 @@ public class DungeonBalance : ScriptableObject
         if(!Mathf.Approximately(health,1))enemy.Stats.AddModifier(new StatModifier(StatType.MaxHealth,health-1,ModifierType.PercentMultiply,this));
         enemy.Stats.AddModifier(new StatModifier(StatType.AttackDamage,damageGrowthPerFloor*depth,ModifierType.PercentAdd,this));
         if(!boss)enemy.Stats.AddModifier(new StatModifier(StatType.MaxHealth,healthGrowthPerFloor*depth,ModifierType.PercentAdd,this));
-        enemy.Stats.AddModifier(new StatModifier(StatType.Armor,armorPerFloor*depth,ModifierType.Flat,this));
+        // The boss is tuned for its own floor (Boss Health Multiplier): no per-floor armour either.
+        if(!boss)enemy.Stats.AddModifier(new StatModifier(StatType.Armor,armorPerFloor*depth,ModifierType.Flat,this));
         // The game-wide group multipliers (ProgressionManager > Balance).
         if(ProgressionManager.HasInstance)ProgressionManager.Instance.ApplyEnemyBase(enemy);
     }

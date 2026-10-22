@@ -80,7 +80,7 @@ MonoBehaviour:
     chancePerRoom: 0.07
     placement: 0
     rooms: 28
-    minFloor: 2
+    minFloor: 1
     maxPerFloor: 1
   - prefab: {fileID: 1038405016691299456, guid: dc5b6f6ac339db9489cb8fe203951f1b, type: 3}
     chancePerRoom: 0.1

@@ -27,6 +27,8 @@ public class CampaignEncounter : ScriptableObject
     public CampaignEncounter deathsIn;
     [ShowIf("@deathsToOpen > 0"), Tooltip("Said as it rises into view.")]
     public DungeonMaster.Line openedLine;
+    [ShowIf("@deathsToOpen > 0"), Tooltip("Said once, back in the room, after the first death counted toward this place while it is still shut.")]
+    public DungeonMaster.Line shutHint;
     public bool Locked => deathsToOpen > 0 && deathsIn != null;
 
     public string KindName => kind switch

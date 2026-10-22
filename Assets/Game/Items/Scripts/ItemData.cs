@@ -261,9 +261,12 @@ public partial class ItemData : ScriptableObject
         bool showMain = TryMainStat(out string mainLabel, out float mainValue, out string mainText);
         if (showMain && withMain)
         {
-            lines.Add($"<size=140%><color={TextColor}>{mainText}</color></size>  <color={DimColor}>{mainLabel}</color>");
+            lines.Add($"<size=140%><color={TextColor}>{mainText}</color></size>  <color={DimColor}>{(IsWeapon ? "Weapon damage" : mainLabel)}</color>");
             if (IsWeapon) lines.Add($"<color={DimColor}>{SwingSpeedWord(SwingSpeed)} swings</color>");
         }
+        // The weapon's number is only its own part of a hit (Hitbox: the wielder's Attack Damage, weapon included, then
+        // skill and Strength): say so, so the character panel's damage doesn't look like a mistake.
+        if (showMain && IsWeapon) lines.Add($"<color={DimColor}>{(withMain ? "" : "Weapon damage. ")}Your own damage, Strength and skill add to it.</color>");
         // The item's own stats in white, the rolled properties of an Uncommon, Rare, Unique or Legendary item in blue.
         if (canBeEquipped && statModifiers != null)
             for (int i = 0; i < statModifiers.Length; i++)

@@ -166,16 +166,29 @@ public class DungeonMaster : Singleton<DungeonMaster>
             if (line.inPerson) pause = Mathf.Max(pause, readBase + readPerWord * line.text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length);
             // In a conversation scene (Dialogue state: the intro, the character sheet) a click, Space, Enter or
             // gamepad South moves on to the next line.
-            for (float t = 0f; t < pause; t += Time.unscaledDeltaTime)
+            // The pause menu holds the line (and its voice) where it is: whoever waits on it waits too.
+            for (float t = 0f; t < pause; )
             {
+                if (Paused) { PauseVoice(true); yield return null; continue; }
+                PauseVoice(false);
                 if (t > .2f && Skippable && InputManager.HasInstance && InputManager.Instance.SkipLinePressed) { StopVoice(); break; }
                 yield return null;
+                if (!Paused) t += Time.unscaledDeltaTime;
             }
         }
         running = null;
     }
 
     static bool Skippable => GameManager.HasInstance && GameManager.Instance.State == GameState.Dialogue;
+    static bool Paused => GameManager.HasInstance && GameManager.Instance.State == GameState.Paused;
+    bool voicePaused;
+    void PauseVoice(bool pause)
+    {
+        if (pause == voicePaused) return;
+        voicePaused = pause;
+        if (voiceSource == null || voiceSource.clip != voiceClip) return;
+        if (pause) voiceSource.Pause(); else voiceSource.UnPause();
+    }
 
     // A line straight away, outside the queue: a conversation paces its own lines.
     public void SayNow(Line line)
@@ -231,6 +244,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
         if (label == null) return;
         SnapSize();
         float now = Time.unscaledTime;
+        // Paused: the lines on screen keep their age, so none fades behind the menu.
+        if (Paused) for (int i = 0; i < lines.Count; i++) { var l = lines[i]; l.shown += Time.unscaledDeltaTime; lines[i] = l; }
         while (lines.Count > 0 && now - lines[0].shown > hold + fadeOut) { lines.RemoveAt(0); dirty = true; }
         // Full-screen menus (the run recap shares this canvas) are not written over unless one asks for it (OverMenus),
         // and a conversation has its own subtitles and choices in the same spot.

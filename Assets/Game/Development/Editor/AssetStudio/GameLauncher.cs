@@ -43,9 +43,14 @@ public static class GameLauncher
     {
         string action = SessionState.GetString(PendingKey, "");
         if (action.Length == 0) return;
-        // Given up after two minutes without the game getting there (a failed start, Play stopped).
-        if (EditorApplication.timeSinceStartup - SessionState.GetFloat(PendingSinceKey, 0) > 120 || !EditorApplication.isPlayingOrWillChangePlaymode)
-        { if (!EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling) SessionState.EraseString(PendingKey); return; }
+        // Given up after two minutes without the game getting there, or when Play stopped for good (a failed start).
+        // A toolbar restart stops Play and starts it again a moment later: the action waits through that gap.
+        if (EditorApplication.timeSinceStartup - SessionState.GetFloat(PendingSinceKey, 0) > 120) { SessionState.EraseString(PendingKey); return; }
+        if (!EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            if (!EditorApplication.isCompiling && !DebugDungeonToolbar.RestartPending) SessionState.EraseString(PendingKey);
+            return;
+        }
         if (!GameReady) return;
         var parts = action.Split('|');
         switch (parts[0])
@@ -83,6 +88,13 @@ public static class GameLauncher
             case "table":
                 if (!TableManager.HasInstance) return;
                 SessionState.EraseString(PendingKey);
+                // table|<place id>|<deaths>|<shut place id>: that many deaths in the place first, and the shut place not
+                // risen yet, so the map shows it come up (written into the save in use).
+                if (parts.Length > 2 && ProgressionManager.HasInstance && int.TryParse(parts[2], out int deaths))
+                {
+                    ProgressionManager.Instance.SetFlag(CampaignManager.DeathsPrefix + parts[1], deaths);
+                    if (parts.Length > 3 && parts[3].Length > 0) ProgressionManager.Instance.SetFlag(CampaignManager.OpenedPrefix + parts[3], 0);
+                }
                 TableManager.Instance.Play();
                 break;
             default:
@@ -107,7 +119,7 @@ public static class GameLauncher
         var player = TablePlayer;
         if (EditorApplication.isPlaying && player != null && player.isActiveAndEnabled) return Give(item, player);
         Pend("give|" + AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(item)));
-        if (!Launch(DebugDungeonToolbar.StartDebug)) return NoRoom;
+        if (!Launch(DebugDungeonToolbar.StartDebug)) return failure;
         return $"Starting the Debug arena with {item.DisplayName} in the bag.";
     }
 
@@ -117,7 +129,7 @@ public static class GameLauncher
     {
         if (!RoomOpen()) return NoRoom;
         SessionState.SetString(DebugDungeonSession.StudioEnemyKey, AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(enemy)));
-        DebugDungeonToolbar.StartDebug();
+        if (!DebugDungeonToolbar.StartDebug()) { SessionState.EraseString(DebugDungeonSession.StudioEnemyKey); return Busy; }
         return $"Starting the Debug arena with {enemy.name}.";
     }
 
@@ -129,7 +141,7 @@ public static class GameLauncher
         var loader = TableManager.HasInstance ? TableManager.Loader : null;
         if (GameReady && loader != null && !loader.Busy && TablePlayer != null && TablePlayer.isActiveAndEnabled) return LoadRoom(loader, template);
         Pend("room|" + Guid(template));
-        if (!TableRunning && !Launch(DebugDungeonToolbar.StartDebug)) return NoRoom;
+        if (!TableRunning && !Launch(DebugDungeonToolbar.StartDebug)) return failure;
         return $"Starting a run in {template.name}.";
     }
 
@@ -155,7 +167,7 @@ public static class GameLauncher
         if (!RoomOpen()) return NoRoom;
         EditorPrefs.SetString(DebugDungeonSession.SelectedDungeonKey, AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(level)));
         MainToolbar.Refresh("LoomRoom/Debug");
-        DebugDungeonToolbar.StartDungeon();
+        if (!DebugDungeonToolbar.StartDungeon()) return Busy;
         return $"Generating {level.name} floor 1.";
     }
 
@@ -165,7 +177,7 @@ public static class GameLauncher
     {
         if (level == null) return "No level.";
         var biome = level.stages != null && stage >= 0 && stage < level.stages.Length ? level.stages[stage]?.biome : null;
-        if (!StartRun($"run|{Guid(level)}|{stage}|{(boss ? 1 : 0)}|")) return NoRoom;
+        if (!StartRun($"run|{Guid(level)}|{stage}|{(boss ? 1 : 0)}|")) return failure;
         string where = biome != null ? biome.name : "stage " + (stage + 1);
         return boss ? $"Starting {level.name} at the boss of {where}." : $"Starting {level.name} at {where}.";
     }
@@ -180,7 +192,7 @@ public static class GameLauncher
                 if (level.stages[i] != null && level.stages[i].biome == biome) return PlayStage(level, i, boss);
         var host = Host();
         if (host == null) return "No generated dungeon to build it in.";
-        if (!StartRun($"run|{Guid(host)}|0|{(boss ? 1 : 0)}|{Guid(biome)}")) return NoRoom;
+        if (!StartRun($"run|{Guid(host)}|0|{(boss ? 1 : 0)}|{Guid(biome)}")) return failure;
         return boss ? $"Starting the boss of {biome.name} (in {host.name})." : $"Starting {biome.name} on its own (in {host.name}).";
     }
 
@@ -190,16 +202,28 @@ public static class GameLauncher
     {
         if (e == null) return "No event.";
         Pend("event|" + Guid(e));
-        if (!EditorApplication.isPlaying && !Launch(DebugDungeonToolbar.StartRoom)) return NoRoom;
+        if (!EditorApplication.isPlaying && !Launch(DebugDungeonToolbar.StartRoom)) return failure;
         return $"Showing {e.title} (a preview: nothing is paid or given).";
     }
 
     // The room, then the table: the campaign map on it.
-    public static string OpenTable()
+    public static string OpenTable() => OpenTable("table");
+
+    // The table with a shut place's deaths in (CampaignEncounter.deathsToOpen in its Deaths In place) and the place not
+    // risen yet: the map raises it with its line. Written into the save in use.
+    public static string OpenTableWithDeaths(CampaignEncounter shut)
     {
-        Pend("table");
+        if (shut == null || shut.deathsIn == null || string.IsNullOrEmpty(shut.deathsIn.id)) return "That place doesn't wait on deaths anywhere.";
+        int deaths = Mathf.Max(0, shut.deathsToOpen);
+        string result = OpenTable($"table|{shut.deathsIn.id}|{deaths}|{shut.id}");
+        return result.StartsWith("Nothing") ? result : result + $" {deaths} death{(deaths == 1 ? "" : "s")} in {shut.deathsIn.displayName} first.";
+    }
+
+    static string OpenTable(string action)
+    {
+        Pend(action);
         // At the table already means the room player: a run going restarts in the room.
-        if ((!EditorApplication.isPlaying || TableRunning) && !Launch(DebugDungeonToolbar.StartRoom)) return NoRoom;
+        if ((!EditorApplication.isPlaying || TableRunning) && !Launch(DebugDungeonToolbar.StartRoom)) return failure;
         return EditorApplication.isPlaying && !TableRunning ? "Going to the table." : "Starting the room, then sitting at the table.";
     }
 
@@ -210,12 +234,14 @@ public static class GameLauncher
         if (map == null) return "No map.";
         var host = map.previewLevel != null && map.previewLevel.IsDungeon ? map.previewLevel : Host();
         if (host == null) return "No dungeon level to play it in.";
-        if (!StartRun($"run|{Guid(host)}|0|0||{Guid(map)}")) return NoRoom;
+        if (!StartRun($"run|{Guid(host)}|0|0||{Guid(map)}")) return failure;
         return $"Starting {map.name} (in a copy of {host.name}).";
     }
 
     // ── Starting Play for a test ──
     const string NoRoom = "Nothing started: the game runs in Room.unity, and it wasn't opened (other open scenes kept).";
+    const string Busy = "Nothing started: Unity is compiling or already entering Play. Try again in a moment.";
+    static string failure = NoRoom;   // why the last Launch started nothing
 
     static bool TableRunning => EditorApplication.isPlaying && TablePlayer != null && TablePlayer.isActiveAndEnabled;
 
@@ -231,10 +257,10 @@ public static class GameLauncher
     }
 
     // Starts Play in one of the toolbar's modes (restarting it when playing), or drops what was waiting for it.
-    static bool Launch(System.Action start)
+    static bool Launch(System.Func<bool> start)
     {
-        if (!RoomOpen()) { SessionState.EraseString(PendingKey); return false; }
-        start();
+        if (!RoomOpen()) { failure = NoRoom; SessionState.EraseString(PendingKey); return false; }
+        if (!start()) { failure = Busy; SessionState.EraseString(PendingKey); return false; }
         return true;
     }
 

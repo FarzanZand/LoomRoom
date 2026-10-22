@@ -26,6 +26,8 @@ public class BossStageEncounter : MonoBehaviour
     readonly Dictionary<BossEvent, float> nextBeat = new();
     float fightStart = -1f, musicStart = -1f, lastComment = -100f;
     bool started, finished, halfSaid, lowSaid, playerLowSaid, darkened, phaseTwo;
+    // The player fell in the fight: it is put away, but a revive picks it up again (OnRevived).
+    bool lost;
     BossStageLights stageLights;
     Coroutine beamRun;
 
@@ -57,6 +59,8 @@ public class BossStageEncounter : MonoBehaviour
     void OnDestroy()
     {
         if (Current == this) Current = null;
+        if (RunManager.HasInstance) RunManager.Instance.Revived -= OnRevived;
+        if (boss != null) boss.Died -= OnBossDied;
         if (started && !finished) Cleanup(false);
         // The floor is going (the next floor loading, or back to the room after a death): the painting's own again.
         if (painting != null) painting.Restore();
@@ -77,6 +81,16 @@ public class BossStageEncounter : MonoBehaviour
         // Room renderers only: the miniature dungeon keeps its own darkness.
         FirstPersonLighting.SetLayers(l, LightingManager.RoomLayer);
         return l;
+    }
+
+    void DarkenRoom()
+    {
+        if (fight == null || !fight.changeRoomLighting || LightingManager.Instance == null) return;
+        var look = dungeon.LevelData.DungeonLighting(dungeon.FloorNumber);
+        look.roomDark = LightingManager.Darkness(fight.roomLighting);
+        look.roomShade = new Color(fight.roomTint.r, fight.roomTint.g, fight.roomTint.b, 1f);
+        LightingManager.Instance.BlendToMood(look, fight.darkenSeconds);
+        darkened = true;
     }
 
     void LightRoom()
@@ -150,7 +164,8 @@ public class BossStageEncounter : MonoBehaviour
             if (flat.magnitude <= StartReach && Mathf.Abs(player.transform.position.y - centre.y) < 1.2f) StartCoroutine(Open(player));
             return;
         }
-        if (player != null && !player.IsAlive) { Defeat(); return; }
+        // A death while he is still setting the boss down waits for the opening to finish, so a revive finds the fight set.
+        if (player != null && !player.IsAlive) { if (fightStart >= 0f) Defeat(); return; }
         if (Fighting) RunEvents(player);
     }
 
@@ -159,6 +174,7 @@ public class BossStageEncounter : MonoBehaviour
     IEnumerator Open(Player player)
     {
         started = true; Current = this;
+        if (RunManager.HasInstance) { RunManager.Instance.Revived -= OnRevived; RunManager.Instance.Revived += OnRevived; }
         stageLights = dungeon.Stage != null ? dungeon.Stage.GetComponent<BossStageLights>() : null;
         DungeonMasterRemarks.Hold = true;
         BossBlessing.Grant(false);
@@ -171,14 +187,7 @@ public class BossStageEncounter : MonoBehaviour
         }
         if (milestone.introSting != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(milestone.introSting, milestone.stingVolume);
         // The room takes the fight's look (Dark: the stage and his eyes are all that is lit), and its own lights come up.
-        if (fight != null && fight.changeRoomLighting && LightingManager.Instance != null)
-        {
-            var look = dungeon.LevelData.DungeonLighting(dungeon.FloorNumber);
-            look.roomDark = LightingManager.Darkness(fight.roomLighting);
-            look.roomShade = new Color(fight.roomTint.r, fight.roomTint.g, fight.roomTint.b, 1f);
-            LightingManager.Instance.BlendToMood(look, fight.darkenSeconds);
-            darkened = true;
-        }
+        DarkenRoom();
         LightRoom();
         if (fight != null) Say(fight.openingLine, true);
         var spot = BossSpot();
@@ -429,7 +438,9 @@ public class BossStageEncounter : MonoBehaviour
 
     void OnBossDied()
     {
-        if (finished) return;
+        // Also after the player fell (lost): a boss that dies then still opens the way on.
+        if (finished && !lost) return;
+        lost = false;
         Comment(fight != null ? fight.victory : null, true);
         if (RunManager.HasInstance) RunManager.Instance.NoteBossSlain();
         MessageLog.Post($"{boss.TheNameCap} falls! The way on is open.", MessageKind.Good);
@@ -441,6 +452,38 @@ public class BossStageEncounter : MonoBehaviour
         if (finished) return;
         Comment(fight != null ? fight.defeat : null, true);
         Finish(false);
+        lost = true;
+    }
+
+    // Back on their feet after falling here (RunManager.Revived): the fight goes on where it was. The room goes dark
+    // again, the stair shuts, the DM comes back to the table and the boss turns on the player; its health, the fight's
+    // clock and the events already done carry on.
+    void OnRevived(bool counted)
+    {
+        if (!lost) return;
+        if (boss != null && !boss.IsAlive) { OnBossDied(); return; }
+        lost = false;
+        if (boss == null) { Finish(true); return; }
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+        finished = false; Current = this;
+        DungeonMasterRemarks.Hold = true;
+        BossBlessing.Grant();
+        ShutStair(true);
+        // The fight's music, if something else took over meanwhile; its beats then count from the new start.
+        if (fight != null && fight.music != null && AudioManager.HasInstance && AudioManager.Instance.CurrentMusic != fight.music)
+        {
+            AudioManager.Instance.CrossfadeMusic(fight.music, true, fight.musicFade, fight.musicVolume);
+            musicStart = Time.time;
+            nextBeat.Clear();
+        }
+        DarkenRoom();
+        LightRoom();
+        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title);
+        if (stageLights != null) { stageLights.Follow(boss.transform); if (phaseTwo) stageLights.PhaseTwo(); }
+        if (seat != null) seat.Focus(StandFor(bossHome), bossHome);
+        // A beam cut short by the death can leave the boss kneeling or keeping away.
+        if (brain != null) { brain.MovementOverride = null; Kneel(false); brain.Alert(); }
+        if (hand != null && player != null) hand.Watch(player.transform.position, false);
     }
 
     void Finish(bool won)
@@ -486,7 +529,8 @@ public class BossStageEncounter : MonoBehaviour
         if (darkened && LightingManager.Instance != null && dungeon != null) LightingManager.Instance.BlendToMood(dungeon.LevelData.DungeonLighting(dungeon.FloorNumber), 2.5f);
         darkened = false;
         if (BossBarUI.HasInstance) BossBarUI.Instance.Hide();
-        if (boss != null) boss.Died -= OnBossDied;
+        // A lost fight keeps listening: a revive picks it up again, and a boss that dies meanwhile still opens the way.
+        if (won && boss != null) boss.Died -= OnBossDied;
         if (won && AudioManager.HasInstance && dungeon != null)
         {
             var music = dungeon.LevelData.MusicFor(dungeon.FloorNumber, out float volume);

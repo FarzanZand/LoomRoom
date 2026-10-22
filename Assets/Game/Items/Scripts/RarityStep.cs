@@ -10,7 +10,7 @@ public class RarityStep
     [HorizontalGroup("Top"), HideLabel] public ItemRarity rarity = ItemRarity.Uncommon;
     [HorizontalGroup("Top"), LabelWidth(70), MinMaxSlider(0, 6, true), Tooltip("How many properties it rolls (ItemPropertyTable).")]
     public Vector2Int properties = new(1, 1);
-    [Range(0, 2), Tooltip("Added to the item's main number (a weapon's damage, a shield's or armour's armour), as a share of the plain item's: 0.15 = +15%, rounded up. Whole numbers stay whole.")]
+    [Range(0, 2), Tooltip("Added to the item's main number (a weapon's damage, a shield's or armour's armour), as a share of the plain item's: 0.15 = +15%, rounded to the nearest. Whole numbers stay whole and each step is at least 1 above the step below.")]
     public float baseBonus = .15f;
     [Min(0), Tooltip("Times the plain item's price.")]
     public float priceMultiplier = 1.6f;

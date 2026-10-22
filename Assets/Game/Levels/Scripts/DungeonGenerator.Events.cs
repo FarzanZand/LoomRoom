@@ -171,8 +171,7 @@ public partial class DungeonGenerator
         foreach (var cell in Layout.RoomCells(index))
             foreach (var d in DungeonLayout.Neighbours)
             {
-                var n = cell + d;
-                if (!Open(n) || Layout.InRoom(index, n)) continue;
+                if (!Layout.IsOpening(index, cell, d)) continue;
                 var outward = new Vector3(d.x, 0f, d.y);
                 var edge = Cell(cell) + outward * (data.cellSize * .5f);
                 ambush.doorways.Add(edge);

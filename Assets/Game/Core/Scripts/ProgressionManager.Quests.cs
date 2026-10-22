@@ -21,8 +21,8 @@ public partial class ProgressionManager
     public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", DeflectQuest = "deflect", SheetQuest = "checkSheet",
         SpendQuest = "spendSpoils", TableQuest = "backToTable", TrophyQuest = "hangTrophies", InventoryQuest = "openInventory";
     public const string InventoryOpenedFlag = "story.inventoryOpened";
-    // Quests the log shows only while the table player is in a dungeon (the shield bash guide).
-    public static bool DungeonOnly(string id) => id == ShieldBashQuest;
+    // Quests the log shows only while the table player is in a dungeon (the shield bash guide, the deflect).
+    public static bool DungeonOnly(string id) => id == ShieldBashQuest || id == DeflectQuest;
 
     [FoldoutGroup("Quests"), ListDrawerSettings(ShowFoldout = true)]
     public List<Quest> quests = BuiltInQuests();
@@ -60,19 +60,26 @@ public partial class ProgressionManager
         else if (spend == 1 && BlockingTaught) CompleteQuest(SpendQuest);
 
         if (Time.frameCount % 15 != 0) return;   // the trophy count builds a list: a few times a second is plenty
-        bool carrying = TrophiesIn(TrophyState.Carried).Count > 0;
+        bool carrying = TrophyCount(TrophyState.Carried) > 0;
         int trophy = QuestState(TrophyQuest);
         if (carrying && trophy != 1) SetFlag(QuestFlag(TrophyQuest), 1);   // given again for each new lot
         else if (!carrying && trophy == 1) CompleteQuest(TrophyQuest);
         // Back to the table only once the trophies are on the wall (none still to be handed over or carried).
-        if (QuestState(SpendQuest) == 2 && QuestState(TableQuest) == 0 && !carrying && TrophiesIn(TrophyState.Earned).Count == 0) GiveQuest(TableQuest);
+        if (QuestState(SpendQuest) == 2 && QuestState(TableQuest) == 0 && !carrying && TrophyCount(TrophyState.Earned) == 0) GiveQuest(TableQuest);
     }
 
     // The lesson after the first run: no new run until Blocking is trained at the sheet, from the moment the run ends
     // (the sheet quest, before the sheet is even opened) until the spend-spoils quest is done (TableManager).
     public bool LessonHoldsRuns => HasFlag(LedgerIntroFlag) && !BlockingTaught;
 
-    public static string QuestFlag(string id) => QuestPrefix + id;
+    // Each quest's flag key is made once: QuestState is read every frame (Update, the sheet's table).
+    static readonly Dictionary<string, string> questFlags = new();
+    public static string QuestFlag(string id)
+    {
+        if (id == null) return QuestPrefix;
+        if (!questFlags.TryGetValue(id, out var flag)) questFlags[id] = flag = QuestPrefix + id;
+        return flag;
+    }
     public int QuestState(string id) => GetFlag(QuestFlag(id));
     public Quest FindQuest(string id) => quests.Find(q => q != null && q.id == id);
 
@@ -101,7 +108,10 @@ public partial class ProgressionManager
         {
             text = text.Replace("{attack}", KeyName(InputManager.Instance.BindingDisplay("PrimaryAction")));
             text = text.Replace("{block}", KeyName(InputManager.Instance.BindingDisplay("SecondaryAction")));
-            text = text.Replace("{inventory}", KeyName(InputManager.Instance.BindingDisplay("Inventory")));
+            string inventory = KeyName(InputManager.Instance.BindingDisplay("Inventory"));
+            // Tab is the fixed second binding: with Inventory bound to Tab too, it is said once.
+            if (string.Equals(inventory, "Tab", StringComparison.OrdinalIgnoreCase)) text = text.Replace("{inventory} or Tab", inventory);
+            text = text.Replace("{inventory}", inventory);
             text = text.Replace("{crouch}", KeyName(InputManager.Instance.BindingDisplay("Crouch")));
         }
         return text;

@@ -206,11 +206,13 @@ MonoBehaviour:
     chestItems: []
     arenaSizeScale: 1.5
     fight: {fileID: 0}
-  ambience: {fileID: 0}
-  ambienceVolume: 0.45
-  ambientOneShots: []
-  oneShotInterval: {x: 10, y: 24}
-  oneShotVolume: 0.5
+  ambience: {fileID: 8300000, guid: 7d68a69d80084da4986a5446c81087af, type: 3}
+  ambienceVolume: 0.35
+  ambientOneShots:
+  - {fileID: 8300000, guid: c5266e6b360825a46b0b33e6a6d76ddb, type: 3}
+  - {fileID: 8300000, guid: 9ecf10f373c6d6d41a06f411273bd3ce, type: 3}
+  oneShotInterval: {x: 12, y: 28}
+  oneShotVolume: 0.4
   music: {fileID: 0}
   musicVolume: 1
   entryLineChance: 1

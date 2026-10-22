@@ -124,7 +124,7 @@ public static class AssetStudioDialogue
         {
             enter = true;
             bool rich = p.propertyType == SerializedPropertyType.Generic && p.type == "Line" && p.FindPropertyRelative("text") != null;
-            bool plain = p.propertyType == SerializedPropertyType.String && LineName(FieldName(p.propertyPath));
+            bool plain = p.propertyType == SerializedPropertyType.String && (LineName(FieldName(p.propertyPath)) || owner is HouseRule && p.propertyPath == "text");
             if (!rich && !plain) continue;
             if (copy && !p.prefabOverride) { if (rich) enter = false; continue; }
             var line = new Line { owner = owner, source = source, ownerName = ownerName, path = p.propertyPath, rich = rich, order = order++ };
@@ -281,14 +281,16 @@ public static class AssetStudioDialogue
 
     // ── CSV (to edit many lines in a spreadsheet and bring them back) ──
 
+    // "original text" is the text at export: on import it tells a row edited in the spreadsheet from a line that moved
+    // in its list since (a line added, removed or moved puts another line under that key).
     public static string ExportCsv(IEnumerable<Line> lines, string file)
     {
-        var sb = new StringBuilder("key,category,where,order,when,text,mumble,in person\n");
+        var sb = new StringBuilder("key,category,where,order,when,original text,text,mumble,in person\n");
         int n = 0;
         foreach (var l in lines)
         {
             sb.Append(Csv(l.Key)).Append(',').Append(Csv(l.category)).Append(',').Append(Csv(l.Where)).Append(',').Append(l.index >= 0 ? (l.index + 1).ToString() : "")
-              .Append(',').Append(Csv(l.when ?? "")).Append(',').Append(Csv(l.text ?? "")).Append(',').Append(l.rich ? (l.mumble ? "yes" : "no") : "")
+              .Append(',').Append(Csv(l.when ?? "")).Append(',').Append(Csv(l.text ?? "")).Append(',').Append(Csv(l.text ?? "")).Append(',').Append(l.rich ? (l.mumble ? "yes" : "no") : "")
               .Append(',').Append(l.rich ? (l.inPerson ? "yes" : "no") : "").Append('\n');
             n++;
         }
@@ -296,29 +298,45 @@ public static class AssetStudioDialogue
         return $"{n} lines to {Path.GetFileName(file)}";
     }
 
-    // Text (and delivery) back from a CSV made by Export, matched by key; other columns are only for reading.
+    // Text (and delivery) back from a CSV made by Export, matched by key; other columns are only for reading. A row
+    // whose line now reads neither its original text nor its new text is skipped (the line under that key changed since
+    // the export) and listed in the Console. The whole import is one undo step.
     public static string ImportCsv(List<Line> lines, string file)
     {
-        var byKey = lines.ToDictionary(l => l.Key, l => l);
+        var byKey = new Dictionary<string, Line>();
+        foreach (var l in lines) byKey[l.Key] = l;
         var rows = ParseCsv(File.ReadAllText(file));
         if (rows.Count == 0) return "Empty file.";
         var head = rows[0];
-        int key = head.IndexOf("key"), text = head.IndexOf("text"), mumble = head.IndexOf("mumble"), person = head.IndexOf("in person");
+        int key = head.IndexOf("key"), text = head.IndexOf("text"), original = head.IndexOf("original text"), mumble = head.IndexOf("mumble"), person = head.IndexOf("in person");
         if (key < 0 || text < 0) return "No key and text columns.";
         int changed = 0, missing = 0;
+        var skipped = new List<string>();
+        Undo.IncrementCurrentGroup();
+        int group = Undo.GetCurrentGroup();
         Undo.SetCurrentGroupName("Import dialogue");
         for (int i = 1; i < rows.Count; i++)
         {
             var r = rows[i];
             if (r.Count <= Math.Max(key, text) || !byKey.TryGetValue(r[key], out var line)) { missing++; continue; }
-            if (r[text] != (line.text ?? "")) { SetText(line, r[text]); changed++; }
+            string now = line.text ?? "";
+            if (original >= 0 && r.Count > original && now != r[original] && now != r[text])
+            {
+                skipped.Add($"row {i + 1} ({line.Where}): the line reads \"{now}\", the file had \"{r[original]}\"");
+                continue;
+            }
+            if (r[text] != now) { SetText(line, r[text]); changed++; }
             if (line.rich && mumble >= 0 && person >= 0 && r.Count > Math.Max(mumble, person))
             {
                 bool m = r[mumble] == "yes", p = r[person] == "yes";
                 if (m != line.mumble || p != line.inPerson) { SetDelivery(line, m, p); changed++; }
             }
         }
-        return $"{changed} changes" + (missing > 0 ? $", {missing} rows matched no line" : "");
+        Undo.CollapseUndoOperations(group);
+        if (skipped.Count > 0) Debug.LogWarning($"[Asset Studio] Dialogue import skipped {skipped.Count} row{(skipped.Count == 1 ? "" : "s")} whose line changed since the export:\n" + string.Join("\n", skipped));
+        return $"{changed} changes" + (missing > 0 ? $", {missing} rows matched no line" : "")
+            + (skipped.Count > 0 ? $", {skipped.Count} skipped (their line changed since the export; listed in the Console)" : "")
+            + (original < 0 ? " (an older file without original text: rows were not checked)" : "");
     }
 
     static string Csv(string s) => s.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0 ? "\"" + s.Replace("\"", "\"\"") + "\"" : s;

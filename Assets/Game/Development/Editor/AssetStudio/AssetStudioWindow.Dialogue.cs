@@ -18,7 +18,9 @@ public partial class AssetStudioWindow
     int dialogueSort;        // DialogueSorts
     bool dialogueEmptyOnly;
     Vector2 dialogueScroll;
-    readonly Dictionary<AssetStudioDialogue.Line, string> dialoguePending = new();
+    // Typed text not written back yet, by line (LineId: its owner and property path, so it outlives reading the owner's
+    // lines again after a change elsewhere).
+    readonly Dictionary<string, string> dialoguePending = new();
     float dialogueWidth;
     readonly List<float> dialogueHeights = new();
     static readonly string[] DialogueSorts = { "Where it plays", "Text A-Z", "Longest first", "Category" };
@@ -61,20 +63,39 @@ public partial class AssetStudioWindow
         dialogueWidth = -1;   // heights again
     }
 
-    // Typed text is written back when the line loses focus (or the view closes), not on every key.
+    // Typed text is written back when the line loses focus, and all of it when the view, the window's focus or the
+    // filter changes (all), not on every key.
     void CommitDialogue(bool all)
     {
         if (dialoguePending.Count == 0) return;
-        string focused = GUI.GetNameOfFocusedControl();
+        string focused = all ? null : GUI.GetNameOfFocusedControl();
         foreach (var kv in dialoguePending.ToList())
         {
-            if (!all && focused == DialogueControl(kv.Key)) continue;
-            if (kv.Key.owner != null && kv.Value != kv.Key.text) AssetStudioDialogue.SetText(kv.Key, kv.Value);
+            if (!all && focused == "dlg " + kv.Key) continue;
+            var line = dialogue?.FirstOrDefault(l => LineId(l) == kv.Key);
+            if (line != null && line.owner != null && kv.Value != line.text) AssetStudioDialogue.SetText(line, kv.Value);
             dialoguePending.Remove(kv.Key);
             dialogueWidth = -1;
         }
     }
-    static string DialogueControl(AssetStudioDialogue.Line l) => "dlg " + l.GetHashCode();
+    static string LineId(AssetStudioDialogue.Line l) => (l.owner != null ? l.owner.GetHashCode().ToString() : "") + "|" + l.path;
+    static string DialogueControl(AssetStudioDialogue.Line l) => "dlg " + LineId(l);
+
+    // Lines read again for the owners that changed elsewhere (an inspector, Ctrl+Z, a saved asset): all, or those whose
+    // asset is in paths, and the open scenes' when scenes.
+    void RecollectDialogue(bool all, ICollection<string> paths, bool scenes)
+    {
+        if (dialogue == null) return;
+        var owners = dialogue.Select(l => l.owner).Distinct().Where(o => all || o == null
+            || (EditorUtility.IsPersistent(o) ? paths != null && paths.Contains(AssetDatabase.GetAssetPath(o)) : scenes)).ToList();
+        if (owners.Count == 0) return;
+        foreach (var owner in owners)
+        {
+            dialogue.RemoveAll(l => l.owner == owner);
+            if (owner != null) AssetStudioDialogue.Collect(owner, dialogue);
+        }
+        FilterDialogue();
+    }
 
     void DialogueStyles()
     {
@@ -105,7 +126,7 @@ public partial class AssetStudioWindow
         x += 268;
         var cats = new[] { "Everywhere" }.Concat(AssetStudioDialogue.CategoryOrder.Select(c => $"{c} ({dialogue.Count(l => l.category == c)})")).ToArray();
         int cat = EditorGUI.Popup(new Rect(x, bar.y, 190, 20), dialogueCategory, cats);
-        if (cat != dialogueCategory) { dialogueCategory = cat; FilterDialogue(); dialogueScroll = Vector2.zero; }
+        if (cat != dialogueCategory) { CommitDialogue(true); dialogueCategory = cat; FilterDialogue(); dialogueScroll = Vector2.zero; }
         x += 198;
         GUI.Label(new Rect(x, bar.y, 34, 20), "Sort", dim);
         int sort = EditorGUI.Popup(new Rect(x + 32, bar.y, 140, 20), dialogueSort, DialogueSorts);
@@ -154,7 +175,7 @@ public partial class AssetStudioWindow
                 if (grouped && l.category != lastCat) { h += 30; lastCat = l.category; lastField = null; }
                 string fieldKey = l.ownerName + "|" + l.field + "|" + l.context;
                 if (!grouped || fieldKey != lastField) { h += 20 + (string.IsNullOrEmpty(l.when) ? 0 : dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + DialogueButtons)); lastField = fieldKey; }
-                string t = dialoguePending.TryGetValue(l, out var pend) ? pend : l.text;
+                string t = dialoguePending.TryGetValue(LineId(l), out var pend) ? pend : l.text;
                 h += Mathf.Max(l.arrayPath != null ? 46 : 26, dialogueArea.CalcHeight(new GUIContent(string.IsNullOrEmpty(t) ? " " : t), textWidth)) + 6;
                 dialogueHeights.Add(h);
             }
@@ -193,10 +214,10 @@ public partial class AssetStudioWindow
                 var area = new Rect(52, cy, textWidth, rowH);
                 EditorGUI.DrawRect(area, new Color(.13f, .13f, .14f));
                 EditorGUI.DrawRect(new Rect(area.x, area.yMax - 1, area.width, 1), new Color(.32f, .31f, .29f));
-                string current = dialoguePending.TryGetValue(l, out var p) ? p : l.text ?? "";
+                string current = dialoguePending.TryGetValue(LineId(l), out var p) ? p : l.text ?? "";
                 GUI.SetNextControlName(DialogueControl(l));
                 string typed = EditorGUI.TextArea(area, current, dialogueArea);
-                if (typed != current) { dialoguePending[l] = typed; dialogueWidth = -1; }
+                if (typed != current) { dialoguePending[LineId(l)] = typed; dialogueWidth = -1; }
                 float bx2 = area.xMax + 8;
                 if (l.rich)
                 {

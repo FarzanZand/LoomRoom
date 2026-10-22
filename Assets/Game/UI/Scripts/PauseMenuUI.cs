@@ -5,7 +5,8 @@ using UnityEngine.UI;
 
 // Escape during gameplay: time stops, the cursor frees. Resume, settings, the adventure
 // menu (table player only), the main menu or quit; leaving and quitting ask first, saying what a run loses.
-// Escape again, or Resume, returns to the game.
+// Escape again, or Resume, returns to the game. It also opens over a cutscene or a conversation (the UI map's Pause, a
+// pad's Start): time stops with it (timelines, a conversation's own clock), and the state underneath comes back on close.
 public class PauseMenuUI : MonoBehaviour
 {
     [SerializeField] GameObject root;
@@ -30,6 +31,8 @@ public class PauseMenuUI : MonoBehaviour
     // The time scale when the menu opened (a hit stop may be slowing time); restored on close.
     // CombatManager's hit stop holds still while the game is Paused, so nothing else writes it meanwhile.
     float resumeTimeScale = 1f;
+    // The open conversation was paused by this menu (DialogueManager), so closing gives it its time back.
+    bool pausedConversation;
     public bool IsOpen => open;
 
     static TableLevelLoader Loader => TableManager.Loader;
@@ -45,13 +48,16 @@ public class PauseMenuUI : MonoBehaviour
         confirmYes?.onClick.AddListener(() => { var go = confirmed; CloseConfirm(); go?.Invoke(); });
         confirmNo?.onClick.AddListener(CloseConfirm);
         if (confirmPanel != null) confirmPanel.SetActive(false);
+        // Settings and keys reach the disk when the settings screen closes.
+        if (settings != null) settings.Closed += UserSettings.Save;
     }
 
     void Start()
     {
         if (!InputManager.HasInstance) return;
-        InputManager.Instance.PausePressed += Open;
-        InputManager.Instance.CancelPressed += OnCancel;
+        InputManager.Instance.PausePressed += OnPause;
+        // While paused, Cancel comes only to this menu (InputManager).
+        InputManager.Instance.PausedCancelPressed += OnCancel;
     }
 
     // Disabled or destroyed while open: restore time and give back the Paused state.
@@ -60,20 +66,30 @@ public class PauseMenuUI : MonoBehaviour
     void OnDestroy()
     {
         Close();
+        if (settings != null) settings.Closed -= UserSettings.Save;
         if (InputManager.HasInstance)
         {
-            InputManager.Instance.PausePressed -= Open;
-            InputManager.Instance.CancelPressed -= OnCancel;
+            InputManager.Instance.PausePressed -= OnPause;
+            InputManager.Instance.PausedCancelPressed -= OnCancel;
         }
     }
 
+    // Pause again (a pad's Start) steps back like Cancel.
+    void OnPause() { if (open) OnCancel(); else Open(); }
+
+    // Over plain play, a cutscene or a conversation; not over another menu, the inventory or death.
+    static bool CanPauseIn(GameState state) => state == GameState.Explore || state == GameState.Cutscene || state == GameState.Dialogue;
+
     public void Open()
     {
-        if (open || root == null || !GameManager.HasInstance || GameManager.Instance.State != GameState.Explore) return;
+        if (open || root == null || !GameManager.HasInstance || !CanPauseIn(GameManager.Instance.State)) return;
         open = true;
         GameManager.Instance.Push(GameState.Paused);
         resumeTimeScale = Time.timeScale;
         Time.timeScale = 0f;
+        // A conversation runs on its own clock (DialogueTime): stop it too.
+        pausedConversation = PixelCrushers.DialogueSystem.DialogueManager.isConversationActive && !PixelCrushers.DialogueSystem.DialogueTime.isPaused;
+        if (pausedConversation) PixelCrushers.DialogueSystem.DialogueManager.Pause();
         root.SetActive(true);
         settings?.Close();
         CloseConfirm();
@@ -125,7 +141,10 @@ public class PauseMenuUI : MonoBehaviour
         if (settings != null) settings.Close();
         if (root != null) root.SetActive(false);
         Time.timeScale = resumeTimeScale;
+        if (pausedConversation) { pausedConversation = false; PixelCrushers.DialogueSystem.DialogueManager.Unpause(); }
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Paused);
+        // The press that closed the menu doesn't also click or skip what is under it.
+        if (InputManager.HasInstance) InputManager.Instance.HoldPresses();
     }
 
     void OnCancel()

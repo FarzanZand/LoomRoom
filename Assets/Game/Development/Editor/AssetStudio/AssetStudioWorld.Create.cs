@@ -9,7 +9,8 @@ using UnityEngine;
 // (a level in the catalog, a biome on its level's run, a room in its biome's pool, a place in the campaign manager's list
 // and on the map, an event in the manager's events), so it shows up in the game at once. Every change is saved straight
 // away and can be undone: asset edits with Ctrl+Z, edits to the campaign manager and realm map prefabs (and the places
-// and events made with them) with the World's Undo button (PrefabUndo below). A level's asset name is how saved runs find it: a new one gets a name no other level has.
+// and events made with them) with the World's Undo button (PrefabUndo below), which asks before overwriting anything
+// changed since. A level's asset name is how saved runs find it: a new one gets a name no other level has.
 public static partial class AssetStudioWorld
 {
     // ── Levels, biomes, rooms ─────────────────────────────────────────
@@ -120,6 +121,39 @@ public static partial class AssetStudioWorld
         if (biome.roomTemplates == null || index < 0 || index >= biome.roomTemplates.Length) return;
         Undo.RecordObject(biome, "Remove room from pool");
         var list = biome.roomTemplates.ToList(); list.RemoveAt(index); biome.roomTemplates = list.ToArray();
+        Save(biome);
+    }
+
+    // ── A biome's enemies ─────────────────────────────────────────────
+
+    public static bool IsEnemy(UnityEngine.Object o) => o is GameObject g && g.GetComponent<EnemyBrain>() != null && EditorUtility.IsPersistent(g);
+
+    public static bool AddEnemy(DungeonBiome biome, GameObject enemy, float weight = 1)
+    {
+        if (biome == null || !IsEnemy(enemy)) return false;
+        if (biome.enemies != null && biome.enemies.Any(s => s != null && s.enemy == enemy)) return false;
+        Undo.RecordObject(biome, "Add enemy");
+        var list = (biome.enemies ?? Array.Empty<DungeonBiome.Spawn>()).ToList();
+        list.Add(new DungeonBiome.Spawn { enemy = enemy, weight = weight, fromFloor = 1 });
+        biome.enemies = list.ToArray();
+        Save(biome);
+        return true;
+    }
+
+    public static void RemoveEnemy(DungeonBiome biome, int index)
+    {
+        if (biome.enemies == null || index < 0 || index >= biome.enemies.Length) return;
+        Undo.RecordObject(biome, "Remove enemy");
+        var list = biome.enemies.ToList(); list.RemoveAt(index); biome.enemies = list.ToArray();
+        Save(biome);
+    }
+
+    public static void SetEnemy(DungeonBiome biome, int index, float weight, int fromFloor)
+    {
+        if (biome.enemies == null || index < 0 || index >= biome.enemies.Length || biome.enemies[index] == null) return;
+        Undo.RecordObject(biome, "Enemy weight");
+        biome.enemies[index].weight = Mathf.Max(0, weight);
+        biome.enemies[index].fromFloor = Mathf.Max(1, fromFloor);
         Save(biome);
     }
 
@@ -266,6 +300,7 @@ public static partial class AssetStudioWorld
         ListInManager(place, null, false);
         string point = PutOnMap(place, false);
         AssetDatabase.SaveAssets();
+        PrefabUndo.Commit();
         message = $"Made {name} in Act {act}" + (level != null ? $", playing {level.name}" : " (a placeholder until it has a level)") + ". " + point;
         return place;
     }
@@ -292,6 +327,7 @@ public static partial class AssetStudioWorld
         PrefabUndo.Created(eventPath);
         ListInManager(null, e, false);
         AssetDatabase.SaveAssets();
+        PrefabUndo.Commit();
         message = $"Made the event {title} (after Act {afterAct}). Write its text, picture and choices in the inspector.";
         return e;
     }
@@ -311,7 +347,7 @@ public static partial class AssetStudioWorld
                 manager.events = (manager.events ?? Array.Empty<CampaignEvent>()).Append(ev).ToArray();
             PrefabUtility.SaveAsPrefabAsset(root, CampaignManagerPrefab);
         }
-        finally { PrefabUtility.UnloadPrefabContents(root); }
+        finally { PrefabUtility.UnloadPrefabContents(root); PrefabUndo.Commit(); }
     }
 
     // A point for the place on the map, under Points, beside the act's other places (or the map's middle).
@@ -324,26 +360,67 @@ public static partial class AssetStudioWorld
             var points = root.GetComponentsInChildren<CampaignPoint>(true);
             if (points.Any(p => p.encounter == place)) return "It is already on the map.";
             var parent = root.transform.Find("Points") ?? points.FirstOrDefault()?.transform.parent ?? root.transform;
-            var near = points.Where(p => p.encounter != null && p.encounter.act == place.act).Select(p => p.transform.localPosition).ToList();
-            if (near.Count == 0) near = points.Select(p => p.transform.localPosition).ToList();
-            Vector3 centre = near.Count > 0 ? near.Aggregate(Vector3.zero, (a, b) => a + b) / near.Count : Vector3.zero;
-            // A free spot: round the act's middle, away from every other place.
-            Vector3 spot = centre;
-            for (int i = 0; i < 24; i++)
-            {
-                float angle = i * 137.5f * Mathf.Deg2Rad, radius = 6f + i * 1.5f;
-                var tryAt = centre + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                if (points.All(p => (p.transform.localPosition - tryAt).sqrMagnitude > 64f)) { spot = tryAt; break; }
-            }
             var go = new GameObject(place.displayName);
             go.transform.SetParent(parent, false);
-            go.transform.localPosition = spot;
+            go.transform.localPosition = FreeSpot(points, place.act, null);
             var point = go.AddComponent<CampaignPoint>();
             point.encounter = place;
             PrefabUtility.SaveAsPrefabAsset(root, RealmMapPrefab);
             return "It stands on the map near the other Act " + place.act + " places, with no road yet: move it and add roads in the Realm map prefab.";
         }
+        finally { PrefabUtility.UnloadPrefabContents(root); PrefabUndo.Commit(); }
+    }
+
+    // A free spot among the points (local positions): round the middle of the act's places (or of every place), away
+    // from every other place. except: a point being moved, left out of both.
+    static Vector3 FreeSpot(CampaignPoint[] points, int act, CampaignPoint except)
+    {
+        var others = points.Where(p => p != except).ToList();
+        var near = others.Where(p => p.encounter != null && p.encounter.act == act).Select(p => p.transform.localPosition).ToList();
+        if (near.Count == 0) near = others.Select(p => p.transform.localPosition).ToList();
+        Vector3 centre = near.Count > 0 ? near.Aggregate(Vector3.zero, (a, b) => a + b) / near.Count : Vector3.zero;
+        for (int i = 0; i < 24; i++)
+        {
+            float angle = i * 137.5f * Mathf.Deg2Rad, radius = 6f + i * 1.5f;
+            var tryAt = centre + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+            if (others.All(p => (p.transform.localPosition - tryAt).sqrMagnitude > 64f)) return tryAt;
+        }
+        return centre;
+    }
+
+    // After a place's act changed: its point moves near that act's other places (its props go with it) and its file to
+    // Campaign/Encounters/Act <act>. The World's Undo puts both back.
+    public static string MoveToAct(CampaignEncounter place)
+    {
+        PrefabUndo.Begin("Move " + place.displayName + " to Act " + place.act, RealmMapPrefab);
+        string result;
+        var root = PrefabUtility.LoadPrefabContents(RealmMapPrefab);
+        try
+        {
+            var points = root.GetComponentsInChildren<CampaignPoint>(true);
+            var point = points.FirstOrDefault(p => p.encounter == place);
+            if (point == null) result = "It is not on the map.";
+            else
+            {
+                var spot = FreeSpot(points, place.act, point);
+                point.transform.localPosition = new Vector3(spot.x, point.transform.localPosition.y, spot.z);
+                PrefabUtility.SaveAsPrefabAsset(root, RealmMapPrefab);
+                result = $"It stands near the Act {place.act} places, with its roads as they were: check them in the Realm map prefab.";
+            }
+        }
         finally { PrefabUtility.UnloadPrefabContents(root); }
+        string from = AssetDatabase.GetAssetPath(place), folder = $"{EncountersRoot}/Act {place.act}";
+        if (Path.GetDirectoryName(from).Replace('\\', '/') != folder)
+        {
+            PrefabUndo.Folder(folder);
+            EnsureFolder(folder);
+            string to = AssetDatabase.GenerateUniqueAssetPath(folder + "/" + Path.GetFileName(from));
+            string err = AssetDatabase.MoveAsset(from, to);
+            if (string.IsNullOrEmpty(err)) { PrefabUndo.Moved(from, to); result += $" Its file is in {folder.Replace("Assets/Game/", "")}."; }
+            else result += " Its file stays: " + err;
+        }
+        PrefabUndo.Commit();
+        return result;
     }
 
     // ── A place's props (the models on its disc in the map prefab) ──────
@@ -393,6 +470,7 @@ public static partial class AssetStudioWorld
             PrefabUtility.UnloadPrefabContents(root);
             // No raw Synty atlas stays on the map: any prop not baked yet gets its pixel bake (only new ones are baked).
             CampaignMapBuilder.PixelProps();
+            PrefabUndo.Commit();
         }
     }
 
@@ -440,11 +518,21 @@ public static partial class AssetStudioWorld
         return $"Took {props.Count} prop{(props.Count == 1 ? "" : "s")} off {place.displayName}.";
     });
 
+    // A level makes it a Level place; no level makes a Level place a placeholder ("not made yet"). Home stays home
+    // until a level is picked for it.
     public static void SetPlaceLevel(CampaignEncounter place, TableLevelData level)
     {
         Undo.RecordObject(place, "Set place level");
         place.level = level;
-        if (level != null && place.kind == CampaignEncounterKind.Placeholder) place.kind = CampaignEncounterKind.Level;
+        if (level != null) place.kind = CampaignEncounterKind.Level;
+        else if (place.kind == CampaignEncounterKind.Level) place.kind = CampaignEncounterKind.Placeholder;
+        Save(place);
+    }
+
+    public static void SetPlaceKind(CampaignEncounter place, CampaignEncounterKind kind)
+    {
+        Undo.RecordObject(place, "Set place kind");
+        place.kind = kind;
         Save(place);
     }
 
@@ -465,47 +553,133 @@ public static partial class AssetStudioWorld
     // ── Undo for prefab edits ─────────────────────────────────────────
 
     // Prefab edits made through PrefabUtility.LoadPrefabContents can't go on Unity's undo, so each World edit of the
-    // campaign manager or the realm map keeps the prefab files as they were (and the assets and folders it made) and
-    // the World's Undo button puts them back. Kept for this editor session, last first.
+    // campaign manager or the realm map keeps the prefab files as they were (and the assets and folders it made or
+    // moved), and the World's Undo button puts them back. Each step also keeps a fingerprint of every file as the step
+    // left it (Commit): a file changed since (in the inspector, by hand, by another tool) is only put back, and an asset
+    // the step made is only deleted, after asking. Kept in Library/AssetStudioUndo (through recompiles), last first.
     public static class PrefabUndo
     {
-        class Step { public string name; public readonly List<(string path, byte[] bytes)> files = new(); public readonly List<string> created = new(); }
-        static readonly List<Step> steps = new();
+        const string Dir = "Library/AssetStudioUndo", Index = Dir + "/steps.json";
+        [Serializable] class Snap { public string path, before, after; }   // before: the copy of the file; after: its fingerprint as the step left it
+        [Serializable] class Made { public string path, after; }           // a file or folder the step made
+        [Serializable] class MovedFile { public string from, to; }
+        [Serializable] class Step { public string name; public List<Snap> files = new(); public List<Made> created = new(); public List<MovedFile> moved = new(); }
+        [Serializable] class State { public List<Step> steps = new(); }
+
+        static State state;
         static Step open;
         static double openedAt;
+
+        static List<Step> Steps
+        {
+            get
+            {
+                if (state == null)
+                {
+                    try { if (File.Exists(Index)) state = JsonUtility.FromJson<State>(File.ReadAllText(Index)); } catch (Exception e) { Debug.LogWarning("[Asset Studio] World undo steps unreadable: " + e.Message); }
+                    state ??= new State();
+                    state.steps ??= new List<Step>();
+                }
+                return state.steps;
+            }
+        }
+
+        static void Write()
+        {
+            try { Directory.CreateDirectory(Dir); File.WriteAllText(Index, JsonUtility.ToJson(state ?? new State())); }
+            catch (Exception e) { Debug.LogWarning("[Asset Studio] Could not keep the World undo steps: " + e.Message); }
+        }
+
+        static string Fingerprint(string path)
+        {
+            if (!File.Exists(path)) return "none";
+            using var md5 = System.Security.Cryptography.MD5.Create();
+            return Convert.ToBase64String(md5.ComputeHash(File.ReadAllBytes(path)));
+        }
 
         // A new step, keeping the prefabs as they are now. Calls within the same moment (one button) join one step.
         public static void Begin(string name, params string[] prefabs)
         {
-            if (open == null || EditorApplication.timeSinceStartup - openedAt > .5)
+            var steps = Steps;
+            if (open == null || !steps.Contains(open) || EditorApplication.timeSinceStartup - openedAt > .5)
             {
                 open = new Step { name = name };
                 steps.Add(open);
-                if (steps.Count > 30) steps.RemoveAt(0);
+                while (steps.Count > 30) { Forget(steps[0]); steps.RemoveAt(0); }
             }
             openedAt = EditorApplication.timeSinceStartup;
+            Directory.CreateDirectory(Dir);
             foreach (var p in prefabs)
-                if (File.Exists(p) && !open.files.Any(f => f.path == p)) open.files.Add((p, File.ReadAllBytes(p)));
+                if (File.Exists(p) && !open.files.Any(f => f.path == p))
+                {
+                    string copy = Dir + "/" + Guid.NewGuid().ToString("N") + ".bytes";
+                    File.Copy(p, copy);
+                    open.files.Add(new Snap { path = p, before = copy });
+                }
+            Write();
         }
-        public static void Created(string path) { if (open != null) open.created.Add(path); }
+        public static void Created(string path) { if (open != null) { open.created.Add(new Made { path = path }); Write(); } }
         // A folder that doesn't exist yet: made by this step, removed with it when empty.
-        public static void Folder(string path) { if (open != null && !AssetDatabase.IsValidFolder(path)) open.created.Add(path); }
+        public static void Folder(string path) { if (open != null && !AssetDatabase.IsValidFolder(path)) { open.created.Add(new Made { path = path }); Write(); } }
+        public static void Moved(string from, string to) { if (open != null) { open.moved.Add(new MovedFile { from = from, to = to }); Write(); } }
 
-        public static string Last => steps.Count > 0 ? steps[steps.Count - 1].name : null;
+        // Right after the step's writes: the fingerprint of every file as the step left them.
+        public static void Commit()
+        {
+            if (open == null) return;
+            foreach (var f in open.files) f.after = Fingerprint(f.path);
+            foreach (var c in open.created) c.after = AssetDatabase.IsValidFolder(c.path) ? "folder" : Fingerprint(c.path);
+            Write();
+        }
+
+        public static string Last => Steps.Count > 0 ? Steps[Steps.Count - 1].name : null;
+
+        static void Forget(Step step)
+        {
+            foreach (var f in step.files) if (!string.IsNullOrEmpty(f.before) && File.Exists(f.before)) File.Delete(f.before);
+        }
+
+        static string Names(IEnumerable<string> paths) => string.Join(", ", paths.Select(Path.GetFileNameWithoutExtension));
 
         public static string UndoLast()
         {
+            var steps = Steps;
             if (steps.Count == 0) return "Nothing to undo.";
             var step = steps[steps.Count - 1];
+            // A file changed since the step left it: putting it back loses those later changes.
+            var changed = step.files.Where(f => string.IsNullOrEmpty(f.after) || Fingerprint(f.path) != f.after).Select(f => f.path).ToList();
+            if (changed.Count > 0 && !EditorUtility.DisplayDialog("Undo: " + step.name,
+                    $"{Names(changed)} changed after this step (in the inspector, by hand or by another tool). Undoing puts {(changed.Count == 1 ? "it" : "them")} back as before the step, and those later changes are lost.",
+                    "Undo anyway", "Cancel"))
+                return "Not undone: " + step.name + ".";
+            // An asset the step made and someone edited since: deleted only when asked.
+            var edited = step.created.Where(c => !AssetDatabase.IsValidFolder(c.path) && File.Exists(c.path) && (string.IsNullOrEmpty(c.after) || Fingerprint(c.path) != c.after)).Select(c => c.path).ToList();
+            bool keepEdited = false;
+            if (edited.Count > 0)
+            {
+                int pick = EditorUtility.DisplayDialogComplex("Undo: " + step.name,
+                    $"{Names(edited)} {(edited.Count == 1 ? "was" : "were")} edited after this step made {(edited.Count == 1 ? "it" : "them")}. Undoing deletes {(edited.Count == 1 ? "it" : "them")}.",
+                    "Delete", "Cancel", "Undo, keep " + (edited.Count == 1 ? "it" : "them"));
+                if (pick == 1) return "Not undone: " + step.name + ".";
+                keepEdited = pick == 2;
+            }
             steps.RemoveAt(steps.Count - 1);
             open = null;
-            foreach (var (path, bytes) in step.files) { File.WriteAllBytes(path, bytes); AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate); }
+            foreach (var f in step.files)
+                if (!string.IsNullOrEmpty(f.before) && File.Exists(f.before)) { File.Copy(f.before, f.path, true); AssetDatabase.ImportAsset(f.path, ImportAssetOptions.ForceUpdate); }
+            for (int i = step.moved.Count - 1; i >= 0; i--)
+            {
+                var mv = step.moved[i];
+                if (File.Exists(mv.to) && !File.Exists(mv.from)) AssetDatabase.MoveAsset(mv.to, mv.from);
+            }
             for (int i = step.created.Count - 1; i >= 0; i--)
             {
-                string c = step.created[i];
+                string c = step.created[i].path;
                 if (AssetDatabase.IsValidFolder(c)) { if (Directory.Exists(c) && Directory.GetFileSystemEntries(c).Length == 0) AssetDatabase.DeleteAsset(c); }
-                else if (File.Exists(c)) AssetDatabase.DeleteAsset(c);
+                else if (File.Exists(c) && !(keepEdited && edited.Contains(c))) AssetDatabase.DeleteAsset(c);
             }
+            Forget(step);
+            Write();
             AssetDatabase.Refresh();
             return "Undid: " + step.name + ".";
         }

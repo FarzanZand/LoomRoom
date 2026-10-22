@@ -39,13 +39,30 @@ public class SkeletonParty : MonoBehaviour
     readonly HashSet<EnemyBrain> seen = new();
     readonly HashSet<DungeonContainer> chests = new();
     float nextGather;
+    // The room's enemies and chests, found by looking through the whole floor for the first Scan Seconds only; those
+    // not ready to join yet (switched off, not set up) wait here and are tried again without another search.
+    readonly List<EnemyBrain> waiting = new();
+    readonly List<DungeonContainer> waitingChests = new();
+    const float ScanSeconds = 3f;
+    float scanUntil;
 
     void Start()
     {
         dungeon = GetComponentInParent<DungeonGenerator>();
         if (dungeon == null || dungeon.Layout == null) return;
         room = dungeon.Layout.RoomAt(dungeon.CellOf(transform.position));
+        scanUntil = Time.time + ScanSeconds;
         Gather();
+    }
+
+    bool InRoom(Component c) => dungeon.Layout.RoomAt(dungeon.CellOf(c.transform.position)) == room;
+
+    void Scan()
+    {
+        foreach (var brain in dungeon.GetComponentsInChildren<EnemyBrain>(true))
+            if (brain != null && !seen.Contains(brain) && !waiting.Contains(brain) && InRoom(brain)) waiting.Add(brain);
+        foreach (var chest in dungeon.GetComponentsInChildren<DungeonContainer>(true))
+            if (chest != null && !chests.Contains(chest) && !waitingChests.Contains(chest) && InRoom(chest)) waitingChests.Add(chest);
     }
 
     // Everyone in the room joins the dance; checked again for a while, since bodies set up their health after this
@@ -53,9 +70,13 @@ public class SkeletonParty : MonoBehaviour
     void Gather()
     {
         if (room < 0 || spoiled) return;
-        foreach (var brain in dungeon.GetComponentsInChildren<EnemyBrain>())
+        if (Time.time < scanUntil) Scan();
+        for (int w = waiting.Count - 1; w >= 0; w--)
         {
-            if (brain == null || seen.Contains(brain) || brain.State == EnemyState.Dead || dungeon.Layout.RoomAt(dungeon.CellOf(brain.transform.position)) != room) continue;
+            var brain = waiting[w];
+            if (brain == null) { waiting.RemoveAt(w); continue; }
+            if (!brain.gameObject.activeInHierarchy || brain.State == EnemyState.Dead || !InRoom(brain)) continue;
+            waiting.RemoveAt(w);
             seen.Add(brain);
             brain.Entranced = true;
             dancers.Add(brain);
@@ -72,28 +93,32 @@ public class SkeletonParty : MonoBehaviour
                 graphs.Add(graph);
             }
         }
-        foreach (var chest in dungeon.GetComponentsInChildren<DungeonContainer>())
-            if (chest != null && !chests.Contains(chest) && dungeon.Layout.RoomAt(dungeon.CellOf(chest.transform.position)) == room)
+        for (int w = waitingChests.Count - 1; w >= 0; w--)
+        {
+            var chest = waitingChests[w];
+            if (chest == null) { waitingChests.RemoveAt(w); continue; }
+            if (!chest.gameObject.activeInHierarchy || !InRoom(chest)) continue;
+            waitingChests.RemoveAt(w);
+            chests.Add(chest); chest.Opened += _ => Spoil(chestLine, true);
+            // The party's prize: one random piece of gear, Legendary, and a heap of gold, nothing else.
+            if (legendaryInChest)
             {
-                chests.Add(chest); chest.Opened += _ => Spoil(chestLine, true);
-                // The party's prize: one random piece of gear, Legendary, and a heap of gold, nothing else.
-                if (legendaryInChest)
-                {
-                    chest.onlyGuaranteed = true; chest.guaranteedItem = null; chest.guaranteedItems.Clear();
-                    chest.bonusGold = prizeGold; chest.goldPiles = prizeGoldPiles;
-                    var floor = TableManager.Loader != null ? Mathf.Max(1, TableManager.Loader.FloorNumber) : 1;
-                    var prize = InventoryManager.GivenGear(ItemRarity.Legendary, prizeMaxTier, floor, new System.Random(System.Environment.TickCount));
-                    if (prize != null) chest.guaranteedItems.Add(prize);
-                }
-                // Its front (the lid's opening) toward the player, who comes in from where they are now: the portal's
-                // side room in a pocket, the way they will walk in on a floor.
-                var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
-                if (player != null)
-                {
-                    var toPlayer = player.transform.position - chest.transform.position; toPlayer.y = 0f;
-                    if (toPlayer.sqrMagnitude > .01f) chest.transform.rotation = Quaternion.LookRotation(SnapToAxis(toPlayer));
-                }
+                chest.onlyGuaranteed = true; chest.guaranteedItem = null; chest.guaranteedItems.Clear();
+                chest.bonusGold = prizeGold; chest.goldPiles = prizeGoldPiles;
+                var floor = TableManager.Loader != null ? Mathf.Max(1, TableManager.Loader.FloorNumber) : 1;
+                // Seeded from where the chest stands, like every placed chest's loot, so co-op and a reload agree.
+                var prize = InventoryManager.GivenGear(ItemRarity.Legendary, prizeMaxTier, floor, new System.Random(unchecked(dungeon.PlacedSeed(chest.transform.position) * 31 + 524287)));
+                if (prize != null) chest.guaranteedItems.Add(prize);
             }
+            // Its front (the lid's opening) toward the player, who comes in from where they are now: the portal's
+            // side room in a pocket, the way they will walk in on a floor.
+            var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+            if (player != null)
+            {
+                var toPlayer = player.transform.position - chest.transform.position; toPlayer.y = 0f;
+                if (toPlayer.sqrMagnitude > .01f) chest.transform.rotation = Quaternion.LookRotation(SnapToAxis(toPlayer));
+            }
+        }
     }
 
     // The nearest of the four room axes, so the chest sits square to the walls.
@@ -102,7 +127,9 @@ public class SkeletonParty : MonoBehaviour
     void Update()
     {
         if (room < 0 || dungeon == null || spoiled) return;
-        if (Time.time >= nextGather) { nextGather = Time.time + .5f; Gather(); }
+        // Once the first search is over and everyone found has joined, there is nothing left to gather.
+        bool gathering = Time.time < scanUntil || waiting.Count > 0 || waitingChests.Count > 0;
+        if (gathering && Time.time >= nextGather) { nextGather = Time.time + .5f; Gather(); }
         FaceChestsToPlayer();
     }
 

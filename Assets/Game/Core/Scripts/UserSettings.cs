@@ -89,6 +89,10 @@ public static class UserSettings
         brightness = PlayerPrefs.GetFloat(BrightnessKey, 0f);
     }
 
+    // Writes PlayerPrefs to disk (settings, volumes, keys). The setters only change them in memory, since sliders set
+    // them every frame of a drag; the settings screen calls this when it closes (PauseMenuUI, MainMenuUI).
+    public static void Save() => PlayerPrefs.Save();
+
     public static bool VSync
     {
         get { Load(); return vsync; }

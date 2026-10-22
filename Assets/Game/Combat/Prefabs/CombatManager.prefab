@@ -44,39 +44,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 178482e117d362148abfe274c101dcd7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatManager
-  playerAttackSpeed: 1.12
+  playerAttackSpeed: 0.85
   attackInputBuffer: 0.4
   weaponSweepSteps: 12
   swingInterval: 0.6
   attackFromBlock: 1
   blockCancelsWindup: 0
-  blockFromAttackAt: 0.75
+  blockFromAttackAt: 0.6
   blockRaiseDelay: 0
   windupSpeed: 1.45
   releaseSpeed: 1.25
   heavyReleaseSpeed: 0.95
   enemyHurtAnimationSpeed: 1.3
   swordSwingSet: 2
-  maceSwingSet: 0
+  maceSwingSet: 5
   swordStaggerStrength: 1
-  maceStaggerStrength: 1
-  comboSpeed: 0.7
+  maceStaggerStrength: 2
+  comboSpeed: 0.6
   comboFirstHitSpeed: 1
   comboSecondHitSpeed: 1
   comboFinisherSpeed: 1
   comboCameraStrength: 1
-  comboHitCooldown: 0.43
+  comboHitCooldown: 0.5
   comboFinisherCooldown: 0.9
   comboSlashLines: 0
   comboFinisherHeavy: 1
   comboFinisherDamage: 1.3
   comboHoldForHeavy: 0.12
-  comboHitStop: 1
+  comboHitStop: 0
   comboHitStopDuration: 0.065
   comboFinisherHitStop: 0.13
-  comboStrikeScale: 1.8
-  comboFinisherStrikeScale: 2
-  comboResetTime: 1.1
+  comboStrikeScale: 1
+  comboFinisherStrikeScale: 0
+  comboResetTime: 0.6
   ikSwingCameraRotation: {x: 0.4, y: -1.2, z: 0.6}
   ikSwingCameraCurve:
     serializedVersion: 2
@@ -120,11 +120,11 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  strikeLunge: 0.25
+  strikeLunge: 0
   strikeLungeTime: 0.12
   heavyStrikeScale: 2
-  strikeKick: {x: 0.8, y: 0, z: 0.4}
-  hitKick: {x: 1.2, y: 0, z: 0.6}
+  strikeKick: {x: 0.4, y: 0, z: 0.2}
+  hitKick: {x: 0.6, y: 0, z: 0.3}
   kickRecovery: 14
   swingCameraMotionEnabled: 1
   lightSwingCameraRotation: {x: 0.3, y: 0.8, z: -0.35}
@@ -283,10 +283,10 @@ MonoBehaviour:
     m_RotationOrder: 4
   heavyImpactShudder: 0.7
   heavyChargeTime: 0.7
-  heavyDamageMultiplier: 1.65
-  heavyKnockbackMultiplier: 1.35
-  heavyStaminaCost: 8
-  heavyStaggerDuration: 0.45
+  heavyDamageMultiplier: 2
+  heavyKnockbackMultiplier: 1.8
+  heavyStaminaCost: 11
+  heavyStaggerDuration: 0.65
   enemyStaggerImmunity: 1.5
   lightFlinchDuration: 0.25
   chargeCameraDelay: 0.2
@@ -318,7 +318,7 @@ MonoBehaviour:
   shieldBashStreaks: {fileID: 7664258301829467767, guid: 114de097bd831cb42b791f59ed3bd225, type: 3}
   shieldBashAudio: {fileID: 11400000, guid: af790c5f7f8ac244b9f1730ba5b5cbcf, type: 2}
   shieldBashHitAudio: {fileID: 11400000, guid: 18b9b7795bb3b9f429495a68707556f6, type: 2}
-  landedCameraKick: 0.65
+  landedCameraKick: 0.85
   hurtCameraKick: 2
   blockCameraKick: 0.8
   hurtScreenAlpha: 0.6
@@ -355,7 +355,7 @@ MonoBehaviour:
   personalSpace: 0.75
   knockbackEnabled: 1
   enemiesKnockedBack: 1
-  enemyKnockbackScale: 1.4
+  enemyKnockbackScale: 0.25
   knockbackForceMultiplier: 0.45
   knockbackDuration: 0.22
   meleeReachMultiplier: 1.2
@@ -378,8 +378,8 @@ MonoBehaviour:
   armorEffectiveness: 0.65
   armorPerPoint: 0.2
   hitStopEnabled: 0
-  lightHitStopDuration: 0.045
-  lightHitStopTimeScale: 0.12
+  lightHitStopDuration: 0.07
+  lightHitStopTimeScale: 0.015
   heavyHitStopDuration: 0.11
   heavyHitStopTimeScale: 0.02
   hitStopRecovery: 0.06
@@ -402,7 +402,7 @@ MonoBehaviour:
   defaultHitAudio: {fileID: 11400000, guid: 6d42536549be02a4aa8e2bafd38cbe4b, type: 2}
   defaultSwingAudio: {fileID: 11400000, guid: bf3a7f0b55bbe1f41b4cdd4a60307c3a, type: 2}
   defaultHeavySwingAudio: {fileID: 11400000, guid: c192a2166bf24c72ba47e39a165f0a0c, type: 2}
-  bladeBlood: 1
+  bladeBlood: 0
   bladeBloodFadeSeconds: 45
   bladeBloodMax: 18
   ragdollDeath: 1
@@ -410,3 +410,9 @@ MonoBehaviour:
   ragdollUpwardImpulse: 3
   lootableCorpses: 0
   corpseLifetime: 0
+  playerDeathFall: 1
+  deathFallSeconds: 0.9
+  deathFallEyeHeight: 0.28
+  deathFallRoll: 72
+  deathFallPitch: 0
+  deathFallArmsDrop: 1.2

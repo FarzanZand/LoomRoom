@@ -80,16 +80,24 @@ public class DungeonAmbush : MonoBehaviour
     {
         foreach (var g in gates) if (g != null) { Raise(g); Play(slamAudio, g.position); }
         MessageLog.Post("Iron gates slam shut across the ways out.", MessageKind.Warning);
+        bool inRun = RunManager.HasInstance && RunManager.Instance.Running;
+        bool Over() => player == null || inRun && (!RunManager.HasInstance || !RunManager.Instance.Running);
         yield return new WaitForSeconds(.7f);
         foreach (var wave in new[] { waveOne, waveTwo })
         {
             if (wave.Count == 0) continue;
+            // While the player is down the fight waits (a revive picks it up again); a run that is over ends it.
+            while (player == null || !player.IsAlive)
+            {
+                if (Over()) yield break;
+                yield return new WaitForSeconds(.25f);
+            }
             yield return Spawn(wave, player);
             while (true)
             {
                 alive.RemoveAll(c => c == null || !c.IsAlive);
                 if (alive.Count == 0) break;
-                if (!player.IsAlive) yield break;
+                if (Over()) yield break;
                 yield return new WaitForSeconds(.25f);
             }
             yield return new WaitForSeconds(1f);

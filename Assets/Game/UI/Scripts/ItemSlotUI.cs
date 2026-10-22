@@ -9,7 +9,7 @@ using UnityEngine.UI;
 // One cell of an inventory or hotbar grid. Bound to (container, index) by its owner
 // UI; all visuals are authored in the prefab/scene.
 public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler,
-    IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
+    IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler, ISelectHandler, IDeselectHandler, ISubmitHandler
 {
     [SerializeField] Image           iconImage;
     [SerializeField] Image           background;
@@ -39,6 +39,9 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     bool GridCell => Container != null && Container.IsGrid;
     // Set by ItemGridUI while an item is dragged over the grid: where it would go (green) or not (red).
     public Color? PreviewTint { get; set; }
+    // Picked with a pad or the arrow keys: the cell shows it with this tint (grid cells have no colour transition).
+    static readonly Color SelectedTint = new Color(1f, .9f, .6f);
+    bool selected;
 
     Player Owner => Container != null ? Container.GetComponentInParent<Player>() : null;
 
@@ -135,10 +138,10 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         }
         // The Rugged HUD (UIManager.hudStyle) draws the slot as the inventory's grey cell: its own colours, not the tint.
         bool rugged = Rugged;
-        if (background != null && !useAuthoredAppearance) background.color = PreviewTint ?? (rugged ? Color.white : item != null ? filledColor : emptyColor);
+        if (background != null && !useAuthoredAppearance) background.color = PreviewTint ?? (selected ? SelectedTint : rugged ? Color.white : item != null ? filledColor : emptyColor);
         // Authored cells (the bag grid) keep their sprite as it is, taken or not (the item's rarity floor marks it);
         // only the drag footprint tints it.
-        else if (background != null && GridCell) background.color = PreviewTint ?? Color.white;
+        else if (background != null && GridCell) background.color = PreviewTint ?? (selected ? SelectedTint : Color.white);
         // The hotbar shows no rarity floor (the bag grid and the equipment slots do): its slots stay as they are.
         if (rarityFill != null) ItemData.ShowSlotFill(rarityFill, item, false);
         if (stackLabel != null)
@@ -181,6 +184,15 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void OnPointerEnter(PointerEventData e) { if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item); }
     public void OnPointerExit(PointerEventData e)  { if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
+
+    // A pad or the arrow keys: selecting a cell shows its tooltip, Submit acts like a right click.
+    public void OnSelect(BaseEventData e) { selected = true; Refresh(); if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item); }
+    public void OnDeselect(BaseEventData e) { selected = false; Refresh(); if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
+    public void OnSubmit(BaseEventData e)
+    {
+        if (Item == null) return;
+        if (Item.IsConsumable) ActivateItem(); else if (!ToggleEquip()) ShowContextMenu();
+    }
 
     public void OnPointerClick(PointerEventData e)
     {
@@ -301,7 +313,9 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
             }));
         }
 
-        ContextMenuUI.Instance.Show(options, Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero);
+        // Opened from a pad (the cell is selected): next to the cell, not where the mouse was left.
+        Vector2 at = selected ? (Vector2)RectTransformUtility.WorldToScreenPoint(null, transform.position) : Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+        ContextMenuUI.Instance.Show(options, at);
     }
 
     // ── Drag & drop ───────────────────────────────────────────────────

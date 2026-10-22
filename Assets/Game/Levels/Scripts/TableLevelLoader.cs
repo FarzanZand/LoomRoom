@@ -199,7 +199,14 @@ public class TableLevelLoader : MonoBehaviour
                 if(level.IsDungeon && RunManager.HasInstance)
                 {
                     if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); }
-                    RunManager.Instance.ReachFloor(FloorNumber);
+                    // A continued run's checkpoint already holds this floor's experience (it was taken after the floor
+                    // was reached): only the depth is set, with no floor experience and no "+XP" meter at level 1.
+                    var resumedProgress = resume != null ? player.GetComponent<AdventurerProgress>() : null;
+                    var floorRules = resumedProgress != null ? resumedProgress.rules : null;
+                    float xpPerFloor = floorRules != null ? floorRules.xpPerFloor : 0f;
+                    if (floorRules != null) floorRules.xpPerFloor = 0f;
+                    try { RunManager.Instance.ReachFloor(FloorNumber); }
+                    finally { if (floorRules != null) floorRules.xpPerFloor = xpPerFloor; }
                     var adventureSave = player.GetComponent<AdventureSave>();
                     if (resume != null && adventureSave != null) adventureSave.Restore(resume);
                     // The biome's line only when the surroundings change; otherwise just the depth.
@@ -248,12 +255,21 @@ public class TableLevelLoader : MonoBehaviour
             if (faded && ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.6f);
             ReleaseCutscene();
             Busy=false;
-            if(!completed) ShowSelection("Could not load that level");
+            // From the campaign map the old adventure menu is no way back: the player stays standing at the table, and
+            // the map rises again on its own (CampaignManager).
+            if(!completed && !descending && CampaignManager.Active) FailedFromMap();
+            else if(!completed) ShowSelection("Could not load that level");
             // The biome's Dungeon Master line, a moment after the player is actually standing in it.
             else if(entryLine!=null) DungeonMaster.Say(entryLine,null,entryLineDelay);
             entryLine=null;
             if(completed && Dungeon!=null && Dungeon.Merchant!=null) MessageLog.Post("A merchant has set up shop on this floor.", MessageKind.Info);
         }
+    }
+    void FailedFromMap()
+    {
+        NotificationUI.Show("Could not load that level");
+        if(PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind!=PlayerKind.Room) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
+        if(TableManager.HasInstance) TableManager.Instance.StandRoomPlayer();
     }
     // Unity never resumes a coroutine whose nested routine threw, so step nested routines here and log instead.
     static IEnumerator RunGuarded(IEnumerator routine) => GuardedRoutine.Run(routine);
@@ -433,6 +449,7 @@ public class TableLevelLoader : MonoBehaviour
                 fade=false;
                 if (TableManager.HasInstance) TableManager.Instance.StandRoomPlayer();
                 var exit = gameObject.AddComponent<TableLevelExit>();
+                bool skipped = false;
                 // How high the floor stands above the tabletop (its tallest room, kit pieces, the arena's stands).
                 float top = Dungeon.transform.position.y;
                 if(environment!=null) foreach(var r in environment.GetComponentsInChildren<Renderer>()) if(r.enabled && !(r is ParticleSystemRenderer)) top=Mathf.Max(top, r.bounds.max.y);
@@ -446,14 +463,16 @@ public class TableLevelLoader : MonoBehaviour
                         if (RoomPainting.BehindDungeonMaster != null) RoomPainting.BehindDungeonMaster.Restore();
                     }));
                 }
-                finally { Destroy(exit); }
+                finally { skipped = exit.Skipped; Destroy(exit); }
                 // The floor sinks into the table as the room settles: all of it, under the tabletop, creatures too (their
                 // agents would hold them up at the floor's height).
                 if(environment!=null)
                 {
                     foreach(var agent in environment.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>()) agent.enabled=false;
                     var t=environment.transform; var from=t.position; float depth=standing+1f;
-                    for(float s=0; s<exitSettings.exitSinkSeconds && t!=null; s+=Time.unscaledDeltaTime)
+                    // A skipped flight skips the sink too: the floor is under the table at once.
+                    if(skipped) t.position=from-Vector3.up*depth;
+                    else for(float s=0; s<exitSettings.exitSinkSeconds && t!=null; s+=Time.unscaledDeltaTime)
                     { t.position=from-Vector3.up*depth*Mathf.SmoothStep(0,1,s/exitSettings.exitSinkSeconds); yield return null; }
                 }
             }

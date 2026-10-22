@@ -54,6 +54,9 @@ public class RunManager : Singleton<RunManager>
 
     public event Action RunStarted;
     public event Action<bool> RunEnded; // victory
+    // The run goes on after a death (RevivePlayer), raised once the player stands again. The argument is whether the
+    // death had already been banked (RunEnded(false) had been raised): its listeners then take back what they did for it.
+    public event Action<bool> Revived; // counted
 
     Player player;
     Coroutine deathRoutine;
@@ -189,7 +192,7 @@ public class RunManager : Singleton<RunManager>
 
     // The dev console's revive: the run goes on after a death. Before the recap came up the death was never banked, so
     // nothing changes; after it, the death had been banked and saved, so the tallies restart from here and nothing is
-    // banked twice. Returns whether the death had already been counted.
+    // banked twice. Returns whether the death had already been counted. RevivePlayer raises Revived after it.
     public bool ReviveRun(out bool counted)
     {
         counted = false;
@@ -215,6 +218,8 @@ public class RunManager : Singleton<RunManager>
         var animator = player.Animator;
         if (animator != null && Character.HasParameter(animator, "Dead", AnimatorControllerParameterType.Bool)) animator.SetBool("Dead", false);
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
+        // Raised with the player up again, so listeners see them alive (the save's checkpoint, the fights on the floor).
+        if (run) Instance.Revived?.Invoke(counted);
         return true;
     }
 

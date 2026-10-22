@@ -26,8 +26,38 @@ MonoBehaviour:
   - biome: {fileID: 11400000, guid: 8eaf9824efd9dcf4db22adc877d60d68, type: 2}
     floors: 10
     boss: 1
-  balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
-  gearByFloor: []
+  balance: {fileID: 11400000, guid: 043d509308ae73c4b8d4e178facd2614, type: 2}
+  gearByFloor:
+  - fromFloor: 1
+    tier1: 100
+    tier2: 0
+    tier3: 0
+    tier4: 0
+    upgradeChance: 0.05
+  - fromFloor: 4
+    tier1: 50
+    tier2: 50
+    tier3: 0
+    tier4: 0
+    upgradeChance: 0.1
+  - fromFloor: 8
+    tier1: 0
+    tier2: 100
+    tier3: 0
+    tier4: 0
+    upgradeChance: 0.1
+  - fromFloor: 12
+    tier1: 0
+    tier2: 60
+    tier3: 40
+    tier4: 0
+    upgradeChance: 0.1
+  - fromFloor: 16
+    tier1: 0
+    tier2: 0
+    tier3: 100
+    tier4: 0
+    upgradeChance: 0.15
   startingRoom: {fileID: 0}
   startingChestConsumable: {fileID: 0}
   fixedSeed: 0

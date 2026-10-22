@@ -51,6 +51,12 @@ public class RuleManager : Singleton<RuleManager>
         DungeonMaster.Say(rule.quote != null && !rule.quote.IsEmpty ? rule.quote : new DungeonMaster.Line { text = $"Rule {Word(Number(rule))}.", mumble = true });
     }
 
+    // A rule by its number (1 = rule one), null past the list.
+    public HouseRule Rule(int number) => rules != null && number >= 1 && number <= rules.Length ? rules[number - 1] : null;
+
+    // Quotes rule number n where it applies (only once pinned, paced by Quote Gap). Safe without a manager.
+    public static void QuoteRule(int number) { if (HasInstance) Instance.Quote(Instance.Rule(number)); }
+
     public void ShowRules() { if (readScreen != null) readScreen.Open(); }
 
     static readonly string[] Words = { "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty" };

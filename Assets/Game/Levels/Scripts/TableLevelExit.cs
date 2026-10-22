@@ -47,8 +47,12 @@ public sealed class TableLevelExit : MonoBehaviour
             float seconds = Mathf.Max(.1f, settings.exitSeconds);
             float floorY = dungeon != null ? dungeon.transform.position.y : start.y;
             var aboveStart = new Vector3(start.x, Mathf.Max(start.y + settings.exitRise, floorY + standing + 1.5f), start.z);
+            // A click or Submit lands the view at once (not in its first moment: the press that started the way back).
+            skipFrom = Time.unscaledTime + .15f;
+            if (InputManager.HasInstance) { skipInput = InputManager.Instance; skipInput.SubmitPressed += OnSkip; }
             for (float elapsed = 0f; elapsed < seconds; elapsed += Time.unscaledDeltaTime)
             {
+                if (Skipped || elapsed > .15f && skipInput != null && skipInput.PointerClicked) { Skipped = true; break; }
                 // The room camera's live pose (its rig may still settle), so Cinemachine takes over from the same view.
                 target.InternalUpdateCameraState(Vector3.up, Time.unscaledDeltaTime);
                 var live = target.State;
@@ -74,8 +78,15 @@ public sealed class TableLevelExit : MonoBehaviour
         finally { Restore(); }
     }
 
+    InputManager skipInput;
+    // The flight was cut short by a click or Submit (the view landed at once).
+    public bool Skipped { get; private set; }
+    float skipFrom;
+    void OnSkip() { if (Time.unscaledTime >= skipFrom) Skipped = true; }
+
     void Restore()
     {
+        if (skipInput != null) { skipInput.SubmitPressed -= OnSkip; skipInput = null; }
         foreach (var entry in roomRenderers) if (entry.renderer != null) entry.renderer.forceRenderingOff = entry.forcedOff;
         roomRenderers.Clear();
         if (captured && output != null)

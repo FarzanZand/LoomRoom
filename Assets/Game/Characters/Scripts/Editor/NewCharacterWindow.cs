@@ -24,7 +24,9 @@ public class NewCharacterWindow : EditorWindow
     [MenuItem("Assets/Create/LoomRoom/Character Variant", true)]
     static bool FromSelectionValid() => IsTemplate(Selection.activeGameObject);
 
-    public static void Open(bool enemy, GameObject selected)
+    // created: called with the new prefab once it is made (Asset Studio shows it). A character as the template puts the
+    // new one in that character's folder; a base, in Enemies or NPCs.
+    public static void Open(bool enemy, GameObject selected, System.Action<GameObject> created = null)
     {
         var window = GetWindow<NewCharacterWindow>(true, enemy ? "New Enemy" : "New NPC");
         window.minSize = window.maxSize = new Vector2(440, 230);
@@ -33,7 +35,12 @@ public class NewCharacterWindow : EditorWindow
         window.folder = Root + (enemy ? "Enemies" : "NPCs");
         window.template = IsTemplate(selected) && (selected.GetComponent<EnemyBrain>() != null) == enemy ? selected
             : AssetDatabase.LoadAssetAtPath<GameObject>(Root + (enemy ? "Enemies/Base/Humanoid enemy base.prefab" : "NPCs/Base/HumanoidNPC.prefab"));
+        string templatePath = window.template != null ? AssetDatabase.GetAssetPath(window.template) : "";
+        if (templatePath.StartsWith(Root) && !templatePath.Contains("/Base/")) window.folder = Path.GetDirectoryName(templatePath).Replace('\\', '/');
+        window.onCreated = created;
     }
+
+    [System.NonSerialized] System.Action<GameObject> onCreated;
 
     // Enemies and NPCs; players are set up by hand.
     static bool IsTemplate(GameObject go) => go != null && PrefabUtility.IsPartOfPrefabAsset(go)
@@ -69,7 +76,9 @@ public class NewCharacterWindow : EditorWindow
                 var created = Create(characterName.Trim(), template, path);
                 Selection.activeObject = created;
                 EditorGUIUtility.PingObject(created);
+                var then = onCreated;
                 Close();
+                then?.Invoke(created);
             }
     }
 

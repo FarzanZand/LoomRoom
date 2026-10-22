@@ -154,6 +154,7 @@ public class MainMenuUI : MonoBehaviour
 
     void CloseSettings()
     {
+        UserSettings.Save();   // settings and keys reach the disk
         if (buttons != null) buttons.SetActive(true);
         settingsButton?.Select();
     }
@@ -177,7 +178,8 @@ public class MainMenuUI : MonoBehaviour
         bool back = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame || Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame;
         if (back && !leaving)
         {
-            if (settings != null && settings.IsOpen) { if (!InputManager.HasInstance || !InputManager.Instance.IsRebinding) settings.Close(); }
+            // Escape that ended a rebind this frame (it finishes before Update) only cancels the rebind.
+            if (settings != null && settings.IsOpen) { if (!InputManager.HasInstance || !InputManager.Instance.IsRebinding && !InputManager.Instance.RebindEndedThisFrame) settings.Close(); }
             else if (confirmPanel != null && confirmPanel.activeSelf) CloseConfirm();
             else if (savesPanel != null && savesPanel.activeSelf) CloseSaves();
             else if (newGamePanel != null && newGamePanel.activeSelf) CloseNewGame();

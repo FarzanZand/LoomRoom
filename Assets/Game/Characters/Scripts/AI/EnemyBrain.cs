@@ -148,6 +148,7 @@ public class EnemyBrain : MonoBehaviour
     float   giveUpTimer = -1f;
     float   investigateTimer;
     bool    wasProvoked;
+    bool    flies;
     Vector3 investigatePoint;
 
     // Spacing
@@ -192,6 +193,7 @@ public class EnemyBrain : MonoBehaviour
         Motor      = GetComponent<EnemyMotor>();
         Perception = GetComponent<Perception>();
         Loadout    = GetComponent<EnemyWeaponLoadout>();
+        flies      = GetComponent<FlyingEnemy>() != null;
         Perception.Profile = Profile;
         if (attackRelay == null) attackRelay = GetComponentInChildren<WeaponAnimationRelay>(true);
         spawnPosition = transform.position;
@@ -549,7 +551,7 @@ public class EnemyBrain : MonoBehaviour
                 : height <= 1f && (Tuning == null || Tuning.HasMeleeLineOfSight(Character, target, targetPos + Vector3.up * 0.9f));
             if (Motor.IsFacing(targetPos, attack.facingAngle) && clear)
                 attackRunner.StartAttack(attack);
-            else HandleSpacing(targetPos, dist);
+            else if (attack.IsRanged || !HandleHeightGap(targetPos, dist)) HandleSpacing(targetPos, dist);
             return;
         }
 
@@ -557,7 +559,7 @@ public class EnemyBrain : MonoBehaviour
         // but is recharging is no reason to stand and wait. It casts on the way in whenever one is ready (PickAttack).
         if (CloseIn ? dist <= PreferredDistance : AnyAttackCoversDistance(dist) || dist <= PreferredDistance)
         {
-            HandleSpacing(targetPos, dist);
+            if (!HandleHeightGap(targetPos, dist)) HandleSpacing(targetPos, dist);
             return;
         }
 
@@ -640,6 +642,60 @@ public class EnemyBrain : MonoBehaviour
             }
         }
         else circleStuckSince = -1f;
+    }
+
+    // The target stands too high or low for a melee blow (a ledge, a stair landing). If the NavMesh leads up to it,
+    // walk the way round (up the stairs) instead of circling underneath; if nothing does, back off out of its reach
+    // and wait, facing it. Flyers, archers and casters keep the plain spacing. False when this doesn't apply.
+    const float MeleeHeightReach = 1f, LedgeStandOff = 3f;
+    float reachCheckedAt = -1f;
+    bool targetReachable;
+    Vector3 reachPoint;
+    NavMeshPath reachPath;
+
+    bool HandleHeightGap(Vector3 targetPos, float dist)
+    {
+        if (Mathf.Abs(targetPos.y - transform.position.y) <= MeleeHeightReach) return false;
+        var data = Data;
+        if (data == null || data.archer || data.caster || flies || Motor.Agent == null || !Motor.Agent.isOnNavMesh) return false;
+
+        // A path query is costly: checked a few times a second.
+        if (Time.time - reachCheckedAt > .5f)
+        {
+            reachCheckedAt = Time.time;
+            targetReachable = false;
+            var filter = new NavMeshQueryFilter { agentTypeID = Motor.Agent.agentTypeID, areaMask = Motor.Agent.areaMask };
+            if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 1.5f, filter) && Mathf.Abs(hit.position.y - targetPos.y) <= MeleeHeightReach)
+            {
+                reachPath ??= new NavMeshPath();
+                if (NavMesh.CalculatePath(transform.position, hit.position, filter, reachPath) && reachPath.status == NavMeshPathStatus.PathComplete)
+                {
+                    targetReachable = true;
+                    reachPoint = hit.position;
+                }
+            }
+        }
+
+        var p = Profile;
+        if (targetReachable)
+        {
+            Motor.SetAutoBraking(false);
+            Motor.SetStoppingDistance(Mathf.Min(PreferredDistance, .5f));
+            Motor.MoveTo(reachPoint);
+            if (dist < MaxAttackRange * 2.5f) Motor.LookAt(targetPos, p.attackFaceSpeed);
+            else Motor.ClearLookTarget();
+            return true;
+        }
+
+        Motor.LookAt(targetPos, p.attackFaceSpeed);
+        if (dist < LedgeStandOff)
+        {
+            Vector3 away = transform.position - targetPos; away.y = 0f;
+            if (away.sqrMagnitude < .0001f) away = -transform.forward;
+            Motor.Strafe(away, ChaseSpeed * p.spacingSpeedFraction);
+        }
+        else Motor.Stop();
+        return true;
     }
 
     void HandleAttack() => attackRunner.HandleAttackState();

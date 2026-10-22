@@ -120625,6 +120625,7 @@ MonoBehaviour:
   radiusBlendSeconds: 1.2
   shadowedLamps: 4
   shadowBudgetSeconds: 0.3
+  roomShadowsOffInDungeon: 1
   roomRoots:
   - {fileID: 956568379}
   - {fileID: 1647973095}
@@ -186249,7 +186250,7 @@ MonoBehaviour:
   reviveButton: {fileID: 734843210}
   reviveAfterDeaths: 3
   reviveUnlockedLine:
-    text: Revive skill added, use it to make it to the boss, but I will mock you.
+    text: You can get up now. Use it to reach the boss. I will mock you every time.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
