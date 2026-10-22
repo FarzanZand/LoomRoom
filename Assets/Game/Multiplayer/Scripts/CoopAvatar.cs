@@ -15,6 +15,8 @@ public class CoopAvatar : MonoBehaviour
     [SerializeField] float labelHeight = 2.15f;
     [Tooltip("Metres (at the body's own scale) up to which the name label shrinks with distance like the body; further it keeps its size on screen.")]
     [SerializeField] float labelFullSize = 4f;
+    [Tooltip("Metres (at the body's own scale): a teammate this close in front of the local player's campaign map view is hidden.")]
+    [SerializeField] float mapViewHideDistance = 3.5f;
     static readonly int ZTestId = Shader.PropertyToID("unity_GUIZTestMode");
     bool labelOnTop;
 
@@ -73,8 +75,10 @@ public class CoopAvatar : MonoBehaviour
         var s = player.Current;
         Rebuild(false);
         // Still in the lobby (joined, waiting for the host's Begin): not in the room yet.
-        if (model != null && model.activeSelf == s.inLobby) model.SetActive(!s.inLobby);
-        if (nameLabel != null && nameLabel.gameObject.activeSelf == s.inLobby) nameLabel.gameObject.SetActive(!s.inLobby);
+        // Over the campaign map a teammate seated right in front of the view would cover it: hidden while that lasts.
+        bool inView = !s.inLobby && !InFrontOfMapView();
+        if (model != null && model.activeSelf != inView) model.SetActive(inView);
+        if (nameLabel != null && nameLabel.gameObject.activeSelf != inView) nameLabel.gameObject.SetActive(inView);
         // A ghost drifts a little off the floor.
         if (model != null && builtGhost) model.transform.localPosition = Vector3.up * (.18f + Mathf.Sin(Time.time * 1.7f) * .06f);
         if (usedVisual != null && Time.time >= useEnds) EndUse();
@@ -479,4 +483,14 @@ public class CoopAvatar : MonoBehaviour
     // The one body gets these from the owner's own states (ApplyArms).
     public void Cast() { if (animator != null && !builtOneBody) animator.SetTrigger("CastSpell"); }
     public void Hurt() { if (animator != null && !builtOneBody && player != null && player.Current.alive) animator.SetTrigger("Hurt"); }
+
+    // The local player is in the campaign map view and this body stands close in front of its camera.
+    bool InFrontOfMapView()
+    {
+        if (!CampaignManager.HasInstance || !CampaignManager.Instance.InMapView || !PlayerManager.HasInstance) return false;
+        var cam = PlayerManager.Instance.OutputCamera;
+        if (cam == null) return false;
+        var to = transform.position + Vector3.up * labelHeight * .8f * builtScale - cam.transform.position;   // the head
+        return to.magnitude < mapViewHideDistance * builtScale && Vector3.Dot(cam.transform.forward, to) > 0f;
+    }
 }

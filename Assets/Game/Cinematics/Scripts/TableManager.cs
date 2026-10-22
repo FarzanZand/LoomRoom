@@ -391,6 +391,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
     {
         var room = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Room) : null;
         if (room != null) StandUp(room);
+        // Co-op: not inside a teammate who stands where this player comes back (the map view walks along the table).
+        if (room != null && Coop.Running) MultiplayerManager.Instance.KeepClearOfTeammates(room);
     }
 
     // Nothing to stand up from any more: just hand the view back.

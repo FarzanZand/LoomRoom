@@ -153,6 +153,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     readonly Dictionary<string, int> earnedFlags = new();
     bool applyingHostFlags;
     Vector3 roomSpot;
+    [Tooltip("Metres (at the room player's own scale) a room player keeps from a teammate when coming back from the table.")]
+    [SerializeField] float roomClearance = 1.3f;
     float roomYaw;
     TableLevelData pendingLevel;
 
@@ -896,6 +898,26 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         done?.Invoke(started);
     }
 
+    // A room player coming back from the table steps aside from a teammate's room body standing on (or nearly on) the
+    // same spot, along the floor, so neither view starts inside the other's head.
+    public void KeepClearOfTeammates(Player room)
+    {
+        if (room == null) return;
+        float scale = Mathf.Max(1f, room.transform.lossyScale.y), clear = roomClearance * scale;
+        var at = room.transform.position;
+        foreach (var p in players)
+        {
+            if (p == null || p.IsOwner || p.Current.place != CoopPlace.Room) continue;
+            var away = at - p.transform.position; away.y = 0f;
+            if (away.magnitude >= clear) continue;
+            if (away.sqrMagnitude < .01f) away = room.transform.right;
+            var to = p.transform.position + away.normalized * clear;
+            if (UnityEngine.AI.NavMesh.SamplePosition(to, out var hit, clear, UnityEngine.AI.NavMesh.AllAreas)) to = hit.position;
+            room.Warp(to, room.transform.rotation);
+            at = to;
+        }
+    }
+
     // Sitting down: nobody hears the Dungeon Master or picks a figure alone. Seated, each waits until everyone in the
     // room has sat down too (players in a run or still in the lobby don't count). False: Esc, stand up again.
     public IEnumerator WaitForEveryoneSeated(System.Action<bool> done)
@@ -1227,6 +1249,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         }
         if (anyone && !anyAlive && !(TableManager.Loader != null && TableManager.Loader.Busy)) EndRun(false);
     }
+
+    // Host: the run is won without the stairs (TableLevelLoader.CompleteRun, an arena's fight): it ends for everyone.
+    public void WinRun() { if (IsHost && runActive) EndRun(true); }
 
     void EndRun(bool victory)
     {

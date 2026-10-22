@@ -394,6 +394,8 @@ public class TableLevelLoader : MonoBehaviour
     public void CompleteRun()
     {
         if(Busy || (IntroController.HasInstance && IntroController.Instance.StairsReached())) return;
+        // Co-op: a won run ends for the whole party, from the host (an arena's fight is won on the host's floor).
+        if(Coop.Running) { if(Coop.IsHost) MultiplayerManager.Instance.WinRun(); return; }
         if(RunManager.HasInstance && RunManager.Instance.Running && RunManager.Instance.recap!=null) { RunManager.Instance.EndRunInVictory(); return; }
         ShowSelection("Dungeon complete");
     }
