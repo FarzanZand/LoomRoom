@@ -62,25 +62,15 @@ public class CampaignHeroSelectUI : MonoBehaviour
         taken = cancelled = false;
         Open = true;
         Sync();
-        void OnNavigate()
-        {
-            // Down the column (or Tab) is the next one, up the one before.
-            details.Cycle(InputManager.Instance.NavigateStep);
-        }
-        void OnSubmit() => taken = true;
-        void OnCancel() => cancelled = true;
         var input = InputManager.HasInstance ? InputManager.Instance : null;
-        if (input != null) { input.NavigatePressed += OnNavigate; input.SubmitPressed += OnSubmit; input.CancelPressed += OnCancel; }
+        Listen(input);
         try
         {
             for (float t = 0; t < 1f; t += Time.unscaledDeltaTime / .18f) { Fade(t); Sync(); yield return null; }
             Fade(1f);
             while (!taken && !cancelled) { Sync(); yield return null; }
         }
-        finally
-        {
-            if (input != null) { input.NavigatePressed -= OnNavigate; input.SubmitPressed -= OnSubmit; input.CancelPressed -= OnCancel; }
-        }
+        finally { Unlisten(); }
         var result = taken ? progress.selectedClass : null;
         if (result == null && before != null) progress.SelectClass(before);
         Sync();
@@ -89,6 +79,34 @@ public class CampaignHeroSelectUI : MonoBehaviour
         Open = false;
         done?.Invoke(result);
     }
+
+    InputManager listening;
+    // Down the column (or Tab) is the next one, up the one before.
+    void OnNavigate() => details.Cycle(InputManager.Instance.NavigateStep);
+    void OnSubmit() => taken = true;
+    void OnCancel() => cancelled = true;
+    void Listen(InputManager input)
+    {
+        Unlisten();
+        listening = input;
+        if (input != null) { input.NavigatePressed += OnNavigate; input.SubmitPressed += OnSubmit; input.CancelPressed += OnCancel; }
+    }
+    void Unlisten()
+    {
+        if (listening != null) { listening.NavigatePressed -= OnNavigate; listening.SubmitPressed -= OnSubmit; listening.CancelPressed -= OnCancel; }
+        listening = null;
+    }
+
+    // Shut from outside (the map view stopped while it was open): no handlers, nothing on screen.
+    public void Abort()
+    {
+        if (!Open) return;
+        Unlisten();
+        Fade(0f);
+        Open = false;
+    }
+
+    void OnDisable() => Unlisten();
 
     void Clicked(CampaignHeroCard card)
     {

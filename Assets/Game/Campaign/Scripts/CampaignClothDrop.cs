@@ -40,6 +40,14 @@ public class CampaignClothDrop
         return d;
     }
 
+    // After the drop has played only its settled shape is needed (the act cloths lie on it): the other frames go.
+    public void KeepLastFrame()
+    {
+        if (frames < 2) return;
+        positions = new[] { positions[frames - 1] };
+        frames = 1;
+    }
+
     // The cloth at a time (seconds from the start), blended between the two frames round it.
     public void Sample(float seconds, Vector3[] into)
     {

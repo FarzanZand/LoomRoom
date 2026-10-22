@@ -169,7 +169,7 @@ public class CampaignManager : Singleton<CampaignManager>
         if (Map.gameObject.activeSelf) { ShowActs(); RefreshMarker(); }
     }
 
-    System.Action cancelHandler;
+    System.Action cancelHandler, navigateHandler, submitHandler;
 
     // The map view stopped from outside (its table switched off mid-view: a coroutine's finally doesn't run then):
     // nothing it set is left behind.
@@ -180,10 +180,22 @@ public class CampaignManager : Singleton<CampaignManager>
     public void AbortMapView()
     {
         changingClass = false;
+        if (eventScreen != null) eventScreen.Abort();
+        if (heroSelect != null) { heroSelect.Abort(); if (heroFollow != null) heroSelect.Shown -= heroFollow; }
+        heroFollow = null;
+        if (figuresHome.HasValue && ClassFiguresOnTable != null) { ClassFiguresOnTable.transform.position = figuresHome.Value; ClassFiguresOnTable.SilentTake = false; }
+        figuresHome = null;
+        CloseAsk();
+        if (card != null) { card.Hide(); card.ShowHint(false); }
         if (!InMapView) return;
         InMapView = false;
-        if (cancelHandler != null && InputManager.HasInstance) InputManager.Instance.CancelPressed -= cancelHandler;
-        cancelHandler = null;
+        if (InputManager.HasInstance)
+        {
+            if (cancelHandler != null) InputManager.Instance.CancelPressed -= cancelHandler;
+            if (navigateHandler != null) InputManager.Instance.NavigatePressed -= navigateHandler;
+            if (submitHandler != null) InputManager.Instance.SubmitPressed -= submitHandler;
+        }
+        cancelHandler = navigateHandler = submitHandler = null;
         Unhover();
         if (card != null) { card.Hide(); card.ShowHint(false); }
         CloseAsk();
@@ -200,6 +212,8 @@ public class CampaignManager : Singleton<CampaignManager>
     void RememberClass()
     {
         if (progress == null || progress.InRun || progress.selectedClass == null || progress.rules == null || PM == null) return;
+        if (heroSelect != null && heroSelect.Open) return;   // browsing: saved once a class is taken
+        if (PM.GetFlag(ClassFlag) == ClassKey(progress.selectedClass)) return;
         PM.SetFlag(ClassFlag, ClassKey(progress.selectedClass));
     }
 
@@ -277,7 +291,7 @@ public class CampaignManager : Singleton<CampaignManager>
             if (!rising && !loading && exploring) break;
             yield return null;
         }
-        yield return RevealPending();
+        yield return GuardedRoutine.Run(RevealPending());
         SayWonLine();
         bool held = ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns;
         // Only while the player is free and still at the table (not in the inventory, the sheet, a menu, or walked off):
@@ -410,8 +424,11 @@ public class CampaignManager : Singleton<CampaignManager>
 
     void OnRunEnded(bool victory)
     {
-        if (!victory || Current == null || IntroController.PracticeRunning) return;
-        if (RunManager.HasInstance && RunManager.Instance.Level != Current.level) return;   // a run not started from the map
+        if (!victory || IntroController.PracticeRunning) return;
+        // The place whose level was won (a run continued from the old menu, or started elsewhere, counts too).
+        var level = RunManager.HasInstance ? RunManager.Instance.Level : null;
+        if (Current == null || Current.level != level) Current = PlaceOf(level);
+        if (Current == null) return;
         lastRunWon = true;
         MarkBeaten(Current);
     }
@@ -508,6 +525,7 @@ public class CampaignManager : Singleton<CampaignManager>
         if (InventoryManager.HasInstance)
             foreach (var item in InventoryManager.Instance.itemCatalog)
                 if (item != null && !string.IsNullOrEmpty(item.saveId) && PM.GetFlag(GiftPrefix + item.saveId) != 0) PM.SetFlag(GiftPrefix + item.saveId, 0);
+        revealedNow = 0;
         RefreshMarker();
         wonLinePending = false;
         ShowActs();
@@ -548,7 +566,7 @@ public class CampaignManager : Singleton<CampaignManager>
         while (revealing) yield return null;
         bool firstReveal = !Map.gameObject.activeSelf && PM != null && !PM.HasFlag(SeenFlag);
         if (firstReveal) yield return StepToMap(player);
-        if (!Map.gameObject.activeSelf) yield return StartCoroutine(firstReveal ? BigReveal() : Rise());
+        if (!Map.gameObject.activeSelf) yield return StartCoroutine(GuardedRoutine.Run(firstReveal ? BigReveal() : Rise(), _ => { rising = false; RepairMap(); }));
         else ShowActs();
         PlaceFigure(At, firstReveal);
         if (!firstReveal) yield return StepToMap(player);
@@ -563,7 +581,7 @@ public class CampaignManager : Singleton<CampaignManager>
         while (revealing) yield return null;
         int shownBefore = Mathf.Min(OpenAct, RevealedAct);
         // On this manager, not the table's sitting coroutine: a table switched off mid-reveal can't leave it half done.
-        yield return StartCoroutine(RevealPending());
+        yield return StartCoroutine(GuardedRoutine.Run(RevealPending()));
         if (frameOpenLand && Mathf.Min(OpenAct, RevealedAct) != shownBefore) yield return Frame(player, .9f);
         yield return RunEvents();
 
@@ -575,6 +593,21 @@ public class CampaignManager : Singleton<CampaignManager>
         bool cancelled = false, started = false;
         CampaignEncounter completing = null; bool resetting = false;
         bool MenuOpen() => ContextMenuUI.HasInstance && ContextMenuUI.Instance.IsOpen;
+        bool submitted = false;
+        void OnNavigate()
+        {
+            if (asking || MenuOpen() || eventScreen != null && eventScreen.Open || heroSelect != null && heroSelect.Open || changingClass) return;
+            int count = KeyPicks().Count;
+            keyPick = keyPick < 0 ? (hovered != null ? Mathf.Max(0, keyPicks.IndexOf(hovered)) : 0) : (keyPick + InputManager.Instance.NavigateStep + count) % count;
+        }
+        void OnSubmit()
+        {
+            if (asking || MenuOpen() || eventScreen != null && eventScreen.Open || heroSelect != null && heroSelect.Open || changingClass) return;
+            if (keyPick >= 0) submitted = true;
+        }
+        if (InputManager.HasInstance) { InputManager.Instance.NavigatePressed += OnNavigate; InputManager.Instance.SubmitPressed += OnSubmit; }
+        navigateHandler = OnNavigate; submitHandler = OnSubmit;
+        keyPick = -1;
         cancelHandler = OnCancel;
         void OnCancel()
         {
@@ -589,7 +622,8 @@ public class CampaignManager : Singleton<CampaignManager>
             {
                 Hover(savedPlace, savedDetail);
                 if (testClick != null) { hovered = testClick == "figure" ? null : TestPoint(testClick); overFigure = testClick == "figure"; }
-                bool clicked = testClick != null || InputManager.HasInstance && InputManager.Instance.PointerClicked && !OverUI();
+                bool clicked = testClick != null || submitted || InputManager.HasInstance && InputManager.Instance.PointerClicked && !OverUI();
+                submitted = false;
                 testClick = null;
                 if (testCancel) { testCancel = false; cancelled = true; }
                 if (testComplete != null) { completing = TestPoint(testComplete)?.encounter; testComplete = null; }
@@ -618,7 +652,7 @@ public class CampaignManager : Singleton<CampaignManager>
                     yield return Walk(e);
                     MarkBeaten(e);
                     int shown = Mathf.Min(OpenAct, RevealedAct);
-                    yield return StartCoroutine(RevealPending());
+                    yield return StartCoroutine(GuardedRoutine.Run(RevealPending()));
                     if (frameOpenLand && Mathf.Min(OpenAct, RevealedAct) != shown) yield return Frame(player, .9f);
                     SayWonLine();
                     yield return RunEvents();
@@ -644,7 +678,7 @@ public class CampaignManager : Singleton<CampaignManager>
                             // The saved run's place continues it, as whatever class the run was played with (when it
                             // still can be: checked before anything moves).
                             bool resume = savedPlace == e && savedClass != null;
-                            if (resume && !loader.CanResumeAdventure()) { NotificationUI.Show("That saved run can't be continued"); continue; }
+                            if (resume && !loader.CanResumeAdventure()) { NotificationUI.Show("That saved run can't be continued"); yield return null; continue; }
                             if (resume && progress != null && progress.selectedClass != savedClass) { progress.SelectClass(savedClass); RememberClass(); PlaceFigure(At); }
                             // A new run over a saved one asks first: the saved run would be gone.
                             if (!resume && savedPlace != null)
@@ -671,7 +705,8 @@ public class CampaignManager : Singleton<CampaignManager>
         finally
         {
             InMapView = false;
-            if (InputManager.HasInstance) InputManager.Instance.CancelPressed -= OnCancel;
+            if (InputManager.HasInstance) { InputManager.Instance.CancelPressed -= OnCancel; InputManager.Instance.NavigatePressed -= OnNavigate; InputManager.Instance.SubmitPressed -= OnSubmit; }
+            navigateHandler = submitHandler = null;
             Unhover();
             if (card != null) { card.Hide(); card.ShowHint(false); }
             if (MenuOpen()) ContextMenuUI.Instance.Hide();
@@ -680,10 +715,11 @@ public class CampaignManager : Singleton<CampaignManager>
         done?.Invoke(started);
     }
 
-    // The resumed run's place, for the win: set when a saved run is continued from elsewhere (the old menu).
-    public void NoteCurrent(TableLevelData level)
+    CampaignEncounter PlaceOf(TableLevelData level)
     {
-        foreach (var e in AllEncounters) if (e != null && e.level == level) { Current = e; return; }
+        if (level == null) return null;
+        foreach (var e in AllEncounters) if (e != null && e.kind == CampaignEncounterKind.Level && e.level == level) return e;
+        return null;
     }
 
     static bool OverUI() => UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
@@ -692,7 +728,18 @@ public class CampaignManager : Singleton<CampaignManager>
     {
         CampaignPoint under = null; overFigure = false;
         var cam = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
-        if (cam != null && InputManager.HasInstance && !OverUI() && !asking)
+        // The keys (or a gamepad) pick until the mouse moves again.
+        var mouseAt = InputManager.HasInstance ? InputManager.Instance.PointerPosition : Vector2.zero;
+        if ((mouseAt - lastMouse).sqrMagnitude > 4f) keyPick = -1;
+        lastMouse = mouseAt;
+        if (keyPick >= 0 && !asking)
+        {
+            var picks = KeyPicks();
+            if (keyPick >= picks.Count) keyPick = 0;
+            under = picks.Count > 0 ? picks[keyPick] : null;
+            overFigure = under == null;
+        }
+        else if (cam != null && InputManager.HasInstance && !OverUI() && !asking)
         {
             var ray = cam.ScreenPointToRay(InputManager.Instance.PointerPosition);
             int n = Physics.RaycastNonAlloc(ray, hits, 600f, ~0, QueryTriggerInteraction.Collide);
@@ -716,14 +763,35 @@ public class CampaignManager : Singleton<CampaignManager>
         else if (hovered != null)
         {
             var e = hovered.encounter;
-            string kindLine = e.KindName + (e.kind == CampaignEncounterKind.Level && e.level != null ? $"  ·  {e.level.FloorCount} floor{(e.level.FloorCount == 1 ? "" : "s")}" : "") + $"  ·  Act {e.act}";
-            string statusLine = savedPlace == e ? $"<color=#E8C46A>Your run waits here: {savedDetail}. Click to continue.</color>"
-                : Beaten(e) ? "<color=#8FD18B>Beaten</color>"
-                : e.kind == CampaignEncounterKind.Placeholder ? "<color=#A9A49A>Not made yet</color>" : null;
-            card.Show(e.displayName, kindLine, e.description, statusLine, hovered.transform.position + Vector3.up * 2f, cam);
+            bool saved = savedPlace == e, beaten = Beaten(e);
+            if (cardFor != e || cardSaved != saved || cardBeaten != beaten || cardDetail != savedDetail)
+            {
+                cardFor = e; cardSaved = saved; cardBeaten = beaten; cardDetail = savedDetail;
+                cardKind = e.KindName + (e.kind == CampaignEncounterKind.Level && e.level != null ? $"  ·  {e.level.FloorCount} floor{(e.level.FloorCount == 1 ? "" : "s")}" : "") + $"  ·  Act {e.act}";
+                cardStatus = saved ? $"<color=#E8C46A>Your run waits here: {savedDetail}. Click to continue.</color>"
+                    : beaten ? "<color=#8FD18B>Beaten</color>"
+                    : e.kind == CampaignEncounterKind.Placeholder ? "<color=#A9A49A>Not made yet</color>" : null;
+            }
+            card.Show(e.displayName, cardKind, e.description, cardStatus, hovered.transform.position + Vector3.up * 2f, cam);
         }
         else card.Hide();
     }
+
+    // The places the keys step through: the figure first (null), then every open place, nearest the player first.
+    readonly List<CampaignPoint> keyPicks = new();
+    int keyPick = -1;
+    Vector2 lastMouse;
+    List<CampaignPoint> KeyPicks()
+    {
+        keyPicks.Clear();
+        keyPicks.Add(null);
+        foreach (var p in Map.Points) if (p.isActiveAndEnabled && p.encounter != null && IsOpen(p.encounter)) keyPicks.Add(p);
+        keyPicks.Sort(1, keyPicks.Count - 1, Comparer<CampaignPoint>.Create((a, b) => a.transform.localPosition.x.CompareTo(b.transform.localPosition.x) != 0
+            ? a.transform.localPosition.x.CompareTo(b.transform.localPosition.x) : a.transform.localPosition.z.CompareTo(b.transform.localPosition.z)));
+        return keyPicks;
+    }
+
+    CampaignEncounter cardFor; bool cardSaved, cardBeaten; string cardDetail, cardKind, cardStatus;
 
     void Unhover() { if (hovered != null) hovered.Lift = 0f; hovered = null; overFigure = false; }
 
@@ -820,10 +888,11 @@ public class CampaignManager : Singleton<CampaignManager>
         {
             var classes = Array.FindAll(progress.rules.classes, c => c != null && c.Unlocked);
             void Follow(AdventurerClass c) => PlaceFigure(At, true);
+            heroFollow = Follow;
             heroSelect.Shown += Follow;
             AdventurerClass chosen = null;
             try { yield return heroSelect.Choose(progress, classes, c => chosen = c); }
-            finally { heroSelect.Shown -= Follow; }
+            finally { heroSelect.Shown -= Follow; heroFollow = null; }
             if (chosen != null) RememberClass();
             PlaceFigure(At, true);
             yield break;
@@ -833,6 +902,7 @@ public class CampaignManager : Singleton<CampaignManager>
         // The figures stand up on the map, in front of the player.
         var holder = figures.transform;
         var oldPos = holder.position;
+        figuresHome = oldPos;
         var near = Map.transform.TransformPoint(new Vector3(-Map.halfX * .55f, 0, 0));
         var centre = figures.Centre;
         holder.position += new Vector3(near.x - centre.x, Map.transform.position.y + 9f - centre.y, near.z - centre.z);
@@ -842,6 +912,7 @@ public class CampaignManager : Singleton<CampaignManager>
         try { yield return figures.Choose(c => picked = c); }
         finally { figures.SilentTake = false; changingClass = false; }
         holder.position = oldPos;
+        figuresHome = null;
         if (picked != null) { progress?.SelectClass(picked); RememberClass(); }
         PlaceFigure(At);
     }
@@ -861,6 +932,8 @@ public class CampaignManager : Singleton<CampaignManager>
 
     bool asking; bool? answer;
     bool changingClass;
+    Action<AdventurerClass> heroFollow;
+    Vector3? figuresHome;   // where the class figures stood before they came out over the map
 
     IEnumerator Ask(string question, Action<bool> result)
     {

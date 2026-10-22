@@ -181,18 +181,16 @@ public class TableManager : Singleton<TableManager>, IInteractable
                 }
                 if (IntroController.HasInstance) IntroController.Instance.EndSheetAtTable();
             }
-            bool started = false, finished = false;
-            try { yield return CampaignManager.Instance.Choose(player, r => started = r); finished = true; }
-            finally
+            bool started = false, failed = false;
+            // Guarded: an error in the map view lets go of everything, so the table can be used again.
+            yield return GuardedRoutine.Run(CampaignManager.Instance.Choose(player, r => started = r), _ => failed = true);
+            if (failed)
             {
-                if (!finished)
-                {
-                    // An error in the map view: let go of everything so the table can be used again.
-                    PopDialogue();
-                    CampaignManager.Instance.AbortMapView();
-                    StandUp(player);
-                    sitting = null; sittingPlayer = null;
-                }
+                PopDialogue();
+                CampaignManager.Instance.AbortMapView();
+                StandUp(player);
+                sitting = null; sittingPlayer = null;
+                yield break;
             }
             PopDialogue();
             if (!started) { yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false); StandUp(player); }

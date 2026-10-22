@@ -148,8 +148,9 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
         if (stand == standing) return;
         standing = stand;
         // Under a black screen nobody sees him move: he is simply back in his chair when it clears,
-        // instead of still sitting down as the picture comes back.
-        if (!stand && ScreenManager.HasInstance && ScreenManager.Instance.FadeAlpha > .99f) { Sit(); return; }
+        // instead of still sitting down as the picture comes back. The way back's flight (TableLevelExit) starts with
+        // the view down in the dungeon, so he takes his chair then too, before the room comes into view.
+        if (!stand && (TableLevelExit.Flying || ScreenManager.HasInstance && ScreenManager.Instance.FadeAlpha > .99f)) { Sit(); return; }
         if (stand) animator.CrossFadeInFixedTime(standState, postureBlend, 0);
         else
         {

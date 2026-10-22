@@ -90,6 +90,15 @@ public class CampaignEventUI : MonoBehaviour
         return b;
     }
 
+    // Shut from outside (the map view stopped mid-event): nothing left on screen or catching clicks.
+    public void Abort()
+    {
+        if (!Open) return;
+        Clear();
+        Fade(0f);
+        Open = false;
+    }
+
     void Clear()
     {
         foreach (var b in spawned) if (b != null) Destroy(b.gameObject);

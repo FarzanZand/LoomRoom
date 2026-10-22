@@ -15,9 +15,12 @@ public sealed class TableLevelExit : MonoBehaviour
     CinemachineBrain brain;
     bool brainEnabled, captured, completed;
     public bool IsPlaying { get; private set; }
+    // A way back is in flight (the Dungeon Master takes his chair at once, as under a black screen).
+    public static bool Flying { get; private set; }
 
+    // standing: how high the floor reaches above its base (the view climbs clear of it before it turns for the room).
     // flying starts as the view leaves the floor (the loader brings the room's light and music back over the flight).
-    public IEnumerator Play(DungeonGenerator dungeon, TableLevelRevealSettings settings, Action flying)
+    public IEnumerator Play(DungeonGenerator dungeon, TableLevelRevealSettings settings, float standing, Action flying)
     {
         output = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
         var room = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Room) : null;
@@ -29,6 +32,7 @@ public sealed class TableLevelExit : MonoBehaviour
             brainEnabled = brain != null && brain.enabled;
             if (brain != null) brain.enabled = false;
             captured = true;
+            Flying = true;
             var start = output.transform.position; var startRotation = output.transform.rotation;
             var startProjection = Matrix4x4.Perspective(output.fieldOfView, output.aspect, output.nearClipPlane, output.farClipPlane);
             output.projectionMatrix = startProjection;
@@ -41,7 +45,8 @@ public sealed class TableLevelExit : MonoBehaviour
             flying?.Invoke();
             var target = room.CameraRig.Camera;
             float seconds = Mathf.Max(.1f, settings.exitSeconds);
-            var aboveStart = start + Vector3.up * settings.exitRise;
+            float floorY = dungeon != null ? dungeon.transform.position.y : start.y;
+            var aboveStart = new Vector3(start.x, Mathf.Max(start.y + settings.exitRise, floorY + standing + 1.5f), start.z);
             for (float elapsed = 0f; elapsed < seconds; elapsed += Time.unscaledDeltaTime)
             {
                 // The room camera's live pose (its rig may still settle), so Cinemachine takes over from the same view.
@@ -52,7 +57,10 @@ public sealed class TableLevelExit : MonoBehaviour
                 float t = Mathf.SmoothStep(0f, 1f, elapsed / seconds), u = 1f - t;
                 // Straight up out of the floor first, then over to the room player (the entry's curve, run backward).
                 var position = u * u * u * start + 3f * u * u * t * aboveStart + 3f * u * t * t * Vector3.Lerp(aboveStart, destination, .3f) + t * t * t * destination;
-                output.transform.SetPositionAndRotation(position, Quaternion.Slerp(startRotation, live.GetFinalOrientation(), t));
+                // The view turns to its landing look in the first part of the flight (after a death it starts tipped on
+                // its side, and a slow roll back the whole way reads as a stagger).
+                float turn = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / (seconds * .55f)));
+                output.transform.SetPositionAndRotation(position, Quaternion.Slerp(startRotation, live.GetFinalOrientation(), turn));
                 var matrix = new Matrix4x4();
                 for (int i = 0; i < 16; i++) matrix[i] = Mathf.Lerp(startProjection[i], projection[i], t);
                 output.projectionMatrix = matrix;
@@ -78,7 +86,7 @@ public sealed class TableLevelExit : MonoBehaviour
         // Cut short: the room player is the one in play either way.
         if (captured && !completed && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind != PlayerKind.Room)
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
-        captured = false; IsPlaying = false;
+        captured = false; IsPlaying = false; Flying = false;
     }
 
     void OnDisable() => Restore();

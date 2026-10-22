@@ -192,8 +192,8 @@ public partial class CampaignMap
     {
         var layer = new ClothLayer { cover = Coverage(act) };
         int w = gridX + 1;
-        var drape = Drape();
         var drop = Drop;
+        var drape = drop == null ? (drapeCache ??= Drape()) : null;
         var verts = new Vector3[layer.cover.Length]; var uvs = new Vector2[layer.cover.Length]; var tris = new List<int>();
         for (int z = 0; z <= gridZ; z++)
             for (int x = 0; x <= gridX; x++)
@@ -247,6 +247,7 @@ public partial class CampaignMap
     }
 
     CampaignClothDrop dropCache; bool dropRead;
+    [System.NonSerialized] float[] drapeCache;
     CampaignClothDrop Drop { get { if (!dropRead) { dropRead = true; dropCache = CampaignClothDrop.Read(clothDropBake); } return dropCache; } }
 
     // The first reveal (after the first morning's dice): the simulated cloth falls onto the bare table, the land rises
@@ -256,6 +257,8 @@ public partial class CampaignMap
     {
         ShowActs(0, cover, style);
         var drop = Drop;
+        // Trimmed to its settled shape after an earlier drop (debug reset): read in full again.
+        if (drop != null && drop.frames < 2) { dropRead = false; drop = Drop; }
         if (drop != null && cover)
         {
             foreach (var f in fogs.Values) if (f != null) f.go.SetActive(false);
@@ -294,6 +297,7 @@ public partial class CampaignMap
                 Destroy(go); Destroy(mesh);
             }
             foreach (var kv in fogs) if (kv.Value != null) { kv.Value.go.SetActive(true); ResetCloth(kv.Value); }
+            drop.KeepLastFrame();   // ~8 MB of frames no longer needed
         }
         rollStarts?.Invoke();
         yield return Reveal(1, rollSeconds, fromLocal);

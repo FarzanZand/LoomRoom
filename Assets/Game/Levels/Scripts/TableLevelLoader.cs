@@ -263,26 +263,7 @@ public class TableLevelLoader : MonoBehaviour
         }
     }
     // Unity never resumes a coroutine whose nested routine threw, so step nested routines here and log instead.
-    static IEnumerator RunGuarded(IEnumerator routine)
-    {
-        var stack=new Stack<IEnumerator>();
-        stack.Push(routine);
-        while(stack.Count>0)
-        {
-            object current=null;
-            bool failed=false, advanced=false;
-            try { advanced=stack.Peek().MoveNext(); if(advanced) current=stack.Peek().Current; }
-            catch(Exception e) { Debug.LogException(e); failed=true; }
-            if(failed)
-            {
-                while(stack.Count>0) (stack.Pop() as IDisposable)?.Dispose();
-                yield break;
-            }
-            if(!advanced) { stack.Pop(); continue; }
-            if(current is IEnumerator nested) stack.Push(nested);
-            else yield return current;
-        }
-    }
+    static IEnumerator RunGuarded(IEnumerator routine) => GuardedRoutine.Run(routine);
     // The table's whole box: its collider is swapped for a cut one while a floor's pits go into it (TableCut).
     Bounds TableBox=>GetComponent<TableCut>() is { } cut && cut.Bounds.size!=Vector3.zero ? cut.Bounds : GetComponent<BoxCollider>().bounds;
     void Prepare(TableLevelData level, bool deferPlayerSwitch = false)
@@ -469,14 +450,28 @@ public class TableLevelLoader : MonoBehaviour
                 fade=false;
                 if (TableManager.HasInstance) TableManager.Instance.StandRoomPlayer();
                 var exit = gameObject.AddComponent<TableLevelExit>();
-                try { yield return RunGuarded(exit.Play(Dungeon, exitSettings, () => RestoreRoom(exitSettings.exitSeconds, exitSettings.exitSeconds * .6f))); }
+                // How high the floor stands above the tabletop (its tallest room, kit pieces, the arena's stands).
+                float top = Dungeon.transform.position.y;
+                if(environment!=null) foreach(var r in environment.GetComponentsInChildren<Renderer>()) if(r.enabled && !(r is ParticleSystemRenderer)) top=Mathf.Max(top, r.bounds.max.y);
+                float standing = top - Dungeon.transform.position.y;
+                try
+                {
+                    yield return RunGuarded(exit.Play(Dungeon, exitSettings, standing, () =>
+                    {
+                        RestoreRoom(exitSettings.exitSeconds, exitSettings.exitSeconds * .6f);
+                        // The boss floor's painting is the room's own again before the room comes into view.
+                        if (RoomPainting.BehindDungeonMaster != null) RoomPainting.BehindDungeonMaster.Restore();
+                    }));
+                }
                 finally { Destroy(exit); }
-                // The floor sinks into the table as the room settles.
+                // The floor sinks into the table as the room settles: all of it, under the tabletop, creatures too (their
+                // agents would hold them up at the floor's height).
                 if(environment!=null)
                 {
-                    var t=environment.transform; var from=t.position;
+                    foreach(var agent in environment.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>()) agent.enabled=false;
+                    var t=environment.transform; var from=t.position; float depth=standing+1f;
                     for(float s=0; s<exitSettings.exitSinkSeconds && t!=null; s+=Time.unscaledDeltaTime)
-                    { t.position=from-Vector3.up*exitSettings.liftDistance*Mathf.SmoothStep(0,1,s/exitSettings.exitSinkSeconds); yield return null; }
+                    { t.position=from-Vector3.up*depth*Mathf.SmoothStep(0,1,s/exitSettings.exitSinkSeconds); yield return null; }
                 }
             }
             else if(fade) { ScreenManager.Instance.FadeToBlack(.45f); yield return new WaitForSecondsRealtime(.5f); }
