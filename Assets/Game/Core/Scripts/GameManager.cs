@@ -31,7 +31,8 @@ public class GameManager : Singleton<GameManager>
 
     // Real time that stands still while the pause menu is open: cutscenes run on real time (they go on under slow
     // motion), and the pause menu can open over them.
-    public static float CutsceneDelta => HasInstance && Instance.State == GameState.Paused ? 0f : Time.unscaledDeltaTime;
+    // Co-op: the game goes on for the others under the pause menu, so a cutscene (a table reveal, the shared intro) does too.
+    public static float CutsceneDelta => HasInstance && Instance.State == GameState.Paused && !Coop.Running ? 0f : Time.unscaledDeltaTime;
     public static IEnumerator WaitCutscene(float seconds) { for (float t = 0f; t < seconds; t += CutsceneDelta) yield return null; }
 
     public GameState State => stack.Count > 0 ? stack[stack.Count - 1] : GameState.Explore;

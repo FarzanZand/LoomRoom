@@ -148,9 +148,10 @@ public static class CoopWorld
                 h = h * 31 + c.name.Replace("(Clone)", "").Trim().GetHashCode();
                 h = h * 31 + Mathf.RoundToInt(p.x * 4); h = h * 31 + Mathf.RoundToInt(p.z * 4);
             }
-            foreach (var e in enemies) Add(e);
-            foreach (var c in containers) Add(c);
-            foreach (var d in destructibles) Add(d);
+            // Loot seeds too: what each chest, breakable and enemy holds must be the same on every machine.
+            foreach (var e in enemies) { Add(e); if (e != null && e.TryGetComponent<DungeonLootDrop>(out var drop)) h = h * 31 + drop.seed; }
+            foreach (var c in containers) { Add(c); if (c != null) h = h * 31 + c.seed; }
+            foreach (var d in destructibles) { Add(d); if (d != null) h = h * 31 + d.seed; }
             foreach (var d in doors) Add(d);
             foreach (var pair in loot) { h = h * 31 + pair.Key; if (pair.Value != null) h = h * 31 + pair.Value.name.GetHashCode(); }
             return h;
