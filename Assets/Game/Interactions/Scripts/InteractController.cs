@@ -56,12 +56,21 @@ public class InteractController : MonoBehaviour
         foreach (var candidate in InteractableTrigger.Available)
         {
             if (!Evaluate(candidate, out float score) || score > acquireAngle) continue;
-            if (score < bestScore) { best = candidate; bestScore = score; }
+            // Aimed at two at once (the crosshair on both, like a note taped to a door): the smaller, more particular one.
+            if (score < bestScore || score == bestScore && best != null && candidate.TargetBounds.size.sqrMagnitude < best.TargetBounds.size.sqrMagnitude)
+            { best = candidate; bestScore = score; }
         }
         if (Evaluate(activeTrigger, out float activeScore) && activeScore <= releaseAngle)
         {
             if (activeScore <= acquireAngle) lastOnTarget = Time.unscaledTime;
             bool clearlyBetter = best != null && best != activeTrigger && bestScore + switchAdvantage < activeScore;
+            // A smaller target on the current one (a note on a door), aimed at as well: it takes over.
+            if (!clearlyBetter && best != null && best != activeTrigger && bestScore <= activeScore)
+            {
+                Bounds small = best.TargetBounds, big = activeTrigger.TargetBounds;
+                big.Expand(.5f);
+                clearlyBetter = small.size.sqrMagnitude < big.size.sqrMagnitude * .5f && big.Intersects(small);
+            }
             if (!clearlyBetter && (activeScore <= acquireAngle || Time.unscaledTime - lastOnTarget < missGrace))
                 return;
         }

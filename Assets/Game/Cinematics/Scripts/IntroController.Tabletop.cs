@@ -122,6 +122,7 @@ public partial class IntroController
         PushDialogue();
         yield return GlideIntoSeat();
         yield return SayAll(lampLines);
+        if (openingRule != null && RuleManager.HasInstance) yield return SayAll(new[] { RuleManager.Instance.Give(openingRule) });
         yield return SheetAndDice(practiceClass != null ? practiceClass.displayName : "", practiceClass != null ? practiceClass.description : "", sheetLines);
         PopDialogue();
         yield return WaitForTable();
