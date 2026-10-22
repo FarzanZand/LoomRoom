@@ -124,7 +124,7 @@ public class TableLevelLoader : MonoBehaviour
     public bool CanResumeAdventure()
     {
         Initialize();
-        if (Coop.Running) { NotificationUI.Show("In co-op, sit down at the table to play"); return; }
+        if (Coop.Running) return false;   // co-op runs aren't continued from a save
         var save = player.GetComponent<AdventureSave>();
         if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) return false;
         var checkpoint = save.Saved.checkpoint;
@@ -135,6 +135,7 @@ public class TableLevelLoader : MonoBehaviour
     public bool ResumeAdventure()
     {
         Initialize();
+        if (Coop.Running) { NotificationUI.Show("In co-op, sit down at the table to play"); return false; }
         var save = player.GetComponent<AdventureSave>();
         if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) { NotificationUI.Show("No compatible saved adventure"); return false; }
         var checkpoint = save.Saved.checkpoint;

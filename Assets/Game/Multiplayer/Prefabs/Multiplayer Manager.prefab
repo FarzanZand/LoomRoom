@@ -77,6 +77,7 @@ MonoBehaviour:
   shieldBlockTurn: {x: 0, y: 0, z: 0}
   roomScale: 20
   enemyPrefabs:
+  - {fileID: 225923992619737395, guid: 7b0b469e6f1a87d41a2ee6cdbee1917d, type: 3}
   - {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
   - {fileID: 8694082213274042645, guid: 201900fae6c0585468bd8ec588f74292, type: 3}
   - {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}

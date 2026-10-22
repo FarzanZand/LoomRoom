@@ -608,6 +608,8 @@ public class CampaignManager : Singleton<CampaignManager>
         yield return RunEvents();
 
         SavedRun(out var savedPlace, out var savedClass, out var savedDetail);
+        // Co-op: runs aren't saved and continued (the party plays from the host's pick each time).
+        if (Coop.Running) { savedPlace = null; savedClass = null; }
         UpdateMarker(savedPlace);
         SayWonLine();
         if (card != null) card.ShowHint(true, Hint);
@@ -665,6 +667,7 @@ public class CampaignManager : Singleton<CampaignManager>
                     resetting = false;
                     ResetCampaign();
                     SavedRun(out savedPlace, out savedClass, out savedDetail);
+                    if (Coop.Running) { savedPlace = null; savedClass = null; }
                     yield return Frame(player, .6f);
                 }
                 if (completing != null)
@@ -689,6 +692,7 @@ public class CampaignManager : Singleton<CampaignManager>
                         yield return ChangeClass(player);
                         if (card != null) card.ShowHint(true, Hint);
                         SavedRun(out savedPlace, out savedClass, out savedDetail);
+                        if (Coop.Running) { savedPlace = null; savedClass = null; }
                     }
                     else if (hovered != null && hovered.encounter != null)
                     {
@@ -717,7 +721,15 @@ public class CampaignManager : Singleton<CampaignManager>
                             Current = e;
                             yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false);
                             player.Look.HeightOverride = null;
-                            if (resume) loader.ResumeAdventure(); else loader.Load(e.level);
+                            if (Coop.Running)
+                            {
+                                // Co-op: the host picks the place; the party waits at the table and the host starts the
+                                // run for everyone (MultiplayerManager). Esc while waiting steps back from the table.
+                                bool ok = false;
+                                yield return MultiplayerManager.Instance.WaitAtTable(progress != null ? progress.selectedClass : null, e.level, player, r => ok = r);
+                                if (!ok) { cancelled = true; break; }
+                            }
+                            else if (resume) loader.ResumeAdventure(); else loader.Load(e.level);
                             started = true;
                         }
                     }

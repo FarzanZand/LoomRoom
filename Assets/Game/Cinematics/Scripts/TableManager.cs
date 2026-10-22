@@ -171,7 +171,9 @@ public class TableManager : Singleton<TableManager>, IInteractable
         }
         // The campaign: the world map on the table (CampaignManager). The first morning's sheet and dice still come
         // first, then its figures, and the class picked stands on the map.
-        if (only == null && CampaignManager.Active)
+        // Co-op: the host plays the map; a guest picks their figure as before and the host's place is the run.
+        if (only == null && CampaignManager.Active && Coop.IsGuest) CampaignManager.Instance.HideNow();
+        if (only == null && CampaignManager.Active && !Coop.IsGuest)
         {
             if (IntroController.SheetPending)
             {
@@ -211,7 +213,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
                 yield break;
             }
             PopDialogue();
-            if (!started) { yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false); StandUp(player); }
+            if (!started) { yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false); StandUp(player); if (Coop.Running) MultiplayerManager.Instance.StoodUp(); }
             sitting = null; sittingPlayer = null;
             yield break;
         }
