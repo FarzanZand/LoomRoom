@@ -18,16 +18,34 @@ public class ArenaFight : MonoBehaviour
     readonly List<EnemyBrain> fighters = new();
     bool done;
 
+    bool started;
+    // Watched by the floor itself (DungeonGenerator calls this as it is built), so the fight counts whether or not its room
+    // is on the table yet: a board level keeps the rooms behind a closed door off the table until it opens, and a room
+    // switched off then would never start its own watch.
+    public void Watch(DungeonGenerator floor)
+    {
+        if (started || !Application.isPlaying || floor == null) return;
+        started = true;
+        floor.StartCoroutine(Run(floor));
+    }
+
     IEnumerator Start()
     {
-        dungeon = GetComponentInParent<DungeonGenerator>();
+        if (started) yield break;
+        started = true;
+        yield return Run(GetComponentInParent<DungeonGenerator>());
+    }
+
+    IEnumerator Run(DungeonGenerator floor)
+    {
+        dungeon = floor;
         if (dungeon == null || dungeon.Layout == null) yield break;
         room = dungeon.Layout.RoomAt(dungeon.CellOf(transform.position));
         if (room < 0) yield break;
         // Enemies are put down after the room is built: gather them for a while.
         for (float t = 0; t < 3f; t += .25f) { Gather(); yield return new WaitForSeconds(.25f); }
         var wait = new WaitForSeconds(.25f);
-        while (!done)
+        while (!done && this != null)
         {
             Gather();
             if (fighters.Count > 0 && fighters.TrueForAll(b => b == null || b.State == EnemyState.Dead)) yield return Won();
@@ -38,8 +56,9 @@ public class ArenaFight : MonoBehaviour
     void Gather()
     {
         // No way out but through the fight: the exit room's stairs stay hidden (a win ends the run on its own).
-        foreach (var exit in dungeon.GetComponentsInChildren<DungeonExit>()) if (exit != null && exit.gameObject.activeSelf) exit.gameObject.SetActive(false);
-        foreach (var brain in dungeon.GetComponentsInChildren<EnemyBrain>())
+        foreach (var exit in dungeon.GetComponentsInChildren<DungeonExit>(true)) if (exit != null && exit.gameObject.activeSelf) exit.gameObject.SetActive(false);
+        // Also the ones still off the table (behind the closed door): they count from the start.
+        foreach (var brain in dungeon.GetComponentsInChildren<EnemyBrain>(true))
             if (brain != null && !fighters.Contains(brain) && brain.State != EnemyState.Dead && dungeon.Layout.RoomAt(dungeon.CellOf(brain.transform.position)) == room)
                 fighters.Add(brain);
     }
