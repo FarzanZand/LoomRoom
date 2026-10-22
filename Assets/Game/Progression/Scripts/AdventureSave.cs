@@ -153,11 +153,12 @@ public class AdventureSave : MonoBehaviour
         return summary;
     }
 
-    // The game was called LoomRoom until 2026-10-13; the save folder follows the product name, so saves from before the
-    // rename sit in the old folder beside the new one. Brought over once ever (a PlayerPrefs marker, also set by any save
+    // The game was called LoomRoom until 2026-10-13 and The Table Waits until 2026-10-22; the save folder follows the
+    // product name, so saves from before a rename sit in the old folder beside the new one (the newest name first). Brought over once ever (a PlayerPrefs marker, also set by any save
     // written here), and only into a folder with no saves yet: a save deleted later must stay deleted. Called by the main
     // menu as it opens and by Initialize.
     const string MigratedPref = "LoomRoom.SavesMigrated";
+    static readonly string[] OldProductNames = { "The Table Waits", "LoomRoom" };
     static void MarkMigrated()
     {
         if (PlayerPrefs.GetInt(MigratedPref, 0) == 1) return;
@@ -170,14 +171,21 @@ public class AdventureSave : MonoBehaviour
         try
         {
             var current = Application.persistentDataPath;
-            var old = Path.Combine(Path.GetDirectoryName(current) ?? "", "LoomRoom");
-            if (!Directory.Exists(old) || string.Equals(Path.GetFullPath(old), Path.GetFullPath(current), StringComparison.OrdinalIgnoreCase)) return;
             if (Directory.Exists(current) && Directory.GetFiles(current, "loomroom-*.json*").Length > 0) return;
-            Directory.CreateDirectory(current);
-            foreach (var name in new[] { AdventureFile, AdventureFile + ".bak", DebugFile, DebugFile + ".bak" })
+            foreach (var oldName in OldProductNames)
             {
-                string from = Path.Combine(old, name), to = Path.Combine(current, name);
-                if (File.Exists(from) && !File.Exists(to)) File.Copy(from, to);
+                var old = Path.Combine(Path.GetDirectoryName(current) ?? "", oldName);
+                if (!Directory.Exists(old) || string.Equals(Path.GetFullPath(old), Path.GetFullPath(current), StringComparison.OrdinalIgnoreCase)) continue;
+                var files = Directory.GetFiles(old, "loomroom-*.json*");
+                if (files.Length == 0) continue;
+                Directory.CreateDirectory(current);
+                // Every save slot, the debug save and their backups.
+                foreach (var from in files)
+                {
+                    var to = Path.Combine(current, Path.GetFileName(from));
+                    if (!File.Exists(to)) File.Copy(from, to);
+                }
+                return;
             }
         }
         catch (Exception e) { Debug.LogWarning($"Could not bring over saves from before the rename: {e.Message}"); }

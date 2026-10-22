@@ -1,4 +1,4 @@
-# The desktop shortcuts "Play The Table Waits" and "LoomRoom Asset Studio".
+# The desktop shortcuts "Play The Table Awaits" and "LoomRoom Asset Studio".
 #   LoomRoomLaunch.ps1 -Mode Play     plays the game in the Editor (Room.unity, the save in use); nothing is built
 #   LoomRoomLaunch.ps1 -Mode Studio   opens Asset Studio
 # With the LoomRoom Editor already open it asks that Editor (through the Unity CLI) and brings its window to the front;
@@ -39,7 +39,7 @@ if ($running) {
     }
     if (-not $ok) {
         Add-Type -AssemblyName PresentationFramework
-        [System.Windows.MessageBox]::Show("The LoomRoom Editor is open but didn't answer (it may be compiling or have a dialog up). Try again in a moment.", 'The Table Waits') | Out-Null
+        [System.Windows.MessageBox]::Show("The LoomRoom Editor is open but didn't answer (it may be compiling or have a dialog up). Try again in a moment.", 'The Table Awaits') | Out-Null
     }
     $h = $running.MainWindowHandle
     if ([LoomWindow]::IsIconic($h)) { [LoomWindow]::ShowWindow($h, 9) | Out-Null }
@@ -50,5 +50,5 @@ elseif (Test-Path $editor) {
 }
 else {
     Add-Type -AssemblyName PresentationFramework
-    [System.Windows.MessageBox]::Show("Unity $version isn't installed at $editor.", 'The Table Waits') | Out-Null
+    [System.Windows.MessageBox]::Show("Unity $version isn't installed at $editor.", 'The Table Awaits') | Out-Null
 }
