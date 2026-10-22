@@ -48,10 +48,13 @@ public class ArenaFight : MonoBehaviour
         while (!done && this != null)
         {
             Gather();
-            if (fighters.Count > 0 && fighters.TrueForAll(b => b == null || b.State == EnemyState.Dead)) yield return Won();
+            if (fighters.Count > 0 && fighters.TrueForAll(Down)) yield return Won();
             yield return wait;
         }
     }
+
+    // Dead by its brain or by its health (an enemy killed while its room was off the table never ran its death).
+    static bool Down(EnemyBrain b) => b == null || b.State == EnemyState.Dead || b.TryGetComponent<Character>(out var c) && !c.IsAlive;
 
     void Gather()
     {
