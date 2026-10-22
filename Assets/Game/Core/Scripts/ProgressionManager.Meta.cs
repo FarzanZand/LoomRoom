@@ -165,7 +165,7 @@ public partial class ProgressionManager
 
     // Each milestone's flag key, made once (the quest log and the key items count trophies several times a second).
     readonly Dictionary<Milestone, (string id, int value, string key)> trophyKeys = new();
-    string TrophyKey(MetaTrack t, Milestone m)
+    public string TrophyKey(MetaTrack t, Milestone m)
     {
         if (trophyKeys.TryGetValue(m, out var k) && k.id == t.id && k.value == m.value) return k.key;
         string key = $"{TrophyPrefix}{t.id}.{m.value}";

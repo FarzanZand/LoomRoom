@@ -78,6 +78,7 @@ MonoBehaviour:
   roomScale: 20
   enemyPrefabs:
   - {fileID: 225923992619737395, guid: 7b0b469e6f1a87d41a2ee6cdbee1917d, type: 3}
+  - {fileID: 3106414846958967852, guid: b50bbc792d8d15d4fb3842724b84568d, type: 3}
   - {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
   - {fileID: 8694082213274042645, guid: 201900fae6c0585468bd8ec588f74292, type: 3}
   - {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
@@ -87,6 +88,7 @@ MonoBehaviour:
   - {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
   - {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
   - {fileID: 3313456664254303774, guid: 6f7038d9258e35042b9a729c4c9edd16, type: 3}
+  - {fileID: 3913280292304150593, guid: c817904a3479ce046b3467fc691a1c0e, type: 3}
   - {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
   - {fileID: 5746219887415064482, guid: ae52da96cec3d1d4db895d43de610fd3, type: 3}
   - {fileID: 4756031280637954703, guid: 7cad916ed64e5034dbe682e5bfa31b73, type: 3}
@@ -95,4 +97,5 @@ MonoBehaviour:
   partnerLightRange: 4
   snapshotRate: 15
   autoStartInEditor: 1
+  roomClearance: 1.3
   roomSpawnSpread: 1.7
