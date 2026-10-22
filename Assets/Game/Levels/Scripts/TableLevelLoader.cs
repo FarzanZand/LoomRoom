@@ -14,6 +14,8 @@ public class TableLevelLoader : MonoBehaviour
     public TableLevelData Current { get; private set; }
     public DungeonGenerator Dungeon { get; private set; }
     public bool Busy { get; private set; }
+    // A level starts loading from the room (not a descent); the room is back after a run (under the black).
+    public event Action LoadStarted, Returned;
     [SerializeField, Min(0), Tooltip("Seconds after arriving in a new biome before the Dungeon Master speaks.")] float entryLineDelay = 5f;
     [SerializeField, Min(.1f), Tooltip("Seconds the last floor takes to sink into the table when the player sits down for the next game.")] float sweepSeconds = .8f;
     DungeonMaster.Line entryLine;
@@ -114,16 +116,28 @@ public class TableLevelLoader : MonoBehaviour
     AdventureSave.Checkpoint pendingResume;
     // The current run was continued from a save, not started fresh.
     public bool Resumed { get; private set; }
-    public void ResumeAdventure()
+    // Whether the saved run can be loaded (its checkpoint fits and its level is still in the catalog).
+    public bool CanResumeAdventure()
     {
         Initialize();
         var save = player.GetComponent<AdventureSave>();
-        if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) { NotificationUI.Show("No compatible saved adventure"); return; }
+        if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) return false;
+        var checkpoint = save.Saved.checkpoint;
+        return Catalog != null && Array.Find(Catalog.levels, x => x != null && x.name == checkpoint.level) != null;
+    }
+
+    // Loads the saved run; false when there is none to load (or its level is gone from the catalog).
+    public bool ResumeAdventure()
+    {
+        Initialize();
+        var save = player.GetComponent<AdventureSave>();
+        if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) { NotificationUI.Show("No compatible saved adventure"); return false; }
         var checkpoint = save.Saved.checkpoint;
         var level = Catalog != null ? Array.Find(Catalog.levels, x => x != null && x.name == checkpoint.level) : null;
-        if (level == null) return;
+        if (level == null) { NotificationUI.Show("That saved adventure's table is gone"); return false; }
         pendingResume = checkpoint;
         StartCoroutine(LoadRoutine(level));
+        return true;
     }
     public void Descend()
     {
@@ -136,6 +150,7 @@ public class TableLevelLoader : MonoBehaviour
         // Loading from the room: the table player may never have been active yet.
         PlayerManager.Instance.EnsureInitialized(PlayerKind.Table);
         int previousFloor=FloorNumber, previousSeed=runSeed;
+        if(!descending) LoadStarted?.Invoke();
         if(descending) FloorNumber++;
         else { FloorNumber=1;runSeed=level.fixedSeed!=0 ? level.fixedSeed : UnityEngine.Random.Range(1,int.MaxValue); }
         var resume = pendingResume; pendingResume = null;
@@ -443,14 +458,34 @@ public class TableLevelLoader : MonoBehaviour
         if(RunManager.HasInstance) RunManager.Instance.Abandon();
         HoldCutscene();
         bool fade=ScreenManager.HasInstance;
+        // A dungeon's way back is its entry flown in reverse (TableLevelExit), with no black: fast, and the room
+        // player is already standing at the table when the view lands. The wake-up and the ending keep the fade.
+        var exitSettings = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
+        bool fly = whileDark==null && Dungeon!=null && exitSettings!=null && !DebugDungeonSession.Active && Current!=null && Current.IsDungeon;
         try
         {
-            if(fade) { ScreenManager.Instance.FadeToBlack(.45f); yield return new WaitForSecondsRealtime(.5f); }
+            if(fly)
+            {
+                fade=false;
+                if (TableManager.HasInstance) TableManager.Instance.StandRoomPlayer();
+                var exit = gameObject.AddComponent<TableLevelExit>();
+                try { yield return RunGuarded(exit.Play(Dungeon, exitSettings, () => RestoreRoom(exitSettings.exitSeconds, exitSettings.exitSeconds * .6f))); }
+                finally { Destroy(exit); }
+                // The floor sinks into the table as the room settles.
+                if(environment!=null)
+                {
+                    var t=environment.transform; var from=t.position;
+                    for(float s=0; s<exitSettings.exitSinkSeconds && t!=null; s+=Time.unscaledDeltaTime)
+                    { t.position=from-Vector3.up*exitSettings.liftDistance*Mathf.SmoothStep(0,1,s/exitSettings.exitSinkSeconds); yield return null; }
+                }
+            }
+            else if(fade) { ScreenManager.Instance.FadeToBlack(.45f); yield return new WaitForSecondsRealtime(.5f); }
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
             RestoreRoom(.6f);
             // The run is over: its floor leaves the table under the black (after a death and after the win, so the
             // ending's morning has a clear table). Its holes in the table close with it.
             if(environment!=null) { Destroy(environment); environment=null; Dungeon=null; }
+            Returned?.Invoke();
             yield return null;
             if(whileDark!=null) { fade=false; whileDark(); }
             if(fade) { ScreenManager.Instance.FadeFromBlack(.6f); fade=false; yield return new WaitForSecondsRealtime(.65f); }
@@ -474,10 +509,10 @@ public class TableLevelLoader : MonoBehaviour
             roomMusicVolume=AudioManager.Instance.CurrentMusicVolume;
         }
     }
-    void RestoreRoom(float musicFade)
+    void RestoreRoom(float musicFade, float lightSeconds=0f)
     {
         if(!roomLighting.HasValue) return;
-        if(lighting!=null) lighting.Restore(roomLighting.Value,0);
+        if(lighting!=null) lighting.Restore(roomLighting.Value,lightSeconds);
         if(AudioManager.HasInstance)
         {
             if(roomMusic!=null) AudioManager.Instance.CrossfadeMusic(roomMusic,roomMusicLoops,musicFade,roomMusicVolume);

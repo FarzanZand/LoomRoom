@@ -55,9 +55,21 @@ public class InputManager : Singleton<InputManager>
 
     public PlayerInputActions Actions => actions;
 
+    // The step the last UI Navigate press asks for (read in a NavigatePressed handler): -1 for up or left, +1 for down,
+    // right or Tab (Navigate is a button bound to several keys, so its value carries no direction).
+    public int NavigateStep
+    {
+        get
+        {
+            var path = actions.UI.Navigate.activeControl?.path ?? "";
+            return path.EndsWith("/up") || path.EndsWith("/upArrow") || path.EndsWith("/left") || path.EndsWith("/leftArrow") ? -1 : 1;
+        }
+    }
+
     // The mouse for picking things in the world while the cursor is free (ClassFigures).
     public Vector2 PointerPosition => Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
     public bool PointerClicked => Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+    public bool PointerRightClicked => Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame;
     // Moves a Dungeon Master line on (DungeonMaster, in the Dialogue state): click, Space, Enter or gamepad South.
     public bool SkipLinePressed => PointerClicked
         || (Keyboard.current != null && (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.enterKey.wasPressedThisFrame))

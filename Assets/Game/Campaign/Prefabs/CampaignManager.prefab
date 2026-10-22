@@ -1,0 +1,120 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7683253400683870663
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4786750668653680287}
+  - component: {fileID: 6380673257219334802}
+  m_Layer: 0
+  m_Name: CampaignManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4786750668653680287
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7683253400683870663}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6380673257219334802
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7683253400683870663}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 832c4b40b945b0045a9854a24eb93aff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CampaignManager
+  useCampaign: 1
+  mapPrefab: {fileID: 5509045572063656809, guid: 545f2a3eb3c487f42babbd2c3f5025a0, type: 3}
+  mapSpot: {fileID: 0}
+  riseSeconds: 1.2
+  home: {fileID: 11400000, guid: 8472af35f9f50fb4c959ae5938b31e91, type: 2}
+  encounters:
+  - {fileID: 11400000, guid: 8472af35f9f50fb4c959ae5938b31e91, type: 2}
+  - {fileID: 11400000, guid: ffada713b3f1ff943955248d41bd14a9, type: 2}
+  - {fileID: 11400000, guid: 3de12f90912ba85428f1af16549afa8d, type: 2}
+  - {fileID: 11400000, guid: b98b532cc2acde349bc9d936f978bf5d, type: 2}
+  - {fileID: 11400000, guid: c1b0522a1f0b95649be14b0af6bd27be, type: 2}
+  - {fileID: 11400000, guid: 57638a060aef4a5498d97af7f3195e92, type: 2}
+  - {fileID: 11400000, guid: b152c5ab62249f8458d279c985116bdf, type: 2}
+  - {fileID: 11400000, guid: 3d5876d9e325b474c85885116092965c, type: 2}
+  - {fileID: 11400000, guid: 3552b3e1683d82e4bb2998f3cb7a83a9, type: 2}
+  - {fileID: 11400000, guid: 922d8baabd8637a4b8861bda630a37f6, type: 2}
+  - {fileID: 11400000, guid: dc69136424fa25f418b63bf90aa8c527, type: 2}
+  unlocks:
+  - beaten: {fileID: 11400000, guid: ffada713b3f1ff943955248d41bd14a9, type: 2}
+    opensAct: 2
+  - beaten: {fileID: 11400000, guid: b152c5ab62249f8458d279c985116bdf, type: 2}
+    opensAct: 3
+  - beaten: {fileID: 11400000, guid: 3d5876d9e325b474c85885116092965c, type: 2}
+    opensAct: 4
+  firstAct: 1
+  playEndingOnWin: 0
+  placeholderText: Placeholder encounter
+  grewLine:
+    text: The map grows. New roads, new trouble.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  finalPlace: {fileID: 11400000, guid: 922d8baabd8637a4b8861bda630a37f6, type: 2}
+  wonLine:
+    text: That was the last of it. The whole realm, start to end. Well played.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  events:
+  - {fileID: 11400000, guid: 4147d9068949c884aa6adcaf76e3bb3e, type: 2}
+  eventScreen: {fileID: 0}
+  debugMenu: 1
+  fog: 1
+  clothStyle: 0
+  revealSeconds: 3.2
+  rollSound: {fileID: 11400000, guid: b9b7b40899925e7439f01b359a65c395, type: 2}
+  rollSoundEvery: 0.5
+  openEverything: 0
+  standBack: 18
+  viewHeight: 2.1
+  viewZoom: 0
+  viewAim: {x: -6, y: 0}
+  stepSeconds: 1
+  frameOpenLand: 1
+  frameMargin: 1.3
+  maxZoomIn: -30
+  bottomRoom: 0.12
+  keepDungeonMasterInView: 1
+  standSlide: 0.55
+  hoverLift: 0.9
+  figureScale: 1
+  hopSeconds: 0.16
+  hopLength: 2.2
+  hopHeight: 0.9
+  card: {fileID: 0}
+  heroSelect: {fileID: 0}
+  firstLookLine:
+    text: This is the realm. Start close to home.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  hint: Click a place to travel there.  Click your figure to change class.  Esc to
+    step back.
+  nearTable: 140

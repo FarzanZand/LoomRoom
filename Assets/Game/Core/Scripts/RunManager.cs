@@ -271,7 +271,7 @@ public class RunManager : Singleton<RunManager>
     public RunSummary Summarize(bool victory) => new RunSummary
     {
         victory = victory,
-        levelName = PlaceName(),
+        levelName = PlaceName(victory),
         killer = Killer,
         floor = Floor,
         floors = Level != null ? Level.FloorCount : 1,
@@ -286,9 +286,15 @@ public class RunManager : Singleton<RunManager>
     };
 
     // Where the run ended, for the recap's sentence ("You conquered the Crypt.", "on floor 2 of the Cellars"): the
-    // floor's biome, else the level's name. A leading "The" is lowered so it reads mid-sentence.
-    string PlaceName()
+    // floor's biome, else the level's name; a win in the campaign names the place on the map ("You conquered Hill
+    // Tower."). A leading "The" is lowered so it reads mid-sentence.
+    string PlaceName(bool victory)
     {
+        if (victory && CampaignManager.Active && CampaignManager.Instance.Current != null && CampaignManager.Instance.Current.level == Level)
+        {
+            string place = CampaignManager.Instance.Current.displayName.Trim();
+            return place.StartsWith("The ") ? "the " + place.Substring(4) : place;
+        }
         var biome = Level != null ? Level.Biome(Mathf.Max(1, Floor)) : null;
         string name = biome != null && !string.IsNullOrWhiteSpace(biome.displayName) ? biome.displayName.Trim()
             : Level != null && !string.IsNullOrWhiteSpace(Level.displayName) ? Level.displayName.Trim() : "the dungeon";

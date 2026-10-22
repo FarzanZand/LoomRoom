@@ -41,6 +41,8 @@ public class ClassFigures : MonoBehaviour
     public bool ResumeChosen { get; private set; }
     [Tooltip("Said when a figure is taken.")]
     public DungeonMaster.Line taken;
+    // Set while the campaign map changes class: a figure taken there starts no run, so the taken line is not said.
+    public bool SilentTake { get; set; }
     [Tooltip("Asks before a new run replaces the saved one (HUD panel: a question, Yes and No).")]
     public GameObject confirmPanel;
     public TMPro.TMP_Text confirmText;
@@ -163,7 +165,7 @@ public class ClassFigures : MonoBehaviour
         if (how != null && howDefault != null) how.text = howDefault;
         if (result != null)
         {
-            DungeonMaster.Say(taken);
+            if (!SilentTake) DungeonMaster.Say(taken);
             // The rest go back in the box; the taken one stays a moment.
             foreach (var f in figures) if (f != chosen) Destroy(f.gameObject);
             yield return new WaitForSecondsRealtime(1.2f);
@@ -260,10 +262,8 @@ public class ClassFigures : MonoBehaviour
     void OnNavigate()
     {
         if (!choosing || Asking || figures.Count == 0 || !InputManager.HasInstance) return;
-        float x = InputManager.Instance.Actions.UI.Navigate.ReadValue<Vector2>().x;
-        if (Mathf.Abs(x) < .5f) return;
         int i = Mathf.Max(0, figures.IndexOf(highlighted));
-        Highlight(figures[(i + (x > 0 ? 1 : -1) + figures.Count) % figures.Count]);
+        Highlight(figures[(i + InputManager.Instance.NavigateStep + figures.Count) % figures.Count]);
     }
 
     // While the question is up, its own buttons answer it (Submit presses the selected one); Esc answers No.

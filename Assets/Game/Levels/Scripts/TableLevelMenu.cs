@@ -46,7 +46,7 @@ public class TableLevelMenu : MonoBehaviour
             var cls = save.GetComponent<AdventurerProgress>().rules.classes;
             var savedClass = System.Array.Find(cls, c => c != null && c.id == checkpoint.classId);
             root.resumeDetail.text = $"{(savedClass != null ? savedClass.displayName : null)}  ·  Level {checkpoint.characterLevel}  ·  {(saved != null ? saved.displayName : checkpoint.level)} floor {checkpoint.floor}";
-            root.resume.onClick.AddListener(loader.ResumeAdventure);
+            root.resume.onClick.AddListener(() => loader.ResumeAdventure());
         }
         root.returnToRoom.onClick.AddListener(loader.ReturnToRoom);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);

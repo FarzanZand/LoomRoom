@@ -96,7 +96,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
             return;
         }
         // The whole dungeon won: the prototype's thank-you instead of a new run.
-        if (TryGetComponent<PrototypeEnd>(out var end) && end.TryPlay()) return;
+        if ((!CampaignManager.Active || CampaignManager.Instance.playEndingOnWin) && TryGetComponent<PrototypeEnd>(out var end) && end.TryPlay()) return;
         if (DungeonMasterSeat.Introduced) EnterTable();
         else if (talkFirst != null && !talkFirst.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(talkFirst);
     }
@@ -150,6 +150,54 @@ public class TableManager : Singleton<TableManager>, IInteractable
                 yield return null;
             }
             yield return new WaitForSecondsRealtime(afterSpeech);
+        }
+        // The campaign: the world map on the table (CampaignManager). The first morning's sheet and dice still come
+        // first, then its figures, and the class picked stands on the map.
+        if (only == null && CampaignManager.Active)
+        {
+            if (IntroController.SheetPending)
+            {
+                CampaignManager.Instance.HideNow();
+                yield return IntroController.Instance.FirstMorningSheet(player);
+                if (figures != null && figures.HasFigures)
+                {
+                    yield return CameraEase.LookAt(player.Look, figures.FocusPoint(false) + Vector3.up * figureAimHeight, lookSeconds);
+                    AdventurerClass first = null;
+                    // No run starts from this pick (the map comes next), so the figure is taken without the taken line.
+                    figures.SilentTake = true;
+                    try { yield return figures.Choose(c => first = c, null, null, null, null, true, true, IntroController.OfferedClasses); }
+                    finally { figures.SilentTake = false; }
+                    if (IntroController.HasInstance) IntroController.Instance.WriteClass(first);
+                    if (first == null)
+                    {
+                        if (IntroController.HasInstance) IntroController.Instance.EndSheetAtTable();
+                        PopDialogue();
+                        yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false);
+                        StandUp(player);
+                        sitting = null; sittingPlayer = null;
+                        yield break;
+                    }
+                    yield return new WaitForSecondsRealtime(.6f);
+                }
+                if (IntroController.HasInstance) IntroController.Instance.EndSheetAtTable();
+            }
+            bool started = false, finished = false;
+            try { yield return CampaignManager.Instance.Choose(player, r => started = r); finished = true; }
+            finally
+            {
+                if (!finished)
+                {
+                    // An error in the map view: let go of everything so the table can be used again.
+                    PopDialogue();
+                    CampaignManager.Instance.AbortMapView();
+                    StandUp(player);
+                    sitting = null; sittingPlayer = null;
+                }
+            }
+            PopDialogue();
+            if (!started) { yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false); StandUp(player); }
+            sitting = null; sittingPlayer = null;
+            yield break;
         }
         // The first morning after the intro: the character sheet and dice come first.
         if (IntroController.SheetPending && only == null) yield return IntroController.Instance.FirstMorningSheet(player);
@@ -303,6 +351,13 @@ public class TableManager : Singleton<TableManager>, IInteractable
         CameraEase.YawPitchTo(player.Look, target, out yaw, out pitch);
     }
 
+    // Back from a run: the room player stands at the table with the normal view (the way back flies into their eyes).
+    public void StandRoomPlayer()
+    {
+        var room = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Room) : null;
+        if (room != null) StandUp(room);
+    }
+
     // Nothing to stand up from any more: just hand the view back.
     void StandUp(Player player)
     {
@@ -316,6 +371,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
         if (sitting != null) StopCoroutine(sitting);
         sitting = null;
         PopDialogue();
+        if (CampaignManager.HasInstance) CampaignManager.Instance.AbortMapView();
         if (sittingPlayer != null) StandUp(sittingPlayer);
         sittingPlayer = null;
     }
