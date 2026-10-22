@@ -100,12 +100,7 @@ public class TableLevelData : ScriptableObject
     {
         if (!IsDungeon) return;
         // An authored plan sets the grid size.
-        if (IsAuthored && !string.IsNullOrWhiteSpace(authoredMap))
-        {
-            var rows = AuthoredRows(authoredMap.TrimEnd());
-            depth = rows.Length; width = 0;
-            foreach (var r in rows) width = Mathf.Max(width, r.Length);
-        }
+        SyncMapSize();
     }
 
     // ── Look & Sound ──────────────────────────────────────────────────
@@ -201,16 +196,32 @@ public class TableLevelData : ScriptableObject
         [HorizontalGroup, LabelWidth(30), Tooltip("What a breakable drops.")] public LootSource loot;
     }
 
-    [TabGroup(Tabs, Layout), ShowIf(nameof(IsAuthored)), TextArea(8, 40), Title("Floor plan", "North at the top. 0-9 then A-Z: rooms (0 is the entrance, the highest is the exit with the stairs). . passage, + passage with a door. Anything else is rock. Width and depth follow the plan.", HorizontalLine = false)]
+    [TabGroup(Tabs, Layout), ShowIf(nameof(IsAuthored)), AssetsOnly, Tooltip("A map template prefab (several rooms with their passages and doors, each room's interior under its Room child): the floor plan and rooms come from it, and the text plan below is not used.")]
+    public DungeonMapTemplate mapTemplate;
+    [TabGroup(Tabs, Layout), ShowIf(nameof(UsesTextMap)), TextArea(8, 40), Title("Floor plan", "North at the top. 0-9 then A-Z: rooms (0 is the entrance, the highest is the exit with the stairs). . passage, + passage with a door. Anything else is rock. Width and depth follow the plan.", HorizontalLine = false)]
     public string authoredMap = "";
     [TabGroup(Tabs, Layout), ShowIf(nameof(IsAuthored)), TextArea(8, 40), Title("Content", "Same size as the floor plan; each marker key below puts its prefab or item on that cell. Anything else is ignored.", HorizontalLine = false)]
     public string authoredContent = "";
-    [TabGroup(Tabs, Layout), ShowIf(nameof(IsAuthored)), ListDrawerSettings(ShowIndexLabels = true), Tooltip("Per room, by number: its role, an optional template and height. Missing rooms: room 0 is the entrance, the last the exit, the rest quiet rooms.")]
+    [TabGroup(Tabs, Layout), ShowIf(nameof(UsesTextMap)), ListDrawerSettings(ShowIndexLabels = true), Tooltip("Per room, by number: its role, an optional template and height. Missing rooms: room 0 is the entrance, the last the exit, the rest quiet rooms.")]
     public AuthoredRoom[] authoredRooms = new AuthoredRoom[0];
     [TabGroup(Tabs, Layout), ShowIf(nameof(IsAuthored))]
     public AuthoredMarker[] authoredMarkers = new AuthoredMarker[0];
 
     bool IsAuthored => IsDungeon && layoutMode == DungeonLayoutMode.Authored;
+    bool UsesTextMap => IsAuthored && mapTemplate == null;
+    // The floor plan and rooms the generator builds: the map template's, else the text plan's.
+    public string AuthoredMapText => mapTemplate != null ? mapTemplate.MapText() : authoredMap ?? "";
+    public AuthoredRoom[] AuthoredRoomList => mapTemplate != null ? mapTemplate.Rooms() : authoredRooms ?? new AuthoredRoom[0];
+    // Width and depth follow the floor plan (the map template's, padded to the generator's smallest grid).
+    public void SyncMapSize()
+    {
+        if (!IsAuthored) return;
+        var text = AuthoredMapText;
+        if (string.IsNullOrWhiteSpace(text)) return;
+        var rows = AuthoredRows(text.TrimEnd());
+        depth = rows.Length; width = 0;
+        foreach (var r in rows) width = Mathf.Max(width, r.Length);
+    }
     bool IsGenerated => IsDungeon && layoutMode != DungeonLayoutMode.Authored;
     public string[] AuthoredRows(string map) => (map ?? "").Replace("\r", "").Split('\n');
 

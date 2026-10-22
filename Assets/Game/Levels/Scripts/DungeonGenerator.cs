@@ -148,8 +148,10 @@ public partial class DungeonGenerator : MonoBehaviour
     // A hand-painted floor plan (the level's Authored Map): rooms, passages and doors exactly as drawn.
     System.Collections.Generic.List<(Vector2Int, Vector2Int)> AuthoredLayout(TableLevelData level, int seed)
     {
-        var rows = level.AuthoredRows(level.authoredMap.TrimEnd());
-        var rooms = level.authoredRooms ?? new TableLevelData.AuthoredRoom[0];
+        // A map template that changed since the level was last looked at: its size follows (the copy in memory only).
+        if (level.mapTemplate != null) level.SyncMapSize();
+        var rows = level.AuthoredRows(level.AuthoredMapText.TrimEnd());
+        var rooms = level.AuthoredRoomList;
         var turns = new int[rooms.Length];
         for (int i = 0; i < rooms.Length; i++) turns[i] = rooms[i] != null ? rooms[i].turns : 0;
         Layout = DungeonLayout.FromMap(rows, seed, turns, out var doors);
@@ -205,9 +207,12 @@ public partial class DungeonGenerator : MonoBehaviour
         // Rooms are one tile high: only a template that asks for more is taller (for effect), never a generated room.
         RoomHeightTiles = new int[Layout.rooms.Count];
         for (int i = 0; i < RoomHeightTiles.Length; i++) { var t = TemplateOf(i); RoomHeightTiles[i] = t != null ? Mathf.Max(1, t.heightTiles) : 1; }
-        if (Authored && level.authoredRooms != null)
-            for (int i = 0; i < RoomHeightTiles.Length && i < level.authoredRooms.Length; i++)
-                if (level.authoredRooms[i] != null && level.authoredRooms[i].height > 0) RoomHeightTiles[i] = level.authoredRooms[i].height;
+        if (Authored)
+        {
+            var authoredRooms = level.AuthoredRoomList;
+            for (int i = 0; i < RoomHeightTiles.Length && i < authoredRooms.Length; i++)
+                if (authoredRooms[i] != null && authoredRooms[i].height > 0) RoomHeightTiles[i] = authoredRooms[i].height;
+        }
         // Corridors are always one tile high.
         CorridorHeightTiles = new int[Layout.CorridorCount];
         for (int i = 0; i < CorridorHeightTiles.Length; i++) CorridorHeightTiles[i] = 1;

@@ -63,6 +63,19 @@ public sealed partial class DungeonLayout
     // Room index painted in an authored map: '0'-'9', then 'A'-'Z' for rooms 10 to 35. -1 for anything else.
     public static int MapRoom(char c) => c >= '0' && c <= '9' ? c - '0' : c >= 'A' && c <= 'Z' ? 10 + c - 'A' : -1;
 
+    // A painted room's centre: the room's cell nearest the middle of its bounds (floor even in an L-shaped room). Cells
+    // in map order (north row first, west to east). Shared with DungeonMapTemplate, which puts each room's child there.
+    public static Vector2Int RoomCentre(List<Vector2Int> cells) => RoomCentre(cells, out _);
+    public static Vector2Int RoomCentre(List<Vector2Int> cells, out RectInt rect)
+    {
+        int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
+        foreach (var c in cells) { minX = Math.Min(minX, c.x); minY = Math.Min(minY, c.y); maxX = Math.Max(maxX, c.x); maxY = Math.Max(maxY, c.y); }
+        rect = new RectInt(minX, minY, maxX - minX + 1, maxY - minY + 1);
+        var middle = Center(rect); var centre = cells[0];
+        foreach (var c in cells) if ((c - middle).sqrMagnitude < (centre - middle).sqrMagnitude) centre = c;
+        return centre;
+    }
+
     // A hand-painted floor plan. Rows run north to south, columns west to east. Room digits/letters are room
     // floor (room 0 is the entrance, the highest is the exit), '.' is passage, '+' is passage with a door into
     // the room beside it; anything else is solid. Rooms must be numbered from 0 without gaps.
@@ -97,12 +110,7 @@ public sealed partial class DungeonLayout
         {
             if (pair.Key != expected++) throw new InvalidOperationException($"Authored map rooms must be numbered 0, 1, 2 ... without gaps (room {expected - 1} is missing).");
             var cells = pair.Value;
-            int minX = int.MaxValue, minY = int.MaxValue, maxX = int.MinValue, maxY = int.MinValue;
-            foreach (var c in cells) { minX = Math.Min(minX, c.x); minY = Math.Min(minY, c.y); maxX = Math.Max(maxX, c.x); maxY = Math.Max(maxY, c.y); }
-            var rect = new RectInt(minX, minY, maxX - minX + 1, maxY - minY + 1);
-            // The centre must be floor of the room, even in an L-shaped one.
-            var middle = Center(rect); var centre = cells[0];
-            foreach (var c in cells) if ((c - middle).sqrMagnitude < (centre - middle).sqrMagnitude) centre = c;
+            var centre = RoomCentre(cells, out var rect);
             layout.rooms.Add(rect); layout.roomCells.Add(cells); layout.roomCenters.Add(centre);
         }
         layout.Finish();

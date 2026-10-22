@@ -131,6 +131,8 @@ public class DungeonRoomTemplate : MonoBehaviour
 
     void OnDrawGizmos()
     {
+        // A room of a map template: the map draws it.
+        if (transform.parent != null && GetComponentInParent<DungeonMapTemplate>() != null) return;
         float c = CellSize;
         var shape = HasFootprint ? Footprint() : null;
         if (shape != null)

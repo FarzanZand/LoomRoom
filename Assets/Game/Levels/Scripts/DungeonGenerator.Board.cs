@@ -37,8 +37,8 @@ public partial class DungeonGenerator
         var rng = new System.Random(unchecked(seed + 70001));
         for (int i = 0; i < rooms; i++)
         {
-            int layers = Authored && data.authoredRooms != null && i < data.authoredRooms.Length && data.authoredRooms[i] != null
-                ? data.authoredRooms[i].raised : i == 0 ? 0 : rng.Next(0, Mathf.Max(0, data.boardMaxRaise) + 1);
+            int layers = Authored && i < data.AuthoredRoomList.Length && data.AuthoredRoomList[i] != null
+                ? data.AuthoredRoomList[i].raised : i == 0 ? 0 : rng.Next(0, Mathf.Max(0, data.boardMaxRaise) + 1);
             raise[i] = layers * data.boardLayerHeight;
         }
         var dirs = DungeonLayout.Neighbours;
