@@ -28,7 +28,8 @@ public class HouseRulesUI : MonoBehaviour
         if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Menu);
         var sb = new System.Text.StringBuilder();
         var rm = RuleManager.Instance;
-        foreach (var rule in rm.PinnedRules()) sb.Append(rm.Number(rule)).Append(".  ").Append(rule.text).Append("\n\n");
+        // A rule that runs onto a second line keeps its text under the text, not under its number.
+        foreach (var rule in rm.PinnedRules()) sb.Append(rm.Number(rule)).Append(".<indent=1.6em>").Append(rule.text).Append("</indent>\n\n");
         if (list != null) list.text = sb.ToString().TrimEnd();
         root.SetActive(true);
     }

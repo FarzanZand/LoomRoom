@@ -170,10 +170,14 @@ public partial class AssetStudioWindow : EditorWindow
         var inspRect = new Rect(full.width - InspectorWidth - Pad, y, InspectorWidth, h);
         var previewRect = new Rect(listRect.xMax + Pad, y, inspRect.xMin - listRect.xMax - Pad * 2, h);
         DrawCategories(catRect);
-        DrawList(listRect);
-        DrawPreview(previewRect);
         inspectorWanted = null;
-        DrawInspector(inspRect);
+        if (showingDialogue) DrawDialogue(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));
+        else
+        {
+            DrawList(listRect);
+            DrawPreview(previewRect);
+            DrawInspector(inspRect);
+        }
         if (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout) PlaceInspector();
         int total = categories.Sum(c => c.entries.Count);
         GUI.Label(new Rect(Pad, full.height - 22, full.width - Pad * 2, 18),
@@ -182,7 +186,7 @@ public partial class AssetStudioWindow : EditorWindow
 
     void DrawTop(Rect r)
     {
-        GUI.Label(new Rect(r.x, r.y - 2, 260, 16), "THE TABLE WAITS", gold);
+        GUI.Label(new Rect(r.x, r.y - 2, 260, 16), "THE TABLE AWAITS", gold);
         GUI.Label(new Rect(r.x, r.y + 12, 300, 30), "Asset Studio", titleStyle);
         float bx = r.xMax;
         Button(ref bx, r, "Export catalog", () =>
@@ -192,7 +196,7 @@ public partial class AssetStudioWindow : EditorWindow
         });
         Button(ref bx, r, "Refresh library", () => { Refresh(); Toast("Library refreshed."); });
         Button(ref bx, r, EditorApplication.isPlaying ? "Stop game" : "Play game", () => { if (EditorApplication.isPlaying) EditorApplication.isPlaying = false; else GameLauncher.Play(); });
-        Button(ref bx, r, "Requests to Main", () => { showingRequests = true; showingRecent = false; RefreshRequests(); });
+        Button(ref bx, r, "Requests to Main", () => { showingRequests = true; showingRecent = showingDialogue = false; RefreshRequests(); });
     }
 
     static void Button(ref float right, Rect row, string label, Action click)
@@ -215,26 +219,28 @@ public partial class AssetStudioWindow : EditorWindow
         if (only != inGameOnly) { inGameOnly = only; EditorPrefs.SetBool(InGameOnlyKey, only); Filter(); listScroll = Vector2.zero; }
         GUI.Label(new Rect(r.x + 8, r.yMax - 24, r.width - 16, 18), "<color=#6fd46a>✔</color> = used in the game", new GUIStyle(dim) { richText = true });
         r.height -= 50;
-        var view = new Rect(0, 0, r.width - 16, (categories.Count + 4) * 30 + 12);
+        var view = new Rect(0, 0, r.width - 16, (categories.Count + 5) * 30 + 12);
         categoryScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 26, r.width, r.height - 26), categoryScroll, view);
         if (GUI.Toggle(new Rect(4, 2, view.width - 4, 28), showingRecent, $"  Recent   <color=#a9a49a>{recent.Count}</color>", showingRecent ? cellSelected : cell) && !showingRecent)
-        { showingRecent = true; showingRequests = showingAll = showingWorld = false; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null); }
+        { showingRecent = true; showingRequests = showingAll = showingWorld = showingDialogue = false; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null); }
         int open = requestList.Count(q => q.status != DevReportStore.Status.Done && q.status != DevReportStore.Status.Failed);
         if (GUI.Toggle(new Rect(4, 32, view.width - 4, 28), showingRequests, $"  Requests to Main   <color=#a9a49a>{open}</color>", showingRequests ? cellSelected : cell) && !showingRequests)
-        { showingRequests = true; showingRecent = showingAll = showingWorld = false; RefreshRequests(); GUI.FocusControl(null); }
+        { showingRequests = true; showingRecent = showingAll = showingWorld = showingDialogue = false; RefreshRequests(); GUI.FocusControl(null); }
         int total = categories.Sum(c => Count(c));
         if (GUI.Toggle(new Rect(4, 62, view.width - 4, 28), showingAll, $"  Everything   <color=#a9a49a>{total}</color>", showingAll ? cellSelected : cell) && !showingAll)
-        { showingAll = true; showingRecent = showingRequests = showingWorld = false; kindFilter = 0; listScroll = Vector2.zero; Filter(); GUI.FocusControl("search"); }
+        { showingAll = true; showingRecent = showingRequests = showingWorld = showingDialogue = false; kindFilter = 0; listScroll = Vector2.zero; Filter(); GUI.FocusControl("search"); }
         // The World: the campaign and the levels as one tree, with New and Tidy (AssetStudioWindow.World).
-        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingWorld, "  World   <color=#a9a49a>campaign & levels</color>", showingWorld ? cellSelected : cell) && !showingWorld) OpenWorld();
+        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingWorld, "  World   <color=#a9a49a>campaign & levels</color>", showingWorld ? cellSelected : cell) && !showingWorld) { showingDialogue = false; OpenWorld(); }
+        // Dialogue: every Dungeon Master line, by where it plays (AssetStudioWindow.Dialogue).
+        if (GUI.Toggle(new Rect(4, 122, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
         for (int i = 0; i < categories.Count; i++)
         {
             var c = categories[i];
-            var row = new Rect(4, 12 + (i + 4) * 30, view.width - 4, 28);
-            bool on = !showingRecent && !showingRequests && !showingAll && !showingWorld && i == categoryIndex;
+            var row = new Rect(4, 12 + (i + 5) * 30, view.width - 4, 28);
+            bool on = !showingRecent && !showingRequests && !showingAll && !showingWorld && !showingDialogue && i == categoryIndex;
             if (GUI.Toggle(row, on, $"  {c.name}   <color=#a9a49a>{Count(c)}</color>", on ? cellSelected : cell) && !on)
             {
-                showingRecent = showingRequests = showingAll = showingWorld = false; categoryIndex = i; kindFilter = 0; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null);
+                showingRecent = showingRequests = showingAll = showingWorld = showingDialogue = false; categoryIndex = i; kindFilter = 0; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null);
             }
         }
         GUI.EndScrollView();
@@ -384,7 +390,7 @@ public partial class AssetStudioWindow : EditorWindow
             ItemDatabaseAuthoring.SyncCatalog();
             Refresh();
             var e = categories.SelectMany(c => c.entries).FirstOrDefault(x => x.path == AssetDatabase.GetAssetPath(copy));
-            showingRecent = showingRequests = showingAll = false; categoryIndex = categories.FindIndex(c => c.name == "Items"); kindFilter = 0; search = ""; Filter(); Select(e);
+            showingRecent = showingRequests = showingAll = showingDialogue = false; categoryIndex = categories.FindIndex(c => c.name == "Items"); kindFilter = 0; search = ""; Filter(); Select(e);
             Toast($"Made {copy.name}. Rename it in the inspector; its icon renders on its own.");
         }));
         actions.AddRange(TestActions(asset));
@@ -535,7 +541,7 @@ public partial class AssetStudioWindow : EditorWindow
     void HandleKeys()
     {
         var e = Event.current;
-        if (showingWorld) return;   // the World's tree is clicked, not stepped through
+        if (showingWorld || showingDialogue) return;   // the World's tree is clicked, not stepped through; Dialogue is typed in
         if (!EditorGUIUtility.editingTextField && preview != null && preview.HandlePaintKey(e)) return;
         if (e.type != EventType.KeyDown || GUI.GetNameOfFocusedControl() == "search" && e.keyCode != KeyCode.DownArrow && e.keyCode != KeyCode.UpArrow) return;
         if (EditorGUIUtility.editingTextField && GUI.GetNameOfFocusedControl() != "search") return;
@@ -570,7 +576,7 @@ public partial class AssetStudioWindow : EditorWindow
     public void TestKind(int k) { kindFilter = k; Filter(); }
     public int TestShownCount => shown.Count;
     public string[] TestKinds => kinds;
-    public int TestEverything(string text) { showingAll = true; showingRecent = showingRequests = false; search = text; Filter(); return shown.Count; }
+    public int TestEverything(string text) { showingAll = true; showingRecent = showingRequests = showingDialogue = false; search = text; Filter(); return shown.Count; }
     public string TestSelectedPath => selected != null ? selected.path : "";
     public string TestInGame() { string r = ""; foreach (var c in categories) r += $"{c.name} {c.entries.Count(e => e.inGame)}/{c.entries.Count}, "; return r; }
     public string TestRequests() { showingRequests = true; RefreshRequests(); if (requestList.Count > 0) PickRequest(requestList[0]); return requestList.Count + " requests, first " + (request != null ? request.message.Split('\n')[0] + " / " + request.note + " / shot " + (requestShot != null ? requestShot.width + "x" + requestShot.height : "none") : "-"); }

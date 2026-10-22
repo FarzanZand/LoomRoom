@@ -17,8 +17,9 @@ public static class RuleSetup
     public static string Build()
     {
         var log = new System.Text.StringBuilder();
-        var rule = RuleOne(log);
-        var manager = Manager(rule, log);
+        var rules = Rules(log);
+        var rule = rules[0];
+        var manager = Manager(rules, log);
         Sheet(log);
         manager.readScreen = ReadScreen(log);
         EditorUtility.SetDirty(manager);
@@ -29,21 +30,36 @@ public static class RuleSetup
         return log.ToString();
     }
 
-    static HouseRule RuleOne(System.Text.StringBuilder log)
+    // The rules, in order: id (saved, never change), text, the line he gives it with, the quote, on the sheet from the start.
+    static readonly (string id, string text, string given, string quote, bool pinned)[] Table =
     {
-        string path = Dir + "/Data/Rule 1.asset";
+        ("rule1", "Nobody leaves the table until I say so.", "The first rule. Nobody leaves the table until I say so.", "Rule one.", true),
+        ("rule2", "Hitting the merchant is allowed, but not recommended.", "The second rule. Hitting the merchant is allowed, but not recommended.", "Rule two.", true),
+    };
+
+    // Each rule's asset (Rules/Data/Rule N), made when missing; made ones are kept as they are (edit them freely).
+    static HouseRule[] Rules(System.Text.StringBuilder log)
+    {
+        var list = new HouseRule[Table.Length];
+        for (int i = 0; i < Table.Length; i++) list[i] = Rule(i + 1, Table[i], log);
+        return list;
+    }
+
+    static HouseRule Rule(int number, (string id, string text, string given, string quote, bool pinned) row, System.Text.StringBuilder log)
+    {
+        string path = $"{Dir}/Data/Rule {number}.asset";
         System.IO.Directory.CreateDirectory(Dir + "/Data");
         var rule = AssetDatabase.LoadAssetAtPath<HouseRule>(path);
         if (rule == null)
         {
             rule = ScriptableObject.CreateInstance<HouseRule>();
-            rule.id = "rule1";
-            rule.text = "Nobody leaves the table until I say so.";
-            rule.given = new DungeonMaster.Line { text = "The first rule. Nobody leaves the table until I say so.", inPerson = true, mumble = true };
-            rule.quote = new DungeonMaster.Line { text = "Rule one.", mumble = true };
-            rule.pinnedFromStart = true;
+            rule.id = row.id;
+            rule.text = row.text;
+            rule.given = new DungeonMaster.Line { text = row.given, inPerson = true, mumble = true };
+            rule.quote = new DungeonMaster.Line { text = row.quote, mumble = true };
+            rule.pinnedFromStart = row.pinned;
             AssetDatabase.CreateAsset(rule, path);
-            log.Append("rule 1 made; ");
+            log.Append($"rule {number} made; ");
         }
         // Said like the intro's other lines (its voice).
         var intro = Object.FindAnyObjectByType<IntroController>(FindObjectsInactive.Include);
@@ -56,7 +72,7 @@ public static class RuleSetup
         return rule;
     }
 
-    static RuleManager Manager(HouseRule rule, System.Text.StringBuilder log)
+    static RuleManager Manager(HouseRule[] rules, System.Text.StringBuilder log)
     {
         string path = Dir + "/Prefabs/RuleManager.prefab";
         System.IO.Directory.CreateDirectory(Dir + "/Prefabs");
@@ -65,13 +81,23 @@ public static class RuleSetup
         {
             var go = new GameObject("RuleManager");
             var m = go.AddComponent<RuleManager>();
-            m.rules = new[] { rule };
             prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
             log.Append("manager prefab made; ");
         }
+        // The prefab lists every rule in order.
+        var contents = PrefabUtility.LoadPrefabContents(path);
+        try { contents.GetComponent<RuleManager>().rules = rules; PrefabUtility.SaveAsPrefabAsset(contents, path); }
+        finally { PrefabUtility.UnloadPrefabContents(contents); }
         var existing = Object.FindAnyObjectByType<RuleManager>(FindObjectsInactive.Include);
-        if (existing != null) return existing;
+        if (existing != null)
+        {
+            // The scene's copy follows the prefab's list.
+            var so = new SerializedObject(existing);
+            var p = so.FindProperty("rules");
+            if (p != null && p.prefabOverride) PrefabUtility.RevertPropertyOverride(p, InteractionMode.AutomatedAction);
+            return existing;
+        }
         var systems = GameObject.Find("Systems");
         var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, systems != null ? systems.transform : null);
         instance.name = "RuleManager";
@@ -90,12 +116,19 @@ public static class RuleSetup
         var old = leaf.transform.Find("House rules sheet");
         if (old != null) Object.DestroyImmediate(old.gameObject);
 
-        // The art: point filtered, every texel kept.
-        var importer = (TextureImporter)AssetImporter.GetAtPath(SheetArt);
-        importer.textureType = TextureImporterType.Default; importer.filterMode = FilterMode.Point; importer.mipmapEnabled = false;
-        importer.textureCompression = TextureImporterCompression.Uncompressed; importer.wrapMode = TextureWrapMode.Clamp; importer.npotScale = TextureImporterNPOTScale.None;
-        importer.SaveAndReimport();
-        var art = AssetDatabase.LoadAssetAtPath<Texture2D>(SheetArt);
+        // The art (one picture per number of rules, Tools/house_rules_sheet.py): point filtered, every texel kept.
+        var pictures = new System.Collections.Generic.List<Texture2D>();
+        for (int n = 1; n <= Table.Length; n++)
+        {
+            string file = n == 1 ? SheetArt : $"{Dir}/Art/House rules sheet {n}.png";
+            var importer = (TextureImporter)AssetImporter.GetAtPath(file);
+            if (importer == null) { log.Append($"no sheet picture for {n} rules ({file}); "); continue; }
+            importer.textureType = TextureImporterType.Default; importer.filterMode = FilterMode.Point; importer.mipmapEnabled = false;
+            importer.textureCompression = TextureImporterCompression.Uncompressed; importer.wrapMode = TextureWrapMode.Clamp; importer.npotScale = TextureImporterNPOTScale.None;
+            importer.SaveAndReimport();
+            pictures.Add(AssetDatabase.LoadAssetAtPath<Texture2D>(file));
+        }
+        var art = pictures[0];
         string matPath = Dir + "/Art/House rules sheet.mat";
         var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
         if (mat == null) { mat = new Material(leaf.sharedMaterial.shader); AssetDatabase.CreateAsset(mat, matPath); }
@@ -125,7 +158,7 @@ public static class RuleSetup
         var box = go.AddComponent<BoxCollider>(); box.size = new Vector3(1f, 1f, 1.2f / Mathf.Max(.001f, go.transform.lossyScale.z)); box.center = new Vector3(0, 0, -box.size.z * .5f);
         go.AddComponent<InteractableTrigger>();
         var sheet = go.AddComponent<HouseRulesSheet>();
-        sheet.paper = mr; sheet.sheets = new[] { art };
+        sheet.paper = mr; sheet.sheets = pictures.ToArray();
         log.Append($"sheet on {door.name} at {centre}; ");
     }
 
