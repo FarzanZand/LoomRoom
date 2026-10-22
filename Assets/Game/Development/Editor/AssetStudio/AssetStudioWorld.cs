@@ -9,7 +9,8 @@ using UnityEngine;
 // keep in sync). Campaign > act > places (CampaignEncounter) and events (CampaignEvent); a place plays a level; a level
 // (TableLevelData) runs stages, each a biome for some floors; a biome has a pool of hand-built rooms, enemies, loot and a
 // guardian. A room belongs to a level through the fields that name it (the level's starting, shop, authored and profile
-// rooms, its biomes' pools and boss arenas, and rooms behind a portal in those), never through folders, so the World view
+// rooms, its biomes' pools and boss arenas, room prefabs nested in its map template, and rooms behind a portal in those),
+// never through folders, so the World view
 // always tells the truth and Tidy can move files to match it. Levels under Development (the debug arena) and the pocket
 // level are tools, not places: they don't make a room "shared".
 public static partial class AssetStudioWorld
@@ -47,6 +48,8 @@ public static partial class AssetStudioWorld
         public readonly List<Level> levels = new();
         public readonly List<DungeonBiome> biomes = new();
         public readonly List<GameObject> rooms = new();
+        public readonly List<DungeonMapTemplate> maps = new();
+        public readonly Dictionary<DungeonMapTemplate, List<TableLevelData>> mapLevels = new();
         public readonly Dictionary<GameObject, List<RoomUse>> roomUses = new();
         public readonly Dictionary<DungeonBiome, List<Level>> biomeLevels = new();
         public readonly List<CampaignEncounter> places = new();
@@ -60,7 +63,9 @@ public static partial class AssetStudioWorld
         // The real (non-tool) levels a room is in.
         public List<TableLevelData> LevelsOf(GameObject room) => UsesOf(room).Where(u => !IsTool(u.level)).Select(u => u.level).Distinct().ToList();
         public List<Level> LevelsOf(DungeonBiome b) => b != null && biomeLevels.TryGetValue(b, out var l) ? l : new List<Level>();
-        public int Acts => Mathf.Max(4, places.Select(p => p.act).DefaultIfEmpty(1).Max());
+        public int Acts => Mathf.Max(4, Mathf.Max(places.Select(p => p.act).DefaultIfEmpty(1).Max(), events.Select(e => e.afterAct).DefaultIfEmpty(1).Max()));
+        // The real (non-tool) levels that play a map template.
+        public List<TableLevelData> MapLevels(DungeonMapTemplate map) => map != null && mapLevels.TryGetValue(map, out var l) ? l.Where(x => !IsTool(x)).ToList() : new List<TableLevelData>();
     }
 
     public static bool IsTool(TableLevelData l) => l != null && (AssetDatabase.GetAssetPath(l).StartsWith("Assets/Game/Development/") || AssetDatabase.GetAssetPath(l).Contains("/Pockets/"));
@@ -77,9 +82,12 @@ public static partial class AssetStudioWorld
             string path = AssetDatabase.GUIDToAssetPath(guid);
             if (path.Contains("/_Archive/")) continue;
             var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (go != null && go.GetComponent<DungeonRoomTemplate>() != null) { m.rooms.Add(go); m.roomUses[go] = new List<RoomUse>(); }
+            if (go == null) continue;
+            if (go.GetComponent<DungeonRoomTemplate>() != null) { m.rooms.Add(go); m.roomUses[go] = new List<RoomUse>(); }
+            if (go.TryGetComponent<DungeonMapTemplate>(out var mapTemplate)) m.maps.Add(mapTemplate);
         }
         m.rooms.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
+        m.maps.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
         m.biomes.AddRange(All<DungeonBiome>().OrderBy(b => b.name));
         var catalog = AssetDatabase.LoadAssetAtPath<TableLevelCatalog>(CatalogPath);
 
@@ -101,6 +109,15 @@ public static partial class AssetStudioWorld
             Use(data.shopRoom, null, "Shop");
             if (data.authoredRooms != null) foreach (var a in data.authoredRooms) if (a != null) Use(a.template, null, "Authored room");
             if (data.roomProfiles != null) foreach (var p in data.roomProfiles) if (p != null) Use(p.roomTemplate, null, "Room profile");
+            if (data.mapTemplate != null)
+            {
+                if (!m.mapLevels.TryGetValue(data.mapTemplate, out var ml)) m.mapLevels[data.mapTemplate] = ml = new List<TableLevelData>();
+                ml.Add(data);
+                // Room prefabs nested in the map (the Arena's pit under its Room child) are the level's too.
+                foreach (var t in data.mapTemplate.GetComponentsInChildren<Transform>(true))
+                    if (t != data.mapTemplate.transform && PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject) && PrefabUtility.GetCorrespondingObjectFromOriginalSource(t.gameObject) is GameObject source)
+                        Use(source, null, "In its map");
+            }
             int floor = 1;
             if (data.stages != null)
                 for (int i = 0; i < data.stages.Length; i++)
@@ -166,6 +183,11 @@ public static partial class AssetStudioWorld
             if (s.boss && (s.biome.guardian == null || !s.biome.guardian.enabled || s.biome.guardian.boss == null)) p.Add($"Stage {s.index + 1} ({s.biome.name}) has Boss on last floor, but the biome has no guardian.");
         }
         if (d.layoutMode != DungeonLayoutMode.Authored && d.startingRoom == null) p.Add("No starting room.");
+        if (d.layoutMode == DungeonLayoutMode.Authored)
+        {
+            if (d.mapTemplate != null) foreach (var mp in d.mapTemplate.Problems()) p.Add($"Map {d.mapTemplate.name}: {mp}");
+            else if (string.IsNullOrWhiteSpace(d.authoredMap)) p.Add("Hand-painted layout with no floor plan: give it a map template or lay it out as rooms in a row.");
+        }
         if (l.places.Count == 0) p.Add("Not on the campaign map: no place plays it.");
     }
 

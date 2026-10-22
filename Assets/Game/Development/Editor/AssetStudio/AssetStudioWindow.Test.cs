@@ -48,6 +48,11 @@ public partial class AssetStudioWindow
             case CampaignEvent e:
                 Add("Show the event", "The event screen over the room, as the map shows it. A preview: choices cost and give nothing.", () => GameLauncher.PreviewEvent(e));
                 break;
+            case GameObject go when go.GetComponent<DungeonMapTemplate>() is DungeonMapTemplate map:
+                var users = World.MapLevels(map);
+                foreach (var l in users.Take(3)) Add("Play " + l.name, $"Generate floor 1 of {l.name}, which plays this map.", () => GameLauncher.PlayLevel(l));
+                Add(users.Count == 0 ? "Play this map" : "Play this map alone", "A run laid out by this map, in a copy of its preview level (or the Dungeon button's pick).", () => GameLauncher.PlayMap(map));
+                break;
             case GameObject go:
                 if (go.GetComponent<EnemyBrain>() != null) Add("Fight it in the arena", "Start the Debug arena with just this enemy in front of you.", () => GameLauncher.FightInArena(go));
                 if (go.GetComponent<DungeonRoomTemplate>() != null)

@@ -7,8 +7,9 @@ using UnityEngine;
 
 // Asset Studio's World: making and arranging things. Every New puts the file in its folder and links it where it belongs
 // (a level in the catalog, a biome on its level's run, a room in its biome's pool, a place in the campaign manager's list
-// and on the map, an event in the manager's events), so it shows up in the game at once. Every change is undoable and
-// saved straight away. A level's asset name is how saved runs find it: a new one gets a name no other level has.
+// and on the map, an event in the manager's events), so it shows up in the game at once. Every change is saved straight
+// away and can be undone: asset edits with Ctrl+Z, edits to the campaign manager and realm map prefabs (and the places
+// and events made with them) with the World's Undo button (PrefabUndo below). A level's asset name is how saved runs find it: a new one gets a name no other level has.
 public static partial class AssetStudioWorld
 {
     // ── Levels, biomes, rooms ─────────────────────────────────────────
@@ -29,7 +30,7 @@ public static partial class AssetStudioWorld
         level.displayName = name;
         if (ownBiomes && level.stages != null)
             for (int i = 0; i < level.stages.Length; i++)
-                if (level.stages[i]?.biome != null) level.stages[i].biome = CopyBiome(level.stages[i].biome, folder + "/Biomes", name + " " + level.stages[i].biome.name);
+                if (level.stages[i]?.biome != null) level.stages[i].biome = CopyBiome(level.stages[i].biome, folder + "/Biomes", name + " " + level.stages[i].biome.name, null);
         EditorUtility.SetDirty(level);
         AddToCatalog(level);
         AssetDatabase.SaveAssets();
@@ -37,13 +38,14 @@ public static partial class AssetStudioWorld
         return level;
     }
 
-    static DungeonBiome CopyBiome(DungeonBiome source, string folder, string name)
+    // fileName names the asset; displayName (what the game shows, e.g. on the run recap) stays the source's unless given.
+    static DungeonBiome CopyBiome(DungeonBiome source, string folder, string fileName, string displayName)
     {
         EnsureFolder(folder);
-        string path = AssetDatabase.GenerateUniqueAssetPath(folder + "/" + CleanName(name) + ".asset");
+        string path = AssetDatabase.GenerateUniqueAssetPath(folder + "/" + CleanName(fileName) + ".asset");
         AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(source), path);
         var copy = AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
-        copy.displayName = CleanName(name);
+        if (!string.IsNullOrEmpty(displayName)) copy.displayName = CleanName(displayName);
         EditorUtility.SetDirty(copy);
         return copy;
     }
@@ -56,7 +58,7 @@ public static partial class AssetStudioWorld
         if (level == null || template == null) { message = "Pick a level, and a biome to start from."; return null; }
         if (name.Length == 0) { message = "Give the biome a name."; return null; }
         string folder = (LevelFolder(level) ?? Path.GetDirectoryName(AssetDatabase.GetAssetPath(level)).Replace('\\', '/')) + "/Biomes";
-        var biome = CopyBiome(template, folder, name);
+        var biome = CopyBiome(template, folder, name, name);
         AddStage(level, biome, floors, boss);
         message = $"Made {biome.name} ({floors} floor{(floors == 1 ? "" : "s")}) at the end of {level.name}'s run.";
         return biome;
@@ -124,11 +126,10 @@ public static partial class AssetStudioWorld
     // A hand-painted layout of rooms in a row, west to east: room 0 the entrance (the level's starting room unless set), the
     // last the exit with the stairs, the ones between fights; each 7 x 7, a door and a short passage between neighbours.
     // Rooms already set up keep their template, role, height and merchant.
-    public static void MakeRoomsInARow(TableLevelData level, int count)
+    // The plan of count 7 x 7 rooms in a row, a door and a short passage between neighbours, north row first.
+    static List<string> RowPlan(int count, int minimum, int margin)
     {
-        count = Mathf.Clamp(count, 2, 8);
-        // The generator wants a plan at least 14 cells each way: rock above and below the row makes up the depth.
-        const int size = 7, gap = 3, margin = 2, minimum = 14;
+        const int size = 7, gap = 3;
         int width = Mathf.Max(minimum, margin * 2 + count * size + (count - 1) * gap), depth = Mathf.Max(minimum, margin * 2 + size);
         int top = (depth - size) / 2;
         var grid = new char[depth, width];
@@ -147,6 +148,26 @@ public static partial class AssetStudioWorld
         }
         var rows = new List<string>();
         for (int y = 0; y < depth; y++) { var row = new char[width]; for (int x = 0; x < width; x++) row[x] = grid[y, x]; rows.Add(new string(row)); }
+        return rows;
+    }
+
+    // Whether laying the level out again throws away a plan someone painted: a floor plan that isn't a row of rooms, or
+    // anything on its content map (enemies, items, breakables placed by letter).
+    public static bool HasHandPaintedPlan(TableLevelData level)
+    {
+        if (level == null || string.IsNullOrWhiteSpace(level.authoredMap)) return false;
+        if (level.authoredContent != null && level.authoredContent.Any(c => c != '\n' && c != '\r' && c != ' ' && c != '#' && c != '.')) return true;
+        int rooms = level.authoredRooms?.Length ?? 0;
+        return rooms < 2 || string.Join('\n', RowPlan(rooms, 14, 2)) != level.authoredMap.Replace("\r", "");
+    }
+
+    // The level as a row of count rooms. Replaces its floor plan and empties its content map (the World asks first).
+    public static void MakeRoomsInARow(TableLevelData level, int count)
+    {
+        count = Mathf.Clamp(count, 2, 8);
+        // The generator wants a plan at least 14 cells each way: rock above and below the row makes up the depth.
+        var rows = RowPlan(count, 14, 2);
+        int width = rows[0].Length, depth = rows.Count;
         Undo.RecordObject(level, "Rooms in a row");
         level.layoutMode = DungeonLayoutMode.Authored;
         level.authoredMap = string.Join('\n', rows);
@@ -162,6 +183,49 @@ public static partial class AssetStudioWorld
             if (keep != null && i == count - 1 && keep.role != DungeonGenerator.RoomRole.Exit) keep.role = DungeonGenerator.RoomRole.Exit;
         }
         level.authoredRooms = list.ToArray();
+        Save(level);
+    }
+
+    // ── Map templates (a whole small map in one prefab) ────────────────
+
+    // A new map template: count rooms in a row painted on it, a Room child per room (SyncRooms), saved in the level's
+    // folder (or Levels/Shared/Maps). use: the level plays it (Authored, its Map Template).
+    public static DungeonMapTemplate NewMapTemplate(string name, TableLevelData level, int count, bool use, out string message)
+    {
+        name = CleanName(name);
+        if (name.Length == 0) { message = "Give the map a name."; return null; }
+        count = Mathf.Clamp(count, 2, 8);
+        string folder = level != null && LevelFolder(level) is string f ? f : LevelsRoot + "/Shared/Maps";
+        EnsureFolder(folder);
+        string path = AssetDatabase.GenerateUniqueAssetPath(folder + "/" + name + ".prefab");
+        var root = new GameObject(name);
+        DungeonMapTemplate saved;
+        try
+        {
+            var map = root.AddComponent<DungeonMapTemplate>();
+            var rows = RowPlan(count, 0, 1);
+            map.width = rows[0].Length; map.depth = rows.Count; map.rows = rows.ToArray();
+            map.previewLevel = level;
+            map.SyncRooms();   // a Room child per painted room, on its centre cell
+            for (int i = 0; i < count; i++)
+            {
+                var room = map.RoomChild(i);
+                if (room != null) room.name = $"Room {DungeonMapTemplate.RoomMark(i)} " + (i == 0 ? "Entrance" : i == count - 1 ? "Exit" : "Fight");
+            }
+            saved = PrefabUtility.SaveAsPrefabAsset(root, path).GetComponent<DungeonMapTemplate>();
+        }
+        finally { UnityEngine.Object.DestroyImmediate(root); }
+        if (use && level != null) SetMapTemplate(level, saved);
+        message = $"Made {saved.name} ({count} rooms in a row) in {folder}" + (use && level != null ? $"; {level.name} plays it." : ".") + " Open it to paint the map and build each room under its Room child.";
+        return saved;
+    }
+
+    // The level plays this map (Authored layout), or its own text plan again when map is null.
+    public static void SetMapTemplate(TableLevelData level, DungeonMapTemplate map)
+    {
+        Undo.RecordObject(level, "Map template");
+        level.mapTemplate = map;
+        if (map != null) level.layoutMode = DungeonLayoutMode.Authored;
         Save(level);
     }
 
@@ -184,8 +248,10 @@ public static partial class AssetStudioWorld
     {
         name = CleanName(name);
         if (name.Length == 0) { message = "Give the place a name."; return null; }
-        act = Mathf.Clamp(act, 1, 4);
+        act = Mathf.Max(1, act);
         string folder = $"{EncountersRoot}/Act {act}";
+        PrefabUndo.Begin("New place " + name, CampaignManagerPrefab, RealmMapPrefab);
+        PrefabUndo.Folder(folder);
         EnsureFolder(folder);
         var place = ScriptableObject.CreateInstance<CampaignEncounter>();
         place.id = FreeId(name, All<CampaignEncounter>(EncountersRoot).Select(p => p.id));
@@ -194,9 +260,11 @@ public static partial class AssetStudioWorld
         place.kind = level != null ? CampaignEncounterKind.Level : CampaignEncounterKind.Placeholder;
         place.level = level;
         place.description = "";
-        AssetDatabase.CreateAsset(place, AssetDatabase.GenerateUniqueAssetPath($"{folder}/{name}.asset"));
-        ListInManager(place, null);
-        string point = PutOnMap(place);
+        string placePath = AssetDatabase.GenerateUniqueAssetPath($"{folder}/{name}.asset");
+        AssetDatabase.CreateAsset(place, placePath);
+        PrefabUndo.Created(placePath);
+        ListInManager(place, null, false);
+        string point = PutOnMap(place, false);
         AssetDatabase.SaveAssets();
         message = $"Made {name} in Act {act}" + (level != null ? $", playing {level.name}" : " (a placeholder until it has a level)") + ". " + point;
         return place;
@@ -207,8 +275,11 @@ public static partial class AssetStudioWorld
     {
         title = CleanName(title);
         if (title.Length == 0) { message = "Give the event a title."; return null; }
-        afterAct = Mathf.Clamp(afterAct, 1, 4);
+        afterAct = Mathf.Max(1, afterAct);
         string folder = $"{EncountersRoot}/Act {afterAct}/{title}";
+        PrefabUndo.Begin("New event " + title, CampaignManagerPrefab);
+        PrefabUndo.Folder($"{EncountersRoot}/Act {afterAct}");
+        PrefabUndo.Folder(folder);
         EnsureFolder(folder);
         var e = ScriptableObject.CreateInstance<CampaignEvent>();
         e.id = FreeId(title, All<CampaignEvent>("Assets/Game/Campaign").Select(x => x.id));
@@ -216,16 +287,19 @@ public static partial class AssetStudioWorld
         e.afterAct = afterAct;
         e.text = "";
         e.choices = new[] { new CampaignEvent.Choice { label = "Leave", outcome = "" } };
-        AssetDatabase.CreateAsset(e, AssetDatabase.GenerateUniqueAssetPath($"{folder}/{title}.asset"));
-        ListInManager(null, e);
+        string eventPath = AssetDatabase.GenerateUniqueAssetPath($"{folder}/{title}.asset");
+        AssetDatabase.CreateAsset(e, eventPath);
+        PrefabUndo.Created(eventPath);
+        ListInManager(null, e, false);
         AssetDatabase.SaveAssets();
         message = $"Made the event {title} (after Act {afterAct}). Write its text, picture and choices in the inspector.";
         return e;
     }
 
     // Appends a place or an event the campaign manager doesn't list yet (it only runs what it lists).
-    public static void ListInManager(CampaignEncounter place, CampaignEvent ev)
+    public static void ListInManager(CampaignEncounter place, CampaignEvent ev, bool undoStep = true)
     {
+        if (undoStep) PrefabUndo.Begin("List in the campaign manager", CampaignManagerPrefab);
         var root = PrefabUtility.LoadPrefabContents(CampaignManagerPrefab);
         try
         {
@@ -241,8 +315,9 @@ public static partial class AssetStudioWorld
     }
 
     // A point for the place on the map, under Points, beside the act's other places (or the map's middle).
-    public static string PutOnMap(CampaignEncounter place)
+    public static string PutOnMap(CampaignEncounter place, bool undoStep = true)
     {
+        if (undoStep) PrefabUndo.Begin("Put " + place.displayName + " on the map", RealmMapPrefab);
         var root = PrefabUtility.LoadPrefabContents(RealmMapPrefab);
         try
         {
@@ -282,16 +357,28 @@ public static partial class AssetStudioWorld
             .Where(n => n != "Base" && n != "poi light").Distinct().OrderBy(n => n).ToList();
     }
 
+    // Props per place (-1: not on the map), read once per change of the map prefab (the place panel asks every frame).
+    static Dictionary<CampaignEncounter, int> propCounts;
+    static Hash128 propCountsFor;
     public static int PropCount(CampaignEncounter place)
     {
-        var map = AssetDatabase.LoadAssetAtPath<GameObject>(RealmMapPrefab);
-        var point = map != null ? map.GetComponentsInChildren<CampaignPoint>(true).FirstOrDefault(p => p.encounter == place) : null;
-        return point == null ? -1 : point.transform.Cast<Transform>().Count(t => t.name != "Base");
+        var hash = AssetDatabase.GetAssetDependencyHash(RealmMapPrefab);
+        if (propCounts == null || hash != propCountsFor)
+        {
+            propCounts = new Dictionary<CampaignEncounter, int>();
+            propCountsFor = hash;
+            var map = AssetDatabase.LoadAssetAtPath<GameObject>(RealmMapPrefab);
+            if (map != null)
+                foreach (var point in map.GetComponentsInChildren<CampaignPoint>(true))
+                    if (point.encounter != null) propCounts[point.encounter] = point.transform.Cast<Transform>().Count(t => t.name != "Base");
+        }
+        return place != null && propCounts.TryGetValue(place, out int n) ? n : -1;
     }
 
     // Edits the place's point in the map prefab: copy is given the prefab's root and the point; saves when it returns true.
-    static string EditPoint(CampaignEncounter place, Func<GameObject, CampaignPoint, string> edit)
+    static string EditPoint(CampaignEncounter place, string undoName, Func<GameObject, CampaignPoint, string> edit)
     {
+        PrefabUndo.Begin(undoName + " (" + place.displayName + ")", RealmMapPrefab);
         var root = PrefabUtility.LoadPrefabContents(RealmMapPrefab);
         try
         {
@@ -310,7 +397,7 @@ public static partial class AssetStudioWorld
     }
 
     // Every prop of another place (not its base), where it stands on that disc.
-    public static string CopyProps(CampaignEncounter place, CampaignEncounter from) => EditPoint(place, (root, point) =>
+    public static string CopyProps(CampaignEncounter place, CampaignEncounter from) => EditPoint(place, "Copy props", (root, point) =>
     {
         var source = root.GetComponentsInChildren<CampaignPoint>(true).FirstOrDefault(p => p.encounter == from);
         if (source == null) return from.displayName + " is not on the map.";
@@ -325,7 +412,7 @@ public static partial class AssetStudioWorld
     });
 
     // One prop (a copy of the first one of that name on the map) at a free spot on the disc, turned at random.
-    public static string AddProp(CampaignEncounter place, string prop) => EditPoint(place, (root, point) =>
+    public static string AddProp(CampaignEncounter place, string prop) => EditPoint(place, "Add " + prop, (root, point) =>
     {
         var model = root.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == prop && t.parent != null && t.parent.GetComponent<CampaignPoint>() != null);
         if (model == null) return "No prop called " + prop + " on the map.";
@@ -346,7 +433,7 @@ public static partial class AssetStudioWorld
         return $"Added {prop} to {place.displayName}.";
     });
 
-    public static string ClearProps(CampaignEncounter place) => EditPoint(place, (root, point) =>
+    public static string ClearProps(CampaignEncounter place) => EditPoint(place, "Clear props", (root, point) =>
     {
         var props = point.transform.Cast<Transform>().Where(t => t.name != "Base").ToList();
         foreach (var t in props) UnityEngine.Object.DestroyImmediate(t.gameObject);
@@ -364,15 +451,64 @@ public static partial class AssetStudioWorld
     public static void SetPlaceAct(CampaignEncounter place, int act)
     {
         Undo.RecordObject(place, "Set place act");
-        place.act = Mathf.Clamp(act, 1, 4);
+        place.act = Mathf.Max(1, act);
         Save(place);
     }
 
     public static void SetEventAct(CampaignEvent e, int act)
     {
         Undo.RecordObject(e, "Set event act");
-        e.afterAct = Mathf.Clamp(act, 1, 4);
+        e.afterAct = Mathf.Max(1, act);
         Save(e);
+    }
+
+    // ── Undo for prefab edits ─────────────────────────────────────────
+
+    // Prefab edits made through PrefabUtility.LoadPrefabContents can't go on Unity's undo, so each World edit of the
+    // campaign manager or the realm map keeps the prefab files as they were (and the assets and folders it made) and
+    // the World's Undo button puts them back. Kept for this editor session, last first.
+    public static class PrefabUndo
+    {
+        class Step { public string name; public readonly List<(string path, byte[] bytes)> files = new(); public readonly List<string> created = new(); }
+        static readonly List<Step> steps = new();
+        static Step open;
+        static double openedAt;
+
+        // A new step, keeping the prefabs as they are now. Calls within the same moment (one button) join one step.
+        public static void Begin(string name, params string[] prefabs)
+        {
+            if (open == null || EditorApplication.timeSinceStartup - openedAt > .5)
+            {
+                open = new Step { name = name };
+                steps.Add(open);
+                if (steps.Count > 30) steps.RemoveAt(0);
+            }
+            openedAt = EditorApplication.timeSinceStartup;
+            foreach (var p in prefabs)
+                if (File.Exists(p) && !open.files.Any(f => f.path == p)) open.files.Add((p, File.ReadAllBytes(p)));
+        }
+        public static void Created(string path) { if (open != null) open.created.Add(path); }
+        // A folder that doesn't exist yet: made by this step, removed with it when empty.
+        public static void Folder(string path) { if (open != null && !AssetDatabase.IsValidFolder(path)) open.created.Add(path); }
+
+        public static string Last => steps.Count > 0 ? steps[steps.Count - 1].name : null;
+
+        public static string UndoLast()
+        {
+            if (steps.Count == 0) return "Nothing to undo.";
+            var step = steps[steps.Count - 1];
+            steps.RemoveAt(steps.Count - 1);
+            open = null;
+            foreach (var (path, bytes) in step.files) { File.WriteAllBytes(path, bytes); AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate); }
+            for (int i = step.created.Count - 1; i >= 0; i--)
+            {
+                string c = step.created[i];
+                if (AssetDatabase.IsValidFolder(c)) { if (Directory.Exists(c) && Directory.GetFileSystemEntries(c).Length == 0) AssetDatabase.DeleteAsset(c); }
+                else if (File.Exists(c)) AssetDatabase.DeleteAsset(c);
+            }
+            AssetDatabase.Refresh();
+            return "Undid: " + step.name + ".";
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────

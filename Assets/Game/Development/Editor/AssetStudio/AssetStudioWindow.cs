@@ -33,7 +33,14 @@ public partial class AssetStudioWindow : EditorWindow
     int kindFilter;                       // 0: every kind in the category
     string[] kinds = { "All kinds" };
     readonly List<string> recent = new();  // last picked, newest first (the Recent list)
-    bool showingRecent, showingRequests, showingAll;
+    // Which view the window shows, one at a time: a category's list, or one of the views above the categories.
+    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue }
+    StudioView studioView;
+    bool showingRecent => studioView == StudioView.Recent;
+    bool showingRequests => studioView == StudioView.Requests;
+    bool showingAll => studioView == StudioView.Everything;
+    bool showingWorld => studioView == StudioView.World;
+    bool showingDialogue => studioView == StudioView.Dialogue;
     const string RecentKey = "LoomRoom.Studio.Recent", InGameOnlyKey = "LoomRoom.Studio.InGameOnly";
     bool inGameOnly;
     List<DevReportStore.Entry> requestList = new();
@@ -81,6 +88,7 @@ public partial class AssetStudioWindow : EditorWindow
         string keep = selected?.id;
         categories = AssetStudioCatalog.Build();
         world = null;   // the World view rebuilds from the assets too
+        tomes = null;
         AssetStudioUsage.Forget();
         categoryIndex = Mathf.Clamp(categoryIndex, 0, categories.Count - 1);
         Filter();
@@ -196,7 +204,7 @@ public partial class AssetStudioWindow : EditorWindow
         });
         Button(ref bx, r, "Refresh library", () => { Refresh(); Toast("Library refreshed."); });
         Button(ref bx, r, EditorApplication.isPlaying ? "Stop game" : "Play game", () => { if (EditorApplication.isPlaying) EditorApplication.isPlaying = false; else GameLauncher.Play(); });
-        Button(ref bx, r, "Requests to Main", () => { showingRequests = true; showingRecent = showingDialogue = false; RefreshRequests(); });
+        Button(ref bx, r, "Requests to Main", () => { studioView = StudioView.Requests; RefreshRequests(); });
     }
 
     static void Button(ref float right, Rect row, string label, Action click)
@@ -222,15 +230,15 @@ public partial class AssetStudioWindow : EditorWindow
         var view = new Rect(0, 0, r.width - 16, (categories.Count + 5) * 30 + 12);
         categoryScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 26, r.width, r.height - 26), categoryScroll, view);
         if (GUI.Toggle(new Rect(4, 2, view.width - 4, 28), showingRecent, $"  Recent   <color=#a9a49a>{recent.Count}</color>", showingRecent ? cellSelected : cell) && !showingRecent)
-        { showingRecent = true; showingRequests = showingAll = showingWorld = showingDialogue = false; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null); }
+        { studioView = StudioView.Recent; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null); }
         int open = requestList.Count(q => q.status != DevReportStore.Status.Done && q.status != DevReportStore.Status.Failed);
         if (GUI.Toggle(new Rect(4, 32, view.width - 4, 28), showingRequests, $"  Requests to Main   <color=#a9a49a>{open}</color>", showingRequests ? cellSelected : cell) && !showingRequests)
-        { showingRequests = true; showingRecent = showingAll = showingWorld = showingDialogue = false; RefreshRequests(); GUI.FocusControl(null); }
+        { studioView = StudioView.Requests; RefreshRequests(); GUI.FocusControl(null); }
         int total = categories.Sum(c => Count(c));
         if (GUI.Toggle(new Rect(4, 62, view.width - 4, 28), showingAll, $"  Everything   <color=#a9a49a>{total}</color>", showingAll ? cellSelected : cell) && !showingAll)
-        { showingAll = true; showingRecent = showingRequests = showingWorld = showingDialogue = false; kindFilter = 0; listScroll = Vector2.zero; Filter(); GUI.FocusControl("search"); }
+        { studioView = StudioView.Everything; kindFilter = 0; listScroll = Vector2.zero; Filter(); GUI.FocusControl("search"); }
         // The World: the campaign and the levels as one tree, with New and Tidy (AssetStudioWindow.World).
-        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingWorld, "  World   <color=#a9a49a>campaign & levels</color>", showingWorld ? cellSelected : cell) && !showingWorld) { showingDialogue = false; OpenWorld(); }
+        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingWorld, "  World   <color=#a9a49a>campaign & levels</color>", showingWorld ? cellSelected : cell) && !showingWorld) OpenWorld();
         // Dialogue: every Dungeon Master line, by where it plays (AssetStudioWindow.Dialogue).
         if (GUI.Toggle(new Rect(4, 122, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
         for (int i = 0; i < categories.Count; i++)
@@ -240,7 +248,7 @@ public partial class AssetStudioWindow : EditorWindow
             bool on = !showingRecent && !showingRequests && !showingAll && !showingWorld && !showingDialogue && i == categoryIndex;
             if (GUI.Toggle(row, on, $"  {c.name}   <color=#a9a49a>{Count(c)}</color>", on ? cellSelected : cell) && !on)
             {
-                showingRecent = showingRequests = showingAll = showingWorld = showingDialogue = false; categoryIndex = i; kindFilter = 0; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null);
+                studioView = StudioView.Category; categoryIndex = i; kindFilter = 0; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null);
             }
         }
         GUI.EndScrollView();
@@ -376,13 +384,31 @@ public partial class AssetStudioWindow : EditorWindow
         if (inspectorHost.style.height.value.value != a.height) inspectorHost.style.height = a.height;
     }
 
+    // Each spell's tome (the item that casts it), read once per library refresh: the panel is drawn every frame.
+    [NonSerialized] Dictionary<SpellDefinition, ItemData> tomes;
+    [NonSerialized] string stateFor, stateText;
+    [NonSerialized] DateTime stateWritten;
+    ItemData TomeFor(SpellDefinition spell)
+    {
+        if (tomes == null)
+        {
+            tomes = new Dictionary<SpellDefinition, ItemData>();
+            foreach (var g in AssetDatabase.FindAssets("t:ItemData", new[] { "Assets/Game" }))
+            {
+                var item = AssetDatabase.LoadAssetAtPath<ItemData>(AssetDatabase.GUIDToAssetPath(g));
+                if (item != null && item.spell != null && !tomes.ContainsKey(item.spell)) tomes[item.spell] = item;
+            }
+        }
+        return tomes.TryGetValue(spell, out var tome) ? tome : null;
+    }
+
     // What can be done with this kind of asset in the game, and where it is used. Returns the next free y.
     float DrawActions(Rect r, float y)
     {
         var asset = selected.Load();
         var actions = new List<(string label, string tip, Action run)>();
         ItemData giveItem = asset as ItemData;
-        if (asset is SpellDefinition spell) giveItem = AssetDatabase.FindAssets("t:ItemData", new[] { "Assets/Game" }).Select(g => AssetDatabase.LoadAssetAtPath<ItemData>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault(i => i != null && i.spell == spell);
+        if (asset is SpellDefinition spell) giveItem = TomeFor(spell);
         if (giveItem != null) actions.Add((EditorApplication.isPlaying ? "Give to table player" : "Try it in the arena", "Into the table player's bag now, or start the Debug arena with it in the bag.", () => Toast(GameLauncher.GiveItem(giveItem))));
         if (asset is ItemData source) actions.Add(("Duplicate as new item", "A copy with its own save ID, in the same folder, added to the item catalog (as the Item Database does). It opens here to edit.", () =>
         {
@@ -390,7 +416,7 @@ public partial class AssetStudioWindow : EditorWindow
             ItemDatabaseAuthoring.SyncCatalog();
             Refresh();
             var e = categories.SelectMany(c => c.entries).FirstOrDefault(x => x.path == AssetDatabase.GetAssetPath(copy));
-            showingRecent = showingRequests = showingAll = showingDialogue = false; categoryIndex = categories.FindIndex(c => c.name == "Items"); kindFilter = 0; search = ""; Filter(); Select(e);
+            studioView = StudioView.Category; categoryIndex = categories.FindIndex(c => c.name == "Items"); kindFilter = 0; search = ""; Filter(); Select(e);
             Toast($"Made {copy.name}. Rename it in the inspector; its icon renders on its own.");
         }));
         actions.AddRange(TestActions(asset));
@@ -422,7 +448,7 @@ public partial class AssetStudioWindow : EditorWindow
                 string label = (u.entry != null ? u.entry.name : System.IO.Path.GetFileNameWithoutExtension(u.path)) + "  <color=#a9a49a>" + System.IO.Path.GetExtension(u.path) + "</color>";
                 if (GUI.Button(new Rect(r.x + 8, y, r.width - 16, 20), label, cell))
                 {
-                    if (u.entry != null) { showingRecent = false; categoryIndex = categories.FindIndex(c => c.name == u.entry.category); kindFilter = 0; search = ""; Filter(); Select(u.entry); }
+                    if (u.entry != null) { studioView = StudioView.Category; categoryIndex = categories.FindIndex(c => c.name == u.entry.category); kindFilter = 0; search = ""; Filter(); Select(u.entry); }
                     else { var o = AssetDatabase.LoadMainAssetAtPath(u.path); Selection.activeObject = o; EditorGUIUtility.PingObject(o); }
                 }
                 y += 21;
@@ -509,11 +535,13 @@ public partial class AssetStudioWindow : EditorWindow
         string state = System.IO.Path.Combine(request.folder, "game-state.json");
         if (System.IO.File.Exists(state))
         {
+            var written = System.IO.File.GetLastWriteTimeUtc(state);
+            if (stateFor != state || stateWritten != written) { stateFor = state; stateWritten = written; stateText = System.IO.File.ReadAllText(state); }
             GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "GAME STATE", gold); y += 18;
             var area = new Rect(r.x + 4, y, r.width - 8, r.yMax - y - 4);
             GUILayout.BeginArea(area);
             inspectorScroll = EditorGUILayout.BeginScrollView(inspectorScroll);
-            EditorGUILayout.SelectableLabel(System.IO.File.ReadAllText(state), EditorStyles.textArea, GUILayout.ExpandHeight(true), GUILayout.MinHeight(area.height - 10));
+            EditorGUILayout.SelectableLabel(stateText, EditorStyles.textArea, GUILayout.ExpandHeight(true), GUILayout.MinHeight(area.height - 10));
             EditorGUILayout.EndScrollView();
             GUILayout.EndArea();
         }
@@ -576,8 +604,8 @@ public partial class AssetStudioWindow : EditorWindow
     public void TestKind(int k) { kindFilter = k; Filter(); }
     public int TestShownCount => shown.Count;
     public string[] TestKinds => kinds;
-    public int TestEverything(string text) { showingAll = true; showingRecent = showingRequests = showingDialogue = false; search = text; Filter(); return shown.Count; }
+    public int TestEverything(string text) { studioView = StudioView.Everything; search = text; Filter(); return shown.Count; }
     public string TestSelectedPath => selected != null ? selected.path : "";
     public string TestInGame() { string r = ""; foreach (var c in categories) r += $"{c.name} {c.entries.Count(e => e.inGame)}/{c.entries.Count}, "; return r; }
-    public string TestRequests() { showingRequests = true; RefreshRequests(); if (requestList.Count > 0) PickRequest(requestList[0]); return requestList.Count + " requests, first " + (request != null ? request.message.Split('\n')[0] + " / " + request.note + " / shot " + (requestShot != null ? requestShot.width + "x" + requestShot.height : "none") : "-"); }
+    public string TestRequests() { studioView = StudioView.Requests; RefreshRequests(); if (requestList.Count > 0) PickRequest(requestList[0]); return requestList.Count + " requests, first " + (request != null ? request.message.Split('\n')[0] + " / " + request.note + " / shot " + (requestShot != null ? requestShot.width + "x" + requestShot.height : "none") : "-"); }
 }

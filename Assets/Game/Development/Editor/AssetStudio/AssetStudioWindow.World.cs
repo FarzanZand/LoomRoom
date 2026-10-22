@@ -9,10 +9,11 @@ using UnityEngine;
 // a search and a Show filter; in the middle, what the picked thing is made of, with buttons to change it and New buttons
 // that make things already filed and linked; right, its inspector as everywhere else in the studio. Rooms can be dragged
 // from the tree (or the Project window) onto a biome to put them in its pool, and a level onto a place to have it play it.
+// Map templates (DungeonMapTemplate: a whole small map in one prefab) show under the levels that play them and in MAPS.
 public partial class AssetStudioWindow
 {
-    enum WorldKind { Header, Act, Place, Event, Level, Stage, Room, Note }
-    enum WorldPane { Picked, NewLevel, NewBiome, NewRoom, NewPlace, NewEvent, Tidy }
+    enum WorldKind { Header, Act, Place, Event, Level, Stage, Room, Note, Map }
+    enum WorldPane { Picked, NewLevel, NewBiome, NewRoom, NewPlace, NewEvent, Tidy, NewMap }
 
     class WorldNode
     {
@@ -25,7 +26,6 @@ public partial class AssetStudioWindow
         public DungeonBiome biome;
     }
 
-    bool showingWorld;
     AssetStudioWorld.Model world;
     readonly HashSet<string> worldOpen = new() { "campaign", "levels", "act1" };
     readonly List<WorldNode> worldRows = new();
@@ -40,7 +40,10 @@ public partial class AssetStudioWindow
     // The New forms' fields.
     string formName = "";
     int formAct = 1, formFloors = 2, formRooms = 3, formLayout;    // formLayout 0: like the template, 1: rooms in a row
-    bool formOwnBiomes = true, formBoss;
+    bool formOwnBiomes = true, formBoss, formUseMap;
+    // The painted layout's room count, for the level it was set for (not fed from the level every frame).
+    TableLevelData layoutRoomsFor;
+    int layoutRooms = 3;
     TableLevelData formLevel;
     DungeonBiome formBiome;
     List<AssetStudioWorld.Move> tidyMoves;
@@ -50,7 +53,7 @@ public partial class AssetStudioWindow
 
     void OpenWorld()
     {
-        showingWorld = true; showingRecent = showingRequests = showingAll = false;
+        studioView = StudioView.World;
         var saved = EditorPrefs.GetString(WorldOpenKey, "");
         if (saved.Length > 0) { worldOpen.Clear(); foreach (var k in saved.Split('|')) if (k.Length > 0) worldOpen.Add(k); }
         GUI.FocusControl(null);
@@ -62,7 +65,10 @@ public partial class AssetStudioWindow
         EditorPrefs.SetString(WorldOpenKey, string.Join("|", worldOpen));
     }
 
-    void RefreshWorld() { world = null; AssetDatabase.SaveAssets(); categories = AssetStudioCatalog.Build(); Filter(); }
+    // After a change: the World model is read again on the next draw (a few asset reads). The library's own list is only
+    // rebuilt when files were made, moved or deleted (RefreshLibrary).
+    void RefreshWorld() { world = null; Repaint(); }
+    void RefreshLibrary() { RefreshWorld(); categories = AssetStudioCatalog.Build(); Filter(); }
 
     // ── The tree ─────────────────────────────────────────────────────
 
@@ -122,9 +128,17 @@ public partial class AssetStudioWindow
                 string onMap = l.places.Count > 0 ? "on the map: " + string.Join(", ", l.places.Select(p => p.displayName)) : l.tool ? "test level" : "not on the map";
                 Row(new WorldNode { key = "level:" + l.path, label = l.data.name, note = (l.data.IsDungeon ? $"{l.data.FloorCount} floor{(l.data.FloorCount == 1 ? "" : "s")} · " : "") + (l.problems.Count > 0 ? l.problems.Count + " to look at · " : "") + onMap, warn = l.problems.Count > 0, kind = WorldKind.Level, asset = l.data, level = l.data, depth = 1, hasChildren = true });
                 if (!Open("level:" + l.path)) continue;
-                // The level's own rooms.
+                // The level's own rooms, and the map it plays with the rooms painted on it.
                 foreach (var (room, role) in OwnRooms(l.data))
                     Row(RoomNode(m, room, 2, l.data, null, role));
+                if (l.data.mapTemplate != null)
+                {
+                    var map = l.data.mapTemplate;
+                    string mapKey = $"map:{l.path}:{AssetDatabase.GetAssetPath(map)}";
+                    var rooms = map.Rooms();
+                    Row(new WorldNode { key = mapKey, label = map.name, note = $"map · {rooms.Length} room{(rooms.Length == 1 ? "" : "s")}" + (map.Problems().Count > 0 ? " · " + map.Problems()[0] : ""), warn = map.Problems().Count > 0, kind = WorldKind.Map, asset = map.gameObject, level = l.data, depth = 2, hasChildren = rooms.Length > 0 });
+                    if (Open(mapKey)) for (int i = 0; i < rooms.Length; i++) Row(MapRoomNode(map, rooms[i], i, 3, mapKey));
+                }
                 foreach (var st in l.stages)
                 {
                     var b = st.biome;
@@ -139,6 +153,16 @@ public partial class AssetStudioWindow
 
         if (worldShow == 0)
         {
+            Row(new WorldNode { key = "maps", label = "MAPS", note = m.maps.Count.ToString(), kind = WorldKind.Header, hasChildren = m.maps.Count > 0 });
+            if (Open("maps"))
+                foreach (var map in m.maps)
+                {
+                    var users = m.MapLevels(map);
+                    string mapKey = "map::" + AssetDatabase.GetAssetPath(map);
+                    var rooms = map.Rooms();
+                    Row(new WorldNode { key = mapKey, label = map.name, note = $"{rooms.Length} room{(rooms.Length == 1 ? "" : "s")} · " + (users.Count == 0 ? "no level plays it" : "played by " + string.Join(", ", users.Select(u => u.name))), kind = WorldKind.Map, asset = map.gameObject, level = users.FirstOrDefault(), depth = 1, hasChildren = rooms.Length > 0 });
+                    if (Open(mapKey)) for (int i = 0; i < rooms.Length; i++) Row(MapRoomNode(map, rooms[i], i, 2, mapKey));
+                }
             int unused = m.rooms.Count(r => m.UsesOf(r).Count == 0);
             Row(new WorldNode { key = "unused", label = "ROOMS NOBODY USES", note = unused.ToString(), kind = WorldKind.Header, hasChildren = unused > 0 });
             if (Open("unused")) foreach (var r in m.rooms.Where(r => m.UsesOf(r).Count == 0)) Row(RoomNode(m, r, 1, null, null, ""));
@@ -149,7 +173,7 @@ public partial class AssetStudioWindow
     {
         if (l.startingRoom != null) yield return (l.startingRoom, "starting room");
         if (l.shopRoom != null) yield return (l.shopRoom, "shop");
-        if (l.layoutMode == DungeonLayoutMode.Authored && l.authoredRooms != null)
+        if (l.layoutMode == DungeonLayoutMode.Authored && l.mapTemplate == null && l.authoredRooms != null)
             for (int i = 0; i < l.authoredRooms.Length; i++)
                 if (l.authoredRooms[i]?.template != null) yield return (l.authoredRooms[i].template, $"room {i}" + (l.authoredRooms[i].merchant ? " · merchant" : ""));
     }
@@ -160,6 +184,13 @@ public partial class AssetStudioWindow
         string where = levels.Count == 0 ? "nobody uses it" : levels.Count == 1 ? "only " + levels[0].name : $"in {levels.Count} levels";
         return new WorldNode { key = $"room:{room.GetHashCode()}:{level?.GetHashCode()}:{biome?.GetHashCode()}", label = room.name, note = (role.Length > 0 ? role + " · " : "") + where, kind = WorldKind.Room, asset = room, level = level, biome = biome, depth = depth };
     }
+
+    // One room painted on a map: its child's name, kind and whether it is hand-built (picking it shows the map).
+    static WorldNode MapRoomNode(DungeonMapTemplate map, TableLevelData.AuthoredRoom room, int i, int depth, string mapKey) => new()
+    {
+        key = mapKey + ":" + i, label = room.label, kind = WorldKind.Note, asset = map.gameObject, depth = depth,
+        note = $"room {DungeonMapTemplate.RoomMark(i)} · {room.role.ToString().ToLowerInvariant()}" + (room.merchant ? " · merchant" : "") + (room.template == null ? " · furnished by the generator" : ""),
+    };
 
     static string PlaceProblem(AssetStudioWorld.Model m, CampaignEncounter p)
     {
@@ -188,6 +219,7 @@ public partial class AssetStudioWindow
             menu.AddItem(new GUIContent("Level"), false, () => StartForm(WorldPane.NewLevel));
             menu.AddItem(new GUIContent("Biome (a stage of a level)"), false, () => StartForm(WorldPane.NewBiome));
             menu.AddItem(new GUIContent("Room"), false, () => StartForm(WorldPane.NewRoom));
+            menu.AddItem(new GUIContent("Map template (a small map of rooms in one prefab)"), false, () => StartForm(WorldPane.NewMap));
             menu.AddSeparator("");
             menu.AddItem(new GUIContent("Place on the campaign map"), false, () => StartForm(WorldPane.NewPlace));
             menu.AddItem(new GUIContent("Campaign event"), false, () => StartForm(WorldPane.NewEvent));
@@ -281,7 +313,8 @@ public partial class AssetStudioWindow
         var entry = categories.SelectMany(c => c.entries).FirstOrDefault(e => e.path == path);
         if (entry != null) { Select(entry); return; }
         Select(null);
-        inspected = asset;
+        // A map template's inspector is its component's (the map painter and its settings), not the bare prefab's.
+        inspected = asset is GameObject go && go.TryGetComponent<DungeonMapTemplate>(out var map) ? map : asset;
         Repaint();
     }
 
@@ -294,7 +327,8 @@ public partial class AssetStudioWindow
         formBiome = picked?.biome;
         if (pane == WorldPane.NewLevel) { formLevel = World.levels.FirstOrDefault(l => l.data.name == "Dungeon1")?.data ?? formLevel; formLayout = 0; formRooms = 3; }
         formAct = picked != null && picked.act > 0 ? picked.act : 1;
-        formFloors = 2; formBoss = false; formOwnBiomes = true;
+        formFloors = 2; formBoss = false; formOwnBiomes = true; formUseMap = false;
+        if (pane == WorldPane.NewMap) formRooms = 2;
         GUI.FocusControl(null);
     }
 
@@ -331,6 +365,10 @@ public partial class AssetStudioWindow
         worldPaneScroll = GUILayout.BeginScrollView(worldPaneScroll);
         try
         {
+            // Edits to the campaign manager and realm map prefabs (and the places and events made with them) aren't on
+            // Ctrl+Z: this puts the files back.
+            if (AssetStudioWorld.PrefabUndo.Last is string last && GUILayout.Button("Undo: " + last, EditorStyles.miniButton))
+            { Toast(AssetStudioWorld.PrefabUndo.UndoLast()); worldPicked = null; RefreshLibrary(); GUIUtility.ExitGUI(); }
             switch (worldPane)
             {
                 case WorldPane.NewLevel: NewLevelForm(); break;
@@ -338,6 +376,7 @@ public partial class AssetStudioWindow
                 case WorldPane.NewRoom: NewRoomForm(); break;
                 case WorldPane.NewPlace: NewPlaceForm(); break;
                 case WorldPane.NewEvent: NewEventForm(); break;
+                case WorldPane.NewMap: NewMapForm(); break;
                 case WorldPane.Tidy: TidyPane(); break;
                 default: PickedPane(); break;
             }
@@ -372,12 +411,15 @@ public partial class AssetStudioWindow
                 Title(n.label.Substring(0, 1) + n.label.Substring(1).ToLowerInvariant());
                 if (n.key == "campaign") { if (Big("New place on the map")) StartForm(WorldPane.NewPlace); if (Big("New campaign event")) StartForm(WorldPane.NewEvent); }
                 if (n.key == "levels" && Big("New level")) StartForm(WorldPane.NewLevel);
+                if (n.key == "maps" && Big("New map template")) StartForm(WorldPane.NewMap);
                 break;
             case WorldKind.Act: ActPane(n.act); break;
             case WorldKind.Place: PlacePane((CampaignEncounter)n.asset); break;
             case WorldKind.Event: EventPane((CampaignEvent)n.asset); break;
             case WorldKind.Level: LevelPane(m.LevelOf(n.level)); break;
             case WorldKind.Stage: StagePane(m.LevelOf(n.level), n.stage); break;
+            case WorldKind.Map: MapPane(((GameObject)n.asset).GetComponent<DungeonMapTemplate>()); break;
+            case WorldKind.Note when n.asset is GameObject g && g.GetComponent<DungeonMapTemplate>() != null: MapPane(g.GetComponent<DungeonMapTemplate>()); break;
             default: Title(n.label, n.note); break;
         }
     }
@@ -407,7 +449,7 @@ public partial class AssetStudioWindow
         if (!m.placesOnMap.Contains(p) && Big("Put it on the map")) { Toast(AssetStudioWorld.PutOnMap(p)); RefreshWorld(); }
         if (!m.listedPlaces.Contains(p) && Big("Add it to the campaign manager's list")) { AssetStudioWorld.ListInManager(p, null); Toast("Listed."); RefreshWorld(); }
         Section("WHAT IT IS");
-        int act = EditorGUILayout.IntSlider("Act", p.act, 1, 4);
+        int act = Mathf.Max(1, EditorGUILayout.DelayedIntField(new GUIContent("Act", "Any act from 1: the map covers each act up to the highest a place has."), p.act));
         if (act != p.act) { AssetStudioWorld.SetPlaceAct(p, act); RefreshWorld(); }
         var levels = m.levels.Where(l => !l.tool && l.data.IsDungeon).Select(l => l.data).ToList();
         int at = levels.IndexOf(p.level) + 1;
@@ -449,7 +491,7 @@ public partial class AssetStudioWindow
         Title(e.title, $"A campaign event · id {e.id} · {e.choices?.Length ?? 0} choice{(e.choices?.Length == 1 ? "" : "s")}");
         GUILayout.Label(m.listedEvents.Contains(e) ? "<color=#6fd46a>✔ In the campaign manager's events: it will show.</color>" : "<color=#e0a85a>Not in the campaign manager's events: it never shows.</color>", new GUIStyle(dim) { richText = true });
         if (!m.listedEvents.Contains(e) && Big("Add it to the campaign manager's events")) { AssetStudioWorld.ListInManager(null, e); Toast("Listed."); RefreshWorld(); }
-        int act = EditorGUILayout.IntSlider("Shows after Act", e.afterAct, 1, 4);
+        int act = Mathf.Max(1, EditorGUILayout.DelayedIntField("Shows after Act", e.afterAct));
         if (act != e.afterAct) { AssetStudioWorld.SetEventAct(e, act); RefreshWorld(); }
         GUILayout.Label("Its picture, text and choices (what each costs, gives and says) are in the inspector on the right.", dim);
         TestSection(e);
@@ -474,7 +516,7 @@ public partial class AssetStudioWindow
             var st = l.stages[i];
             GUILayout.BeginHorizontal();
             if (GUILayout.Button($"Floors {st.firstFloor}{(st.lastFloor > st.firstFloor ? "-" + st.lastFloor : "")}   {(st.biome != null ? st.biome.name : "<color=#e0a85a>no biome</color>")}" + (st.boss ? "   <color=#a9a49a>boss</color>" : ""), cell)) { PickStage(d, i); }
-            int floors = EditorGUILayout.IntField(d.stages[i].floors, GUILayout.Width(36));
+            int floors = EditorGUILayout.DelayedIntField(d.stages[i].floors, GUILayout.Width(36));
             bool boss = GUILayout.Toggle(d.stages[i].boss, "boss", GUILayout.Width(50));
             if (floors != d.stages[i].floors || boss != d.stages[i].boss) SetStage(d, i, floors, boss);
             if (GUILayout.Button("▲", GUILayout.Width(24))) { AssetStudioWorld.MoveStage(d, i, -1); RefreshWorld(); }
@@ -492,12 +534,33 @@ public partial class AssetStudioWindow
         }
         GUILayout.EndHorizontal();
 
-        if (d.layoutMode == DungeonLayoutMode.Authored) AuthoredRooms(d);
+        if (d.layoutMode == DungeonLayoutMode.Authored)
+        {
+            Section("LAYOUT (hand-painted)");
+            var map = (DungeonMapTemplate)EditorGUILayout.ObjectField(new GUIContent("Map template", "A prefab that holds the whole map: its rooms, passages and doors painted on it, each room built under its Room child. Empty: the level's own text plan."), d.mapTemplate, typeof(DungeonMapTemplate), false);
+            if (map != d.mapTemplate) { AssetStudioWorld.SetMapTemplate(d, map); RefreshWorld(); }
+            if (d.mapTemplate != null)
+            {
+                GUILayout.Label($"Its floor plan and rooms come from {d.mapTemplate.name}: paint and build them there.", dim);
+                GUILayout.BeginHorizontal();
+                if (Big("Show " + d.mapTemplate.name)) PickAsset(d.mapTemplate.gameObject);
+                if (Big("Open it to paint and build")) AssetDatabase.OpenAsset(d.mapTemplate.gameObject);
+                GUILayout.EndHorizontal();
+            }
+            else
+            {
+                AuthoredRooms(d);
+                if (Big("New map template for " + d.name, "A prefab holding this level's whole map, each room built under its own child, previewed with real walls in Prefab Mode.")) NewMapFor(d);
+            }
+        }
         else
         {
             Section("LAYOUT");
             GUILayout.Label($"Generated: about {d.roomCount} rooms a floor. Its rooms come from each biome's pool; the starting room and shop are the level's.", dim);
-            if (Big("Make it rooms in a row instead (hand-painted)", "A fixed layout: rooms side by side, entrance to exit; you pick each room's interior below.")) { AssetStudioWorld.MakeRoomsInARow(d, formRooms); RefreshWorld(); }
+            GUILayout.BeginHorizontal();
+            if (Big("Make it rooms in a row instead", "A fixed layout: rooms side by side, entrance to exit; you pick each room's interior below.") && ConfirmLayout(d, 3)) { AssetStudioWorld.MakeRoomsInARow(d, 3); RefreshWorld(); }
+            if (Big("Give it a map template", "A fixed layout held in a prefab: paint the map and build each room under its Room child.")) NewMapFor(d);
+            GUILayout.EndHorizontal();
         }
         Section("ITS OWN ROOMS");
         RoomField(d, "Starting room", d.startingRoom, v => d.startingRoom = v);
@@ -516,7 +579,7 @@ public partial class AssetStudioWindow
             if (a == null) continue;
             GUILayout.BeginHorizontal();
             GUILayout.Label($"{i}", GUILayout.Width(16));
-            string label = EditorGUILayout.TextField(a.label, GUILayout.Width(110));
+            string label = EditorGUILayout.DelayedTextField(a.label, GUILayout.Width(110));
             var role = (DungeonGenerator.RoomRole)EditorGUILayout.EnumPopup(a.role, GUILayout.Width(90));
             var template = (GameObject)EditorGUILayout.ObjectField(a.template, typeof(GameObject), false, GUILayout.MinWidth(120));
             bool merchant = GUILayout.Toggle(a.merchant, new GUIContent("merchant", "The merchant stands in this room."), GUILayout.Width(80));
@@ -525,10 +588,62 @@ public partial class AssetStudioWindow
         }
         GUILayout.Label("Room 0 without an interior uses the starting room. The last room has the stairs out. Drag rooms from the tree onto a field.", dim);
         GUILayout.BeginHorizontal();
-        formRooms = EditorGUILayout.IntSlider("Rooms", Mathf.Max(2, rooms.Length), 2, 8);
-        if (GUILayout.Button("Lay out again", GUILayout.Width(110)) && (formRooms == rooms.Length || EditorUtility.DisplayDialog("Lay out again", $"Lay {d.name} out as {formRooms} rooms in a row? Rooms past the new count go.", "Lay out", "Cancel")))
-        { AssetStudioWorld.MakeRoomsInARow(d, formRooms); RefreshWorld(); }
+        if (layoutRoomsFor != d) { layoutRoomsFor = d; layoutRooms = Mathf.Clamp(rooms.Length, 2, 8); }
+        layoutRooms = EditorGUILayout.IntSlider("Rooms", layoutRooms, 2, 8);
+        if (GUILayout.Button("Lay out again", GUILayout.Width(110)) && ConfirmLayout(d, layoutRooms))
+        { AssetStudioWorld.MakeRoomsInARow(d, layoutRooms); RefreshWorld(); }
         GUILayout.EndHorizontal();
+    }
+
+    // Laying a level out as rooms in a row replaces its floor plan: always asked, in plain words about what goes.
+    static bool ConfirmLayout(TableLevelData d, int count)
+    {
+        bool painted = AssetStudioWorld.HasHandPaintedPlan(d);
+        int had = d.authoredRooms?.Length ?? 0;
+        string what = painted
+            ? $"This replaces {d.name}'s hand-painted floor plan with {count} rooms in a row and empties its content map (the enemies, items and breakables painted on it)."
+            : d.layoutMode == DungeonLayoutMode.Authored ? $"Lay {d.name} out as {count} rooms in a row?" + (count < had ? $" Rooms {count} to {had - 1} go." : "")
+            : $"{d.name} stops generating its floors and becomes {count} rooms in a row.";
+        return EditorUtility.DisplayDialog("Lay out again", what + " Ctrl+Z undoes it.", painted ? "Replace it" : "Lay out", "Cancel");
+    }
+
+    void NewMapFor(TableLevelData d)
+    {
+        StartForm(WorldPane.NewMap);
+        formLevel = d; formUseMap = true; formName = d.name + " map";
+        formRooms = Mathf.Clamp(d.mapTemplate == null && d.layoutMode == DungeonLayoutMode.Authored ? d.authoredRooms?.Length ?? 2 : 2, 2, 8);
+    }
+
+    void MapPane(DungeonMapTemplate map)
+    {
+        if (map == null) return;
+        var m = World;
+        var rooms = map.Rooms();
+        var users = m.MapLevels(map);
+        Title(map.name, $"A map template · {rooms.Length} room{(rooms.Length == 1 ? "" : "s")} · {AssetDatabase.GetAssetPath(map)}");
+        var problems = map.Problems();
+        if (problems.Count == 0) GUILayout.Label("<color=#6fd46a>✔ Ready to play.</color>", new GUIStyle(dim) { richText = true });
+        foreach (var pr in problems) GUILayout.Label("<color=#e0a85a>• " + pr + "</color>", new GUIStyle(dim) { richText = true, wordWrap = true });
+        GUILayout.Label(users.Count == 0 ? "No level plays it yet." : "Played by " + string.Join(", ", users.Select(u => u.name)) + ".", dim);
+        TestSection(map.gameObject);
+        Section("ROOMS (room 0 is where the player starts, the last has the stairs out)");
+        for (int i = 0; i < rooms.Length; i++)
+        {
+            var r = rooms[i];
+            GUILayout.Label($"{DungeonMapTemplate.RoomMark(i)}   {r.label}   <color=#a9a49a>{r.role.ToString().ToLowerInvariant()}{(r.merchant ? " · merchant" : "")}{(r.template == null ? " · furnished by the generator" : " · hand-built")}</color>", new GUIStyle(dim) { richText = true });
+        }
+        GUILayout.Label("Paint rooms, passages and doors on the map in its inspector, press Sync rooms, and build each room under its Room child.", dim);
+        GUILayout.BeginHorizontal();
+        if (Big("Open it to paint and build")) AssetDatabase.OpenAsset(map.gameObject);
+        if (Big("Use it for a level..."))
+        {
+            var menu = new GenericMenu();
+            foreach (var l in m.levels.Where(l => !l.tool && l.data.IsDungeon))
+                menu.AddItem(new GUIContent(l.data.name), l.data.mapTemplate == map, () => { AssetStudioWorld.SetMapTemplate(l.data, map); Toast($"{l.data.name} plays {map.name}."); RefreshWorld(); });
+            menu.ShowAsContext();
+        }
+        GUILayout.EndHorizontal();
+        foreach (var u in users) if (GUILayout.Button("Open " + u.name, cell)) PickLevel(u);
     }
 
     void SetStage(TableLevelData d, int i, int floors, bool boss)
@@ -580,10 +695,10 @@ public partial class AssetStudioWindow
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(c.template != null ? c.template.name : "<color=#e0a85a>empty</color>", cell, GUILayout.MinWidth(140))) { if (c.template != null) PickAsset(c.template); }
             GUILayout.Label("weight", dim, GUILayout.Width(40));
-            float w = EditorGUILayout.FloatField(c.weight, GUILayout.Width(40));
+            float w = EditorGUILayout.DelayedFloatField(c.weight, GUILayout.Width(40));
             var kinds = (DungeonRoomRoles)EditorGUILayout.EnumFlagsField(c.rooms, GUILayout.Width(120));
             GUILayout.Label("from floor", dim, GUILayout.Width(58));
-            int from = EditorGUILayout.IntField(c.fromFloor, GUILayout.Width(30));
+            int from = EditorGUILayout.DelayedIntField(c.fromFloor, GUILayout.Width(30));
             if (GUILayout.Button("✕", GUILayout.Width(24))) { AssetStudioWorld.RemoveFromPool(b, i); RefreshWorld(); GUIUtility.ExitGUI(); }
             GUILayout.EndHorizontal();
             if (w != c.weight || kinds != c.rooms || from != c.fromFloor) { Undo.RecordObject(b, "Pool entry"); c.weight = Mathf.Max(0, w); c.rooms = kinds; c.fromFloor = Mathf.Max(1, from); EditorUtility.SetDirty(b); AssetDatabase.SaveAssetIfDirty(b); }
@@ -620,7 +735,8 @@ public partial class AssetStudioWindow
     void PickAsset(UnityEngine.Object asset)
     {
         var n = worldRows.FirstOrDefault(r => r.asset == asset) ?? new WorldNode { key = "asset:" + asset.GetHashCode(), label = asset.name, asset = asset,
-            kind = asset is CampaignEncounter ? WorldKind.Place : asset is CampaignEvent ? WorldKind.Event : asset is TableLevelData ? WorldKind.Level : asset is GameObject ? WorldKind.Room : WorldKind.Note,
+            kind = asset is CampaignEncounter ? WorldKind.Place : asset is CampaignEvent ? WorldKind.Event : asset is TableLevelData ? WorldKind.Level
+                : asset is GameObject g && g.GetComponent<DungeonMapTemplate>() != null ? WorldKind.Map : asset is GameObject ? WorldKind.Room : WorldKind.Note,
             level = asset as TableLevelData };
         Pick(n);
     }
@@ -650,7 +766,7 @@ public partial class AssetStudioWindow
     void Made(UnityEngine.Object made, string message)
     {
         Toast(message);
-        RefreshWorld();
+        RefreshLibrary();
         if (made != null) PickAsset(made); else worldPane = WorldPane.Picked;
     }
 
@@ -709,11 +825,32 @@ public partial class AssetStudioWindow
 
     void MakeRoom() { var room = AssetStudioWorld.NewRoom(formName, formLevel, formBiome, out var msg); Made(room, msg); }
 
+    void NewMapForm()
+    {
+        Title("New map template", "A whole small map in one prefab: rooms in a row to start from, a Room child per room. Open it to paint the map as you like (rooms, passages, doors), press Sync rooms, and build each room under its child.");
+        NameField("Name");
+        formLevel = LevelPopup("For level", formLevel, true);
+        formRooms = EditorGUILayout.IntSlider("Rooms", formRooms, 2, 8);
+        if (formLevel != null) formUseMap = EditorGUILayout.Toggle(new GUIContent($"{formLevel.name} plays it", "The level's layout becomes this map (Authored, Map Template)."), formUseMap);
+        GUILayout.Label(formLevel != null ? $"Saved in {formLevel.name}'s folder." : "Saved in Levels/Shared/Maps.", dim);
+        GUILayout.Space(8);
+        if (Big("Make the map")) MakeMap();
+        if (worldPicked?.asset is GameObject made && made.GetComponent<DungeonMapTemplate>() != null && Big("Open " + made.name + " to paint it")) AssetDatabase.OpenAsset(made);
+    }
+
+    void MakeMap()
+    {
+        if (formUseMap && formLevel != null && formLevel.layoutMode == DungeonLayoutMode.Authored && formLevel.mapTemplate == null && AssetStudioWorld.HasHandPaintedPlan(formLevel)
+            && !EditorUtility.DisplayDialog("New map template", $"{formLevel.name} has a hand-painted text plan. Playing the new map instead leaves that plan unused (it stays on the level). Go on?", "Make the map", "Cancel")) return;
+        var map = AssetStudioWorld.NewMapTemplate(formName, formLevel, formRooms, formUseMap, out var msg);
+        Made(map != null ? map.gameObject : null, msg);
+    }
+
     void NewPlaceForm()
     {
         Title("New place on the campaign map", "A place in an act: its asset, a point on the map near the act's other places (move it in the Realm map prefab), and its entry in the campaign manager's list.");
         NameField("Name");
-        formAct = EditorGUILayout.IntSlider("Act", formAct, 1, 4);
+        formAct = Mathf.Max(1, EditorGUILayout.IntField("Act", formAct));
         formLevel = LevelPopup("Plays", formLevel, true);
         GUILayout.Space(8);
         if (Big("Make the place")) MakePlace();
@@ -725,7 +862,7 @@ public partial class AssetStudioWindow
     {
         Title("New campaign event", "A picture, a few lines and choices, shown once the first time the map is seen after its act opens. Made with one Leave choice; write the rest in the inspector.");
         NameField("Title");
-        formAct = EditorGUILayout.IntSlider("Shows after Act", formAct, 1, 4);
+        formAct = Mathf.Max(1, EditorGUILayout.IntField("Shows after Act", formAct));
         GUILayout.Space(8);
         if (Big("Make the event")) MakeEvent();
     }
@@ -745,7 +882,7 @@ public partial class AssetStudioWindow
             GUILayout.EndHorizontal();
         }
         int on = tidyMoves.Count(x => x.on);
-        if (on > 0 && Big($"Move {on} file{(on == 1 ? "" : "s")}")) { Toast(AssetStudioWorld.ApplyTidy(tidyMoves)); RefreshWorld(); tidyMoves = AssetStudioWorld.TidyPlan(World, out tidyKept); }
+        if (on > 0 && Big($"Move {on} file{(on == 1 ? "" : "s")}")) { Toast(AssetStudioWorld.ApplyTidy(tidyMoves)); RefreshLibrary(); tidyMoves = AssetStudioWorld.TidyPlan(World, out tidyKept); }
         if (tidyKept != null && tidyKept.Count > 0)
         {
             Section("LEFT WHERE THEY ARE");
@@ -771,13 +908,16 @@ public partial class AssetStudioWindow
         SetAuthoredRoom(d, i, label, (DungeonGenerator.RoomRole)role, t, merchant);
         return notice;
     }
-    public void TestLayOutAgain(string level, int rooms) { var d = TestLevel(level); formRooms = rooms; AssetStudioWorld.MakeRoomsInARow(d, formRooms); RefreshWorld(); }
+    public void TestLayOutAgain(string level, int rooms) { var d = TestLevel(level); AssetStudioWorld.MakeRoomsInARow(d, rooms); RefreshWorld(); }
+    public bool TestHandPainted(string level) => AssetStudioWorld.HasHandPaintedPlan(TestLevel(level));
+    public string TestUndo() { var r = AssetStudioWorld.PrefabUndo.UndoLast(); RefreshLibrary(); return r; }
     // The place panel's prop buttons.
     public string TestAddProp(string place, string prop) { var p = World.places.First(x => x.displayName == place); var r = AssetStudioWorld.AddProp(p, prop); Toast(r); RefreshWorld(); return r; }
     public string TestPane() => $"{worldPane} · picked {worldPicked?.kind} {worldPicked?.label}";
     // Fill the open New form and press its Make button (what the form's fields and button do, nothing else).
-    public string TestMake(string name, string level = null, string biome = null, int act = 1, int layout = 0, int rooms = 3, bool ownBiomes = true, int floors = 2, bool boss = false)
+    public string TestMake(string name, string level = null, string biome = null, int act = 1, int layout = 0, int rooms = 3, bool ownBiomes = true, int floors = 2, bool boss = false, bool useMap = false)
     {
+        formUseMap = useMap;
         formName = name;
         formLevel = level == null ? null : World.levels.FirstOrDefault(l => l.data.name == level)?.data;
         formBiome = biome == null ? null : World.biomes.FirstOrDefault(b => b.name == biome);
@@ -789,6 +929,7 @@ public partial class AssetStudioWindow
             case WorldPane.NewRoom: MakeRoom(); break;
             case WorldPane.NewPlace: MakePlace(); break;
             case WorldPane.NewEvent: MakeEvent(); break;
+            case WorldPane.NewMap: MakeMap(); break;
         }
         return notice;
     }

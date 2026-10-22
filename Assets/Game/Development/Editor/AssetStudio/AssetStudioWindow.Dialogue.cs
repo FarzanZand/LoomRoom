@@ -11,7 +11,6 @@ using UnityEngine;
 // line in the open scene leaves the scene unsaved until Save scene.
 public partial class AssetStudioWindow
 {
-    bool showingDialogue;
     List<AssetStudioDialogue.Line> dialogue;
     List<AssetStudioDialogue.Line> dialogueShown = new();
     string dialogueSearch = "";
@@ -28,7 +27,7 @@ public partial class AssetStudioWindow
 
     void OpenDialogue()
     {
-        showingDialogue = true; showingRecent = showingRequests = showingAll = showingWorld = false;
+        studioView = StudioView.Dialogue;
         if (dialogue == null) RescanDialogue();
         GUI.FocusControl(null);
     }
