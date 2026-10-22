@@ -38,6 +38,9 @@ public sealed partial class DungeonLayout
     // Room index of a floor cell, or -1 for corridors, walls and pillars.
     public int RoomAt(Vector2Int p) => InBounds(p) && floor[p.x,p.y] && RegionIds[p.x,p.y] < rooms.Count ? RegionIds[p.x,p.y] : -1;
     public bool InRoom(int room, Vector2Int p) => RoomAt(p) == room;
+    // A way in or out of a room: from its cell p, the cell toward d is floor that is not the room's (a passage or
+    // another room).
+    public bool IsOpening(int room, Vector2Int p, Vector2Int d) { var n = p + d; return InBounds(n) && floor[n.x, n.y] && !InRoom(room, n); }
     public bool IsRectangular(int room) => roomCells[room].Count == rooms[room].width * rooms[room].height;
     // Grown layouts only: the shape each room was built from, and quarter turns for its template.
     public DungeonShape[] Shapes { get; private set; }

@@ -80,7 +80,7 @@ public class EquipmentPanelUI : MonoBehaviour
         title=t.displayName;subtitle=fromRun>0?$"{score}  ({score-fromRun} from the sheet, +{fromRun} this run)":score.ToString();
         body=$"{ProgressionManager.AttributeEffects(t,1)} per point above {t.baseScore}.";
         if(above!=0)body+=$"\n\n<color={dim}>Now</color><pos=30%><color={good}>{ProgressionManager.AttributeEffects(t,above)}</color>";
-        if(progress!=null && progress.UnspentPoints>0)body+=$"\n\n<color={dim}>Press + to put a point here.</color>";
+        if(progress!=null && progress.UnspentPoints>0)body+=$"\n\n<color={dim}>Click + to put a point here.</color>";
         return true;
     }
 

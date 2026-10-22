@@ -44,12 +44,32 @@ public partial class AssetStudioWindow
             case CampaignEncounter place:
                 if (place.level != null) Add("Play " + place.level.name, "Generate floor 1 of the level this place plays.", () => GameLauncher.PlayLevel(place.level));
                 Add("Sit at the table", "Start the room and sit at the table: the campaign map, as the save in use has it.", GameLauncher.OpenTable);
+                if (place.Locked && !string.IsNullOrEmpty(place.deathsIn.id))
+                    Add($"Sit at the table with {place.deathsToOpen} death{(place.deathsToOpen == 1 ? "" : "s")} in {place.deathsIn.displayName}",
+                        $"Sets campaign.deaths.{place.deathsIn.id} to {place.deathsToOpen} in the save in use (and {place.displayName} not risen yet), then sits at the table: the map raises it with its line.",
+                        () => GameLauncher.OpenTableWithDeaths(place));
                 break;
             case CampaignEvent e:
                 Add("Show the event", "The event screen over the room, as the map shows it. A preview: choices cost and give nothing.", () => GameLauncher.PreviewEvent(e));
                 break;
+            case GameObject go when go.GetComponent<DungeonMapTemplate>() is DungeonMapTemplate map:
+                var users = World.MapLevels(map);
+                foreach (var l in users.Take(3)) Add("Play " + l.name, $"Generate floor 1 of {l.name}, which plays this map.", () => GameLauncher.PlayLevel(l));
+                Add(users.Count == 0 ? "Play this map" : "Play this map alone", "A run laid out by this map, in a copy of its preview level (or the Dungeon button's pick).", () => GameLauncher.PlayMap(map));
+                break;
             case GameObject go:
                 if (go.GetComponent<EnemyBrain>() != null) Add("Fight it in the arena", "Start the Debug arena with just this enemy in front of you.", () => GameLauncher.FightInArena(go));
+                // A new character made from this one (a variant with its own copy of the data), as New Enemy / New NPC do.
+                if (go.GetComponent<Character>() != null && go.GetComponent<Player>() == null)
+                {
+                    bool enemy = go.GetComponent<EnemyBrain>() != null;
+                    Add(enemy ? "New enemy from this" : "New NPC from this", $"A variant of {go.name} with its own copy of its data: name it, then it opens here to edit.", () =>
+                    {
+                        // The studio may have been closed while the window was open: then there is nothing to show it in.
+                        NewCharacterWindow.Open(enemy, go, made => { if (made != null && this != null && categories != null) ShowInLibrary(AssetDatabase.GetAssetPath(made), $"Made {made.name}. Edit it on its Character component."); });
+                        return "Name the new " + (enemy ? "enemy" : "NPC") + " in the window that opened.";
+                    });
+                }
                 if (go.GetComponent<DungeonRoomTemplate>() != null)
                 {
                     Add("Play from this room", "A new run that opens in this room (the dev console's loadtemplate).", () => GameLauncher.PlayRoom(go));
@@ -64,6 +84,18 @@ public partial class AssetStudioWindow
                 break;
         }
         return list;
+    }
+
+    // A file just made: the library sorts it in and shows it, in its category.
+    void ShowInLibrary(string path, string message)
+    {
+        AssetStudioCatalog.Apply(categories, new[] { path });
+        var e = categories.SelectMany(c => c.entries).FirstOrDefault(x => x.path == path);
+        studioView = StudioView.Category;
+        if (e != null) categoryIndex = Mathf.Max(0, categories.FindIndex(c => c.name == e.category));
+        kindFilter = 0; search = ""; Filter(); Select(e);
+        Toast(message);
+        Focus();
     }
 
     // The World panes' TEST section, two buttons a row.

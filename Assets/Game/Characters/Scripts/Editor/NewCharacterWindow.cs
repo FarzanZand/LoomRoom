@@ -24,7 +24,9 @@ public class NewCharacterWindow : EditorWindow
     [MenuItem("Assets/Create/LoomRoom/Character Variant", true)]
     static bool FromSelectionValid() => IsTemplate(Selection.activeGameObject);
 
-    public static void Open(bool enemy, GameObject selected)
+    // created: called with the new prefab once it is made (Asset Studio shows it). A character as the template puts the
+    // new one in that character's folder; a base, in Enemies or NPCs.
+    public static void Open(bool enemy, GameObject selected, System.Action<GameObject> created = null)
     {
         var window = GetWindow<NewCharacterWindow>(true, enemy ? "New Enemy" : "New NPC");
         window.minSize = window.maxSize = new Vector2(440, 230);
@@ -33,7 +35,12 @@ public class NewCharacterWindow : EditorWindow
         window.folder = Root + (enemy ? "Enemies" : "NPCs");
         window.template = IsTemplate(selected) && (selected.GetComponent<EnemyBrain>() != null) == enemy ? selected
             : AssetDatabase.LoadAssetAtPath<GameObject>(Root + (enemy ? "Enemies/Base/Humanoid enemy base.prefab" : "NPCs/Base/HumanoidNPC.prefab"));
+        string templatePath = window.template != null ? AssetDatabase.GetAssetPath(window.template) : "";
+        if (templatePath.StartsWith(Root) && !templatePath.Contains("/Base/")) window.folder = Path.GetDirectoryName(templatePath).Replace('\\', '/');
+        window.onCreated = created;
     }
+
+    [System.NonSerialized] System.Action<GameObject> onCreated;
 
     // Enemies and NPCs; players are set up by hand.
     static bool IsTemplate(GameObject go) => go != null && PrefabUtility.IsPartOfPrefabAsset(go)
@@ -54,9 +61,12 @@ public class NewCharacterWindow : EditorWindow
                 if (at >= 0) folder = picked.Substring(at + 1);
             }
         }
-        string path = $"{folder}/{characterName}.prefab";
+        // The name as it is saved (spaces round it dropped), so the check below is about the file Create writes.
+        string name = (characterName ?? "").Trim();
+        string path = $"{folder}/{name}.prefab";
         bool templateIsEnemy = template != null && template.GetComponent<EnemyBrain>() != null;
-        string problem = string.IsNullOrWhiteSpace(characterName) ? "Enter a name."
+        string problem = name.Length == 0 ? "Enter a name."
+            : name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ? "The name can't hold / \\ : * ? \" < > or |."
             : !IsTemplate(template) ? "Pick an enemy or NPC prefab (or a base) as the template."
             : templateIsEnemy != enemy ? (enemy ? "That template is an NPC." : "That template is an enemy.")
             : !AssetDatabase.IsValidFolder(folder) ? "Folder does not exist."
@@ -66,10 +76,12 @@ public class NewCharacterWindow : EditorWindow
         using (new EditorGUI.DisabledScope(problem != null))
             if (GUILayout.Button(enemy ? "Create enemy" : "Create NPC", GUILayout.Height(30)))
             {
-                var created = Create(characterName.Trim(), template, path);
+                var created = Create(name, template, path);
                 Selection.activeObject = created;
                 EditorGUIUtility.PingObject(created);
+                var then = onCreated;
                 Close();
+                then?.Invoke(created);
             }
     }
 

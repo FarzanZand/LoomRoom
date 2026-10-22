@@ -80,6 +80,45 @@ public class ShopUI : Singleton<ShopUI>
         if (player.Hotbar != null) player.Hotbar.Changed += Refresh;
         if (player.Wallet != null) player.Wallet.Changed += OnGold;
         Refresh();
+        // With a pad, a ware is selected at once (selecting shows it in the details, so the mouse keeps the help text).
+        if (InputManager.PadConnected) SelectStart();
+    }
+
+    // Nothing selected and a pad's d-pad or an arrow key pressed: select a ware.
+    void Update()
+    {
+        if (open && InputManager.MenuInputStarted && InputManager.NothingSelected) SelectStart();
+    }
+
+    // The first ware, else the first pack cell, else Close, so Submit buys or sells.
+    void SelectStart()
+    {
+        Selectable pick = FirstSelectable(supplyRows);
+        if (pick == null) pick = FirstSelectable(gearRows);
+        if (pick == null) pick = FirstSelectable(packSlots);
+        if (pick == null) pick = closeButton;
+        if (pick != null) pick.Select();
+    }
+
+    static Selectable FirstSelectable<T>(T[] parts) where T : Component
+    {
+        if (parts == null) return null;
+        foreach (var p in parts)
+        {
+            if (p == null || !p.gameObject.activeInHierarchy) continue;
+            var s = p.GetComponentInChildren<Selectable>();
+            if (s != null && s.IsInteractable()) return s;
+        }
+        return null;
+    }
+
+    // A bought ware's row can go away under the selection: pick again so a pad isn't left with nothing.
+    void KeepSelection()
+    {
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        if (events == null || !InputManager.PadConnected) return;
+        var selected = events.currentSelectedGameObject;
+        if (selected != null && !selected.activeInHierarchy) SelectStart();
     }
 
     public void Close()
@@ -92,6 +131,10 @@ public class ShopUI : Singleton<ShopUI>
             if (player.Hotbar != null) player.Hotbar.Changed -= Refresh;
             if (player.Wallet != null) player.Wallet.Changed -= OnGold;
         }
+        // A ware or cell left selected would stay selected while hidden.
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        if (events != null && root != null && events.currentSelectedGameObject != null && events.currentSelectedGameObject.transform.IsChildOf(root.transform)
+            && !events.alreadySelecting) events.SetSelectedGameObject(null);
         if (root != null) root.SetActive(false);
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
         merchant = null; player = null;
@@ -217,6 +260,7 @@ public class ShopUI : Singleton<ShopUI>
         Say(message);
         ShowDetails(null);
         Refresh();
+        KeepSelection();
     }
 
     void Sell(int index)

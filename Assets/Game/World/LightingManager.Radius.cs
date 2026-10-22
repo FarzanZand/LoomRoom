@@ -39,13 +39,22 @@ public sealed partial class LightingManager
     [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
     [Min(.05f)] public float shadowBudgetSeconds = .3f;
     readonly System.Collections.Generic.Dictionary<Light, LightShadows> lampShadows = new();
-    readonly System.Collections.Generic.List<Light> lamps = new(), found = new(), stale = new();
+    readonly System.Collections.Generic.List<Light> lamps = new(), found = new(), stale = new(), pocketFound = new();
+    readonly System.Collections.Generic.List<DungeonGenerator> pockets = new();
     static Vector3 sortEye;
     static readonly System.Comparison<Light> ByDistance = (a, b) => (a.transform.position - sortEye).sqrMagnitude.CompareTo((b.transform.position - sortEye).sqrMagnitude);
     DungeonGenerator lampsOf;
     float nextShadowBudget;
 
-    // The floor's own lamps keep their authored shadows only while they are among the nearest few.
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
+    [Tooltip("While the table player is on a dungeon floor, the room's own point and spot lights (under Room Roots) cast no shadows; the room is still lit and seen. They get their shadows back in the room.")]
+    public bool roomShadowsOffInDungeon = true;
+    readonly System.Collections.Generic.Dictionary<Light, LightShadows> roomShadows = new();
+    readonly System.Collections.Generic.List<Light> roomLights = new();
+    bool roomShadowsOff;
+
+    // The floor's own lamps (and its portals' pockets', built beside it) keep their authored shadows only while they
+    // are among the nearest few.
     void ApplyShadowBudget(Vector3 eye)
     {
         var loader = TableManager.Loader;
@@ -53,6 +62,9 @@ public sealed partial class LightingManager
         // A new floor is budgeted at once, before its first frame draws every lamp's shadows.
         if (dungeon == lampsOf && Time.unscaledTime < nextShadowBudget) return;
         nextShadowBudget = Time.unscaledTime + shadowBudgetSeconds;
+        // Not while a floor loads or the way back flies into the room: the room is in view then.
+        bool onFloor = dungeon != null && !loader.Busy && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
+        ApplyRoomShadows(onFloor && roomShadowsOffInDungeon);
         if (dungeon != lampsOf)
         {
             foreach (var pair in lampShadows) if (pair.Key != null) pair.Key.shadows = pair.Value;
@@ -63,6 +75,15 @@ public sealed partial class LightingManager
         found.Clear();
         // Lamps in rooms not dealt in yet count too, so they light up already within the budget.
         dungeon.GetComponentsInChildren(true, found);
+        PortalArch.PocketsOf(dungeon, pockets);
+        foreach (var pocket in pockets)
+        {
+            if (pocket == null) continue;
+            pocketFound.Clear();
+            pocket.GetComponentsInChildren(true, pocketFound);
+            found.AddRange(pocketFound);
+        }
+        pocketFound.Clear();
         foreach (var l in found)
         {
             if (!lampShadows.ContainsKey(l)) lampShadows[l] = l.shadows;
@@ -79,6 +100,34 @@ public sealed partial class LightingManager
     // (MultiplayerManager). Null: around the camera.
     public static Vector3? RadiusCentre;
     public static float RadiusScale = 1f;
+    // The room's point and spot lights without shadows (their own put back when off is false). Gathered once each
+    // time the table player goes down to a floor.
+    void ApplyRoomShadows(bool off)
+    {
+        if (off == roomShadowsOff) return;
+        roomShadowsOff = off;
+        if (!off)
+        {
+            foreach (var pair in roomShadows) if (pair.Key != null) pair.Key.shadows = pair.Value;
+            roomShadows.Clear();
+            return;
+        }
+        if (roomRoots == null) return;
+        foreach (var root in roomRoots)
+        {
+            if (root == null) continue;
+            roomLights.Clear();
+            root.GetComponentsInChildren(true, roomLights);
+            foreach (var l in roomLights)
+            {
+                if (l == null || (l.type != LightType.Point && l.type != LightType.Spot) || l.shadows == LightShadows.None) continue;
+                if (roomShadows.ContainsKey(l) || IsNotRoom(l.transform)) continue;
+                roomShadows[l] = l.shadows;
+                l.shadows = LightShadows.None;
+            }
+        }
+        roomLights.Clear();
+    }
 
     static readonly int LightRadiusId = Shader.PropertyToID("_LoomLightRadius");
     static readonly int LightRadiusEdgeId = Shader.PropertyToID("_LoomLightRadiusEdge");

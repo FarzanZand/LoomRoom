@@ -194,9 +194,6 @@ MonoBehaviour:
   - enemy: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
     weight: 3
     fromFloor: 1
-  - enemy: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
-    weight: 1
-    fromFloor: 2
   - enemy: {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
     weight: 2
     fromFloor: 1
@@ -209,9 +206,6 @@ MonoBehaviour:
   - enemy: {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
     weight: 2
     fromFloor: 1
-  - enemy: {fileID: 8694082213274042645, guid: 201900fae6c0585468bd8ec588f74292, type: 3}
-    weight: 1
-    fromFloor: 2
   encounterChance: {x: 0.75, y: 0.8}
   minEnemiesPerRoom: 2
   maxEnemiesPerRoom: 3
@@ -238,11 +232,14 @@ MonoBehaviour:
     chestItems: []
     arenaSizeScale: 1.5
     fight: {fileID: 0}
-  ambience: {fileID: 0}
-  ambienceVolume: 0.45
-  ambientOneShots: []
-  oneShotInterval: {x: 10, y: 24}
-  oneShotVolume: 0.5
+  ambience: {fileID: 8300000, guid: d61d49208c7dd0648a08f048e58b4e46, type: 3}
+  ambienceVolume: 0.35
+  ambientOneShots:
+  - {fileID: 8300000, guid: ec196c649a0b6f94bb138fefec169e56, type: 3}
+  - {fileID: 8300000, guid: c77551c20cbf8ac4c8df57963a660f4b, type: 3}
+  - {fileID: 8300000, guid: 330531aa76f11f441875b6eb437f603f, type: 3}
+  oneShotInterval: {x: 12, y: 28}
+  oneShotVolume: 0.4
   music: {fileID: 0}
   musicVolume: 1
   entryLineChance: 1

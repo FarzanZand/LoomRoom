@@ -39,11 +39,23 @@ public class InputManager : Singleton<InputManager>
     public event Action PingPressed;
     public event Action InventoryToggled;
     public event Action CancelPressed;
-    public event Action PausePressed;    // Room or Table gameplay: open the pause menu
+    // While paused, Cancel goes only here (the pause menu): screens under it (figures, the map, a reveal) don't see it.
+    public event Action PausedCancelPressed;
+    public event Action PausePressed;    // Room or Table gameplay, or the UI map's Pause (a pad's Start): open the pause menu
     public event Action NavigatePressed; // UI: move between menu options
     public event Action SubmitPressed;   // UI: confirm or skip
+    // A rebind or a reset to defaults changed the keys: anything showing key names writes them again.
+    public event Action BindingsChanged;
     public bool CancelHandledThisFrame => cancelFrame == Time.frameCount;
     int cancelFrame = -1;
+    // A rebind ended this frame (Escape that cancelled it must not also close the settings screen).
+    public bool RebindEndedThisFrame => rebindEndFrame == Time.frameCount;
+    int rebindEndFrame = -1;
+    // Presses of this frame are spent (the pause menu just closed on it): pointer clicks and line skips read false.
+    int heldPressFrame = -1;
+    public void HoldPresses() => heldPressFrame = Time.frameCount;
+    static bool Paused => GameManager.HasInstance && GameManager.Instance.State == GameState.Paused;
+    bool PressesHeld => heldPressFrame == Time.frameCount || Paused;
     public event Action PrimaryPressed;
     public event Action PrimaryReleased;
     public event Action SecondaryPressed;
@@ -68,14 +80,45 @@ public class InputManager : Singleton<InputManager>
         }
     }
 
-    // The mouse for picking things in the world while the cursor is free (ClassFigures).
+    // A pad is plugged in: menus select a control as they open so its Submit works.
+    public static bool PadConnected => Gamepad.current != null;
+    // A pad's d-pad or an arrow key pressed: a menu with nothing selected selects something (not South, which would
+    // press what was just selected).
+    public static bool MenuInputStarted =>
+        Gamepad.current != null && (Gamepad.current.dpad.ReadValue() != Vector2.zero || Gamepad.current.leftStick.ReadValue().sqrMagnitude > .25f)
+        || Keyboard.current != null && (Keyboard.current.upArrowKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame
+            || Keyboard.current.leftArrowKey.wasPressedThisFrame || Keyboard.current.rightArrowKey.wasPressedThisFrame);
+    // The UI selection is empty or sits on something hidden (a menu closed with it selected): a menu selects again.
+    public static bool NothingSelected
+    {
+        get
+        {
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            if (events == null) return false;
+            var selected = events.currentSelectedGameObject;
+            return selected == null || !selected.activeInHierarchy;
+        }
+    }
+    // A text field has the keyboard (the letters typed are text, not keys for the game).
+    static bool Typing
+    {
+        get
+        {
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            var selected = events != null ? events.currentSelectedGameObject : null;
+            return selected != null && selected.TryGetComponent<TMPro.TMP_InputField>(out var field) && field.isFocused;
+        }
+    }
+
+    // The mouse for picking things in the world while the cursor is free (ClassFigures). Never while paused: the click
+    // is for the pause menu, not what lies under it.
     public Vector2 PointerPosition => Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
-    public bool PointerClicked => Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
-    public bool PointerRightClicked => Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame;
+    public bool PointerClicked => !PressesHeld && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+    public bool PointerRightClicked => !PressesHeld && Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame;
     // Moves a Dungeon Master line on (DungeonMaster, in the Dialogue state): click, Space, Enter or gamepad South.
-    public bool SkipLinePressed => PointerClicked
+    public bool SkipLinePressed => !PressesHeld && (PointerClicked
         || (Keyboard.current != null && (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.enterKey.wasPressedThisFrame))
-        || (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame);
+        || (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame));
 
     protected override void Awake()
     {
@@ -102,9 +145,15 @@ public class InputManager : Singleton<InputManager>
         actions.Table.Pause.performed += _ => PausePressed?.Invoke();
         actions.Table.Ping.performed += _ => PingPressed?.Invoke();
         actions.Room.Pause.performed  += _ => PausePressed?.Invoke();
+        // The UI map is live in cutscenes, conversations and menus. A Pause action there (a pad's Start; not Escape,
+        // which is Cancel) lets the pause menu open over a cutscene or a conversation. Found by name, so the map works without it.
+        var uiPause = actions.UI.Get().FindAction("Pause");
+        // P is a letter: typed into a text field (a name, the dev prompt over the pause menu) it is not a pause.
+        if (uiPause != null) uiPause.performed += ctx => { if (!(ctx.control?.device is Keyboard && Typing)) PausePressed?.Invoke(); };
         LoadBindingOverrides();
-        actions.UI.Navigate.performed += _ => NavigatePressed?.Invoke();
-        actions.UI.Submit.performed   += _ => SubmitPressed?.Invoke();
+        // Paused: the screens under the pause menu don't move or confirm.
+        actions.UI.Navigate.performed += _ => { if (!Paused) NavigatePressed?.Invoke(); };
+        actions.UI.Submit.performed   += _ => { if (!Paused) SubmitPressed?.Invoke(); };
         actions.UI.Inventory.performed += _ => InventoryToggled?.Invoke();
         actions.UI.Cancel.performed    += _ =>
         {
@@ -112,6 +161,7 @@ public class InputManager : Singleton<InputManager>
             cancelFrame = Time.frameCount;
             // Dismiss a nested item action menu before its underlying inventory.
             if (ContextMenuUI.HasInstance && ContextMenuUI.Instance.IsOpen) ContextMenuUI.Instance.Hide();
+            else if (Paused) PausedCancelPressed?.Invoke();
             else CancelPressed?.Invoke();
         };
 
@@ -185,12 +235,19 @@ public class InputManager : Singleton<InputManager>
         catch (Exception e) { Debug.LogWarning($"[InputManager] Ignoring saved bindings: {e.Message}"); }
     }
 
-    void SaveBindingOverrides() => PlayerPrefs.SetString(BindingsPref, actions.asset.SaveBindingOverridesAsJson());
+    // Written to disk at once, so a crash doesn't lose a rebind.
+    void SaveBindingOverrides()
+    {
+        PlayerPrefs.SetString(BindingsPref, actions.asset.SaveBindingOverridesAsJson());
+        PlayerPrefs.Save();
+    }
 
     public void ResetBindings()
     {
         actions.asset.RemoveAllBindingOverrides();
         PlayerPrefs.DeleteKey(BindingsPref);
+        PlayerPrefs.Save();
+        BindingsChanged?.Invoke();
     }
 
     // The keyboard/mouse binding for an action, or one part of a composite ("up", "left"...).
@@ -247,6 +304,7 @@ public class InputManager : Singleton<InputManager>
                 Mirror(action, index);
                 SaveBindingOverrides();
                 Finish();
+                BindingsChanged?.Invoke();
             })
             .OnCancel(_ => Finish());
         rebind.Start();
@@ -257,7 +315,7 @@ public class InputManager : Singleton<InputManager>
             rebind = null;
             if (wasEnabled) action.Enable();
             // The UI map sees the pressed key too; do not let it close the menu.
-            cancelFrame = Time.frameCount;
+            cancelFrame = rebindEndFrame = Time.frameCount;
             onDone?.Invoke();
         }
     }

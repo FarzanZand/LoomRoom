@@ -126,18 +126,27 @@ public class DungeonAmbush : MonoBehaviour
     {
         foreach (var g in gates) if (g != null) { Raise(g); Play(slamAudio, g.position); }
         MessageLog.Post("Iron gates slam shut across the ways out.", MessageKind.Warning);
+        bool inRun = RunManager.HasInstance && RunManager.Instance.Running;
+        bool Over() => player == null || inRun && (!RunManager.HasInstance || !RunManager.Instance.Running);
         yield return new WaitForSeconds(.7f);
         foreach (var wave in new[] { waveOne, waveTwo })
         {
             if (wave.Count == 0) continue;
+            // While the player is down the fight waits (a revive picks it up again); a run that is over ends it.
+            // Co-op: it waits only while the whole party is down.
+            while (Coop.Running ? !AnyoneAlive() : player == null || !player.IsAlive)
+            {
+                if (Over()) yield break;
+                yield return new WaitForSeconds(.25f);
+            }
             yield return Spawn(wave, player);
             while (true)
             {
                 alive.RemoveAll(c => c == null || !c.IsAlive);
                 if (alive.Count == 0) break;
+                if (Over()) yield break;
                 // Co-op: the fight goes on while anyone of the party is alive; with nobody left in the room (dead or shut
                 // out) the gates lift so the others can finish it.
-                if (Coop.Running ? !AnyoneAlive() : !player.IsAlive) yield break;
                 if (Coop.Running && !opened)
                 {
                     emptyFor = AnyoneInside() ? 0f : emptyFor + .25f;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -27,6 +28,11 @@ public class GameManager : Singleton<GameManager>
 
     readonly List<GameState> stack = new();
     readonly Dictionary<GameState, int> owners = new();
+
+    // Real time that stands still while the pause menu is open: cutscenes run on real time (they go on under slow
+    // motion), and the pause menu can open over them.
+    public static float CutsceneDelta => HasInstance && Instance.State == GameState.Paused ? 0f : Time.unscaledDeltaTime;
+    public static IEnumerator WaitCutscene(float seconds) { for (float t = 0f; t < seconds; t += CutsceneDelta) yield return null; }
 
     public GameState State => stack.Count > 0 ? stack[stack.Count - 1] : GameState.Explore;
     public bool GameplayActive => State == GameState.Explore;

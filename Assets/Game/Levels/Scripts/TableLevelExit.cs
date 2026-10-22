@@ -17,6 +17,7 @@ public sealed class TableLevelExit : MonoBehaviour
     public bool IsPlaying { get; private set; }
     // A way back is in flight (the Dungeon Master takes his chair at once, as under a black screen).
     public static bool Flying { get; private set; }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => Flying = false;
 
     // standing: how high the floor reaches above its base (the view climbs clear of it before it turns for the room).
     // flying starts as the view leaves the floor (the loader brings the room's light and music back over the flight).
@@ -47,10 +48,14 @@ public sealed class TableLevelExit : MonoBehaviour
             float seconds = Mathf.Max(.1f, settings.exitSeconds);
             float floorY = dungeon != null ? dungeon.transform.position.y : start.y;
             var aboveStart = new Vector3(start.x, Mathf.Max(start.y + settings.exitRise, floorY + standing + 1.5f), start.z);
-            for (float elapsed = 0f; elapsed < seconds; elapsed += Time.unscaledDeltaTime)
+            // A click or Submit lands the view at once (not in its first moment: the press that started the way back).
+            skipFrom = Time.unscaledTime + .15f;
+            if (InputManager.HasInstance) { skipInput = InputManager.Instance; skipInput.SubmitPressed += OnSkip; }
+            for (float elapsed = 0f; elapsed < seconds; elapsed += GameManager.CutsceneDelta)
             {
+                if (Skipped || elapsed > .15f && skipInput != null && skipInput.PointerClicked) { Skipped = true; break; }
                 // The room camera's live pose (its rig may still settle), so Cinemachine takes over from the same view.
-                target.InternalUpdateCameraState(Vector3.up, Time.unscaledDeltaTime);
+                target.InternalUpdateCameraState(Vector3.up, GameManager.CutsceneDelta);
                 var live = target.State;
                 var destination = live.GetFinalPosition();
                 var projection = Matrix4x4.Perspective(live.Lens.FieldOfView, output.aspect, live.Lens.NearClipPlane, live.Lens.FarClipPlane);
@@ -66,7 +71,7 @@ public sealed class TableLevelExit : MonoBehaviour
                 output.projectionMatrix = matrix;
                 yield return null;
             }
-            target.InternalUpdateCameraState(Vector3.up, Time.unscaledDeltaTime);
+            target.InternalUpdateCameraState(Vector3.up, GameManager.CutsceneDelta);
             output.transform.SetPositionAndRotation(target.State.GetFinalPosition(), target.State.GetFinalOrientation());
             output.fieldOfView = target.State.Lens.FieldOfView;
             completed = true;
@@ -74,8 +79,15 @@ public sealed class TableLevelExit : MonoBehaviour
         finally { Restore(); }
     }
 
+    InputManager skipInput;
+    // The flight was cut short by a click or Submit (the view landed at once).
+    public bool Skipped { get; private set; }
+    float skipFrom;
+    void OnSkip() { if (Time.unscaledTime >= skipFrom) Skipped = true; }
+
     void Restore()
     {
+        if (skipInput != null) { skipInput.SubmitPressed -= OnSkip; skipInput = null; }
         foreach (var entry in roomRenderers) if (entry.renderer != null) entry.renderer.forceRenderingOff = entry.forcedOff;
         roomRenderers.Clear();
         if (captured && output != null)

@@ -43,7 +43,31 @@ public class InventoryUI : MonoBehaviour
     void HidePanel(){if(panel!=null)panel.SetActive(false);}
     void FinishClose(){ReleaseMenu();HidePanel();}
 
-    void Update(){if(isOpen && PlayerManager.HasInstance && (PlayerManager.Instance.Active==null || !PlayerManager.Instance.Active.IsAlive))Close();}
+    void Update(){
+        if(isOpen && PlayerManager.HasInstance && (PlayerManager.Instance.Active==null || !PlayerManager.Instance.Active.IsAlive))Close();
+        // Nothing selected and a pad's d-pad or an arrow key pressed: select a cell.
+        if(isOpen && InputManager.MenuInputStarted && InputManager.NothingSelected && !ContextMenuOpen)SelectStart();
+    }
+
+    // With a pad a bag cell is selected as the bag opens (the first holding an item, else the first), so Submit and the
+    // d-pad have something to act on; the mouse works as before.
+    void SelectStart(){
+        ItemSlotUI pick=null;
+        foreach(var s in slots)if(s!=null && s.gameObject.activeInHierarchy && s.Item!=null){pick=s;break;}
+        if(pick==null)foreach(var s in slots)if(s!=null && s.gameObject.activeInHierarchy){pick=s;break;}
+        if(pick==null)return;
+        if(pick.TryGetComponent<UnityEngine.UI.Selectable>(out var selectable))selectable.Select();
+        else if(UnityEngine.EventSystems.EventSystem.current!=null)UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(pick.gameObject);
+    }
+    static bool ContextMenuOpen=>ContextMenuUI.HasInstance && ContextMenuUI.Instance.IsOpen;
+
+    // Closing with a cell selected: the selection is let go while the cell can still hear it (its tint and tooltip go),
+    // so the next menu starts clean.
+    void ReleaseSelection(){
+        var events=UnityEngine.EventSystems.EventSystem.current;
+        var selected=events!=null?events.currentSelectedGameObject:null;
+        if(selected!=null && panel!=null && selected.transform.IsChildOf(panel.transform) && !events.alreadySelecting)events.SetSelectedGameObject(null);
+    }
 
     void OnEnable()
     {
@@ -120,6 +144,7 @@ public class InventoryUI : MonoBehaviour
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.InventoryOpened();
         var style=feedback!=null?feedback:UIFeedbackSettings.Shared;style?.Play(style.openKey);Animate(true);
         Refresh();
+        if(InputManager.PadConnected)SelectStart();
     }
 
     void OnCancel()
@@ -133,9 +158,9 @@ public class InventoryUI : MonoBehaviour
         isOpen = false;
         ReleaseMenu();
         var style=feedback!=null?feedback:UIFeedbackSettings.Shared;style?.Play(style.closeKey);Animate(false);
-        if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
         if (ContextMenuUI.HasInstance) ContextMenuUI.Instance.Hide();
-
+        ReleaseSelection();
+        if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
     }
 
     void Refresh()

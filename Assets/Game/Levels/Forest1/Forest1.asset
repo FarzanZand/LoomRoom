@@ -16,7 +16,6 @@ MonoBehaviour:
   description: Twenty floors down. A new layout every run.
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
   kind: 2
-  environmentPrefab: {fileID: 0}
   stages:
   - biome: {fileID: 11400000, guid: 544a86e1822ce2e43b0bf64d8e1fa23a, type: 2}
     floors: 3
@@ -27,107 +26,85 @@ MonoBehaviour:
   - biome: {fileID: 11400000, guid: 8eaf9824efd9dcf4db22adc877d60d68, type: 2}
     floors: 10
     boss: 1
-  balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
-  gearByFloor: []
+  balance: {fileID: 11400000, guid: 043d509308ae73c4b8d4e178facd2614, type: 2}
+  gearByFloor:
+  - fromFloor: 1
+    tier1: 100
+    tier2: 0
+    tier3: 0
+    tier4: 0
+    upgradeChance: 0.05
+  - fromFloor: 4
+    tier1: 50
+    tier2: 50
+    tier3: 0
+    tier4: 0
+    upgradeChance: 0.1
+  - fromFloor: 8
+    tier1: 0
+    tier2: 100
+    tier3: 0
+    tier4: 0
+    upgradeChance: 0.1
+  - fromFloor: 12
+    tier1: 0
+    tier2: 60
+    tier3: 40
+    tier4: 0
+    upgradeChance: 0.1
+  - fromFloor: 16
+    tier1: 0
+    tier2: 0
+    tier3: 100
+    tier4: 0
+    upgradeChance: 0.15
+  startingRoom: {fileID: 0}
+  startingChestConsumable: {fileID: 0}
+  fixedSeed: 0
+  pocket: 0
+  layoutMode: 1
+  width: 40
+  depth: 54
+  roomCount: 20
+  roomSize: {x: 5, y: 10}
+  roomSpacing: {x: 1, y: 2}
+  loopPercent: 15
+  loopReach: 6
+  corridorWander: 0.3
+  wideCorridorPercent: 70
+  doorPrefab: {fileID: 7005205240093728226, guid: 3c6bc2dc79fc2bb42ba380732b33a2f2, type: 3}
+  mapTemplate: {fileID: 0}
+  authoredMap: 
+  authoredRooms: []
+  authoredContent: 
+  authoredMarkers: []
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   moodLighting: 8
-  overrideLighting: 0
-  lightingSettings:
-    skyTint: {r: 0.4, g: 0.5, b: 0.62, a: 1}
-    skyExposure: 0.8
-    lightColor: {r: 0.78, g: 0.85, b: 1, a: 1}
-    lightIntensity: 0.65
-    ambientSky: {r: 0.85, g: 0.88, b: 0.94, a: 1}
-    ambientHorizon: {r: 0.74, g: 0.76, b: 0.79, a: 1}
-    ambientGround: {r: 0.5, g: 0.52, b: 0.56, a: 1}
-    fogColor: {r: 0.28, g: 0.34, b: 0.42, a: 1}
   roomLighting: 1
-  roomTint: {r: 1, g: 1, b: 1, a: 1}
-  minimumAmbient: 0.07
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
   backgroundMusic: {fileID: 8300000, guid: ef4f5eea8a3e11d4ba749bcb52683db8, type: 3}
   backgroundMusicVolume: 0.3
-  loopMusic: 1
-  musicFadeSeconds: 1.5
-  fixedSeed: 0
-  startFacingDungeonMaster: 0
-  width: 40
-  depth: 54
-  cellSize: 2
-  roomCount: 20
-  largeRoomPercent: 10
-  largeRoomScale: 1.6
-  loopPercent: 15
-  layoutMode: 1
-  roomSize: {x: 5, y: 10}
-  roomSpacing: {x: 1, y: 2}
-  corridorWander: 0.3
-  wideCorridorPercent: 70
-  deadEndPercent: 0
-  loopReach: 6
-  roomShapes:
-  - kind: 0
-    shape: {fileID: 0}
+  defaultStyle: {fileID: 11400000, guid: e76ec57bbb590d54c88ccc1bdbe04188, type: 2}
+  roomStyles:
+  - style: {fileID: 11400000, guid: e76ec57bbb590d54c88ccc1bdbe04188, type: 2}
     weight: 3
-  - kind: 1
-    shape: {fileID: 0}
-    weight: 2
-  - kind: 2
-    shape: {fileID: 0}
-    weight: 2
-  - kind: 3
-    shape: {fileID: 0}
+  - style: {fileID: 11400000, guid: a2ad16f5fab79e547b03ebc7c9870e45, type: 2}
     weight: 1
-  - kind: 4
-    shape: {fileID: 0}
+  corridorsCopyConnectedRoomStyle: 0
+  corridorStyles:
+  - style: {fileID: 11400000, guid: 7a9cbe7d81d296f42b00e869125d1a29, type: 2}
     weight: 1
-  - kind: 5
-    shape: {fileID: 0}
-    weight: 2
-  - kind: 6
-    shape: {fileID: 0}
-    weight: 1
-  - kind: 7
-    shape: {fileID: 0}
-    weight: 1
-  - kind: 8
-    shape: {fileID: 0}
-    weight: 1
-  - kind: 9
-    shape: {fileID: 11400000, guid: ea0db8439193e10459cc0c558c73244b, type: 2}
-    weight: 0.6
-  - kind: 9
-    shape: {fileID: 11400000, guid: d7bbc65db8e0e7b41b27f9bd028d5a1e, type: 2}
-    weight: 0.6
-  - kind: 9
-    shape: {fileID: 11400000, guid: dc8ef7b381958914ca2eeb67cdc2397a, type: 2}
-    weight: 0.6
-  - kind: 9
-    shape: {fileID: 11400000, guid: 0079639818c389346ad08832809d67ef, type: 2}
-    weight: 0.6
-  - kind: 9
-    shape: {fileID: 11400000, guid: b83f1b9ea222f1f4690c0e00502d6342, type: 2}
-    weight: 0.6
-  startingRoom: {fileID: 0}
-  authoredMap: 
-  authoredContent: 
-  authoredRooms: []
-  authoredMarkers: []
-  doorPrefab: {fileID: 7005205240093728226, guid: 3c6bc2dc79fc2bb42ba380732b33a2f2, type: 3}
-  doorPercent: 65
+  kitModels: 0
+  hideStartWallInReveal: 0
   boardEdgeMaterial: {fileID: 2100000, guid: b9c4c0e160db0d6449dad9e7fafa73d9, type: 2}
   boardGridMaterial: {fileID: 0}
   boardPitMaterial: {fileID: 2100000, guid: 5053cbb8979684f40966c88c0034318a, type: 2}
-  boardTileThickness: 0.14
-  boardLayerHeight: 0.32
-  boardMaxRaise: 2
   boardVerticality: 5
   boardTileTaps:
   - {fileID: 8300000, guid: 426c8cc8b2a4e1c4f8d100f1b194662f, type: 3}
   - {fileID: 8300000, guid: fa0b67f13f850da4f9d3fb90db46a4f3, type: 3}
   - {fileID: 8300000, guid: c137ad7632865df4f90d121edb6c5ec7, type: 3}
-  boardRevealAll: 0
   boardDoorPosts:
   - {fileID: 1272422309174959784, guid: cbe7442d756e4cb42892e0b20ee7a0c8, type: 3}
   - {fileID: 1550712168596299570, guid: ca278248ef071a7408cef8bad099cc64, type: 3}
@@ -139,36 +116,10 @@ MonoBehaviour:
   - {fileID: 8570400056133937746, guid: 5c00ba14ee957cd479fb78422b65bd45, type: 3}
   - {fileID: 6438821886919304874, guid: ef751d70c77230448adbee8900a52bc6, type: 3}
   - {fileID: 4512585253218133542, guid: 4d61de25fe2587a4284ad2d051b25095, type: 3}
-  furnishEntranceRims: 1
-  architectureTileSize: 3
-  hideRoof: 0
-  hideRoofPercent: 5.9
-  skylightFrame: 0.9
-  hideEdges: 0
-  hideEdgesPercent: 100
-  windowSill: 0.55
-  windowLintel: 0.75
-  windowJamb: 0.45
-  defaultStyle: {fileID: 11400000, guid: e76ec57bbb590d54c88ccc1bdbe04188, type: 2}
-  roomStyles:
-  - style: {fileID: 11400000, guid: e76ec57bbb590d54c88ccc1bdbe04188, type: 2}
-    weight: 3
-  - style: {fileID: 11400000, guid: a2ad16f5fab79e547b03ebc7c9870e45, type: 2}
-    weight: 1
-  corridorsCopyConnectedRoomStyle: 0
-  corridorStyles:
-  - style: {fileID: 11400000, guid: 7a9cbe7d81d296f42b00e869125d1a29, type: 2}
-    weight: 1
-  roomProfiles: []
-  roomPropPrefabs: []
-  lightingPrefabs:
-  - prefab: {fileID: 3904118440429741045, guid: 91efdc5ce7c631c43a3188387ca652aa, type: 3}
-    weight: 1
-    overrideColor: 0
-    color: {r: 1, g: 0.6, b: 0.3, a: 1}
   torchesPerRoom: {x: 1, y: 2}
   litRoomChance: 0.7
   corridorTorchChance: 0.3
+  darkRoomLight: {fileID: 0}
   propRules:
   - prefab: {fileID: 6650608859907281787, guid: 42858282f0c93e84fa9fd2c78ea85948, type: 3}
     placement: 0
@@ -303,7 +254,8 @@ MonoBehaviour:
     perRoom: {x: 0, y: 3}
     chance: 1
     rooms: 63
-  chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+  furnishEntranceRims: 1
+  destructiblesPerRoom: {x: 1, y: 3}
   chestTiers:
   - prefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
     weight: 6
@@ -311,7 +263,7 @@ MonoBehaviour:
     weight: 3
   - prefab: {fileID: 6682190492535852451, guid: a3f935b8a5116744c81458439dead315, type: 3}
     weight: 1
-  kitModels: 0
+  shopRoom: {fileID: 729654494956090050, guid: f105c91660738b445806b5bc0d789329, type: 3}
   roomFeatures:
     shrineBargains: 1
     shrineChance: 0.35
@@ -326,6 +278,7 @@ MonoBehaviour:
     sleepChance: 0.1
     maxSleepingPacks: 3
     pits: 1
+    playerFallsInPits: 0
     pitFallDamage: 0.25
     sunkenFloors: 1
     archerLedges: 1
@@ -343,51 +296,6 @@ MonoBehaviour:
   ambushLiftAudio: {fileID: 8300000, guid: a12060e86d16cae45a745a7d132485fa, type: 3}
   ambushSpawnAudio: {fileID: 8300000, guid: 3779d6189bc84204eba34bf53a79a2eb, type: 3}
   sleepAudio: {fileID: 8300000, guid: 96a5ae5e34bf02d4f8c523f7edd884f3, type: 3}
-  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
-  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
-  destructibles:
-  - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
-    weight: 3
-  - prefab: {fileID: 3676609536429769752, guid: 74294ce93f890d0479859cebe2ea259e, type: 3}
-    weight: 2
-  - prefab: {fileID: 6976356556941518252, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
-    weight: 2
-  - prefab: {fileID: 4940602601245648603, guid: fb562eb337691f54c8a6648dcc1a3045, type: 3}
-    weight: 2
-  destructiblesPerRoom: {x: 1, y: 3}
-  features:
-  - prefab: {fileID: 1139990893470972911, guid: 69b99ad0ca2199f40ba3c9ac972343da, type: 3}
-    chancePerRoom: 0.08
-    placement: 2
-    rooms: 30
-    minFloor: 1
-    maxPerFloor: 1
-  - prefab: {fileID: 2628686250012602643, guid: 8605074f6c2806a418b4153f5c861b1f, type: 3}
-    chancePerRoom: 0.07
-    placement: 0
-    rooms: 28
-    minFloor: 2
-    maxPerFloor: 1
-  - prefab: {fileID: 1038405016691299456, guid: dc5b6f6ac339db9489cb8fe203951f1b, type: 3}
-    chancePerRoom: 0.1
-    placement: 0
-    rooms: 22
-    minFloor: 1
-    maxPerFloor: 2
-  - prefab: {fileID: 2510687268772921315, guid: 1a1941feba8c9704db9d6c4b74284941, type: 3}
-    chancePerRoom: 0.1
-    placement: 0
-    rooms: 30
-    minFloor: 1
-    maxPerFloor: 2
-  startingItems: []
-  startingEquipment: []
-  merchantPrefab: {fileID: 6335521276860554555, guid: 0b9bfb4bda23a524ba9567e96ba16304, type: 3}
-  merchantStock: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
-  shopRoom: {fileID: 729654494956090050, guid: f105c91660738b445806b5bc0d789329, type: 3}
-  enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
-  damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
-  messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}
   dialogue:
   - trigger: 1
     room: 0

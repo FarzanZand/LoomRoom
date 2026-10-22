@@ -44,6 +44,8 @@ public class RoomLoopPortal : MonoBehaviour
         destination.lastPlayer = player;
         destination.lastSide = destination.transform.InverseTransformPoint(target).z;
         Crossed?.Invoke(player);
+        // Trying to leave the room: house rule one (nobody leaves the table until he says so).
+        if (player.kind == PlayerKind.Room) RuleManager.QuoteRule(1);
     }
 
     void OnDrawGizmos()

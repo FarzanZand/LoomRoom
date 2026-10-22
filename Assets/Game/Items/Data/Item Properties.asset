@@ -54,7 +54,7 @@ MonoBehaviour:
     enabled: 1
     stat: 0
     statPerPoint: 1
-    slots: 334
+    slots: 366
     weight: 1
     byFloor:
     - 4
@@ -138,7 +138,7 @@ MonoBehaviour:
     enabled: 1
     stat: 25
     statPerPoint: 1
-    slots: 133
+    slots: 231
     weight: 1
     byFloor:
     - 1
@@ -150,7 +150,7 @@ MonoBehaviour:
     enabled: 1
     stat: 6
     statPerPoint: 0.01
-    slots: 32
+    slots: 96
     weight: 1
     byFloor:
     - 3
@@ -174,7 +174,7 @@ MonoBehaviour:
     enabled: 1
     stat: 10
     statPerPoint: 1
-    slots: 264
+    slots: 268
     weight: 1
     byFloor:
     - 6
@@ -186,7 +186,7 @@ MonoBehaviour:
     enabled: 1
     stat: 11
     statPerPoint: 1
-    slots: 264
+    slots: 268
     weight: 1
     byFloor:
     - 0.3
@@ -246,7 +246,7 @@ MonoBehaviour:
     enabled: 1
     stat: 33
     statPerPoint: 1
-    slots: 272
+    slots: 278
     weight: 0.34
     byFloor:
     - 2
@@ -258,7 +258,7 @@ MonoBehaviour:
     enabled: 1
     stat: 26
     statPerPoint: 0.01
-    slots: 144
+    slots: 208
     weight: 1
     byFloor:
     - 10

@@ -72,6 +72,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         {
             var r = row;
             r.buy?.onClick.AddListener(() => Buy(r));
+            Navigable(r.buy);
             foreach (var hover in HoverTargets(r)) AddHover(hover, r);
             for (int m = 0; m < r.milestoneIcons.Length; m++) if (r.milestoneIcons[m] != null) AddHover(r.milestoneIcons[m].transform.parent.gameObject, r, m);
             // The next bubble buys too.
@@ -86,6 +87,25 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             }
         }
         if (tip != null) tip.gameObject.SetActive(false);
+        Navigable(refundButton); Navigable(closeButton);
+    }
+
+    // A pad or the arrow keys move between the rows' buttons: a button authored with no navigation gets Unity's own.
+    static void Navigable(Selectable s)
+    {
+        if (s != null && s.navigation.mode == Navigation.Mode.None) s.navigation = new Navigation { mode = Navigation.Mode.Automatic };
+    }
+
+    // Something is selected as the sheet opens, so Submit works on a pad: the Train button the quest asks for, else
+    // the first row's that can be pressed, else Close. The mouse works as before.
+    void SelectStart()
+    {
+        Selectable pick = questRow != null && questRow.buy != null && questRow.buy.IsInteractable() ? questRow.buy : null;
+        if (pick == null)
+            foreach (var r in rows)
+                if (r.buy != null && r.buy.gameObject.activeInHierarchy && r.buy.IsInteractable()) { pick = r.buy; break; }
+        if (pick == null) pick = closeButton;
+        if (pick != null) pick.Select();
     }
 
     void Start() { if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel; }
@@ -129,6 +149,9 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         HideTip();
         if (unlockBanner != null) unlockBanner.gameObject.SetActive(false);
         Refresh();
+        // With a pad, at once; the arrow keys select on their first press (Update), and the mouse selects nothing, so
+        // Space typed later never presses a Train button.
+        if (InputManager.PadConnected) SelectStart();
     }
 
     public void Close()
@@ -138,6 +161,10 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (nameField != null && nameField.isFocused) SaveName(nameField.text);
         if (Meta != null) Meta.MetaChanged -= Refresh;
         HideTip();
+        // A button left selected would stay selected while hidden.
+        var events = EventSystem.current;
+        if (events != null && root != null && events.currentSelectedGameObject != null && events.currentSelectedGameObject.transform.IsChildOf(root.transform)
+            && !events.alreadySelecting) events.SetSelectedGameObject(null);
         if (root != null) root.SetActive(false);
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
         // Put down: the DM hands over what was earned.
@@ -146,6 +173,8 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
 
     void Update()
     {
+        // A mouse click on nothing clears the selection: a pad's or an arrow key's next press selects again.
+        if (open && InputManager.MenuInputStarted && InputManager.NothingSelected) SelectStart();
         if (open && feedback != null && feedback.text.Length > 0 && Time.unscaledTime > feedbackUntil) feedback.text = "";
         // The quest's ring breathes so the eye finds it.
         if (open && questRing != null && questRing.gameObject.activeSelf)

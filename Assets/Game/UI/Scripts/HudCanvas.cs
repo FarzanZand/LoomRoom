@@ -1,14 +1,15 @@
 using UnityEngine;
 
 // Hides the HUD canvas when GameManager says so (cutscenes). Full-screen menus share the canvas, so behind them (the
-// shop, character sheet, run recap: the Menu state) only the hotbar and the vitals fade out.
+// shop, character sheet, run recap: the Menu state) only the hotbar and the vitals fade out. The pause menu shares it
+// too, so pausing a cutscene shows the canvas again: the hotbar and vitals stay out of sight behind it then as well.
 public class HudCanvas : MonoBehaviour
 {
     [SerializeField] Canvas canvas;
     HotbarUI hotbar;
     PlayerVitalsUI vitals;
     CanvasGroup hotbarGroup, vitalsGroup;
-    public static bool BehindMenu => GameManager.HasInstance && GameManager.Instance.State == GameState.Menu;
+    public static bool BehindMenu => GameManager.HasInstance && GameManager.Instance.State == GameState.Menu || PauseMenuUI.OverCutscene;
 
     void Awake()
     {

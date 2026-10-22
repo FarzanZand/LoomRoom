@@ -87,8 +87,7 @@ public class CampaignEventUI : MonoBehaviour
             var last = spawned.FindLast(b => b != null && b.interactable && b.gameObject.activeInHierarchy);
             if (es != null && last != null) es.SetSelectedGameObject(last.gameObject);
         }
-        var input = InputManager.HasInstance ? InputManager.Instance : null;
-        if (input != null) { input.NavigatePressed += OnNavigate; input.CancelPressed += OnCancel; }
+        Listen(InputManager.HasInstance ? InputManager.Instance : null, OnNavigate, OnCancel);
         try
         {
             for (float t = 0; t < fadeSeconds; t += Time.unscaledDeltaTime) { Fade(t / fadeSeconds); yield return null; }
@@ -97,7 +96,7 @@ public class CampaignEventUI : MonoBehaviour
             body.text = string.IsNullOrWhiteSpace(picked.outcome) ? e.text : picked.outcome;
             while (!closed) yield return null;
         }
-        finally { if (input != null) { input.NavigatePressed -= OnNavigate; input.CancelPressed -= OnCancel; } }
+        finally { Unlisten(); }
         for (float t = fadeSeconds; t > 0; t -= Time.unscaledDeltaTime) { Fade(t / fadeSeconds); yield return null; }
         Fade(0f);
         Clear();
@@ -120,9 +119,27 @@ public class CampaignEventUI : MonoBehaviour
         return b;
     }
 
+    // The key handlers of the event on screen, kept so Abort can take them off too (a coroutine stopped from outside
+    // never runs its finally: left on, the next event's keys would step twice).
+    InputManager listening;
+    Action navigateHandler, cancelHandler;
+    void Listen(InputManager input, Action navigate, Action cancel)
+    {
+        Unlisten();
+        if (input == null) return;
+        listening = input; navigateHandler = navigate; cancelHandler = cancel;
+        input.NavigatePressed += navigateHandler; input.CancelPressed += cancelHandler;
+    }
+    void Unlisten()
+    {
+        if (listening != null) { listening.NavigatePressed -= navigateHandler; listening.CancelPressed -= cancelHandler; }
+        listening = null; navigateHandler = cancelHandler = null;
+    }
+
     // Shut from outside (the map view stopped mid-event): nothing left on screen or catching clicks.
     public void Abort()
     {
+        Unlisten();
         if (!Open) return;
         Clear();
         Fade(0f);

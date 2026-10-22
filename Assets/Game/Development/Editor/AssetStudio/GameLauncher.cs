@@ -43,9 +43,16 @@ public static class GameLauncher
     {
         string action = SessionState.GetString(PendingKey, "");
         if (action.Length == 0) return;
-        // Given up after two minutes without the game getting there (a failed start, Play stopped).
-        if (EditorApplication.timeSinceStartup - SessionState.GetFloat(PendingSinceKey, 0) > 120 || !EditorApplication.isPlayingOrWillChangePlaymode)
-        { if (!EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling) SessionState.EraseString(PendingKey); return; }
+        // Given up after two minutes without the game getting there, or when Play stopped for good (a failed start).
+        // A toolbar restart stops Play and starts it again a moment later: the action waits through that gap.
+        if (EditorApplication.timeSinceStartup - SessionState.GetFloat(PendingSinceKey, 0) > 120) { SessionState.EraseString(PendingKey); return; }
+        // Never in the session a restart is stopping: the action is for the one that starts next.
+        if (DebugDungeonToolbar.RestartPending) return;
+        if (!EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            if (!EditorApplication.isCompiling && !DebugDungeonToolbar.RestartPending) SessionState.EraseString(PendingKey);
+            return;
+        }
         if (!GameReady) return;
         var parts = action.Split('|');
         switch (parts[0])
@@ -62,6 +69,12 @@ public static class GameLauncher
                 SessionState.EraseString(PendingKey);
                 if (!DevConsole.RunCommand(parts[1])) Debug.LogWarning("[Asset Studio] The dev console isn't there to run: " + parts[1]);
                 break;
+            case "room":
+                var roomLoader = TableManager.HasInstance ? TableManager.Loader : null;
+                if (roomLoader == null || roomLoader.Busy || TablePlayer == null || !TablePlayer.isActiveAndEnabled) return;
+                SessionState.EraseString(PendingKey);
+                Debug.Log("[Asset Studio] " + LoadRoom(roomLoader, AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(parts[1]))));
+                break;
             case "run":
                 var runLoader = TableManager.HasInstance ? TableManager.Loader : null;
                 if (runLoader == null || runLoader.Busy || TablePlayer == null || !TablePlayer.isActiveAndEnabled) return;
@@ -77,6 +90,13 @@ public static class GameLauncher
             case "table":
                 if (!TableManager.HasInstance) return;
                 SessionState.EraseString(PendingKey);
+                // table|<place id>|<deaths>|<shut place id>: that many deaths in the place first, and the shut place not
+                // risen yet, so the map shows it come up (written into the save in use).
+                if (parts.Length > 2 && ProgressionManager.HasInstance && int.TryParse(parts[2], out int deaths))
+                {
+                    ProgressionManager.Instance.SetFlag(CampaignManager.DeathsPrefix + parts[1], deaths);
+                    if (parts.Length > 3 && parts[3].Length > 0) ProgressionManager.Instance.SetFlag(CampaignManager.OpenedPrefix + parts[3], 0);
+                }
                 TableManager.Instance.Play();
                 break;
             default:
@@ -101,34 +121,55 @@ public static class GameLauncher
         var player = TablePlayer;
         if (EditorApplication.isPlaying && player != null && player.isActiveAndEnabled) return Give(item, player);
         Pend("give|" + AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(item)));
-        DebugDungeonToolbar.StartDebug();
+        if (!Launch(DebugDungeonToolbar.StartDebug)) return failure;
         return $"Starting the Debug arena with {item.DisplayName} in the bag.";
     }
 
-    // The Debug arena with just this enemy in front of the player.
+    // The Debug arena with just this enemy in front of the player. The pick is only set when the arena really starts
+    // (a pick left behind would make the next toolbar Debug spawn only that enemy).
     public static string FightInArena(GameObject enemy)
     {
+        if (!RoomOpen()) return NoRoom;
         SessionState.SetString(DebugDungeonSession.StudioEnemyKey, AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(enemy)));
-        DebugDungeonToolbar.StartDebug();
+        if (!DebugDungeonToolbar.StartDebug()) { SessionState.EraseString(DebugDungeonSession.StudioEnemyKey); return Busy; }
         return $"Starting the Debug arena with {enemy.name}.";
     }
 
-    // A run opening in this room template (the dev console's loadtemplate), from the Debug arena if nothing is running.
+    // A run opening in this room template, from the Debug arena unless the table player is already playing. Found by its
+    // GUID (two folders can hold rooms of the same name), built in a level that uses it (the dev console's loadtemplate).
     public static string PlayRoom(GameObject template)
     {
-        string command = "loadtemplate " + template.name;
-        if (GameReady && TablePlayer != null && TablePlayer.isActiveAndEnabled && DevConsole.RunCommand(command)) return $"Loading a run in {template.name}.";
-        Pend("console|" + command);
-        if (!EditorApplication.isPlaying) DebugDungeonToolbar.StartDebug();
+        if (template == null) return "No room.";
+        var loader = TableManager.HasInstance ? TableManager.Loader : null;
+        if (GameReady && loader != null && !loader.Busy && TablePlayer != null && TablePlayer.isActiveAndEnabled) return LoadRoom(loader, template);
+        Pend("room|" + Guid(template));
+        if (!TableRunning && !Launch(DebugDungeonToolbar.StartDebug)) return failure;
         return $"Starting a run in {template.name}.";
+    }
+
+    static string LoadRoom(TableLevelLoader loader, GameObject template)
+    {
+        if (template == null) return "The room to test is gone.";
+        var level = DevConsole.LevelFor(template, loader, out int stage);
+        if (level == null) return "No generated dungeon to build " + template.name + " in.";
+        // A copy that opens in this room, its run starting at the biome that uses it (same name: a checkpoint finds it).
+        var copy = Object.Instantiate(level);
+        copy.name = level.name;
+        copy.startingRoom = template;
+        copy.fixedSeed = 0;
+        if (stage > 0 && copy.stages != null) copy.stages = copy.stages.Skip(stage).ToArray();
+        loader.Load(copy, skipReveal: true);
+        return $"Loading a run in {template.name} ({level.name}).";
     }
 
     // The toolbar's Dungeon button with this level picked.
     public static string PlayLevel(TableLevelData level)
     {
+        if (level == null) return "No level.";
+        if (!RoomOpen()) return NoRoom;
         EditorPrefs.SetString(DebugDungeonSession.SelectedDungeonKey, AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(level)));
         MainToolbar.Refresh("LoomRoom/Debug");
-        DebugDungeonToolbar.StartDungeon();
+        if (!DebugDungeonToolbar.StartDungeon()) return Busy;
         return $"Generating {level.name} floor 1.";
     }
 
@@ -138,7 +179,7 @@ public static class GameLauncher
     {
         if (level == null) return "No level.";
         var biome = level.stages != null && stage >= 0 && stage < level.stages.Length ? level.stages[stage]?.biome : null;
-        StartRun($"run|{Guid(level)}|{stage}|{(boss ? 1 : 0)}|");
+        if (!StartRun($"run|{Guid(level)}|{stage}|{(boss ? 1 : 0)}|")) return failure;
         string where = biome != null ? biome.name : "stage " + (stage + 1);
         return boss ? $"Starting {level.name} at the boss of {where}." : $"Starting {level.name} at {where}.";
     }
@@ -153,7 +194,7 @@ public static class GameLauncher
                 if (level.stages[i] != null && level.stages[i].biome == biome) return PlayStage(level, i, boss);
         var host = Host();
         if (host == null) return "No generated dungeon to build it in.";
-        StartRun($"run|{Guid(host)}|0|{(boss ? 1 : 0)}|{Guid(biome)}");
+        if (!StartRun($"run|{Guid(host)}|0|{(boss ? 1 : 0)}|{Guid(biome)}")) return failure;
         return boss ? $"Starting the boss of {biome.name} (in {host.name})." : $"Starting {biome.name} on its own (in {host.name}).";
     }
 
@@ -163,24 +204,75 @@ public static class GameLauncher
     {
         if (e == null) return "No event.";
         Pend("event|" + Guid(e));
-        if (!EditorApplication.isPlaying) DebugDungeonToolbar.StartRoom();
+        if (!EditorApplication.isPlaying && !Launch(DebugDungeonToolbar.StartRoom)) return failure;
         return $"Showing {e.title} (a preview: nothing is paid or given).";
     }
 
     // The room, then the table: the campaign map on it.
-    public static string OpenTable()
+    public static string OpenTable() => OpenTable("table");
+
+    // The table with a shut place's deaths in (CampaignEncounter.deathsToOpen in its Deaths In place) and the place not
+    // risen yet: the map raises it with its line. Written into the save in use.
+    public static string OpenTableWithDeaths(CampaignEncounter shut)
     {
-        Pend("table");
-        if (!EditorApplication.isPlaying) DebugDungeonToolbar.StartRoom();
-        return EditorApplication.isPlaying ? "Going to the table." : "Starting the room, then sitting at the table.";
+        if (shut == null || shut.deathsIn == null || string.IsNullOrEmpty(shut.deathsIn.id)) return "That place doesn't wait on deaths anywhere.";
+        int deaths = Mathf.Max(0, shut.deathsToOpen);
+        string result = OpenTable($"table|{shut.deathsIn.id}|{deaths}|{shut.id}");
+        return result.StartsWith("Nothing") ? result : result + $" {deaths} death{(deaths == 1 ? "" : "s")} in {shut.deathsIn.displayName} first.";
+    }
+
+    static string OpenTable(string action)
+    {
+        Pend(action);
+        // At the table already means the room player: a run going restarts in the room.
+        if ((!EditorApplication.isPlaying || TableRunning) && !Launch(DebugDungeonToolbar.StartRoom)) return failure;
+        return EditorApplication.isPlaying && !TableRunning ? "Going to the table." : "Starting the room, then sitting at the table.";
+    }
+
+    // A map template played on its own: in a level that plays it, else in a copy of its preview level (or the Dungeon
+    // button's pick) laid out by this map.
+    public static string PlayMap(DungeonMapTemplate map)
+    {
+        if (map == null) return "No map.";
+        var host = map.previewLevel != null && map.previewLevel.IsDungeon ? map.previewLevel : Host();
+        if (host == null) return "No dungeon level to play it in.";
+        if (!StartRun($"run|{Guid(host)}|0|0||{Guid(map)}")) return failure;
+        return $"Starting {map.name} (in a copy of {host.name}).";
+    }
+
+    // ── Starting Play for a test ──
+    const string NoRoom = "Nothing started: the game runs in Room.unity, and it wasn't opened (other open scenes kept).";
+    const string Busy = "Nothing started: Unity is compiling or already entering Play. Try again in a moment.";
+    static string failure = NoRoom;   // why the last Launch started nothing
+
+    static bool TableRunning => EditorApplication.isPlaying && TablePlayer != null && TablePlayer.isActiveAndEnabled;
+
+    // Room.unity open (asking to save other open changes first), or already playing. False: nothing can start.
+    static bool RoomOpen()
+    {
+        if (EditorApplication.isPlaying) return true;
+        for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
+            if (UnityEngine.SceneManagement.SceneManager.GetSceneAt(i).path == RoomScene) return true;
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return false;
+        EditorSceneManager.OpenScene(RoomScene);
+        return true;
+    }
+
+    // Starts Play in one of the toolbar's modes (restarting it when playing), or drops what was waiting for it.
+    static bool Launch(System.Func<bool> start)
+    {
+        if (!RoomOpen()) { failure = NoRoom; SessionState.EraseString(PendingKey); return false; }
+        if (!start()) { failure = Busy; SessionState.EraseString(PendingKey); return false; }
+        return true;
     }
 
     static string Guid(Object asset) => AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset));
 
-    static void StartRun(string action)
+    // A run built from the pending action once the table player is up: the Debug arena first unless a run is going.
+    static bool StartRun(string action)
     {
         Pend(action);
-        if (!EditorApplication.isPlaying) DebugDungeonToolbar.StartDebug();
+        return TableRunning || Launch(DebugDungeonToolbar.StartDebug);
     }
 
     static IEnumerable<TableLevelData> Levels()
@@ -208,9 +300,11 @@ public static class GameLauncher
         int.TryParse(parts[2], out int stage);
         bool boss = parts[3] == "1";
         var biome = parts.Length > 4 && parts[4].Length > 0 ? AssetDatabase.LoadAssetAtPath<DungeonBiome>(AssetDatabase.GUIDToAssetPath(parts[4])) : null;
+        var map = parts.Length > 5 && parts[5].Length > 0 ? AssetDatabase.LoadAssetAtPath<DungeonMapTemplate>(AssetDatabase.GUIDToAssetPath(parts[5])) : null;
         var copy = Object.Instantiate(level);
         copy.name = level.name;
         copy.fixedSeed = 0;
+        if (map != null) { copy.layoutMode = DungeonLayoutMode.Authored; copy.mapTemplate = map; }
         var stages = new List<TableLevelData.BiomeStage>();
         if (biome != null) stages.Add(new TableLevelData.BiomeStage { biome = biome, floors = 2, boss = biome.guardian != null && biome.guardian.enabled });
         else if (level.stages != null)
@@ -219,7 +313,7 @@ public static class GameLauncher
         if (boss && stages.Count > 0) stages = new List<TableLevelData.BiomeStage> { new() { biome = stages[0].biome, floors = 1, boss = true } };
         if (stages.Count > 0) copy.stages = stages.ToArray();
         var first = stages.Count > 0 ? stages[0].biome : null;
-        Debug.Log($"[Asset Studio] Testing {level.name}{(first != null ? " from " + first.name : "")}{(boss ? ", boss floor" : "")}.");
+        Debug.Log($"[Asset Studio] Testing {(map != null ? map.name + " in " : "")}{level.name}{(first != null ? " from " + first.name : "")}{(boss ? ", boss floor" : "")}.");
         loader.Load(copy, skipReveal: true);
     }
 

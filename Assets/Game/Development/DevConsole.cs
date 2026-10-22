@@ -325,7 +325,7 @@ public class DevConsole : MonoBehaviour
     // The level to build a template in: one whose starting room it is or whose biomes pick it (the level being played
     // first), else the level being played, else the Dungeon button's pick, else the first generated dungeon in the
     // catalog. stage: the run stage whose biome picks it.
-    static TableLevelData LevelFor(GameObject template, TableLevelLoader loader, out int stage)
+    public static TableLevelData LevelFor(GameObject template, TableLevelLoader loader, out int stage)
     {
         stage = 0;
         var candidates = new List<TableLevelData> { loader.Current };

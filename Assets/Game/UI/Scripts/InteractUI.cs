@@ -12,10 +12,21 @@ public class InteractUI : MonoBehaviour
     [SerializeField] RectTransform targetMarker;
     InteractController bound;
     Canvas canvas;
+    InputManager input;
+    // What the prompt says now: rebuilt only when the key or the target's message changes.
+    string shownKey, shownMessage;
+    float nextPromptCheck;
+    const float PromptCheckSeconds = .2f;
 
     void LateUpdate()
     {
         var target = bound != null ? bound.Active : null;
+        // A prompt can change while it is shown (a door opened, a chest emptied): look again a few times a second.
+        if (target != null && Time.unscaledTime >= nextPromptCheck)
+        {
+            nextPromptCheck = Time.unscaledTime + PromptCheckSeconds;
+            ShowPrompt(target);
+        }
         bool show = target != null && target.WorldItem != null && bound.ViewCamera != null;
         if (targetMarker == null) return;
         if (targetMarker.gameObject.activeSelf != show) targetMarker.gameObject.SetActive(show);
@@ -41,6 +52,7 @@ public class InteractUI : MonoBehaviour
 
     void OnEnable()
     {
+        ListenForKeys();
         if (PlayerManager.HasInstance)
         {
             PlayerManager.Instance.PlayerSwapped += OnPlayerSwapped;
@@ -51,8 +63,20 @@ public class InteractUI : MonoBehaviour
     void OnDisable()
     {
         if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped -= OnPlayerSwapped;
+        if (input != null) input.BindingsChanged -= OnBindingsChanged;
+        input = null;
         Bind(null);
     }
+
+    // The prompt names the Interact key: written again after a rebind.
+    void ListenForKeys()
+    {
+        if (input != null || !InputManager.HasInstance) return;
+        input = InputManager.Instance;
+        input.BindingsChanged += OnBindingsChanged;
+    }
+
+    void OnBindingsChanged() { shownKey = null; if (bound != null && bound.Active != null) ShowPrompt(bound.Active); }
 
     void Start()
     {
@@ -63,6 +87,7 @@ public class InteractUI : MonoBehaviour
             PlayerManager.Instance.PlayerSwapped += OnPlayerSwapped;
         }
         if (PlayerManager.HasInstance) OnPlayerSwapped(PlayerManager.Instance.Active);
+        ListenForKeys();
     }
 
     void OnPlayerSwapped(Player player) => Bind(player != null ? player.Interact : null);
@@ -79,18 +104,24 @@ public class InteractUI : MonoBehaviour
     {
         if (promptRoot != null) promptRoot.SetActive(trigger != null);
         if (targetMarker != null && trigger == null) targetMarker.gameObject.SetActive(false);
-        if (trigger != null && promptText != null)
+        shownKey = shownMessage = null;
+        if (trigger != null) ShowPrompt(trigger);
+    }
+
+    void ShowPrompt(InteractableTrigger trigger)
+    {
+        if (promptText == null) return;
+        // The key is read once per rebind (shownKey is cleared then), the message each check.
+        string key = shownKey ?? (InputManager.HasInstance ? InputManager.Instance.BindingDisplay("Interact") : "E");
+        string message = trigger.WorldItem != null && trigger.WorldItem.Item != null
+            ? trigger.WorldItem.Item.itemName : trigger.PromptMessage;
+        if (key == shownKey && message == shownMessage) return;
+        shownKey = key; shownMessage = message;
+        promptText.text = "<b>[" + key + "]</b>  " + (trigger.WorldItem != null && trigger.WorldItem.Item != null ? "Pick up " + message : message);
+        if (promptRoot != null)
         {
-            string key = "E";
-            if (InputManager.HasInstance) key = InputManager.Instance.BindingDisplay("Interact");
-            string message = trigger.WorldItem != null && trigger.WorldItem.Item != null
-                ? "Pick up " + trigger.WorldItem.Item.itemName : trigger.PromptMessage;
-            promptText.text = "<b>[" + key + "]</b>  " + message;
-            if (promptRoot != null)
-            {
-                var size = promptText.GetPreferredValues(promptText.text, 560, 0);
-                ((RectTransform)promptRoot.transform).sizeDelta = new Vector2(size.x + 32, size.y + 16);
-            }
+            var size = promptText.GetPreferredValues(promptText.text, 560, 0);
+            ((RectTransform)promptRoot.transform).sizeDelta = new Vector2(size.x + 32, size.y + 16);
         }
     }
 }

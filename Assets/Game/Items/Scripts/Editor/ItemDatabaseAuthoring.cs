@@ -18,8 +18,20 @@ public static class ItemDatabaseAuthoring
     {
         ItemType.Weapon => "Weapons", ItemType.Shield => "Shields",
         ItemType.Equipment => "Armor", ItemType.Consumable => "Consumables",
-        ItemType.Tool => "Tools", ItemType.Key => "Keys", _ => "Generic"
+        ItemType.Tool => "Tools", ItemType.Key => "Keys", ItemType.Spoils => "Spoils", _ => "Generic"
     });
+    // Where an item belongs: its kind's folder, trinkets in Trinkets, and a spell tome beside its spell
+    // (Combat/Spells/<Spell>, one folder per spell) or where it is when it has no spell yet.
+    public static string FolderFor(ItemData item)
+    {
+        if (item.itemType == ItemType.Equipment && (item.equipSlot == EquipmentSlot.Trinket1 || item.equipSlot == EquipmentSlot.Trinket2)) return Root + "/Trinkets";
+        if (item.itemType == ItemType.Spell || item.spell != null)
+        {
+            string spellPath = item.spell != null ? AssetDatabase.GetAssetPath(item.spell) : "";
+            return spellPath.Length > 0 ? Path.GetDirectoryName(spellPath).Replace('\\', '/') : Path.GetDirectoryName(AssetDatabase.GetAssetPath(item)).Replace('\\', '/');
+        }
+        return Folder(item.itemType);
+    }
     public static void EnsureFolder(string path)
     {
         if (AssetDatabase.IsValidFolder(path)) return;
@@ -35,7 +47,10 @@ public static class ItemDatabaseAuthoring
         item.itemName = Path.GetFileNameWithoutExtension(path); item.itemType = type;
         item.canBeEquipped = type == ItemType.Weapon || type == ItemType.Shield || type == ItemType.Equipment;
         item.equipSlot = type == ItemType.Shield ? EquipmentSlot.LeftHand : type == ItemType.Equipment ? EquipmentSlot.Head : EquipmentSlot.RightHand;
-        AssetDatabase.CreateAsset(item, path); Save();
+        AssetDatabase.CreateAsset(item, path);
+        // Its save ID (an item's save ID is its asset GUID): without one a checkpoint can't find it again.
+        item.saveId = AssetDatabase.AssetPathToGUID(path);
+        EditorUtility.SetDirty(item); Save();
         // Worn gear gets its tier's look straight away; other kinds once they have a model (OnValidate).
         ItemIconRenderer.Generate(item);
         return item;
@@ -56,7 +71,7 @@ public static class ItemDatabaseAuthoring
         if (ItemIconRenderer.IsGenerated(copy.icon)) ItemIconRenderer.Generate(copy); // its own icon file, not the source's
         return copy;
     }
-    public static string Destination(ItemData item) => Folder(item.itemType) + "/" + Path.GetFileName(AssetDatabase.GetAssetPath(item));
+    public static string Destination(ItemData item) => FolderFor(item) + "/" + Path.GetFileName(AssetDatabase.GetAssetPath(item));
     public static void Move(ItemData item, string destination)
     {
         string from = AssetDatabase.GetAssetPath(item);

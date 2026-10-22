@@ -54,6 +54,9 @@ public class RunManager : Singleton<RunManager>
 
     public event Action RunStarted;
     public event Action<bool> RunEnded; // victory
+    // The run goes on after a death (RevivePlayer), raised once the player stands again. The argument is whether the
+    // death had already been banked (RunEnded(false) had been raised): its listeners then take back what they did for it.
+    public event Action<bool> Revived; // counted
 
     Player player;
     Coroutine deathRoutine;
@@ -102,7 +105,7 @@ public class RunManager : Singleton<RunManager>
     {
         StopDeathMoment();
         deathPending = false;
-        Running = true; Ended = false;
+        Running = true; Ended = false; won = false;
         Level = level; Seed = seed; Floor = 1;
         Kills = 0; GoldFound = 0; BossesSlain = 0; HealthSlain = 0; Seconds = 0f; Killer = null; LastTally = default;
         ListenToWallet();
@@ -144,7 +147,7 @@ public class RunManager : Singleton<RunManager>
     public void EndRunInVictory()
     {
         if (!Running || Ended) return;
-        Ended = true;
+        Ended = true; won = true;
         Settle(true);
         RunEnded?.Invoke(true);
         if (AudioManager.HasInstance && victorySting != null) AudioManager.Instance.PlaySFX2D(victorySting, victoryStingVolume);
@@ -172,6 +175,8 @@ public class RunManager : Singleton<RunManager>
     public static bool DeferDeath, HoldDeath;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetDeathHolds() => DeferDeath = HoldDeath = false;
     bool deathPending;
+    // The run ended in victory (EndRunInVictory), not a death.
+    bool won;
 
     // Deaths over the whole save, in its flags (not the intro's practice run): the death screen's Revive button unlocks
     // after RunRecapUI.reviveAfterDeaths of them.
@@ -193,11 +198,12 @@ public class RunManager : Singleton<RunManager>
 
     // The dev console's revive: the run goes on after a death. Before the recap came up the death was never banked, so
     // nothing changes; after it, the death had been banked and saved, so the tallies restart from here and nothing is
-    // banked twice. Returns whether the death had already been counted.
+    // banked twice. Returns whether the death had already been counted. RevivePlayer raises Revived after it.
     public bool ReviveRun(out bool counted)
     {
         counted = false;
-        if (!Running || !Ended) return false;
+        // A won run stays won: a player who falls after it (nothing on the floor stops) gets up without reopening it.
+        if (!Running || !Ended || won) return false;
         counted = !deathPending;
         deathPending = false;
         StopDeathMoment();
@@ -219,6 +225,8 @@ public class RunManager : Singleton<RunManager>
         var animator = player.Animator;
         if (animator != null && Character.HasParameter(animator, "Dead", AnimatorControllerParameterType.Bool)) animator.SetBool("Dead", false);
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
+        // Raised with the player up again, so listeners see them alive (the save's checkpoint, the fights on the floor).
+        if (run) Instance.Revived?.Invoke(counted);
         return true;
     }
 

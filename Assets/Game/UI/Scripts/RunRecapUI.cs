@@ -23,7 +23,7 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField, Min(0), Tooltip("Deaths in the save (RunManager.DeathsFlag) before Revive shows on the death screen in a release build.")]
     int reviveAfterDeaths = 3;
     [SerializeField, Tooltip("The Dungeon Master, on the death screen where Revive first shows.")]
-    DungeonMaster.Line reviveUnlockedLine = new() { text = "Revive skill added, use it to make it to the boss, but I will mock you." };
+    DungeonMaster.Line reviveUnlockedLine = new() { text = "You can get up now. Use it to reach the boss. I'll mock you every time." };
     [SerializeField, Tooltip("The Dungeon Master mocks a revive: one at random.")]
     DungeonMaster.Line[] reviveLines =
     {
@@ -361,11 +361,11 @@ public class RunRecapUI : MonoBehaviour
 
     // A win plays the ending (a new morning); a death puts the player back in the room, standing by the table,
     // with no wake-up.
-    static void WakeUp(bool victory)
+    void WakeUp(bool victory)
     {
         var world = WorldManager.Instance;
         if (victory && world.ending != null) { world.ending.Play(); return; }
-        Loader?.ReturnToRoom();
+        BringBackRoom();
     }
 
     void ReturnToRoom()
@@ -374,6 +374,15 @@ public class RunRecapUI : MonoBehaviour
         Hide();
         if (RunManager.HasInstance) RunManager.Instance.Abandon();
         if (wake) WakeUp(victory);
-        else Loader?.ReturnToRoom();
+        else BringBackRoom();
+    }
+
+    // The loader refuses while it is still busy (a floor loading): TableManager's helper retries until it starts.
+    void BringBackRoom()
+    {
+        var loader = Loader;
+        if (loader == null) return;
+        if (isActiveAndEnabled) StartCoroutine(TableManager.ReturnToRoom(loader, null, context: this));
+        else loader.ReturnToRoom();
     }
 }

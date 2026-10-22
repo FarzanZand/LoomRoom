@@ -188,7 +188,7 @@ public class TableLevelLoader : MonoBehaviour
             else if (!DebugDungeonSession.Active)
             {
                 ScreenManager.Instance.FadeToBlack(.45f); faded=true;
-                yield return new WaitForSecondsRealtime(.5f);
+                yield return GameManager.WaitCutscene(.5f);
             }
             bool ready=false;
             try {
@@ -210,13 +210,6 @@ public class TableLevelLoader : MonoBehaviour
                 {
                     player.UseLevelLoadout();
                     player.Equipment.UnequipAll();player.Bag.Clear();player.Hotbar.Clear();
-                    if(level.startingItems!=null) foreach(var item in level.startingItems)
-                        InventoryManager.Instance.Pickup(item,player,preferHotbar: level.startingEquipment!=null && Array.IndexOf(level.startingEquipment,item)>=0,playSound:false,announcePickup:false);
-                    if(level.startingEquipment!=null) foreach(var item in level.startingEquipment) if(item!=null) {
-                        bool owned=player.Bag.IndexOf(item)>=0 || player.Hotbar.IndexOf(item)>=0;
-                        if(!owned)owned=InventoryManager.Instance.Pickup(item,player,preferHotbar:true,playSound:false,announcePickup:false);
-                        if(owned)player.Equipment.Equip(item,playSound:false);
-                    }
                 }
                 else if(level.kind==TableLevelKind.Town) RestoreTownInventory();
                 if(!descending || coopRevive) player.Stats.Revive();
@@ -224,14 +217,21 @@ public class TableLevelLoader : MonoBehaviour
                 if(level.IsDungeon && RunManager.HasInstance)
                 {
                     if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); }
-                    RunManager.Instance.ReachFloor(FloorNumber);
+                    // A continued run's checkpoint already holds this floor's experience (it was taken after the floor
+                    // was reached): only the depth is set, with no floor experience and no "+XP" meter at level 1.
+                    var resumedProgress = resume != null ? player.GetComponent<AdventurerProgress>() : null;
+                    var floorRules = resumedProgress != null ? resumedProgress.rules : null;
+                    float xpPerFloor = floorRules != null ? floorRules.xpPerFloor : 0f;
+                    if (floorRules != null) floorRules.xpPerFloor = 0f;
+                    try { RunManager.Instance.ReachFloor(FloorNumber); }
+                    finally { if (floorRules != null) floorRules.xpPerFloor = xpPerFloor; }
                     var adventureSave = player.GetComponent<AdventureSave>();
                     if (resume != null && adventureSave != null) adventureSave.Restore(resume);
                     // The biome's line only when the surroundings change; otherwise just the depth.
                     var biome=level.Biome(FloorNumber);
                     bool newBiome=!descending || biome!=level.Biome(FloorNumber-1);
                     string arrival=newBiome && biome!=null && !string.IsNullOrWhiteSpace(biome.entryMessage) ? biome.entryMessage.Trim()
-                        : descending ? $"You descend to floor {FloorNumber}." : $"You enter {level.displayName}.";
+                        : descending ? string.Format(string.IsNullOrWhiteSpace(level.nextFloorMessage) ? "You descend to floor {0}." : level.nextFloorMessage, FloorNumber) : $"You enter {level.displayName}.";
                     MessageLog.Post(arrival,MessageKind.Lore);
                     if(newBiome && biome!=null) entryLine=biome.PickEntryLine();
                 }
@@ -241,6 +241,9 @@ public class TableLevelLoader : MonoBehaviour
             {
                 FloorNumber=previousFloor;runSeed=previousSeed;
                 if(Current==null)PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
+                // Nothing on the table (no run): the room was never changed, so its snapshot is let go, or the next
+                // load would keep this one however the room looks by then.
+                if(Dungeon==null && !descending) { roomLighting=null; roomMusic=null; }
             }
             if (ready && useReveal)
             {
@@ -253,7 +256,7 @@ public class TableLevelLoader : MonoBehaviour
             if (faded)
             {
                 ScreenManager.Instance.FadeFromBlack(.6f); faded=false;
-                yield return new WaitForSecondsRealtime(.65f);
+                yield return GameManager.WaitCutscene(.65f);
             }
             if (ready && AudioManager.HasInstance)
             {
@@ -273,12 +276,21 @@ public class TableLevelLoader : MonoBehaviour
             if (faded && ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.6f);
             ReleaseCutscene();
             Busy=false;
-            if(!completed) ShowSelection("Could not load that level");
+            // From the campaign map the old adventure menu is no way back: the player stays standing at the table, and
+            // the map rises again on its own (CampaignManager).
+            if(!completed && !descending && CampaignManager.Active) FailedFromMap();
+            else if(!completed) ShowSelection("Could not load that level");
             // The biome's Dungeon Master line, a moment after the player is actually standing in it.
             else if(entryLine!=null) DungeonMaster.Say(entryLine,null,entryLineDelay);
             entryLine=null;
             if(completed && Dungeon!=null && Dungeon.Merchant!=null) MessageLog.Post("A merchant has set up shop on this floor.", MessageKind.Info);
         }
+    }
+    void FailedFromMap()
+    {
+        NotificationUI.Show("Could not load that level");
+        if(PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind!=PlayerKind.Room) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
+        if(TableManager.HasInstance) TableManager.Instance.StandRoomPlayer();
     }
     // Unity never resumes a coroutine whose nested routine threw, so step nested routines here and log instead.
     static IEnumerator RunGuarded(IEnumerator routine) => GuardedRoutine.Run(routine);
@@ -303,15 +315,13 @@ public class TableLevelLoader : MonoBehaviour
                 // A layout can fail validation (a room cut off by props). Try the next derived seed
                 // rather than failing the floor; the sequence is fixed, so runs stay reproducible.
                 for(int attempt=0;;attempt++) {
-                    candidate=level.environmentPrefab!=null ? Instantiate(level.environmentPrefab) : new GameObject(level.displayName+" (generated)");
+                    candidate=new GameObject(level.displayName+" (generated)");
                     candidate.transform.position=new Vector3(bounds.center.x,bounds.max.y+.08f,bounds.center.z);
                     candidateDungeon=candidate.GetComponent<DungeonGenerator>();
                     if(candidateDungeon==null)candidateDungeon=candidate.AddComponent<DungeonGenerator>();
                     try {
                         candidateDungeon.Build(level,unchecked(seed+attempt*7907),FloorNumber,attempt>=7);
-                        // The level wants the player to start facing the Dungeon Master: keep looking for such a layout.
-                        if(!level.startFacingDungeonMaster || level.layoutMode==DungeonLayoutMode.Authored || FloorNumber>1 || attempt>=15 || FacesDungeonMaster(candidateDungeon)) break;
-                        candidate.SetActive(false);DestroyImmediate(candidate);candidate=null;
+                        break;
                     }
                     catch(InvalidOperationException e) when (attempt<7) {
                         Debug.LogWarning($"Floor {FloorNumber} layout rejected, trying another: {e.Message}");
@@ -319,7 +329,7 @@ public class TableLevelLoader : MonoBehaviour
                     }
                 }
                 spawn=candidateDungeon.SpawnPoint;rotation=candidateDungeon.SpawnRotation;
-            } else if(level.environmentPrefab!=null)candidate=Instantiate(level.environmentPrefab,transform.position,Quaternion.identity);
+            }
         } catch {
             if(candidate!=null){candidate.SetActive(false);Destroy(candidate);}
             if(previousEnvironment!=null)previousEnvironment.SetActive(true);
@@ -352,16 +362,6 @@ public class TableLevelLoader : MonoBehaviour
         controller.enabled=false;player.transform.SetPositionAndRotation(spawn,rotation);controller.enabled=true;
         player.SetSpawnPoint(spawn,rotation);if(player.Look!=null)player.Look.SetYaw(rotation.eulerAngles.y);player.SynchronizePresentation();
         Physics.SyncTransforms();
-    }
-    // The starting room's way out (and so the player's first view) points across the table at the Dungeon Master.
-    bool FacesDungeonMaster(DungeonGenerator dungeon)
-    {
-        var table = GetComponent<TableManager>();
-        var dm = table != null ? table.DM : null;
-        if(dm==null) return true;
-        var toDM = dm.transform.position - dungeon.SpawnPoint; toDM.y = 0;
-        var facing = dungeon.SpawnRotation * Vector3.forward; facing.y = 0;
-        return toDM.sqrMagnitude < .01f || Vector3.Angle(facing, toDM) < 45f;
     }
     void SetTown(bool active)
     {
@@ -399,7 +399,7 @@ public class TableLevelLoader : MonoBehaviour
         if(RunManager.HasInstance && RunManager.Instance.Running && RunManager.Instance.recap!=null) { RunManager.Instance.EndRunInVictory(); return; }
         ShowSelection("Dungeon complete");
     }
-    IEnumerator DeathMenu() { yield return new WaitForSecondsRealtime(.8f);ShowSelection("You died"); }
+    IEnumerator DeathMenu() { yield return GameManager.WaitCutscene(.8f);ShowSelection("You died"); }
     // Sinks the last floor into the table, from the player's side outward, over sweepSeconds, then destroys it (never
     // during a run). The loader lets go of it at once, so the next game can be set up while it goes.
     public void SweepTable(Vector3 from)
@@ -480,6 +480,8 @@ public class TableLevelLoader : MonoBehaviour
                 fade=false;
                 if (TableManager.HasInstance) TableManager.Instance.StandRoomPlayer();
                 var exit = gameObject.AddComponent<TableLevelExit>();
+                bool skipped = false;
+                var roomSnap = roomLighting;   // RestoreRoom clears it; a skipped flight puts the room's light back at once
                 // How high the floor stands above the tabletop (its tallest room, kit pieces, the arena's stands).
                 float top = Dungeon.transform.position.y;
                 if(environment!=null) foreach(var r in environment.GetComponentsInChildren<Renderer>()) if(r.enabled && !(r is ParticleSystemRenderer)) top=Mathf.Max(top, r.bounds.max.y);
@@ -493,18 +495,21 @@ public class TableLevelLoader : MonoBehaviour
                         if (RoomPainting.BehindDungeonMaster != null) RoomPainting.BehindDungeonMaster.Restore();
                     }));
                 }
-                finally { Destroy(exit); }
+                finally { skipped = exit.Skipped; Destroy(exit); }
+                if (skipped && roomSnap.HasValue && lighting != null) lighting.Restore(roomSnap.Value, 0f);
                 // The floor sinks into the table as the room settles: all of it, under the tabletop, creatures too (their
                 // agents would hold them up at the floor's height).
                 if(environment!=null)
                 {
                     foreach(var agent in environment.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>()) agent.enabled=false;
                     var t=environment.transform; var from=t.position; float depth=standing+1f;
-                    for(float s=0; s<exitSettings.exitSinkSeconds && t!=null; s+=Time.unscaledDeltaTime)
+                    // A skipped flight skips the sink too: the floor is under the table at once.
+                    if(skipped) t.position=from-Vector3.up*depth;
+                    else for(float s=0; s<exitSettings.exitSinkSeconds && t!=null; s+=GameManager.CutsceneDelta)
                     { t.position=from-Vector3.up*depth*Mathf.SmoothStep(0,1,s/exitSettings.exitSinkSeconds); yield return null; }
                 }
             }
-            else if(fade) { ScreenManager.Instance.FadeToBlack(.45f); yield return new WaitForSecondsRealtime(.5f); }
+            else if(fade) { ScreenManager.Instance.FadeToBlack(.45f); yield return GameManager.WaitCutscene(.5f); }
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
             RestoreRoom(.6f);
             // The run is over: its floor leaves the table under the black (after a death and after the win, so the
@@ -513,7 +518,7 @@ public class TableLevelLoader : MonoBehaviour
             Returned?.Invoke();
             yield return null;
             if(whileDark!=null) { fade=false; whileDark(); }
-            if(fade) { ScreenManager.Instance.FadeFromBlack(.6f); fade=false; yield return new WaitForSecondsRealtime(.65f); }
+            if(fade) { ScreenManager.Instance.FadeFromBlack(.6f); fade=false; yield return GameManager.WaitCutscene(.65f); }
         }
         finally
         {

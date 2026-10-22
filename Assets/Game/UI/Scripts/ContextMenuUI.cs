@@ -35,7 +35,9 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
         if (buttonTemplate != null) buttonTemplate.gameObject.SetActive(false);
     }
 
-    public void Show(List<(string label, Action callback)> options, Vector2 screenPos)
+    // select: opened from a pad or the keys: the first option is selected, and the selection goes back to what had it
+    // when the menu closes.
+    public void Show(List<(string label, Action callback)> options, Vector2 screenPos, bool select = false)
     {
         if (overlay == null || panel == null || buttonTemplate == null) return;
 
@@ -67,11 +69,26 @@ public class ContextMenuUI : Singleton<ContextMenuUI>
         overlay.transform.SetAsLastSibling();
         entrance?.Kill();panel.localScale=Vector3.one*.94f;
         entrance=panel.DOScale(1,.12f).SetEase(Ease.OutCubic).SetUpdate(true);
+
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        returnTo = null;
+        if (select && events != null && !events.alreadySelecting && spawned.Count > 0)
+        {
+            returnTo = events.currentSelectedGameObject;
+            events.SetSelectedGameObject(spawned[0]);
+        }
     }
+
+    GameObject returnTo;
 
     public void Hide()
     {
         entrance?.Kill();
+        bool was = IsOpen;
         if (overlay != null) overlay.SetActive(false);
+        var back = returnTo;
+        returnTo = null;
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        if (was && back != null && back.activeInHierarchy && events != null && !events.alreadySelecting) events.SetSelectedGameObject(back);
     }
 }

@@ -171,8 +171,7 @@ public partial class DungeonGenerator
         foreach (var cell in Layout.RoomCells(index))
             foreach (var d in DungeonLayout.Neighbours)
             {
-                var n = cell + d;
-                if (!Open(n) || Layout.InRoom(index, n)) continue;
+                if (!Layout.IsOpening(index, cell, d)) continue;
                 var outward = new Vector3(d.x, 0f, d.y);
                 var edge = Cell(cell) + outward * (data.cellSize * .5f);
                 ambush.doorways.Add(edge);
@@ -243,7 +242,8 @@ public partial class DungeonGenerator
         var chest = go.GetComponent<DungeonContainer>();
         if (chest == null) return null;
         chest.loot = m.bossLoot != null ? m.bossLoot : FloorLoot;
-        chest.seed = new System.Random(FloorNumber * 7919 + 17).Next(); chest.floorNumber = FloorNumber;
+        // From the floor's seed: the same reward for every machine and a reload, a new one each run.
+        chest.seed = new System.Random(Scramble(unchecked(seed0 + FloorNumber * 7919 + 17))).Next(); chest.floorNumber = FloorNumber;
         chest.guaranteedItems = new List<ItemData>(m.chestItems ?? new List<ItemData>());
         chest.bonusGold = m.bonusGold;
         if (chest.openAudio == null) chest.openAudio = data.chestOpenAudio;

@@ -244,7 +244,7 @@ public class AdventureSave : MonoBehaviour
             foreach (var flag in Saved.flags) ProgressionManager.Instance.SetFlag(flag.key, flag.value);
             loading = false; ProgressionManager.Instance.FlagChanged += FlagChanged;
         }
-        if (RunManager.HasInstance) RunManager.Instance.RunEnded += Ended;
+        if (RunManager.HasInstance) { RunManager.Instance.RunEnded += Ended; RunManager.Instance.Revived += Revived; }
         if (!existed) SeedStartingMemorials();
         if (named || ProgressionManager.HasInstance && ProgressionManager.Instance.IntroSkipped) Write();
     }
@@ -261,7 +261,7 @@ public class AdventureSave : MonoBehaviour
     void OnDestroy()
     {
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= FlagChanged;
-        if (RunManager.HasInstance) RunManager.Instance.RunEnded -= Ended;
+        if (RunManager.HasInstance) { RunManager.Instance.RunEnded -= Ended; RunManager.Instance.Revived -= Revived; }
     }
     // False when there is no save yet, or none could be read (the unreadable files are then kept aside).
     bool Read()
@@ -378,10 +378,27 @@ public class AdventureSave : MonoBehaviour
             GetComponent<PlayerSpellcasting>().ResetHand(checkpoint.leftHand);
         else GetComponent<PlayerSpellcasting>().RestoreEquippedHand();
     }
+    // The memorial added for the last death, until the next run ends: a revive takes it back.
+    string deathMemorial;
     void Ended(bool victory)
     {
         if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave) return;
-        if (!victory) Saved.memorials.Add(new Memorial { id = Guid.NewGuid().ToString("N"), classId = progress.selectedClass.id, className = progress.selectedClass.displayName, killer = RunManager.Instance.Killer, floor = RunManager.Instance.Floor, level = progress.Level, skills = (int[])progress.Ranks.Clone() });
+        deathMemorial = null;
+        if (!victory)
+        {
+            var memorial = new Memorial { id = Guid.NewGuid().ToString("N"), classId = progress.selectedClass.id, className = progress.selectedClass.displayName, killer = RunManager.Instance.Killer, floor = RunManager.Instance.Floor, level = progress.Level, skills = (int[])progress.Ranks.Clone() };
+            Saved.memorials.Add(memorial);
+            deathMemorial = memorial.id;
+        }
         Saved.checkpoint = null; Write();
+    }
+    // Back on your feet after a death that was already saved: that death's memorial goes and the run gets its
+    // checkpoint again, taken where the player stands now (the spoils were banked, so none are carried).
+    void Revived(bool counted)
+    {
+        if (!counted) return;
+        if (deathMemorial != null) { Saved.memorials.RemoveAll(m => m != null && m.id == deathMemorial); deathMemorial = null; }
+        if (progress != null && progress.InRun && !IntroController.PracticeRunning) CaptureFloor();
+        else Write();
     }
 }

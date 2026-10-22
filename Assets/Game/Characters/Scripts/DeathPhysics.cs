@@ -28,6 +28,10 @@ public static class DeathPhysics
     static readonly HashSet<Collider> corpsePieces = new();
     public static bool IsCorpse(Collider c) => c != null && corpsePieces.Contains(c);
 
+    // Enter Play Mode without a domain reload keeps statics: drop the last session's pieces.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() => corpsePieces.Clear();
+
     public static void IgnorePlayers(List<Rigidbody> bodies)
     {
         var pieces = new List<Collider>();

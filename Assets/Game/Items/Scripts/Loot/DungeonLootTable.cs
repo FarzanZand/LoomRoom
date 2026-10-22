@@ -70,7 +70,9 @@ public class DungeonLootTable : LootSource
             var selected=Select(entries,random,floor,source,null);
             if(selected!=null)Add(result,selected,random);
         } else foreach(var pool in pools) {
-            if(pool==null || (pool.sources&source)==0 || random.NextDouble()>=Mathf.Clamp01(pool.chance*InventoryManager.DropChanceFor(source)))continue;
+            // The drop multiplier counts once: a kill already passed it at the gate above, other sources take it here.
+            float scale=source==DungeonLootSource.Enemy ? 1f : InventoryManager.DropChanceFor(source);
+            if(pool==null || (pool.sources&source)==0 || random.NextDouble()>=Mathf.Clamp01(pool.chance*scale))continue;
             int min=Mathf.Clamp(pool.minRolls,0,20),max=Mathf.Clamp(pool.maxRolls,min,20);
             int rolls=random.Next(min,max+1);
             var used=pool.uniqueItems ? new HashSet<ItemData>() : null;

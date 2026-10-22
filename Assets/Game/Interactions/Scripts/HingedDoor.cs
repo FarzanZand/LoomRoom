@@ -48,7 +48,12 @@ public class HingedDoor : MonoBehaviour, IInteractable
     public void Interact(Character who)
     {
         if(!CanInteract(who)) return;
-        if(locked) lockedEffect?.Execute(new InteractionContext { Who=who, Trigger=interactionTrigger });
+        if(locked)
+        {
+            lockedEffect?.Execute(new InteractionContext { Who=who, Trigger=interactionTrigger });
+            // The apartment's locked front door: house rule one (nobody leaves the table until he says so).
+            if(who is Player p && p.kind==PlayerKind.Room && WorldManager.HasInstance && WorldManager.Instance.apartmentDoor==this) RuleManager.QuoteRule(1);
+        }
         else SetOpen(!targetOpen,who);
     }
 

@@ -62,8 +62,7 @@ public partial class DungeonGenerator
         foreach (var c in Layout.RoomCells(region))
             foreach (var d in DungeonLayout.Neighbours)
             {
-                var o = c + d;
-                if (!Layout.InBounds(o) || !Layout.floor[o.x, o.y] || Layout.InRoom(region, o)) continue;
+                if (!Layout.IsOpening(region, c, d)) continue;
                 var to = c - cell; float dist = to.sqrMagnitude;
                 if (dist >= best || to == Vector2Int.zero) continue;
                 best = dist;

@@ -80,7 +80,7 @@ public partial class CampaignMap : MonoBehaviour
     {
         var route = new List<Vector3>();
         if (from == null || to == null || from == to) return route;
-        // Breadth first over the open roads.
+        // Breadth first over the open roads (none to a place still shut, which isn't on the map).
         var previous = new Dictionary<CampaignPoint, CampaignPath>();
         var queue = new Queue<CampaignPoint>();
         queue.Enqueue(from); previous[from] = null;
@@ -90,7 +90,7 @@ public partial class CampaignMap : MonoBehaviour
             if (at == to) break;
             foreach (var path in Paths)
             {
-                if (!path.Open(openAct)) continue;
+                if (!path.Open(openAct) || Hidden(path)) continue;
                 var next = path.from == at ? path.to : path.to == at ? path.from : null;
                 if (next == null || previous.ContainsKey(next)) continue;
                 previous[next] = path;

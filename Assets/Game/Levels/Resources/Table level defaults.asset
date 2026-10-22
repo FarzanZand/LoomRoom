@@ -1,0 +1,104 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8db55e65413e51f4bb6b14a514c579d0, type: 3}
+  m_Name: Table level defaults
+  m_EditorClassIdentifier: Assembly-CSharp::TableLevelDefaults
+  roomShapes:
+  - kind: 0
+    shape: {fileID: 0}
+    weight: 3
+  - kind: 1
+    shape: {fileID: 0}
+    weight: 2
+  - kind: 2
+    shape: {fileID: 0}
+    weight: 2
+  - kind: 3
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 4
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 5
+    shape: {fileID: 0}
+    weight: 2
+  - kind: 6
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 7
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 8
+    shape: {fileID: 0}
+    weight: 1
+  - kind: 9
+    shape: {fileID: 11400000, guid: ea0db8439193e10459cc0c558c73244b, type: 2}
+    weight: 0.6
+  - kind: 9
+    shape: {fileID: 11400000, guid: d7bbc65db8e0e7b41b27f9bd028d5a1e, type: 2}
+    weight: 0.6
+  - kind: 9
+    shape: {fileID: 11400000, guid: dc8ef7b381958914ca2eeb67cdc2397a, type: 2}
+    weight: 0.6
+  - kind: 9
+    shape: {fileID: 11400000, guid: 0079639818c389346ad08832809d67ef, type: 2}
+    weight: 0.6
+  - kind: 9
+    shape: {fileID: 11400000, guid: b83f1b9ea222f1f4690c0e00502d6342, type: 2}
+    weight: 0.6
+  lightingPrefabs:
+  - prefab: {fileID: 3904118440429741045, guid: 91efdc5ce7c631c43a3188387ca652aa, type: 3}
+    weight: 1
+    overrideColor: 0
+    color: {r: 1, g: 0.6, b: 0.3, a: 1}
+  destructibles:
+  - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+    weight: 3
+  - prefab: {fileID: 3676609536429769752, guid: 74294ce93f890d0479859cebe2ea259e, type: 3}
+    weight: 2
+  - prefab: {fileID: 6976356556941518252, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
+    weight: 2
+  - prefab: {fileID: 4940602601245648603, guid: fb562eb337691f54c8a6648dcc1a3045, type: 3}
+    weight: 2
+  features:
+  - prefab: {fileID: 1139990893470972911, guid: 69b99ad0ca2199f40ba3c9ac972343da, type: 3}
+    chancePerRoom: 0.08
+    placement: 2
+    rooms: 30
+    minFloor: 1
+    maxPerFloor: 1
+  - prefab: {fileID: 2628686250012602643, guid: 8605074f6c2806a418b4153f5c861b1f, type: 3}
+    chancePerRoom: 0.07
+    placement: 0
+    rooms: 28
+    minFloor: 1
+    maxPerFloor: 1
+  - prefab: {fileID: 1038405016691299456, guid: dc5b6f6ac339db9489cb8fe203951f1b, type: 3}
+    chancePerRoom: 0.1
+    placement: 0
+    rooms: 22
+    minFloor: 1
+    maxPerFloor: 2
+  - prefab: {fileID: 2510687268772921315, guid: 1a1941feba8c9704db9d6c4b74284941, type: 3}
+    chancePerRoom: 0.1
+    placement: 0
+    rooms: 30
+    minFloor: 1
+    maxPerFloor: 2
+  chestPrefab: {fileID: 9141804034553306270, guid: 11e05cea78fb187489c1b4d44eaeac1a, type: 3}
+  containerBreakAudio: {fileID: 8300000, guid: ae55ef9721e18144399174ed78e497b0, type: 3}
+  chestOpenAudio: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
+  merchantPrefab: {fileID: 6335521276860554555, guid: 0b9bfb4bda23a524ba9567e96ba16304, type: 3}
+  merchantStock: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
+  enemyBarPrefab: {fileID: 3665682175256812972, guid: 94e66f59c30bc954784e543d4b5589be, type: 3}
+  damageNumberPrefab: {fileID: 8734304378017426708, guid: 5e2588909cacaa74ba93419de74dde32, type: 3}
+  messagePrefab: {fileID: 3105128816940411010, guid: 2f6f79ff634af4142a3e60687088f18b, type: 3}

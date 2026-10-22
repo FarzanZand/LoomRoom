@@ -16,6 +16,7 @@ public class ArenaFight : MonoBehaviour
     DungeonGenerator dungeon;
     int room = -1;
     readonly List<EnemyBrain> fighters = new();
+    readonly List<DungeonExit> exits = new();
     bool done;
 
     bool started;
@@ -42,25 +43,37 @@ public class ArenaFight : MonoBehaviour
         if (dungeon == null || dungeon.Layout == null) yield break;
         room = dungeon.Layout.RoomAt(dungeon.CellOf(transform.position));
         if (room < 0) yield break;
-        // Enemies are put down after the room is built: gather them for a while.
-        for (float t = 0; t < 3f; t += .25f) { Gather(); yield return new WaitForSeconds(.25f); }
+        // Enemies are put down after the room is built: gather them for a while, then keep to the ones found.
+        for (float t = 0; t < 3f; t += .25f) { Gather(true); yield return new WaitForSeconds(.25f); }
         var wait = new WaitForSeconds(.25f);
         while (!done && this != null)
         {
-            Gather();
-            if (fighters.Count > 0 && fighters.TrueForAll(b => b == null || b.State == EnemyState.Dead)) yield return Won();
+            Gather(false);
+            if (fighters.Count > 0 && fighters.TrueForAll(Down)) yield return Won();
             yield return wait;
         }
     }
 
-    void Gather()
+    // Dead by its brain or by its health (an enemy killed while its room was off the table never ran its death). One that
+    // never started (its room still behind a closed door) reads 0 health but stands: it counts as up.
+    static bool Down(EnemyBrain b) => b == null || b.State == EnemyState.Dead
+        || b.TryGetComponent<CharacterStats>(out var s) && s.Initialised && !s.IsAlive;
+
+    // scan: look through the whole floor (only while it is being set up); otherwise only the exits already found.
+    void Gather(bool scan)
     {
-        // No way out but through the fight: the exit room's stairs stay hidden (a win ends the run on its own).
-        foreach (var exit in dungeon.GetComponentsInChildren<DungeonExit>(true)) if (exit != null && exit.gameObject.activeSelf) exit.gameObject.SetActive(false);
-        // Also the ones still off the table (behind the closed door): they count from the start.
-        foreach (var brain in dungeon.GetComponentsInChildren<EnemyBrain>(true))
-            if (brain != null && !fighters.Contains(brain) && brain.State != EnemyState.Dead && dungeon.Layout.RoomAt(dungeon.CellOf(brain.transform.position)) == room)
-                fighters.Add(brain);
+        if (scan)
+        {
+            // Only the way on: the ladder the player came down stays in the landing (it leads nowhere).
+            foreach (var exit in dungeon.GetComponentsInChildren<DungeonExit>(true)) if (exit != null && !exit.entrance && !exits.Contains(exit)) exits.Add(exit);
+            // Also the ones still off the table (behind the closed door): they count from the start.
+            foreach (var brain in dungeon.GetComponentsInChildren<EnemyBrain>(true))
+                if (brain != null && !fighters.Contains(brain) && brain.State != EnemyState.Dead && dungeon.Layout.RoomAt(dungeon.CellOf(brain.transform.position)) == room)
+                    fighters.Add(brain);
+        }
+        // No way out but through the fight: the exit room's stairs stay hidden (a win ends the run on its own), also
+        // when a room dealt onto the table switches them on again.
+        foreach (var exit in exits) if (exit != null && exit.gameObject.activeSelf) exit.gameObject.SetActive(false);
     }
 
     IEnumerator Won()

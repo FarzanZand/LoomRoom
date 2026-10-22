@@ -11,6 +11,8 @@ public partial class DungeonGenerator : MonoBehaviour
     public Vector3 ExitPoint { get; private set; }
     // The floor's walking height where the players start (co-op's cutaway measures walls from it).
     public float FloorHeight => SpawnPoint.y - .12f;
+    // The cell the way on really stands in (moved off Layout.Exit by a merchant's stall or a boss stage's shaft).
+    public Vector2Int ExitCell { get; private set; }
     public NavMeshSurface Surface { get; private set; }
     NavMeshData navMeshData;
     TableLevelData data;
@@ -349,8 +351,8 @@ public partial class DungeonGenerator : MonoBehaviour
         SpawnPoint = Cell(Layout.Start)+Vector3.up*.12f;
         float closest=float.MaxValue;
         foreach(var cell in Layout.RoomCells(0))foreach(var direction in dirs) {
+            if(!Layout.IsOpening(0,cell,direction))continue;
             var outside=cell+direction;
-            if(Layout.InRoom(0,outside) || !Open(outside))continue;
             var delta=Cell(outside)-Cell(Layout.Start); delta.y=0;
             if(delta.sqrMagnitude<closest){closest=delta.sqrMagnitude;SpawnRotation=Quaternion.LookRotation(delta);}
         }
@@ -373,6 +375,7 @@ public partial class DungeonGenerator : MonoBehaviour
             exitStair = MakeExit(ExitPoint, false, StageRoom >= 0);
             if (StageRoom >= 0) exitStair.gameObject.SetActive(false);
         }
+        ExitCell = exitStair != null ? CellOf(exitStair.transform.position) : Layout.Exit;
         // A room whose fight decides the run is watched from the floor (its room may be off the table for now; the watch
         // keeps gathering the room's enemies as they are put down).
         foreach (var fight in GetComponentsInChildren<ArenaFight>(true)) fight.Watch(this);
@@ -409,7 +412,8 @@ public partial class DungeonGenerator : MonoBehaviour
         StockStartingChest();
         FaceStartingChests();
         FinishRoomEvents();
-        gameObject.AddComponent<DungeonAmbience>().Initialize(Biome);
+        // A pocket is played beside its floor: the floor's own ambience goes on playing.
+        if (!data.pocket) gameObject.AddComponent<DungeonAmbience>().Initialize(Biome);
         gameObject.AddComponent<DungeonHud>().Initialize(this);
         if (Board) gameObject.AddComponent<BoardReveal>().Initialize(this);
         watch.Stop();GenerationMilliseconds=watch.Elapsed.TotalMilliseconds;
@@ -440,10 +444,11 @@ public partial class DungeonGenerator : MonoBehaviour
 
     bool FindRoomFloor(int room, System.Random rng, out NavMeshHit hit)
     {
-        var rect = Layout.rooms[room];
-        for (int attempt = 0; attempt < 12; attempt++)
+        // The room's own cells: a shaped room's bounding box also covers passages running past it.
+        var cells = Layout.RoomCells(room);
+        for (int attempt = 0; attempt < 12 && cells.Count > 0; attempt++)
         {
-            var cell = new Vector2Int(rng.Next(rect.xMin, rect.xMax), rng.Next(rect.yMin, rect.yMax));
+            var cell = cells[rng.Next(cells.Count)];
             if (!Layout.InBounds(cell) || !Layout.floor[cell.x, cell.y]) continue;
             if (NavMesh.SamplePosition(Cell(cell), out hit, data.cellSize, NavMesh.AllAreas) && RoomForBody(hit.position)) return true;
         }
@@ -676,8 +681,8 @@ public partial class DungeonGenerator : MonoBehaviour
         }
     }
 
-    // In the starting room (room 0 built from the level's Starting Room template).
-    bool InStartingRoom(Vector3 pos) => !Authored && data.startingRoom!=null && Layout!=null && TemplatePrefab(0)==data.startingRoom && Layout.RoomAt(CellOf(pos))==0;
+    // In the starting room (room 0 built from the level's Starting Room template, generated or on an authored map).
+    bool InStartingRoom(Vector3 pos) => !data.pocket && data.startingRoom!=null && Layout!=null && TemplatePrefab(0)==data.startingRoom && Layout.RoomAt(CellOf(pos))==0;
 
     // The starting room's chest: one piece of gear and the level's potion, always (DungeonContainer.startingKit).
     void StockStartingChest()

@@ -194,20 +194,17 @@ MonoBehaviour:
   - enemy: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
     weight: 3
     fromFloor: 1
-  - enemy: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
-    weight: 1
-    fromFloor: 1
   - enemy: {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
-    weight: 2
-    fromFloor: 1
-  - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
-    weight: 2
-    fromFloor: 1
-  - enemy: {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
     weight: 2
     fromFloor: 1
   - enemy: {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
     weight: 2
+    fromFloor: 1
+  - enemy: {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
+    weight: 1
+    fromFloor: 1
+  - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
+    weight: 1
     fromFloor: 1
   - enemy: {fileID: 8694082213274042645, guid: 201900fae6c0585468bd8ec588f74292, type: 3}
     weight: 1
@@ -238,28 +235,27 @@ MonoBehaviour:
     chestItems: []
     arenaSizeScale: 1.5
     fight: {fileID: 0}
-  ambience: {fileID: 0}
-  ambienceVolume: 0.45
-  ambientOneShots: []
-  oneShotInterval: {x: 10, y: 24}
-  oneShotVolume: 0.5
+  ambience: {fileID: 8300000, guid: dc08b8d9f108e1a438fa288e0e32f130, type: 3}
+  ambienceVolume: 0.35
+  ambientOneShots:
+  - {fileID: 8300000, guid: 063701fcd35e30642a81c0e9f701c99d, type: 3}
+  - {fileID: 8300000, guid: d55e21f0265772843bc35ca6d385158b, type: 3}
+  - {fileID: 8300000, guid: 6135cda50a94a464abae8bdf7e6ea8bb, type: 3}
+  oneShotInterval: {x: 12, y: 28}
+  oneShotVolume: 0.4
   music: {fileID: 0}
   musicVolume: 1
   entryLineChance: 1
   entryLines:
-  - text: Mind the stairs.
-    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
-    mumble: 0
+  - text: The catacombs. Bones in every wall.
+    voice: {fileID: 0}
+    mumble: 1
     inPerson: 0
-  - text: Rats first. Then worse.
-    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
-    mumble: 0
+  - text: Mind the niches. Not all of them are empty.
+    voice: {fileID: 0}
+    mumble: 1
     inPerson: 0
-  - text: Take it slow this time.
-    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
-    mumble: 0
-    inPerson: 0
-  - text: Same cellars. New rooms.
-    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
-    mumble: 0
+  - text: Deeper now. Fewer rats, more bones.
+    voice: {fileID: 0}
+    mumble: 1
     inPerson: 0

@@ -56,6 +56,7 @@ public class PortalArch : MonoBehaviour
     {
         // A Return gate is only ever made by an Enter portal, in its pocket.
         if (mode == Mode.Return && owner == null) { gameObject.SetActive(false); return; }
+        if (broken) return;
         BuildShimmer();
     }
 
@@ -122,6 +123,10 @@ public class PortalArch : MonoBehaviour
     public float hurtGrace = 1.5f;
     static float lastHurt = -99f;
     static Character watched;
+    // Play mode starts without a domain reload: a hit from the last session would hold the way back shut (Time.time
+    // starts again from 0).
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() { lastHurt = -99f; watched = null; cameFrom = Vector3.zero; cameFromFacing = Quaternion.identity; portalBuffer.Clear(); }
     static void OnWatchedHurt(DamageInfo info) => lastHurt = Time.time;
 
     // This machine's player in a pocket: its hits are watched for the way back.
@@ -136,12 +141,21 @@ public class PortalArch : MonoBehaviour
 
     // Every Enter portal on a new floor builds its pocket now, from the floor's seed and the portal's place among the
     // floor's portals, so every machine builds the same pockets (TableLevelLoader, before co-op indexes the floor).
-    public static void PrebuildAll(DungeonGenerator floor, int floorSeed)
+    // A pocket that can't be built leaves its portal shut (a warning, never a failed floor); failures are added to
+    // errors when given (DungeonStressTest) and counted in the result.
+    public static int PrebuildAll(DungeonGenerator floor, int floorSeed, System.Collections.Generic.List<string> errors = null)
     {
-        if (floor == null) return;
-        int index = 0;
+        if (floor == null) return 0;
+        int index = 0, failed = 0;
         foreach (var portal in floor.GetComponentsInChildren<PortalArch>(true))
-            if (portal.mode == Mode.Enter && portal.pocket == null) { index++; portal.Build(floor, unchecked(floorSeed * 486187739 + 7919 * index), index); }
+        {
+            if (portal.mode != Mode.Enter || portal.pocket != null || portal.broken) continue;
+            index++;
+            if (portal.TryBuild(floor, unchecked(floorSeed * 486187739 + 7919 * index), index, out var error)) continue;
+            failed++;
+            errors?.Add($"{portal.name} ({(portal.room != null ? portal.room.name : "no room")}): {error}");
+        }
+        return failed;
     }
 
     // The pockets of a floor's portals (co-op indexes their enemies, chests and loot with the floor's).
@@ -150,6 +164,37 @@ public class PortalArch : MonoBehaviour
         if (floor == null) yield break;
         foreach (var portal in floor.GetComponentsInChildren<PortalArch>(true))
             if (portal.mode == Mode.Enter && portal.pocket != null) yield return portal.pocket;
+    }
+
+    // The same into a list, without allocating (LightingManager's shadow budget, several times a second).
+    static readonly System.Collections.Generic.List<PortalArch> portalBuffer = new();
+    public static void PocketsOf(DungeonGenerator floor, System.Collections.Generic.List<DungeonGenerator> into)
+    {
+        into.Clear();
+        if (floor == null) return;
+        portalBuffer.Clear();
+        floor.GetComponentsInChildren(true, portalBuffer);
+        foreach (var portal in portalBuffer)
+            if (portal != null && portal.mode == Mode.Enter && portal.pocket != null) into.Add(portal.pocket);
+        portalBuffer.Clear();
+    }
+
+    // A portal whose pocket could not be built: shut for the rest of the floor.
+    bool broken;
+    const int BuildAttempts = 8;
+
+    // Builds the pocket like the loader builds a floor: a few derived seeds, the last one played even if its navigation
+    // check fails. Anything else that goes wrong shuts this portal instead of breaking the floor's load.
+    bool TryBuild(DungeonGenerator floor, int seed, int index, out string error)
+    {
+        error = null;
+        try { Build(floor, seed, index); }
+        catch (System.Exception e) { error = $"{e.GetType().Name}: {e.Message}"; Debug.LogException(e, this); }
+        if (error == null && pocket == null && room != null && pocketLevel != null) error = "no pocket was built";
+        if (error == null) return true;
+        Debug.LogWarning($"{name}: the portal's pocket could not be built ({error}); the portal stays shut on this floor.", this);
+        Shut();
+        return false;
     }
 
     void Build(DungeonGenerator floor, int seed, int index)
@@ -161,19 +206,49 @@ public class PortalArch : MonoBehaviour
         if (pocketCopy.authoredRooms != null && pocketCopy.authoredRooms.Length > 0) pocketCopy.authoredRooms[0].template = room;
         if (biome != null && pocketCopy.stages != null && pocketCopy.stages.Length > 0) pocketCopy.stages[0].biome = biome;
 
-        var go = new GameObject("Pocket: " + room.name);
         // Each portal's pocket in its own place, well apart from the others.
-        go.transform.position = (floor != null ? floor.transform.position : transform.position) + Vector3.right * pocketDistance + Vector3.forward * (index - 1) * 120f;
-        pocket = go.AddComponent<DungeonGenerator>();
-        pocket.Build(pocketCopy, seed, floor != null ? floor.FloorNumber : 1);
+        var at = (floor != null ? floor.transform.position : transform.position) + Vector3.right * pocketDistance + Vector3.forward * (index - 1) * 120f;
+        for (int attempt = 0; ; attempt++)
+        {
+            var go = new GameObject("Pocket: " + room.name);
+            go.transform.position = at;
+            pocket = go.AddComponent<DungeonGenerator>();
+            try
+            {
+                pocket.Build(pocketCopy, unchecked(seed + attempt * 7907), floor != null ? floor.FloorNumber : 1, attempt >= BuildAttempts - 1);
+                break;
+            }
+            catch (System.Exception e)
+            {
+                go.SetActive(false); DestroyImmediate(go); pocket = null;
+                if (attempt >= BuildAttempts - 1 || !(e is System.InvalidOperationException)) throw;
+                Debug.LogWarning($"{name}: pocket layout rejected, trying another: {e.Message}", this);
+            }
+        }
         if (wayBack == WayBack.AtStart) PlaceWayBack(pocket);
-        else StartCoroutine(WayBackWhenCleared(pocket));
+        else if (Application.isPlaying) StartCoroutine(WayBackWhenCleared(pocket));
+    }
+
+    // No pocket: the portal does nothing (no shimmer, light or trigger).
+    void Shut()
+    {
+        broken = true;
+        if (pocket != null) { pocket.gameObject.SetActive(false); DestroyImmediate(pocket.gameObject); }
+        if (pocketCopy != null) DestroyImmediate(pocketCopy);
+        pocket = null; pocketCopy = null;
+        // The shimmer exists only once Start has run (Play mode).
+        if (!Application.isPlaying) return;
+        if (material != null) { Destroy(material); material = null; }
+        glow = null;
+        foreach (Transform child in transform) if (child.name == "Shimmer" || child.name == "Portal light") Destroy(child.gameObject);
+        foreach (var box in GetComponents<BoxCollider>()) if (box.isTrigger) Destroy(box);
     }
 
     IEnumerator Enter(Player player)
     {
+        if (broken) yield break;
         // A portal set down after the floor was built (the Debug arena's) builds its pocket on first use.
-        if (pocket == null) Build(GetComponentInParent<DungeonGenerator>(), Random.Range(1, 99999), 1);
+        if (pocket == null && !TryBuild(GetComponentInParent<DungeonGenerator>(), Random.Range(1, 99999), 1, out _)) yield break;
         if (pocket == null) yield break;
         busy = true;
         cameFrom = transform.position + transform.forward * 1.4f;

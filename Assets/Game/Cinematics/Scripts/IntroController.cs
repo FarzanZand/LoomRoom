@@ -52,6 +52,8 @@ public partial class IntroController : Singleton<IntroController>
     [Header("Opening")]
     [Tooltip("Said in the dark.")] public DungeonMaster.Line[] beforeLamp = new DungeonMaster.Line[0];
     [Tooltip("Said once the lamp is on, before the practice figure comes out.")] public DungeonMaster.Line[] afterLamp = new DungeonMaster.Line[0];
+    [Tooltip("A house rule he gives in the opening (RuleManager): said after this many After Lamp lines.")] public HouseRule openingRule;
+    [Min(0)] public int openingRuleAfter = 3;
     [Tooltip("Played when the lamp comes on.")] public AudioClip lampSound;
 
     [Header("Practice board")]
@@ -169,7 +171,8 @@ public partial class IntroController : Singleton<IntroController>
 
     static bool Flag(string key) => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(key);
 
-    // Called by WorldManager on the first frame. False: the normal wake-up plays.
+    // Called by WorldManager on the first frame. False: the normal wake-up plays. True: the intro plays, or (an intro
+    // quit near its end) the first morning's wake-up was started here.
     public bool TryPlay()
     {
         // Co-op: the host's intro already started here (PlayShared, the moment the lobby ended).
@@ -181,6 +184,19 @@ public partial class IntroController : Singleton<IntroController>
         // The flags come from the save; it may not have been read yet.
         var save = table != null ? table.GetComponent<AdventureSave>() : null;
         if (save != null) save.Initialize();
+        // Quit after the practice death but before the intro's end (the goodnight lines, OpenRoom): the room opens as
+        // the end would have opened it, and the first morning's wake-up plays (with its greeting, then the sheet and
+        // dice at the table on the Lamp opening).
+        if (room != null && Flag(IntroFlag) && !Flag(RoomOpenFlag) && ProgressionManager.HasInstance)
+        {
+            CloseRoomQuests();
+            ProgressionManager.Instance.SetFlag(DungeonMasterRemarks.SatFlag);
+            ProgressionManager.Instance.SetFlag(RoomOpenFlag);
+            BeginFirstMorning();
+            if (!WorldManager.HasInstance || WorldManager.Instance.wakeUpCutscene == null) return false;
+            WorldManager.Instance.wakeUpCutscene.Play(false);
+            return true;
+        }
         // Played once: a game that got as far as the practice death starts with the mornings.
         if (room == null || Flag(RoomOpenFlag) || Flag(IntroFlag)) return false;
         loader = TableManager.Loader;
@@ -250,8 +266,11 @@ public partial class IntroController : Singleton<IntroController>
         yield return new WaitForSeconds(openingFade);
         yield return SayAll(beforeLamp);
         yield return LampOn();
-        // The view turns to the figure while the last line is still up.
-        yield return SayAll(afterLamp, false);
+        // The house rule comes in among the lines; the view turns to the figure while the last line is still up.
+        int split = Mathf.Clamp(openingRuleAfter, 0, afterLamp.Length);
+        yield return SayAll(System.Array.FindAll(afterLamp, l => System.Array.IndexOf(afterLamp, l) < split));
+        if (openingRule != null && RuleManager.HasInstance) yield return SayAll(new[] { RuleManager.Instance.Give(openingRule) }, split < afterLamp.Length);
+        yield return SayAll(System.Array.FindAll(afterLamp, l => System.Array.IndexOf(afterLamp, l) >= split), false);
         yield return new WaitForSeconds(.4f);
         PopDialogue();
         yield return WaitForTable();

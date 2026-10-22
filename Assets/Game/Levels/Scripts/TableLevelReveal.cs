@@ -152,7 +152,7 @@ public sealed class TableLevelReveal : MonoBehaviour
                 }
                 if (!started && build >= 0) { started = true; PlaySound(settings.buildSound, settings.volume); }
                 if (!settled && build >= 1) { settled = true; PlaySound(settings.settleSound, settings.volume); foreach (var actor in actors) if (actor.target != null) actor.target.SetActive(actor.active); }
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameManager.CutsceneDelta;
                 yield return null;
             }
             skipWindow = false;
@@ -216,7 +216,7 @@ public sealed class TableLevelReveal : MonoBehaviour
             // the live destination so Cinemachine receives the same pose at handover.
             if (entryTarget != null)
             {
-                entryTarget.InternalUpdateCameraState(Vector3.up, Time.unscaledDeltaTime);
+                entryTarget.InternalUpdateCameraState(Vector3.up, GameManager.CutsceneDelta);
                 var live = entryTarget.State;
                 destination = live.GetFinalPosition(); rotation = live.GetFinalOrientation();
                 projection = Matrix4x4.Perspective(live.Lens.FieldOfView, output.aspect, live.Lens.NearClipPlane, live.Lens.FarClipPlane);
@@ -234,12 +234,12 @@ public sealed class TableLevelReveal : MonoBehaviour
             var matrix = new Matrix4x4();
             for (int i = 0; i < 16; i++) matrix[i] = Mathf.Lerp(startProjection[i], projection[i], t);
             output.projectionMatrix = matrix;
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += GameManager.CutsceneDelta;
             yield return null;
         }
         if (entryTarget != null)
         {
-            entryTarget.InternalUpdateCameraState(Vector3.up, Time.unscaledDeltaTime);
+            entryTarget.InternalUpdateCameraState(Vector3.up, GameManager.CutsceneDelta);
             var live = entryTarget.State;
             destination = live.GetFinalPosition(); rotation = live.GetFinalOrientation();
             projection = Matrix4x4.Perspective(live.Lens.FieldOfView, output.aspect, live.Lens.NearClipPlane, live.Lens.FarClipPlane);

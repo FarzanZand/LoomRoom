@@ -101,10 +101,10 @@ public class CombatManager : Singleton<CombatManager>
     public float comboCameraStrength = 1f;
     public float ComboHitSpeed(int hit) => hit <= 0 ? comboFirstHitSpeed : hit == 1 ? comboSecondHitSpeed : comboFinisherSpeed;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
-    [FormerlySerializedAs("comboChainAfter"), Min(0f), Tooltip("Seconds from the start of a combo hit before the next one can start (a press before then waits for it). Plain seconds: attack speed and Combo Speed don't change it.")]
+    [FormerlySerializedAs("comboChainAfter"), Min(0f), Tooltip("Seconds from the start of a combo hit before the next one can start (a press before then waits for it). Divided by the player's attack speed (the weapon's swing speed included); Combo Speed doesn't change it.")]
     public float comboHitCooldown = .43f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
-    [Min(0f), Tooltip("Seconds from the start of the finisher (the third hit) before the combo can start again.")]
+    [Min(0f), Tooltip("Seconds from the start of the finisher (the third hit) before the combo can start again, divided by the player's attack speed.")]
     public float comboFinisherCooldown = .9f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
     [Tooltip("The thin streaks (SlashLines) along the blade during combo hits. Off: they looked like a rake on the long combo arcs.")]
@@ -632,11 +632,18 @@ public class CombatManager : Singleton<CombatManager>
             if(t.IsChildOf(source.transform) || (victim!=null && t.IsChildOf(victim)))continue;
             // Loose debris on the floor (splinters, gore, a knocked-off helmet) never stops a blow.
             // (anything with a rigidbody, settled or not, that isn't a character).
-            if(obstructionHits[i].rigidbody!=null && obstructionHits[i].collider.GetComponentInParent<Character>()==null)continue;
+            var col=obstructionHits[i].collider;
+            var owner=col.GetComponentInParent<Character>();
+            if(obstructionHits[i].rigidbody!=null && owner==null)continue;
+            // Nor does a corpse: a dead rat never shields the next one.
+            if(DeathPhysics.IsCorpse(col) || IsDeadBody(owner))continue;
             return false;
         }
         return true;
     }
+
+    // A character that has died (one that never started reads 0 health but stands).
+    static bool IsDeadBody(Character c) => c!=null && c.Stats!=null && c.Stats.Initialised && !c.Stats.IsAlive;
 
     // How close an enemy notices the player without looking at them, and how far it can see,
     // as shares of its profile's radii. Sneaking (crouching) and the Stealth skill shrink both.

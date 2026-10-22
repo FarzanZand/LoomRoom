@@ -23,17 +23,33 @@ public partial class AssetStudioWindow : EditorWindow
         return w;
     }
 
-    List<AssetStudioCatalog.Category> categories;
-    int categoryIndex;
+    // The library, kept through recompiles and Play (the window's serialized state): only files changed since are read
+    // again (AssetStudioCatalog.Apply); it is built whole once per Editor session and by Refresh library.
+    [SerializeField] List<AssetStudioCatalog.Category> categories;
+    [SerializeField] int categoryIndex;
     string search = "";
     List<AssetStudioCatalog.Entry> shown = new();
     AssetStudioCatalog.Entry selected;
+    // The picked entry and World node, by ID and key, picked again after a recompile.
+    [SerializeField] string selectedId, worldPickedKey;
     Vector2 listScroll, inspectorScroll, categoryScroll;
     string askText = "";
     int kindFilter;                       // 0: every kind in the category
     string[] kinds = { "All kinds" };
+    [SerializeField] int itemSort;        // the Items list's order (ItemSorts)
+    static readonly string[] ItemSorts = { "By name", "By main number", "By slot", "By price", "By tier" };
     readonly List<string> recent = new();  // last picked, newest first (the Recent list)
-    bool showingRecent, showingRequests, showingAll;
+    // Which view the window shows, one at a time: a category's list, or one of the views above the categories.
+    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue }
+    [SerializeField] StudioView view;
+    // Leaving the Dialogue view writes back what was typed there.
+    StudioView studioView { get => view; set { if (value != view) CommitDialogue(true); view = value; } }
+    const string BuiltKey = "LoomRoom.Studio.Built";
+    bool showingRecent => studioView == StudioView.Recent;
+    bool showingRequests => studioView == StudioView.Requests;
+    bool showingAll => studioView == StudioView.Everything;
+    bool showingWorld => studioView == StudioView.World;
+    bool showingDialogue => studioView == StudioView.Dialogue;
     const string RecentKey = "LoomRoom.Studio.Recent", InGameOnlyKey = "LoomRoom.Studio.InGameOnly";
     bool inGameOnly;
     List<DevReportStore.Entry> requestList = new();
@@ -56,35 +72,138 @@ public partial class AssetStudioWindow : EditorWindow
 
     void OnEnable()
     {
+        titleContent = new GUIContent("Asset Studio");
         inGameOnly = EditorPrefs.GetBool(InGameOnlyKey, false);
         recent.Clear();
         recent.AddRange(EditorPrefs.GetString(RecentKey, "").Split('|').Where(x => x.StartsWith("ast_")));
-        Refresh();
-        RefreshRequests();
         preview ??= new AssetStudioPreview();
+        // Built whole once per Editor session; after a recompile or Play only what changed is read again.
+        if (categories == null || categories.Count == 0 || !SessionState.GetBool(BuiltKey, false)) Refresh(false);
+        else { ApplyLibraryChanges(); categoryIndex = Mathf.Clamp(categoryIndex, 0, categories.Count - 1); Filter(); }
+        if (selected == null && !string.IsNullOrEmpty(selectedId) && Find(selectedId) is AssetStudioCatalog.Entry keep) Select(keep);
+        if (studioView == StudioView.World && !string.IsNullOrEmpty(worldPickedKey)) worldRepick = worldPickedKey;
+        RefreshRequests();
         wantsMouseMove = true;
         EditorApplication.update += Tick;
+        AssetStudioCatalog.Changed += MarkStale;
+        EditorApplication.projectChanged += OnProjectChanged;
+        Undo.undoRedoPerformed += OnUndoRedo;
+        ObjectChangeEvents.changesPublished += OnObjectChanges;
+        EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        UnityEditor.SceneManagement.EditorSceneManager.sceneOpened += OnSceneOpened;
     }
 
     void OnDisable()
     {
+        CommitDialogue(true);
         EditorApplication.update -= Tick;
+        AssetStudioCatalog.Changed -= MarkStale;
+        EditorApplication.projectChanged -= OnProjectChanged;
+        Undo.undoRedoPerformed -= OnUndoRedo;
+        ObjectChangeEvents.changesPublished -= OnObjectChanges;
+        EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+        UnityEditor.SceneManagement.EditorSceneManager.sceneOpened -= OnSceneOpened;
         preview?.Dispose();
         preview = null;
         AssetStudioPreview.StopAudio();
     }
 
-    void Tick() { if (preview != null && preview.WantsRepaint) Repaint(); }
+    void OnLostFocus() => CommitDialogue(true);
 
-    void Refresh()
+    void Tick()
     {
-        string keep = selected?.id;
+        if (preview != null && preview.WantsRepaint) Repaint();
+        if (staleAt > 0 && EditorApplication.timeSinceStartup >= staleAt) { staleAt = 0; CatchUp(); }
+    }
+
+    // ── Keeping up with changes made elsewhere (Ctrl+Z, an inspector, New..., Tidy, files saved) ──
+    // Each change only marks the views stale; they are read again once things settle (staleAt), so a burst of changes
+    // costs one catch-up.
+    double staleAt;
+    bool staleUndo, staleScenes, staleProject;
+    readonly HashSet<string> stalePaths = new();
+
+    void MarkStale() => staleAt = EditorApplication.timeSinceStartup + .4;
+    void OnUndoRedo() { staleUndo = true; MarkStale(); }
+    void OnProjectChanged() { staleProject = true; MarkStale(); }
+    // Play started or stopped, or a scene opened: the scene objects that held lines are other objects now.
+    void OnPlayModeChanged(PlayModeStateChange change)
+    {
+        if (change == PlayModeStateChange.EnteredEditMode || change == PlayModeStateChange.EnteredPlayMode) { staleScenes = true; MarkStale(); }
+    }
+    void OnSceneOpened(UnityEngine.SceneManagement.Scene scene, UnityEditor.SceneManagement.OpenSceneMode mode) { staleScenes = true; MarkStale(); }
+
+    void OnObjectChanges(ref ObjectChangeEventStream stream)
+    {
+        for (int i = 0; i < stream.length; i++)
+        {
+            switch (stream.GetEventType(i))
+            {
+                case ObjectChangeKind.ChangeAssetObjectProperties:
+                    stream.GetChangeAssetObjectPropertiesEvent(i, out var args);
+                    string path = AssetDatabase.GUIDToAssetPath(args.guid);
+                    if (!string.IsNullOrEmpty(path)) stalePaths.Add(path);
+                    break;
+                case ObjectChangeKind.ChangeGameObjectOrComponentProperties:
+                case ObjectChangeKind.ChangeGameObjectStructure:
+                case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
+                case ObjectChangeKind.ChangeScene:
+                    staleScenes = true;
+                    break;
+            }
+        }
+        MarkStale();
+    }
+
+    void CatchUp()
+    {
+        var changed = ApplyLibraryChanges();
+        if (changed != null) stalePaths.UnionWith(changed);
+        // Assets changed: the World model, the tomes and Where used are read again when next needed. Scene edits
+        // alone only touch the Dialogue view's scene lines.
+        if (staleUndo || staleProject || stalePaths.Count > 0)
+        {
+            world = null;
+            tomes = null;
+            AssetStudioUsage.Forget();
+            usedBy = null; usedByFor = null;
+        }
+        RecollectDialogue(staleUndo, stalePaths, staleScenes || staleUndo);
+        staleUndo = staleScenes = staleProject = false;
+        stalePaths.Clear();
+        Repaint();
+    }
+
+    // The files changed since the library was built, sorted in (or the whole library again when a folder moved).
+    List<string> ApplyLibraryChanges()
+    {
+        if (categories == null || !AssetStudioCatalog.HasChanges) return null;
+        var changes = AssetStudioCatalog.TakeChanges();
+        if (changes == null) { Refresh(false); return null; }
+        AssetStudioCatalog.Apply(categories, changes);
+        Filter();
+        // The picked entry was made again: keep showing it (the preview stays as it is).
+        if (selected != null) { var again = Find(selected.id); if (again == null) Select(null); else selected = again; }
+        return changes;
+    }
+
+    AssetStudioCatalog.Entry Find(string id) => categories?.SelectMany(c => c.entries).FirstOrDefault(e => e.id == id);
+
+    // The whole library again. reselect: the picked entry is shown afresh (its preview built again).
+    void Refresh(bool reselect = true)
+    {
+        string keep = selected?.id ?? selectedId;
+        AssetStudioCatalog.ClearChanges();
         categories = AssetStudioCatalog.Build();
+        SessionState.SetBool(BuiltKey, true);
         world = null;   // the World view rebuilds from the assets too
+        tomes = null;
         AssetStudioUsage.Forget();
         categoryIndex = Mathf.Clamp(categoryIndex, 0, categories.Count - 1);
         Filter();
-        if (keep != null) Select(categories.SelectMany(c => c.entries).FirstOrDefault(e => e.id == keep));
+        if (keep == null) return;
+        var e = Find(keep);
+        if (reselect || e == null || selected == null) Select(e); else selected = e;
     }
 
     void Styles()
@@ -122,11 +241,27 @@ public partial class AssetStudioWindow : EditorWindow
             if (kindFilter > 0) source = source.Where(e => e.kind == kinds[kindFilter]).ToList();
         }
         shown = string.IsNullOrEmpty(s) ? source : source.Where(e => s.Split(' ').All(w => e.Search.Contains(w))).ToList();
+        if (ItemsShown && itemSort > 0)
+        {
+            var items = shown.Where(e => !string.IsNullOrEmpty(e.itemSlot));
+            IOrderedEnumerable<AssetStudioCatalog.Entry> ordered = itemSort switch
+            {
+                1 => items.OrderByDescending(e => e.itemMain),
+                2 => items.OrderBy(e => e.itemSlot).ThenByDescending(e => e.itemMain),
+                3 => items.OrderByDescending(e => e.itemPrice),
+                _ => items.OrderBy(e => e.itemTier).ThenBy(e => e.itemSlot),
+            };
+            shown = ordered.ThenBy(e => e.name, StringComparer.OrdinalIgnoreCase).Concat(shown.Where(e => string.IsNullOrEmpty(e.itemSlot))).ToList();
+        }
     }
+
+    // The Items category is on screen: its rows show each item's main number, slot and price, and can be sorted by them.
+    bool ItemsShown => studioView == StudioView.Category && categories != null && categoryIndex < categories.Count && categories[categoryIndex].name == "Items";
 
     void Select(AssetStudioCatalog.Entry e)
     {
         selected = e;
+        selectedId = e?.id;
         AssetStudioPreview.StopAudio();
         if (e != null) { recent.Remove(e.id); recent.Insert(0, e.id); if (recent.Count > 20) recent.RemoveAt(recent.Count - 1); EditorPrefs.SetString(RecentKey, string.Join("|", recent)); }
         usedBy = null; usedByFor = null;
@@ -147,6 +282,7 @@ public partial class AssetStudioWindow : EditorWindow
             if (data != null) return data;
             var template = go.GetComponent<DungeonRoomTemplate>();
             if (template != null) return template;
+            if (go.TryGetComponent<DungeonMapTemplate>(out var map)) return map;
             var mb = go.GetComponents<MonoBehaviour>().FirstOrDefault(m => m != null);
             return mb != null ? mb : go;
         }
@@ -154,6 +290,66 @@ public partial class AssetStudioWindow : EditorWindow
     }
 
     void Toast(string text) { notice = text; noticeUntil = EditorApplication.timeSinceStartup + 4; }
+
+    // ── Right-click on an asset (the library's lists, the World tree): Show in Project, Copy ID, Delete... ──
+
+    void AssetMenu(string path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
+        string guid = AssetDatabase.AssetPathToGUID(path);
+        var menu = new GenericMenu();
+        menu.AddItem(new GUIContent("Show in Project"), false, () => { var a = AssetDatabase.LoadMainAssetAtPath(path); Selection.activeObject = a; EditorGUIUtility.PingObject(a); });
+        menu.AddItem(new GUIContent("Copy ID"), false, () => { EditorGUIUtility.systemCopyBuffer = AssetStudioCatalog.IdFor(guid); Toast("Copied " + AssetStudioCatalog.IdFor(guid)); });
+        menu.AddSeparator("");
+        string blocked = DeleteBlocked(path);
+        if (blocked == null) menu.AddItem(new GUIContent("Delete..."), false, () => DeleteAsset(path));
+        else menu.AddDisabledItem(new GUIContent("Delete (" + blocked + ")"));   // no slash in the reason: it would make a submenu
+        menu.ShowAsContext();
+    }
+
+    // Paths named in code (a builder or a loader reads or writes them there), read once per compile.
+    [NonSerialized] HashSet<string> namedInCode;
+
+    // Why this file can't be deleted from here, or null. Only the game's own content: never anything outside Assets/Game
+    // (Synty, the packs, plugins), code, a scene in the build, what a Resources folder holds (code loads it by name:
+    // TableLevels, Table level defaults, DungeonLighting) or a file a tool names in code.
+    string DeleteBlocked(string path)
+    {
+        if (!path.StartsWith("Assets/Game/")) return "not the game's own content";
+        if (AssetDatabase.IsValidFolder(path)) return "a folder";
+        string ext = Path.GetExtension(path).ToLowerInvariant();
+        if (ext == ".cs" || ext == ".shader" || ext == ".hlsl" || ext == ".asmdef" || ext == ".dll") return "code";
+        if (EditorBuildSettings.scenes.Any(s => s.path == path)) return "a scene in the build";
+        if (path.Contains("/Resources/")) return "in a Resources folder, code loads it by name";
+        namedInCode ??= AssetStudioWorld.PinnedPaths();
+        if (namedInCode.Contains(path)) return "a tool names this file in code";
+        return null;
+    }
+
+    // Asks first (what uses it), then moves the file to the system's recycle bin (it can be got back from there).
+    void DeleteAsset(string path)
+    {
+        string why = DeleteBlocked(path);
+        if (why != null) { Toast("Not deleted: " + why + "."); return; }
+        string name = Path.GetFileNameWithoutExtension(path), guid = AssetDatabase.AssetPathToGUID(path);
+        var users = AssetStudioUsage.Find(guid, categories).Where(u => u.path != path).ToList();
+        string Name((string path, AssetStudioCatalog.Entry entry) u) => u.entry != null ? u.entry.name : Path.GetFileNameWithoutExtension(u.path);
+        string use = users.Count == 0 ? "Nothing else in the game uses it."
+            : $"Used by {users.Count} asset{(users.Count == 1 ? "" : "s")}: {string.Join(", ", users.Take(5).Select(u => Name(u)))}{(users.Count > 5 ? $" and {users.Count - 5} more" : "")}. {(users.Count == 1 ? "It" : "They")} will lose it.";
+        if (!EditorUtility.DisplayDialog("Delete " + name, $"{name}\n{path}\n\n{use}\n\nIt goes to the recycle bin, so it can be got back from there.", "Delete", "Cancel")) return;
+        CommitDialogue(true);
+        // Let go of it first: the preview's copy, a painting on it, the inspector.
+        if (selected != null && selected.path == path) Select(null);
+        if (inspected != null && AssetDatabase.GetAssetPath(inspected) == path) inspected = null;
+        if (!AssetDatabase.MoveAssetToTrash(path)) { Toast("Could not delete " + name + "."); return; }
+        AssetStudioCatalog.Apply(categories, new[] { path });
+        Filter();
+        world = null; tomes = null;
+        AssetStudioUsage.Forget();
+        usedBy = null; usedByFor = null;
+        Toast($"Moved {name} to the recycle bin.");
+        Repaint();
+    }
 
     void OnGUI()
     {
@@ -170,10 +366,14 @@ public partial class AssetStudioWindow : EditorWindow
         var inspRect = new Rect(full.width - InspectorWidth - Pad, y, InspectorWidth, h);
         var previewRect = new Rect(listRect.xMax + Pad, y, inspRect.xMin - listRect.xMax - Pad * 2, h);
         DrawCategories(catRect);
-        DrawList(listRect);
-        DrawPreview(previewRect);
         inspectorWanted = null;
-        DrawInspector(inspRect);
+        if (showingDialogue) DrawDialogue(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));
+        else
+        {
+            DrawList(listRect);
+            DrawPreview(previewRect);
+            DrawInspector(inspRect);
+        }
         if (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout) PlaceInspector();
         int total = categories.Sum(c => c.entries.Count);
         GUI.Label(new Rect(Pad, full.height - 22, full.width - Pad * 2, 18),
@@ -182,7 +382,7 @@ public partial class AssetStudioWindow : EditorWindow
 
     void DrawTop(Rect r)
     {
-        GUI.Label(new Rect(r.x, r.y - 2, 260, 16), "THE TABLE WAITS", gold);
+        GUI.Label(new Rect(r.x, r.y - 2, 260, 16), "THE TABLE AWAITS", gold);
         GUI.Label(new Rect(r.x, r.y + 12, 300, 30), "Asset Studio", titleStyle);
         float bx = r.xMax;
         Button(ref bx, r, "Export catalog", () =>
@@ -192,7 +392,7 @@ public partial class AssetStudioWindow : EditorWindow
         });
         Button(ref bx, r, "Refresh library", () => { Refresh(); Toast("Library refreshed."); });
         Button(ref bx, r, EditorApplication.isPlaying ? "Stop game" : "Play game", () => { if (EditorApplication.isPlaying) EditorApplication.isPlaying = false; else GameLauncher.Play(); });
-        Button(ref bx, r, "Requests to Main", () => { showingRequests = true; showingRecent = false; RefreshRequests(); });
+        Button(ref bx, r, "Requests to Main", () => { studioView = StudioView.Requests; RefreshRequests(); });
     }
 
     static void Button(ref float right, Rect row, string label, Action click)
@@ -215,26 +415,28 @@ public partial class AssetStudioWindow : EditorWindow
         if (only != inGameOnly) { inGameOnly = only; EditorPrefs.SetBool(InGameOnlyKey, only); Filter(); listScroll = Vector2.zero; }
         GUI.Label(new Rect(r.x + 8, r.yMax - 24, r.width - 16, 18), "<color=#6fd46a>✔</color> = used in the game", new GUIStyle(dim) { richText = true });
         r.height -= 50;
-        var view = new Rect(0, 0, r.width - 16, (categories.Count + 4) * 30 + 12);
+        var view = new Rect(0, 0, r.width - 16, (categories.Count + 5) * 30 + 12);
         categoryScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 26, r.width, r.height - 26), categoryScroll, view);
         if (GUI.Toggle(new Rect(4, 2, view.width - 4, 28), showingRecent, $"  Recent   <color=#a9a49a>{recent.Count}</color>", showingRecent ? cellSelected : cell) && !showingRecent)
-        { showingRecent = true; showingRequests = showingAll = showingWorld = false; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null); }
+        { studioView = StudioView.Recent; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null); }
         int open = requestList.Count(q => q.status != DevReportStore.Status.Done && q.status != DevReportStore.Status.Failed);
         if (GUI.Toggle(new Rect(4, 32, view.width - 4, 28), showingRequests, $"  Requests to Main   <color=#a9a49a>{open}</color>", showingRequests ? cellSelected : cell) && !showingRequests)
-        { showingRequests = true; showingRecent = showingAll = showingWorld = false; RefreshRequests(); GUI.FocusControl(null); }
+        { studioView = StudioView.Requests; RefreshRequests(); GUI.FocusControl(null); }
         int total = categories.Sum(c => Count(c));
         if (GUI.Toggle(new Rect(4, 62, view.width - 4, 28), showingAll, $"  Everything   <color=#a9a49a>{total}</color>", showingAll ? cellSelected : cell) && !showingAll)
-        { showingAll = true; showingRecent = showingRequests = showingWorld = false; kindFilter = 0; listScroll = Vector2.zero; Filter(); GUI.FocusControl("search"); }
+        { studioView = StudioView.Everything; kindFilter = 0; listScroll = Vector2.zero; Filter(); GUI.FocusControl("search"); }
         // The World: the campaign and the levels as one tree, with New and Tidy (AssetStudioWindow.World).
         if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingWorld, "  World   <color=#a9a49a>campaign & levels</color>", showingWorld ? cellSelected : cell) && !showingWorld) OpenWorld();
+        // Dialogue: every Dungeon Master line, by where it plays (AssetStudioWindow.Dialogue).
+        if (GUI.Toggle(new Rect(4, 122, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
         for (int i = 0; i < categories.Count; i++)
         {
             var c = categories[i];
-            var row = new Rect(4, 12 + (i + 4) * 30, view.width - 4, 28);
-            bool on = !showingRecent && !showingRequests && !showingAll && !showingWorld && i == categoryIndex;
+            var row = new Rect(4, 12 + (i + 5) * 30, view.width - 4, 28);
+            bool on = !showingRecent && !showingRequests && !showingAll && !showingWorld && !showingDialogue && i == categoryIndex;
             if (GUI.Toggle(row, on, $"  {c.name}   <color=#a9a49a>{Count(c)}</color>", on ? cellSelected : cell) && !on)
             {
-                showingRecent = showingRequests = showingAll = showingWorld = false; categoryIndex = i; kindFilter = 0; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null);
+                studioView = StudioView.Category; categoryIndex = i; kindFilter = 0; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null);
             }
         }
         GUI.EndScrollView();
@@ -251,8 +453,14 @@ public partial class AssetStudioWindow : EditorWindow
         if (showingRecent) GUI.Label(new Rect(r.x + 8, r.y + 32, r.width - 16, 40), "What you looked at last, newest first.", dim);
         else
         {
-            int k = EditorGUI.Popup(new Rect(r.x + 6, r.y + 32, r.width - 12, 20), kindFilter, kinds);
+            float kindWidth = ItemsShown ? (r.width - 16) / 2 : r.width - 12;
+            int k = EditorGUI.Popup(new Rect(r.x + 6, r.y + 32, kindWidth, 20), kindFilter, kinds);
             if (k != kindFilter) { kindFilter = k; Filter(); listScroll = Vector2.zero; }
+            if (ItemsShown)
+            {
+                int sort = EditorGUI.Popup(new Rect(r.x + 10 + kindWidth, r.y + 32, kindWidth, 20), itemSort, ItemSorts);
+                if (sort != itemSort) { itemSort = sort; Filter(); listScroll = Vector2.zero; }
+            }
             if (showingAll) GUI.Label(new Rect(r.x + 8, r.y + 54, r.width - 16, 28), "The whole library: type to search names, IDs, paths and kinds in every category.", dim);
             else if (categories.Count > 0) GUI.Label(new Rect(r.x + 8, r.y + 54, r.width - 16, 28), categories[categoryIndex].description, dim);
         }
@@ -274,7 +482,12 @@ public partial class AssetStudioWindow : EditorWindow
             if (e.inGame) DrawCheck(new Rect(row.x + rowH - 18, row.y + rowH - 20, 15, 15));
             GUI.Label(new Rect(row.x + rowH + 2, row.y + 3, row.width - rowH, 18), e.name, EditorStyles.boldLabel);
             GUI.Label(new Rect(row.x + rowH + 2, row.y + 21, row.width - rowH, 16), (showingAll || showingRecent ? e.category + " · " : "") + e.kind + (string.IsNullOrEmpty(e.description) ? "" : " · " + e.description), dimLine);
-            if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition)) { Select(e); GUI.FocusControl(null); Event.current.Use(); }
+            if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
+            {
+                Select(e); GUI.FocusControl(null);
+                if (Event.current.button == 1) AssetMenu(e.path);   // right-click: Show in Project, Copy ID, Delete...
+                Event.current.Use();
+            }
         }
         if (shown.Count == 0) GUI.Label(new Rect(10, 10, view.width - 20, 40), search.Length > 0 ? "Nothing matches that search." : "Nothing in this category.", dim);
         GUI.EndScrollView();
@@ -370,21 +583,39 @@ public partial class AssetStudioWindow : EditorWindow
         if (inspectorHost.style.height.value.value != a.height) inspectorHost.style.height = a.height;
     }
 
+    // Each spell's tome (the item that casts it), read once per library refresh: the panel is drawn every frame.
+    [NonSerialized] Dictionary<SpellDefinition, ItemData> tomes;
+    [NonSerialized] string stateFor, stateText;
+    [NonSerialized] DateTime stateWritten;
+    ItemData TomeFor(SpellDefinition spell)
+    {
+        if (tomes == null)
+        {
+            tomes = new Dictionary<SpellDefinition, ItemData>();
+            foreach (var g in AssetDatabase.FindAssets("t:ItemData", new[] { "Assets/Game" }))
+            {
+                var item = AssetDatabase.LoadAssetAtPath<ItemData>(AssetDatabase.GUIDToAssetPath(g));
+                if (item != null && item.spell != null && !tomes.ContainsKey(item.spell)) tomes[item.spell] = item;
+            }
+        }
+        return tomes.TryGetValue(spell, out var tome) ? tome : null;
+    }
+
     // What can be done with this kind of asset in the game, and where it is used. Returns the next free y.
     float DrawActions(Rect r, float y)
     {
         var asset = selected.Load();
         var actions = new List<(string label, string tip, Action run)>();
         ItemData giveItem = asset as ItemData;
-        if (asset is SpellDefinition spell) giveItem = AssetDatabase.FindAssets("t:ItemData", new[] { "Assets/Game" }).Select(g => AssetDatabase.LoadAssetAtPath<ItemData>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault(i => i != null && i.spell == spell);
+        if (asset is SpellDefinition spell) giveItem = TomeFor(spell);
         if (giveItem != null) actions.Add((EditorApplication.isPlaying ? "Give to table player" : "Try it in the arena", "Into the table player's bag now, or start the Debug arena with it in the bag.", () => Toast(GameLauncher.GiveItem(giveItem))));
         if (asset is ItemData source) actions.Add(("Duplicate as new item", "A copy with its own save ID, in the same folder, added to the item catalog (as the Item Database does). It opens here to edit.", () =>
         {
             var copy = ItemDatabaseAuthoring.Duplicate(source);
             ItemDatabaseAuthoring.SyncCatalog();
-            Refresh();
+            ApplyLibraryChanges();   // the copy, sorted in from the watcher's notes (not the whole library again)
             var e = categories.SelectMany(c => c.entries).FirstOrDefault(x => x.path == AssetDatabase.GetAssetPath(copy));
-            showingRecent = showingRequests = showingAll = false; categoryIndex = categories.FindIndex(c => c.name == "Items"); kindFilter = 0; search = ""; Filter(); Select(e);
+            studioView = StudioView.Category; categoryIndex = categories.FindIndex(c => c.name == "Items"); kindFilter = 0; search = ""; Filter(); Select(e);
             Toast($"Made {copy.name}. Rename it in the inspector; its icon renders on its own.");
         }));
         actions.AddRange(TestActions(asset));
@@ -416,7 +647,7 @@ public partial class AssetStudioWindow : EditorWindow
                 string label = (u.entry != null ? u.entry.name : System.IO.Path.GetFileNameWithoutExtension(u.path)) + "  <color=#a9a49a>" + System.IO.Path.GetExtension(u.path) + "</color>";
                 if (GUI.Button(new Rect(r.x + 8, y, r.width - 16, 20), label, cell))
                 {
-                    if (u.entry != null) { showingRecent = false; categoryIndex = categories.FindIndex(c => c.name == u.entry.category); kindFilter = 0; search = ""; Filter(); Select(u.entry); }
+                    if (u.entry != null) { studioView = StudioView.Category; categoryIndex = categories.FindIndex(c => c.name == u.entry.category); kindFilter = 0; search = ""; Filter(); Select(u.entry); }
                     else { var o = AssetDatabase.LoadMainAssetAtPath(u.path); Selection.activeObject = o; EditorGUIUtility.PingObject(o); }
                 }
                 y += 21;
@@ -503,11 +734,13 @@ public partial class AssetStudioWindow : EditorWindow
         string state = System.IO.Path.Combine(request.folder, "game-state.json");
         if (System.IO.File.Exists(state))
         {
+            var written = System.IO.File.GetLastWriteTimeUtc(state);
+            if (stateFor != state || stateWritten != written) { stateFor = state; stateWritten = written; stateText = System.IO.File.ReadAllText(state); }
             GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "GAME STATE", gold); y += 18;
             var area = new Rect(r.x + 4, y, r.width - 8, r.yMax - y - 4);
             GUILayout.BeginArea(area);
             inspectorScroll = EditorGUILayout.BeginScrollView(inspectorScroll);
-            EditorGUILayout.SelectableLabel(System.IO.File.ReadAllText(state), EditorStyles.textArea, GUILayout.ExpandHeight(true), GUILayout.MinHeight(area.height - 10));
+            EditorGUILayout.SelectableLabel(stateText, EditorStyles.textArea, GUILayout.ExpandHeight(true), GUILayout.MinHeight(area.height - 10));
             EditorGUILayout.EndScrollView();
             GUILayout.EndArea();
         }
@@ -535,7 +768,7 @@ public partial class AssetStudioWindow : EditorWindow
     void HandleKeys()
     {
         var e = Event.current;
-        if (showingWorld) return;   // the World's tree is clicked, not stepped through
+        if (showingWorld || showingDialogue) return;   // the World's tree is clicked, not stepped through; Dialogue is typed in
         if (!EditorGUIUtility.editingTextField && preview != null && preview.HandlePaintKey(e)) return;
         if (e.type != EventType.KeyDown || GUI.GetNameOfFocusedControl() == "search" && e.keyCode != KeyCode.DownArrow && e.keyCode != KeyCode.UpArrow) return;
         if (EditorGUIUtility.editingTextField && GUI.GetNameOfFocusedControl() != "search") return;
@@ -570,8 +803,8 @@ public partial class AssetStudioWindow : EditorWindow
     public void TestKind(int k) { kindFilter = k; Filter(); }
     public int TestShownCount => shown.Count;
     public string[] TestKinds => kinds;
-    public int TestEverything(string text) { showingAll = true; showingRecent = showingRequests = false; search = text; Filter(); return shown.Count; }
+    public int TestEverything(string text) { studioView = StudioView.Everything; search = text; Filter(); return shown.Count; }
     public string TestSelectedPath => selected != null ? selected.path : "";
     public string TestInGame() { string r = ""; foreach (var c in categories) r += $"{c.name} {c.entries.Count(e => e.inGame)}/{c.entries.Count}, "; return r; }
-    public string TestRequests() { showingRequests = true; RefreshRequests(); if (requestList.Count > 0) PickRequest(requestList[0]); return requestList.Count + " requests, first " + (request != null ? request.message.Split('\n')[0] + " / " + request.note + " / shot " + (requestShot != null ? requestShot.width + "x" + requestShot.height : "none") : "-"); }
+    public string TestRequests() { studioView = StudioView.Requests; RefreshRequests(); if (requestList.Count > 0) PickRequest(requestList[0]); return requestList.Count + " requests, first " + (request != null ? request.message.Split('\n')[0] + " / " + request.note + " / shot " + (requestShot != null ? requestShot.width + "x" + requestShot.height : "none") : "-"); }
 }

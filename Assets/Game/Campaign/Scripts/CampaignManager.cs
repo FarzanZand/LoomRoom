@@ -90,6 +90,11 @@ public class CampaignManager : Singleton<CampaignManager>
 
     public const string SeenFlag = "campaign.seen", WonFlag = "campaign.won", EventPrefix = "campaign.event.", GiftPrefix = "campaign.gift.";
     public const string ActFlag = "campaign.act", RevealedFlag = "campaign.revealed", AtFlag = "campaign.at", ClassFlag = "campaign.class", BeatenPrefix = "campaign.beaten.";
+    // Deaths in a place's runs (a shut place opens after enough of them, CampaignEncounter.deathsToOpen), and a shut place
+    // that has risen into view.
+    public const string DeathsPrefix = "campaign.deaths.", OpenedPrefix = "campaign.opened.";
+    // A shut place's hint has been said (CampaignEncounter.shutHint, once per save).
+    public const string HintedPrefix = "campaign.hinted.";
 
     public static bool Active => HasInstance && Instance.useCampaign && Instance.mapPrefab != null;
     public CampaignMap Map { get; private set; }
@@ -109,7 +114,12 @@ public class CampaignManager : Singleton<CampaignManager>
     int RevealedAct => Mathf.Max(firstAct, Mathf.Max(revealedNow, PM != null ? PM.GetFlag(RevealedFlag) : 0));
     int revealedNow;
     public bool Beaten(CampaignEncounter e) => e != null && PM != null && PM.HasFlag(BeatenPrefix + e.id);
-    public bool IsOpen(CampaignEncounter e) => e != null && e.act <= OpenAct;
+    public bool IsOpen(CampaignEncounter e) => e != null && e.act <= OpenAct && !Shut(e);
+    public int Deaths(CampaignEncounter e) => e != null && PM != null ? PM.GetFlag(DeathsPrefix + e.id) : 0;
+    // Enough deaths in the place it waits on: it may come up (it is shown once PopPending has raised it).
+    bool Earned(CampaignEncounter e) => !e.Locked || Deaths(e.deathsIn) >= e.deathsToOpen || Beaten(e);
+    // Off the map: still shut, or earned but not raised yet. Debug's open-everything shows it.
+    bool Shut(CampaignEncounter e) => e != null && e.Locked && !openEverything && !Beaten(e) && !(PM != null && PM.HasFlag(OpenedPrefix + e.id));
 
     CampaignEncounter At
     {
@@ -146,9 +156,15 @@ public class CampaignManager : Singleton<CampaignManager>
         {
             if (p.encounter == null) continue;
             if (string.IsNullOrEmpty(p.encounter.id)) { Debug.LogError($"[Campaign] {p.encounter.name} has no id: its beaten flag would be shared with every place without one. Give it an id.", p.encounter); continue; }
+            if (p.encounter.kind == CampaignEncounterKind.Level && p.encounter.level == null)
+                Debug.LogError($"[Campaign] {p.encounter.name} is a Level place with no level: clicking it only says the placeholder text. Give it a level.", p.encounter);
             if (p.encounter.kind == CampaignEncounterKind.Level && p.encounter.level != null && catalog != null
                 && Array.IndexOf(catalog.levels, p.encounter.level) < 0)
                 Debug.LogWarning($"[Campaign] {p.encounter.name}'s level {p.encounter.level.name} is not in Levels/Resources/TableLevels.asset: a run saved there can't be continued.", p.encounter);
+            if (p.encounter.deathsToOpen > 0 && p.encounter.deathsIn == null)
+                Debug.LogWarning($"[Campaign] {p.encounter.name} is shut until {p.encounter.deathsToOpen} deaths but has no Deaths In: it opens with its act.", p.encounter);
+            else if (p.encounter.Locked && (p.encounter.deathsIn == p.encounter || p.encounter.deathsIn.kind != CampaignEncounterKind.Level))
+                Debug.LogError($"[Campaign] {p.encounter.name} counts deaths in {p.encounter.deathsIn.name}, where no run can be played: it never opens.", p.encounter);
             string id = p.encounter.id;
             if (seen.TryGetValue(id, out var other)) Debug.LogError($"[Campaign] places {other.name} and {p.name} share the encounter id '{id}': give the duplicate its own encounter.", p);
             else seen[id] = p;
@@ -164,7 +180,7 @@ public class CampaignManager : Singleton<CampaignManager>
         saver?.Initialize();
         loader = TableManager.Loader;
         if (loader != null) { loader.LoadStarted += OnLoadStarted; loader.Returned += OnReturned; }
-        if (RunManager.HasInstance) { RunManager.Instance.RunEnded += OnRunEnded; RunManager.Instance.RunStarted += GiveGifts; }
+        if (RunManager.HasInstance) { RunManager.Instance.RunEnded += OnRunEnded; RunManager.Instance.RunStarted += GiveGifts; RunManager.Instance.Revived += OnRevived; }
         var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         progress = table != null ? table.GetComponent<AdventurerProgress>() : null;
         if (progress != null) progress.Changed += RememberClass;
@@ -180,7 +196,7 @@ public class CampaignManager : Singleton<CampaignManager>
 
     // The map view stopped from outside (its table switched off mid-view: a coroutine's finally doesn't run then):
     // nothing it set is left behind.
-    void OnDisable() => AbortMapView();
+    void OnDisable() { popping = false; AbortMapView(); }
 
     // Ends a map view whose coroutine was stopped from outside (the table switched off, or an error in it): the cancel
     // handler, the lifted place, the hint and the question go.
@@ -194,6 +210,8 @@ public class CampaignManager : Singleton<CampaignManager>
         figuresHome = null;
         CloseAsk();
         if (card != null) { card.Hide(); card.ShowHint(false); }
+        if (InputManager.HasInstance) InputManager.Instance.SubmitPressed -= SkipWalk;
+        walking = skipWalk = false;
         if (!InMapView) return;
         InMapView = false;
         if (InputManager.HasInstance)
@@ -208,10 +226,11 @@ public class CampaignManager : Singleton<CampaignManager>
         CloseAsk();
     }
 
-    void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         if (loader != null) { loader.LoadStarted -= OnLoadStarted; loader.Returned -= OnReturned; }
-        if (RunManager.HasInstance) { RunManager.Instance.RunEnded -= OnRunEnded; RunManager.Instance.RunStarted -= GiveGifts; }
+        if (RunManager.HasInstance) { RunManager.Instance.RunEnded -= OnRunEnded; RunManager.Instance.RunStarted -= GiveGifts; RunManager.Instance.Revived -= OnRevived; }
         if (progress != null) progress.Changed -= RememberClass;
     }
 
@@ -253,13 +272,14 @@ public class CampaignManager : Singleton<CampaignManager>
         Map.name = "Campaign map";
         foreach (var p in Map.Points) p.EnsurePickCollider();
         CheckPlaces();
+        Map.Shut = Shut;   // before any reveal: a shut place stays off the map from the first cloth drop on
         foreach (var ev in events) if (ev != null && string.IsNullOrEmpty(ev.id)) Debug.LogError($"[Campaign] the event {ev.name} has no id: it would share its seen flag with every event without one.", ev);
         restY = Map.transform.localPosition.y;
     }
 
     float restY;
 
-    void ShowActs() => Map.ShowActs(Mathf.Min(OpenAct, RevealedAct), fog, clothStyle);
+    void ShowActs() { Map.Shut = Shut; Map.ShowActs(Mathf.Min(OpenAct, RevealedAct), fog, clothStyle); }
 
     // Test: shows an act under the given cloth, then uncovers it as a won run would.
     public void TestReveal(CampaignClothStyle style, int act)
@@ -281,17 +301,52 @@ public class CampaignManager : Singleton<CampaignManager>
         if (Map == null) return;
         RefreshMarker();
         // Not back from the intro's practice board, nor before the first morning's dice: the map isn't open yet.
-        if (MapBelongsOnTableAfterReturn) StartCoroutine(Rise());
+        bool onTable = MapBelongsOnTableAfterReturn;
+        if (onTable) StartCoroutine(Rise());
         // After a win the player goes straight back to the map, to see what opened.
         if (lastRunWon) StartCoroutine(BackToMap());
+        else if (onTable) StartCoroutine(GuardedRoutine.Run(Landed()));
         lastRunWon = false;
+    }
+
+    // Back in the room after a run that didn't win: once the map has risen and the player is free, shut places whose
+    // deaths are in rise into view with their lines, and a place still shut may get its hint. Otherwise both wait for
+    // the next map view.
+    IEnumerator Landed()
+    {
+        for (float until = Time.unscaledTime + 8f; ; )
+        {
+            bool loading = loader != null && loader.Busy;
+            bool exploring = GameManager.HasInstance && GameManager.Instance.State == GameState.Explore;
+            if (!rising && !loading && exploring) break;
+            if (Time.unscaledTime >= until) yield break;
+            yield return null;
+        }
+        if (Map == null || !Map.gameObject.activeSelf || !MapBelongsOnTable || InMapView || revealing || popping) yield break;
+        yield return PopPending(null);
+        SayShutHint();
+    }
+
+    // A shut place's hint, once per save, after a death has counted toward it while it is still shut (one at a time).
+    void SayShutHint()
+    {
+        if (PM == null || Map == null || openEverything) return;
+        int shown = Mathf.Min(OpenAct, RevealedAct);
+        foreach (var e in AllEncounters)
+        {
+            if (e == null || !e.Locked || e.shutHint == null || e.shutHint.IsEmpty || e.act > shown) continue;
+            if (!Shut(e) || Earned(e) || Deaths(e.deathsIn) < 1 || PM.HasFlag(HintedPrefix + e.id)) continue;
+            PM.SetFlag(HintedPrefix + e.id, 1);
+            DungeonMaster.Say(e.shutHint);
+            return;
+        }
     }
 
     // After a win: what opened is shown at once (the fog lifts over the table where the player stands), then the player
     // is taken to the map, unless something holds the table (the sheet lesson).
     IEnumerator BackToMap()
     {
-        yield return new WaitForSecondsRealtime(.3f);
+        yield return GameManager.WaitCutscene(.3f);
         for (float until = Time.unscaledTime + 8f; Time.unscaledTime < until; )
         {
             bool loading = loader != null && loader.Busy;
@@ -445,13 +500,30 @@ public class CampaignManager : Singleton<CampaignManager>
 
     void OnRunEnded(bool victory)
     {
-        if (!victory || IntroController.PracticeRunning) return;
-        // The place whose level was won (a run continued from the old menu, or started elsewhere, counts too).
+        deathCountedIn = null;
+        if (IntroController.PracticeRunning) return;
+        // The place whose level was played (a run continued from the old menu, or started elsewhere, counts too).
         var level = RunManager.HasInstance ? RunManager.Instance.Level : null;
         if (Current == null || Current.level != level) Current = PlaceOf(level);
         if (Current == null) return;
+        if (!victory)
+        {
+            if (PM != null && ProgressionManager.MetaActive) { PM.SetFlag(DeathsPrefix + Current.id, Deaths(Current) + 1); deathCountedIn = Current; }
+            return;
+        }
         lastRunWon = true;
         MarkBeaten(Current);
+    }
+
+    // The place this run's death was counted in (OnRunEnded), so a revive can take it back.
+    CampaignEncounter deathCountedIn;
+
+    // Revived after the death was counted: the run goes on, so that death no longer counts toward a shut place.
+    void OnRevived(bool counted)
+    {
+        if (!counted || deathCountedIn == null || PM == null) { deathCountedIn = null; return; }
+        PM.SetFlag(DeathsPrefix + deathCountedIn.id, Mathf.Max(0, Deaths(deathCountedIn) - 1));
+        deathCountedIn = null;
     }
 
     bool wonLinePending;
@@ -476,6 +548,30 @@ public class CampaignManager : Singleton<CampaignManager>
     }
 
     // ── Text events ──
+
+    // Shut places whose deaths are in (CampaignEncounter.deathsToOpen) rise into view one after another, each with its line.
+    IEnumerator PopPending(Action popped)
+    {
+        if (popping || PM == null || Map == null || openEverything) yield break;
+        popping = true;
+        try
+        {
+            int shown = Mathf.Min(OpenAct, RevealedAct);
+            foreach (var e in AllEncounters)
+            {
+                if (e == null || !e.Locked || e.act > shown || PM.HasFlag(OpenedPrefix + e.id) || !Earned(e)) continue;
+                // Raised from the moment it starts coming up: quitting halfway leaves it on the map.
+                PM.SetFlag(OpenedPrefix + e.id, 1);
+                popped?.Invoke();
+                if (e.openedLine != null && !e.openedLine.IsEmpty) DungeonMaster.Say(e.openedLine);
+                if (fog) StartCoroutine(Rustle(.6f));
+                yield return Map.PopIn(e, .9f);
+            }
+        }
+        finally { popping = false; }
+    }
+
+    bool popping;
 
     // Every event whose act is now shown and that hasn't been seen yet, one after another.
     IEnumerator RunEvents()
@@ -536,21 +632,45 @@ public class CampaignManager : Singleton<CampaignManager>
         MessageLog.Post(line, MessageKind.Info);
     }
 
-    // Debug: every campaign flag cleared, the cloth back over every closed act and the figure home.
+    // Debug: every campaign flag cleared (the map unseen, deaths, shut places shut again) and the map off the table, so
+    // the first reveal's cloth drop plays again (the map view plays it at once, ReplayFirstReveal).
     void ResetCampaign()
     {
-        if (PM == null) return;
+        if (PM == null || Map == null) return;
         foreach (var e in AllEncounters) if (e != null) PM.SetFlag(BeatenPrefix + e.id, 0);
-        foreach (var f in new[] { ActFlag, RevealedFlag, AtFlag, WonFlag }) PM.SetFlag(f, 0);
+        foreach (var f in new[] { ActFlag, RevealedFlag, AtFlag, WonFlag, SeenFlag }) PM.SetFlag(f, 0);
         foreach (var ev in events) if (ev != null) PM.SetFlag(EventPrefix + ev.id, 0);
         if (InventoryManager.HasInstance)
             foreach (var item in InventoryManager.Instance.itemCatalog)
                 if (item != null && !string.IsNullOrEmpty(item.saveId) && PM.GetFlag(GiftPrefix + item.saveId) != 0) PM.SetFlag(GiftPrefix + item.saveId, 0);
+        // Collected first: the flags can't change while they are being read.
+        var cleared = new List<string>();
+        foreach (var kv in PM.AllFlags)
+            if (kv.Value != 0 && (kv.Key.StartsWith(DeathsPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(OpenedPrefix, StringComparison.Ordinal)
+                || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal)))
+                cleared.Add(kv.Key);
+        foreach (var key in cleared) PM.SetFlag(key, 0);
+        deathCountedIn = null;
         revealedNow = 0;
-        RefreshMarker();
         wonLinePending = false;
-        ShowActs();
+        if (figure != null) { Destroy(figure); figure = null; figureCollider = null; }
+        if (marker != null) Destroy(marker);
+        Map.dropPending = true;
+        Map.gameObject.SetActive(false);
+    }
+
+    // After a debug reset, in the map view: the cloth drops onto the bare table again, as the first time.
+    IEnumerator ReplayFirstReveal(Player player)
+    {
+        yield return StartCoroutine(GuardedRoutine.Run(BigReveal(), _ => { rising = false; Map.gameObject.SetActive(true); RepairMap(); ShowActs(); }));
+        if (PM != null && !PM.HasFlag(SeenFlag))
+        {
+            PM.SetFlag(SeenFlag, 1);
+            if (firstLookLine != null && !firstLookLine.IsEmpty) DungeonMaster.Say(firstLookLine);
+        }
         PlaceFigure(At, true);
+        RefreshMarker();
+        yield return Frame(player, .6f);
     }
 
     // A run saved on quit: its place, class and where it stopped.
@@ -600,11 +720,14 @@ public class CampaignManager : Singleton<CampaignManager>
         }
 
         // Acts opened since the map was last seen: their cloth is rolled back now, and the view widens to take them in.
-        while (revealing) yield return null;
+        while (revealing || popping) yield return null;
         int shownBefore = Mathf.Min(OpenAct, RevealedAct);
         // On this manager, not the table's sitting coroutine: a table switched off mid-reveal can't leave it half done.
         yield return StartCoroutine(GuardedRoutine.Run(RevealPending()));
-        if (frameOpenLand && Mathf.Min(OpenAct, RevealedAct) != shownBefore) yield return Frame(player, .9f);
+        bool popped = false;
+        yield return StartCoroutine(GuardedRoutine.Run(PopPending(() => popped = true)));
+        SayShutHint();
+        if (frameOpenLand && (popped || Mathf.Min(OpenAct, RevealedAct) != shownBefore)) yield return Frame(player, .9f);
         yield return RunEvents();
 
         SavedRun(out var savedPlace, out var savedClass, out var savedDetail);
@@ -622,11 +745,14 @@ public class CampaignManager : Singleton<CampaignManager>
         {
             if (asking || MenuOpen() || eventScreen != null && eventScreen.Open || heroSelect != null && heroSelect.Open || changingClass) return;
             int count = KeyPicks().Count;
-            keyPick = keyPick < 0 ? (hovered != null ? Mathf.Max(0, keyPicks.IndexOf(hovered)) : 0) : (keyPick + InputManager.Instance.NavigateStep + count) % count;
+            // Nothing to step through (the map is being laid out again after a debug reset).
+            if (count == 0) { keyPick = -1; return; }
+            keyPick =keyPick < 0 ? (hovered != null ? Mathf.Max(0, keyPicks.IndexOf(hovered)) : 0) : (keyPick + InputManager.Instance.NavigateStep + count) % count;
         }
         void OnSubmit()
         {
             if (asking || MenuOpen() || eventScreen != null && eventScreen.Open || heroSelect != null && heroSelect.Open || changingClass) return;
+            if (walking) return;   // that press ends the walk (Walk)
             if (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking) return;   // that press moves his line on
             if (keyPick >= 0) submitted = true;
         }
@@ -665,10 +791,14 @@ public class CampaignManager : Singleton<CampaignManager>
                 if (resetting)
                 {
                     resetting = false;
+                    if (card != null) { card.Hide(); card.ShowHint(false); }
+                    Unhover();
                     ResetCampaign();
+                    yield return ReplayFirstReveal(player);
                     SavedRun(out savedPlace, out savedClass, out savedDetail);
                     if (Coop.Running) { savedPlace = null; savedClass = null; }
-                    yield return Frame(player, .6f);
+                    submitted = false; keyPick = -1;
+                    if (card != null) card.ShowHint(true, Hint);
                 }
                 if (completing != null)
                 {
@@ -682,6 +812,7 @@ public class CampaignManager : Singleton<CampaignManager>
                     if (frameOpenLand && Mathf.Min(OpenAct, RevealedAct) != shown) yield return Frame(player, .9f);
                     SayWonLine();
                     yield return RunEvents();
+                    submitted = false;   // a key pressed while it played is not a pick
                     continue;
                 }
                 if (clicked && !asking && !MenuOpen())
@@ -700,7 +831,8 @@ public class CampaignManager : Singleton<CampaignManager>
                         if (!IsOpen(e)) { }
                         else if (e.kind == CampaignEncounterKind.Placeholder) NotificationUI.Show(placeholderText);
                         else if (e.kind == CampaignEncounterKind.Home) { if (At != e) yield return Walk(e); }
-                        else if (e.level != null)
+                        else if (e.level == null) NotificationUI.Show(placeholderText);   // a Level place with no level (CheckPlaces logs it)
+                        else
                         {
                             // The saved run's place continues it, as whatever class the run was played with (when it
                             // still can be: checked before anything moves).
@@ -805,7 +937,7 @@ public class CampaignManager : Singleton<CampaignManager>
                 cardKind = e.KindName + (e.kind == CampaignEncounterKind.Level && e.level != null ? $"  ·  {e.level.FloorCount} floor{(e.level.FloorCount == 1 ? "" : "s")}" : "") + $"  ·  Act {e.act}";
                 cardStatus = saved ? $"<color=#E8C46A>Your run waits here: {savedDetail}. Click to continue.</color>"
                     : beaten ? "<color=#8FD18B>Beaten</color>"
-                    : e.kind == CampaignEncounterKind.Placeholder ? "<color=#A9A49A>Not made yet</color>" : null;
+                    : e.kind == CampaignEncounterKind.Placeholder || e.kind == CampaignEncounterKind.Level && e.level == null ? "<color=#A9A49A>Not made yet</color>" : null;
             }
             card.Show(e.displayName, cardKind, e.description, cardStatus, hovered.transform.position + Vector3.up * 2f, cam);
         }
@@ -903,22 +1035,46 @@ public class CampaignManager : Singleton<CampaignManager>
             for (int i = 1; i <= steps; i++) stops.Add(Map.OnGround(Vector3.Lerp(last, p, i / (float)steps), .05f));
             last = p;
         }
-        foreach (var stop in stops)
+        // A click or Submit ends the walk at once: the figure is set down where it was going.
+        walking = true; skipWalk = false;
+        if (InputManager.HasInstance) InputManager.Instance.SubmitPressed += SkipWalk;
+        try
         {
-            var start = figure.transform.localPosition;
-            var dir = stop - start; dir.y = 0;
-            if (dir.sqrMagnitude > .01f) figure.transform.localRotation = Quaternion.Slerp(figure.transform.localRotation, Quaternion.LookRotation(dir) * Quaternion.Euler(0, 90, 0), .6f);
-            for (float t = 0; t < hopSeconds; t += Time.deltaTime)
+            foreach (var stop in stops)
             {
-                float k = t / hopSeconds;
-                figure.transform.localPosition = Vector3.Lerp(start, stop, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * hopHeight;
-                yield return null;
+                var start = figure.transform.localPosition;
+                var dir = stop - start; dir.y = 0;
+                if (dir.sqrMagnitude > .01f) figure.transform.localRotation = Quaternion.Slerp(figure.transform.localRotation, Quaternion.LookRotation(dir) * Quaternion.Euler(0, 90, 0), .6f);
+                for (float t = 0; t < hopSeconds && !skipWalk; t += Time.deltaTime)
+                {
+                    float k = t / hopSeconds;
+                    figure.transform.localPosition = Vector3.Lerp(start, stop, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * hopHeight;
+                    yield return null;
+                    if (InputManager.HasInstance && InputManager.Instance.PointerClicked) skipWalk = true;
+                }
+                if (skipWalk) break;
+                figure.transform.localPosition = stop;
+                if (UIFeedbackSettings.Shared != null && stops.IndexOf(stop) % 2 == 0) UIFeedbackSettings.Shared.Hover();
             }
-            figure.transform.localPosition = stop;
-            if (UIFeedbackSettings.Shared != null && stops.IndexOf(stop) % 2 == 0) UIFeedbackSettings.Shared.Hover();
+            if (skipWalk && figure != null && stops.Count > 0)
+            {
+                var end = stops[stops.Count - 1];
+                var dir = end - figure.transform.localPosition; dir.y = 0;
+                if (dir.sqrMagnitude > .01f) figure.transform.localRotation = Quaternion.LookRotation(dir) * Quaternion.Euler(0, 90, 0);
+                figure.transform.localPosition = end;
+                yield return null;   // the press that ended the walk is not also a press on the map
+            }
+        }
+        finally
+        {
+            if (InputManager.HasInstance) InputManager.Instance.SubmitPressed -= SkipWalk;
+            walking = false; skipWalk = false;
         }
         At = to;
     }
+
+    bool walking, skipWalk;
+    void SkipWalk() => skipWalk = true;
 
     // ── Changing class: the class figures come out over the map ──
 
@@ -1178,7 +1334,7 @@ public class CampaignManager : Singleton<CampaignManager>
         var min = new Vector2(float.MaxValue, float.MaxValue); var max = -min;
         foreach (var p in Map.Points)
         {
-            if (p.encounter == null || p.encounter.act > shown) continue;
+            if (p.encounter == null || p.encounter.act > shown || Shut(p.encounter)) continue;
             var l = p.transform.localPosition; float r = p.radius + 1f;
             min = Vector2.Min(min, new Vector2(l.x - r, l.z - r)); max = Vector2.Max(max, new Vector2(l.x + r, l.z + r));
         }

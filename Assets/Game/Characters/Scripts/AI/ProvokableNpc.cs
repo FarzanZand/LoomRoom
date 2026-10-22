@@ -37,6 +37,8 @@ public class ProvokableNpc : MonoBehaviour
     [Min(0), Tooltip("Camera shake when it turns (impulse force; 0 = none).")]
     public float turnShake = .5f;
 
+    const int MerchantRule = 2;   // RuleManager's rule two, quoted on the first blow
+
     public int Hits { get; private set; }
     public bool Turned { get; private set; }
     float firstHitAt = -100f;
@@ -73,6 +75,8 @@ public class ProvokableNpc : MonoBehaviour
             firstHitAt = Time.time;
             Post(provokedMessage);
             Say(provokedLines);
+            // House rule two: hitting the merchant is allowed, but not recommended.
+            RuleManager.QuoteRule(MerchantRule);
             return;
         }
         Turned = true;

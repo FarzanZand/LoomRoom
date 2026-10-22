@@ -32,6 +32,8 @@ public class QuestLogUI : MonoBehaviour
     readonly Dictionary<string, float> doneAt = new();
     readonly Dictionary<string, float> poppedAt = new();
     ProgressionManager progression;
+    InputManager input;
+    readonly List<string> finished = new();
     float slideStart = -10f, pulseStart = -10f;
     bool visible, connected;
 
@@ -45,11 +47,15 @@ public class QuestLogUI : MonoBehaviour
     {
         if (progression != null) progression.FlagChanged -= FlagChanged;
         progression = null;
+        if (input != null) input.BindingsChanged -= Rebuild;
+        input = null;
     }
 
     // The HUD can wake before the managers do: connect as soon as ProgressionManager is there.
     void Connect()
     {
+        // Lines name the player's keys: written again after a rebind.
+        if (input == null && InputManager.HasInstance) { input = InputManager.Instance; input.BindingsChanged += Rebuild; }
         if (progression != null || !ProgressionManager.HasInstance) return;
         progression = ProgressionManager.Instance;
         progression.FlagChanged += FlagChanged;
@@ -108,12 +114,12 @@ public class QuestLogUI : MonoBehaviour
 
     void Update()
     {
-        if (progression == null) Connect();
+        if (progression == null || input == null) Connect();
         if (InDungeon != shownInDungeon) { shownInDungeon = InDungeon; Rebuild(); }
         float now = Time.unscaledTime;
         if (doneAt.Count > 0)
         {
-            var finished = new List<string>();
+            finished.Clear();
             foreach (var pair in doneAt)
             {
                 float t = now - pair.Value - doneSeconds;

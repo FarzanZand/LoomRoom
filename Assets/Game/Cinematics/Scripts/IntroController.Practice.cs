@@ -337,7 +337,7 @@ public partial class IntroController
 
     IEnumerator AfterPracticeDeath()
     {
-        yield return new WaitForSecondsRealtime(.6f);
+        yield return GameManager.WaitCutscene(.6f);
         bool dark = false, started = false;
         yield return TableManager.ReturnToRoom(loader, () => dark = true, ok => started = ok, this);
         if (!started) yield break; // logged by ReturnToRoom
