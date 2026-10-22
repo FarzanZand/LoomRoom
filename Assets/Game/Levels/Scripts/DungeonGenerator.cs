@@ -123,6 +123,28 @@ public partial class DungeonGenerator : MonoBehaviour
 
     bool Authored => data.layoutMode == DungeonLayoutMode.Authored;
 
+    // A cell of the merchant's room away from the stall (its Merchant socket, else the room's middle), off the walkways
+    // to the doors and not at the wall, the farthest such cell from the stall.
+    Vector2Int ClearOfMerchant(int room)
+    {
+        var stall = Cell(Layout.RoomCenter(room));
+        foreach (var socket in GetComponentsInChildren<DungeonSocket>(true))
+            if (socket != null && socket.type == DungeonSocketType.Merchant && Layout.RoomAt(CellOf(socket.transform.position)) == room) { stall = socket.transform.position; break; }
+        var lanes = Lanes(room);
+        Vector2Int best = Layout.Exit; float far = -1;
+        foreach (var c in Layout.RoomCells(room))
+        {
+            if (lanes.Contains(c)) continue;
+            bool inner = true;
+            foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right }) if (!Layout.InRoom(room, c + d)) inner = false;
+            if (!inner) continue;
+            var at = Cell(c); at.y = stall.y;
+            float dist = (at - stall).sqrMagnitude;
+            if (dist > far) { far = dist; best = c; }
+        }
+        return best;
+    }
+
     // A hand-painted floor plan (the level's Authored Map): rooms, passages and doors exactly as drawn.
     System.Collections.Generic.List<(Vector2Int, Vector2Int)> AuthoredLayout(TableLevelData level, int seed)
     {
@@ -326,6 +348,9 @@ public partial class DungeonGenerator : MonoBehaviour
             if(delta.sqrMagnitude<closest){closest=delta.sqrMagnitude;SpawnRotation=Quaternion.LookRotation(delta);}
         }
         ExitPoint = Cell(Layout.Exit);
+        // The merchant can keep the last room (a painted layout's merchant tick): the way out then goes to the room's
+        // free cell farthest from the stall, so the ladder never stands in the merchant's shop counter.
+        if (MerchantRoom >= 0 && Layout.RoomAt(Layout.Exit) == MerchantRoom) ExitPoint = Cell(ClearOfMerchant(MerchantRoom));
         // The way in: a ladder right behind the player, who starts facing away from it into the room.
         var forward = SpawnRotation * Vector3.forward;
         var ladderAt = SpawnPoint - forward * 1.1f;

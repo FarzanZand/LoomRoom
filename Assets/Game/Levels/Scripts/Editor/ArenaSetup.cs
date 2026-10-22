@@ -140,7 +140,7 @@ public static partial class ArenaSetup
     static DungeonBiome Biome(DungeonRoomStyle style, System.Text.StringBuilder log)
     {
         string path = Dir + "/Arena biome.asset";
-        if (AssetDatabase.LoadAssetAtPath<DungeonBiome>(path) == null) { AssetDatabase.CopyAsset("Assets/Game/Levels/Dungeon1/Biomes/Cellars.asset", path); log.Append("copied the Cellars as the Arena biome; "); }
+        if (AssetDatabase.LoadAssetAtPath<DungeonBiome>(path) == null) { AssetDatabase.CopyAsset("Assets/Game/Levels/Shared/Biomes/Cellars.asset", path); log.Append("copied the Cellars as the Arena biome; "); }
         var b = AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
         b.displayName = "The Arena";
         // Its own words (the copy came with the Cellars'): the pit's template has the Dungeon Master's lines on the way in.

@@ -88,6 +88,9 @@ public partial class DungeonGenerator
     // template's own settings apply; these are the first draws of the extra stream.
     int ChooseMerchantRoom(RoomRole[] roles,System.Func<int,bool> hasTemplate)
     {
+        // A painted layout can name the merchant's room itself (AuthoredRoom.merchant): always there, no roll.
+        if(Authored && data.merchantPrefab!=null && data.authoredRooms!=null)
+            for(int i=0;i<data.authoredRooms.Length && i<roles.Length;i++)if(data.authoredRooms[i]!=null && data.authoredRooms[i].merchant)return i;
         if(data.merchantPrefab==null || extraRandom.NextDouble()>=data.MerchantChance(FloorNumber))return -1;
         var candidates=new System.Collections.Generic.List<int>();
         var plain=new System.Collections.Generic.List<int>();

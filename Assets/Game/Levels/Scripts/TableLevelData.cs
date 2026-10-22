@@ -189,6 +189,7 @@ public class TableLevelData : ScriptableObject
         [HorizontalGroup(70), LabelWidth(40), Range(0, 3), Tooltip("Quarter turns of the template.")] public int turns;
         [HorizontalGroup(80), LabelWidth(44), Min(0), Tooltip("Height in tiles; 0 keeps the generated height.")] public int height;
         [HorizontalGroup(70), LabelWidth(36), Range(0, 3), Tooltip("Board-game levels: how many layers the room is raised; stairs lead up to it.")] public int raised;
+        [HorizontalGroup(70), LabelWidth(52), Tooltip("The merchant stands in this room, on every floor of this layout (the level needs a Merchant Prefab).")] public bool merchant;
     }
     [System.Serializable]
     public class AuthoredMarker

@@ -7,7 +7,7 @@ using UnityEngine;
 // DungeonKitBlocks (built of the room's own stone when the floor is generated); the pillar, broken pillar, arch and
 // gallery railing also carry a painted model (Rooms/Kit/Models, Synty Dark Fantasy pieces through the painted-prop
 // pipeline) that the level uses instead of those blocks while TableLevelData.kitModels is on (DungeonKitPiece).
-// Writes the kit to Levels/Dungeon1/Rooms/Kit, the chunks to Rooms/Templates/Chunks, and adds the chunks to Cellars' and
+// Writes the kit to Levels/Dungeon1/Rooms/Kit, the chunks to Levels/Shared/Rooms (every Dungeon level shares them), and adds the chunks to Cellars' and
 // Crypt's room pools (DungeonBiome.roomTemplates). Only what doesn't exist yet is made: a kit piece or room you have
 // edited is never overwritten, and pool entries you changed or added stay (Build Kit and Chunks (Overwrite) rebuilds
 // everything of mine from scratch).
@@ -19,7 +19,7 @@ public static class DungeonChunkKit
     const string Rooms = "Assets/Game/Levels/Dungeon1/Rooms";
     const string KitFolder = Rooms + "/Kit";
     const string ModelFolder = KitFolder + "/Models";
-    const string ChunkFolder = Rooms + "/Templates/Chunks";
+    const string ChunkFolder = "Assets/Game/Levels/Shared/Rooms";
     const string Synty = "Assets/Synty/PolygonDarkFantasy/Prefabs";
     const float C = 2f;   // Dungeon1's cell size
     static readonly Dictionary<string, GameObject> kit = new();
@@ -34,13 +34,13 @@ public static class DungeonChunkKit
         overwrite = replaceExisting;
         if (!AssetDatabase.IsValidFolder(KitFolder)) AssetDatabase.CreateFolder(Rooms, "Kit");
         if (!AssetDatabase.IsValidFolder(ModelFolder)) AssetDatabase.CreateFolder(KitFolder, "Models");
-        if (!AssetDatabase.IsValidFolder(ChunkFolder)) AssetDatabase.CreateFolder(Rooms + "/Templates", "Chunks");
+        if (!AssetDatabase.IsValidFolder(ChunkFolder)) AssetDatabase.CreateFolder("Assets/Game/Levels/Shared", "Rooms");
         BuildKit();
         var chunks = BuildChunks();
         var log = new System.Text.StringBuilder($"kit {kit.Count} pieces, chunks: ");
         foreach (var c in chunks) log.Append(c.name).Append(", ");
-        Pool("Assets/Game/Levels/Dungeon1/Biomes/Cellars.asset", chunks, c => c.cellars);
-        Pool("Assets/Game/Levels/Dungeon1/Biomes/Crypt.asset", chunks, c => c.crypt);
+        Pool("Assets/Game/Levels/Shared/Biomes/Cellars.asset", chunks, c => c.cellars);
+        Pool("Assets/Game/Levels/Shared/Biomes/Crypt.asset", chunks, c => c.crypt);
         AssetDatabase.SaveAssets();
         return log.ToString();
     }
@@ -620,19 +620,26 @@ public static class DungeonChunkKit
     // then add it to a biome's Room Templates.
     public static void NewRoomTemplate()
     {
-        if (!AssetDatabase.IsValidFolder(ChunkFolder)) AssetDatabase.CreateFolder(Rooms + "/Templates", "Chunks");
-        var c = Begin("New room", 7, 7, 1, new Vector2Int(3, 0));
+        if (!AssetDatabase.IsValidFolder(ChunkFolder)) AssetDatabase.CreateFolder("Assets/Game/Levels/Shared", "Rooms");
+        var prefab = NewRoomTemplate(ChunkFolder, "New room");
+        AssetDatabase.OpenAsset(prefab);
+        Selection.activeObject = prefab;
+    }
+
+    // The same blank room saved as <folder>/<name>.prefab (a free name), not opened (Asset Studio's New room).
+    public static GameObject NewRoomTemplate(string folder, string name)
+    {
+        var c = Begin(name, 7, 7, 1, new Vector2Int(3, 0));
         Light(c, 0, 3, West); Light(c, 6, 3, East);
         Socket(c, DungeonSocketType.Enemy, c.Cell(2, 4), .8f);
-        string path = AssetDatabase.GenerateUniqueAssetPath($"{ChunkFolder}/New room.prefab");
+        string path = AssetDatabase.GenerateUniqueAssetPath($"{folder}/{name}.prefab");
         var t = c.root.gameObject.AddComponent<DungeonRoomTemplate>();
         var rows = new string[c.h];
         for (int y = 0; y < c.h; y++) { var row = new char[c.w]; for (int x = 0; x < c.w; x++) row[x] = c.doors.Contains(new Vector2Int(x, y)) ? '+' : new Vector2Int(x, y) == c.centre ? '*' : '#'; rows[y] = new string(row); }
         t.paintFootprint = true; t.width = c.w; t.height = c.h; t.rows = rows; t.replaceGeneratedProps = false; t.replaceGeneratedEnemies = false;
         var prefab = PrefabUtility.SaveAsPrefabAsset(c.root.gameObject, path);
         UnityEngine.Object.DestroyImmediate(c.root.gameObject);
-        AssetDatabase.OpenAsset(prefab);
-        Selection.activeObject = prefab;
+        return prefab;
     }
 
     // Adds my chunks the biome doesn't list yet (with their kinds of room and weight); entries already there stay as you

@@ -48,6 +48,7 @@ public static class AssetStudioCatalog
         var sounds = Cat("Sounds", "Sound data (AudioData) and the clips they play.");
         var music = Cat("Music", "Music tracks.");
         var art = Cat("Painted art", "The painted pixel textures of items, props and characters.");
+        var campaign = Cat("Campaign", "Places on the campaign map (CampaignEncounter) and campaign events (CampaignEvent). The World view shows how they hang together.");
 
         // Typed assets.
         AddTyped<ItemData>(items, i => i.itemType.ToString(), i => $"tier {i.tier} · {i.rarity}" + (string.IsNullOrEmpty(i.description) ? "" : " · " + i.description));
@@ -56,6 +57,8 @@ public static class AssetStudioCatalog
         AddTyped<DungeonBiome>(levels, b => "Biome", b => b.name);
         AddTyped<BossFight>(levels, b => "Boss fight", b => b.name);
         AddTyped<AudioData>(sounds, a => "Sound data", a => a.name);
+        AddTyped<CampaignEncounter>(campaign, p => $"Place · Act {p.act}", p => p.displayName + " · " + p.KindName + (p.level != null ? " · " + p.level.name : ""));
+        AddTyped<CampaignEvent>(campaign, e => $"Event · after Act {e.afterAct}", e => e.title);
 
         // Prefabs, sorted by what is on them.
         foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { Root }))
@@ -150,7 +153,7 @@ public static class AssetStudioCatalog
 
     // The whole library as JSON (asset_studio_catalog.json), for Main or for review.
     [Serializable] class ExportEntry { public string id, name, category, kind, path, description; }
-    [Serializable] class ExportFile { public string game = "The Table Waits"; public string exported_at; public int total; public List<ExportEntry> entries = new(); }
+    [Serializable] class ExportFile { public string game = "The Table Awaits"; public string exported_at; public int total; public List<ExportEntry> entries = new(); }
     public static string Export(List<Category> cats, string file)
     {
         var x = new ExportFile { exported_at = DateTime.UtcNow.ToString("o") };

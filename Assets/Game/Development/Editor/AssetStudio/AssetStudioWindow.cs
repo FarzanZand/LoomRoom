@@ -13,7 +13,7 @@ using UnityEngine;
 // right, the asset's own inspector, its ID and path, and "Ask Main": a request about this asset, saved to the same
 // outbox as the game's F9 prompt (DevReportStore) with a picture of the preview, for the Main session to pick up.
 // Browsing never changes an asset; edits are made in the inspector shown, exactly as in Unity's own.
-public class AssetStudioWindow : EditorWindow
+public partial class AssetStudioWindow : EditorWindow
 {
     [MenuItem("Tools/LoomRoom/Asset Studio")]
     public static AssetStudioWindow Open()
@@ -80,6 +80,7 @@ public class AssetStudioWindow : EditorWindow
     {
         string keep = selected?.id;
         categories = AssetStudioCatalog.Build();
+        world = null;   // the World view rebuilds from the assets too
         AssetStudioUsage.Forget();
         categoryIndex = Mathf.Clamp(categoryIndex, 0, categories.Count - 1);
         Filter();
@@ -176,7 +177,7 @@ public class AssetStudioWindow : EditorWindow
         if (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout) PlaceInspector();
         int total = categories.Sum(c => c.entries.Count);
         GUI.Label(new Rect(Pad, full.height - 22, full.width - Pad * 2, 18),
-            EditorApplication.timeSinceStartup < noticeUntil ? notice : $"{shown.Count} shown · {total} entries in the library · The Table Waits", dim);
+            EditorApplication.timeSinceStartup < noticeUntil ? notice : $"{shown.Count} shown · {total} entries in the library · The Table Awaits", dim);
     }
 
     void DrawTop(Rect r)
@@ -214,24 +215,26 @@ public class AssetStudioWindow : EditorWindow
         if (only != inGameOnly) { inGameOnly = only; EditorPrefs.SetBool(InGameOnlyKey, only); Filter(); listScroll = Vector2.zero; }
         GUI.Label(new Rect(r.x + 8, r.yMax - 24, r.width - 16, 18), "<color=#6fd46a>✔</color> = used in the game", new GUIStyle(dim) { richText = true });
         r.height -= 50;
-        var view = new Rect(0, 0, r.width - 16, (categories.Count + 3) * 30 + 12);
+        var view = new Rect(0, 0, r.width - 16, (categories.Count + 4) * 30 + 12);
         categoryScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 26, r.width, r.height - 26), categoryScroll, view);
         if (GUI.Toggle(new Rect(4, 2, view.width - 4, 28), showingRecent, $"  Recent   <color=#a9a49a>{recent.Count}</color>", showingRecent ? cellSelected : cell) && !showingRecent)
-        { showingRecent = true; showingRequests = showingAll = false; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null); }
+        { showingRecent = true; showingRequests = showingAll = showingWorld = false; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null); }
         int open = requestList.Count(q => q.status != DevReportStore.Status.Done && q.status != DevReportStore.Status.Failed);
         if (GUI.Toggle(new Rect(4, 32, view.width - 4, 28), showingRequests, $"  Requests to Main   <color=#a9a49a>{open}</color>", showingRequests ? cellSelected : cell) && !showingRequests)
-        { showingRequests = true; showingRecent = showingAll = false; RefreshRequests(); GUI.FocusControl(null); }
+        { showingRequests = true; showingRecent = showingAll = showingWorld = false; RefreshRequests(); GUI.FocusControl(null); }
         int total = categories.Sum(c => Count(c));
         if (GUI.Toggle(new Rect(4, 62, view.width - 4, 28), showingAll, $"  Everything   <color=#a9a49a>{total}</color>", showingAll ? cellSelected : cell) && !showingAll)
-        { showingAll = true; showingRecent = showingRequests = false; kindFilter = 0; listScroll = Vector2.zero; Filter(); GUI.FocusControl("search"); }
+        { showingAll = true; showingRecent = showingRequests = showingWorld = false; kindFilter = 0; listScroll = Vector2.zero; Filter(); GUI.FocusControl("search"); }
+        // The World: the campaign and the levels as one tree, with New and Tidy (AssetStudioWindow.World).
+        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingWorld, "  World   <color=#a9a49a>campaign & levels</color>", showingWorld ? cellSelected : cell) && !showingWorld) OpenWorld();
         for (int i = 0; i < categories.Count; i++)
         {
             var c = categories[i];
-            var row = new Rect(4, 12 + (i + 3) * 30, view.width - 4, 28);
-            bool on = !showingRecent && !showingRequests && !showingAll && i == categoryIndex;
+            var row = new Rect(4, 12 + (i + 4) * 30, view.width - 4, 28);
+            bool on = !showingRecent && !showingRequests && !showingAll && !showingWorld && i == categoryIndex;
             if (GUI.Toggle(row, on, $"  {c.name}   <color=#a9a49a>{Count(c)}</color>", on ? cellSelected : cell) && !on)
             {
-                showingRecent = showingRequests = showingAll = false; categoryIndex = i; kindFilter = 0; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null);
+                showingRecent = showingRequests = showingAll = showingWorld = false; categoryIndex = i; kindFilter = 0; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null);
             }
         }
         GUI.EndScrollView();
@@ -240,6 +243,7 @@ public class AssetStudioWindow : EditorWindow
     void DrawList(Rect r)
     {
         if (showingRequests) { DrawRequestList(r); return; }
+        if (showingWorld) { DrawWorldTree(r); return; }
         GUI.Box(r, GUIContent.none);
         GUI.SetNextControlName("search");
         string s = EditorGUI.TextField(new Rect(r.x + 6, r.y + 6, r.width - 12, 22), search, EditorStyles.toolbarSearchField);
@@ -289,6 +293,7 @@ public class AssetStudioWindow : EditorWindow
     void DrawPreview(Rect r)
     {
         if (showingRequests) { DrawRequest(r); return; }
+        if (showingWorld && DrawWorldMiddle(ref r)) return;
         GUI.Box(r, GUIContent.none);
         if (selected == null) { GUI.Label(new Rect(r.x + 16, r.y + 16, r.width - 32, 40), "Pick something on the left.", dim); return; }
         GUI.Label(new Rect(r.x + 12, r.y + 6, r.width - 24, 30), selected.name, titleStyle);
@@ -304,7 +309,8 @@ public class AssetStudioWindow : EditorWindow
     {
         if (showingRequests) { DrawRequestDetails(r); return; }
         GUI.Box(r, GUIContent.none);
-        if (selected == null) return;
+        // The World can show an asset the library doesn't list: just its inspector.
+        if (selected == null) { if (showingWorld && inspected != null) inspectorWanted = new Rect(r.x + 4, r.y + 8, r.width - 8, r.height - 12); return; }
         float y = r.y + 8;
         GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "DETAILS", gold); y += 18;
         if (!string.IsNullOrEmpty(selected.description)) { float dh = dim.CalcHeight(new GUIContent(selected.description), r.width - 16); GUI.Label(new Rect(r.x + 8, y, r.width - 16, dh), selected.description, dim); y += dh + 4; }
@@ -381,12 +387,7 @@ public class AssetStudioWindow : EditorWindow
             showingRecent = showingRequests = showingAll = false; categoryIndex = categories.FindIndex(c => c.name == "Items"); kindFilter = 0; search = ""; Filter(); Select(e);
             Toast($"Made {copy.name}. Rename it in the inspector; its icon renders on its own.");
         }));
-        if (asset is GameObject go)
-        {
-            if (go.GetComponent<EnemyBrain>() != null) actions.Add(("Fight it in the arena", "Start the Debug arena with just this enemy in front of you.", () => Toast(GameLauncher.FightInArena(go))));
-            if (go.GetComponent<DungeonRoomTemplate>() != null) actions.Add(("Play from this room", "A new run that opens in this room (the dev console's loadtemplate).", () => Toast(GameLauncher.PlayRoom(go))));
-        }
-        if (asset is TableLevelData level) actions.Add(("Play this level", "Generate floor 1 of this level and play it.", () => Toast(GameLauncher.PlayLevel(level))));
+        actions.AddRange(TestActions(asset));
         if (asset is Texture2D) actions.Add(("Open in image editor", "Opens the PNG in your default image editor. Unity reimports it when saved.", () => EditorUtility.OpenWithDefaultApp(selected.path)));
         bool listing = usedBy != null && usedByFor == selected.id;
         actions.Add((listing ? "Hide where used" : "Where used", "Every prefab, scene and asset that points at this one.", () =>
@@ -534,6 +535,7 @@ public class AssetStudioWindow : EditorWindow
     void HandleKeys()
     {
         var e = Event.current;
+        if (showingWorld) return;   // the World's tree is clicked, not stepped through
         if (!EditorGUIUtility.editingTextField && preview != null && preview.HandlePaintKey(e)) return;
         if (e.type != EventType.KeyDown || GUI.GetNameOfFocusedControl() == "search" && e.keyCode != KeyCode.DownArrow && e.keyCode != KeyCode.UpArrow) return;
         if (EditorGUIUtility.editingTextField && GUI.GetNameOfFocusedControl() != "search") return;
