@@ -60,6 +60,17 @@ public class ScreenManager : Singleton<ScreenManager>
     [FoldoutGroup("Renderer features"), Tooltip("The Desktop Renderer's full-screen pass using Hidden/LoomRoom/Retro Screen (pixelate and colour banding).")]
     public ScriptableRendererFeature retroScreenFeature;
 
+    [FoldoutGroup("Stealth look"), LabelText("Look"), Tooltip("The view while the table player sneaks (Characters/Players/Settings/Stealth look: the ghost's look in grey), blended in over everything by StealthIndicatorUI.")]
+    public VolumeProfile stealthLook;
+    [FoldoutGroup("Stealth look"), LabelText("Hidden"), Range(0f, 1f), Tooltip("How strong the look is while crouched and seen by no one (1 = as strong as the profile).")]
+    public float stealthHiddenLook = .9f;
+    [FoldoutGroup("Stealth look"), LabelText("Crouched, seen"), Range(0f, 1f), Tooltip("How strong the look is while crouched but seen.")]
+    public float stealthCrouchedLook = .45f;
+    [FoldoutGroup("Stealth look"), LabelText("Muffled cutoff"), Min(10f), Tooltip("Low-pass cutoff (Hz) of everything heard while hidden; 22000 is unmuffled.")]
+    public float stealthMuffledCutoff = 1600f;
+    [FoldoutGroup("Stealth look"), LabelText("Fade"), Min(.01f), Tooltip("Seconds the look and the muffling take to come and go.")]
+    public float stealthFade = .5f;
+
     [Button("Reset Room to cabin preset")]
     void ResetRoomEffects() => roomEffects = ScreenEffectSettings.RoomLook();
 

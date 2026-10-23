@@ -5,20 +5,13 @@ using UnityEngine;
 // does. Crouched, the ghost's look in grey comes over the view (look, Stealth look: Ghost look with its tints made
 // neutral grey) at no more than half strength: a little of it while crouched, the half while hidden (seen by no one),
 // where what they hear is also muffled (a low-pass filter on the audio listener); it eases back as they are seen or
-// stand up.
+// stand up. The look's settings are on ScreenManager (Stealth look).
 public class StealthIndicatorUI : MonoBehaviour
 {
     [SerializeField] CanvasGroup visibility;
     [SerializeField] StealthEyeGraphic eye;
     [SerializeField] Color hiddenColor = new(.85f, .82f, .72f), seenColor = new(.95f, .58f, .35f);
     [SerializeField, Min(0)] float transitionDuration = .18f;
-    [Header("Hidden")]
-    [SerializeField, Tooltip("The view while sneaking (Characters/Players/Settings/Stealth look), blended in over everything.")]
-    UnityEngine.Rendering.VolumeProfile look;
-    [SerializeField, Range(0, 1), Tooltip("How strong the look is while hidden (1 = as strong as the profile).")] float hiddenLook = .9f;
-    [SerializeField, Range(0, 1), Tooltip("How strong the look is while crouched but seen.")] float crouchedLook = .45f;
-    [SerializeField, Min(10), Tooltip("Low-pass cutoff (Hz) of everything heard while hidden; 22000 is unmuffled.")] float muffledCutoff = 1600f;
-    [SerializeField, Min(.01f), Tooltip("Seconds the look and the muffling take to come and go.")] float hiddenFade = .5f;
     Tween transition;
     bool? lastSeen;
     float hiddenAmount, crouchAmount;
@@ -46,6 +39,8 @@ public class StealthIndicatorUI : MonoBehaviour
                 if (brain != null && brain.Character != null && brain.Character.IsAlive && brain.Perception != null && brain.Perception.Target == player && brain.Perception.TargetVisible) { seen = true; break; }
         bool exploring = !(GameManager.HasInstance && GameManager.Instance.State != GameState.Explore);
         bool hidden = sneaking && !seen && exploring;
+        var screen = ScreenManager.HasInstance ? ScreenManager.Instance : null;
+        float hiddenFade = screen != null ? screen.stealthFade : .5f;
         hiddenAmount = Mathf.MoveTowards(hiddenAmount, hidden ? 1f : 0f, Time.unscaledDeltaTime / hiddenFade);
         crouchAmount = Mathf.MoveTowards(crouchAmount, sneaking && exploring ? 1f : 0f, Time.unscaledDeltaTime / hiddenFade);
         Apply();
@@ -64,6 +59,10 @@ public class StealthIndicatorUI : MonoBehaviour
 
     void Apply()
     {
+        var screen = ScreenManager.HasInstance ? ScreenManager.Instance : null;
+        var look = screen != null ? screen.stealthLook : null;
+        float hiddenLook = screen != null ? screen.stealthHiddenLook : 0f, crouchedLook = screen != null ? screen.stealthCrouchedLook : 0f;
+        float muffledCutoff = screen != null ? screen.stealthMuffledCutoff : OpenCutoff;
         float k = hiddenAmount * hiddenAmount * (3f - 2f * hiddenAmount);
         float c = crouchAmount * crouchAmount * (3f - 2f * crouchAmount);
         // The look: a little while crouched, more while hidden; steady, no pulsing.
