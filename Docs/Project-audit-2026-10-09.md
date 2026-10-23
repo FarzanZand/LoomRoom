@@ -28,12 +28,12 @@ Still open:
 | 5 | `Cinematics/Scripts/CutsceneController.cs:34-37` | OnDisable mid-cutscene never calls `Finish()`: Cutscene state stays pushed, camera priority stays raised. |
 | 6 | `Cinematics/Scripts/TableManager.cs:252-257` | OnDisable pops Dialogue only if it is on top; `sitting` is cleared after the pops, so a disable during Zoom/menu wait can pop someone else's count. Needs an `ownsDialogue` flag. |
 | 7 | `Cinematics/Scripts/IntroController.Tabletop.cs:174,308` | `rolls = new int[3]` but `rolledAttributes` length is free; a 4th attribute throws mid-coroutine with Dialogue pushed, game freezes. |
-| 8 | `Characters/Scripts/DeathBurst.cs:349` | One `new Mesh` per body part per death, never destroyed. Leaks over a run. Also `?.`/`??` on Unity objects at :246, :304. |
-| 9 | `Levels/Scripts/DungeonGenerator.cs:250,262,270` | Shop template's height/style/openCeiling read via `TemplateOf(i)` before `MerchantRoom` is chosen (:347). Latent (current shop template sets none). |
+| 8 | `Characters/Scripts/Death/DeathBurst.cs:349` | One `new Mesh` per body part per death, never destroyed. Leaks over a run. Also `?.`/`??` on Unity objects at :246, :304. |
+| 9 | `Levels/Scripts/Generation/DungeonGenerator.cs:250,262,270` | Shop template's height/style/openCeiling read via `TemplateOf(i)` before `MerchantRoom` is chosen (:347). Latent (current shop template sets none). |
 | 10 | `Levels/IntroDungeon/IntroDungeon.asset:257` | `boardTileTaps: []`; the three `Shared/Board/Board tap *.wav` are unreferenced, so board taps never play. |
-| 11 | `Levels/Scripts/BoardReveal.cs:53-65` | Children filed by pivot: `Torches` root and `Dungeon HUD` canvas (both at table centre) get hidden/squashed with whatever room is at the centre. |
-| 12 | `Levels/Scripts/DungeonCombatFeedback.cs:59-71` + `TableLevelLoader.cs:280` | Missing HUD prefab throws `ArgumentException`; loader retry only catches `InvalidOperationException`, so the floor fails. |
-| 13 | `UI/Scripts/ShopUI.cs:46-50`, `PauseMenuUI`, `InventoryUI.cs:36`, `EndingController.cs:73/98`, `DialogueBridge` | Destroy/disable while open leaks the pushed state (Inventory pops only from a tween's OnComplete). |
+| 11 | `Levels/Scripts/On the table/BoardReveal.cs:53-65` | Children filed by pivot: `Torches` root and `Dungeon HUD` canvas (both at table centre) get hidden/squashed with whatever room is at the centre. |
+| 12 | `Levels/Scripts/On the table/DungeonCombatFeedback.cs:59-71` + `TableLevelLoader.cs:280` | Missing HUD prefab throws `ArgumentException`; loader retry only catches `InvalidOperationException`, so the floor fails. |
+| 13 | `UI/Scripts/Shop/ShopUI.cs:46-50`, `PauseMenuUI`, `InventoryUI.cs:36`, `EndingController.cs:73/98`, `DialogueBridge` | Destroy/disable while open leaks the pushed state (Inventory pops only from a tween's OnComplete). |
 | 14 | `Dialogue/Scripts/DialogueBridge.cs:13-19` | Subscribes only if `DialogueManager.hasInstance` already true in OnEnable, no Start retry: depends on component order. |
 | 15 | `Characters/Scripts/AI/EnemyBrain.cs:206-209` | Pause cancels the swing every frame without setting a cooldown; enemy can swing instantly after unpause. |
 | 16 | `Characters/Scripts/AI/EnemyBrain.cs:217-227` | Personal-space step-back runs before the recovery check, so staggered enemies still walk. |
@@ -45,7 +45,7 @@ Still open:
 | 22 | `Items/Scripts/ItemData.cs:248` | Trinket tooltip compares only against Trinket1. |
 | 23 | `Dialogue/Scripts/DialogueBridge.cs:86-95` | Lua `HasItem` misses Honed copies (reference match on base asset). |
 | 24 | `Characters/Players/TablePlayer.prefab`, `Room.unity` | Default starting items are `_Archive/DebugSword`/`DebugShield`; room pickups `Sword`/`Shield` point to `_Archive` items not in the catalog (would break checkpoint restore if ever saved). |
-| 25 | `UI/Scripts/PauseMenuUI.cs` | Sets `Time.timeScale = 1` on close, cancelling an active hit stop. |
+| 25 | `UI/Scripts/Menus/PauseMenuUI.cs` | Sets `Time.timeScale = 1` on close, cancelling an active hit stop. |
 
 Lower-priority bugs: torch placement ignores the floor seed (`DungeonGenerator.Growth.cs:162`); `MakeContainer` uses the main RNG stream despite the comment (`DungeonGenerator.cs:115`); lintel loop can hang with non-integer tile size (`:532-545`); `??`/`?.` on serialized Unity refs in ~12 places in Levels and `TableManager.cs:56`; `EnemyAttackRunner` cooldown list sized once in Awake; revive doesn't clear the Animator `Dead` bool; hit flash misses weapons spawned in Start (`CharacterFX.cs:200`); `PoolManager.Release` drops inactive objects; `Equipment.cs:173` drops armour on the floor when the bag is full instead of refusing; `AdventureSave` rewrites the whole file synchronously on every flag change and overwrites a corrupt save without keeping it.
 
@@ -98,7 +98,7 @@ Lower-priority bugs: torch placement ignores the floor seed (`DungeonGenerator.G
 
 | Item | Size | Notes |
 |---|---|---|
-| `Audio/Library/_Sound Effects Library` | 1,063 MB, **986 MB unreferenced** | Full 96 kHz/24-bit source library. Move out of `Assets/`, copy in used clips (48/16). |
+| `Assets/ThirdParty/Sound Effects Library` | 1,063 MB, **986 MB unreferenced** | Full 96 kHz/24-bit source library. Move out of `Assets/`, copy in used clips (48/16). |
 | `Characters/Animations/_Archive` | 147 MB | Nothing references it. |
 | `Assets/Synty` | 722 MB, ~73 MB reachable | Demo scenes alone ~119 MB; `SyntyLensDirt_01.png` 35 MB. |
 | `Assets/ThirdParty/StarterAssets` | 84 MB | Only `Armature.fbx` (5 MB) used: move it to `Characters`, delete rest. |
@@ -108,7 +108,7 @@ Lower-priority bugs: torch placement ignores the floor seed (`DungeonGenerator.G
 | `World/Terrain/Woodland/Grounded Meadow *` + `Table Terrain`, `Table Navigation` | 27 MB | Unreferenced (live copies in `Rendering/`). |
 | FPC docs | 7.8 MB | Footstep WAVs used, PDF/docs not. |
 | `Assets/ProPixelizer` | 18 MB | No references; replaced by PixelLook. Compiles 79 scripts. |
-| `Art/PixelItems` | 19 MB + 53 MB of .meta | 11,600 PNGs, ~70 used; big import cost. |
+| `Assets/ThirdParty/Pixel Items` | 19 MB + 53 MB of .meta | 11,600 PNGs, ~70 used; big import cost. |
 | Loose music | ~40 MB | `Pixel March.wav`, `Mines01.mp3`, several RPG tracks unreferenced. |
 | Root clutter | | `Assets/New Terrain.asset` (3.4 MB), `Assets/Settings` URP template leftovers (Mobile/PC RP assets, Readme, TutorialInfo), empty folders `Items/Data/Generic`, `Items/Data/Keys`, `World/Props`. |
 | Small leftovers | | Unused `Audio/Data/Poof`, `Weapon_Swing_Default`, five `UI/Audio/*.asset`, `UI/Resources/UIFeedback rows.asset`, `Items/Effects/LogMessage`, `Bronze Shield/Sword` prefabs, `Heal Potion` pickup, `Adventure option`, `Skill Row` prefabs, `Loomy Dungeons Darkened` theme, `PIXEARG_OUT`/`SDFUnderlay` fonts (check TMP fallbacks), `TableArmsMesh*` prefabs, `_Archive/Green Slime`. |

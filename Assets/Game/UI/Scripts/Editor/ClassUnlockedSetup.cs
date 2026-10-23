@@ -10,7 +10,7 @@ using UnityEngine.UI;
 public static class ClassUnlockedSetup
 {
     static readonly Color Ink = new(.24f, .17f, .1f), InkSoft = new(.36f, .28f, .19f);
-    const string Sound = "Assets/Game/Audio/Library/Generic Fantasy UI/Fantasy_UI_Gen_New_Skill_Unlocked_stereo.wav";
+    const string Sound = "Assets/ThirdParty/Generic Fantasy UI/Fantasy_UI_Gen_New_Skill_Unlocked_stereo.wav";
 
     public static string Build()
     {

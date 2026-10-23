@@ -11,7 +11,7 @@ public static partial class MetaProgressionSetup
     const string SpoilsData = "Assets/Game/Items/Data/Spoils", SpoilsPrefabs = "Assets/Game/Items/Prefabs/Spoils";
     const string Painted = "Assets/Game/Art/Synty Pixel/Props/";
     const string ManagerPrefab = "Assets/Game/Core/Prefabs/ProgressionManager.prefab";
-    const string SkillIcons = "Assets/Game/Art/PixelItems/Skills/Singles/";
+    const string SkillIcons = "Assets/ThirdParty/Pixel Items/Skills/Singles/";
 
     public static void BuildEverything()
     {

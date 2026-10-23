@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 
-// The pieces the room events and the newer hand-built rooms use, as prefabs in Levels/Dungeon1/Prefabs:
+// The pieces the room events and the newer hand-built rooms use, as prefabs in Levels/Shared/Props:
 //   Traps/Spike trap, Traps/Ambush gate      (Blender models from Tools/trap_models.py, Traps/Models)
 //   Features/Shrine                          (the altar table with a skull pile and candles; DungeonShrine)
 //   Furnishing/Sarcophagus, Skull pile, Pew, Candle rack, Hanging chain, Candle cluster
@@ -12,9 +12,9 @@ using UnityEngine.AI;
 // Synty models are copied in as plain objects and painted with the painted-prop pipeline afterwards (loomroom-art).
 public static class DungeonRoomEventKit
 {
-    const string Prefabs = "Assets/Game/Levels/Dungeon1/Prefabs";
+    const string Prefabs = "Assets/Game/Levels/Shared/Props";
     const string Synty = "Assets/Synty/PolygonDarkFantasy/Prefabs/Props";
-    const string Library = "Assets/Game/Audio/Library/_Sound Effects Library";
+    const string Library = "Assets/ThirdParty/Sound Effects Library";
     static bool overwrite;
 
     public static string Run() => Run(false);

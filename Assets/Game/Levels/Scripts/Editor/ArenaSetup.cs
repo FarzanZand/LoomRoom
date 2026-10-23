@@ -109,7 +109,7 @@ public static partial class ArenaSetup
     static DungeonRoomStyle Style()
     {
         string dir = Dir + "/Styles";
-        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Dungeon1/Styles/Church.asset");
+        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Church.asset");
         Material Mat(string name, Material like)
         {
             string tex = $"{dir}/{name}.png", path = $"{dir}/{name}.mat";
@@ -294,7 +294,7 @@ public static partial class ArenaSetup
                 Put(banner, Cell(x, y) + Up(tier[6] + 2.2f), Mathf.Atan2(toMiddle.x, toMiddle.z) * Mathf.Rad2Deg);
             }
             // Braziers at the sand's corners, weapon racks either side of the way in.
-            var brazier = Load("Assets/Game/Levels/Dungeon1/Prefabs/Furnishing/Brazier.prefab");
+            var brazier = Load("Assets/Game/Levels/Shared/Props/Furnishing/Brazier.prefab");
             foreach (var (x, y) in new[] { (3.2f, 3.2f), (n - 4.2f, 3.2f), (3.2f, n - 4.2f), (n - 4.2f, n - 4.2f) }) Put(brazier, Cell(x, y));
             var rack = Restyled("Assets/Synty/PolygonFantasyKingdom/Prefabs/Props/BattleGround/SM_Prop_Weapon_Rack_01.prefab", "Arena weapon rack", 1f);
             Put(rack, Cell(mid - 2.2f, 3.3f), 0f); Put(rack, Cell(mid + 2.2f, 3.3f), 0f);

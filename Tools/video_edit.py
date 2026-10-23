@@ -6,7 +6,7 @@ The edit file lists shots and a soundtrack:
 
 {
   "out": "Assets/Videos/Edits/my video.mp4",
-  "music": {"file": "Assets/Game/Audio/RPG_04_Cathedral.mp3", "start": 12.0, "volume": 0.9, "fade_out": 1.5},
+  "music": {"file": "Assets/Game/Audio/Music/RPG_04_Cathedral.mp3", "start": 12.0, "volume": 0.9, "fade_out": 1.5},
   "game_audio": 0.6,                       # default volume of the footage's own sound
   "shots": [
     {"src": "Assets/Videos/Morning take.mp4", "in": 2.0, "dur": 2.5,

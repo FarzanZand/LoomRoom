@@ -1,7 +1,7 @@
 """Pixel-art dungeon door, drawn at the walls' texel density (32 texels per 3-unit tile, so a
 1.9 x 2.8 door is 20 x 30). Planks with grain, two shaded riveted iron straps and a ring handle,
 with a shaded edge.
-Run: python -I Tools/door_texture.py "Assets/Game/Levels/Dungeon1/Materials/Dungeon door.png"
+Run: python -I Tools/door_texture.py "Assets/Game/Levels/Shared/Materials/Dungeon door.png"
 """
 import sys, random
 from PIL import Image

@@ -5,11 +5,11 @@ Everything below is authored data; code only reads it. Reload the dungeon to see
 ## Biomes and guardians: `Levels/Dungeon1/Dungeon1.asset`
 
 - **Run** tab: Cellars (floors 1 to 3), Crypt (4 to 20). See [Dungeon authoring](Dungeon-authoring.md#biomes-and-the-run-plan) for what a biome holds.
-- **Biomes** (`Levels/Dungeon1/Biomes`): Dungeon1 has two, Cellars and Crypt, each with its own loot profile next to it (`Cellars loot`, `Crypt loot`). Room styles and their materials are in `Dungeon1/Styles`. The arrival line only posts when the biome changes; otherwise the log says "You descend to floor N".
+- **Biomes** (`Levels/Dungeon1/Biomes`): Dungeon1 has two, Cellars and Crypt, each with its own loot profile next to it (`Cellars loot`, `Crypt loot`). Room styles and their materials are in `Levels/Shared/Room styles`. The arrival line only posts when the biome changes; otherwise the log says "You descend to floor N".
 - **Guardians**: each biome's Guardian tab. Cellars: a Crypt Warden at x1.8 health and x1.2 damage, with `Items/LootTables/Guardian rewards`. Crypt: the Crypt Lord in the `Crypt Lord arena` template, with an intro sting and the `Crypt Lord loot` profile. **Seal Exit** keeps the stairs shut until the guardian dies; **Arena Size Scale** enlarges the exit room.
 - Boss: `Characters/Enemies/Crypt/Crypt Lord.prefab`, a variant of the Crypt Warden with its own data and behaviour (waits idle until the fight starts).
 
-## Hand-built rooms: `Levels/Dungeon1/Rooms/Templates`
+## Hand-built rooms: `Levels/Shared/Rooms`
 
 Templates: `Starting room` (the level's `startingRoom`), `Merchant shop` (the level's **Shop Room**), `Shrine of Ashes` and `Crypt Lord arena`. A room profile's **Room Template** is optional; empty generates the room as usual. The generator still builds walls, floor, ceiling and doors in the room's style, then places the template at the room centre.
 
@@ -20,9 +20,9 @@ Templates: `Starting room` (the level's `startingRoom`), `Merchant shop` (the le
 
 ## Breakables and features
 
-- `Levels/Dungeon1/Prefabs/Props`: Breakable barrel, Breakable crate, Clay pot, Cobweb (`DungeonDestructible`). Cobwebs use **Corner** placement. The level's **Destructibles** list is weighted; **Destructibles Per Room** adds extras (Dungeon1: 1-3). Supply spots that are not chests use a floor breakable. Debris stays on the floor until the next floor (`debrisStays`; it freezes once settled, at most 220 pieces); puffs in `Props/Effects` are pooled. A barrel or crate can hide a Crypt Rat that comes out alerted when it breaks (`ambushPrefab`, `ambushChance` 0.12). Board levels skip corner breakables (cobwebs).
+- `Levels/Shared/Props`: Breakable barrel, Breakable crate, Clay pot, Cobweb (`DungeonDestructible`). Cobwebs use **Corner** placement. The level's **Destructibles** list is weighted; **Destructibles Per Room** adds extras (Dungeon1: 1-3). Supply spots that are not chests use a floor breakable. Debris stays on the floor until the next floor (`debrisStays`; it freezes once settled, at most 220 pieces); puffs in `Props/Effects` are pooled. A barrel or crate can hide a Crypt Rat that comes out alerted when it breaks (`ambushPrefab`, `ambushChance` 0.12). Board levels skip corner breakables (cobwebs).
 - Supply chests glow gold as they open (`openBurst` sparks and a fading light, `glowColor`, `glowIntensity`) and throw their loot out in arcs from the mouth (`DungeonLootDrop.Spill` with `popFrom`). Loot lying on a dungeon floor gets a `LootBeam`, and `LootLabelsUI` names the items within 4.5 m.
-- `Levels/Dungeon1/Prefabs/Features`:
+- `Levels/Shared/Props/Features`:
   - **Fountain**: sips roll weighted outcomes.
   - **Altar**: pay gold for a blessing. The price grows with depth.
   - **Grave**: dig for loot; the occupant may rise.

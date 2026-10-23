@@ -10,7 +10,7 @@ using UnityEngine.UI;
 public static class RunRecapShowcase
 {
     const string Slot = "Assets/Game/UI/Sprites/Inventory/Plain slot grey.png";
-    const string Library = "Assets/Game/Audio/Library/_Sound Effects Library/";
+    const string Library = "Assets/ThirdParty/Sound Effects Library/";
     const string DataFolder = "Assets/Game/Audio/Data/";
     const string AudioPrefab = "Assets/Game/Core/Prefabs/AudioManager.prefab";
     // One plain recorded sound a row, kept quiet: gold set down, a few things moved, a book shut, a coin pouch.

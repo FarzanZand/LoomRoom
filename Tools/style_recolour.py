@@ -20,7 +20,7 @@ import sys
 import numpy as np
 from PIL import Image
 
-SRC = "Assets/Game/Levels/Dungeon1/Styles/HighRes Materials"
+SRC = "Assets/Game/Levels/Shared/Room styles/HighRes Materials"
 # Source surfaces: (folder, file prefix, surface file name, its variant suffixes).
 SOURCES = {
     "Church": ("Church", "Church tiled ", {"wall": ["cracked", "cross", "moss", "mould"], "upper wall": ["soot"],

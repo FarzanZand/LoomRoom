@@ -16,7 +16,7 @@ public static class ShieldBashSetup
     const string ControllerPath = "Assets/Game/Characters/Animations/FirstPersonTable.controller";
     const string PlayerPath = "Assets/Game/Characters/Players/Table/TablePlayer.prefab";
     const string ManagerPath = "Assets/Game/Combat/Prefabs/CombatManager.prefab";
-    const string Sounds = "Assets/Game/Audio/Library/_Sound Effects Library/";
+    const string Sounds = "Assets/ThirdParty/Sound Effects Library/";
 
     public static void SetUpMenu() => Debug.Log("[ShieldBash] " + SetUp());
 

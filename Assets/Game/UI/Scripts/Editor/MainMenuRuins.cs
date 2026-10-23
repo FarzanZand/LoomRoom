@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 
 // Builds the main menu's tabletop ruin in the house pixel style: broken walls as solid slabs whose tops step down
-// course by course, wrapped in the painted Church3 brick wall (Levels/Dungeon1/Styles/HighRes Materials), loose stone
+// course by course, wrapped in the painted Church3 brick wall (Levels/Shared/Room styles/HighRes Materials), loose stone
 // chunks cut from the same painting, and the painted Kit pillar (Art/Synty Pixel/Props/SM_Bld_Pillar_02) standing and
 // fallen. Walls and rubble take the pillar's texel size, so every pixel on the ruin is the same size.
 // Tools > LoomRoom > UI > Rebuild Main Menu Ruins rebuilds the layout under "Ruins" in the open scene from its seeds
@@ -11,7 +11,7 @@ using UnityEngine;
 public static class MainMenuRuins
 {
     const string Folder = "Assets/Game/UI/Main Menu/Ruins";
-    const string WallTexturePath = "Assets/Game/Levels/Dungeon1/Styles/HighRes Materials/Church3/Church3 wall.png";
+    const string WallTexturePath = "Assets/Game/Levels/Shared/Room styles/HighRes Materials/Church3/Church3 wall.png";
     const string PillarMeshPath = "Assets/Game/Art/Synty Pixel/Props/SM_Bld_Pillar_02/SM_Bld_Pillar_02 painted.asset";
     const string PillarMaterialPath = "Assets/Game/Art/Synty Pixel/Props/SM_Bld_Pillar_02/SM_Bld_Pillar_02 painted.mat";
     // The pillar's scale on the ruin; its painting is 128 texels per unit at scale 1.

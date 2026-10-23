@@ -6,10 +6,10 @@ using UnityEngine;
 // - Levels/Shared/Portal/Portal arch: the kit arch with a PortalArch on it. Put it in any room template and set its Room.
 // - Levels/Pockets/Pocket: the level a portal's pocket is built from (its room 0 takes the portal's Room; Crypt stone
 //   unless the portal names a biome).
-// - Rooms/Templates/Chunks/Skeleton Party room: the Moonlit fountain room (open skylight) without its fountain, four
+// - Levels/Shared/Rooms/Skeleton Party room: the Moonlit fountain room (open skylight) without its fountain, four
 //   skeleton dancers in a square round a chest in the middle (Enemy sockets, Crypt Soldier; Socket Enemies Only, so the
 //   floor adds none), RoomMusic and SkeletonParty on the root.
-// - Rooms/Templates/Chunks/Portal hall: the Gate hall with its first arch swapped for a Portal arch to the party room.
+// - Levels/Shared/Rooms/Portal hall: the Gate hall with its first arch swapped for a Portal arch to the party room.
 // - Cellars and Crypt: the Portal hall joins the room pools (at most once a floor); the party room itself is only
 //   behind the portal, never in the pools.
 // Edit the prefabs freely afterwards (the dance clip and the party's track go on the room's root).
@@ -23,7 +23,7 @@ public static class SkeletonPartySetup
     const string PortalFolder = "Assets/Game/Levels/Shared/Portal";
     const string PortalArchPrefab = PortalFolder + "/Portal arch.prefab";
     const string Dancer = "Assets/Game/Characters/Enemies/Crypt/Crypt Soldier.prefab";
-    const string Arch = "Assets/Game/Levels/Dungeon1/Rooms/Kit/Arch.prefab";
+    const string Arch = "Assets/Game/Levels/Shared/Room pieces/Arch.prefab";
     const float DancerSpread = 2.2f;   // each dancer this far from the middle along both axes: a square round the chest, inside the four pillars (at 4)
 
     public static string Build()

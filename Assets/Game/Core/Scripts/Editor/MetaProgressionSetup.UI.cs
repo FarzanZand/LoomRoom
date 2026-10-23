@@ -323,7 +323,7 @@ public static partial class MetaProgressionSetup
         var killsValue = Label("Kills value", 100, "0", text, bold, 32, true);
         var kills = Img("Kills strip", tally, new Vector2(0, 40), new Vector2(760, 76), slotSprite, Color.white, Image.Type.Sliced).rectTransform;
         var grid = kills.gameObject.AddComponent<GridLayoutGroup>(); grid.cellSize = new Vector2(28, 26); grid.spacing = new Vector2(4, 4); grid.padding = new RectOffset(14, 14, 10, 8);
-        var skull = Img("Skull", kills, Vector2.zero, new Vector2(28, 26), AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/Art/PixelItems/01_Skull_Human.png"), new Color(.92f, .88f, .8f));
+        var skull = Img("Skull", kills, Vector2.zero, new Vector2(28, 26), AssetDatabase.LoadAssetAtPath<Sprite>("Assets/ThirdParty/Pixel Items/01_Skull_Human.png"), new Color(.92f, .88f, .8f));
         skull.preserveAspect = true;
         var healthLine = Label("Health line", -32, "Health slain  0 / 50", dim, body, 26);
         var healthValue = Label("Health value", -32, "0", text, bold, 32, true);

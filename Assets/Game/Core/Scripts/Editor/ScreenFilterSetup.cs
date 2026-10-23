@@ -7,12 +7,12 @@ using UnityEngine.Rendering.Universal;
 
 // Makes one ScreenFilterLook per camera filter in Rendering/Filters with its starting values and lists them on the
 // ScreenManager prefab. Safe to run again: a look that exists keeps its values (Overwrite puts the starting values back).
-// Ghost uses the co-op ghost's own profile (Multiplayer/Ghost look, the same asset the coop branch's MultiplayerManager uses).
+// Ghost uses the co-op ghost's own profile (Characters/Players/Settings/Ghost look, the same asset the coop branch's MultiplayerManager uses).
 public static class ScreenFilterSetup
 {
     const string Folder = "Assets/Game/Rendering/Filters";
     const string Prefab = "Assets/Game/Core/Prefabs/ScreenManager.prefab";
-    const string GhostProfile = "Assets/Game/Multiplayer/Ghost look.asset";
+    const string GhostProfile = "Assets/Game/Characters/Players/Settings/Ghost look.asset";
 
     public static string Build(bool overwrite)
     {

@@ -145,7 +145,7 @@ public static class AssetStudioCatalog
             if (path.Contains("/Items/Prefabs/") || path.Contains("/Combat/Spells/") && go.GetComponentInChildren<ParticleSystem>() == null) return null;   // shown through their item or spell
             if (go.GetComponentInChildren<ParticleSystem>(true) != null && (path.Contains("/Combat/") || path.Contains("/Effects/") || path.Contains("/Spells/")))
                 return Add(C("VFX"), guid, path, "Effect", Folder(path));
-            if (path.Contains("/Prefabs/") && (path.StartsWith(Root + "/Levels/") || path.StartsWith(Root + "/World/") || path.StartsWith(Root + "/Progression/")))
+            if ((path.Contains("/Prefabs/") || path.Contains("/Props/")) && (path.StartsWith(Root + "/Levels/") || path.StartsWith(Root + "/World/") || path.StartsWith(Root + "/Progression/")))
                 return Add(C("Props"), guid, path, "Prop", Folder(path));
             return null;
         }
@@ -153,7 +153,7 @@ public static class AssetStudioCatalog
         // Clips: music by folder, the rest are sounds (the bought libraries are browsed in Unity).
         if (typeof(AudioClip).IsAssignableFrom(type))
         {
-            if (!new[] { "/Audio/", "/UI/Audio/", "/Combat/", "/Levels/" }.Any(f => path.StartsWith(Root + f)) || path.Contains("/Audio/Library/")) return null;
+            if (!new[] { "/Audio/", "/UI/Audio/", "/Combat/", "/Levels/" }.Any(f => path.StartsWith(Root + f))) return null;
             bool isMusic = path.StartsWith(Root + "/Audio/Music/") || Path.GetDirectoryName(path).Replace('\\', '/') == Root + "/Audio";
             return Add(isMusic ? C("Music") : C("Sounds"), guid, path, isMusic ? "Music" : "Clip", Folder(path));
         }
