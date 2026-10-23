@@ -18,8 +18,6 @@ public class DungeonMasterHand : MonoBehaviour
     public float aimKeepAway = 9f;
     [Tooltip("Degrees he leans while he aims the beam.")]
     [Range(0, 50)] public float beamLean = 10f;
-    [Tooltip("How far above his head his casting hand is raised (a share of his arm's length) while he leans over the table: up high, the beam pours down across the player's view; at his face it runs end-on at the player and is hardly seen.")]
-    [Range(0, 1)] public float castRaise = .45f;
     [Tooltip("Seconds his weights take to blend in and out.")]
     [Min(.05f)] public float blend = .35f;
     [Tooltip("Where the figure hangs below his pinch: a share of its own height (a little over 1: the top of its head just under his fingers, never in them).")]
@@ -260,9 +258,9 @@ public class DungeonMasterHand : MonoBehaviour
         var outside = Vector3.Cross(flat, Vector3.up);   // his left
         float reach = ArmLength(HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand);
         // Leaning over the table on his forearms (the boss fight) brings his shoulder down to the table's edge: the hand
-        // is raised above his head instead (castRaise), so the beam pours down from up high, not along the table top.
+        // is raised to just under his face instead, so the beam pours down from up high, not along the table top.
         var head = animator != null ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
-        if (head != null) origin.y = Mathf.Max(origin.y, head.position.y + reach * castRaise);
+        if (head != null) origin.y = Mathf.Max(origin.y, head.position.y - reach * .3f);
         leftTarget = origin + (flat * aimReach + outside * .14f - Vector3.up * .12f) * reach;
         // The elbow low and a little out, so the forearm stands up from it.
         leftHint = origin + (-Vector3.up * .55f + outside * .3f + flat * .1f) * reach;
