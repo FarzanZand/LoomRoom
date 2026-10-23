@@ -394,8 +394,8 @@ public static partial class ArenaSetup
         return e;
     }
 
-    // Its place on the map between the Old Wood, the Mill and the Crypt: a low stone ring round a sand floor on its base,
-    // banners at the way in, a glow over it, and a road to the Old Wood.
+    // Its place on the map near the Crypt: a low stone ring round a sand floor on its base,
+    // banners at the way in, a glow over it, and a road to the Crypt.
     static void MapPlace(CampaignEncounter e, System.Text.StringBuilder log)
     {
         var root = PrefabUtility.LoadPrefabContents(CampaignMapBuilder.PrefabPath);
@@ -454,13 +454,13 @@ public static partial class ArenaSetup
             }
             point.enabled = false; point.enabled = true;   // snaps to the ground and builds its base
             point.EnsurePickCollider();
-            var wood = map.points.Find("The Old Wood")?.GetComponent<CampaignPoint>();
-            if (wood != null)
+            var cryptPoint = map.points.Find("The Crypt")?.GetComponent<CampaignPoint>();
+            if (cryptPoint != null && map.paths.Find("Road The Arena - The Crypt") == null)
             {
-                var road = new GameObject("Road The Arena - The Old Wood");
+                var road = new GameObject("Road The Arena - The Crypt");
                 road.transform.SetParent(map.paths, false);
                 var path = road.AddComponent<CampaignPath>();
-                path.from = point; path.to = wood; path.width = 1.1f; path.wobble = .3f; path.bend = .15f;
+                path.from = point; path.to = cryptPoint; path.width = 1.1f; path.wobble = .3f; path.bend = 0f;
                 path.Rebuild();
             }
             map.ClearScatterUnderRoads();

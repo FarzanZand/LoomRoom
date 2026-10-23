@@ -35,7 +35,7 @@ public static class CampaignSetup
             if (e != null) enc.Add(e);
         }
         if (cm.encounters == null || cm.encounters.Length == 0) cm.encounters = enc.ToArray();
-        cm.home = enc.Find(e => e.id == "start");
+        cm.home = enc.Find(e => e.id == "crypt") ?? enc.Find(e => e.id == "start");
         if (cm.unlocks == null || cm.unlocks.Length == 0)
             cm.unlocks = new[] { new CampaignManager.Unlock { beaten = enc.Find(e => e.id == "crypt"), opensAct = 2 } };
         PrefabUtility.SaveAsPrefabAsset(contents, ManagerPrefab);

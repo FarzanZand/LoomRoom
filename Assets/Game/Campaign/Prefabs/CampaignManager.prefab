@@ -48,7 +48,8 @@ MonoBehaviour:
   mapPrefab: {fileID: 5509045572063656809, guid: 545f2a3eb3c487f42babbd2c3f5025a0, type: 3}
   mapSpot: {fileID: 0}
   riseSeconds: 1.2
-  home: {fileID: 11400000, guid: 8472af35f9f50fb4c959ae5938b31e91, type: 2}
+  lightFadeSeconds: 0.8
+  home: {fileID: 11400000, guid: ffada713b3f1ff943955248d41bd14a9, type: 2}
   encounters:
   - {fileID: 11400000, guid: 8472af35f9f50fb4c959ae5938b31e91, type: 2}
   - {fileID: 11400000, guid: ffada713b3f1ff943955248d41bd14a9, type: 2}
