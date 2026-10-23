@@ -37,6 +37,8 @@ public class StealthIndicatorUI : MonoBehaviour
         if (sneaking)
             foreach (var brain in EnemyBrain.Active)
                 if (brain != null && brain.Character != null && brain.Character.IsAlive && brain.Perception != null && brain.Perception.Target == player && brain.Perception.TargetVisible) { seen = true; break; }
+        // Co-op: a guest's enemies are the host's; whom they see comes with their snapshots.
+        if (sneaking && !seen && Coop.IsGuest) seen = CoopWorld.LocalSeen();
         bool exploring = !(GameManager.HasInstance && GameManager.Instance.State != GameState.Explore);
         bool hidden = sneaking && !seen && exploring;
         var screen = ScreenManager.HasInstance ? ScreenManager.Instance : null;

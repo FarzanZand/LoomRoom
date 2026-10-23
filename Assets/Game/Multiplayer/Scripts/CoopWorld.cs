@@ -212,6 +212,15 @@ public static class CoopWorld
         return p != null ? p.Proxy : null;
     }
 
+    // Guest: an enemy of the host's has this player in sight right now (its snapshots say whom it sees).
+    public static bool LocalSeen()
+    {
+        if (!Coop.IsGuest) return false;
+        foreach (var e in enemies)
+            if (e != null && e.IsAlive && e.TryGetComponent<CoopEnemyPuppet>(out var puppet) && puppet.Sees == Coop.LocalSlot) return true;
+        return false;
+    }
+
     public static Character Enemy(int id) => id >= 0 && id < enemies.Count ? enemies[id] : null;
     public static bool TryEnemyId(Character c, out ushort id) { id = 0; return c != null && enemyIds.TryGetValue(c, out id); }
     public static IReadOnlyList<Character> Enemies => enemies;
@@ -392,6 +401,7 @@ public static class CoopWorld
             id = id, position = c.transform.position, yaw = (short)Mathf.RoundToInt(Mathf.Repeat(c.transform.eulerAngles.y, 360f) * 50f),
             state = brain != null ? (byte)brain.State : (byte)0, asleep = brain != null && brain.Asleep,
             modelHeight = flyer != null ? flyer.Height : 0f,
+            sees = brain != null && brain.Perception != null && brain.Perception.TargetVisible && brain.Perception.Target != null ? (byte)SlotOf(brain.Perception.Target) : Coop.NoSlot,
         };
         var anim = c.Animator;
         if (anim == null || anim.runtimeAnimatorController == null || !anim.isInitialized) { s.states = new int[0]; s.times = new byte[0]; s.floats = new float[0]; return s; }

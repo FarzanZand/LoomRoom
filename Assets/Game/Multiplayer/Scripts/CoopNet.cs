@@ -165,6 +165,7 @@ public struct EnemySnapshot : INetworkSerializable
     public float modelHeight;        // a flyer's model above its agent
     public byte state;               // EnemyState
     public bool asleep;
+    public byte sees;                // the player it has in sight (Coop.NoSlot: nobody): a guest's stealth look reads it
     public int[] states;             // per animator layer: the state's full path hash
     public byte[] times;             // per layer: normalised time in the state, 0-255 over one loop
     public float[] floats;           // the animator's float parameters, in parameter order
@@ -173,7 +174,7 @@ public struct EnemySnapshot : INetworkSerializable
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref id); s.SerializeValue(ref position); s.SerializeValue(ref yaw); s.SerializeValue(ref modelHeight);
-        s.SerializeValue(ref state); s.SerializeValue(ref asleep); s.SerializeValue(ref bools);
+        s.SerializeValue(ref state); s.SerializeValue(ref asleep); s.SerializeValue(ref sees); s.SerializeValue(ref bools);
         int layers = states != null ? states.Length : 0;
         s.SerializeValue(ref layers);
         if (s.IsReader) { states = new int[layers]; times = new byte[layers]; }

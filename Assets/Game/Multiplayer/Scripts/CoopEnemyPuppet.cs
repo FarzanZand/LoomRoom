@@ -10,6 +10,8 @@ public class CoopEnemyPuppet : MonoBehaviour
     Vector3 targetPosition;
     float targetYaw;
     bool hasTarget;
+    // The player the host's enemy has in sight (Coop.NoSlot: nobody).
+    public byte Sees { get; private set; } = Coop.NoSlot;
 
     void Awake()
     {
@@ -24,6 +26,7 @@ public class CoopEnemyPuppet : MonoBehaviour
     public void Apply(EnemySnapshot s)
     {
         targetPosition = s.position;
+        Sees = s.sees;
         targetYaw = s.yaw / 50f;
         if (!hasTarget || (transform.position - targetPosition).sqrMagnitude > 16f) { transform.position = targetPosition; transform.rotation = Quaternion.Euler(0, targetYaw, 0); }
         hasTarget = true;
