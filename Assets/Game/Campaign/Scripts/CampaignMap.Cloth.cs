@@ -331,6 +331,11 @@ public partial class CampaignMap
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>().sharedMaterial = ClothMaterial(style);
             var verts = new Vector3[drop.nx * drop.nz];
+            // Where each of the cloth's points lies over the map (its place in the grid it starts as).
+            var spot = new Vector2[verts.Length];
+            for (int z = 0; z < drop.nz; z++)
+                for (int x = 0; x < drop.nx; x++)
+                    spot[z * drop.nx + x] = new Vector2((x / (float)(drop.nx - 1) * 2 - 1) * halfX, (z / (float)(drop.nz - 1) * 2 - 1) * halfZ);
             var rest = transform.localScale;
             try
             {
@@ -343,11 +348,16 @@ public partial class CampaignMap
                     transform.localScale = new Vector3(rest.x, rest.y * sy, rest.z);
                     go.transform.localScale = new Vector3(1f, 1f / sy, 1f);
                     drop.Sample(t, verts);
+                    // Once it has landed each point of the cloth stays over its own spot of the map: the simulation lets it
+                    // slide in from the edges as the land rises under it, which uncovered the map's rim. Only its height
+                    // follows the simulation.
+                    float pin = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(drop.riseStart * .6f, drop.riseStart, t));
                     // A little clearance as the land rises (the cloth's triangles are coarser than the ground's).
                     // Never under the ground (a sharp peak fits between the cloth's vertices): at least the clearance over it.
                     for (int i = 0; i < verts.Length; i++)
                     {
                         var v = verts[i];
+                        v.x = Mathf.Lerp(v.x, spot[i].x, pin); v.z = Mathf.Lerp(v.z, spot[i].y, pin);
                         v.y = Mathf.Max(v.y + dropClearance * k, (Peak(v.x, v.z) + dropClearance) * sy);
                         verts[i] = v;
                     }
@@ -355,8 +365,7 @@ public partial class CampaignMap
                     yield return null;
                 }
                 transform.localScale = rest; go.transform.localScale = Vector3.one;
-                // The simulated cloth has drawn in as the land rose under it; the act cloths reach the map's edges and
-                // hang over them. It spreads out into their shape before they take over, so nothing snaps.
+                // It settles into the act cloths' shape (their heights) before they take over, so nothing snaps.
                 var from = (Vector3[])verts.Clone(); var to = new Vector3[verts.Length];
                 for (int z = 0; z < drop.nz; z++)
                     for (int x = 0; x < drop.nx; x++)
