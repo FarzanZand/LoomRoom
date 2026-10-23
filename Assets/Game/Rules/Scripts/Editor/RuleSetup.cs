@@ -33,8 +33,8 @@ public static class RuleSetup
     // The rules, in order: id (saved, never change), text, the line he gives it with, the quote, on the sheet from the start.
     static readonly (string id, string text, string given, string quote, bool pinned)[] Table =
     {
-        ("rule1", "Nobody leaves the table until I say so.", "The first rule. Nobody leaves the table until I say so.", "Rule one.", true),
-        ("rule2", "Hitting the merchant is allowed, but not recommended.", "The second rule. Hitting the merchant is allowed, but not recommended.", "Rule two.", true),
+        ("rule1", "Nobody leaves the table until I say so.", "*The first rule.* Nobody leaves the table until I say so.", "*Rule one.*", true),
+        ("rule2", "Hitting the merchant is allowed, but not recommended.", "*The second rule.* Hitting the merchant is allowed, but not recommended.", "*Rule two.*", true),
     };
 
     // Each rule's asset (Rules/Data/Rule N), made when missing; made ones are kept as they are (edit them freely).
