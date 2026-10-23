@@ -4,7 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Escape during gameplay: time stops, the cursor frees. Resume, settings, the adventure
-// menu (table player only), the main menu or quit; leaving and quitting ask first, saying what a run loses.
+// menu (table player only), leave the level (during a run: back to the room, the run kept to pick up at the start of
+// this floor, as after quitting), the main menu or quit; leaving and quitting ask first, saying what a run loses.
 // Escape again, or Resume, returns to the game. It also opens over a cutscene or a conversation (the UI map's Pause, a
 // pad's Start): time stops with it (timelines, a conversation's own clock), and the state underneath comes back on close.
 public class PauseMenuUI : MonoBehaviour
@@ -13,6 +14,8 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField] Button resumeButton;
     [SerializeField] Button settingsButton;
     [SerializeField] Button adventuresButton;
+    [SerializeField, Tooltip("Shown during a run (not the intro's practice): back to the room standing at the table; the run is kept and picks up at the start of this floor from the map.")]
+    Button leaveButton;
     [SerializeField] Button mainMenuButton;
     [SerializeField] Button quitButton;
     [SerializeField] SettingsUI settings;
@@ -50,6 +53,7 @@ public class PauseMenuUI : MonoBehaviour
         resumeButton?.onClick.AddListener(Close);
         settingsButton?.onClick.AddListener(OpenSettings);
         adventuresButton?.onClick.AddListener(Adventures);
+        leaveButton?.onClick.AddListener(() => Ask("Leave this level?", LeaveLevel));
         mainMenuButton?.onClick.AddListener(() => Ask("Leave for the main menu?", ToMainMenu));
         quitButton?.onClick.AddListener(() => Ask("Quit the game?", Quit));
         confirmYes?.onClick.AddListener(() => { var go = confirmed; CloseConfirm(); go?.Invoke(); });
@@ -106,6 +110,7 @@ public class PauseMenuUI : MonoBehaviour
         bool table = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
         // The buttons sit in a vertical layout, so a hidden one leaves no gap.
         if (adventuresButton != null) adventuresButton.gameObject.SetActive(table && Loader != null && !Loader.Busy && !InRun);
+        if (leaveButton != null) leaveButton.gameObject.SetActive(table && InRun && Loader != null && !Loader.Busy && !IntroController.PracticeRunning);
         resumeButton?.Select();
     }
 
@@ -203,6 +208,16 @@ public class PauseMenuUI : MonoBehaviour
         settings?.Close();
         if (pausePanel != null) pausePanel.SetActive(true);
         settingsButton?.Select();
+    }
+
+    // The run is put aside, not ended (no tally, no death): its checkpoint stays, so the map's flag over its place
+    // continues it from the start of this floor. The way back is the usual flight out of the table.
+    void LeaveLevel()
+    {
+        Close();
+        if (RunManager.HasInstance) RunManager.Instance.Abandon();
+        var loader = Loader;
+        if (loader != null) StartCoroutine(TableManager.ReturnToRoom(loader, null, context: this));
     }
 
     void Adventures()
