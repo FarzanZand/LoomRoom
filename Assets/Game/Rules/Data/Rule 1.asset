@@ -15,12 +15,12 @@ MonoBehaviour:
   id: rule1
   text: Nobody leaves the table until I say so.
   given:
-    text: The first rule. Nobody leaves the table until I say so.
+    text: '*The first rule.* Nobody leaves the table until I say so.'
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   quote:
-    text: Rule one.
+    text: '*Rule one.*'
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

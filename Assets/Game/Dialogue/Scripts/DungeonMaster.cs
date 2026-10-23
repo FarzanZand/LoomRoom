@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 // The on-screen message feed: what just happened in white (kills in orange),
@@ -11,6 +12,8 @@ using Random = UnityEngine.Random;
 // short gibberish mumble). Lines appear whole in the lower
 // middle (or bottom left) and fade. Damage lines stay out: floating numbers show those.
 // The DM speaks through DungeonMaster.Say(...), lines typed on the components and levels that use them, a biome's entry lines, or Lua DMSay("...").
+// A part of a line written between asterisks is said in the highlight colour: "*The first rule.* Nobody leaves the
+// table until I say so." shows "The first rule." in Highlight and the rest in Standard (the conversations too).
 public class DungeonMaster : Singleton<DungeonMaster>
 {
     public enum Placement { LowerMiddle = 0, BottomLeft = 1 }
@@ -30,9 +33,12 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     [SerializeField] TextMeshProUGUI label;
     [SerializeField, Tooltip("Where the lines sit on screen.")] Placement placement = Placement.LowerMiddle;
-    [SerializeField, Tooltip("The Dungeon Master's lines.")] Color color = new(.45f, .85f, .95f);
+    [Header("Text colours")]
+    [SerializeField, FormerlySerializedAs("color"), Tooltip("The Dungeon Master's lines, here and in conversations at the table.")] Color standardColor = new(.45f, .85f, .95f);
+    [SerializeField, Tooltip("The part of a Dungeon Master line written between asterisks (*The first rule.*).")] Color highlightColor = Color.white;
     [SerializeField, Tooltip("Everything else that happens.")] Color eventColor = Color.white;
     [SerializeField] Color killColor = new(1f, .6f, .22f);
+    [Header("Feed")]
     [SerializeField, Tooltip("Also show message log lines (pickups, doors, kills). Combat damage is always left out.")] bool showEvents = true;
     [SerializeField, Min(8)] float fontSize = 30;
     [SerializeField, Range(0, 1)] float outline = .12f;
@@ -48,7 +54,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     readonly Queue<(Line line, float delay)> queue = new();
     // Oldest first. hex is the colour's RGB, worked out once when the line is added.
-    readonly List<(string text, float shown, Color color, string hex)> lines = new();
+    // marked: a Dungeon Master line, whose *asterisked* parts take the highlight colour.
+    readonly List<(string text, float shown, Color color, string hex, bool marked)> lines = new();
     readonly StringBuilder builder = new();
     // The label is rebuilt only when lines were added or removed, or one is fading.
     bool dirty, blanked;
@@ -203,7 +210,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     // Shows the line and starts its voice or mumble. Returns the seconds of speech.
     float Speak(Line line)
     {
-        Show($"\"{line.text.Trim()}\"", color);
+        Show($"\"{line.text.Trim()}\"", standardColor, true);
         Spoke?.Invoke(line);
         float speaking = .5f;
         if (AudioManager.HasInstance)
@@ -214,14 +221,14 @@ public class DungeonMaster : Singleton<DungeonMaster>
             else if (pendingClip != null) { voice = AudioManager.Instance.PlayUI(pendingClip); pendingClip = null; }
             if (voice != null) { voiceSource = voice; voiceClip = voice.clip; }
             if (voice != null && voice.clip != null) speaking = voice.clip.length;
-            else if (line.mumble) speaking = Mumble(line.text);
+            else if (line.mumble) speaking = Mumble(Plain(line.text));
         }
         return speaking;
     }
 
-    void Show(string text, Color tint)
+    void Show(string text, Color tint, bool marked = false)
     {
-        lines.Add((text, Time.unscaledTime, tint, ColorUtility.ToHtmlStringRGB(tint)));
+        lines.Add((text, Time.unscaledTime, tint, ColorUtility.ToHtmlStringRGB(tint), marked));
         while (lines.Count > maxLines) lines.RemoveAt(0);
         dirty = true;
     }
@@ -267,15 +274,47 @@ public class DungeonMaster : Singleton<DungeonMaster>
         if (!dirty && !blanked && !fading) return;
         dirty = blanked = false;
         builder.Clear();
-        foreach (var (text, shown, tint, hex) in lines)
+        foreach (var (text, shown, tint, hex, marked) in lines)
         {
             float alpha = Mathf.Clamp01(1 - (now - shown - hold) / Mathf.Max(.01f, fadeOut));
             if (builder.Length > 0) builder.Append('\n');
-            builder.Append("<color=#").Append(hex).Append(AlphaHex[Mathf.RoundToInt(Mathf.Clamp01(tint.a * alpha) * 255)])
+            if (marked) AppendMarked(builder, text, alpha);
+            else builder.Append("<color=#").Append(hex).Append(AlphaHex[Mathf.RoundToInt(Mathf.Clamp01(tint.a * alpha) * 255)])
                 .Append('>').Append(text).Append("</color>");
         }
         label.text = builder.ToString();
     }
+
+    // A Dungeon Master line in rich text: Standard, with the parts between asterisks in Highlight (alpha fades both).
+    void AppendMarked(StringBuilder into, string text, float alpha = 1f)
+    {
+        bool high = false;
+        int start = 0;
+        for (int i = 0; i <= text.Length; i++)
+        {
+            if (i < text.Length && text[i] != '*') continue;
+            if (i > start)
+            {
+                var tint = high ? highlightColor : standardColor;
+                into.Append("<color=#").Append(ColorUtility.ToHtmlStringRGB(tint)).Append(AlphaHex[Mathf.RoundToInt(Mathf.Clamp01(tint.a * alpha) * 255)])
+                    .Append('>').Append(text, start, i - start).Append("</color>");
+            }
+            high = !high;
+            start = i + 1;
+        }
+    }
+
+    // The line coloured for a conversation's subtitle (DialogueBridge), the same way as in the feed.
+    public static string Colored(string text)
+    {
+        if (!HasInstance || string.IsNullOrEmpty(text)) return Plain(text);
+        var into = new StringBuilder();
+        Instance.AppendMarked(into, text);
+        return into.ToString();
+    }
+
+    // The line without its highlight marks (for the mumble and anything that shows it plainly).
+    public static string Plain(string text) => string.IsNullOrEmpty(text) ? text : text.Replace("*", "");
 
     void OnEnable() { if (MessageLog.HasInstance) MessageLog.Instance.Posted += OnLog; }
     // MessageLog may wake after this; subscribe once it exists.

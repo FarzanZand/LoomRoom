@@ -38,7 +38,7 @@ public class RuleManager : Singleton<RuleManager>
     {
         if (rule == null) return null;
         if (PM != null && !Given(rule)) { PM.SetFlag(FlagPrefix + rule.id, 1); Changed?.Invoke(); }
-        return rule.given != null && !rule.given.IsEmpty ? rule.given : new DungeonMaster.Line { text = $"Rule {Word(Number(rule))}. {rule.text}", inPerson = true, mumble = true };
+        return rule.given != null && !rule.given.IsEmpty ? rule.given : new DungeonMaster.Line { text = $"*Rule {Word(Number(rule))}.* {rule.text}", inPerson = true, mumble = true };
     }
 
     readonly Dictionary<HouseRule, float> lastQuote = new();
@@ -48,7 +48,7 @@ public class RuleManager : Singleton<RuleManager>
         if (rule == null || !Pinned(rule)) return;
         if (lastQuote.TryGetValue(rule, out float at) && Time.unscaledTime - at < quoteGap) return;
         lastQuote[rule] = Time.unscaledTime;
-        DungeonMaster.Say(rule.quote != null && !rule.quote.IsEmpty ? rule.quote : new DungeonMaster.Line { text = $"Rule {Word(Number(rule))}.", mumble = true });
+        DungeonMaster.Say(rule.quote != null && !rule.quote.IsEmpty ? rule.quote : new DungeonMaster.Line { text = $"*Rule {Word(Number(rule))}.*", mumble = true });
     }
 
     // A rule by its number (1 = rule one), null past the list.

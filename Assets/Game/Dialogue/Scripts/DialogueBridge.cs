@@ -71,7 +71,9 @@ public class DialogueBridge : MonoBehaviour
     {
         if (subtitle == null || subtitle.speakerInfo == null || subtitle.speakerInfo.isPlayer) return;
         var text = subtitle.formattedText.text;
-        if (!string.IsNullOrWhiteSpace(text) && !text.StartsWith("\"")) subtitle.formattedText.text = "\"" + text + "\"";
+        if (string.IsNullOrWhiteSpace(text)) return;
+        if (!text.StartsWith("\"")) text = "\"" + text + "\"";
+        subtitle.formattedText.text = DungeonMaster.Colored(text);
     }
 
     void OnConversationEnded(Transform actor)
