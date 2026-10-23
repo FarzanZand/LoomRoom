@@ -25,6 +25,8 @@ public class CampaignManager : Singleton<CampaignManager>
     public Transform mapSpot;
     [TabGroup("Map"), Tooltip("Seconds for the map to grow up out of the table, or fold away.")]
     [Min(0)] public float riseSeconds = .8f;
+    [TabGroup("Map"), Tooltip("Seconds the map's lights over the table take to come back on after it has grown or the cloth has dropped.")]
+    [Min(0)] public float lightFadeSeconds = .8f;
 
     [TabGroup("Rules"), Tooltip("Where the figure stands in a new campaign.")] public CampaignEncounter home;
     [TabGroup("Rules"), Tooltip("Every place there is (their order is saved for where the figure stands: append only).")]
@@ -468,11 +470,34 @@ public class CampaignManager : Singleton<CampaignManager>
     // The places' lights don't squash with the map, so they are off while it grows or folds (lying on the flattened
     // land they would blow it out).
     readonly List<Light> mapLights = new();
+    readonly Dictionary<Light, float> lightIntensity = new();
+    IEnumerator FadeLightIn(Light l)
+    {
+        if (!lightIntensity.TryGetValue(l, out float full)) lightIntensity[l] = full = l.intensity;
+        for (float t = 0; t < lightFadeSeconds && l != null && l.enabled; t += Time.unscaledDeltaTime)
+        {
+            l.intensity = full * Mathf.SmoothStep(0f, 1f, t / lightFadeSeconds);
+            yield return null;
+        }
+        if (l != null) l.intensity = full;
+    }
+    bool OnTheLand(Light l) => l.GetComponentInParent<CampaignPoint>() != null || Map.scatter != null && l.transform.IsChildOf(Map.scatter);
     void MapLights(bool on)
     {
         // Lights already switched off by an earlier call stay on the list (a fold and a rise can overlap).
         if (!on) { foreach (var l in Map.GetComponentsInChildren<Light>()) if (l.enabled) { mapLights.Add(l); l.enabled = false; } }
-        else { foreach (var l in mapLights) if (l != null) l.enabled = true; mapLights.Clear(); }
+        else
+        {
+            foreach (var l in mapLights)
+            {
+                if (l == null) continue;
+                l.enabled = true;
+                // The map's own lights high over the table come back gently: switched on at once, the land and the
+                // cloth would brighten in one frame. (The places' lamps rise with their places, CampaignMap.Reveal.)
+                if (!OnTheLand(l)) StartCoroutine(FadeLightIn(l));
+            }
+            mapLights.Clear();
+        }
     }
 
     IEnumerator Sink()
