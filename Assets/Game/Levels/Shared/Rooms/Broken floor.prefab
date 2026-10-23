@@ -48,6 +48,8 @@ MonoBehaviour:
   chance: 0.8
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &1349286445116487744
@@ -98,6 +100,8 @@ MonoBehaviour:
   chance: 0.6
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &2607153616996049276
@@ -148,6 +152,8 @@ MonoBehaviour:
   chance: 0.6
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &2823907503563046649
@@ -198,6 +204,7 @@ MonoBehaviour:
   cells: {x: 1, y: 1}
   depth: 4
   fallDamage: 0.25
+  keepPlayerOut: 1
 --- !u!1 &4082502307346454430
 GameObject:
   m_ObjectHideFlags: 0
@@ -246,6 +253,8 @@ MonoBehaviour:
   chance: 0.4
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &5060226314958153439
@@ -296,6 +305,7 @@ MonoBehaviour:
   cells: {x: 1, y: 1}
   depth: 4
   fallDamage: 0.25
+  keepPlayerOut: 1
 --- !u!1 &5250045113979731483
 GameObject:
   m_ObjectHideFlags: 0
@@ -344,6 +354,8 @@ MonoBehaviour:
   chance: 0.6
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &5825237856676315258
@@ -428,11 +440,16 @@ MonoBehaviour:
   ceilingFrame: 0.3
   skylightRadius: 0
   replaceGeneratedProps: 0
+  addFurnishing: 0
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
   roomEvent: 0
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 0}
   previewCellSize: 2
 --- !u!1 &6184052058626071185
@@ -483,6 +500,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &6843369376591053706
@@ -533,6 +552,7 @@ MonoBehaviour:
   cells: {x: 1, y: 1}
   depth: 4
   fallDamage: 0.25
+  keepPlayerOut: 1
 --- !u!1 &7182921821043633722
 GameObject:
   m_ObjectHideFlags: 0
@@ -581,6 +601,8 @@ MonoBehaviour:
   chance: 0.8
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &7263505009243035841
@@ -631,6 +653,7 @@ MonoBehaviour:
   cells: {x: 2, y: 2}
   depth: 4
   fallDamage: 0.25
+  keepPlayerOut: 1
 --- !u!1 &7639379004698119163
 GameObject:
   m_ObjectHideFlags: 0
@@ -679,6 +702,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &9095507218996600530
@@ -729,6 +754,7 @@ MonoBehaviour:
   cells: {x: 2, y: 1}
   depth: 4
   fallDamage: 0.25
+  keepPlayerOut: 1
 --- !u!1001 &3083738842828875743
 PrefabInstance:
   m_ObjectHideFlags: 0

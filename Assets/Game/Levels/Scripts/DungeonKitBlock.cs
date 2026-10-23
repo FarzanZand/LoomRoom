@@ -4,8 +4,10 @@ using UnityEngine;
 // galleries). Put blocks inside a DungeonRoomTemplate (or a kit prefab placed in one) and size them; when the room is
 // built the block becomes a box with the room style's materials (sides: its wall or trim, top: its floor), textured
 // like the walls (one texture repeat per architecture tile, in world metres, so neighbouring blocks and the walls
-// line up), with a collider the NavMesh walks on. In the editor it shows its shape in the level's default stone (an
-// EditorOnly "Kit preview" child, so prefab thumbnails show it too); the preview is removed when the room is built.
+// line up), with a collider the NavMesh walks on. In the editor it shows its shape in its room's style (or the level's
+// default stone), textured per tile like the built block (an EditorOnly "Kit preview" child with a mesh of its size,
+// saved under Kit/Previews, so prefab thumbnails and the Asset Studio show it too); the preview is removed when the
+// room is built.
 public class DungeonKitBlock : MonoBehaviour
 {
     public enum Surface { Wall = 0, Trim = 1, Floor = 2, UpperWall = 3, Ceiling = 4 }
@@ -55,7 +57,7 @@ public class DungeonKitBlock : MonoBehaviour
 #if UNITY_EDITOR
     // ── Editor preview ──────────────────────────────────────────────
 
-    const string PreviewMeshPath = "Assets/Game/Levels/Dungeon1/Rooms/Kit/Kit preview cube.asset";
+    const string PreviewFolder = "Assets/Game/Levels/Dungeon1/Rooms/Kit/Previews";
     const string PreviewLevelPath = "Assets/Game/Levels/Dungeon1/Dungeon1.asset";
 
     void OnValidate()
@@ -76,8 +78,7 @@ public class DungeonKitBlock : MonoBehaviour
             return;
         }
         var level = UnityEditor.AssetDatabase.LoadAssetAtPath<TableLevelData>(PreviewLevelPath);
-        var mesh = PreviewMesh();
-        if (level == null || mesh == null) return;
+        if (level == null) return;
         var template = GetComponentInParent<DungeonRoomTemplate>(true);
         float tile = Mathf.Max(.01f, level.architectureTileSize);
         float roomHeight = tile * Mathf.Max(1, template != null ? template.heightTiles : 1);
@@ -85,31 +86,35 @@ public class DungeonKitBlock : MonoBehaviour
         var s = size; float lift = 0f;
         if (fromCeiling) lift = floorY + roomHeight - ceilingGap - (standsOnPosition ? s.y : s.y * .5f) - transform.position.y;
         else if (toCeiling) s.y = Mathf.Max(.1f, roomHeight - ceilingGap - (standsOnPosition ? transform.position.y - floorY : 0f));
+        var mesh = PreviewMesh(s, tile);
+        if (mesh == null) return;
         var go = existing != null ? existing.gameObject : new GameObject(PreviewName, typeof(MeshFilter), typeof(MeshRenderer));
         go.tag = "EditorOnly";
         go.transform.SetParent(transform, false);
         go.transform.localRotation = Quaternion.identity;
-        go.transform.localScale = new Vector3(s.x / Mathf.Max(.0001f, 1f), s.y, s.z);
+        go.transform.localScale = Vector3.one;
         go.transform.localPosition = (standsOnPosition ? Vector3.up * s.y * .5f : Vector3.zero) + Vector3.up * lift;
         go.GetComponent<MeshFilter>().sharedMesh = mesh;
         var r = go.GetComponent<MeshRenderer>();
-        r.sharedMaterials = new[] { Material(null, level, sides), Material(null, level, top) };
+        var style = template != null ? template.style : null;
+        r.sharedMaterials = new[] { Material(style, level, sides), Material(style, level, top) };
         r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
 
-    // A unit cube with the block's two submeshes (sides, top and bottom), saved once next to the kit.
-    static Mesh PreviewMesh()
+    // A box of the block's size with its two submeshes (sides, top and bottom), textured per tile like the built block
+    // (a scaled cube would stretch the texture across each face). One saved mesh per size, shared by every block of it.
+    static Mesh PreviewMesh(Vector3 size, float tile)
     {
-        var mesh = UnityEditor.AssetDatabase.LoadAssetAtPath<Mesh>(PreviewMeshPath);
+        string Num(float f) => (Mathf.Round(f * 100f) / 100f).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+        string path = $"{PreviewFolder}/Kit block {Num(size.x)} x {Num(size.y)} x {Num(size.z)}.asset";
+        var mesh = UnityEditor.AssetDatabase.LoadAssetAtPath<Mesh>(path);
         if (mesh != null) return mesh;
+        if (!UnityEditor.AssetDatabase.IsValidFolder(PreviewFolder)) UnityEditor.AssetDatabase.CreateFolder(System.IO.Path.GetDirectoryName(PreviewFolder).Replace('\\', '/'), "Previews");
         var holder = new GameObject("tmp") { hideFlags = HideFlags.HideAndDontSave };
-        mesh = BoxMesh(holder.transform, Vector3.zero, Vector3.one, 1f);
+        mesh = BoxMesh(holder.transform, Vector3.zero, size, tile);
         DestroyImmediate(holder);
-        // Per face 0..1, not world tiles: the cube is scaled per block.
-        var uv = new Vector2[mesh.vertexCount];
-        for (int i = 0; i < uv.Length; i += 4) { uv[i] = new Vector2(0, 0); uv[i + 1] = new Vector2(1, 0); uv[i + 2] = new Vector2(1, 1); uv[i + 3] = new Vector2(0, 1); }
-        mesh.uv = uv; mesh.name = "Kit preview cube";
-        UnityEditor.AssetDatabase.CreateAsset(mesh, PreviewMeshPath);
+        mesh.name = System.IO.Path.GetFileNameWithoutExtension(path);
+        UnityEditor.AssetDatabase.CreateAsset(mesh, path);
         return mesh;
     }
 #endif

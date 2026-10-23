@@ -49,7 +49,8 @@ public static class DungeonChunkKit
     public static string RefreshPreviews()
     {
         int n = 0;
-        foreach (var g in AssetDatabase.FindAssets("t:Prefab", new[] { Rooms }))
+        // Every level's rooms and kit pieces, not only the shared ones.
+        foreach (var g in AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Game/Levels", "Assets/Game/Development" }))
         {
             string path = AssetDatabase.GUIDToAssetPath(g);
             if (AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponentInChildren<DungeonKitBlock>(true) == null) continue;

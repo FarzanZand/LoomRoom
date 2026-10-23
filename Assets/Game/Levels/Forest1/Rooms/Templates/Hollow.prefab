@@ -140,10 +140,14 @@ MonoBehaviour:
   replaceGeneratedProps: 0
   addFurnishing: 1
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
   roomEvent: 0
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 0}
   previewCellSize: 2
 --- !u!114 &2104000824278406925
@@ -189,7 +193,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.3, z: 0}
-  m_LocalScale: {x: 2, y: 0.6, z: 0.55}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5492349263390361549}
@@ -201,7 +205,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 691404420320595705}
-  m_Mesh: {fileID: 4300000, guid: 0980a0d6c3448cc4e9857ee179bc3838, type: 2}
+  m_Mesh: {fileID: 4300000, guid: b72cf1b310c36ee45840c0c9e97d80da, type: 2}
 --- !u!23 &7218399580604057038
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -300,6 +304,8 @@ MonoBehaviour:
   chance: 0.8
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &922450148459298544
@@ -628,7 +634,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.3, z: 0}
-  m_LocalScale: {x: 2, y: 0.6, z: 0.55}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1629522093023295529}
@@ -640,7 +646,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2695153392216454030}
-  m_Mesh: {fileID: 4300000, guid: 0980a0d6c3448cc4e9857ee179bc3838, type: 2}
+  m_Mesh: {fileID: 4300000, guid: b72cf1b310c36ee45840c0c9e97d80da, type: 2}
 --- !u!23 &2808751361977203381
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -739,6 +745,7 @@ MonoBehaviour:
   cells: {x: 5, y: 5}
   depth: 0.9
   fallDamage: 0.25
+  keepPlayerOut: 1
 --- !u!1 &3149565413235526791
 GameObject:
   m_ObjectHideFlags: 0
@@ -767,7 +774,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.15, z: 0}
-  m_LocalScale: {x: 2, y: 0.3, z: 0.55}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1838760955266091215}
@@ -779,7 +786,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3149565413235526791}
-  m_Mesh: {fileID: 4300000, guid: 0980a0d6c3448cc4e9857ee179bc3838, type: 2}
+  m_Mesh: {fileID: 4300000, guid: 60ec04cf4831e3e4e8b38a918e5900de, type: 2}
 --- !u!23 &7577412816931929188
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -878,6 +885,8 @@ MonoBehaviour:
   chance: 0.5
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &3749987950534801642
@@ -908,7 +917,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.15, z: 0}
-  m_LocalScale: {x: 2, y: 0.3, z: 0.55}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8487686639907271389}
@@ -920,7 +929,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3749987950534801642}
-  m_Mesh: {fileID: 4300000, guid: 0980a0d6c3448cc4e9857ee179bc3838, type: 2}
+  m_Mesh: {fileID: 4300000, guid: 60ec04cf4831e3e4e8b38a918e5900de, type: 2}
 --- !u!23 &9101710341244132597
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1019,6 +1028,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &4027556448440293463
@@ -1049,7 +1060,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.3, z: 0}
-  m_LocalScale: {x: 2, y: 0.6, z: 0.55}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 541484017481435648}
@@ -1061,7 +1072,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4027556448440293463}
-  m_Mesh: {fileID: 4300000, guid: 0980a0d6c3448cc4e9857ee179bc3838, type: 2}
+  m_Mesh: {fileID: 4300000, guid: b72cf1b310c36ee45840c0c9e97d80da, type: 2}
 --- !u!23 &312803185826711079
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1160,6 +1171,8 @@ MonoBehaviour:
   chance: 0.5
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &4366826392302831703
@@ -1329,6 +1342,8 @@ MonoBehaviour:
   chance: 0.5
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &5269085439717144894
@@ -1379,6 +1394,8 @@ MonoBehaviour:
   chance: 0.8
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &5733464562567573450
@@ -1409,7 +1426,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.15, z: 0}
-  m_LocalScale: {x: 2, y: 0.3, z: 0.55}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 458812505835312480}
@@ -1421,7 +1438,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5733464562567573450}
-  m_Mesh: {fileID: 4300000, guid: 0980a0d6c3448cc4e9857ee179bc3838, type: 2}
+  m_Mesh: {fileID: 4300000, guid: 60ec04cf4831e3e4e8b38a918e5900de, type: 2}
 --- !u!23 &113451148336286254
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1520,6 +1537,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &8419876234665624985
@@ -1550,7 +1569,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.15, z: 0}
-  m_LocalScale: {x: 2, y: 0.3, z: 0.55}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2412854728581384899}
@@ -1562,7 +1581,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8419876234665624985}
-  m_Mesh: {fileID: 4300000, guid: 0980a0d6c3448cc4e9857ee179bc3838, type: 2}
+  m_Mesh: {fileID: 4300000, guid: 60ec04cf4831e3e4e8b38a918e5900de, type: 2}
 --- !u!23 &9187399486302762179
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1641,7 +1660,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.3, z: 0}
-  m_LocalScale: {x: 2, y: 0.6, z: 0.55}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6486492987315928150}
@@ -1653,7 +1672,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8551028478348897303}
-  m_Mesh: {fileID: 4300000, guid: 0980a0d6c3448cc4e9857ee179bc3838, type: 2}
+  m_Mesh: {fileID: 4300000, guid: b72cf1b310c36ee45840c0c9e97d80da, type: 2}
 --- !u!23 &5546463556380397922
 MeshRenderer:
   m_ObjectHideFlags: 0
