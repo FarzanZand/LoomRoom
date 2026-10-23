@@ -241,7 +241,13 @@ public static class DungeonChunkKit
     static GameObject Save(Chunk c)
     {
         chunkInfo.Add(c);
+        // Where the chunk already is (Rooms, or a subfolder such as Rooms/Scripted), else Rooms.
         string path = $"{ChunkFolder}/{c.name}.prefab";
+        foreach (var g in AssetDatabase.FindAssets($"t:Prefab \"{c.name}\"", new[] { ChunkFolder }))
+        {
+            var p = AssetDatabase.GUIDToAssetPath(g);
+            if (System.IO.Path.GetFileNameWithoutExtension(p) == c.name) { path = p; break; }
+        }
         var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
         if (existing != null && !overwrite) { UnityEngine.Object.DestroyImmediate(c.root.gameObject); return existing; }
         var t = c.root.gameObject.AddComponent<DungeonRoomTemplate>();

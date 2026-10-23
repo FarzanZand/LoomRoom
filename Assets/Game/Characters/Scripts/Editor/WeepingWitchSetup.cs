@@ -6,7 +6,7 @@ using UnityEngine;
 // - Characters/Enemies/Crypt/Not a witch: a copy of the Demon (melee on the Humanoid enemy base) wearing the Synty Dark
 //   Fantasy witch body and hair, casting the Crypt Lord's spells (Fireball, Fire Circle, the volley) and closing in to melee,
 //   80 health and a skeleton soldier's damage for now; WeepingEnemy makes her kneel and weep (Audio/Clips/Weeping, Tools/weeping_loop.py) until hit.
-// - Levels/Shared/Rooms/Sunken court: her own instance in the moonlight at the court's sunken middle, the
+// - Levels/Shared/Rooms/Scripted/Sunken court: her own instance in the moonlight at the court's sunken middle, the
 //   room's other Enemy sockets gone, and only its own (socketEnemiesOnly), so she weeps there alone. She is placed in
 //   it as herself, so she can be tweaked there by hand; a run again keeps the instance that is already there.
 public static class WeepingWitchSetup
@@ -16,7 +16,7 @@ public static class WeepingWitchSetup
     const string Lord = "Assets/Game/Characters/Enemies/Crypt/Crypt Lord.prefab";
     const string OldPath = "Assets/Game/Characters/Enemies/Crypt/Weeping witch.prefab";
     const string Path_ = "Assets/Game/Characters/Enemies/Crypt/Not a witch.prefab";
-    const string Court = "Assets/Game/Levels/Shared/Rooms/Sunken court.prefab";
+    const string Court = "Assets/Game/Levels/Shared/Rooms/Scripted/Sunken court.prefab";
     const string Weeping = "Assets/Game/Audio/Clips/Weeping/Weeping loop.wav";
     static readonly string[] Parts = { "SM_Chr_Witch_Female_01", "SM_Chr_Attach_Hair_Witch_01" };
 

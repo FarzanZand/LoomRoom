@@ -6,7 +6,7 @@ using UnityEngine;
 // - Levels/Shared/Portal/Portal arch: the kit arch with a PortalArch on it. Put it in any room template and set its Room.
 // - Levels/Pockets/Pocket: the level a portal's pocket is built from (its room 0 takes the portal's Room; Crypt stone
 //   unless the portal names a biome).
-// - Levels/Shared/Rooms/Skeleton Party room: the Moonlit fountain room (open skylight) without its fountain, four
+// - Levels/Shared/Rooms/Scripted/Skeleton Party room: the Moonlit fountain room (open skylight) without its fountain, four
 //   skeleton dancers in a square round a chest in the middle (Enemy sockets, Crypt Soldier; Socket Enemies Only, so the
 //   floor adds none), RoomMusic and SkeletonParty on the root.
 // - Levels/Shared/Rooms/Portal hall: the Gate hall with its first arch swapped for a Portal arch to the party room.
@@ -16,7 +16,7 @@ using UnityEngine;
 public static class SkeletonPartySetup
 {
     const string Chunks = "Assets/Game/Levels/Shared/Rooms/";
-    const string Party = Chunks + "Skeleton Party room.prefab";
+    const string Party = Chunks + "Scripted/Skeleton Party room.prefab";   // a scripted room: Rooms/Scripted
     const string Portal = Chunks + "Portal hall.prefab";
     const string PocketFolder = "Assets/Game/Levels/Pockets";
     const string Pocket = PocketFolder + "/Pocket.asset";

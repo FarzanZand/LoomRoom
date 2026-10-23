@@ -35,7 +35,7 @@ Where things live in `Assets`, and the rules that keep it that way. Reorganised 
 
 ## Levels
 
-- **`Levels/Shared`** holds what every level uses: `Rooms` (room templates), `Room pieces` (the building blocks placed inside a room
+- **`Levels/Shared`** holds what every level uses: `Rooms` (room templates; `Rooms/Scripted` for rooms that run their own scripted event: the Skeleton Party room, the Sunken court with Not a witch, the Boss stage), `Room pieces` (the building blocks placed inside a room
   template: pillars, arches, niches, platforms, galleries, rubble; called "kit" in code, `DungeonKitBlock`/`DungeonKitPiece`),
   `Room shapes` (floor plans for generated rooms), `Room styles` (styles with their textures and materials), `Props` (`Breakables`,
   `Chests`, `Effects`, `Features`, `Furnishing`, `Groups`, `Shop`, `Traps`), `Doors`, `Materials`, `Biomes`, `Board`, `Portal`, `Reveal`.
