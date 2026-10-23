@@ -13,19 +13,19 @@ public class FireballVolley : MonoBehaviour
     {
         [Min(1)] public int count = 3;
         [Min(0), Tooltip("Seconds between one ball appearing and the next.")]
-        public float spawnInterval = 1f;
+        public float spawnInterval = .5f;
         [Min(0), Tooltip("Metres each ball drifts up after it appears.")]
         public float rise = 1.2f;
         [Min(0), Tooltip("Metres between the hanging balls, side by side.")]
         public float spread = 1.3f;
         [Min(.05f), Tooltip("Seconds a ball takes to drift up into place.")]
-        public float riseSeconds = .5f;
+        public float riseSeconds = .35f;
         [Min(0), Tooltip("Seconds after the last ball is in place before the first one leaves.")]
-        public float holdSeconds = 1f;
+        public float holdSeconds = .25f;
         [Min(0), Tooltip("Seconds between one ball leaving and the next.")]
-        public float launchInterval = 1f;
+        public float launchInterval = .45f;
         [Min(0), Tooltip("Seconds a ball takes to reach full speed (the spell's Speed) from a standstill.")]
-        public float rampSeconds = .7f;
+        public float rampSeconds = .35f;
         [Min(.1f), Tooltip("Size of each ball against the spell's own projectile.")]
         public float scale = 1.3f;
         [Tooltip("The balls home in on the target once they leave (also on when the spell itself is Homing). Off: each flies at where the target stood when it started to speed up.")]

@@ -51,6 +51,14 @@ public sealed partial class LightingManager : MonoBehaviour
     [Range(0f, 4f), OnValueChanged(nameof(Apply))]
     [Tooltip("Multiplies the room's ambient light (the light in unlit corners), in every mood: higher makes the room's dark less dark. 1 = as the moods have it. While no dungeon floor is dark (the intro, board levels) this is the whole scene's ambient.")]
     public float roomAmbient = 1f;
+
+    [TabGroup("Tabs", "Room"), Title("Night light")]
+    [Tooltip("The bedroom's soft night light (it replaced the skylight's moon): one of the room lights, so it dims and goes out with them (off in the intro's dark).")]
+    public Light nightLight;
+    [TabGroup("Tabs", "Room"), OnValueChanged(nameof(Apply)), Tooltip("The night light's colour.")]
+    public Color nightLightColor = new(.6f, .72f, 1f);
+    [TabGroup("Tabs", "Room"), Min(0f), OnValueChanged(nameof(Apply)), Tooltip("The night light's strength before the room's brightness and moods.")]
+    public float nightLightIntensity = 450f;
     [TabGroup("Tabs", "Dungeon"), Title("Ambient light")]
     [Range(0f, 4f), OnValueChanged(nameof(Apply))]
     [Tooltip("Multiplies the ambient light on dark dungeon floors, after Dark Ambient caps it: higher makes the dungeon's dark less dark (places no torch or carried light reaches). 1 = as is.")]
@@ -197,6 +205,10 @@ public sealed partial class LightingManager : MonoBehaviour
 
     void Apply()
     {
+        // The night light is one of the room lights; its colour and strength are set here.
+        if (nightLight != null && sceneSources != null)
+            foreach (var source in sceneSources)
+                if (source != null && source.light == nightLight) { source.baseColor = nightLightColor; source.baseIntensity = nightLightIntensity; }
         // Room Lighting dims the room's lights; without a dungeon floor's darkness (the intro, a board) the
         // table and skylight group belongs to the room too.
         float roomLevel = 1f - RoomDark;

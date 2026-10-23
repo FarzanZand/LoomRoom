@@ -697,7 +697,10 @@ public partial class DungeonGenerator : MonoBehaviour
     {
         foreach(var chest in GetComponentsInChildren<DungeonContainer>(true))
         {
-            if(chest==null || !chest.chest || !InStartingRoom(chest.transform.position))continue;
+            if(chest==null || !chest.chest)continue;
+            // A level with Starting Chest off (the Arena) has no chest in its first room, whatever built it.
+            if(!data.startingChest && !data.pocket && Layout!=null && Layout.RoomAt(CellOf(chest.transform.position))==0){DestroyImmediate(chest.gameObject);continue;}
+            if(!InStartingRoom(chest.transform.position))continue;
             // Only the run's first floor has it; the starting room on a new biome's first floor is bare.
             if(FloorNumber>1){DestroyImmediate(chest.gameObject);continue;}
             bool extras=data.startingChestItems!=null && data.startingChestItems.Exists(i=>i!=null);

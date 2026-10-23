@@ -40,7 +40,11 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
     public bool CanInteract(Character who)=>!open && who!=null && who.IsAlive && (who is Player || HasAccess(who));
     static bool HasAccess(Character who) { var access=who.GetComponent<DungeonDoorAccess>(); return access!=null && access.isActiveAndEnabled; }
     Quaternion closedRotation, swingTarget;
-    void Awake(){closedPosition=leaf.localPosition;closedRotation=leaf.localRotation;swingTarget=closedRotation*Quaternion.Euler(0,swingDegrees,0);}
+    // The leaf as authored (its handle away from the hinge): mirrored when the hinge goes to the other side, so the
+    // handle stays on the far edge.
+    Vector3 leafMeshScale; float authoredSide = -1f;
+    void Awake(){closedPosition=leaf.localPosition;closedRotation=leaf.localRotation;swingTarget=closedRotation*Quaternion.Euler(0,swingDegrees,0);
+        if(leafMesh!=null)leafMeshScale=leafMesh.localScale; if(Mathf.Abs(closedPosition.x)>.001f)authoredSide=Mathf.Sign(closedPosition.x);}
     public void FitCeiling(float ceilingHeight, float wallTileSize = 0)
     {
         if (lintel == null) return;
@@ -83,6 +87,7 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
             float side=front ? -1f : 1f;
             leaf.localPosition=new Vector3(side*halfWidth,closedPosition.y,closedPosition.z);
             leafMesh.localPosition=new Vector3(-side*halfWidth,leafMesh.localPosition.y,leafMesh.localPosition.z);
+            leafMesh.localScale=new Vector3(side==authoredSide ? leafMeshScale.x : -leafMeshScale.x,leafMeshScale.y,leafMeshScale.z);
             // With the hinge on their left, turning the same way always takes the leaf away from them.
             swingTarget=closedRotation*Quaternion.Euler(0,-Mathf.Abs(swingDegrees),0);
         }

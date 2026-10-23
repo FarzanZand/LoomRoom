@@ -91,6 +91,8 @@ public partial class TableLevelData : ScriptableObject
     public List<LootFloorTiers> gearByFloor = new();
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("Start", HorizontalLine = false), AssetsOnly, Tooltip("Room template prefab the player starts in on the first floor and on the first floor of each new biome. Give its footprint one door cell: the only way out, which the player faces from the centre. Empty uses an ordinary entrance room.")]
     public GameObject startingRoom;
+    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("The starting room keeps its chest. Off: the chest is taken out (the Arena starts with none).")]
+    public bool startingChest = true;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), AssetsOnly, Tooltip("The starting room's chest always holds two things: one piece of gear rolled from the floor's loot, and this (a potion). Its chest is never trapped. Empty: an ordinary chest.")]
     public ItemData startingChestConsumable;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), AssetsOnly, Tooltip("More items the starting room's chest always holds on top of the gear and the potion (a spell tome, say).")]

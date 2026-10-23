@@ -226,6 +226,8 @@ public static partial class ArenaSetup
             }
             // The owner's box: a raised stone floor on the north stands.
             Block("Owner's box", mid - 2, mid + 2, n - 2, n - 1, 2.3f);
+            // Its front and back would lie in the same planes as the north stands' faces (they flickered): 2 cm deeper each way.
+            root.transform.Find("Owner's box").GetComponent<DungeonKitBlock>().size += new Vector3(0f, 0f, .04f);
 
             GameObject Load(string p) => AssetDatabase.LoadAssetAtPath<GameObject>(p);
             Transform Put(GameObject prefab, Vector3 pos, float yaw = 0f, float scale = 1f)

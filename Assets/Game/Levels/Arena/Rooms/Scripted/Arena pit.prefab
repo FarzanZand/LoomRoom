@@ -1087,7 +1087,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c930f665fbfe6743b615a7b80555558, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonKitBlock
-  size: {x: 10, y: 2.3, z: 4}
+  size: {x: 10, y: 2.3, z: 4.04}
   standsOnPosition: 1
   toCeiling: 0
   fromCeiling: 0
@@ -1384,7 +1384,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6385502781371963977}
-  m_Mesh: {fileID: 4300000, guid: 68993202e4d86e543937ad7e6d204701, type: 2}
+  m_Mesh: {fileID: 4300000, guid: a73ed6ba9c164af4596cabf278c9e3d9, type: 2}
 --- !u!23 &292992026260347548
 MeshRenderer:
   m_ObjectHideFlags: 0
