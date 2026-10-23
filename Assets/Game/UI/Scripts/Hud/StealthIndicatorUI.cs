@@ -2,8 +2,9 @@ using DG.Tweening;
 using UnityEngine;
 
 // Sneaking (the table player crouched): an eye on the HUD, open and orange while an enemy sees them, shut while none
-// does. While they are hidden (crouched and seen by no one) the screen's edges darken (shade, a soft vignette under
-// the HUD) and what they hear is muffled (a low-pass filter on the audio listener); both ease back as they are seen or
+// does. Crouched, the ghost's look in grey comes over the view (look, Stealth look: Ghost look with its tints made
+// neutral grey) at no more than half strength: a little of it while crouched, the half while hidden (seen by no one),
+// where what they hear is also muffled (a low-pass filter on the audio listener); it eases back as they are seen or
 // stand up.
 public class StealthIndicatorUI : MonoBehaviour
 {
@@ -12,15 +13,17 @@ public class StealthIndicatorUI : MonoBehaviour
     [SerializeField] Color hiddenColor = new(.85f, .82f, .72f), seenColor = new(.95f, .58f, .35f);
     [SerializeField, Min(0)] float transitionDuration = .18f;
     [Header("Hidden")]
-    [SerializeField, Tooltip("The dark vignette over the screen's edges while hidden (a full-screen image under the HUD).")]
-    CanvasGroup shade;
-    [SerializeField, Range(0, 1), Tooltip("How dark the edges get while hidden.")] float shadeStrength = .65f;
+    [SerializeField, Tooltip("The view while sneaking (Characters/Players/Settings/Stealth look), blended in over everything.")]
+    UnityEngine.Rendering.VolumeProfile look;
+    [SerializeField, Range(0, 1), Tooltip("How strong the look is while hidden (1 = as strong as the profile).")] float hiddenLook = .5f;
+    [SerializeField, Range(0, 1), Tooltip("How strong the look is while crouched but seen.")] float crouchedLook = .2f;
     [SerializeField, Min(10), Tooltip("Low-pass cutoff (Hz) of everything heard while hidden; 22000 is unmuffled.")] float muffledCutoff = 1600f;
-    [SerializeField, Min(.01f), Tooltip("Seconds the shade and the muffling take to come and go.")] float hiddenFade = .5f;
+    [SerializeField, Min(.01f), Tooltip("Seconds the look and the muffling take to come and go.")] float hiddenFade = .5f;
     Tween transition;
     bool? lastSeen;
-    float hiddenAmount;
+    float hiddenAmount, crouchAmount;
     AudioLowPassFilter muffle;
+    UnityEngine.Rendering.Volume volume;
 
     const float OpenCutoff = 22000f;
 
@@ -28,8 +31,10 @@ public class StealthIndicatorUI : MonoBehaviour
     void OnDisable()
     {
         transition?.Kill(); if (visibility != null) visibility.alpha = 0; lastSeen = null;
-        hiddenAmount = 0f; Apply();
+        hiddenAmount = crouchAmount = 0f; Apply();
     }
+
+    void OnDestroy() { if (volume != null) Destroy(volume.gameObject); }
 
     void Update()
     {
@@ -39,8 +44,10 @@ public class StealthIndicatorUI : MonoBehaviour
         if (sneaking)
             foreach (var brain in EnemyBrain.Active)
                 if (brain != null && brain.Character != null && brain.Character.IsAlive && brain.Perception != null && brain.Perception.Target == player && brain.Perception.TargetVisible) { seen = true; break; }
-        bool hidden = sneaking && !seen && !(GameManager.HasInstance && GameManager.Instance.State != GameState.Explore);
+        bool exploring = !(GameManager.HasInstance && GameManager.Instance.State != GameState.Explore);
+        bool hidden = sneaking && !seen && exploring;
         hiddenAmount = Mathf.MoveTowards(hiddenAmount, hidden ? 1f : 0f, Time.unscaledDeltaTime / hiddenFade);
+        crouchAmount = Mathf.MoveTowards(crouchAmount, sneaking && exploring ? 1f : 0f, Time.unscaledDeltaTime / hiddenFade);
         Apply();
 
         if (eye == null || visibility == null) return;
@@ -58,7 +65,21 @@ public class StealthIndicatorUI : MonoBehaviour
     void Apply()
     {
         float k = hiddenAmount * hiddenAmount * (3f - 2f * hiddenAmount);
-        if (shade != null) shade.alpha = k * shadeStrength;
+        float c = crouchAmount * crouchAmount * (3f - 2f * crouchAmount);
+        // The look: a little while crouched, more while hidden; steady, no pulsing.
+        float weight = Mathf.Lerp(c * crouchedLook, hiddenLook, k);
+        if (look != null && (weight > 0f || volume != null))
+        {
+            if (volume == null)
+            {
+                // Its own object on the default layer (cameras' volume masks take it; the HUD's UI layer they may not).
+                volume = new GameObject("Stealth look").AddComponent<UnityEngine.Rendering.Volume>();
+                volume.gameObject.layer = 0;
+                volume.isGlobal = true; volume.priority = 40f; volume.sharedProfile = look;
+            }
+            volume.weight = weight;
+            volume.enabled = weight > 0f;
+        }
         // The filter lives on the listener (the camera the player hears through); added the first time it is needed.
         if (muffle == null)
         {
