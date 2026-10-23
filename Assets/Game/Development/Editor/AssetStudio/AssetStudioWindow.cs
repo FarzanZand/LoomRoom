@@ -237,7 +237,15 @@ public partial class AssetStudioWindow : EditorWindow
         else if (showingAll) source = all.ToList();
         else source = categories.Count > 0 ? categories[categoryIndex].entries : new List<AssetStudioCatalog.Entry>();
         if (inGameOnly) source = source.Where(e => e.inGame).ToList();
-        if (!showingRecent)
+        if (RoomsShown)
+        {
+            // Rooms by the places that use them: a room several levels use is under each of them.
+            var where = RoomPlaces();
+            kinds = new[] { "Every place" }.Concat(where.order.Where(k => source.Any(e => where.Of(e).Contains(k)))).ToArray();
+            kindFilter = Mathf.Clamp(kindFilter, 0, kinds.Length - 1);
+            if (kindFilter > 0) source = source.Where(e => where.Of(e).Contains(kinds[kindFilter])).ToList();
+        }
+        else if (!showingRecent)
         {
             kinds = new[] { "All kinds" }.Concat(source.Select(e => e.kind).Distinct().OrderBy(k => k)).ToArray();
             kindFilter = Mathf.Clamp(kindFilter, 0, kinds.Length - 1);
@@ -256,9 +264,46 @@ public partial class AssetStudioWindow : EditorWindow
             };
             shown = ordered.ThenBy(e => e.name, StringComparer.OrdinalIgnoreCase).Concat(shown.Where(e => string.IsNullOrEmpty(e.itemSlot))).ToList();
         }
-        // Rooms by where they are: the shared rooms first, then each place's own, by name within each.
+        // Rooms by where they are: in campaign order of the first place that uses each, then by name.
         if (RoomsShown && roomSort == 1)
-            shown = shown.OrderBy(e => e.kind.StartsWith("Shared") ? 0 : 1).ThenBy(e => e.kind, StringComparer.OrdinalIgnoreCase).ThenBy(e => e.name, StringComparer.OrdinalIgnoreCase).ToList();
+        {
+            var where = RoomPlaces();
+            int First(AssetStudioCatalog.Entry e) { var p = where.Of(e); return p.Count == 0 ? int.MaxValue : where.order.IndexOf(p[0]); }
+            shown = shown.OrderBy(First).ThenBy(e => e.name, StringComparer.OrdinalIgnoreCase).ToList();
+        }
+    }
+
+    // Which places use each room (from the World model: pools, starting rooms, shops, arenas, authored rooms, maps,
+    // portals), named "The Crypt (Dungeon1)", or the level's name when no place plays it; in campaign order.
+    class RoomWhere
+    {
+        public readonly List<string> order = new();
+        public readonly Dictionary<string, List<string>> byPath = new();
+        public List<string> Of(AssetStudioCatalog.Entry e) => byPath.TryGetValue(e.path, out var l) ? l : None;
+        static readonly List<string> None = new() { NoPlace };
+    }
+    const string NoPlace = "No level uses it";
+    [NonSerialized] RoomWhere roomWhere;
+    [NonSerialized] AssetStudioWorld.Model roomWhereFor;
+
+    RoomWhere RoomPlaces()
+    {
+        var model = World;
+        if (roomWhere != null && roomWhereFor == model) return roomWhere;
+        var where = new RoomWhere();
+        string Label(AssetStudioWorld.Level l) =>
+            l.places.Count > 0 ? string.Join(", ", l.places.Select(p => p.displayName)) + $" ({l.data.name})" : l.data.name;
+        var levels = model.Groups(false).SelectMany(g => g.levels).ToList();
+        foreach (var l in levels) where.order.Add(Label(l));
+        where.order.Add(NoPlace);
+        foreach (var room in model.rooms)
+        {
+            var labels = model.LevelsOf(room).Select(d => model.LevelOf(d)).Where(l => l != null)
+                .OrderBy(l => levels.IndexOf(l)).Select(Label).Distinct().ToList();
+            where.byPath[AssetDatabase.GetAssetPath(room)] = labels.Count > 0 ? labels : new List<string> { NoPlace };
+        }
+        roomWhereFor = model;
+        return roomWhere = where;
     }
 
     // Shows an entry in its category's list; one in a category kept off the sidebar (places, events, house rules) is

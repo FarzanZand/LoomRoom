@@ -132,7 +132,7 @@ public static class AssetStudioCatalog
             var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (go == null) return null;
             if (go.GetComponent<DungeonMapTemplate>() != null) return Add(C("Levels & biomes"), guid, path, "Map template", Folder(path));
-            if (go.GetComponent<DungeonRoomTemplate>() != null) return Add(C("Rooms"), guid, path, RoomPlace(path), Folder(path));
+            if (go.GetComponent<DungeonRoomTemplate>() != null) return Add(C("Rooms"), guid, path, "Room template", Folder(path));
             var character = go.GetComponent<Character>();
             if (character != null)
             {
@@ -240,24 +240,6 @@ public static class AssetStudioCatalog
         return i.itemType.ToString();
     }
     public static int ItemKindOrder(string kind) { int k = Array.IndexOf(ItemKinds, kind); return k < 0 ? ItemKinds.Length : k; }
-
-    // Where a room template lives: the place (or level) whose folder holds it, Shared for the rooms several levels use.
-    static string RoomPlace(string path)
-    {
-        const string levels = Root + "/Levels/";
-        if (!path.StartsWith(levels)) return "Other";
-        string folder = path.Substring(levels.Length).Split('/')[0];
-        if (folder == "Shared") return "Shared (several levels)";
-        if (folder == "Pockets") return "Portal pockets";
-        foreach (var g in AssetDatabase.FindAssets("t:TableLevelData", new[] { levels + folder }))
-        {
-            var l = AssetDatabase.LoadAssetAtPath<TableLevelData>(AssetDatabase.GUIDToAssetPath(g));
-            if (l == null) continue;
-            var places = Levels.PlacesOf(l);
-            return places.Length > 0 ? $"{string.Join(", ", places)} ({l.name})" : l.name;
-        }
-        return folder;
-    }
 
     static void DescribeItem(Entry e, ItemData i)
     {
