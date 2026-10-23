@@ -40,7 +40,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     [Min(.5f)] public float ghostLightRange = 6f;
     [Tooltip("How much faster a ghost walks and runs than the living (1.6 = 60% faster).")]
     [Min(1)] public float ghostSpeed = 1.6f;
-    [Tooltip("The ghost's own view: a post-processing profile laid over everything while it is a ghost (Multiplayer/Ghost look: cold, drained, a dark blue vignette, grain and colour fringes).")]
+    [Tooltip("The ghost's own view: a post-processing profile laid over everything while it is a ghost (Characters/Players/Settings/Ghost look: cold, drained, a dark blue vignette, grain and colour fringes).")]
     public UnityEngine.Rendering.VolumeProfile ghostLook;
     [Tooltip("Seconds the ghost look takes to come in.")]
     [Min(0)] public float ghostLookFade = .8f;
