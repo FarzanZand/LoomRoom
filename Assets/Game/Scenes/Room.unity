@@ -199290,6 +199290,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1857895055}
     - target: {fileID: 6380673257219334802, guid: a221052a7e69a8a4c927db7a91135bea, type: 3}
+      propertyPath: clothStyle
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6380673257219334802, guid: a221052a7e69a8a4c927db7a91135bea, type: 3}
       propertyPath: heroSelect
       value: 
       objectReference: {fileID: 1279833380}
