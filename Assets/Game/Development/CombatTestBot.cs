@@ -333,8 +333,8 @@ public class CombatTestBot : MonoBehaviour
     // chest <metres> [wood|iron|gold]: a chest from the level's props, set down in front of the player (needs a dungeon).
     void SpawnChest(float distance, string tier)
     {
-        var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(tier == "iron" ? "Assets/Game/Levels/Dungeon1/Prefabs/Props/Chests/Iron chest.prefab"
-            : tier == "gold" ? "Assets/Game/Levels/Dungeon1/Prefabs/Props/Chests/Gold chest.prefab" : "Assets/Game/Levels/Dungeon1/Prefabs/Props/Supply chest.prefab");
+        var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(tier == "iron" ? "Assets/Game/Levels/Shared/Props/Chests/Iron chest.prefab"
+            : tier == "gold" ? "Assets/Game/Levels/Shared/Props/Chests/Gold chest.prefab" : "Assets/Game/Levels/Shared/Props/Chests/Supply chest.prefab");
         var dungeon = FindAnyObjectByType<DungeonGenerator>();
         if (prefab == null || dungeon == null) { Log("no chest prefab or dungeon"); return; }
         Vector3 forward = player.Look != null ? player.Look.YawTransform.forward : player.transform.forward; forward.y = 0f; forward.Normalize();

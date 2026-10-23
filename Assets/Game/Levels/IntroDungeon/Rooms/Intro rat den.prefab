@@ -49,6 +49,7 @@ MonoBehaviour:
   overridePrefab: {fileID: 0}
   archer: 0
   faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &3462669108684496043
@@ -100,6 +101,7 @@ MonoBehaviour:
   overridePrefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   archer: 0
   faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &8832094108586682034
@@ -176,10 +178,14 @@ MonoBehaviour:
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
   roomEvent: 1
   replaceGeneratedTorches: 1
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 11400000, guid: c645aab0a734a674c819d23a78475cc7, type: 2}
   previewCellSize: 2
 --- !u!1 &9093043138295683352
@@ -231,6 +237,7 @@ MonoBehaviour:
   overridePrefab: {fileID: 0}
   archer: 0
   faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &9171616304162710813
@@ -282,6 +289,7 @@ MonoBehaviour:
   overridePrefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   archer: 0
   faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1001 &675972584411326207

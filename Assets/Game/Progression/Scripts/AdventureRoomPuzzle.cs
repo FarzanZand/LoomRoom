@@ -10,6 +10,12 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
     public int revealFloor = 3;
     public string progressFlag = "adventure.deepestFloor", unlockFlag = "class.spellblade";
     public string unlockedClassName = "Arcanist";
+    [Tooltip("The class it unlocks: its sheet portrait and name are on the card that pops up (ClassUnlockedUI).")]
+    public AdventurerClass unlockedClass;
+    [Tooltip("A burst over the table as it opens (Items/Effects/Chest burst), scaled up to the room.")]
+    public GameObject unlockEffect;
+    [Min(.1f), Tooltip("The burst is made for the dungeon (1 unit to the metre); the room is ~22 units to the metre.")]
+    public float unlockEffectScale = 20f;
     [Header("Authored presentation")]
     public GameObject puzzleContents;
     public TMP_Text inscription;
@@ -144,7 +150,18 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
         if (step < solution.Length) { NotificationUI.Show($"{symbols[symbol]}  {step} / {solution.Length}"); return; }
         foreach (var b in Buttons) b.Light(true);
         ProgressionManager.Instance.SetFlag(unlockFlag);
-        NotificationUI.Show($"{unlockedClassName} unlocked");
+        ClassUnlockedUI.Show(unlockedClass, unlockedClassName);
+        Burst();
         MessageLog.Post($"{unlockedClassName} unlocked. You can pick it at the table.", MessageKind.Good);
+    }
+
+    // The burst sized for the room: every particle system scales with its transform.
+    void Burst()
+    {
+        if (unlockEffect == null) return;
+        var fx = Instantiate(unlockEffect, transform.position + Vector3.up * 4f, Quaternion.identity);
+        fx.transform.localScale = unlockEffect.transform.localScale * unlockEffectScale;
+        foreach (var ps in fx.GetComponentsInChildren<ParticleSystem>(true)) { var main = ps.main; main.scalingMode = ParticleSystemScalingMode.Hierarchy; }
+        Destroy(fx, 4f);
     }
 }

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// An enemy that kneels and weeps where it was set down (the Sunken court's moonlight) and leaves the player alone until
+// An enemy that kneels and weeps where it was set down (the Not a witch room's moonlight) and leaves the player alone until
 // someone hurts it: it notices nothing (EnemyBrain.Entranced, no close awareness behind it), so a quiet approach and a
 // blow from behind is an easy backstab. The first hit wakes it for good: it stands, screams and fights (its own
 // melee and spells, EnemyData). It drops a random piece of gear rolled Legendary (the highest rarity) and spoils when it dies.

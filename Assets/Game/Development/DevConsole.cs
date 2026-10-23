@@ -33,7 +33,7 @@ public class DevConsole : MonoBehaviour
     [SerializeField, Tooltip("Every room template prefab, for loadtemplate in development builds (the Editor finds them itself). Filled by Tools > LoomRoom > Dev > Build Dev Console (and DevConsoleBuilder.RefreshTemplates from an eval).")]
     GameObject[] templates = new GameObject[0];
 
-    static readonly string[] Commands = { "god", "ghost", "revive", "loadtemplate", "help", "clear" };
+    static readonly string[] Commands = { "god", "ghost", "revive", "die", "loadtemplate", "help", "clear" };
     const string TemplateCommand = "loadtemplate";
     List<(string name, GameObject prefab)> roomTemplates;
 
@@ -230,6 +230,7 @@ public class DevConsole : MonoBehaviour
                 Print("god [on|off]: no damage, health, mana and stamina kept full");
                 Print("ghost [on|off]: fly through walls, enemies don't see you");
                 Print("revive: back on your feet after dying");
+                Print("die: the table player dies at once (god mode goes off)");
                 Print("loadtemplate <name>: a new run opening in that room template (Tab completes the name)");
                 Print("clear: empty this window");
                 break;
@@ -243,6 +244,9 @@ public class DevConsole : MonoBehaviour
             case "revive":
                 Revive();
                 break;
+            case "die":
+                Die();
+                break;
             case TemplateCommand:
                 Split(line, out _, out var name, out _);
                 LoadTemplate(name.Trim());
@@ -255,6 +259,21 @@ public class DevConsole : MonoBehaviour
                 Print($"Unknown command: {command}. Type help.");
                 break;
         }
+    }
+
+    // Instant death for the table player, as a real death: god mode goes off, the hit can't be blocked.
+    void Die()
+    {
+        var player = Active;
+        if (player == null || player.Stats == null) { Print("No player."); return; }
+        if (!player.IsAlive) { Print("Already dead."); return; }
+        if (PlayerManager.Instance.ActiveKind != PlayerKind.Table) { Print("Only the table player can die."); return; }
+        if (DevGodMode.On) DevGodMode.Set(false);
+        player.Stats.BlockBlessing = false;
+        var hit = DamageInfo.Simple(player.Stats.CurrentHealth * 100f + 100000f);
+        hit.Magic = true; hit.SourceName = "the console";
+        player.Stats.TakeDamage(hit);
+        Print(player.IsAlive ? "Could not die." : "You die.");
     }
 
     static bool Switch(string arg, bool current) => arg == "on" ? true : arg == "off" ? false : !current;
@@ -340,6 +359,9 @@ public class DevConsole : MonoBehaviour
                 var biome = level.stages[i]?.biome;
                 if (biome != null && biome.roomTemplates != null && biome.roomTemplates.Any(c => c != null && c.template == template)) { stage = i; return level; }
             }
+            // A level without stages: its base biome's pool.
+            var own = !level.HasStages ? level.baseBiome : null;
+            if (own != null && own.roomTemplates != null && own.roomTemplates.Any(c => c != null && c.template == template)) return level;
         }
         var selected = DebugDungeonSession.SelectedDungeon;
         return candidates.FirstOrDefault(l => l == loader.Current)

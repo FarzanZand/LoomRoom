@@ -5,9 +5,9 @@ using UnityEngine;
 
 // Hand-built rooms ("chunks") and the kit they are made of. Kit pieces are
 // DungeonKitBlocks (built of the room's own stone when the floor is generated); the pillar, broken pillar, arch and
-// gallery railing also carry a painted model (Rooms/Kit/Models, Synty Dark Fantasy pieces through the painted-prop
-// pipeline) that the level uses instead of those blocks while TableLevelData.kitModels is on (DungeonKitPiece).
-// Writes the kit to Levels/Dungeon1/Rooms/Kit, the chunks to Levels/Shared/Rooms (every Dungeon level shares them), and adds the chunks to Cellars' and
+// gallery railing also carry a painted model (Levels/Shared/Room pieces/Models, Synty Dark Fantasy pieces through the painted-prop
+// pipeline) that the level uses instead of those blocks while its Kit Models is on (base biome, TableLevelData.kitModels; DungeonKitPiece).
+// Writes the kit to Levels/Shared/Room pieces, the chunks to Levels/Shared/Rooms (every Dungeon level shares them), and adds the chunks to Cellars' and
 // Crypt's room pools (DungeonBiome.roomTemplates). Only what doesn't exist yet is made: a kit piece or room you have
 // edited is never overwritten, and pool entries you changed or added stay (Build Kit and Chunks (Overwrite) rebuilds
 // everything of mine from scratch).
@@ -16,8 +16,8 @@ using UnityEngine;
 // kit pieces and sockets in, and add it to a biome's Room Templates.
 public static class DungeonChunkKit
 {
-    const string Rooms = "Assets/Game/Levels/Dungeon1/Rooms";
-    const string KitFolder = Rooms + "/Kit";
+    const string Shared = "Assets/Game/Levels/Shared";
+    const string KitFolder = Shared + "/Room pieces";
     const string ModelFolder = KitFolder + "/Models";
     const string ChunkFolder = "Assets/Game/Levels/Shared/Rooms";
     const string Synty = "Assets/Synty/PolygonDarkFantasy/Prefabs";
@@ -32,7 +32,7 @@ public static class DungeonChunkKit
     public static string Run(bool replaceExisting)
     {
         overwrite = replaceExisting;
-        if (!AssetDatabase.IsValidFolder(KitFolder)) AssetDatabase.CreateFolder(Rooms, "Kit");
+        if (!AssetDatabase.IsValidFolder(KitFolder)) AssetDatabase.CreateFolder(Shared, "Room pieces");
         if (!AssetDatabase.IsValidFolder(ModelFolder)) AssetDatabase.CreateFolder(KitFolder, "Models");
         if (!AssetDatabase.IsValidFolder(ChunkFolder)) AssetDatabase.CreateFolder("Assets/Game/Levels/Shared", "Rooms");
         BuildKit();
@@ -49,7 +49,8 @@ public static class DungeonChunkKit
     public static string RefreshPreviews()
     {
         int n = 0;
-        foreach (var g in AssetDatabase.FindAssets("t:Prefab", new[] { Rooms }))
+        // Every level's rooms and kit pieces, not only the shared ones.
+        foreach (var g in AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Game/Levels", "Assets/Game/Development" }))
         {
             string path = AssetDatabase.GUIDToAssetPath(g);
             if (AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponentInChildren<DungeonKitBlock>(true) == null) continue;
@@ -89,7 +90,7 @@ public static class DungeonChunkKit
     }
 
     // A painted model for a piece: Synty's model copied as plain objects (meshes, its materials, mesh colliders) into
-    // Rooms/Kit/Models, where the painted-prop pipeline paints it. Never overwritten: its painting stays.
+    // Room pieces/Models, where the painted-prop pipeline paints it. Never overwritten: its painting stays.
     static GameObject Model(string name, string syntyPrefab)
     {
         string path = $"{ModelFolder}/{name}.prefab";
@@ -240,7 +241,13 @@ public static class DungeonChunkKit
     static GameObject Save(Chunk c)
     {
         chunkInfo.Add(c);
+        // Where the chunk already is (Rooms, or a subfolder such as Rooms/Scripted), else Rooms.
         string path = $"{ChunkFolder}/{c.name}.prefab";
+        foreach (var g in AssetDatabase.FindAssets($"t:Prefab \"{c.name}\"", new[] { ChunkFolder }))
+        {
+            var p = AssetDatabase.GUIDToAssetPath(g);
+            if (System.IO.Path.GetFileNameWithoutExtension(p) == c.name) { path = p; break; }
+        }
         var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
         if (existing != null && !overwrite) { UnityEngine.Object.DestroyImmediate(c.root.gameObject); return existing; }
         var t = c.root.gameObject.AddComponent<DungeonRoomTemplate>();
@@ -296,7 +303,7 @@ public static class DungeonChunkKit
     static readonly Dictionary<string, GameObject> props = new();
     static GameObject PropPrefab(string path)
     {
-        if (!props.TryGetValue(path, out var p)) props[path] = p = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Levels/Dungeon1/Prefabs/{path}.prefab");
+        if (!props.TryGetValue(path, out var p)) props[path] = p = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Levels/Shared/Props/{path}.prefab");
         return p;
     }
 
@@ -437,7 +444,7 @@ public static class DungeonChunkKit
         made.Add(Save(c));
 
         // 8. A sunken court open to the sky: moonlight falls into the middle, pillars stand on the rim.
-        c = Begin("Sunken court", 9, 9, 1, new Vector2Int(4, 0), new Vector2Int(4, 8), new Vector2Int(0, 4), new Vector2Int(8, 4));
+        c = Begin("Not a witch", 9, 9, 1, new Vector2Int(4, 0), new Vector2Int(4, 8), new Vector2Int(0, 4), new Vector2Int(8, 4));
         c.rooms = Combat | Quiet; c.mood = DungeonRoomLight.Moonlit; c.openCeiling = true; c.skylightRadius = 1; c.cellars = .8f; c.crypt = .8f;
         const float sunk = .9f;
         Cut(c, DungeonFloorCut.Kind.Sunken, 2, 2, 6, 6, sunk);
@@ -616,7 +623,7 @@ public static class DungeonChunkKit
     }
 
     // A blank hand-built room: a painted 7 x 7 footprint with its centre and one door, opened in Prefab Mode. Paint the
-    // footprint in the inspector, drag pieces from Rooms/Kit (they take the room's stone when it is built) and sockets in,
+    // footprint in the inspector, drag pieces from Levels/Shared/Room pieces (they take the room's stone when it is built) and sockets in,
     // then add it to a biome's Room Templates.
     public static void NewRoomTemplate()
     {

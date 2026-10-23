@@ -32,6 +32,7 @@ public static class AssetStudioCatalog
     {
         public string name;
         public string description;
+        public bool hidden;       // kept for the World view and ID search, not listed in the sidebar
         public List<Entry> entries = new();
     }
 
@@ -44,7 +45,7 @@ public static class AssetStudioCatalog
     static List<Category> NewCategories()
     {
         var cats = new List<Category>();
-        void Cat(string name, string description) => cats.Add(new Category { name = name, description = description });
+        void Cat(string name, string description, bool hidden = false) => cats.Add(new Category { name = name, description = description, hidden = hidden });
         Cat("Items", "Weapons, shields, armour, trinkets, consumables, spell tomes and keys (ItemData).");
         Cat("Enemies", "Enemy prefabs, their EnemyData inside them.");
         Cat("Players & NPCs", "The two players and the people of the world.");
@@ -55,8 +56,9 @@ public static class AssetStudioCatalog
         Cat("VFX", "Particle effects: spells, gore, hits, torches.");
         Cat("Sounds", "Sound data (AudioData) and the clips they play.");
         Cat("Music", "Music tracks.");
-        Cat("Painted art", "The painted pixel textures of items, props and characters.");
-        Cat("Campaign", "Places on the campaign map (CampaignEncounter), campaign events (CampaignEvent) and the house rules (HouseRule). The World view shows how they hang together.");
+        // Places, events and house rules are browsed in the World and Dialogue views; their entries stay for the World's
+        // details panel and for ID search.
+        Cat("Campaign", "Places on the campaign map, campaign events and the house rules.", hidden: true);
         return cats;
     }
 
@@ -67,13 +69,13 @@ public static class AssetStudioCatalog
         foreach (var t in new[] { "ItemData", "SpellDefinition", "TableLevelData", "DungeonBiome", "BossFight", "AudioData", "CampaignEncounter", "CampaignEvent", "TableLevelDefaults", "HouseRule", "Prefab" })
             guids.UnionWith(AssetDatabase.FindAssets("t:" + t, new[] { Root }));
         guids.UnionWith(AssetDatabase.FindAssets("t:AudioClip", new[] { Root + "/Audio", Root + "/UI/Audio", Root + "/Combat", Root + "/Levels" }.Where(AssetDatabase.IsValidFolder).ToArray()));
-        if (AssetDatabase.IsValidFolder(Root + "/Art/Synty Pixel")) guids.UnionWith(AssetDatabase.FindAssets("t:Texture2D", new[] { Root + "/Art/Synty Pixel" }));
         return guids.Select(AssetDatabase.GUIDToAssetPath);
     }
 
     public static List<Category> Build()
     {
         var cats = NewCategories();
+        Levels.Forget();
         foreach (var path in Candidates()) Classify(cats, path);
         Sort(cats);
         shipped = InGame();
@@ -104,12 +106,13 @@ public static class AssetStudioCatalog
                 switch (a)
                 {
                     case ItemData i:
-                        e = Add(C("Items"), guid, path, i.itemType.ToString(), "");
+                        e = Add(C("Items"), guid, path, ItemKind(i), "");
                         DescribeItem(e, i);
                         break;
                     case SpellDefinition s: e = Add(C("Spells"), guid, path, "Spell", s.displayName); break;
-                    case TableLevelData l: e = Add(C("Levels & biomes"), guid, path, $"Level · {l.kind}", l.name); break;
-                    case DungeonBiome b: e = Add(C("Levels & biomes"), guid, path, "Biome", b.name); break;
+                    // Levels by the act that plays them; board or walled is a word on the row.
+                    case TableLevelData l: e = Add(C("Levels & biomes"), guid, path, "Level · " + Levels.GroupOf(l, path), LevelLine(l)); break;
+                    case DungeonBiome b: e = Add(C("Levels & biomes"), guid, path, "Biome", Levels.BiomeLine(b)); break;
                     case BossFight f: e = Add(C("Levels & biomes"), guid, path, "Boss fight", f.name); break;
                     case TableLevelDefaults _: e = Add(C("Levels & biomes"), guid, path, "Level defaults", "Chests, the merchant, breakables, features, wall lights and HUD pieces every level shares."); break;
                     case AudioData d: e = Add(C("Sounds"), guid, path, "Sound data", d.name); break;
@@ -142,7 +145,7 @@ public static class AssetStudioCatalog
             if (path.Contains("/Items/Prefabs/") || path.Contains("/Combat/Spells/") && go.GetComponentInChildren<ParticleSystem>() == null) return null;   // shown through their item or spell
             if (go.GetComponentInChildren<ParticleSystem>(true) != null && (path.Contains("/Combat/") || path.Contains("/Effects/") || path.Contains("/Spells/")))
                 return Add(C("VFX"), guid, path, "Effect", Folder(path));
-            if (path.Contains("/Prefabs/") && (path.StartsWith(Root + "/Levels/") || path.StartsWith(Root + "/World/") || path.StartsWith(Root + "/Progression/")))
+            if ((path.Contains("/Prefabs/") || path.Contains("/Props/")) && (path.StartsWith(Root + "/Levels/") || path.StartsWith(Root + "/World/") || path.StartsWith(Root + "/Progression/")))
                 return Add(C("Props"), guid, path, "Prop", Folder(path));
             return null;
         }
@@ -150,25 +153,101 @@ public static class AssetStudioCatalog
         // Clips: music by folder, the rest are sounds (the bought libraries are browsed in Unity).
         if (typeof(AudioClip).IsAssignableFrom(type))
         {
-            if (!new[] { "/Audio/", "/UI/Audio/", "/Combat/", "/Levels/" }.Any(f => path.StartsWith(Root + f)) || path.Contains("/Audio/Library/")) return null;
+            if (!new[] { "/Audio/", "/UI/Audio/", "/Combat/", "/Levels/" }.Any(f => path.StartsWith(Root + f))) return null;
             bool isMusic = path.StartsWith(Root + "/Audio/Music/") || Path.GetDirectoryName(path).Replace('\\', '/') == Root + "/Audio";
             return Add(isMusic ? C("Music") : C("Sounds"), guid, path, isMusic ? "Music" : "Clip", Folder(path));
         }
-
-        // Painted textures (the house style's art), one per item, prop or character.
-        if (typeof(Texture2D).IsAssignableFrom(type) && path.StartsWith(Root + "/Art/Synty Pixel/") && path.Contains("painted"))
-            return Add(C("Painted art"), guid, path, "Painted texture", Folder(path));
         return null;
     }
 
+    static string LevelLine(TableLevelData l)
+    {
+        string kind = l.kind == TableLevelKind.Town ? "town" : l.IsBoard ? "board" : "walled";
+        if (!l.IsDungeon) return kind;
+        var places = Levels.PlacesOf(l);
+        return $"{kind} · {l.FloorCount} floor{(l.FloorCount == 1 ? "" : "s")}" + (l.HasStages ? "" : " on its base biome") + (places.Length > 0 ? " · " + string.Join(", ", places) : "");
+    }
+
+    // What the level and biome rows need from the rest of the content (the places that play each level, the catalog,
+    // which levels run each biome), read once per build or update of the library.
+    static class Levels
+    {
+        static Dictionary<TableLevelData, int> acts;
+        static Dictionary<TableLevelData, List<string>> places;
+        static HashSet<TableLevelData> listed;
+        static Dictionary<DungeonBiome, List<TableLevelData>> users;
+
+        public static void Forget() { acts = null; places = null; listed = null; users = null; }
+
+        static void Read()
+        {
+            if (acts != null) return;
+            acts = new Dictionary<TableLevelData, int>(); places = new Dictionary<TableLevelData, List<string>>(); users = new Dictionary<DungeonBiome, List<TableLevelData>>();
+            foreach (var g in AssetDatabase.FindAssets("t:CampaignEncounter", new[] { AssetStudioWorld.EncountersRoot }))
+            {
+                var p = AssetDatabase.LoadAssetAtPath<CampaignEncounter>(AssetDatabase.GUIDToAssetPath(g));
+                if (p == null || p.kind != CampaignEncounterKind.Level || p.level == null) continue;
+                if (!acts.TryGetValue(p.level, out int a) || p.act < a) acts[p.level] = Mathf.Max(1, p.act);
+                if (!places.TryGetValue(p.level, out var names)) places[p.level] = names = new List<string>();
+                names.Add(p.displayName);
+            }
+            var catalog = AssetDatabase.LoadAssetAtPath<TableLevelCatalog>(AssetStudioWorld.CatalogPath);
+            listed = new HashSet<TableLevelData>(catalog != null && catalog.levels != null ? catalog.levels.Where(l => l != null) : Enumerable.Empty<TableLevelData>());
+            foreach (var g in AssetDatabase.FindAssets("t:TableLevelData", new[] { Root }))
+            {
+                var level = AssetDatabase.LoadAssetAtPath<TableLevelData>(AssetDatabase.GUIDToAssetPath(g));
+                if (level == null || level.stages == null || AssetStudioWorld.IsTool(level)) continue;
+                foreach (var s in level.stages)
+                    if (s != null && s.biome != null)
+                    {
+                        if (!users.TryGetValue(s.biome, out var list)) users[s.biome] = list = new List<TableLevelData>();
+                        if (!list.Contains(level)) list.Add(level);
+                    }
+            }
+        }
+
+        public static string GroupOf(TableLevelData l, string path)
+        {
+            Read();
+            if (acts.TryGetValue(l, out int act)) return "Act " + act;
+            return AssetStudioWorld.IsTool(l) || !listed.Contains(l) ? AssetStudioWorld.OtherGroup : AssetStudioWorld.NotOnMapGroup;
+        }
+
+        public static string[] PlacesOf(TableLevelData l) { Read(); return places.TryGetValue(l, out var n) ? n.ToArray() : Array.Empty<string>(); }
+
+        public static string BiomeLine(DungeonBiome b)
+        {
+            Read();
+            var list = users.TryGetValue(b, out var u) ? u : new List<TableLevelData>();
+            return list.Count == 0 ? "no level runs it" : list.Count == 1 ? list[0].name + "'s" : "shared: " + string.Join(", ", list.Select(x => x.name));
+        }
+    }
+
     // An item's row: its main number (damage or armour), slot and price first, for balancing.
+    // What kind of item it is, for the Items filter and its By type order: swords and maces apart, each worn slot apart.
+    static readonly string[] ItemKinds = { "Sword", "Mace", "Shield", "Helm", "Body armour", "Gloves", "Boots", "Leggings", "Trinket", "Spell tome", "Consumable", "Spoils", "Key" };
+    public static string ItemKind(ItemData i)
+    {
+        if (i.spell != null || i.itemType == ItemType.Spell) return "Spell tome";
+        if (i.IsWeapon) return i.weaponCategory == WeaponCategory.Mace ? "Mace" : "Sword";
+        if (i.itemType == ItemType.Shield) return "Shield";
+        if (i.itemType == ItemType.Equipment || i.canBeEquipped)
+            return i.equipSlot switch
+            {
+                EquipmentSlot.Head => "Helm", EquipmentSlot.Body => "Body armour", EquipmentSlot.Gloves => "Gloves", EquipmentSlot.Boots => "Boots",
+                EquipmentSlot.Legs => "Leggings", EquipmentSlot.Trinket1 or EquipmentSlot.Trinket2 => "Trinket", _ => ItemData.SlotName(i.equipSlot),
+            };
+        return i.itemType.ToString();
+    }
+    public static int ItemKindOrder(string kind) { int k = Array.IndexOf(ItemKinds, kind); return k < 0 ? ItemKinds.Length : k; }
+
     static void DescribeItem(Entry e, ItemData i)
     {
         if (!string.IsNullOrEmpty(i.itemName)) { e.name = i.itemName; }
         string main = "";
         try { if (i.TryMainStat(out _, out float value, out string text)) { e.itemMain = value; main = (i.IsWeapon ? "Damage " : "Armour ") + text; } }
         catch { }
-        e.itemSlot = i.spell != null ? "Spell tome" : i.IsWeapon || i.itemType == ItemType.Shield || i.canBeEquipped ? ItemData.SlotName(i.equipSlot) : i.itemType.ToString();
+        e.itemSlot = e.kind;
         e.itemPrice = i.value;
         e.itemTier = i.tier;
         e.description = string.Join(" · ", new[] { main, e.itemSlot, $"{i.value} gold", $"tier {i.tier}", i.rarity.ToString(), i.description }.Where(s => !string.IsNullOrWhiteSpace(s)));
@@ -185,6 +264,10 @@ public static class AssetStudioCatalog
     {
         if (cats == null || paths.Count == 0) return;
         var all = cats.SelectMany(c => c.entries).ToList();
+        // A place, a level or a biome changed: every level and biome row is written again (their act, places, users).
+        Levels.Forget();
+        if (paths.Any(p => p.StartsWith(AssetStudioWorld.EncountersRoot + "/") || p.StartsWith(AssetStudioWorld.LevelsRoot + "/") && p.EndsWith(".asset")))
+            paths = paths.Concat(all.Where(e => e.kind.StartsWith("Level") || e.kind == "Biome").Select(e => e.path)).Distinct().ToList();
         foreach (var path in paths)
         {
             // The GUID only of a file that is there: a path moved or deleted can still answer with its old GUID, which

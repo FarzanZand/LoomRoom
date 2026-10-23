@@ -16,46 +16,61 @@ public static partial class AssetStudioWorld
     // ── Levels, biomes, rooms ─────────────────────────────────────────
 
     // A new level made from an existing one (its look, layout and rules): Levels/<name>/<name>.asset with Biomes and
-    // Rooms folders, its own copy of each of the template's biomes when ownBiomes (else it shares them), in the catalog.
+    // Rooms folders, its own copy of each of the template's stage biomes when ownBiomes (else it shares them), in the
+    // catalog. The base biome comes along inside the file (renamed for the new level).
     public static TableLevelData NewLevel(string name, TableLevelData template, bool ownBiomes, out string message)
     {
-        name = CleanName(name);
         if (template == null) { message = "Pick a level to start from."; return null; }
-        if (name.Length == 0) { message = "Give the level a name."; return null; }
-        if (All<TableLevelData>().Any(l => string.Equals(l.name, name, StringComparison.OrdinalIgnoreCase))) { message = $"A level is already called {name}: saved runs find levels by name."; return null; }
+        if (LevelNameProblem(name) is string problem) { message = problem; return null; }
+        name = CleanName(name);
         string folder = LevelsRoot + "/" + name;
         EnsureFolder(folder + "/Biomes"); EnsureFolder(folder + "/Rooms");
         string path = folder + "/" + name + ".asset";
         if (!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(template), path)) { message = "Could not copy " + template.name + "."; return null; }
         var level = AssetDatabase.LoadAssetAtPath<TableLevelData>(path);
+        level.MakeBaseBiome();   // the copied base biome, named for this level (made when the template had none)
         level.displayName = name;
+        bool staged = level.HasStages;
         if (ownBiomes && level.stages != null)
             for (int i = 0; i < level.stages.Length; i++)
                 if (level.stages[i]?.biome != null) level.stages[i].biome = CopyBiome(level.stages[i].biome, folder + "/Biomes", name + " " + level.stages[i].biome.name, null);
         EditorUtility.SetDirty(level);
         AddToCatalog(level);
         AssetDatabase.SaveAssets();
-        message = $"Made {name} from {template.name}" + (ownBiomes ? " with its own biomes." : ", sharing its biomes.");
+        message = $"Made {name} from {template.name}" + (!staged ? ", its floors on its own base biome." : ownBiomes ? " with its own biomes." : ", sharing its biomes.");
         return level;
     }
 
     // fileName names the asset; displayName (what the game shows, e.g. on the run recap) stays the source's unless given.
+    // A level's base biome is copied out of its level's file on its own (copying the file would copy the whole level).
     static DungeonBiome CopyBiome(DungeonBiome source, string folder, string fileName, string displayName)
     {
         EnsureFolder(folder);
         string path = AssetDatabase.GenerateUniqueAssetPath(folder + "/" + CleanName(fileName) + ".asset");
-        AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(source), path);
-        var copy = AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
+        DungeonBiome copy;
+        if (IsBase(source))
+        {
+            copy = UnityEngine.Object.Instantiate(source);
+            copy.name = Path.GetFileNameWithoutExtension(path);
+            copy.isLevelBase = false;
+            AssetDatabase.CreateAsset(copy, path);
+        }
+        else
+        {
+            AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(source), path);
+            copy = AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
+        }
         if (!string.IsNullOrEmpty(displayName)) copy.displayName = CleanName(displayName);
         EditorUtility.SetDirty(copy);
         return copy;
     }
 
-    // A new biome on a level's run (a copy of template, or of the level's last biome), for some floors.
+    // A new biome on a level's run (a copy of template, or of the level's last biome, or its base biome), for some floors.
     public static DungeonBiome NewBiome(TableLevelData level, string name, DungeonBiome template, int floors, bool boss, out string message)
     {
         name = CleanName(name);
         template ??= level != null && level.stages != null ? level.stages.LastOrDefault(s => s?.biome != null)?.biome : null;
+        template ??= level != null ? level.baseBiome : null;
         if (level == null || template == null) { message = "Pick a level, and a biome to start from."; return null; }
         if (name.Length == 0) { message = "Give the biome a name."; return null; }
         string folder = (LevelFolder(level) ?? Path.GetDirectoryName(AssetDatabase.GetAssetPath(level)).Replace('\\', '/')) + "/Biomes";
@@ -74,12 +89,31 @@ public static partial class AssetStudioWorld
         Save(level);
     }
 
-    public static void RemoveStage(TableLevelData level, int index)
+    // Takes a stage off the run. When it was the last, the level's floors run on its base biome: as many floors as that
+    // stage had, its boss too. Returns what changed (with what the base biome lacks for that).
+    public static string RemoveStage(TableLevelData level, int index)
     {
-        if (level.stages == null || index < 0 || index >= level.stages.Length) return;
+        if (level.stages == null || index < 0 || index >= level.stages.Length) return "";
         Undo.RecordObject(level, "Remove stage");
+        var removed = level.stages[index];
         var list = level.stages.ToList(); list.RemoveAt(index); level.stages = list.ToArray();
+        string result = $"Took {(removed?.biome != null ? removed.biome.name : "the stage")} off {level.name}'s run.";
+        if (level.IsDungeon && !level.HasStages)
+        {
+            if (removed != null) { level.floors = Mathf.Max(1, removed.floors); level.bossOnLastFloor = removed.boss; }
+            var b = level.baseBiome;
+            if (b == null) result += " It has no stages and no base biome now: make the base biome on its Base biome tab.";
+            else
+            {
+                result += $" Its {level.FloorCount} floor{(level.FloorCount == 1 ? "" : "s")} now run on its base biome.";
+                var lacks = new List<string>();
+                if (b.enemies == null || !b.enemies.Any(e => e != null && e.enemy != null)) lacks.Add("no enemies");
+                if (b.loot == null) lacks.Add("no loot");
+                if (lacks.Count > 0) result += " Its base biome has " + string.Join(" and ", lacks) + ": give it some.";
+            }
+        }
         Save(level);
+        return result;
     }
 
     public static void MoveStage(TableLevelData level, int index, int by)
@@ -619,6 +653,8 @@ public static partial class AssetStudioWorld
             Write();
         }
         public static void Created(string path) { if (open != null) { open.created.Add(new Made { path = path }); Write(); } }
+        // Keeps the open step joinable a moment longer: a long making (several files) and a Begin inside it are one step.
+        public static void Keep() { if (open != null) openedAt = EditorApplication.timeSinceStartup; }
         // A folder that doesn't exist yet: made by this step, removed with it when empty.
         public static void Folder(string path) { if (open != null && !AssetDatabase.IsValidFolder(path)) { open.created.Add(new Made { path = path }); Write(); } }
         public static void Moved(string from, string to) { if (open != null) { open.moved.Add(new MovedFile { from = from, to = to }); Write(); } }

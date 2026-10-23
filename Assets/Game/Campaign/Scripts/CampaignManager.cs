@@ -25,6 +25,8 @@ public class CampaignManager : Singleton<CampaignManager>
     public Transform mapSpot;
     [TabGroup("Map"), Tooltip("Seconds for the map to grow up out of the table, or fold away.")]
     [Min(0)] public float riseSeconds = .8f;
+    [TabGroup("Map"), Tooltip("Seconds the map's lights over the table take to come back on after it has grown or the cloth has dropped.")]
+    [Min(0)] public float lightFadeSeconds = .8f;
 
     [TabGroup("Rules"), Tooltip("Where the figure stands in a new campaign.")] public CampaignEncounter home;
     [TabGroup("Rules"), Tooltip("Every place there is (their order is saved for where the figure stands: append only).")]
@@ -468,11 +470,34 @@ public class CampaignManager : Singleton<CampaignManager>
     // The places' lights don't squash with the map, so they are off while it grows or folds (lying on the flattened
     // land they would blow it out).
     readonly List<Light> mapLights = new();
+    readonly Dictionary<Light, float> lightIntensity = new();
+    IEnumerator FadeLightIn(Light l)
+    {
+        if (!lightIntensity.TryGetValue(l, out float full)) lightIntensity[l] = full = l.intensity;
+        for (float t = 0; t < lightFadeSeconds && l != null && l.enabled; t += Time.unscaledDeltaTime)
+        {
+            l.intensity = full * Mathf.SmoothStep(0f, 1f, t / lightFadeSeconds);
+            yield return null;
+        }
+        if (l != null) l.intensity = full;
+    }
+    bool OnTheLand(Light l) => l.GetComponentInParent<CampaignPoint>() != null || Map.scatter != null && l.transform.IsChildOf(Map.scatter);
     void MapLights(bool on)
     {
         // Lights already switched off by an earlier call stay on the list (a fold and a rise can overlap).
         if (!on) { foreach (var l in Map.GetComponentsInChildren<Light>()) if (l.enabled) { mapLights.Add(l); l.enabled = false; } }
-        else { foreach (var l in mapLights) if (l != null) l.enabled = true; mapLights.Clear(); }
+        else
+        {
+            foreach (var l in mapLights)
+            {
+                if (l == null) continue;
+                l.enabled = true;
+                // The map's own lights high over the table come back gently: switched on at once, the land and the
+                // cloth would brighten in one frame. (The places' lamps rise with their places, CampaignMap.Reveal.)
+                if (!OnTheLand(l)) StartCoroutine(FadeLightIn(l));
+            }
+            mapLights.Clear();
+        }
     }
 
     IEnumerator Sink()
@@ -662,6 +687,7 @@ public class CampaignManager : Singleton<CampaignManager>
     // After a debug reset, in the map view: the cloth drops onto the bare table again, as the first time.
     IEnumerator ReplayFirstReveal(Player player)
     {
+        if (frameOpenLand) yield return Frame(player, .6f, wholeTable: true);
         yield return StartCoroutine(GuardedRoutine.Run(BigReveal(), _ => { rising = false; Map.gameObject.SetActive(true); RepairMap(); ShowActs(); }));
         if (PM != null && !PM.HasFlag(SeenFlag))
         {
@@ -707,10 +733,13 @@ public class CampaignManager : Singleton<CampaignManager>
         // A reveal still running (a win's, as the player came straight back to the table) finishes first.
         while (revealing) yield return null;
         bool firstReveal = !Map.gameObject.activeSelf && PM != null && !PM.HasFlag(SeenFlag);
-        if (firstReveal) yield return StepToMap(player);
+        // The first time the player stands at the middle of the table to watch the cloth fall over all of it, then walks
+        // over to the land that opened.
+        if (firstReveal) yield return StepToMap(player, wholeTable: true);
         if (!Map.gameObject.activeSelf) yield return StartCoroutine(GuardedRoutine.Run(firstReveal ? BigReveal() : Rise(), _ => { rising = false; RepairMap(); ShowActs(); }));
         else ShowActs();
         PlaceFigure(At, firstReveal);
+        if (firstReveal && frameOpenLand) yield return Frame(player, .9f);
         if (!firstReveal) yield return StepToMap(player);
         // The first time the realm is seen, the Dungeon Master says where to start.
         if (PM != null && !PM.HasFlag(SeenFlag))
@@ -1220,19 +1249,20 @@ public class CampaignManager : Singleton<CampaignManager>
 
     // ── Standing over the map ──
 
-    IEnumerator StepToMap(Player player)
+    IEnumerator StepToMap(Player player, bool wholeTable = false)
     {
         if (player.Look == null) yield break;
         player.Look.HeightOverride = viewHeight;
-        yield return Frame(player, stepSeconds);
+        yield return Frame(player, stepSeconds, wholeTable);
     }
 
     // Walks the player along the near side to face the open land and turns the view onto it, then zooms until its
-    // places fill the view (or, with frameOpenLand off, the fixed spot, aim and zoom).
-    IEnumerator Frame(Player player, float seconds)
+    // places fill the view (or, with frameOpenLand off, the fixed spot, aim and zoom). wholeTable: the middle of the near
+    // side, the whole map in view (the first reveal's cloth drop).
+    IEnumerator Frame(Player player, float seconds, bool wholeTable = false)
     {
         var m = Map.transform;
-        var (centre, half) = OpenLand();
+        var (centre, half) = wholeTable ? (Vector2.zero, new Vector2(Map.halfX, Map.halfZ)) : OpenLand();
         var aimLocal = frameOpenLand ? new Vector3(centre.x, 0f, centre.y) : new Vector3(viewAim.x, 0f, viewAim.y);
         aimLocal.y = Map.HeightAt(aimLocal.x, aimLocal.z);
         var aim = m.TransformPoint(aimLocal);

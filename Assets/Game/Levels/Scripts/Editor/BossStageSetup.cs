@@ -12,13 +12,13 @@ public static class BossStageSetup
     const string Controller = "Assets/Game/Characters/Animations/HumanoidController.controller";
     const string DungeonMaster = "Assets/Game/Characters/NPCs/DungeonMaster.prefab";
     const string BeamFolder = "Assets/Game/Combat/Effects/DM beam";
-    const string StagePath = "Assets/Game/Levels/Shared/Rooms/Boss stage.prefab";
+    const string StagePath = "Assets/Game/Levels/Shared/Rooms/Scripted/Boss stage.prefab";
     const string FightPath = "Assets/Game/Levels/Dungeon1/Biomes/Crypt Lord fight.asset";
     const string CryptBiome = "Assets/Game/Levels/Shared/Biomes/Crypt.asset";
     const string CryptLord = "Assets/Game/Characters/Enemies/Crypt/Crypt Lord.prefab";
     const string Acolyte = "Assets/Game/Characters/Enemies/Crypt/Crypt Acolyte.prefab";
-    const string Brazier = "Assets/Game/Levels/Dungeon1/Prefabs/Furnishing/Brazier.prefab";
-    const string Sounds = "Assets/Game/Audio/Library/_Sound Effects Library/";
+    const string Brazier = "Assets/Game/Levels/Shared/Props/Furnishing/Brazier.prefab";
+    const string Sounds = "Assets/ThirdParty/Sound Effects Library/";
 
     public static void SetUpMenu() => Debug.Log("[Boss stage] " + SetUp());
 
@@ -181,7 +181,7 @@ public static class BossStageSetup
         var fight = AssetDatabase.LoadAssetAtPath<BossFight>(FightPath);
         if (fight != null) return fight;
         fight = ScriptableObject.CreateInstance<BossFight>();
-        fight.music = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Audio/CHIP_07_Forge.mp3");
+        fight.music = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Audio/Music/CHIP_07_Forge.mp3");
         fight.bpm = 129.2f; fight.firstBeat = .743f; fight.musicVolume = .8f;
         fight.landSound = AssetDatabase.LoadAssetAtPath<AudioClip>(Sounds + "Magic/Mgc_Electric_Impact_01.wav");
         fight.beamChargeSound = AssetDatabase.LoadAssetAtPath<AudioClip>(Sounds + "Magic/Mgc_Electric_Cast_Start_01.wav");

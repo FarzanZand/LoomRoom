@@ -7,8 +7,9 @@ using UnityEngine;
 //  - Characters/Enemies/Arena/Arena Champion: a copy of the Crypt Soldier wearing the Fantasy Kingdom headsman (a
 //    bare-chested, hooded brute no other character wears), rebound onto the enemy rig by bone name, with a steel mace.
 //  - Levels/Arena: a board-game level (printed tiles on the table, like the Old Wood): the Arena style (sand floor,
-//    sandstone, from Tools/arena_style.py), the Arena biome (a copy of the Cellars with that style, no merchant or
-//    hand-built rooms) and the Arena pit: a 13 x 13 board of sand ringed by three tiers of stands with a crowd of pewter
+//    sandstone, from Tools/arena_style.py), one floor on the level's base biome (inside Arena.asset, no biome file: the
+//    Cellars' enemies and loot with that style, no merchant or hand-built rooms; once it is set up its own content is
+//    kept) and the Arena pit: a 13 x 13 board of sand ringed by three tiers of stands with a crowd of pewter
 //    miniatures, the owner's box under an awning, banners and braziers, the champion waiting near the far side, the DM's
 //    lines and ArenaFight. The level is a landing and the pit (the pit is the last room, its stairs hidden by ArenaFight).
 //  - Campaign/Encounters/Act 1/The Arena, appended to the CampaignManager's places, with its place and road on the map.
@@ -25,9 +26,8 @@ public static partial class ArenaSetup
         if (!AssetDatabase.IsValidFolder(Dir + "/Rooms")) AssetDatabase.CreateFolder(Dir, "Rooms");
         var champion = Champion(log);
         var style = Style();
-        var biome = Biome(style, log);
         var room = Room(champion, style);
-        var level = Level(biome, room, log);
+        var level = Level(room, style, log);
         var encounter = Encounter(level, log);
         MapPlace(encounter, log);
         AssetDatabase.SaveAssets();
@@ -109,7 +109,7 @@ public static partial class ArenaSetup
     static DungeonRoomStyle Style()
     {
         string dir = Dir + "/Styles";
-        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Dungeon1/Styles/Church.asset");
+        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Church.asset");
         Material Mat(string name, Material like)
         {
             string tex = $"{dir}/{name}.png", path = $"{dir}/{name}.mat";
@@ -137,11 +137,19 @@ public static partial class ArenaSetup
 
     // ── The biome ──
 
-    static DungeonBiome Biome(DungeonRoomStyle style, System.Text.StringBuilder log)
+    // The level's base biome is the arena's only biome. Still with stages (a fresh copy of Dungeon1, or a level from before
+    // base biomes): the content of its old biome file in the Arena folder, else the Cellars', folded into the base.
+    static DungeonBiome Biome(TableLevelData level, DungeonRoomStyle style, System.Text.StringBuilder log)
     {
-        string path = Dir + "/Arena biome.asset";
-        if (AssetDatabase.LoadAssetAtPath<DungeonBiome>(path) == null) { AssetDatabase.CopyAsset("Assets/Game/Levels/Shared/Biomes/Cellars.asset", path); log.Append("copied the Cellars as the Arena biome; "); }
-        var b = AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
+        var b = level.MakeBaseBiome();
+        if (level.HasStages)
+        {
+            DungeonBiome old = null;
+            foreach (var s in level.stages) if (s != null && s.biome != null) { old = s.biome; break; }
+            var from = old != null && AssetDatabase.GetAssetPath(old).StartsWith(Dir + "/") ? old : AssetDatabase.LoadAssetAtPath<DungeonBiome>("Assets/Game/Levels/Shared/Biomes/Cellars.asset");
+            b.FoldIn(from);
+            log.Append($"the base biome takes {(from != null ? from.name : "nothing")}'s enemies, loot and look; ");
+        }
         b.displayName = "The Arena";
         // Its own words (the copy came with the Cellars'): the pit's template has the Dungeon Master's lines on the way in.
         b.entryMessage = "You step into the arena.";
@@ -151,6 +159,11 @@ public static partial class ArenaSetup
         b.templateChance = 0f;
         b.guardian.enabled = false;
         b.roomStyles = new[] { new DungeonStyleChoice { style = style, weight = 1f } };
+        b.destructiblesPerRoom = Vector2Int.zero;
+        // A board on the table, lit and edged like the Old Wood's.
+        var forest = AssetDatabase.LoadAssetAtPath<TableLevelData>("Assets/Game/Levels/Forest1/Forest1.asset");
+        b.boardLightColor = forest.boardLightColor; b.boardLightIntensity = forest.boardLightIntensity * .6f;   // pale sand takes less light than a forest floor
+        b.boardGridMaterial = forest.boardGridMaterial; b.boardEdgeMaterial = forest.boardEdgeMaterial;
         EditorUtility.SetDirty(b);
         return b;
     }
@@ -281,7 +294,7 @@ public static partial class ArenaSetup
                 Put(banner, Cell(x, y) + Up(tier[6] + 2.2f), Mathf.Atan2(toMiddle.x, toMiddle.z) * Mathf.Rad2Deg);
             }
             // Braziers at the sand's corners, weapon racks either side of the way in.
-            var brazier = Load("Assets/Game/Levels/Dungeon1/Prefabs/Furnishing/Brazier.prefab");
+            var brazier = Load("Assets/Game/Levels/Shared/Props/Furnishing/Brazier.prefab");
             foreach (var (x, y) in new[] { (3.2f, 3.2f), (n - 4.2f, 3.2f), (3.2f, n - 4.2f), (n - 4.2f, n - 4.2f) }) Put(brazier, Cell(x, y));
             var rack = Restyled("Assets/Synty/PolygonFantasyKingdom/Prefabs/Props/BattleGround/SM_Prop_Weapon_Rack_01.prefab", "Arena weapon rack", 1f);
             Put(rack, Cell(mid - 2.2f, 3.3f), 0f); Put(rack, Cell(mid + 2.2f, 3.3f), 0f);
@@ -293,7 +306,7 @@ public static partial class ArenaSetup
             var s = socket.AddComponent<DungeonSocket>(); s.type = DungeonSocketType.Enemy; s.chance = 1f; s.overridePrefab = champion;
             // Every prop at the world's pixel size (the weapon racks, throne, banners and awning: their Synty sizes vary).
             MatchTexels(root, "arena");
-            string path = Dir + "/Rooms/Arena pit.prefab";
+            string path = Dir + "/Rooms/Scripted/Arena pit.prefab";
             Debug.Log($"[Arena] pit built: {placed} spectators at scale {miniScale:F2}");
             return PrefabUtility.SaveAsPrefabAsset(root, path);
         }
@@ -302,7 +315,7 @@ public static partial class ArenaSetup
 
     // ── The level ──
 
-    static TableLevelData Level(DungeonBiome biome, GameObject room, System.Text.StringBuilder log)
+    static TableLevelData Level(GameObject room, DungeonRoomStyle style, System.Text.StringBuilder log)
     {
         string path = Dir + "/Arena.asset";
         if (AssetDatabase.LoadAssetAtPath<TableLevelData>(path) == null) { AssetDatabase.CopyAsset("Assets/Game/Levels/Dungeon1/Dungeon1.asset", path); log.Append("copied Dungeon1 as the Arena level; "); }
@@ -310,11 +323,8 @@ public static partial class ArenaSetup
         level.displayName = "The Arena";
         level.description = "One fight, in the sand.";
         level.layoutMode = DungeonLayoutMode.Authored;
-        // A board on the table, lit and edged like the Old Wood's.
-        var forest = AssetDatabase.LoadAssetAtPath<TableLevelData>("Assets/Game/Levels/Forest1/Forest1.asset");
         level.kind = TableLevelKind.Boardgame;
-        level.boardLightColor = forest.boardLightColor; level.boardLightIntensity = forest.boardLightIntensity * .6f;   // pale sand takes less light than a forest floor
-        level.boardGridMaterial = forest.boardGridMaterial; level.boardEdgeMaterial = forest.boardEdgeMaterial;
+        Biome(level, style, log);
         // North at the top: the pit (1, the last room, so its stairs are hidden by ArenaFight), the landing (0) where the
         // player starts. At least 14 cells each way.
         var rows = new[]
@@ -348,8 +358,9 @@ public static partial class ArenaSetup
         level.authoredContent = "";
         level.SyncMapSize();
         level.authoredMarkers = new TableLevelData.AuthoredMarker[0];
-        level.stages = new[] { new TableLevelData.BiomeStage { biome = biome, floors = 1, boss = false } };
-        level.destructiblesPerRoom = Vector2Int.zero;
+        // One floor on the base biome, no boss (the champion is the pit's own).
+        level.stages = new TableLevelData.BiomeStage[0];
+        level.floors = 1; level.bossOnLastFloor = false;
         EditorUtility.SetDirty(level);
         // The catalog (a saved run finds its level here by name) and the toolbar's Dungeon list.
         var catalog = AssetDatabase.LoadAssetAtPath<TableLevelCatalog>("Assets/Game/Levels/Resources/TableLevels.asset");

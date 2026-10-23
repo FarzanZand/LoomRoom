@@ -3,18 +3,18 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 
-// The pieces the room events and the newer hand-built rooms use, as prefabs in Levels/Dungeon1/Prefabs:
+// The pieces the room events and the newer hand-built rooms use, as prefabs in Levels/Shared/Props:
 //   Traps/Spike trap, Traps/Ambush gate      (Blender models from Tools/trap_models.py, Traps/Models)
 //   Features/Shrine                          (the altar table with a skull pile and candles; DungeonShrine)
 //   Furnishing/Sarcophagus, Skull pile, Pew, Candle rack, Hanging chain, Candle cluster
 //   Props/Effects/Moonlight                  (a cold spot light, a shaft of dust and motes for moonlit rooms)
-// and wires them on Dungeon1 (Rooms tab: Room event pieces). Only missing prefabs are made (Overwrite rebuilds); the
+// and wires them on Table level defaults (Room events tab, every level). Only missing prefabs are made (Overwrite rebuilds); the
 // Synty models are copied in as plain objects and painted with the painted-prop pipeline afterwards (loomroom-art).
 public static class DungeonRoomEventKit
 {
-    const string Prefabs = "Assets/Game/Levels/Dungeon1/Prefabs";
+    const string Prefabs = "Assets/Game/Levels/Shared/Props";
     const string Synty = "Assets/Synty/PolygonDarkFantasy/Prefabs/Props";
-    const string Library = "Assets/Game/Audio/Library/_Sound Effects Library";
+    const string Library = "Assets/ThirdParty/Sound Effects Library";
     static bool overwrite;
 
     public static string Run() => Run(false);
@@ -321,17 +321,17 @@ public static class DungeonRoomEventKit
 
     static void Wire()
     {
-        var level = AssetDatabase.LoadAssetAtPath<TableLevelData>("Assets/Game/Levels/Dungeon1/Dungeon1.asset");
-        if (level == null) return;
+        var shared = AssetDatabase.LoadAssetAtPath<TableLevelDefaults>("Assets/Game/Levels/Resources/Table level defaults.asset");
+        if (shared == null) return;
         T Load<T>(string p) where T : Object => AssetDatabase.LoadAssetAtPath<T>(p);
-        if (level.shrinePrefab == null) level.shrinePrefab = Load<GameObject>($"{Prefabs}/Features/Shrine.prefab");
-        if (level.spikeTrapPrefab == null) level.spikeTrapPrefab = Load<GameObject>($"{Prefabs}/Traps/Spike trap.prefab");
-        if (level.ambushGatePrefab == null) level.ambushGatePrefab = Load<GameObject>($"{Prefabs}/Traps/Ambush gate.prefab");
-        if (level.ambushSpawnPuff == null) level.ambushSpawnPuff = Load<GameObject>($"{Prefabs}/Props/Effects/Dust puff.prefab");
-        if (level.ambushSlamAudio == null) level.ambushSlamAudio = Clip("Doors/Drs_Dungeon_MetalDoubleDoor_Close_01.wav");
-        if (level.ambushLiftAudio == null) level.ambushLiftAudio = Clip("Doors/Drs_Dungeon_MetalDoubleDoor_Open_01.wav");
-        if (level.ambushSpawnAudio == null) level.ambushSpawnAudio = Clip("SoundFX/Poof.wav");
-        if (level.sleepAudio == null) level.sleepAudio = Clip("SoundFX/snoring1.wav");
-        EditorUtility.SetDirty(level);
+        if (shared.shrinePrefab == null) shared.shrinePrefab = Load<GameObject>($"{Prefabs}/Features/Shrine.prefab");
+        if (shared.spikeTrapPrefab == null) shared.spikeTrapPrefab = Load<GameObject>($"{Prefabs}/Traps/Spike trap.prefab");
+        if (shared.ambushGatePrefab == null) shared.ambushGatePrefab = Load<GameObject>($"{Prefabs}/Traps/Ambush gate.prefab");
+        if (shared.ambushSpawnPuff == null) shared.ambushSpawnPuff = Load<GameObject>($"{Prefabs}/Props/Effects/Dust puff.prefab");
+        if (shared.ambushSlamAudio == null) shared.ambushSlamAudio = Clip("Doors/Drs_Dungeon_MetalDoubleDoor_Close_01.wav");
+        if (shared.ambushLiftAudio == null) shared.ambushLiftAudio = Clip("Doors/Drs_Dungeon_MetalDoubleDoor_Open_01.wav");
+        if (shared.ambushSpawnAudio == null) shared.ambushSpawnAudio = Clip("SoundFX/Poof.wav");
+        if (shared.sleepAudio == null) shared.sleepAudio = Clip("SoundFX/snoring1.wav");
+        EditorUtility.SetDirty(shared);
     }
 }

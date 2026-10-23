@@ -459,7 +459,7 @@ public partial class IntroController : Singleton<IntroController>
         if (lamp != null) lamp.color = lampColor;
         var glow = dmEyes != null ? dmEyes.GetComponent<GlowInDark>() : null;
         if (glow != null) glow.glow = look.eyes;
-        if (introDungeon != null) introDungeon.boardLightColor = look.boardLight;
+        if (introDungeon != null) introDungeon.SetBoardLightColor(look.boardLight);
         var figures = TableManager.HasInstance ? TableManager.Instance.GetComponentInChildren<ClassFigures>(true) : FindAnyObjectByType<ClassFigures>(FindObjectsInactive.Include);
         look.ApplyToCard(figures);
         if (sheet != null) look.ApplyTo(sheet.transform);

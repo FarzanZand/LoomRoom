@@ -63,15 +63,26 @@ public static class DebugDungeonToolbar
     {
         var menu = new UnityEditor.GenericMenu();
         var selected = DebugDungeonSession.SelectedDungeon;
+        void Pick(TableLevelData picked)
+        {
+            EditorPrefs.SetString(DebugDungeonSession.SelectedDungeonKey, AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(picked)));
+            MainToolbar.Refresh("LoomRoom/Debug");
+        }
+        var listed = new List<TableLevelData>();
         foreach (var level in DebugDungeonSession.DebugDungeons)
         {
             if (level == null) continue;
             var picked = level;
-            menu.AddItem(new UnityEngine.GUIContent(level.name), level == selected, () =>
-            {
-                EditorPrefs.SetString(DebugDungeonSession.SelectedDungeonKey, AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(picked)));
-                MainToolbar.Refresh("LoomRoom/Debug");
-            });
+            listed.Add(level);
+            menu.AddItem(new UnityEngine.GUIContent(level.name), level == selected, () => Pick(picked));
+        }
+        // A level picked elsewhere (Asset Studio) that isn't on the list: shown too, so the button's pick is visible.
+        if (selected != null && !listed.Contains(selected)) menu.AddItem(new UnityEngine.GUIContent(selected.name), true, () => Pick(selected));
+        // Every other level, by the act of the campaign place that plays it.
+        foreach (var (group, level) in AssetStudioWorld.DungeonsByGroup())
+        {
+            var picked = level;
+            menu.AddItem(new UnityEngine.GUIContent("All levels/" + group + "/" + level.name), level == selected, () => Pick(picked));
         }
         if (menu.GetItemCount() > 0) menu.AddSeparator("");
         menu.AddItem(new UnityEngine.GUIContent("Edit list (WorldManager)"), false, () =>

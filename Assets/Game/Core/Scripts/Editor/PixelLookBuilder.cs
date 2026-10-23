@@ -155,7 +155,7 @@ public static class PixelLookBuilder
         string path = AssetDatabase.GetAssetPath(m);
         string name = m.name.ToLowerInvariant();
         if (path.Contains("/Characters/")) return PixelLookCategory.Character;
-        if (path.Contains("/Styles/") || ArchitectureKeys.Any(k => name == k || name.Contains(k + " ") || name.Contains(" " + k) || name.StartsWith(k)))
+        if (path.Contains("/Styles/") || path.Contains("/Room styles/") || ArchitectureKeys.Any(k => name == k || name.Contains(k + " ") || name.Contains(" " + k) || name.StartsWith(k)))
             return PixelLookCategory.Architecture;
         return PixelLookCategory.Prop;
     }

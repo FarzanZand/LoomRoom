@@ -9,7 +9,7 @@ Paths are under `Assets/Game`.
 - `UI/Resources/UIFeedback.asset`: panel slide duration and ease, hover and press scale. UI clips and volumes are on **AudioManager > UI Library**.
 - `Items/Prefabs/Equipment`: hand models and armour models. `Items/Prefabs/Consumables` holds food models.
 - `Items/Prefabs/Props/Equipment loot pouch.prefab`: the pickup visual for armour and other meshless items (InventoryManager's **Default Pickup Visual**). Lookup order: the item's Pickup Visual Prefab, its World Prefab, then the manager's fallback.
-- `Levels/Dungeon1/Prefabs/Props/Supply chest.prefab`: the chest the level places. It opens its lid and releases loot once.
+- `Levels/Shared/Props/Chests/Supply chest.prefab`: the chest the level places. It opens its lid and releases loot once.
 - `Levels/Dungeon1/Dungeon balance.asset`: per-floor enemy scaling (damage +2, health +10%, armour +0.2 per floor after the first). Base values are on each enemy prefab's EnemyData and the TablePlayer prefab's PlayerData.
 - Starting kit: each class asset in `Progression/Data/Classes` (equipment, spells, supplies).
 - Loot: biome loot profiles in `Levels/Dungeon1/Biomes`; see [Dungeon authoring](Dungeon-authoring.md#loot).
@@ -46,4 +46,4 @@ Food stacks to five; Crimson tonic stacks to three. All five foods are tier 1, s
 
 There are no inventory or balance validation tools in the project. Check equip, pickup, eating and loot behaviour in Play Mode; the toolbar Debug button gives a quick arena.
 
-The doorway prefab is `Levels/Dungeon1/Doors/Dungeon door.prefab`, with its leaf and lintel meshes and pixel texture in the same folder.
+The doorway prefab is `Levels/Shared/Doors/Dungeon door.prefab`, with its leaf and lintel meshes and pixel texture in the same folder.

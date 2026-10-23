@@ -42,6 +42,8 @@ public partial class CampaignMap
     public TextAsset clothDropBake;
     [Tooltip("Lifts the simulated cloth this far over the land once it has risen (its triangles are coarser than the ground's).")]
     public float dropClearance = .25f;
+    [Tooltip("Seconds the dropped cloth takes to spread out into the act cloths' shape (to the map's edges) once the land has risen.")]
+    public float settleSeconds = .6f;
     [Tooltip("Scatter this close to the cloth (local units) is hidden with it, so nothing pokes through its edge.")] public float scatterClearance = 1.4f;
 
     class ClothLayer
@@ -113,24 +115,37 @@ public partial class CampaignMap
         foreach (var p in Points) if (p.encounter != null && p.encounter.act == act && !Hidden(p)) Add(p.transform);
         foreach (var path in Paths) if (path.Open(act) && !path.Open(act - 1) && !Hidden(path)) Add(path.transform);
         foreach (var a in appearing) { a.t.localScale = Vector3.zero; a.t.gameObject.SetActive(true); }
+        // A piece's lights don't shrink with it: still under the cloth, a lantern would light the cloth from below as a
+        // bright spot. They come up with their piece.
+        var glows = new List<(Light light, float intensity, int piece)>();
+        for (int i = 0; i < appearing.Count; i++)
+            foreach (var l in appearing[i].t.GetComponentsInChildren<Light>()) { glows.Add((l, l.intensity, i)); l.intensity = 0f; }
         try
         {
+            var grown = new float[appearing.Count];
             for (float t = 0; t < seconds; t += Time.deltaTime)
             {
                 float k = t / seconds;
                 float front = cloth != null ? RollCloth(cloth, k, fromLocal) : k;
-                foreach (var a in appearing)
+                for (int i = 0; i < appearing.Count; i++)
                 {
+                    var a = appearing[i];
                     if (a.t == null) continue;
                     // Each piece pops up just after the roll has passed it.
                     float local = Mathf.Clamp01((front - a.at) / .12f);
                     float s = local < 1 ? Mathf.Sin(local * Mathf.PI * .5f) * (1f + .15f * Mathf.Sin(local * Mathf.PI)) : 1f;
                     a.t.localScale = a.scale * s;
+                    grown[i] = local;
                 }
+                foreach (var g in glows) if (g.light != null) g.light.intensity = g.intensity * grown[g.piece] * grown[g.piece];
                 yield return null;
             }
         }
-        finally { foreach (var a in appearing) if (a.t != null) a.t.localScale = a.scale; }
+        finally
+        {
+            foreach (var a in appearing) if (a.t != null) a.t.localScale = a.scale;
+            foreach (var g in glows) if (g.light != null) g.light.intensity = g.intensity;
+        }
         if (cloth != null) cloth.go.SetActive(false);
         shownAct = Mathf.Max(shownAct, act);
     }
@@ -316,10 +331,16 @@ public partial class CampaignMap
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>().sharedMaterial = ClothMaterial(style);
             var verts = new Vector3[drop.nx * drop.nz];
+            // Where each of the cloth's points lies over the map (its place in the grid it starts as).
+            var spot = new Vector2[verts.Length];
+            for (int z = 0; z < drop.nz; z++)
+                for (int x = 0; x < drop.nx; x++)
+                    spot[z * drop.nx + x] = new Vector2((x / (float)(drop.nx - 1) * 2 - 1) * halfX, (z / (float)(drop.nz - 1) * 2 - 1) * halfZ);
             var rest = transform.localScale;
             try
             {
-                for (float t = 0; t <= drop.Seconds; t += Time.deltaTime)
+                // At most a frame's worth of time a step: after a hitch the cloth carries on falling instead of jumping.
+                for (float t = 0; t <= drop.Seconds; t += Mathf.Min(Time.deltaTime, 1f / 30f))
                 {
                     // The land rises with the simulation's collider (flat until riseStart, full at riseEnd, eased).
                     float k = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(drop.riseStart, drop.riseEnd, t));
@@ -327,14 +348,37 @@ public partial class CampaignMap
                     transform.localScale = new Vector3(rest.x, rest.y * sy, rest.z);
                     go.transform.localScale = new Vector3(1f, 1f / sy, 1f);
                     drop.Sample(t, verts);
+                    // Once it has landed each point of the cloth stays over its own spot of the map: the simulation lets it
+                    // slide in from the edges as the land rises under it, which uncovered the map's rim. Only its height
+                    // follows the simulation.
+                    float pin = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(drop.riseStart * .6f, drop.riseStart, t));
                     // A little clearance as the land rises (the cloth's triangles are coarser than the ground's).
                     // Never under the ground (a sharp peak fits between the cloth's vertices): at least the clearance over it.
                     for (int i = 0; i < verts.Length; i++)
                     {
                         var v = verts[i];
+                        v.x = Mathf.Lerp(v.x, spot[i].x, pin); v.z = Mathf.Lerp(v.z, spot[i].y, pin);
                         v.y = Mathf.Max(v.y + dropClearance * k, (Peak(v.x, v.z) + dropClearance) * sy);
                         verts[i] = v;
                     }
+                    mesh.vertices = verts; mesh.RecalculateNormals(); mesh.RecalculateBounds();
+                    yield return null;
+                }
+                transform.localScale = rest; go.transform.localScale = Vector3.one;
+                // It settles into the act cloths' shape (their heights) before they take over, so nothing snaps.
+                var from = (Vector3[])verts.Clone(); var to = new Vector3[verts.Length];
+                for (int z = 0; z < drop.nz; z++)
+                    for (int x = 0; x < drop.nx; x++)
+                    {
+                        float lx = (x / (float)(drop.nx - 1) * 2 - 1) * halfX, lz = (z / (float)(drop.nz - 1) * 2 - 1) * halfZ;
+                        float y = HeightAt(lx, lz) - .15f;
+                        foreach (var f in fogs.Values) if (f != null) y = Mathf.Max(y, RestSurfaceAt(f, lx, lz));
+                        to[z * drop.nx + x] = new Vector3(lx, y, lz);
+                    }
+                for (float t = 0; t < settleSeconds; t += Mathf.Min(Time.deltaTime, 1f / 30f))
+                {
+                    float e = Mathf.SmoothStep(0f, 1f, t / settleSeconds);
+                    for (int i = 0; i < verts.Length; i++) verts[i] = Vector3.LerpUnclamped(from[i], to[i], e);
                     mesh.vertices = verts; mesh.RecalculateNormals(); mesh.RecalculateBounds();
                     yield return null;
                 }
@@ -440,6 +484,16 @@ public partial class CampaignMap
         f.mesh.vertices = f.work; f.mesh.normals = f.workNormals;
         f.mesh.RecalculateBounds();
         return Mathf.Clamp01((front - f.sMin) / span);
+    }
+
+    // A cloth's resting surface at a spot, between its grid's vertices (bilinear).
+    float RestSurfaceAt(ClothLayer f, float lx, float lz)
+    {
+        float fx = Mathf.Clamp01((lx / halfX + 1) * .5f) * gridX, fz = Mathf.Clamp01((lz / halfZ + 1) * .5f) * gridZ;
+        int ix = Mathf.Min(gridX - 1, (int)fx), iz = Mathf.Min(gridZ - 1, (int)fz), w = gridX + 1;
+        float tx = fx - ix, tz = fz - iz;
+        float a = f.rest[iz * w + ix].y, b = f.rest[iz * w + ix + 1].y, c = f.rest[(iz + 1) * w + ix].y, d = f.rest[(iz + 1) * w + ix + 1].y;
+        return Mathf.Lerp(Mathf.Lerp(a, b, tx), Mathf.Lerp(c, d, tx), tz);
     }
 
     float RestHeightAt(ClothLayer f, float lx, float lz)
