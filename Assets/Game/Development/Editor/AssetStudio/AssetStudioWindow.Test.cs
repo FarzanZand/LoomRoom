@@ -108,9 +108,8 @@ public partial class AssetStudioWindow
     {
         AssetStudioCatalog.Apply(categories, new[] { path });
         var e = categories.SelectMany(c => c.entries).FirstOrDefault(x => x.path == path);
-        studioView = StudioView.Category;
-        if (e != null) categoryIndex = Mathf.Max(0, categories.FindIndex(c => c.name == e.category));
-        kindFilter = 0; search = ""; Filter(); Select(e);
+        if (e != null) ShowEntry(e);
+        else { studioView = StudioView.Category; kindFilter = 0; search = ""; Filter(); Select(null); }
         Toast(message);
         Focus();
     }

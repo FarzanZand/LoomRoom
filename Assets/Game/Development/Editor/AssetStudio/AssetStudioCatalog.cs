@@ -32,6 +32,7 @@ public static class AssetStudioCatalog
     {
         public string name;
         public string description;
+        public bool hidden;       // kept for the World view and ID search, not listed in the sidebar
         public List<Entry> entries = new();
     }
 
@@ -44,7 +45,7 @@ public static class AssetStudioCatalog
     static List<Category> NewCategories()
     {
         var cats = new List<Category>();
-        void Cat(string name, string description) => cats.Add(new Category { name = name, description = description });
+        void Cat(string name, string description, bool hidden = false) => cats.Add(new Category { name = name, description = description, hidden = hidden });
         Cat("Items", "Weapons, shields, armour, trinkets, consumables, spell tomes and keys (ItemData).");
         Cat("Enemies", "Enemy prefabs, their EnemyData inside them.");
         Cat("Players & NPCs", "The two players and the people of the world.");
@@ -55,8 +56,9 @@ public static class AssetStudioCatalog
         Cat("VFX", "Particle effects: spells, gore, hits, torches.");
         Cat("Sounds", "Sound data (AudioData) and the clips they play.");
         Cat("Music", "Music tracks.");
-        Cat("Painted art", "The painted pixel textures of items, props and characters.");
-        Cat("Campaign", "Places on the campaign map (CampaignEncounter), campaign events (CampaignEvent) and the house rules (HouseRule). The World view shows how they hang together.");
+        // Places, events and house rules are browsed in the World and Dialogue views; their entries stay for the World's
+        // details panel and for ID search.
+        Cat("Campaign", "Places on the campaign map, campaign events and the house rules.", hidden: true);
         return cats;
     }
 
@@ -67,7 +69,6 @@ public static class AssetStudioCatalog
         foreach (var t in new[] { "ItemData", "SpellDefinition", "TableLevelData", "DungeonBiome", "BossFight", "AudioData", "CampaignEncounter", "CampaignEvent", "TableLevelDefaults", "HouseRule", "Prefab" })
             guids.UnionWith(AssetDatabase.FindAssets("t:" + t, new[] { Root }));
         guids.UnionWith(AssetDatabase.FindAssets("t:AudioClip", new[] { Root + "/Audio", Root + "/UI/Audio", Root + "/Combat", Root + "/Levels" }.Where(AssetDatabase.IsValidFolder).ToArray()));
-        if (AssetDatabase.IsValidFolder(Root + "/Art/Synty Pixel")) guids.UnionWith(AssetDatabase.FindAssets("t:Texture2D", new[] { Root + "/Art/Synty Pixel" }));
         return guids.Select(AssetDatabase.GUIDToAssetPath);
     }
 
@@ -105,7 +106,7 @@ public static class AssetStudioCatalog
                 switch (a)
                 {
                     case ItemData i:
-                        e = Add(C("Items"), guid, path, i.itemType.ToString(), "");
+                        e = Add(C("Items"), guid, path, ItemKind(i), "");
                         DescribeItem(e, i);
                         break;
                     case SpellDefinition s: e = Add(C("Spells"), guid, path, "Spell", s.displayName); break;
@@ -131,7 +132,7 @@ public static class AssetStudioCatalog
             var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (go == null) return null;
             if (go.GetComponent<DungeonMapTemplate>() != null) return Add(C("Levels & biomes"), guid, path, "Map template", Folder(path));
-            if (go.GetComponent<DungeonRoomTemplate>() != null) return Add(C("Rooms"), guid, path, "Room template", Folder(path));
+            if (go.GetComponent<DungeonRoomTemplate>() != null) return Add(C("Rooms"), guid, path, RoomPlace(path), Folder(path));
             var character = go.GetComponent<Character>();
             if (character != null)
             {
@@ -156,10 +157,6 @@ public static class AssetStudioCatalog
             bool isMusic = path.StartsWith(Root + "/Audio/Music/") || Path.GetDirectoryName(path).Replace('\\', '/') == Root + "/Audio";
             return Add(isMusic ? C("Music") : C("Sounds"), guid, path, isMusic ? "Music" : "Clip", Folder(path));
         }
-
-        // Painted textures (the house style's art), one per item, prop or character.
-        if (typeof(Texture2D).IsAssignableFrom(type) && path.StartsWith(Root + "/Art/Synty Pixel/") && path.Contains("painted"))
-            return Add(C("Painted art"), guid, path, "Painted texture", Folder(path));
         return null;
     }
 
@@ -227,13 +224,48 @@ public static class AssetStudioCatalog
     }
 
     // An item's row: its main number (damage or armour), slot and price first, for balancing.
+    // What kind of item it is, for the Items filter and its By type order: swords and maces apart, each worn slot apart.
+    static readonly string[] ItemKinds = { "Sword", "Mace", "Shield", "Helm", "Body armour", "Gloves", "Boots", "Leggings", "Trinket", "Spell tome", "Consumable", "Spoils", "Key" };
+    public static string ItemKind(ItemData i)
+    {
+        if (i.spell != null || i.itemType == ItemType.Spell) return "Spell tome";
+        if (i.IsWeapon) return i.weaponCategory == WeaponCategory.Mace ? "Mace" : "Sword";
+        if (i.itemType == ItemType.Shield) return "Shield";
+        if (i.itemType == ItemType.Equipment || i.canBeEquipped)
+            return i.equipSlot switch
+            {
+                EquipmentSlot.Head => "Helm", EquipmentSlot.Body => "Body armour", EquipmentSlot.Gloves => "Gloves", EquipmentSlot.Boots => "Boots",
+                EquipmentSlot.Legs => "Leggings", EquipmentSlot.Trinket1 or EquipmentSlot.Trinket2 => "Trinket", _ => ItemData.SlotName(i.equipSlot),
+            };
+        return i.itemType.ToString();
+    }
+    public static int ItemKindOrder(string kind) { int k = Array.IndexOf(ItemKinds, kind); return k < 0 ? ItemKinds.Length : k; }
+
+    // Where a room template lives: the place (or level) whose folder holds it, Shared for the rooms several levels use.
+    static string RoomPlace(string path)
+    {
+        const string levels = Root + "/Levels/";
+        if (!path.StartsWith(levels)) return "Other";
+        string folder = path.Substring(levels.Length).Split('/')[0];
+        if (folder == "Shared") return "Shared (several levels)";
+        if (folder == "Pockets") return "Portal pockets";
+        foreach (var g in AssetDatabase.FindAssets("t:TableLevelData", new[] { levels + folder }))
+        {
+            var l = AssetDatabase.LoadAssetAtPath<TableLevelData>(AssetDatabase.GUIDToAssetPath(g));
+            if (l == null) continue;
+            var places = Levels.PlacesOf(l);
+            return places.Length > 0 ? $"{string.Join(", ", places)} ({l.name})" : l.name;
+        }
+        return folder;
+    }
+
     static void DescribeItem(Entry e, ItemData i)
     {
         if (!string.IsNullOrEmpty(i.itemName)) { e.name = i.itemName; }
         string main = "";
         try { if (i.TryMainStat(out _, out float value, out string text)) { e.itemMain = value; main = (i.IsWeapon ? "Damage " : "Armour ") + text; } }
         catch { }
-        e.itemSlot = i.spell != null ? "Spell tome" : i.IsWeapon || i.itemType == ItemType.Shield || i.canBeEquipped ? ItemData.SlotName(i.equipSlot) : i.itemType.ToString();
+        e.itemSlot = e.kind;
         e.itemPrice = i.value;
         e.itemTier = i.tier;
         e.description = string.Join(" · ", new[] { main, e.itemSlot, $"{i.value} gold", $"tier {i.tier}", i.rarity.ToString(), i.description }.Where(s => !string.IsNullOrWhiteSpace(s)));

@@ -37,14 +37,16 @@ public partial class AssetStudioWindow : EditorWindow
     int kindFilter;                       // 0: every kind in the category
     string[] kinds = { "All kinds" };
     [SerializeField] int itemSort;        // the Items list's order (ItemSorts)
-    static readonly string[] ItemSorts = { "By name", "By main number", "By slot", "By price", "By tier" };
+    static readonly string[] ItemSorts = { "By name", "By main number", "By type", "By price", "By tier" };
+    [SerializeField] int roomSort;        // the Rooms list's order (RoomSorts)
+    static readonly string[] RoomSorts = { "By name", "By where they are" };
     readonly List<string> recent = new();  // last picked, newest first (the Recent list)
     // Which view the window shows, one at a time: a category's list, or one of the views above the categories.
     enum StudioView { Category, Recent, Requests, Everything, World, Dialogue }
     [SerializeField] StudioView view;
     // Leaving the Dialogue view writes back what was typed there.
     StudioView studioView { get => view; set { if (value != view) CommitDialogue(true); view = value; } }
-    const string BuiltKey = "LoomRoom.Studio.Built";
+    const string BuiltKey = "LoomRoom.Studio.Built.2";   // a new number when the categories change: the library is built afresh
     bool showingRecent => studioView == StudioView.Recent;
     bool showingRequests => studioView == StudioView.Requests;
     bool showingAll => studioView == StudioView.Everything;
@@ -79,7 +81,7 @@ public partial class AssetStudioWindow : EditorWindow
         preview ??= new AssetStudioPreview();
         // Built whole once per Editor session; after a recompile or Play only what changed is read again.
         if (categories == null || categories.Count == 0 || !SessionState.GetBool(BuiltKey, false)) Refresh(false);
-        else { ApplyLibraryChanges(); categoryIndex = Mathf.Clamp(categoryIndex, 0, categories.Count - 1); Filter(); }
+        else { ApplyLibraryChanges(); categoryIndex = Mathf.Clamp(categoryIndex, 0, categories.Count - 1); if (categories[categoryIndex].hidden) categoryIndex = 0; Filter(); }
         if (selected == null && !string.IsNullOrEmpty(selectedId) && Find(selectedId) is AssetStudioCatalog.Entry keep) Select(keep);
         if (studioView == StudioView.World && !string.IsNullOrEmpty(worldPickedKey)) worldRepick = worldPickedKey;
         RefreshRequests();
@@ -200,6 +202,7 @@ public partial class AssetStudioWindow : EditorWindow
         tomes = null;
         AssetStudioUsage.Forget();
         categoryIndex = Mathf.Clamp(categoryIndex, 0, categories.Count - 1);
+        if (categories.Count > 0 && categories[categoryIndex].hidden) categoryIndex = 0;
         Filter();
         if (keep == null) return;
         var e = Find(keep);
@@ -247,13 +250,30 @@ public partial class AssetStudioWindow : EditorWindow
             IOrderedEnumerable<AssetStudioCatalog.Entry> ordered = itemSort switch
             {
                 1 => items.OrderByDescending(e => e.itemMain),
-                2 => items.OrderBy(e => e.itemSlot).ThenByDescending(e => e.itemMain),
+                2 => items.OrderBy(e => AssetStudioCatalog.ItemKindOrder(e.itemSlot)).ThenBy(e => e.itemTier).ThenByDescending(e => e.itemMain),
                 3 => items.OrderByDescending(e => e.itemPrice),
-                _ => items.OrderBy(e => e.itemTier).ThenBy(e => e.itemSlot),
+                _ => items.OrderBy(e => e.itemTier).ThenBy(e => AssetStudioCatalog.ItemKindOrder(e.itemSlot)),
             };
             shown = ordered.ThenBy(e => e.name, StringComparer.OrdinalIgnoreCase).Concat(shown.Where(e => string.IsNullOrEmpty(e.itemSlot))).ToList();
         }
+        // Rooms by where they are: the shared rooms first, then each place's own, by name within each.
+        if (RoomsShown && roomSort == 1)
+            shown = shown.OrderBy(e => e.kind.StartsWith("Shared") ? 0 : 1).ThenBy(e => e.kind, StringComparer.OrdinalIgnoreCase).ThenBy(e => e.name, StringComparer.OrdinalIgnoreCase).ToList();
     }
+
+    // Shows an entry in its category's list; one in a category kept off the sidebar (places, events, house rules) is
+    // found in Everything by its ID.
+    void ShowEntry(AssetStudioCatalog.Entry e)
+    {
+        int index = categories.FindIndex(c => c.name == e.category);
+        kindFilter = 0; listScroll = Vector2.zero;
+        if (index < 0 || categories[index].hidden) { studioView = StudioView.Everything; search = e.id; }
+        else { studioView = StudioView.Category; categoryIndex = index; search = ""; }
+        Filter(); Select(e);
+    }
+
+    bool RoomsShown => studioView == StudioView.Category && categories != null && categoryIndex < categories.Count && categories[categoryIndex].name == "Rooms";
+    bool SortShown => ItemsShown || RoomsShown;
 
     // The Items category is on screen: its rows show each item's main number, slot and price, and can be sorted by them.
     bool ItemsShown => studioView == StudioView.Category && categories != null && categoryIndex < categories.Count && categories[categoryIndex].name == "Items";
@@ -429,10 +449,11 @@ public partial class AssetStudioWindow : EditorWindow
         if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingWorld, "  World   <color=#a9a49a>campaign & levels</color>", showingWorld ? cellSelected : cell) && !showingWorld) OpenWorld();
         // Dialogue: every Dungeon Master line, by where it plays (AssetStudioWindow.Dialogue).
         if (GUI.Toggle(new Rect(4, 122, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
-        for (int i = 0; i < categories.Count; i++)
+        for (int i = 0, line = 0; i < categories.Count; i++)
         {
             var c = categories[i];
-            var row = new Rect(4, 12 + (i + 5) * 30, view.width - 4, 28);
+            if (c.hidden) continue;
+            var row = new Rect(4, 12 + (line++ + 5) * 30, view.width - 4, 28);
             bool on = !showingRecent && !showingRequests && !showingAll && !showingWorld && !showingDialogue && i == categoryIndex;
             if (GUI.Toggle(row, on, $"  {c.name}   <color=#a9a49a>{Count(c)}</color>", on ? cellSelected : cell) && !on)
             {
@@ -453,13 +474,18 @@ public partial class AssetStudioWindow : EditorWindow
         if (showingRecent) GUI.Label(new Rect(r.x + 8, r.y + 32, r.width - 16, 40), "What you looked at last, newest first.", dim);
         else
         {
-            float kindWidth = ItemsShown ? (r.width - 16) / 2 : r.width - 12;
+            float kindWidth = SortShown ? (r.width - 16) / 2 : r.width - 12;
             int k = EditorGUI.Popup(new Rect(r.x + 6, r.y + 32, kindWidth, 20), kindFilter, kinds);
             if (k != kindFilter) { kindFilter = k; Filter(); listScroll = Vector2.zero; }
             if (ItemsShown)
             {
                 int sort = EditorGUI.Popup(new Rect(r.x + 10 + kindWidth, r.y + 32, kindWidth, 20), itemSort, ItemSorts);
                 if (sort != itemSort) { itemSort = sort; Filter(); listScroll = Vector2.zero; }
+            }
+            else if (RoomsShown)
+            {
+                int sort = EditorGUI.Popup(new Rect(r.x + 10 + kindWidth, r.y + 32, kindWidth, 20), roomSort, RoomSorts);
+                if (sort != roomSort) { roomSort = sort; Filter(); listScroll = Vector2.zero; }
             }
             if (showingAll) GUI.Label(new Rect(r.x + 8, r.y + 54, r.width - 16, 28), "The whole library: type to search names, IDs, paths and kinds in every category.", dim);
             else if (categories.Count > 0) GUI.Label(new Rect(r.x + 8, r.y + 54, r.width - 16, 28), categories[categoryIndex].description, dim);
@@ -647,7 +673,7 @@ public partial class AssetStudioWindow : EditorWindow
                 string label = (u.entry != null ? u.entry.name : System.IO.Path.GetFileNameWithoutExtension(u.path)) + "  <color=#a9a49a>" + System.IO.Path.GetExtension(u.path) + "</color>";
                 if (GUI.Button(new Rect(r.x + 8, y, r.width - 16, 20), label, cell))
                 {
-                    if (u.entry != null) { studioView = StudioView.Category; categoryIndex = categories.FindIndex(c => c.name == u.entry.category); kindFilter = 0; search = ""; Filter(); Select(u.entry); }
+                    if (u.entry != null) ShowEntry(u.entry);
                     else { var o = AssetDatabase.LoadMainAssetAtPath(u.path); Selection.activeObject = o; EditorGUIUtility.PingObject(o); }
                 }
                 y += 21;
