@@ -17,7 +17,7 @@ public static class SkeletonPartySetup
 {
     const string Chunks = "Assets/Game/Levels/Shared/Rooms/";
     const string Party = Chunks + "Scripted/Skeleton Party room.prefab";   // a scripted room: Rooms/Scripted
-    const string Portal = Chunks + "Scripted/Portal hall.prefab";
+    const string Portal = Chunks + "Portal hall.prefab";
     const string PocketFolder = "Assets/Game/Levels/Pockets";
     const string Pocket = PocketFolder + "/Pocket.asset";
     const string PortalFolder = "Assets/Game/Levels/Shared/Portal";
@@ -206,7 +206,7 @@ public static class SkeletonPartySetup
     {
         var party = AssetDatabase.LoadAssetAtPath<GameObject>(Party);
         var portal = AssetDatabase.LoadAssetAtPath<GameObject>(Portal);
-        var cell = AssetDatabase.LoadAssetAtPath<GameObject>(Chunks + "Scripted/Cell block.prefab");
+        var cell = AssetDatabase.LoadAssetAtPath<GameObject>(Chunks + "Cell block.prefab");
         var gateHall = AssetDatabase.LoadAssetAtPath<GameObject>(Chunks + "Gate hall.prefab");
         foreach (var path in new[] { "Assets/Game/Levels/Shared/Biomes/Cellars.asset", "Assets/Game/Levels/Shared/Biomes/Crypt.asset" })
         {

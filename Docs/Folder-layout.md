@@ -35,7 +35,7 @@ Where things live in `Assets`, and the rules that keep it that way. Reorganised 
 
 ## Levels
 
-- **`Levels/Shared`** holds what every level uses: `Rooms` (room templates; `Rooms/Scripted` for rooms that do something of their own: the shop, the portal hall, the Skeleton Party room, Not a witch, the Boss stage, shrine, trap and ambush rooms, boss arenas; a level's own such rooms go in its `Rooms/Scripted`; rooms of plain shapes and props stay in `Rooms`), `Room pieces` (the building blocks placed inside a room
+- **`Levels/Shared`** holds what every level uses: `Rooms` (room templates; `Rooms/Scripted` for rooms with an event of their own: the shop, the Skeleton Party room, Not a witch, the Boss stage; a level's own such rooms go in its `Rooms/Scripted`, like the Arena pit. A room that only holds a feature any room can have (a shrine, spike plates, an ambush, a portal, a guardian) stays in `Rooms`), `Room pieces` (the building blocks placed inside a room
   template: pillars, arches, niches, platforms, galleries, rubble; called "kit" in code, `DungeonKitBlock`/`DungeonKitPiece`),
   `Room shapes` (floor plans for generated rooms), `Room styles` (styles with their textures and materials), `Props` (`Breakables`,
   `Chests`, `Effects`, `Features`, `Furnishing`, `Groups`, `Shop`, `Traps`), `Doors`, `Materials`, `Biomes`, `Board`, `Portal`, `Reveal`.
