@@ -190,7 +190,7 @@ MonoBehaviour:
   ambience: {fileID: 0}
   ambienceVolume: 0.55
   ambientOneShots: []
-  oneShotInterval: {x: 10, y: 24}
+  oneShotInterval: {x: 60, y: 200}
   oneShotVolume: 0.5
   music: {fileID: 0}
   musicVolume: 1

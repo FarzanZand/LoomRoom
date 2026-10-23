@@ -124,7 +124,7 @@ public class DungeonBiome : ScriptableObject
     [TabGroup(Sound), Range(0, 1)] public float ambienceVolume = .55f;
     [TabGroup(Sound), Tooltip("Occasional distant sounds played around the player (rumbles, drips, creaks).")]
     public AudioClip[] ambientOneShots = new AudioClip[0];
-    [TabGroup(Sound), MinMaxSlider(2, 60, true)] public Vector2 oneShotInterval = new Vector2(10, 24);
+    [TabGroup(Sound), MinMaxSlider(2, 200, true), Tooltip("Seconds between the occasional sounds: a random gap between the two.")] public Vector2 oneShotInterval = new Vector2(60, 200);
     [TabGroup(Sound), Range(0, 1)] public float oneShotVolume = .5f;
     [TabGroup(Sound), Tooltip("Replaces the level's music in this biome. Empty keeps the level's.")]
     public AudioClip music;
