@@ -44,6 +44,21 @@ public class GameManager : Singleton<GameManager>
 
     void Start() => Apply();
 
+    // The cursor is held to the state every frame, not only when the state changes: losing focus, Escape in the
+    // editor's Game view or a plugin can free it behind our back, and it then showed while walking until a click.
+    // Written only when it differs, so it never fights itself (which made it flicker).
+    bool cursorLocked = true;
+    void Update() => HoldCursor();
+    void OnApplicationFocus(bool focused) { if (focused) HoldCursor(); }
+
+    void HoldCursor()
+    {
+        if (!Application.isFocused) return;
+        var mode = cursorLocked ? CursorLockMode.Locked : CursorLockMode.None;
+        if (Cursor.lockState != mode) Cursor.lockState = mode;
+        if (Cursor.visible == cursorLocked) Cursor.visible = !cursorLocked;
+    }
+
     // Dead is a flag, not a count: level loads clear it without knowing whether anyone died.
     static bool Counted(GameState state) => state != GameState.Dead;
 
@@ -86,9 +101,9 @@ public class GameManager : Singleton<GameManager>
     void Apply()
     {
         GameState s = State;
-        bool locked = s == GameState.Explore || s == GameState.Cutscene || s == GameState.Dead;
-        Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
-        Cursor.visible   = !locked;
+        cursorLocked = s == GameState.Explore || s == GameState.Cutscene || s == GameState.Dead;
+        Cursor.lockState = cursorLocked ? CursorLockMode.Locked : CursorLockMode.None;
+        Cursor.visible   = !cursorLocked;
 
         if (InputManager.HasInstance)
             InputManager.Instance.SetGameplayEnabled(s == GameState.Explore, allowMovement: s == GameState.Inventory);

@@ -355,6 +355,7 @@ public partial class DungeonGenerator
                 var go = new GameObject("Rim"); go.transform.SetParent(rim, false);
                 go.transform.position = centre + new Vector3(dir.x, 0, dir.y) * (size * .5f + .05f) + Vector3.up * (top * .5f);
                 var box = go.AddComponent<BoxCollider>();
+                go.AddComponent<InvisibleWall>();
                 box.size = dir.x != 0 ? new Vector3(.1f, top, size + .1f) : new Vector3(size + .1f, top, .1f);
             }
         }

@@ -340,6 +340,8 @@ public partial class DungeonMasterBeam : MonoBehaviour
         {
             if (hit.distance < length * .5f || hit.distance >= nearest) continue;
             if (hit.collider.GetComponentInParent<Character>() != null || hit.transform.IsChildOf(transform)) continue;
+            // The stage's invisible edges only keep walkers in: ended on one, the beam ran end-on at the player's eye and wasn't seen.
+            if (InvisibleWall.Is(hit.collider)) continue;
             nearest = hit.distance; point = hit.point;
         }
         return nearest < float.MaxValue;

@@ -130,6 +130,7 @@ public partial class DungeonGenerator
                 edge.transform.SetParent(root, false);
                 edge.transform.position = Cell(c) + new Vector3(d.x, 0, d.y) * (size * .5f + .1f) + Vector3.up * (bottom + stage.edgeHeight * .5f);
                 var box = edge.AddComponent<BoxCollider>();
+                edge.AddComponent<InvisibleWall>();
                 box.size = d.x != 0 ? new Vector3(.2f, stage.edgeHeight, size + .2f) : new Vector3(size + .2f, stage.edgeHeight, .2f);
             }
     }

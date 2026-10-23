@@ -287989,6 +287989,11 @@ MonoBehaviour:
     postExposure: -0.2
   ambientOcclusionFeature: {fileID: 7833122117494664109, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
   retroScreenFeature: {fileID: 6238588630179067837, guid: 572c3e37e34236549a97c14f1afe094c, type: 2}
+  stealthLook: {fileID: 11400000, guid: 5d55645dec301184fb34ae7f18816f83, type: 2}
+  stealthHiddenLook: 0.9
+  stealthCrouchedLook: 0.45
+  stealthMuffledCutoff: 1600
+  stealthFade: 0.5
   sceneOpenFade: 0.35
   filmicVolume: {fileID: 508513323}
   filmicBlendSeconds: 1.5
@@ -330301,7 +330306,7 @@ MonoBehaviour:
   sfxMinDistance: 3.5
   sfxMaxDistance: 40
   defaultMasterVolume: 1
-  defaultMusicVolume: 0.374
+  defaultMusicVolume: 0
   defaultSfxVolume: 1
   defaultUiVolume: 1
   defaultFadeDuration: 1.5
@@ -337560,7 +337565,7 @@ MonoBehaviour:
   releaseSpeed: 1.25
   heavyReleaseSpeed: 0.95
   enemyHurtAnimationSpeed: 1.3
-  swordSwingSet: 2
+  swordSwingSet: 5
   maceSwingSet: 5
   swordStaggerStrength: 1
   maceStaggerStrength: 2

@@ -349,8 +349,7 @@ public partial class BossStageEncounter : MonoBehaviour
 
     IEnumerator Beam(Player player)
     {
-        // He straightens up from the lean first, so his raised palm is high above the stage when the beam starts.
-        if (seat != null) seat.Straighten(true);
+        // He stays leaning over the table while he casts (the user does not want him standing up for it).
         // As he starts to charge, the boss goes back to its place and kneels to him until the beam is over.
         System.Func<bool> kneel = () => Kneel(true);
         if (brain != null && fight.beamKneel)
@@ -370,7 +369,6 @@ public partial class BossStageEncounter : MonoBehaviour
         System.Func<bool> giveWay = () => GiveWay(player);
         if (brain != null && fight.beamGiveWay > 0f && !fight.beamKneel) brain.MovementOverride = giveWay;
         yield return beam.Fire(player, fight, ok => held = ok);
-        if (seat != null) seat.Straighten(false);
         if (brain != null && brain.MovementOverride == giveWay) brain.MovementOverride = null;
         if (brain != null && brain.MovementOverride == kneel) { brain.MovementOverride = null; Kneel(false); if (boss != null && boss.IsAlive) brain.Alert(); }
         if (held == true) { Comment(fight.beamBlocked, true); if (fight.beamBlockedSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(fight.beamBlockedSound, fight.beamVolume); }

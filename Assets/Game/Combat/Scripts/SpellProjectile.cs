@@ -15,7 +15,24 @@ public class SpellProjectile : MonoBehaviour
     [Min(0)] public float surfaceOffset = .15f;
 
     // A volley (FireballVolley) holds its balls in the air before letting them go: held, it neither moves nor ages.
-    public bool Held { get; set; }
+    // Let go, it ignores whatever it already touched where it was set down (a pillar, the table's edge): it bursts only
+    // on what it flies into, or on a character it was let go on.
+    public bool Held
+    {
+        get => held;
+        set
+        {
+            if (held && !value)
+            {
+                startedIn.Clear();
+                foreach (var c in Physics.OverlapSphere(transform.position, collisionRadius, collisionMask, QueryTriggerInteraction.Ignore))
+                    if (c != null && c.GetComponentInParent<Character>() == null) startedIn.Add(c);
+            }
+            held = value;
+        }
+    }
+    bool held;
+    readonly System.Collections.Generic.HashSet<Collider> startedIn = new();
     // Seconds from a standstill to full speed once it moves (0: full speed at once).
     public float RampSeconds { get; set; }
     // The one character it may hurt (the Dungeon Master's spells), and the name a death is put down to.
@@ -75,6 +92,8 @@ public class SpellProjectile : MonoBehaviour
         {
             if (owner != null && hit.transform.IsChildOf(owner.transform)) continue;
             if (hit.transform.IsChildOf(transform)) continue;
+            // Walls that only keep walkers in (the boss stage's edges, a board's rim), and what a placed ball started in.
+            if (InvisibleWall.Is(hit.collider) || startedIn.Contains(hit.collider)) continue;
             // Dead bodies are flown past, as arrows do: a corpse in the way doesn't set the spell off.
             if (DeathPhysics.IsCorpse(hit.collider)) continue;
             // A sphere cast that starts overlapping reports a zero point; use the cast origin.

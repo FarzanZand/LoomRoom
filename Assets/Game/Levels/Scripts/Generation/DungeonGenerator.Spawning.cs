@@ -210,22 +210,62 @@ public partial class DungeonGenerator
 
     // A taller room (Height Tiles over 1): what hangs from a one-tile ceiling (a hanging chain) is lifted by the extra
     // height so it still hangs from the ceiling, and a moonlit room's patch of night sky stays above the ceiling.
-    void HangFromCeiling(GameObject instance,DungeonRoomTemplate template)
+    void HangFromCeiling(GameObject instance,DungeonRoomTemplate template,int index)
     {
-        if(template==null || template.heightTiles<=1 || Board)return;
-        float tile=Mathf.Max(.01f,data.architectureTileSize), extra=(template.heightTiles-1)*tile, ceiling=instance.transform.position.y+template.heightTiles*tile;
+        if(template==null || Board)return;
+        float tile=Mathf.Max(.01f,data.architectureTileSize), extra=(Mathf.Max(1,template.heightTiles)-1)*tile, ceiling=instance.transform.position.y+Mathf.Max(1,template.heightTiles)*tile;
+        Transform sky=null;
         foreach(var t in instance.GetComponentsInChildren<Transform>(true))
         {
-            if(t.name.StartsWith("Hanging chain"))t.position+=Vector3.up*extra;
-            else if(t.name=="Night sky" && t.position.y<ceiling+1f)
+            if(extra>0f && t.name.StartsWith("Hanging chain"))t.position+=Vector3.up*extra;
+            else if(t.name=="Night sky")
             {
-                // The moon above it goes up with it.
-                float lift=ceiling+1.6f-t.position.y;
-                t.position+=Vector3.up*lift;
-                var moon=t.parent!=null ? t.parent.Find("Moon") : null;
-                if(moon!=null)moon.position+=Vector3.up*lift;
+                sky=t;
+                if(t.position.y<ceiling+1f)
+                {
+                    // The moon above it goes up with it.
+                    float lift=ceiling+1.6f-t.position.y;
+                    t.position+=Vector3.up*lift;
+                    var moon=t.parent!=null ? t.parent.Find("Moon") : null;
+                    if(moon!=null)moon.position+=Vector3.up*lift;
+                }
             }
         }
+        if(sky!=null)CloseSkyGap(instance,index,sky,ceiling);
+    }
+
+    // The patch of night sky hangs a little above the ceiling's skylight: the room's walls go on up to it in its own
+    // upper stone (kit blocks, built with the room's other blocks; no collider), and the sky is cut to the room's own
+    // outline, so nothing shows through between the walls and the stars and no sky hangs over the rooms round it.
+    void CloseSkyGap(GameObject instance,int index,Transform sky,float ceiling)
+    {
+        if(index<0 || index>=Layout.rooms.Count)return;
+        float height=sky.position.y-ceiling;
+        if(height<=.05f)return;
+        var r=Layout.rooms[index];
+        Vector3 a=Cell(new Vector2Int(r.xMin,r.yMin)), b=Cell(new Vector2Int(r.xMax-1,r.yMax-1));
+        float half=data.cellSize*.5f, thick=.4f;
+        float x0=a.x-half, x1=b.x+half, z0=a.z-half, z1=b.z+half, cx=(x0+x1)*.5f, cz=(z0+z1)*.5f, w=x1-x0, d=z1-z0;
+        var holder=new GameObject("Sky walls").transform;
+        holder.SetParent(instance.transform,true);
+        void Band(Vector3 at,Vector3 size)
+        {
+            var go=new GameObject("Sky wall");
+            go.transform.SetParent(holder,true);
+            go.transform.position=at; go.transform.rotation=Quaternion.identity;
+            var block=go.AddComponent<DungeonKitBlock>();
+            block.size=size; block.standsOnPosition=true; block.solid=false;
+            block.sides=DungeonKitBlock.Surface.UpperWall; block.top=DungeonKitBlock.Surface.UpperWall;
+        }
+        Band(new Vector3(cx,ceiling,z0),new Vector3(w+thick,height,thick));
+        Band(new Vector3(cx,ceiling,z1),new Vector3(w+thick,height,thick));
+        Band(new Vector3(x0,ceiling,cz),new Vector3(thick,height,d+thick));
+        Band(new Vector3(x1,ceiling,cz),new Vector3(thick,height,d+thick));
+        // The sky over the room alone, lying on the bands.
+        sky.position=new Vector3(cx,sky.position.y,cz);
+        sky.rotation=Quaternion.Euler(-90f,0f,0f);
+        var parentScale=sky.parent!=null ? sky.parent.lossyScale : Vector3.one;
+        sky.localScale=new Vector3((w+thick)/Mathf.Max(.001f,parentScale.x),(d+thick)/Mathf.Max(.001f,parentScale.z),1f);
     }
 
     void PlaceTemplate(int index)
@@ -237,7 +277,7 @@ public partial class DungeonGenerator
         templateInstances[index]=instance;
         // A boss stage: the platform and stair go in, and the template is lifted onto it.
         if(index==StageRoom)BuildStage(instance,index);
-        HangFromCeiling(instance,template);
+        HangFromCeiling(instance,template,index);
         var lanes=Lanes(index);
         foreach(var piece in instance.GetComponentsInChildren<DungeonTemplatePiece>(true))
         {
