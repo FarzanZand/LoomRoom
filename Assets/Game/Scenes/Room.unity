@@ -71642,12 +71642,12 @@ Light:
   m_Type: 0
   m_Color: {r: 0.6, g: 0.6912, b: 0.9, a: 1}
   m_Intensity: 416
-  m_Range: 260
-  m_SpotAngle: 160
-  m_InnerSpotAngle: 80
+  m_Range: 140
+  m_SpotAngle: 130
+  m_InnerSpotAngle: 95
   m_CookieSize2D: {x: 0.5, y: 0.5}
   m_Shadows:
-    m_Type: 0
+    m_Type: 2
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -116931,6 +116931,7 @@ Transform:
   m_Children:
   - {fileID: 1811792893}
   - {fileID: 753612968}
+  - {fileID: 1730293590}
   m_Father: {fileID: 1216555968}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &1225173025
@@ -116941,7 +116942,7 @@ MeshRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1225173023}
   m_Enabled: 1
-  m_CastShadows: 1
+  m_CastShadows: 0
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
   m_StaticShadowCaster: 0
@@ -121121,10 +121122,10 @@ MonoBehaviour:
   ambientMultiplier: 1
   overrideFogColor: 0
   fogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  roomAmbient: 1.1
+  roomAmbient: 0.65
   nightLight: {fileID: 753612970}
-  nightLightColor: {r: 0.6, g: 0.72, b: 1, a: 1}
-  nightLightIntensity: 320
+  nightLightColor: {r: 1, g: 0.93, b: 0.82, a: 1}
+  nightLightIntensity: 9000
   nightLightShade: {fileID: 1225173025}
   nightShadeGlow: 1.2
   dungeonAmbient: 1
@@ -121201,6 +121202,9 @@ MonoBehaviour:
   - light: {fileID: 753612970}
     baseIntensity: 320
     baseColor: {r: 0.6, g: 0.72, b: 1, a: 1}
+  - light: {fileID: 1730293589}
+    baseIntensity: 200
+    baseColor: {r: 1, g: 0.9, b: 0.78, a: 1}
   originalAmbientSky: {r: 0.66625136, g: 0.68425226, b: 0.7169812, a: 1}
   originalAmbientHorizon: {r: 0.32, g: 0.35, b: 0.4, a: 1}
   originalAmbientGround: {r: 0.19, g: 0.18, b: 0.16, a: 1}
@@ -166158,6 +166162,103 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1729746139}
   m_Mesh: {fileID: 4300000, guid: e685a803a4699824e96739d3809065ce, type: 2}
+--- !u!1 &1730293588
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1730293590}
+  - component: {fileID: 1730293589}
+  m_Layer: 0
+  m_Name: Night lamp glow
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!108 &1730293589
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1730293588}
+  m_Enabled: 1
+  serializedVersion: 13
+  m_Type: 2
+  m_Color: {r: 1, g: 0.9, b: 0.78, a: 1}
+  m_Intensity: 200
+  m_Range: 70
+  m_SpotAngle: 30
+  m_InnerSpotAngle: 21.80208
+  m_CookieSize2D: {x: 0.5, y: 0.5}
+  m_Shadows:
+    m_Type: 0
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ForceVisible: 0
+  m_ShapeRadius: 0.025
+  m_ShadowAngle: 0
+  m_LightUnit: 1
+  m_LuxAtDistance: 1
+  m_EnableSpotReflector: 1
+--- !u!4 &1730293590
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1730293588}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.2142857, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1225173024}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1731052087
 GameObject:
   m_ObjectHideFlags: 0
