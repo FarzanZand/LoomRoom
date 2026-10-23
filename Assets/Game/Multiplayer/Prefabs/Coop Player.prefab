@@ -178,6 +178,7 @@ MonoBehaviour:
   body: {fileID: 1040031726843058184}
   labelHeight: 2.15
   labelFullSize: 4
+  mapViewHideDistance: 3.5
 --- !u!114 &1966322032610912200
 MonoBehaviour:
   m_ObjectHideFlags: 0
