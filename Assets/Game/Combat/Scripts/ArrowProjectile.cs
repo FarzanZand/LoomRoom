@@ -49,6 +49,7 @@ public class ArrowProjectile : MonoBehaviour
         {
             if (hit.transform.IsChildOf(transform)) continue;
             if (owner != null && hit.transform.IsChildOf(owner.transform)) continue;
+            if (InvisibleWall.Is(hit.collider)) continue;   // a wall that only keeps walkers in
             var point = hit.distance <= 0 ? transform.position : hit.point;
 
             var victim = hit.collider.GetComponentInParent<Character>();
