@@ -38,6 +38,13 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Tooltip("The part of a Dungeon Master line written between asterisks (*The first rule.*).")] Color highlightColor = Color.white;
     [SerializeField, Tooltip("Everything else that happens.")] Color eventColor = Color.white;
     [SerializeField] Color killColor = new(1f, .6f, .22f);
+    [Header("TikTok mode")]
+    [SerializeField, Tooltip("For recording vertical (9:16) videos: the Dungeon Master's lines, his conversation lines and the choices sit in the middle of the screen, no wider than a 9:16 crop of it, so a whole line is always in the video. Switch it on before recording.")]
+    bool tiktokMode;
+    [SerializeField, Min(200), Tooltip("Width of the lines in TikTok mode, in the 1920 x 1080 canvas: a 9:16 crop of it is 607 wide.")]
+    float tiktokWidth = 560f;
+    public static bool TikTokMode => HasInstance && Instance.tiktokMode;
+
     [Header("Feed")]
     [SerializeField, Tooltip("Also show message log lines (pickups, doors, kills). Combat damage is always left out.")] bool showEvents = true;
     [SerializeField, Min(8)] float fontSize = 30;
@@ -81,11 +88,12 @@ public class DungeonMaster : Singleton<DungeonMaster>
     void ApplyStyle()
     {
         var r = label.rectTransform;
-        bool middle = placement == Placement.LowerMiddle;
+        bool middle = placement == Placement.LowerMiddle || tiktokMode;
         r.anchorMin = r.anchorMax = r.pivot = middle ? new Vector2(.5f, 0) : Vector2.zero;
         r.anchoredPosition = middle ? new Vector2(0, 250) : new Vector2(40, 300);
-        r.sizeDelta = new Vector2(middle ? 1200 : 900, 200);
+        r.sizeDelta = new Vector2(tiktokMode ? tiktokWidth : middle ? 1200 : 900, tiktokMode ? 400 : 200);
         label.alignment = middle ? TextAlignmentOptions.Bottom : TextAlignmentOptions.BottomLeft;
+        if (Application.isPlaying) FitConversation();
         label.fontSize = fontSize;
         label.color = Color.white;
         label.textWrappingMode = TextWrappingModes.Normal;
@@ -231,6 +239,17 @@ public class DungeonMaster : Singleton<DungeonMaster>
         lines.Add((text, Time.unscaledTime, tint, ColorUtility.ToHtmlStringRGB(tint), marked));
         while (lines.Count > maxLines) lines.RemoveAt(0);
         dirty = true;
+    }
+
+    // The conversation screen's subtitle and choice panels: as wide as the feed's lines (narrow in TikTok mode).
+    public void FitConversation()
+    {
+        var ui = PixelCrushers.DialogueSystem.DialogueManager.hasInstance ? PixelCrushers.DialogueSystem.DialogueManager.dialogueUI as Component : null;
+        if (ui == null) return;
+        float width = tiktokMode ? tiktokWidth : 1200f;
+        foreach (var rect in ui.GetComponentsInChildren<RectTransform>(true))
+            if (rect.name == "NPC Subtitle Panel" || rect.name == "PC Subtitle Panel" || rect.name == "Response Menu Panel")
+                rect.sizeDelta = new Vector2(width, rect.sizeDelta.y);
     }
 
     // The voice is chosen on AudioManager (Dungeon Master voice).

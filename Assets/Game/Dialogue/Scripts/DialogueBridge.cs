@@ -60,6 +60,7 @@ public class DialogueBridge : MonoBehaviour
 
     void OnConversationStarted(Transform actor)
     {
+        if (DungeonMaster.HasInstance) DungeonMaster.Instance.FitConversation();
         if (!pushedDialogue && GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); pushedDialogue = true; }
         // Pixel Crushers passes the actor (the player); the NPC is the conversant.
         var conversant = DialogueManager.currentConversant;
