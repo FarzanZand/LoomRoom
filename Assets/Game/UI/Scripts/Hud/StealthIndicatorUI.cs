@@ -15,8 +15,8 @@ public class StealthIndicatorUI : MonoBehaviour
     [Header("Hidden")]
     [SerializeField, Tooltip("The view while sneaking (Characters/Players/Settings/Stealth look), blended in over everything.")]
     UnityEngine.Rendering.VolumeProfile look;
-    [SerializeField, Range(0, 1), Tooltip("How strong the look is while hidden (1 = as strong as the profile).")] float hiddenLook = .5f;
-    [SerializeField, Range(0, 1), Tooltip("How strong the look is while crouched but seen.")] float crouchedLook = .2f;
+    [SerializeField, Range(0, 1), Tooltip("How strong the look is while hidden (1 = as strong as the profile).")] float hiddenLook = .9f;
+    [SerializeField, Range(0, 1), Tooltip("How strong the look is while crouched but seen.")] float crouchedLook = .45f;
     [SerializeField, Min(10), Tooltip("Low-pass cutoff (Hz) of everything heard while hidden; 22000 is unmuffled.")] float muffledCutoff = 1600f;
     [SerializeField, Min(.01f), Tooltip("Seconds the look and the muffling take to come and go.")] float hiddenFade = .5f;
     Tween transition;
