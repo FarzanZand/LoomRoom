@@ -691,7 +691,8 @@ public partial class DungeonGenerator : MonoBehaviour
     // In the starting room (room 0 built from the level's Starting Room template, generated or on an authored map).
     bool InStartingRoom(Vector3 pos) => !data.pocket && data.startingRoom!=null && Layout!=null && TemplatePrefab(0)==data.startingRoom && Layout.RoomAt(CellOf(pos))==0;
 
-    // The starting room's chest: one piece of gear and the level's potion, always (DungeonContainer.startingKit).
+    // The starting room's chest: one piece of gear, the level's potion and its other starting items, always
+    // (DungeonContainer.startingKit).
     void StockStartingChest()
     {
         foreach(var chest in GetComponentsInChildren<DungeonContainer>(true))
@@ -699,10 +700,12 @@ public partial class DungeonGenerator : MonoBehaviour
             if(chest==null || !chest.chest || !InStartingRoom(chest.transform.position))continue;
             // Only the run's first floor has it; the starting room on a new biome's first floor is bare.
             if(FloorNumber>1){DestroyImmediate(chest.gameObject);continue;}
-            if(data.startingChestConsumable==null)continue;
+            bool extras=data.startingChestItems!=null && data.startingChestItems.Exists(i=>i!=null);
+            if(data.startingChestConsumable==null && !extras)continue;
             chest.startingKit=true;
             chest.extraRolls=0; chest.rareRollFloors=0;
-            if(!chest.guaranteedItems.Contains(data.startingChestConsumable))chest.guaranteedItems.Add(data.startingChestConsumable);
+            if(data.startingChestConsumable!=null && !chest.guaranteedItems.Contains(data.startingChestConsumable))chest.guaranteedItems.Add(data.startingChestConsumable);
+            if(extras)foreach(var item in data.startingChestItems)if(item!=null && !chest.guaranteedItems.Contains(item))chest.guaranteedItems.Add(item);
         }
     }
 

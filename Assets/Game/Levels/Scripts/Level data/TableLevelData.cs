@@ -93,6 +93,8 @@ public partial class TableLevelData : ScriptableObject
     public GameObject startingRoom;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), AssetsOnly, Tooltip("The starting room's chest always holds two things: one piece of gear rolled from the floor's loot, and this (a potion). Its chest is never trapped. Empty: an ordinary chest.")]
     public ItemData startingChestConsumable;
+    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), AssetsOnly, Tooltip("More items the starting room's chest always holds on top of the gear and the potion (a spell tome, say).")]
+    public List<ItemData> startingChestItems = new();
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("Zero generates a new seed on each entry.")]
     public int fixedSeed;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("A pocket: a room reached through a portal (PortalArch), built beside the floor the player came from. No ladder in and no stairs out; its own portal gate leads back.")]
