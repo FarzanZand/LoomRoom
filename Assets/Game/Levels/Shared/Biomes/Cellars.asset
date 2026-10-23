@@ -232,13 +232,10 @@ MonoBehaviour:
     chestItems: []
     arenaSizeScale: 1.5
     fight: {fileID: 0}
-  ambience: {fileID: 8300000, guid: d61d49208c7dd0648a08f048e58b4e46, type: 3}
+  ambience: {fileID: 0}
   ambienceVolume: 0.35
-  ambientOneShots:
-  - {fileID: 8300000, guid: ec196c649a0b6f94bb138fefec169e56, type: 3}
-  - {fileID: 8300000, guid: c77551c20cbf8ac4c8df57963a660f4b, type: 3}
-  - {fileID: 8300000, guid: 330531aa76f11f441875b6eb437f603f, type: 3}
-  oneShotInterval: {x: 12, y: 28}
+  ambientOneShots: []
+  oneShotInterval: {x: 60, y: 200}
   oneShotVolume: 0.4
   music: {fileID: 0}
   musicVolume: 1
@@ -260,3 +257,24 @@ MonoBehaviour:
     voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
     mumble: 0
     inPerson: 0
+  isLevelBase: 0
+  defaultStyle: {fileID: 0}
+  corridorsCopyConnectedRoomStyle: 0
+  kitModels: 1
+  torchesPerRoom: {x: 1, y: 2}
+  litRoomChance: 0.75
+  corridorTorchChance: 0.3
+  darkRoomLight: {fileID: 0}
+  furnishEntranceRims: 0
+  destructiblesPerRoom: {x: 1, y: 3}
+  chestTiers: []
+  shopRoom: {fileID: 0}
+  boardEdgeMaterial: {fileID: 0}
+  boardGridMaterial: {fileID: 0}
+  boardPitMaterial: {fileID: 0}
+  boardVerticality: 1
+  boardTileTaps: []
+  boardDoorPosts: []
+  boardMoundProps: []
+  boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
+  boardLightIntensity: 2600

@@ -173,7 +173,7 @@ MonoBehaviour:
   ambience: {fileID: 0}
   ambienceVolume: 0.45
   ambientOneShots: []
-  oneShotInterval: {x: 10, y: 24}
+  oneShotInterval: {x: 60, y: 200}
   oneShotVolume: 0.5
   music: {fileID: 0}
   musicVolume: 1
@@ -227,6 +227,7 @@ MonoBehaviour:
   gearByFloor: []
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
   startingChestConsumable: {fileID: 0}
+  startingChestItems: []
   fixedSeed: 1211
   pocket: 0
   nextFloorMessage: You descend to floor {0}.

@@ -190,7 +190,7 @@ MonoBehaviour:
   ambience: {fileID: 0}
   ambienceVolume: 0.55
   ambientOneShots: []
-  oneShotInterval: {x: 10, y: 24}
+  oneShotInterval: {x: 60, y: 200}
   oneShotVolume: 0.5
   music: {fileID: 0}
   musicVolume: 1
@@ -280,6 +280,8 @@ MonoBehaviour:
     upgradeChance: 0
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
+  startingChestItems:
+  - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
   fixedSeed: 0
   pocket: 0
   nextFloorMessage: You descend to floor {0}.
