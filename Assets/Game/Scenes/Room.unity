@@ -320831,7 +320831,7 @@ MonoBehaviour:
   seenColor: {r: 0.95, g: 0.58, b: 0.35, a: 1}
   transitionDuration: 0.18
   look: {fileID: 11400000, guid: 5d55645dec301184fb34ae7f18816f83, type: 2}
-  hiddenLook: 0.5
+  hiddenLook: 0.9
   crouchedLook: 0.45
   muffledCutoff: 1600
   hiddenFade: 0.5
