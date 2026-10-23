@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 999801942344821723}
   - component: {fileID: 2104000824278406925}
   m_Layer: 0
-  m_Name: Sunken court
+  m_Name: Not a witch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

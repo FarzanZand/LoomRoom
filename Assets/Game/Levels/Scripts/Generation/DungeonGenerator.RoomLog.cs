@@ -5,7 +5,7 @@ using UnityEngine;
 public partial class DungeonGenerator
 {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-    // The room at a point, for the developer prompt's game state: "room 4 (Combat): Sunken court" or "corridor".
+    // The room at a point, for the developer prompt's game state: "room 4 (Combat): Not a witch" or "corridor".
     public string DescribeRoomAt(Vector3 position)
     {
         if (Layout == null) return "";

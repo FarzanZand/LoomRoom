@@ -48,7 +48,7 @@ public partial class DungeonGenerator
             if (!allowed.TryGetValue(t, out bool ok)) { var tpl = t.GetComponent<DungeonRoomTemplate>(); allowed[t] = ok = tpl == null || features.AllowsAll(tpl.Requires()); }
             return ok;
         }
-        // No room template comes up twice on one floor (the Sunken court's witch, the event rooms): a profile's own
+        // No room template comes up twice on one floor (the Not a witch room, the event rooms): a profile's own
         // template counts as used too. maxPerFloor can only lower that (0 or 1 both mean once).
         for (int i = 0; i < roles.Length && i < chosen.Length; i++)
             if (chosen[i] != null && chosen[i].roomTemplate != null) used[chosen[i].roomTemplate] = 1;

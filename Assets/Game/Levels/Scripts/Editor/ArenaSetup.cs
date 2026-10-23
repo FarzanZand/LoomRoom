@@ -306,7 +306,7 @@ public static partial class ArenaSetup
             var s = socket.AddComponent<DungeonSocket>(); s.type = DungeonSocketType.Enemy; s.chance = 1f; s.overridePrefab = champion;
             // Every prop at the world's pixel size (the weapon racks, throne, banners and awning: their Synty sizes vary).
             MatchTexels(root, "arena");
-            string path = Dir + "/Rooms/Arena pit.prefab";
+            string path = Dir + "/Rooms/Scripted/Arena pit.prefab";
             Debug.Log($"[Arena] pit built: {placed} spectators at scale {miniScale:F2}");
             return PrefabUtility.SaveAsPrefabAsset(root, path);
         }

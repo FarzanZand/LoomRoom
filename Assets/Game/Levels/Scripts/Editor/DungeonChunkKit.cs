@@ -444,7 +444,7 @@ public static class DungeonChunkKit
         made.Add(Save(c));
 
         // 8. A sunken court open to the sky: moonlight falls into the middle, pillars stand on the rim.
-        c = Begin("Sunken court", 9, 9, 1, new Vector2Int(4, 0), new Vector2Int(4, 8), new Vector2Int(0, 4), new Vector2Int(8, 4));
+        c = Begin("Not a witch", 9, 9, 1, new Vector2Int(4, 0), new Vector2Int(4, 8), new Vector2Int(0, 4), new Vector2Int(8, 4));
         c.rooms = Combat | Quiet; c.mood = DungeonRoomLight.Moonlit; c.openCeiling = true; c.skylightRadius = 1; c.cellars = .8f; c.crypt = .8f;
         const float sunk = .9f;
         Cut(c, DungeonFloorCut.Kind.Sunken, 2, 2, 6, 6, sunk);
