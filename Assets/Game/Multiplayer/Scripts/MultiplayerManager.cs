@@ -1027,7 +1027,10 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             StartHostRun();
             return;
         }
-        // Someone picked a figure while the run is on: they join on the current floor.
+        // Someone picked a figure while the run is on: they join on the current floor. A guest who left the run (the pause
+        // menu's Leave level) and isn't waiting at the table can be sent it again when they pick once more.
+        foreach (var p in players)
+            if (p != null && !p.IsOwner && !p.Current.ready && !p.Current.inRun) lateJoinSent.Remove(p.OwnerClientId);
         foreach (var p in players)
             if (p != null && !p.IsOwner && p.Current.ready && !p.Current.inRun && !lateJoinSent.Contains(p.OwnerClientId))
             {
@@ -1248,6 +1251,13 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             if (alive) anyAlive = true;
         }
         if (anyone && !anyAlive && !(TableManager.Loader != null && TableManager.Loader.Busy)) EndRun(false);
+    }
+
+    // A guest left the level from the pause menu: no longer in the party's run (their state says so to the host).
+    public void LeftRun()
+    {
+        EndGhost();
+        LocalInRun = false; LocalReady = false; LocalAtTable = false;
     }
 
     // Host: the run is won without the stairs (TableLevelLoader.CompleteRun, an arena's fight): it ends for everyone.

@@ -121,7 +121,8 @@ public class PauseMenuUI : MonoBehaviour
         bool table = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
         // The buttons sit in a vertical layout, so a hidden one leaves no gap.
         if (adventuresButton != null) adventuresButton.gameObject.SetActive(table && Loader != null && !Loader.Busy && !InRun);
-        if (leaveButton != null) leaveButton.gameObject.SetActive(table && InRun && Loader != null && !Loader.Busy && !IntroController.PracticeRunning);
+        // Co-op: a guest can leave the party's run; the host runs the floor for everyone, so it stays.
+        if (leaveButton != null) leaveButton.gameObject.SetActive(table && InRun && Loader != null && !Loader.Busy && !IntroController.PracticeRunning && !Coop.IsHost);
         resumeButton?.Select();
     }
 
@@ -229,6 +230,8 @@ public class PauseMenuUI : MonoBehaviour
     {
         Close();
         if (RunManager.HasInstance) RunManager.Instance.Abandon();
+        // Co-op: out of the party's run (the others play on; sitting down again joins them where they are).
+        if (Coop.IsGuest) MultiplayerManager.Instance.LeftRun();
         var loader = Loader;
         if (loader != null) StartCoroutine(TableManager.ReturnToRoom(loader, null, context: this));
     }
