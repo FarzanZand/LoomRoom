@@ -19,6 +19,7 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
   var headBone = System.Array.Find(bodyGo.GetComponent<UnityEngine.SkinnedMeshRenderer>().bones, x => x.name == "head");
   foreach (var par in new[] { headGo.transform, headBone }) { var oldF = par.Find("Face features"); if (oldF) UnityEngine.Object.DestroyImmediate(oldF.gameObject); }
   var smr = bodyGo.GetComponent<UnityEngine.SkinnedMeshRenderer>(); var mr = headGo.GetComponent<UnityEngine.Renderer>(); var ht = headGo.transform;
+  float NeckStrip = who == "woman" && System.IO.File.Exists("Temp/RoomHead/neckback.txt") ? float.Parse(System.IO.File.ReadAllText("Temp/RoomHead/neckback.txt").Trim(), System.Globalization.CultureInfo.InvariantCulture) : 2f;   // UVs above this are the back-of-neck sleeve
   var hm = headGo.TryGetComponent<UnityEngine.MeshFilter>(out var hmf) ? hmf.sharedMesh : headGo.GetComponent<UnityEngine.SkinnedMeshRenderer>().sharedMesh; var v = hm.vertices; var nr = hm.normals; var uv = hm.uv; var tr = hm.triangles;
   // (a skinned head is worked on in its bind pose, the pose room_head_views.eval.cs renders it in)
   var b = mr.bounds; var c = b.center; float hH = b.size.y; var f = bt.transform.forward; var rg = UnityEngine.Vector3.Cross(UnityEngine.Vector3.up, f).normalized;
@@ -97,7 +98,7 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
     float frac = hitN / (float)tot; float lo = Rel(p0).y < -.2f ? .25f : .6f, hi = lo + .4f;   // the neck takes shadow sooner than the face
     float t = UnityEngine.Mathf.Clamp01((frac - lo) / (hi - lo)); return t * t * (3 - 2 * t);
   }
-  var acc = new UnityEngine.Color[S2 * S2]; var cov = new bool[S2 * S2]; var flat = new bool[S2 * S2]; var isSkin = new bool[S2 * S2]; int[] used = new int[5]; int scalp = 0, unseen = 0, innerHair = 0;
+  var acc = new UnityEngine.Color[S2 * S2]; var cov = new bool[S2 * S2]; var ear = new bool[S2 * S2]; var flat = new bool[S2 * S2]; var isSkin = new bool[S2 * S2]; int[] used = new int[5]; int scalp = 0, unseen = 0, innerHair = 0;
   for (int rp = 0; rp < 2; rp++)   // pass 0: texels whose centre lies on the triangle; pass 1: a one-texel rim where nothing painted yet (never a margin that scales with the triangle)
   for (int t = 0; t < tr.Length; t += 3)
   {
@@ -148,14 +149,22 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
         { int[] kn = new int[3]; UnityEngine.Color[] kc = new UnityEngine.Color[3]; bool[] kg = new bool[3];   // the kind most of the jaw just above has (his beard, her skin), so a beard's underside is beard
           for (int dy2 = 0; dy2 <= 6; dy2++) { int yy2 = fy + dy2; if (fx < 0 || fx >= G || yy2 < 0 || yy2 >= G) continue; var q = pc[0][yy2 * G + fx]; int qk = pk[0][yy2 * G + fx].r; if (q.a > 128 && (qk == 1 || qk == 2)) { kn[qk]++; if (!kg[qk]) { kc[qk] = q; kg[qk] = true; } } }
           int bestK = kn[2] > kn[1] ? 2 : 1; if (kg[bestK]) { cls = bestK; col = kc[bestK]; }   /* the grade's occlusion shades it */ } }
-      if (cls == 1 && rel.x < -.12f && rel.y > -.3f) { cls = 2; col = hairMain; scalp++; }   // behind the ears: scalp under the hair
+      bool sleeve = (uv[i0] * w1 + uv[i1] * w2 + uv[i2] * w3).y > NeckStrip;   // the back of her neck (Tools/room_head_neckback.eval.cs): skin, never scalp
+      if (sleeve) { cls = 1; if (!SampleKind(order[0], wp, 1, out col)) col = skinFill; }
+      if (!sleeve && cls == 1 && rel.x < -.12f && rel.y > -.3f) { cls = 2; col = hairMain; scalp++; }   // behind the ears: scalp under the hair
       if (cls >= 3) { bool onHair = bakeCls[UnityEngine.Mathf.Clamp((int)((uv[i0] * w1 + uv[i1] * w2 + uv[i2] * w3).y * BN), 0, BN - 1) * BN + UnityEngine.Mathf.Clamp((int)((uv[i0] * w1 + uv[i1] * w2 + uv[i2] * w3).x * BN), 0, BN - 1)].r == 1; if (onHair) { cls = 2; if (!SampleKind(order[0], wp, 2, out col)) col = hairMain; } else { cls = 1; col = skinFill; } }
       graded:
       float ao = PixelRestyle.Occlusion(wp, wn, dirs, aoDist);
+      // his ears are skin all over (the bake has them so): the beard beside the lobe and the cleanup passes painted parts of
+      // them dark, and their deep folds shaded black; on the ear the painting's skin wins and the creases stay soft
+      bool onEar = false;
+      if (who == "man") { var er = Rel(wp); var euv = uv[i0] * w1 + uv[i1] * w2 + uv[i2] * w3;
+        if (UnityEngine.Mathf.Abs(er.z) > .26f && er.x > -.13f && er.x < .10f && er.y > -.20f && er.y < .03f && bpx[UnityEngine.Mathf.Clamp((int)(euv.y * FW), 0, FW - 1) * FW + UnityEngine.Mathf.Clamp((int)(euv.x * FW), 0, FW - 1)].grayscale > .3f)   // light in the bake: ear skin (his skin there is greyish, past the skin test; hair and beard are near black)
+        { onEar = true; if (cls != 1) { cls = 1; if (!SampleKind(order[0], wp, 1, out col)) col = skinFill; } ao = UnityEngine.Mathf.Max(ao, .7f); } }
       float hairOver = cls == 1 ? enclosed(wp, wn) : 0f; if (hairOver > 0) enclosedN++;   // skin under the hair is in its shadow: darkened after grading, more the more hair covers it
       acc[idx] = PixelRestyle.GradeTexel(col, smr.transform.InverseTransformPoint(wp), smr.transform.InverseTransformDirection(wn).normalized, ao, size);
-      if (hairOver > 0) acc[idx] = UnityEngine.Color.Lerp(acc[idx], hairShade, hairOver * .85f);
-      cov[idx] = true; isSkin[idx] = cls == 1;
+      if (hairOver > 0) { var dk = acc[idx] * .45f; dk.a = 1; acc[idx] = UnityEngine.Color.Lerp(acc[idx], dk, hairOver * .85f); }   // the skin itself in shadow (blending to the hair's colour turned light skin red)
+      cov[idx] = true; isSkin[idx] = cls == 1; ear[idx] = onEar;
     }
   }
   UnityEngine.Matrix4x4? toHead = null;   // mesh space -> head bone space at bind, for a skinned head
@@ -208,24 +217,30 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
     log.Append($"features {nt.Count / 3} tris; ");
   }
   foreach (var g in probes) UnityEngine.Object.DestroyImmediate(g); UnityEngine.Object.DestroyImmediate(baked);
-  // skin to the body's neck (front of the neck, as it is seen)
+  // skin to the body's hands (user, 2026-10-24: the face should be as light as the hands, and no dirtier): the head's
+  // skin is scaled so its median matches the hands' median, then its texel-to-texel spread is brought down to the hands'
   var bodyPng = new UnityEngine.Texture2D(2, 2); bodyPng.LoadImage(System.IO.File.ReadAllBytes(UnityEditor.AssetDatabase.GetAssetPath(smr.sharedMaterial.GetTexture("_BaseMap"))));
-  float Med(System.Collections.Generic.List<float> l) { l.Sort(); return l.Count > 0 ? l[l.Count * 6 / 10] : 1; }
-  var br = new System.Collections.Generic.List<float>(); var bg = new System.Collections.Generic.List<float>(); var bb2 = new System.Collections.Generic.List<float>();
-  { var bk = new UnityEngine.Mesh(); smr.BakeMesh(bk); var bv = bk.vertices; var bnrm = bk.normals; var buv = smr.sharedMesh.uv;
-    var nbT = System.Array.Find(smr.bones, x => x.name == "neck_01"); var hbT = System.Array.Find(smr.bones, x => x.name == "head"); var mid = (nbT.position + hbT.position) * .5f; float rad = (hbT.position - nbT.position).magnitude * .9f;
-    var inv = new UnityEngine.Vector3(1 / smr.transform.lossyScale.x, 1 / smr.transform.lossyScale.y, 1 / smr.transform.lossyScale.z);
-    for (int i = 0; i < bv.Length; i++) { var w = smr.transform.TransformPoint(UnityEngine.Vector3.Scale(bv[i], inv)); if ((w - mid).magnitude > rad) continue; if (UnityEngine.Vector3.Dot(smr.transform.TransformDirection(bnrm[i]).normalized, f) < .4f) continue;
-      var cc2 = bodyPng.GetPixelBilinear(buv[i].x, buv[i].y); if (!(cc2.r > cc2.b * 1.05f)) continue; br.Add(cc2.r); bg.Add(cc2.g); bb2.Add(cc2.b); }
-    UnityEngine.Object.DestroyImmediate(bk); }
+  float Med(System.Collections.Generic.List<float> l) { l.Sort(); return l.Count > 0 ? l[l.Count / 2] : 1; }
+  float Spread(System.Collections.Generic.List<float> l) { if (l.Count == 0) return 0; float mean = 0; foreach (var x in l) mean += x; mean /= l.Count; float sd = 0; foreach (var x in l) sd += (x - mean) * (x - mean); return UnityEngine.Mathf.Sqrt(sd / l.Count); }
+  var br = new System.Collections.Generic.List<float>(); var bg = new System.Collections.Generic.List<float>(); var bb2 = new System.Collections.Generic.List<float>(); var bl = new System.Collections.Generic.List<float>();
+  { var buv = smr.sharedMesh.uv; var bwt = smr.sharedMesh.boneWeights;
+    for (int i = 0; i < buv.Length; i++)
+    { var bn = smr.bones[bwt[i].boneIndex0].name.ToLower(); if (!(bn.Contains("hand") || bn.Contains("finger") || bn.Contains("thumb") || bn.Contains("index") || bn.Contains("middle") || bn.Contains("ring") || bn.Contains("pinky"))) continue;
+      var cc2 = bodyPng.GetPixelBilinear(buv[i].x, buv[i].y); if (!(cc2.r > cc2.g * 1.06f && cc2.g > cc2.b && cc2.r > cc2.b * 1.12f)) continue; br.Add(cc2.r); bg.Add(cc2.g); bb2.Add(cc2.b); bl.Add(cc2.grayscale); } }
   var hr = new System.Collections.Generic.List<float>(); var hg = new System.Collections.Generic.List<float>(); var hb2 = new System.Collections.Generic.List<float>();
   for (int i = 0; i < acc.Length; i++) if (cov[i] && isSkin[i]) { hr.Add(acc[i].r); hg.Add(acc[i].g); hb2.Add(acc[i].b); }
-  var kS = new UnityEngine.Color(Med(br) / Med(hr), Med(bg) / Med(hg), Med(bb2) / Med(hb2), 1);
-  { var trim = System.IO.File.Exists("Temp/RoomHead/trim2.txt") ? System.IO.File.ReadAllText("Temp/RoomHead/trim2.txt").Trim().Split('|')[who == "woman" ? 0 : 1].Split(',') : new[] { "1", "1", "1" };
-    kS = new UnityEngine.Color(kS.r * float.Parse(trim[0], System.Globalization.CultureInfo.InvariantCulture), kS.g * float.Parse(trim[1], System.Globalization.CultureInfo.InvariantCulture), kS.b * float.Parse(trim[2], System.Globalization.CultureInfo.InvariantCulture), 1); }
-  for (int i = 0; i < acc.Length; i++) if (cov[i] && isSkin[i]) acc[i] = new UnityEngine.Color(UnityEngine.Mathf.Clamp01(acc[i].r * kS.r), UnityEngine.Mathf.Clamp01(acc[i].g * kS.g), UnityEngine.Mathf.Clamp01(acc[i].b * kS.b), 1);
+  // the head's median goes to the hands' median (per channel) and its spread to theirs (one slope for all channels; a plain
+  // scale pushed the brighter texels past white and greyed the face)
+  float P(System.Collections.Generic.List<float> l, float q) { l.Sort(); return l.Count > 0 ? l[UnityEngine.Mathf.Clamp((int)(l.Count * q), 0, l.Count - 1)] : 1; }
+  float[] mH = { P(br, .5f), P(bg, .5f), P(bb2, .5f) }, tH = { P(br, .9f), P(bg, .9f), P(bb2, .9f) }, mF = { P(hr, .5f), P(hg, .5f), P(hb2, .5f) }, tF = { P(hr, .9f), P(hg, .9f), P(hb2, .9f) };
+  float spreadH = (tH[0] + tH[1] + tH[2] - mH[0] - mH[1] - mH[2]) / 3f, spreadF = (tF[0] + tF[1] + tF[2] - mF[0] - mF[1] - mF[2]) / 3f;
+  float k1 = spreadF > 1e-4f ? spreadH / spreadF : 1f; var kk = new[] { k1, k1, k1 };   // one slope for all three: a slope per channel turned the shadowed skin red
+  for (int i = 0; i < acc.Length; i++) if (cov[i] && isSkin[i])
+    acc[i] = new UnityEngine.Color(UnityEngine.Mathf.Clamp01(mH[0] + (acc[i].r - mF[0]) * kk[0]), UnityEngine.Mathf.Clamp01(mH[1] + (acc[i].g - mF[1]) * kk[1]), UnityEngine.Mathf.Clamp01(mH[2] + (acc[i].b - mF[2]) * kk[2]), 1);
+  var kS = new UnityEngine.Color(kk[0], kk[1], kk[2], 1);
+  log.Append($"skin median {mF[0]:F2},{mF[1]:F2},{mF[2]:F2} -> hands {mH[0]:F2},{mH[1]:F2},{mH[2]:F2}; ");
   // down to the final size: eyes and brows by the colour most samples have, the rest averaged; then pad the islands
-  var outC = new UnityEngine.Color[N * N]; var oc = new bool[N * N]; var skinK = new bool[N * N];   // skin or hair per final texel
+  var outC = new UnityEngine.Color[N * N]; var oc = new bool[N * N]; var skinK = new bool[N * N]; var locked = new bool[N * N];   // skin or hair per final texel; locked: his ears, skin whatever the passes say
   for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
   {
     var votes = new System.Collections.Generic.Dictionary<UnityEngine.Color, int>(); int nf = 0; UnityEngine.Color s = default; int n = 0;
@@ -235,6 +250,7 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
     for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) { int i = (y * 2 + dy) * S2 + x * 2 + dx; if (!cov[i] || flat[i] || isSkin[i] != wantSkin) continue; s += acc[i]; n++; }
     if (nf >= 2 || (nf > 0 && n == 0)) { UnityEngine.Color bc = default; int bv2 = -1; foreach (var kv in votes) if (kv.Value > bv2) { bv2 = kv.Value; bc = kv.Key; } outC[y * N + x] = bc; oc[y * N + x] = true; }
     else if (n > 0) { outC[y * N + x] = s / n; oc[y * N + x] = true; skinK[y * N + x] = wantSkin; }
+    { int ne = 0; for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) if (ear[(y * 2 + dy) * S2 + x * 2 + dx]) ne++; if (ne >= 2 && skinK[y * N + x]) locked[y * N + x] = true; }
   }
   for (int pass = 0; pass < 8; pass++) { var add = new System.Collections.Generic.List<(int, UnityEngine.Color)>();
     for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) { if (oc[y * N + x]) continue; for (int k2 = 0; k2 < 8; k2++) { int dx = new[] { 1, -1, 0, 0, 1, -1, 1, -1 }[k2], dy = new[] { 0, 0, 1, -1, 1, 1, -1, -1 }[k2]; int xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= N || yy >= N || !oc[yy * N + xx]) continue; add.Add((y * N + x, outC[yy * N + xx])); skinK[y * N + x] = skinK[yy * N + xx]; break; } }
@@ -247,9 +263,9 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
       System.Array.Clear(lab, 0, lab.Length); int next = 0;
       for (int s0 = 0; s0 < N * N; s0++)
       {
-        if (!oc[s0] || lab[s0] != 0) continue; next++; var comp = new System.Collections.Generic.List<int> { s0 }; lab[s0] = next; bool k0 = skinK[s0];
+        if (!oc[s0] || lab[s0] != 0 || locked[s0]) continue; next++; var comp = new System.Collections.Generic.List<int> { s0 }; lab[s0] = next; bool k0 = skinK[s0];
         for (int q = 0; q < comp.Count && comp.Count <= 13; q++) { int i = comp[q], x = i % N, y = i / N;
-          foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { int xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= N || yy >= N) continue; int j = yy * N + xx; if (!oc[j] || lab[j] != 0 || skinK[j] != k0) continue; lab[j] = next; comp.Add(j); } }
+          foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { int xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= N || yy >= N) continue; int j = yy * N + xx; if (!oc[j] || lab[j] != 0 || skinK[j] != k0 || locked[j]) continue; lab[j] = next; comp.Add(j); } }
         if (comp.Count > 12) continue;
         int other = 0, same = 0; UnityEngine.Color sum = default; var inComp = new System.Collections.Generic.HashSet<int>(comp);
         foreach (var i in comp) { int x = i % N, y = i / N; for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) { int xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= N || yy >= N) continue; int j = yy * N + xx; if (!oc[j] || inComp.Contains(j)) continue; if (skinK[j] != k0) { other++; sum += outC[j]; } else same++; } }
@@ -263,7 +279,7 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
   { var cpK = (bool[])skinK.Clone(); var cpC = (UnityEngine.Color[])outC.Clone(); int edged = 0;
     for (int y = 1; y < N - 1; y++) for (int x = 1; x < N - 1; x++)
     {
-      int i = y * N + x; if (!oc[i]) continue; int other = 0, tot = 0; UnityEngine.Color sum = default;
+      int i = y * N + x; if (!oc[i] || locked[i]) continue; int other = 0, tot = 0; UnityEngine.Color sum = default;
       for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) { if (dx == 0 && dy == 0) continue; int j = (y + dy) * N + x + dx; if (!oc[j]) continue; tot++; if (cpK[j] != cpK[i]) { other++; sum += cpC[j]; } }
       if (tot >= 7 && other >= 5) { var col = sum / other; col.a = 1; outC[i] = col; skinK[i] = !cpK[i]; edged++; }
     }
@@ -276,7 +292,7 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
       var cp = (UnityEngine.Color[])outC.Clone();
       for (int y = 1; y < N - 1; y++) for (int x = 1; x < N - 1; x++)
       {
-        bool me = SkC(cp[y * N + x]); int same = 0, other = 0; UnityEngine.Color oc2 = default;
+        if (locked[y * N + x]) continue; bool me = SkC(cp[y * N + x]); int same = 0, other = 0; UnityEngine.Color oc2 = default;
         for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) { if (dx == 0 && dy == 0) continue; var q = cp[(y + dy) * N + x + dx]; if (SkC(q) == me) same++; else { other++; oc2 = q; } }
         if (other >= 6) { outC[y * N + x] = oc2; fixedS++; }
       }
@@ -285,6 +301,7 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
   for (int i = 0; i < outC.Length; i++) outC[i].a = 1;
   var tex = new UnityEngine.Texture2D(N, N, UnityEngine.TextureFormat.RGBA32, false); tex.SetPixels(outC); tex.Apply();
   System.IO.File.WriteAllBytes(outPath, tex.EncodeToPNG()); UnityEditor.AssetDatabase.ImportAsset(outPath, UnityEditor.ImportAssetOptions.ForceUpdate);
+  mr.sharedMaterial.SetFloat("_Cull", 2); UnityEditor.EditorUtility.SetDirty(mr.sharedMaterial);   // back faces culled: from behind and below, the inside of the face showed through the neck
   log.Append($"enclosed skin {enclosedN}; kind fixed {fixedKind}; {name}: {N}px ({tpu:F2} a unit), views used {string.Join("/", used)}, unseen {unseen}, inner hair {innerHair}, scalp {scalp}, skin x{kS}\n");
   headGo.SetActive(hw); bodyGo.SetActive(bw);
 }

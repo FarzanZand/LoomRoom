@@ -1,6 +1,6 @@
 // Body meshes for the Meshy heads: the Synty head (and the woman's hair) cut away, every hole left closed with a fan,
 // and the neck slimmed toward its own axis (Synty necks carry Synty's oversized heads). Afterwards run, in this order,
-// Tools/room_body_neckcap.eval.cs, room_body_capshade.eval.cs, room_body_hairshadow.eval.cs and room_body_capshade_man.eval.cs (her neck's caps and edge
+// Tools/room_body_neckcap.eval.cs, room_body_capshade.eval.cs, room_body_hairshadow.eval.cs, room_body_backpatch.eval.cs and room_body_capshade_man.eval.cs (her neck's caps and edge
 // triangles otherwise show as pale flaps and slivers among her hair and a pink slab on her back).
 if (UnityEngine.Application.isPlaying) return "playing";
 var cfg = System.IO.File.ReadAllText("C:/Users/Farza/AppData/Local/Temp/claude/C--Game-projects-LoomRoom/79e85251-42df-4f8e-85b0-cecba42a4de5/scratchpad/face/bodyfix.txt").Trim().Split('|');
@@ -105,6 +105,18 @@ foreach (var (bodyGo, name, cutHair) in new[] { (bt.bodyA, "Character_Daughter_0
   for (int i = 0; i < verts.Count; i++) { float nw = Wt(ws[i], j => j == nb) + .6f * Wt(ws[i], j => j == hb); if (nw <= .05f) continue; nw = UnityEngine.Mathf.Clamp01(nw);
     var d = verts[i] - np; var along = axis * UnityEngine.Vector3.Dot(d, axis); var perp = d - along;
     verts[i] = np + along + perp * (1f - (1f - (cutHair ? .45f : neckF)) * nw); slim++; }   // her neck slimmer still: it sits inside the Meshy head's own neck
+  // no zero normals (they shade to NaN: white bloom balls): a fan or flattened triangle with no area gave one. Such a
+  // vertex takes the average of the face normals round it, or failing that the direction out from the neck's axis
+  { var fsum = new UnityEngine.Vector3[verts.Count];
+    for (int i = 0; i < tris.Count; i += 3) { var fn = UnityEngine.Vector3.Cross(verts[tris[i + 1]] - verts[tris[i]], verts[tris[i + 2]] - verts[tris[i]]); for (int e = 0; e < 3; e++) fsum[tris[i + e]] += fn; }
+    int zeroN = 0;
+    for (int i = 0; i < norms.Count; i++)
+    {
+      if (norms[i].sqrMagnitude > 1e-6f && !float.IsNaN(norms[i].x)) { norms[i] = norms[i].normalized; continue; }
+      var nn = fsum[i]; if (nn.sqrMagnitude < 1e-12f) { var d = verts[i] - np; nn = d - axis * UnityEngine.Vector3.Dot(d, axis); }
+      norms[i] = nn.sqrMagnitude > 1e-12f ? nn.normalized : UnityEngine.Vector3.up; zeroN++;
+    }
+    log.Append($"zero normals mended {zeroN}; "); }
   var cut = UnityEngine.Object.Instantiate(mesh); cut.name = name + " No Face";
   cut.SetVertices(verts); cut.SetNormals(norms); cut.SetUVs(0, uvs); cut.boneWeights = ws.ToArray(); cut.bindposes = bp;
   cut.subMeshCount = 1; cut.SetTriangles(tris, 0); cut.RecalculateBounds();

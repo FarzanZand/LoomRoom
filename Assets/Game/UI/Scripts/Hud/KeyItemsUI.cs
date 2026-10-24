@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The room player's key items: a column of icons on the right edge of the screen, shown only in the room. For now
+// The room player's key items: a row of icons along the top of the screen at the right, above the quest log, each new
+// one added to the left of the last; shown only in the room. For now
 // they are the trophies the DM has handed over and the player hasn't hung on the wall yet (ProgressionManager).
 // Authored in the scene (a template slot under this object); this only fills it.
 public class KeyItemsUI : MonoBehaviour
@@ -53,7 +54,7 @@ public class KeyItemsUI : MonoBehaviour
             var slot = Instantiate(template, template.parent);
             slot.gameObject.SetActive(true);
             slot.name = $"{track.displayName} {milestone.value}";
-            slot.anchoredPosition = template.anchoredPosition - new Vector2(0, i++ * (template.rect.height + 10));
+            slot.anchoredPosition = template.anchoredPosition - new Vector2(i++ * (template.rect.width + 10), 0);
             // The icon is the template's Icon child (by name); without one set, the slot's own image shows it.
             Image img = null;
             if (templateIcon != null) foreach (var candidate in slot.GetComponentsInChildren<Image>(true)) if (candidate.name == templateIcon.name) { img = candidate; break; }
@@ -73,7 +74,7 @@ public class KeyItemsUI : MonoBehaviour
             var slot = Instantiate(template, template.parent);
             slot.gameObject.SetActive(true);
             slot.name = meta.missingTile.itemName;
-            slot.anchoredPosition = template.anchoredPosition - new Vector2(0, i++ * (template.rect.height + 10));
+            slot.anchoredPosition = template.anchoredPosition - new Vector2(i++ * (template.rect.width + 10), 0);
             Image img = null;
             if (templateIcon != null) foreach (var candidate in slot.GetComponentsInChildren<Image>(true)) if (candidate.name == templateIcon.name) { img = candidate; break; }
             if (img == null) img = slot.GetComponent<Image>();

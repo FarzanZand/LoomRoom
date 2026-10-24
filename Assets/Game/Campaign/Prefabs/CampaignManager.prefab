@@ -105,7 +105,7 @@ MonoBehaviour:
   maxZoomOut: 14
   bottomRoom: 0.12
   keepDungeonMasterInView: 1
-  standSlide: 0.55
+  standSlide: 0
   hoverLift: 0.9
   figureScale: 1
   hopSeconds: 0.16

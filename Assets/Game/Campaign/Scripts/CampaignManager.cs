@@ -67,7 +67,7 @@ public class CampaignManager : Singleton<CampaignManager>
     [TabGroup("View"), Tooltip("Field of view change while over the map (negative zooms in).")] public float viewZoom = 0f;
     [TabGroup("View"), Tooltip("Where the view aims, in map units from its centre (x toward the far side, z to the left).")]
     public Vector2 viewAim = new(-6f, 0f);
-    [TabGroup("View"), Min(.1f)] public float stepSeconds = 1f;
+    [TabGroup("View"), Min(.1f), Tooltip("Seconds of the one move from the seat or the room onto the map: walking, rising, turning and zooming together.")] public float stepSeconds = 1f;
     [TabGroup("View"), Tooltip("Frame the open land: the player stands in front of it and the view zooms until its places fill it, widening as acts open. Off: the middle of the near side, aimed at View Aim, zoomed by View Zoom.")]
     public bool frameOpenLand = true;
     [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Min(1f), Tooltip("Room round the open places (1 = edge to edge).")] public float frameMargin = 1.3f;
@@ -75,7 +75,7 @@ public class CampaignManager : Singleton<CampaignManager>
     [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Min(0f), Tooltip("The most the view widens when the open land doesn't fit (field of view change): with every act open the near places would be cut off.")] public float maxZoomOut = 14f;
     [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Range(0f, .4f), Tooltip("Room kept below the land (a share of the view's height) so the hint line doesn't cover the nearest places.")] public float bottomRoom = .12f;
     [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Tooltip("The Dungeon Master's head is kept in the view too (the view aims between him and the land).")] public bool keepDungeonMasterInView = true;
-    [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Range(0f, 1f), Tooltip("How far along the near side the player may walk toward the open land (share of the map's length from its middle).")] public float standSlide = .55f;
+    [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Range(0f, 1f), Tooltip("How far along the near side the player may walk toward the open land (share of the map's length from its middle). 0: always the middle, so the whole map is in front of them.")] public float standSlide = 0f;
     [TabGroup("View"), Tooltip("How far a hovered place rises (map units).")] public float hoverLift = .9f;
 
     [TabGroup("Figure"), Tooltip("The figure's size on the map, as a share of the class figures' own scale.")]
@@ -1248,43 +1248,57 @@ public class CampaignManager : Singleton<CampaignManager>
         yield return Frame(player, stepSeconds, wholeTable);
     }
 
-    // Walks the player along the near side to face the open land and turns the view onto it, then zooms until its
-    // places fill the view (or, with frameOpenLand off, the fixed spot, aim and zoom). wholeTable: the middle of the near
-    // side, the whole map in view (the first reveal's cloth drop).
+    // One move onto the map: the player walks to the middle of the near side (or along it toward the open land, Stand
+    // Slide), rises to the view height, and turns and zooms straight to the final framing, all eased together, so there
+    // is no rise first and a reframe after. The framing is worked out first, from where the eye will end: the open places
+    // (and their margin) and the Dungeon Master's head just fit (or, with frameOpenLand off, View Aim at View Zoom).
+    // wholeTable: the whole map in view (the first reveal's cloth drop).
     IEnumerator Frame(Player player, float seconds, bool wholeTable = false)
     {
         var m = Map.transform;
+        var look = player.Look;
         var (centre, half) = wholeTable ? (Vector2.zero, new Vector2(Map.halfX, Map.halfZ)) : OpenLand();
         var aimLocal = frameOpenLand ? new Vector3(centre.x, 0f, centre.y) : new Vector3(viewAim.x, 0f, viewAim.y);
         aimLocal.y = Map.HeightAt(aimLocal.x, aimLocal.z);
         var aim = m.TransformPoint(aimLocal);
         float slide = frameOpenLand ? Mathf.Clamp(centre.y, -Map.halfZ * standSlide, Map.halfZ * standSlide) : 0f;
-        var standLocal = new Vector3(-Map.halfX, 0f, slide);
-        var stand = m.TransformPoint(standLocal);
+        var stand = m.TransformPoint(new Vector3(-Map.halfX, 0f, slide));
         var to = new Vector3(stand.x - standBack, player.transform.position.y, stand.z);
         var from = player.transform.position;
-        float fromYaw = player.Look.YawTransform.eulerAngles.y, fromPitch = player.Look.Pitch;
+        float fromYaw = look.YawTransform.eulerAngles.y, fromPitch = look.Pitch;
         float fromZoom = player.CameraRig != null ? player.CameraRig.FovOffset : 0f;
-        float midZoom = frameOpenLand ? Mathf.Min(fromZoom, 0f) : viewZoom;
+        float fromHeight = look.CameraHeight, toHeight = look.HeightOverride ?? fromHeight;
+        // Where the eye ends: moved with the player and raised to the view height.
+        var heightSpace = look.YawTransform.parent != null ? look.YawTransform.parent : player.transform;
+        var eye = look.PitchTransform.position + (to - from) + heightSpace.TransformVector(Vector3.up * (toHeight - fromHeight));
+        CameraEase.YawPitchTo(eye, aim, out float yawTo, out float pitchTo, fromYaw);
+        float zoomTo = frameOpenLand ? Mathf.Min(fromZoom, 0f) : viewZoom;
+        var cam = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
+        if (frameOpenLand && player.CameraRig != null && cam != null) FitView(eye, centre, half, cam, player.CameraRig.FovOffset, ref yawTo, ref pitchTo, ref zoomTo);
         for (float t = 0; t < seconds; t += Time.deltaTime)
         {
             float k = Mathf.SmoothStep(0f, 1f, t / seconds);
             player.Warp(Vector3.Lerp(from, to, k));
-            CameraEase.YawPitchTo(player.Look, aim, out float yaw, out float pitch);
-            player.Look.SetYaw(Mathf.LerpAngle(fromYaw, yaw, k));
-            player.Look.SetPitch(Mathf.Lerp(fromPitch, pitch, k));
-            if (player.CameraRig != null) player.CameraRig.FovOffset = Mathf.Lerp(fromZoom, midZoom, k);
+            look.SnapHeight(Mathf.Lerp(fromHeight, toHeight, k));
+            look.SetYaw(Mathf.LerpAngle(fromYaw, yawTo, k));
+            look.SetPitch(Mathf.Lerp(fromPitch, pitchTo, k));
+            if (player.CameraRig != null) player.CameraRig.FovOffset = Mathf.Lerp(fromZoom, zoomTo, k);
             yield return null;
         }
         player.Warp(to);
-        yield return CameraEase.LookAt(player.Look, aim, .2f);
-        if (!frameOpenLand || player.CameraRig == null) yield break;
-        // Turn and zoom until the open places (and their margin), and the Dungeon Master's head, just fit: the view aims
-        // at the middle of what it must show, from where the eye now stands.
-        var cam = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
-        if (cam == null) yield break;
-        var eye = player.Look.PitchTransform.position;
-        float baseYaw = player.Look.YawTransform.eulerAngles.y;
+        look.SnapHeight(toHeight);
+        look.SetYaw(yawTo); look.SetPitch(pitchTo);
+        if (player.CameraRig != null) player.CameraRig.FovOffset = zoomTo;
+    }
+
+    // The view from eye that just holds the open places (and their margin) and the Dungeon Master's head: each point is
+    // projected through the view (a steep look down makes their angles a poor guide to the width), at every pitch
+    // between the lowest and the highest point, and the pitch that needs the narrowest field of view wins. Then room
+    // under the land for the hint line. yaw comes in aimed at the land and goes out aimed at the middle of it all.
+    void FitView(Vector3 eye, Vector2 centre, Vector2 half, Camera cam, float currentZoom, ref float yaw, ref float pitch, ref float zoom)
+    {
+        var m = Map.transform;
+        float baseYaw = yaw;
         float minYaw = float.MaxValue, maxYaw = float.MinValue, minPitch = float.MaxValue, maxPitch = float.MinValue;
         var shown = new List<Vector3>();
         void Take(Vector3 world)
@@ -1304,13 +1318,10 @@ public class CampaignManager : Singleton<CampaignManager>
             }
         var head = keepDungeonMasterInView ? DungeonMasterHead() : null;
         if (head != null) Take(head.position + Vector3.up * 1.5f);
-        // The tightest view that holds every point: each point is projected through the view (a steep look down
-        // makes their angles a poor guide to the width), at every pitch between the lowest and the highest point, and
-        // the pitch that needs the narrowest field of view wins. Then room under the land for the hint line.
         float yawTo = baseYaw + (minYaw + maxYaw) * .5f, aspect = Mathf.Max(.5f, cam.aspect);
-        float Needed(float pitch)
+        float Needed(float p)
         {
-            var inv = Quaternion.Inverse(Quaternion.Euler(-pitch, yawTo, 0f));
+            var inv = Quaternion.Inverse(Quaternion.Euler(-p, yawTo, 0f));
             float t = 0f;
             foreach (var w in shown)
             {
@@ -1325,19 +1336,9 @@ public class CampaignManager : Singleton<CampaignManager>
         vFov *= 1.04f;
         pitchTo -= vFov * bottomRoom * .5f;
         vFov *= 1f + bottomRoom;
-        float baseFov = cam.fieldOfView - player.CameraRig.FovOffset;
-        float zoom = Mathf.Clamp(vFov - baseFov, maxZoomIn, maxZoomOut);
-        float startZoom = player.CameraRig.FovOffset, startPitch = player.Look.Pitch;
-        for (float t = 0; t < .5f; t += Time.deltaTime)
-        {
-            float k = Mathf.SmoothStep(0f, 1f, t / .5f);
-            player.Look.SetYaw(Mathf.LerpAngle(baseYaw, yawTo, k));
-            player.Look.SetPitch(Mathf.Lerp(startPitch, pitchTo, k));
-            player.CameraRig.FovOffset = Mathf.Lerp(startZoom, zoom, k);
-            yield return null;
-        }
-        player.Look.SetYaw(yawTo); player.Look.SetPitch(pitchTo);
-        player.CameraRig.FovOffset = zoom;
+        float baseFov = cam.fieldOfView - currentZoom;
+        yaw = yawTo; pitch = pitchTo;
+        zoom = Mathf.Clamp(vFov - baseFov, maxZoomIn, maxZoomOut);
     }
 
     Transform dmHead;

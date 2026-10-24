@@ -41,6 +41,8 @@ public sealed class TableLevelReveal : MonoBehaviour
     public IEnumerator Play(DungeonGenerator generated, TableLevelRevealSettings settings, System.Action beginEntry = null)
     {
         dungeon = generated;
+        // The floor's own rendering layer: the lamp over the table lights it softly while it is built (LightingManager.BuildLight).
+        if (dungeon != null) foreach (var r in dungeon.GetComponentsInChildren<Renderer>(true)) r.renderingLayerMask |= LightingManager.TableFloorLayer;
         output = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
         if (dungeon == null || output == null || settings == null) yield break;
         IsPlaying = true;

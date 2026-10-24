@@ -21,6 +21,7 @@ from scipy import ndimage
 OVER = 8
 BROW_ROWS = {"man": 2}   # brow depth limit per head (hers is as approved)
 EYE_ROWS = {"man": 2}    # his tired lids leave a narrow opening: two rows of eye
+EYE_DROP = {"woman": 1}  # her upper lids bulge over the eye's top row: the eye sits a row lower
 VIEWS = ["front", "right", "back", "left", "top"]
 os.makedirs("Temp/RoomHead/paint", exist_ok=True)
 
@@ -125,7 +126,7 @@ for who in sys.argv[1:]:
     skinPal = kmeans(skinpx, 5); hairPal = kmeans(hairpx, 5)
     hairDark = hairPal[np.argmin(hairPal.mean(1))]
     browC = hairDark * .85; lashC = hairDark * .6
-    white = np.array([.9, .87, .82]); pupil = np.array([.08, .06, .05])
+    white = np.array([1., 1., 1.]); pupil = np.array([.08, .06, .05])
     fimg = imgs['front']; fcls = data['front'][0]; flum = fimg.mean(-1); fsat = fimg.max(-1) - fimg.min(-1)
     irisPx = fimg[(fcls == 3) & (flum > .15) & (flum < .55) & (fsat > .05)]
     irisC = np.median(irisPx, 0) if len(irisPx) > 10 else np.array([.4, .3, .2])
@@ -159,9 +160,12 @@ for who in sys.argv[1:]:
                     for y in rows[:-BROW_ROWS[who]]:
                         oc[y, x] = 1; out[y, x, :3] = nearest(skinPal, out[y:y + 1, x, :3])[0]
         out[oc == 4, :3] = browC
-        # eyes, drawn last as pixel art from where the Meshy eye is (its white either side of the iris), nothing over them:
-        #   top:  W W I P W W .      iris two texels at the Meshy iris, pupil in it
-        #   low:  . W I I W . .      corners cut, so the eye is an almond
+        # eyes, drawn last as pixel art where the Meshy eye is, nothing over them (three rows; two for his tired lids):
+        #   lash: . L L L L L L L
+        #   top:  . W W I I W W L      I iris (2 x 2)
+        #   mid:  W W W P I W W W      P pupil
+        #   low:  . W W W W W W .      corners cut evenly
+        #   lid:  . s s s s s s .      soft lid shadow
         # columns run from the inner corner (toward the face's middle) outward
         oc[oc == 3] = 1
         skinX = np.nonzero(oc == 1)[1]; midX = skinX.mean() if len(skinX) else G / 2
@@ -169,7 +173,7 @@ for who in sys.argv[1:]:
             bw_ = (x1 - x0) / OVER; bh_ = (y1 - y0) / OVER
             w = int(np.clip(round(bw_ * .75), 6, 8)); R = EYE_ROWS.get(who, 3 if bh_ >= 2.5 else 2)
             gxc = (x0 + x1) / 2 / OVER; gyc = (y0 + y1) / 2 / OVER
-            gx0 = int(round(gxc - w / 2)); top = int(round(gyc - R / 2))
+            gx0 = int(round(gxc - w / 2)); top = int(round(gyc - R / 2)) + EYE_DROP.get(who, 0)
             if gxc < midX: inner, step = gx0 + w - 1, -1
             else: inner, step = gx0, 1
             ic = (w - 3) // 2
@@ -183,12 +187,21 @@ for who in sys.argv[1:]:
             def put(col, row, c, k):
                 x = inner + col * step
                 if 0 <= x < G and 0 <= row < G: out[row, x, :3] = c; out[row, x, 3] = 1; oc[row, x] = k
+            # an almond framed top and bottom: a dark lash line over it (one texel longer at the outer end), pure white
+            # with its corners cut evenly, a compact 2 x 2 iris with the pupil in it (it reads round at this size), and
+            # a soft lid shadow under it, so the white stands out from light skin
+            ic = (w - 2) // 2
+            for col in range(1, w + 1): put(col if col < w else w - 1, top - 1 if col < w else top, lashC, 3)
             for r in range(R):
-                c_lo = 1 if r == R - 1 else (1 if (R == 3 and r == 0) else 0); c_hi = w - 2 if (r == 0 or r == R - 1) else w - 1
-                for col in range(c_lo, c_hi + 1): put(col, top + r, white, 3)
-                for col in range(ic, ic + 3):
-                    if c_lo <= col <= c_hi: put(col, top + r, irisC, 3)
-            put(ic + 1, top + (1 if R == 3 else 0), pupil, 3)
+                cut = 1 if r == 0 or r == R - 1 else 0
+                if R == 2: cut = 1 if r == 0 else 1
+                for col in range(cut, w - cut): put(col, top + r, white, 3)
+            for r in range(min(2, R)):
+                rr = top + (r if R == 2 else r)
+                put(ic, rr, irisC, 3); put(ic + 1, rr, irisC, 3)
+            put(ic + (1 if step > 0 else 0), top + (1 if R >= 2 else 0), pupil, 3)
+            lid = np.clip(skinPal[np.argsort(skinPal.mean(1))[1]] * .92, 0, 1)
+            for col in range(1, w - 1): put(col, top + R, lid, 3)
         Image.fromarray((np.clip(out, 0, 1) * 255).astype(np.uint8), "RGBA").save(f"Temp/RoomHead/paint/{who}_{v}.png")
         Image.fromarray(np.stack([oc] * 3, -1)).save(f"Temp/RoomHead/paint/{who}_{v}_cls.png")
         print(who, v, "grid", G, "classes", np.bincount(oc.ravel(), minlength=5).tolist(), "eyes", len(eyeinfo))

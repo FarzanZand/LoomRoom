@@ -137,11 +137,14 @@ public class TableManager : Singleton<TableManager>, IInteractable
         // The last game's floor sinks into the table at once while the player sits down.
         if (figures != null && figures.HasFigures) loader.SweepTable(player.transform.position);
         PushDialogue();
-        yield return Sit(player);
+        // Straight onto the campaign map: the view goes to the board in one move (CampaignManager), with no turn to the
+        // Dungeon Master's face first and no wait for him to finish a line (he goes on talking over the map).
+        bool straightToMap = only == null && CampaignManager.Active && !IntroController.SheetPending;
+        if (!straightToMap) yield return Sit(player);
 
         Seated?.Invoke(player);
         yield return null;
-        if (DMTalking)
+        if (DMTalking && !straightToMap)
         {
             float waited = 0f;
             while (DMTalking && waited < maxSpeechWait)
