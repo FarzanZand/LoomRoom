@@ -77,17 +77,28 @@ public sealed partial class LightingManager
         TagRoom();
     }
 
+    // Something just made in the room (the map figure, the run flag): lit by the room's lamps at once, not up to
+    // 1.5 s later at the next pass.
+    public static void LightAsRoom(GameObject go)
+    {
+        if (go == null || Instance == null || !Instance.RoomSeparated) return;
+        foreach (var r in go.GetComponentsInChildren<Renderer>(true)) if (r != null && !Instance.IsNotRoom(r.transform)) r.renderingLayerMask |= RoomLayer;
+    }
+
     // Room renderers carry the Room rendering layer for good: the pixel look reads it to give the room
-    // its own texel scale, and the held sun lights only that layer.
+    // its own texel scale, and the held sun lights only that layer. One list reused, so the pass every 1.5 s allocates nothing.
+    readonly List<Renderer> tagScratch = new();
     void TagRoom()
     {
         if (!RoomSeparated) return;
         foreach (var root in roomRoots)
         {
             if (root == null) continue;
-            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            root.GetComponentsInChildren(true, tagScratch);
+            foreach (var r in tagScratch)
                 if (r != null && !IsNotRoom(r.transform)) r.renderingLayerMask |= RoomLayer;
         }
+        tagScratch.Clear();
         // The room's lamps light only the room: the dungeon lies on the table under them, and the bedroom's
         // ceiling lamp lit it through its walls and ceiling (no dark corners left). The sun is held separately.
         if (sceneSources != null)

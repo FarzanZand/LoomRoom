@@ -379,7 +379,9 @@ public partial class ItemData : ScriptableObject
             : itemType == ItemType.Equipment ? SlotName(equipSlot)
             : itemType.ToString();
         string stat = null;
-        if (statModifiers != null)
+        // Gear: its main number in all (rolled bonuses included), the same number its tooltip shows.
+        if (TryMainStat(out string mainLabel, out _, out string mainText)) stat = $"{mainText} {mainLabel.ToLowerInvariant()}";
+        if (stat == null && statModifiers != null)
             foreach (var m in statModifiers)
                 if (m != null) { stat = StatLine(m.stat, m.type, m.value, BlockOnly(m.stat)); break; }
         if (spell != null) stat = $"{spell.manaCost:0.#} mana";

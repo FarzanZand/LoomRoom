@@ -43,6 +43,9 @@ public class AdventureSave : MonoBehaviour
         public List<Memorial> memorials = new();
         public List<ProgressionManager.FlagEntry> flags = new();
         [Tooltip("The name written on the character sheet.")] public string characterName = "";
+        // When it was written (UTC ticks): the file's own time is wrong after a copy (the rename's move to a new folder
+        // gave every slot the same time). 0 in a file written before this existed: the file's time is used.
+        public long savedAt;
     }
     public Data Saved { get; private set; } = new();
     [Tooltip("In the Unity editor, every Play session starts as a new game: the save file is neither read nor written. Turn off to test saving and continuing.")]
@@ -129,7 +132,7 @@ public class AdventureSave : MonoBehaviour
         get
         {
             int best = 0; DateTime newest = DateTime.MinValue;
-            for (int i = 1; i <= SlotCount; i++) { var time = LastWritten(i); if (time.HasValue && time.Value > newest && Summarize(i).readable) { newest = time.Value; best = i; } }
+            for (int i = 1; i <= SlotCount; i++) { var s = Summarize(i); if (s.readable && s.lastPlayed > newest) { newest = s.lastPlayed; best = i; } }
             return best;
         }
     }
@@ -181,6 +184,7 @@ public class AdventureSave : MonoBehaviour
                         else if (flag.key.StartsWith(ProgressionManager.TrophyPrefix) && flag.value == (int)ProgressionManager.TrophyState.Mounted) summary.trophies++;
                     }
                 summary.runFloor = data.version == Data.Current && data.checkpoint != null ? data.checkpoint.floor : 0;
+                if (data.savedAt > 0) summary.lastPlayed = new DateTime(data.savedAt, DateTimeKind.Utc).ToLocalTime();
                 return summary;
             }
             catch (Exception e) { Debug.LogWarning($"Could not read save {path}: {e.Message}"); }
@@ -218,7 +222,7 @@ public class AdventureSave : MonoBehaviour
                 foreach (var from in files)
                 {
                     var to = Path.Combine(current, Path.GetFileName(from));
-                    if (!File.Exists(to)) File.Copy(from, to);
+                    if (!File.Exists(to)) { File.Copy(from, to); File.SetLastWriteTime(to, File.GetLastWriteTime(from)); }   // keeps "last played" true
                 }
                 return;
             }
@@ -305,6 +309,7 @@ public class AdventureSave : MonoBehaviour
         // Their own meta progression (spoils, the sheet, the trophies) is still written at once (GuestSaveFlags).
         if (!UsesFile) { Changed?.Invoke(); return; }
         Saved.version = Data.Current;
+        Saved.savedAt = DateTime.UtcNow.Ticks;
         if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave)
         {
             var own = MultiplayerManager.Instance.GuestSaveFlags();

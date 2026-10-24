@@ -257,6 +257,8 @@ public class RunRecapUI : MonoBehaviour
             return;
         }
         var lines = s.victory ? victoryLines : s.tally.total >= goodHaul ? goodHaulLines : poorHaulLines;
+        // A place of one floor has no deeper to go: lines telling the player to go deeper are left out there.
+        if (s.floors <= 1 && lines != null) { var fit = System.Array.FindAll(lines, l => l != null && l.text != null && !l.text.Contains("deeper")); if (fit.Length > 0) lines = fit; }
         var line = lines != null && lines.Length > 0 ? lines[Random.Range(0, lines.Length)] : null;
         if (line == null || string.IsNullOrWhiteSpace(line.text)) return;
         DungeonMaster.OverMenus = true;

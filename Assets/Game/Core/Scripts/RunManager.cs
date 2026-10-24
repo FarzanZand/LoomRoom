@@ -302,12 +302,15 @@ public class RunManager : Singleton<RunManager>
     // Tower."). A leading "The" is lowered so it reads mid-sentence.
     string PlaceName(bool victory)
     {
-        if (victory && CampaignManager.Active && CampaignManager.Instance.Current != null && CampaignManager.Instance.Current.level == Level)
+        // A level with no stages runs on its own base biome (often a copy named after the biome it came from, "Cellars"):
+        // its place on the map, or its own name, says where it was, whatever the outcome.
+        bool ownBiome = Level != null && (Level.stages == null || Level.stages.Length == 0);
+        if ((victory || ownBiome) && CampaignManager.Active && CampaignManager.Instance.Current != null && CampaignManager.Instance.Current.level == Level)
         {
             string place = CampaignManager.Instance.Current.displayName.Trim();
             return place.StartsWith("The ") ? "the " + place.Substring(4) : place;
         }
-        var biome = Level != null ? Level.Biome(Mathf.Max(1, Floor)) : null;
+        var biome = Level != null && !ownBiome ? Level.Biome(Mathf.Max(1, Floor)) : null;
         string name = biome != null && !string.IsNullOrWhiteSpace(biome.displayName) ? biome.displayName.Trim()
             : Level != null && !string.IsNullOrWhiteSpace(Level.displayName) ? Level.displayName.Trim() : "the dungeon";
         return name.StartsWith("The ") ? "the " + name.Substring(4) : name;

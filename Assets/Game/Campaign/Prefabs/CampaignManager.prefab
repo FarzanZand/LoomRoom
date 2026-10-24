@@ -114,7 +114,7 @@ MonoBehaviour:
   card: {fileID: 0}
   heroSelect: {fileID: 0}
   firstLookLine:
-    text: This is the realm. Start close to home.
+    text: This is the realm. Start with the Crypt.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1

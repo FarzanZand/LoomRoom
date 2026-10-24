@@ -288,10 +288,19 @@ public partial class AudioManager : Singleton<AudioManager>
         return src;
     }
 
+    // Sources paused on purpose (the Dungeon Master's voice behind the pause menu) aren't free though they aren't
+    // playing: a menu sound took the voice's source and the rest of the line was lost.
+    readonly HashSet<AudioSource> held = new();
+    public void Hold(AudioSource source, bool hold)
+    {
+        if (source == null) return;
+        if (hold) held.Add(source); else held.Remove(source);
+    }
+
     AudioSource ClaimSource(List<AudioSource> pool)
     {
         foreach (var s in pool)
-            if (!s.isPlaying) return ResetAttenuation(s);
+            if (!s.isPlaying && !held.Contains(s)) return ResetAttenuation(s);
 
         // All busy: cut the one heard least (quiet or far away, distant footsteps first), so hits and kills play out.
         var listener = Listener();
@@ -299,6 +308,7 @@ public partial class AudioManager : Singleton<AudioManager>
         float lowest = float.MaxValue;
         foreach (var s in pool)
         {
+            if (held.Contains(s)) continue;
             if (s.clip == null) return ResetAttenuation(s);
             float heard = Audibility(s, listener);
             if (heard < lowest) { lowest = heard; steal = s; }
