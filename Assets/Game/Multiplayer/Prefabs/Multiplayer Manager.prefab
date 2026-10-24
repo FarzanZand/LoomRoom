@@ -70,6 +70,7 @@ MonoBehaviour:
   spawnSpacing: 0.9
   roomBodies:
   - {fileID: 2407261899975651315, guid: a1e0947a4012f434cbb44ff57342643e, type: 3}
+  - {fileID: 8404391906711690198, guid: 5f6ae848d26c73a4e8e5e9d3d1687b9a, type: 3}
   defaultTableBody: {fileID: 8511015406522375087, guid: c1aaf49909ca80a428813247dfb674c5, type: 3}
   bodyController: {fileID: 9100000, guid: 112a6b639462f57489cad7a8d912c38f, type: 2}
   weaponGrip: {fileID: 11400000, guid: 5ee5c2a3f163c6741a980b7344f01981, type: 2}

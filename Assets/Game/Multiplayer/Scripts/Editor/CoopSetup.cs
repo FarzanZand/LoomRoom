@@ -43,10 +43,10 @@ public static class CoopSetup
 
         var shieldGrip = ShieldGrip();
         var classBodies = Bodies(rebuildBodies);
-        var roomBody = RoomBody(rebuildBodies);
+        var roomBodies = RoomBodies(rebuildBodies);
         var player = PlayerPrefab();
         var list = PrefabList(player);
-        var manager = ManagerPrefab(classBodies, roomBody, shieldGrip);
+        var manager = ManagerPrefab(classBodies, roomBodies, shieldGrip);
         SceneObjects(player, list, manager);
         AssetDatabase.SaveAssets();
         Debug.Log("[Coop] Set up: player prefab, NetworkManager, bodies and MultiplayerManager are in place.");
@@ -139,24 +139,39 @@ public static class CoopSetup
     }
 
     // The room player's own body, at room scale, for the others to see walking about the room.
-    static GameObject RoomBody(bool rebuild)
+    // The room bodies others see, one per body the room player has (RoomBodyType: the woman, then the man), handed out by
+    // player slot (MultiplayerManager.RoomBody). Copied from the room player's BodyVisuals, which holds the Animator and the
+    // avatar the bodies share; models switched off there (an old body kept for reference) are left out.
+    static GameObject[] RoomBodies(bool rebuild)
     {
-        string path = $"{BodiesDir}/Room body.prefab";
-        var existing = rebuild ? null : AssetDatabase.LoadAssetAtPath<GameObject>(path);
-        if (existing != null) return existing;
+        string[] names = { "Room body", "Room body (man)" };
+        var paths = names.Select(n => $"{BodiesDir}/{n}.prefab").ToArray();
+        if (!rebuild && paths.All(p => AssetDatabase.LoadAssetAtPath<GameObject>(p) != null)) return paths.Select(p => AssetDatabase.LoadAssetAtPath<GameObject>(p)).ToArray();
         // The scene's room player as it is dressed there (its attachments are scene overrides), else the prefab's.
         var inScene = Object.FindObjectsByType<Player>(FindObjectsInactive.Include).FirstOrDefault(p => p.kind == PlayerKind.Room);
         var roomPlayer = inScene != null && inScene.transform.parent != null ? inScene.transform.parent.gameObject : AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Characters/Players/Room/RoomPlayer.prefab");
-        var source = roomPlayer != null ? roomPlayer.transform.Find("BodyVisuals/RoomBody") : null;
-        if (source == null) { Debug.LogWarning("[Coop] RoomPlayer has no BodyVisuals/RoomBody."); return null; }
-        var copy = Object.Instantiate(source.gameObject);
-        copy.name = "Room body";
-        copy.transform.localScale = source.lossyScale;
-        foreach (var c in copy.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
-        foreach (var b in copy.GetComponentsInChildren<MonoBehaviour>(true)) Object.DestroyImmediate(b);
-        var saved = PrefabUtility.SaveAsPrefabAsset(copy, path);
-        Object.DestroyImmediate(copy);
-        return saved;
+        var source = roomPlayer != null ? roomPlayer.transform.Find("BodyVisuals") : null;
+        if (source == null) { Debug.LogWarning("[Coop] RoomPlayer has no BodyVisuals."); return new GameObject[0]; }
+        var bodies = new List<GameObject>();
+        for (int i = 0; i < names.Length; i++)
+        {
+            var copy = Object.Instantiate(source.gameObject);
+            copy.name = names[i];
+            copy.transform.localScale = source.lossyScale;
+            foreach (Transform child in copy.transform.Cast<Transform>().ToArray()) if (!child.gameObject.activeSelf) Object.DestroyImmediate(child.gameObject);
+            var type = copy.GetComponentInChildren<RoomBodyType>(true);
+            if (type != null)
+            {
+                bool a = i == 0;
+                foreach (var go in new[] { type.bodyA, type.headA }) if (go != null) go.SetActive(a);
+                foreach (var go in new[] { type.bodyB, type.headB }) if (go != null) go.SetActive(!a);
+            }
+            foreach (var c in copy.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
+            foreach (var b in copy.GetComponentsInChildren<MonoBehaviour>(true)) Object.DestroyImmediate(b);
+            bodies.Add(PrefabUtility.SaveAsPrefabAsset(copy, paths[i]));
+            Object.DestroyImmediate(copy);
+        }
+        return bodies.ToArray();
     }
 
     static GameObject PlayerPrefab()
@@ -215,7 +230,7 @@ public static class CoopSetup
         return list;
     }
 
-    static GameObject ManagerPrefab(Dictionary<string, GameObject> bodies, GameObject roomBody, EnemyWeaponGrip shieldGrip)
+    static GameObject ManagerPrefab(Dictionary<string, GameObject> bodies, GameObject[] roomBodies, EnemyWeaponGrip shieldGrip)
     {
         var existing = AssetDatabase.LoadAssetAtPath<GameObject>(ManagerPrefabPath);
         var go = existing != null ? PrefabUtility.LoadPrefabContents(ManagerPrefabPath) : new GameObject("Multiplayer Manager");
@@ -226,7 +241,8 @@ public static class CoopSetup
             ?? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Game/Characters/Animations/HumanoidController.controller");
         manager.weaponGrip = FirstPersonGrip(WeaponGripPath, "RightHand_Socket");
         manager.shieldGrip = shieldGrip;
-        if (roomBody != null && (manager.roomBodies == null || manager.roomBodies.All(b => b == null))) manager.roomBodies = new[] { roomBody };
+        // One room body per body the room player has, handed out by player slot.
+        if (roomBodies != null && roomBodies.Length > 0 && roomBodies.All(b => b != null)) manager.roomBodies = roomBodies;
         if (manager.defaultTableBody == null && bodies.TryGetValue("fighter", out var fighter)) manager.defaultTableBody = fighter;
         manager.enemyPrefabs = AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Game/Characters/Enemies" })
             .Select(AssetDatabase.GUIDToAssetPath)
