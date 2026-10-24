@@ -73,7 +73,7 @@ public partial class CampaignMap
         if (style != builtStyle) { foreach (var f in fogs.Values) if (f != null) f.go.GetComponent<MeshRenderer>().sharedMaterial = ClothMaterial(style); builtStyle = style; }
         shownAct = openAct;
         if (scatterAct.Count == 0 && scatter != null) foreach (Transform t in scatter) scatterAct[t] = (ActAt(t.localPosition), t.gameObject.activeSelf);
-        foreach (var p in Points) p.gameObject.SetActive((p.encounter == null || p.encounter.act <= openAct) && !Hidden(p));
+        foreach (var p in Points) { p.gameObject.SetActive((p.encounter == null || p.encounter.act <= openAct) && !Hidden(p)); p.ShowProps(!Unmade(p)); }
         foreach (var path in Paths) path.gameObject.SetActive(path.Open(openAct) && !Hidden(path));
         for (int act = 1, last = MaxAct; act <= last; act++)
         {
@@ -112,7 +112,7 @@ public partial class CampaignMap
         foreach (var kv in scatterAct)
             if (kv.Key != null && kv.Value.on && kv.Value.act <= act && !UnderCloth(kv.Key.localPosition, act) && (kv.Value.act == act || !kv.Key.gameObject.activeSelf))
                 Add(kv.Key);
-        foreach (var p in Points) if (p.encounter != null && p.encounter.act == act && !Hidden(p)) Add(p.transform);
+        foreach (var p in Points) if (p.encounter != null && p.encounter.act == act && !Hidden(p)) { p.ShowProps(!Unmade(p)); Add(p.transform); }
         foreach (var path in Paths) if (path.Open(act) && !path.Open(act - 1) && !Hidden(path)) Add(path.transform);
         foreach (var a in appearing) { a.t.localScale = Vector3.zero; a.t.gameObject.SetActive(true); }
         // A piece's lights don't shrink with it: still under the cloth, a lantern would light the cloth from below as a
@@ -155,6 +155,11 @@ public partial class CampaignMap
     [NonSerialized] public Func<CampaignEncounter, bool> Shut;
     bool Hidden(CampaignPoint p) => p != null && p.encounter != null && Shut != null && Shut(p.encounter);
     bool Hidden(CampaignPath path) => Hidden(path.from) || Hidden(path.to);
+
+    // Places that can't be entered (not made yet) and aren't beaten: only their bare base shows, a clearing their roads
+    // still meet at, so the places beyond them stay joined; their props are off and they can't be picked (decided by CampaignManager).
+    [NonSerialized] public Func<CampaignEncounter, bool> NotPlayable;
+    bool Unmade(CampaignPoint p) => p != null && p.encounter != null && NotPlayable != null && NotPlayable(p.encounter);
 
     // A place that was shut rises into view where it stands, with the open roads to it.
     public IEnumerator PopIn(CampaignEncounter encounter, float seconds)

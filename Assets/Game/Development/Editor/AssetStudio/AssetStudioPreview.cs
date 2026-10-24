@@ -21,6 +21,11 @@ public class AssetStudioPreview : IDisposable
     Bounds bounds;
     ParticleSystem[] particles = new ParticleSystem[0];
     float yaw = 35f, pitch = 18f, distance = 4f, fit = 4f;
+    // Middle-drag moves the point the view turns round (up, down and sideways on screen); Frame puts it back.
+    Vector3 pan;
+    Vector3 Pivot => bounds.center + pan;
+    // A model with two bodies (the room player's RoomBodyType): the turntable shows one at a time, switched in the toolbar.
+    RoomBodyType bodySwitch;
     bool spin = true;
     double last;
     // Effects
@@ -99,7 +104,9 @@ public class AssetStudioPreview : IDisposable
         bounds = Measure(instance);
         AddGround();
         fit = Mathf.Max(.2f, bounds.extents.magnitude) * 3f;
-        distance = fit;
+        distance = fit; pan = Vector3.zero;
+        bodySwitch = instance.GetComponentInChildren<RoomBodyType>(true);
+        if (bodySwitch != null) bodySwitch.Apply();
         mode = Mode.Model;
         last = EditorApplication.timeSinceStartup;
     }
@@ -179,7 +186,7 @@ public class AssetStudioPreview : IDisposable
         StopAudio();
     }
 
-    public void Frame() { distance = fit; yaw = 35f; pitch = 18f; zoom = 0; }
+    public void Frame() { distance = fit; yaw = 35f; pitch = 18f; zoom = 0; pan = Vector3.zero; }
     public void TogglePlay()
     {
         if (mode == Mode.Audio) { if (AudioPlaying) StopAudio(); else PlayAudio(clip, audioLoop); }
@@ -212,7 +219,15 @@ public class AssetStudioPreview : IDisposable
         if (r.Contains(e.mousePosition))
         {
             if (e.type == EventType.MouseDrag && (e.button == 0 && !Painting || e.button == 1 || e.button == 0 && e.alt)) { yaw += e.delta.x * .5f; pitch = Mathf.Clamp(pitch + e.delta.y * .5f, -85f, 85f); spin = false; e.Use(); }
-            if (e.type == EventType.ScrollWheel) { distance = Mathf.Clamp(distance * (1f + e.delta.y * .05f), fit * .1f, fit * 6f); e.Use(); }
+            if (e.type == EventType.MouseDrag && e.button == 2)
+            {
+                // As far as the mouse moved on the screen, at the distance the view turns round.
+                var rot = Quaternion.Euler(pitch, yaw, 0);
+                float perPixel = 2f * distance * Mathf.Tan(util.camera.fieldOfView * .5f * Mathf.Deg2Rad) / Mathf.Max(1f, r.height);
+                pan += rot * new Vector3(-e.delta.x, e.delta.y, 0f) * perPixel;
+                spin = false; e.Use();
+            }
+            if (e.type == EventType.ScrollWheel) { distance = Mathf.Clamp(distance * (1f + e.delta.y * .05f), fit * .005f, fit * 6f); e.Use(); }
         }
         double now = EditorApplication.timeSinceStartup;
         float dt = (float)(now - last); last = now;
@@ -347,7 +362,7 @@ public class AssetStudioPreview : IDisposable
     {
         Mesh src; Matrix4x4 m;
         if (rend is SkinnedMeshRenderer smr && smr.sharedMesh != null)
-        { src = new Mesh(); smr.BakeMesh(src, true); m = Matrix4x4.TRS(smr.transform.position, smr.transform.rotation, Vector3.one); }
+        { src = new Mesh(); smr.BakeMesh(src, true); m = AssetStudioPainter.BakedToWorld(smr, src); }
         else
         {
             var mf = rend.GetComponent<MeshFilter>();
@@ -473,7 +488,7 @@ public class AssetStudioPreview : IDisposable
         }
         var rot = Quaternion.Euler(pitch, yaw, 0);
         var cam = util.camera;
-        cam.transform.position = bounds.center + rot * new Vector3(0, 0, -distance);
+        cam.transform.position = Pivot + rot * new Vector3(0, 0, -distance);
         cam.transform.rotation = rot;
         cam.aspect = r.width / Mathf.Max(1, r.height);
         painter.viewRight = cam.transform.right; painter.viewUp = cam.transform.up; painter.viewForward = cam.transform.forward;
@@ -486,7 +501,7 @@ public class AssetStudioPreview : IDisposable
     {
         var rot = Quaternion.Euler(pitch, yaw, 0);
         var cam = util.camera;
-        cam.transform.position = bounds.center + rot * new Vector3(0, 0, -distance);
+        cam.transform.position = Pivot + rot * new Vector3(0, 0, -distance);
         cam.transform.rotation = rot;
         cam.aspect = r.width / Mathf.Max(1, r.height);
         painter.viewRight = cam.transform.right; painter.viewUp = cam.transform.up; painter.viewForward = cam.transform.forward;
@@ -663,7 +678,7 @@ public class AssetStudioPreview : IDisposable
     {
         if (util == null || instance == null) return;
         var rot = Quaternion.Euler(pitch, yaw, 0);
-        util.camera.transform.position = bounds.center + rot * new Vector3(0, 0, -distance);
+        util.camera.transform.position = Pivot + rot * new Vector3(0, 0, -distance);
         util.camera.transform.rotation = rot;
         util.camera.backgroundColor = Backgrounds[background];
         util.lights[0].intensity = 1.6f; util.lights[0].transform.rotation = Quaternion.Euler(40f, yaw + 40f, 0);
@@ -724,6 +739,18 @@ public class AssetStudioPreview : IDisposable
                 if (GUILayout.Button("Front", GUILayout.Width(55))) { yaw = 180; pitch = 5; spin = false; }
                 if (GUILayout.Button("Side", GUILayout.Width(50))) { yaw = 90; pitch = 5; spin = false; }
                 if (GUILayout.Button("Top", GUILayout.Width(45))) { yaw = 180; pitch = 85; spin = false; }
+                if (bodySwitch != null)
+                {
+                    // Not while painting: the painter has mapped the body that shows.
+                    GUI.enabled = !Painting;
+                    foreach (BodyType b in System.Enum.GetValues(typeof(BodyType)))
+                    {
+                        string label = b == BodyType.BodyA ? "Body A" : b == BodyType.BodyB ? "Body B" : b.ToString();
+                        if (GUILayout.Toggle(bodySwitch.body == b, new GUIContent(label, "Show this body (RoomBodyType). Stop painting first to switch."), "Button", GUILayout.Width(60)) && bodySwitch.body != b)
+                        { bodySwitch.body = b; bodySwitch.Apply(); }
+                    }
+                    GUI.enabled = true;
+                }
                 if (CanPaint)
                 {
                     GUI.backgroundColor = Painting ? new Color(1f, .8f, .4f) : Color.white;
@@ -766,8 +793,8 @@ public class AssetStudioPreview : IDisposable
         }
         GUILayout.Label(mode switch
         {
-            Mode.Model when Painting => "B brush · I pick · E erase · G fill · [ ] size · Ctrl+Z undo · Ctrl+S save · Esc done",
-            Mode.Model => "Drag to orbit · wheel to zoom · F to frame · Space to pause" + (CanPaint ? " · Paint to draw on it" : ""),
+            Mode.Model when Painting => "B brush · I pick · E erase · G fill · [ ] size · middle-drag pan · Ctrl+Z undo · Ctrl+S save · Esc done",
+            Mode.Model => "Drag to orbit · middle-drag to pan · wheel to zoom · F to frame · Space to pause" + (CanPaint ? " · Paint to draw on it" : ""),
             Mode.Audio => "Space to play or stop",
             Mode.Texture => "Point-filtered, whole-number zooms",
             _ => "",
@@ -782,7 +809,7 @@ public class AssetStudioPreview : IDisposable
         {
             // Unity's own still-picture path: it brings its own target and leaves the live preview's camera as it was.
             var rot = Quaternion.Euler(pitch, yaw, 0);
-            util.camera.transform.position = bounds.center + rot * new Vector3(0, 0, -distance);
+            util.camera.transform.position = Pivot + rot * new Vector3(0, 0, -distance);
             util.camera.transform.rotation = rot;
             util.camera.backgroundColor = Backgrounds[background];
             ApplyLook();

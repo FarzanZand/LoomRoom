@@ -27,6 +27,15 @@ public class AssetStudioPainter
         public int[][] triangles;      // per submesh
         public Sheet[] sheets;         // per submesh: what is painted there (null: nothing paintable)
         public bool[] twoSided;        // per submesh: its material draws both faces (otherwise back faces are culled)
+        public float[] cutoff;         // per submesh: its material's alpha clip (0: none): see-through texels aren't hit
+    }
+
+    // A texel the material clips away (an eye layer over a face): the mouse goes through it to what is drawn behind.
+    static bool SeeThrough(Sheet sheet, float cutoff, Vector2 uv)
+    {
+        if (cutoff <= 0f || sheet == null) return false;
+        var t = TexelAt(new Hit { sheet = sheet, uv = uv });
+        return sheet.texture.GetPixel(t.x, t.y).a < cutoff;
     }
 
     public class Sheet
@@ -110,7 +119,7 @@ public class AssetStudioPainter
             {
                 mesh = new Mesh { hideFlags = HideFlags.HideAndDontSave };
                 smr.BakeMesh(mesh, true);
-                toWorld = Matrix4x4.TRS(smr.transform.position, smr.transform.rotation, Vector3.one);
+                toWorld = BakedToWorld(smr, mesh);
             }
             else
             {
@@ -127,12 +136,15 @@ public class AssetStudioPainter
             var mats = r.sharedMaterials;
             part.sheets = new Sheet[mesh.subMeshCount];
             part.twoSided = new bool[mesh.subMeshCount];
+            part.cutoff = new float[mesh.subMeshCount];
             var copies = new Material[mats.Length];
             for (int i = 0; i < mats.Length; i++)
             {
                 var m = mats[i];
                 if (m == null) continue;
                 if (i < part.twoSided.Length) part.twoSided[i] = m.HasProperty("_Cull") && m.GetFloat("_Cull") < .5f || m.HasProperty("_CullMode") && m.GetFloat("_CullMode") < .5f;
+                if (i < part.cutoff.Length && (m.HasProperty("_AlphaClip") && m.GetFloat("_AlphaClip") > .5f || m.IsKeywordEnabled("_ALPHATEST_ON")))
+                    part.cutoff[i] = m.HasProperty("_Cutoff") ? Mathf.Max(.01f, m.GetFloat("_Cutoff")) : .5f;
                 var copy = new Material(m) { hideFlags = HideFlags.HideAndDontSave };
                 materialCopies.Add(copy);
                 copies[i] = copy;
@@ -152,6 +164,21 @@ public class AssetStudioPainter
             Problem = skipped.Count > 0 ? "Nothing here can be painted: " + string.Join(", ", skipped.Take(3)) : "This model has no texture to paint.";
         else if (skipped.Count > 0) Problem = "Not paintable here: " + string.Join(", ", skipped.Take(3));
         return parts.Count > 0;
+    }
+
+    // Where a baked skinned mesh stands in the world. Unity's bake leaves out scale on the renderer's parents (the room
+    // player's rig is scaled 20 times): placed by position and rotation alone, such a mesh came out 20 times too small
+    // at its feet, so nothing on it could be hit. Both placements are tried and the one as big as the mesh really is
+    // (its own bounds at the renderer's world scale) wins.
+    public static Matrix4x4 BakedToWorld(SkinnedMeshRenderer smr, Mesh baked)
+    {
+        var plain = Matrix4x4.TRS(smr.transform.position, smr.transform.rotation, Vector3.one);
+        var scaled = smr.transform.localToWorldMatrix;
+        if (smr.sharedMesh == null) return plain;
+        float want = Vector3.Scale(smr.sharedMesh.bounds.size, smr.transform.lossyScale).magnitude;
+        float bakedSize = baked.bounds.size.magnitude;
+        float SizeOff(Matrix4x4 m) => Mathf.Abs(Mathf.Log(Mathf.Max(1e-6f, m.lossyScale.x * bakedSize) / Mathf.Max(1e-6f, want)));
+        return SizeOff(scaled) < SizeOff(plain) ? scaled : plain;
     }
 
     Sheet SheetFor(Texture2D source, HashSet<string> skipped)
@@ -209,8 +236,9 @@ public class AssetStudioPainter
                     var world = part.toWorld.MultiplyPoint3x4(o + d * t);
                     float dist = Vector3.Distance(ray.origin, world);
                     if (dist >= best) continue;
-                    best = dist;
                     var uv = part.uvs[tris[i]] * (1 - u - v) + part.uvs[tris[i + 1]] * u + part.uvs[tris[i + 2]] * v;
+                    if (SeeThrough(sheet, part.cutoff[sm], uv)) continue;
+                    best = dist;
                     var ua = part.uvs[tris[i]]; var ub = part.uvs[tris[i + 1]]; var uc = part.uvs[tris[i + 2]];
                     float uvArea = Mathf.Abs((ub.x - ua.x) * (uc.y - ua.y) - (uc.x - ua.x) * (ub.y - ua.y));
                     float worldArea = Vector3.Cross(part.toWorld.MultiplyVector(b - a), part.toWorld.MultiplyVector(c - a)).magnitude;
@@ -385,6 +413,8 @@ public class AssetStudioPainter
                 pickBlock.Clear();
                 pickBlock.SetFloat("_Id", part.sheets[sm] != null ? pi * 64 + sm + 1 : -1);
                 pickBlock.SetFloat("_Cull", part.twoSided[sm] ? 0 : 2);
+                pickBlock.SetFloat("_Cutoff", part.cutoff[sm]);
+                if (part.sheets[sm] != null) pickBlock.SetTexture("_MainTex", part.sheets[sm].texture);
                 cmd.DrawMesh(part.mesh, part.toWorld, pickMaterial, sm, 0, pickBlock);
             }
         }

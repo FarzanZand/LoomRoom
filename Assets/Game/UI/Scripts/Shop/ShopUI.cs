@@ -136,6 +136,7 @@ public class ShopUI : Singleton<ShopUI>
         if (events != null && root != null && events.currentSelectedGameObject != null && events.currentSelectedGameObject.transform.IsChildOf(root.transform)
             && !events.alreadySelecting) events.SetSelectedGameObject(null);
         if (root != null) root.SetActive(false);
+        if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
         merchant = null; player = null;
     }

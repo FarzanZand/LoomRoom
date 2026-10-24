@@ -7,7 +7,7 @@ using UnityEngine.UI;
 // One cell of the player's pack in the shop, laid out like the inventory grid. Hover (or a left click) shows the
 // item and its sell price; a right click (or Submit on a pad or keyboard) sells one. Empty cells stay visible so the
 // grid keeps its shape.
-public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IPointerClickHandler, ISubmitHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IDeselectHandler, ISelectHandler, IPointerClickHandler, ISubmitHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [SerializeField] Image background;
     [SerializeField] Image icon;
@@ -36,7 +36,12 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, I
 
     public void Clear() => Bind(null, 0, false, null, null);
 
-    public void OnPointerEnter(PointerEventData eventData) => hover?.Invoke(item);
+    // The item's tooltip (the inventory's) beside the mouse, besides the details panel.
+    public void OnPointerEnter(PointerEventData eventData) { hover?.Invoke(item); ShowTooltip(null); }
+    public void OnPointerExit(PointerEventData eventData) => HideTooltip();
+    public void OnDeselect(BaseEventData eventData) => HideTooltip();
+    void ShowTooltip(RectTransform at) { if (item != null && TooltipUI.HasInstance && !dragging) TooltipUI.Instance.Show(item, at); }
+    static void HideTooltip() { if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
     public void OnPointerClick(PointerEventData eventData)
     {
         if (eventData.button == PointerEventData.InputButton.Right) Sell();
@@ -49,6 +54,7 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, I
     bool dragging;
     public void OnBeginDrag(PointerEventData eventData)
     {
+        HideTooltip();
         dragging = item != null && eventData.button == PointerEventData.InputButton.Left && ShopUI.HasInstance && ShopUI.Instance.BeginDrag(item, icon);
     }
     public void OnDrag(PointerEventData eventData) { }
@@ -58,5 +64,5 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, I
         dragging = false;
         if (ShopUI.Instance.EndDrag(eventData.position) == ShopUI.DropZone.Wares) Sell();
     }
-    public void OnSelect(BaseEventData eventData) => hover?.Invoke(item);
+    public void OnSelect(BaseEventData eventData) { hover?.Invoke(item); if (eventData is not PointerEventData) ShowTooltip((RectTransform)transform); }
 }

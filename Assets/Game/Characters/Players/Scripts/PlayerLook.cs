@@ -31,6 +31,9 @@ public class PlayerLook : MonoBehaviour
     public float CurrentLeanAngle { get; private set; }
     // Set while seated (TableManager): camera height above the feet instead of standing or crouching.
     public float? HeightOverride { get; set; }
+    // The camera's height now (local units), and a way to set it at once (a scripted move that eases it itself).
+    public float CameraHeight => cameraHeight.y;
+    public void SnapHeight(float height) { cameraHeight.y = height; if (lateralTorso != null) lateralTorso.localPosition = cameraHeight; }
     public float Pitch => pitch;
 
     Player  player;

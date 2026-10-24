@@ -51,6 +51,20 @@ public sealed partial class LightingManager : MonoBehaviour
     [Range(0f, 4f), OnValueChanged(nameof(Apply))]
     [Tooltip("Multiplies the room's ambient light (the light in unlit corners), in every mood: higher makes the room's dark less dark. 1 = as the moods have it. While no dungeon floor is dark (the intro, board levels) this is the whole scene's ambient.")]
     public float roomAmbient = 1f;
+
+    [TabGroup("Tabs", "Room"), Title("Night light")]
+    [Tooltip("The bedroom's soft night light (it replaced the skylight's moon): one of the room lights, so it dims and goes out with them (off in the intro's dark).")]
+    public Light nightLight;
+    [TabGroup("Tabs", "Room"), OnValueChanged(nameof(Apply)), Tooltip("The night light's colour.")]
+    public Color nightLightColor = new(.6f, .72f, 1f);
+    [TabGroup("Tabs", "Room"), Min(0f), OnValueChanged(nameof(Apply)), Tooltip("The night light's strength before the room's brightness and moods.")]
+    public float nightLightIntensity = 320f;
+    [TabGroup("Tabs", "Room"), Tooltip("The shade of the lamp the night light hangs in (the pendant over the table): it glows in the night light's colour, as bright as the light is now (dark when the room's lights are out).")]
+    public Renderer nightLightShade;
+    [TabGroup("Tabs", "Room"), Range(0f, 4f), OnValueChanged(nameof(Apply)), Tooltip("How brightly the shade glows at the light's full strength.")]
+    public float nightShadeGlow = 1.2f;
+    MaterialPropertyBlock shadeBlock;
+    static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
     [TabGroup("Tabs", "Dungeon"), Title("Ambient light")]
     [Range(0f, 4f), OnValueChanged(nameof(Apply))]
     [Tooltip("Multiplies the ambient light on dark dungeon floors, after Dark Ambient caps it: higher makes the dungeon's dark less dark (places no torch or carried light reaches). 1 = as is.")]
@@ -184,8 +198,10 @@ public sealed partial class LightingManager : MonoBehaviour
     {
         UpdateMoodBlend();
         UpdateReveal();
+        RetagRoom();
         Apply();
         ApplyLightRadius();
+        ApplyBuildLight();
 #if UNITY_EDITOR
         if ((fading || moodBlending) && !Application.isPlaying)
         {
@@ -197,14 +213,30 @@ public sealed partial class LightingManager : MonoBehaviour
 
     void Apply()
     {
+        // The night light is one of the room lights; its colour and strength are set here.
+        if (nightLight != null && sceneSources != null)
+            foreach (var source in sceneSources)
+                if (source != null && source.light == nightLight) { source.baseColor = nightLightColor; source.baseIntensity = nightLightIntensity; }
         // Room Lighting dims the room's lights; without a dungeon floor's darkness (the intro, a board) the
         // table and skylight group belongs to the room too.
         float roomLevel = 1f - RoomDark;
         ApplyGroup(sources, brightness * (roomHeld ? 1f : roomLevel), tint * (roomHeld ? Color.white : RoomTint));
         ApplyGroup(sceneSources, sceneBrightness * roomLevel, sceneTint * RoomTint);
+        GlowNightShade();
         if (moodActive) ApplyMood();
         else { HoldRoom(0f); ApplyAmbient(sceneBrightness * ambientMultiplier * roomAmbient, sceneTint, overrideFogColor); RestoreSceneFog(); }
         sceneApplied = true;
+    }
+
+    // The shade follows its light: the light's strength now against its full strength.
+    void GlowNightShade()
+    {
+        if (nightLightShade == null || nightLight == null) return;
+        float level = nightLightIntensity > 0f && nightLight.enabled && nightLight.gameObject.activeInHierarchy ? Mathf.Clamp01(nightLight.intensity / nightLightIntensity) : 0f;
+        shadeBlock ??= new MaterialPropertyBlock();
+        nightLightShade.GetPropertyBlock(shadeBlock);
+        shadeBlock.SetColor(EmissionColorId, nightLightColor * (nightShadeGlow * level));
+        nightLightShade.SetPropertyBlock(shadeBlock);
     }
 
     static void ApplyGroup(Source[] group, float level, Color color)

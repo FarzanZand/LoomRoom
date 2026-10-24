@@ -141,7 +141,10 @@ public class TableManager : Singleton<TableManager>, IInteractable
         if (figures != null && figures.HasFigures) loader.SweepTable(player.transform.position);
         PushDialogue();
         if (Coop.Running) MultiplayerManager.Instance.SatDown();
-        yield return Sit(player);
+        // Straight onto the campaign map: the view goes to the board in one move (CampaignManager), with no turn to the
+        // Dungeon Master's face first and no wait for him to finish a line (he goes on talking over the map).
+        bool straightToMap = only == null && CampaignManager.Active && !IntroController.SheetPending && !Coop.IsGuest;   // a co-op guest sits for the figures
+        if (!straightToMap) yield return Sit(player);
         // Co-op: the Dungeon Master and the figures wait until everyone in the room has sat down.
         if (Coop.Running && only == null)
         {
@@ -159,7 +162,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
 
         Seated?.Invoke(player);
         yield return null;
-        if (DMTalking)
+        if (DMTalking && !straightToMap)
         {
             float waited = 0f;
             while (DMTalking && waited < maxSpeechWait)

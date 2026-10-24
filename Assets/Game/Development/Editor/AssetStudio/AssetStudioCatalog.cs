@@ -134,12 +134,15 @@ public static class AssetStudioCatalog
             if (go.GetComponent<DungeonMapTemplate>() != null) return Add(C("Levels & biomes"), guid, path, "Map template", Folder(path));
             if (go.GetComponent<DungeonRoomTemplate>() != null) return Add(C("Rooms"), guid, path, "Room template", Folder(path));
             var character = go.GetComponent<Character>();
+            // The two players keep their Character on a child (Controller), under the camera rig's root.
+            var player = character == null ? go.GetComponentInChildren<Player>(true) : null;
+            if (player != null) character = player.GetComponent<Character>();
             if (character != null)
             {
                 bool enemy = go.GetComponent<EnemyBrain>() != null;
                 if (enemy && path.Contains("/Enemies/Base/")) return null;   // the shared bases, not enemies
                 var data = AssetDatabase.LoadAllAssetsAtPath(path).OfType<CharacterData>().FirstOrDefault();
-                return Add(enemy ? C("Enemies") : C("Players & NPCs"), guid, path, enemy ? "Enemy" : go.GetComponent<Player>() != null ? "Player" : "Character",
+                return Add(enemy ? C("Enemies") : C("Players & NPCs"), guid, path, enemy ? "Enemy" : go.GetComponentInChildren<Player>(true) != null ? "Player" : "Character",
                     data != null ? $"{data.name}" : Folder(path));
             }
             if (path.Contains("/Items/Prefabs/") || path.Contains("/Combat/Spells/") && go.GetComponentInChildren<ParticleSystem>() == null) return null;   // shown through their item or spell

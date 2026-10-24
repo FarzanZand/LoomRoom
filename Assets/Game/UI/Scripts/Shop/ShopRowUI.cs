@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 // One ware in the shop: icon, name, a short info line, count and price. Hover shows details; a left or right click
 // buys, and so does dragging it onto the pack (ShopUI).
-public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IDeselectHandler, ISelectHandler, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [SerializeField] Image icon;
     [Tooltip("The ware's rarity floor behind its icon (the inventory's), shown for Fine, Masterwork and other coloured items.")]
@@ -44,8 +44,13 @@ public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IP
         gameObject.SetActive(false);
     }
 
-    public void OnPointerEnter(PointerEventData eventData) => hover?.Invoke(item);
-    public void OnSelect(BaseEventData eventData) => hover?.Invoke(item);
+    // The item's tooltip (the inventory's) beside the mouse, besides the details panel.
+    public void OnPointerEnter(PointerEventData eventData) { hover?.Invoke(item); ShowTooltip(null); }
+    public void OnPointerExit(PointerEventData eventData) => HideTooltip();
+    public void OnDeselect(BaseEventData eventData) => HideTooltip();
+    void ShowTooltip(RectTransform at) { if (item != null && TooltipUI.HasInstance && !dragging) TooltipUI.Instance.Show(item, at); }
+    static void HideTooltip() { if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
+    public void OnSelect(BaseEventData eventData) { hover?.Invoke(item); if (eventData is not PointerEventData) ShowTooltip((RectTransform)transform); }
 
     // The left button is the Button's own click; the right one buys too.
     public void OnPointerClick(PointerEventData eventData)
@@ -58,6 +63,7 @@ public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IP
     bool dragging;
     public void OnBeginDrag(PointerEventData eventData)
     {
+        HideTooltip();
         dragging = item != null && eventData.button == PointerEventData.InputButton.Left && ShopUI.HasInstance && ShopUI.Instance.BeginDrag(item, icon);
     }
     public void OnDrag(PointerEventData eventData) { }
