@@ -179,6 +179,23 @@ public class CampaignPoint : MonoBehaviour
         return mesh;
     }
 
+    // A place that can't be entered yet shows only its bare base (a clearing the roads meet at): its props and glow are
+    // off and it can't be picked. Each prop's own on/off is remembered, so props switched off by hand stay off.
+    readonly Dictionary<Transform, bool> propsOn = new();
+    public bool PropsShown { get; private set; } = true;
+    public void ShowProps(bool show)
+    {
+        if (show == PropsShown) return;
+        PropsShown = show;
+        foreach (Transform child in transform)
+        {
+            if (child.name == "Base") continue;
+            if (!show) { propsOn[child] = child.gameObject.activeSelf; child.gameObject.SetActive(false); }
+            else child.gameObject.SetActive(!propsOn.TryGetValue(child, out var on) || on);
+        }
+        var box = GetComponent<BoxCollider>(); if (box != null) box.enabled = show;
+    }
+
     // A trigger the size of the place, for picking it with the mouse.
     public void EnsurePickCollider()
     {

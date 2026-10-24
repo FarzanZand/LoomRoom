@@ -116,11 +116,13 @@ public class CampaignManager : Singleton<CampaignManager>
     int RevealedAct => Mathf.Max(firstAct, Mathf.Max(revealedNow, PM != null ? PM.GetFlag(RevealedFlag) : 0));
     int revealedNow;
     public bool Beaten(CampaignEncounter e) => e != null && PM != null && PM.HasFlag(BeatenPrefix + e.id);
-    public bool IsOpen(CampaignEncounter e) => e != null && e.act <= OpenAct && !Shut(e);
+    public bool IsOpen(CampaignEncounter e) => e != null && e.act <= OpenAct && !Shut(e) && !NotPlayable(e);
     public int Deaths(CampaignEncounter e) => e != null && PM != null ? PM.GetFlag(DeathsPrefix + e.id) : 0;
     // Enough deaths in the place it waits on: it may come up (it is shown once PopPending has raised it).
     bool Earned(CampaignEncounter e) => !e.Locked || Deaths(e.deathsIn) >= e.deathsToOpen || Beaten(e);
     // Off the map: still shut, or earned but not raised yet. Debug's open-everything shows it.
+    // A place shows on the map only when it can be entered (a Level place with its level) or has been beaten.
+    bool NotPlayable(CampaignEncounter e) => e != null && !openEverything && !(e.kind == CampaignEncounterKind.Level && e.level != null) && !Beaten(e);
     bool Shut(CampaignEncounter e) => e != null && e.Locked && !openEverything && !Beaten(e) && !(PM != null && PM.HasFlag(OpenedPrefix + e.id));
 
     CampaignEncounter At
@@ -274,14 +276,14 @@ public class CampaignManager : Singleton<CampaignManager>
         Map.name = "Campaign map";
         foreach (var p in Map.Points) p.EnsurePickCollider();
         CheckPlaces();
-        Map.Shut = Shut;   // before any reveal: a shut place stays off the map from the first cloth drop on
+        Map.Shut = Shut; Map.NotPlayable = NotPlayable;   // before any reveal: a shut place stays off the map from the first cloth drop on
         foreach (var ev in events) if (ev != null && string.IsNullOrEmpty(ev.id)) Debug.LogError($"[Campaign] the event {ev.name} has no id: it would share its seen flag with every event without one.", ev);
         restY = Map.transform.localPosition.y;
     }
 
     float restY;
 
-    void ShowActs() { Map.Shut = Shut; Map.ShowActs(Mathf.Min(OpenAct, RevealedAct), fog, clothStyle); }
+    void ShowActs() { Map.Shut = Shut; Map.NotPlayable = NotPlayable; Map.ShowActs(Mathf.Min(OpenAct, RevealedAct), fog, clothStyle); }
 
     // Test: shows an act under the given cloth, then uncovers it as a won run would.
     public void TestReveal(CampaignClothStyle style, int act)
@@ -992,7 +994,9 @@ public class CampaignManager : Singleton<CampaignManager>
     {
         if (figure != null) { Destroy(figure); figure = null; figureCollider = null; }
         var cls = progress != null ? progress.selectedClass : null;
-        var point = Map.PointFor(at) ?? Map.PointFor(home);
+        // A place off the map (not made yet) puts the figure at home.
+        var point = at != null && !NotPlayable(at) ? Map.PointFor(at) : null;
+        point ??= Map.PointFor(home);
         if (cls == null || cls.miniature == null || point == null) return;
         var figures = ClassFiguresOnTable;
         figure = new GameObject("Campaign figure");
@@ -1036,7 +1040,7 @@ public class CampaignManager : Singleton<CampaignManager>
     // The figure hops along the roads to a place.
     IEnumerator Walk(CampaignEncounter to)
     {
-        var fromPoint = Map.PointFor(At); var toPoint = Map.PointFor(to);
+        var fromPoint = Map.PointFor(NotPlayable(At) ? home : At); var toPoint = Map.PointFor(to);
         if (figure == null || toPoint == null) { At = to; yield break; }
         if (fromPoint == toPoint) { At = to; yield break; }   // already there
         var route = Map.Route(fromPoint, toPoint, OpenAct);
@@ -1352,7 +1356,7 @@ public class CampaignManager : Singleton<CampaignManager>
         var min = new Vector2(float.MaxValue, float.MaxValue); var max = -min;
         foreach (var p in Map.Points)
         {
-            if (p.encounter == null || p.encounter.act > shown || Shut(p.encounter)) continue;
+            if (p.encounter == null || p.encounter.act > shown || Shut(p.encounter) || NotPlayable(p.encounter)) continue;
             var l = p.transform.localPosition; float r = p.radius + 1f;
             min = Vector2.Min(min, new Vector2(l.x - r, l.z - r)); max = Vector2.Max(max, new Vector2(l.x + r, l.z + r));
         }

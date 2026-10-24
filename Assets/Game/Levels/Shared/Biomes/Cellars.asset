@@ -186,7 +186,7 @@ MonoBehaviour:
   - prefab: {fileID: 3904118440429741045, guid: 91efdc5ce7c631c43a3188387ca652aa, type: 3}
     weight: 1
     overrideColor: 1
-    color: {r: 1, g: 0.8950959, b: 0.8160377, a: 1}
+    color: {r: 1, g: 0.71660745, b: 0.4575472, a: 1}
   overrideTorchColor: 0
   torchColor: {r: 1, g: 0.6, b: 0.3, a: 1}
   torchBrightness: 1
