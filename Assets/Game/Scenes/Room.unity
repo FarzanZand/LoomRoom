@@ -124990,6 +124990,7 @@ MonoBehaviour:
   - {fileID: 1697459214}
   - {fileID: 486678030300132004}
   - {fileID: 794788859}
+  - {fileID: 1470607779}
   notRoom: []
   tableLamp: {fileID: 108572490}
   controlScope: 0

@@ -67,6 +67,16 @@ public sealed partial class LightingManager
 
     bool RoomSeparated => Application.isPlaying && roomRoots != null && roomRoots.Length > 0;
 
+    // Things put in the room during play (the class figures on the table, the memorial figures) get the Room layer too,
+    // or the room's lamps (which light only that layer) would leave them dark.
+    float nextRoomTag;
+    void RetagRoom()
+    {
+        if (!RoomSeparated || Time.unscaledTime < nextRoomTag) return;
+        nextRoomTag = Time.unscaledTime + 1.5f;
+        TagRoom();
+    }
+
     // Room renderers carry the Room rendering layer for good: the pixel look reads it to give the room
     // its own texel scale, and the held sun lights only that layer.
     void TagRoom()
@@ -78,6 +88,11 @@ public sealed partial class LightingManager
             foreach (var r in root.GetComponentsInChildren<Renderer>(true))
                 if (r != null && !IsNotRoom(r.transform)) r.renderingLayerMask |= RoomLayer;
         }
+        // The room's lamps light only the room: the dungeon lies on the table under them, and the bedroom's
+        // ceiling lamp lit it through its walls and ceiling (no dark corners left). The sun is held separately.
+        if (sceneSources != null)
+            foreach (var s in sceneSources)
+                if (s != null && s.light != null && !IsDirectional(s)) FirstPersonLighting.SetLayers(s.light, RoomLayer);
     }
 
     Light Sun()
