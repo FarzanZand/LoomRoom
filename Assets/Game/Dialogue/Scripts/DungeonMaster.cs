@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
+using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
@@ -55,14 +56,22 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Min(0), Tooltip("Seconds a line stays before fading.")] float hold = 6f;
     [SerializeField, Min(0)] float fadeOut = 1.5f;
     [SerializeField, Min(1)] int maxLines = 4;
+    [SerializeField, Tooltip("One line at a time: a new Dungeon Master line takes the place of every line before it, and a new message (a pickup, a kill) takes the place of earlier messages, never of his line.")]
+    bool soloStrings;
+    [SerializeField, Tooltip("The Dungeon Master's lines are typed out letter by letter. A line stays Hold seconds once it is all typed out.")]
+    bool typewriter;
+    [SerializeField, Min(1), ShowIf(nameof(typewriter)), Tooltip("Letters typed a second.")] float charactersPerSecond = 40f;
+    [SerializeField, Min(0), ShowIf(nameof(typewriter)), Tooltip("Extra seconds after a full stop, question or exclamation mark (a comma, colon or semicolon waits half as long).")]
+    float punctuationPause = .25f;
     [SerializeField, Min(0), Tooltip("Lines said in person (a conversation at the table) stay at least this long, plus the time per word, before the next one.")]
     float readBase = 1.2f;
     [SerializeField, Min(0)] float readPerWord = .3f;
 
     readonly Queue<(Line line, float delay)> queue = new();
     // Oldest first. hex is the colour's RGB, worked out once when the line is added.
-    // marked: a Dungeon Master line, whose *asterisked* parts take the highlight colour.
-    readonly List<(string text, float shown, Color color, string hex, bool marked)> lines = new();
+    // marked: a Dungeon Master line, whose *asterisked* parts take the highlight colour. typing: seconds it takes to type
+    // out (0: shown whole); its hold and fade come after.
+    readonly List<(string text, float shown, Color color, string hex, bool marked, float typing)> lines = new();
     readonly StringBuilder builder = new();
     // The label is rebuilt only when lines were added or removed, or one is fading.
     bool dirty, blanked;
@@ -221,7 +230,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     // Shows the line and starts its voice or mumble. Returns the seconds of speech.
     float Speak(Line line)
     {
-        Show($"\"{line.text.Trim()}\"", standardColor, true);
+        float typing = Show($"\"{line.text.Trim()}\"", standardColor, true);
         Spoke?.Invoke(line);
         float speaking = .5f;
         if (AudioManager.HasInstance)
@@ -234,14 +243,38 @@ public class DungeonMaster : Singleton<DungeonMaster>
             if (voice != null && voice.clip != null) speaking = voice.clip.length;
             else if (line.mumble) speaking = Mumble(Plain(line.text));
         }
-        return speaking;
+        return Mathf.Max(speaking, typing);   // the next line waits for this one to be typed out
     }
 
-    void Show(string text, Color tint, bool marked = false)
+    // Returns the seconds the line takes to type out (0 when shown whole).
+    float Show(string text, Color tint, bool marked = false)
     {
-        lines.Add((text, Time.unscaledTime, tint, ColorUtility.ToHtmlStringRGB(tint), marked));
+        // Solo: a line of his replaces everything; a message replaces only earlier messages.
+        if (soloStrings) lines.RemoveAll(l => marked || !l.marked);
+        float typing = marked && typewriter ? TypeOut(text, float.MaxValue, out _) : 0f;
+        lines.Add((text, Time.unscaledTime, tint, ColorUtility.ToHtmlStringRGB(tint), marked, typing));
         while (lines.Count > maxLines) lines.RemoveAt(0);
         dirty = true;
+        return typing;
+    }
+
+    // Typing a line out: how many of its letters (the highlight marks don't count) show after elapsed seconds, and how
+    // long the whole line takes.
+    float TypeOut(string text, float elapsed, out int shown)
+    {
+        float t = 0f, step = 1f / Mathf.Max(1f, charactersPerSecond);
+        shown = 0;
+        for (int i = 0; i < text.Length; i++)
+        {
+            char c = text[i];
+            if (c == '*') continue;
+            if (t > elapsed) return t;
+            shown++;
+            t += step;
+            if (c == '.' || c == '!' || c == '?') t += punctuationPause;
+            else if (c == ',' || c == ';' || c == ':') t += punctuationPause * .5f;
+        }
+        return t;
     }
 
     // The conversation screen's subtitle and choice panels: as wide as the feed's lines (narrow in TikTok mode).
@@ -279,7 +312,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
         float now = Time.unscaledTime;
         // Paused: the lines on screen keep their age, so none fades behind the menu.
         if (Paused) for (int i = 0; i < lines.Count; i++) { var l = lines[i]; l.shown += Time.unscaledDeltaTime; lines[i] = l; }
-        while (lines.Count > 0 && now - lines[0].shown > hold + fadeOut) { lines.RemoveAt(0); dirty = true; }
+        if (lines.RemoveAll(l => now - l.shown > l.typing + hold + fadeOut) > 0) dirty = true;
         // Full-screen menus (the run recap shares this canvas) are not written over unless one asks for it (OverMenus),
         // and a conversation has its own subtitles and choices in the same spot.
         if ((GameManager.HasInstance && !overMenus && (GameManager.Instance.State == GameState.Menu || GameManager.Instance.State == GameState.Paused))
@@ -292,15 +325,18 @@ public class DungeonMaster : Singleton<DungeonMaster>
         bool cutscene = GameManager.HasInstance && GameManager.Instance.State == GameState.Cutscene;
         if (cutscene && !wasCutscene && lines.Count > 0) { lines.Clear(); dirty = true; }
         wasCutscene = cutscene;
-        bool fading = lines.Count > 0 && now - lines[0].shown > hold;   // the oldest line fades first
-        if (!dirty && !blanked && !fading) return;
+        bool fading = false, typing = false;
+        foreach (var l in lines) { float age = now - l.shown; if (age > l.typing + hold) fading = true; else if (age < l.typing) typing = true; }
+        if (!dirty && !blanked && !fading && !typing) return;
         dirty = blanked = false;
         builder.Clear();
-        foreach (var (text, shown, tint, hex, marked) in lines)
+        foreach (var (text, shown, tint, hex, marked, lineTyping) in lines)
         {
-            float alpha = Mathf.Clamp01(1 - (now - shown - hold) / Mathf.Max(.01f, fadeOut));
+            float alpha = Mathf.Clamp01(1 - (now - shown - lineTyping - hold) / Mathf.Max(.01f, fadeOut));
             if (builder.Length > 0) builder.Append('\n');
-            if (marked) AppendMarked(builder, text, alpha);
+            int typed = int.MaxValue;
+            if (lineTyping > 0f && now - shown < lineTyping) TypeOut(text, now - shown, out typed);
+            if (marked) AppendMarked(builder, text, alpha, typed);
             else builder.Append("<color=#").Append(hex).Append(AlphaHex[Mathf.RoundToInt(Mathf.Clamp01(tint.a * alpha) * 255)])
                 .Append('>').Append(text).Append("</color>");
         }
@@ -308,18 +344,23 @@ public class DungeonMaster : Singleton<DungeonMaster>
     }
 
     // A Dungeon Master line in rich text: Standard, with the parts between asterisks in Highlight (alpha fades both).
-    void AppendMarked(StringBuilder into, string text, float alpha = 1f)
+    // typed: how many of its letters show (the typewriter); the rest are written fully clear, so the line keeps its
+    // shape and doesn't shift as it types.
+    void AppendMarked(StringBuilder into, string text, float alpha = 1f, int typed = int.MaxValue)
     {
         bool high = false;
-        int start = 0;
+        int start = 0, letters = 0;
         for (int i = 0; i <= text.Length; i++)
         {
             if (i < text.Length && text[i] != '*') continue;
             if (i > start)
             {
                 var tint = high ? highlightColor : standardColor;
-                into.Append("<color=#").Append(ColorUtility.ToHtmlStringRGB(tint)).Append(AlphaHex[Mathf.RoundToInt(Mathf.Clamp01(tint.a * alpha) * 255)])
-                    .Append('>').Append(text, start, i - start).Append("</color>");
+                string rgb = ColorUtility.ToHtmlStringRGB(tint);
+                int length = i - start, seen = Mathf.Clamp(typed - letters, 0, length);
+                if (seen > 0) into.Append("<color=#").Append(rgb).Append(AlphaHex[Mathf.RoundToInt(Mathf.Clamp01(tint.a * alpha) * 255)]).Append('>').Append(text, start, seen).Append("</color>");
+                if (seen < length) into.Append("<color=#").Append(rgb).Append("00>").Append(text, start + seen, length - seen).Append("</color>");
+                letters += length;
             }
             high = !high;
             start = i + 1;

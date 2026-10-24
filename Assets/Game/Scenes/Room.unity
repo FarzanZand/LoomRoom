@@ -9394,6 +9394,10 @@ MonoBehaviour:
   hold: 6
   fadeOut: 1.5
   maxLines: 6
+  soloStrings: 0
+  typewriter: 0
+  charactersPerSecond: 40
+  punctuationPause: 0.25
   readBase: 1.2
   readPerWord: 0.3
 --- !u!114 &87319290
@@ -9409,32 +9413,40 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonMasterRemarks
   morning:
-    text: Morning.
+  - text: Morning.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: You're up.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   callOver:
-    text: Over here. Come and talk to me.
+  - text: Over here. Come and talk to me.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   idle:
-    text: Whenever you're ready.
+  - text: Whenever you're ready.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: The table's waiting.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   door:
-    text: It does not go anywhere. You are not allowed to leave yet.
+  - text: It does not go anywhere. You are not allowed to leave yet.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   doorAgain:
-    text: It still doesn't go anywhere.
+  - text: It still doesn't go anywhere.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   forgottenFigure:
-    text: You don't remember that one.
+  - text: You don't remember that one.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
@@ -9442,42 +9454,62 @@ MonoBehaviour:
   idleSeconds: 75
   doorLoopAgainAt: 4
   again:
-    text: Again.
+  - text: Again.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: Back so soon.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   further:
-    text: Further than before.
+  - text: Further than before.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: Deeper this time.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   sameKiller:
-    text: The {killer} again.
+  - text: The {killer} again.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
+  - text: Beaten by the {killer} again.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   afterTheEnd:
-    text: Again?
+  - text: Again?
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   newFigure:
-    text: You haven't tried this one.
+  - text: You haven't tried this one.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   usualPick:
-    text: You always pick that one.
+  - text: You always pick that one.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Your favourite.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   samePick:
-    text: That one again.
+  - text: That one again.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Let's see if it goes better this time.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   newPick:
-    text: That's new.
+  - text: That's new.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
