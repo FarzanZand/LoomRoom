@@ -9,6 +9,14 @@ Every piece of art in LoomRoom looks like the approved creature concepts (cave b
 low-resolution, chunky, **dirty** pixel art painted by an image model, never procedural noise and never Meshy
 *retexture*. Reference images: `Docs/Images/Pixel texture style/`. Style notes: `Docs/Pixel-texture-style.md`.
 
+**First and last step of every art task, no exceptions: measure the texel size.** Before showing anything, run
+`TexelCheck.Scene("<scene object>", <texels a unit>)` from an eval (bedroom: `TexelCheck.Scene()`, 6.4; board and map
+pieces: `CampaignMapBuilder.CheckTexels`) and fix every line it prints until it says 0 off. Never borrow a texture made
+for another density (the apartment's 64 px textures are 1.8) without fitting its tiling by measurement, and never build a
+round thing (candle, cup, pan, arm) from boxes: model it in Blender. The user has had to ask for this many times.
+
+**Characters and heads: review every feature, not the whole.** Run `Tools/character_review.eval.cs` and judge each crop (eyes, brows, nose and mouth, ears, hairline, nape, behind the ears, neck join, back of the head) in neutral and room light next to the approved concept. Eyes and brows are placed like pixel art (clean white, iris, pupil; brows shaped and the hair's colour), never left to automatic grading.
+
 ## Tools: what to use and what never to use
 
 - **No Meshy unless the user asks for it (user, 2026-10-17).** Its paintings read as AI-made (the gargoyle, skull pile,
