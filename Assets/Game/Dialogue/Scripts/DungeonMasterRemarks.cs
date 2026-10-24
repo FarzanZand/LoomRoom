@@ -295,6 +295,8 @@ public class DungeonMasterRemarks : MonoBehaviour
         beatRecord = RunManager.HasInstance && recordAtRunStart >= 1 && RunManager.Instance.Floor > recordAtRunStart;
     }
 
+    string lastRunClass;   // the class of the last run started this session (the campaign's class stays put)
+
     IEnumerator CommentOnClass()
     {
         // A resumed run restores its class and totals right after it starts.
@@ -304,11 +306,19 @@ public class DungeonMasterRemarks : MonoBehaviour
         var loader = TableManager.Loader;
         if (loader != null && loader.Resumed) yield break; // continuing, not picking
         var memorials = save.Saved.memorials;
-        int count = memorials.Count(m => m.classId == progress.selectedClass.id);
-        int most = memorials.Count == 0 ? 0 : memorials.GroupBy(m => m.classId).Max(g => g.Count());
-        SayInDungeon(count == 0 ? newPick : count >= 2 && count == most ? usualPick : samePick);
+        // On the campaign the class is only picked when it changes (the hero select): the same class as last run was
+        // not picked again, so there is nothing to remark on.
+        string classId = progress.selectedClass.id;
+        bool picked = !CampaignManager.Active || lastRunClass == null ? !(CampaignManager.Active && memorials.Count > 0 && memorials[memorials.Count - 1].classId == classId) : lastRunClass != classId;
+        lastRunClass = classId;
+        if (picked)
+        {
+            int count = memorials.Count(m => m.classId == classId);
+            int most = memorials.Count == 0 ? 0 : memorials.GroupBy(m => m.classId).Max(g => g.Count());
+            SayInDungeon(count == 0 ? newPick : count >= 2 && count == most ? usualPick : samePick);
+        }
         // The level's own opening remark, after the class comment.
-        yield return new WaitForSeconds(runRemarkDelay + .5f);
+        yield return new WaitForSeconds(picked ? runRemarkDelay + .5f : .5f);
         lastRemark = -999f;
         Trigger(DungeonDialogueTrigger.RunStart, -1, runRemarkDelay);
     }

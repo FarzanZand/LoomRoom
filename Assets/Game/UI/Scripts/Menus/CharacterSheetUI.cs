@@ -309,8 +309,9 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     Row questRow;
     void RefreshQuest(ProgressionManager meta)
     {
-        bool open = meta.QuestState(ProgressionManager.SpendQuest) == 1;
         var blocking = meta.Track(AdventureSkill.Blocking);
+        // Done on the page as soon as Blocking is trained (the quest itself closes when the sheet is put down).
+        bool open = meta.QuestState(ProgressionManager.SpendQuest) == 1 && meta.Bought(blocking) == 0;
         questRow = open && blocking != null ? rows.Find(r => r.trackId == blocking.id) : null;
         if (questNote != null)
         {

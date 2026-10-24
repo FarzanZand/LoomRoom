@@ -30,7 +30,7 @@ public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         item = data; click = onClick; hover = onHover;
         if (icon != null) { icon.sprite = data != null ? data.icon : null; icon.enabled = icon.sprite != null; }
         ItemData.ShowSlotFill(rarityFill, data, data != null);
-        if (itemName != null) itemName.text = data == null ? "" : data.HasRarityColour ? $"<color={data.RarityTextColour}>{data.DisplayName}</color>" : data.itemName;
+        if (itemName != null) itemName.text = data == null ? "" : data.HasRarityColour ? $"<color={data.RarityTextColour}>{data.itemName}</color>" : data.itemName;   // the plain name, like the tooltip; the colour says the rarity
         if (info != null) info.text = data != null ? data.ShortInfo() : "";
         if (count != null) count.text = amount > 1 ? $"x{amount}" : "";
         if (price != null) price.text = cost;

@@ -259,6 +259,8 @@ public class ShopUI : Singleton<ShopUI>
         if (merchant == null) return;
         merchant.Buy(index, player, out string message);
         Say(message);
+        // The item under the mouse has gone or changed: its tooltip goes until the mouse moves onto something again.
+        if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
         ShowDetails(null);
         Refresh();
         KeepSelection();
@@ -271,6 +273,7 @@ public class ShopUI : Singleton<ShopUI>
         if (container == null || slot < 0) return;
         merchant.Sell(player, container, slot, out string message);
         Say(message);
+        if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
         ShowDetails(container.ItemAt(slot), false);
         Refresh();
     }

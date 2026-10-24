@@ -143,6 +143,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     {
         // A paused voice (the pause menu) reads as not playing, but is stopped all the same.
         if (voiceSource != null && (voiceSource.isPlaying || voicePaused) && voiceSource.clip == voiceClip) voiceSource.Stop();
+        if (voiceSource != null && AudioManager.HasInstance) AudioManager.Instance.Hold(voiceSource, false);
         voiceSource = null; voiceClip = null;
         if (AudioManager.HasInstance) AudioManager.Instance.StopMumble();
     }
@@ -205,6 +206,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
         // A mumble is only sound under the line: it stops rather than waits (its syllables run on real time).
         if (pause && AudioManager.HasInstance) AudioManager.Instance.StopMumble();
         if (voiceSource == null || voiceSource.clip != voiceClip) return;
+        // Held while paused, so the pool doesn't hand the paused voice's source to another sound.
+        if (AudioManager.HasInstance) AudioManager.Instance.Hold(voiceSource, pause);
         if (pause) voiceSource.Pause(); else voiceSource.UnPause();
     }
 

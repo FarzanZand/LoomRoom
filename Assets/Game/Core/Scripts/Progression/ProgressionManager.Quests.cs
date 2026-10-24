@@ -23,6 +23,9 @@ public partial class ProgressionManager
     public const string InventoryOpenedFlag = "story.inventoryOpened";
     // Quests the log shows only while the table player is in a dungeon (the shield bash guide, the deflect).
     public static bool DungeonOnly(string id) => id == ShieldBashQuest || id == DeflectQuest;
+    // Quests done in the room (the sheet, the trophy wall, the table, the symbol puzzle): the log leaves them out while
+    // the table player is in a dungeon, where they can't be done.
+    public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == TileQuest;
 
     [FoldoutGroup("Quests"), ListDrawerSettings(ShowFoldout = true)]
     public List<Quest> quests = BuiltInQuests();

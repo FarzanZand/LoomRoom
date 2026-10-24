@@ -83,7 +83,7 @@ public class QuestLogUI : MonoBehaviour
         {
             if (q == null || string.IsNullOrEmpty(q.id)) continue;
             int state = progression.QuestState(q.id);
-            bool show = (state == 1 || doneAt.ContainsKey(q.id)) && (!ProgressionManager.DungeonOnly(q.id) || InDungeon);
+            bool show = (state == 1 || doneAt.ContainsKey(q.id)) && (!ProgressionManager.DungeonOnly(q.id) || InDungeon) && !(ProgressionManager.RoomOnly(q.id) && InDungeon);
             if (!show) { if (rows.TryGetValue(q.id, out var gone)) { Destroy(gone.gameObject); rows.Remove(q.id); poppedAt.Remove(q.id); } continue; }
             if (!rows.TryGetValue(q.id, out var row))
             {

@@ -86,7 +86,7 @@ public class CampaignManager : Singleton<CampaignManager>
 
     [TabGroup("UI"), Tooltip("The hover card and the hint line (HUD canvas).")] public CampaignCardUI card;
     [TabGroup("UI"), Tooltip("Choosing a hero when the figure is clicked (HUD canvas). Empty: the class figures come out over the map.")] public CampaignHeroSelectUI heroSelect;
-    [TabGroup("UI"), Tooltip("Said the first time the map is seen (flag campaign.seen).")] public DungeonMaster.Line firstLookLine = new() { text = "This is the realm. Start close to home.", inPerson = true };
+    [TabGroup("UI"), Tooltip("Said the first time the map is seen (flag campaign.seen).")] public DungeonMaster.Line firstLookLine = new() { text = "This is the realm. Start with the Crypt.", inPerson = true };
     string Hint => DebugMenuOn ? hint + "  Right-click a place: debug." : hint;
     [TabGroup("UI")] public string hint = "Click a place to travel there.  Click your figure to change class.  Esc to step back.";
 
@@ -200,7 +200,8 @@ public class CampaignManager : Singleton<CampaignManager>
 
     // The map view stopped from outside (its table switched off mid-view: a coroutine's finally doesn't run then):
     // nothing it set is left behind.
-    void OnDisable() { popping = false; AbortMapView(); }
+    // Switched off mid-way (the table off, an error), nothing may stay busy: a later Choose waits on these.
+    void OnDisable() { popping = false; revealing = false; rising = false; AbortMapView(); }
 
     // Ends a map view whose coroutine was stopped from outside (the table switched off, or an error in it): the cancel
     // handler, the lifted place, the hint and the question go.
@@ -1023,6 +1024,7 @@ public class CampaignManager : Singleton<CampaignManager>
         box.size = Vector3.Scale(figure.transform.InverseTransformVector(bounds.size), new Vector3(1.6f, 1.2f, 1.6f));
         box.size = new Vector3(Mathf.Abs(box.size.x), Mathf.Abs(box.size.y), Mathf.Abs(box.size.z));
         figureCollider = box;
+        LightingManager.LightAsRoom(figure);
         if (pop) StartCoroutine(Pop(figure.transform));
     }
 
@@ -1203,6 +1205,7 @@ public class CampaignManager : Singleton<CampaignManager>
         var flag = Resources.Load<GameObject>("Campaign run marker");
         if (flag == null) return;
         marker = Instantiate(flag, point.transform);
+        LightingManager.LightAsRoom(marker);
         // Over the place's tallest prop (a tower would swallow it at a fixed height).
         float top = point.radius * 1.4f;
         foreach (var r in point.GetComponentsInChildren<Renderer>())

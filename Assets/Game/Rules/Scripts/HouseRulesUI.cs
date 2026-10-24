@@ -20,6 +20,14 @@ public class HouseRulesUI : MonoBehaviour
     }
     void Start() { if (InputManager.HasInstance) InputManager.Instance.CancelPressed += Close; }
     void OnDestroy() { if (InputManager.HasInstance) InputManager.Instance.CancelPressed -= Close; }
+    // Switched off while open (a scene unload): its Menu state is popped, or the game would stay in a menu with nothing shown.
+    // (Objects can't be switched off while this one is being switched off, so only the state is let go.)
+    void OnDisable()
+    {
+        if (!open) return;
+        open = false;
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
+    }
 
     public void Open()
     {

@@ -693,13 +693,22 @@ public partial class DungeonGenerator : MonoBehaviour
 
     // The starting room's chest: one piece of gear, the level's potion and its other starting items, always
     // (DungeonContainer.startingKit).
+    // The cell is the room's or within reach cells of one of its cells.
+    bool NearRoom(Vector2Int cell,int room,int reach)
+    {
+        for(int dx=-reach;dx<=reach;dx++)for(int dy=-reach;dy<=reach;dy++)
+            if(Layout.RoomAt(new Vector2Int(cell.x+dx,cell.y+dy))==room)return true;
+        return false;
+    }
+
     void StockStartingChest()
     {
         foreach(var chest in GetComponentsInChildren<DungeonContainer>(true))
         {
             if(chest==null || !chest.chest)continue;
             // A level with Starting Chest off (the Arena) has no chest in its first room, whatever built it.
-            if(!data.startingChest && !data.pocket && Layout!=null && Layout.RoomAt(CellOf(chest.transform.position))==0){DestroyImmediate(chest.gameObject);continue;}
+            // A chest can stand on a cell no room owns (an edge or a doorway cell), so "in it" means room 0's cells or next to them.
+            if(!data.startingChest && !data.pocket && Layout!=null && NearRoom(CellOf(chest.transform.position),0,2)){DestroyImmediate(chest.gameObject);continue;}
             if(!InStartingRoom(chest.transform.position))continue;
             // Only the run's first floor has it; the starting room on a new biome's first floor is bare.
             if(FloorNumber>1){DestroyImmediate(chest.gameObject);continue;}
