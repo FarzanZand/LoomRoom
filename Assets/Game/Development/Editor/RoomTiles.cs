@@ -125,7 +125,9 @@ public static class RoomTiles
                 tile[f] = (Tile)best;
                 // Box sides are often folded a few degrees corner to corner: a normal close to a world axis is
                 // snapped to it, so the whole side lights as one.
-                var wn = rot * sum[FindF(f)].normalized; var aw = new Vector3(Mathf.Abs(wn.x), Mathf.Abs(wn.y), Mathf.Abs(wn.z));
+                // A face of only sliver triangles sums to nothing: a zero normal shades to NaN (a white bloom ball in the Scene view).
+                var sn = sum[FindF(f)]; if (sn.sqrMagnitude < 1e-12f) sn = n[t[f * 3]] + n[t[f * 3 + 1]] + n[t[f * 3 + 2]]; if (sn.sqrMagnitude < 1e-12f) sn = Vector3.up;
+                var wn = rot * sn.normalized; var aw = new Vector3(Mathf.Abs(wn.x), Mathf.Abs(wn.y), Mathf.Abs(wn.z));
                 float most = Mathf.Max(aw.x, Mathf.Max(aw.y, aw.z));
                 if (most > .9f) wn = aw.x == most ? new Vector3(Mathf.Sign(wn.x), 0, 0) : aw.y == most ? new Vector3(0, Mathf.Sign(wn.y), 0) : new Vector3(0, 0, Mathf.Sign(wn.z));
                 faceNormal[f] = (Quaternion.Inverse(rot) * wn).normalized;
