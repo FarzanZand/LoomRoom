@@ -7,6 +7,8 @@ if (UnityEngine.Application.isPlaying) return "stop Play first";
 const string Bed = "World/Apartment/Main Bedroom";
 var log = new System.Text.StringBuilder();
 var fur = UnityEngine.GameObject.Find(Bed + "/Furnishings").transform;
+// the night light and its glow hang in the mood's lantern: back to the old lamp first, or rebuilding would destroy them
+foreach (var ln in new[] { "Night light", "Night lamp glow" }) { var t = fur.Find($"Mood/Globe lantern/{ln}"); if (t) t.SetParent(fur.Find("Night lamp"), true); }
 var old = fur.Find("Mood"); if (old) UnityEngine.Object.DestroyImmediate(old.gameObject);
 var root = new UnityEngine.GameObject("Mood").transform; root.SetParent(fur, false);
 string dir = "Assets/Game/World/Art/Mood"; System.IO.Directory.CreateDirectory(dir + "/Meshes");
@@ -135,10 +137,12 @@ foreach (var r in lantern.GetComponentsInChildren<UnityEngine.MeshRenderer>())
 var lb = lantern.GetComponentInChildren<UnityEngine.Renderer>().bounds; foreach (var r in lantern.GetComponentsInChildren<UnityEngine.Renderer>()) lb.Encapsulate(r.bounds);
 float lanternTop = lb.max.y;
 var susp = lamp.Find("Pendant suspension");
-if (susp) { susp.GetComponent<UnityEngine.MeshRenderer>().enabled = false; Box("Lantern rod", root, new UnityEngine.Vector3(C.x, (73f + lanternTop) * .5f, C.z), new UnityEngine.Vector3(.4f, 73f - lanternTop, .4f), susp.GetComponent<UnityEngine.MeshRenderer>().sharedMaterial); }
+if (susp) { susp.GetComponent<UnityEngine.MeshRenderer>().enabled = false; Box("Lantern rod", lantern.transform, new UnityEngine.Vector3(C.x, (73f + lanternTop) * .5f, C.z), new UnityEngine.Vector3(.4f, 73f - lanternTop, .4f), susp.GetComponent<UnityEngine.MeshRenderer>().sharedMaterial); }
 // the night light (the spot onto the table) inside the globe, softer, and the glow that lights the ceiling round it stronger
 var nl = lamp.Find("Night light"); if (nl) nl.position = new UnityEngine.Vector3(C.x, LanternY - 2f, C.z);
 var glow = lamp.Find("Night lamp glow"); if (glow) { glow.position = new UnityEngine.Vector3(C.x, LanternY, C.z); var gl = glow.GetComponent<UnityEngine.Light>(); gl.range = 130f; }
+// a light belongs to its fixture: both lights hang in the lantern, so moving the lantern moves them (the rod too)
+if (nl) nl.SetParent(lantern.transform, true); if (glow) glow.SetParent(lantern.transform, true);
 var lmgr = UnityEngine.Object.FindAnyObjectByType<LightingManager>(); lmgr.nightLightIntensity = 6500f; UnityEditor.EditorUtility.SetDirty(lmgr);
 log.Append($"globe lantern {lb.size.y:F1} tall, top {lanternTop:F1}; ");
 
