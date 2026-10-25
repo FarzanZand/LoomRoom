@@ -12,8 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d1071685ae8439ca78a98c290a18326, type: 3}
   m_Name: Table Spotlight
   m_EditorClassIdentifier: Assembly-CSharp::SceneMood
-  tableLightingOnly: 0
-  tableLightMultiplier: 1.4
   overrideLightGroups: 1
   tableBrightness: 1.4
   tableTint: {r: 1, g: 0.87, b: 0.68, a: 1}

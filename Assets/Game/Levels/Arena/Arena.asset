@@ -115,7 +115,7 @@ MonoBehaviour:
     chance: 0.6
     rooms: 62
   destructibles: []
-  lighting: 1
+  lighting: 2
   litThroughout: 0
   lightBoard: 0
   roomTemplates: []
@@ -242,7 +242,7 @@ MonoBehaviour:
   boardTileTaps: []
   boardDoorPosts: []
   boardMoundProps: []
-  boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
+  boardLightColor: {r: 1, g: 1, b: 1, a: 1}
   boardLightIntensity: 1560.0001
 --- !u!114 &11400000
 MonoBehaviour:
@@ -296,7 +296,9 @@ MonoBehaviour:
   fixedSeed: 0
   pocket: 0
   nextFloorMessage: You descend to floor {0}.
-  roomLighting: 1
+  roomLighting: 0
+  roomBrightness: 0.5
+  roomTint: {r: 1, g: 1, b: 1, a: 1}
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   layoutMode: 2
   width: 17
