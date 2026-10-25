@@ -148,6 +148,8 @@ public static class AssetStudioCatalog
             if (path.Contains("/Items/Prefabs/") || path.Contains("/Combat/Spells/") && go.GetComponentInChildren<ParticleSystem>() == null) return null;   // shown through their item or spell
             if (go.GetComponentInChildren<ParticleSystem>(true) != null && (path.Contains("/Combat/") || path.Contains("/Effects/") || path.Contains("/Spells/")))
                 return Add(C("VFX"), guid, path, "Effect", Folder(path));
+            // The realm map, so its ground, bases, road and props can be painted in the turntable like any prop.
+            if (go.GetComponent<CampaignMap>() != null) return Add(C("Props"), guid, path, "Campaign map", Folder(path));
             if ((path.Contains("/Prefabs/") || path.Contains("/Props/")) && (path.StartsWith(Root + "/Levels/") || path.StartsWith(Root + "/World/") || path.StartsWith(Root + "/Progression/")))
                 return Add(C("Props"), guid, path, "Prop", Folder(path));
             return null;

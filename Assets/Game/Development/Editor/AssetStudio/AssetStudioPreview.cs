@@ -95,6 +95,8 @@ public class AssetStudioPreview : IDisposable
         instance = UnityEngine.Object.Instantiate(prefab);
         instance.hideFlags = HideFlags.HideAndDontSave;
         foreach (var mb in instance.GetComponentsInChildren<MonoBehaviour>(true)) if (mb != null) mb.enabled = false;
+        // The realm map's mist hazes over the land being painted: the preview shows the map without it.
+        if (instance.GetComponent<CampaignMap>() != null && instance.transform.Find("Mist") is Transform mist) mist.gameObject.SetActive(false);
         util.AddSingleGO(instance);
         particles = instance.GetComponentsInChildren<ParticleSystem>(true);
         vfxLength = particles.Length > 0 ? Mathf.Clamp(particles.Max(p => p.main.duration + p.main.startLifetime.constantMax), .5f, 12f) : 0f;
