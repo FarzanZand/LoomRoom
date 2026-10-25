@@ -147,12 +147,12 @@ log.Append($"globe lantern {lb.size.y:F1} tall, top {lanternTop:F1}; ");
 var mapRoot = tm.transform.Find("Campaign map");
 var mistSrc = LoadMat("Assets/Game/UI/Main Menu/Fog/Fog low.mat");
 var mistParent = new UnityEngine.GameObject("Map mist").transform; mistParent.SetParent(mapRoot ? mapRoot : root, false); mistParent.position = new UnityEngine.Vector3(C.x, ty, C.z);
-foreach (var (h, a, sc) in new[] { (1.0f, .5f, 1f), (2.2f, .5f, 1.08f), (3.6f, .45f, 1f), (5.4f, .4f, .95f), (7.6f, .26f, .88f), (10.5f, .14f, .8f) })
+foreach (var (h, a, sc) in new[] { (1.4f, .55f, 1f), (3.2f, .45f, 1.06f), (5.6f, .32f, .95f), (8.6f, .18f, .85f) })
 {
   string mp = $"{dir}/Map mist {h:0.#}.mat"; var mm = LoadMat(mp);
   if (!mm) { mm = new UnityEngine.Material(mistSrc); UnityEditor.AssetDatabase.CreateAsset(mm, mp); }
-  mm.CopyPropertiesFromMaterial(mistSrc); mm.SetColor("_Color", new UnityEngine.Color(.95f, .95f, .97f, a)); mm.SetFloat("_TopFade", 0f); mm.SetVector("_EdgeFade", new UnityEngine.Vector4(.16f, .16f, 0, 0));
-  mm.SetVector("_Scale", new UnityEngine.Vector4(3.2f * sc, 2.4f * sc, 0, 0)); mm.SetVector("_Drift", new UnityEngine.Vector4(.008f, .003f, 0, 0)); mm.SetFloat("_DepthFade", 1.2f); mm.SetFloat("_Threshold", .3f); mm.SetFloat("_Density", 2f); UnityEditor.EditorUtility.SetDirty(mm);
+  mm.CopyPropertiesFromMaterial(mistSrc); mm.SetColor("_Color", new UnityEngine.Color(.9f, .91f, .93f, a)); mm.SetFloat("_TopFade", 0f);
+  mm.SetVector("_Scale", new UnityEngine.Vector4(1.7f * sc, 1.3f * sc, 0, 0)); mm.SetVector("_Drift", new UnityEngine.Vector4(.008f, .003f, 0, 0)); mm.SetFloat("_DepthFade", 3f); mm.SetFloat("_Threshold", .22f); mm.SetFloat("_Softness", .85f); mm.SetFloat("_Density", 2.2f); mm.SetVector("_EdgeFade", new UnityEngine.Vector4(.3f, .3f, 0, 0)); UnityEditor.EditorUtility.SetDirty(mm);
   var go = new UnityEngine.GameObject($"Mist {h:0.#}"); go.transform.SetParent(mistParent, false); go.transform.position = new UnityEngine.Vector3(C.x, ty + h, C.z);
   go.transform.rotation = UnityEngine.Quaternion.Euler(90, 0, 0); go.transform.localScale = new UnityEngine.Vector3(2 * hx * sc, 2 * hz * sc, 1);
   go.AddComponent<UnityEngine.MeshFilter>().sharedMesh = quad; var r = go.AddComponent<UnityEngine.MeshRenderer>(); r.sharedMaterial = mm; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -240,6 +240,62 @@ for (int k = 0; k < 4; k++) Prop("Rug", rugs, "Props/SM_Prop_Rug_02/SM_Prop_Rug_
 // (the bookcase that stood by the hobby table stays switched off: by the window it would stand in the memorial table)
 var library = fur.Find("Reading Corner and Lighting/Campaign library"); var framed = fur.Find("Reading Corner and Lighting/Framed abstract - 1");
 if (library && library.gameObject.activeSelf) { library.gameObject.SetActive(false); if (framed) framed.gameObject.SetActive(true); }
+// dark wood panelling to dado height on the bare walls (the trophy wall has its own), and a rail along its top
+var panels = new UnityEngine.GameObject("Wall panelling").transform; panels.SetParent(roomPart, false);
+const float PanH = 22f, PanT = 2.2f;
+void PanelX(float x0, float x1, float zFace, float dir)   // along a north or south wall; dir: +1 the room is at larger z
+{ float zc = zFace + dir * PanT * .5f; Box("Panel", panels, new UnityEngine.Vector3((x0 + x1) * .5f, 1f + PanH * .5f, zc), new UnityEngine.Vector3(x1 - x0, PanH, PanT), wood);
+  Box("Dado rail", panels, new UnityEngine.Vector3((x0 + x1) * .5f, 1f + PanH + .7f, zFace + dir * (PanT + .6f) * .5f), new UnityEngine.Vector3(x1 - x0, 1.4f, PanT + .6f), wood); }
+void PanelZ(float z0, float z1, float xFace, float dir)   // along an east or west wall; dir: +1 the room is at larger x
+{ float xc = xFace + dir * PanT * .5f; Box("Panel", panels, new UnityEngine.Vector3(xc, 1f + PanH * .5f, (z0 + z1) * .5f), new UnityEngine.Vector3(PanT, PanH, z1 - z0), wood, true);
+  Box("Dado rail", panels, new UnityEngine.Vector3(xFace + dir * (PanT + .6f) * .5f, 1f + PanH + .7f, (z0 + z1) * .5f), new UnityEngine.Vector3(PanT + .6f, 1.4f, z1 - z0), wood, true); }
+PanelX(-472f, -268f, 525f, -1f);                 // north wall
+PanelZ(274f, 306f, -472f, 1f); PanelZ(334f, 525f, -472f, 1f);   // west wall, either side of the hall doorway
+PanelZ(274f, 306f, -268f, -1f);                  // east wall south of its door (the painting and the window take the rest)
+
+// a writing desk against the west wall with maps pinned over it, a lantern, candles and an open book (the photo's
+// desk), and the chair drawn up to it
+var desk = new UnityEngine.GameObject("Writing desk").transform; desk.SetParent(roomPart, false);
+const float DeskZ = 440f, DeskTop = 16f, DeskW = 32f, DeskD = 13f; float deskX = -472f + PanT + DeskD * .5f;
+Box("Desk top", desk, new UnityEngine.Vector3(deskX, DeskTop - .7f, DeskZ), new UnityEngine.Vector3(DeskD, 1.4f, DeskW), wood, true);
+foreach (var (dx, dz) in new[] { (-1f, -1f), (1f, -1f), (-1f, 1f), (1f, 1f) }) Box("Desk leg", desk, new UnityEngine.Vector3(deskX + dx * (DeskD * .5f - 1.2f), (DeskTop - 1.4f) * .5f, DeskZ + dz * (DeskW * .5f - 1.2f)), new UnityEngine.Vector3(2f, DeskTop - 1.4f, 2f), wood);
+Box("Desk apron", desk, new UnityEngine.Vector3(deskX, DeskTop - 2.6f, DeskZ), new UnityEngine.Vector3(DeskD - 1f, 2.4f, DeskW - 1f), wood, true);
+var deskLantern = Prop("Lantern", desk, "Props/SM_Prop_Lantern_01/SM_Prop_Lantern_01", new UnityEngine.Vector3(deskX - 1f, DeskTop, DeskZ - 11f), 20f, 17.7f);
+var dl = PointLight("Lantern light", deskLantern.transform, deskLantern.transform.position + UnityEngine.Vector3.up * 6f, new UnityEngine.Color(1f, .64f, .32f), 40f, 40f); newLights.Add(dl);
+Prop("Open book", desk, "Room/SM_Prop_BookOpen_01/SM_Prop_BookOpen_01 painted", new UnityEngine.Vector3(deskX + 1f, DeskTop, DeskZ + 1f), 75f, 19.94f);
+Prop("Books", desk, "Room/SM_Prop_Book_Group_01/SM_Prop_Book_Group_01 painted", new UnityEngine.Vector3(deskX - 2f, DeskTop, DeskZ + 11f), 90f, 20.04f);
+var dc = (UnityEngine.GameObject)UnityEngine.Object.Instantiate(clusterPf, desk); dc.name = "Candles"; dc.transform.position = new UnityEngine.Vector3(deskX + 2f, DeskTop, DeskZ + 6f); dc.transform.localScale = UnityEngine.Vector3.one * 20f;
+{ var drop3 = new System.Collections.Generic.List<UnityEngine.GameObject>(); foreach (UnityEngine.Transform c in dc.transform) { var mf2 = c.GetComponent<UnityEngine.MeshFilter>(); if (mf2 && mf2.sharedMesh.name.Contains("Candle_03")) drop3.Add(c.gameObject); }
+  foreach (var d in drop3) UnityEngine.Object.DestroyImmediate(d); foreach (UnityEngine.Transform c in dc.transform) if (c.GetComponent<UnityEngine.MeshRenderer>()) c.localScale = UnityEngine.Vector3.one;
+  var dcl = dc.GetComponentInChildren<UnityEngine.Light>(); if (dcl) { dcl.range = 30f; dcl.intensity = 20f; dcl.shadows = UnityEngine.LightShadows.None; newLights.Add(dcl); } }
+// a board of pinned maps over the desk
+float boardX = -472f + PanT * .5f + .3f;
+Box("Map board", desk, new UnityEngine.Vector3(-472f + .6f, 38f, DeskZ), new UnityEngine.Vector3(1.2f, 22f, 38f), wood, true);
+foreach (var (y, z, rot) in new[] { (42f, DeskZ - 9f, 2f), (35f, DeskZ + 8f, -4f), (44f, DeskZ + 10f, 6f), (33f, DeskZ - 10f, -3f) })
+{ var mp = Prop("Pinned map", desk, "Room/SM_Prop_Map_01/SM_Prop_Map_01", new UnityEngine.Vector3(-472f + 1.35f, y, z), 0, 14.17f);
+  mp.transform.rotation = UnityEngine.Quaternion.Euler(0, 0, -90) * UnityEngine.Quaternion.Euler(0, 90 + rot, 0); mp.transform.localScale = UnityEngine.Vector3.one * (z > DeskZ ? 11f : 14.17f); }
+var chair = fur.Find("SM_Prop_Chair_Wood_03"); if (chair) { chair.position = new UnityEngine.Vector3(deskX + 11f, chair.position.y, DeskZ - 2f); chair.rotation = UnityEngine.Quaternion.Euler(0, -90, 0); }
+// the standing reading lamp by the bed goes (the photo has no floor lamps; the bookcase stands there now)
+var readLamp = fur.Find("Reading Corner and Lighting/Hobby reading lamp"); if (readLamp) readLamp.gameObject.SetActive(false);
+// a bookcase against the north wall between the bedside table and the memorial table
+var shelf = Prop("Bookcase", roomPart, "Props/SM_Prop_Bookshelf_01/SM_Prop_Bookshelf_01 painted", UnityEngine.Vector3.zero, 180f, 16f);
+{ var sb = shelf.GetComponent<UnityEngine.Renderer>().bounds; shelf.transform.position += new UnityEngine.Vector3(-385.5f - sb.center.x, 1f - sb.min.y, 525f - PanT - .2f - sb.max.z); }
+// books on its shelves (boards at .22, .76, 1.26, 1.76 and 2.26 of the mesh's height units, x16) and a candle on one
+{ var sb = shelf.GetComponent<UnityEngine.Renderer>().bounds; var rngB = new System.Random(3); float baseY = sb.min.y;
+  foreach (var (board, k) in new[] { (.22f, 0), (.76f, 1), (1.26f, 2), (1.76f, 3) })
+  {
+    float y = baseY + board * 16f + .05f;
+    foreach (var side in new[] { -1f, 1f })
+    {
+      if (k == 3 && side > 0) continue;   // the candle stands there
+      float x = sb.center.x + side * (3.6f + (float)rngB.NextDouble() * 1.4f);
+      Prop("Books", shelf.transform.parent, "Room/SM_Prop_Book_Group_01/SM_Prop_Book_Group_01 painted", new UnityEngine.Vector3(x, y, sb.center.z + .4f), 180f + (float)rngB.NextDouble() * 10f - 5f, 20.04f);
+    }
+  }
+  var sc = (UnityEngine.GameObject)UnityEngine.Object.Instantiate(clusterPf, shelf.transform.parent); sc.name = "Shelf candles"; sc.transform.position = new UnityEngine.Vector3(sb.center.x + 4.5f, baseY + 1.76f * 16f + .05f, sb.center.z); sc.transform.localScale = UnityEngine.Vector3.one * 20f;
+  var drop4 = new System.Collections.Generic.List<UnityEngine.GameObject>(); foreach (UnityEngine.Transform c in sc.transform) { var mf2 = c.GetComponent<UnityEngine.MeshFilter>(); if (mf2 && mf2.sharedMesh.name.Contains("Candle_03")) drop4.Add(c.gameObject); }
+  foreach (var d in drop4) UnityEngine.Object.DestroyImmediate(d); foreach (UnityEngine.Transform c in sc.transform) if (c.GetComponent<UnityEngine.MeshRenderer>()) c.localScale = UnityEngine.Vector3.one;
+  var scl = sc.GetComponentInChildren<UnityEngine.Light>(); if (scl) { scl.range = 30f; scl.intensity = 22f; scl.shadows = UnityEngine.LightShadows.None; newLights.Add(scl); } }
 // the room's own lamps much dimmer: the light comes from the lantern, the candles and the window
 var lm = UnityEngine.Object.FindAnyObjectByType<LightingManager>(); var bedT = UnityEngine.GameObject.Find(Bed).transform;
 var dim = new System.Collections.Generic.Dictionary<string, float> { { "Hobby reading pool", 110f }, { "Bedside amber pool", 55f }, { "Bed warm fill", 35f }, { "Bedroom daylight", 0f }, { "Reading amber pool", 60f }, { "Fill -40", 160f }, { "Fill 40", 160f }, { "Night lamp glow", 900f } };
@@ -252,7 +308,7 @@ foreach (var src in lm.sceneSources)
   list.Add(src);
 }
 foreach (var l in newLights) list.Add(new LightingManager.Source { light = l, baseIntensity = l.intensity, baseColor = l.color });
-lm.sceneSources = list.ToArray(); lm.roomAmbient = .55f; UnityEditor.EditorUtility.SetDirty(lm);
+lm.sceneSources = list.ToArray(); lm.roomAmbient = .65f; UnityEditor.EditorUtility.SetDirty(lm);
 log.Append($"room: walls, beams, window, {newLights.Count} lights registered; ");
 UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(fur.gameObject.scene); UnityEditor.AssetDatabase.SaveAssets();
 return log.ToString();
