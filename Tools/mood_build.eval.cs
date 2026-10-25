@@ -70,7 +70,10 @@ UnityEngine.Light PointLight(string name, UnityEngine.Transform parent, UnityEng
 // ── The table ─────────────────────────────────────────────────────────
 var tm = TableManager.Instance; var top = tm.GetComponent<UnityEngine.BoxCollider>().bounds; var C = top.center; float hx = top.extents.x, hz = top.extents.z, ty = top.max.y;
 var dressing = fur.Find("Game table dressing");
-foreach (UnityEngine.Transform c in dressing) if (c.name.StartsWith("Table leg") || c.name == "Table apron" || c.name == "Table rim") c.gameObject.SetActive(false);
+// the plain table's legs, apron and rim under one "Simple table" object (TableManager > Table Look picks which shows)
+var simple = dressing.Find("Simple table"); if (!simple) { simple = new UnityEngine.GameObject("Simple table").transform; simple.SetParent(dressing, false); }
+var parts = new System.Collections.Generic.List<UnityEngine.Transform>(); foreach (UnityEngine.Transform c in dressing) if (c.name.StartsWith("Table leg") || c.name == "Table apron" || c.name == "Table rim") parts.Add(c);
+foreach (var c in parts) { c.SetParent(simple, true); c.gameObject.SetActive(true); }
 var woodSrc = LoadMat("Assets/Game/World/Art/Bedroom/Bedroom table wood.mat");
 // the war table's own darker stain: the tabletop's planks (same texture and tiling, so the same texel size), darker
 var wood = LoadMat($"{dir}/War table wood.mat"); if (!wood) { wood = new UnityEngine.Material(woodSrc); UnityEditor.AssetDatabase.CreateAsset(wood, $"{dir}/War table wood.mat"); }
@@ -301,5 +304,7 @@ foreach (var src in lm.sceneSources)
 foreach (var l in newLights) list.Add(new LightingManager.Source { light = l, baseIntensity = l.intensity, baseColor = l.color });
 lm.sceneSources = list.ToArray(); lm.roomAmbient = .65f; UnityEditor.EditorUtility.SetDirty(lm);
 log.Append($"room: walls, beams, window, {newLights.Count} lights registered; ");
+// the two table looks on the TableManager
+{ var so = new UnityEditor.SerializedObject(tm); so.FindProperty("simpleTable").objectReferenceValue = simple.gameObject; so.FindProperty("borderedTable").objectReferenceValue = table.gameObject; so.ApplyModifiedPropertiesWithoutUndo(); tm.ApplyLook(); log.Append($"table look {tm.Look}; "); }
 UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(fur.gameObject.scene); UnityEditor.AssetDatabase.SaveAssets();
 return log.ToString();
