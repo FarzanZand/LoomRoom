@@ -91,7 +91,20 @@ public class DungeonMaster : Singleton<DungeonMaster>
         if (label != null) label.text = "";
     }
 
-    void OnValidate() { if (label != null) ApplyStyle(); }
+    // Applied a frame later: Unity doesn't allow changing a RectTransform inside OnValidate (it warned "SendMessage cannot
+    // be called during Awake, CheckConsistency, or OnValidate" on every change).
+    void OnValidate()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.delayCall += () =>
+        {
+            if (this == null || label == null) return;
+            ApplyStyle();
+            // A change to TikTok mode in Play reaches an open conversation's panels too.
+            if (Application.isPlaying && PixelCrushers.DialogueSystem.DialogueManager.isConversationActive) FitConversation();
+        };
+#endif
+    }
 
     // Layout and look come from here so the placement switch is one field.
     void ApplyStyle()
@@ -102,7 +115,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
         r.anchoredPosition = middle ? new Vector2(0, 250) : new Vector2(40, 300);
         r.sizeDelta = new Vector2(tiktokMode ? tiktokWidth : middle ? 1200 : 900, tiktokMode ? 400 : 200);
         label.alignment = middle ? TextAlignmentOptions.Bottom : TextAlignmentOptions.BottomLeft;
-        if (Application.isPlaying) FitConversation();
+        // (The conversation's panels are fitted as each conversation starts, DialogueBridge: asking for the dialogue UI
+        // here, in Awake, made the Dialogue System build it then, and every SetParent in it warned.)
         label.fontSize = fontSize;
         label.color = Color.white;
         label.textWrappingMode = TextWrappingModes.Normal;
@@ -230,7 +244,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     // Shows the line and starts its voice or mumble. Returns the seconds of speech.
     float Speak(Line line)
     {
-        float typing = Show($"\"{line.text.Trim()}\"", standardColor, true);
+        float typing = Show(line.text.Trim(), standardColor, true);
         Spoke?.Invoke(line);
         float speaking = .5f;
         if (AudioManager.HasInstance)
