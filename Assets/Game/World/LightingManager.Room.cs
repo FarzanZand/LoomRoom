@@ -47,6 +47,8 @@ public sealed partial class LightingManager
     float lampBase = -1f, appliedRoomDark = -1f;
     Color appliedTint = Color.white;
     bool lampDriven;
+    // The share of the room's own light left now (1 lit, 0 when Room Lighting is Dark): things that glow by themselves follow it (RoomGlow).
+    public float RoomLightLevel => 1f - RoomDark;
     // How much of the held room light is taken away now (the level's Room Lighting).
     float RoomDark => moodActive ? Mathf.Clamp01(displayedMood.roomDark) : 0f;
     Color RoomTint => moodActive && displayedMood.roomShade.a > 0f ? displayedMood.roomShade : Color.white;

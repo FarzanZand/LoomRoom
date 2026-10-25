@@ -1,3 +1,5 @@
+// WARNING: this rebuilds Furnishings/Mood from scratch, so hand edits made there in the scene are lost. Do not run it
+// again over the user's edits; change the scene directly instead.
 // Mood pass (branch mood, 2026-10-24): the bedroom and the game table dressed toward the user's reference photo (a dark
 // study: a heavy wooden war table with a misty relief map, candles on its corners, a caged lantern hanging over it, cool
 // blue shadows and warm pools of light). Everything built here lives under Furnishings/Mood and is rebuilt on every
@@ -180,35 +182,7 @@ foreach (var z in new[] { 300f, 348f, 445f, 493f })
 Box("Ceiling beam", roomPart, new UnityEngine.Vector3(-370f, 71.5f, 396.5f + 32f), new UnityEngine.Vector3(203f, 3f, 3f), wood);
 Box("Ceiling beam", roomPart, new UnityEngine.Vector3(-370f, 71.5f, 396.5f - 32f), new UnityEngine.Vector3(203f, 3f, 3f), wood);
 
-// the gothic window on the east wall, north of the painting, with moonlight coming in
-var winWood = LoadMat($"{dir}/Window wood 6.4.mat"); if (!winWood) { winWood = new UnityEngine.Material(wood); UnityEditor.AssetDatabase.CreateAsset(winWood, $"{dir}/Window wood 6.4.mat"); }
-winWood.CopyPropertiesFromMaterial(wood); var wtex = wood.GetTexture("_BaseMap"); winWood.SetTextureScale("_BaseMap", UnityEngine.Vector2.one * (6.4f / wtex.width)); UnityEditor.EditorUtility.SetDirty(winWood);
-var night = LoadMat($"{dir}/Night glass Glow.mat"); if (!night) { night = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(night, $"{dir}/Night glass Glow.mat"); }
-night.SetColor("_BaseColor", new UnityEngine.Color(.08f, .12f, .2f)); night.EnableKeyword("_EMISSION"); night.SetColor("_EmissionColor", new UnityEngine.Color(.3f, .45f, .85f)); night.SetFloat("_Smoothness", .7f); night.SetFloat("_Cull", 0); UnityEditor.EditorUtility.SetDirty(night);
-UnityEditor.AssetDatabase.ImportAsset($"{dir}/Gothic window.fbx");
-var winPf = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>($"{dir}/Gothic window.fbx");
-const float WinZ = 471f, WallX = -268.2f;
-var win = (UnityEngine.GameObject)UnityEngine.Object.Instantiate(winPf, roomPart); win.name = "Gothic window";
-win.transform.position = new UnityEngine.Vector3(WallX, 10f, WinZ); win.transform.rotation = UnityEngine.Quaternion.Euler(0, -90, 0);   // z (into the room) turned to -x
-foreach (var r in win.GetComponentsInChildren<UnityEngine.MeshRenderer>()) { r.sharedMaterial = r.name == "Glass" ? night : winWood; if (r.name == "Glass") r.enabled = false; }
-// the night outside: a pixel picture (Tools/night_window.py) cut to the arch, glowing a little, just behind the frame
-string ntp = $"{dir}/Night window.png"; UnityEditor.AssetDatabase.ImportAsset(ntp);
-var nti = (UnityEditor.TextureImporter)UnityEditor.AssetImporter.GetAtPath(ntp);
-if (nti.filterMode != UnityEngine.FilterMode.Point || nti.npotScale != UnityEditor.TextureImporterNPOTScale.None) { nti.filterMode = UnityEngine.FilterMode.Point; nti.npotScale = UnityEditor.TextureImporterNPOTScale.None; nti.mipmapEnabled = false; nti.alphaIsTransparency = true; nti.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed; nti.wrapMode = UnityEngine.TextureWrapMode.Clamp; nti.SaveAndReimport(); }
-var ntex = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(ntp);
-night.SetTexture("_BaseMap", ntex); night.SetColor("_BaseColor", UnityEngine.Color.white); night.SetTexture("_EmissionMap", ntex); night.SetColor("_EmissionColor", UnityEngine.Color.white * 1.1f);
-night.SetFloat("_AlphaClip", 1); night.SetFloat("_Cutoff", .5f); night.EnableKeyword("_ALPHATEST_ON"); night.SetFloat("_Smoothness", 0f); UnityEditor.EditorUtility.SetDirty(night);
-var nq = new UnityEngine.GameObject("Night outside"); nq.transform.SetParent(win.transform, false);
-const float WW = 34f, WH = 56f, WFR = 2.2f; nq.transform.localPosition = new UnityEngine.Vector3(0, WH * .5f, .6f); nq.transform.localRotation = UnityEngine.Quaternion.Euler(0, 180, 0); nq.transform.localScale = new UnityEngine.Vector3(WW - 2 * WFR, WH - 2 * WFR, 1);
-nq.AddComponent<UnityEngine.MeshFilter>().sharedMesh = quad; var nqr = nq.AddComponent<UnityEngine.MeshRenderer>(); nqr.sharedMaterial = night; nqr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-var moonGo = new UnityEngine.GameObject("Moonlight"); moonGo.transform.SetParent(win.transform, false); moonGo.transform.position = new UnityEngine.Vector3(WallX - 5f, 50f, WinZ);
-moonGo.transform.LookAt(new UnityEngine.Vector3(-330f, 0f, 455f));
-var moon = moonGo.AddComponent<UnityEngine.Light>(); moon.type = UnityEngine.LightType.Spot; moon.color = new UnityEngine.Color(.55f, .68f, 1f); moon.intensity = 6000f; moon.range = 170f; moon.spotAngle = 60f; moon.innerSpotAngle = 25f; moon.shadows = UnityEngine.LightShadows.Soft;
-newLights.Add(moon);
-var winGlow = PointLight("Window glow", win.transform, new UnityEngine.Vector3(WallX - 16f, 34f, WinZ), new UnityEngine.Color(.5f, .62f, 1f), 260f, 70f); newLights.Add(winGlow);
-// the wall clock moves off the window's wall, onto the north wall over the wardrobe
-var clock = fur.Find("Wall clock"); if (clock && clock.position.x > -275f) { clock.position = new UnityEngine.Vector3(-292f, 62f, 524.3f); clock.rotation = UnityEngine.Quaternion.Euler(0, -90, 0) * clock.rotation; }
-// (no plants by the window: the painting and the wardrobe stand on either side of it)
+// (the gothic window, its moonlight and the clock's move are gone: the user removed them, 2026-10-25)
 
 // candle groups about the room, each with its own small warm light (as in the photo: on the desk, the shelves, the floor)
 var roomCandles = new UnityEngine.GameObject("Room candles").transform; roomCandles.SetParent(roomPart, false);
@@ -271,25 +245,7 @@ foreach (var (y, z, rot) in new[] { (42f, DeskZ - 9f, 2f), (35f, DeskZ + 8f, -4f
 var chair = fur.Find("SM_Prop_Chair_Wood_03"); if (chair) { chair.position = new UnityEngine.Vector3(deskX + 11f, chair.position.y, DeskZ - 2f); chair.rotation = UnityEngine.Quaternion.Euler(0, -90, 0); }
 // the standing reading lamp by the bed goes (the photo has no floor lamps; the bookcase stands there now)
 var readLamp = fur.Find("Reading Corner and Lighting/Hobby reading lamp"); if (readLamp) readLamp.gameObject.SetActive(false);
-// a bookcase against the north wall between the bedside table and the memorial table
-var shelf = Prop("Bookcase", roomPart, "Props/SM_Prop_Bookshelf_01/SM_Prop_Bookshelf_01 painted", UnityEngine.Vector3.zero, 180f, 16f);
-{ var sb = shelf.GetComponent<UnityEngine.Renderer>().bounds; shelf.transform.position += new UnityEngine.Vector3(-385.5f - sb.center.x, 1f - sb.min.y, 525f - PanT - .2f - sb.max.z); }
-// books on its shelves (boards at .22, .76, 1.26, 1.76 and 2.26 of the mesh's height units, x16) and a candle on one
-{ var sb = shelf.GetComponent<UnityEngine.Renderer>().bounds; var rngB = new System.Random(3); float baseY = sb.min.y;
-  foreach (var (board, k) in new[] { (.22f, 0), (.76f, 1), (1.26f, 2), (1.76f, 3) })
-  {
-    float y = baseY + board * 16f + .05f;
-    foreach (var side in new[] { -1f, 1f })
-    {
-      if (k == 3 && side > 0) continue;   // the candle stands there
-      float x = sb.center.x + side * (3.6f + (float)rngB.NextDouble() * 1.4f);
-      Prop("Books", shelf.transform.parent, "Room/SM_Prop_Book_Group_01/SM_Prop_Book_Group_01 painted", new UnityEngine.Vector3(x, y, sb.center.z + .4f), 180f + (float)rngB.NextDouble() * 10f - 5f, 20.04f);
-    }
-  }
-  var sc = (UnityEngine.GameObject)UnityEngine.Object.Instantiate(clusterPf, shelf.transform.parent); sc.name = "Shelf candles"; sc.transform.position = new UnityEngine.Vector3(sb.center.x + 4.5f, baseY + 1.76f * 16f + .05f, sb.center.z); sc.transform.localScale = UnityEngine.Vector3.one * 20f;
-  var drop4 = new System.Collections.Generic.List<UnityEngine.GameObject>(); foreach (UnityEngine.Transform c in sc.transform) { var mf2 = c.GetComponent<UnityEngine.MeshFilter>(); if (mf2 && mf2.sharedMesh.name.Contains("Candle_03")) drop4.Add(c.gameObject); }
-  foreach (var d in drop4) UnityEngine.Object.DestroyImmediate(d); foreach (UnityEngine.Transform c in sc.transform) if (c.GetComponent<UnityEngine.MeshRenderer>()) c.localScale = UnityEngine.Vector3.one;
-  var scl = sc.GetComponentInChildren<UnityEngine.Light>(); if (scl) { scl.range = 30f; scl.intensity = 22f; scl.shadows = UnityEngine.LightShadows.None; newLights.Add(scl); } }
+// (the bookcase is gone: the user deleted it, 2026-10-25)
 // the room's own lamps much dimmer: the light comes from the lantern, the candles and the window
 var lm = UnityEngine.Object.FindAnyObjectByType<LightingManager>(); var bedT = UnityEngine.GameObject.Find(Bed).transform;
 var dim = new System.Collections.Generic.Dictionary<string, float> { { "Hobby reading pool", 110f }, { "Bedside amber pool", 55f }, { "Bed warm fill", 35f }, { "Bedroom daylight", 0f }, { "Reading amber pool", 60f }, { "Fill -40", 160f }, { "Fill 40", 160f }, { "Night lamp glow", 900f } };

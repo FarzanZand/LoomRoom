@@ -624,7 +624,7 @@ MonoBehaviour:
   - '#############'
   - '#############'
   minimumCells: {x: 6, y: 6}
-  style: {fileID: 11400000, guid: b7beb5b39fafcdb4ba654624e3576450, type: 2}
+  style: {fileID: 11400000, guid: 7cf3e3c7d11010d43a22add44b3c755c, type: 2}
   heightTiles: 0
   openCeiling: 0
   ceilingFrame: 0.35
