@@ -221,7 +221,7 @@ looks wrong, too.
   every build re-apply the holders to the scene and scan the scene for renderers with no mesh. Re-apply must find
   broken copies through their Synty source (`ApplyRoomHolder` does): a copy whose mesh is already missing has no name
   to match, and 47 props were left invisible that way.
-- Lights belong under their prop (lamp, lantern, pendant), so moving the prop moves the light.
+- Lights belong under their prop (lamp, lantern, pendant, candle, window), so moving the prop moves the light. This holds for every prop I make or swap in: a new fixture that replaces an old one takes over its lights and its rod or chain as children (the mood pass's globe lantern left them under the hidden old shade, 2026-10-25), and a builder that rebuilds the prop hands the lights back first so it doesn't destroy them.
 - Lamp glow (emission) is masked by the shade's geometry, never by bright texels (that made the pole glow).
 - Moving parts (clock hands) stay separate objects with their own plain material; the dial is drawn by hand, marks on
   the face, not the frame.

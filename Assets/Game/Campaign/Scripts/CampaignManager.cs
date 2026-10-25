@@ -182,8 +182,15 @@ public class CampaignManager : Singleton<CampaignManager>
         // revealed map and the beaten places are known before anything below reads them.
         var saver = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table)?.GetComponent<AdventureSave>() : null;
         saver?.Initialize();
+        // The toolbar's Room, Dungeon, Debug and Boss starts skip the first morning, so they skip the map's first reveal
+        // too: it counts as done, and the map lies on the table whenever the player is in the room.
+        if (PM != null && (DebugDungeonSession.RoomStart || DebugDungeonSession.Active) && !PM.HasFlag(SeenFlag))
+        {
+            PM.SetFlag(SeenFlag, 1);
+            PM.SetFlag(RevealedFlag, Mathf.Max(1, PM.GetFlag(RevealedFlag)));
+        }
         loader = TableManager.Loader;
-        if (loader != null) { loader.LoadStarted += OnLoadStarted; loader.Returned += OnReturned; }
+        if (loader != null) { loader.LoadStarted += OnLoadStarted; loader.Returned += OnReturned; loader.Leaving += OnLeaving; }
         if (RunManager.HasInstance) { RunManager.Instance.RunEnded += OnRunEnded; RunManager.Instance.RunStarted += GiveGifts; RunManager.Instance.Revived += OnRevived; }
         var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         progress = table != null ? table.GetComponent<AdventurerProgress>() : null;
@@ -234,7 +241,7 @@ public class CampaignManager : Singleton<CampaignManager>
     protected override void OnDestroy()
     {
         base.OnDestroy();
-        if (loader != null) { loader.LoadStarted -= OnLoadStarted; loader.Returned -= OnReturned; }
+        if (loader != null) { loader.LoadStarted -= OnLoadStarted; loader.Returned -= OnReturned; loader.Leaving -= OnLeaving; }
         if (RunManager.HasInstance) { RunManager.Instance.RunEnded -= OnRunEnded; RunManager.Instance.RunStarted -= GiveGifts; RunManager.Instance.Revived -= OnRevived; }
         if (progress != null) progress.Changed -= RememberClass;
     }
@@ -299,6 +306,9 @@ public class CampaignManager : Singleton<CampaignManager>
     // ── The map on and off the table ──
 
     void OnLoadStarted() { if (Map != null && Map.gameObject.activeSelf) StartCoroutine(Sink()); }
+
+    // The flight back to the room has begun and the floor is sinking: the map rises in its place meanwhile.
+    void OnLeaving() { if (Map != null && !Map.gameObject.activeSelf && !rising && MapBelongsOnTableAfterReturn) StartCoroutine(Rise()); }
 
     void OnReturned()
     {
@@ -503,16 +513,26 @@ public class CampaignManager : Singleton<CampaignManager>
         }
     }
 
+    // The map is folding away into the table (a floor waits for it before it is shown).
+    public static bool MapSinking => HasInstance && Instance.sinking;
+    bool sinking;
+
     IEnumerator Sink()
     {
         var t = Map.transform;
+        sinking = true;
         MapLights(false);
         float seconds = riseSeconds * .6f;
         try
         {
-            for (float s = 0; s < seconds; s += Time.deltaTime)
+            // Never ahead of the floor being built under it (TableLevelLoader.BuildProgress): flat just as it is ready.
+            // Never back up either (a floor rejected and built again starts its progress over).
+            float k = 0f;
+            for (float s = 0; ; s += Time.deltaTime)
             {
-                t.localScale = new Vector3(1f, Mathf.Max(.01f, 1f - Mathf.SmoothStep(0, 1, s / seconds)), 1f);
+                k = Mathf.Max(k, Mathf.Min(s / seconds, loader != null ? loader.BuildProgress : 1f));
+                if (k >= 1f) break;
+                t.localScale = new Vector3(1f, Mathf.Max(.01f, 1f - Mathf.SmoothStep(0, 1, k)), 1f);
                 yield return null;
             }
             Map.gameObject.SetActive(false);
@@ -521,6 +541,7 @@ public class CampaignManager : Singleton<CampaignManager>
         {
             if (t != null) t.localScale = Vector3.one;
             MapLights(true);
+            sinking = false;
         }
     }
 
@@ -881,9 +902,13 @@ public class CampaignManager : Singleton<CampaignManager>
                             if (e.pickedLine != null && !e.pickedLine.IsEmpty) DungeonMaster.Say(e.pickedLine);
                             if (card != null) { card.Hide(); card.ShowHint(false); }
                             Unhover();
-                            yield return Walk(e);
+                            // The run starts on the click: the figure is set down there (no walk), and the map sinks
+                            // (OnLoadStarted) while the view's zoom eases back and the floor is built over several frames
+                            // out of sight; the floor is shown once the map is gone (TableLevelLoader, MapSinking).
+                            At = e;
+                            PlaceFigure(e);
                             Current = e;
-                            yield return CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false);
+                            StartCoroutine(CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false));
                             player.Look.HeightOverride = null;
                             if (Coop.Running)
                             {

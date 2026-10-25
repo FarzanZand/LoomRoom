@@ -42,7 +42,7 @@ public partial class AssetStudioWindow : EditorWindow
     static readonly string[] RoomSorts = { "By name", "By where they are" };
     readonly List<string> recent = new();  // last picked, newest first (the Recent list)
     // Which view the window shows, one at a time: a category's list, or one of the views above the categories.
-    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue }
+    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue, Levels }
     [SerializeField] StudioView view;
     // Leaving the Dialogue view writes back what was typed there.
     StudioView studioView { get => view; set { if (value != view) CommitDialogue(true); view = value; } }
@@ -209,15 +209,17 @@ public partial class AssetStudioWindow : EditorWindow
         if (reselect || e == null || selected == null) Select(e); else selected = e;
     }
 
+    // The game's own UI look (StudioSkin): gold PixelOperator titles, off-white text, grey stone rows with a gold edge on
+    // the picked one.
     void Styles()
     {
-        if (titleStyle != null && dimLine != null) return;
-        titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 20 };
-        dim = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true, normal = { textColor = new Color(.66f, .64f, .6f) } };
-        dimLine = new GUIStyle(EditorStyles.miniLabel) { fontSize = dim.fontSize, wordWrap = false, clipping = TextClipping.Clip, normal = { textColor = new Color(.66f, .64f, .6f) } };
-        gold = new GUIStyle(EditorStyles.miniBoldLabel) { normal = { textColor = Gold } };
-        cell = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleLeft, padding = new RectOffset(6, 4, 2, 2), richText = true };
-        cellSelected = new GUIStyle(cell) { normal = { background = Tex(new Color(.91f, .74f, .38f, .22f)), textColor = Color.white } };
+        if (titleStyle != null && dimLine != null && titleStyle.font != null) return;
+        titleStyle = StudioSkin.Title;
+        dim = StudioSkin.Faint;
+        dimLine = StudioSkin.FaintLine;
+        gold = StudioSkin.Section;
+        cell = StudioSkin.Row;
+        cellSelected = StudioSkin.RowOn;
     }
 
     static Texture2D Tex(Color c) { var t = new Texture2D(1, 1) { hideFlags = HideFlags.HideAndDontSave }; t.SetPixel(0, 0, c); t.Apply(); return t; }
@@ -418,12 +420,18 @@ public partial class AssetStudioWindow : EditorWindow
 
     void OnGUI()
     {
+        using (StudioSkin.Use()) DrawWindow();
+    }
+
+    void DrawWindow()
+    {
         Styles();
         if (categories == null) Refresh();
         HandleKeys();
 
         var full = new Rect(0, 0, position.width, position.height);
-        var top = new Rect(Pad, Pad, full.width - Pad * 2, 44);
+        EditorGUI.DrawRect(full, StudioSkin.Back);
+        var top = new Rect(Pad, Pad, full.width - Pad * 2, 52);
         DrawTop(top);
         float y = top.yMax + Pad, h = full.height - y - 26;
         var catRect = new Rect(Pad, y, CategoryWidth, h);
@@ -447,8 +455,8 @@ public partial class AssetStudioWindow : EditorWindow
 
     void DrawTop(Rect r)
     {
-        GUI.Label(new Rect(r.x, r.y - 2, 260, 16), "THE TABLE AWAITS", gold);
-        GUI.Label(new Rect(r.x, r.y + 12, 300, 30), "Asset Studio", titleStyle);
+        GUI.Label(new Rect(r.x, r.y - 4, 260, 20), "THE TABLE AWAITS", gold);
+        GUI.Label(new Rect(r.x, r.y + 12, 340, 40), "Asset Studio", titleStyle);
         float bx = r.xMax;
         Button(ref bx, r, "Export catalog", () =>
         {
@@ -464,7 +472,7 @@ public partial class AssetStudioWindow : EditorWindow
     {
         float w = GUI.skin.button.CalcSize(new GUIContent(label)).x + 24;
         right -= w;
-        if (GUI.Button(new Rect(right, row.y + 4, w, 34), label)) click();
+        if (GUI.Button(new Rect(right, row.y + 8, w, 36), label)) click();
         right -= 6;
     }
 
@@ -480,7 +488,7 @@ public partial class AssetStudioWindow : EditorWindow
         if (only != inGameOnly) { inGameOnly = only; EditorPrefs.SetBool(InGameOnlyKey, only); Filter(); listScroll = Vector2.zero; }
         GUI.Label(new Rect(r.x + 8, r.yMax - 24, r.width - 16, 18), "<color=#6fd46a>✔</color> = used in the game", new GUIStyle(dim) { richText = true });
         r.height -= 50;
-        var view = new Rect(0, 0, r.width - 16, (categories.Count + 5) * 30 + 12);
+        var view = new Rect(0, 0, r.width - 16, (categories.Count + 6) * 30 + 12);
         categoryScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 26, r.width, r.height - 26), categoryScroll, view);
         if (GUI.Toggle(new Rect(4, 2, view.width - 4, 28), showingRecent, $"  Recent   <color=#a9a49a>{recent.Count}</color>", showingRecent ? cellSelected : cell) && !showingRecent)
         { studioView = StudioView.Recent; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null); }
@@ -491,15 +499,17 @@ public partial class AssetStudioWindow : EditorWindow
         if (GUI.Toggle(new Rect(4, 62, view.width - 4, 28), showingAll, $"  Everything   <color=#a9a49a>{total}</color>", showingAll ? cellSelected : cell) && !showingAll)
         { studioView = StudioView.Everything; kindFilter = 0; listScroll = Vector2.zero; Filter(); GUI.FocusControl("search"); }
         // The World: the campaign and the levels as one tree, with New and Tidy (AssetStudioWindow.World).
-        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingWorld, "  World   <color=#a9a49a>campaign & levels</color>", showingWorld ? cellSelected : cell) && !showingWorld) OpenWorld();
+        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingWorld, "  Campaign   <color=#a9a49a>acts, places</color>", showingWorld ? cellSelected : cell) && !showingWorld) OpenWorld();
+        // Levels: one page per level, its run, rooms and look (AssetStudioWindow.Levels).
+        if (GUI.Toggle(new Rect(4, 122, view.width - 4, 28), showingLevels, $"  Levels   <color=#a9a49a>{World.levels.Count(x => !x.tool)}</color>", showingLevels ? cellSelected : cell) && !showingLevels) OpenLevels();
         // Dialogue: every Dungeon Master line, by where it plays (AssetStudioWindow.Dialogue).
-        if (GUI.Toggle(new Rect(4, 122, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
+        if (GUI.Toggle(new Rect(4, 152, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
         for (int i = 0, line = 0; i < categories.Count; i++)
         {
             var c = categories[i];
             if (c.hidden) continue;
-            var row = new Rect(4, 12 + (line++ + 5) * 30, view.width - 4, 28);
-            bool on = !showingRecent && !showingRequests && !showingAll && !showingWorld && !showingDialogue && i == categoryIndex;
+            var row = new Rect(4, 12 + (line++ + 6) * 30, view.width - 4, 28);
+            bool on = studioView == StudioView.Category && i == categoryIndex;
             if (GUI.Toggle(row, on, $"  {c.name}   <color=#a9a49a>{Count(c)}</color>", on ? cellSelected : cell) && !on)
             {
                 studioView = StudioView.Category; categoryIndex = i; kindFilter = 0; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null);
@@ -512,6 +522,7 @@ public partial class AssetStudioWindow : EditorWindow
     {
         if (showingRequests) { DrawRequestList(r); return; }
         if (showingWorld) { DrawWorldTree(r); return; }
+        if (showingLevels) { DrawLevelList(r); return; }
         GUI.Box(r, GUIContent.none);
         GUI.SetNextControlName("search");
         string s = EditorGUI.TextField(new Rect(r.x + 6, r.y + 6, r.width - 12, 22), search, EditorStyles.toolbarSearchField);
@@ -532,11 +543,11 @@ public partial class AssetStudioWindow : EditorWindow
                 int sort = EditorGUI.Popup(new Rect(r.x + 10 + kindWidth, r.y + 32, kindWidth, 20), roomSort, RoomSorts);
                 if (sort != roomSort) { roomSort = sort; Filter(); listScroll = Vector2.zero; }
             }
-            if (showingAll) GUI.Label(new Rect(r.x + 8, r.y + 54, r.width - 16, 28), "The whole library: type to search names, IDs, paths and kinds in every category.", dim);
-            else if (categories.Count > 0) GUI.Label(new Rect(r.x + 8, r.y + 54, r.width - 16, 28), categories[categoryIndex].description, dim);
+            if (showingAll) GUI.Label(new Rect(r.x + 8, r.y + 56, r.width - 16, 34), "The whole library: type to search names, IDs, paths and kinds in every category.", dim);
+            else if (categories.Count > 0) GUI.Label(new Rect(r.x + 8, r.y + 56, r.width - 16, 34), categories[categoryIndex].description, dim);
         }
         const float rowH = 44;
-        var area = new Rect(r.x, r.y + 84, r.width, r.height - 84);
+        var area = new Rect(r.x, r.y + 96, r.width, r.height - 100);
         var view = new Rect(0, 0, r.width - 16, Mathf.Max(shown.Count * rowH, area.height - 2));
         listScroll = GUI.BeginScrollView(area, listScroll, view);
         int first = Mathf.Max(0, (int)(listScroll.y / rowH) - 1), last = Mathf.Min(shown.Count, first + (int)(area.height / rowH) + 3);
@@ -578,15 +589,22 @@ public partial class AssetStudioWindow : EditorWindow
     {
         if (showingRequests) { DrawRequest(r); return; }
         if (showingWorld && DrawWorldMiddle(ref r)) return;
+        if (showingLevels) { DrawLevelPage(r); return; }
         GUI.Box(r, GUIContent.none);
         if (selected == null) { GUI.Label(new Rect(r.x + 16, r.y + 16, r.width - 32, 40), "Pick something on the left.", dim); return; }
-        GUI.Label(new Rect(r.x + 12, r.y + 6, r.width - 24, 30), selected.name, titleStyle);
-        GUI.Label(new Rect(r.x + 12, r.y + 36, r.width - 24, 16), $"{selected.category} · {selected.kind}", dim);
+        GUI.Label(new Rect(r.x + 14, r.y + 10, r.width - 28, 40), selected.name, titleStyle);
+        GUI.Label(new Rect(r.x + 14, r.y + 50, r.width - 28, 18), $"{selected.category} · {selected.kind}", dim);
         float controls = preview.ControlsHeight;
-        var stage = new Rect(r.x + 8, r.y + 58, r.width - 16, r.height - 58 - controls - 10);
+        // The preview on top, the page under it (AssetStudioWindow.Pages): about two fifths for a model or a clip,
+        // the page the rest. Painting takes the whole column.
+        bool page = HasPage(selected) && !preview.Painting;
+        float top = r.y + 74, bottom = r.yMax - 10;
+        float stageHeight = page ? Mathf.Max(220, (bottom - top) * .42f - controls) : bottom - top - controls - 6;
+        var stage = new Rect(r.x + 12, top, r.width - 24, stageHeight);
         preview.Draw(stage, this);
-        var transport = new Rect(r.x + 8, stage.yMax + 6, r.width - 16, controls);
+        var transport = new Rect(r.x + 12, stage.yMax + 6, r.width - 24, controls);
         preview.DrawControls(transport);
+        if (page) DrawPage(new Rect(r.x + 10, transport.yMax + 8, r.width - 20, bottom - transport.yMax - 8));
     }
 
     void DrawInspector(Rect r)
@@ -594,7 +612,7 @@ public partial class AssetStudioWindow : EditorWindow
         if (showingRequests) { DrawRequestDetails(r); return; }
         GUI.Box(r, GUIContent.none);
         // The World can show an asset the library doesn't list: just its inspector.
-        if (selected == null) { if (showingWorld && inspected != null) inspectorWanted = new Rect(r.x + 4, r.y + 8, r.width - 8, r.height - 12); return; }
+        if (selected == null) { if ((showingWorld || showingLevels) && inspected != null) inspectorWanted = new Rect(r.x + 4, r.y + 8, r.width - 8, r.height - 12); return; }
         float y = r.y + 8;
         GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "DETAILS", gold); y += 18;
         if (!string.IsNullOrEmpty(selected.description)) { float dh = dim.CalcHeight(new GUIContent(selected.description), r.width - 16); GUI.Label(new Rect(r.x + 8, y, r.width - 16, dh), selected.description, dim); y += dh + 4; }
@@ -635,6 +653,14 @@ public partial class AssetStudioWindow : EditorWindow
         {
             inspectorHost = new UnityEngine.UIElements.ScrollView(UnityEngine.UIElements.ScrollViewMode.Vertical);
             inspectorHost.style.position = UnityEngine.UIElements.Position.Absolute;
+            // The game's font in the inspector too (StudioSkin); its fields keep Unity's own shapes.
+            if (StudioSkin.Body != null) inspectorHost.style.unityFontDefinition = UnityEngine.UIElements.FontDefinition.FromFont(StudioSkin.Body);
+            inspectorHost.style.fontSize = StudioSkin.Size;
+            inspectorHost.style.color = StudioSkin.Text;
+            var sheet = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.StyleSheet>("Assets/Game/Development/Editor/AssetStudio/Studio Inspector.uss");
+            if (sheet != null) inspectorHost.styleSheets.Add(sheet);
+            // Inspectors drawn in IMGUI (Odin's, older editors) draw after the window: each is wrapped in the skin too.
+            inspectorHost.schedule.Execute(SkinImgui).Every(300);
             rootVisualElement.Add(inspectorHost);
         }
         var want = showingRequests ? null : inspectorWanted;
@@ -652,6 +678,19 @@ public partial class AssetStudioWindow : EditorWindow
         if (inspectorHost.style.top.value.value != a.y) inspectorHost.style.top = a.y;
         if (inspectorHost.style.width.value.value != a.width) inspectorHost.style.width = a.width;
         if (inspectorHost.style.height.value.value != a.height) inspectorHost.style.height = a.height;
+    }
+
+    void SkinImgui()
+    {
+        if (inspectorHost == null) return;
+        UnityEngine.UIElements.UQueryExtensions.Query<UnityEngine.UIElements.IMGUIContainer>(inspectorHost).ForEach(c =>
+        {
+            if (c.userData as string == "studio skin" || c.onGUIHandler == null) return;
+            var draw = c.onGUIHandler;
+            c.onGUIHandler = () => { using (StudioSkin.Use()) draw(); };
+            c.userData = "studio skin";
+            c.MarkDirtyRepaint();
+        });
     }
 
     // Each spell's tome (the item that casts it), read once per library refresh: the panel is drawn every frame.

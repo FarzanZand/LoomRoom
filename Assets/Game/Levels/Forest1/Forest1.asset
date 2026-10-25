@@ -342,12 +342,15 @@ MonoBehaviour:
     tier4: 0
     upgradeChance: 0.15
   startingRoom: {fileID: 0}
+  startingChest: 1
   startingChestConsumable: {fileID: 0}
   startingChestItems: []
   fixedSeed: 0
   pocket: 0
   nextFloorMessage: You descend to floor {0}.
   roomLighting: 1
+  roomBrightness: 0.5
+  roomTint: {r: 1, g: 1, b: 1, a: 1}
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   layoutMode: 1
   width: 40
@@ -367,7 +370,7 @@ MonoBehaviour:
   authoredContent: 
   authoredMarkers: []
   baseBiome: {fileID: -1703195437708700038}
-  backgroundMusic: {fileID: 8300000, guid: ef4f5eea8a3e11d4ba749bcb52683db8, type: 3}
+  backgroundMusic: {fileID: 0}
   backgroundMusicVolume: 0.3
   dialogue:
   - trigger: 1

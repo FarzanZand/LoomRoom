@@ -7,8 +7,18 @@ using UnityEngine;
 // (on this object). A run saved on quit is its class's figure, picked first: taking it continues the
 // run. Cancelling hands the view back. Without figures the adventure menu opens instead.
 // tableIntroController only lists which objects belong to the town (read by TableLevelLoader).
+// How the game table itself looks. Serialized by number: append only.
+public enum TableLook { Simple = 0, Bordered = 1 }
+
 public class TableManager : Singleton<TableManager>, IInteractable
 {
+    [Header("Look")]
+    [SerializeField, Tooltip("Simple: the plain table (thin legs, an apron and a low rim). Bordered: a heavy dark frame round the map with thick legs and candles on its corners (the mood pass).")]
+    TableLook tableLook = TableLook.Bordered;
+    [SerializeField, Tooltip("The plain table's legs, apron and rim.")] GameObject simpleTable;
+    [SerializeField, Tooltip("The bordered table's frame, legs and corner candles.")] GameObject borderedTable;
+    public TableLook Look => tableLook;
+
     public TableIntroController tableIntroController;
     public GameObject DM;
     public Transform dmPlacement;
@@ -72,9 +82,24 @@ public class TableManager : Singleton<TableManager>, IInteractable
         && !PixelCrushers.DialogueSystem.DialogueManager.isConversationActive;
     // The win ending is playing (the morning walk to the open door): the table only points the player out.
     public static bool EndingRunning => WorldManager.HasInstance && WorldManager.Instance.ending != null && WorldManager.Instance.ending.Running;
+    // Shows the table of the chosen look and hides the other.
+    public void ApplyLook()
+    {
+        if (simpleTable != null && simpleTable.activeSelf != (tableLook == TableLook.Simple)) simpleTable.SetActive(tableLook == TableLook.Simple);
+        if (borderedTable != null && borderedTable.activeSelf != (tableLook == TableLook.Bordered)) borderedTable.SetActive(tableLook == TableLook.Bordered);
+    }
+#if UNITY_EDITOR
+    // SetActive is not allowed inside OnValidate, so the swap waits a frame. Prefab assets are left alone.
+    void OnValidate()
+    {
+        if (UnityEditor.PrefabUtility.IsPartOfPrefabAsset(this)) return;
+        UnityEditor.EditorApplication.delayCall += () => { if (this != null) ApplyLook(); };
+    }
+#endif
     protected override void Awake()
     {
         base.Awake();
+        ApplyLook();
         // There is no authored loader: it is added here.
         loader = GetComponent<TableLevelLoader>();
         if (loader == null) loader = gameObject.AddComponent<TableLevelLoader>();

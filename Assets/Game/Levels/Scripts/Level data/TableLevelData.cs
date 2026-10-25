@@ -6,7 +6,7 @@ using Sirenix.OdinInspector;
 // Boardgame: a dungeon laid out as board-game tiles on the table, no walls, rooms revealed as their doors open.
 public enum TableLevelKind { Town = 0, Dungeon = 1, Boardgame = 2 }
 // How the room looks while a table level is played (seen from the dungeon through its skylights).
-public enum RoomLighting { Normal = 0, Dim = 1, Dark = 2, Night = 3 }
+public enum RoomLighting { Normal = 0, Dim = 1, Dark = 2, Night = 3, Custom = 4 }
 public enum DungeonMoodLighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6, Darkness = 7, Standard = 8 }
 
 // A table level: its run (stages of biomes, or a number of floors on its base biome), its floor plan, and its base biome,
@@ -17,7 +17,7 @@ public partial class TableLevelData : ScriptableObject
 {
     // Inspector layout only.
     const string Tabs = "Tabs";
-    const string Run = "Run", Map = "Map", Base = "Base biome", Sound = "Sound", Dialogue = "Dialogue";
+    const string Run = "Run", Map = "Map", Light = "Lighting", Base = "Base biome", Sound = "Sound", Dialogue = "Dialogue";
     const string D = nameof(IsDungeon);
     // Dungeons and board-game dungeons: everything a run needs.
     public bool IsDungeon => kind != TableLevelKind.Town;
@@ -103,8 +103,26 @@ public partial class TableLevelData : ScriptableObject
     public bool pocket;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("Posted when the player reaches the next floor ({0} is the floor's number): a tower climbs.")]
     public string nextFloorMessage = "You descend to floor {0}.";
-    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("The room", HorizontalLine = false), Tooltip("The room while this level is played. Normal: as it was when you sat down, visible from the dungeon. Dim: its lights lowered. Dark: black, with only the lamp over the table lit (the intro's look).")]
+    // ── Lighting tab: everything about how this level and the room look while it is played ──
+    [TabGroup(Tabs, Light), PropertyOrder(2), Title("The room", "How the bedroom looks while this level is played.", HorizontalLine = false), Tooltip("Normal: as it was when you sat down, seen from the table. Dim: its lights lowered. Night: a little lower. Dark: black, with only the lamp over the table lit (the intro's look). Custom: Room Brightness below.")]
     public RoomLighting roomLighting;
+    [TabGroup(Tabs, Light), PropertyOrder(2), ShowIf(nameof(roomLighting), RoomLighting.Custom), Range(0f, 1f), Tooltip("How bright the room's lights stay: 1 as when you sat down, 0 black (below about 0.3 the lamp over the table comes on).")]
+    public float roomBrightness = .5f;
+    [TabGroup(Tabs, Light), PropertyOrder(2), ColorUsage(false), Tooltip("The room's light takes this colour while the level is played (white: its own colour).")]
+    public Color roomTint = Color.white;
+    [TabGroup(Tabs, Light), PropertyOrder(2), ShowIf(nameof(IsBoard)), Title("Board light", "The lamp over a board level: it lights every room on the board. (Kept on the base biome; set here.)", HorizontalLine = false), ShowInInspector, ColorUsage(false)]
+    Color BoardLightColour { get => B != null ? B.boardLightColor : new Color(1f, .86f, .68f); set { if (B != null) { B.boardLightColor = value; MarkBaseDirty(); } } }
+    [TabGroup(Tabs, Light), PropertyOrder(2), ShowIf(nameof(IsBoard)), ShowInInspector, LabelText("Board Light Strength"), MinValue(0)]
+    float BoardLightStrength { get => B != null ? B.boardLightIntensity : 2600f; set { if (B != null) { B.boardLightIntensity = Mathf.Max(0f, value); MarkBaseDirty(); } } }
+    [TabGroup(Tabs, Light), PropertyOrder(3), InfoBox("A walled dungeon floor is lit by its biome: the Look tab of each stage's biome (and the Base biome tab) holds its colours, darkness and lamps. A board level uses the board light above, unless its biome has Light Board ticked.", InfoMessageType.None), ShowInInspector, HideLabel, ReadOnly]
+    string LightingNote => "";
+    void MarkBaseDirty()
+    {
+#if UNITY_EDITOR
+        if (B != null) UnityEditor.EditorUtility.SetDirty(B);
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif
+    }
     [TabGroup(Tabs, Run), HideIf(nameof(IsDungeon)), Tooltip("The town's lighting.")]
     public SceneMood mood;
 
@@ -358,7 +376,6 @@ public partial class TableLevelData : ScriptableObject
     public int boardMaxRaise => 2;                  // the most layers a generated board room is raised
     public bool boardRevealAll => false;            // boards deal rooms in as their doors open
     public float darkRoomLightStrength => .6f;      // a dark room's one light against the prefab's own
-    public Color roomTint => Color.white;           // the room's light keeps its colour while a level is played
     public float minimumAmbient => .07f;            // a dungeon is never darker than this
     public bool loopMusic => true;
     public float musicFadeSeconds => 1.5f;
@@ -433,10 +450,10 @@ public partial class TableLevelData : ScriptableObject
         return state;
     }
 
-    float RoomDarkness => LightingManager.Darkness(roomLighting);
+    float RoomDarkness => LightingManager.Darkness(roomLighting, roomBrightness);
 
     // A board lies under the room's own light: the room as it is now, with this level's Room Lighting and tint.
-    public LightingManager.MoodState BoardLighting(LightingManager lighting) => lighting.RoomLook(roomLighting, roomTint);
+    public LightingManager.MoodState BoardLighting(LightingManager lighting) => lighting.RoomLook(roomLighting, roomTint, roomBrightness);
     // The light a board floor gets: the room's own light, or its biome's lighting when the biome asks (lightBoard).
     public LightingManager.MoodState BoardLighting(LightingManager lighting, int floorNumber) =>
         Biome(floorNumber) is { lightBoard: true } ? DungeonLighting(floorNumber) : BoardLighting(lighting);

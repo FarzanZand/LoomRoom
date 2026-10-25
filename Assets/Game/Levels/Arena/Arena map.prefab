@@ -47,7 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonMapRoom
   room: 0
   role: 0
-  raised: 0
+  raised: 3
   merchant: 0
   generated: 1
 --- !u!114 &7609323592360848006
@@ -209,7 +209,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonMapRoom
   room: 1
   role: 5
-  raised: 0
+  raised: 5
   merchant: 0
   generated: 0
 --- !u!114 &6143669934746340696
@@ -244,7 +244,7 @@ MonoBehaviour:
   - '#############'
   - '#############'
   minimumCells: {x: 6, y: 6}
-  style: {fileID: 11400000, guid: b7beb5b39fafcdb4ba654624e3576450, type: 2}
+  style: {fileID: 11400000, guid: 7cf3e3c7d11010d43a22add44b3c755c, type: 2}
   heightTiles: 0
   openCeiling: 0
   ceilingFrame: 0.35

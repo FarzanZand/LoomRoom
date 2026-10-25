@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq;
+using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -9,40 +10,40 @@ using UnityEngine;
 // Dialogue Database conversation started by talking to the DM (DungeonMasterSeat). Sits on the Dialogue Manager.
 public class DungeonMasterRemarks : MonoBehaviour
 {
-    [Header("Room")]
-    [Tooltip("After the opening wake-up.")] public DungeonMaster.Line morning;
-    [Tooltip("After waking, until the player has talked to the DM once.")] public DungeonMaster.Line callOver;
-    [Tooltip("After walking about for a while without sitting down.")] public DungeonMaster.Line idle;
-    [Tooltip("The first time the door loops back into the room.")] public DungeonMaster.Line door;
-    [Tooltip("When the door has looped a few times in one session.")] public DungeonMaster.Line doorAgain;
-    [Tooltip("The first time the player looks at a blank figure on the memorial table.")] public DungeonMaster.Line forgottenFigure;
-    [Min(0), Tooltip("Seconds after waking before the greeting.")] public float greetingDelay = 1.5f;
-    [Min(5), Tooltip("Seconds of walking about after waking, without sitting down, before a nudge.")] public float idleSeconds = 75f;
-    [Min(2), Tooltip("The door's second remark comes on this many loops in one session.")] public int doorLoopAgainAt = 4;
-    [Header("Table")]
-    [Tooltip("Sitting down after a death.")] public DungeonMaster.Line again;
-    [Tooltip("Sitting down after a death deeper than any before.")] public DungeonMaster.Line further;
-    [Tooltip("Sitting down after two deaths to the same enemy. {killer} is its name.")] public DungeonMaster.Line sameKiller;
-    [Tooltip("Sitting down the first time after the ending.")] public DungeonMaster.Line afterTheEnd;
-    [Tooltip("Sitting down after a class was unlocked. Its figure is picked first.")] public DungeonMaster.Line newFigure;
+    // Each remark is a list of lines: one is picked at random each time (one line is fine for things said once).
+    const string Tabs = "Tabs";
+    [TabGroup(Tabs, "Room"), Tooltip("Waking up in the morning.")] public List<DungeonMaster.Line> morning = new();
+    [TabGroup(Tabs, "Room"), Tooltip("After waking, until the player has talked to him once.")] public List<DungeonMaster.Line> callOver = new();
+    [TabGroup(Tabs, "Room"), Tooltip("Walking about for a while without sitting down.")] public List<DungeonMaster.Line> idle = new();
+    [TabGroup(Tabs, "Room"), Tooltip("The first time the door loops back into the room.")] public List<DungeonMaster.Line> door = new();
+    [TabGroup(Tabs, "Room"), Tooltip("When the door has looped a few times in one session.")] public List<DungeonMaster.Line> doorAgain = new();
+    [TabGroup(Tabs, "Room"), Tooltip("The first look at a blank figure on the memorial table.")] public List<DungeonMaster.Line> forgottenFigure = new();
+    [TabGroup(Tabs, "Room"), Min(0), Tooltip("Seconds after waking before the greeting.")] public float greetingDelay = 1.5f;
+    [TabGroup(Tabs, "Room"), Min(5), Tooltip("Seconds of walking about without sitting down before the nudge.")] public float idleSeconds = 75f;
+    [TabGroup(Tabs, "Room"), Min(2), Tooltip("Loops of the door in one session before its second remark.")] public int doorLoopAgainAt = 4;
 
-    [Header("Runs")]
-    [Tooltip("Run start, with the class the player has lost most often.")] public DungeonMaster.Line usualPick;
-    [Tooltip("Run start, with a class the player has lost before.")] public DungeonMaster.Line samePick;
-    [Tooltip("Run start, with a class none of the figures has.")] public DungeonMaster.Line newPick;
-    [Tooltip("When the player's spell hits him from the dungeon (up through a skylight). One picked at random; the boss fight has its own lines.")]
-    public System.Collections.Generic.List<DungeonMaster.Line> spellHitMe = new()
+    [TabGroup(Tabs, "Table"), Tooltip("Sitting down after a death.")] public List<DungeonMaster.Line> again = new();
+    [TabGroup(Tabs, "Table"), Tooltip("Sitting down after a death deeper than any before.")] public List<DungeonMaster.Line> further = new();
+    [TabGroup(Tabs, "Table"), Tooltip("Sitting down after two deaths to the same enemy. {killer} is its name.")] public List<DungeonMaster.Line> sameKiller = new();
+    [TabGroup(Tabs, "Table"), Tooltip("Sitting down the first time after the ending.")] public List<DungeonMaster.Line> afterTheEnd = new();
+    [TabGroup(Tabs, "Table"), Tooltip("Sitting down after a class was unlocked (its figure is picked first).")] public List<DungeonMaster.Line> newFigure = new();
+
+    [TabGroup(Tabs, "Runs"), Tooltip("Run start with the class the player has lost most often.")] public List<DungeonMaster.Line> usualPick = new();
+    [TabGroup(Tabs, "Runs"), Tooltip("Run start with a class the player has lost before.")] public List<DungeonMaster.Line> samePick = new();
+    [TabGroup(Tabs, "Runs"), Tooltip("Run start with a class none of the figures has.")] public List<DungeonMaster.Line> newPick = new();
+    [TabGroup(Tabs, "Runs"), Tooltip("The player's spell hits him from the dungeon (up through a skylight). Not during the boss fight, which has its own lines.")]
+    public List<DungeonMaster.Line> spellHitMe = new()
     {
         new() { text = "Did you just throw that at me?" },
         new() { text = "Careful. I can see you." },
         new() { text = "That's not how this game works." },
         new() { text = "Aim at the monsters, not at me." },
     };
-    [Min(0), Tooltip("Seconds before he answers another spell at him.")] public float spellHitGap = 8f;
-    [InfoBox("What he says during a run (kills, close calls, new floors, rooms) is set on each level's Dialogue tab.")]
-    [Range(.05f, .5f), Tooltip("Health left, as a fraction, that counts as a close call.")] public float closeCallFraction = .25f;
-    [Min(0), Tooltip("Seconds between two run remarks.")] public float remarkGap = 25f;
-    [Min(0), Tooltip("Seconds after arriving in the dungeon before a remark.")] public float runRemarkDelay = 1.5f;
+    [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds before he answers another spell at him.")] public float spellHitGap = 8f;
+    [TabGroup(Tabs, "Runs"), InfoBox("What he says during a run (kills, close calls, new floors, rooms) is set on each level's Dialogue tab.")]
+    [Range(.05f, .5f), Tooltip("Health left, as a share, that counts as a close call.")] public float closeCallFraction = .25f;
+    [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds between two run remarks.")] public float remarkGap = 25f;
+    [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds after arriving in the dungeon before a remark.")] public float runRemarkDelay = 1.5f;
 
     public const string SatFlag = "story.sat", OfferedPrefix = "story.offered.", LoopedFlag = "story.loopedDoor", ForgottenSeenFlag = "story.forgottenSeen";
     const string DeepestFlag = "adventure.deepestFloor";
@@ -97,6 +98,14 @@ public class DungeonMasterRemarks : MonoBehaviour
     static bool Flag(string key) => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(key);
     static void SetFlag(string key) { if (ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(key); }
     static void Say(DungeonMaster.Line line) { if (line != null) DungeonMaster.Say(line); }
+    static void Say(List<DungeonMaster.Line> lines) => Say(Pick(lines));
+    // One of the lines at random, skipping empty ones; null when there are none.
+    static DungeonMaster.Line Pick(List<DungeonMaster.Line> lines)
+    {
+        if (lines == null || lines.Count == 0) return null;
+        var usable = lines.FindAll(l => l != null && !l.IsEmpty);
+        return usable.Count > 0 ? usable[Random.Range(0, usable.Count)] : null;
+    }
     static bool EndingRunning => WorldManager.HasInstance && WorldManager.Instance.ending != null && WorldManager.Instance.ending.Running;
     static bool RoomPlayerFree => PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Room
         && GameManager.HasInstance && GameManager.Instance.State == GameState.Explore;
@@ -174,7 +183,7 @@ public class DungeonMasterRemarks : MonoBehaviour
         {
             string killer = LastTwoKiller();
             if (beatRecord) Say(further);
-            else if (killer != null && sameKiller != null) DungeonMaster.Say(sameKiller.With(sameKiller.text.Replace("{killer}", killer)));
+            else if (killer != null && Pick(sameKiller) is DungeonMaster.Line kill) DungeonMaster.Say(kill.With(kill.text.Replace("{killer}", killer)));
             else Say(again);
         }
         died = won = beatRecord = false;
@@ -333,8 +342,9 @@ public class DungeonMasterRemarks : MonoBehaviour
 
     // Queued now, while the floor is still being set up: the DM feed holds it through the descent and
     // says it a moment after arrival, ahead of the biome's own entry line.
-    void SayInDungeon(DungeonMaster.Line line)
+    void SayInDungeon(List<DungeonMaster.Line> lines)
     {
+        var line = Pick(lines);
         if (line != null && !line.IsEmpty) DungeonMaster.Say(line.With(line.text), null, runRemarkDelay);
     }
 }

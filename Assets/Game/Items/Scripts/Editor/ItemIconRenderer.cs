@@ -229,9 +229,17 @@ public static partial class ItemIconRenderer
         {
             var mesh = r is SkinnedMeshRenderer skinned ? skinned.sharedMesh : r.TryGetComponent<MeshFilter>(out var filter) ? filter.sharedMesh : null;
             parts.Add(mesh == null ? "no mesh" : FileHash(AssetDatabase.GetAssetPath(mesh)) + mesh.name);
-            foreach (var m in r.sharedMaterials) if (m != null && m.mainTexture != null) parts.Add(FileHash(AssetDatabase.GetAssetPath(m.mainTexture)));
+            foreach (var m in r.sharedMaterials) if (MainTexture(m) is Texture t) parts.Add(FileHash(AssetDatabase.GetAssetPath(t)));
         }
         return Hash128.Compute(string.Join(",", parts)).ToString();
+    }
+    // A material's colour texture, by the names our shaders and Synty's use (Material.mainTexture logs an error for a
+    // shader with no _MainTex, such as Synty/Generic_Basic).
+    static Texture MainTexture(Material m)
+    {
+        if (m == null) return null;
+        foreach (var name in new[] { "_BaseMap", "_MainTex", "_Albedo_Map" }) if (m.HasTexture(name) && m.GetTexture(name) is Texture t) return t;
+        return null;
     }
     // The model file itself (not its textures), so switching pixel lighting never counts as a change.
     static string FileHash(string path) => string.IsNullOrEmpty(path) || !File.Exists(path) || path.EndsWith(".fbx") ? path : Hash128.Compute(File.ReadAllBytes(path)).ToString();

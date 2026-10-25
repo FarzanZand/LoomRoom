@@ -37,7 +37,6 @@ public sealed partial class LightingManager
             var l = buildLightInstance;
             l.type = nightLight.type; l.range = nightLight.range; l.spotAngle = nightLight.spotAngle; l.innerSpotAngle = nightLight.innerSpotAngle;
             l.shadows = nightLight.shadows; l.shadowStrength = nightLight.shadowStrength; l.shadowBias = nightLight.shadowBias; l.shadowNormalBias = nightLight.shadowNormalBias;
-            l.shadowResolution = nightLight.shadowResolution;
             FirstPersonLighting.SetLayers(l, TableFloorLayer);
         }
         buildLightInstance.enabled = true;

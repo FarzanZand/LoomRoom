@@ -12,7 +12,7 @@ public class DungeonMapRoom : MonoBehaviour
     public string room = "0";
     [Tooltip("What kind of room it is (combat rooms roll enemies, treasure rooms loot, the exit has the stairs).")]
     public DungeonGenerator.RoomRole role = DungeonGenerator.RoomRole.Combat;
-    [Range(0, 3), Tooltip("Board-game levels: how many layers the room is raised; stairs lead up to it.")]
+    [Range(0, 6), Tooltip("Board-game levels: how many layers the room is raised (a layer is TableLevelData.boardLayerHeight); stairs lead up to it.")]
     public int raised;
     [Tooltip("The merchant stands in this room (the level needs a Merchant Prefab).")]
     public bool merchant;

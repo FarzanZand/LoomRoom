@@ -35,8 +35,14 @@ public class DungeonBiome : ScriptableObject
 
     // Same numbers as DungeonMoodLighting (a preset of that name in Resources/DungeonLighting), plus Custom.
     public enum Lighting { AmberCrypt = 0, MoonlitStone = 1, EmeraldRuins = 2, RoseSanctuary = 3, GoldenHall = 4, Default = 5, TableSpotlight = 6, Darkness = 7, Standard = 8, Custom = 100 }
-    [TabGroup(Look), Title("Lighting"), Tooltip("The lighting in this biome: a preset, or Custom to set every value below. On dark floors the Lighting Manager holds the ambient down (Dungeon darkness), so the torches give most of the light.")]
+    [TabGroup(Look), Title("Lighting", "How a walled dungeon floor of this biome is lit. A board level is lit by its board light (the level's Lighting tab) instead, unless Light Board is ticked; the room's look is on the level's Lighting tab too.")]
+    [Tooltip("The lighting in this biome: a preset, or Custom to set every value below. On dark floors the Lighting Manager holds the ambient down (Dungeon darkness), so the torches give most of the light.")]
     public Lighting lighting = Lighting.Darkness;
+    // The preset picked above, editable here (it is a shared asset in Levels/Resources/DungeonLighting: every biome
+    // using it changes too). Custom shows its own values further down instead.
+    [TabGroup(Look), ShowInInspector, ShowIf(nameof(UsesPreset)), InlineEditor(InlineEditorObjectFieldModes.Foldout), LabelText("Preset (shared)")]
+    SceneMood LightingPreset { get => UsesPreset ? Resources.Load<SceneMood>("DungeonLighting/" + (DungeonMoodLighting)(int)lighting) : null; set { } }   // picked with the dropdown above
+    bool UsesPreset => lighting != Lighting.Custom;
     [TabGroup(Look), Tooltip("Skip the Lighting Manager's dungeon darkness here: the preset's ambient light reaches everywhere, so unlit places stay visible.")]
     public bool litThroughout;
     [TabGroup(Look), Tooltip("Board-game levels: light the board with this biome's lighting above instead of the room's own light (the level's Room Lighting), so each biome of a board level can look different.")]

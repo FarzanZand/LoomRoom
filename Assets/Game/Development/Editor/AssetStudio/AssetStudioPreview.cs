@@ -72,6 +72,13 @@ public class AssetStudioPreview : IDisposable
             _ => null,
         };
         if (model != null) { BuildModel(model); return; }
+        if (t is DungeonRoomStyle style)
+        {
+            var sample = AssetStudioStyles.Sample(style);
+            try { BuildModel(sample); }
+            finally { UnityEngine.Object.DestroyImmediate(sample); }
+            return;
+        }
         if (t is AudioClip c) { clip = c; clips = new[] { c }; mode = Mode.Audio; return; }
         if (t is AudioData data && data.clips != null && data.clips.Length > 0) { clips = data.clips.Where(x => x != null).ToArray(); clip = clips.FirstOrDefault(); mode = clip != null ? Mode.Audio : Mode.Icon; return; }
         if (t is Texture2D tex) { texture = tex; mode = Mode.Texture; return; }
@@ -95,6 +102,8 @@ public class AssetStudioPreview : IDisposable
         instance = UnityEngine.Object.Instantiate(prefab);
         instance.hideFlags = HideFlags.HideAndDontSave;
         foreach (var mb in instance.GetComponentsInChildren<MonoBehaviour>(true)) if (mb != null) mb.enabled = false;
+        // The realm map's mist hazes over the land being painted: the preview shows the map without it.
+        if (instance.GetComponent<CampaignMap>() != null && instance.transform.Find("Mist") is Transform mist) mist.gameObject.SetActive(false);
         util.AddSingleGO(instance);
         particles = instance.GetComponentsInChildren<ParticleSystem>(true);
         vfxLength = particles.Length > 0 ? Mathf.Clamp(particles.Max(p => p.main.duration + p.main.startLifetime.constantMax), .5f, 12f) : 0f;

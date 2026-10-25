@@ -16,6 +16,8 @@ public class TableLevelLoader : MonoBehaviour
     public bool Busy { get; private set; }
     // A level starts loading from the room (not a descent); the room is back after a run (under the black).
     public event Action LoadStarted, Returned;
+    // The flight back to the room has begun (the floor starts sinking into the table under it): the campaign map rises.
+    public event Action Leaving;
     [SerializeField, Min(0), Tooltip("Seconds after arriving in a new biome before the Dungeon Master speaks.")] float entryLineDelay = 5f;
     [SerializeField, Min(.1f), Tooltip("Seconds the last floor takes to sink into the table when the player sits down for the next game.")] float sweepSeconds = .8f;
     DungeonMaster.Line entryLine;
@@ -191,17 +193,36 @@ public class TableLevelLoader : MonoBehaviour
                 yield return GameManager.WaitCutscene(.5f);
             }
             bool ready=false;
+            Exception failure=null;
+            IEnumerator preparing=null;
             try {
                 LootSource.BiomeProgress = floor => { level.BiomeAt(floor, out int at, out int count); return count <= 1 ? 1 : (at - 1f) / (count - 1); };
                 LootSource.FloorGear = floor => level.GearAt(floor);
                 LootSource.GenerationLevel = coop.HasValue ? Mathf.Max(1, coop.Value.generationLevel) : resume != null ? Mathf.Max(1, resume.lootLevel) : descending ? player.GetComponent<AdventurerProgress>().Level : 1;
                 generationLevel = LootSource.GenerationLevel.Value;
-                Prepare(level, useReveal);
-                DebugDungeonSession.ConfigureEnemies(Dungeon);
-                ready=true;
+                // With the reveal (from the room) the floor is built over several frames while the campaign map folds away.
+                preparing = PrepareRoutine(level, useReveal, useReveal);
             }
-            catch(Exception e) { Debug.LogException(e); }
-            finally { LootSource.GenerationLevel = null; }
+            catch(Exception e) { failure=e; }
+            while(failure==null) {
+                bool more;
+                try { more=preparing.MoveNext(); } catch(Exception e) { failure=e; break; }
+                if(!more) break;
+                yield return null;
+            }
+            if(failure==null) {
+                try { DebugDungeonSession.ConfigureEnemies(Dungeon); ready=true; }
+                catch(Exception e) { failure=e; }
+            }
+            if(failure!=null) Debug.LogException(failure);
+            LootSource.GenerationLevel = null;
+            // The campaign map finishes folding away before the floor is shown; until then the floor stays switched off
+            // (not drawn, nothing in it started).
+            if(ready && useReveal && environment!=null && CampaignManager.MapSinking) {
+                environment.SetActive(false);
+                while(CampaignManager.MapSinking) yield return null;
+                environment.SetActive(true);
+            }
             if (ready && useReveal && AudioManager.HasInstance) AudioManager.Instance.StopMusic(revealSettings.cameraTransitionSeconds);
             if (!useReveal) yield return null;
             if(ready)
@@ -296,44 +317,66 @@ public class TableLevelLoader : MonoBehaviour
     static IEnumerator RunGuarded(IEnumerator routine) => GuardedRoutine.Run(routine);
     // The table's whole box: its collider is swapped for a cut one while a floor's pits go into it (TableCut).
     Bounds TableBox=>GetComponent<TableCut>() is { } cut && cut.Bounds.size!=Vector3.zero ? cut.Bounds : GetComponent<BoxCollider>().bounds;
-    void Prepare(TableLevelData level, bool deferPlayerSwitch = false)
+    DungeonGenerator building;
+    // How far the floor being built over several frames has got (0 to 1); 1 when none is (the campaign map folds away
+    // at this pace).
+    public float BuildProgress => building!=null ? building.BuildProgress : 1f;
+    // sliced: the floor is built over several frames (DungeonGenerator.BuildSliced), so a floor built from the
+    // campaign map never holds the game still while the map folds away.
+    IEnumerator PrepareRoutine(TableLevelData level, bool deferPlayerSwitch, bool sliced)
     {
         var previousEnvironment=environment;
         bool previousTown=Current!=null && Current.kind==TableLevelKind.Town;
         GameObject candidate=null;
         DungeonGenerator candidateDungeon=null;
         Vector3 spawn=townPosition;Quaternion rotation=townRotation;
-        try {
-            if(level.IsDungeon) {
-                var bounds=TableBox;
-                if(level.cellSize<=0 || level.width*level.cellSize>bounds.size.x-2 || level.depth*level.cellSize>bounds.size.z-2)
-                    throw new InvalidOperationException("Dungeon dimensions exceed the table. Reduce dimensions on the level asset.");
+        if(level.IsDungeon) {
+            Exception failure=null;
+            var bounds=TableBox;
+            if(level.cellSize<=0 || level.width*level.cellSize>bounds.size.x-2 || level.depth*level.cellSize>bounds.size.z-2)
+                failure=new InvalidOperationException("Dungeon dimensions exceed the table. Reduce dimensions on the level asset.");
+            else {
                 // Hide and unregister the old surface while keeping it intact for rollback.
                 if(previousEnvironment!=null)previousEnvironment.SetActive(false);
                 SetTown(false);
-                int seed=unchecked(runSeed+(FloorNumber-1)*104729);
-                // A layout can fail validation (a room cut off by props). Try the next derived seed
-                // rather than failing the floor; the sequence is fixed, so runs stay reproducible.
-                for(int attempt=0;;attempt++) {
-                    candidate=new GameObject(level.displayName+" (generated)");
-                    candidate.transform.position=new Vector3(bounds.center.x,bounds.max.y+.08f,bounds.center.z);
-                    candidateDungeon=candidate.GetComponent<DungeonGenerator>();
-                    if(candidateDungeon==null)candidateDungeon=candidate.AddComponent<DungeonGenerator>();
-                    try {
-                        candidateDungeon.Build(level,unchecked(seed+attempt*7907),FloorNumber,attempt>=7);
-                        break;
-                    }
-                    catch(InvalidOperationException e) when (attempt<7) {
-                        Debug.LogWarning($"Floor {FloorNumber} layout rejected, trying another: {e.Message}");
-                        candidate.SetActive(false);DestroyImmediate(candidate);candidate=null;
-                    }
-                }
-                spawn=candidateDungeon.SpawnPoint;rotation=candidateDungeon.SpawnRotation;
             }
-        } catch {
-            if(candidate!=null){candidate.SetActive(false);Destroy(candidate);}
-            if(previousEnvironment!=null)previousEnvironment.SetActive(true);
-            SetTown(previousTown);throw;
+            int seed=unchecked(runSeed+(FloorNumber-1)*104729);
+            // A layout can fail validation (a room cut off by props). Try the next derived seed
+            // rather than failing the floor; the sequence is fixed, so runs stay reproducible.
+            for(int attempt=0; failure==null; attempt++) {
+                candidate=new GameObject(level.displayName+" (generated)");
+                candidate.transform.position=new Vector3(bounds.center.x,bounds.max.y+.08f,bounds.center.z);
+                candidateDungeon=candidate.GetComponent<DungeonGenerator>();
+                if(candidateDungeon==null)candidateDungeon=candidate.AddComponent<DungeonGenerator>();
+                int attemptSeed=unchecked(seed+attempt*7907);
+                Exception error=null;
+                if(sliced) {
+                    var steps=candidateDungeon.BuildSliced(level,attemptSeed,FloorNumber,attempt>=7);
+                    building=candidateDungeon;
+                    while(true) {
+                        bool more;
+                        try { more=steps.MoveNext(); } catch(Exception e) { error=e; break; }
+                        if(!more) break;
+                        yield return null;
+                    }
+                    building=null;
+                }
+                else { try { candidateDungeon.Build(level,attemptSeed,FloorNumber,attempt>=7); } catch(Exception e) { error=e; } }
+                if(error==null) break;
+                if(error is InvalidOperationException && attempt<7) {
+                    Debug.LogWarning($"Floor {FloorNumber} layout rejected, trying another: {error.Message}");
+                    candidate.SetActive(false);DestroyImmediate(candidate);candidate=null;
+                    continue;
+                }
+                failure=error;
+            }
+            if(failure!=null) {
+                if(candidate!=null){candidate.SetActive(false);Destroy(candidate);}
+                if(previousEnvironment!=null)previousEnvironment.SetActive(true);
+                SetTown(previousTown);
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+            }
+            spawn=candidateDungeon.SpawnPoint;rotation=candidateDungeon.SpawnRotation;
         }
         if(Current==null || Current.kind==TableLevelKind.Town)SaveTownInventory();
         environment=candidate;Dungeon=candidateDungeon;
@@ -460,6 +503,24 @@ public class TableLevelLoader : MonoBehaviour
     }
     // Fade out, switch to the room player and put the room's lighting and music back under the
     // black, then fade in.
+    Coroutine sinking;
+    bool floorSinking;
+    Vector3 sinkTo;
+    // Sinks the floor into the table: all of it, under the tabletop, creatures too (their agents would hold them up at
+    // the floor's height).
+    IEnumerator SinkFloor(GameObject floor, float depth, float seconds)
+    {
+        try
+        {
+            if(floor==null) yield break;
+            foreach(var agent in floor.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>()) agent.enabled=false;
+            var t=floor.transform; var from=t.position; sinkTo=from-Vector3.up*depth;
+            for(float s=0; s<seconds && t!=null; s+=GameManager.CutsceneDelta)
+            { t.position=from-Vector3.up*depth*Mathf.SmoothStep(0,1,s/seconds); yield return null; }
+            if(t!=null) t.position=sinkTo;
+        }
+        finally { floorSinking=false; }
+    }
     IEnumerator ReturnRoutine(Action whileDark)
     {
         Busy=true;
@@ -493,21 +554,18 @@ public class TableLevelLoader : MonoBehaviour
                         RestoreRoom(exitSettings.exitSeconds, exitSettings.exitSeconds * .6f);
                         // The boss floor's painting is the room's own again before the room comes into view.
                         if (RoomPainting.BehindDungeonMaster != null) RoomPainting.BehindDungeonMaster.Restore();
+                        // The floor sinks into the table as the view leaves it, and the map rises in its place, both
+                        // while the view flies back to the room.
+                        floorSinking = true; sinking = StartCoroutine(SinkFloor(environment, standing + 1f, exitSettings.exitSinkSeconds));
+                        Leaving?.Invoke();
                     }));
                 }
                 finally { skipped = exit.Skipped; Destroy(exit); }
                 if (skipped && roomSnap.HasValue && lighting != null) lighting.Restore(roomSnap.Value, 0f);
-                // The floor sinks into the table as the room settles: all of it, under the tabletop, creatures too (their
-                // agents would hold them up at the floor's height).
-                if(environment!=null)
-                {
-                    foreach(var agent in environment.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>()) agent.enabled=false;
-                    var t=environment.transform; var from=t.position; float depth=standing+1f;
-                    // A skipped flight skips the sink too: the floor is under the table at once.
-                    if(skipped) t.position=from-Vector3.up*depth;
-                    else for(float s=0; s<exitSettings.exitSinkSeconds && t!=null; s+=GameManager.CutsceneDelta)
-                    { t.position=from-Vector3.up*depth*Mathf.SmoothStep(0,1,s/exitSettings.exitSinkSeconds); yield return null; }
-                }
+                // A skipped flight skips the sink too: the floor is under the table at once. Otherwise what is left of the
+                // sink plays out (it usually ends with the flight).
+                if(skipped && floorSinking) { if(sinking!=null) StopCoroutine(sinking); floorSinking=false; if(environment!=null) environment.transform.position=sinkTo; }
+                while(floorSinking) yield return null;
             }
             else if(fade) { ScreenManager.Instance.FadeToBlack(.45f); yield return GameManager.WaitCutscene(.5f); }
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);

@@ -7,11 +7,11 @@ using UnityEngine.Rendering;
 // optionally the table/room light groups. The source skybox material is never modified.
 public sealed partial class LightingManager
 {
-    [TabGroup("Tabs", "Moods")]
-    [Title("Scene moods"), InlineEditor]
+    // A mood to try on the room (F7 in Play mode toggles it). Out of the inspector: the mood assets are the biomes'
+    // lighting presets, edited under a biome's Lighting dropdown and seen by testing a level that uses them.
+    [HideInInspector]
     public SceneMood moodPreset;
-    [TabGroup("Tabs", "Moods")]
-    [Min(0f)] public float moodBlendDuration = 3f;
+    [HideInInspector, Min(0f)] public float moodBlendDuration = 3f;
     [SerializeField, HideInInspector] LightingDefault savedDefault;
     [SerializeField, HideInInspector] bool hasSavedDefault;
     // Unity never leaves savedDefault null; scenes saved before the flag existed are detected by their non-zero values.
@@ -129,8 +129,6 @@ public sealed partial class LightingManager
 
     // ── Moods ─────────────────────────────────────────────────────────
 
-    [TabGroup("Tabs", "Moods")]
-    [Button("Toggle Mood (F7)")]
     public void ToggleMood()
     {
         if (keyboardMoodPreview) { RestoreDefault(); return; }
@@ -140,12 +138,8 @@ public sealed partial class LightingManager
         keyboardMoodPreview = true;
     }
 
-    [TabGroup("Tabs", "Moods")]
-    [Button("Preview Mood"), HorizontalGroup("Tabs/Moods/Mood actions")]
     public void PreviewMood() => BlendToMood(moodPreset, 0f);
 
-    [TabGroup("Tabs", "Moods")]
-    [Button("Blend to Mood"), HorizontalGroup("Tabs/Moods/Mood actions")]
     public void BlendSelectedMood() => BlendToMood(moodPreset, moodBlendDuration);
 
     public void BlendToMood(SceneMood preset, float duration = 3f)
@@ -212,8 +206,6 @@ public sealed partial class LightingManager
                                                  tableTint = snapshot.groupsBefore.tableTint, roomTint = snapshot.groupsBefore.roomTint };
     }
 
-    [TabGroup("Tabs", "Moods")]
-    [Button("Save Current as Default"), HorizontalGroup("Tabs/Moods/Default actions")]
     public void SaveCurrentAsDefault()
     {
 #if UNITY_EDITOR
@@ -230,8 +222,6 @@ public sealed partial class LightingManager
 #endif
     }
 
-    [TabGroup("Tabs", "Moods")]
-    [Button("Restore Default"), HorizontalGroup("Tabs/Moods/Default actions")]
     public void RestoreDefault()
     {
         keyboardMoodPreview = false;

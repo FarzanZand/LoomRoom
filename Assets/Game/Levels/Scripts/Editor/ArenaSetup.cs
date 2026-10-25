@@ -26,7 +26,7 @@ public static partial class ArenaSetup
         if (!AssetDatabase.IsValidFolder(Dir + "/Rooms")) AssetDatabase.CreateFolder(Dir, "Rooms");
         var champion = Champion(log);
         var style = Style();
-        var room = Room(champion, style);
+        var room = Room(champion, PitStyle(style));
         var level = Level(room, style, log);
         var encounter = Encounter(level, log);
         MapPlace(encounter, log);
@@ -104,20 +104,27 @@ public static partial class ArenaSetup
 
     // ── The look ──
 
-    // The Arena style: the textures Tools/arena_style.py paints, on copies of the Church style's materials (same shader and
-    // tiling, so the same texel size), point filtered.
+    // The Arena style: the textures Tools/arena_style.py paints (grey stone with moss since 2026-10-25), on copies of the
+    // Church style's materials (same shader), point filtered, never scaled to a power of two, each tiled to the Church's
+    // 384 texels an architecture tile: the 512 floor at .75 (it repeats every two board cells), the 256 x 192 wall at
+    // 1.5 x 2, the 256 trim at 1.5.
     static DungeonRoomStyle Style()
     {
         string dir = Dir + "/Styles";
         var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Church.asset");
-        Material Mat(string name, Material like)
+        Material Mat(string name, Material like, string texture, Vector2 tiling)
         {
-            string tex = $"{dir}/{name}.png", path = $"{dir}/{name}.mat";
+            string tex = $"{dir}/{texture}.png", path = $"{dir}/{name}.mat";
             var importer = (TextureImporter)AssetImporter.GetAtPath(tex);
-            if (importer != null && importer.filterMode != FilterMode.Point) { importer.filterMode = FilterMode.Point; importer.textureCompression = TextureImporterCompression.Uncompressed; importer.SaveAndReimport(); }
+            if (importer != null && (importer.filterMode != FilterMode.Point || importer.npotScale != TextureImporterNPOTScale.None))
+            {
+                importer.filterMode = FilterMode.Point; importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.npotScale = TextureImporterNPOTScale.None; importer.SaveAndReimport();
+            }
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (m == null) { m = new Material(like) { name = name }; AssetDatabase.CreateAsset(m, path); }
             m.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(tex));
+            m.SetTextureScale("_BaseMap", tiling);
             m.color = Color.white;
             EditorUtility.SetDirty(m);
             return m;
@@ -125,14 +132,28 @@ public static partial class ArenaSetup
         string stylePath = dir + "/Arena.asset";
         var style = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>(stylePath);
         if (style == null) { style = ScriptableObject.CreateInstance<DungeonRoomStyle>(); AssetDatabase.CreateAsset(style, stylePath); }
-        style.floor = Mat("Arena sand", church.floor);
-        style.bottomWall = style.upperWall = Mat("Arena wall", church.bottomWall);
-        style.trim = style.ceiling = Mat("Arena trim", church.trim);
+        style.floor = Mat("Arena floor", church.floor, "Arena floor", new Vector2(.75f, .75f));
+        Mat("Arena sand", church.floor, "Arena sand", new Vector2(.75f, .75f));
+        style.bottomWall = style.upperWall = Mat("Arena wall", church.bottomWall, "Arena wall", new Vector2(1.5f, 2f));
+        style.trim = style.ceiling = Mat("Arena trim", church.trim, "Arena trim", new Vector2(1.5f, 1.5f));
         style.wood = church.wood; style.metal = church.metal;
         style.wallVariants = new DungeonSurfaceVariant[0]; style.floorVariants = new DungeonSurfaceVariant[0];
         style.wallDecor = new DungeonWeightedPrefab[0];
         EditorUtility.SetDirty(style);
         return style;
+    }
+
+    // The pit's style: the Arena style with the sand floor (the landing and the way up are stone paving).
+    static DungeonRoomStyle PitStyle(DungeonRoomStyle arena)
+    {
+        string path = Dir + "/Styles/Arena pit.asset";
+        var pit = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>(path);
+        if (pit == null) { pit = Object.Instantiate(arena); AssetDatabase.CreateAsset(pit, path); }
+        EditorUtility.CopySerialized(arena, pit);
+        pit.name = "Arena pit";
+        pit.floor = AssetDatabase.LoadAssetAtPath<Material>(Dir + "/Styles/Arena sand.mat");
+        EditorUtility.SetDirty(pit);
+        return pit;
     }
 
     // ── The biome ──

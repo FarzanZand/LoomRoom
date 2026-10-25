@@ -17,6 +17,8 @@ public sealed class TableLevelReveal : MonoBehaviour
     readonly List<(TableCut.Hole hole, float delay)> holes = new();
     readonly List<LineRenderer> outlines = new();
     readonly List<Renderer> liftedCeilings = new();
+    // While the view flies in, only the start room's ceiling (its skylight frame) is on: the others come on as it lands.
+    readonly List<Renderer> heldCeilings = new(), startCeilings = new();
     readonly List<(Renderer renderer, bool forcedOff)> handRenderers = new();
     readonly List<(Renderer renderer, bool forcedOff)> roomRenderers = new();
     Camera output;
@@ -170,6 +172,7 @@ public sealed class TableLevelReveal : MonoBehaviour
             // First activation initializes the rig's Awake/Start and look pivots. Keep the
             // output under our control, and hold first-person hands until the flight ends.
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Table);
+            HoldCeilings();
             // The way in is the spawn room's skylight. Without one (a resumed floor), lift the
             // ceiling over the spawn point for the flight only.
             if (!dungeon.SpawnRoofOpen && dungeon.Ceilings != null)
@@ -197,6 +200,7 @@ public sealed class TableLevelReveal : MonoBehaviour
             HasArrived = true;
             ShowStartWall();
             RestoreCeilings();
+            ReleaseCeilings();
             // The loadout is ready, but belongs only to the dungeon POV. Reveal it at
             // the destination, never attached to the room camera during the flight.
             if (entryHands != null) entryHands.FollowTransitionCamera(output, 0);
@@ -247,6 +251,29 @@ public sealed class TableLevelReveal : MonoBehaviour
             projection = Matrix4x4.Perspective(live.Lens.FieldOfView, output.aspect, live.Lens.NearClipPlane, live.Lens.FarClipPlane);
         }
         output.transform.SetPositionAndRotation(destination, rotation); output.projectionMatrix = projection;
+    }
+
+    // The switch to the table player brings the ceilings back (TableLevelLoader.OnPlayerSwapped): until the view has
+    // landed, every merged ceiling chunk is held off and the start room's own ceiling pieces (merged away, so switched
+    // off) are drawn instead. A start room with no skylight (a resumed floor) shows none of its ceiling either.
+    void HoldCeilings()
+    {
+        if (dungeon == null || dungeon.Ceilings == null || !dungeon.Ceilings.gameObject.activeInHierarchy || dungeon.Layout == null) return;
+        int start = dungeon.SpawnRoofOpen ? dungeon.Layout.RoomAt(dungeon.CellOf(dungeon.SpawnPoint)) : -2;
+        foreach (var r in dungeon.Ceilings.GetComponentsInChildren<Renderer>())
+        {
+            bool chunk = r.name == "Static chunk";
+            bool inStart = !chunk && start >= 0 && dungeon.Layout.RoomAt(dungeon.CellOf(r.transform.position)) == start;
+            if (r.enabled && !inStart) { heldCeilings.Add(r); r.enabled = false; }
+            else if (!r.enabled && inStart) { startCeilings.Add(r); r.enabled = true; }
+        }
+    }
+
+    void ReleaseCeilings()
+    {
+        foreach (var r in startCeilings) if (r != null) r.enabled = false;
+        foreach (var r in heldCeilings) if (r != null) r.enabled = true;
+        startCeilings.Clear(); heldCeilings.Clear();
     }
 
     void RestoreCeilings()
@@ -413,6 +440,7 @@ public sealed class TableLevelReveal : MonoBehaviour
         }
         if (captured && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind != PlayerKind.Table) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Table);
         RestoreCeilings();
+        ReleaseCeilings();
         if (dungeon != null) dungeon.ShowCeilingsFor(PlayerManager.HasInstance ? PlayerManager.Instance.ActiveKind : PlayerKind.Table);
         pieces.Clear(); actors.Clear(); lights.Clear(); holes.Clear(); effects.Clear(); outlines.Clear(); captured = false; IsPlaying = false;
     }

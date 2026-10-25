@@ -24,6 +24,7 @@ public sealed partial class LightingManager
     [ShowIf(nameof(lightRadius)), Tooltip("The table player's own lights (the fill over the head and the key light) also fade out by the radius plus its edge, so the dark starts where the radius says (a circle of light). Off, they reach as far as they are set to (about 12 m) and the radius only takes the faint ambient out of the far dark.")]
     public bool radiusDimsPlayerLights = true;
 
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
     [ShowIf(nameof(lightRadius)), Min(0f), Tooltip("Seconds the radius takes to close in once the table player has the view (from the room it is wide open, so the table reveal shows the floor lit).")]
     public float radiusBlendSeconds = 1.2f;
     const float RoomViewRadius = 400f;

@@ -67,13 +67,12 @@ public class DialogueBridge : MonoBehaviour
         talkingNpc = conversant != null ? conversant.GetComponentInParent<NpcBrain>() : null;
     }
 
-    // Sent by Pixel Crushers before each line is shown: NPC lines are quoted, like the DM's feed.
+    // Sent by Pixel Crushers before each line is shown: NPC lines take the DM feed's colours (no quote marks).
     void OnConversationLine(Subtitle subtitle)
     {
         if (subtitle == null || subtitle.speakerInfo == null || subtitle.speakerInfo.isPlayer) return;
         var text = subtitle.formattedText.text;
         if (string.IsNullOrWhiteSpace(text)) return;
-        if (!text.StartsWith("\"")) text = "\"" + text + "\"";
         subtitle.formattedText.text = DungeonMaster.Colored(text);
     }
 

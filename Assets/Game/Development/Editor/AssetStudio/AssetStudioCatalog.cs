@@ -51,6 +51,7 @@ public static class AssetStudioCatalog
         Cat("Players & NPCs", "The two players and the people of the world.");
         Cat("Spells", "Spell definitions (SpellDefinition) and what they launch.");
         Cat("Rooms", "Room templates: hand-built chunks, starting rooms, arenas and pockets.");
+        Cat("Styles", "Room styles: the floor, wall, trim and ceiling materials a room is built in, shown as a corner of a room.");
         Cat("Levels & biomes", "Table levels, their biomes, boss fights, map templates and the defaults every level shares.");
         Cat("Props", "Furniture, breakables, features and room props, dungeon and apartment.");
         Cat("VFX", "Particle effects: spells, gore, hits, torches.");
@@ -66,7 +67,7 @@ public static class AssetStudioCatalog
     static IEnumerable<string> Candidates()
     {
         var guids = new HashSet<string>();
-        foreach (var t in new[] { "ItemData", "SpellDefinition", "TableLevelData", "DungeonBiome", "BossFight", "AudioData", "CampaignEncounter", "CampaignEvent", "TableLevelDefaults", "HouseRule", "Prefab" })
+        foreach (var t in new[] { "ItemData", "SpellDefinition", "TableLevelData", "DungeonBiome", "BossFight", "AudioData", "CampaignEncounter", "CampaignEvent", "TableLevelDefaults", "HouseRule", "DungeonRoomStyle", "Prefab" })
             guids.UnionWith(AssetDatabase.FindAssets("t:" + t, new[] { Root }));
         guids.UnionWith(AssetDatabase.FindAssets("t:AudioClip", new[] { Root + "/Audio", Root + "/UI/Audio", Root + "/Combat", Root + "/Levels" }.Where(AssetDatabase.IsValidFolder).ToArray()));
         return guids.Select(AssetDatabase.GUIDToAssetPath);
@@ -113,6 +114,7 @@ public static class AssetStudioCatalog
                     // Levels by the act that plays them; board or walled is a word on the row.
                     case TableLevelData l: e = Add(C("Levels & biomes"), guid, path, "Level · " + Levels.GroupOf(l, path), LevelLine(l)); break;
                     case DungeonBiome b: e = Add(C("Levels & biomes"), guid, path, "Biome", Levels.BiomeLine(b)); break;
+                    case DungeonRoomStyle st: e = Add(C("Styles"), guid, path, AssetStudioStyles.KindOf(st), AssetStudioStyles.Describe(st)); break;
                     case BossFight f: e = Add(C("Levels & biomes"), guid, path, "Boss fight", f.name); break;
                     case TableLevelDefaults _: e = Add(C("Levels & biomes"), guid, path, "Level defaults", "Chests, the merchant, breakables, features, wall lights and HUD pieces every level shares."); break;
                     case AudioData d: e = Add(C("Sounds"), guid, path, "Sound data", d.name); break;
@@ -148,6 +150,8 @@ public static class AssetStudioCatalog
             if (path.Contains("/Items/Prefabs/") || path.Contains("/Combat/Spells/") && go.GetComponentInChildren<ParticleSystem>() == null) return null;   // shown through their item or spell
             if (go.GetComponentInChildren<ParticleSystem>(true) != null && (path.Contains("/Combat/") || path.Contains("/Effects/") || path.Contains("/Spells/")))
                 return Add(C("VFX"), guid, path, "Effect", Folder(path));
+            // The realm map, so its ground, bases, road and props can be painted in the turntable like any prop.
+            if (go.GetComponent<CampaignMap>() != null) return Add(C("Props"), guid, path, "Campaign map", Folder(path));
             if ((path.Contains("/Prefabs/") || path.Contains("/Props/")) && (path.StartsWith(Root + "/Levels/") || path.StartsWith(Root + "/World/") || path.StartsWith(Root + "/Progression/")))
                 return Add(C("Props"), guid, path, "Prop", Folder(path));
             return null;
