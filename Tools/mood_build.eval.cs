@@ -36,9 +36,9 @@ UnityEngine.GameObject Box(string name, UnityEngine.Transform parent, UnityEngin
         var w = p; UnityEngine.Vector2 uv = UnityEngine.Mathf.Abs(n.y) > .5f ? (grainAlongZ ? new UnityEngine.Vector2(w.z, w.x) : new UnityEngine.Vector2(w.x, w.z)) : UnityEngine.Mathf.Abs(n.x) > .5f ? new UnityEngine.Vector2(w.z, w.y) : new UnityEngine.Vector2(w.x, w.y);
         us.Add(uv * k);
       }
-      // winding so the face looks along n (Unity: clockwise seen from outside)
+      // winding so the face looks along n: Unity draws a triangle's front where cross(b - a, c - a) points
       var fn = UnityEngine.Vector3.Cross(vs[b + 1] - vs[b], vs[b + 2] - vs[b]);
-      if (UnityEngine.Vector3.Dot(fn, n) > 0) { ts.AddRange(new[] { b, b + 2, b + 1, b, b + 3, b + 2 }); } else { ts.AddRange(new[] { b, b + 1, b + 2, b, b + 2, b + 3 }); }
+      if (UnityEngine.Vector3.Dot(fn, n) > 0) { ts.AddRange(new[] { b, b + 1, b + 2, b, b + 2, b + 3 }); } else { ts.AddRange(new[] { b, b + 2, b + 1, b, b + 3, b + 2 }); }
     }
     Face(UnityEngine.Vector3.up, UnityEngine.Vector3.right, UnityEngine.Vector3.forward); Face(UnityEngine.Vector3.down, UnityEngine.Vector3.right, UnityEngine.Vector3.forward);
     Face(UnityEngine.Vector3.right, UnityEngine.Vector3.forward, UnityEngine.Vector3.up); Face(UnityEngine.Vector3.left, UnityEngine.Vector3.forward, UnityEngine.Vector3.up);
@@ -143,21 +143,8 @@ var lmgr = UnityEngine.Object.FindAnyObjectByType<LightingManager>(); lmgr.night
 log.Append($"globe lantern {lb.size.y:F1} tall, top {lanternTop:F1}; ");
 
 
-// mist lying over the map: three thin sheets of the main menu's drifting fog, just over the relief
-var mapRoot = tm.transform.Find("Campaign map");
-var mistSrc = LoadMat("Assets/Game/UI/Main Menu/Fog/Fog low.mat");
-var mistParent = new UnityEngine.GameObject("Map mist").transform; mistParent.SetParent(mapRoot ? mapRoot : root, false); mistParent.position = new UnityEngine.Vector3(C.x, ty, C.z);
-foreach (var (h, a, sc) in new[] { (1.4f, .55f, 1f), (3.2f, .45f, 1.06f), (5.6f, .32f, .95f), (8.6f, .18f, .85f) })
-{
-  string mp = $"{dir}/Map mist {h:0.#}.mat"; var mm = LoadMat(mp);
-  if (!mm) { mm = new UnityEngine.Material(mistSrc); UnityEditor.AssetDatabase.CreateAsset(mm, mp); }
-  mm.CopyPropertiesFromMaterial(mistSrc); mm.SetColor("_Color", new UnityEngine.Color(.9f, .91f, .93f, a)); mm.SetFloat("_TopFade", 0f);
-  mm.SetVector("_Scale", new UnityEngine.Vector4(1.7f * sc, 1.3f * sc, 0, 0)); mm.SetVector("_Drift", new UnityEngine.Vector4(.008f, .003f, 0, 0)); mm.SetFloat("_DepthFade", 3f); mm.SetFloat("_Threshold", .22f); mm.SetFloat("_Softness", .85f); mm.SetFloat("_Density", 2.2f); mm.SetVector("_EdgeFade", new UnityEngine.Vector4(.3f, .3f, 0, 0)); UnityEditor.EditorUtility.SetDirty(mm);
-  var go = new UnityEngine.GameObject($"Mist {h:0.#}"); go.transform.SetParent(mistParent, false); go.transform.position = new UnityEngine.Vector3(C.x, ty + h, C.z);
-  go.transform.rotation = UnityEngine.Quaternion.Euler(90, 0, 0); go.transform.localScale = new UnityEngine.Vector3(2 * hx * sc, 2 * hz * sc, 1);
-  go.AddComponent<UnityEngine.MeshFilter>().sharedMesh = quad; var r = go.AddComponent<UnityEngine.MeshRenderer>(); r.sharedMaterial = mm; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-}
-log.Append("map mist; ");
+// the mist over the map lives in the map prefab (Tools/mood_map_glows.eval.cs), so it comes and goes with the map
+{ var oldMist = tm.transform.Find("Campaign map/Map mist"); if (oldMist) UnityEngine.Object.DestroyImmediate(oldMist.gameObject); var oldMist2 = root.Find("Map mist"); if (oldMist2) UnityEngine.Object.DestroyImmediate(oldMist2.gameObject); }
 // the places' glows on the map are in the map prefab (Tools/mood_map_glows.eval.cs)
 
 
