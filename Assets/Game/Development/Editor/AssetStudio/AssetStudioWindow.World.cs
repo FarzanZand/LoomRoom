@@ -34,6 +34,7 @@ public partial class AssetStudioWindow
     }
 
     AssetStudioWorld.Model world;
+    static readonly bool levelsInTree = false;   // the levels have their own page now
     readonly HashSet<string> worldOpen = new() { "campaign", "levels", "act1", "lgroup:Act 1" };
     readonly List<WorldNode> worldRows = new();
     WorldNode worldPicked;
@@ -144,6 +145,8 @@ public partial class AssetStudioWindow
         // The levels, by the act of the place that plays them; under each its own rooms, its map, its run (stages, or
         // its base biome) and, under stages, its base biome's level-wide settings. Biomes several levels run (or none)
         // come after, under SHARED BIOMES.
+        // The levels have their own page (Levels in the sidebar); the tree keeps the campaign, maps and unused rooms.
+        if (!levelsInTree) goto afterLevels;
         Row(new WorldNode { key = "levels", label = "LEVELS", kind = WorldKind.Header, hasChildren = true });
         var defaults = AssetDatabase.LoadAssetAtPath<TableLevelDefaults>(AssetStudioWorld.DefaultsPath);
         if (Open("levels") && worldShow != 1 && !searching)
@@ -179,6 +182,7 @@ public partial class AssetStudioWindow
             }
         }
 
+        afterLevels:
         if (worldShow == 0)
         {
             Row(new WorldNode { key = "maps", label = "MAPS", note = m.maps.Count.ToString(), kind = WorldKind.Header, hasChildren = m.maps.Count > 0 });
@@ -770,6 +774,23 @@ public partial class AssetStudioWindow
         }
         GUILayout.EndHorizontal();
 
+        LayoutSection(d);
+
+        if (d.baseBiome != null)
+        {
+            var b = d.baseBiome;
+            Section("BASE BIOME (inside the level's file)");
+            GUILayout.Label($"Style {(b.defaultStyle != null ? b.defaultStyle.name : "none")} · {b.roomStyles?.Length ?? 0} room style{(b.roomStyles?.Length == 1 ? "" : "s")} · kit models {(b.kitModels ? "on" : "off")} · {b.chestTiers?.Length ?? 0} chest tier{(b.chestTiers?.Length == 1 ? "" : "s")} · shop {(b.shopRoom != null ? b.shopRoom.name : "a quiet side room")}"
+                + (d.IsBoard ? " · board light " + Mathf.RoundToInt(b.boardLightIntensity) : ""), new GUIStyle(dim) { wordWrap = true });
+            GUILayout.Label(l.Staged ? "What every floor shares (its Level tab and room features); its stages add their own lists on top." : "What every floor shares and, with no stages, what lives there too.", dim);
+            if (Big("Open the base biome")) PickStage(d, -1);
+        }
+    }
+
+    // How a level's floors are laid out (generated, rooms in a row, or a map template) and its own rooms: the World's
+    // level pane and the Levels page's Map tab.
+    void LayoutSection(TableLevelData d)
+    {
         if (d.layoutMode == DungeonLayoutMode.Authored)
         {
             Section("LAYOUT (hand-painted)");
@@ -803,16 +824,6 @@ public partial class AssetStudioWindow
         // The shop room is on the base biome's Level tab.
         if (d.baseBiome != null) RoomField(d, d.baseBiome, "Shop room", d.baseBiome.shopRoom, v => d.baseBiome.shopRoom = v);
         if (Big("New room for " + d.name)) { StartForm(WorldPane.NewRoom); formLevel = d; formBiome = null; }
-
-        if (d.baseBiome != null)
-        {
-            var b = d.baseBiome;
-            Section("BASE BIOME (inside the level's file)");
-            GUILayout.Label($"Style {(b.defaultStyle != null ? b.defaultStyle.name : "none")} · {b.roomStyles?.Length ?? 0} room style{(b.roomStyles?.Length == 1 ? "" : "s")} · kit models {(b.kitModels ? "on" : "off")} · {b.chestTiers?.Length ?? 0} chest tier{(b.chestTiers?.Length == 1 ? "" : "s")} · shop {(b.shopRoom != null ? b.shopRoom.name : "a quiet side room")}"
-                + (d.IsBoard ? " · board light " + Mathf.RoundToInt(b.boardLightIntensity) : ""), new GUIStyle(dim) { wordWrap = true });
-            GUILayout.Label(l.Staged ? "What every floor shares (its Level tab and room features); its stages add their own lists on top." : "What every floor shares and, with no stages, what lives there too.", dim);
-            if (Big("Open the base biome")) PickStage(d, -1);
-        }
     }
 
     // A level without stages: its floor count and whether the base biome's guardian waits on the last floor.
@@ -1090,14 +1101,8 @@ public partial class AssetStudioWindow
     {
         if (asset == null) return;
         if (asset is DungeonBiome biome) { PickBiome(biome); return; }
-        // A level: its tree row (its group opened so the row shows, picked under the same key as in the tree).
-        if (asset is TableLevelData level && World.LevelOf(level) is AssetStudioWorld.Level found)
-        {
-            string key = "level:" + found.path;
-            if (worldOpen.Add("levels") | worldOpen.Add("lgroup:" + found.Group)) EditorPrefs.SetString(WorldOpenKey, string.Join("|", worldOpen));
-            Pick(new WorldNode { key = key, label = level.name, kind = WorldKind.Level, asset = level, level = level, act = found.act, hasChildren = true, open = worldOpen.Contains(key) });
-            return;
-        }
+        // A level: its page (AssetStudioWindow.Levels).
+        if (asset is TableLevelData level && World.LevelOf(level) != null) { OpenLevel(level, -1); return; }
         var n = worldRows.FirstOrDefault(r => r.asset == asset) ?? new WorldNode { key = "asset:" + asset.GetHashCode(), label = asset.name, asset = asset,
             kind = asset is CampaignEncounter ? WorldKind.Place : asset is CampaignEvent ? WorldKind.Event : asset is TableLevelData ? WorldKind.Level
                 : asset is GameObject g && g.GetComponent<DungeonMapTemplate>() != null ? WorldKind.Map
@@ -1112,6 +1117,7 @@ public partial class AssetStudioWindow
     // A stage of a level's run, or its base biome (index -1).
     void PickStage(TableLevelData level, int index)
     {
+        if (level != null && World.LevelOf(level) != null) { OpenLevel(level, index); levelTab = 0; return; }
         var l = World.LevelOf(level);
         var st = index < 0 ? l?.baseStage : l?.stages.FirstOrDefault(s => s.index == index);
         string key = index < 0 ? "base:" + l?.path : $"stage:{l?.path}:{index}";
@@ -1126,7 +1132,7 @@ public partial class AssetStudioWindow
         var users = World.LevelsOf(b).Where(x => !x.tool).ToList();
         var st = users.Count == 1 ? users[0].stages.FirstOrDefault(s => s.biome == b) : null;
         if (st != null) { PickStage(users[0].data, st.index); return; }
-        Pick(new WorldNode { key = "biome:" + AssetDatabase.GetAssetPath(b), label = b.name, kind = WorldKind.Stage, asset = b, biome = b, stage = -2 });
+        OpenSharedBiome(b);
     }
 
     // ── New forms ────────────────────────────────────────────────────

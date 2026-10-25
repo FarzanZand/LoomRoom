@@ -1,0 +1,8 @@
+/* Asset Studio's inspector in the game's font (StudioSkin): PixelOperator at 16 px, crisp on whole pixels. */
+.unity-text-element, .unity-base-field__label, .unity-foldout__text, .unity-text-input {
+    -unity-font-definition: url("project://database/Assets/Game/Development/Editor/AssetStudio/Fonts/Studio%20PixelOperator.ttf");
+    font-size: 16px;
+}
+.unity-foldout__text, .unity-label.unity-base-field__label {
+    color: rgb(230, 230, 230);
+}

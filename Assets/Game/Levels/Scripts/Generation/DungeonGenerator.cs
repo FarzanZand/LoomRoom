@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.AI.Navigation;
@@ -103,6 +104,31 @@ public partial class DungeonGenerator : MonoBehaviour
     // (the failure is logged as an error to fix) rather than the level failing to load.
     public void Build(TableLevelData level, int seed, int floorNumber=1, bool lastTry=false)
     {
+        var steps = BuildSteps(level, seed, floorNumber, lastTry, false);
+        while (steps.MoveNext()) { }
+    }
+
+    // The same build spread over frames (a floor built from the campaign map, while the map folds away): it stops
+    // whenever a slice has run SliceMilliseconds, and between slices the floor is switched off, so nothing of it is
+    // drawn, lit or started half built. The same seed gives the same floor either way.
+    public IEnumerator BuildSliced(TableLevelData level, int seed, int floorNumber=1, bool lastTry=false) => BuildSteps(level, seed, floorNumber, lastTry, true);
+
+    public const float SliceMilliseconds = 12f;
+    bool slicing;
+    readonly System.Diagnostics.Stopwatch sliceWatch = new();
+    bool SliceDue => slicing && sliceWatch.Elapsed.TotalMilliseconds >= SliceMilliseconds;
+    void Pause() => gameObject.SetActive(false);
+    void Resume() { gameObject.SetActive(true); Physics.SyncTransforms(); sliceWatch.Restart(); }
+    // How far the build has got, 0 to 1, by the share of the time each part took on Dungeon1 (layout .04, walls .19,
+    // rooms .36, the rest of the dressing .08, navigation .1, enemies and sockets .2): the campaign map folds away at
+    // this pace, so it is flat just as the floor is ready.
+    public float BuildProgress { get; private set; } = 1;
+
+    IEnumerator BuildSteps(TableLevelData level, int seed, int floorNumber, bool lastTry, bool sliced)
+    {
+        slicing = sliced; sliceWatch.Restart(); BuildProgress = 0;
+        try
+        {
         acceptUnreachable = lastTry;
         var watch=System.Diagnostics.Stopwatch.StartNew();
         FloorNumber=floorNumber;
@@ -130,7 +156,16 @@ public partial class DungeonGenerator : MonoBehaviour
         doorways = authoredDoors != null ? (level.doorPrefab != null ? authoredDoors : new())
             : level.doorPrefab != null && level.doorPercent > 0 ? Layout.SelectDoorways(level.doorPercent) : new();
         AddStartingRoomDoor();
-        BuildArchitecture(level, seed, floorNumber, watch);
+        BuildProgress = .04f;
+        if (SliceDue) { Pause(); yield return null; Resume(); }
+        var architecture = BuildArchitecture(level, seed, floorNumber, watch);
+        while (architecture.MoveNext()) yield return architecture.Current;
+        }
+        finally
+        {
+            // The table's holes wait for the finished floor (OnEnable skips them while it is built in slices).
+            BuildProgress = 1; if (slicing) { slicing = false; if (isActiveAndEnabled && tableHoles.Count > 0) TableCut.Set(this, tableHoles); }
+        }
     }
 
     bool Authored => data.layoutMode == DungeonLayoutMode.Authored;
@@ -213,7 +248,7 @@ public partial class DungeonGenerator : MonoBehaviour
             }
     }
 
-    void BuildArchitecture(TableLevelData level, int seed, int floorNumber, System.Diagnostics.Stopwatch watch)
+    IEnumerator BuildArchitecture(TableLevelData level, int seed, int floorNumber, System.Diagnostics.Stopwatch watch)
     {
         StageRoom = FindStageRoom();
         // Rooms are one tile high: only a template that asks for more is taller (for effect), never a generated room.
@@ -266,7 +301,11 @@ public partial class DungeonGenerator : MonoBehaviour
         ceiling = new GameObject("Ceilings").transform; ceiling.SetParent(transform, false);
         float size = level.cellSize, tile = level.architectureTileSize;
         var dirs = DungeonLayout.Neighbours;
-        for (int x = 0; x < level.width; x++) for (int z = 0; z < level.depth; z++)
+        for (int x = 0; x < level.width; x++)
+        {
+        BuildProgress = .04f + .19f * x / level.width;
+        if (SliceDue) { Pause(); yield return null; Resume(); }
+        for (int z = 0; z < level.depth; z++)
         {
             if (!Layout.floor[x,z]) continue;
             if (Board) { BuildBoardCell(x, z); continue; }
@@ -332,15 +371,24 @@ public partial class DungeonGenerator : MonoBehaviour
                 }
             }
         }
+        }
         ChooseTemplates();
         ChooseRoomEvents();
         CutExitShaft();
-        for (int i=0;i<Layout.rooms.Count;i++) DecorateRoom(i);
+        BuildProgress = .24f;
+        if (SliceDue) { Pause(); yield return null; Resume(); }
+        for (int i=0;i<Layout.rooms.Count;i++) { DecorateRoom(i); BuildProgress = .24f + .36f * (i + 1) / Layout.rooms.Count; if (SliceDue) { Pause(); yield return null; Resume(); } }
         DecorateWalls();
+        BuildProgress = .62f;
+        if (SliceDue) { Pause(); yield return null; Resume(); }
         PlaceTorches();
         ApplyRoomLights();
+        BuildProgress = .63f;
+        if (SliceDue) { Pause(); yield return null; Resume(); }
         DressCorridors();
         StockDeadEnds();
+        BuildProgress = .64f;
+        if (SliceDue) { Pause(); yield return null; Resume(); }
         if (Board) { BuildBoardMounds(); BuildBoardRim(); }
         // Board tiles stay separate: they are laid out one by one as rooms are revealed.
         var batching=gameObject.AddComponent<DungeonStaticGeometry>();
@@ -348,6 +396,8 @@ public partial class DungeonGenerator : MonoBehaviour
         batching.Combine(ceiling,data.cellSize*8);
         // Ceilings also answer to the player's ceiling light (see FirstPersonLighting).
         foreach(var r in ceiling.GetComponentsInChildren<Renderer>(true)) r.renderingLayerMask |= FirstPersonLighting.CeilingLayer;
+        BuildProgress = .68f;
+        if (SliceDue) { Pause(); yield return null; Resume(); }
         Physics.SyncTransforms();
         Surface = gameObject.AddComponent<NavMeshSurface>();
         Surface.collectObjects = CollectObjects.Children;
@@ -356,6 +406,8 @@ public partial class DungeonGenerator : MonoBehaviour
         Surface.BuildNavMesh();
         navMeshData = Surface.navMeshData;
         ValidateNavigation();
+        BuildProgress = .76f;
+        if (SliceDue) { Pause(); yield return null; Resume(); }
         MakeDoors(seed);
         SpawnPoint = Cell(Layout.Start)+Vector3.up*.12f;
         float closest=float.MaxValue;
@@ -414,8 +466,13 @@ public partial class DungeonGenerator : MonoBehaviour
                 var enemy = Instantiate(prefab,hit.position,Quaternion.Euler(0,random.Next(360),0),transform);
                 JoinPack(i,SetUpEnemy(enemy,random,profiles[i]!=null ? profiles[i].rewards : null));
             }
+            BuildProgress = .8f + .05f * i / Layout.rooms.Count;
+            if (SliceDue) { Pause(); yield return null; Resume(); }
         }
+        if (SliceDue) { Pause(); yield return null; Resume(); }
         SpawnSocketActors(exitStair);
+        BuildProgress = .97f;
+        if (SliceDue) { Pause(); yield return null; Resume(); }
         StockStartingChest();
         FaceStartingChests();
         FinishRoomEvents();
@@ -775,7 +832,7 @@ public partial class DungeonGenerator : MonoBehaviour
     public bool SpawnRoofOpen { get; private set; }
 
     // Holes go into the table under this floor's pits while it is on the table (TableCut).
-    void OnEnable() { if (tableHoles.Count > 0) TableCut.Set(this, tableHoles); }
+    void OnEnable() { if (tableHoles.Count > 0 && !slicing) TableCut.Set(this, tableHoles); }
     void OnDisable() => TableCut.Remove(this);
 
     void OnDestroy()

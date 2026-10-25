@@ -78,7 +78,7 @@ public partial class DungeonGenerator
     // Diagonally touching rooms retain these box colliders, but their visible meshes are
     // mitered by MiterDiagonalEnds so neither room exposes the other room's wall end.
     public const float WallThickness = .22f;
-    const float TrimDepth = .04f;
+    const float TrimDepth = .04f, TrimInset = .02f;
     const float CeilingWallOverlap = .02f;
 
     // Does the cell carry a wall piece facing d at height y?
@@ -165,8 +165,11 @@ public partial class DungeonGenerator
         var outward = new Vector3(d.x, 0, d.y);
         float y = probeY + .001f;
         float back = EndAdjust(cell, d, -end, y, proud), front = EndAdjust(cell, d, end, y, proud);
-        float length = data.cellSize + back + front, thickness = WallThickness + proud;
-        var center = Cell(cell) + outward * (data.cellSize * .5f + (WallThickness - proud) * .5f)
+        // A trim's back face stops TrimInset short of the wall's back: in the same plane they flicker where the back of
+        // the wall shows (an outer wall seen from the room).
+        float inset = proud > 0 ? TrimInset : 0;
+        float length = data.cellSize + back + front, thickness = WallThickness + proud - inset;
+        var center = Cell(cell) + outward * (data.cellSize * .5f + (WallThickness - proud - inset) * .5f)
             + along * ((front - back) * .5f) + Vector3.up * centerY;
         return (center, d.x != 0 ? new Vector3(thickness, height, length) : new Vector3(length, height, thickness));
     }

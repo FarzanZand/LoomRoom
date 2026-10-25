@@ -237,7 +237,7 @@ MonoBehaviour:
   ambientOneShots: []
   oneShotInterval: {x: 60, y: 200}
   oneShotVolume: 0.4
-  music: {fileID: 8300000, guid: 9b6676d6e31306043b7c187ddb5cd29c, type: 3}
+  music: {fileID: 0}
   musicVolume: 0.8
   entryLineChance: 1
   entryLines:

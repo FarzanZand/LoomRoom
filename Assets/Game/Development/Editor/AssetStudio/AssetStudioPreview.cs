@@ -72,6 +72,13 @@ public class AssetStudioPreview : IDisposable
             _ => null,
         };
         if (model != null) { BuildModel(model); return; }
+        if (t is DungeonRoomStyle style)
+        {
+            var sample = AssetStudioStyles.Sample(style);
+            try { BuildModel(sample); }
+            finally { UnityEngine.Object.DestroyImmediate(sample); }
+            return;
+        }
         if (t is AudioClip c) { clip = c; clips = new[] { c }; mode = Mode.Audio; return; }
         if (t is AudioData data && data.clips != null && data.clips.Length > 0) { clips = data.clips.Where(x => x != null).ToArray(); clip = clips.FirstOrDefault(); mode = clip != null ? Mode.Audio : Mode.Icon; return; }
         if (t is Texture2D tex) { texture = tex; mode = Mode.Texture; return; }

@@ -228,13 +228,13 @@ MonoBehaviour:
     chestPrefab: {fileID: 0}
     chestItems: []
     arenaSizeScale: 1.6
-    fight: {fileID: 11400000, guid: 736d6abcfa7acca429fc08e09befcdeb, type: 2}
+    fight: {fileID: 11400000, guid: 118656016a749ff4e9badfaa95013430, type: 2}
   ambience: {fileID: 0}
   ambienceVolume: 0.35
   ambientOneShots: []
   oneShotInterval: {x: 60, y: 200}
   oneShotVolume: 0.4
-  music: {fileID: 8300000, guid: 9b4a330a254e499489933841e58be111, type: 3}
+  music: {fileID: 0}
   musicVolume: 0.8
   entryLineChance: 0.7
   entryLines:
