@@ -1263,7 +1263,10 @@ public class CampaignManager : Singleton<CampaignManager>
 
     bool MapBelongsOnTable => Unveiled && !IntroController.SheetPending
         && !IntroController.PracticeRunning && !(RunManager.HasInstance && RunManager.Instance.Running)
-        && !(loader != null && loader.Busy);
+        && !(loader != null && loader.Busy) && !CoopGuestAtTable;
+
+    // Co-op: a guest at the table picks a figure (the host plays the map), so their map stays down meanwhile.
+    static bool CoopGuestAtTable => Coop.IsGuest && MultiplayerManager.HasInstance && MultiplayerManager.Instance.LocalAtTable;
 
     void Update()
     {
