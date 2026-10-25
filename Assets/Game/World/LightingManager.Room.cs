@@ -26,17 +26,17 @@ public sealed partial class LightingManager
     // Something else is working the lamp (the intro lights and puts it out itself): leave it alone.
     [System.NonSerialized] public bool lampHeld;
 
-    // How much of the room's light each Room Lighting takes away.
-    public static float Darkness(RoomLighting look) => look switch { RoomLighting.Dark => 1f, RoomLighting.Dim => .6f, RoomLighting.Night => .22f, _ => 0f };
+    // How much of the room's light each Room Lighting takes away (Custom: what its Room Brightness leaves).
+    public static float Darkness(RoomLighting look, float customBrightness = 1f) => look switch { RoomLighting.Dark => 1f, RoomLighting.Dim => .6f, RoomLighting.Night => .22f, RoomLighting.Custom => 1f - Mathf.Clamp01(customBrightness), _ => 0f };
 
     // The room as it looks now, with a level's (or the intro's) Room Lighting and Room Tint. Board levels
     // and the intro blend to this; dungeon floors get the same two values through their own mood.
-    public MoodState RoomLook(RoomLighting look, Color tint)
+    public MoodState RoomLook(RoomLighting look, Color tint, float customBrightness = 1f)
     {
         var state = Capture().mood;
         state.overrideLightGroups = false;
         state.darkness = 0f;
-        state.roomDark = Darkness(look);
+        state.roomDark = Darkness(look, customBrightness);
         state.roomShade = new Color(tint.r, tint.g, tint.b, 1f);
         return state;
     }

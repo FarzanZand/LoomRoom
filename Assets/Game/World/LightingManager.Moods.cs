@@ -7,10 +7,11 @@ using UnityEngine.Rendering;
 // optionally the table/room light groups. The source skybox material is never modified.
 public sealed partial class LightingManager
 {
-    [TabGroup("Tabs", "Moods")]
-    [Title("Scene moods"), InlineEditor]
+    [TabGroup("Tabs", "Mood preview")]
+    [Title("Mood preview", "A tool to try a mood asset on the room in the editor: pick one, then Preview or Blend, and Restore Default after. The game doesn't use this pick: each level sets the room on its own Lighting tab, and the intro, the ending and boss fights set theirs.")]
+    [InlineEditor, LabelText("Mood to try")]
     public SceneMood moodPreset;
-    [TabGroup("Tabs", "Moods")]
+    [TabGroup("Tabs", "Mood preview")]
     [Min(0f)] public float moodBlendDuration = 3f;
     [SerializeField, HideInInspector] LightingDefault savedDefault;
     [SerializeField, HideInInspector] bool hasSavedDefault;
@@ -129,7 +130,7 @@ public sealed partial class LightingManager
 
     // ── Moods ─────────────────────────────────────────────────────────
 
-    [TabGroup("Tabs", "Moods")]
+    [TabGroup("Tabs", "Mood preview")]
     [Button("Toggle Mood (F7)")]
     public void ToggleMood()
     {
@@ -140,12 +141,12 @@ public sealed partial class LightingManager
         keyboardMoodPreview = true;
     }
 
-    [TabGroup("Tabs", "Moods")]
-    [Button("Preview Mood"), HorizontalGroup("Tabs/Moods/Mood actions")]
+    [TabGroup("Tabs", "Mood preview")]
+    [Button("Preview Mood"), HorizontalGroup("Tabs/Mood preview/Mood actions")]
     public void PreviewMood() => BlendToMood(moodPreset, 0f);
 
-    [TabGroup("Tabs", "Moods")]
-    [Button("Blend to Mood"), HorizontalGroup("Tabs/Moods/Mood actions")]
+    [TabGroup("Tabs", "Mood preview")]
+    [Button("Blend to Mood"), HorizontalGroup("Tabs/Mood preview/Mood actions")]
     public void BlendSelectedMood() => BlendToMood(moodPreset, moodBlendDuration);
 
     public void BlendToMood(SceneMood preset, float duration = 3f)
@@ -212,8 +213,8 @@ public sealed partial class LightingManager
                                                  tableTint = snapshot.groupsBefore.tableTint, roomTint = snapshot.groupsBefore.roomTint };
     }
 
-    [TabGroup("Tabs", "Moods")]
-    [Button("Save Current as Default"), HorizontalGroup("Tabs/Moods/Default actions")]
+    [TabGroup("Tabs", "Mood preview")]
+    [Button("Save Current as Default"), HorizontalGroup("Tabs/Mood preview/Default actions")]
     public void SaveCurrentAsDefault()
     {
 #if UNITY_EDITOR
@@ -230,8 +231,8 @@ public sealed partial class LightingManager
 #endif
     }
 
-    [TabGroup("Tabs", "Moods")]
-    [Button("Restore Default"), HorizontalGroup("Tabs/Moods/Default actions")]
+    [TabGroup("Tabs", "Mood preview")]
+    [Button("Restore Default"), HorizontalGroup("Tabs/Mood preview/Default actions")]
     public void RestoreDefault()
     {
         keyboardMoodPreview = false;

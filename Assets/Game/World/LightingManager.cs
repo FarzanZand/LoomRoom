@@ -15,42 +15,36 @@ public sealed partial class LightingManager : MonoBehaviour
     // cutscenes and loaders instead of searching the scene.
     public static LightingManager Instance { get; private set; }
 
-    [TabGroup("Tabs", "Room")]
-    [Title("Lighting controls")]
-    [EnumToggleButtons]
-    [Tooltip("Select which controls to edit. Both sets of settings stay active when switching tabs.")]
-    public Scope controlScope;
-    [TabGroup("Tabs", "Room")]
-    [ShowIf("@controlScope == Scope.TableOnly"), LabelText("Table Brightness")]
-    [Range(0f, 8f), OnValueChanged(nameof(Apply))]
-    [Tooltip("Live brightness. 1 is the original skylight; 0 is off. Works in edit and Play mode.")]
-    public float brightness = 1f;
-    [TabGroup("Tabs", "Room")]
-    [ShowIf("@controlScope == Scope.TableOnly"), LabelText("Table Tint")]
-    [OnValueChanged(nameof(Apply))]
-    public Color tint = Color.white;
-    [TabGroup("Tabs", "Room")]
-    [ShowIf("@controlScope == Scope.WholeScene"), Range(0f, 8f), OnValueChanged(nameof(Apply))]
-    [Tooltip("Brightness of the room lights and environment. Does not change the table's dedicated lights.")]
+    // ── Room tab: the bedroom as it is outside a level (a level changes it on its own Lighting tab while played) ──
+    [TabGroup("Tabs", "Room"), PropertyOrder(-3)]
+    [Title("Room lights", "The bedroom's lamps and the light everywhere in it. While a level is played its own Lighting tab dims or colours the room on top of this.")]
+    [LabelText("Room Brightness"), Range(0f, 8f), OnValueChanged(nameof(Apply))]
+    [Tooltip("How bright the room's lamps, sun and sky are (1 as authored). The table's two spot lights have their own control below.")]
     public float sceneBrightness = 1f;
-    [TabGroup("Tabs", "Room")]
-    [ShowIf("@controlScope == Scope.WholeScene"), OnValueChanged(nameof(Apply))]
+    [TabGroup("Tabs", "Room"), PropertyOrder(-3), LabelText("Room Colour"), OnValueChanged(nameof(Apply)), Tooltip("The colour the room's lamps and ambient light take (white: as authored).")]
     public Color sceneTint = Color.white;
-    [TabGroup("Tabs", "Room")]
-    [ShowIf("@controlScope == Scope.WholeScene")]
-    [Range(0f, 4f)] public float ambientMultiplier = 1f;
-    [TabGroup("Tabs", "Room")]
-    [ShowIf("@controlScope == Scope.WholeScene")]
-    public bool overrideFogColor;
-    [TabGroup("Tabs", "Room")]
-    [ShowIf("@controlScope == Scope.WholeScene && overrideFogColor")]
-    public Color fogColor = Color.gray;
-
-    [TabGroup("Tabs", "Room")]
-    [Title("Ambient light")]
-    [Range(0f, 4f), OnValueChanged(nameof(Apply))]
-    [Tooltip("Multiplies the room's ambient light (the light in unlit corners), in every mood: higher makes the room's dark less dark. 1 = as the moods have it. While no dungeon floor is dark (the intro, board levels) this is the whole scene's ambient.")]
+    [TabGroup("Tabs", "Room"), PropertyOrder(-3), LabelText("Dark Corners"), Range(0f, 4f), OnValueChanged(nameof(Apply))]
+    [Tooltip("The light in the room's unlit corners (its ambient), in every mood: higher makes the room's dark less dark, 0 leaves only what the lamps reach. While no dungeon floor is dark (the intro, board levels) this is the whole scene's ambient.")]
     public float roomAmbient = 1f;
+
+    [TabGroup("Tabs", "Room"), PropertyOrder(1), Title("Table spot lights", "The two spot lights over the table (Systems/Lighting Manager/Skylight Lighting).")]
+    [LabelText("Table Spot Lights"), Range(0f, 8f), OnValueChanged(nameof(Apply))]
+    [Tooltip("Their brightness: 1 as authored, 0 off.")]
+    public float brightness = 1f;
+    [TabGroup("Tabs", "Room"), PropertyOrder(1), LabelText("Table Spot Colour"), OnValueChanged(nameof(Apply))]
+    public Color tint = Color.white;
+
+    [TabGroup("Tabs", "Room"), PropertyOrder(2), ShowIf(nameof(SceneHasFog)), Title("Fog", "Only while the scene's fog is on (Lighting window).")]
+    [LabelText("Own Fog Colour"), OnValueChanged(nameof(Apply))]
+    public bool overrideFogColor;
+    [TabGroup("Tabs", "Room"), PropertyOrder(2), ShowIf("@SceneHasFog() && overrideFogColor"), OnValueChanged(nameof(Apply))]
+    public Color fogColor = Color.gray;
+    bool SceneHasFog() => RenderSettings.fog;
+
+    // Kept for older scenes, out of the inspector: the old Table/Whole scene switch only chose which controls showed,
+    // and a second ambient slider did what Dark Corners does (left at 1).
+    [HideInInspector] public Scope controlScope;
+    [HideInInspector, Range(0f, 4f)] public float ambientMultiplier = 1f;
 
     [TabGroup("Tabs", "Room"), Title("Night light")]
     [Tooltip("The bedroom's soft night light (it replaced the skylight's moon): one of the room lights, so it dims and goes out with them (off in the intro's dark).")]
@@ -65,35 +59,29 @@ public sealed partial class LightingManager : MonoBehaviour
     public float nightShadeGlow = 1.2f;
     MaterialPropertyBlock shadeBlock;
     static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
-    [TabGroup("Tabs", "Dungeon"), Title("Ambient light")]
-    [Range(0f, 4f), OnValueChanged(nameof(Apply))]
-    [Tooltip("Multiplies the ambient light on dark dungeon floors, after Dark Ambient caps it: higher makes the dungeon's dark less dark (places no torch or carried light reaches). 1 = as is.")]
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(1), ShowIf(nameof(dungeonDarkness)), LabelText("Dark Corners"), Range(0f, 4f), OnValueChanged(nameof(Apply))]
+    [Tooltip("Multiplies the ambient light on dark dungeon floors, after Ambient Cap: higher makes the dungeon's dark less dark (places no torch or carried light reaches). 1 = as is. The room's own Dark Corners is on the Room tab.")]
     public float dungeonAmbient = 1f;
 
-    [TabGroup("Tabs", "Table reveal")]
-    [Title("Table hand-raise reveal")]
-    [Range(0f, 8f)] public float startingBrightness = 1f;
-    [TabGroup("Tabs", "Table reveal")]
-    [Range(0f, 8f)] public float revealedBrightness = 3f;
-    [TabGroup("Tabs", "Table reveal")]
-    [Min(0f), Tooltip("Seconds after the ReachOut trigger before the light starts changing.")]
-    public float revealDelay = 0.75f;
-    [TabGroup("Tabs", "Table reveal")]
-    [Min(0f), Tooltip("Seconds to reach the revealed brightness after ReachOut starts.")]
-    public float fadeDuration = 6f;
+    // The old hand-raise reveal of the table's spot lights (PlayReveal, ShowBefore, ShowAfter): nothing triggers it any
+    // more, so its numbers are kept out of the inspector.
+    [HideInInspector, Range(0f, 8f)] public float startingBrightness = 1f;
+    [HideInInspector, Range(0f, 8f)] public float revealedBrightness = 3f;
+    [HideInInspector, Min(0f)] public float revealDelay = 0.75f;
+    [HideInInspector, Min(0f)] public float fadeDuration = 6f;
 
-    [TabGroup("Tabs", "Dungeon")]
-    [Title("Dungeon darkness")]
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(0)]
+    [Title("Dungeon darkness", "How dark a walled dungeon floor is where no torch or carried light reaches. Each biome's Look tab picks its colours; these hold every floor down.")]
     [OnValueChanged(nameof(Apply))]
     [Tooltip("Dungeons are dark away from light sources whatever their lighting preset: ambient light and the sun are held down, so only torches and the player's own light show the way. A biome can opt out with Lit Throughout.")]
     public bool dungeonDarkness = true;
     [TabGroup("Tabs", "Dungeon")]
-    [ShowIf(nameof(dungeonDarkness)), Range(0f, 1f), OnValueChanged(nameof(Apply))]
+    [ShowIf(nameof(dungeonDarkness)), LabelText("Ambient Cap"), PropertyOrder(1), Range(0f, 1f), OnValueChanged(nameof(Apply))]
     [Tooltip("Brightest the preset's ambient colours may be in a dungeon: how visible unlit places are. 0.11 matches the Darkness preset; 0 is pitch black.")]
     public float darkAmbient = .11f;
     [TabGroup("Tabs", "Dungeon")]
-    [ShowIf(nameof(dungeonDarkness)), Range(0f, 1f), OnValueChanged(nameof(Apply))]
-    [Tooltip("Strongest the directional (sun) light may be in a dungeon. 0.02 matches the Darkness preset.")]
+    [ShowIf(nameof(dungeonDarkness)), LabelText("Sun Cap"), PropertyOrder(2), Range(0f, 1f), OnValueChanged(nameof(Apply))]
+    [Tooltip("Strongest the directional (sun) light may be in a dungeon (little reaches a walled floor anyway). 0.02 matches the Darkness preset.")]
     public float darkSunIntensity = .02f;
     [TabGroup("Tabs", "Dungeon")]
     [ShowIf(nameof(dungeonDarkness)), OnValueChanged(nameof(Apply))]
@@ -143,8 +131,8 @@ public sealed partial class LightingManager : MonoBehaviour
         Instance = this;
         EnableMoods();
         originalProbe = RenderSettings.ambientProbe;
-        if (Application.isPlaying && HasSavedDefault) RestoreDefault();
-        else if (Application.isPlaying) brightness = startingBrightness;
+        // Play starts from the inspector's values: what is set here is what the game shows. (The saved default is only
+        // the Mood preview's point to go back to, Restore Default.)
         Apply();
     }
 
