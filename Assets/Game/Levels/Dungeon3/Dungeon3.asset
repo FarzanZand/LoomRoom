@@ -166,7 +166,7 @@ MonoBehaviour:
   maxEnemiesPerRoom: 2
   features: []
   loot: {fileID: 0}
-  merchantChance: 0.3
+  merchantChance: 1
   guardian:
     enabled: 0
     boss: {fileID: 0}
@@ -213,7 +213,7 @@ MonoBehaviour:
     weight: 3
   - prefab: {fileID: 6682190492535852451, guid: a3f935b8a5116744c81458439dead315, type: 3}
     weight: 1
-  shopRoom: {fileID: 729654494956090050, guid: 20a0a3a67173c774abd0169ec0deff6e, type: 3}
+  shopRoom: {fileID: 729654494956090050, guid: cd4e8a9f5828584449707f8024914c70, type: 3}
   boardEdgeMaterial: {fileID: 0}
   boardGridMaterial: {fileID: 0}
   boardPitMaterial: {fileID: 0}

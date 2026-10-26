@@ -63,11 +63,13 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Min(1), ShowIf(nameof(typewriter)), Tooltip("Letters typed a second.")] float charactersPerSecond = 40f;
     [SerializeField, Min(0), ShowIf(nameof(typewriter)), Tooltip("Extra seconds after a full stop, question or exclamation mark (a comma, colon or semicolon waits half as long).")]
     float punctuationPause = .25f;
-    [SerializeField, Min(0), Tooltip("Lines said in person (a conversation at the table) stay at least this long, plus the time per word, before the next one.")]
+    [SerializeField, Min(0), Tooltip("Each line stays this long, plus the time per word, once it is typed out, before the next queued line takes its place (and at least as long as its voice).")]
     float readBase = 1.2f;
     [SerializeField, Min(0)] float readPerWord = .3f;
 
-    readonly Queue<(Line line, float delay)> queue = new();
+    // Lines waiting their turn, oldest first: a new line never cuts off the one being said. clip: a recorded voice
+    // given with the line (Say(text, clip)).
+    readonly List<(Line line, AudioClip clip, float delay)> queue = new();
     // Oldest first. hex is the colour's RGB, worked out once when the line is added.
     // marked: a Dungeon Master line, whose *asterisked* parts take the highlight colour. typing: seconds it takes to type
     // out (0: shown whole); its hold and fade come after.
@@ -154,7 +156,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     // Drops lines not yet said (a run ended: what was meant for the dungeon is not said in the room).
     public void Silence()
     {
-        queue.Clear(); pendingClip = null;
+        queue.Clear();
         if (running != null) { StopCoroutine(running); running = null; }
         StopVoice();
     }
@@ -185,11 +187,10 @@ public class DungeonMaster : Singleton<DungeonMaster>
     static bool overMenus;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetOverMenus() => overMenus = false;
 
-    AudioClip pendingClip;
     void Enqueue(Line line, AudioClip clip, float delay)
     {
-        if (clip != null) { line = new Line { text = line.text, mumble = false, inPerson = line.inPerson }; pendingClip = clip; }
-        queue.Enqueue((line, delay));
+        if (clip != null) line = new Line { text = line.text, mumble = false, inPerson = line.inPerson };
+        queue.Add((line, clip, delay));
         if (running == null && isActiveAndEnabled) running = StartCoroutine(Run());
     }
 
@@ -197,19 +198,33 @@ public class DungeonMaster : Singleton<DungeonMaster>
     {
         while (queue.Count > 0)
         {
-            var (line, delay) = queue.Dequeue();
+            var (line, clip, delay) = queue[0];
+            queue.RemoveAt(0);
             if (delay > 0) yield return new WaitForSecondsRealtime(delay);
             // The label sits on the HUD canvas, which cutscenes and the pause menu hide: hold the line until it can be read.
-            while (GameManager.HasInstance && GameManager.Instance.State is GameState.Cutscene or GameState.Paused) yield return null;
-            float speaking = Speak(line);
-            float pause = speaking + .6f;
-            if (line.inPerson) pause = Mathf.Max(pause, readBase + readPerWord * line.text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length);
+            while (Cutscene || Paused) yield return null;
+            float speaking = Speak(line, clip, out float typing);
+            // The next line waits until this one has been heard, typed out and read.
+            float pause = Mathf.Max(speaking + .6f, typing + Reading(line.text));
             // In a conversation scene (Dialogue state: the intro, the character sheet) a click, Space, Enter or
             // gamepad South moves on to the next line.
             // The pause menu holds the line (and its voice) where it is: whoever waits on it waits too.
             for (float t = 0f; t < pause; )
             {
                 if (Paused) { yield return null; continue; }
+                // A cutscene (a floor being built on the table) hides the feed: a line it cuts off mid-voice stops and
+                // is said again, whole, once the cutscene is over, so the voice never plays without its words.
+                if (Cutscene)
+                {
+                    if (t < speaking)
+                    {
+                        StopVoice();
+                        string shown = line.text.Trim();
+                        lines.RemoveAll(l => l.marked && l.text == shown); dirty = true;
+                        queue.Insert(0, (line, clip, 0f));
+                    }
+                    break;
+                }
                 if (t > .2f && Skippable && InputManager.HasInstance && InputManager.Instance.SkipLinePressed) { StopVoice(); break; }
                 yield return null;
                 if (!Paused) t += Time.unscaledDeltaTime;
@@ -220,6 +235,9 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     static bool Skippable => GameManager.HasInstance && GameManager.Instance.State == GameState.Dialogue;
     static bool Paused => GameManager.HasInstance && GameManager.Instance.State == GameState.Paused;
+    static bool Cutscene => GameManager.HasInstance && GameManager.Instance.State == GameState.Cutscene;
+    // Seconds to read a line once it is all on screen.
+    float Reading(string text) => readBase + readPerWord * text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length;
     // Held from Update, so a line said outside the queue (SayNow) is held too.
     bool voicePaused;
     void PauseVoice(bool pause)
@@ -238,13 +256,14 @@ public class DungeonMaster : Singleton<DungeonMaster>
     public void SayNow(Line line)
     {
         if (line == null || string.IsNullOrWhiteSpace(line.text)) return;
-        Speak(line);
+        Speak(line, null, out _);
     }
 
-    // Shows the line and starts its voice or mumble. Returns the seconds of speech.
-    float Speak(Line line)
+    // Shows the line and starts its voice (its own, the clip given with it, or the mumble). Returns the seconds of
+    // speech; typing: the seconds it takes to type out.
+    float Speak(Line line, AudioClip clip, out float typing)
     {
-        float typing = Show(line.text.Trim(), standardColor, true);
+        typing = Show(line.text.Trim(), standardColor, true);
         Spoke?.Invoke(line);
         float speaking = .5f;
         if (AudioManager.HasInstance)
@@ -252,12 +271,12 @@ public class DungeonMaster : Singleton<DungeonMaster>
             StopVoice();   // a new line never talks over the last one's voice
             AudioSource voice = null;
             if (line.voice != null) voice = AudioManager.Instance.PlayUIData(line.voice);
-            else if (pendingClip != null) { voice = AudioManager.Instance.PlayUI(pendingClip); pendingClip = null; }
+            else if (clip != null) voice = AudioManager.Instance.PlayUI(clip);
             if (voice != null) { voiceSource = voice; voiceClip = voice.clip; }
             if (voice != null && voice.clip != null) speaking = voice.clip.length;
             else if (line.mumble) speaking = Mumble(Plain(line.text));
         }
-        return Mathf.Max(speaking, typing);   // the next line waits for this one to be typed out
+        return speaking;
     }
 
     // Returns the seconds the line takes to type out (0 when shown whole).

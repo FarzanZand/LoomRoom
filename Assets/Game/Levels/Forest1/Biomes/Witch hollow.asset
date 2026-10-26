@@ -185,7 +185,7 @@ MonoBehaviour:
   maxEnemiesPerRoom: 3
   features: []
   loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
-  merchantChance: 0.5
+  merchantChance: 1
   guardian:
     enabled: 1
     boss: {fileID: 642504646530285115, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}

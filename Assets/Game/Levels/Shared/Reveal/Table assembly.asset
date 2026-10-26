@@ -18,6 +18,9 @@ MonoBehaviour:
   cameraTransitionSeconds: 0.65
   approachSeconds: 1.25
   allowSkip: 1
+  exitSeconds: 1.1
+  exitRise: 4
+  exitSinkSeconds: 0.45
   liftDistance: 2.5
   pieceDuration: 0.28
   rise:
@@ -56,3 +59,54 @@ MonoBehaviour:
   buildSound: {fileID: 8300000, guid: c8062c865d2dc8040aeb14e6388d1a25, type: 3}
   settleSound: {fileID: 8300000, guid: 7b3df19198c8fe249a9e4e454c3c4444, type: 3}
   volume: 0.4
+  ghostSeconds: 0.45
+  ghostColor: {r: 0.2, g: 0.2, b: 0.23, a: 0.85}
+  ghostTileSize: 0.9
+  cascadeSeconds: 1.6
+  tileDropSeconds: 0.34
+  tileDropHeight: 1.6
+  variety: 0.45
+  tilePop: 1.15
+  tileSquash: 0.22
+  tileTilt: 18
+  waveJitter: 0.12
+  waveWarp: 0.14
+  wallLag: 0.04
+  entrancePause: 0.45
+  entranceDropHeight: 3
+  entranceDropSeconds: 0.3
+  entranceShake: 1.4
+  entranceShakeSeconds: 0.5
+  entranceDustMaterial: {fileID: 2100000, guid: 991b4b557a7633a49be55155ab5cd3d3, type: 2}
+  entranceDustCount: 220
+  entranceFlash: 3
+  lightsPause: 0.3
+  lightsSeconds: 1.1
+  lightFadeSeconds: 0.35
+  entranceLightsPause: 0.3
+  litHold: 0.35
+  tileSounds:
+  - {fileID: 8300000, guid: 76129171a7d8aaa4f8ca7bdf67c2a312, type: 3}
+  - {fileID: 8300000, guid: 506875a089d68404aa0b3c6e3299ea81, type: 3}
+  - {fileID: 8300000, guid: 5ff1264984a48894d8a9fd172df01286, type: 3}
+  - {fileID: 8300000, guid: 70043eeaa51274c4a86a626b6b213149, type: 3}
+  - {fileID: 8300000, guid: 1f7ae83045f99194e8ec09fddf621173, type: 3}
+  - {fileID: 8300000, guid: f5dc372ad3fcfb24f98c6c2dc553de24, type: 3}
+  - {fileID: 8300000, guid: 8a1109230c3b10945b29575640656fbc, type: 3}
+  - {fileID: 8300000, guid: 164d03a41cb874d4e9a7f356c1df78b0, type: 3}
+  - {fileID: 8300000, guid: f55158d79e7dd014c89e6934a6fdd1d7, type: 3}
+  clackGap: 0.045
+  clackVolume: 0.3
+  clackPitch: {x: 0.7, y: 0.9}
+  footprintSound: {fileID: 8300000, guid: 01cadee36d9f9924b9a97e34c083a71d, type: 3}
+  footprintVolume: 0.35
+  entranceSlamSound: {fileID: 8300000, guid: b29876153e4b14d4299b75e4f7ef690a, type: 3}
+  entranceSlamVolume: 0.7
+  torchSounds:
+  - {fileID: 8300000, guid: 9e7a73af33d092444b392110fbdce25b, type: 3}
+  - {fileID: 8300000, guid: bba5a261566b4d644a0232e4f2170795, type: 3}
+  - {fileID: 8300000, guid: 15fe395829ef9fa43a9865a99e5bc10c, type: 3}
+  torchVolume: 0.18
+  torchGap: 0.18
+  entranceTorchSound: {fileID: 8300000, guid: 88c50d31d9f1feb44af8f2a29db5b6d1, type: 3}
+  entranceTorchVolume: 0.45

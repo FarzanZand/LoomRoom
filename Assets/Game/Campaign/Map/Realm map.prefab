@@ -8022,6 +8022,9 @@ MonoBehaviour:
   dropClearance: 0.25
   settleSeconds: 0.6
   scatterClearance: 1.4
+  greyShader: {fileID: 4800000, guid: 25d8ff5b9ab1ca047af9f5482d9ae692, type: 3}
+  greyAmount: 0.85
+  greyDarken: 0.75
   terrain: {fileID: 3952612297985501398}
   gridX: 156
   gridZ: 212

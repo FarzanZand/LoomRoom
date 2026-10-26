@@ -16,7 +16,8 @@ public partial class DungeonGenerator
         if (greetedFloor != templates) { greetedRooms.Clear(); greetedFloor = templates; }
         int room = Layout.RoomAt(CellOf(player.transform.position));
         if (room < 0 || room >= templates.Length || templates[room] == null || !greetedRooms.Add(room)) return;
-        var line = templates[room].PickEnterLine();
+        // The tavern speaks off the record (TavernRoom); any other room says one of its Enter Lines.
+        var line = templates[room].TryGetComponent<TavernRoom>(out var tavern) ? tavern.Pick(this) : templates[room].PickEnterLine();
         if (line != null) DungeonMaster.Say(line, null, .6f);
     }
 }

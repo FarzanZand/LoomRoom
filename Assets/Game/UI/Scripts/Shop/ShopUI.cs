@@ -32,6 +32,8 @@ public class ShopUI : Singleton<ShopUI>
     [SerializeField, Tooltip("A bag item over its cells (inactive; children Icon, Honed fill, Stack). Empty: each item's icon sits in its top-left cell.")]
     RectTransform bagItemTemplate;
     [SerializeField, Min(0)] float iconPadding = 4f;
+    [Tooltip("The tavern keeper's tabs (Wares, Food, Rumours); hidden for a plain merchant.")]
+    [SerializeField] TavernTabsUI tavern;
     [Tooltip("Price line of a ware the player can't afford.")]
     [SerializeField] Color tooDearColor = new(.69f, .353f, .306f);
 
@@ -80,6 +82,7 @@ public class ShopUI : Singleton<ShopUI>
         if (player.Hotbar != null) player.Hotbar.Changed += Refresh;
         if (player.Wallet != null) player.Wallet.Changed += OnGold;
         Refresh();
+        if (tavern != null) tavern.Bind(m, p);
         // With a pad, a ware is selected at once (selecting shows it in the details, so the mouse keeps the help text).
         if (InputManager.PadConnected) SelectStart();
     }
@@ -135,6 +138,7 @@ public class ShopUI : Singleton<ShopUI>
         var events = UnityEngine.EventSystems.EventSystem.current;
         if (events != null && root != null && events.currentSelectedGameObject != null && events.currentSelectedGameObject.transform.IsChildOf(root.transform)
             && !events.alreadySelecting) events.SetSelectedGameObject(null);
+        if (tavern != null) tavern.Unbind();
         if (root != null) root.SetActive(false);
         if (TooltipUI.HasInstance) TooltipUI.Instance.Hide();
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
@@ -189,6 +193,7 @@ public class ShopUI : Singleton<ShopUI>
                 drawItem: !(inBag && drawBag) && (!inBag || slot == i - hotbarCells));
         }
         DrawBag(drawBag);
+        if (tavern != null) tavern.AfterShopRefresh();
     }
 
     // One view per bag item, from its top-left cell to its bottom-right cell (ItemGridUI.Place does the same in the bag).
@@ -278,6 +283,14 @@ public class ShopUI : Singleton<ShopUI>
         Refresh();
     }
 
+    // The tavern's tabs: fill the wares again (back on the Wares tab), and a line in the feedback spot.
+    public void RefreshWares() => Refresh();
+    // The line at the foot while nothing is hovered: the wares' own, or a tavern tab's (null puts the wares' back).
+    const string WaresHelp = "Hover over an item to see it. Click a ware or drag it to your pack to buy it. Right click something in your pack or drag it to the wares to sell it.";
+    string help;
+    public void SetHelp(string text) { help = text; ShowDetails(null); }
+    public void Feedback(string message) => Say(message);
+
     void Say(string message)
     {
         if (feedback != null && !string.IsNullOrEmpty(message)) feedback.text = message;
@@ -327,7 +340,7 @@ public class ShopUI : Singleton<ShopUI>
         bool any = item != null;
         if (detailsIcon != null) { detailsIcon.sprite = any ? item.icon : null; detailsIcon.enabled = detailsIcon.sprite != null; }
         if (detailsName != null) detailsName.text = any ? item.itemName : "";
-        if (details != null) details.text = any ? item.BuildTooltip() : "Hover over an item to see it. Click a ware or drag it to your pack to buy it. Right click something in your pack or drag it to the wares to sell it.";
+        if (details != null) details.text = any ? item.BuildTooltip() : help ?? WaresHelp;
         if (detailsPrice == null || merchant == null) return;
         if (!any) { detailsPrice.text = ""; return; }
         if (ware)

@@ -144,6 +144,16 @@ public sealed partial class DungeonLayout
         foreach (var p in roomCells[rooms.Count - 1]) Reserved.Add(p);
     }
 
+    // An authored map's exit is the room it marks Exit, which need not be its last-numbered room.
+    public void SetExitRoom(int room)
+    {
+        int last = rooms.Count - 1;
+        if (room < 0 || room >= rooms.Count || room == last) return;
+        if (last != 0) foreach (var p in roomCells[last]) if (!Walkways.Contains(p)) Reserved.Remove(p);
+        foreach (var p in roomCells[room]) Reserved.Add(p);
+        Exit = roomCenters[room];
+    }
+
     // Keeps furnishing off the cells an authored map puts its own content on.
     public void Reserve(Vector2Int cell) => Reserved.Add(cell);
 

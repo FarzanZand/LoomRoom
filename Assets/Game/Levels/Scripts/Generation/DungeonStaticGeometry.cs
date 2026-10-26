@@ -12,6 +12,8 @@ public class DungeonStaticGeometry : MonoBehaviour
 {
     readonly List<Mesh> ownedMeshes=new();
     public const string FloorTileName="Flagstone";
+    // What the build's Combine made and switched off: the cascade reveal draws the pieces themselves while it runs.
+    public readonly List<MeshRenderer> BuildChunks=new(), MergedPieces=new();
     public void Combine(Transform root,float chunkSize)
     {
         var groups=new Dictionary<(Material,int,int),List<MeshFilter>>();
@@ -33,7 +35,8 @@ public class DungeonStaticGeometry : MonoBehaviour
             var go=new GameObject("Static chunk",typeof(MeshFilter),typeof(MeshRenderer));go.transform.SetParent(root,false);
             go.GetComponent<MeshFilter>().sharedMesh=mesh;go.GetComponent<MeshRenderer>().sharedMaterial=group.Key.Item1;
             if(group.Value.TrueForAll(f=>f.name==FloorTileName))go.GetComponent<MeshRenderer>().shadowCastingMode=ShadowCastingMode.Off;
-            foreach(var f in group.Value)f.GetComponent<MeshRenderer>().enabled=false;
+            BuildChunks.Add(go.GetComponent<MeshRenderer>());
+            foreach(var f in group.Value){var piece=f.GetComponent<MeshRenderer>();piece.enabled=false;MergedPieces.Add(piece);}
         }
     }
     // The build's chunks under root merged again into squares of chunkSize (same material, shadow mode and rendering

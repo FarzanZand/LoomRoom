@@ -39,7 +39,25 @@ public partial class DungeonGenerator
         var shapes = new DungeonShape[count];
         for (int i = 0; i < count; i++) shapes[i] = ChooseShape(roles[i], chosen[i], shapeRandom, RequestedTemplate(i, roles[i], chosen[i], merchant));
         // A stage arena is kept at the edge in front of the Dungeon Master (DungeonGenerator.Stage).
-        Layout = DungeonLayout.Grow(level.width, level.depth, shapes, seed, level.Growth, StageOrigin(shapes[count - 1]));
+        if (UsesStartingRoom) shapes[0] = FacingDungeonMaster(shapes[0]);
+        var entranceAt = EntranceOrigin(shapes[0]);
+        Layout = DungeonLayout.Grow(level.width, level.depth, shapes, seed, level.Growth, StageOrigin(shapes[count - 1]), entranceAt);
+        // The shop (the tavern) is built whole or not at all. Grown late on a full grid it can come out as a small
+        // fallback room, which drops most of its interior: the floor is grown again with the shop's room moved earlier
+        // in the growing order (halfway back each time, then every earlier place), and failing that later, until it
+        // stands whole. Floors where it fitted are unchanged.
+        var shopFootprint = merchant > 0 && data.shopRoom != null && data.shopRoom.GetComponent<DungeonRoomTemplate>() is { HasFootprint: true } shop ? shop.Footprint() : null;
+        if (shopFootprint != null && !ShopWhole(Layout, merchant, shopFootprint.FloorCount))
+            foreach (int to in OtherPlaces(merchant, count))
+            {
+                var movedShapes = Moved(shapes, merchant, to);
+                var again = DungeonLayout.Grow(level.width, level.depth, movedShapes, seed, level.Growth, StageOrigin(movedShapes[count - 1]), entranceAt);
+                if (!ShopWhole(again, to, shopFootprint.FloorCount)) continue;
+                Layout = again; shapes = movedShapes;
+                roles = Moved(roles, merchant, to); chosen = Moved(chosen, merchant, to); pooledTemplates = Moved(pooledTemplates, merchant, to);
+                merchant = to;
+                break;
+            }
         var placed = Layout.PlacedRequests;
         Roles = new RoomRole[placed.Length];
         profiles = new DungeonRoomProfile[placed.Length];
@@ -54,6 +72,7 @@ public partial class DungeonGenerator
             if (chunk != null && chunk.HasFootprint && Layout.RoomCells(i).Count < chunk.Footprint().FloorCount * .9f) pooledTemplates[i] = null;
         }
         MerchantRoom = System.Array.IndexOf(placed, merchant);
+        if (shopFootprint != null && MerchantRoom >= 0 && !ShopWhole(Layout, merchant, shopFootprint.FloorCount)) MerchantRoom = -1;
         // A shop room that did not fit the grid: the merchant sets up in a placed quiet room with no interior of its
         // own instead (no shop template there, its shape wasn't made for it), so every floor that rolls one has one.
         shopInPlainRoom = false;
@@ -74,6 +93,34 @@ public partial class DungeonGenerator
     }
     bool shopInPlainRoom;
 
+    // Where to move the shop's request to: halfway back each time down to right after the entrance, then every other
+    // earlier place, latest first, then the later ones (never the exit's). Right after the entrance it can still lose
+    // out: a floor grown again for lost rooms puts a plain room before any with marked doors.
+    static System.Collections.Generic.IEnumerable<int> OtherPlaces(int from, int count)
+    {
+        var tried = new System.Collections.Generic.HashSet<int> { from };
+        for (int to = from / 2; to >= 1; to = to == 1 ? 0 : Mathf.Max(1, to / 2)) if (tried.Add(to)) yield return to;
+        for (int to = from - 1; to >= 1; to--) if (tried.Add(to)) yield return to;
+        for (int to = from + 1; to < count - 1; to++) if (tried.Add(to)) yield return to;
+    }
+
+    // The requests with the one at `from` moved to `to`, the ones between shifted one place toward where it was.
+    static T[] Moved<T>(T[] items, int from, int to)
+    {
+        var moved = (T[])items.Clone();
+        for (int i = from; i > to; i--) moved[i] = moved[i - 1];
+        for (int i = from; i < to; i++) moved[i] = moved[i + 1];
+        moved[to] = items[from];
+        return moved;
+    }
+
+    // Whether requested room `request` was placed with (nearly) all of the shop's footprint, as the pooled chunks are checked.
+    static bool ShopWhole(DungeonLayout layout, int request, int footprintCells)
+    {
+        int placedIndex = System.Array.IndexOf(layout.PlacedRequests, request);
+        return placedIndex >= 0 && layout.RoomCells(placedIndex).Count >= footprintCells * .9f;
+    }
+
     // The first floor of the run and of every new biome opens in the level's Starting room.
     bool UsesStartingRoom => data.startingRoom != null && !Authored
         && (FloorNumber == 1 || data.Biome(FloorNumber) != data.Biome(FloorNumber - 1));
@@ -91,6 +138,34 @@ public partial class DungeonGenerator
                 doorways.RemoveAll(d => { var n = d.roomCell + d.direction; return Layout.InBounds(n) && Layout.RegionIds[n.x, n.y] == passage; });
                 doorways.Add((cell, dir));
                 return;
+            }
+    }
+
+    // The merchant's room (the tavern) can ask for a door on every way in (DungeonRoomTemplate.wayInDoor): one door per
+    // opening cell, as the ambush's gates, in place of any other door on those passages (the starting room's keeps its own).
+    readonly System.Collections.Generic.Dictionary<(Vector2Int, Vector2Int), GameObject> doorPrefabs = new();
+    void AddWayInDoors()
+    {
+        doorPrefabs.Clear();
+        if (MerchantRoom <= 0) return;
+        // The merchant in a plain room (the shop didn't fit) has no tavern, so no tavern door either.
+        var prefab = TemplatePrefab(MerchantRoom);
+        var template = prefab != null ? prefab.GetComponent<DungeonRoomTemplate>() : null;
+        if (template == null || template.wayInDoor == null) return;
+        foreach (var cell in Layout.RoomCells(MerchantRoom))
+            foreach (var dir in DungeonLayout.Neighbours)
+            {
+                if (!Layout.IsOpening(MerchantRoom, cell, dir)) continue;
+                var outside = cell + dir;
+                int passage = Layout.RegionIds[outside.x, outside.y];
+                // The passage's other doors go (one door a passage), the starting room's own excepted.
+                doorways.RemoveAll(d =>
+                {
+                    var n = d.roomCell + d.direction;
+                    return Layout.InBounds(n) && Layout.RegionIds[n.x, n.y] == passage && !Layout.InRoom(0, d.roomCell) && !Layout.InRoom(MerchantRoom, d.roomCell);
+                });
+                doorways.Add((cell, dir));
+                doorPrefabs[(cell, dir)] = template.wayInDoor;
             }
     }
 

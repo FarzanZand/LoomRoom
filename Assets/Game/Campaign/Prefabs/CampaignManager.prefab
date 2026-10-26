@@ -44,11 +44,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 832c4b40b945b0045a9854a24eb93aff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CampaignManager
+  burnAway: 1
+  burnShader: {fileID: 4800000, guid: 1fdcc94b29a5f0243be42d8ddcff8b69, type: 3}
+  burnSeconds: 1.6
+  burnGlow: {r: 2.6, g: 0.62, b: 0.1, a: 1}
+  burnRagged: 0.3
+  burnEmberMaterial: {fileID: 2100000, guid: 1d268683ca5efdb478bf0c538ff5b796, type: 2}
+  burnEmbersPerSecond: 160
+  burnSound: {fileID: 8300000, guid: c0950232261258942b4b9b9d11ef8ef9, type: 3}
+  burnLoop: {fileID: 8300000, guid: 1e265126e51901d4285a02b09895d365, type: 3}
+  burnVolume: 0.5
   useCampaign: 1
   mapPrefab: {fileID: 5509045572063656809, guid: 545f2a3eb3c487f42babbd2c3f5025a0, type: 3}
   mapSpot: {fileID: 0}
   riseSeconds: 1.2
   lightFadeSeconds: 0.8
+  levelGenerator: 1
   home: {fileID: 11400000, guid: ffada713b3f1ff943955248d41bd14a9, type: 2}
   encounters:
   - {fileID: 11400000, guid: 8472af35f9f50fb4c959ae5938b31e91, type: 2}
@@ -100,6 +111,7 @@ MonoBehaviour:
   viewAim: {x: -6, y: 0}
   stepSeconds: 1
   frameOpenLand: 1
+  frameWholeTable: 1
   frameMargin: 1.3
   maxZoomIn: -30
   maxZoomOut: 14

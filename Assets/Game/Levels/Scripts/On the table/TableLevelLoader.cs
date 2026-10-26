@@ -237,7 +237,7 @@ public class TableLevelLoader : MonoBehaviour
                 if(ProgressionManager.HasInstance) ProgressionManager.Instance.tableEntered=true;
                 if(level.IsDungeon && RunManager.HasInstance)
                 {
-                    if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); }
+                    if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); if(resume==null) { TavernDish.ForgetEaten(); player.GetComponent<AdventurerProgress>()?.ApplyStats(); } }
                     // A continued run's checkpoint already holds this floor's experience (it was taken after the floor
                     // was reached): only the depth is set, with no floor experience and no "+XP" meter at level 1.
                     var resumedProgress = resume != null ? player.GetComponent<AdventurerProgress>() : null;

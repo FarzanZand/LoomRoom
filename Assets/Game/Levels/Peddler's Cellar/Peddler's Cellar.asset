@@ -166,7 +166,7 @@ MonoBehaviour:
   maxEnemiesPerRoom: 2
   features: []
   loot: {fileID: 0}
-  merchantChance: 0.3
+  merchantChance: 1
   guardian:
     enabled: 0
     boss: {fileID: 0}
@@ -272,12 +272,15 @@ MonoBehaviour:
     tier4: 0
     upgradeChance: 0
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  startingChest: 1
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   startingChestItems: []
   fixedSeed: 0
   pocket: 0
   nextFloorMessage: You descend to floor {0}.
   roomLighting: 1
+  roomBrightness: 0.5
+  roomTint: {r: 1, g: 1, b: 1, a: 1}
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   layoutMode: 2
   width: 31

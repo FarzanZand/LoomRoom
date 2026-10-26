@@ -37,6 +37,62 @@ public partial class DungeonGenerator
         return new Vector2Int(Mathf.Clamp(Mathf.RoundToInt(cx - s.width * .5f), 1, width - 1 - s.width), dz >= 0 ? depth - 1 - s.height - gz : 1 + gz);
     }
 
+    // Where the entrance room may go, best first: on the grid's edge away from the Dungeon Master (in front of the player
+    // standing at the table opposite him), centred on him, then 4 and 8 cells further in, so the floor is built toward
+    // him from the player's side (DungeonLayout.Grow keeps the first spot every room fits from).
+    // Off: the entrance grows from near the grid's middle, as before (for comparing layouts).
+    public static bool EntranceFacesPlayer = true;
+    Vector2Int[] EntranceOrigin(DungeonShape shape)
+    {
+        if (!EntranceFacesPlayer || !TableManager.HasInstance || TableManager.Instance.DM == null) return null;
+        var s = shape.Trimmed();
+        int width = data.width, depth = data.depth;
+        var local = DungeonMasterPosition() - transform.position;
+        float cx = local.x / data.cellSize + width * .5f, cz = local.z / data.cellSize + depth * .5f;
+        float dx = (cx - width * .5f) / width, dz = (cz - depth * .5f) / depth;
+        var spots = new Vector2Int[3];
+        for (int i = 0; i < spots.Length; i++)
+        {
+            int inset = 1 + i * 4;
+            spots[i] = Mathf.Abs(dx) >= Mathf.Abs(dz)
+                ? new Vector2Int(dx >= 0 ? inset : width - inset - s.width, Mathf.Clamp(Mathf.RoundToInt(cz - s.height * .5f), 1, depth - 1 - s.height))
+                : new Vector2Int(Mathf.Clamp(Mathf.RoundToInt(cx - s.width * .5f), 1, width - 1 - s.width), dz >= 0 ? inset : depth - inset - s.height);
+        }
+        return spots;
+    }
+
+    // The grid direction toward the Dungeon Master, along whichever grid axis points at him most.
+    Vector2Int? TowardDungeonMaster()
+    {
+        if (!EntranceFacesPlayer || !TableManager.HasInstance || TableManager.Instance.DM == null) return null;
+        var local = DungeonMasterPosition() - transform.position;
+        float dx = local.x / (data.width * data.cellSize), dz = local.z / (data.depth * data.cellSize);
+        return Mathf.Abs(dx) >= Mathf.Abs(dz) ? new Vector2Int(dx >= 0 ? 1 : -1, 0) : new Vector2Int(0, dz >= 0 ? 1 : -1);
+    }
+
+    // The entrance's marked door (the starting room's one way out) turned to face the Dungeon Master: the floor grows
+    // from it across the table away from the player, with no hallway wrapping round the room first.
+    DungeonShape FacingDungeonMaster(DungeonShape shape)
+    {
+        var toward = TowardDungeonMaster();
+        if (toward == null || shape == null || !shape.HasDoorMarks) return shape;
+        for (int i = 0; i < 4; i++)
+        {
+            if (DoorSide(shape) == toward.Value) return shape;
+            shape = shape.RotatedClockwise();
+        }
+        return shape;
+    }
+
+    // Which side of the shape its marked doors are on (from its centre, along the stronger axis).
+    static Vector2Int DoorSide(DungeonShape s)
+    {
+        var sum = Vector2.zero;
+        for (int x = 0; x < s.width; x++) for (int y = 0; y < s.height; y++)
+            if (s.DoorAllowed(x, y)) sum += new Vector2(x - s.center.x, y - s.center.y);
+        return Mathf.Abs(sum.x) >= Mathf.Abs(sum.y) ? new Vector2Int(sum.x >= 0 ? 1 : -1, 0) : new Vector2Int(0, sum.y >= 0 ? 1 : -1);
+    }
+
     // The exit room when its template is a stage (in a grown or an authored layout), else -1.
     int FindStageRoom()
     {

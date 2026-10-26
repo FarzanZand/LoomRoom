@@ -158,6 +158,7 @@ public partial class DungeonGenerator : MonoBehaviour
         doorways = authoredDoors != null ? (level.doorPrefab != null ? authoredDoors : new())
             : level.doorPrefab != null && level.doorPercent > 0 ? Layout.SelectDoorways(level.doorPercent) : new();
         AddStartingRoomDoor();
+        AddWayInDoors();
         BuildProgress = .04f;
         if (SliceDue) { Pause(); yield return null; Resume(); }
         var architecture = BuildArchitecture(level, seed, floorNumber, watch);
@@ -210,6 +211,7 @@ public partial class DungeonGenerator : MonoBehaviour
         Roles = new RoomRole[count];
         for (int i = 0; i < count; i++)
             Roles[i] = i < rooms.Length && rooms[i] != null ? rooms[i].role : i == 0 ? RoomRole.Entrance : i == count - 1 ? RoomRole.Exit : RoomRole.Rest;
+        Layout.SetExitRoom(System.Array.IndexOf(Roles, RoomRole.Exit));
         profiles = new DungeonRoomProfile[count];
         // Furnishing keeps off the cells the content map uses.
         var content = level.AuthoredRows(level.authoredContent ?? "");
@@ -609,14 +611,16 @@ public partial class DungeonGenerator : MonoBehaviour
 
     void MakeDoors(int seed)
     {
-        if(data.doorPrefab==null)return;
+        if(data.doorPrefab==null && doorPrefabs.Count==0)return;
         foreach(var doorway in doorways) {
             var p=doorway.roomCell;
             var dir=doorway.direction;
             var n=p+dir;
             var pos=(Cell(p)+Cell(n))*.5f;
             if (Board) pos.y = Cell(p).y; // it stands at the room's edge, where the steps begin
-            var door=Instantiate(data.doorPrefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
+            var prefab=doorPrefabs.TryGetValue((p,dir),out var own) ? own : data.doorPrefab;
+            if(prefab==null)continue;
+            var door=Instantiate(prefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
             // Cell width changes the span, not the doorway height or ceiling clearance.
             door.transform.localScale=new Vector3(data.cellSize/2f,1,1);
             var gate = door.GetComponent<DungeonDoor>();
@@ -667,7 +671,7 @@ public partial class DungeonGenerator : MonoBehaviour
         // Only decorate cells outside the reserved doorway-to-centre routes.
         var available=new System.Collections.Generic.List<Vector2Int>();
         // The entrance and exit rooms are kept clear, except their rims when the level asks (trees round a glade).
-        bool rim=data.furnishEntranceRims && (index==0 || index==Layout.rooms.Count-1);
+        bool rim=data.furnishEntranceRims && (index==0 || Roles[index]==RoomRole.Exit);
         bool Rim(Vector2Int p){if(Layout.Walkways.Contains(p))return false;foreach(var d in DungeonLayout.Neighbours)if(!Layout.InRoom(index,p+d))return true;return false;}
         foreach(var p in Layout.RoomCells(index))if(!Layout.Reserved.Contains(p) || rim && Rim(p))available.Add(p);
         for(int i=available.Count-1;i>0;i--){int j=random.Next(i+1);(available[i],available[j])=(available[j],available[i]);}

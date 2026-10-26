@@ -3,8 +3,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Timed effects on the active player, shown as icons above the health bar with the time left:
-// food regen (the food's icon) and timed stat modifiers (the item's icon, one per source).
+// Effects on the active player, shown as icons above the health bar with the time left: food regen (the food's icon),
+// timed stat modifiers (the item's icon, one per source) and the tavern's dishes eaten this run (TavernDish: "run" for
+// a timer, as they last it). Hovering one says what it is (HoverText).
 // The slots are authored in the scene; unused ones are hidden.
 public class BuffBarUI : MonoBehaviour
 {
@@ -28,8 +29,9 @@ public class BuffBarUI : MonoBehaviour
     struct Shown
     {
         public Sprite icon;
-        public float seconds;
+        public float seconds;   // below 0: lasts the run
         public bool harmful;
+        public string title, subtitle, body;
     }
 
     readonly List<Shown> shown = new();
@@ -51,10 +53,13 @@ public class BuffBarUI : MonoBehaviour
             if (slot.timer != null)
             {
                 if (slotSeconds == null || slotSeconds.Length != slots.Length) slotSeconds = new int[slots.Length];
-                int seconds = Mathf.CeilToInt(shown[i].seconds);
-                if (slotSeconds[i] != seconds || slot.timer.text.Length == 0) { slotSeconds[i] = seconds; slot.timer.text = Format(seconds); }
+                int seconds = shown[i].seconds < 0 ? -1 : Mathf.CeilToInt(shown[i].seconds);
+                if (slotSeconds[i] != seconds || slot.timer.text.Length == 0) { slotSeconds[i] = seconds; slot.timer.text = seconds < 0 ? "run" : Format(seconds); }
             }
             if (slot.frame != null) slot.frame.color = shown[i].harmful ? debuffFrame : buffFrame;
+            var hover = slot.root.GetComponent<HoverText>();
+            if (hover == null) hover = slot.root.AddComponent<HoverText>();
+            if (hover.title != shown[i].title || hover.body != shown[i].body) hover.Set(shown[i].title, shown[i].subtitle, shown[i].body);
         }
     }
 
@@ -64,7 +69,12 @@ public class BuffBarUI : MonoBehaviour
         bySource.Clear();
         if (stats == null || !stats.IsAlive) return;
         if (stats.FoodRemaining > 0f)
-            shown.Add(new Shown { icon = stats.FoodSource != null && stats.FoodSource.icon != null ? stats.FoodSource.icon : foodIcon, seconds = stats.FoodRemaining });
+            shown.Add(new Shown { icon = stats.FoodSource != null && stats.FoodSource.icon != null ? stats.FoodSource.icon : foodIcon, seconds = stats.FoodRemaining,
+                title = stats.FoodSource != null ? stats.FoodSource.itemName : "Food", subtitle = "Healing over time" });
+        // The tavern's dishes: the whole run.
+        if (PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table && RunManager.HasInstance && RunManager.Instance.Running)
+            foreach (var dish in TavernDish.EatenThisRun())
+                shown.Add(new Shown { icon = dish.icon != null ? dish.icon : foodIcon, seconds = -1, title = dish.displayName, subtitle = "Lasts until this run ends", body = dish.effectText });
         foreach (var m in stats.Modifiers)
         {
             if (m == null || m.IsPermanent || m.IsExpired) continue;
@@ -78,7 +88,8 @@ public class BuffBarUI : MonoBehaviour
             }
             var item = (m.Source as ItemBuffSource)?.Item;
             bySource[key] = shown.Count;
-            shown.Add(new Shown { icon = item != null && item.icon != null ? item.icon : fallbackIcon, seconds = m.Duration, harmful = m.Value < 0f });
+            shown.Add(new Shown { icon = item != null && item.icon != null ? item.icon : fallbackIcon, seconds = m.Duration, harmful = m.Value < 0f,
+                title = item != null ? item.itemName : "Effect", subtitle = m.Value < 0f ? "Harmful" : "Helpful", body = StatModifierEntry.Describe(m.Stat, m.Type, m.Value) });
         }
     }
 

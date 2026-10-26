@@ -1,24 +1,27 @@
 using System.Collections;
 using UnityEngine;
 
-// A friendly character the table player can pick a fight with (the dungeon merchant). Neutral characters take no damage
+// A friendly character the table player can pick a fight with (the tavern keeper). Neutral characters take no damage
 // (FactionRules), so a player's blow or spell that lands on one comes here instead (Hitbox, SpellProjectile.Blast). The
-// first one provokes it: it turns on the player, glares, and the Dungeon Master warns them. The next one, after
-// Calm Seconds, ends it: it is swapped for Wrath Prefab (an enemy that wears its look and is nearly impossible to kill),
+// first blow gives the house rule about it (RuleManager, rule two: "New rule added: Do not attack the help..."; once
+// given, he quotes it instead), the next ones until Hits To Turn get a warning, and that many blows (each after Calm
+// Seconds) end it: it is swapped for Wrath Prefab (an enemy that wears its look and is nearly impossible to kill),
 // which comes straight for the player, and the Dungeon Master has his say again.
 public class ProvokableNpc : MonoBehaviour
 {
-    [Tooltip("Said by the Dungeon Master the first time it is hit (one picked at random).")]
+    [Min(2), Tooltip("Blows it takes before it turns (the first gives the house rule, the ones between get a warning).")]
+    public int hitsToTurn = 3;
+    [Tooltip("Said by the Dungeon Master on the blows between the first and the last (one picked at random); on the first too once the rule is given.")]
     public DungeonMaster.Line[] provokedLines =
     {
         new() { text = "I would not do that again.", mumble = true },
         new() { text = "He has been down here longer than you. Leave him be.", mumble = true },
     };
-    [Tooltip("Said by the Dungeon Master when it is hit again and turns (one picked at random).")]
+    [Tooltip("Said by the Dungeon Master when it turns (one picked at random).")]
     public DungeonMaster.Line[] wrathLines =
     {
         new() { text = "I did warn you.", mumble = true },
-        new() { text = "You had to try it twice.", mumble = true },
+        new() { text = "Some people only learn the hard way.", mumble = true },
     };
     [Tooltip("Posted to the message feed the first time. {Name} is its name with \"The\" in front.")]
     public string provokedMessage = "{Name} glares at you.";
@@ -39,7 +42,7 @@ public class ProvokableNpc : MonoBehaviour
     [Min(0), Tooltip("Seconds it reels from a blow before it turns to glare at whoever struck it.")]
     public float staggerSeconds = .45f;
 
-    const int MerchantRule = 2;   // RuleManager's rule two, quoted on the first blow
+    const int MerchantRule = 2;   // RuleManager's rule two, given on the first blow
 
     public int Hits { get; private set; }
     public bool Turned { get; private set; }
@@ -71,14 +74,16 @@ public class ProvokableNpc : MonoBehaviour
         if (Hits > 0 && Time.time - firstHitAt < calmSeconds) return;
         Hits++;
         CoopWorld.Provoked(this, Hits);
-        Stagger(by, Hits > 1);
-        if (Hits == 1)
+        Stagger(by, Hits >= hitsToTurn);
+        if (Hits < hitsToTurn)
         {
             firstHitAt = Time.time;
             Post(provokedMessage);
+            // House rule two, given on the first blow (pinned to the sheet from then on); once given, the first blow quotes it
+            // ("Rule two.") and every blow before the last gets a warning.
+            if (Hits == 1 && GiveRule()) return;
+            if (Hits == 1) RuleManager.QuoteRule(MerchantRule);
             Say(provokedLines);
-            // House rule two: hitting the merchant is allowed, but not recommended.
-            RuleManager.QuoteRule(MerchantRule);
             return;
         }
         Turned = true;
@@ -136,6 +141,17 @@ public class ProvokableNpc : MonoBehaviour
         if (staggerSeconds > 0f) yield return new WaitForSeconds(staggerSeconds);
         if (brain != null && by != null) brain.SnapRotationTowards(by.transform.position);
         glare = null;
+    }
+
+    // The first blow ever: the rule is given and he says it ("New rule added: ..."). Already given: false.
+    static bool GiveRule()
+    {
+        if (!RuleManager.HasInstance) return false;
+        var rule = RuleManager.Instance.Rule(MerchantRule);
+        if (rule == null || RuleManager.Instance.Given(rule)) return false;
+        var line = RuleManager.Instance.Give(rule);
+        if (line != null && !line.IsEmpty) DungeonMaster.Say(line);
+        return true;
     }
 
     void Post(string text)

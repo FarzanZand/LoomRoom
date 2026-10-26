@@ -31,20 +31,40 @@ public sealed partial class DungeonLayout
 
     // exitAt: where the exit room must stand (a boss stage in front of the Dungeon Master): the spot is kept free
     // while the other rooms grow, then the exit is placed there and tunnelled to the nearest room it can reach.
-    public static DungeonLayout Grow(int width, int depth, IList<DungeonShape> requests, int seed, DungeonGrowthSettings settings, Vector2Int? exitAt = null)
+    // entranceAt: where the entrance room should stand, best first (the edge in front of the player at the table, then a
+    // little further in): the first spot from which every room fits is kept; failing all of them it grows from the middle.
+    public static DungeonLayout Grow(int width, int depth, IList<DungeonShape> requests, int seed, DungeonGrowthSettings settings, Vector2Int? exitAt = null, IList<Vector2Int> entranceAt = null)
     {
         if (requests == null || requests.Count < 2) throw new ArgumentException("Dungeon requires at least two rooms.");
-        var layout = new DungeonLayout(width, depth, seed);
-        layout.GrowRooms(requests, settings, exitAt, false);
+        DungeonLayout layout = null;
+        if (entranceAt != null)
+            foreach (var spot in entranceAt)
+            {
+                var tried = new DungeonLayout(width, depth, seed) { entranceAt = spot };
+                try { tried.GrowRooms(requests, settings, exitAt, false); } catch (InvalidOperationException) { continue; }
+                if (!tried.EntrancePlacedAt) continue;
+                if (layout == null || tried.PlacedRequests.Length > layout.PlacedRequests.Length) layout = tried;
+                if (layout.PlacedRequests.Length == requests.Count) break;
+            }
+        if (layout == null || layout.PlacedRequests.Length < requests.Count)
+        {
+            var middle = new DungeonLayout(width, depth, seed);
+            if (layout == null) middle.GrowRooms(requests, settings, exitAt, false);
+            else
+            {
+                try { middle.GrowRooms(requests, settings, exitAt, false); } catch (InvalidOperationException) { middle = null; }
+            }
+            if (layout == null || middle != null && middle.PlacedRequests.Length > layout.PlacedRequests.Length) layout = middle;
+        }
         // Rooms lost: grown again with no hand-built room (its doorways marked, often a single one)
         // until a plain room with free walls stands. Otherwise the starting room's one door can lead into a one-door
         // chunk and leave nothing to grow from (a floor of just the start and the exit). The layout with more rooms is
         // kept; floors that placed every room are untouched.
         if (layout.PlacedRequests.Length < requests.Count)
         {
-            var again = new DungeonLayout(width, depth, seed);
-            again.GrowRooms(requests, settings, exitAt, true);
-            if (again.PlacedRequests.Length > layout.PlacedRequests.Length) layout = again;
+            var again = new DungeonLayout(width, depth, seed) { entranceAt = layout.entranceAt };
+            try { again.GrowRooms(requests, settings, exitAt, true); } catch (InvalidOperationException) when (again.entranceAt.HasValue) { again = null; }
+            if (again != null && again.PlacedRequests.Length > layout.PlacedRequests.Length) layout = again;
         }
         if (layout.PlacedRequests.Length < requests.Count)
             Debug.LogWarning($"Dungeon seed {seed}: {requests.Count - layout.PlacedRequests.Length} of {requests.Count} rooms did not fit the {width}x{depth} grid. Reduce room count or size, or enlarge the grid.");
@@ -55,6 +75,9 @@ public sealed partial class DungeonLayout
     public bool ExitPlacedAt { get; private set; }
 
     bool plainFirst;
+    Vector2Int? entranceAt;
+    // The entrance stands where it was asked to (entranceAt).
+    public bool EntrancePlacedAt { get; private set; }
 
     void GrowRooms(IList<DungeonShape> requests, DungeonGrowthSettings settings, Vector2Int? exitAt, bool plainFirst)
     {
@@ -113,6 +136,12 @@ public sealed partial class DungeonLayout
     bool PlaceFirst(DungeonShape shape)
     {
         int width = floor.GetLength(0), depth = floor.GetLength(1);
+        if (entranceAt is { } at)
+        {
+            var whole = shape.Trimmed();
+            var spot = new Vector2Int(Mathf.Clamp(at.x, 1, width - 1 - whole.width), Mathf.Clamp(at.y, 1, depth - 1 - whole.height));
+            if (Fits(whole, spot)) { Place(whole, spot); EntrancePlacedAt = true; return true; }
+        }
         foreach (var s in Fallbacks(shape))
             for (int attempt = 0; attempt < 40; attempt++)
             {
@@ -138,7 +167,10 @@ public sealed partial class DungeonLayout
                 int gap = growRandom.Next(growth.spacing.x, growth.spacing.y + 1);
                 var a = rooms[anchor];
                 Vector2Int origin;
-                switch (growRandom.Next(4))
+                // Off a room whose ways out are marked (a hand-built room, the starting room), on the side its doors are
+                // on, so the passage runs straight out of the door instead of round the room to it.
+                int side = DoorSide(anchor);
+                switch (side >= 0 ? side : growRandom.Next(4))
                 {
                     case 0: origin = new Vector2Int(a.xMax + gap, growRandom.Next(a.yMin - s.height + 1, a.yMax)); break;
                     case 1: origin = new Vector2Int(a.xMin - gap - s.width, growRandom.Next(a.yMin - s.height + 1, a.yMax)); break;
@@ -147,11 +179,33 @@ public sealed partial class DungeonLayout
                 }
                 if (!Fits(s, origin)) continue;
                 int index = Place(s, origin);
-                if (Connect(anchor, index, (gap * 2 + 14) * 16)) return true;
+                // Out of the starting room the passage stays short (it opens the floor): a room only reached the long
+                // way round is tried elsewhere.
+                int reach = anchor == 0 && doorAnchors[0] != null ? (gap + 3) * 12 : (gap * 2 + 14) * 16;
+                if (Connect(anchor, index, reach)) return true;
                 Unplace(index);
             }
         }
         return false;
+    }
+
+    // The side of one of a room's marked doors, picked at random (0 +x, 1 -x, 2 +y, 3 -y, as TryGrow's sides); -1 when
+    // its doors may be anywhere.
+    int DoorSide(int room)
+    {
+        var anchors = doorAnchors[room];
+        if (anchors == null || anchors.Count == 0) return -1;
+        var r = rooms[room];
+        int pick = growRandom.Next(anchors.Count), i = 0;
+        foreach (var c in anchors)
+        {
+            if (i++ != pick) continue;
+            // How far the door cell sits from each side of the room: the nearest side is the one it opens on.
+            int toRight = r.xMax - 1 - c.x, toLeft = c.x - r.xMin, toTop = r.yMax - 1 - c.y, toBottom = c.y - r.yMin;
+            int least = Mathf.Min(Mathf.Min(toRight, toLeft), Mathf.Min(toTop, toBottom));
+            return least == toRight ? 0 : least == toLeft ? 1 : least == toTop ? 2 : 3;
+        }
+        return -1;
     }
 
     // Keeps a room's spot (and the cell of clearance round it) free while the others grow, or frees it again.
@@ -313,8 +367,20 @@ public sealed partial class DungeonLayout
     // existing corridor costs 5, so passages share tunnels instead of digging twins.
     bool Connect(int a, int b, int maxCost)
     {
+        // The entrance with marked doors (the starting room) has one way out: a second passage beside the first would
+        // leave an opening its one door doesn't close.
+        if ((a == 0 || b == 0) && doorAnchors[0] != null && degree[0] > 0) return false;
         var sources = DoorCells(a, b);
         var targets = new HashSet<Vector2Int>(DoorCells(b, a));
+        // Along the starting room's wall only its own door cells may be dug: any other cell touching it (a door cell of
+        // the room at the other end, a step sideways) would be a second opening its one door doesn't close.
+        HashSet<Vector2Int> startDoors = null;
+        if (doorAnchors[0] != null && (a == 0 || b == 0))
+        {
+            startDoors = new HashSet<Vector2Int>(a == 0 ? sources : DoorCells(0, a));
+            sources.RemoveAll(c => !startDoors.Contains(c) && TouchesRoom(c, 0));
+            targets.RemoveWhere(c => !startDoors.Contains(c) && TouchesRoom(c, 0));
+        }
         if (sources.Count == 0 || targets.Count == 0) return false;
         int width = floor.GetLength(0), depth = floor.GetLength(1);
         var cost = new int[width, depth];
@@ -336,6 +402,7 @@ public sealed partial class DungeonLayout
                 int o = occupant[n.x, n.y];
                 bool open = targets.Contains(n) || o == CorridorCell || (o == EmptyCell && !Halo(n));
                 if (!open) continue;
+                if (startDoors != null && !startDoors.Contains(n) && TouchesRoom(n, 0)) continue;
                 int next = c + (o == CorridorCell ? 5 : 10 + noise[n.x, n.y]);
                 if (next > maxCost || next >= cost[n.x, n.y]) continue;
                 cost[n.x, n.y] = next; previous[n.x, n.y] = p; heap.Push(next, n);
@@ -367,6 +434,12 @@ public sealed partial class DungeonLayout
         return true;
     }
 
+    bool TouchesRoom(Vector2Int p, int room)
+    {
+        foreach (var d in Directions) { var n = p + d; if (Inner(n) && occupant[n.x, n.y] == room) return true; }
+        return false;
+    }
+
     bool Dig(Vector2Int p, int owner)
     {
         if (occupant[p.x, p.y] != EmptyCell) return false;
@@ -384,6 +457,8 @@ public sealed partial class DungeonLayout
         for (int i = 0; i < rooms.Count; i++) for (int j = i + 1; j < rooms.Count; j++)
         {
             if (ExitPlacedAt && (i == rooms.Count - 1 || j == rooms.Count - 1)) continue;
+            // The entrance with marked doors (the starting room) keeps its one way out.
+            if (i == 0 && doorAnchors[0] != null) continue;
             if (Connections.Contains(new Vector2Int(i, j)) || Connections.Contains(new Vector2Int(j, i))) continue;
             if (Gap(rooms[i], rooms[j]) <= reach) pairs.Add((i, j));
         }

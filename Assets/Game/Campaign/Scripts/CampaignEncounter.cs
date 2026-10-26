@@ -25,11 +25,20 @@ public class CampaignEncounter : ScriptableObject
     public int deathsToOpen;
     [ShowIf("@deathsToOpen > 0"), Tooltip("The place whose deaths count (campaign.deaths.<its id>).")]
     public CampaignEncounter deathsIn;
-    [ShowIf("@deathsToOpen > 0"), Tooltip("Said as it rises into view.")]
+    [ShowIf("@deathsToOpen > 0 || rumoured"), Tooltip("Said as it rises into view.")]
     public DungeonMaster.Line openedLine;
     [ShowIf("@deathsToOpen > 0"), Tooltip("Said once, back in the room, after the first death counted toward this place while it is still shut.")]
     public DungeonMaster.Line shutHint;
     public bool Locked => deathsToOpen > 0 && deathsIn != null;
+
+    [Title("Rumour", HorizontalLine = false), Tooltip("Off the map until the player buys the tavern keeper's rumour about it; then it rises into view (with Opened Line) as soon as they are back in the room. A save that has played it already keeps it.")]
+    public bool rumoured;
+    [ShowIf(nameof(rumoured)), TextArea(2, 3), Tooltip("What the keeper says before you pay: cryptic, never the place's name.")]
+    public string rumour;
+    [ShowIf(nameof(rumoured)), TextArea(2, 3), Tooltip("What he tells you once you have paid (the screen names the place and its act too).")]
+    public string rumourTold;
+    // Off the map until something opens it: deaths elsewhere, or a rumour.
+    public bool Hidden => Locked || rumoured;
 
     public string KindName => kind switch
     {

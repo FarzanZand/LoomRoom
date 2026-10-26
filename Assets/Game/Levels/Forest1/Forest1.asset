@@ -212,7 +212,7 @@ MonoBehaviour:
   maxEnemiesPerRoom: 2
   features: []
   loot: {fileID: 0}
-  merchantChance: 0.3
+  merchantChance: 1
   guardian:
     enabled: 0
     boss: {fileID: 0}

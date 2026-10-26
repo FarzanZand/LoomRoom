@@ -21,6 +21,7 @@ public partial class AssetStudioWindow
     static readonly string[] SpellGlance = { "displayName", "manaCost", "power", "castSeconds", "recoverySeconds", "speed", "lifetime", "homing", "groundArea", "areaRadius", "areaDelay", "description" };
     static readonly string[] SoundGlance = { "clips", "volume", "pitch", "pitchVariance" };
     static readonly string[] RoomGlance = { "heightTiles", "roomEvent", "openCeiling", "skylightRadius", "style", "enterLines", "enterChance" };
+    static readonly string[] DishGlance = { "displayName", "icon", "price", "effectText", "flavour", "attributes", "modifiers" };
     static readonly string[] StyleGlance = { "floor", "bottomWall", "upperWall", "ceiling", "trim", "hideTrims", "wallBaseWeight", "wallVariants", "floorBaseWeight", "floorVariants" };
 
     bool HasPage(AssetStudioCatalog.Entry e) => e != null && e.category != "Campaign";
@@ -41,6 +42,10 @@ public partial class AssetStudioWindow
                 case SpellDefinition spell: Glance(spell, SpellGlance); break;
                 case AudioData sound: Glance(sound, SoundGlance); break;
                 case DungeonRoomStyle style: Glance(style, StyleGlance); break;
+                case TavernDish dish:
+                    Glance(dish, DishGlance);
+                    GUILayout.Label("Eaten at the tavern once a run; it lasts until the run ends. Write Effect Text as the screen should say it.", dim);
+                    break;
                 case TableLevelData level:
                     GUILayout.Label("Levels have their own page, with their run, rooms and look.", dim);
                     if (GUILayout.Button("Open " + level.name + "'s page", GUILayout.Height(30), GUILayout.Width(280))) OpenLevel(level, -1);

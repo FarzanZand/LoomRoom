@@ -102,7 +102,9 @@ public partial class DungeonGenerator
             // An opening's corner (a doorway between a room and a corridor): the room's wall keeps
             // the corner so the corridor wall's end never shows as a strip in the room's wall.
             bool room = IsRoomCell(cell), otherRoom = IsRoomCell(cell + end + d);
-            if (room && !otherRoom) return zFacing ? proud : 0;
+            // A trim wraps the corner by its own depth whichever way it faces: ending on the opening's edge, its end face lay
+            // in the plane of the wall's end face there and flickered against it (the tavern's way in).
+            if (room && !otherRoom) return proud;
             if (!room && otherRoom) return -WallThickness;
             return zFacing ? proud : -WallThickness;
         }

@@ -9,7 +9,7 @@ using UnityEngine;
 // table, clicking the figure changes class. Beating a place opens the acts it unlocks (Unlocks), whose fog lifts the
 // next time the map is shown. All the campaign's rules and looks are set here; the map itself is a prefab
 // (CampaignMap) edited by hand. Progress is plain flags (campaign.*), so saves need no new format.
-public class CampaignManager : Singleton<CampaignManager>
+public partial class CampaignManager : Singleton<CampaignManager>
 {
     [Serializable]
     public class Unlock
@@ -27,6 +27,13 @@ public class CampaignManager : Singleton<CampaignManager>
     [Min(0)] public float riseSeconds = .8f;
     [TabGroup("Map"), Tooltip("Seconds the map's lights over the table take to come back on after it has grown or the cloth has dropped.")]
     [Min(0)] public float lightFadeSeconds = .8f;
+
+    // How a run's floor is built on the table once a place is clicked (TableLevelReveal; timings and sounds are on
+    // WorldManager's Table Level Reveal asset). Saved by number: append only.
+    public enum LevelGenerator { BottomUp = 0, Cascade = 1 }
+    [TabGroup("Map"), Tooltip("How a dungeon floor is built on the table. Bottom Up: the floor's pieces rise up out of the table from the entrance outward. Cascade: the floor's footprint shows as dark tiles, then a wave runs out from the entrance, every tile dropping into place with a bounce and a clack, the lamps flaring on as it passes.")]
+    public LevelGenerator levelGenerator = LevelGenerator.Cascade;
+    public static LevelGenerator Generator => HasInstance ? Instance.levelGenerator : LevelGenerator.BottomUp;
 
     [TabGroup("Rules"), Tooltip("Where the figure stands in a new campaign.")] public CampaignEncounter home;
     [TabGroup("Rules"), Tooltip("Every place there is (their order is saved for where the figure stands: append only).")]
@@ -70,6 +77,8 @@ public class CampaignManager : Singleton<CampaignManager>
     [TabGroup("View"), Min(.1f), Tooltip("Seconds of the one move from the seat or the room onto the map: walking, rising, turning and zooming together.")] public float stepSeconds = 1f;
     [TabGroup("View"), Tooltip("Frame the open land: the player stands in front of it and the view zooms until its places fill it, widening as acts open. Off: the middle of the near side, aimed at View Aim, zoomed by View Zoom.")]
     public bool frameOpenLand = true;
+    [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Tooltip("Using the table frames the whole table (the whole map, and the floor that will be built on it), not only the open land.")]
+    public bool frameWholeTable = true;
     [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Min(1f), Tooltip("Room round the open places (1 = edge to edge).")] public float frameMargin = 1.3f;
     [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Tooltip("The most the view zooms in (field of view change, negative).")] public float maxZoomIn = -30f;
     [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Min(0f), Tooltip("The most the view widens when the open land doesn't fit (field of view change): with every act open the near places would be cut off.")] public float maxZoomOut = 14f;
@@ -97,6 +106,27 @@ public class CampaignManager : Singleton<CampaignManager>
     public const string DeathsPrefix = "campaign.deaths.", OpenedPrefix = "campaign.opened.";
     // A shut place's hint has been said (CampaignEncounter.shutHint, once per save).
     public const string HintedPrefix = "campaign.hinted.";
+    // A place's rumour bought from the tavern keeper (CampaignEncounter.rumoured).
+    public const string RumourPrefix = "campaign.rumour.";
+
+    public bool RumourBought(CampaignEncounter e) => e != null && PM != null && PM.HasFlag(RumourPrefix + e.id);
+
+    // The rumours the tavern keeper can sell: places off the map for want of one, in an act that is open, not yet
+    // played; in campaign order (act, then the manager's list).
+    public List<CampaignEncounter> Rumours()
+    {
+        var list = new List<CampaignEncounter>();
+        if (PM == null) return list;
+        foreach (var e in AllEncounters)
+            if (e != null && e.rumoured && e.act <= OpenAct && !RumourBought(e) && Shut(e) && !Earned(e)) list.Add(e);
+        // By act, keeping the list's order within an act (List.Sort is not stable).
+        var byAct = new List<CampaignEncounter>();
+        for (int act = 1; byAct.Count < list.Count; act++) foreach (var e in list) if (e.act == act) byAct.Add(e);
+        return byAct;
+    }
+
+    // Bought: it rises onto the map as soon as the player is back in the room (PopPending).
+    public void BuyRumour(CampaignEncounter e) { if (e != null && PM != null) PM.SetFlag(RumourPrefix + e.id, 1); }
 
     public static bool Active => HasInstance && Instance.useCampaign && Instance.mapPrefab != null;
     public CampaignMap Map { get; private set; }
@@ -119,11 +149,13 @@ public class CampaignManager : Singleton<CampaignManager>
     public bool IsOpen(CampaignEncounter e) => e != null && e.act <= OpenAct && !Shut(e) && !NotPlayable(e);
     public int Deaths(CampaignEncounter e) => e != null && PM != null ? PM.GetFlag(DeathsPrefix + e.id) : 0;
     // Enough deaths in the place it waits on: it may come up (it is shown once PopPending has raised it).
-    bool Earned(CampaignEncounter e) => !e.Locked || Deaths(e.deathsIn) >= e.deathsToOpen || Beaten(e);
+    // Opened: its deaths are in (when it waits on deaths) and its rumour bought (when it waits on one); or it has been
+    // played already (beaten, or died in: a save from before it was a rumour).
+    bool Earned(CampaignEncounter e) => Beaten(e) || (!e.Locked || Deaths(e.deathsIn) >= e.deathsToOpen) && (!e.rumoured || RumourBought(e) || Deaths(e) > 0);
     // Off the map: still shut, or earned but not raised yet. Debug's open-everything shows it.
     // A place shows on the map only when it can be entered (a Level place with its level) or has been beaten.
     bool NotPlayable(CampaignEncounter e) => e != null && !openEverything && !(e.kind == CampaignEncounterKind.Level && e.level != null) && !Beaten(e);
-    bool Shut(CampaignEncounter e) => e != null && e.Locked && !openEverything && !Beaten(e) && !(PM != null && PM.HasFlag(OpenedPrefix + e.id));
+    bool Shut(CampaignEncounter e) => e != null && e.Hidden && !openEverything && !Beaten(e) && !(PM != null && PM.HasFlag(OpenedPrefix + e.id));
 
     CampaignEncounter At
     {
@@ -284,14 +316,14 @@ public class CampaignManager : Singleton<CampaignManager>
         Map.name = "Campaign map";
         foreach (var p in Map.Points) p.EnsurePickCollider();
         CheckPlaces();
-        Map.Shut = Shut; Map.NotPlayable = NotPlayable;   // before any reveal: a shut place stays off the map from the first cloth drop on
+        Map.Shut = Shut; Map.NotPlayable = NotPlayable; Map.Beaten = Beaten;   // before any reveal: a shut place stays off the map from the first cloth drop on
         foreach (var ev in events) if (ev != null && string.IsNullOrEmpty(ev.id)) Debug.LogError($"[Campaign] the event {ev.name} has no id: it would share its seen flag with every event without one.", ev);
         restY = Map.transform.localPosition.y;
     }
 
     float restY;
 
-    void ShowActs() { Map.Shut = Shut; Map.NotPlayable = NotPlayable; Map.ShowActs(Mathf.Min(OpenAct, RevealedAct), fog, clothStyle); }
+    void ShowActs() { Map.Shut = Shut; Map.NotPlayable = NotPlayable; Map.Beaten = Beaten; Map.ShowActs(Mathf.Min(OpenAct, RevealedAct), fog, clothStyle); }
 
     // Test: shows an act under the given cloth, then uncovers it as a won run would.
     public void TestReveal(CampaignClothStyle style, int act)
@@ -305,7 +337,7 @@ public class CampaignManager : Singleton<CampaignManager>
 
     // ── The map on and off the table ──
 
-    void OnLoadStarted() { if (Map != null && Map.gameObject.activeSelf) StartCoroutine(Sink()); }
+    void OnLoadStarted() { if (Map != null && Map.gameObject.activeSelf) StartCoroutine(burnAway && burnShader != null ? Burn() : Sink()); }
 
     // The flight back to the room has begun and the floor is sinking: the map rises in its place meanwhile.
     void OnLeaving() { if (Map != null && !Map.gameObject.activeSelf && !rising && MapBelongsOnTableAfterReturn) StartCoroutine(Rise()); }
@@ -587,6 +619,7 @@ public class CampaignManager : Singleton<CampaignManager>
         foreach (var u in unlocks) if (u != null && u.beaten == e) act = Mathf.Max(act, u.opensAct);
         if (act > SavedAct) PM.SetFlag(ActFlag, act);
         if (e == finalPlace && !PM.HasFlag(WonFlag)) { PM.SetFlag(WonFlag, 1); wonLinePending = true; }
+        if (Map != null) { Map.Beaten = Beaten; Map.RefreshGrey(); }
     }
 
     void SayWonLine()
@@ -608,7 +641,7 @@ public class CampaignManager : Singleton<CampaignManager>
             int shown = Mathf.Min(OpenAct, RevealedAct);
             foreach (var e in AllEncounters)
             {
-                if (e == null || !e.Locked || e.act > shown || PM.HasFlag(OpenedPrefix + e.id) || !Earned(e)) continue;
+                if (e == null || !e.Hidden || e.act > shown || PM.HasFlag(OpenedPrefix + e.id) || !Earned(e)) continue;
                 // Raised from the moment it starts coming up: quitting halfway leaves it on the map.
                 PM.SetFlag(OpenedPrefix + e.id, 1);
                 popped?.Invoke();
@@ -696,7 +729,7 @@ public class CampaignManager : Singleton<CampaignManager>
         var cleared = new List<string>();
         foreach (var kv in PM.AllFlags)
             if (kv.Value != 0 && (kv.Key.StartsWith(DeathsPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(OpenedPrefix, StringComparison.Ordinal)
-                || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal)))
+                || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(RumourPrefix, StringComparison.Ordinal)))
                 cleared.Add(kv.Key);
         foreach (var key in cleared) PM.SetFlag(key, 0);
         deathCountedIn = null;
@@ -1300,7 +1333,7 @@ public class CampaignManager : Singleton<CampaignManager>
     {
         var m = Map.transform;
         var look = player.Look;
-        var (centre, half) = wholeTable ? (Vector2.zero, new Vector2(Map.halfX, Map.halfZ)) : OpenLand();
+        var (centre, half) = wholeTable || frameWholeTable ? (Vector2.zero, new Vector2(Map.halfX, Map.halfZ)) : OpenLand();
         var aimLocal = frameOpenLand ? new Vector3(centre.x, 0f, centre.y) : new Vector3(viewAim.x, 0f, viewAim.y);
         aimLocal.y = Map.HeightAt(aimLocal.x, aimLocal.z);
         var aim = m.TransformPoint(aimLocal);

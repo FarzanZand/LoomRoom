@@ -5,7 +5,9 @@ using Unity.Cinemachine;
 
 // Presentation only: the seeded layout and navigation are already ready before playback.
 // Every touched state is restored, including on interruption or scene unload.
-public sealed class TableLevelReveal : MonoBehaviour
+// How the floor is built is CampaignManager > Level generator: Bottom Up here (the pieces rise out of the table from
+// the entrance outward), Cascade in TableLevelReveal.Cascade.cs.
+public sealed partial class TableLevelReveal : MonoBehaviour
 {
     struct Piece { public Renderer renderer; public Vector3 position; public float delay; }
     readonly List<Piece> pieces = new();
@@ -79,6 +81,8 @@ public sealed class TableLevelReveal : MonoBehaviour
             foreach (var character in dungeon.GetComponentsInChildren<Character>())
             { actors.Add((character.gameObject, character.gameObject.activeSelf)); character.gameObject.SetActive(false); }
             float range = Mathf.Max(1, new Vector2(width, depth).magnitude);
+            bool cascade = CampaignManager.Generator == CampaignManager.LevelGenerator.Cascade;
+            if (!cascade)
             foreach (var renderer in dungeon.GetComponentsInChildren<Renderer>())
             {
                 if (!renderer.enabled || renderer is ParticleSystemRenderer || renderer.GetComponentInParent<Canvas>() != null) continue;
@@ -110,16 +114,19 @@ public sealed class TableLevelReveal : MonoBehaviour
                 var at = new Vector3(hole.area.center.x, dungeon.SpawnPoint.y, hole.area.center.y);
                 holes.Add((hole, Vector3.Distance(at, dungeon.SpawnPoint) / range * .72f)); hole.Open = false;
             }
-            BuildBlueprint(settings);
-            HideStartWall(overview);
-            if (settings.dustPrefab != null)
+            BuildBlueprint(settings, !cascade);
+            if (cascade) CollectTiles(settings);
+            HideStartWall(overview, cascade);
+            if (settings.dustPrefab != null && !cascade)
             {
                 dust = Instantiate(settings.dustPrefab, dungeon.transform.position + Vector3.up * .2f, Quaternion.identity, transform);
                 // The shape is turned -90 on X to emit upward, so its local Y is the floor's depth and Z is height.
                 var shape = dust.shape; shape.scale = new Vector3(width, depth, .1f);
                 dust.Play();
             }
-            yield return MoveCamera(overview, overviewRotation, overviewProjection, settings.cameraTransitionSeconds);
+            // The cascade doesn't wait out a camera move that goes nowhere (the room player's own view).
+            bool stays = Vector3.Distance(cameraPosition, overview) < .01f && Quaternion.Angle(cameraRotation, overviewRotation) < .1f;
+            yield return MoveCamera(overview, overviewRotation, overviewProjection, cascade && stays ? .1f : settings.cameraTransitionSeconds);
             float elapsed = 0, duration = settings.blueprintSeconds + settings.buildSeconds + settings.settleSeconds;
             bool started = false, settled = false;
             if (settings.allowSkip && InputManager.HasInstance)
@@ -129,6 +136,7 @@ public sealed class TableLevelReveal : MonoBehaviour
                 skipInput.SubmitPressed += OnSkipInput;
             }
             skipWindow = settings.allowSkip;
+            if (cascade) { yield return Cascade(settings); duration = 0; }
             while (elapsed < duration)
             {
                 if (settings.allowSkip && SkipRequested) break;
@@ -172,6 +180,8 @@ public sealed class TableLevelReveal : MonoBehaviour
             // First activation initializes the rig's Awake/Start and look pivots. Keep the
             // output under our control, and hold first-person hands until the flight ends.
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Table);
+            // The room's screen look is gone while the view is still over the table, not on the way into the dark floor.
+            if (ScreenManager.HasInstance) ScreenManager.Instance.BlendEffectsWithin(settings.approachSeconds * .4f);
             HoldCeilings();
             // The way in is the spawn room's skylight. Without one (a resumed floor), lift the
             // ceiling over the spawn point for the flight only.
@@ -284,6 +294,7 @@ public sealed class TableLevelReveal : MonoBehaviour
 
     void RestorePieces()
     {
+        RestoreTiles();
         foreach (var piece in pieces) if (piece.renderer != null) { piece.renderer.transform.position = piece.position; piece.renderer.enabled = true; }
         foreach (var entry in lights) if (entry.light != null) entry.light.enabled = entry.enabled;
         foreach (var entry in effects) if (entry.effect != null) entry.effect.SetActive(entry.active);
@@ -307,13 +318,14 @@ public sealed class TableLevelReveal : MonoBehaviour
         sound = null; soundClip = null;
     }
 
-    void BuildBlueprint(TableLevelRevealSettings settings)
+    void BuildBlueprint(TableLevelRevealSettings settings, bool outline = true)
     {
         if (settings.lineMaterial == null) return;
         blueprint = new GameObject("Dungeon blueprint"); blueprint.transform.SetParent(transform, false);
         var layout = dungeon.Layout; float half = dungeon.LevelData.cellSize * .5f;
         var directions = DungeonLayout.Neighbours;
         // Outline the actual floor perimeter, including the routed corridors.
+        if (outline)
         for (int x = 0; x < layout.floor.GetLength(0); x++) for (int y = 0; y < layout.floor.GetLength(1); y++)
         {
             if (!layout.floor[x, y]) continue;
@@ -346,7 +358,7 @@ public sealed class TableLevelReveal : MonoBehaviour
     // TableLevelData.hideStartWallInReveal: the starting room's wall on the viewer's side, hidden until arrival. The
     // walls are merged into static chunks (several walls each), so every chunk holding a piece of that wall is hidden whole.
     readonly List<Renderer> splitChunks = new(), hiddenCeiling = new();
-    void HideStartWall(Vector3 viewer)
+    void HideStartWall(Vector3 viewer, bool cascade = false)
     {
         var data = dungeon.LevelData;
         if (data == null || !data.hideStartWallInReveal || dungeon.Layout == null) return;
@@ -387,10 +399,14 @@ public sealed class TableLevelReveal : MonoBehaviour
         // Only the pieces merged away into chunks count: the reveal has every other renderer switched off for now.
         var revealed = new HashSet<Renderer>();
         foreach (var piece in pieces) revealed.Add(piece.renderer);
-        int count = pieces.Count;
+        // The cascade holds the chunks off and draws their pieces: it looks at the same chunks.
+        var chunks = new List<Renderer>();
+        if (cascade) foreach (var (held, _) in heldChunks) chunks.Add(held);
+        else foreach (var piece in pieces) chunks.Add(piece.renderer);
+        int count = chunks.Count;
         for (int i = 0; i < count; i++)
         {
-            var chunk = pieces[i].renderer;
+            var chunk = chunks[i];
             if (chunk == null || chunk.name != "Static chunk" || chunk.bounds.size.y < 1f || !chunk.bounds.Intersects(area)) continue;
             if (dungeon.Ceilings != null && chunk.transform.IsChildOf(dungeon.Ceilings)) continue;
             // A chunk that holds a piece of the near wall is hidden whole (only looked at, nothing is switched on).
@@ -404,6 +420,7 @@ public sealed class TableLevelReveal : MonoBehaviour
             if (!near) continue;
             chunk.forceRenderingOff = true; splitChunks.Add(chunk);
         }
+        if (cascade) KeepHiddenWithChunks(splitChunks);
     }
 
     // The hidden chunks and ceiling show again.
@@ -426,6 +443,7 @@ public sealed class TableLevelReveal : MonoBehaviour
         if (skipInput != null) { skipInput.CancelPressed -= OnSkipInput; skipInput.SubmitPressed -= OnSkipInput; }
         skipInput = null;
         StopSound();
+        DestroyClackSources();
         if (blueprint != null) Destroy(blueprint);
         if (dust != null) Destroy(dust.gameObject);
         blueprint = null; dust = null;

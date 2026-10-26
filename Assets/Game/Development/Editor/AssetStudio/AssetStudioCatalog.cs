@@ -67,7 +67,7 @@ public static class AssetStudioCatalog
     static IEnumerable<string> Candidates()
     {
         var guids = new HashSet<string>();
-        foreach (var t in new[] { "ItemData", "SpellDefinition", "TableLevelData", "DungeonBiome", "BossFight", "AudioData", "CampaignEncounter", "CampaignEvent", "TableLevelDefaults", "HouseRule", "DungeonRoomStyle", "Prefab" })
+        foreach (var t in new[] { "ItemData", "SpellDefinition", "TableLevelData", "DungeonBiome", "BossFight", "AudioData", "CampaignEncounter", "CampaignEvent", "TableLevelDefaults", "HouseRule", "DungeonRoomStyle", "TavernDish", "Prefab" })
             guids.UnionWith(AssetDatabase.FindAssets("t:" + t, new[] { Root }));
         guids.UnionWith(AssetDatabase.FindAssets("t:AudioClip", new[] { Root + "/Audio", Root + "/UI/Audio", Root + "/Combat", Root + "/Levels" }.Where(AssetDatabase.IsValidFolder).ToArray()));
         return guids.Select(AssetDatabase.GUIDToAssetPath);
@@ -114,6 +114,7 @@ public static class AssetStudioCatalog
                     // Levels by the act that plays them; board or walled is a word on the row.
                     case TableLevelData l: e = Add(C("Levels & biomes"), guid, path, "Level · " + Levels.GroupOf(l, path), LevelLine(l)); break;
                     case DungeonBiome b: e = Add(C("Levels & biomes"), guid, path, "Biome", Levels.BiomeLine(b)); break;
+                    case TavernDish dish: e = Add(C("Items"), guid, path, "Dish", $"{dish.effectText} · {dish.price} gold · the tavern keeper serves it"); break;
                     case DungeonRoomStyle st: e = Add(C("Styles"), guid, path, AssetStudioStyles.KindOf(st), AssetStudioStyles.Describe(st)); break;
                     case BossFight f: e = Add(C("Levels & biomes"), guid, path, "Boss fight", f.name); break;
                     case TableLevelDefaults _: e = Add(C("Levels & biomes"), guid, path, "Level defaults", "Chests, the merchant, breakables, features, wall lights and HUD pieces every level shares."); break;
