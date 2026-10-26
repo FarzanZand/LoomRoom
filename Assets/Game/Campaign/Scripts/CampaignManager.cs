@@ -97,6 +97,27 @@ public class CampaignManager : Singleton<CampaignManager>
     public const string DeathsPrefix = "campaign.deaths.", OpenedPrefix = "campaign.opened.";
     // A shut place's hint has been said (CampaignEncounter.shutHint, once per save).
     public const string HintedPrefix = "campaign.hinted.";
+    // A place's rumour bought from the tavern keeper (CampaignEncounter.rumoured).
+    public const string RumourPrefix = "campaign.rumour.";
+
+    public bool RumourBought(CampaignEncounter e) => e != null && PM != null && PM.HasFlag(RumourPrefix + e.id);
+
+    // The rumours the tavern keeper can sell: places off the map for want of one, in an act that is open, not yet
+    // played; in campaign order (act, then the manager's list).
+    public List<CampaignEncounter> Rumours()
+    {
+        var list = new List<CampaignEncounter>();
+        if (PM == null) return list;
+        foreach (var e in AllEncounters)
+            if (e != null && e.rumoured && e.act <= OpenAct && !RumourBought(e) && Shut(e) && !Earned(e)) list.Add(e);
+        // By act, keeping the list's order within an act (List.Sort is not stable).
+        var byAct = new List<CampaignEncounter>();
+        for (int act = 1; byAct.Count < list.Count; act++) foreach (var e in list) if (e.act == act) byAct.Add(e);
+        return byAct;
+    }
+
+    // Bought: it rises onto the map as soon as the player is back in the room (PopPending).
+    public void BuyRumour(CampaignEncounter e) { if (e != null && PM != null) PM.SetFlag(RumourPrefix + e.id, 1); }
 
     public static bool Active => HasInstance && Instance.useCampaign && Instance.mapPrefab != null;
     public CampaignMap Map { get; private set; }
@@ -119,11 +140,13 @@ public class CampaignManager : Singleton<CampaignManager>
     public bool IsOpen(CampaignEncounter e) => e != null && e.act <= OpenAct && !Shut(e) && !NotPlayable(e);
     public int Deaths(CampaignEncounter e) => e != null && PM != null ? PM.GetFlag(DeathsPrefix + e.id) : 0;
     // Enough deaths in the place it waits on: it may come up (it is shown once PopPending has raised it).
-    bool Earned(CampaignEncounter e) => !e.Locked || Deaths(e.deathsIn) >= e.deathsToOpen || Beaten(e);
+    // Opened: its deaths are in (when it waits on deaths) and its rumour bought (when it waits on one); or it has been
+    // played already (beaten, or died in: a save from before it was a rumour).
+    bool Earned(CampaignEncounter e) => Beaten(e) || (!e.Locked || Deaths(e.deathsIn) >= e.deathsToOpen) && (!e.rumoured || RumourBought(e) || Deaths(e) > 0);
     // Off the map: still shut, or earned but not raised yet. Debug's open-everything shows it.
     // A place shows on the map only when it can be entered (a Level place with its level) or has been beaten.
     bool NotPlayable(CampaignEncounter e) => e != null && !openEverything && !(e.kind == CampaignEncounterKind.Level && e.level != null) && !Beaten(e);
-    bool Shut(CampaignEncounter e) => e != null && e.Locked && !openEverything && !Beaten(e) && !(PM != null && PM.HasFlag(OpenedPrefix + e.id));
+    bool Shut(CampaignEncounter e) => e != null && e.Hidden && !openEverything && !Beaten(e) && !(PM != null && PM.HasFlag(OpenedPrefix + e.id));
 
     CampaignEncounter At
     {
@@ -284,14 +307,14 @@ public class CampaignManager : Singleton<CampaignManager>
         Map.name = "Campaign map";
         foreach (var p in Map.Points) p.EnsurePickCollider();
         CheckPlaces();
-        Map.Shut = Shut; Map.NotPlayable = NotPlayable;   // before any reveal: a shut place stays off the map from the first cloth drop on
+        Map.Shut = Shut; Map.NotPlayable = NotPlayable; Map.Beaten = Beaten;   // before any reveal: a shut place stays off the map from the first cloth drop on
         foreach (var ev in events) if (ev != null && string.IsNullOrEmpty(ev.id)) Debug.LogError($"[Campaign] the event {ev.name} has no id: it would share its seen flag with every event without one.", ev);
         restY = Map.transform.localPosition.y;
     }
 
     float restY;
 
-    void ShowActs() { Map.Shut = Shut; Map.NotPlayable = NotPlayable; Map.ShowActs(Mathf.Min(OpenAct, RevealedAct), fog, clothStyle); }
+    void ShowActs() { Map.Shut = Shut; Map.NotPlayable = NotPlayable; Map.Beaten = Beaten; Map.ShowActs(Mathf.Min(OpenAct, RevealedAct), fog, clothStyle); }
 
     // Test: shows an act under the given cloth, then uncovers it as a won run would.
     public void TestReveal(CampaignClothStyle style, int act)
@@ -587,6 +610,7 @@ public class CampaignManager : Singleton<CampaignManager>
         foreach (var u in unlocks) if (u != null && u.beaten == e) act = Mathf.Max(act, u.opensAct);
         if (act > SavedAct) PM.SetFlag(ActFlag, act);
         if (e == finalPlace && !PM.HasFlag(WonFlag)) { PM.SetFlag(WonFlag, 1); wonLinePending = true; }
+        if (Map != null) { Map.Beaten = Beaten; Map.RefreshGrey(); }
     }
 
     void SayWonLine()
@@ -608,7 +632,7 @@ public class CampaignManager : Singleton<CampaignManager>
             int shown = Mathf.Min(OpenAct, RevealedAct);
             foreach (var e in AllEncounters)
             {
-                if (e == null || !e.Locked || e.act > shown || PM.HasFlag(OpenedPrefix + e.id) || !Earned(e)) continue;
+                if (e == null || !e.Hidden || e.act > shown || PM.HasFlag(OpenedPrefix + e.id) || !Earned(e)) continue;
                 // Raised from the moment it starts coming up: quitting halfway leaves it on the map.
                 PM.SetFlag(OpenedPrefix + e.id, 1);
                 popped?.Invoke();
@@ -696,7 +720,7 @@ public class CampaignManager : Singleton<CampaignManager>
         var cleared = new List<string>();
         foreach (var kv in PM.AllFlags)
             if (kv.Value != 0 && (kv.Key.StartsWith(DeathsPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(OpenedPrefix, StringComparison.Ordinal)
-                || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal)))
+                || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(RumourPrefix, StringComparison.Ordinal)))
                 cleared.Add(kv.Key);
         foreach (var key in cleared) PM.SetFlag(key, 0);
         deathCountedIn = null;

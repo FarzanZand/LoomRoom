@@ -196,6 +196,32 @@ public class CampaignPoint : MonoBehaviour
         var box = GetComponent<BoxCollider>(); if (box != null) box.enabled = show;
     }
 
+    // Its props drawn grey (a beaten place) or in their own colours again; the base and its lights are left alone.
+    public bool Greyed { get; private set; }
+    readonly Dictionary<Renderer, Material[]> ownMaterials = new();
+    public void Grey(bool grey, System.Func<Material, Material> greyOf)
+    {
+        if (grey == Greyed || greyOf == null) return;
+        Greyed = grey;
+        foreach (Transform child in transform)
+        {
+            if (child.name == "Base") continue;
+            foreach (var r in child.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r is ParticleSystemRenderer) continue;
+                if (grey)
+                {
+                    if (!ownMaterials.ContainsKey(r)) ownMaterials[r] = r.sharedMaterials;
+                    var mats = ownMaterials[r];
+                    var next = new Material[mats.Length];
+                    for (int i = 0; i < mats.Length; i++) next[i] = greyOf(mats[i]);
+                    r.sharedMaterials = next;
+                }
+                else if (ownMaterials.TryGetValue(r, out var own)) r.sharedMaterials = own;
+            }
+        }
+    }
+
     // A trigger the size of the place, for picking it with the mouse.
     public void EnsurePickCollider()
     {

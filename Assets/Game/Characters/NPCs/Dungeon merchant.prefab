@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6937500787780077632}
   - component: {fileID: 8543578968028982367}
   - component: {fileID: 7812918852908091464}
+  - component: {fileID: 5393833673201492057}
   m_Layer: 0
   m_Name: Shop
   m_TagString: Untagged
@@ -99,11 +100,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a0157434bab3344d9fa58e7b1fe1dca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Merchant
-  merchantName: Wandering Merchant
+  merchantName: Tavern keeper
   greetings:
-  - '"Coin for goods. Have a look."'
-  - '"I buy and I sell. Take your time."'
-  - '"Fair prices, this far down."'
+  - '"Sit down. Eat something."'
+  - '"Food, a fire, and things I''ve heard."'
+  - '"Nothing comes through that door. Mostly."'
   staples:
   - {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
   - {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
@@ -122,12 +123,30 @@ MonoBehaviour:
   buysItems: 1
   tradeClip: {fileID: 0}
   tradeVolume: 0.9
-  musicKey: shop
+  musicKey: 
   musicRadius: 8
   musicLeaveRadius: 11
   musicFade: 1.5
   seed: 0
   floorNumber: 1
+--- !u!114 &5393833673201492057
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1679593909423230256}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52743095f2247b44d9f489b44373568d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TavernKeeper
+  dishes:
+  - {fileID: 11400000, guid: 65cb2593085790a4da8e020ec74318fe, type: 2}
+  - {fileID: 11400000, guid: e974a15ff091e4b49b711b717671c607, type: 2}
+  rumourPrice: 20
+  ateMessage: You eat the {Dish}.
+  rumourMessage: '{Place} is on your campaign map now.'
 --- !u!1 &6421281305431218587
 GameObject:
   m_ObjectHideFlags: 0
@@ -402,6 +421,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5848c68f50fa8ad438118c0b63ed1007, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProvokableNpc
+  hitsToTurn: 3
   provokedLines:
   - text: I would not do that again.
     voice: {fileID: 0}
@@ -416,7 +436,7 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: You had to try it twice.
+  - text: Some people only learn the hard way.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -427,6 +447,7 @@ MonoBehaviour:
   calmSeconds: 0.8
   turnDelay: 0.35
   turnShake: 0.5
+  staggerSeconds: 0.45
 --- !u!114 &8740748507874765247 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2587794438410830846, guid: f94d90b974acbb14ca1535187658fd22, type: 3}
@@ -451,7 +472,7 @@ MonoBehaviour:
   m_Name: Wandering Merchant
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   portrait: {fileID: 0}
-  characterName: Wandering Merchant
+  characterName: tavern keeper
   properName: 0
   faction: 0
   description: 

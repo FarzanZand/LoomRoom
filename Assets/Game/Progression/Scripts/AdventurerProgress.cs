@@ -257,6 +257,10 @@ public class AdventurerProgress : MonoBehaviour
                 foreach (var (stat, amount, kind) in ProgressionManager.AttributeGains(track, Score((MetaAttribute)a) - track.baseScore)) Add(stat, amount, kind);
             }
         }
+        // The tavern's dishes eaten this run (their attribute bonus is in Score above).
+        if (InRun)
+            foreach (var dish in TavernDish.EatenThisRun())
+                foreach (var m in dish.modifiers) if (m != null) Add(m.stat, m.value, m.type);
         stats.RestorePools(health, mana, stamina);
         Changed?.Invoke();
     }
@@ -311,12 +315,13 @@ public class AdventurerProgress : MonoBehaviour
         Changed?.Invoke();
     }
 
-    // An attribute's score now: the character sheet's plus the points put in this run.
+    // An attribute's score now: the character sheet's plus the points put in this run and what the tavern's dishes
+    // eaten this run add (TavernDish).
     public int Score(MetaAttribute attribute)
     {
         int sheet = ProgressionManager.HasInstance ? ProgressionManager.Instance.AttributeScore(attribute) : 8;
         int i = (int)attribute;
-        return sheet + (i >= 0 && i < AttributePoints.Length ? AttributePoints[i] : 0);
+        return sheet + (i >= 0 && i < AttributePoints.Length ? AttributePoints[i] : 0) + (InRun ? TavernDish.AttributeBonus() : 0);
     }
 
     // An attribute's points above its track's base score (what its bonuses count).

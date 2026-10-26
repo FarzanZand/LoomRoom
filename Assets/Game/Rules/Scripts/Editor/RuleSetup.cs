@@ -34,7 +34,7 @@ public static class RuleSetup
     static readonly (string id, string text, string given, string quote, bool pinned)[] Table =
     {
         ("rule1", "Nobody leaves the table until I say so.", "*The first rule.* Nobody leaves the table until I say so.", "*Rule one.*", true),
-        ("rule2", "Hitting the merchant is allowed, but not recommended.", "*The second rule.* Hitting the merchant is allowed, but not recommended.", "*Rule two.*", true),
+        ("rule2", "Do not attack the help. It will hurt you more than them.", "*New rule added:* Do not attack the help. It will hurt you more than them.", "*Rule two.*", false),
     };
 
     // Each rule's asset (Rules/Data/Rule N), made when missing; made ones are kept as they are (edit them freely).

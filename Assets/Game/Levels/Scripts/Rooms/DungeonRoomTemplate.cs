@@ -53,6 +53,9 @@ public class DungeonRoomTemplate : MonoBehaviour
     [ShowIf(nameof(openCeiling)), Min(0), Tooltip("Open only the cells at most this many steps from the room's centre cell (a moonlit court's opening). 0 opens the whole room.")]
     public int skylightRadius;
 
+    [AssetsOnly, Tooltip("A door on every way into this room (a dungeon door prefab, or a variant of one such as the Tavern door), in place of the level's random doors there. Only for the merchant's room (the shop room) for now. Empty: the level's doors as usual.")]
+    public GameObject wayInDoor;
+
     [Title("Contents")]
     [Tooltip("Skip the generator's random props, supply container and features in this room.")]
     public bool replaceGeneratedProps = true;

@@ -94,6 +94,33 @@ public partial class DungeonGenerator
             }
     }
 
+    // The merchant's room (the tavern) can ask for a door on every way in (DungeonRoomTemplate.wayInDoor): one door per
+    // opening cell, as the ambush's gates, in place of any other door on those passages (the starting room's keeps its own).
+    readonly System.Collections.Generic.Dictionary<(Vector2Int, Vector2Int), GameObject> doorPrefabs = new();
+    void AddWayInDoors()
+    {
+        doorPrefabs.Clear();
+        if (MerchantRoom <= 0) return;
+        var prefab = Authored ? TemplatePrefab(MerchantRoom) : data.shopRoom;
+        var template = prefab != null ? prefab.GetComponent<DungeonRoomTemplate>() : null;
+        if (template == null || template.wayInDoor == null) return;
+        foreach (var cell in Layout.RoomCells(MerchantRoom))
+            foreach (var dir in DungeonLayout.Neighbours)
+            {
+                if (!Layout.IsOpening(MerchantRoom, cell, dir)) continue;
+                var outside = cell + dir;
+                int passage = Layout.RegionIds[outside.x, outside.y];
+                // The passage's other doors go (one door a passage), the starting room's own excepted.
+                doorways.RemoveAll(d =>
+                {
+                    var n = d.roomCell + d.direction;
+                    return Layout.InBounds(n) && Layout.RegionIds[n.x, n.y] == passage && !Layout.InRoom(0, d.roomCell) && !Layout.InRoom(MerchantRoom, d.roomCell);
+                });
+                doorways.Add((cell, dir));
+                doorPrefabs[(cell, dir)] = template.wayInDoor;
+            }
+    }
+
     // prefab: the room's template (RequestedTemplate), whose footprint or minimum size wins.
     DungeonShape ChooseShape(RoomRole role, DungeonRoomProfile profile, System.Random rng, GameObject prefab)
     {

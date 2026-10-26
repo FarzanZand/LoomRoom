@@ -675,6 +675,17 @@ public partial class AssetStudioWindow
         var deaths = so.FindProperty("deathsToOpen");
         if (deaths == null) return;
         EditorGUILayout.PropertyField(deaths, new GUIContent("Deaths to open", "0: it opens with its act. Else it stays off the map (its road too) until the player has died this many times in the place below."));
+        // A rumour: off the map until the tavern keeper's rumour about it is bought (CampaignEncounter.rumoured).
+        if (so.FindProperty("rumoured") is SerializedProperty rumoured)
+        {
+            EditorGUILayout.PropertyField(rumoured, new GUIContent("Opened by a rumour", "Off the map until the player buys the tavern keeper's rumour about it (20 gold); it rises onto the map as soon as they are back in the room."));
+            if (rumoured.boolValue)
+            {
+                EditorGUILayout.PropertyField(so.FindProperty("rumour"), new GUIContent("Before paying", "What the keeper says: cryptic, never the place's name."));
+                EditorGUILayout.PropertyField(so.FindProperty("rumourTold"), new GUIContent("Once paid", "What he tells you; the screen names the place and its act too."));
+                if (deaths.intValue == 0 && so.FindProperty("openedLine") is SerializedProperty risen) EditorGUILayout.PropertyField(risen, new GUIContent("Said as it rises"), true);
+            }
+        }
         if (deaths.intValue > 0)
         {
             if (so.FindProperty("deathsIn") is SerializedProperty inPlace) EditorGUILayout.PropertyField(inPlace, new GUIContent("Deaths in", "The place whose deaths count (campaign.deaths.<its id>)."));
@@ -688,7 +699,7 @@ public partial class AssetStudioWindow
             if (!EditorGUIUtility.editingTextField) AssetDatabase.SaveAssetIfDirty(p);
             RefreshWorld();
         }
-        string state = p.Locked ? char.ToUpperInvariant(ShutText(p)[0]) + ShutText(p).Substring(1) + "." : p.deathsToOpen > 0 ? "No place to die in is set: it opens with its act." : "Opens with its act.";
+        string state = p.Locked ? char.ToUpperInvariant(ShutText(p)[0]) + ShutText(p).Substring(1) + "." : p.rumoured ? "Opens when its rumour is bought from the tavern keeper." : p.deathsToOpen > 0 ? "No place to die in is set: it opens with its act." : "Opens with its act.";
         GUILayout.Label(state, dim);
     }
 

@@ -94,7 +94,7 @@ public class Merchant : MonoBehaviour, IInteractable
     public IReadOnlyList<Ware> Wares { get { EnsureStock(); foreach (var w in wares) w.price=PriceOf(w.item); return wares; } }
     public string Currency => CurrencyManager.HasInstance ? CurrencyManager.Instance.currencyName : "gold";
 
-    public string Prompt => $"Trade with the {merchantName}";
+    public string Prompt => $"Trade with the {merchantName.ToLowerInvariant()}";
     public bool CanInteract(Character who) => DungeonFeatureUtility.TablePlayer(who) != null;
 
     public void Interact(Character who)

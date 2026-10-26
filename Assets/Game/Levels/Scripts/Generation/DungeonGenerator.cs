@@ -156,6 +156,7 @@ public partial class DungeonGenerator : MonoBehaviour
         doorways = authoredDoors != null ? (level.doorPrefab != null ? authoredDoors : new())
             : level.doorPrefab != null && level.doorPercent > 0 ? Layout.SelectDoorways(level.doorPercent) : new();
         AddStartingRoomDoor();
+        AddWayInDoors();
         BuildProgress = .04f;
         if (SliceDue) { Pause(); yield return null; Resume(); }
         var architecture = BuildArchitecture(level, seed, floorNumber, watch);
@@ -605,14 +606,16 @@ public partial class DungeonGenerator : MonoBehaviour
 
     void MakeDoors(int seed)
     {
-        if(data.doorPrefab==null)return;
+        if(data.doorPrefab==null && doorPrefabs.Count==0)return;
         foreach(var doorway in doorways) {
             var p=doorway.roomCell;
             var dir=doorway.direction;
             var n=p+dir;
             var pos=(Cell(p)+Cell(n))*.5f;
             if (Board) pos.y = Cell(p).y; // it stands at the room's edge, where the steps begin
-            var door=Instantiate(data.doorPrefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
+            var prefab=doorPrefabs.TryGetValue((p,dir),out var own) ? own : data.doorPrefab;
+            if(prefab==null)continue;
+            var door=Instantiate(prefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
             // Cell width changes the span, not the doorway height or ceiling clearance.
             door.transform.localScale=new Vector3(data.cellSize/2f,1,1);
             var gate = door.GetComponent<DungeonDoor>();

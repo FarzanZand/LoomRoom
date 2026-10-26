@@ -73,7 +73,7 @@ public partial class CampaignMap
         if (style != builtStyle) { foreach (var f in fogs.Values) if (f != null) f.go.GetComponent<MeshRenderer>().sharedMaterial = ClothMaterial(style); builtStyle = style; }
         shownAct = openAct;
         if (scatterAct.Count == 0 && scatter != null) foreach (Transform t in scatter) scatterAct[t] = (ActAt(t.localPosition), t.gameObject.activeSelf);
-        foreach (var p in Points) { p.gameObject.SetActive((p.encounter == null || p.encounter.act <= openAct) && !Hidden(p)); p.ShowProps(!Unmade(p)); }
+        foreach (var p in Points) { p.gameObject.SetActive((p.encounter == null || p.encounter.act <= openAct) && !Hidden(p)); p.ShowProps(!Unmade(p)); p.Grey(Done(p), Greyed); }
         foreach (var path in Paths) path.gameObject.SetActive(path.Open(openAct) && !Hidden(path));
         for (int act = 1, last = MaxAct; act <= last; act++)
         {
@@ -112,7 +112,7 @@ public partial class CampaignMap
         foreach (var kv in scatterAct)
             if (kv.Key != null && kv.Value.on && kv.Value.act <= act && !UnderCloth(kv.Key.localPosition, act) && (kv.Value.act == act || !kv.Key.gameObject.activeSelf))
                 Add(kv.Key);
-        foreach (var p in Points) if (p.encounter != null && p.encounter.act == act && !Hidden(p)) { p.ShowProps(!Unmade(p)); Add(p.transform); }
+        foreach (var p in Points) if (p.encounter != null && p.encounter.act == act && !Hidden(p)) { p.ShowProps(!Unmade(p)); p.Grey(Done(p), Greyed); Add(p.transform); }
         foreach (var path in Paths) if (path.Open(act) && !path.Open(act - 1) && !Hidden(path)) Add(path.transform);
         foreach (var a in appearing) { a.t.localScale = Vector3.zero; a.t.gameObject.SetActive(true); }
         // A piece's lights don't shrink with it: still under the cloth, a lantern would light the cloth from below as a
@@ -160,6 +160,53 @@ public partial class CampaignMap
     // still meet at, so the places beyond them stay joined; their props are off and they can't be picked (decided by CampaignManager).
     [NonSerialized] public Func<CampaignEncounter, bool> NotPlayable;
     bool Unmade(CampaignPoint p) => p != null && p.encounter != null && NotPlayable != null && NotPlayable(p.encounter);
+
+    // Places already beaten: their props are drawn grey (decided by CampaignManager), so what is left to do stands out.
+    [NonSerialized] public Func<CampaignEncounter, bool> Beaten;
+    [Title("Beaten places"), Tooltip("Draws a beaten place's props grey (Hidden/LoomRoom/Grey out). Empty: they keep their colours.")]
+    public Shader greyShader;
+    [Range(0, 1), Tooltip("How grey (1: no colour left).")] public float greyAmount = .85f;
+    [Range(0, 1), Tooltip("How much darker.")] public float greyDarken = .75f;
+    // Greys the places beaten since the map was laid out (a run won, the debug Complete).
+    public void RefreshGrey() { foreach (var p in Points) p.Grey(Done(p), Greyed); }
+    bool Done(CampaignPoint p) => p != null && p.encounter != null && Beaten != null && Beaten(p.encounter);
+
+    // A grey copy of a prop's material, made once: its texture desaturated on the GPU (no readable texture needed) and its
+    // colour too.
+    readonly Dictionary<Material, Material> greyed = new();
+    Material greyMaterial;
+    Material Greyed(Material source)
+    {
+        if (source == null || greyShader == null) return source;
+        if (greyed.TryGetValue(source, out var m) && m != null) return m;
+        if (greyMaterial == null) greyMaterial = new Material(greyShader) { hideFlags = HideFlags.HideAndDontSave };
+        greyMaterial.SetFloat("_Amount", greyAmount); greyMaterial.SetFloat("_Darken", greyDarken);
+        m = new Material(source) { name = source.name + " (beaten)", hideFlags = HideFlags.DontSave };
+        foreach (var prop in new[] { "_BaseMap", "_MainTex" })
+        {
+            if (!source.HasProperty(prop) || source.GetTexture(prop) is not Texture tex) continue;
+            var rt = new RenderTexture(tex.width, tex.height, 0, RenderTextureFormat.ARGB32) { filterMode = tex.filterMode, wrapMode = tex.wrapMode, name = tex.name + " grey" };
+            Graphics.Blit(tex, rt, greyMaterial);
+            m.SetTexture(prop, rt);
+        }
+        foreach (var prop in new[] { "_BaseColor", "_Color" })
+            if (source.HasProperty(prop)) { var c = source.GetColor(prop); float g = c.r * .299f + c.g * .587f + c.b * .114f; var grey = Color.Lerp(c, new Color(g, g, g, c.a), greyAmount); m.SetColor(prop, new Color(grey.r * greyDarken, grey.g * greyDarken, grey.b * greyDarken, c.a)); }
+        greyed[source] = m;
+        return m;
+    }
+
+    // The grey copies and their textures go with the map.
+    void OnDestroy()
+    {
+        foreach (var m in greyed.Values)
+        {
+            if (m == null) continue;
+            foreach (var prop in new[] { "_BaseMap", "_MainTex" }) if (m.HasProperty(prop) && m.GetTexture(prop) is RenderTexture rt) { rt.Release(); Destroy(rt); }
+            Destroy(m);
+        }
+        greyed.Clear();
+        if (greyMaterial != null) Destroy(greyMaterial);
+    }
 
     // A place that was shut rises into view where it stands, with the open roads to it.
     public IEnumerator PopIn(CampaignEncounter encounter, float seconds)
