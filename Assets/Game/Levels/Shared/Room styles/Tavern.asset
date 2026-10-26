@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomStyle
   bottomWall: {fileID: 2100000, guid: 73bba42f49d9722489deb8991148488e, type: 2}
   upperWall: {fileID: 2100000, guid: 73bba42f49d9722489deb8991148488e, type: 2}
-  floor: {fileID: 2100000, guid: 9f5bfd1d20da00146957bce56b0852a0, type: 2}
+  floor: {fileID: 2100000, guid: f7b2b8953d6eca345879c652f1f95904, type: 2}
   ceiling: {fileID: 2100000, guid: 73bde6ac279fcef40945661065584aad, type: 2}
   hideTrims: 0
   trim: {fileID: 2100000, guid: 9cccf6f22b0e448458131db6b2cac7d4, type: 2}

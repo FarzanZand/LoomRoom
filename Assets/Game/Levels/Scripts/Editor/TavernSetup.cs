@@ -28,7 +28,7 @@ public static class TavernSetup
     const string RoomPath = "Assets/Game/Levels/Shared/Rooms/Scripted/Tavern.prefab";
     const string ShopPath = "Assets/Game/Levels/Shared/Rooms/Scripted/Merchant shop.prefab";
     const string DoorPath = PropDir + "/Tavern door.prefab";
-    const string DungeonDoor = "Assets/Game/Levels/Shared/Doors/Dungeon door.prefab";
+    const string DungeonDoor = "Assets/Game/Levels/Shared/Doors/Door 128/Dungeon door 128.prefab";   // the door every walled level uses
     const string DishDir = "Assets/Game/Levels/Resources/Tavern dishes";
     const string Music = "Assets/Game/Audio/Music/Quirky Song 2.mp3";
     const float PropTexels = 128f;
@@ -75,25 +75,42 @@ public static class TavernSetup
 
     // ── The door ──
 
+    // The door alone (made again when it was made from an older door), from an eval.
+    public static string RemakeDoor() { var log = new System.Text.StringBuilder(); Door(log); return log.ToString(); }
+
     static GameObject Door(System.Text.StringBuilder log)
     {
         Folder(PropDir);
         var existing = AssetDatabase.LoadAssetAtPath<GameObject>(DoorPath);
-        if (existing != null) { log.Append("door kept; "); return existing; }
         var source = AssetDatabase.LoadAssetAtPath<GameObject>(DungeonDoor);
+        // Kept while it is made from the current dungeon door; made again in place (same file, so the room's
+        // reference stays) when it was made from another one.
+        if (existing != null && PrefabUtility.GetCorrespondingObjectFromSource(existing) == source) { log.Append("door kept; "); return existing; }
         var door = (GameObject)PrefabUtility.InstantiatePrefab(source);
         door.name = "Tavern door";
         try
         {
-            var leaf = door.GetComponentsInChildren<MeshRenderer>(true).FirstOrDefault(r => r.name == "Door leaf");
+            // The leaf: a mesh of its own on the old door, a holder of its planks and iron on the 128 door.
+            var leaf = door.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "Door leaf");
             var shieldPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Items/Prefabs/Shields/Bronze Shield.prefab");
             if (leaf != null && shieldPrefab != null)
             {
-                var shield = (GameObject)PrefabUtility.InstantiatePrefab(shieldPrefab, leaf.transform);
+                var shield = (GameObject)PrefabUtility.InstantiatePrefab(shieldPrefab, leaf);
                 PrefabUtility.UnpackPrefabInstance(shield, PrefabUnpackMode.OutermostRoot, InteractionMode.AutomatedAction);
                 shield.name = "Shield trophy";
                 foreach (var c in shield.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
-                var lb = leaf.GetComponent<MeshFilter>().sharedMesh.bounds;
+                // The leaf's bounds in its own space, from every mesh under it.
+                var lb = new Bounds(); bool any = false;
+                foreach (var f in leaf.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (f.sharedMesh == null || f.transform.IsChildOf(shield.transform)) continue;
+                    var mb = f.sharedMesh.bounds;
+                    for (int i = 0; i < 8; i++)
+                    {
+                        var corner = leaf.InverseTransformPoint(f.transform.TransformPoint(mb.center + Vector3.Scale(mb.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1))));
+                        if (!any) { lb = new Bounds(corner, Vector3.zero); any = true; } else lb.Encapsulate(corner);
+                    }
+                }
                 // On the outside face (+z, the corridor side), in the middle at chest height.
                 shield.transform.localRotation = Quaternion.identity;
                 shield.transform.localPosition = new Vector3(lb.center.x, 1.55f, lb.max.z + .06f);

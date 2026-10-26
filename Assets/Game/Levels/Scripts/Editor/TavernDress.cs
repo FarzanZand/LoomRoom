@@ -48,7 +48,7 @@ public static class TavernDress
         }
         var style = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>(StylePath);
         if (style == null) { style = ScriptableObject.CreateInstance<DungeonRoomStyle>(); AssetDatabase.CreateAsset(style, StylePath); }
-        style.floor = Mat("Tavern floor", church.floor, .5f);                  // 768 texels repeat every two tiles
+        style.floor = church.floor;                                             // the Church's own pale flagstones, as drawn
         style.bottomWall = style.upperWall = Mat("Tavern wall", church.bottomWall, 1f);
         style.ceiling = Mat("Tavern ceiling", church.ceiling, 1f);
         style.trim = Mat("Tavern trim", church.trim, 1f);
@@ -133,7 +133,6 @@ public static class TavernDress
         GameObject P(string pack, string file, string name, float scale = 1f) => Prop(Synty(pack, file), name, scale);
         var bar = P(DF, "SM_Prop_Counter_Bar_01", "Bar counter");
         var barStool = P(DF, "SM_Prop_Stool_Bar_01", "Bar stool");
-        var wineRack = P(FK, "SM_Prop_Cabinet_Wine_01", "Wine rack");
         var wallShelf = P(FK, "SM_Prop_Shelf_04", "Wall shelf");
         var bottles = new[] { P(FK, "SM_Item_Bottle_01", "Bottle A"), P(FK, "SM_Item_Bottle_02", "Bottle C"), P(FK, "SM_Item_Bottle_03", "Bottle B"),
             P(FK, "SM_Item_Bottle_04", "Bottle D"), P(FK, "SM_Item_Jug_01", "Jug A"), P(FK, "SM_Item_Jug_03", "Jug B"), P(FK, "SM_Item_Jar_02", "Jar") };
@@ -181,15 +180,17 @@ public static class TavernDress
             foreach (Transform c in t.Cast<Transform>().ToArray()) if (!keep.Contains(c)) Object.DestroyImmediate(c.gameObject);
             var template = root.GetComponent<DungeonRoomTemplate>();
             template.style = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>(StylePath);
+            template.replaceGeneratedTorches = true;   // its own lanterns light it; the floor's wall torches stay out
 
             Transform Group(string name) { var g = new GameObject(name).transform; g.SetParent(t, false); return g; }
             // piece: the generator may take it out (a pivot outside the room's cells, or, while blocking, on a walkway);
             // flat or fixed things (rugs, the fireplace, the chandelier) are never taken out.
-            GameObject Put(GameObject prefab, Transform parent, float x, float y, float z, float turn = 0f, bool piece = true, bool blocking = true)
+            GameObject Put(GameObject prefab, Transform parent, float x, float y, float z, float turn = 0f, bool piece = true, bool blocking = true, bool collide = true)
             {
                 var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
                 go.transform.localPosition = new Vector3(x, y, z); go.transform.localRotation = Quaternion.Euler(0, turn, 0);
                 if (piece) (go.GetComponent<DungeonTemplatePiece>() ?? go.AddComponent<DungeonTemplatePiece>()).removeIfBlocking = blocking;
+                if (!collide) foreach (var col in go.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(col);
                 return go;
             }
             void Glow(GameObject owner, Vector3 local, Color colour, float intensity, float range)
@@ -201,37 +202,44 @@ public static class TavernDress
             }
             var warm = new Color(1f, .82f, .62f); var flame = new Color(1f, .68f, .38f);   // lamps a warm white, so the room is not all orange
 
+            // The room is 14 m across (local x -7..7) and 10 m deep (z -5..5); the way in is the middle of z = -5, kept
+            // clear with a path to the bar. Only what stands on the floor and can be walked into keeps a collider
+            // (collide: false strips them): the player got caught under the chandelier's.
+
             // The bar along the back wall, the keeper behind it, his kegs and bottles against the wall at his back.
             var b = Group("Bar");
-            Put(bar, b, -1.22f, 0, 3.90f); Put(bar, b, 1.22f, 0, 3.90f);   // a little overlap: no gap between the halves
-            foreach (var x in new[] { -1.9f, -.65f, .65f, 1.9f }) Put(barStool, b, x, 0, 2.95f, Random.Range(0f, 90f));
-            Put(tap, b, 2.0f, 1.07f, 3.95f, 180);
-            Put(tankard, b, -1.5f, 1.07f, 3.65f, 200); Put(beerMug, b, -.3f, 1.07f, 3.70f, 160); Put(tankard, b, .9f, 1.07f, 3.60f, 120);
-            Put(bottle1, b, -2.2f, 1.07f, 4f, 30); Put(bottle2, b, -2.0f, 1.07f, 3.85f, 70);
-            var barLamp = Put(lantern, b, .95f, 1.07f, 4.05f, 180); Glow(barLamp, new Vector3(0, .35f, 0), warm, 2.2f, 5f);
-            Put(wineRack, b, 0, 0, 6.5f, 180);
-            // Open shelves either side of the rack, two high, lined with bottles, jugs and jars.
+            Put(bar, b, -1.22f, 0, 1.8f); Put(bar, b, 1.22f, 0, 1.8f);   // a little overlap: no gap between the halves
+            foreach (var x in new[] { -1.9f, -.65f, .65f, 1.9f }) Put(barStool, b, x, 0, .85f, Random.Range(0f, 90f), blocking: false);   // at the counter, where they belong even on the walkway
+            Put(tap, b, 2.0f, 1.07f, 1.85f, 180, collide: false);
+            Put(tankard, b, -1.5f, 1.07f, 1.55f, 200, collide: false); Put(beerMug, b, -.3f, 1.07f, 1.6f, 160, collide: false); Put(tankard, b, .55f, 1.07f, 1.5f, 120, collide: false);
+            Put(bottle1, b, -2.2f, 1.07f, 1.9f, 30, collide: false); Put(bottle2, b, -2.0f, 1.07f, 1.75f, 70, collide: false);
+            var barLamp = Put(lantern, b, 1.0f, 1.07f, 1.95f, 180, collide: false); Glow(barLamp, new Vector3(0, .35f, 0), warm, 2.2f, 5f);
+            // A wall of open shelves behind him, lined with bottles, jugs and jars, two barrels under the middle ones.
+            // (The wine rack it replaced kept flat, untextured sides and back however it was shaded.)
+            Put(barrel, b, -.45f, 0, 4.55f, 30); Put(barrel, b, .45f, 0, 4.55f, 75);
             int n = 0;
-            foreach (var x in new[] { -2.15f, 2.15f })
-                foreach (var y in new[] { 1.45f, 2.05f })
+            foreach (var (x, y) in new[] { (-2.15f, 1.45f), (-2.15f, 2.05f), (0f, 1.3f), (0f, 1.85f), (0f, 2.4f), (2.15f, 1.45f), (2.15f, 2.05f) })
                 {
-                    Put(wallShelf, b, x, y, 7f, 180, blocking: false);
+                    if (x == 0 && y < 1.5f) continue;   // the barrels stand there
+                    Put(wallShelf, b, x, y, 4.97f, 180, blocking: false, collide: false);   // just inside the wall line: a pivot on it counts as in the wall
                     for (float bx = x - .65f; bx <= x + .66f; bx += .19f + (n % 3) * .04f)
-                        Put(bottles[(n++ * 5 + (int)(y * 10)) % bottles.Length], b, bx, y, 6.8f, n * 47 % 360, blocking: false);
+                        Put(bottles[(n++ * 5 + (int)(y * 10)) % bottles.Length], b, bx, y, 4.8f, n * 47 % 360, blocking: false, collide: false);
                 }
-            Put(keg, b, -4.0f, 0, 6.15f, 180); Put(keg, b, 4.0f, 0, 6.15f, 180);
-            Put(ham, b, -3.4f, 2.95f, 4.0f, 20); Put(ham, b, -3.0f, 2.95f, 4.2f, 80); Put(ham, b, 3.3f, 2.95f, 4.1f, 40);
-            var merchant = t.Find("Merchant"); merchant.localPosition = new Vector3(0, 0, 5.1f);   // behind the bar, on floor wide enough to be walkable (the keeper is put on the nearest walkable floor) merchant.localRotation = Quaternion.Euler(0, 180, 0);
+            Put(keg, b, -3.75f, 0, 4.2f, 180); Put(keg, b, 3.75f, 0, 4.2f, 180);
+            Put(ham, b, -3.0f, 2.95f, 1.8f, 20, collide: false); Put(ham, b, -2.65f, 2.95f, 2.0f, 80, collide: false); Put(ham, b, 3.0f, 2.95f, 1.9f, 40, collide: false);
+            var merchant = t.Find("Merchant");
+            merchant.localPosition = new Vector3(0, 0, 3.2f);   // behind the bar, on floor wide enough to be walkable (the keeper is put on the nearest walkable floor)
+            merchant.localRotation = Quaternion.Euler(0, 180, 0);
 
             // The fireplace on the left wall (the Hearth's model swapped; its rest, light, flames and Interaction kept),
             // a rug and seats round it, antlers over the mantel and shields either side.
             var hearth = t.Find("Hearth");
             foreach (Transform c in hearth.Cast<Transform>().ToArray())
                 if (c.GetComponent<MeshFilter>() != null || c.name == "Fire pit" || c.name == "Stool" || c.name == "Fireplace" || c.name == "Hearth logs") Object.DestroyImmediate(c.gameObject);
-            hearth.localPosition = new Vector3(-4.95f, 0, -.5f); hearth.localRotation = Quaternion.Euler(0, 90, 0);
+            hearth.localPosition = new Vector3(-6.95f, 0, -.3f); hearth.localRotation = Quaternion.Euler(0, 90, 0);
             Put(fireplace, hearth, 0, 0, 0, 0, piece: false);
-            Put(logs, hearth, 0, .2f, .4f, 0, piece: false);
-            // The fire on the logs: the hearth's flames made bigger and spread across them, two more added to its list.
+            Put(logs, hearth, 0, .2f, .4f, 0, piece: false, collide: false);
+            // The fire on the logs: the hearth's flames spread across them, five, listed on the hearth.
             var th = hearth.GetComponent<TavernHearth>();
             var flames = hearth.GetComponentsInChildren<ParticleSystem>(true).Where(f => f.transform.parent == hearth).ToList();
             while (flames.Count < 5 && flames.Count > 0) { var extra = Object.Instantiate(flames[0].gameObject, hearth); extra.name = flames[0].name; flames.Add(extra.GetComponent<ParticleSystem>()); }
@@ -247,56 +255,56 @@ public static class TavernDress
             var fire = hearth.GetComponentInChildren<Light>(true); if (fire != null) fire.transform.localPosition = new Vector3(0, .7f, .9f);
             var interaction = hearth.Find("Interaction"); if (interaction != null) interaction.localPosition = new Vector3(0, 0, 1.2f);
             var h = Group("Hearth side");
-            Put(rug, h, -3.3f, .005f, -.5f, 90, blocking: false);
-            Put(chair, h, -3.0f, 0, -1.75f, 300); Put(chair, h, -3.0f, 0, .75f, 240); Put(stool, h, -2.4f, 0, -.5f);
-            Put(antlers, h, -4.97f, 2.3f, -.5f, 90);
-            Put(shield, h, -4.95f, 1.95f, -2.6f, 90); Put(shield, h, -4.95f, 1.95f, 1.6f, 90);
-            Put(pot, h, -4.45f, 0, -1.6f, 30);
+            Put(rug, h, -5.3f, .005f, -.3f, 90, blocking: false, collide: false);
+            Put(chair, h, -5.0f, 0, -1.6f, 300); Put(chair, h, -5.0f, 0, 1.0f, 240); Put(stool, h, -4.4f, 0, -.3f);
+            Put(antlers, h, -6.97f, 2.3f, -.3f, 90, collide: false);
+            Put(shield, h, -6.95f, 1.95f, -2.3f, 90, collide: false); Put(shield, h, -6.95f, 1.95f, 1.7f, 90, collide: false);
+            Put(pot, h, -6.45f, 0, -1.45f, 30, collide: false);
 
             // Tables along the right wall with benches either side, set with mugs, plates and food.
             var tb = Group("Tables");
-            foreach (var z in new[] { -3.6f, .4f })
+            foreach (var z in new[] { -2.5f, 1.1f })
             {
-                Put(longTable, tb, 3.45f, 0, z, 90);
-                Put(runner2, tb, 3.45f, .785f, z, 0, blocking: false);
-                Put(bench, tb, 4.55f, 0, z, 90); Put(bench, tb, 2.3f, 0, z, 90);
-                Put(tankard, tb, 3.1f, .78f, z - .8f, 30); Put(beerMug, tb, 3.8f, .78f, z - .2f, 200); Put(tankard, tb, 3.2f, .78f, z + .9f, 300);
-                Put(plate, tb, 3.6f, .78f, z + .35f); Put(bowl, tb, 3.25f, .78f, z - .35f, 40);
-                Put(z < 0 ? bread : cheese, tb, 3.7f, .79f, z + .35f, 15);
-                var c = Put(candle, tb, 3.45f, .78f, z + 1.05f); Glow(c, new Vector3(0, .32f, 0), flame, .9f, 2.5f);
+                Put(longTable, tb, 5.45f, 0, z, 90);
+                Put(runner2, tb, 5.45f, .785f, z, 0, blocking: false, collide: false);
+                Put(bench, tb, 6.55f, 0, z, 90); Put(bench, tb, 4.3f, 0, z, 90);
+                Put(tankard, tb, 5.1f, .78f, z - .8f, 30, collide: false); Put(beerMug, tb, 5.8f, .78f, z - .2f, 200, collide: false); Put(tankard, tb, 5.2f, .78f, z + .9f, 300, collide: false);
+                Put(plate, tb, 5.6f, .78f, z + .35f, collide: false); Put(bowl, tb, 5.25f, .78f, z - .35f, 40, collide: false);
+                Put(z < 0 ? bread : cheese, tb, 5.7f, .79f, z + .35f, 15, collide: false);
+                var c = Put(candle, tb, 5.45f, .78f, z + 1.05f, collide: false); Glow(c, new Vector3(0, .32f, 0), flame, .9f, 2.5f);
             }
-            // A small table at the left wall's back, a barrel table at its front.
-            Put(smallTable, tb, -4.25f, 0, 3.0f); Put(stool, tb, -3.4f, 0, 3.1f); Put(stool, tb, -4.3f, 0, 2.05f);
-            Put(tankard, tb, -4.3f, .9f, 3.1f, 80); Put(plate, tb, -4.1f, .9f, 2.85f);
-            Put(barrelTable, tb, -3.7f, 0, -4.2f); Put(stool, tb, -2.9f, 0, -4.3f); Put(stool, tb, -3.8f, 0, -3.35f);
-            Put(beerMug, tb, -3.6f, .48f, -4.1f, 45);
+            // A small table with stools at the left wall's front, a barrel table left of the way in.
+            Put(smallTable, tb, -5.6f, 0, -3.6f); Put(stool, tb, -4.7f, 0, -3.5f); Put(stool, tb, -5.6f, 0, -2.65f);
+            Put(tankard, tb, -5.6f, .9f, -3.5f, 80, collide: false); Put(plate, tb, -5.4f, .9f, -3.75f, collide: false);
+            Put(barrelTable, tb, -3.0f, 0, -3.9f); Put(stool, tb, -2.2f, 0, -4.0f); Put(stool, tb, -3.1f, 0, -3.05f);
+            Put(beerMug, tb, -2.9f, .48f, -3.8f, 45, collide: false);
 
-            // Stores in the front corners, kept clear of the way in.
+            // Stores in the corners: barrels at the back left, barrels and sacks at the back right and front right.
             var st = Group("Stores");
-            Put(barrels, st, -3.8f, 0, -6.45f);
-            Put(barrel, st, 4.3f, 0, -6.3f); Put(barrel, st, 3.55f, 0, -6.45f, 40); Put(sacks, st, 4.25f, 0, -5.4f, 20);
+            Put(barrels, st, -6.5f, 0, 3.6f, 90);
+            Put(barrel, st, 6.4f, 0, 4.4f); Put(sacks, st, 5.5f, 0, 4.5f, 20);
+            Put(barrel, st, 6.4f, 0, -4.4f); Put(barrel, st, 5.65f, 0, -4.5f, 40);
 
-            // On the walls: lanterns by the door and along the sides, banners, the deer and the boar.
+            // On the walls: lanterns by the door and along the sides, banners, the deer and the boar, shields.
             var w = Group("Wall decor");
-            foreach (var x in new[] { -1.55f, 1.55f }) { var l = Put(lantern, w, x, 2.0f, -6.95f, 0); Glow(l, new Vector3(0, .25f, .25f), warm, 2.5f, 6f); }
-            foreach (var z in new[] { -1.6f, 3.2f }) { var l = Put(lantern, w, 4.95f, 2.0f, z, 270); Glow(l, new Vector3(0, .25f, .25f), warm, 2.5f, 6f); }
-            { var l = Put(lantern, w, -4.95f, 2.0f, 4.6f, 90); Glow(l, new Vector3(0, .25f, .25f), warm, 2.5f, 6f); }
-            Put(banner, w, -2.6f, 2.95f, -6.95f, 0); Put(banner, w, 2.6f, 2.95f, -6.95f, 0);
-            Put(banner, w, -4.95f, 2.95f, -3.0f, 90);
-            Put(deer, w, 4.95f, 1.75f, -5.5f, 270); Put(boar, w, 4.97f, 2.0f, 5.2f, 270);
-            Put(shield, w, 0, 2.15f, 6.95f, 180);
+            foreach (var x in new[] { -1.6f, 1.6f }) { var l = Put(lantern, w, x, 2.0f, -4.95f, 0, collide: false); Glow(l, new Vector3(0, .25f, .25f), warm, 2.5f, 6f); }
+            foreach (var z in new[] { -4.2f, 3.2f }) { var l = Put(lantern, w, 6.95f, 2.0f, z, 270, collide: false); Glow(l, new Vector3(0, .25f, .25f), warm, 2.5f, 6f); }
+            foreach (var z in new[] { -3.6f, 3.0f }) { var l = Put(lantern, w, -6.95f, 2.0f, z, 90, collide: false); Glow(l, new Vector3(0, .25f, .25f), warm, 2.5f, 6f); }
+            Put(banner, w, -3.0f, 2.95f, -4.95f, 0, collide: false); Put(banner, w, 3.0f, 2.95f, -4.95f, 0, collide: false);
+            Put(deer, w, 6.95f, 1.9f, -.7f, 270, collide: false); Put(boar, w, -4.6f, 2.0f, 4.97f, 180, collide: false);
+            Put(shield, w, 4.6f, 2.0f, 4.95f, 180, collide: false);
 
-            // The floor rug between the door and the bar, the chandelier over it.
+            // The floor rug between the door and the bar, the chandelier over it (no collider, high enough to pass under).
             var mid = Group("Middle");
-            Put(runner, mid, 0, .005f, -1.0f, 90, blocking: false);
-            var ch = Put(chandelier, mid, 0, 3.0f, -1.0f, 0, false); Glow(ch, new Vector3(0, -.7f, 0), warm, 4f, 9f);
+            Put(runner, mid, 0, .005f, -1.1f, 0, blocking: false, collide: false);
+            var ch = Put(chandelier, mid, 0, 3.0f, -1.1f, 0, false, collide: false); Glow(ch, new Vector3(0, -.7f, 0), warm, 4f, 9f);
 
-            // Beams across the ceiling, in the style's trim.
+            // Beams across the ceiling, in the style's trim, running front to back.
             var beams = Group("Ceiling beams");
-            foreach (var z in new[] { -5.0f, -2.0f, 1.0f, 4.0f })
+            foreach (var x in new[] { -4.5f, -1.5f, 1.5f, 4.5f })
             {
-                var go = new GameObject("Beam"); go.transform.SetParent(beams, false); go.transform.localPosition = new Vector3(0, 2.7f, z);
-                var k = go.AddComponent<DungeonKitBlock>(); k.size = new Vector3(10f, .28f, .3f); k.fromCeiling = true; k.standsOnPosition = true;
+                var go = new GameObject("Beam"); go.transform.SetParent(beams, false); go.transform.localPosition = new Vector3(x, 2.7f, 0);
+                var k = go.AddComponent<DungeonKitBlock>(); k.size = new Vector3(.3f, .28f, 10f); k.fromCeiling = true; k.standsOnPosition = true;
                 k.sides = DungeonKitBlock.Surface.Trim; k.top = DungeonKitBlock.Surface.Trim; k.solid = false;
             }
             PrefabUtility.SaveAsPrefabAsset(root, RoomPath);
@@ -338,5 +346,48 @@ public static class TavernDressIcons
             return dishName + ": " + keep;
         }
         finally { AssetDatabase.DeleteAsset(temp); }
+    }
+}
+
+// ── Hand-made shading for the tavern's props ──
+// The plain restyles (PixelRestyle.Build) came out smooth and blotchy next to the dungeon's props (the user, 2026-10-26).
+// Each prop's texture is given the dungeon props' hand-made structure (Tools/prop_structure.py): faces as planks and
+// bands, five shades a material, lit top edges and dark bottoms, wood grain, darker creases. Bake writes the G-buffers;
+// Tools/tavern_structure.sh runs the painter; Apply reimports. The plain textures are kept in Temp/Tavern/plain.
+public static class TavernStructure
+{
+    const string PixelDir = "Assets/Game/Levels/Shared/Props/Tavern/Pixel";
+
+    public static string Bake(string only = null)
+    {
+        Directory.CreateDirectory("Temp/Tavern/gb"); Directory.CreateDirectory("Temp/Tavern/plain");
+        var log = new System.Text.StringBuilder();
+        foreach (var dir in Directory.GetDirectories(PixelDir))
+        {
+            string key = Path.GetFileName(dir);
+            if (only != null && !only.Split('|').Any(o => key.StartsWith(o))) continue;
+            string meshPath = $"{PixelDir}/{key}/{key}.asset", texPath = $"{PixelDir}/{key}/{key}.png";
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath); var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
+            if (tex == null || mesh == null) { log.AppendLine(key + ": skipped"); continue; }
+            string plain = $"Temp/Tavern/plain/{key}.png";
+            if (!File.Exists(plain)) File.Copy(texPath, plain);
+            string syntyName = key.LastIndexOf(" x") > 0 ? key.Substring(0, key.LastIndexOf(" x")) : key;
+            log.AppendLine(key + "\t" + PixelRestyle.BakeGBuffer(meshPath, tex.width, tex.height, $"Temp/Tavern/gb/{key}.bin", "synty:" + syntyName));
+        }
+        File.WriteAllText("Temp/Tavern/gb/bake.txt", log.ToString());
+        return log.ToString();
+    }
+
+    public static string Apply()
+    {
+        int n = 0;
+        foreach (var dir in Directory.GetDirectories(PixelDir))
+        {
+            string key = Path.GetFileName(dir), made = $"Temp/Tavern/structured/{key}.png";
+            if (!File.Exists(made)) continue;
+            File.Copy(made, $"{PixelDir}/{key}/{key}.png", true);
+            AssetDatabase.ImportAsset($"{PixelDir}/{key}/{key}.png", ImportAssetOptions.ForceUpdate); n++;
+        }
+        return n + " textures given structure";
     }
 }

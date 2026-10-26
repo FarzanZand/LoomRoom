@@ -1,15 +1,14 @@
-"""Paints the Tavern room style's textures as pixel art in the house style (Docs/Pixel-texture-style.md): a small
-palette picked texel by texel (no smooth blends), dark creases and lit edges, muted warm browns, dirt and wear. Every
-texture is seamless and at the dungeon's density, 384 texels an architecture tile (3 m, 128 a metre):
+"""Paints the Tavern room style's textures as drawn pixel art, the way the Church style is drawn (its walls, floor and
+vault): every shape (board, post, stone, chip) has a dark outline, a lit edge on its upper or left side and a shaded one
+opposite, two or three tones inside laid in clusters of several texels (never texel-by-texel noise), drawn cracks and
+grain lines, a few single specks. Muted colours: limewash, green paint, dark oak. Seamless, at the dungeon's density of
+384 texels an architecture tile (3 m, 128 a metre). The floor is the Church floor itself (pale flagstones).
 
-  Tavern floor.png    768 x 768, tiling .5: grey slate flagstones, dark grout with grit, worn tops, ale stains, cracks
-  Tavern wall.png     384 x 384, tiling 1: a green-painted plank wainscot to 1 m (worn back to the wood at its
-                      edges), a dado rail, limewashed plaster between timber posts at the tile's edges, smoke at the
-                      top, a wall plate along the top
-  Tavern ceiling.png  384 x 384, tiling 1: dark sooty boards, close to neutral
-Not everything brown (the user, 2026-10-26: "every layer is just different shades of brown"): stone floor, pale walls,
-green paint, so the wood of the furniture and the timbers stands out against them.
-  Tavern trim.png     384 x 384, tiling 1: rough dark timber (the kit blocks' beams, frames and rails)
+  Tavern wall.png     384 x 384, tiling 1: a green-painted board wainscot to 1 m (chipped back to the wood), a dado
+                      rail, limewashed plaster panels between timber posts (cracks, a flaked patch showing the stones
+                      behind, smoke along the top), a wall plate
+  Tavern ceiling.png  384 x 384, tiling 1: dark boards with grain, nail heads and soot
+  Tavern trim.png     384 x 384, tiling 1: rough dark timber with grain lines and splits (beams, rails, frames)
 
 python Tools/tavern_style.py <out dir>
 """
@@ -21,292 +20,220 @@ from pathlib import Path
 from PIL import Image
 
 
-def value_noise(w, h, cx, cy, seed):
-    """Tileable value noise in 0..1; cx, cy = texels between lattice points (must divide w and h)."""
+def value_noise(w, h, c, seed):
+    """Tileable value noise in 0..1, c texels between lattice points (divides w and h)."""
     rnd = random.Random(seed)
-    nx, ny = w // cx, h // cy
+    nx, ny = w // c, h // c
     lat = [[rnd.random() for _ in range(nx)] for _ in range(ny)]
     out = [[0.0] * w for _ in range(h)]
     for y in range(h):
-        fy = y / cy; y0 = int(fy); ty = fy - y0; ty = ty * ty * (3 - 2 * ty)
+        fy = y / c; y0 = int(fy); ty = fy - y0; ty = ty * ty * (3 - 2 * ty)
         for x in range(w):
-            fx = x / cx; x0 = int(fx); tx = fx - x0; tx = tx * tx * (3 - 2 * tx)
+            fx = x / c; x0 = int(fx); tx = fx - x0; tx = tx * tx * (3 - 2 * tx)
             a = lat[y0 % ny][x0 % nx]; b = lat[y0 % ny][(x0 + 1) % nx]
-            c = lat[(y0 + 1) % ny][x0 % nx]; d = lat[(y0 + 1) % ny][(x0 + 1) % nx]
-            out[y][x] = (a + (b - a) * tx) * (1 - ty) + (c + (d - c) * tx) * ty
+            cc = lat[(y0 + 1) % ny][x0 % nx]; d = lat[(y0 + 1) % ny][(x0 + 1) % nx]
+            out[y][x] = (a + (b - a) * tx) * (1 - ty) + (cc + (d - cc) * tx) * ty
     return out
 
 
-def shade(c, k):
-    return tuple(max(0, min(255, int(round(v * k)))) for v in c)
+def tone(ramp, t):
+    return ramp[max(0, min(len(ramp) - 1, int(t * len(ramp))))]
 
 
-def mix(a, b, t):
-    return tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(3))
+# Ramps, dark to light, few steps (a drawn look keeps to them).
+PLASTER = [(118, 112, 98), (146, 139, 122), (170, 162, 143), (190, 182, 160)]
+PLASTER_LINE = (92, 86, 74)
+GREEN = [(28, 46, 36), (38, 62, 48), (50, 78, 60), (64, 94, 72)]
+GREEN_LINE = (18, 28, 22)
+OAK = [(44, 30, 22), (60, 41, 28), (78, 54, 36), (98, 69, 45)]
+OAK_LINE = (26, 17, 12)
+CEIL = [(34, 28, 24), (44, 37, 31), (56, 47, 39), (68, 57, 47)]
+CEIL_LINE = (20, 16, 13)
+STONE = [(70, 70, 72), (92, 92, 92), (114, 112, 108), (134, 131, 124)]
+NAIL = (40, 38, 36)
 
 
-def pick(palette, t):
-    return palette[max(0, min(len(palette) - 1, int(t * len(palette))))]
+class Canvas:
+    def __init__(self, w, h):
+        self.w, self.h = w, h
+        self.img = Image.new("RGB", (w, h)); self.px = self.img.load()
+
+    def set(self, x, y, c): self.px[x % self.w, y % self.h] = c
+    def get(self, x, y): return self.px[x % self.w, y % self.h]
 
 
-OAK = [(62, 40, 26), (76, 50, 32), (90, 60, 38), (104, 70, 44), (118, 81, 51), (132, 92, 58)]
-DARK = [(34, 23, 16), (44, 30, 20), (54, 37, 25), (64, 44, 29), (74, 51, 33)]
-PLASTER = [(132, 130, 122), (146, 144, 135), (160, 157, 147), (172, 169, 158), (184, 180, 168), (194, 190, 177)]
-GREEN = [(26, 42, 34), (32, 52, 41), (38, 61, 48), (44, 70, 55), (52, 80, 62)]
-GREYWOOD = [(34, 31, 28), (42, 38, 34), (50, 45, 40), (58, 52, 46), (66, 59, 52)]
-SLATE = [(56, 58, 62), (65, 67, 71), (74, 76, 80), (83, 85, 88), (93, 94, 96), (104, 104, 105)]
-GAP = (24, 16, 11)
-IRON = (52, 50, 48)
-
-
-def boards(px, w, h, x0, y0, bw, bh, along_x, rnd, grain, palette, seed_tone, joints=True, nails=True, lit=1.12, dark=.74):
-    """Planks in a rectangle: rows of boards bh texels thick running along x (or columns along y), random lengths,
-    each board its own tone, grain streaks along it, a 1-texel gap, lit leading edge, shaded trailing edge."""
-    span, across = (bw, bh) if along_x else (bh, bw)
-    count = across // 24 if along_x else across // 24
-    size = 24
-    for k in range(across // size):
-        a0 = k * size
-        start = rnd.randrange(span)
-        cuts = [start]
-        while True:
-            nxt = cuts[-1] + rnd.randrange(span // 4, span // 2 + 1)
-            if nxt >= start + span - span // 6: break
-            cuts.append(nxt)
-        for j, c0 in enumerate(cuts):
-            c1 = cuts[j + 1] if j + 1 < len(cuts) else start + span
-            tone = rnd.uniform(-.18, .18) + seed_tone
-            for along in range(c0, c1):
-                for t in range(size):
-                    if along_x: x, y = x0 + along % span, y0 + a0 + t
-                    else: x, y = x0 + a0 + t, y0 + along % span
-                    g = grain[y % h][x % w]
-                    v = .5 + tone + (g - .5) * .9 + (rnd.random() - .5) * .35
-                    col = pick(palette, v)
-                    if t == 0: col = GAP
-                    elif t == 1: col = shade(col, lit)
-                    elif t == size - 1: col = shade(col, dark)
-                    elif t == size - 2: col = shade(col, .88)
-                    if joints and along == c0: col = GAP
-                    elif joints and along == c0 + 1: col = shade(col, .82)
-                    px[x % w, y % h] = col
-            # nail heads near each end, two per board
-            if nails:
-                for end in (c0 + 4, c1 - 5):
-                    for t in (6, size - 7):
-                        if along_x: x, y = x0 + end % span, y0 + a0 + t
-                        else: x, y = x0 + a0 + t, y0 + end % span
-                        px[x % w, y % h] = IRON
-                        px[(x + 1) % w, (y + 1) % h] = shade(px[(x + 1) % w, (y + 1) % h], .7)
-                        px[(x - 1) % w, (y - 1) % h] = shade(px[(x - 1) % w, (y - 1) % h], 1.12)
-
-
-def knots(px, w, h, rnd, n, region=None):
-    for _ in range(n):
-        if region: x0, y0, x1, y1 = region; cx, cy = rnd.randrange(x0, x1), rnd.randrange(y0, y1)
-        else: cx, cy = rnd.randrange(w), rnd.randrange(h)
-        rx, ry = rnd.randrange(3, 6), rnd.randrange(2, 3)
-        for dy in range(-ry - 2, ry + 3):
-            for dx in range(-rx - 3, rx + 4):
-                d = (dx / (rx + .01)) ** 2 + (dy / (ry + .01)) ** 2
-                x, y = (cx + dx) % w, (cy + dy) % h
-                if d <= 1: px[x, y] = shade(DARK[1], .85 + .3 * rnd.random())
-                elif d <= 2.2 and rnd.random() < .7: px[x, y] = shade(px[x, y], .8)
-
-
-def stains(px, w, h, rnd, n, colour, rmin, rmax, strength=.4, region=None):
-    for _ in range(n):
-        if region: x0, y0, x1, y1 = region; cx, cy = rnd.randrange(x0, x1), rnd.randrange(y0, y1)
-        else: cx, cy = rnd.randrange(w), rnd.randrange(h)
-        r = rnd.randrange(rmin, rmax)
-        for dy in range(-r, r + 1):
-            for dx in range(-r, r + 1):
-                if math.hypot(dx, dy * 1.2) + rnd.random() * 2.5 <= r:
-                    x, y = (cx + dx) % w, (cy + dy) % h
-                    px[x, y] = mix(px[x, y], colour, strength)
-
-
-def grit(px, w, h, rnd, dark_p=.025, light_p=.012, region=None):
-    x0, y0, x1, y1 = region or (0, 0, w, h)
-    for y in range(y0, y1):
-        for x in range(x0, x1):
-            n = rnd.random()
-            if n < dark_p: px[x, y] = shade(px[x, y], .72)
-            elif n > 1 - light_p: px[x, y] = shade(px[x, y], 1.14)
-
-
-def floor(path):
-    w = h = 768
-    rnd = random.Random(41)
-    clump = value_noise(w, h, 8, 8, 42)
-    # rows of flags of uneven height, cut into slabs of uneven width; each its own grey, picked texel by texel
-    rows, y = [], 0
-    while y < h:
-        r = rnd.choice([72, 88, 96, 112, 128])
-        if h - y - r < 72: r = h - y
-        rows.append((y, r)); y += r
-    slab = [[None] * w for _ in range(h)]
-    for (y0, rh) in rows:
-        start = rnd.randrange(w); x = 0; cuts = []
-        while x < w:
-            sw = rnd.choice([96, 112, 128, 144, 176])
-            if w - x - sw < 96: sw = w - x
-            cuts.append((x, sw)); x += sw
-        for (x0, sw) in cuts:
-            tone = rnd.uniform(-1.1, 1.1)
-            for yy in range(y0, y0 + rh):
-                for xx in range(x0, x0 + sw):
-                    slab[yy][(xx + start) % w] = (tone, xx - x0, yy - y0, sw, rh)
-    img = Image.new("RGB", (w, h)); px = img.load()
-    grout, sand = (30, 30, 32), (112, 98, 72)
-    for y in range(h):
-        for x in range(w):
-            tone, lx, ly, sw, rh = slab[y][x]
-            k = 2.5 + tone + (clump[y][x] - .5) * 1.4 + (rnd.random() - .5) * 1.6
-            c = SLATE[max(0, min(len(SLATE) - 1, int(round(k))))]
-            if lx < 2 or ly < 2: c = sand if rnd.random() < .18 else grout
-            elif lx == 2 or ly == 2: c = shade(c, 1.14)                # the lit lip
-            elif lx == sw - 1 or ly == rh - 1: c = shade(c, .7)        # the shaded edge into the next joint
-            elif lx == sw - 2 or ly == rh - 2: c = shade(c, .86)
-            px[x, y] = c
-    # worn smooth where feet go: hard-edged lighter patches; ale and soot stains; cracks; grit
-    wear = value_noise(w, h, 24, 24, 43)
-    for y in range(h):
-        for x in range(w):
-            if wear[y][x] > .7 and rnd.random() < .8: px[x, y] = shade(px[x, y], 1.08)
-    stains(px, w, h, rnd, 16, (30, 24, 20), 4, 12, .4)
-    stains(px, w, h, rnd, 5, (70, 52, 26), 3, 7, .3)
-    for _ in range(30):
-        x, y = rnd.randrange(w), rnd.randrange(h)
-        for _ in range(rnd.randrange(8, 30)):
-            px[x % w, y % h] = grout
-            px[(x + 1) % w, (y + 1) % h] = shade(px[(x + 1) % w, (y + 1) % h], 1.1)
-            x += rnd.choice((-1, 0, 1, 1)); y += rnd.choice((0, 1, 1))
-    grit(px, w, h, rnd)
-    img.save(path)
+def board(cv, x0, y0, bw, bh, ramp, line, rnd, clusters, along_x=True, grain=True, knot_chance=.3, nails=True):
+    """One outlined board: dark outline, lit leading edge, shaded trailing edge, inside two or three tones by cluster
+    noise stretched along the board, broken grain lines, maybe a knot, nail heads at its ends."""
+    t0 = rnd.uniform(-.12, .12)
+    span, depth = (bw, bh) if along_x else (bh, bw)
+    for j in range(bh):
+        for i in range(bw):
+            a, d = (i, j) if along_x else (j, i)            # a: along the board, d: across it
+            n = clusters[(d * 3 + y0 * 7) % len(clusters)][(a // 5 + x0) % len(clusters[0])]
+            c = tone(ramp, .45 + t0 + (n - .5) * .7)
+            if d == 0 or a == 0: c = line
+            elif d == 1: c = tone(ramp, .99)                 # lit edge
+            elif d == depth - 1: c = tone(ramp, 0)           # shaded edge
+            cv.set(x0 + i, y0 + j, c)
+    if grain:
+        for g in range(max(1, depth // 7)):
+            off = 3 + g * 7 + rnd.randrange(0, 3)
+            if off >= depth - 2: break
+            pos = rnd.randrange(2, 10)
+            while pos < span - 3:
+                run = rnd.randrange(6, 22)
+                for k in range(run):
+                    if pos + k >= span - 2: break
+                    x, y = (x0 + pos + k, y0 + off) if along_x else (x0 + off, y0 + pos + k)
+                    cv.set(x, y, tone(ramp, 0))
+                pos += run + rnd.randrange(3, 12)
+                if rnd.random() < .4: off = min(depth - 3, max(2, off + rnd.choice((-1, 1))))
+    if rnd.random() < knot_chance and span > 30:
+        kx = rnd.randrange(10, span - 10); ky = depth // 2
+        for dk in range(-3, 4):
+            for dd in range(-1, 2):
+                if abs(dk) == 3 and dd != 0: continue
+                x, y = (x0 + kx + dk, y0 + ky + dd) if along_x else (x0 + ky + dd, y0 + kx + dk)
+                cv.set(x, y, line if (abs(dk) == 3 or abs(dd) == 1) else tone(ramp, .3))
+    if nails:
+        for end in (4, span - 5):
+            for side in (3, depth - 4):
+                if side <= 1 or side >= depth - 1: continue
+                x, y = (x0 + end, y0 + side) if along_x else (x0 + side, y0 + end)
+                cv.set(x, y, NAIL); cv.set(x - 1, y - 1, tone(ramp, .99))
 
 
 def wall(path):
     w = h = 384
     rnd = random.Random(51)
-    img = Image.new("RGB", (w, h)); px = img.load()
-    plate, rail_top, rail_h, post = 18, h - 128 - 12, 12, 14       # rows from the top (PIL y 0 = the wall's top)
-    # plaster: muted, chosen texel by texel, smoke darkening in steps toward the top, cracks and bare patches
-    pg = value_noise(w, h, 8, 8, 52)
+    cv = Canvas(w, h)
+    clusters = value_noise(w, h, 6, 52)
+    plate, rail_h, wains, post = 20, 14, 126, 16
+    rail_top = h - wains - rail_h
+    # plaster: big zones of three tones from broad noise, quantised; smoke along the top as a ragged darker band
+    big = value_noise(w, h, 24, 53)
     for y in range(plate, rail_top):
-        smoke = max(0.0, 1 - (y - plate) / 110)                       # 1 at the top, 0 lower down
         for x in range(w):
-            v = .55 + (pg[y][x] - .5) * .5 + (rnd.random() - .5) * .6 - (.45 if rnd.random() < smoke * .8 else 0)
-            px[x, y] = pick(PLASTER, v)
-    # one bare patch low on the plaster, ragged, the wattle showing as rows of dark lath with a crease round it
-    cx, cy = rnd.randrange(post + 60, w - post - 60), rail_top - 26
-    edge = [rnd.randrange(14, 26) for _ in range(64)]
-    for dy in range(-12, 13):
-        for dx in range(-30, 31):
-            ang = int((math.atan2(dy * 2.2, dx) + math.pi) / (2 * math.pi) * 63)
-            r = edge[ang] * (1 - abs(dy) / 14)
-            x, y = cx + dx, cy + dy
-            if abs(dx) <= r - 2: px[x, y] = GAP if y % 4 == 0 else shade(DARK[2], .85 + .3 * rnd.random())
-            elif abs(dx) <= r: px[x, y] = shade(px[x, y], .7)
-    # cracks
-    for _ in range(9):
-        x, y = rnd.randrange(post, w - post), rnd.randrange(plate, rail_top)
-        for _ in range(rnd.randrange(10, 34)):
-            if plate <= y < rail_top:
-                px[x % w, y] = shade(PLASTER[0], .62)
-                px[(x + 1) % w, y] = shade(px[(x + 1) % w, y], 1.06)
-            x += rnd.choice((-1, 0, 1)); y += rnd.choice((1, 1, 0, -1))
-    grit(px, w, h, rnd, .02, .01, (0, plate, w, rail_top))
-    # wainscot: vertical planks from the rail down
-    grain = value_noise(w, h, 2, 24, 53)
-    sub = Image.new("RGB", (w, 128 + 12)); sp = sub.load()
-    g2 = [[grain[y][x] for x in range(w)] for y in range(140)]
-    boards(sp, w, 140, 0, 0, w, 140, False, rnd, g2, GREEN, 0, joints=False, nails=True)
-    wear = value_noise(w, 140, 8, 4, 55)
-    for y in range(140):
+            v = .64 + (big[y][x] - .5) * .26 + (clusters[y][x] - .5) * .1      # one tone, a few soft-edged patches
+            if y < plate + 26 and clusters[y][x] + (y - plate) / 40 < .9: v -= .3
+            cv.set(x, y, tone(PLASTER, v))
+    # where one zone steps darker than the one above, a drawn line (on half of them, so it stays loose)
+    zone = [[cv.get(x, y) for x in range(w)] for y in range(h)]
+    for y in range(plate + 1, rail_top):
         for x in range(w):
-            c = sp[x, y]
-            t = x % 24
-            # paint worn through to the dark wood on the boards' edges and in chips, more toward the floor
-            if (t in (2, 21) and rnd.random() < .45) or wear[y][x] + y / 700 > .9: c = pick(DARK, .3 + rnd.random() * .5)
-            px[x, h - 140 + y] = c
-    # dado rail and the wall plate: dark timber with a lit top and a shaded underside
-    tg = value_noise(w, h, 32, 2, 54)
-    def timber(y0, y1, vertical=False, x0=0, x1=w):
-        for y in range(y0, y1):
-            for x in range(x0, x1):
-                v = .45 + (tg[y][x] - .5) * .8 + (rnd.random() - .5) * .35
-                c = pick(DARK, v)
-                if (y == y0 and not vertical) or (x == x0 and vertical): c = shade(c, 1.25)
-                elif (y == y1 - 1 and not vertical) or (x == x1 - 1 and vertical): c = shade(c, .6)
-                px[x % w, y] = c
-    timber(rail_top, rail_top + rail_h)
-    for x in range(w): px[x, rail_top + rail_h] = shade(px[x, rail_top + rail_h], .7)   # its shadow on the planks
-    # posts at the tile's edges (half on each side, so they meet across the seam), over plaster and rail
-    for y in range(plate, rail_top):
-        for x in list(range(0, post // 2)) + list(range(w - post // 2, w)):
-            v = .4 + (tg[(x * 7) % h][y % w] - .5) * .8 + (rnd.random() - .5) * .35
-            c = pick(DARK, v)
-            if x == w - post // 2: c = shade(c, 1.22)
-            elif x == post // 2 - 1: c = shade(c, .6)
-            px[x, y] = c
-        px[post // 2, y] = shade(px[post // 2, y], .78)                # plaster's crease against the post
-        px[w - post // 2 - 1, y] = shade(px[w - post // 2 - 1, y], .78)
-    # pegs where the posts meet the plate and rail
-    for x in (2, w - 3):
-        for y in (plate + 4, rail_top - 5):
-            px[x, y] = GAP; px[x + 1, y + 1] = shade(DARK[3], 1.2)
-    timber(0, plate)
-    for x in range(w): px[x, plate] = shade(px[x, plate], .62)            # the plate's shadow on the plaster
-    img.save(path)
+            if sum(zone[y][x]) < sum(zone[y - 1][x]) - 40 and rnd.random() < .5: cv.set(x, y, tone(PLASTER, .25))
+    # trowel strokes: short light dashes with a darker one under, scattered, so the limewash reads as laid by hand
+    for _ in range(420):
+        x, y = rnd.randrange(post, w - post), rnd.randrange(plate + 30, rail_top - 3)
+        L = rnd.randrange(3, 8)
+        for k in range(L):
+            if cv.get(x + k, y) in PLASTER: cv.set(x + k, y, tone(PLASTER, .99))
+            if cv.get(x + k + 1, y + 1) in PLASTER and k < L - 1: cv.set(x + k + 1, y + 1, tone(PLASTER, .3))
+    # (No flaked patch showing the stones: one patch repeats on every 3 m wall tile and reads as a stamp.)
+    # cracks: drawn dark lines with a lit texel beside
+    for _ in range(6):
+        x, y = rnd.randrange(post, w - post), rnd.randrange(plate + 4, rail_top - 6)
+        for _ in range(rnd.randrange(12, 30)):
+            if plate < y < rail_top - 1 and post // 2 < x % w < w - post // 2:
+                cv.set(x, y, PLASTER_LINE); cv.set(x + 1, y, tone(PLASTER, .99))
+            x += rnd.choice((-1, 0, 1)); y += rnd.choice((1, 1, 0))
+    # wainscot: vertical green-painted boards; chips back to the wood, outlined, heavier toward the floor
+    bw = 24
+    for i in range(w // bw):
+        board(cv, i * bw, h - wains, bw, wains, GREEN, GREEN_LINE, rnd, clusters, along_x=False, knot_chance=0)
+    for _ in range(26):
+        x0, y0 = rnd.randrange(w), rnd.randrange(h - wains + 6, h - 2)
+        if y0 < h - 60 and rnd.random() < .6: continue
+        rx, ry = rnd.randrange(2, 6), rnd.randrange(1, 4)
+        for dy in range(-ry - 1, ry + 2):
+            for dx in range(-rx - 1, rx + 2):
+                d = (dx / rx) ** 2 + (dy / ry) ** 2
+                if d <= 1: cv.set(x0 + dx, y0 + dy, tone(OAK, .5 + (.3 if dy < 0 else 0)))
+                elif d <= 1.7 and cv.get(x0 + dx, y0 + dy) in GREEN: cv.set(x0 + dx, y0 + dy, GREEN_LINE)
+    # timber: the dado rail and the wall plate, then posts at the tile's edges (half each side)
+    for (y0, hh) in ((rail_top, rail_h), (0, plate)):
+        board(cv, 0, y0, w, hh, OAK, OAK_LINE, rnd, clusters, along_x=True, knot_chance=.6, nails=False)
+    for y in range(rail_top + rail_h, rail_top + rail_h + 2):
+        for x in range(w): cv.set(x, y, GREEN_LINE)
+    for y in range(plate, plate + 2):
+        for x in range(w): cv.set(x, y, tone(PLASTER, .1))
+    for side in (0, 1):
+        x0 = 0 if side == 0 else w - post // 2
+        for y in range(plate, rail_top):
+            for i in range(post // 2):
+                x = x0 + i
+                n = clusters[(y // 6) % h][x]
+                c = tone(OAK, .45 + (n - .5) * .7)
+                edge_i = i if side == 1 else post // 2 - 1 - i
+                if edge_i == 0: c = OAK_LINE
+                elif edge_i == 1: c = tone(OAK, .99) if side == 1 else tone(OAK, 0)
+                if (y + x * 7) % 23 < 7 and edge_i in (3, 5): c = tone(OAK, 0)
+                cv.set(x, y, c)
+        px = 2 if side == 0 else w - 3
+        for py in (plate + 5, rail_top - 6):
+            cv.set(px, py, NAIL); cv.set(px - 1, py - 1, tone(OAK, .99))
+    for _ in range(140):
+        x, y = rnd.randrange(w), rnd.randrange(plate, h)
+        if cv.get(x, y) in PLASTER: cv.set(x, y, PLASTER_LINE if rnd.random() < .7 else tone(PLASTER, .99))
+    cv.img.save(path)
 
 
 def ceiling(path):
     w = h = 384
     rnd = random.Random(61)
-    grain = value_noise(w, h, 48, 2, 62)
-    img = Image.new("RGB", (w, h)); px = img.load()
-    boards(px, w, h, 0, 0, w, h, True, rnd, grain, GREYWOOD, -.04, nails=False, lit=1.08, dark=.7)
-    soot = value_noise(w, h, 16, 16, 63)
+    cv = Canvas(w, h)
+    clusters = value_noise(w, h, 6, 62)
+    for row in range(h // 32):
+        start = rnd.randrange(w); x = 0
+        while x < w:
+            L = rnd.choice([96, 128, 160, 192])
+            if w - x - L < 64: L = w - x
+            sub = Canvas(L, 32)
+            board(sub, 0, 0, L, 32, CEIL, CEIL_LINE, rnd, clusters, along_x=True, knot_chance=.4)
+            for j in range(32):
+                for i in range(L): cv.set(start + x + i, row * 32 + j, sub.get(i, j))
+            x += L
+    soot = value_noise(w, h, 24, 63)
     for y in range(h):
         for x in range(w):
-            if soot[y][x] > .72: px[x, y] = shade(px[x, y], .84)
-    knots(px, w, h, rnd, 10)
-    grit(px, w, h, rnd, .03, .006)
-    img.save(path)
+            if soot[y][x] > .72 and clusters[y][x] > .45:
+                c = cv.get(x, y)
+                if c in CEIL[1:]: cv.set(x, y, CEIL[CEIL.index(c) - 1])
+    cv.img.save(path)
 
 
 def trim(path):
     w = h = 384
     rnd = random.Random(71)
-    grain = value_noise(w, h, 64, 3, 72)
-    fine = value_noise(w, h, 8, 2, 73)
-    img = Image.new("RGB", (w, h)); px = img.load()
+    cv = Canvas(w, h)
+    clusters = value_noise(w, h, 6, 72)
     for y in range(h):
         for x in range(w):
-            v = .5 + (grain[y][x] - .5) * 1.0 + (fine[y][x] - .5) * .4 + (rnd.random() - .5) * .3
-            px[x, y] = pick(DARK + [OAK[1]], v)
-    # checks (long splits along the grain) with a lit lip, adze marks
-    for _ in range(26):
-        x, y, n = rnd.randrange(w), rnd.randrange(h), rnd.randrange(20, 70)
-        for i in range(n):
-            px[(x + i) % w, y % h] = GAP
-            px[(x + i) % w, (y - 1) % h] = shade(px[(x + i) % w, (y - 1) % h], 1.15)
-            if rnd.random() < .15: y += rnd.choice((-1, 1))
-    for _ in range(60):
-        x, y = rnd.randrange(w), rnd.randrange(h)
-        for i in range(rnd.randrange(5, 10)):
-            px[(x + i) % w, y] = shade(px[(x + i) % w, y], 1.12)
-            px[(x + i) % w, (y + 1) % h] = shade(px[(x + i) % w, (y + 1) % h], .82)
-    knots(px, w, h, rnd, 8)
-    grit(px, w, h, rnd, .02, .008)
-    img.save(path)
+            cv.set(x, y, tone(OAK, .52 + (clusters[y][(x // 4) % w] - .5) * .32))
+    for gy in range(2, h, 6):
+        off = gy; pos = rnd.randrange(8)
+        while pos < w:
+            run = rnd.randrange(10, 40)
+            for k in range(run): cv.set(pos + k, off, tone(OAK, 0))
+            pos += run + rnd.randrange(4, 16)
+            if rnd.random() < .3: off += rnd.choice((-1, 1))
+    for _ in range(18):
+        x, y, n = rnd.randrange(w), rnd.randrange(h), rnd.randrange(24, 80)
+        for k in range(n):
+            cv.set(x + k, y, OAK_LINE); cv.set(x + k, y - 1, tone(OAK, .99))
+    for _ in range(10):
+        cx, cy = rnd.randrange(w), rnd.randrange(h)
+        for dk in range(-4, 5):
+            for dd in range(-2, 3):
+                d = (dk / 4.5) ** 2 + (dd / 2.5) ** 2
+                if d <= 1: cv.set(cx + dk, cy + dd, OAK_LINE if d > .55 else tone(OAK, .3))
+    cv.img.save(path)
 
 
 def main():
     out = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
     out.mkdir(parents=True, exist_ok=True)
-    floor(out / "Tavern floor.png")
     wall(out / "Tavern wall.png")
     ceiling(out / "Tavern ceiling.png")
     trim(out / "Tavern trim.png")
