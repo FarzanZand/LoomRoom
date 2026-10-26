@@ -41,6 +41,11 @@ public class GameManager : Singleton<GameManager>
 
     public event Action<bool>      HudVisibilityChanged;
 
+    // A scripted moment that wants the HUD in view (resting by the tavern fire shows the health bar fill) keeps it shown
+    // through a Cutscene: counted like the states, every true needs its false from the same owner.
+    int hudKept;
+    public void KeepHud(bool keep) { hudKept = Mathf.Max(0, hudKept + (keep ? 1 : -1)); Apply(); }
+
     void Start() => Apply();
 
     // The cursor is held to the state every frame, not only when the state changes: losing focus, Escape in the
@@ -107,7 +112,7 @@ public class GameManager : Singleton<GameManager>
         if (InputManager.HasInstance)
             InputManager.Instance.SetGameplayEnabled(s == GameState.Explore, allowMovement: s == GameState.Inventory);
 
-        bool hudVisible = !(hideHudInCutscenes && s == GameState.Cutscene);
+        bool hudVisible = !(hideHudInCutscenes && s == GameState.Cutscene && hudKept == 0);
         HudVisibilityChanged?.Invoke(hudVisible);
     }
 }

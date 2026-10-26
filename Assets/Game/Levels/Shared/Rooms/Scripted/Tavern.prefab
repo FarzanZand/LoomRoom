@@ -900,6 +900,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TavernHearth
   heal: 0.2
+  restSeconds: 5
+  seats:
+  - {fileID: 1647256825297568962}
+  - {fileID: 728251228912023707}
+  seatedEyeHeight: 0.62
+  sitSeconds: 0.7
   restedMessage: You rest by the fire. +{Amount} health.
   restedLine:
     text: Warm your hands. It won't last.

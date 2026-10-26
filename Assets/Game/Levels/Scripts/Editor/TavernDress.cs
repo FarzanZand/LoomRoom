@@ -256,7 +256,9 @@ public static class TavernDress
             var interaction = hearth.Find("Interaction"); if (interaction != null) interaction.localPosition = new Vector3(0, 0, 1.2f);
             var h = Group("Hearth side");
             Put(rug, h, -5.3f, .005f, -.3f, 90, blocking: false, collide: false);
-            Put(chair, h, -5.0f, 0, -1.6f, 300); Put(chair, h, -5.0f, 0, 1.0f, 240); Put(stool, h, -4.4f, 0, -.3f);
+            var seatA = Put(chair, h, -5.0f, 0, -1.6f, 300); var seatB = Put(chair, h, -5.0f, 0, 1.0f, 240); Put(stool, h, -4.4f, 0, -.3f);
+            // Resting by the fire sits the player in the nearer of the two chairs.
+            if (th != null) { var tso = new SerializedObject(th); var seatList = tso.FindProperty("seats"); seatList.arraySize = 2; seatList.GetArrayElementAtIndex(0).objectReferenceValue = seatA.transform; seatList.GetArrayElementAtIndex(1).objectReferenceValue = seatB.transform; tso.ApplyModifiedPropertiesWithoutUndo(); }
             Put(antlers, h, -6.97f, 2.3f, -.3f, 90, collide: false);
             Put(shield, h, -6.95f, 1.95f, -2.3f, 90, collide: false); Put(shield, h, -6.95f, 1.95f, 1.7f, 90, collide: false);
             Put(pot, h, -6.45f, 0, -1.45f, 30, collide: false);

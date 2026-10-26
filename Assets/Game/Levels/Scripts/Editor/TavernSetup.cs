@@ -111,9 +111,9 @@ public static class TavernSetup
                         if (!any) { lb = new Bounds(corner, Vector3.zero); any = true; } else lb.Encapsulate(corner);
                     }
                 }
-                // On the outside face (+z, the corridor side), in the middle at chest height.
+                // On the outside face (+z, the corridor side), in the middle of the upper panel, between the middle and top bands.
                 shield.transform.localRotation = Quaternion.identity;
-                shield.transform.localPosition = new Vector3(lb.center.x, 1.55f, lb.max.z + .06f);
+                shield.transform.localPosition = new Vector3(lb.center.x, 2.0f, lb.max.z + .06f);
             }
             var block = new GameObject("Keeps enemies out");
             block.transform.SetParent(door.transform, false);
