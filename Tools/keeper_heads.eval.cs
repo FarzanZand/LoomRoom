@@ -6,7 +6,7 @@
 //    painting's colour per texel, occlusion, crease dirt, grain), and set under the head bone, centred over the neck,
 //    its top `drop` below the Synty crown (negative for horns), its height `size` x the crown's height over the neck
 //    bone; the neck goes on down into the collar.
-// Config: Tools/keeper_heads.txt, one line per head: <Name>|<size>|<drop, m>|<turn y>|<forward offset, m>[|<neck taper 0..1>|<taper height share>]
+// Config: Tools/keeper_heads.txt, one line per head: <Name>|<size>|<drop, m>|<turn y>|<forward offset, m>[|<neck taper 0..1>|<taper height share>|<neck extension share>]
 if (UnityEngine.Application.isPlaying) return "stop Play first";
 UnityEditor.AssetDatabase.Refresh();
 const string PrefabPath = "Assets/Game/Characters/NPCs/Dungeon merchant.prefab";
@@ -74,7 +74,7 @@ try
   foreach (var line in System.IO.File.ReadAllLines("Tools/keeper_heads.txt"))
   {
     if (line.Trim() == "" || line.StartsWith("#")) continue;
-    var a = line.Split('|'); string name = a[0]; float size = float.Parse(a[1], ci), drop = float.Parse(a[2], ci), turn = float.Parse(a[3], ci), fwd = float.Parse(a[4], ci); float taper = a.Length > 5 ? float.Parse(a[5], ci) : 0f, taperHeight = a.Length > 6 ? float.Parse(a[6], ci) : .25f;
+    var a = line.Split('|'); string name = a[0]; float size = float.Parse(a[1], ci), drop = float.Parse(a[2], ci), turn = float.Parse(a[3], ci), fwd = float.Parse(a[4], ci); float taper = a.Length > 5 ? float.Parse(a[5], ci) : 0f, taperHeight = a.Length > 6 ? float.Parse(a[6], ci) : .25f, extend = a.Length > 7 ? float.Parse(a[7], ci) : 0f;
     var kind = (KeeperFaceKind)System.Enum.Parse(typeof(KeeperFaceKind), name);
     string dir = $"Assets/Game/Meshy/KeeperHead{name}";
     // the head as Tools/keeper_head_bake.py wrote it ("Keeper Head <X> obj.txt", already in Unity's frame: y up, face +z),
@@ -103,6 +103,14 @@ try
         float k = UnityEngine.Mathf.Lerp(taper, 1f, (p0.y - y0) / (top - y0));
         mv[i] = new UnityEngine.Vector3(axis.x + (p0.x - axis.x) * k, p0.y, axis.z + (p0.z - axis.z) * k);
       }
+    }
+    // neck extension (column 8, a share of the head's height): the foot of the neck is drawn further down, so its cut
+    // edge ends inside his tunic, under the hood lying at his back, instead of resting on it (the minotaur from behind)
+    if (extend > 0f)
+    {
+      float y0 = float.MaxValue, y1 = float.MinValue; foreach (var p0 in mv) { y0 = UnityEngine.Mathf.Min(y0, p0.y); y1 = UnityEngine.Mathf.Max(y1, p0.y); }
+      float band = (y1 - y0) * .15f;
+      for (int i = 0; i < mv.Count; i++) { var p0 = mv[i]; if (p0.y >= y0 + band) continue; mv[i] = new UnityEngine.Vector3(p0.x, p0.y - extend * (y1 - y0) * (1f - (p0.y - y0) / band), p0.z); }
     }
     // winding: the mirror into Unity's frame reverses it; the outward side is the one with positive volume
     double vol = 0; for (int i = 0; i < mt.Count; i += 3) vol += UnityEngine.Vector3.Dot(mv[mt[i]], UnityEngine.Vector3.Cross(mv[mt[i + 1]], mv[mt[i + 2]]));
