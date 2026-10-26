@@ -1,0 +1,17 @@
+{
+  "tasks": [
+    {
+      "id": "01a17881-0fc8-710f-a63f-f6bf613d2468",
+      "type": "image-to-3d",
+      "credits": 30,
+      "note": "raw model left out of the repo (tens of MB); python Tools/meshy.py fetch fetches it again"
+    },
+    {
+      "id": "01a1789c-9120-72dd-b0ef-0e82f9a9b319",
+      "type": "remesh",
+      "polycount": 1400,
+      "credits": 5,
+      "note": "the source of the keeper head (keeper_head_bake.py cut .40); left out of the repo (four 2K textures inside), python Tools/meshy.py fetch fetches it again"
+    }
+  ]
+}

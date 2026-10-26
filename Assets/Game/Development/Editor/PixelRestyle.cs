@@ -274,6 +274,7 @@ public static partial class PixelRestyle
         n = n.ToLowerInvariant();
         // Painted modern fittings first: kitchen units, house doors, appliances.
         if (n.Contains("kitchen") || n.Contains("house_door") || n.Contains("fridge") || n.Contains("toaster")) return Kind.Painted;
+        if (n.Contains("keeper head")) return Kind.Painted;   // the tavern keeper's heads: skin, fur and scales mottle, never rust (the grey ogre) or wood grain
         if (n.Contains("skeleton") || n.Contains("bone") || n.Contains("skull")) return Kind.Bone;
         if (n.Contains("wep_") || n.Contains("shield") || n.Contains("ring") || n.Contains("latch") || n.Contains("torch") || n.Contains("brazier") || n.Contains("lantern") || n.Contains("armor")) return Kind.Metal;
         if (n.Contains("bld_") || n.Contains("pillar") || n.Contains("tomb") || n.Contains("fountain") || n.Contains("gargoyle") || n.Contains("altar")) return Kind.Stone;

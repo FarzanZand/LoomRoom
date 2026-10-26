@@ -1,0 +1,7 @@
+# <Name>|<size: height vs the Synty crown over the neck bone>|<drop: top below the Synty crown, m; negative for horns>|<turn y>|<forward offset, m>
+# Heads from Tools/keeper_head_bake.py on each Meshy remesh (cut: Gecko .36, Hobgoblin .35, Minotaur .50, Ogre .40 with neck_fix 2, Ratfolk .44 with cloth 1)
+Gecko|1.2|0.03|0|0.025
+Hobgoblin|1.15|0.0|0|0
+Minotaur|1.35|-0.08|0|0
+Ogre|1.1|0.03|0|0
+Ratfolk|1.1|0.0|0|0
