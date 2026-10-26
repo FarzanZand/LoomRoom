@@ -28,7 +28,9 @@ public static class ClipRecorder
         mixer.SetFloat(AudioManager.P_MUSIC, linear <= .0001f ? -80f : Mathf.Log10(linear) * 20f);
     }
 
-    public static string Begin(string clipName, int width = 1080, int height = 1920, float fps = 60, bool audio = true)
+    // prores: Apple ProRes 422 HQ in a .mov instead of the built-in MP4 (H.264), whose bitrate runs out at hard cuts into
+    // dark, dithered scenes (the frames after the cut ghost and smear); turn the .mov into an MP4 with ffmpeg after.
+    public static string Begin(string clipName, int width = 1080, int height = 1920, float fps = 60, bool audio = true, bool prores = false)
     {
         if (!EditorApplication.isPlaying) { Debug.LogError("[ClipRecorder] Recording needs Play mode."); return null; }
         End();
@@ -38,7 +40,8 @@ public static class ClipRecorder
         var movie = ScriptableObject.CreateInstance<MovieRecorderSettings>();
         movie.name = clipName;
         movie.Enabled = true;
-        movie.EncoderSettings = new CoreEncoderSettings
+        if (prores) movie.EncoderSettings = new ProResEncoderSettings { Format = ProResEncoderSettings.OutputFormat.ProRes422HQ };
+        else movie.EncoderSettings = new CoreEncoderSettings
         {
             Codec = CoreEncoderSettings.OutputCodec.MP4,
             EncodingQuality = CoreEncoderSettings.VideoEncodingQuality.High,
@@ -57,7 +60,7 @@ public static class ClipRecorder
         controller = new RecorderController(settings);
         controller.PrepareRecording();
         if (!controller.StartRecording()) { Debug.LogError("[ClipRecorder] The recorder did not start."); controller = null; return null; }
-        LastFile = movie.OutputFile + ".mp4";
+        LastFile = movie.OutputFile + (prores ? ".mov" : ".mp4");
         if (MuteMusic) SetMusicMuted(true);
         Debug.Log($"[ClipRecorder] Recording {width}x{height} @ {fps} to {LastFile}");
         return LastFile;

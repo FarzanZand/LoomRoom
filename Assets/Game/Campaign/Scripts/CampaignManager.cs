@@ -9,7 +9,7 @@ using UnityEngine;
 // table, clicking the figure changes class. Beating a place opens the acts it unlocks (Unlocks), whose fog lifts the
 // next time the map is shown. All the campaign's rules and looks are set here; the map itself is a prefab
 // (CampaignMap) edited by hand. Progress is plain flags (campaign.*), so saves need no new format.
-public class CampaignManager : Singleton<CampaignManager>
+public partial class CampaignManager : Singleton<CampaignManager>
 {
     [Serializable]
     public class Unlock
@@ -27,6 +27,13 @@ public class CampaignManager : Singleton<CampaignManager>
     [Min(0)] public float riseSeconds = .8f;
     [TabGroup("Map"), Tooltip("Seconds the map's lights over the table take to come back on after it has grown or the cloth has dropped.")]
     [Min(0)] public float lightFadeSeconds = .8f;
+
+    // How a run's floor is built on the table once a place is clicked (TableLevelReveal; timings and sounds are on
+    // WorldManager's Table Level Reveal asset). Saved by number: append only.
+    public enum LevelGenerator { BottomUp = 0, Cascade = 1 }
+    [TabGroup("Map"), Tooltip("How a dungeon floor is built on the table. Bottom Up: the floor's pieces rise up out of the table from the entrance outward. Cascade: the floor's footprint shows as dark tiles, then a wave runs out from the entrance, every tile dropping into place with a bounce and a clack, the lamps flaring on as it passes.")]
+    public LevelGenerator levelGenerator = LevelGenerator.Cascade;
+    public static LevelGenerator Generator => HasInstance ? Instance.levelGenerator : LevelGenerator.BottomUp;
 
     [TabGroup("Rules"), Tooltip("Where the figure stands in a new campaign.")] public CampaignEncounter home;
     [TabGroup("Rules"), Tooltip("Every place there is (their order is saved for where the figure stands: append only).")]
@@ -70,6 +77,8 @@ public class CampaignManager : Singleton<CampaignManager>
     [TabGroup("View"), Min(.1f), Tooltip("Seconds of the one move from the seat or the room onto the map: walking, rising, turning and zooming together.")] public float stepSeconds = 1f;
     [TabGroup("View"), Tooltip("Frame the open land: the player stands in front of it and the view zooms until its places fill it, widening as acts open. Off: the middle of the near side, aimed at View Aim, zoomed by View Zoom.")]
     public bool frameOpenLand = true;
+    [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Tooltip("Using the table frames the whole table (the whole map, and the floor that will be built on it), not only the open land.")]
+    public bool frameWholeTable = true;
     [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Min(1f), Tooltip("Room round the open places (1 = edge to edge).")] public float frameMargin = 1.3f;
     [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Tooltip("The most the view zooms in (field of view change, negative).")] public float maxZoomIn = -30f;
     [TabGroup("View"), ShowIf(nameof(frameOpenLand)), Min(0f), Tooltip("The most the view widens when the open land doesn't fit (field of view change): with every act open the near places would be cut off.")] public float maxZoomOut = 14f;
@@ -328,7 +337,7 @@ public class CampaignManager : Singleton<CampaignManager>
 
     // ── The map on and off the table ──
 
-    void OnLoadStarted() { if (Map != null && Map.gameObject.activeSelf) StartCoroutine(Sink()); }
+    void OnLoadStarted() { if (Map != null && Map.gameObject.activeSelf) StartCoroutine(burnAway && burnShader != null ? Burn() : Sink()); }
 
     // The flight back to the room has begun and the floor is sinking: the map rises in its place meanwhile.
     void OnLeaving() { if (Map != null && !Map.gameObject.activeSelf && !rising && MapBelongsOnTableAfterReturn) StartCoroutine(Rise()); }
@@ -1309,7 +1318,7 @@ public class CampaignManager : Singleton<CampaignManager>
     {
         var m = Map.transform;
         var look = player.Look;
-        var (centre, half) = wholeTable ? (Vector2.zero, new Vector2(Map.halfX, Map.halfZ)) : OpenLand();
+        var (centre, half) = wholeTable || frameWholeTable ? (Vector2.zero, new Vector2(Map.halfX, Map.halfZ)) : OpenLand();
         var aimLocal = frameOpenLand ? new Vector3(centre.x, 0f, centre.y) : new Vector3(viewAim.x, 0f, viewAim.y);
         aimLocal.y = Map.HeightAt(aimLocal.x, aimLocal.z);
         var aim = m.TransformPoint(aimLocal);

@@ -18,6 +18,10 @@ public class ScreenManager : Singleton<ScreenManager>
     public ScreenEffectSettings tableEffects = new();
     [Min(0), Tooltip("Seconds to crossfade between the room and table effects when the active player changes.")]
     public float effectBlendSeconds = 1.5f;
+    // A crossfade that has to be over sooner than effectBlendSeconds (the flight down into a floor: the room's colour
+    // banding left over in the dark dungeon showed as static), until it is done.
+    float blendWithin;
+    public void BlendEffectsWithin(float seconds) => blendWithin = Mathf.Max(.01f, seconds);
 
     [FoldoutGroup("Retro pixel grid"), Tooltip("Master switch for the full-screen pixel grid on both players (Retro Screen pass). Off keeps colour banding and every other effect.")]
     public bool pixelationEnabled = true;
@@ -254,8 +258,10 @@ public class ScreenManager : Singleton<ScreenManager>
         ApplyColourSplit();
         ApplyFilmicLook();
         SetPixelLightingGlobals();
-        float step = effectBlendSeconds > 0f ? Time.unscaledDeltaTime / effectBlendSeconds : 1f;
+        float seconds = blendWithin > 0f ? blendWithin : effectBlendSeconds;
+        float step = seconds > 0f ? Time.unscaledDeltaTime / seconds : 1f;
         tableWeight = Mathf.MoveTowards(tableWeight, TargetTableWeight, step);
+        if (Mathf.Approximately(tableWeight, TargetTableWeight)) blendWithin = 0f;
         ApplyRenderingEffects();
     }
 

@@ -39,7 +39,9 @@ public partial class DungeonGenerator
         var shapes = new DungeonShape[count];
         for (int i = 0; i < count; i++) shapes[i] = ChooseShape(roles[i], chosen[i], shapeRandom, RequestedTemplate(i, roles[i], chosen[i], merchant));
         // A stage arena is kept at the edge in front of the Dungeon Master (DungeonGenerator.Stage).
-        Layout = DungeonLayout.Grow(level.width, level.depth, shapes, seed, level.Growth, StageOrigin(shapes[count - 1]));
+        if (UsesStartingRoom) shapes[0] = FacingDungeonMaster(shapes[0]);
+        var entranceAt = EntranceOrigin(shapes[0]);
+        Layout = DungeonLayout.Grow(level.width, level.depth, shapes, seed, level.Growth, StageOrigin(shapes[count - 1]), entranceAt);
         // The shop (the tavern) is built whole or not at all. Grown late on a full grid it can come out as a small
         // fallback room, which drops most of its interior: the floor is grown again with the shop's room moved earlier
         // in the growing order (halfway back each time, then every earlier place), and failing that later, until it
@@ -49,7 +51,7 @@ public partial class DungeonGenerator
             foreach (int to in OtherPlaces(merchant, count))
             {
                 var movedShapes = Moved(shapes, merchant, to);
-                var again = DungeonLayout.Grow(level.width, level.depth, movedShapes, seed, level.Growth, StageOrigin(movedShapes[count - 1]));
+                var again = DungeonLayout.Grow(level.width, level.depth, movedShapes, seed, level.Growth, StageOrigin(movedShapes[count - 1]), entranceAt);
                 if (!ShopWhole(again, to, shopFootprint.FloorCount)) continue;
                 Layout = again; shapes = movedShapes;
                 roles = Moved(roles, merchant, to); chosen = Moved(chosen, merchant, to); pooledTemplates = Moved(pooledTemplates, merchant, to);
