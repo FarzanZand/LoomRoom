@@ -16,8 +16,13 @@ public partial class DungeonGenerator
     DungeonStage StageTemplate => !Board && Milestone != null && Milestone.arena != null ? Milestone.arena.GetComponent<DungeonStage>() : null;
 
     // The Dungeon Master in the room (TableManager.DM); without one the stage goes on the east edge.
+    static DungeonMasterSeat seat;
     Vector3 DungeonMasterPosition()
     {
+        // His chair, not his body: he leans, turns and stands up, and a cell's rounding must not follow him (co-op peers
+        // building the same floor saw him a little differently).
+        if (seat == null) seat = Object.FindAnyObjectByType<DungeonMasterSeat>();
+        if (seat != null) return seat.SeatPosition;
         var dm = TableManager.HasInstance && TableManager.Instance.DM != null ? TableManager.Instance.DM.transform : null;
         return dm != null ? dm.position : transform.position + Vector3.right * 1000f;
     }

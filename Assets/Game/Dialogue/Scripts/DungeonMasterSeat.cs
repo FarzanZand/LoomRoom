@@ -38,6 +38,9 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
 
     Transform body;
     Vector3 seatPosition;
+    // Where he sits, as the scene was loaded: the same on every machine whatever he is doing now (the floor's layout is
+    // placed from it, DungeonGenerator.DungeonMasterPosition).
+    public Vector3 SeatPosition => body != null ? seatPosition : transform.position;
     Quaternion seatRotation;
     bool standing;
 
