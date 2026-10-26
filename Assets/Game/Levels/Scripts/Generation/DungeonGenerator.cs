@@ -209,6 +209,7 @@ public partial class DungeonGenerator : MonoBehaviour
         Roles = new RoomRole[count];
         for (int i = 0; i < count; i++)
             Roles[i] = i < rooms.Length && rooms[i] != null ? rooms[i].role : i == 0 ? RoomRole.Entrance : i == count - 1 ? RoomRole.Exit : RoomRole.Rest;
+        Layout.SetExitRoom(System.Array.IndexOf(Roles, RoomRole.Exit));
         profiles = new DungeonRoomProfile[count];
         // Furnishing keeps off the cells the content map uses.
         var content = level.AuthoredRows(level.authoredContent ?? "");
@@ -666,7 +667,7 @@ public partial class DungeonGenerator : MonoBehaviour
         // Only decorate cells outside the reserved doorway-to-centre routes.
         var available=new System.Collections.Generic.List<Vector2Int>();
         // The entrance and exit rooms are kept clear, except their rims when the level asks (trees round a glade).
-        bool rim=data.furnishEntranceRims && (index==0 || index==Layout.rooms.Count-1);
+        bool rim=data.furnishEntranceRims && (index==0 || Roles[index]==RoomRole.Exit);
         bool Rim(Vector2Int p){if(Layout.Walkways.Contains(p))return false;foreach(var d in DungeonLayout.Neighbours)if(!Layout.InRoom(index,p+d))return true;return false;}
         foreach(var p in Layout.RoomCells(index))if(!Layout.Reserved.Contains(p) || rim && Rim(p))available.Add(p);
         for(int i=available.Count-1;i>0;i--){int j=random.Next(i+1);(available[i],available[j])=(available[j],available[i]);}
