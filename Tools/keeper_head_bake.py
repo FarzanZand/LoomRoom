@@ -180,9 +180,22 @@ if neck_fix:
         else: foreign = (neck_fix == 1 and s_ < .18 and v > .45) or (.09 < h < .17 and s_ > .35 and v > .25)
         if foreign: bad.append(pts)
         else: good.append((c, pts))
+    # the neck's own colour comes from just above the band (the band's own faces carry the collar's browns), and in mode
+    # 2 any band face far from it (the collar showing through as brown on the ogre's nape) is repainted too
+    ref = []
+    for p in me.polygons:
+        if band < p.center.z < z0 + (z1 - z0) * .4:
+            pts = tri_px(p)
+            if pts: ref.append(np.mean([pxo[y, x, :3] for y, x in pts], axis=0))
     specks = 0
     if good:
-        med = np.median(np.array([g[0] for g in good]), axis=0)
+        med = np.median(np.array(ref), axis=0) if ref else np.median(np.array([g[0] for g in good]), axis=0)
+        if neck_fix == 2:
+            keep = []
+            for c, pts in good:
+                if np.linalg.norm(c - med) > .22: bad.append(pts)
+                else: keep.append((c, pts))
+            good = keep
         for pts in bad:
             for y, x in pts: pxo[y, x, :3] = med
         # single mustard texels inside the neck's own faces (the tunic's edge running through a face) go too

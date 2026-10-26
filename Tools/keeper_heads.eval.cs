@@ -6,7 +6,7 @@
 //    painting's colour per texel, occlusion, crease dirt, grain), and set under the head bone, centred over the neck,
 //    its top `drop` below the Synty crown (negative for horns), its height `size` x the crown's height over the neck
 //    bone; the neck goes on down into the collar.
-// Config: Tools/keeper_heads.txt, one line per head: <Name>|<size>|<drop, m>|<turn y>|<forward offset, m>
+// Config: Tools/keeper_heads.txt, one line per head: <Name>|<size>|<drop, m>|<turn y>|<forward offset, m>[|<neck taper 0..1>|<taper height share>]
 if (UnityEngine.Application.isPlaying) return "stop Play first";
 UnityEditor.AssetDatabase.Refresh();
 const string PrefabPath = "Assets/Game/Characters/NPCs/Dungeon merchant.prefab";
@@ -74,7 +74,7 @@ try
   foreach (var line in System.IO.File.ReadAllLines("Tools/keeper_heads.txt"))
   {
     if (line.Trim() == "" || line.StartsWith("#")) continue;
-    var a = line.Split('|'); string name = a[0]; float size = float.Parse(a[1], ci), drop = float.Parse(a[2], ci), turn = float.Parse(a[3], ci), fwd = float.Parse(a[4], ci);
+    var a = line.Split('|'); string name = a[0]; float size = float.Parse(a[1], ci), drop = float.Parse(a[2], ci), turn = float.Parse(a[3], ci), fwd = float.Parse(a[4], ci); float taper = a.Length > 5 ? float.Parse(a[5], ci) : 0f, taperHeight = a.Length > 6 ? float.Parse(a[6], ci) : .25f;
     var kind = (KeeperFaceKind)System.Enum.Parse(typeof(KeeperFaceKind), name);
     string dir = $"Assets/Game/Meshy/KeeperHead{name}";
     // the head as Tools/keeper_head_bake.py wrote it ("Keeper Head <X> obj.txt", already in Unity's frame: y up, face +z),
@@ -88,6 +88,21 @@ try
       else if (q[0] == "vt") T.Add(new UnityEngine.Vector2(float.Parse(q[1], ci), float.Parse(q[2], ci)));
       else if (q[0] == "vn") N.Add(new UnityEngine.Vector3(float.Parse(q[1], ci), float.Parse(q[2], ci), float.Parse(q[3], ci)));
       else if (q[0] == "f") for (int e = 1; e <= 3; e++) { var k = q[e].Split('/'); mt.Add(mv.Count); mv.Add(P[int.Parse(k[0]) - 1]); mu.Add(T[int.Parse(k[1]) - 1]); mn.Add(N[int.Parse(k[2]) - 1].normalized); }
+    }
+    // taper (config column 6, 0..1; column 7 how high it reaches, a share of the head's height, a quarter by default): the
+    // bottom of the neck is drawn in toward its middle, down to `taper` of its width at the foot, so a bull's or an ogre's neck drops into the collar instead of flaring over it like a hood
+    if (taper > 0f)
+    {
+      float y0 = float.MaxValue, y1 = float.MinValue; foreach (var p0 in mv) { y0 = UnityEngine.Mathf.Min(y0, p0.y); y1 = UnityEngine.Mathf.Max(y1, p0.y); }
+      float top = y0 + (y1 - y0) * taperHeight; var axis = UnityEngine.Vector3.zero; int na = 0;
+      foreach (var p0 in mv) if (p0.y < top && p0.y > y0 + (y1 - y0) * taperHeight * .6f) { axis += p0; na++; }
+      if (na > 0) axis /= na;
+      for (int i = 0; i < mv.Count; i++)
+      {
+        var p0 = mv[i]; if (p0.y >= top) continue;
+        float k = UnityEngine.Mathf.Lerp(taper, 1f, (p0.y - y0) / (top - y0));
+        mv[i] = new UnityEngine.Vector3(axis.x + (p0.x - axis.x) * k, p0.y, axis.z + (p0.z - axis.z) * k);
+      }
     }
     // winding: the mirror into Unity's frame reverses it; the outward side is the one with positive volume
     double vol = 0; for (int i = 0; i < mt.Count; i += 3) vol += UnityEngine.Vector3.Dot(mv[mt[i]], UnityEngine.Vector3.Cross(mv[mt[i + 1]], mv[mt[i + 2]]));
