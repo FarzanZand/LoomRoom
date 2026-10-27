@@ -220,6 +220,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: 'The rest room on every floor, behind a shield door no enemy passes:
+    the keeper''s wares, food, rumours and a fire to rest by once.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1

@@ -48,6 +48,8 @@ MonoBehaviour:
   chance: 0.9
   overridePrefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &3622705728896646137
@@ -98,6 +100,8 @@ MonoBehaviour:
   chance: 0.6
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &4600718111456491904
@@ -148,6 +152,8 @@ MonoBehaviour:
   chance: 0.7
   overridePrefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &4832995058429868355
@@ -204,6 +210,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: 'Always a sleeping pack: four rats asleep in a small nest.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -221,13 +229,18 @@ MonoBehaviour:
   openCeiling: 0
   ceilingFrame: 0.3
   skylightRadius: 0
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 0
   addFurnishing: 0
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
   roomEvent: 3
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 0}
   previewCellSize: 2
 --- !u!1 &8001428935183044640
@@ -278,6 +291,8 @@ MonoBehaviour:
   chance: 0.5
   overridePrefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &8453028488941310087
@@ -328,6 +343,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &8699314395667349728
@@ -378,6 +395,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1001 &334520110462313398

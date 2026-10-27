@@ -16,7 +16,7 @@ Where things live in `Assets`, and the rules that keep it that way. Reorganised 
 | `Art` | Art made by our tools from bought models: `Synty Pixel` (the pixel copies of every Synty model in the game; generated, never edited by hand) |
 | `Audio` | `Clips` (our sounds, by kind: Chests, Kills, Voice, Dialogue lines, Grunts, SFX, Misc ...), `Data` (AudioData assets), `Music` (every track the game plays, bought packs included), `Scripts`, `GameMixer.mixer` |
 | `Campaign` | The realm map on the table: `Map` (the map prefab, its textures, the pixel props in `Map/Pixel`), `Encounters/Act N` (places and events by act), `Scripts`, `Prefabs`, `Resources` |
-| `Characters` | Players, enemies and NPCs, one prefab each (`Players`, `Enemies/<group>`, `NPCs`), `Animations`, `Scripts` (`AI`, `Data`, `Death`, `Hit feel`, `Editor`) |
+| `Characters` | Players, enemies and NPCs, one prefab each (`Players`, `Enemies/<group>`, `NPCs`), `Skills/<Skill>` (each skill's data and its abilities, Blocking's Shield bash and Deflect), `Animations`, `Scripts` (`AI`, `Data`, `Death`, `Hit feel`, `Editor`) |
 | `Cinematics` | Cutscenes and the intro |
 | `Combat` | Hits, gore, blocking, spells (`Spells/<Spell>`), arrows, effects |
 | `Core` | The managers and the game's own systems (game state, input, players, progression, runs, screen) |

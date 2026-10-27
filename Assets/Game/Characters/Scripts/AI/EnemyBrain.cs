@@ -244,6 +244,8 @@ public class EnemyBrain : MonoBehaviour
     void Start()
     {
         if (Data == null) Debug.LogWarning($"{name}: EnemyBrain needs EnemyData on its Character (has {(Character.data != null ? Character.data.GetType().Name : "none")}).", this);
+        // Alerted or provoked in the frame it was put down (the wrathful merchant, the intro's killer): already fighting.
+        if (State == EnemyState.Chase || State == EnemyState.Attack || State == EnemyState.Dead) return;
         SetState(Profile.defaultState);
     }
 

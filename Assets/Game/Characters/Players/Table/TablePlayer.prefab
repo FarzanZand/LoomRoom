@@ -2303,6 +2303,10 @@ MonoBehaviour:
   swingIndexParam: SwingIndex
   swingSequenceReset: 1.2
   attackCancelParam: AttackCancel
+  deflectSparkSize: 0.45
+  deflectSparkCount: 3
+  deflectSparkDistance: 0.26
+  deflectSparkScale: 1.2
 --- !u!114 &6359001954766408055
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9473,6 +9477,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerData
   portrait: {fileID: 0}
   characterName: Table Player
+  properName: 0
   faction: 1
   description: 
   creatureKind: 0
@@ -9529,14 +9534,6 @@ MonoBehaviour:
     baseValue: 0
     min: -100
     max: 0
-  - stat: 18
-    baseValue: 0
-    min: -100
-    max: 0
-  - stat: 19
-    baseValue: 0
-    min: -100
-    max: 0
   audio:
     idle: []
     alert: []
@@ -9573,6 +9570,7 @@ MonoBehaviour:
   stopTime: 0.07
   backwardSpeed: 0.45
   canJump: 1
+  canCrouch: 1
   jumpForce: 8
   gravityMultiplier: 2.5
   sprintStaminaPerSecond: 6

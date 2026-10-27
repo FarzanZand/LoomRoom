@@ -1,8 +1,8 @@
-"""Paints the Tavern room style's textures as drawn pixel art, the way the Church style is drawn (its walls, floor and
+"""Paints the Tavern room style's textures as drawn pixel art, the way the Cellar1 style is drawn (its walls, floor and
 vault): every shape (board, post, stone, chip) has a dark outline, a lit edge on its upper or left side and a shaded one
 opposite, two or three tones inside laid in clusters of several texels (never texel-by-texel noise), drawn cracks and
 grain lines, a few single specks. Muted colours: limewash, green paint, dark oak. Seamless, at the dungeon's density of
-384 texels an architecture tile (3 m, 128 a metre). The floor is the Church floor itself (pale flagstones).
+384 texels an architecture tile (3 m, 128 a metre). The floor is the Cellar1 floor itself (pale flagstones).
 
   Tavern wall.png     384 x 384, tiling 1: a green-painted board wainscot to 1 m (chipped back to the wood), a dado
                       rail, limewashed plaster panels between timber posts (cracks, a flaked patch showing the stones

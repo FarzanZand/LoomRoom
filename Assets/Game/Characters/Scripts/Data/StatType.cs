@@ -4,7 +4,8 @@ using UnityEngine;
 // Values are explicit and must never be reused or renumbered — Unity serializes
 // enums as integers, so changing a value re-points every authored asset.
 // Retired: 3 (CritChance), 4 (CritMultiplier), 5 (DodgeChance), 8 (Experience),
-// 9 (ExperienceToNextLevel), 23 (QuietSteps, removed 2026-10-20). Leave those numbers unused forever.
+// 9 (ExperienceToNextLevel), 23 (QuietSteps, removed 2026-10-20), 18 (Perception) and 19 (Charisma)
+// (the classes' old six attributes, removed 2026-10-27). Leave those numbers unused forever.
 public enum StatType
 {
     MaxHealth    = 0,
@@ -20,8 +21,6 @@ public enum StatType
     Dexterity = 15,
     Constitution = 16,
     Intelligence = 17,
-    Perception = 18,
-    Charisma = 19,
     // Gear stats (the loot rework). Fractions where the line shows a percent (0.06 = +6%).
     CriticalChance = 20,     // added to CombatManager.critChance
     BackstabDamage = 21,     // backstabs deal (1 + this) times more

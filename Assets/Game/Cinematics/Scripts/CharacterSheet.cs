@@ -15,8 +15,6 @@ public class CharacterSheet : MonoBehaviour
     public Transform rest;
     [Tooltip("Where it starts, on the Dungeon Master's side.")]
     public Transform from;
-    [Tooltip("Where it is pushed once filled in, out of the way of the figure.")]
-    public Transform aside;
     [Min(.05f)] public float slideSeconds = .8f;
     [Min(.01f), Tooltip("Seconds per character as a number is pencilled in.")] public float writeSeconds = .12f;
 
@@ -49,20 +47,6 @@ public class CharacterSheet : MonoBehaviour
             yield return null;
         }
         transform.SetPositionAndRotation(rest.position, rest.rotation);
-    }
-
-    // Pushed to the side of the table, still readable.
-    public IEnumerator SlideAside()
-    {
-        if (aside == null) yield break;
-        Vector3 p0 = transform.position; Quaternion r0 = transform.rotation;
-        for (float t = 0f; t < slideSeconds; t += Time.deltaTime)
-        {
-            float k = Mathf.SmoothStep(0f, 1f, t / slideSeconds);
-            transform.SetPositionAndRotation(Vector3.Lerp(p0, aside.position, k), Quaternion.Slerp(r0, aside.rotation, k));
-            yield return null;
-        }
-        transform.SetPositionAndRotation(aside.position, aside.rotation);
     }
 
     public IEnumerator Write(int row, string text)

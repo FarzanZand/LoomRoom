@@ -1,6 +1,6 @@
 """New dungeon room styles from the existing ones, by hand-style recolouring (no AI painting).
 
-Each new style takes each of its surfaces (bottom wall, upper wall, floor, ceiling, trim) from one of the Church styles
+Each new style takes each of its surfaces (bottom wall, upper wall, floor, ceiling, trim) from one of the Cellar styles
 and recolours it texel by texel with a gradient map: every texel keeps its brightness within the texture, so bricks,
 mortar, cracks and dirt stay exactly where they were drawn, and only the colour changes. Texels that clearly are
 something else (moss, mould, a red grave cloth) keep their own colour. A two-colour checker floor maps each of its two
@@ -20,40 +20,40 @@ import sys
 import numpy as np
 from PIL import Image
 
-SRC = "Assets/Game/Levels/Shared/Room styles/HighRes Materials"
+SRC = "Assets/Game/Levels/Shared/Room styles/Cellar"
 # Source surfaces: (folder, file prefix, surface file name, its variant suffixes).
 SOURCES = {
-    "Church": ("Church", "Church tiled ", {"wall": ["cracked", "cross", "moss", "mould"], "upper wall": ["soot"],
+    "Cellar1": ("Cellar1", "Cellar1 tiled ", {"wall": ["cracked", "cross", "moss", "mould"], "upper wall": ["soot"],
                                             "floor": ["cracked", "grave"], "vault": [], "trim": []}),
-    "Church2": ("Church2", "Church2 ", {"wall": ["cracked", "cross"], "upper wall": ["soot", "flaking"],
+    "Cellar2": ("Cellar2", "Cellar2 ", {"wall": ["cracked", "cross"], "upper wall": ["soot", "flaking"],
                                         "floor": ["broken", "grave"], "ceiling": [], "trim": []}),
-    "Church3": ("Church3", "Church3 ", {"wall": ["cracked", "cross"], "upper wall": ["soot", "flaking"],
+    "Cellar3": ("Cellar3", "Cellar3 ", {"wall": ["cracked", "cross"], "upper wall": ["soot", "flaking"],
                                         "floor": ["broken", "grave"], "ceiling": [], "trim": []}),
 }
 
 # Each new style: surface -> (source style, source surface, ramp). A ramp is (dark, light) RGB, or for a checker floor
 # {"split": (ramp for the saturated tiles, ramp for the grey tiles)}.
 STYLES = {
-    "Church4": {  # mossy cellar
-        "wall": ("Church", "wall", ((24, 30, 24), (118, 128, 104))),
-        "upper wall": ("Church2", "upper wall", ((66, 72, 60), (150, 156, 134))),
-        "floor": ("Church", "floor", ((36, 30, 24), (148, 130, 104))),
-        "ceiling": ("Church2", "ceiling", ((20, 18, 14), (104, 92, 70))),
-        "trim": ("Church", "trim", ((16, 32, 24), (88, 118, 88))),
+    "Cellar4": {  # mossy cellar
+        "wall": ("Cellar1", "wall", ((24, 30, 24), (118, 128, 104))),
+        "upper wall": ("Cellar2", "upper wall", ((66, 72, 60), (150, 156, 134))),
+        "floor": ("Cellar1", "floor", ((36, 30, 24), (148, 130, 104))),
+        "ceiling": ("Cellar2", "ceiling", ((20, 18, 14), (104, 92, 70))),
+        "trim": ("Cellar1", "trim", ((16, 32, 24), (88, 118, 88))),
     },
-    "Church5": {  # red brick chapel
-        "wall": ("Church3", "wall", ((44, 20, 16), (150, 80, 62))),
-        "upper wall": ("Church3", "upper wall", ((64, 52, 36), (156, 136, 98))),
-        "floor": ("Church2", "floor", {"split": (((96, 88, 70), (176, 166, 136)), ((22, 22, 26), (78, 76, 84)))}),
-        "ceiling": ("Church", "vault", ((32, 32, 34), (128, 122, 114))),
-        "trim": ("Church2", "trim", ((46, 18, 14), (148, 78, 58))),
+    "Cellar5": {  # red brick chapel
+        "wall": ("Cellar3", "wall", ((44, 20, 16), (150, 80, 62))),
+        "upper wall": ("Cellar3", "upper wall", ((64, 52, 36), (156, 136, 98))),
+        "floor": ("Cellar2", "floor", {"split": (((96, 88, 70), (176, 166, 136)), ((22, 22, 26), (78, 76, 84)))}),
+        "ceiling": ("Cellar1", "vault", ((32, 32, 34), (128, 122, 114))),
+        "trim": ("Cellar2", "trim", ((46, 18, 14), (148, 78, 58))),
     },
-    "Church6": {  # pale crypt
-        "wall": ("Church", "wall", ((48, 44, 38), (168, 158, 134))),
-        "upper wall": ("Church", "upper wall", ((28, 26, 36), (108, 102, 122))),
-        "floor": ("Church3", "floor", {"by": "warm", "split": (((96, 92, 78), (158, 152, 128)), ((20, 24, 22), (70, 76, 72)))}),
-        "ceiling": ("Church2", "ceiling", ((26, 26, 26), (118, 114, 106))),
-        "trim": ("Church3", "trim", ((56, 52, 42), (178, 168, 142))),
+    "Cellar6": {  # pale crypt
+        "wall": ("Cellar1", "wall", ((48, 44, 38), (168, 158, 134))),
+        "upper wall": ("Cellar1", "upper wall", ((28, 26, 36), (108, 102, 122))),
+        "floor": ("Cellar3", "floor", {"by": "warm", "split": (((96, 92, 78), (158, 152, 128)), ((20, 24, 22), (70, 76, 72)))}),
+        "ceiling": ("Cellar2", "ceiling", ((26, 26, 26), (118, 114, 106))),
+        "trim": ("Cellar3", "trim", ((56, 52, 42), (178, 168, 142))),
     },
 }
 

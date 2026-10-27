@@ -5,8 +5,6 @@ using UnityEngine;
 public class AdventureRules : ScriptableObject
 {
     public AdventurerClass[] classes;
-    [Tooltip("Blank miniatures already on the memorial table in a new save: figures lost before the player remembers. Class only, no details.")]
-    public AdventurerClass[] startingMemorials = System.Array.Empty<AdventurerClass>();
     public AdventureSkillData[] skills;
     [Tooltip("Stealth trains while crouching within this many metres of an enemy that hasn't noticed you.")]
     [Min(1)] public float sneakPractiseRange = 4f;
@@ -23,6 +21,4 @@ public class AdventureRules : ScriptableObject
     public float strengthAttack = 1, constitutionArmor = .25f, constitutionHealth = 0;
     public float intelligenceMana = 0, intelligenceSpell = .035f;
     public float dexteritySpeed = .01f;
-    public float perceptionRangePerPoint = .04f, perceptionRangeCap = .5f;
-    public float charismaDiscountPerPoint = .02f, charismaDiscountCap = .3f;
 }

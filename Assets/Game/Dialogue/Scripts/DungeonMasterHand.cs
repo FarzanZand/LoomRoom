@@ -196,18 +196,6 @@ public class DungeonMasterHand : MonoBehaviour
         Busy = false;
     }
 
-    // The right hand from a to b over seconds, eased, rising by arc in the middle.
-    IEnumerator Move(Vector3 a, Vector3 b, float seconds, float arc)
-    {
-        for (float t = 0; t < seconds; t += Time.deltaTime)
-        {
-            float u = Mathf.SmoothStep(0, 1, t / seconds);
-            rightTarget = Vector3.Lerp(a, b, u) + Vector3.up * Mathf.Sin(u * Mathf.PI) * arc;
-            yield return null;
-        }
-        rightTarget = b;
-    }
-
     static float FigureHeight(Transform figure)
     {
         var bounds = new Bounds(figure.position, Vector3.zero);

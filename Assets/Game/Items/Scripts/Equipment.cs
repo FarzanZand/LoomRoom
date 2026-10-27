@@ -138,6 +138,8 @@ public class Equipment : MonoBehaviour
         EnsureInitialized();
         if (!CanEquip(item)) return false;
         if (IsHand(item.equipSlot) && IsEquipped(item)) return true;
+        // While eating or drinking the hands are busy (the weapon is only hidden): nothing new is taken in hand.
+        if (IsHand(item.equipSlot) && IsUsingItem && !grant) return false;
 
         var slot = into.HasValue && Fits(item, into.Value) ? into.Value : SlotFor(item);
         int wasAt=-1;   // a worn item taken from the bag: the one it replaces goes back to its place

@@ -119,14 +119,15 @@ public static partial class MetaProgressionSetup
         var body = Font("PixelOperator"); var bold = Font("PixelOperator-Bold"); var title = Font("PixelOperator-Bold");   // one font everywhere
 
         // You: portrait, name, attributes.
-        var ring = Img("Portrait ring", p, new Vector2(-580, 230), new Vector2(260, 260), MetaSprite("Ring"), Color.white);
-        var maskImg = Img("Portrait mask", ring.transform, Vector2.zero, new Vector2(216, 216), MetaSprite("Ring mask"), Color.white);
+        var ring = Img("Portrait ring", p, new Vector2(-575, 235), new Vector2(350, 350), MetaSprite("Ring"), Color.white);
+        var maskImg = Img("Portrait mask", ring.transform, Vector2.zero, new Vector2(290, 290), MetaSprite("Ring mask"), Color.white);
         maskImg.gameObject.AddComponent<Mask>().showMaskGraphic = false;
-        var portrait = Img("Portrait", maskImg.transform, Vector2.zero, new Vector2(176, 216), MetaSprite("Portrait placeholder"), Color.white);
+        var portrait = Img("Portrait", maskImg.transform, Vector2.zero, new Vector2(290, 290), MetaSprite("Portrait placeholder"), Color.white);
         portrait.preserveAspect = true;
-        var prev = PenButton("Previous portrait", p, new Vector2(-760, 230), new Vector2(52, 52), "<", 30, out _);
-        var next = PenButton("Next portrait", p, new Vector2(-400, 230), new Vector2(52, 52), ">", 30, out _);
-        var portraitLabel = Text("Portrait label", p, new Vector2(-580, 78), new Vector2(360, 30), "Portrait 1 of 3", body, 22, Faint, TextAlignmentOptions.Center);
+        var prev = PenButton("Previous portrait", p, new Vector2(-770, 235), new Vector2(36, 36), "<", 26, out _);
+        var next = PenButton("Next portrait", p, new Vector2(-380, 235), new Vector2(36, 36), ">", 26, out _);
+        var portraitLabel = Text("Portrait label", p, new Vector2(-580, 74), new Vector2(360, 30), "Portrait 1 of 3", body, 22, Faint, TextAlignmentOptions.Center);
+        portraitLabel.gameObject.SetActive(false);   // the user took the "Portrait n of n" line off (2026-10-27)
         // Name: an input on a pencil line.
         var nameRect = Rect("Name", p, new Vector2(-580, 22), new Vector2(340, 56));
         var nameArea = Rect("Text Area", nameRect, Vector2.zero, Vector2.zero, Vector2.zero);
@@ -141,7 +142,7 @@ public static partial class MetaProgressionSetup
         input.caretColor = Pen; input.selectionColor = new Color(Pen.r, Pen.g, Pen.b, .25f); input.customCaretColor = true;
         var nameHit = nameRect.gameObject.AddComponent<Image>(); nameHit.color = new Color(1, 1, 1, 0); input.targetGraphic = nameHit;
         Img("Line", p, new Vector2(-580, -8), new Vector2(340, 2), null, Ink);
-        Text("Name label", p, new Vector2(-580, -28), new Vector2(340, 26), "NAME", body, 20, Faint, TextAlignmentOptions.Center);
+        Text("Name label", p, new Vector2(-580, -28), new Vector2(340, 26), "NAME", body, 20, Faint, TextAlignmentOptions.Center).gameObject.SetActive(false);   // taken off by the user (2026-10-27)
 
         var rows = new List<CharacterSheetUI.Row>();
         string[] attributes = { "strength", "dexterity", "constitution", "intelligence" };

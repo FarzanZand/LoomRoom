@@ -24,7 +24,7 @@ public partial class DungeonGenerator
     // entrance and the last room, grown off the furthest room, is the exit.
     void GrowLayout(TableLevelData level, int seed)
     {
-        int count = Mathf.Max(2, level.roomCount);
+        int count = Mathf.Max(2, Biome != null && Biome.roomCount > 0 && !Biome.isLevelBase ? Biome.roomCount : level.roomCount);
         var roles = new RoomRole[count];
         float encounter = EncounterChance;
         for (int i = 0; i < count; i++)
@@ -122,7 +122,8 @@ public partial class DungeonGenerator
     }
 
     // The first floor of the run and of every new biome opens in the level's Starting room.
-    bool UsesStartingRoom => data.startingRoom != null && !Authored
+    // A stage with a look of its own (a forest under the cellars) opens in an ordinary entrance room instead.
+    bool UsesStartingRoom => data.startingRoom != null && !Authored && !OwnLook
         && (FloorNumber == 1 || data.Biome(FloorNumber) != data.Biome(FloorNumber - 1));
 
     // The starting room's only way out gets the level's door, replacing any other door on that passage.
@@ -174,6 +175,7 @@ public partial class DungeonGenerator
     {
         var template = prefab != null ? prefab.GetComponent<DungeonRoomTemplate>() : null;
         float scale = profile != null ? profile.sizeScale : 1;
+        if (Biome != null && !Biome.isLevelBase) scale *= Mathf.Clamp(Biome.roomSizeScale, .5f, 2.5f);
         if (rng.NextDouble() * 100 < Mathf.Clamp(data.largeRoomPercent, 0, 30)) scale *= Mathf.Clamp(data.largeRoomScale, 1, 3);
         if (role == RoomRole.Exit && Milestone != null) scale = Mathf.Max(scale, Mathf.Clamp(Milestone.arenaSizeScale, 1, 3));
         int w = RollSize(rng, scale), h = RollSize(rng, scale);
@@ -183,7 +185,9 @@ public partial class DungeonGenerator
             return DungeonShape.Rectangle(Mathf.Max(w, template.minimumCells.x), Mathf.Max(h, template.minimumCells.y));
         }
         // A room profile's own shapes replace the rest; otherwise the shared ones, the base biome's and the stage's together.
-        var choices = FirstList(profile != null ? profile.shapes : null, Shared(data.roomShapes, b => b.roomShapes));
+        // A stage with a look of its own and shapes of its own uses only those (a forest's clearings are never boxes).
+        var ownShapes = OwnLook && StageBiome.roomShapes != null && StageBiome.roomShapes.Length > 0 ? StageBiome.roomShapes : null;
+        var choices = FirstList(profile != null ? profile.shapes : null, ownShapes, Shared(data.roomShapes, b => b.roomShapes));
         // Stairs stand beside the centre of the entrance and exit, so those need open floor there.
         bool needsOpenCentre = role == RoomRole.Entrance || role == RoomRole.Exit;
         for (int attempt = 0; attempt < 6; attempt++)
@@ -473,7 +477,7 @@ public partial class DungeonGenerator
         if (profile != null && profile.props != null && profile.props.Length > 0) return (null, profile.props);
         // Base biome (the level's) and stage biome together: furnishing rules when either has any, otherwise plain props.
         var stage = StageBiome;
-        var rules = Both(data.propRules, stage != null ? stage.propRules : null);
+        var rules = Both(OwnLook ? null : data.propRules, stage != null ? stage.propRules : null);
         if (rules != null && rules.Length > 0) return (rules, null);
         return (null, Shared(data.roomPropPrefabs, b => b.props));
     }

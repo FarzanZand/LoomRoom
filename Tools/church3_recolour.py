@@ -1,5 +1,5 @@
-# Church3: the Church2 paintings recoloured into the dungeon's own palette (Dungeon1 Styles/Materials: crypt
-# stone, slate, flagstone, vault, timber), so the room keeps Church2's blocks, cracks and layout but stops clashing.
+# Cellar3: the Cellar2 paintings recoloured into the dungeon's own palette (Dungeon1 Styles/Materials: crypt
+# stone, slate, flagstone, vault, timber), so the room keeps Cellar2's blocks, cracks and layout but stops clashing.
 # Each texel's brightness (normalised per texture) goes through a ramp for its material; a little of the
 # original colour, desaturated, stays on top so blocks keep their texel-to-texel variation.
 #   python Tools/church3_recolour.py
@@ -7,7 +7,7 @@ import os
 from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(__file__), '..', 'Assets', 'Game', 'Levels', 'Dungeon1', 'Styles', 'HighRes Materials')
-SRC, DST = os.path.join(ROOT, 'Church2'), os.path.join(ROOT, 'Church3')
+SRC, DST = os.path.join(ROOT, 'Cellar2'), os.path.join(ROOT, 'Cellar3')
 
 # Ramps, dark to light (sampled from the dungeon textures, stretched a little for contrast).
 CRYPT = [(26, 29, 31), (46, 52, 53), (70, 78, 78), (88, 96, 95), (108, 114, 110), (128, 132, 124)]
@@ -92,12 +92,12 @@ PLAN = {
 
 if __name__ == '__main__':
     os.makedirs(DST, exist_ok=True)
-    _speck_mask = SpeckMask(os.path.join(SRC, 'Church2 upper wall.png'))
+    _speck_mask = SpeckMask(os.path.join(SRC, 'Cellar2 upper wall.png'))
     for name, (palette, base, contrast) in PLAN.items():
-        src = os.path.join(SRC, f'Church2 {name}.png')
+        src = os.path.join(SRC, f'Cellar2 {name}.png')
         if not os.path.exists(src): print('missing', src); continue
         warm = ((96, 84, 72), .45) if name.startswith('floor') else None
-        rng = bounds(os.path.join(SRC, f'Church2 {base}.png'))
-        brick = bounds(os.path.join(SRC, 'Church2 wall.png')) if name == 'upper wall flaking' else None
-        recolour(src, os.path.join(DST, f'Church3 {name}.png'), palette, rng, contrast, warm=warm, brick=brick, despeck=name.startswith('upper wall'))
-        print('Church3', name)
+        rng = bounds(os.path.join(SRC, f'Cellar2 {base}.png'))
+        brick = bounds(os.path.join(SRC, 'Cellar2 wall.png')) if name == 'upper wall flaking' else None
+        recolour(src, os.path.join(DST, f'Cellar3 {name}.png'), palette, rng, contrast, warm=warm, brick=brick, despeck=name.startswith('upper wall'))
+        print('Cellar3', name)

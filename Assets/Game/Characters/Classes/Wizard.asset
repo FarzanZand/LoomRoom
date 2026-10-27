@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e1245925be5b504991286fe52736323, type: 3}
+  m_Name: Wizard
+  m_EditorClassIdentifier: Assembly-CSharp::AdventurerClass
+  id: mage
+  displayName: Wizard
+  description: Starts with a Fireball Tome and lots of mana. Low health.
+  portrait: {fileID: 21300000, guid: e6ee88d68ebc4d64eaa831abd8ab994f, type: 3}
+  sheetPortrait: {fileID: 21300000, guid: 9c6ad9da4d2c92b488ef94a9a0511a33, type: 3}
+  sheetPortraitColour: {fileID: 21300000, guid: 559ae5ff8e8faf3409ff9d47178a7452, type: 3}
+  miniature: {fileID: 7150585330265139970, guid: 5de9132990a12fe4c95693101094544e, type: 3}
+  unlockFlag: 
+  coopBody: {fileID: 272089454752684668, guid: 13bff3fd77a1aca428e375024d5a3a2b, type: 3}
+  posterLine:
+    text: The Wizard. Try not to set the poster on fire.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  deskProp: {fileID: 8813178666049725722, guid: ba98acb4362514e4b9ac54964dfc6650, type: 3}
+  equipment:
+  - {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
+  spells:
+  - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
+  supplies:
+  - item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
+    count: 1
+  - item: {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
+    count: 3
+  - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
+    count: 2
+  leftHand: 1
+  strength: 0
+  dexterity: -1
+  constitution: 0
+  intelligence: 3
+  health: 20
+  mana: 50
+  stamina: 30
+  skills: 000000000000000000000000140000000a0000000a0000000a000000

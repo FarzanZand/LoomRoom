@@ -1,13 +1,22 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Board-game levels (TableLevelKind.Boardgame): the same layout, rooms and content, built as printed tiles
+// Board-game floors (a biome whose Kind is Board game): the same layout, rooms and content, built as printed tiles
 // lying on the table instead of walled rooms. Rooms can be raised a layer or two; the short passages
 // between them become small stairs. An invisible rim keeps everyone on the tiles, and BoardReveal keeps
 // whatever lies behind a closed door off the table until it opens.
 public partial class DungeonGenerator
 {
-    bool Board => data != null && data.kind == TableLevelKind.Boardgame;
+    bool Board => data != null && data.BoardOn(FloorNumber);   // the floor's biome's Kind
+    // The floor's board pieces: a board stage's own, else the level's (TableLevelData.BoardBiome).
+    DungeonBiome Kit => data.BoardBiome(FloorNumber);
+    float KitVerticality => Kit != null ? Kit.boardVerticality : 1f;
+    Material KitGrid => Kit != null ? Kit.boardGridMaterial : null;
+    Material KitEdge => Kit != null ? Kit.boardEdgeMaterial : null;
+    Material KitPit => Kit != null ? Kit.boardPitMaterial : null;
+    Material KitWater => Kit != null ? Kit.boardPitWater : null;
+    GameObject[] KitDoorPosts => Kit != null ? Kit.boardDoorPosts : new GameObject[0];
+    GameObject[] KitMoundProps => Kit != null ? Kit.boardMoundProps : new GameObject[0];
 
     float[,] elevation;               // top of the floor at each cell's centre, above the table
     float[,] stairFrom, stairTo;      // passage cells: floor height at the edge toward each end
@@ -186,7 +195,7 @@ public partial class DungeonGenerator
     // Below 1 everything flattens evenly. The start room keeps its height.
     void VaryHeights(float[] raise, System.Random rng)
     {
-        float v = Mathf.Max(0f, data.boardVerticality);
+        float v = Mathf.Max(0f, KitVerticality);
         if (Mathf.Approximately(v, 1f)) return;
         int peak = -1; float top = 0f;
         for (int i = 1; i < raise.Length; i++) if (raise[i] > top) { top = raise[i]; peak = i; }
@@ -297,7 +306,7 @@ public partial class DungeonGenerator
         if (!stairs)
         {
             Slab(cell, centre, new Vector2(size, size), elevation[x, z], top, region);
-            if (data.boardGridMaterial != null)
+            if (KitGrid != null)
             {
                 var grid = GameObject.CreatePrimitive(PrimitiveType.Quad); grid.name = "Printed grid";
                 DestroyImmediate(grid.GetComponent<Collider>());
@@ -305,7 +314,7 @@ public partial class DungeonGenerator
                 grid.transform.position = centre + Vector3.up * (elevation[x, z] + t + .006f);
                 grid.transform.rotation = Quaternion.Euler(90, 0, 0);
                 grid.transform.localScale = new Vector3(size, size, 1);
-                var r = grid.GetComponent<Renderer>(); r.sharedMaterial = data.boardGridMaterial; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                var r = grid.GetComponent<Renderer>(); r.sharedMaterial = KitGrid; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             }
             return;
         }
@@ -328,9 +337,10 @@ public partial class DungeonGenerator
     {
         float t = TileThickness;
         float bodyHeight = height + t - .02f;
-        var sides = height > .01f ? WallMaterial(region, 0) : data.boardEdgeMaterial != null ? data.boardEdgeMaterial : data.woodMaterial;
+        var sides = height > .01f ? WallMaterial(region, 0) : KitEdge != null ? KitEdge : WoodMaterial;
         var bodySize = new Vector3(footprint.x, bodyHeight, footprint.y);
-        var body = height > .01f ? ArchitectureBox("Raised block", centre + Vector3.up * (bodyHeight * .5f), bodySize, sides, parent)
+        // A card edge is drawn across the box's own UVs; earth round wild ground (WildSettings) tiles like the banks.
+        var body = height > .01f || WildSettings != null ? ArchitectureBox(height > .01f ? "Raised block" : "Tile edge", centre + Vector3.up * (bodyHeight * .5f), bodySize, sides, parent)
             : Box("Tile edge", centre + Vector3.up * (bodyHeight * .5f), bodySize, sides, parent);
         var cap = ArchitectureBox("Printed top", centre + Vector3.up * (bodyHeight + .01f), new Vector3(footprint.x, .02f, footprint.y), top, parent);
         cap.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -361,13 +371,17 @@ public partial class DungeonGenerator
         }
     }
 
-    bool BoardPostProps => data.boardDoorPosts != null && data.boardDoorPosts.Length > 0;
+    bool BoardPostProps => KitDoorPosts != null && KitDoorPosts.Length > 0;
 
     // Cells a room's shape leaves out inside it (pillar hall columns, the middle of a ring): with mound props on the
     // level, each becomes a mound a layer above the room with a prop on it, filed under the room so it is revealed with it.
+    // The cells inside a room left out of its shape, raised as a low mound under a rock or a fern tree (the wild ground
+    // builds no bank on them).
+    readonly HashSet<Vector2Int> moundCells = new();
     void BuildBoardMounds()
     {
-        if (data.boardMoundProps == null || data.boardMoundProps.Length == 0) return;
+        moundCells.Clear();
+        if (KitMoundProps == null || KitMoundProps.Length == 0) return;
         var rng = new System.Random(unchecked(seed0 * 31 + 7919));
         int w = Layout.floor.GetLength(0), d = Layout.floor.GetLength(1);
         for (int r = 0; r < Layout.rooms.Count; r++)
@@ -388,11 +402,12 @@ public partial class DungeonGenerator
                     float height = 0f;
                     foreach (var n in DungeonLayout.Neighbours) if (Floor(x + n.x, z + n.y)) height = Mathf.Max(height, elevation[x + n.x, z + n.y]);
                     height += data.boardLayerHeight;
+                    moundCells.Add(new Vector2Int(x, z));
                     var cell = new GameObject($"Mound {x},{z}").transform; cell.SetParent(boardRegions[r], false);
                     var centre = transform.position + new Vector3((x - data.width * .5f) * data.cellSize, 0, (z - data.depth * .5f) * data.cellSize);
                     cell.position = centre;
                     Slab(cell, centre, new Vector2(data.cellSize, data.cellSize), height, FloorMaterial(r, x, z), r);
-                    var prefab = data.boardMoundProps[rng.Next(data.boardMoundProps.Length)];
+                    var prefab = KitMoundProps[rng.Next(KitMoundProps.Length)];
                     if (prefab != null) Instantiate(prefab, centre + Vector3.up * (height + TileThickness), Quaternion.Euler(0, rng.Next(360), 0), cell);
                 }
         }
@@ -411,7 +426,7 @@ public partial class DungeonGenerator
             if (BoardPostProps)
             {
                 // A post prop (a tree) either side of the door, standing on the room's edge.
-                var prefab = data.boardDoorPosts[rng.Next(data.boardDoorPosts.Length)];
+                var prefab = KitDoorPosts[rng.Next(KitDoorPosts.Length)];
                 var at = basePos + right * (side * (data.cellSize * .5f + post * .5f)); at.y = door.transform.position.y;
                 if (prefab != null) Instantiate(prefab, at, Quaternion.Euler(0, rng.Next(360), 0), door.transform);
                 continue;

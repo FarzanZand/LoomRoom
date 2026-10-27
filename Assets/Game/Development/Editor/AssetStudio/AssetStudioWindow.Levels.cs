@@ -19,6 +19,8 @@ public partial class AssetStudioWindow
     string levelSearch = "";
     static readonly string[] LevelTabs = { "Run", "Map", "Look", "Balance", "Sound", "Dialogue" };
     readonly Dictionary<DungeonRoomStyle, Texture2D> styleThumbs = new();
+    [SerializeField] int roomTileSort;   // the pictures of a pool's rooms: as listed, by kind or by name
+    static readonly string[] RoomTileSorts = { "As listed", "By kind", "By name" };
 
     bool showingLevels => studioView == StudioView.Levels;
 
@@ -383,14 +385,24 @@ public partial class AssetStudioWindow
     }
 
     // The hand-built rooms its floors are made of, as pictures: click one to see it, right-click for more.
-    void RoomTiles(AssetStudioWorld.Level l, DungeonBiome b)
+    // reserved: the page's width taken by other things beside the tiles (the run strip; -1: worked out here).
+    void RoomTiles(AssetStudioWorld.Level l, DungeonBiome b, float reserved = -1)
     {
         GUILayout.BeginVertical(StudioSkin.Inset);
         var pool = b.roomTemplates ?? Array.Empty<DungeonBiome.RoomTemplateChoice>();
+        GUILayout.BeginHorizontal();
         GUILayout.Label($"Rooms it can build  <color=#b8ae9c>{pool.Count(c => c != null && c.template != null)}</color>", gold);
+        GUILayout.FlexibleSpace();
+        GUILayout.Label("sort", dim, GUILayout.Width(30));
+        roomTileSort = EditorGUILayout.Popup(roomTileSort, RoomTileSorts, GUILayout.Width(130));
+        GUILayout.EndHorizontal();
+        // The order shown: as listed in the pool, by kind (Scripted, Active, Visual, unsorted) or by name.
+        var order = Enumerable.Range(0, pool.Length).ToList();
+        if (roomTileSort == 1) order = order.OrderBy(i => AssetStudioRoomKinds.Rank(pool[i]?.template)).ThenBy(i => pool[i]?.template != null ? pool[i].template.name : "", StringComparer.OrdinalIgnoreCase).ToList();
+        else if (roomTileSort == 2) order = order.OrderBy(i => pool[i]?.template != null ? pool[i].template.name : "", StringComparer.OrdinalIgnoreCase).ToList();
         const float w = 112, h = 92;
         // The page's width less the run strip and the frames round it.
-        float width = Mathf.Max(w, position.width - CategoryWidth - ListWidth - InspectorWidth - Pad * 5 - (l != null ? 300 : 60));
+        float width = Mathf.Max(w, position.width - CategoryWidth - ListWidth - InspectorWidth - Pad * 5 - (reserved >= 0 ? reserved : l != null ? 300 : 60));
         int perRow = Mathf.Max(1, Mathf.FloorToInt(width / (w + 6)));
         int count = pool.Length + 1;
         for (int row = 0; row * perRow < count; row++)
@@ -413,21 +425,26 @@ public partial class AssetStudioWindow
                     }
                     continue;
                 }
-                var c = pool[k];
+                var c = pool[order[k]];
                 if (c == null) continue;
                 var pic = c.template != null ? AssetPreview.GetAssetPreview(c.template) : null;
                 if (pic != null) GUI.DrawTexture(new Rect(r.x + 6, r.y + 6, r.width - 12, r.height - 30), pic, ScaleMode.ScaleToFit);
+                if (c.template != null) AssetStudioRoomKinds.Badge(new Rect(r.x + 4, r.y + 4, 28, 28), c.template);
+                // Hovering a room shows what it is (DungeonRoomTemplate.description).
+                if (c.template != null && c.template.TryGetComponent<DungeonRoomTemplate>(out var described) && !string.IsNullOrWhiteSpace(described.description)) GUI.Label(r, new GUIContent("", c.template.name + ": " + described.description));
                 GUI.Label(new Rect(r.x + 6, r.yMax - 22, r.width - 12, 18), c.template != null ? c.template.name : "<color=#e0a85a>empty</color>", new GUIStyle(dimLine) { alignment = TextAnchor.MiddleCenter, normal = { textColor = StudioSkin.Text } });
                 if (c.weight != 1) GUI.Label(new Rect(r.xMax - 40, r.y + 4, 34, 18), "x" + c.weight.ToString("0.#"), new GUIStyle(dimLine) { alignment = TextAnchor.UpperRight });
                 var e2 = Event.current;
                 if (e2.type == EventType.MouseDown && r.Contains(e2.mousePosition))
                 {
-                    int index = k;
+                    int index = order[k];
                     if (e2.button == 1)
                     {
                         var menu = new GenericMenu();
                         if (c.template != null)
                         {
+                            AssetStudioRoomKinds.AddTo(menu, c.template, Repaint);
+                            menu.AddSeparator("");
                             menu.AddItem(new GUIContent("Open to build"), false, () => AssetDatabase.OpenAsset(c.template));
                             menu.AddItem(new GUIContent("Play from this room"), false, () => Toast(GameLauncher.PlayRoom(c.template)));
                         }

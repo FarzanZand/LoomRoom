@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -43,6 +44,27 @@ public class AdventureSkillData : ScriptableObject
     [Tooltip("On: the second bonus is a plain amount (stamina), not a percentage.")]
     public bool extraFlat;
     public string legendaryText;
+
+    [Title("Abilities")]
+    [InfoBox("What the skill gives besides its rank bonus, each its own asset in this skill's folder (Characters/Skills/<Skill>/): there from the start, or unlocked by a milestone (ProgressionManager > Meta progression > Tracks).")]
+    [InlineEditor(InlineEditorObjectFieldModes.Foldout), ListDrawerSettings(ShowFoldout = true)]
+    public List<SkillAbility> abilities = new();
+
+#if UNITY_EDITOR
+    [ShowInInspector, ReadOnly, PropertyOrder(1), Tooltip("The skill's milestones and what each unlocks (ProgressionManager > Meta progression > Tracks).")]
+    string Milestones
+    {
+        get
+        {
+            var pm = SkillAbility.EditorManager();
+            var track = pm != null ? pm.Track(skill) : null;
+            if (track == null || track.milestones == null || track.milestones.Count == 0) return "None";
+            var parts = new List<string>();
+            foreach (var m in track.milestones) if (m != null) parts.Add($"{m.value}: {(m.Known ? m.Name : "?")}");
+            return string.Join(", ", parts);
+        }
+    }
+#endif
 
     // The second bonus at a rank, and as it is shown (a percentage, or a plain amount).
     public float ExtraAt(int rank) => rank * .01f * extraAt100;

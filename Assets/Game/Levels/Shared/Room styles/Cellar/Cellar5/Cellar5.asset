@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48e1a08511ae4bb89e9a2ba01ad45eb5, type: 3}
+  m_Name: Cellar5
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomStyle
+  bottomWall: {fileID: 2100000, guid: 1ec10aeea850d8f4b8c6c00a99475583, type: 2}
+  upperWall: {fileID: 2100000, guid: 409f909bcacab994b814cc770a55c97e, type: 2}
+  floor: {fileID: 2100000, guid: bf8e33b52a38dfa478a4f4bbf7abbd55, type: 2}
+  ceiling: {fileID: 2100000, guid: 39ae8560a5700e846a303e16c624f2ee, type: 2}
+  hideTrims: 0
+  trim: {fileID: 2100000, guid: 558379f4aa580274c825d6ba6f8548d2, type: 2}
+  wood: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
+  metal: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
+  wallBaseWeight: 10
+  wallVariants:
+  - material: {fileID: 2100000, guid: 026a9e7b147c0f04bb8f56697e86e067, type: 2}
+    weight: 1
+    rows: 1
+  - material: {fileID: 2100000, guid: efc9f0d46b99fd74783d0240b1a377d1, type: 2}
+    weight: 0.5
+    rows: 1
+  - material: {fileID: 2100000, guid: 474640de3aabe714597848bd7fbb1145, type: 2}
+    weight: 1
+    rows: 2
+  - material: {fileID: 2100000, guid: ea63a2eb1cac96d4ca18ca16f35948dc, type: 2}
+    weight: 1.5
+    rows: 2
+  floorBaseWeight: 10
+  floorVariants:
+  - material: {fileID: 2100000, guid: 7563c06dab637a64380dc7f829c97cde, type: 2}
+    weight: 1.5
+    rows: 0
+  - material: {fileID: 2100000, guid: 04739a565505fcd49a57c0f6de11359d, type: 2}
+    weight: 0.6
+    rows: 0
+  wallDecor: []
+  wallDecorPerTenFaces: 0.5
+  corridorDressing: {fileID: 0}
+  dressingSpacing: 3
+  stretchDressingToCeiling: 1

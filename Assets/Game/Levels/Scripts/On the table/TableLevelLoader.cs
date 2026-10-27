@@ -112,13 +112,16 @@ public class TableLevelLoader : MonoBehaviour
         if(!Busy) menu.Show(title);
     }
     // skipReveal: straight in behind a fade, as the debug sessions do (the dev console's loadtemplate).
-    public void Load(TableLevelData level, bool skipReveal=false)
+    // startFloor: the run's first floor (the toolbar's floor pick); 1 in play.
+    public void Load(TableLevelData level, bool skipReveal=false, int startFloor=1)
     {
         if(Busy || level==null) return;
         // Co-op: the table is played together; a run starts from the figures (CoopLoad), never from a menu here.
         if(Coop.Running) { NotificationUI.Show("In co-op, sit down at the table to play"); return; }
+        pendingStartFloor = Mathf.Clamp(startFloor, 1, Mathf.Max(1, level.FloorCount));
         Initialize(); StartCoroutine(LoadRoutine(level,false,skipReveal));
     }
+    int pendingStartFloor = 1;
     AdventureSave.Checkpoint pendingResume;
     // The current run was continued from a save, not started fresh.
     public bool Resumed { get; private set; }
@@ -172,7 +175,8 @@ public class TableLevelLoader : MonoBehaviour
         bool coopRevive=coop.HasValue && descending && !player.IsAlive;
         if(coop.HasValue) { FloorNumber=Mathf.Max(1,coop.Value.floor); runSeed=coop.Value.seed; }
         else if(descending) FloorNumber++;
-        else { FloorNumber=1;runSeed=level.fixedSeed!=0 ? level.fixedSeed : UnityEngine.Random.Range(1,int.MaxValue); }
+        else { FloorNumber=pendingStartFloor;runSeed=level.fixedSeed!=0 ? level.fixedSeed : UnityEngine.Random.Range(1,int.MaxValue); }
+        pendingStartFloor=1;
         var resume = pendingResume; pendingResume = null;
         if (!descending) Resumed = resume != null;
         if (resume != null) { FloorNumber = resume.floor; runSeed = resume.seed; }
@@ -271,7 +275,7 @@ public class TableLevelLoader : MonoBehaviour
                 reveal = gameObject.AddComponent<TableLevelReveal>();
                 yield return RunGuarded(reveal.Play(Dungeon, revealSettings, () =>
                 {
-                    if (lighting != null) lighting.BlendToMood(level.IsBoard ? level.BoardLighting(lighting, FloorNumber) : level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
+                    if (lighting != null) lighting.BlendToMood(level.BoardOn(FloorNumber) ? level.BoardLighting(lighting, FloorNumber) : level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
                 }));
             }
             if (faded)
@@ -380,7 +384,11 @@ public class TableLevelLoader : MonoBehaviour
         }
         if(Current==null || Current.kind==TableLevelKind.Town)SaveTownInventory();
         environment=candidate;Dungeon=candidateDungeon;
-        if(previousEnvironment!=null){previousEnvironment.SetActive(false);Destroy(previousEnvironment);}
+        if(previousEnvironment!=null){
+            previousEnvironment.SetActive(false);Destroy(previousEnvironment);
+            // Spells still in the air or about to erupt belong to the old floor: they never reach the new one.
+            FireballVolley.ClearAll();SpellProjectile.ClearAll();GroundAreaSpell.ClearAll();
+        }
         SetTown(level.kind==TableLevelKind.Town);
         Current=level;
         // Portal pockets are built with the floor from its seed, so every co-op machine has the same ones.
@@ -392,7 +400,7 @@ public class TableLevelLoader : MonoBehaviour
             if(UnityEngine.AI.NavMesh.SamplePosition(beside,out var hit,1f,UnityEngine.AI.NavMesh.AllAreas)) spawn=hit.position+Vector3.up*.12f;
         }
         if(lighting!=null && !deferPlayerSwitch) {
-            if(level.IsBoard) lighting.BlendToMood(level.BoardLighting(lighting,FloorNumber),0);
+            if(level.BoardOn(FloorNumber)) lighting.BlendToMood(level.BoardLighting(lighting,FloorNumber),0);
             else if(level.IsDungeon) lighting.BlendToMood(level.DungeonLighting(FloorNumber),0);
             else if(level.mood!=null) lighting.BlendToMood(level.mood,0);
             else lighting.RestoreDefault();

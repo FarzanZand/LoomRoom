@@ -6,8 +6,8 @@ using UnityEngine;
 
 // The tavern's look and furnishing (asked for on 2026-10-26: "use the space more so not all walls are empty and all
 // furniture is in the middle"). Run from an eval:
-//   TavernDress.Style()   the Tavern room style: Tools/tavern_style.py's textures on copies of the Church materials,
-//                         each tiled to the Church's 384 texels an architecture tile
+//   TavernDress.Style()   the Tavern room style: Tools/tavern_style.py's textures on copies of the Cellar1 materials,
+//                         each tiled to the Cellar1's 384 texels an architecture tile
 //   TavernDress.Dress()   lays the room out again: every piece under Tavern.prefab's root is replaced except the keeper's
 //                         Merchant socket and the Hearth's workings (TavernHearth, its Fire light, flames and
 //                         Interaction); hand edits to the furniture are lost, so run it once and edit the prefab by hand
@@ -20,14 +20,14 @@ public static class TavernDress
     const string PropDir = "Assets/Game/Levels/Shared/Props/Tavern";
     const string PixelDir = PropDir + "/Pixel";
     const string StyleDir = "Assets/Game/Levels/Shared/Room styles/Tavern";
-    const string StylePath = "Assets/Game/Levels/Shared/Room styles/Tavern.asset";
+    const string StylePath = "Assets/Game/Levels/Shared/Room styles/Tavern/Tavern.asset";
     const float Texels = 128f;
 
     // ── The style ──
 
     public static string Style()
     {
-        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Church.asset");
+        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Cellar/Cellar1/Cellar1.asset");
         Material Mat(string name, Material like, float tiling)
         {
             string tex = $"{StyleDir}/{name}.png", path = $"{StyleDir}/{name}.mat";
@@ -48,7 +48,7 @@ public static class TavernDress
         }
         var style = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>(StylePath);
         if (style == null) { style = ScriptableObject.CreateInstance<DungeonRoomStyle>(); AssetDatabase.CreateAsset(style, StylePath); }
-        style.floor = church.floor;                                             // the Church's own pale flagstones, as drawn
+        style.floor = church.floor;                                             // the Cellar1's own pale flagstones, as drawn
         style.bottomWall = style.upperWall = Mat("Tavern wall", church.bottomWall, 1f);
         style.ceiling = Mat("Tavern ceiling", church.ceiling, 1f);
         style.trim = Mat("Tavern trim", church.trim, 1f);

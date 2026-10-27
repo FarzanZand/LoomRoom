@@ -47,6 +47,8 @@ public partial class CampaignManager : Singleton<CampaignManager>
     [TabGroup("Rules"), Tooltip("Said when the map grows.")]
     public DungeonMaster.Line grewLine = new() { text = "The map grows. New roads, new trouble.", inPerson = true };
     [TabGroup("Rules"), Tooltip("Beating this place wins the campaign (flag campaign.won).")] public CampaignEncounter finalPlace;
+    [TabGroup("Rules"), Min(1), Tooltip("The last act made: acts after it stay under their cloth whatever a save says (1 while only act 1 is played; their land is held by the empty markers \"Act N land\" on the map).")]
+    public int lastAct = 1;
     [TabGroup("Rules"), Tooltip("Said back at the map once the final place is beaten.")]
     public DungeonMaster.Line wonLine = new() { text = "That was the last of it. The whole realm, start to end. Well played.", inPerson = true };
 
@@ -140,7 +142,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
 
     static ProgressionManager PM => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
     int MaxAct => Map != null ? Map.MaxAct : 4;
-    int SavedAct => Mathf.Clamp(Mathf.Max(firstAct, PM != null ? PM.GetFlag(ActFlag) : 0), 1, MaxAct);
+    int SavedAct => Mathf.Clamp(Mathf.Max(firstAct, PM != null ? PM.GetFlag(ActFlag) : 0), 1, Mathf.Max(1, Mathf.Min(MaxAct, lastAct)));
     public int OpenAct => openEverything ? MaxAct : SavedAct;
     // Revealed acts: the save's, or more this session while openEverything (debug) shows them without saving.
     int RevealedAct => Mathf.Max(firstAct, Mathf.Max(revealedNow, PM != null ? PM.GetFlag(RevealedFlag) : 0));
@@ -202,6 +204,8 @@ public partial class CampaignManager : Singleton<CampaignManager>
             else if (p.encounter.Locked && (p.encounter.deathsIn == p.encounter || p.encounter.deathsIn.kind != CampaignEncounterKind.Level))
                 Debug.LogError($"[Campaign] {p.encounter.name} counts deaths in {p.encounter.deathsIn.name}, where no run can be played: it never opens.", p.encounter);
             string id = p.encounter.id;
+            // Placeholders are never entered nor beaten, so several can share one (the act land markers do).
+            if (p.encounter.kind == CampaignEncounterKind.Placeholder) continue;
             if (seen.TryGetValue(id, out var other)) Debug.LogError($"[Campaign] places {other.name} and {p.name} share the encounter id '{id}': give the duplicate its own encounter.", p);
             else seen[id] = p;
         }
@@ -700,9 +704,11 @@ public partial class CampaignManager : Singleton<CampaignManager>
             if (item == null || string.IsNullOrEmpty(item.saveId)) continue;
             int count = PM.GetFlag(GiftPrefix + item.saveId);
             if (count <= 0) continue;
-            PM.SetFlag(GiftPrefix + item.saveId, 0);
-            for (int i = 0; i < count; i++) InventoryManager.Instance.Pickup(item, player, preferHotbar: true, playSound: false, announcePickup: false);
-            given.Add(count > 1 ? $"{item.itemName} x{count}" : item.itemName);
+            int got = 0;
+            for (int i = 0; i < count; i++) if (InventoryManager.Instance.Pickup(item, player, preferHotbar: true, playSound: false, announcePickup: false)) got++;
+            // What didn't fit waits for the next run's pack.
+            PM.SetFlag(GiftPrefix + item.saveId, count - got);
+            if (got > 0) given.Add(got > 1 ? $"{item.itemName} x{got}" : item.itemName);
         }
         // Posted a frame later: the run's log is cleared right after it starts.
         if (given.Count > 0) StartCoroutine(PostLater("In your pack, as promised: " + string.Join(", ", given) + "."));
@@ -1205,6 +1211,31 @@ public partial class CampaignManager : Singleton<CampaignManager>
         figuresHome = null;
         if (picked != null) { progress?.SelectClass(picked); RememberClass(); }
         PlaceFigure(At);
+    }
+
+    // ── Choosing the hero in the room: the poster wall by the bed (ClassPosterWall) opens the same hero select ──
+
+    // Not in a run and not while the map view or another choice is open.
+    public bool CanChooseHeroInRoom => heroSelect != null && !heroSelect.Open && !changingClass && progress != null && progress.rules != null && !progress.InRun;
+
+    public void ChooseHeroInRoom()
+    {
+        if (CanChooseHeroInRoom) StartCoroutine(GuardedRoutine.Run(HeroInRoom(), _ => { heroSelect.Abort(); if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu); }));
+    }
+
+    IEnumerator HeroInRoom()
+    {
+        var classes = Array.FindAll(progress.rules.classes, c => c != null && c.Unlocked);
+        if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Menu);
+        // The map's figure follows the pick when the map is up on the table.
+        void Follow(AdventurerClass c) { if (figure != null) PlaceFigure(At, true); }
+        heroSelect.Shown += Follow;
+        AdventurerClass chosen = null;
+        try { yield return heroSelect.Choose(progress, classes, c => chosen = c); }
+        finally { heroSelect.Shown -= Follow; }
+        if (chosen != null) RememberClass();
+        if (figure != null) PlaceFigure(At, true);
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
     }
 
     static IEnumerator Pop(Transform t)

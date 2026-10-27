@@ -97,6 +97,8 @@ public class QuestLogUI : MonoBehaviour
                     Sound(newQuestSound);
                 }
             }
+            // Done and opened again before its row faded out (the trophies hung, then another one bought): it stays.
+            if (state == 1 && doneAt.Remove(q.id)) row.alpha = 1f;
             string text = progression.QuestText(q);
             row.text = state == 2 ? $"<s>{text}</s>" : text;
             row.color = state == 2 ? doneColour : openColour;

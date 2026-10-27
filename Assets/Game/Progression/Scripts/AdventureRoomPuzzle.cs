@@ -54,7 +54,7 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
         hintIntensity = CharacterSheetTable.ReachDown(hint, transform, hintIntensity);
         // The puzzle lies on the memorial table: the outline goes round the table, which reads from across the room.
         glow = (transform.parent != null ? transform.parent.gameObject : gameObject).AddComponent<QuestGlow>();
-        if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged += OnFlag;
+        if (ProgressionManager.HasInstance) { lastProgress = ProgressionManager.Instance.GetFlag(progressFlag); ProgressionManager.Instance.FlagChanged += OnFlag; }
         Refresh();
     }
 
@@ -84,9 +84,16 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
 
     void OnDestroy() { if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= OnFlag; }
 
+    int lastProgress;
+
     void OnFlag(string key, int value)
     {
-        if (key == progressFlag && value == revealFloor && !Solved) MessageLog.Post(clueFoundMessage, MessageKind.Lore);
+        // Said as the deepest floor first reaches the reveal floor, also when a start past it skips over it.
+        if (key == progressFlag)
+        {
+            if (value >= revealFloor && lastProgress < revealFloor && !Solved) MessageLog.Post(clueFoundMessage, MessageKind.Lore);
+            lastProgress = value;
+        }
         if (key == progressFlag || key == unlockFlag || key == ProgressionManager.TileFlag) Refresh();
     }
 

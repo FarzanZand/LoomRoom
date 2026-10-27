@@ -100,7 +100,7 @@ Flat props (swords, knives, maces, shields, planks, signs) are painted straight 
 - Texture importer: `npotScale = None` (Unity otherwise snaps every texture to a power of two and undoes the exact
   size). `BuildPainted` bakes, measures (`PixelRestyle.TexelsPerUnit`), and re-bakes until within 5% of 128.
 - Reference: `Docs/Images/Pixel texture style/Weapons and shields 150.png` (all items at one world scale, same pixels; made at the old 150).
-- Surfaces (walls, floors, ceilings): one texel per painted pixel at 128 per metre. Meshy paints about 200 pixels across with "Detailed pixel art at 320 by 320 pixel resolution" (100 without it); sample one texel per painted pixel and set the material's tiling to `tile x 128 / width` (UVs repeat once per 3 m architecture tile). The Church style (`Levels/Shared/Room styles/HighRes Materials`) is built this way.
+- Surfaces (walls, floors, ceilings): one texel per painted pixel at 128 per metre. Meshy paints about 200 pixels across with "Detailed pixel art at 320 by 320 pixel resolution" (100 without it); sample one texel per painted pixel and set the material's tiling to `tile x 128 / width` (UVs repeat once per 3 m architecture tile). The Cellar1 style (`Levels/Shared/Room styles/Cellar`) is built this way.
 - Meshy creature textures: resample so the model lands at 128 per metre (measure with `PixelRestyle.TexelsPerUnit`).
 - Check it: render items and creatures side by side **at the same world scale** (not each zoomed to fit) and compare the
   pixel squares. Dungeon walls and floors stay 10.7; the apartment room 1.8.
@@ -297,7 +297,7 @@ looks wrong, too.
 
 ## Tiling surfaces (walls, floors, ceilings): check before showing
 
-Lessons from the Church room styles (`Levels/Shared/Room styles/HighRes Materials`, 2026-10-12). Lay the textures out as
+Lessons from the Cellar1 room styles (`Levels/Shared/Room styles/Cellar`, 2026-10-12). Lay the textures out as
 they will repeat (a strip of 6-8 wall tiles with the variants in place, the floor 3x3) at full size and look for:
 
 - **Distinct features in the base repeat.** Anything that catches the eye (a mould or soot blotch, a stain, a mark, a
@@ -318,7 +318,7 @@ they will repeat (a strip of 6-8 wall tiles with the variants in place, the floo
 - **Pixel size.** Painted pixels must stay square and the material's texels exactly 128 per unit (tiling = tile x 128 /
   texture size); never stretch a painting to a different aspect.
 - **No obvious repetition (user, 2026-10-17).** The same base tile next to itself is fine, and rare low-weighted variants
-  break it up (Church3's ratio: base weight 10, variants 0.5 to 1.5, wall variants 256x384, floor variants 256x256). What
+  break it up (Cellar3's ratio: base weight 10, variants 0.5 to 1.5, wall variants 256x384, floor variants 256x256). What
   must not happen is a sign the player can clearly see on a tile: any mark, blotch, bright accent or odd shape in the base
   that the eye picks out shows on every tile and gives the repeat away. The base is even detail of one density; anything
   that stands out goes on a rare variant. Check it on a 4x3 (walls) or 4x4 (floors) layout of the base at full size, then
@@ -327,5 +327,5 @@ they will repeat (a strip of 6-8 wall tiles with the variants in place, the floo
   pixels) is smaller than a tile; a crop would repeat inside it. The tool brings the painting down to one texel per painted
   pixel and quilts the tile from overlapping patches of it (joined along their least visible cut, wrapping so the tile is
   seamless, no painting spot used twice), then levels the light drift. Every texel stays a painted one. Wall tiles are
-  quilted at 256x384, floor and ceiling tiles at 256x256 (the Church3 sizes and tilings above). Not for coursed masonry
-  (blocks and mortar lines must line up; build those as the Church styles were).
+  quilted at 256x384, floor and ceiling tiles at 256x256 (the Cellar3 sizes and tilings above). Not for coursed masonry
+  (blocks and mortar lines must line up; build those as the Cellar styles were).

@@ -13,7 +13,7 @@ public class AdventureSave : MonoBehaviour
         public string level, classId;
         public int floor, seed, characterLevel, gold, lootLevel = 1;
         public float xp, health, mana, stamina;
-        public int[] ranks, growth;
+        public int[] ranks;
         public int[] attributePoints;   // points from levels put in this run, by MetaAttribute (empty in older checkpoints)
         public int unspentPoints;
         public float[] skillExperience;
@@ -29,7 +29,7 @@ public class AdventureSave : MonoBehaviour
         public string id, classId, className, killer;
         public int floor, level;
         public int[] skills;
-        [Tooltip("A starting memorial: a figure from before the player remembers, with no details.")]
+        [Tooltip("A blank record older saves started with (the retired memorial table's figures): class only, no details.")]
         public bool forgotten;
     }
     // JsonUtility fills a new Data (and Checkpoint) from its field initialisers before reading, so a field
@@ -249,19 +249,9 @@ public class AdventureSave : MonoBehaviour
             loading = false; ProgressionManager.Instance.FlagChanged += FlagChanged;
         }
         if (RunManager.HasInstance) { RunManager.Instance.RunEnded += Ended; RunManager.Instance.Revived += Revived; }
-        if (!existed) SeedStartingMemorials();
         if (named || ProgressionManager.HasInstance && ProgressionManager.Instance.IntroSkipped) Write();
     }
 
-    // A new save starts with the rules' blank figures on the memorial table.
-    void SeedStartingMemorials()
-    {
-        var starting = progress != null && progress.rules != null ? progress.rules.startingMemorials : null;
-        if (starting == null || starting.Length == 0) return;
-        foreach (var c in starting)
-            if (c != null) Saved.memorials.Add(new Memorial { id = Guid.NewGuid().ToString("N"), classId = c.id, className = c.displayName, forgotten = true });
-        Write();
-    }
     void OnDestroy()
     {
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= FlagChanged;
@@ -340,7 +330,7 @@ public class AdventureSave : MonoBehaviour
         if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave) return;
         var run = RunManager.Instance;
         Saved.checkpoint = new Checkpoint { level = run.Level.name, floor = run.Floor, seed = run.Seed, classId = progress.selectedClass.id,
-            characterLevel = progress.Level, lootLevel = TableManager.Loader.GenerationLevel, xp = progress.Experience, skillExperience = (float[])progress.SkillExperience.Clone(), ranks = (int[])progress.Ranks.Clone(), growth = (int[])progress.Growth.Clone(), attributePoints = (int[])progress.AttributePoints.Clone(), unspentPoints = progress.UnspentPoints,
+            characterLevel = progress.Level, lootLevel = TableManager.Loader.GenerationLevel, xp = progress.Experience, skillExperience = (float[])progress.SkillExperience.Clone(), ranks = (int[])progress.Ranks.Clone(), attributePoints = (int[])progress.AttributePoints.Clone(), unspentPoints = progress.UnspentPoints,
             health = player.Stats.CurrentHealth, mana = player.Stats.CurrentMana, stamina = player.Stats.CurrentStamina, gold = player.Wallet.Gold,
             bag = Capture(player.Bag), hotbar = Capture(player.Hotbar), equipped = player.Equipment.EquippedItems.Select(x => x.saveId).ToArray(), leftHand = GetComponent<PlayerSpellcasting>().Equipped,
             blessings = player.Stats.Modifiers.Where(m => ReferenceEquals(m.Source, RunManager.BlessingSource)).Select(m => new Blessing { stat=m.Stat, type=m.Type, value=m.Value, duration=m.Duration }).ToArray(),
@@ -349,7 +339,7 @@ public class AdventureSave : MonoBehaviour
     }
     public bool CanRestore(Checkpoint checkpoint)
     {
-        if (checkpoint == null || checkpoint.bag == null || checkpoint.hotbar == null || checkpoint.equipped == null || checkpoint.ranks?.Length != AdventureSkills.Count || checkpoint.growth?.Length != AdventurerProgress.StatNames.Length || checkpoint.floor < 1 || progress.rules == null || !progress.rules.classes.Any(x => x != null && x.id == checkpoint.classId)) return false;
+        if (checkpoint == null || checkpoint.bag == null || checkpoint.hotbar == null || checkpoint.equipped == null || checkpoint.ranks?.Length != AdventureSkills.Count || checkpoint.floor < 1 || progress.rules == null || !progress.rules.classes.Any(x => x != null && x.id == checkpoint.classId)) return false;
         // Items that no longer exist (retired to _Archive, dropped from the catalog) don't block the run: Restore leaves them out.
         return true;
     }
@@ -371,7 +361,7 @@ public class AdventureSave : MonoBehaviour
                 for (int n = 0; n < stack.count; n++) InventoryManager.Instance.DropFromPlayer(stack.item, player);
         foreach (var id in checkpoint.equipped) if (Item(id) is ItemData worn) player.Equipment.Equip(worn, false, grant: true);
         if (missing.Count > 0) Debug.LogWarning("[AdventureSave] Left out items that no longer exist: " + string.Join(", ", missing));
-        progress.Restore(checkpoint.characterLevel, checkpoint.xp, (int[])checkpoint.ranks.Clone(), (int[])checkpoint.growth.Clone(), checkpoint.skillExperience, (int[])checkpoint.attributePoints?.Clone(), checkpoint.unspentPoints);
+        progress.Restore(checkpoint.characterLevel, checkpoint.xp, (int[])checkpoint.ranks.Clone(), checkpoint.skillExperience, (int[])checkpoint.attributePoints?.Clone(), checkpoint.unspentPoints);
         player.Stats.RemoveAllFromSource(RunManager.BlessingSource);
         if (checkpoint.blessings != null) foreach(var b in checkpoint.blessings) player.Stats.AddModifier(new StatModifier(b.stat,b.value,b.type,RunManager.BlessingSource,b.duration));
         player.Stats.ClearFood();

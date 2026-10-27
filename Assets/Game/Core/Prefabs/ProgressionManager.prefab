@@ -87,12 +87,13 @@ MonoBehaviour:
     thirdUnit: 
     milestones:
     - value: 15
-      unlock: Deflect
-      description: 'Shield up toward an arrow or a spell: it flies back at whoever
-        sent it.'
-      icon: {fileID: 21300000, guid: 4f96369d9f16cff4c89b498a47060ee0, type: 3}
+      ability: {fileID: 11400000, guid: e3f721e348b7cef468084c9a4d1881ce, type: 2}
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
       trophy: {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}
     - value: 50
+      ability: {fileID: 0}
       unlock: '?'
       description: 
       icon: {fileID: 0}
@@ -115,11 +116,13 @@ MonoBehaviour:
     thirdUnit: 
     milestones:
     - value: 25
+      ability: {fileID: 0}
       unlock: Riposte
       description: The first sword swing after a block hits 50% harder.
       icon: {fileID: 21300000, guid: 681ec8be9f8b4a54ea9aa2d47d7a98ee, type: 3}
       trophy: {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
     - value: 50
+      ability: {fileID: 0}
       unlock: '?'
       description: 
       icon: {fileID: 0}
@@ -142,12 +145,14 @@ MonoBehaviour:
     thirdUnit: 
     milestones:
     - value: 25
+      ability: {fileID: 0}
       unlock: Crush
       description: A heavy mace hit knocks 10 armour off the target for the rest
         of the fight, up to 5 times.
       icon: {fileID: 21300000, guid: a8349bd2793955c4a9d6546bd65394b4, type: 3}
       trophy: {fileID: 11400000, guid: b1a6850fe492d4643b2c79564b88c087, type: 2}
     - value: 50
+      ability: {fileID: 0}
       unlock: '?'
       description: 
       icon: {fileID: 0}
@@ -170,12 +175,14 @@ MonoBehaviour:
     thirdUnit: 
     milestones:
     - value: 25
+      ability: {fileID: 0}
       unlock: Burning
       description: 'Fireball sets what it hits on fire: a fifth of the hit again
         every second for 3 seconds.'
       icon: {fileID: 21300000, guid: 665feea7fd5b7b94d8b11b1cf07a2fed, type: 3}
       trophy: {fileID: 11400000, guid: 90fcb602aa103114bba5a2c00f5127d6, type: 2}
     - value: 50
+      ability: {fileID: 0}
       unlock: '?'
       description: 
       icon: {fileID: 0}
@@ -198,11 +205,13 @@ MonoBehaviour:
     thirdUnit: 
     milestones:
     - value: 25
+      ability: {fileID: 0}
       unlock: Mending
       description: 'Heal keeps healing: half as much again over 4 seconds.'
       icon: {fileID: 21300000, guid: 93ae97ff5e5eb8d4c88fae0c12de0dcf, type: 3}
       trophy: {fileID: 11400000, guid: 38526901aa689654ea34e6a6200e56be, type: 2}
     - value: 50
+      ability: {fileID: 0}
       unlock: '?'
       description: 
       icon: {fileID: 0}
@@ -225,11 +234,13 @@ MonoBehaviour:
     thirdUnit: 
     milestones:
     - value: 25
+      ability: {fileID: 0}
       unlock: Sprint
       description: You can sprint.
       icon: {fileID: 21300000, guid: e36d67b393157c94a945587edffbb3dd, type: 3}
       trophy: {fileID: 11400000, guid: 0fa67589586481d43b0d3147311b842c, type: 2}
     - value: 50
+      ability: {fileID: 0}
       unlock: '?'
       description: 
       icon: {fileID: 0}
@@ -252,11 +263,13 @@ MonoBehaviour:
     thirdUnit: 
     milestones:
     - value: 25
+      ability: {fileID: 0}
       unlock: Ambush
       description: A backstab is a critical hit as well.
       icon: {fileID: 21300000, guid: 3151a4f7b65c5ba4db2f589e5d050f06, type: 3}
       trophy: {fileID: 11400000, guid: 4c4a17a16a14b5a49bd9466ac8e9b724, type: 2}
     - value: 50
+      ability: {fileID: 0}
       unlock: '?'
       description: 
       icon: {fileID: 0}
@@ -279,11 +292,13 @@ MonoBehaviour:
     thirdUnit: 
     milestones:
     - value: 25
+      ability: {fileID: 0}
       unlock: Keen eye
       description: Merchants offer Uncommon, Rare and Unique gear twice as often.
       icon: {fileID: 21300000, guid: 02f3131e614723748b7aef625832a8e0, type: 3}
       trophy: {fileID: 11400000, guid: ef5f66e3c2c30c4439c9bfe0a2653800, type: 2}
     - value: 50
+      ability: {fileID: 0}
       unlock: '?'
       description: 
       icon: {fileID: 0}
@@ -388,6 +403,8 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   lessonDelay: 2.5
+  colourSheetPortraits: 0
+  classRules: {fileID: 11400000, guid: 11287e425e881074b9ec2c3371b5e5be, type: 2}
   quests:
   - id: shieldBash
     text: 'Shield bash: hold {block}, press {attack}.'

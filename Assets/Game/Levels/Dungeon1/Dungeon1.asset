@@ -13,6 +13,39 @@ MonoBehaviour:
   m_Name: Dungeon1 base
   m_EditorClassIdentifier: Assembly-CSharp::DungeonBiome
   displayName: The Crypt
+  kind: 0
+  boardReveal: 0
+  ownBoardPieces: 0
+  ownLook: 0
+  wilds:
+    enabled: 0
+    roofed: 0
+    depth: 5
+    height: {x: 1.6, y: 3.6}
+    top: {fileID: 0}
+    side: {fileID: 0}
+    trees: []
+    treeChance: 0.45
+    treeScale: {x: 0.8, y: 1.25}
+    undergrowth: []
+    undergrowthPerCell: 1
+    foot: []
+    footChance: 0.45
+    edges: 1
+    faces: []
+    faceChance: 0.3
+    faceStandOut: 0.5
+    lip: []
+    lipChance: 0.6
+    glows: []
+    glowEvery: 9
+    hangings: []
+    hangChance: 0.25
+    pondChance: 0.35
+    pondSize: {x: 2, y: 3}
+    pondGlow: {r: 0.35, g: 0.85, b: 1, a: 1}
+    pondGlowStrength: 2.5
+    pondEdge: []
   entryMessage: 
   roomStyles: []
   corridorStyles:
@@ -115,9 +148,13 @@ MonoBehaviour:
   destructibles: []
   lighting: 6
   litThroughout: 0
+  fog: {x: 0, y: 0}
   lightBoard: 0
   roomTemplates: []
   templateChance: 0.7
+  roomCount: 0
+  roomSizeScale: 1
+  noDoors: 0
   overrideDungeonSettings: 0
   roomFeatures:
     shrineBargains: 1
@@ -217,12 +254,15 @@ MonoBehaviour:
   boardEdgeMaterial: {fileID: 0}
   boardGridMaterial: {fileID: 0}
   boardPitMaterial: {fileID: 0}
+  boardPitWater: {fileID: 0}
   boardVerticality: 1
   boardTileTaps: []
   boardDoorPosts: []
   boardMoundProps: []
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
+  boardLightAngle: 0
+  boardLightFrom: 220
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -250,6 +290,24 @@ MonoBehaviour:
   - biome: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
     floors: 1
     boss: 1
+  - biome: {fileID: 11400000, guid: 28c75b4027f67c949a2c00a2f20e71a2, type: 2}
+    floors: 1
+    boss: 0
+  - biome: {fileID: 11400000, guid: cf945130f3c1cce4fbde0f1312d3d3e4, type: 2}
+    floors: 1
+    boss: 0
+  - biome: {fileID: 11400000, guid: 9012b71dfd09a7446bc26272f589a7cb, type: 2}
+    floors: 1
+    boss: 0
+  - biome: {fileID: 11400000, guid: 982d8b3f7a28bf0498b32a7265370690, type: 2}
+    floors: 1
+    boss: 0
+  - biome: {fileID: 11400000, guid: 29d73894662dc204ebe0b50f8ce9acab, type: 2}
+    floors: 1
+    boss: 0
+  - biome: {fileID: 11400000, guid: a120b1fb852141c43b0f64838c9e2b0a, type: 2}
+    floors: 1
+    boss: 0
   floors: 1
   bossOnLastFloor: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}

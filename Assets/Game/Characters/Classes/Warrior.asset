@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e1245925be5b504991286fe52736323, type: 3}
+  m_Name: Warrior
+  m_EditorClassIdentifier: Assembly-CSharp::AdventurerClass
+  id: fighter
+  displayName: Warrior
+  description: Sword, shield and good armor. Tough, but bad at magic.
+  portrait: {fileID: 21300000, guid: c41c399af111a414d8ec9b3a6018e770, type: 3}
+  sheetPortrait: {fileID: 21300000, guid: b757f95d7f3a10a4f86271d6683a4ad6, type: 3}
+  sheetPortraitColour: {fileID: 21300000, guid: cbcb60a4fa24dd4418fe35fe0d5df6f5, type: 3}
+  miniature: {fileID: 1153340145165615227, guid: 108c08a331d94194691faf3e8ddfd646, type: 3}
+  unlockFlag: 
+  coopBody: {fileID: 8511015406522375087, guid: c1aaf49909ca80a428813247dfb674c5, type: 3}
+  posterLine:
+    text: The Warrior. Every wall needs one.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  deskProp: {fileID: 5919666315678075746, guid: 734f3fb57635b85499483edf37165319, type: 3}
+  equipment:
+  - {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
+  - {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}
+  - {fileID: 11400000, guid: a28df57d3014dee4c81499eaf4753671, type: 2}
+  spells: []
+  supplies:
+  - item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
+    count: 1
+  - item: {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
+    count: 2
+  - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
+    count: 2
+  leftHand: 0
+  strength: 1
+  dexterity: 1
+  constitution: 0
+  intelligence: -2
+  health: 30
+  mana: 20
+  stamina: 35
+  skills: 140000000a0000000f00000000000000000000000500000000000000

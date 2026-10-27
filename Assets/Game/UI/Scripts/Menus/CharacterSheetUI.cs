@@ -244,7 +244,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
                     foreach (var m in t.milestones)
                         if (meta.Reached(t, m) && !before.Contains(m))
                         {
-                            ShowUnlock(m.unlock != "?" ? $"Unlocked: {m.unlock}" : $"{t.displayName} {m.value}", "A trophy for the wall");
+                            ShowUnlock(m.Known ? $"Unlocked: {m.Name}" : $"{t.displayName} {m.value}", "A trophy for the wall");
                             if (AudioManager.HasInstance) AudioManager.Instance.PlayLevelUp();
                         }
                 break;
@@ -298,7 +298,8 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (spoilsText != null) spoilsText.text = meta.Spoils.ToString();
         var portraits = Portraits();
         var cls = portraits.Count > 0 ? portraits[Mathf.Clamp(meta.PortraitIndex, 0, portraits.Count - 1)] : null;
-        if (portrait != null) { portrait.sprite = cls != null && cls.sheetPortrait != null ? cls.sheetPortrait : portraitPlaceholder; portrait.preserveAspect = true; }
+        var picture = meta.SheetPortrait(cls);
+        if (portrait != null) { portrait.sprite = picture != null ? picture : portraitPlaceholder; portrait.preserveAspect = true; }
         if (portraitLabel != null) portraitLabel.text = portraits.Count > 0 ? $"Portrait {Mathf.Clamp(meta.PortraitIndex, 0, portraits.Count - 1) + 1} of {portraits.Count}" : "";
         foreach (var r in rows) RefreshRow(meta, r);
         RefreshQuest(meta);
@@ -360,12 +361,12 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
                 bool reached = meta.Reached(t, m);
                 if (i < r.milestoneIcons.Length && r.milestoneIcons[i] != null)
                 {
-                    r.milestoneIcons[i].enabled = m.icon != null;
-                    if (m.icon != null) r.milestoneIcons[i].sprite = m.icon;
+                    r.milestoneIcons[i].enabled = m.Icon != null;
+                    if (m.Icon != null) r.milestoneIcons[i].sprite = m.Icon;
                 }
                 if (i < r.milestoneMarks.Length && r.milestoneMarks[i] != null)
                 {
-                    r.milestoneMarks[i].text = m.icon != null ? "" : "?";
+                    r.milestoneMarks[i].text = m.Icon != null ? "" : "?";
                     r.milestoneMarks[i].color = reached ? Color.white : ink;
                 }
             }
@@ -408,8 +409,8 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         var m = t.milestones[index];
         bool got = meta.Reached(t, m);
         string state = got ? (meta.Trophy(t, m) == ProgressionManager.TrophyState.Mounted ? "On the wall." : "A trophy to hang.") : $"At {t.displayName} {m.value}.";
-        string name = string.IsNullOrEmpty(m.unlock) || m.unlock == "?" ? "?" : m.unlock;
-        string body = string.IsNullOrEmpty(m.description) ? state : $"{m.description}\n<color=#{ColorUtility.ToHtmlStringRGB(got ? pen : faint)}>{state}</color>";
+        string name = m.Known ? m.Name : "?";
+        string body = string.IsNullOrEmpty(m.Description) ? state : $"{m.Description}\n<color=#{ColorUtility.ToHtmlStringRGB(got ? pen : faint)}>{state}</color>";
         ShowCard(name, body, near);
     }
 

@@ -94,7 +94,8 @@ public class DungeonCombatFeedback : MonoBehaviour
     }
     void ObjectHit(DungeonDestructible target,DamageInfo info)
     {
-        if(target==null || !target.transform.IsChildOf(dungeon.transform))return;
+        // Between floors (the old one gone, the new one not yet bound) a hit has no floor to show on.
+        if(dungeon==null || target==null || !target.transform.IsChildOf(dungeon.transform))return;
         var view=objects.Find(o=>o.target==target);
         if(view==null && dungeon.LevelData.enemyBarPrefab==null){if(Mine(info))ShowNumber(target.transform,target.Top,Mathf.CeilToInt(info.Amount).ToString(),new Color(1,.93f,.79f),numberScale);return;}
         if(view==null)

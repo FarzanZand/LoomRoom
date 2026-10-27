@@ -28,11 +28,11 @@ public partial class AssetStudioWindow
     {
         var m = World;
         int act = Mathf.Max(1, formAct);
-        var cellars = Biome("Cellars") ?? m.biomes.FirstOrDefault();
+        var cellars = Biome("Cellars1") ?? m.biomes.FirstOrDefault();
         encounterPlan = new AssetStudioWorld.EncounterPlan { act = act, contentFrom = cellars, rooms = 3 };
         dungeonPlan = new AssetStudioWorld.DungeonPlan { act = act, balanceFrom = m.levels.FirstOrDefault(l => l.data.name == "Dungeon1")?.data };
         if (cellars != null) dungeonPlan.stages.Add(new AssetStudioWorld.StagePlan { biome = cellars, floors = 2 });
-        var crypt = Biome("Crypt");
+        var crypt = Biome("Cellars3");
         if (crypt != null) dungeonPlan.stages.Add(new AssetStudioWorld.StagePlan { biome = crypt, floors = 1, boss = AssetStudioWorld.HasGuardian(crypt) });
         nameCheckFor = null;
     }
@@ -279,7 +279,7 @@ public partial class AssetStudioWindow
     // ── For tests (an eval) ──────────────────────────────────────────
     // Fill the form's plan and press Create (what the form does, nothing else). stages: "Cellars:2:0;+Crypt:1:1"
     // (biome:floors:boss, + for a new copy).
-    public string TestNewEncounter(string name, int act, bool board, string copyMap = null, int rooms = 3, string contentFrom = "Cellars", bool place = true)
+    public string TestNewEncounter(string name, int act, bool board, string copyMap = null, int rooms = 3, string contentFrom = "Cellars1", bool place = true)
     {
         StartForm(WorldPane.NewLevel); newLevelFlow = 0;
         encounterPlan = new AssetStudioWorld.EncounterPlan { name = name, act = act, board = board, rooms = rooms, place = place,

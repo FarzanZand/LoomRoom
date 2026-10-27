@@ -7,7 +7,7 @@ public class EquipmentPanelUI : MonoBehaviour
     public TMP_Text health,mana,stamina,damage,armor,food;
     [Tooltip("Optional: name, class and level (the panel's header).")] public TMP_Text identity;
     [Tooltip("Optional: a thin line under the level, filled with the progress to the next level (stretched in its frame, like the skill rows).")] public UnityEngine.UI.Image levelProgress;
-    [Tooltip("Optional: Strength, Dexterity, Constitution, Intelligence, Perception, Charisma, one per line.")] public TMP_Text attributes;
+    [Tooltip("Optional: Strength, Dexterity, Constitution and Intelligence, one per line.")] public TMP_Text attributes;
     [Tooltip("The skills with their ranks; hovering one shows what it does per point and now.")] public AdventureSkillRowUI[] skills;
     [Tooltip("Optional: the line of gear bonuses (critical chance, kill heal...) under armor; hovering it lists them all.")] public GearBonusesUI gearBonuses;
     [Tooltip("Strength, Dexterity, Constitution, Intelligence: the sheet's scores plus this run's points, with a + while a level's point is left.")] public AttributeCellUI[] attributeCells;
@@ -85,7 +85,7 @@ public class EquipmentPanelUI : MonoBehaviour
     }
 
     public void Bind(Player value){player=value;foreach(var slot in slots)if(slot!=null)slot.Bind(player);Refresh();}
-    static readonly (StatType stat,string label)[] Attributes={(StatType.Strength,"STRENGTH"),(StatType.Dexterity,"DEXTERITY"),(StatType.Constitution,"CONSTITUTION"),(StatType.Intelligence,"INTELLIGENCE"),(StatType.Perception,"PERCEPTION"),(StatType.Charisma,"CHARISMA")};
+    static readonly (StatType stat,string label)[] Attributes={(StatType.Strength,"STRENGTH"),(StatType.Dexterity,"DEXTERITY"),(StatType.Constitution,"CONSTITUTION"),(StatType.Intelligence,"INTELLIGENCE")};
     public void Refresh(){foreach(var slot in slots)if(slot!=null)slot.Refresh();shownKey=null;Update();}
     // Every number the labels show, rounded as shown; the strings are rebuilt only when one changes.
     long[] shownKey;

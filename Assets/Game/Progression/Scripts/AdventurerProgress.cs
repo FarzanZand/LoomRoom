@@ -20,7 +20,6 @@ public class AdventurerProgress : MonoBehaviour
     // Skill, awarded XP, previous fraction, resulting fraction, ranks gained.
     public event Action<AdventureSkill, float, float, float, int> SkillExperienceGained;
     public float SkillProgress(AdventureSkill skill) => Ranks[(int)skill] >= 100 ? 1 : SkillExperience[(int)skill] / (Definition(skill)?.ExperienceRequired(Ranks[(int)skill]) ?? 100);
-    public int[] Growth { get; private set; } = new int[StatNames.Length];
     // Attribute points put in this run, by MetaAttribute, on top of the character sheet's scores; and the points from
     // levels not put anywhere yet (one per level, spent on the character panel).
     public int[] AttributePoints { get; private set; } = new int[AttributeCount];
@@ -106,9 +105,8 @@ public class AdventurerProgress : MonoBehaviour
     }
     public float SpellCastTime(AdventureSkill school) => Legendary(school) ? .5f : Mathf.Max(.5f, 1 - Extra(school));
 
-    public float BuyPriceMultiplier => Mathf.Max(.5f, 1 - Bonus(AdventureSkill.Trading) - Charisma - (Legendary(AdventureSkill.Trading) ? .1f : 0));
-    public float SellPriceMultiplier => 1 + Extra(AdventureSkill.Trading) + Charisma;
-    float Charisma => rules != null ? Mathf.Clamp(Attribute(StatType.Charisma) * rules.charismaDiscountPerPoint, 0, rules.charismaDiscountCap) : 0;
+    public float BuyPriceMultiplier => Mathf.Max(.5f, 1 - Bonus(AdventureSkill.Trading) - (Legendary(AdventureSkill.Trading) ? .1f : 0));
+    public float SellPriceMultiplier => 1 + Extra(AdventureSkill.Trading);
 
     // ── Practising skills ──────────────────────────────────────────────────────
     // Every eligible action earns XP. Returns true if at least one rank was gained.
@@ -204,7 +202,7 @@ public class AdventurerProgress : MonoBehaviour
     {
         if (rules == null || rules.classes == null || rules.classes.Length == 0) return;
         if (selectedClass == null || !selectedClass.Unlocked) selectedClass = rules.classes[0];
-        Level = 1; Experience = 0; Growth = new int[StatNames.Length]; AttributePoints = new int[AttributeCount]; UnspentPoints = 0;
+        Level = 1; Experience = 0; AttributePoints = new int[AttributeCount]; UnspentPoints = 0;
         SkillExperience = new float[AdventureSkills.Count];
         Ranks = new int[AdventureSkills.Count];
         // A run starts from the base bought on the character sheet (ProgressionManager) plus the class.
@@ -236,8 +234,7 @@ public class AdventurerProgress : MonoBehaviour
         float health = stats.CurrentHealth, mana = stats.CurrentMana, stamina = stats.CurrentStamina;
         stats.RemoveAllFromSource(source);
         void Add(StatType stat, float value, ModifierType kind = ModifierType.Flat) => stats.AddModifier(new StatModifier(stat, value, kind, source));
-        // The classes' old six attributes (AdventurerClass.attributes) are retired: nothing adds them, so the stats they
-        // fed (CharacterStats' derived damage, armour, speed; Charisma prices, Perception light) stay at their own values.
+        // The class's own attribute points are in Score below, with the sheet's (AdventurerClass.strength and the rest).
         Add(StatType.MaxHealth, selectedClass.health - stats.GetBase(StatType.MaxHealth) + 0);
         Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + 0);
         // Legendary Athletics: a deeper well of stamina.
@@ -284,7 +281,7 @@ public class AdventurerProgress : MonoBehaviour
             {
                 var track = meta.Track((MetaAttribute)a);
                 if (track == null) continue;
-                foreach (var (stat, amount, kind) in ProgressionManager.AttributeGains(track, meta.AttributeScore((MetaAttribute)a) - track.baseScore))
+                foreach (var (stat, amount, kind) in ProgressionManager.AttributeGains(track, meta.AttributeScore((MetaAttribute)a) + c.Attribute((MetaAttribute)a) - track.baseScore))
                     if (kind == ModifierType.Flat) Add(stat, amount);
             }
             int athletics = (ProgressionManager.MetaActive ? meta.BaseRank(AdventureSkill.Athletics) : 0) + c.StartingRank(AdventureSkill.Athletics);
@@ -315,13 +312,13 @@ public class AdventurerProgress : MonoBehaviour
         Changed?.Invoke();
     }
 
-    // An attribute's score now: the character sheet's plus the points put in this run and what the tavern's dishes
-    // eaten this run add (TavernDish).
+    // An attribute's score now: the character sheet's plus, in a run, the class's own points (AdventurerClass), the
+    // points put in this run and what the tavern's dishes eaten this run add (TavernDish).
     public int Score(MetaAttribute attribute)
     {
         int sheet = ProgressionManager.HasInstance ? ProgressionManager.Instance.AttributeScore(attribute) : 8;
         int i = (int)attribute;
-        return sheet + (i >= 0 && i < AttributePoints.Length ? AttributePoints[i] : 0) + (InRun ? TavernDish.AttributeBonus() : 0);
+        return sheet + (i >= 0 && i < AttributePoints.Length ? AttributePoints[i] : 0) + (InRun ? TavernDish.AttributeBonus() + (selectedClass != null ? selectedClass.Attribute(attribute) : 0) : 0);
     }
 
     // An attribute's points above its track's base score (what its bonuses count).
@@ -342,8 +339,6 @@ public class AdventurerProgress : MonoBehaviour
         return true;
     }
 
-    public static readonly string[] StatNames = { "STR", "DEX", "CON", "INT", "PER", "CHR" };
-    public static readonly string[] StatFullNames = { "Strength", "Dexterity", "Constitution", "Intelligence", "Perception", "Charisma" };
     // A level gained in a run: the new level and what it gave, one line each ("+3 Health"), for LevelUpUI.
     public event Action<int, System.Collections.Generic.List<string>> LeveledUp;
 
@@ -360,7 +355,7 @@ public class AdventurerProgress : MonoBehaviour
         if (perceptionLight != null && rules != null)
         {
             perceptionLight.enabled = player.IsActive && InRun;
-            perceptionLight.range = baseVisibilityRange * (1 + Mathf.Clamp(Attribute(StatType.Perception) * rules.perceptionRangePerPoint, 0, rules.perceptionRangeCap));
+            perceptionLight.range = baseVisibilityRange;
         }
         var position = transform.position; float moved = Vector3.Distance(position, lastPosition); lastPosition = position;
         if (!InRun || !player.IsActive || rules == null || !GameManager.HasInstance || !GameManager.Instance.GameplayActive) return;
@@ -395,7 +390,7 @@ public class AdventurerProgress : MonoBehaviour
     }
 
     // attributePoints and unspent: the points from levels, as saved (null: none, a checkpoint from before them).
-    public void Restore(int level, float xp, int[] ranks, int[] growth, float[] skillExperience = null, int[] attributePoints = null, int unspent = 0)
+    public void Restore(int level, float xp, int[] ranks, float[] skillExperience = null, int[] attributePoints = null, int unspent = 0)
     {
         Level = Mathf.Clamp(level, 1, 100); Experience = Mathf.Max(0, xp);
         Ranks = ranks != null && ranks.Length == AdventureSkills.Count ? ranks : new int[AdventureSkills.Count];
@@ -407,7 +402,6 @@ public class AdventurerProgress : MonoBehaviour
             SkillExperience[i] = Ranks[i] >= 100 || float.IsNaN(value) || float.IsInfinity(value) ? 0 : Mathf.Clamp(value, 0, (Definition((AdventureSkill)i)?.ExperienceRequired(Ranks[i]) ?? 100) - .001f);
         }
         taught.Clear();
-        Growth = growth != null && growth.Length == StatNames.Length ? growth : new int[StatNames.Length];
         AttributePoints = attributePoints != null && attributePoints.Length == AttributeCount ? attributePoints : new int[AttributeCount];
         UnspentPoints = Mathf.Max(0, unspent);
         ApplyStats();

@@ -67,7 +67,7 @@ public class DebugDungeonSession : MonoBehaviour
         if (level == null) { Debug.LogError("Add the levels the Dungeon button should play to WorldManager's Debug Dungeons."); yield break; }
         var player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         if (settings != null && settings.startingClass != null) player.GetComponent<AdventurerProgress>().selectedClass = settings.startingClass;
-        loader.Load(level);
+        loader.Load(level, false, CurrentMode == Mode.Dungeon ? StartFloor : 1);
         if (CurrentMode == Mode.Boss) yield return OntoStage(loader, player);
         if (CurrentMode == Mode.Arena) yield return GiveStartingItems(loader, player);
     }
@@ -112,6 +112,22 @@ public class DebugDungeonSession : MonoBehaviour
     // The level the Dungeon button plays: the one picked in the toolbar's dropdown (remembered per user), else the first
     // of WorldManager's Debug Dungeons.
     public const string SelectedDungeonKey = "LoomRoom.DebugDungeon.Selected";
+    // The floor the Dungeon button starts on (the toolbar's floor pick, remembered per user; past the level's last floor
+    // it starts on the last).
+    public const string StartFloorKey = "LoomRoom.DebugDungeon.StartFloor";
+    public static int StartFloor
+    {
+        get
+        {
+#if UNITY_EDITOR
+            int floor = UnityEditor.EditorPrefs.GetInt(StartFloorKey, 1);
+            var level = SelectedDungeon;
+            return Mathf.Clamp(floor, 1, Mathf.Max(1, level != null ? level.FloorCount : 1));
+#else
+            return 1;
+#endif
+        }
+    }
     public static TableLevelData[] DebugDungeons => WorldManager.HasInstance && WorldManager.Instance.debugDungeons != null ? WorldManager.Instance.debugDungeons : new TableLevelData[0];
     public static TableLevelData SelectedDungeon
     {

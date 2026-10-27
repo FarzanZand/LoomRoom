@@ -18,8 +18,8 @@ Paths are under `Assets/Game`.
 | Asset | What to edit |
 |---|---|
 | `Progression/Data/Adventure Rules.asset` | Level XP, training limits, attribute and growth tuning, starting memorials |
-| `Progression/Data/Classes/` | Warrior, Wizard, Cleric, Arcanist: starting equipment, known spells, attributes, resources, skill ranks, unlock flag |
-| `Progression/Data/Skills/` | One asset per skill: XP per action, rank cost, the rank 100 bonus |
+| `Characters/Classes/` | Warrior, Wizard, Cleric, Arcanist: starting equipment, known spells, attributes, resources, skill ranks, unlock flag |
+| `Characters/Skills/<Skill>/` | One folder per skill: its data (XP per action, rank cost, the rank 100 bonus) and its abilities (Blocking: Shield bash, Deflect) |
 | `Items/Data/{Weapons,Armor,Shields,Consumables,Trinkets}` | Tiered gear, potions and food |
 | `Levels/Dungeon1/Biomes/* loot.asset` | Loot profiles: gear tier range, upgrade chance, gold and drop chances per source |
 | `Combat/Spells/Fireball/`, `Combat/Spells/Heal/` | Spell data, hotbar tome, hand and impact effects, projectile |

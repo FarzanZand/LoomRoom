@@ -62,7 +62,7 @@ public static class ClassUnlockedSetup
 
         string sound = AddSound();
         // The puzzle names its class: the card shows that class's portrait.
-        var arcanist = AssetDatabase.LoadAssetAtPath<AdventurerClass>("Assets/Game/Progression/Data/Classes/Arcanist.asset");
+        var arcanist = AssetDatabase.LoadAssetAtPath<AdventurerClass>("Assets/Game/Characters/Classes/Arcanist.asset");
         foreach (var puzzle in Object.FindObjectsByType<AdventureRoomPuzzle>(FindObjectsInactive.Include))
             if (puzzle.unlockedClass == null && arcanist != null && puzzle.unlockFlag == arcanist.unlockFlag)
             { Undo.RecordObject(puzzle, "Puzzle class"); puzzle.unlockedClass = arcanist; EditorUtility.SetDirty(puzzle); }

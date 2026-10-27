@@ -24530,6 +24530,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: 'The Crypt Lord''s fight, the floor''s last room: an open stage in
+    front of the Dungeon Master, who sets the boss down and joins in with his beam
+    and fireballs.'
   paintFootprint: 0
   footprint: {fileID: 0}
   allowRotation: 0
@@ -24542,6 +24546,7 @@ MonoBehaviour:
   openCeiling: 0
   ceilingFrame: 0.35
   skylightRadius: 0
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1

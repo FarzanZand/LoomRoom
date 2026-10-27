@@ -242,6 +242,8 @@ MonoBehaviour:
   chance: 0.5
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &2275175101673650287
@@ -292,6 +294,8 @@ MonoBehaviour:
   chance: 0.5
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &2595768016994287474
@@ -342,6 +346,8 @@ MonoBehaviour:
   chance: 0.8
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &3959014872587702559
@@ -489,6 +495,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &6094011178556838177
@@ -557,6 +565,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: 'The Crypt Lord''s old arena from before the stage fight: the boss,
+    two guards and a chest. No level uses it now.'
   paintFootprint: 0
   footprint: {fileID: 0}
   allowRotation: 1
@@ -569,13 +580,18 @@ MonoBehaviour:
   openCeiling: 0
   ceilingFrame: 0.35
   skylightRadius: 0
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
   roomEvent: 0
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 0}
   previewCellSize: 2
 --- !u!1 &6346824532260587478
@@ -626,6 +642,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1001 &1174088559287559802

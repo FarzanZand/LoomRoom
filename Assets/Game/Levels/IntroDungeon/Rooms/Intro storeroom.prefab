@@ -48,6 +48,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &6966637714150526988
@@ -98,6 +100,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &8982110632713967090
@@ -156,6 +160,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: 'Cut from the intro: a candlelit room with a gold chest. Nothing uses
+    it.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 0
@@ -173,13 +180,18 @@ MonoBehaviour:
   openCeiling: 0
   ceilingFrame: 0.35
   skylightRadius: 0
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
   roomEvent: 1
   replaceGeneratedTorches: 1
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 11400000, guid: c645aab0a734a674c819d23a78475cc7, type: 2}
   previewCellSize: 2
 --- !u!114 &9201115776946714054

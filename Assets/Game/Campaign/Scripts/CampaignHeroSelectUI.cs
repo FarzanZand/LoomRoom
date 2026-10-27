@@ -75,7 +75,8 @@ public class CampaignHeroSelectUI : MonoBehaviour
         var result = taken ? progress.selectedClass : null;
         if (result == null && before != null) progress.SelectClass(before);
         Sync();
-        for (float t = 1; t > 0; t -= Time.unscaledDeltaTime / .15f) { Fade(t); yield return null; }
+        // Aborted from outside: it is already off screen.
+        if (Open) for (float t = 1; t > 0; t -= Time.unscaledDeltaTime / .15f) { Fade(t); yield return null; }
         Fade(0f);
         Open = false;
         done?.Invoke(result);
@@ -107,6 +108,7 @@ public class CampaignHeroSelectUI : MonoBehaviour
         if (progress != null && classBefore != null && progress.selectedClass != classBefore) progress.SelectClass(classBefore);
         Fade(0f);
         Open = false;
+        cancelled = true;   // a Choose still waiting ends too, so its caller gives the state it pushed back
     }
 
     void OnDisable() => Unlisten();

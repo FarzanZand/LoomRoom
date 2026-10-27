@@ -39,8 +39,8 @@ public static class DungeonChunkKit
         var chunks = BuildChunks();
         var log = new System.Text.StringBuilder($"kit {kit.Count} pieces, chunks: ");
         foreach (var c in chunks) log.Append(c.name).Append(", ");
-        Pool("Assets/Game/Levels/Shared/Biomes/Cellars.asset", chunks, c => c.cellars);
-        Pool("Assets/Game/Levels/Shared/Biomes/Crypt.asset", chunks, c => c.crypt);
+        Pool("Assets/Game/Levels/Shared/Biomes/Cellars1.asset", chunks, c => c.cellars);
+        Pool("Assets/Game/Levels/Shared/Biomes/Cellars3.asset", chunks, c => c.crypt);
         AssetDatabase.SaveAssets();
         return log.ToString();
     }

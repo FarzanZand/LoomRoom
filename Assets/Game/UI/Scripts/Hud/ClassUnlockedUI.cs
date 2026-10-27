@@ -39,7 +39,7 @@ public class ClassUnlockedUI : MonoBehaviour
     {
         if (instance == null) return;
         instance.Play(unlocked != null && !string.IsNullOrEmpty(unlocked.displayName) ? unlocked.displayName : fallbackName,
-            unlocked != null ? (unlocked.sheetPortrait != null ? unlocked.sheetPortrait : unlocked.portrait) : null);
+            unlocked != null ? (ProgressionManager.HasInstance && ProgressionManager.Instance.SheetPortrait(unlocked) is Sprite s ? s : unlocked.sheetPortrait != null ? unlocked.sheetPortrait : unlocked.portrait) : null);
     }
 
     void Play(string name, Sprite picture)

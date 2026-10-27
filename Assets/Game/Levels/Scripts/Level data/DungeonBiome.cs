@@ -2,6 +2,12 @@ using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+// All serialized by integer: append only.
+// What a biome's floors are built as: walled rooms, or a board game of printed tiles on the table.
+public enum DungeonFloorKind { Dungeon = 0, [InspectorName("Board game")] Boardgame = 1 }
+// How a board floor comes onto the table: room by room as its doors open, or all of it at once.
+public enum BoardRoomReveal { [InspectorName("As their doors open")] DoorByDoor = 0, [InspectorName("All at once")] WholeFloor = 1 }
+
 // One stretch of a dungeon run: cellars, crypt, caves. A level lists its biomes in order with a
 // floor count each (TableLevelData.stages). Everything that makes a biome feel different lives
 // here: how it looks and sounds, what lives in it and how densely, what it drops, and the guardian
@@ -16,6 +22,17 @@ public class DungeonBiome : ScriptableObject
 
     [TabGroup(Look), InfoBox("Lists in this biome are added to its level's base biome's, which every floor shares. Put things all stages use on the base biome; put what makes this stage different here.", VisibleIf = "@!isLevelBase")]
     [TabGroup(Look)] public string displayName = "The Crypt";
+    [TabGroup(Look), Tooltip("Dungeon: walled rooms with ceilings. Board game: the same rooms built as printed tiles on the table, no walls (the board's pieces and light are on the level's base biome, Level tab). Each floor is built as its own biome says, so a run can go from one to the other.")]
+    public DungeonFloorKind kind;
+    [TabGroup(Look), ShowIf(nameof(IsBoard)), LabelText("Rooms appear"), Tooltip("As their doors open: only the rooms reachable from the start are on the table; opening a door deals in the rooms behind it, tile by tile. All at once: the whole floor is built from the start, as on a walled dungeon.")]
+    public BoardRoomReveal boardReveal;
+    public bool IsBoard => kind == DungeonFloorKind.Boardgame;
+    [TabGroup(Look), ShowIf("@IsBoard && !isLevelBase"), Tooltip("A board stage in a level of walled floors (a forest under the cellars): its own board pieces and board light (the Level tab) instead of the level's.")]
+    public bool ownBoardPieces;
+    [TabGroup(Look), HideIf(nameof(isLevelBase)), Tooltip("Leave out the level's room and corridor styles, furnishing rules and props: this biome's floors use only its own (a forest stage in a dungeon of cellars). Its first room style stands in for the level's default style.")]
+    public bool ownLook;
+    [TabGroup(Look), InlineProperty, HideLabel, Title("Wild ground", "Raised banks of earth or rock round the rooms and paths, with growth on them. Board floors: they fill the table round the board. Walled floors: they stand in for the walls (Roofed keeps the ceilings, for a cave).", HorizontalLine = false)]
+    public BoardWilds wilds = new();
     [TabGroup(Look), InfoBox("A level's base biome: what every floor of the level shares (its Level tab, room features and lists; a stage's biome adds its own lists). On a level without stages every floor is this biome.", VisibleIf = nameof(isLevelBase))]
     [TextArea, Tooltip("Posted to the message log when the run enters this biome. Keep it short and plain.")]
     public string entryMessage;
@@ -45,6 +62,8 @@ public class DungeonBiome : ScriptableObject
     bool UsesPreset => lighting != Lighting.Custom;
     [TabGroup(Look), Tooltip("Skip the Lighting Manager's dungeon darkness here: the preset's ambient light reaches everywhere, so unlit places stay visible.")]
     public bool litThroughout;
+    [TabGroup(Look), ShowIf(nameof(litThroughout)), MinMaxSlider(0, 120, true), LabelText("Distance fog"), Tooltip("Lit throughout only: the floor fades into its lighting's fog colour from the first distance to the second (metres from the eye), the depth of a forest at night. 0 to 0: no fog.")]
+    public Vector2 fog;
     [TabGroup(Look), Tooltip("Board-game levels: light the board with this biome's lighting above instead of the room's own light (the level's Room Lighting), so each biome of a board level can look different.")]
     public bool lightBoard;
     [System.Serializable]
@@ -60,6 +79,12 @@ public class DungeonBiome : ScriptableObject
     public RoomTemplateChoice[] roomTemplates = new RoomTemplateChoice[0];
     [TabGroup(RoomsTab), Range(0f, 1f), Tooltip("Share of the rooms that get a hand-built room from the list above (when one suits them).")]
     public float templateChance = .7f;
+    [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Min(0), Tooltip("Rooms on each floor of this biome. 0: the level's Room Count.")]
+    public int roomCount;
+    [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Range(.5f, 2.5f), Tooltip("Generated rooms this much wider and deeper than the level's Room Size (a forest's clearings).")]
+    public float roomSizeScale = 1f;
+    [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Tooltip("No doors between rooms on this biome's floors (the starting room's door too): a forest has none.")]
+    public bool noDoors;
     [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Tooltip("Use the room features below on this biome's floors instead of the level's (its base biome's Room Features).")]
     public bool overrideDungeonSettings;
     [TabGroup(RoomsTab), ShowIf("@overrideDungeonSettings || isLevelBase"), InfoBox("Room events, heights and room light on every floor of the level. A stage's biome can replace them (its Override Dungeon Settings).", VisibleIf = nameof(isLevelBase))]
@@ -172,23 +197,31 @@ public class DungeonBiome : ScriptableObject
     [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), AssetsOnly, LabelText("Shop Room"), Tooltip("Room template the merchant's room is built from (a Merchant socket marks where he stands). Empty puts him in a quiet side room as it is.")]
     public GameObject shopRoom;
 
-    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), Title("Board", "Board-game levels only: the tiles' printed tops use the floor materials; these make the rest.", HorizontalLine = false), Tooltip("The cut edge of a ground-level tile: layers of card.")]
+    // A level's base biome, or a board stage with its own board pieces (ownBoardPieces).
+    bool HoldsBoardPieces => isLevelBase || (IsBoard && ownBoardPieces);
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), Title("Board", "Board-game floors only (a biome whose Kind is Board game): the tiles' printed tops use the floor materials; these make the rest.", HorizontalLine = false), Tooltip("The cut edge of a ground-level tile: layers of card.")]
     public Material boardEdgeMaterial;
-    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), Tooltip("Printed grid over each tile (transparent).")]
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), Tooltip("Printed grid over each tile (transparent).")]
     public Material boardGridMaterial;
-    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), Tooltip("The bottom of a pit on the board (a template's Pit floor cut): the tiles there are taken away down to the table and this dark card lies in the hole. Empty uses the edge material.")]
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), Tooltip("The bottom of a pit on the board (a template's Pit floor cut): the tiles there are taken away down to the table and this dark card lies in the hole. Empty uses the edge material.")]
     public Material boardPitMaterial;
-    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), Range(0, 8), Tooltip("How vertical the board is. The tallest room rises to its layer height times this; about half the other rooms keep their level, some dip lower and some climb part of the way. 1 keeps the layers as set, below 1 flattens. Rooms that would need too steep a stair are lifted to fit.")]
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), Tooltip("Water standing in every pit on the board (a pond), a little under the tiles' top. Empty: dry pits.")]
+    public Material boardPitWater;
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), Range(0, 8), Tooltip("How vertical the board is. The tallest room rises to its layer height times this; about half the other rooms keep their level, some dip lower and some climb part of the way. 1 keeps the layers as set, below 1 flattens. Rooms that would need too steep a stair are lifted to fit.")]
     public float boardVerticality = 1f;
-    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), Tooltip("Soft taps played as tiles land when a room is revealed (Tools/board_tap.py makes them).")]
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), Tooltip("Soft taps played as tiles land when a room is revealed (Tools/board_tap.py makes them).")]
     public AudioClip[] boardTileTaps = new AudioClip[0];
-    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), AssetsOnly, Tooltip("Board doors stand between two of these (trees, for a forest) instead of a stone arch with a beam. Empty builds the arch.")]
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), AssetsOnly, Tooltip("Board doors stand between two of these (trees, for a forest) instead of a stone arch with a beam. Empty builds the arch.")]
     public GameObject[] boardDoorPosts = new GameObject[0];
-    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), AssetsOnly, Tooltip("Cells a room's shape leaves out inside it (between the columns of a pillar hall, the middle of a ring) become low mounds with one of these on top, instead of holes in the board. Empty leaves the holes.")]
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), AssetsOnly, Tooltip("Cells a room's shape leaves out inside it (between the columns of a pillar hall, the middle of a ring) become low mounds with one of these on top, instead of holes in the board. Empty leaves the holes.")]
     public GameObject[] boardMoundProps = new GameObject[0];
-    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), Title("Board light", "The light hung over a board level, like a lamp over a gaming table: it lights every room.", HorizontalLine = false)]
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), Title("Board light", "The light hung over a board level, like a lamp over a gaming table: it lights every room.", HorizontalLine = false)]
     [ColorUsage(false)] public Color boardLightColor = new Color(1f, .86f, .68f);
-    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), Min(0)] public float boardLightIntensity = 2600f;
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), Min(0)] public float boardLightIntensity = 2600f;
+    [TabGroup(LevelTab), ShowIf(nameof(HoldsBoardPieces)), Range(0, 70), Tooltip("How far the board light leans from straight down (degrees): a low moon rakes across the board, so trees, banks and rocks throw long shadows. 0 hangs it straight over the board.")]
+    public float boardLightAngle;
+    [TabGroup(LevelTab), ShowIf("@HoldsBoardPieces && boardLightAngle > 0"), Range(0, 360), Tooltip("The side the leaning board light comes from (degrees round the board, 0 = from the north).")]
+    public float boardLightFrom = 220f;
 
     public DungeonMaster.Line PickEntryLine()
     {
@@ -214,8 +247,8 @@ public class DungeonBiome : ScriptableObject
         "m_Script", nameof(isLevelBase), nameof(defaultStyle), nameof(corridorsCopyConnectedRoomStyle), nameof(kitModels),
         nameof(torchesPerRoom), nameof(litRoomChance), nameof(corridorTorchChance), nameof(darkRoomLight), nameof(furnishEntranceRims),
         nameof(destructiblesPerRoom), nameof(chestTiers), nameof(shopRoom), nameof(boardEdgeMaterial), nameof(boardGridMaterial),
-        nameof(boardPitMaterial), nameof(boardVerticality), nameof(boardTileTaps), nameof(boardDoorPosts), nameof(boardMoundProps),
-        nameof(boardLightColor), nameof(boardLightIntensity), nameof(roomFeatures), nameof(overrideDungeonSettings),
+        nameof(boardPitMaterial), nameof(boardPitWater), nameof(boardVerticality), nameof(boardTileTaps), nameof(boardDoorPosts), nameof(boardMoundProps),
+        nameof(boardLightColor), nameof(boardLightIntensity), nameof(boardLightAngle), nameof(boardLightFrom), nameof(roomFeatures), nameof(overrideDungeonSettings),
         nameof(roomStyles), nameof(corridorStyles), nameof(propRules),
     };
     public static bool IsLevelSide(string field) => LevelSide.Contains(field);

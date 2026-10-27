@@ -109,7 +109,13 @@ public class TavernHearth : MonoBehaviour, IInteractable
 
     void BurnLow()
     {
-        foreach (var l in lights) if (l != null) l.intensity *= embers;
+        // A flickering light rewrites its intensity every frame from its own scale, so it burns low through that.
+        foreach (var l in lights)
+        {
+            if (l == null) continue;
+            if (l.TryGetComponent<TorchFlicker>(out var flicker)) flicker.scale *= embers;
+            else l.intensity *= embers;
+        }
         foreach (var f in flames)
             if (f != null) { var main = f.main; main.startSizeMultiplier *= .5f; var emission = f.emission; emission.rateOverTimeMultiplier *= .4f; }
     }

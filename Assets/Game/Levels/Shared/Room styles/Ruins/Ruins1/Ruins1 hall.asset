@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48e1a08511ae4bb89e9a2ba01ad45eb5, type: 3}
+  m_Name: Ruins1 hall
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomStyle
+  bottomWall: {fileID: 2100000, guid: 96a47a45a034f884d8475e1cf520c25d, type: 2}
+  upperWall: {fileID: 2100000, guid: 96a47a45a034f884d8475e1cf520c25d, type: 2}
+  floor: {fileID: 2100000, guid: 16816bec871112a4e93c93a219257498, type: 2}
+  ceiling: {fileID: 2100000, guid: 1df95358a32243d4d8fd471b4ae917b7, type: 2}
+  hideTrims: 1
+  trim: {fileID: 2100000, guid: 2ad539abd8092d246a4890babd2086d0, type: 2}
+  wood: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
+  metal: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
+  wallBaseWeight: 10
+  wallVariants:
+  - material: {fileID: 2100000, guid: 10b80d3f937155f48a022b3e86b3b93d, type: 2}
+    weight: 4
+    rows: 0
+  - material: {fileID: 2100000, guid: b3aa510d9fadf21469224e98ddbbf3e6, type: 2}
+    weight: 4
+    rows: 0
+  - material: {fileID: 2100000, guid: af31db5fa9720074eb66c3eb8a1ef6e0, type: 2}
+    weight: 1.5
+    rows: 0
+  floorBaseWeight: 10
+  floorVariants:
+  - material: {fileID: 2100000, guid: 264be4c7cd20d424b8a1bb29d926bef2, type: 2}
+    weight: 4
+    rows: 0
+  - material: {fileID: 2100000, guid: 9de0c092ef68dab4baeea71c775f6cde, type: 2}
+    weight: 3
+    rows: 0
+  - material: {fileID: 2100000, guid: 1d6eac63b09ab8f41b60b37f9f3fb8b6, type: 2}
+    weight: 1.5
+    rows: 0
+  wallDecor: []
+  wallDecorPerTenFaces: 1
+  corridorDressing: {fileID: 0}
+  dressingSpacing: 3
+  stretchDressingToCeiling: 1

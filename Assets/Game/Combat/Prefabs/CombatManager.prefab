@@ -302,22 +302,7 @@ MonoBehaviour:
   blockFrontalDot: -0.3
   blockStaminaCost: 12
   shieldStaminaPerSecond: 4
-  enableShieldBash: 1
-  shieldBashCooldown: 5
-  shieldBashSpeed: 15
-  shieldBashDistance: 6
-  shieldBashWindup: 0.06
-  shieldBashRecovery: 0.3
-  shieldBashAngle: 35
-  shieldBashDamage: 3
-  shieldBashDamagePerArmor: 0
-  shieldBashStun: 1
-  shieldBashKnockback: 1.5
-  shieldBashStaminaCost: 10
-  shieldBashGlow: {r: 1.8, g: 1.55, b: 1.05, a: 1}
-  shieldBashStreaks: {fileID: 7664258301829467767, guid: 114de097bd831cb42b791f59ed3bd225, type: 3}
-  shieldBashAudio: {fileID: 11400000, guid: af790c5f7f8ac244b9f1730ba5b5cbcf, type: 2}
-  shieldBashHitAudio: {fileID: 11400000, guid: 18b9b7795bb3b9f429495a68707556f6, type: 2}
+  shieldBash: {fileID: 11400000, guid: 05f425b93046cd74a80863b65255ba10, type: 2}
   landedCameraKick: 0.85
   hurtCameraKick: 2
   blockCameraKick: 0.8
