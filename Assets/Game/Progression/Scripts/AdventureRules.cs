@@ -21,6 +21,4 @@ public class AdventureRules : ScriptableObject
     public float strengthAttack = 1, constitutionArmor = .25f, constitutionHealth = 0;
     public float intelligenceMana = 0, intelligenceSpell = .035f;
     public float dexteritySpeed = .01f;
-    public float perceptionRangePerPoint = .04f, perceptionRangeCap = .5f;
-    public float charismaDiscountPerPoint = .02f, charismaDiscountCap = .3f;
 }
