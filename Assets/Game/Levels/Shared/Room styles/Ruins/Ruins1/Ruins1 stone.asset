@@ -20,7 +20,7 @@ MonoBehaviour:
   trim: {fileID: 2100000, guid: 2ad539abd8092d246a4890babd2086d0, type: 2}
   wood: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
   metal: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
-  wallBaseWeight: 10
+  wallBaseWeight: 9.81
   wallVariants:
   - material: {fileID: 2100000, guid: 96a47a45a034f884d8475e1cf520c25d, type: 2}
     weight: 5
