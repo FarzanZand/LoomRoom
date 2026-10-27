@@ -23,8 +23,6 @@ public class TableManager : Singleton<TableManager>, IInteractable
     public GameObject DM;
     public Transform dmPlacement;
     [SerializeField] string prompt = "Play";
-    [SerializeField, Tooltip("Said when the table is used before the player has talked to the Dungeon Master.")]
-    DungeonMaster.Line talkFirst;
     [SerializeField, Tooltip("Said when the table is used during the win ending, while the door stands open.")]
     DungeonMaster.Line endingLine = new() { text = "Not now. The door's open. Go and get some air." };
     [SerializeField, Tooltip("Said when the table is used while the spend-spoils quest is open (Blocking first).")]
@@ -103,7 +101,6 @@ public class TableManager : Singleton<TableManager>, IInteractable
         loader = GetComponent<TableLevelLoader>();
         if (loader == null) loader = gameObject.AddComponent<TableLevelLoader>();
     }
-    // Until the Dungeon Master has introduced the game, the table sends the player to him.
     public void Interact(Character who)
     {
         if (!CanInteract(who)) return;
@@ -122,8 +119,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
         }
         // The whole dungeon won: the prototype's thank-you instead of a new run.
         if ((!CampaignManager.Active || CampaignManager.Instance.playEndingOnWin) && TryGetComponent<PrototypeEnd>(out var end) && end.TryPlay()) return;
-        if (DungeonMasterSeat.Introduced) EnterTable();
-        else if (talkFirst != null && !talkFirst.IsEmpty && DungeonMaster.HasInstance && !DungeonMaster.Instance.Speaking) DungeonMaster.Say(talkFirst);
+        EnterTable();
     }
     public void EnterTable() => Play();
 

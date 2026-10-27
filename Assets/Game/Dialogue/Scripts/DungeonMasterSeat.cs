@@ -2,7 +2,7 @@ using UnityEngine;
 
 // The Dungeon Master in the room, seated across the table. Plays the talking gesture whenever a line
 // is said in person, and talking to them starts their conversation in the Dialogue Database: the
-// introduction the first time (the table stays shut until then), and afterwards the everyday talk.
+// introduction the first time, and afterwards the everyday talk (the table never waits for either).
 // When the introduction ends, or the talk ends on a choice that sets the Lua variable PlayNow, the
 // player goes straight to the table. Sits on
 // the DM's interaction trigger, so it is used instead of the NpcBrain conversation. While the player is
