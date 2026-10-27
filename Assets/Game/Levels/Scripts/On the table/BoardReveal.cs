@@ -68,8 +68,8 @@ public class BoardReveal : MonoBehaviour
 
         HangBoardLight();
         foreach (var region in Reachable()) shown.Add(region);
-        // Reveal All (the level's option): every room is on the table from the start, as on a walled dungeon.
-        if (generated.LevelData.boardRevealAll) for (int i = 0; i < regions.Length; i++) shown.Add(i);
+        // Rooms appear All at once (the biome's option): every room is on the table from the start, as on a walled dungeon.
+        if (generated.LevelData.RevealWholeFloor(generated.FloorNumber)) for (int i = 0; i < regions.Length; i++) shown.Add(i);
         for (int i = 0; i < regions.Length; i++)
         {
             bool on = shown.Contains(i);

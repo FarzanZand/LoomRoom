@@ -257,7 +257,7 @@ public class TableLevelLoader : MonoBehaviour
                 reveal = gameObject.AddComponent<TableLevelReveal>();
                 yield return RunGuarded(reveal.Play(Dungeon, revealSettings, () =>
                 {
-                    if (lighting != null) lighting.BlendToMood(level.IsBoard ? level.BoardLighting(lighting, FloorNumber) : level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
+                    if (lighting != null) lighting.BlendToMood(level.BoardOn(FloorNumber) ? level.BoardLighting(lighting, FloorNumber) : level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
                 }));
             }
             if (faded)
@@ -372,7 +372,7 @@ public class TableLevelLoader : MonoBehaviour
         // Portal pockets are built with the floor from its seed (each portal keeps its own until the floor goes).
         if(level.IsDungeon) PortalArch.PrebuildAll(Dungeon,unchecked(runSeed+(FloorNumber-1)*104729));
         if(lighting!=null && !deferPlayerSwitch) {
-            if(level.IsBoard) lighting.BlendToMood(level.BoardLighting(lighting,FloorNumber),0);
+            if(level.BoardOn(FloorNumber)) lighting.BlendToMood(level.BoardLighting(lighting,FloorNumber),0);
             else if(level.IsDungeon) lighting.BlendToMood(level.DungeonLighting(FloorNumber),0);
             else if(level.mood!=null) lighting.BlendToMood(level.mood,0);
             else lighting.RestoreDefault();

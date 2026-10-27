@@ -37,10 +37,17 @@ public partial class ProgressionManager
     public class Milestone
     {
         [HorizontalGroup("Row", 60), HideLabel, Tooltip("The value the track reaches (15 or 25, then 50).")] public int value = 25;
-        [HorizontalGroup("Row"), LabelWidth(50), Tooltip("What it unlocks; \"?\" until designed.")] public string unlock = "?";
-        [Tooltip("Shown on the sheet's hover card.")] public string description;
-        [PreviewField(32), Tooltip("The unlock's icon on the sheet (empty: \"?\").")] public Sprite icon;
+        [HorizontalGroup("Row"), LabelWidth(50), Tooltip("The ability it unlocks, an asset in its skill's folder (Characters/Skills/<Skill>/) that holds its name, icon and description. Empty: the fields below, \"?\" until designed.")] public SkillAbility ability;
+        [HideIf(nameof(ability)), Tooltip("What it unlocks while it has no ability; \"?\" until designed.")] public string unlock = "?";
+        [HideIf(nameof(ability)), Tooltip("Shown on the sheet's hover card.")] public string description;
+        [HideIf(nameof(ability)), PreviewField(32), Tooltip("The unlock's icon on the sheet (empty: \"?\").")] public Sprite icon;
         [Tooltip("The trophy the DM hands over: its world model hangs on the wall, its icon shows in the key items.")] public ItemData trophy;
+
+        // What the sheet and the character panel show: the ability's own words when there is one.
+        public string Name => ability != null ? ability.displayName : unlock;
+        public string Description => ability != null ? ability.description : description;
+        public Sprite Icon => ability != null ? ability.icon : icon;
+        public bool Known => !string.IsNullOrEmpty(Name) && Name != "?";
     }
 
     [Serializable]
@@ -94,6 +101,11 @@ public partial class ProgressionManager
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("After Blocking's first trophy (Deflect) is mounted for the first time.")]
     public DungeonMaster.Line shieldBashMounted = new() { text = "Hold your shield up against arrows and fire now. They go back where they came from." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Min(0), Tooltip("Seconds after the room player is free before the lesson's first line.")] public float lessonDelay = 2.5f;
+    [TabGroup("Meta progression/Tabs", "Sheet"), Tooltip("The character sheet's portraits in colour (each class's Sheet Portrait Colour) instead of drawn in pencil (Sheet Portrait).")]
+    public bool colourSheetPortraits;
+
+    // The portrait the sheet shows for a class, in the look picked above.
+    public Sprite SheetPortrait(AdventurerClass c) => c == null ? null : colourSheetPortraits && c.sheetPortraitColour != null ? c.sheetPortraitColour : c.sheetPortrait;
 
     // Story flags of the lesson; meta.* flags hold the state.
     public const string LedgerIntroFlag = "story.ledgerIntro", LedgerSaidFlag = "story.ledgerSaid", BlockingTaughtFlag = "story.blockingTaught", BashMountedFlag = "story.bashMounted";
@@ -390,6 +402,7 @@ public partial class ProgressionManager
         // Once, after the save is read: a save left in the lesson with too few spoils to buy Blocking is put right.
         if (!lessonBankChecked) { lessonBankChecked = true; if (TopUpForLesson() > 0) MetaChanged?.Invoke(); }
         UpdateSheetQuest();
+        UpdatePosterQuest();
         if (lessonRoutine != null) return;
         if (HasFlag(LedgerIntroFlag) && !HasFlag(LedgerSaidFlag) && RoomPlayerFree) lessonRoutine = StartCoroutine(SayLesson());
     }

@@ -231,7 +231,8 @@ public static partial class AssetStudioWorld
         level.MakeBaseBiome();
         level.displayName = name;
         level.description = "";
-        level.kind = board ? TableLevelKind.Boardgame : TableLevelKind.Dungeon;
+        level.kind = TableLevelKind.Dungeon;
+        if (level.baseBiome != null) { level.baseBiome.kind = board ? DungeonFloorKind.Boardgame : DungeonFloorKind.Dungeon; EditorUtility.SetDirty(level.baseBiome); }
         level.stages = new TableLevelData.BiomeStage[0];
         level.pocket = false;
         level.fixedSeed = 0;

@@ -201,7 +201,7 @@ public static partial class MetaProgressionSetup
             if (pm.tracks.Count == 0)
             {
                 Sprite Icon(string file) => AssetDatabase.LoadAssetAtPath<Sprite>(SkillIcons + file);
-                Sprite SkillIcon(AdventureSkill s) => AssetDatabase.LoadAssetAtPath<AdventureSkillData>($"Assets/Game/Progression/Data/Skills/{s}.asset")?.icon;
+                Sprite SkillIcon(AdventureSkill s) => AssetDatabase.LoadAssetAtPath<AdventureSkillData>($"Assets/Game/Characters/Skills/{s}/{s}.asset")?.icon;
                 void Skill(AdventureSkill s, string first, string second, string trophyFolder1, string trophy1, string trophyFolder2, string trophy2)
                 {
                     var t = new ProgressionManager.MetaTrack { id = s.ToString().ToLowerInvariant(), displayName = s.ToString(), kind = MetaTrackKind.Skill, skill = s, icon = SkillIcon(s), givenLevels = 2, levels = 10, perLevel = 5 };

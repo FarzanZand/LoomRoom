@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Board-game levels (TableLevelKind.Boardgame): the same layout, rooms and content, built as printed tiles
+// Board-game floors (a biome whose Kind is Board game): the same layout, rooms and content, built as printed tiles
 // lying on the table instead of walled rooms. Rooms can be raised a layer or two; the short passages
 // between them become small stairs. An invisible rim keeps everyone on the tiles, and BoardReveal keeps
 // whatever lies behind a closed door off the table until it opens.
 public partial class DungeonGenerator
 {
-    bool Board => data != null && data.kind == TableLevelKind.Boardgame;
+    bool Board => data != null && data.BoardOn(FloorNumber);   // the floor's biome's Kind
 
     float[,] elevation;               // top of the floor at each cell's centre, above the table
     float[,] stairFrom, stairTo;      // passage cells: floor height at the edge toward each end

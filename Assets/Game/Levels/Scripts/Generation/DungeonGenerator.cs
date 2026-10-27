@@ -485,9 +485,6 @@ public partial class DungeonGenerator : MonoBehaviour
         gameObject.AddComponent<DungeonHud>().Initialize(this);
         if (Board) gameObject.AddComponent<BoardReveal>().Initialize(this);
         watch.Stop();GenerationMilliseconds=watch.Elapsed.TotalMilliseconds;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        Debug.Log($"Dungeon seed {seed}, floor {floorNumber}: {Layout.rooms.Count} rooms, {Layout.Connections.Count} connections, generated in {GenerationMilliseconds:F0} ms.",this);
-#endif
     }
 
     // Once the floor is in play (after the table reveal, which lifts each small chunk as one piece): walls, floors and

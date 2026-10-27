@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// The shield bash (CombatManager > Player > Shield bash): with the shield up, attack thrusts it forward and the
+// The shield bash (Blocking's ability, Characters/Skills/Blocking/Shield bash, set on CombatManager > Player > Shield bash): with the shield up, attack thrusts it forward and the
 // player dashes ahead until the first enemy in the way, hits it with Holy damage (more for more armour) and stuns it.
 // One use per cooldown; while it cools down, block and attack swing as usual (PlayerCombat asks TryStart first).
 // The arms play Shield_Bash on the LeftArm layer (trigger ShieldBash, state tag ShieldBash), the shield glows and gold
@@ -27,7 +27,8 @@ public class ShieldBash : MonoBehaviour
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor"), ColorId = Shader.PropertyToID("_Color");
     Light glowLight;
 
-    static CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
+    static CombatManager Combat => CombatManager.HasInstance ? CombatManager.Instance : null;
+    static ShieldBashAbility Tuning => Combat != null ? Combat.shieldBash : null;
 
     // Winding up, dashing or recovering: the player neither swings nor guards.
     public bool Busy => phase != Phase.None;
@@ -36,7 +37,7 @@ public class ShieldBash : MonoBehaviour
     public bool HoldsAttacks => phase == Phase.Windup || phase == Phase.Dash;
     public bool Dashing => phase == Phase.Dash;
     public float CooldownLeft => Mathf.Max(0f, readyAt - Time.time);
-    public float CooldownTotal => Tuning != null ? Tuning.shieldBashCooldown : 0f;
+    public float CooldownTotal => Tuning != null ? Tuning.cooldown : 0f;
     bool ShieldHeld => player.Equipment != null && player.Equipment.Get(EquipmentSlot.LeftHand)?.itemType == ItemType.Shield;
 
     void Awake()
@@ -54,22 +55,22 @@ public class ShieldBash : MonoBehaviour
     public bool TryStart()
     {
         var t = Tuning;
-        if (t == null || !t.enableShieldBash || Busy || Time.time < readyAt || !player.IsActive || !ShieldHeld) return false;
+        if (t == null || !t.enabled || Busy || Time.time < readyAt || !player.IsActive || !ShieldHeld) return false;
         if (motor != null && !motor.IsGrounded) return false;
         var stats = player.Stats;
-        if (stats != null && stats.HasStat(StatType.MaxStamina) && t.shieldBashStaminaCost > 0f &&
-            !stats.TryUseStamina(t.shieldBashStaminaCost, player.PlayerData != null ? player.PlayerData.staminaRegenDelay : 1f))
+        if (stats != null && stats.HasStat(StatType.MaxStamina) && t.staminaCost > 0f &&
+            !stats.TryUseStamina(t.staminaCost, player.PlayerData != null ? player.PlayerData.staminaRegenDelay : 1f))
             return false;   // TryUseStamina reports it
-        readyAt = Time.time + t.shieldBashCooldown;
+        readyAt = Time.time + t.cooldown;
         var yaw = player.Look != null ? player.Look.YawTransform : transform;
         direction = yaw.forward; direction.y = 0f;
         direction = direction.sqrMagnitude > .001f ? direction.normalized : transform.forward;
         phase = Phase.Windup;
-        phaseEnds = Time.time + t.shieldBashWindup;
+        phaseEnds = Time.time + t.windup;
         travelled = 0f;
         glow = 1f;
         AnimatorHelper.SetTrigger(arms, bashTrigger);
-        if (t.shieldBashAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(t.shieldBashAudio);
+        if (t.swingAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(t.swingAudio);
         CollectShield();
         return true;
     }
@@ -103,26 +104,26 @@ public class ShieldBash : MonoBehaviour
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.CompleteQuest(ProgressionManager.ShieldBashQuest);
     }
 
-    void UpdateDash(CombatManager t)
+    void UpdateDash(ShieldBashAbility t)
     {
         // Measured, not assumed: a wall or a ledge stops the dash short.
         var moved = transform.position - lastPosition; moved.y = 0f;
-        float step = t.shieldBashSpeed * Time.deltaTime;
+        float step = t.speed * Time.deltaTime;
         if (travelled > .3f && moved.magnitude < step * .25f) { EndDash(t); return; }
         travelled += moved.magnitude;
         lastPosition = transform.position;
 
         var target = FindTarget(t, step);
         if (target != null) { Hit(target, t); EndDash(t); return; }
-        if (travelled >= t.shieldBashDistance) { EndDash(t); return; }
-        if (motor != null) motor.DashVelocity = direction * t.shieldBashSpeed;
+        if (travelled >= t.distance) { EndDash(t); return; }
+        if (motor != null) motor.DashVelocity = direction * t.speed;
     }
 
     // The nearest living enemy ahead within reach of this frame's step, in the dash's cone and in sight.
-    EnemyBrain FindTarget(CombatManager t, float step)
+    EnemyBrain FindTarget(ShieldBashAbility t, float step)
     {
-        float reach = t.personalSpace + .45f + step;
-        float cos = Mathf.Cos(t.shieldBashAngle * Mathf.Deg2Rad);
+        float reach = Combat.personalSpace + .45f + step;
+        float cos = Mathf.Cos(t.angle * Mathf.Deg2Rad);
         EnemyBrain best = null; float bestDistance = float.MaxValue;
         foreach (var enemy in EnemyBrain.Active)
         {
@@ -134,7 +135,7 @@ public class ShieldBash : MonoBehaviour
             float distance = to.magnitude;
             if (distance > reach || distance >= bestDistance) continue;
             if (distance > .1f && Vector3.Dot(to / distance, direction) < cos) continue;
-            if (!t.HasMeleeLineOfSight(player, enemy.Character, Chest(enemy.Character))) continue;
+            if (!Combat.HasMeleeLineOfSight(player, enemy.Character, Chest(enemy.Character))) continue;
             best = enemy; bestDistance = distance;
         }
         return best;
@@ -146,38 +147,38 @@ public class ShieldBash : MonoBehaviour
         return col != null ? col.bounds.center : c.transform.position + Vector3.up;
     }
 
-    void Hit(EnemyBrain enemy, CombatManager t)
+    void Hit(EnemyBrain enemy, ShieldBashAbility t)
     {
         var target = enemy.Character;
         // Stunned first, so the hit's hurt reaction plays (a swing in progress would swallow it).
-        enemy.Stun(t.shieldBashStun);
+        enemy.Stun(t.stun);
         // All the player's armour, the shield's own (only counted on a block) included: it is a shield blow.
         float armor = player.Stats != null ? player.Stats.ArmorWithoutShield + player.Stats.BlockArmor : 0f;
         var chest = Chest(target);
         var col = target.GetComponent<Collider>();
         var info = new DamageInfo
         {
-            Amount = t.shieldBashDamage + Mathf.Max(0f, armor) * CombatManager.ArmorPerPoint * t.shieldBashDamagePerArmor + (player.Stats != null ? Mathf.Max(0f, player.Stats.GetFinal(StatType.ShieldBashDamage)) : 0f),
+            Amount = t.damage + Mathf.Max(0f, armor) * CombatManager.ArmorPerPoint * t.damagePerArmor + (player.Stats != null ? Mathf.Max(0f, player.Stats.GetFinal(StatType.ShieldBashDamage)) : 0f),
             Source = player,
             Weapon = player.Equipment != null ? player.Equipment.Get(EquipmentSlot.LeftHand) : null,
             HitPoint = col != null ? col.ClosestPoint(transform.position + Vector3.up * (chest.y - transform.position.y)) : chest,
             Direction = direction,
             SwingDirection = direction,
-            KnockbackForce = t.ScaleKnockback(t.shieldBashKnockback),
+            KnockbackForce = Combat.ScaleKnockback(t.knockback),
             Magic = true,   // Holy: no armour taken off, no shield blocks it
         };
         var damageable = target.GetComponent<IDamageable>() ?? target.GetComponentInChildren<IDamageable>();
         damageable?.TakeDamage(info);
-        if (t.shieldBashHitAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(t.shieldBashHitAudio, info.HitPoint);
-        NoiseEvents.Report(transform.position, t.fightNoiseRadius, player);
+        if (t.hitAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(t.hitAudio, info.HitPoint);
+        NoiseEvents.Report(transform.position, Combat.fightNoiseRadius, player);
     }
 
-    void EndDash(CombatManager t)
+    void EndDash(ShieldBashAbility t)
     {
         if (motor != null) motor.DashVelocity = Vector3.zero;
         Streaks(false);
         phase = Phase.Recovery;
-        phaseEnds = Time.time + t.shieldBashRecovery;
+        phaseEnds = Time.time + t.recovery;
     }
 
     void Stop()
@@ -194,9 +195,9 @@ public class ShieldBash : MonoBehaviour
     void Streaks(bool on)
     {
         var t = Tuning;
-        if (on && streaks == null && t != null && t.shieldBashStreaks != null && player.CameraRig != null && player.CameraRig.Camera != null)
+        if (on && streaks == null && t != null && t.streaks != null && player.CameraRig != null && player.CameraRig.Camera != null)
         {
-            var go = Instantiate(t.shieldBashStreaks, player.CameraRig.Camera.transform);
+            var go = Instantiate(t.streaks, player.CameraRig.Camera.transform);
             go.transform.localPosition = Vector3.zero; go.transform.localRotation = Quaternion.identity;
             streaks = go.GetComponentInChildren<ParticleSystem>();
         }
@@ -231,11 +232,11 @@ public class ShieldBash : MonoBehaviour
     {
         var t = Tuning;
         if (shieldRenderers.Count == 0) return;
-        if (phase == Phase.Recovery && t != null) glow = Mathf.MoveTowards(glow, 0f, Time.deltaTime / Mathf.Max(.05f, t.shieldBashRecovery));
+        if (phase == Phase.Recovery && t != null) glow = Mathf.MoveTowards(glow, 0f, Time.deltaTime / Mathf.Max(.05f, t.recovery));
         else if (phase == Phase.None) glow = 0f;
         if (glow <= 0f) { RestoreShield(); return; }
         glowBlock ??= new MaterialPropertyBlock();
-        var gold = t != null ? t.shieldBashGlow : Color.white;
+        var gold = t != null ? t.glow : Color.white;
         var colour = Color.Lerp(Color.white, gold, glow);
         for (int i = 0; i < shieldRenderers.Count; i++)
         {

@@ -79,14 +79,14 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
         var def = progress.Definition(skill);
         string skillName = def != null ? def.displayName : skill.ToString();
         int rank = progress.Rank(skill);
-        bool known = !string.IsNullOrEmpty(m.unlock) && m.unlock != "?";
+        bool known = m.Known;
         var text = new System.Text.StringBuilder();
-        if (known && !string.IsNullOrEmpty(m.description)) text.Append(m.description).AppendLine().AppendLine();
+        if (known && !string.IsNullOrEmpty(m.Description)) text.Append(m.Description).AppendLine().AppendLine();
         if (meta.Trophy(track, m) == ProgressionManager.TrophyState.Mounted) text.Append($"<color={Good}>Learned</color> <color={Dim}>(trophy wall)</color>");
         else if (meta.Unlocked(track, m, rank)) text.Append($"<color={Good}>Learned</color>");
         else if (rank >= m.value) text.Append($"<color={Bad}>Locked</color>");
         else text.Append($"<color={Bad}>Locked</color> <color={Dim}>(rank {rank} / {m.value})</color>");
-        TooltipUI.Instance.ShowText(known ? m.unlock : "?", $"{skillName.ToUpperInvariant()}  {m.value}", text.ToString());
+        TooltipUI.Instance.ShowText(known ? m.Name : "?", $"{skillName.ToUpperInvariant()}  {m.value}", text.ToString());
     }
 
     public void Refresh(AdventurerProgress character, AdventureSkill shown)
@@ -119,11 +119,11 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
             var image = milestoneIcons[i];
             if (image != null)
             {
-                image.enabled = m.icon != null;
-                if (m.icon != null) image.sprite = m.icon;
+                image.enabled = m.Icon != null;
+                if (m.Icon != null) image.sprite = m.Icon;
                 image.color = learned ? Color.white : LockedTint;
             }
-            if (mark != null) { mark.text = m.icon != null ? "" : "?"; mark.color = learned ? Color.white : LockedTint; }
+            if (mark != null) { mark.text = m.Icon != null ? "" : "?"; mark.color = learned ? Color.white : LockedTint; }
         }
     }
 

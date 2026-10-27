@@ -2,6 +2,12 @@ using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+// All serialized by integer: append only.
+// What a biome's floors are built as: walled rooms, or a board game of printed tiles on the table.
+public enum DungeonFloorKind { Dungeon = 0, [InspectorName("Board game")] Boardgame = 1 }
+// How a board floor comes onto the table: room by room as its doors open, or all of it at once.
+public enum BoardRoomReveal { [InspectorName("As their doors open")] DoorByDoor = 0, [InspectorName("All at once")] WholeFloor = 1 }
+
 // One stretch of a dungeon run: cellars, crypt, caves. A level lists its biomes in order with a
 // floor count each (TableLevelData.stages). Everything that makes a biome feel different lives
 // here: how it looks and sounds, what lives in it and how densely, what it drops, and the guardian
@@ -16,6 +22,11 @@ public class DungeonBiome : ScriptableObject
 
     [TabGroup(Look), InfoBox("Lists in this biome are added to its level's base biome's, which every floor shares. Put things all stages use on the base biome; put what makes this stage different here.", VisibleIf = "@!isLevelBase")]
     [TabGroup(Look)] public string displayName = "The Crypt";
+    [TabGroup(Look), Tooltip("Dungeon: walled rooms with ceilings. Board game: the same rooms built as printed tiles on the table, no walls (the board's pieces and light are on the level's base biome, Level tab). Each floor is built as its own biome says, so a run can go from one to the other.")]
+    public DungeonFloorKind kind;
+    [TabGroup(Look), ShowIf(nameof(IsBoard)), LabelText("Rooms appear"), Tooltip("As their doors open: only the rooms reachable from the start are on the table; opening a door deals in the rooms behind it, tile by tile. All at once: the whole floor is built from the start, as on a walled dungeon.")]
+    public BoardRoomReveal boardReveal;
+    public bool IsBoard => kind == DungeonFloorKind.Boardgame;
     [TabGroup(Look), InfoBox("A level's base biome: what every floor of the level shares (its Level tab, room features and lists; a stage's biome adds its own lists). On a level without stages every floor is this biome.", VisibleIf = nameof(isLevelBase))]
     [TextArea, Tooltip("Posted to the message log when the run enters this biome. Keep it short and plain.")]
     public string entryMessage;
@@ -172,7 +183,7 @@ public class DungeonBiome : ScriptableObject
     [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), AssetsOnly, LabelText("Shop Room"), Tooltip("Room template the merchant's room is built from (a Merchant socket marks where he stands). Empty puts him in a quiet side room as it is.")]
     public GameObject shopRoom;
 
-    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), Title("Board", "Board-game levels only: the tiles' printed tops use the floor materials; these make the rest.", HorizontalLine = false), Tooltip("The cut edge of a ground-level tile: layers of card.")]
+    [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), Title("Board", "Board-game floors only (a biome whose Kind is Board game): the tiles' printed tops use the floor materials; these make the rest.", HorizontalLine = false), Tooltip("The cut edge of a ground-level tile: layers of card.")]
     public Material boardEdgeMaterial;
     [TabGroup(LevelTab), ShowIf(nameof(isLevelBase)), Tooltip("Printed grid over each tile (transparent).")]
     public Material boardGridMaterial;

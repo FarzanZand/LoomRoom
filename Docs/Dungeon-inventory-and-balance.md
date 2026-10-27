@@ -11,7 +11,7 @@ Paths are under `Assets/Game`.
 - `Items/Prefabs/Props/Equipment loot pouch.prefab`: the pickup visual for armour and other meshless items (InventoryManager's **Default Pickup Visual**). Lookup order: the item's Pickup Visual Prefab, its World Prefab, then the manager's fallback.
 - `Levels/Shared/Props/Chests/Supply chest.prefab`: the chest the level places. It opens its lid and releases loot once.
 - `Levels/Dungeon1/Dungeon balance.asset`: per-floor enemy scaling (damage +2, health +10%, armour +0.2 per floor after the first). Base values are on each enemy prefab's EnemyData and the TablePlayer prefab's PlayerData.
-- Starting kit: each class asset in `Progression/Data/Classes` (equipment, spells, supplies).
+- Starting kit: each class asset in `Characters/Classes` (equipment, spells, supplies).
 - Loot: biome loot profiles in `Levels/Dungeon1/Biomes`; see [Dungeon authoring](Dungeon-authoring.md#loot).
 
 ## Controls and behaviour

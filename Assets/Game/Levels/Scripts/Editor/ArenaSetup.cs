@@ -182,6 +182,7 @@ public static partial class ArenaSetup
         b.roomStyles = new[] { new DungeonStyleChoice { style = style, weight = 1f } };
         b.destructiblesPerRoom = Vector2Int.zero;
         // A board on the table, lit and edged as the Old Wood's was (the Old Wood is gone since 2026-10-27).
+        b.kind = DungeonFloorKind.Boardgame;
         b.boardLightColor = new Color(1f, .86f, .68f); b.boardLightIntensity = 2600f * .6f;   // pale sand takes less light than a forest floor
         b.boardGridMaterial = null; b.boardEdgeMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Levels/Shared/Board/Board edge.mat");
         EditorUtility.SetDirty(b);
@@ -262,7 +263,7 @@ public static partial class ArenaSetup
 
             // The crowd: the classes' pewter miniatures at a person's height, on tiers 5 and 6, turned to the sand.
             var minis = new List<GameObject>();
-            foreach (var g in AssetDatabase.FindAssets("t:AdventurerClass", new[] { "Assets/Game/Progression/Data/Classes" }))
+            foreach (var g in AssetDatabase.FindAssets("t:AdventurerClass", new[] { "Assets/Game/Characters/Classes" }))
             {
                 var c = AssetDatabase.LoadAssetAtPath<AdventurerClass>(AssetDatabase.GUIDToAssetPath(g));
                 if (c != null && c.miniature != null) minis.Add(c.miniature);
@@ -345,7 +346,7 @@ public static partial class ArenaSetup
         level.displayName = "The Arena";
         level.description = "One fight, in the sand.";
         level.layoutMode = DungeonLayoutMode.Authored;
-        level.kind = TableLevelKind.Boardgame;
+        level.kind = TableLevelKind.Dungeon;   // a board by its base biome's Kind (Biome below)
         Biome(level, style, log);
         // North at the top: the pit (1, the last room, so its stairs are hidden by ArenaFight), the landing (0) where the
         // player starts. At least 14 cells each way.

@@ -204,6 +204,8 @@ public partial class CampaignManager : Singleton<CampaignManager>
             else if (p.encounter.Locked && (p.encounter.deathsIn == p.encounter || p.encounter.deathsIn.kind != CampaignEncounterKind.Level))
                 Debug.LogError($"[Campaign] {p.encounter.name} counts deaths in {p.encounter.deathsIn.name}, where no run can be played: it never opens.", p.encounter);
             string id = p.encounter.id;
+            // Placeholders are never entered nor beaten, so several can share one (the act land markers do).
+            if (p.encounter.kind == CampaignEncounterKind.Placeholder) continue;
             if (seen.TryGetValue(id, out var other)) Debug.LogError($"[Campaign] places {other.name} and {p.name} share the encounter id '{id}': give the duplicate its own encounter.", p);
             else seen[id] = p;
         }
@@ -1195,6 +1197,31 @@ public partial class CampaignManager : Singleton<CampaignManager>
         figuresHome = null;
         if (picked != null) { progress?.SelectClass(picked); RememberClass(); }
         PlaceFigure(At);
+    }
+
+    // ── Choosing the hero in the room: the poster wall by the bed (ClassPosterWall) opens the same hero select ──
+
+    // Not in a run and not while the map view or another choice is open.
+    public bool CanChooseHeroInRoom => heroSelect != null && !heroSelect.Open && !changingClass && progress != null && progress.rules != null && !progress.InRun;
+
+    public void ChooseHeroInRoom()
+    {
+        if (CanChooseHeroInRoom) StartCoroutine(GuardedRoutine.Run(HeroInRoom(), _ => { heroSelect.Abort(); if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu); }));
+    }
+
+    IEnumerator HeroInRoom()
+    {
+        var classes = Array.FindAll(progress.rules.classes, c => c != null && c.Unlocked);
+        if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Menu);
+        // The map's figure follows the pick when the map is up on the table.
+        void Follow(AdventurerClass c) { if (figure != null) PlaceFigure(At, true); }
+        heroSelect.Shown += Follow;
+        AdventurerClass chosen = null;
+        try { yield return heroSelect.Choose(progress, classes, c => chosen = c); }
+        finally { heroSelect.Shown -= Follow; }
+        if (chosen != null) RememberClass();
+        if (figure != null) PlaceFigure(At, true);
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
     }
 
     static IEnumerator Pop(Transform t)

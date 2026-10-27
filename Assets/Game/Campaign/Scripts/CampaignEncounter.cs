@@ -42,7 +42,7 @@ public class CampaignEncounter : ScriptableObject
 
     public string KindName => kind switch
     {
-        CampaignEncounterKind.Level => level != null && level.kind == TableLevelKind.Boardgame ? "Board" : "Dungeon",
+        CampaignEncounterKind.Level => level != null && level.BoardOn(1) ? "Board" : "Dungeon",
         CampaignEncounterKind.Home => "Home",
         _ => "Unknown",
     };

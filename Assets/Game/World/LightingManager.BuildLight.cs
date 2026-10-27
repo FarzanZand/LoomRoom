@@ -25,7 +25,7 @@ public sealed partial class LightingManager
         if (!Application.isPlaying || nightLight == null) return;
         var loader = TableManager.Loader;
         var level = loader != null ? loader.Current : null;
-        bool floor = buildLight && loader != null && loader.Dungeon != null && level != null && level.IsDungeon && !level.IsBoard;
+        bool floor = buildLight && loader != null && loader.Dungeon != null && level != null && level.IsDungeon && !level.BoardOn(loader.FloorNumber);
         float dark = moodActive ? Mathf.Clamp01(displayedMood.darkness) : 0f;
         float share = floor ? 1f - dark : 0f;
         if (share <= .001f) { if (buildLightInstance != null) buildLightInstance.enabled = false; return; }

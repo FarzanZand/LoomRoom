@@ -272,7 +272,16 @@ public partial class DungeonGenerator
     {
         var template=templates[index];
         // Grown rooms built from a template footprint may be turned; the interior turns with them.
-        var instance=Instantiate(template.gameObject,Cell(Layout.RoomCenter(index)),Quaternion.Euler(0,90*Layout.RoomRotation(index),0),transform);
+        // Made under a switched-off holder so an enemy dragged into the template is switched off before it wakes: awake
+        // before the NavMesh is baked, its agent finds no floor ("not close enough to the NavMesh"). It is put down after
+        // the bake (TakePlacedEnemies, PutDownPlacedEnemy).
+        var holder=new GameObject("Placing room");
+        holder.SetActive(false);
+        holder.transform.SetParent(transform,false);
+        var instance=Instantiate(template.gameObject,Cell(Layout.RoomCenter(index)),Quaternion.Euler(0,90*Layout.RoomRotation(index),0),holder.transform);
+        foreach(var brain in instance.GetComponentsInChildren<EnemyBrain>(true))brain.gameObject.SetActive(false);
+        instance.transform.SetParent(transform,true);
+        DestroyImmediate(holder);
         instance.name=template.gameObject.name;
         templateInstances[index]=instance;
         // A boss stage: the platform and stair go in, and the template is lifted onto it.

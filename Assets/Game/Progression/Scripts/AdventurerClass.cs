@@ -29,10 +29,16 @@ public class AdventurerClass : ScriptableObject
     [PreviewField(64)] public Sprite portrait;
     [PreviewField(64), Tooltip("The picture on the character sheet when this class's portrait is picked. Empty: a stick figure stands in.")]
     public Sprite sheetPortrait;
+    [PreviewField(64), Tooltip("The same picture in colour, used instead when ProgressionManager > Meta progression > Sheet > Colour Sheet Portraits is on (Tools/sheet_portraits.py makes both).")]
+    public Sprite sheetPortraitColour;
     [Tooltip("Model shown as a miniature on the memorial table in the room.")]
     [AssetsOnly] public GameObject miniature;
     [Tooltip("Empty = available from the start. Otherwise the progression flag that unlocks it.")]
     public string unlockFlag;
+    [Tooltip("What the Dungeon Master says when this class's poster goes up on the wall by the bed (a class unlocked in play; its poster is World/Art/Class posters/<class> poster).")]
+    public DungeonMaster.Line posterLine = new();
+    [AssetsOnly, Tooltip("This class's thing on the writing desk under its poster (World/Art/Class props), shown with the poster. The poster wall prefab holds an instance placed by hand.")]
+    public GameObject deskProp;
 
     [Title("Starting kit")]
     public ItemData[] equipment = Array.Empty<ItemData>();
@@ -40,15 +46,22 @@ public class AdventurerClass : ScriptableObject
     public ItemStack[] supplies = Array.Empty<ItemStack>();
     public LeftHandSpell leftHand;
 
-    [Title("Attributes"), InfoBox("STR, DEX, CON, INT, PER, CHR")]
-    public int[] attributes = new int[6];
-    [Tooltip("Attribute index raised at each character level, repeating (0 STR … 5 CHR).")]
-    public int[] growth = { 0, 2, 1 };
+    [Title("Attributes"), InfoBox("Added to the character sheet's scores in a run of this class. Each point above the base gives what its track says (ProgressionManager > Meta progression > Tracks): Strength damage, Dexterity critical chance, Constitution health and stamina, Intelligence mana and spell power.")]
+    public int strength, dexterity, constitution, intelligence;
     public float health = 30, mana = 20, stamina = 30;
 
     [Title("Skills"), InfoBox("Swords, Maces, Blocking, Sorcery, Thaumaturgy, Athletics, Trading")]
     public int[] skills = new int[AdventureSkills.Count];
 
     public bool Unlocked => string.IsNullOrEmpty(unlockFlag) || (ProgressionManager.HasInstance && ProgressionManager.Instance.GetFlag(unlockFlag) > 0);
+    // The class's points in an attribute, on top of the sheet's score.
+    public int Attribute(MetaAttribute attribute) => attribute switch
+    {
+        MetaAttribute.Strength => strength,
+        MetaAttribute.Dexterity => dexterity,
+        MetaAttribute.Constitution => constitution,
+        MetaAttribute.Intelligence => intelligence,
+        _ => 0,
+    };
     public int StartingRank(AdventureSkill skill) => skills != null && (int)skill < skills.Length ? Mathf.Clamp(skills[(int)skill], 0, 100) : 0;
 }

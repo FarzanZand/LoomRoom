@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Cellars1
   m_EditorClassIdentifier: Assembly-CSharp::DungeonTheme
   displayName: The Cellars
+  kind: 0
+  boardReveal: 0
   entryMessage: You climb down into the cellars.
   roomStyles:
   - style: {fileID: 11400000, guid: 5e6a07315aa79734498dcba82c591e34, type: 2}

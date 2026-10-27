@@ -338,6 +338,29 @@ public partial class AssetStudioWindow
 
     // ── A floor ──
 
+    // The biome's Kind (walled or a board game) and, for a board, how its rooms come onto the table.
+    void BiomeKind(DungeonBiome b)
+    {
+        GUILayout.BeginHorizontal();
+        GUILayout.Label(new GUIContent("Kind", "Dungeon: walled rooms. Board game: printed tiles on the table, no walls (the board's pieces and light are on the level's base biome)."), dim, GUILayout.Width(130));
+        EditorGUI.BeginChangeCheck();
+        var kind = (DungeonFloorKind)EditorGUILayout.EnumPopup(b.kind, GUILayout.Width(160));
+        var reveal = b.boardReveal;
+        if (kind == DungeonFloorKind.Boardgame)
+        {
+            GUILayout.Space(12);
+            GUILayout.Label(new GUIContent("Rooms appear", "As their doors open: rooms are dealt onto the table as you open the doors to them. All at once: the whole floor is built from the start."), dim, GUILayout.Width(95));
+            reveal = (BoardRoomReveal)EditorGUILayout.EnumPopup(b.boardReveal, GUILayout.Width(160));
+        }
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
+        if (!EditorGUI.EndChangeCheck()) return;
+        Undo.RecordObject(b, "Biome kind");
+        b.kind = kind; b.boardReveal = reveal;
+        EditorUtility.SetDirty(b);
+        AssetDatabase.SaveAssetIfDirty(b);
+    }
+
     void FloorPage(AssetStudioWorld.Level l, AssetStudioWorld.Stage st)
     {
         var d = l.data;
@@ -362,6 +385,7 @@ public partial class AssetStudioWindow
             GUILayout.EndHorizontal();
             if (n != stage.floors || boss != stage.boss) SetStage(d, st.index, n, boss);
         }
+        BiomeKind(b);
 
         Section("WHAT YOU MEET HERE");
         EnemyRows(b, st.firstFloor, st.lastFloor);

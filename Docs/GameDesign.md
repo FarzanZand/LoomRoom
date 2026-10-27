@@ -200,7 +200,7 @@ Seven skills cover the current mechanics. Each runs from **0 to 100** and rises 
 | Athletics | DEX | Sprinting over new ground on a floor (1 in 5 per 12 m); swimming once water exists | -50% sprint stamina | +20 maximum stamina |
 | Trading | CHR | Buying from a merchant (1 in 3), selling (1 in 5) | Prices -20%, sales +30% | Prices a further 10% lower |
 
-The numbers above live on each skill's asset (`Progression/Data/Skills`) and the skill sheet shows them exactly as authored.
+The numbers above live on each skill's asset (`Characters/Skills`) and the skill sheet shows them exactly as authored.
 
 ### Training rules and pace
 

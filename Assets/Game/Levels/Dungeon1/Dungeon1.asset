@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Dungeon1 base
   m_EditorClassIdentifier: Assembly-CSharp::DungeonBiome
   displayName: The Crypt
+  kind: 0
+  boardReveal: 0
   entryMessage: 
   roomStyles: []
   corridorStyles:

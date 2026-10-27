@@ -4,13 +4,15 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-// Tools > LoomRoom > Combat > Set Up Shield Bash: everything the shield bash (ShieldBash, CombatManager > Player >
-// Shield bash) needs, safe to run again: the arms clip Shield_Bash (made once from BlockIdle; edit it by hand after),
-// its LeftArm state and trigger in FirstPersonTable.controller, the gold streaks and the sounds in
-// Combat/Effects/Shield bash, the component on the table player and the references on the Combat Manager prefab.
+// Everything the shield bash (ShieldBash, Blocking's ability Characters/Skills/Blocking/Shield bash, set on
+// CombatManager > Player > Shield bash) needs, safe to run again (ShieldBashSetup.SetUp from an eval): the arms clip
+// Shield_Bash (made once from BlockIdle; edit it by hand after), its LeftArm state and trigger in
+// FirstPersonTable.controller, the ability asset, its gold streaks and sounds in Characters/Skills/Blocking/Shield bash,
+// the component on the table player and the reference on the Combat Manager prefab.
 public static class ShieldBashSetup
 {
-    const string Folder = "Assets/Game/Combat/Effects/Shield bash";
+    const string Folder = "Assets/Game/Characters/Skills/Blocking/Shield bash";
+    const string AbilityPath = "Assets/Game/Characters/Skills/Blocking/Shield bash.asset";
     const string ClipPath = "Assets/Game/Characters/Animations/FirstPersonPlayer/Shield_Bash.anim";
     const string BaseClipPath = "Assets/Game/Characters/Animations/FirstPersonPlayer/BlockIdle.anim";
     const string ControllerPath = "Assets/Game/Characters/Animations/FirstPersonTable.controller";
@@ -26,8 +28,20 @@ public static class ShieldBashSetup
         if (AssetDatabase.LoadAssetAtPath<AnimationClip>(ClipPath) == null) BakeClip();
         WireController();
         var streaks = BuildStreaks();
-        var swing = MakeAudio("Shield bash", Sounds + "SoundFX/Wpn_Whoosh_0{0}.wav", 5, .8f, .85f);
+        var swing = MakeAudio("Shield bash swing", Sounds + "SoundFX/Wpn_Whoosh_0{0}.wav", 5, .8f, .85f);
         var hit = MakeAudio("Shield bash hit", Sounds + "Weapons/Wpn_Bash_Shield_0{0}.wav", 5, 1f, .9f);
+
+        var ability = AssetDatabase.LoadAssetAtPath<ShieldBashAbility>(AbilityPath);
+        if (ability == null)
+        {
+            ability = ScriptableObject.CreateInstance<ShieldBashAbility>();
+            ability.skill = AdventureSkill.Blocking; ability.displayName = "Shield bash";
+            AssetDatabase.CreateAsset(ability, AbilityPath);
+        }
+        if (ability.streaks == null) ability.streaks = streaks;
+        if (ability.swingAudio == null) ability.swingAudio = swing;
+        if (ability.hitAudio == null) ability.hitAudio = hit;
+        EditorUtility.SetDirty(ability);
 
         var root = PrefabUtility.LoadPrefabContents(PlayerPath);
         try
@@ -44,9 +58,7 @@ public static class ShieldBashSetup
         try
         {
             var combat = manager.GetComponent<CombatManager>();
-            if (combat.shieldBashStreaks == null) combat.shieldBashStreaks = streaks;
-            if (combat.shieldBashAudio == null) combat.shieldBashAudio = swing;
-            if (combat.shieldBashHitAudio == null) combat.shieldBashHitAudio = hit;
+            if (combat.shieldBash == null) combat.shieldBash = ability;
             PrefabUtility.SaveAsPrefabAsset(manager, ManagerPath);
         }
         finally { PrefabUtility.UnloadPrefabContents(manager); }

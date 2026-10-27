@@ -236,8 +236,7 @@ public class AdventurerProgress : MonoBehaviour
         float health = stats.CurrentHealth, mana = stats.CurrentMana, stamina = stats.CurrentStamina;
         stats.RemoveAllFromSource(source);
         void Add(StatType stat, float value, ModifierType kind = ModifierType.Flat) => stats.AddModifier(new StatModifier(stat, value, kind, source));
-        // The classes' old six attributes (AdventurerClass.attributes) are retired: nothing adds them, so the stats they
-        // fed (CharacterStats' derived damage, armour, speed; Charisma prices, Perception light) stay at their own values.
+        // The class's own attribute points are in Score below, with the sheet's (AdventurerClass.strength and the rest).
         Add(StatType.MaxHealth, selectedClass.health - stats.GetBase(StatType.MaxHealth) + 0);
         Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + 0);
         // Legendary Athletics: a deeper well of stamina.
@@ -284,7 +283,7 @@ public class AdventurerProgress : MonoBehaviour
             {
                 var track = meta.Track((MetaAttribute)a);
                 if (track == null) continue;
-                foreach (var (stat, amount, kind) in ProgressionManager.AttributeGains(track, meta.AttributeScore((MetaAttribute)a) - track.baseScore))
+                foreach (var (stat, amount, kind) in ProgressionManager.AttributeGains(track, meta.AttributeScore((MetaAttribute)a) + c.Attribute((MetaAttribute)a) - track.baseScore))
                     if (kind == ModifierType.Flat) Add(stat, amount);
             }
             int athletics = (ProgressionManager.MetaActive ? meta.BaseRank(AdventureSkill.Athletics) : 0) + c.StartingRank(AdventureSkill.Athletics);
@@ -315,13 +314,13 @@ public class AdventurerProgress : MonoBehaviour
         Changed?.Invoke();
     }
 
-    // An attribute's score now: the character sheet's plus the points put in this run and what the tavern's dishes
-    // eaten this run add (TavernDish).
+    // An attribute's score now: the character sheet's plus, in a run, the class's own points (AdventurerClass), the
+    // points put in this run and what the tavern's dishes eaten this run add (TavernDish).
     public int Score(MetaAttribute attribute)
     {
         int sheet = ProgressionManager.HasInstance ? ProgressionManager.Instance.AttributeScore(attribute) : 8;
         int i = (int)attribute;
-        return sheet + (i >= 0 && i < AttributePoints.Length ? AttributePoints[i] : 0) + (InRun ? TavernDish.AttributeBonus() : 0);
+        return sheet + (i >= 0 && i < AttributePoints.Length ? AttributePoints[i] : 0) + (InRun ? TavernDish.AttributeBonus() + (selectedClass != null ? selectedClass.Attribute(attribute) : 0) : 0);
     }
 
     // An attribute's points above its track's base score (what its bonuses count).

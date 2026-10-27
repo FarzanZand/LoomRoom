@@ -3,7 +3,8 @@ using UnityEngine;
 using Sirenix.OdinInspector;
 
 // All serialized by integer: append only.
-// Boardgame: a dungeon laid out as board-game tiles on the table, no walls, rooms revealed as their doors open.
+// Walled or board is set per biome (DungeonBiome.kind); Boardgame is retired here and read as a dungeon whose
+// biomes have no kind of their own yet (a level saved before 2026-10-27 is built as a board).
 public enum TableLevelKind { Town = 0, Dungeon = 1, Boardgame = 2 }
 // How the room looks while a table level is played (seen from the dungeon through its skylights).
 public enum RoomLighting { Normal = 0, Dim = 1, Dark = 2, Night = 3, Custom = 4 }
@@ -21,7 +22,27 @@ public partial class TableLevelData : ScriptableObject
     const string D = nameof(IsDungeon);
     // Dungeons and board-game dungeons: everything a run needs.
     public bool IsDungeon => kind != TableLevelKind.Town;
-    public bool IsBoard => kind == TableLevelKind.Boardgame;
+    public bool IsTown => kind == TableLevelKind.Town;
+    // Whether a floor is a board is its biome's Kind (the stage's biome, or the base biome without stages).
+    public bool BoardOn(int floor)
+    {
+        if (!IsDungeon) return false;
+        var biome = Biome(floor);
+        return biome != null ? biome.IsBoard || kind == TableLevelKind.Boardgame : kind == TableLevelKind.Boardgame;
+    }
+    // Some floor of the run is a board (the board light and the labels).
+    public bool IsBoard
+    {
+        get
+        {
+            if (!IsDungeon) return false;
+            if (kind == TableLevelKind.Boardgame) return true;
+            foreach (var b in RunBiomes()) if (b != null && b.IsBoard) return true;
+            return false;
+        }
+    }
+    // A board floor whose biome builds it all at once instead of room by room as its doors open.
+    public bool RevealWholeFloor(int floor) { var biome = Biome(floor); return biome != null && biome.boardReveal == BoardRoomReveal.WholeFloor; }
     // A level with stages runs each stage's biome in turn; one without runs Floors floors on its base biome.
     public bool HasStages => IsDungeon && stages != null && System.Array.Exists(stages, s => s != null && s.biome != null);
     bool NoStages => IsDungeon && !HasStages;
@@ -32,7 +53,8 @@ public partial class TableLevelData : ScriptableObject
     [TextArea] public string description;
     [Tooltip("Picture on the adventure card at the table (a shot of the level).")]
     [PreviewField(80)] public Sprite cardArt;
-    public TableLevelKind kind;
+    [ShowIf(nameof(IsTown)), Tooltip("A town. A dungeon's floors are walled or a board game by their biome's Kind (the biome's Look tab).")]
+    public TableLevelKind kind = TableLevelKind.Dungeon;
 
     // ── Run ───────────────────────────────────────────────────────────
     [System.Serializable]
@@ -374,7 +396,6 @@ public partial class TableLevelData : ScriptableObject
     public float boardTileThickness => .14f;        // a board tile's thickness
     public float boardLayerHeight => .32f;          // one layer a board room can be raised by
     public int boardMaxRaise => 2;                  // the most layers a generated board room is raised
-    public bool boardRevealAll => false;            // boards deal rooms in as their doors open
     public float darkRoomLightStrength => .6f;      // a dark room's one light against the prefab's own
     public float minimumAmbient => .07f;            // a dungeon is never darker than this
     public bool loopMusic => true;

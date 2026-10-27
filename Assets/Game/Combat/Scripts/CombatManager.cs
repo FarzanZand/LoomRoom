@@ -256,51 +256,8 @@ public class CombatManager : Singleton<CombatManager>
 
     // ── Player: Shield bash ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Tooltip("Holding block and pressing attack bashes forward with the shield: a fast dash that stops at the first enemy in the way, hits it and stuns it. Needs a shield in hand. While it cools down, block and attack swings as usual.")]
-    public bool enableShieldBash = true;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(0f), Tooltip("Seconds before the bash can be used again.")]
-    public float shieldBashCooldown = 5f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(.5f), Tooltip("Dash speed in metres per second.")]
-    public float shieldBashSpeed = 15f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(.5f), Tooltip("Longest dash in metres, when nothing is in the way.")]
-    public float shieldBashDistance = 6f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(0f), Tooltip("Seconds the dash waits after the press before it moves (the shield coming forward).")]
-    public float shieldBashWindup = .06f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(0f), Tooltip("Seconds after the hit (or the end of the dash) before you can attack or block again.")]
-    public float shieldBashRecovery = .3f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Range(0f, 90f), Tooltip("How far off straight ahead (degrees) an enemy can be and still be hit by the dash.")]
-    public float shieldBashAngle = 35f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(0f), Tooltip("Damage of the hit before armour: Holy damage, like a spell it ignores the enemy's armour.")]
-    public float shieldBashDamage = 6f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(0f), Tooltip("Extra damage per point of damage the player's own armour stops (armour x Armor Per Point, so 5 armour counts as 1).")]
-    public float shieldBashDamagePerArmor = 1.5f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(0f), Tooltip("Seconds the struck enemy stands stunned (its swing is cancelled). Its usual stagger immunity follows.")]
-    public float shieldBashStun = 1f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(0f), Tooltip("Push on the struck enemy. Small: it stays standing in front of you for the follow-up.")]
-    public float shieldBashKnockback = 1.5f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Min(0f), Tooltip("Stamina the bash costs.")]
-    public float shieldBashStaminaCost = 10f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [ColorUsage(false, true), Tooltip("The shield's glow during the dash (HDR: above 1 glows).")]
-    public Color shieldBashGlow = new(1.8f, 1.55f, 1.05f);
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    [Tooltip("Gold streaks that rush past during the dash, made for it (Combat/Effects/Shield bash streaks).")]
-    public GameObject shieldBashStreaks;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    public AudioData shieldBashAudio;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
-    public AudioData shieldBashHitAudio;
+    [InlineEditor(InlineEditorObjectFieldModes.Boxed), Tooltip("The shield bash's tuning, effects and sounds: Blocking's ability asset (Characters/Skills/Blocking/Shield bash).")]
+    public ShieldBashAbility shieldBash;
 
     // ── Player: Getting hit ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]

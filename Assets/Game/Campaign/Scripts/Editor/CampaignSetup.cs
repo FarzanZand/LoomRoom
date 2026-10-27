@@ -106,6 +106,26 @@ public static class CampaignSetup
         return log + "built the campaign card";
     }
 
+    // Only the hero select, in its old place among the HUD's children (from an eval: CampaignSetup.RebuildHeroSelect()).
+    public static string RebuildHeroSelect()
+    {
+        var hud = Object.FindAnyObjectByType<HudCanvas>(FindObjectsInactive.Include);
+        var instance = Object.FindAnyObjectByType<CampaignManager>(FindObjectsInactive.Include);
+        if (hud == null || instance == null) return "no HudCanvas or CampaignManager in the open scene";
+        var old = hud.transform.Find("Campaign hero select");
+        int at = old != null ? old.GetSiblingIndex() : -1;
+        var title = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
+        var body = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
+        var bodyMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator Underlay.mat");
+        var ui = BuildHeroSelect(hud.transform, title, body, bodyMaterial);
+        if (at >= 0) ui.transform.SetSiblingIndex(at);
+        instance.heroSelect = ui;
+        EditorUtility.SetDirty(instance);
+        PrefabUtility.RecordPrefabInstancePropertyModifications(instance);
+        EditorSceneManager.MarkSceneDirty(hud.gameObject.scene);
+        return "rebuilt the hero select";
+    }
+
     // The hero select: a shade over the map, a title, a row of hero cards at the bottom between two arrows, and the
     // chosen hero's details in a panel at the right (the class card's content). Replaces any older one.
     static CampaignHeroSelectUI BuildHeroSelect(Transform hud, TMP_FontAsset title, TMP_FontAsset body, Material bodyMaterial)
@@ -136,44 +156,60 @@ public static class CampaignSetup
         keys.text = "Up and down to choose.  Enter or click again to take.  Esc to go back.";
 
         // The details panel at the right.
-        var panel = MakeRect("Details", root, typeof(Image), typeof(VerticalLayoutGroup), typeof(AdventureClassSelectionUI));
+        var panel = MakeRect("Details", root, typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter), typeof(AdventureClassSelectionUI));
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(1f, .5f);
-        panel.anchoredPosition = new Vector2(-64f, 60f); panel.sizeDelta = new Vector2(580f, 560f);
+        panel.anchoredPosition = new Vector2(-64f, 40f); panel.sizeDelta = new Vector2(724f, 0f);   // the info column 286 wide: its widest line (an attribute row) fills it, so both sides keep the 40 px margin
+        panel.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         var panelImage = panel.GetComponent<Image>();
         panelImage.sprite = frameSprite; panelImage.type = Image.Type.Tiled; panelImage.pixelsPerUnitMultiplier = 1f; panelImage.color = new Color(.85f, .85f, .85f, .97f);
         var v = panel.GetComponent<VerticalLayoutGroup>();
-        v.padding = new RectOffset(30, 30, 26, 26); v.spacing = 10f;
+        v.padding = new RectOffset(40, 40, 36, 34); v.spacing = 26f;
         v.childControlWidth = v.childControlHeight = true; v.childForceExpandWidth = true; v.childForceExpandHeight = false;
         var details = panel.GetComponent<AdventureClassSelectionUI>();
         ui.details = details;
 
-        var top = Row("Top", panel, 18f, 120f);
-        var portraitSlot = Slot("Portrait slot", top, slotSprite, 120f, 120f);
-        details.portrait = Icon("Portrait", portraitSlot, 8f);
+        // Two columns: a big portrait at the left with no frame (the class paintings are 3:4, so it fills its 330 x 440),
+        // and beside it everything about the class: name, pools, attributes, description and starting skills at the top,
+        // the kit at the bottom, level with the portrait's foot. The panel fits its height to them; the buttons run along
+        // the bottom.
+        var top = Row("Top", panel, 28f, 0f);
+        top.GetComponent<LayoutElement>().preferredHeight = -1f;
+        var topLayout = top.GetComponent<HorizontalLayoutGroup>();
+        topLayout.childAlignment = TextAnchor.UpperLeft; topLayout.childForceExpandHeight = true;
+        var portraitSlot = Slot("Portrait slot", top, slotSprite, 330f, 440f);
+        var slotLayout = portraitSlot.GetComponent<LayoutElement>(); slotLayout.minWidth = 330f; slotLayout.minHeight = 440f;
+        portraitSlot.GetComponent<Image>().enabled = false;
+        details.portrait = Icon("Portrait", portraitSlot, 0f);
         var nameBlock = MakeRect("Name block", top, typeof(VerticalLayoutGroup), typeof(LayoutElement));
         nameBlock.GetComponent<LayoutElement>().flexibleWidth = 1f;
         var nv = nameBlock.GetComponent<VerticalLayoutGroup>();
-        nv.childControlWidth = nv.childControlHeight = true; nv.childForceExpandHeight = false; nv.spacing = 6f; nv.childAlignment = TextAnchor.MiddleLeft;
+        nv.childControlWidth = nv.childControlHeight = true; nv.childForceExpandHeight = false; nv.spacing = 6f; nv.childAlignment = TextAnchor.UpperLeft; nv.padding = new RectOffset(0, 0, 0, 0);
         details.className = Text("Name", nameBlock, title, 40f, Gold, null, true);
         details.resources = Text("Pools", nameBlock, body, 24f, light, bodyMaterial, false);
-        details.description = Text("Description", panel, body, 24f, light, bodyMaterial, false);
-        Text("Skills heading", panel, title, 22f, dim, null, true).text = "STARTING SKILLS";
+        details.attributes = Text("Attributes", nameBlock, body, 24f, light, bodyMaterial, false);
+        details.attributes.textWrappingMode = TextWrappingModes.NoWrap;
+        details.description = Text("Description", nameBlock, body, 24f, light, bodyMaterial, false);
+        details.description.margin = new Vector4(0f, 8f, 0f, 0f);
+        // The two gaps (before the skills and before the kit) share the column's free height equally, so the kit ends
+        // level with the portrait's foot.
+        Gap("Gap before skills", nameBlock);
+        Text("Skills heading", nameBlock, title, 22f, dim, null, true).text = "STARTING SKILLS";
         details.skillIcons = new Image[3]; details.skillLabels = new TMP_Text[3];
         for (int i = 0; i < 3; i++)
         {
-            var row = Row($"Skill {i + 1}", panel, 10f, 34f);
+            var row = Row($"Skill {i + 1}", nameBlock, 10f, 30f);
             var icon = MakeRect("Icon", row, typeof(Image), typeof(LayoutElement));
             var le = icon.GetComponent<LayoutElement>(); le.preferredWidth = le.preferredHeight = 32f; le.flexibleWidth = 0f;
             details.skillIcons[i] = icon.GetComponent<Image>(); details.skillIcons[i].preserveAspect = true;
             details.skillLabels[i] = Text("Label", row, body, 24f, light, bodyMaterial, false);
             details.skillLabels[i].gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
         }
-        Text("Kit heading", panel, title, 22f, dim, null, true).text = "STARTS WITH";
-        var kit = Row("Kit", panel, 10f, 68f);
+        Gap("Gap before kit", nameBlock);
+        var kitHeading = Text("Kit heading", nameBlock, title, 22f, dim, null, true);
+        kitHeading.text = "STARTS WITH";
+        var kit = Row("Kit", nameBlock, 8f, 50f);
         details.kitIcons = new Image[5];
-        for (int i = 0; i < 5; i++) details.kitIcons[i] = Icon("Icon", Slot($"Kit {i + 1}", kit, slotSprite, 68f, 68f), 8f);
-        var spacer = MakeRect("Spacer", panel, typeof(LayoutElement));
-        spacer.GetComponent<LayoutElement>().flexibleHeight = 1f;
+        for (int i = 0; i < 5; i++) details.kitIcons[i] = Icon("Icon", Slot($"Kit {i + 1}", kit, slotSprite, 50f, 50f), 6f);
         var buttons = Row("Buttons", panel, 16f, 58f);
         ui.back = MakeButton("Back", buttons, slotSprite, title, "Back");
         ui.choose = MakeButton("Choose", buttons, slotSprite, title, "Choose");
@@ -316,6 +352,12 @@ public static class CampaignSetup
         h.childControlWidth = h.childControlHeight = true; h.childForceExpandWidth = h.childForceExpandHeight = false;
         r.GetComponent<LayoutElement>().preferredHeight = height;
         return r;
+    }
+
+    static void Gap(string name, Transform parent)
+    {
+        var le = MakeRect(name, parent, typeof(LayoutElement)).GetComponent<LayoutElement>();
+        le.minHeight = 8f; le.flexibleHeight = 1f;
     }
 
     static RectTransform Slot(string name, Transform parent, Sprite sprite, float w, float h)
