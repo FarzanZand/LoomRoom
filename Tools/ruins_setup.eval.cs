@@ -96,6 +96,21 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
     stone.floorVariants = new[] { V("stone floor b", 5), V("stone floor moss", 2f), V("stone floor ochre", 1.5f) };
     UnityEditor.EditorUtility.SetDirty(stone); UnityEditor.EditorUtility.SetDirty(timber);
   }
+  // The second room style is a hall of the same stone (the timber style's wall repeated one cobble panel in a black frame
+  // every tile and looked bad, the user): its other wall and floor drawings as the base, more moss, the stone ceiling.
+  var hallPath = $"{R}/{name}/{name} hall.asset";
+  var hall = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>(hallPath);
+  if (hall == null && stone != null) { hall = UnityEngine.Object.Instantiate(stone); UnityEditor.AssetDatabase.CreateAsset(hall, hallPath); }
+  if (hall != null && stone != null)
+  {
+    UnityEditor.EditorUtility.CopySerialized(stone, hall); hall.name = $"{name} hall";
+    UnityEngine.Material M(string surface) => UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>($"{R}/{name}/{name} {surface}.mat");
+    hall.bottomWall = M("stone wall b"); hall.upperWall = hall.bottomWall; hall.floor = M("stone floor b");
+    DungeonSurfaceVariant H(string surface, float weight) => new DungeonSurfaceVariant { material = M(surface), weight = weight, rows = DungeonVariantRows.Any };
+    hall.wallVariants = new[] { H("stone wall", 4), H("stone wall moss", 4), H("stone wall soot", 1.5f) };
+    hall.floorVariants = new[] { H("stone floor", 4), H("stone floor moss", 3), H("stone floor ochre", 1.5f) };
+    UnityEditor.EditorUtility.SetDirty(hall);
+  }
   var path = $"Assets/Game/Levels/Dungeon1/Biomes/{name}.asset";
   var biome = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
   if (biome == null) { biome = UnityEngine.ScriptableObject.CreateInstance<DungeonBiome>(); UnityEditor.AssetDatabase.CreateAsset(biome, path); }
@@ -104,7 +119,7 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   biome.kind = DungeonFloorKind.Dungeon;
   // Its own look: the Ruins styles everywhere (a hand-built room's own style too), no cellar starting room.
   biome.ownLook = true; biome.ownBoardPieces = false;
-  biome.roomStyles = new[] { new DungeonStyleChoice { style = stone, weight = 3 }, new DungeonStyleChoice { style = timber, weight = 1 } };
+  biome.roomStyles = new[] { new DungeonStyleChoice { style = stone, weight = 3 }, new DungeonStyleChoice { style = hall, weight = 2 } };
   biome.corridorStyles = new[] { new DungeonStyleChoice { style = stone, weight = 1 } };
   biome.roomShapes = DungeonBiome.CloneAll(crypt.roomShapes);
   biome.propRules = DungeonBiome.CloneAll(crypt.propRules);
@@ -123,8 +138,8 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   biome.roomFeatures = features;
   // A dungeon: dark and torchlit as the Crypt is, each ruin in its own light (the lighting presets).
   biome.lighting = lighting; biome.litThroughout = false; biome.fog = UnityEngine.Vector2.zero;
-  // Big halls: the dark closes in at 8 m, not the dungeon's 5 (a hall past the torches was black).
-  biome.lightRadius = 8f;
+  // The dungeon's own light radius (the user: do not widen it).
+  biome.lightRadius = 0f;
   // Wild walls under the ceiling: the masonry of each room's own style, rock outcrops and fallen ruin set into it, roots,
   // moss and rubble at its foot. Nothing grows on top (the ceiling hides it).
   var w = biome.wilds ?? new BoardWilds();
@@ -157,7 +172,7 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
 // basalt and black oak in an eerie green with glowing mushrooms.
 Make(1, "The Ruins", "Old walls, older than the crypt.", DungeonBiome.Lighting.AmberCrypt, null, 12);
 Make(2, "The White Ruins", "Pale stone, half buried.", DungeonBiome.Lighting.MoonlitStone, null, 12);
-Make(3, "The Black Ruins", "Something still lives here.", DungeonBiome.Lighting.EmeraldRuins, "cyan", 7);
+Make(3, "The Black Ruins", "Something still lives here.", DungeonBiome.Lighting.Standard, "cyan", 14);
 
 // Dungeon1's floors 7, 8 and 9: one ruin each, after the forests.
 var stages = new System.Collections.Generic.List<TableLevelData.BiomeStage>(level.stages);

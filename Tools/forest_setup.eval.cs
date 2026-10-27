@@ -78,7 +78,7 @@ foreach (var (gname, colour, mush) in glowColours)
   UnityEditor.PrefabUtility.UnpackPrefabInstance(root, UnityEditor.PrefabUnpackMode.Completely, UnityEditor.InteractionMode.AutomatedAction);
   root.name = $"Glow mushrooms {gname}";
   var lgo = new UnityEngine.GameObject("Glow light"); lgo.transform.SetParent(root.transform, false); lgo.transform.localPosition = new UnityEngine.Vector3(0, .9f, .3f);
-  var l = lgo.AddComponent<UnityEngine.Light>(); l.type = UnityEngine.LightType.Point; l.color = colour; l.intensity = 3f; l.range = 7f; l.shadows = UnityEngine.LightShadows.None;
+  var l = lgo.AddComponent<UnityEngine.Light>(); l.type = UnityEngine.LightType.Point; l.color = colour; l.intensity = 5f; l.range = 9f; l.shadows = UnityEngine.LightShadows.None;
   var gp = $"{F}/Props/Glow mushrooms {gname}.prefab";
   var saved = UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, gp);
   UnityEngine.Object.DestroyImmediate(root);
@@ -167,6 +167,41 @@ UnityEngine.GameObject Air(string name, bool leaves, UnityEngine.Color colour)
   UnityEngine.Object.DestroyImmediate(root);
   return saved;
 }
+// Pools of light in the clearings, so the forest is not lit evenly (the ambient is kept low, below):
+//  - Moonbeam <colour>: the dungeon's moonlight (a spot from 11 m up, its shaft and motes) without its night-sky card,
+//    falling into a clearing; its light is the prop's child.
+//  - Lit lantern stand: the forest's lantern stand with a warm point light at its lantern.
+UnityEngine.GameObject Beam(string name, UnityEngine.Color colour, float strength)
+{
+  var src = Load<UnityEngine.GameObject>("Assets/Game/Levels/Shared/Props/Effects/Moonlight.prefab");
+  var root = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(src);
+  UnityEditor.PrefabUtility.UnpackPrefabInstance(root, UnityEditor.PrefabUnpackMode.Completely, UnityEditor.InteractionMode.AutomatedAction);
+  root.name = name;
+  var sky = root.transform.Find("Night sky"); if (sky != null) UnityEngine.Object.DestroyImmediate(sky.gameObject);
+  foreach (var light in root.GetComponentsInChildren<UnityEngine.Light>()) { light.color = colour; light.intensity = strength; light.spotAngle = 40f; light.innerSpotAngle = 18f; light.range = 20f; light.shadows = UnityEngine.LightShadows.Soft; }
+  var saved = UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, $"{F}/Props/{name}.prefab");
+  UnityEngine.Object.DestroyImmediate(root);
+  return saved;
+}
+Beam("Moonbeam", new UnityEngine.Color(.75f, .85f, 1f), 260f);
+Beam("Moonbeam warm", new UnityEngine.Color(1f, .78f, .55f), 240f);
+Beam("Moonbeam blue", new UnityEngine.Color(.55f, .7f, 1f), 300f);
+{
+  var src = Load<UnityEngine.GameObject>($"{F}/Props/Lantern stand/Lantern stand.prefab");
+  var root = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(src);
+  UnityEditor.PrefabUtility.UnpackPrefabInstance(root, UnityEditor.PrefabUnpackMode.Completely, UnityEditor.InteractionMode.AutomatedAction);
+  root.name = "Lit lantern stand";
+  var b = new UnityEngine.Bounds(root.transform.position, UnityEngine.Vector3.zero);
+  foreach (var r in root.GetComponentsInChildren<UnityEngine.Renderer>()) b.Encapsulate(r.bounds);
+  var lgo = new UnityEngine.GameObject("Lantern light"); lgo.transform.SetParent(root.transform, false);
+  lgo.transform.position = new UnityEngine.Vector3(b.center.x, b.max.y - .35f, b.center.z);
+  var l = lgo.AddComponent<UnityEngine.Light>(); l.type = UnityEngine.LightType.Point; l.color = new UnityEngine.Color(1f, .68f, .38f); l.intensity = 9f; l.range = 9f; l.shadows = UnityEngine.LightShadows.Soft;
+  lgo.AddComponent<TorchFlicker>();
+  UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, $"{F}/Props/Lit lantern stand.prefab");
+  UnityEngine.Object.DestroyImmediate(root);
+}
+DungeonPropRule Pool(string n, int placement, float chance) => new DungeonPropRule { prefab = Load<UnityEngine.GameObject>($"{F}/Props/{n}.prefab"), placement = (DungeonPropPlacement)placement, footprint = new UnityEngine.Vector2Int(1, 1), perTenCells = .25f, perRoom = new UnityEngine.Vector2Int(1, 2), chance = chance, rooms = (DungeonRoomRoles)62 };
+
 Air("Fireflies", false, new UnityEngine.Color(.95f, 1f, .55f));
 Air("Fireflies blue", false, new UnityEngine.Color(.55f, .9f, 1f));
 Air("Falling leaves", true, UnityEngine.Color.white);
@@ -174,6 +209,9 @@ Air("Falling leaves", true, UnityEngine.Color.white);
 var mounds = new System.Collections.Generic.List<UnityEngine.GameObject>();
 foreach (var n in new[] { "Formation 1", "Formation 2", "Formation 5", "Formation 9", "Formation 12", "Fern tree 1", "Fern tree 2" }) { var g = Load<UnityEngine.GameObject>($"{F}/Props/{n}/{n}.prefab"); if (g != null) mounds.Add(g); }
 UnityEngine.Color C(float r, float g, float b) => new UnityEngine.Color(r, g, b);
+// The ambient is held low so the forest is lit in pools (moonbeams, lanterns, glows, the board light) instead of evenly
+// (the user: everything looked equally lit); the ground under the canopy darker still.
+const float Ambient = .68f;
 var made = new System.Collections.Generic.List<DungeonBiome>();
 
 // name, shown name, entry line, clearing style, bank top, tree weights (green, red, gold, teal, fern trees), the light
@@ -218,7 +256,7 @@ DungeonBiome Make(string name, string display, string entry, DungeonRoomStyle ro
   biome.roomFeatures = features;
   // Lit throughout: a forest at night, not a cellar's dark (no light radius closing in round the player).
   biome.lighting = DungeonBiome.Lighting.Custom; biome.lightBoard = true; biome.litThroughout = true;
-  biome.lightingSettings = new DungeonLightingSettings { skyTint = C(.22f, .3f, .55f), skyExposure = 1f, lightColor = sun, lightIntensity = 1f, ambientSky = sky, ambientHorizon = horizon, ambientGround = ground, fogColor = fogColour };
+  biome.lightingSettings = new DungeonLightingSettings { skyTint = C(.22f, .3f, .55f), skyExposure = 1f, lightColor = sun, lightIntensity = 1f, ambientSky = sky * Ambient, ambientHorizon = horizon * Ambient, ambientGround = ground * Ambient * .8f, fogColor = fogColour };
   biome.fog = fog;
   biome.filmicLook = .8f; biome.shadowTint = shadow; biome.lampTint = lamp;
   // Board pieces of its own.
@@ -266,20 +304,20 @@ DungeonBiome Make(string name, string display, string entry, DungeonRoomStyle ro
 // Forest1: a mixed autumn wood under a bright, near-neutral moon; no fog, so the room stays in view (the user's choice).
 // Less even ambient and a stronger raking moon than first made, so shapes read (the user: less flat).
 Make("Forest1", "The Forest", "The trees close in.", clearing, moss, (1f, .5f, .4f, .15f, .6f),
-  C(1.12f, 1.18f, 1.3f), C(.84f, .84f, .92f), C(.46f, .41f, .41f), C(.88f, .9f, 1f), C(.9f, .9f, 1f), 5200f,
+  C(1.12f, 1.18f, 1.3f), C(.84f, .84f, .92f), C(.46f, .41f, .41f), C(.88f, .9f, 1f), C(.9f, .9f, 1f), 3900f,
   C(.72f, .82f, .95f), C(1.04f, .96f, .9f), C(.3f, .33f, .4f), UnityEngine.Vector2.zero, 6,
-  48f, 220f, C(.35f, .85f, 1f), 2.5f, Rule("Fireflies", 2, .2f, 1, .8f));
+  48f, 220f, C(.35f, .85f, 1f), 2.5f, Rule("Fireflies", 2, .2f, 1, .8f), Pool("Moonbeam", 2, .8f), Pool("Lit lantern stand", 0, .6f));
 // Forest2: deep in the fall, red and gold almost everywhere, the ground under fallen gold leaves, a warmer light.
 // A little redder than warm (the user: not too heavy on the red).
 Make("Forest2", "The Autumn Wood", "Leaves fall all around.", clearingFall, floorFall, (.25f, 1.1f, 1f, .05f, .3f),
-  C(1.16f, 1f, .94f), C(.88f, .72f, .66f), C(.5f, .35f, .31f), C(1f, .84f, .74f), C(1f, .86f, .78f), 4200f,
+  C(1.16f, 1f, .94f), C(.88f, .72f, .66f), C(.5f, .35f, .31f), C(1f, .84f, .74f), C(1f, .86f, .78f), 3300f,
   C(.94f, .8f, .76f), C(1.1f, .92f, .82f), C(.38f, .28f, .26f), UnityEngine.Vector2.zero, 7,
-  55f, 250f, C(.4f, .8f, .9f), 2f, Rule("Falling leaves", 2, .2f, 1, .9f), Rule("Fireflies", 2, .1f, 1, .3f));
+  55f, 250f, C(.4f, .8f, .9f), 2f, Rule("Falling leaves", 2, .2f, 1, .9f), Rule("Fireflies", 2, .1f, 1, .3f), Pool("Moonbeam warm", 2, .75f), Pool("Lit lantern stand", 0, .7f));
 // Forest3: the blue-purple moonlit night the user picked (the glowing pond picture, 2026-10-27), deep blue fog, more glows.
 Make("Forest3", "The Moonlit Wood", "The moon is cold here.", clearing, moss, (1f, .12f, .08f, 1.1f, .8f),
-  C(.95f, 1.1f, 1.8f), C(.62f, .6f, 1.1f), C(.32f, .26f, .4f), C(.62f, .7f, 1f), C(.62f, .7f, 1f), 2400f,
+  C(.95f, 1.1f, 1.8f), C(.62f, .6f, 1.1f), C(.32f, .26f, .4f), C(.62f, .7f, 1f), C(.62f, .7f, 1f), 1900f,
   C(.5f, .62f, 1f), C(1.04f, .96f, .9f), C(.17f, .27f, .5f), new UnityEngine.Vector2(12f, 70f), 4,
-  40f, 200f, C(.3f, .75f, 1f), 4f, Rule("Fireflies blue", 2, .2f, 1, .9f));
+  40f, 200f, C(.3f, .75f, 1f), 4f, Rule("Fireflies blue", 2, .2f, 1, .9f), Pool("Moonbeam blue", 2, .85f), Pool("Lit lantern stand", 0, .35f));
 
 // Dungeon1's floors 4, 5 and 6: one forest each, after the Crypt.
 var stages = new System.Collections.Generic.List<TableLevelData.BiomeStage>(level.stages);

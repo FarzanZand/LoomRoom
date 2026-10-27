@@ -334,6 +334,20 @@ MonoBehaviour:
     perRoom: {x: 0, y: 1}
     chance: 0.3
     rooms: 62
+  - prefab: {fileID: 4696081989565957123, guid: 90d4468408f2f8d43b3b95cb31a55381, type: 3}
+    placement: 2
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.25
+    perRoom: {x: 1, y: 2}
+    chance: 0.75
+    rooms: 62
+  - prefab: {fileID: 7070275811808255662, guid: d9502a710d4fc7f408ce2d867a3dfda7, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.25
+    perRoom: {x: 1, y: 2}
+    chance: 0.7
+    rooms: 62
   destructibles: []
   lighting: 100
   litThroughout: 1
@@ -378,9 +392,9 @@ MonoBehaviour:
     skyExposure: 1
     lightColor: {r: 1, g: 0.84, b: 0.74, a: 1}
     lightIntensity: 1
-    ambientSky: {r: 1.16, g: 1, b: 0.94, a: 1}
-    ambientHorizon: {r: 0.88, g: 0.72, b: 0.66, a: 1}
-    ambientGround: {r: 0.5, g: 0.35, b: 0.31, a: 1}
+    ambientSky: {r: 0.7888, g: 0.68, b: 0.63920003, a: 0.68}
+    ambientHorizon: {r: 0.5984, g: 0.48960003, b: 0.44880003, a: 0.68}
+    ambientGround: {r: 0.272, g: 0.1904, b: 0.16864, a: 0.544}
     fogColor: {r: 0.38, g: 0.28, b: 0.26, a: 1}
   lightingPrefabs: []
   overrideTorchColor: 0
@@ -468,6 +482,6 @@ MonoBehaviour:
   - {fileID: 7549309634469148542, guid: 84f44cf6552370f4e902ee125dcd0396, type: 3}
   - {fileID: 6069732326470734011, guid: 5b4a1ea4aafc24148a9d00dcffa1fd9e, type: 3}
   boardLightColor: {r: 1, g: 0.86, b: 0.78, a: 1}
-  boardLightIntensity: 4200
+  boardLightIntensity: 3300
   boardLightAngle: 55
   boardLightFrom: 250

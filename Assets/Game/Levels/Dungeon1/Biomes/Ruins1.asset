@@ -92,8 +92,8 @@ MonoBehaviour:
   roomStyles:
   - style: {fileID: 11400000, guid: 102c64aec6beaba408edd7aa53a1c312, type: 2}
     weight: 3
-  - style: {fileID: 11400000, guid: 26b89f06ffc75cc4a9bb470ceeac6cf5, type: 2}
-    weight: 1
+  - style: {fileID: 11400000, guid: 2eb54d596ba146e40af0666b29f9f71e, type: 2}
+    weight: 2
   corridorStyles:
   - style: {fileID: 11400000, guid: 102c64aec6beaba408edd7aa53a1c312, type: 2}
     weight: 1
@@ -258,7 +258,7 @@ MonoBehaviour:
     moonlitRooms: 1
     eerieRooms: 1
     eerieChance: 0.06
-  lightRadius: 8
+  lightRadius: 0
   filmicLook: 0
   shadowTint: {r: 0.55, g: 0.85, b: 1, a: 1}
   lampTint: {r: 1.06, g: 0.97, b: 0.86, a: 1}

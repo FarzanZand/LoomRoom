@@ -17,8 +17,9 @@ def blotch(scale):
     return np.asarray(Image.fromarray((g * 255).astype("uint8")).resize((N + 2 * scale, N + 2 * scale), Image.BICUBIC)).astype(float)[scale:scale + N, scale:scale + N] / 255
 
 # Muted greens, dark to lit, and a dead leaf brown.
-greens = np.array([[52, 66, 38], [68, 86, 46], [86, 104, 54], [108, 122, 66]], float)
-dead = np.array([[110, 84, 46], [132, 100, 52]], float)
+# The ruins' moss tones (Tools/ruins_variety.py), not leaf green: bright lime stood out against the stone (the user).
+greens = np.array([[36, 42, 28], [46, 54, 34], [56, 64, 40], [68, 74, 48]], float)
+dead = np.array([[70, 58, 40], [84, 68, 46]], float)
 n = blotch(7) * .7 + blotch(3) * .3
 idx = np.clip((n * 4.4 - .7).astype(int), 0, 3)
 col = greens[idx]
@@ -34,8 +35,8 @@ left = np.roll(solid, 1, axis=1)
 right = np.roll(solid, -1, axis=1)
 edge = solid & ~(up & down & left & right)
 top = solid & ~up
-col[edge] *= .62
-col[top] = col[top] / .62 * 1.18
+col[edge] *= .5
+col[top] = col[top] / .5 * 1.1
 out = np.zeros((N, N, 4))
 out[..., :3] = np.clip(col, 0, 255)
 out[..., 3] = solid * 255

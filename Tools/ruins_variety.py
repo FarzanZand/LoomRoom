@@ -32,7 +32,15 @@ def load(path):
 
 
 def save(a, path):
-    Image.fromarray(np.clip(a, 0, 255).astype("uint8")).save(path)
+    # The editor may be reading the file as it reimports the last one: try again a few times.
+    import time
+    for attempt in range(20):
+        try:
+            Image.fromarray(np.clip(a, 0, 255).astype("uint8")).save(path)
+            return
+        except OSError:
+            time.sleep(.5)
+    raise OSError(f"could not write {path}")
 
 
 def base_of(path):
@@ -151,20 +159,25 @@ def palette_of(img, ref):
 REPALETTE = {(3, "stone ceiling"): "stone wall"}
 
 
-for n in (1, 2, 3):
-    d = f"{ROOT}/Ruins{n}"
-    for surface in ("stone wall", "stone wall b", "stone floor", "stone floor b", "stone ceiling", "timber upper", "timber upper b"):
-        p = f"{d}/Ruins{n} {surface}.png"
-        img = base_of(p)
-        if (n, surface) in REPALETTE:
-            img = palette_of(img, base_of(f"{d}/Ruins{n} {REPALETTE[(n, surface)]}.png"))
-        out = tinted(img, n)
-        save(out, p)
-        print("tinted", p)
-    wall = load(f"{d}/Ruins{n} stone wall.png")
-    floor = load(f"{d}/Ruins{n} stone floor.png")
-    save(mossy(wall, 10 + n, True), f"{d}/Ruins{n} stone wall moss.png")
-    save(sooty(wall, 20 + n), f"{d}/Ruins{n} stone wall soot.png")
-    save(mossy(floor, 30 + n, False), f"{d}/Ruins{n} stone floor moss.png")
-    save(ochre(floor, 40 + n), f"{d}/Ruins{n} stone floor ochre.png")
-    print("variants", n)
+def main():
+    for n in (1, 2, 3):
+        d = f"{ROOT}/Ruins{n}"
+        for surface in ("stone wall", "stone wall b", "stone floor", "stone floor b", "stone ceiling", "timber upper", "timber upper b"):
+            p = f"{d}/Ruins{n} {surface}.png"
+            img = base_of(p)
+            if (n, surface) in REPALETTE:
+                img = palette_of(img, base_of(f"{d}/Ruins{n} {REPALETTE[(n, surface)]}.png"))
+            out = tinted(img, n)
+            save(out, p)
+            print("tinted", p)
+        wall = load(f"{d}/Ruins{n} stone wall.png")
+        floor = load(f"{d}/Ruins{n} stone floor.png")
+        save(mossy(wall, 10 + n, True), f"{d}/Ruins{n} stone wall moss.png")
+        save(sooty(wall, 20 + n), f"{d}/Ruins{n} stone wall soot.png")
+        save(mossy(floor, 30 + n, False), f"{d}/Ruins{n} stone floor moss.png")
+        save(ochre(floor, 40 + n), f"{d}/Ruins{n} stone floor ochre.png")
+        print("variants", n)
+
+
+if __name__ == "__main__":
+    main()

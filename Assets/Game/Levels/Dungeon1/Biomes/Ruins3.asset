@@ -70,7 +70,7 @@ MonoBehaviour:
     glows:
     - prefab: {fileID: 4025669486279446446, guid: 3c4c36a2d228a144fb0215c661b46a29, type: 3}
       weight: 1
-    glowEvery: 7
+    glowEvery: 14
     hangings:
     - prefab: {fileID: 1821965667047035972, guid: 70ea81212525afd42accb32707f22caa, type: 3}
       weight: 1
@@ -96,8 +96,8 @@ MonoBehaviour:
   roomStyles:
   - style: {fileID: 11400000, guid: 950d773e510998a4e84417231abeb2eb, type: 2}
     weight: 3
-  - style: {fileID: 11400000, guid: aa1c3a4d52c966242956171b28a25aeb, type: 2}
-    weight: 1
+  - style: {fileID: 11400000, guid: c34203c7559c3b54da7e54c154d661bc, type: 2}
+    weight: 2
   corridorStyles:
   - style: {fileID: 11400000, guid: 950d773e510998a4e84417231abeb2eb, type: 2}
     weight: 1
@@ -113,7 +113,7 @@ MonoBehaviour:
     weight: 2
   - prefab: {fileID: 4940602601245648603, guid: fb562eb337691f54c8a6648dcc1a3045, type: 3}
     weight: 2
-  lighting: 2
+  lighting: 8
   litThroughout: 0
   fog: {x: 0, y: 0}
   lightBoard: 0
@@ -262,7 +262,7 @@ MonoBehaviour:
     moonlitRooms: 1
     eerieRooms: 1
     eerieChance: 0.06
-  lightRadius: 8
+  lightRadius: 0
   filmicLook: 0
   shadowTint: {r: 0.55, g: 0.85, b: 1, a: 1}
   lampTint: {r: 1.06, g: 0.97, b: 0.86, a: 1}

@@ -13,6 +13,39 @@ MonoBehaviour:
   m_Name: Cellars3
   m_EditorClassIdentifier: Assembly-CSharp::DungeonTheme
   displayName: The Crypt
+  kind: 0
+  boardReveal: 0
+  ownBoardPieces: 0
+  ownLook: 0
+  wilds:
+    enabled: 0
+    roofed: 0
+    depth: 5
+    height: {x: 1.6, y: 3.6}
+    top: {fileID: 0}
+    side: {fileID: 0}
+    trees: []
+    treeChance: 0.45
+    treeScale: {x: 0.8, y: 1.25}
+    undergrowth: []
+    undergrowthPerCell: 1
+    foot: []
+    footChance: 0.45
+    edges: 1
+    faces: []
+    faceChance: 0.3
+    faceStandOut: 0.5
+    lip: []
+    lipChance: 0.6
+    glows: []
+    glowEvery: 9
+    hangings: []
+    hangChance: 0.25
+    pondChance: 0.35
+    pondSize: {x: 2, y: 3}
+    pondGlow: {r: 0.35, g: 0.85, b: 1, a: 1}
+    pondGlowStrength: 2.5
+    pondEdge: []
   entryMessage: The cellars give way to an old crypt.
   roomStyles:
   - style: {fileID: 11400000, guid: b70b907d7c9124648b6e11dfdb34ca5f, type: 2}
@@ -26,6 +59,7 @@ MonoBehaviour:
   destructibles: []
   lighting: 8
   litThroughout: 0
+  fog: {x: 0, y: 0}
   lightBoard: 0
   roomTemplates:
   - template: {fileID: 4217182298497846190, guid: 3203dca7f2718fb438980165eab522be, type: 3}
@@ -144,6 +178,9 @@ MonoBehaviour:
     fromFloor: 1
     maxPerFloor: 1
   templateChance: 1
+  roomCount: 0
+  roomSizeScale: 1
+  noDoors: 0
   overrideDungeonSettings: 0
   roomFeatures:
     shrineBargains: 1
@@ -281,9 +318,12 @@ MonoBehaviour:
   boardEdgeMaterial: {fileID: 0}
   boardGridMaterial: {fileID: 0}
   boardPitMaterial: {fileID: 0}
+  boardPitWater: {fileID: 0}
   boardVerticality: 1
   boardTileTaps: []
   boardDoorPosts: []
   boardMoundProps: []
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
+  boardLightAngle: 0
+  boardLightFrom: 220
