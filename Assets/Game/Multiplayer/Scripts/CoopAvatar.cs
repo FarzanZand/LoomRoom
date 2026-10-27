@@ -476,7 +476,7 @@ public class CoopAvatar : MonoBehaviour
     public void Bash()
     {
         if (animator != null && !builtOneBody) animator.SetTrigger("Bash");
-        var audio = CombatManager.HasInstance ? CombatManager.Instance.shieldBashAudio : null;
+        var audio = CombatManager.HasInstance && CombatManager.Instance.shieldBash != null ? CombatManager.Instance.shieldBash.swingAudio : null;
         if (audio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(audio, transform.position + Vector3.up * 1.2f * builtScale);
     }
 

@@ -302,8 +302,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         commandJoin = join;
     }
 
-    void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         if (network != null)
         {
             network.OnClientConnectedCallback -= OnClientConnected;
