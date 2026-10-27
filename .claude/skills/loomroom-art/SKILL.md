@@ -297,6 +297,28 @@ looks wrong, too.
 
 ## Tiling surfaces (walls, floors, ceilings): check before showing
 
+**Test every tile combination where the tiles meet (user, 2026-10-28).** The generator picks the base or a variant per
+2 m cell (each wall face, each floor cell), so every pair of a style's tiles meets somewhere, at any cell edge. Run
+`python Tools/tile_seams.py <style.asset> [...]` on every style you make or change: it lays every pair side by side as
+the generator maps them (UVs from world metres, material tiling and offset, cell edges at odd metres; floors along both
+axes; bottom-only and upper-only wall variants on their own rows), measures the change across each cell edge against
+the same edge between two base tiles, prints each hard edge, and writes a sheet of every pair to `Temp/Seams`. It must
+print 0 hard edges, then look at the sheets at full size and at the walls and floors in game, straight on and close.
+What went wrong before (the user saw all of it in game):
+- **A variant on a 3 m texture cut off at a third of it.** A 2 m cell shows two thirds of a 3 m repeat, so a mossy
+  tile's moss ended in a straight line where the plain tile beside it began. A texture with variants repeats once per
+  cell: 256 texels wide (and 256 tall for a floor), material tiling 1.5 and offset .5. Masonry is re-laid from its own
+  whole stones to that width (`ruins_variety.relay`), loose ground is quilted (`style_tiles.quilt`, its step must divide
+  256 exactly or the rest of the tile stays black).
+- **Variants tinted apart from their base.** Each file coloured on its own gave the same stone two colours, a colour
+  jump at every cell edge. A variant is its base with something added: take the base's colours texel for texel
+  (`cellar_variety.on_base`).
+- **What a variant adds reaches the edge.** Fade it out raggedly before the cell's edges (by noise, never a soft
+  gradient), and never recolour a stone that crosses the edge (its other half may be on the plain tile).
+- **Box UVs wrapped every 3 m.** With a 2 m texture a third of the cells came out half a repeat off, cutting stones at
+  their edges; `ArchitectureBox` now wraps every 6 m. Look at stones running across cell edges in game, not only at
+  the sheets.
+
 Lessons from the Cellar1 room styles (`Levels/Shared/Room styles/Cellar`, 2026-10-12). Lay the textures out as
 they will repeat (a strip of 6-8 wall tiles with the variants in place, the floor 3x3) at full size and look for:
 

@@ -180,8 +180,12 @@ public partial class DungeonGenerator
         var go = Box(name, pos, size, material, parent);
         float tile = Mathf.Max(.01f, data.architectureTileSize);
         Vector3 relative = pos - transform.position;
-        // Repeat phases are shared across adjacent grid cells, even when grid spacing differs from tile size.
-        Vector3 phase = new Vector3(Mathf.Repeat(relative.x, tile), Mathf.Repeat(relative.y, tile), Mathf.Repeat(relative.z, tile));
+        // Repeat phases are shared across adjacent grid cells, even when grid spacing differs from tile size. They wrap
+        // every two tiles (6 m), where a texture repeating per tile and one repeating per 2 m cell (tiling 1.5, the Cellar
+        // and Ruins walls and floors) both come round whole: wrapped every tile, a third of the cells took the 2 m
+        // texture half a repeat off and cut its stones at the cell's edge.
+        float period = tile * 2f;
+        Vector3 phase = new Vector3(Mathf.Repeat(relative.x, period), Mathf.Repeat(relative.y, period), Mathf.Repeat(relative.z, period));
         phase = new Vector3(Mathf.Round(phase.x*10000)/10000, Mathf.Round(phase.y*10000)/10000, Mathf.Round(phase.z*10000)/10000);
         var key = (size, phase);
         if (!architectureMeshes.TryGetValue(key, out var mesh))

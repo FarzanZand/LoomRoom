@@ -20,21 +20,27 @@ MonoBehaviour:
   trim: {fileID: 2100000, guid: 2ad539abd8092d246a4890babd2086d0, type: 2}
   wood: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
   metal: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
-  wallBaseWeight: 9.81
+  wallBaseWeight: 10
   wallVariants:
-  - material: {fileID: 2100000, guid: 96a47a45a034f884d8475e1cf520c25d, type: 2}
-    weight: 5
+  - material: {fileID: 2100000, guid: 703c4ab323a478340bfdbe42f5032b5b, type: 2}
+    weight: 6
+    rows: 0
+  - material: {fileID: 2100000, guid: a0673baa3f0a5ef44bfa142add3167a9, type: 2}
+    weight: 6
     rows: 0
   - material: {fileID: 2100000, guid: b3aa510d9fadf21469224e98ddbbf3e6, type: 2}
     weight: 2.5
-    rows: 0
+    rows: 1
   - material: {fileID: 2100000, guid: af31db5fa9720074eb66c3eb8a1ef6e0, type: 2}
     weight: 1.5
-    rows: 0
+    rows: 1
   floorBaseWeight: 10
   floorVariants:
-  - material: {fileID: 2100000, guid: 16816bec871112a4e93c93a219257498, type: 2}
-    weight: 5
+  - material: {fileID: 2100000, guid: 0a94eabbeb616ca4fa6d630d9ee76e24, type: 2}
+    weight: 6
+    rows: 0
+  - material: {fileID: 2100000, guid: a972e4f0d4ba128409d944b0adae0b13, type: 2}
+    weight: 6
     rows: 0
   - material: {fileID: 2100000, guid: 9de0c092ef68dab4baeea71c775f6cde, type: 2}
     weight: 2

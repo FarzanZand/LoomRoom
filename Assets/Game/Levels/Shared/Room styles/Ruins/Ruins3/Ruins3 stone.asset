@@ -22,19 +22,25 @@ MonoBehaviour:
   metal: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
   wallBaseWeight: 10
   wallVariants:
-  - material: {fileID: 2100000, guid: 3357f47a6ae579b49b27b1ea40aa5249, type: 2}
-    weight: 5
+  - material: {fileID: 2100000, guid: 6ba947e35535cea4e853585b625f9106, type: 2}
+    weight: 6
+    rows: 0
+  - material: {fileID: 2100000, guid: b9b0cac9e50389d4c8ba38ae0a88b1c9, type: 2}
+    weight: 6
     rows: 0
   - material: {fileID: 2100000, guid: ab0f32d1569a4294fa14946038a5f790, type: 2}
     weight: 2.5
-    rows: 0
+    rows: 1
   - material: {fileID: 2100000, guid: 1ce19d3e4b6e6de4988e9defd1ac338e, type: 2}
     weight: 1.5
-    rows: 0
+    rows: 1
   floorBaseWeight: 10
   floorVariants:
-  - material: {fileID: 2100000, guid: 27deeb1043e32b24a8ad8faa3f056136, type: 2}
-    weight: 5
+  - material: {fileID: 2100000, guid: 3789ce31b7c45f74c8877be693ab0365, type: 2}
+    weight: 6
+    rows: 0
+  - material: {fileID: 2100000, guid: 79a727526b19bb645adfdee353caa9bc, type: 2}
+    weight: 6
     rows: 0
   - material: {fileID: 2100000, guid: ef89b7e996d26f7438d9a966d02e24c8, type: 2}
     weight: 2

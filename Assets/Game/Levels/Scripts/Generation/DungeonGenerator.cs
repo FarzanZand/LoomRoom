@@ -357,6 +357,9 @@ public partial class DungeonGenerator : MonoBehaviour
             if (IsStageCell(x, z)) continue;
             // Wild ground stands in for the outer walls (DungeonGenerator.Wilds), and there is a ceiling only when roofed.
             var wildWalls = WildSettings;
+            // The tavern on a walled floor keeps real walls and ceiling of its own: the banks beside it stand back behind
+            // them (DungeonGenerator.Wilds), so its plaster is only ever seen from inside.
+            if (wildWalls != null && !Board && room == MerchantRoom) wildWalls = null;
             if (wildWalls != null)
             {
                 // Roofed: a ceiling, broken open where a room is moonlit (a ruin's fallen roof).
