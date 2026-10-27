@@ -39,10 +39,10 @@ public partial class AssetStudioWindow : EditorWindow
     [SerializeField] int itemSort;        // the Items list's order (ItemSorts)
     static readonly string[] ItemSorts = { "By name", "By main number", "By type", "By price", "By tier" };
     [SerializeField] int roomSort;        // the Rooms list's order (RoomSorts)
-    static readonly string[] RoomSorts = { "By name", "By where they are" };
+    static readonly string[] RoomSorts = { "By name", "By where they are", "By kind" };
     readonly List<string> recent = new();  // last picked, newest first (the Recent list)
     // Which view the window shows, one at a time: a category's list, or one of the views above the categories.
-    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue, Levels }
+    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue, Levels, Dungeon }
     [SerializeField] StudioView view;
     // Leaving the Dialogue view writes back what was typed there.
     StudioView studioView { get => view; set { if (value != view) CommitDialogue(true); view = value; } }
@@ -273,6 +273,9 @@ public partial class AssetStudioWindow : EditorWindow
             int First(AssetStudioCatalog.Entry e) { var p = where.Of(e); return p.Count == 0 ? int.MaxValue : where.order.IndexOf(p[0]); }
             shown = shown.OrderBy(First).ThenBy(e => e.name, StringComparer.OrdinalIgnoreCase).ToList();
         }
+        // Rooms by kind: Scripted, Active, Visual, then the unsorted (DungeonRoomTemplate.kind), each by name.
+        if (RoomsShown && roomSort == 2)
+            shown = shown.OrderBy(e => AssetStudioRoomKinds.Rank(e.Load() as GameObject)).ThenBy(e => e.name, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     // Which places use each room (from the World model: pools, starting rooms, shops, arenas, authored rooms, maps,
@@ -365,6 +368,12 @@ public partial class AssetStudioWindow : EditorWindow
         if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
         string guid = AssetDatabase.AssetPathToGUID(path);
         var menu = new GenericMenu();
+        // A room: its kind first (Scripted, Active, Visual).
+        if (AssetDatabase.LoadMainAssetAtPath(path) is GameObject room && room.GetComponent<DungeonRoomTemplate>() != null)
+        {
+            AssetStudioRoomKinds.AddTo(menu, room, () => { Filter(); Repaint(); });
+            menu.AddSeparator("");
+        }
         menu.AddItem(new GUIContent("Show in Project"), false, () => { var a = AssetDatabase.LoadMainAssetAtPath(path); Selection.activeObject = a; EditorGUIUtility.PingObject(a); });
         menu.AddItem(new GUIContent("Copy ID"), false, () => { EditorGUIUtility.systemCopyBuffer = AssetStudioCatalog.IdFor(guid); Toast("Copied " + AssetStudioCatalog.IdFor(guid)); });
         menu.AddSeparator("");
@@ -488,27 +497,29 @@ public partial class AssetStudioWindow : EditorWindow
         if (only != inGameOnly) { inGameOnly = only; EditorPrefs.SetBool(InGameOnlyKey, only); Filter(); listScroll = Vector2.zero; }
         GUI.Label(new Rect(r.x + 8, r.yMax - 24, r.width - 16, 18), "<color=#6fd46a>✔</color> = used in the game", new GUIStyle(dim) { richText = true });
         r.height -= 50;
-        var view = new Rect(0, 0, r.width - 16, (categories.Count + 6) * 30 + 12);
+        var view = new Rect(0, 0, r.width - 16, (categories.Count + 7) * 30 + 12);
         categoryScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 26, r.width, r.height - 26), categoryScroll, view);
-        if (GUI.Toggle(new Rect(4, 2, view.width - 4, 28), showingRecent, $"  Recent   <color=#a9a49a>{recent.Count}</color>", showingRecent ? cellSelected : cell) && !showingRecent)
+        // Dungeon: one dungeon the way a run goes, made, tuned and played in one place (AssetStudioWindow.Dungeon).
+        if (GUI.Toggle(new Rect(4, 2, view.width - 4, 28), showingDungeon, "  Dungeon   <color=#a9a49a>the Crypt</color>", showingDungeon ? cellSelected : cell) && !showingDungeon) OpenDungeon();
+        if (GUI.Toggle(new Rect(4, 32, view.width - 4, 28), showingRecent, $"  Recent   <color=#a9a49a>{recent.Count}</color>", showingRecent ? cellSelected : cell) && !showingRecent)
         { studioView = StudioView.Recent; search = ""; listScroll = Vector2.zero; Filter(); GUI.FocusControl(null); }
         int open = requestList.Count(q => q.status != DevReportStore.Status.Done && q.status != DevReportStore.Status.Failed);
-        if (GUI.Toggle(new Rect(4, 32, view.width - 4, 28), showingRequests, $"  Requests to Main   <color=#a9a49a>{open}</color>", showingRequests ? cellSelected : cell) && !showingRequests)
+        if (GUI.Toggle(new Rect(4, 62, view.width - 4, 28), showingRequests, $"  Requests to Main   <color=#a9a49a>{open}</color>", showingRequests ? cellSelected : cell) && !showingRequests)
         { studioView = StudioView.Requests; RefreshRequests(); GUI.FocusControl(null); }
         int total = categories.Sum(c => Count(c));
-        if (GUI.Toggle(new Rect(4, 62, view.width - 4, 28), showingAll, $"  Everything   <color=#a9a49a>{total}</color>", showingAll ? cellSelected : cell) && !showingAll)
+        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingAll, $"  Everything   <color=#a9a49a>{total}</color>", showingAll ? cellSelected : cell) && !showingAll)
         { studioView = StudioView.Everything; kindFilter = 0; listScroll = Vector2.zero; Filter(); GUI.FocusControl("search"); }
         // The World: the campaign and the levels as one tree, with New and Tidy (AssetStudioWindow.World).
-        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingWorld, "  Campaign   <color=#a9a49a>acts, places</color>", showingWorld ? cellSelected : cell) && !showingWorld) OpenWorld();
+        if (GUI.Toggle(new Rect(4, 122, view.width - 4, 28), showingWorld, "  Campaign   <color=#a9a49a>acts, places</color>", showingWorld ? cellSelected : cell) && !showingWorld) OpenWorld();
         // Levels: one page per level, its run, rooms and look (AssetStudioWindow.Levels).
-        if (GUI.Toggle(new Rect(4, 122, view.width - 4, 28), showingLevels, $"  Levels   <color=#a9a49a>{World.levels.Count(x => !x.tool)}</color>", showingLevels ? cellSelected : cell) && !showingLevels) OpenLevels();
+        if (GUI.Toggle(new Rect(4, 152, view.width - 4, 28), showingLevels, $"  Levels   <color=#a9a49a>{World.levels.Count(x => !x.tool)}</color>", showingLevels ? cellSelected : cell) && !showingLevels) OpenLevels();
         // Dialogue: every Dungeon Master line, by where it plays (AssetStudioWindow.Dialogue).
-        if (GUI.Toggle(new Rect(4, 152, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
+        if (GUI.Toggle(new Rect(4, 182, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
         for (int i = 0, line = 0; i < categories.Count; i++)
         {
             var c = categories[i];
             if (c.hidden) continue;
-            var row = new Rect(4, 12 + (line++ + 6) * 30, view.width - 4, 28);
+            var row = new Rect(4, 12 + (line++ + 7) * 30, view.width - 4, 28);
             bool on = studioView == StudioView.Category && i == categoryIndex;
             if (GUI.Toggle(row, on, $"  {c.name}   <color=#a9a49a>{Count(c)}</color>", on ? cellSelected : cell) && !on)
             {
@@ -523,6 +534,7 @@ public partial class AssetStudioWindow : EditorWindow
         if (showingRequests) { DrawRequestList(r); return; }
         if (showingWorld) { DrawWorldTree(r); return; }
         if (showingLevels) { DrawLevelList(r); return; }
+        if (showingDungeon) { DrawDungeonList(r); return; }
         GUI.Box(r, GUIContent.none);
         GUI.SetNextControlName("search");
         string s = EditorGUI.TextField(new Rect(r.x + 6, r.y + 6, r.width - 12, 22), search, EditorStyles.toolbarSearchField);
@@ -562,6 +574,8 @@ public partial class AssetStudioWindow : EditorWindow
             Texture icon = loaded is ItemData item && item.icon != null ? item.icon.texture : AssetPreview.GetAssetPreview(loaded) ?? AssetPreview.GetMiniThumbnail(loaded);
             if (icon != null) GUI.DrawTexture(new Rect(row.x + 4, row.y + 3, rowH - 8, rowH - 8), icon, ScaleMode.ScaleToFit);
             if (e.inGame) DrawCheck(new Rect(row.x + rowH - 18, row.y + rowH - 20, 15, 15));
+            // A room's kind in the icon's top corner (right-click the row to set it).
+            if (RoomsShown && loaded is GameObject roomGo && roomGo.GetComponent<DungeonRoomTemplate>() != null) AssetStudioRoomKinds.Badge(new Rect(row.x + 2, row.y + 1, 16, 16), roomGo);
             GUI.Label(new Rect(row.x + rowH + 2, row.y + 3, row.width - rowH, 18), e.name, EditorStyles.boldLabel);
             GUI.Label(new Rect(row.x + rowH + 2, row.y + 21, row.width - rowH, 16), (showingAll || showingRecent ? e.category + " · " : "") + e.kind + (string.IsNullOrEmpty(e.description) ? "" : " · " + e.description), dimLine);
             if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
@@ -590,6 +604,7 @@ public partial class AssetStudioWindow : EditorWindow
         if (showingRequests) { DrawRequest(r); return; }
         if (showingWorld && DrawWorldMiddle(ref r)) return;
         if (showingLevels) { DrawLevelPage(r); return; }
+        if (showingDungeon) { DrawDungeonPage(r); return; }
         GUI.Box(r, GUIContent.none);
         if (selected == null) { GUI.Label(new Rect(r.x + 16, r.y + 16, r.width - 32, 40), "Pick something on the left.", dim); return; }
         GUI.Label(new Rect(r.x + 14, r.y + 10, r.width - 28, 40), selected.name, titleStyle);
@@ -612,7 +627,7 @@ public partial class AssetStudioWindow : EditorWindow
         if (showingRequests) { DrawRequestDetails(r); return; }
         GUI.Box(r, GUIContent.none);
         // The World can show an asset the library doesn't list: just its inspector.
-        if (selected == null) { if ((showingWorld || showingLevels) && inspected != null) inspectorWanted = new Rect(r.x + 4, r.y + 8, r.width - 8, r.height - 12); return; }
+        if (selected == null) { if ((showingWorld || showingLevels || showingDungeon) && inspected != null) inspectorWanted = new Rect(r.x + 4, r.y + 8, r.width - 8, r.height - 12); return; }
         float y = r.y + 8;
         GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "DETAILS", gold); y += 18;
         if (!string.IsNullOrEmpty(selected.description)) { float dh = dim.CalcHeight(new GUIContent(selected.description), r.width - 16); GUI.Label(new Rect(r.x + 8, y, r.width - 16, dh), selected.description, dim); y += dh + 4; }
@@ -878,7 +893,7 @@ public partial class AssetStudioWindow : EditorWindow
     void HandleKeys()
     {
         var e = Event.current;
-        if (showingWorld || showingDialogue) return;   // the World's tree is clicked, not stepped through; Dialogue is typed in
+        if (showingWorld || showingDialogue || showingDungeon) return;   // the World's tree and the Dungeon's pages are clicked, not stepped through; Dialogue is typed in
         if (!EditorGUIUtility.editingTextField && preview != null && preview.HandlePaintKey(e)) return;
         if (e.type != EventType.KeyDown || GUI.GetNameOfFocusedControl() == "search" && e.keyCode != KeyCode.DownArrow && e.keyCode != KeyCode.UpArrow) return;
         if (EditorGUIUtility.editingTextField && GUI.GetNameOfFocusedControl() != "search") return;

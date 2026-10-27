@@ -5,7 +5,7 @@
 
    python Tools/arena_style.py <out dir>
 
-Writes "Arena sand.png", "Arena floor.png", "Arena wall.png" and "Arena trim.png" into <out dir>. Same density as the Church style
+Writes "Arena sand.png", "Arena floor.png", "Arena wall.png" and "Arena trim.png" into <out dir>. Same density as the Cellar1 style
 (256 texels per 2 m of floor at the material's 1.5 tiling).
 """
 import math

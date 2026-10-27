@@ -81,6 +81,8 @@ public partial class DungeonGenerator : MonoBehaviour
     // propRandom (Growth) draw wall decorations, dead ends and furnishing rules.
     System.Random extraRandom;
     DungeonRoomTemplate[] templates;
+    // The hand-built interior a room was built from (null: generated).
+    public DungeonRoomTemplate BuiltFrom(int room) => templates != null && room >= 0 && room < templates.Length ? templates[room] : null;
     GameObject[] templateInstances;
     readonly System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<DungeonSocket>> actorSockets = new();
     readonly System.Collections.Generic.Dictionary<GameObject,int> featureCounts = new();

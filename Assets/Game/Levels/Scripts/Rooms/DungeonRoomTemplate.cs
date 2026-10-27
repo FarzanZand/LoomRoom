@@ -21,11 +21,20 @@ using UnityEngine;
 // mirrored); the prefab turns with it.
 // What happens in a hand-built combat room. Serialized by value: append only.
 public enum DungeonRoomEvent { Rolled = 0, None = 1, Ambush = 2, SleepingPack = 3 }
+// What kind of room it is, for sorting rooms in the Asset Studio (nothing in the game reads it). Scripted: a room with an
+// event of its own (the Skeleton Party, the tavern, a boss stage); Active: something in it does something (spikes, a
+// chest, a shrine, a pit, a portal); Visual: only decor. Serialized by value: append only.
+public enum DungeonRoomKind { Unsorted = 0, Scripted = 1, Active = 2, Visual = 3 }
 
 [ExecuteAlways]
 public class DungeonRoomTemplate : MonoBehaviour
 {
     bool UsesAsset => !paintFootprint;
+
+    [Tooltip("What kind of room this is, for sorting rooms in the Asset Studio (right-click a room there to set it). Scripted: an event of its own; Active: something in it does something (spikes, a chest, a shrine); Visual: only decor. The game doesn't read it.")]
+    public DungeonRoomKind kind;
+    [TextArea(2, 5), Tooltip("For the designer: what this room is and what it does in a run, in a sentence or two (not what props are in it). Shown in the Asset Studio. The game doesn't read it.")]
+    public string description;
 
     [Title("Footprint")]
     [Tooltip("Paint the room's outline, pillars and door cells right here instead of referencing a Room Shape asset.")]

@@ -1,7 +1,7 @@
 """Dungeon room style surfaces from Meshy paintings: one seamless tile per wall segment or floor cell, 128 texels per unit.
 
 A painting has about 190 painted pixels across, less than a wall tile (256 x 384 texels: a 2-unit segment by the 3-unit
-tile height, as the Church styles) or a floor tile (256 x 256, a 2 x 2 cell), so a crop would repeat inside the tile. Instead:
+tile height, as the Cellar styles) or a floor tile (256 x 256, a 2 x 2 cell), so a crop would repeat inside the tile. Instead:
   1. grid   the painting is brought down to one texel per painted pixel (the painted grid's period and phase found
             from where colour changes; each texel is its cell's middle);
   2. quilt  a 384 x 384 tile is laid from overlapping square patches of those texels (each patch picked among the

@@ -53,8 +53,16 @@ public static class GameLauncher
             if (!EditorApplication.isCompiling && !DebugDungeonToolbar.RestartPending) SessionState.EraseString(PendingKey);
             return;
         }
-        if (!GameReady) return;
         var parts = action.Split('|');
+        // A place picked on the map: the map view is no Explore state, so this one doesn't wait for one.
+        if (parts[0] == "click")
+        {
+            if (!EditorApplication.isPlaying || !CampaignManager.HasInstance || !CampaignManager.Instance.InMapView) return;
+            SessionState.EraseString(PendingKey);
+            CampaignManager.Instance.TestClick(parts[1]);
+            return;
+        }
+        if (!GameReady) return;
         switch (parts[0])
         {
             case "give":
@@ -97,6 +105,12 @@ public static class GameLauncher
                     ProgressionManager.Instance.SetFlag(CampaignManager.DeathsPrefix + parts[1], deaths);
                     if (parts.Length > 3 && parts[3].Length > 0) ProgressionManager.Instance.SetFlag(CampaignManager.OpenedPrefix + parts[3], 0);
                 }
+                TableManager.Instance.Play();
+                break;
+            case "place":
+                // place|<id>: at the table, then (click|<id>) that place picked on the map once it is up.
+                if (!TableManager.HasInstance) return;
+                Pend("click|" + parts[1]);
                 TableManager.Instance.Play();
                 break;
             default:
@@ -176,12 +190,15 @@ public static class GameLauncher
     // A run of this level opening at one of its stages (0 = the first), from the Debug arena; boss: that stage cut to
     // one floor, so its guardian waits on the first floor. A level without stages has one, its base biome (stage 0).
     // The level itself is not changed (the run plays a copy).
-    public static string PlayStage(TableLevelData level, int stage, bool boss)
+    // force: a room event every room that can have it gets on that run (ForceEvent: ambush, sleep, shrine, trap, dark,
+    // eerie), to try it at once.
+    public static string PlayStage(TableLevelData level, int stage, bool boss, string force = null)
     {
         if (level == null) return "No level.";
         var biome = !level.HasStages ? level.baseBiome : level.stages != null && stage >= 0 && stage < level.stages.Length ? level.stages[stage]?.biome : null;
         if (!level.HasStages) stage = 0;
-        if (!StartRun($"run|{Guid(level)}|{stage}|{(boss ? 1 : 0)}|")) return failure;
+        if (!StartRun($"run|{Guid(level)}|{stage}|{(boss ? 1 : 0)}|||{force}")) return failure;
+        if (!string.IsNullOrEmpty(force)) return $"Starting {level.name} at {(biome != null ? biome.name : "stage " + (stage + 1))} with {ForcedName(force)}.";
         string where = biome != null ? biome.name : "stage " + (stage + 1);
         return boss ? $"Starting {level.name} at the boss of {where}." : $"Starting {level.name} at {where}.";
     }
@@ -223,6 +240,18 @@ public static class GameLauncher
         string result = OpenTable($"table|{shut.deathsIn.id}|{deaths}|{shut.id}");
         return result.StartsWith("Nothing") ? result : result + $" {deaths} death{(deaths == 1 ? "" : "s")} in {shut.deathsIn.displayName} first.";
     }
+
+    // A run started the way a player starts it: the room, the table, then this place clicked on the campaign map (the
+    // map goes and the floor is built on the table). The save in use, as Room does.
+    public static string PlayFromTable(CampaignEncounter place)
+    {
+        if (place == null || string.IsNullOrEmpty(place.id)) return "No place on the map plays it.";
+        string result = OpenTable("place|" + place.id);
+        return result.StartsWith("Nothing") ? result : $"Going to the table to start {place.displayName}.";
+    }
+
+    // The Boss toolbar button: the boss stage in front of the Dungeon Master, nothing else.
+    public static string PlayBossStage() => Launch(DebugDungeonToolbar.StartBoss) ? "Starting on the boss stage: walk to its middle." : failure;
 
     static string OpenTable(string action)
     {
@@ -317,9 +346,44 @@ public static class GameLauncher
         if (stages.Count > 0) copy.stages = stages.ToArray();
         // No stages: its floors run on its base biome, so the boss test is one floor with the base biome's guardian on it.
         else if (boss) { copy.floors = 1; copy.bossOnLastFloor = true; }
+        // A room event forced on: copies of the base biome and of each stage biome with settings of its own, with it set to
+        // come wherever it can (the assets are not changed).
+        string force = parts.Length > 6 ? parts[6] : "";
+        if (force.Length > 0)
+        {
+            if (copy.baseBiome != null) { var b = Object.Instantiate(copy.baseBiome); b.name = copy.baseBiome.name; ForceEvent(b.roomFeatures, force); copy.baseBiome = b; }
+            foreach (var s in stages)
+                if (s.biome != null && s.biome.overrideDungeonSettings) { var b = Object.Instantiate(s.biome); b.name = s.biome.name; ForceEvent(b.roomFeatures, force); s.biome = b; }
+            if (stages.Count > 0) copy.stages = stages.ToArray();
+        }
         var first = stages.Count > 0 ? stages[0].biome : copy.baseBiome;
-        Debug.Log($"[Asset Studio] Testing {(map != null ? map.name + " in " : "")}{level.name}{(first != null ? " from " + first.name : "")}{(boss ? ", boss floor" : "")}.");
+        Debug.Log($"[Asset Studio] Testing {(map != null ? map.name + " in " : "")}{level.name}{(first != null ? " from " + first.name : "")}{(boss ? ", boss floor" : "")}{(force.Length > 0 ? ", with " + ForcedName(force) : "")}.");
         loader.Load(copy, skipReveal: true);
+    }
+
+    public static string ForcedName(string force) => force switch
+    {
+        "ambush" => "an ambush",
+        "sleep" => "every pack asleep",
+        "shrine" => "a shrine in every room that can have one",
+        "trap" => "every chest trapped",
+        "dark" => "every generated room dark",
+        "eerie" => "every generated room green-lit",
+        _ => force,
+    };
+
+    static void ForceEvent(DungeonRoomFeatures f, string force)
+    {
+        if (f == null) return;
+        switch (force)
+        {
+            case "ambush": f.ambushes = true; f.ambushChance = 1; f.maxAmbushes = 1; break;
+            case "sleep": f.sleepingPacks = true; f.sleepChance = 1; f.maxSleepingPacks = 0; f.ambushes = false; break;
+            case "shrine": f.shrineBargains = true; f.shrineChance = 1; break;
+            case "trap": f.trappedTreasure = true; f.trapChance = 1; break;
+            case "dark": f.darkRooms = true; f.darkChance = 1; break;
+            case "eerie": f.eerieRooms = true; f.eerieChance = 1; f.darkChance = 0; break;
+        }
     }
 
     static void ShowEvent(CampaignEventUI screen, CampaignEvent e)

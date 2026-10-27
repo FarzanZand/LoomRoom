@@ -2,7 +2,7 @@ using System.Text;
 using UnityEngine;
 
 // Builds many floors of a level in a row (Play mode, from an eval) and reports every one that fails to generate:
-// DungeonStressTest.Run("Assets/Game/Levels/Forest1/Forest1.asset", 20, 3) builds 20 seeds x floors 1-3. A floor the
+// DungeonStressTest.Run("Assets/Game/Levels/Dungeon1/Dungeon1.asset", 20, 3) builds 20 seeds x floors 1-3. A floor the
 // loader can't build after its retries shows "Could not load that level", so a level should pass with 0 failures.
 // Each floor's portal pockets are built too (PortalArch.PrebuildAll); a pocket that fails counts as a failure.
 // Writes Temp/stress.log (with each failure's exception and stack) and returns the summary. Outside Play mode the floors

@@ -105,13 +105,13 @@ public static partial class ArenaSetup
     // ── The look ──
 
     // The Arena style: the textures Tools/arena_style.py paints (grey stone with moss since 2026-10-25), on copies of the
-    // Church style's materials (same shader), point filtered, never scaled to a power of two, each tiled to the Church's
+    // Cellar1 style's materials (same shader), point filtered, never scaled to a power of two, each tiled to the Cellar1's
     // 384 texels an architecture tile: the 512 floor at .75 (it repeats every two board cells), the 256 x 192 wall at
     // 1.5 x 2, the 256 trim at 1.5.
     static DungeonRoomStyle Style()
     {
         string dir = Dir + "/Styles";
-        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Church.asset");
+        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Cellar1.asset");
         Material Mat(string name, Material like, string texture, Vector2 tiling)
         {
             string tex = $"{dir}/{texture}.png", path = $"{dir}/{name}.mat";
@@ -167,7 +167,7 @@ public static partial class ArenaSetup
         {
             DungeonBiome old = null;
             foreach (var s in level.stages) if (s != null && s.biome != null) { old = s.biome; break; }
-            var from = old != null && AssetDatabase.GetAssetPath(old).StartsWith(Dir + "/") ? old : AssetDatabase.LoadAssetAtPath<DungeonBiome>("Assets/Game/Levels/Shared/Biomes/Cellars.asset");
+            var from = old != null && AssetDatabase.GetAssetPath(old).StartsWith(Dir + "/") ? old : AssetDatabase.LoadAssetAtPath<DungeonBiome>("Assets/Game/Levels/Shared/Biomes/Cellars1.asset");
             b.FoldIn(from);
             log.Append($"the base biome takes {(from != null ? from.name : "nothing")}'s enemies, loot and look; ");
         }
@@ -181,10 +181,9 @@ public static partial class ArenaSetup
         b.guardian.enabled = false;
         b.roomStyles = new[] { new DungeonStyleChoice { style = style, weight = 1f } };
         b.destructiblesPerRoom = Vector2Int.zero;
-        // A board on the table, lit and edged like the Old Wood's.
-        var forest = AssetDatabase.LoadAssetAtPath<TableLevelData>("Assets/Game/Levels/Forest1/Forest1.asset");
-        b.boardLightColor = forest.boardLightColor; b.boardLightIntensity = forest.boardLightIntensity * .6f;   // pale sand takes less light than a forest floor
-        b.boardGridMaterial = forest.boardGridMaterial; b.boardEdgeMaterial = forest.boardEdgeMaterial;
+        // A board on the table, lit and edged as the Old Wood's was (the Old Wood is gone since 2026-10-27).
+        b.boardLightColor = new Color(1f, .86f, .68f); b.boardLightIntensity = 2600f * .6f;   // pale sand takes less light than a forest floor
+        b.boardGridMaterial = null; b.boardEdgeMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Levels/Shared/Board/Board edge.mat");
         EditorUtility.SetDirty(b);
         return b;
     }

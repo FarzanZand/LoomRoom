@@ -47,6 +47,9 @@ MonoBehaviour:
   type: 6
   chance: 1
   overridePrefab: {fileID: 0}
+  archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &7318103106866180065
@@ -96,6 +99,9 @@ MonoBehaviour:
   type: 6
   chance: 1
   overridePrefab: {fileID: 0}
+  archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &7647481684650771359
@@ -147,6 +153,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: 'Where every run starts: open overhead for the flight in, a gold chest
+    with a potion, and one door out facing the Dungeon Master.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -165,11 +174,19 @@ MonoBehaviour:
   heightTiles: 1
   openCeiling: 1
   ceilingFrame: 0.35
+  skylightRadius: 0
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 1
+  addFurnishing: 0
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
+  roomEvent: 0
   replaceGeneratedTorches: 1
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 11400000, guid: 42db8accb58492743bedbc91bbca4ba3, type: 2}
   previewCellSize: 2
 --- !u!1001 &2946215204002954859

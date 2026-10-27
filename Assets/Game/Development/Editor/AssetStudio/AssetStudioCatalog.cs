@@ -135,7 +135,8 @@ public static class AssetStudioCatalog
             var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (go == null) return null;
             if (go.GetComponent<DungeonMapTemplate>() != null) return Add(C("Levels & biomes"), guid, path, "Map template", Folder(path));
-            if (go.GetComponent<DungeonRoomTemplate>() != null) return Add(C("Rooms"), guid, path, "Room template", Folder(path));
+            // A room's own description first (DungeonRoomTemplate.description), then its folder.
+            if (go.TryGetComponent<DungeonRoomTemplate>(out var room)) return Add(C("Rooms"), guid, path, "Room template", string.IsNullOrWhiteSpace(room.description) ? Folder(path) : room.description.Trim() + " · " + Folder(path));
             var character = go.GetComponent<Character>();
             // The two players keep their Character on a child (Controller), under the camera rig's root.
             var player = character == null ? go.GetComponentInChildren<Player>(true) : null;

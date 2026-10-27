@@ -110,11 +110,14 @@ public class TableLevelLoader : MonoBehaviour
         if(!Busy) menu.Show(title);
     }
     // skipReveal: straight in behind a fade, as the debug sessions do (the dev console's loadtemplate).
-    public void Load(TableLevelData level, bool skipReveal=false)
+    // startFloor: the run's first floor (the toolbar's floor pick); 1 in play.
+    public void Load(TableLevelData level, bool skipReveal=false, int startFloor=1)
     {
         if(Busy || level==null) return;
+        pendingStartFloor = Mathf.Clamp(startFloor, 1, Mathf.Max(1, level.FloorCount));
         Initialize(); StartCoroutine(LoadRoutine(level,false,skipReveal));
     }
+    int pendingStartFloor = 1;
     AdventureSave.Checkpoint pendingResume;
     // The current run was continued from a save, not started fresh.
     public bool Resumed { get; private set; }
@@ -154,7 +157,8 @@ public class TableLevelLoader : MonoBehaviour
         int previousFloor=FloorNumber, previousSeed=runSeed;
         if(!descending) LoadStarted?.Invoke();
         if(descending) FloorNumber++;
-        else { FloorNumber=1;runSeed=level.fixedSeed!=0 ? level.fixedSeed : UnityEngine.Random.Range(1,int.MaxValue); }
+        else { FloorNumber=pendingStartFloor;runSeed=level.fixedSeed!=0 ? level.fixedSeed : UnityEngine.Random.Range(1,int.MaxValue); }
+        pendingStartFloor=1;
         var resume = pendingResume; pendingResume = null;
         if (!descending) Resumed = resume != null;
         if (resume != null) { FloorNumber = resume.floor; runSeed = resume.seed; }

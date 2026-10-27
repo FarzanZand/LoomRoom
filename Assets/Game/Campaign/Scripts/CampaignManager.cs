@@ -47,6 +47,8 @@ public partial class CampaignManager : Singleton<CampaignManager>
     [TabGroup("Rules"), Tooltip("Said when the map grows.")]
     public DungeonMaster.Line grewLine = new() { text = "The map grows. New roads, new trouble.", inPerson = true };
     [TabGroup("Rules"), Tooltip("Beating this place wins the campaign (flag campaign.won).")] public CampaignEncounter finalPlace;
+    [TabGroup("Rules"), Min(1), Tooltip("The last act made: acts after it stay under their cloth whatever a save says (1 while only act 1 is played; their land is held by the empty markers \"Act N land\" on the map).")]
+    public int lastAct = 1;
     [TabGroup("Rules"), Tooltip("Said back at the map once the final place is beaten.")]
     public DungeonMaster.Line wonLine = new() { text = "That was the last of it. The whole realm, start to end. Well played.", inPerson = true };
 
@@ -140,7 +142,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
 
     static ProgressionManager PM => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
     int MaxAct => Map != null ? Map.MaxAct : 4;
-    int SavedAct => Mathf.Clamp(Mathf.Max(firstAct, PM != null ? PM.GetFlag(ActFlag) : 0), 1, MaxAct);
+    int SavedAct => Mathf.Clamp(Mathf.Max(firstAct, PM != null ? PM.GetFlag(ActFlag) : 0), 1, Mathf.Max(1, Mathf.Min(MaxAct, lastAct)));
     public int OpenAct => openEverything ? MaxAct : SavedAct;
     // Revealed acts: the save's, or more this session while openEverything (debug) shows them without saving.
     int RevealedAct => Mathf.Max(firstAct, Mathf.Max(revealedNow, PM != null ? PM.GetFlag(RevealedFlag) : 0));

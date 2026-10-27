@@ -66,6 +66,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: 'The merchant''s stall room: the shop for levels without a tavern
+    (the Arena, the intro, the Peddler''s Cellar, the test arenas).'
   paintFootprint: 0
   footprint: {fileID: 0}
   allowRotation: 1
@@ -78,13 +81,18 @@ MonoBehaviour:
   openCeiling: 0
   ceilingFrame: 0.35
   skylightRadius: 0
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
   roomEvent: 0
   replaceGeneratedTorches: 0
   overrideLightColor: 1
   lightColor: {r: 1, g: 0.72, b: 0.42, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 11400000, guid: 42db8accb58492743bedbc91bbca4ba3, type: 2}
   previewCellSize: 2
 --- !u!1 &1471501655186130260
@@ -486,6 +494,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1001 &306860486750785529

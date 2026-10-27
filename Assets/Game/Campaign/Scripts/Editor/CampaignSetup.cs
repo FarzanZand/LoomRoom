@@ -29,7 +29,7 @@ public static class CampaignSetup
         var cm = contents.GetComponent<CampaignManager>();
         cm.mapPrefab = AssetDatabase.LoadAssetAtPath<CampaignMap>(CampaignMapBuilder.PrefabPath);
         var enc = new System.Collections.Generic.List<CampaignEncounter>();
-        foreach (var name in new[] { "Home", "The Crypt", "The Old Wood", "The Mill", "Soldiers' Camp", "Market Town", "Hill Tower", "Broken Keep", "Ember Shrine", "The Black Fort" })
+        foreach (var name in new[] { "Home", "The Crypt", "The Mill" })
         {
             var e = FindEncounter(name);
             if (e != null) enc.Add(e);

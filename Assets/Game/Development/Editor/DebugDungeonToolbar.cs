@@ -46,6 +46,7 @@ public static class DebugDungeonToolbar
         new MainToolbarButton(new MainToolbarContent("Debug", "Start the test arena: one open room, enemies from Debug Dungeon Settings standing just outside detection range."), () => StartDebug()),
         new MainToolbarButton(new MainToolbarContent("Dungeon", "Generate the level picked in the dropdown next to it and play it straight away, skipping the room."), () => StartDungeon()),
         new MainToolbarDropdown(new MainToolbarContent(DungeonLabel(), "The level the Dungeon button plays (WorldManager's Debug Dungeons)."), ShowDungeonMenu),
+        new MainToolbarDropdown(new MainToolbarContent("Floor " + DebugDungeonSession.StartFloor, "The floor the Dungeon button starts the run on."), ShowFloorMenu),
         new MainToolbarButton(new MainToolbarContent("Boss", "Start on the boss stage in front of the Dungeon Master (Boss Debug level). Walk to the middle of the stage and he sets the boss down."), () => StartBoss()),
         new MainToolbarButton(new MainToolbarContent("Room", "Start in the room as the room player on an ordinary morning: no intro, wake-up or character sheet. Uses the normal save."), () => StartRoom()),
         new MainToolbarToggle(new MainToolbarContent("Fullscreen", "Play in a borderless Game view covering the whole monitor (F11 toggles it by hand)."), FullscreenGameView.OnPlay, FullscreenGameView.SetOnPlay),
@@ -87,6 +88,23 @@ public static class DebugDungeonToolbar
         {
             if (WorldManager.HasInstance) { Selection.activeObject = WorldManager.Instance; EditorGUIUtility.PingObject(WorldManager.Instance); }
         });
+        menu.DropDown(rect);
+    }
+
+    static void ShowFloorMenu(UnityEngine.Rect rect)
+    {
+        var menu = new UnityEditor.GenericMenu();
+        var level = DebugDungeonSession.SelectedDungeon;
+        int floors = level != null ? UnityEngine.Mathf.Max(1, level.FloorCount) : 1, current = DebugDungeonSession.StartFloor;
+        for (int f = 1; f <= floors; f++)
+        {
+            int floor = f;
+            menu.AddItem(new UnityEngine.GUIContent("Floor " + floor), floor == current, () =>
+            {
+                EditorPrefs.SetInt(DebugDungeonSession.StartFloorKey, floor);
+                MainToolbar.Refresh("LoomRoom/Debug");
+            });
+        }
         menu.DropDown(rect);
     }
 

@@ -208,6 +208,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: 'Behind the Portal hall''s portal: skeletons dance and ignore you.
+    Open the chest (a Legendary piece and gold) or hit one and they all attack.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -227,6 +230,7 @@ MonoBehaviour:
   openCeiling: 1
   ceilingFrame: 0.3
   skylightRadius: 2
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 0
   addFurnishing: 0
   replaceGeneratedEnemies: 1

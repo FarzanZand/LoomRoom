@@ -48,6 +48,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &5364221619945644165
@@ -101,6 +103,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: A small moonlit rest room round a fountain to drink from. Sometimes
+    something crawls out of it.
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -118,12 +123,18 @@ MonoBehaviour:
   openCeiling: 1
   ceilingFrame: 0.3
   skylightRadius: 1
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 0
+  addFurnishing: 0
   replaceGeneratedEnemies: 1
+  socketEnemiesOnly: 0
   roomEvent: 0
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  enterLines: []
+  enterChance: 1
+  enterInPerson: 0
   previewLevel: {fileID: 0}
   previewCellSize: 2
 --- !u!114 &5871339890619786785
@@ -189,6 +200,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 0}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &7185980776285698153
@@ -239,6 +252,8 @@ MonoBehaviour:
   chance: 1
   overridePrefab: {fileID: 1139990893470972911, guid: 69b99ad0ca2199f40ba3c9ac972343da, type: 3}
   archer: 0
+  faceWall: 0
+  wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1001 &4505814217217344051

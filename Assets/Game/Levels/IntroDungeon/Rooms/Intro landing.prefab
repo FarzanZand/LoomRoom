@@ -177,6 +177,11 @@ PrefabInstance:
       value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 7158968555923997367, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+      propertyPath: description
+      value: The intro's first room, open to the sky for the way in. A gold chest
+        gives the first gear.
+      objectReference: {fileID: 0}
+    - target: {fileID: 7158968555923997367, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
       propertyPath: previewLevel
       value: 
       objectReference: {fileID: 11400000, guid: c645aab0a734a674c819d23a78475cc7, type: 2}

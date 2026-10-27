@@ -53,6 +53,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: A small fight round a collapsed stairwell that drops into a pit.
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -70,6 +72,7 @@ MonoBehaviour:
   openCeiling: 0
   ceilingFrame: 0.3
   skylightRadius: 0
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 0
   addFurnishing: 0
   replaceGeneratedEnemies: 1

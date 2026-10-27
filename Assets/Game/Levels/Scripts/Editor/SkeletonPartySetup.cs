@@ -208,7 +208,7 @@ public static class SkeletonPartySetup
         var portal = AssetDatabase.LoadAssetAtPath<GameObject>(Portal);
         var cell = AssetDatabase.LoadAssetAtPath<GameObject>(Chunks + "Cell block.prefab");
         var gateHall = AssetDatabase.LoadAssetAtPath<GameObject>(Chunks + "Gate hall.prefab");
-        foreach (var path in new[] { "Assets/Game/Levels/Shared/Biomes/Cellars.asset", "Assets/Game/Levels/Shared/Biomes/Crypt.asset" })
+        foreach (var path in new[] { "Assets/Game/Levels/Shared/Biomes/Cellars1.asset", "Assets/Game/Levels/Shared/Biomes/Cellars3.asset" })
         {
             var biome = AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
             var list = new List<DungeonBiome.RoomTemplateChoice>(biome.roomTemplates ?? new DungeonBiome.RoomTemplateChoice[0]);

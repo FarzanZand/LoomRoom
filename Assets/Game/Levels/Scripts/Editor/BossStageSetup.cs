@@ -14,7 +14,7 @@ public static class BossStageSetup
     const string BeamFolder = "Assets/Game/Combat/Effects/DM beam";
     const string StagePath = "Assets/Game/Levels/Shared/Rooms/Scripted/Boss stage.prefab";
     const string FightPath = "Assets/Game/Levels/Dungeon1/Biomes/Crypt Lord fight.asset";
-    const string CryptBiome = "Assets/Game/Levels/Shared/Biomes/Crypt.asset";
+    const string CryptBiome = "Assets/Game/Levels/Shared/Biomes/Cellars3.asset";
     const string CryptLord = "Assets/Game/Characters/Enemies/Crypt/Crypt Lord.prefab";
     const string Acolyte = "Assets/Game/Characters/Enemies/Crypt/Crypt Acolyte.prefab";
     const string Brazier = "Assets/Game/Levels/Shared/Props/Furnishing/Brazier.prefab";

@@ -21,10 +21,6 @@ public class SyntyPackageHelper
     //Non async way of quickly checking a package is added to the package manager
     public static bool IsPackageInstalled(string packageId)
     {
-        // A Multiplayer Play Mode clone has no Packages/manifest.json of its own, so ask the Package Manager first.
-        if ( UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages().Any(p => p.name == packageId) )
-            return true;
-
         if ( !File.Exists("Packages/manifest.json") )
             return false;
 
@@ -47,6 +43,8 @@ public class SyntyPackageHelper
             }
         }
 
+        Debug.Log($"Loaded {configs.Count} ExamplePackConfig assets");
+
         return configs.ToArray();
     }
 
@@ -57,7 +55,7 @@ public class SyntyPackageHelper
         ProcessConfigs(LoadSyntyPackageHelperConfigs());
     }
 
-    [MenuItem("Tools/Synty/Package Helper/Install Packages")]
+    [MenuItem("Synty/Package Helper/Install Packages")]
     public static void InstallShaderGraphPackage()
     {
         ProcessConfigs(LoadSyntyPackageHelperConfigs(), true);

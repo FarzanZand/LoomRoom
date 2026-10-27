@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48c5a50007786234094ff52307f8238e, type: 3}
+  m_Name: Act 3 land
+  m_EditorClassIdentifier: Assembly-CSharp::CampaignEncounter
+  id: act3land
+  displayName: Act 3
+  kind: 1
+  level: {fileID: 0}
+  act: 3
+  description: Holds act 3's land under its cloth until the act is made.
+  pickedLine:
+    text: 
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  deathsToOpen: 0
+  deathsIn: {fileID: 0}
+  openedLine:
+    text: 
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  shutHint:
+    text: 
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  rumoured: 0
+  rumour: 
+  rumourTold: 
