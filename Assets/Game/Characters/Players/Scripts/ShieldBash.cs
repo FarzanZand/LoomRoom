@@ -100,6 +100,9 @@ public class ShieldBash : MonoBehaviour
     {
         phase = Phase.Dash;
         lastPosition = transform.position;
+        // A dash blocked from its first frame (a wall, a door, a friendly body) moves nothing: it ends on time anyway.
+        var t = Tuning;
+        phaseEnds = Time.time + (t != null ? t.distance / Mathf.Max(.5f, t.speed) : .4f) + .15f;
         Streaks(true);
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.CompleteQuest(ProgressionManager.ShieldBashQuest);
     }
@@ -115,7 +118,7 @@ public class ShieldBash : MonoBehaviour
 
         var target = FindTarget(t, step);
         if (target != null) { Hit(target, t); EndDash(t); return; }
-        if (travelled >= t.distance) { EndDash(t); return; }
+        if (travelled >= t.distance || Time.time >= phaseEnds) { EndDash(t); return; }
         if (motor != null) motor.DashVelocity = direction * t.speed;
     }
 

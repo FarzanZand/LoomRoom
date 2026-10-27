@@ -39,7 +39,7 @@ public class EquipmentSlotUI : MonoBehaviour,IPointerClickHandler,IPointerEnterH
         var item=player?.Equipment?.Get(slot);
         if(item==null || !ItemDragHandler.HasInstance)return;
         var size=((RectTransform)transform).rect.size;
-        if(Equipment.IsHand(slot)){int at=player.Hotbar.IndexOf(item);if(at<0)return;ItemDragHandler.Instance.BeginEquipped(player.Hotbar,at,null,item,size);}
+        if(Equipment.IsHand(slot)){int at=player.Equipment.HeldIndex(slot);if(at<0)return;ItemDragHandler.Instance.BeginEquipped(player.Hotbar,at,null,item,size);}
         else ItemDragHandler.Instance.BeginEquipped(null,-1,slot,item,size);
         if(TooltipUI.HasInstance)TooltipUI.Instance.Hide();
     }

@@ -60087,6 +60087,8 @@ GameObject:
   m_Component:
   - component: {fileID: 509792815}
   - component: {fileID: 509792816}
+  - component: {fileID: 509792818}
+  - component: {fileID: 509792817}
   m_Layer: 5
   m_Name: Pause menu
   m_TagString: Untagged
@@ -60141,6 +60143,47 @@ MonoBehaviour:
   confirmNo: {fileID: 1468000394}
   mainMenuScene: Main Menu
   runLoss: Your run picks up at the start of this floor.
+--- !u!114 &509792817
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 509792814}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!223 &509792818
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 509792814}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 1
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 1100
+  m_TargetDisplay: 0
 --- !u!1 &511353777
 GameObject:
   m_ObjectHideFlags: 0
@@ -92048,11 +92091,6 @@ MonoBehaviour:
   DM: {fileID: 8548514477388622717}
   dmPlacement: {fileID: 8272895588190165703}
   prompt: Play
-  talkFirst:
-    text: Not yet. Talk to me first.
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 1
   endingLine:
     text: Not now. The door's open. Go and get some air.
     voice: {fileID: 0}
@@ -155526,6 +155564,9 @@ MonoBehaviour:
       roomDark: 0
       roomShade: {r: 0, g: 0, b: 0, a: 0}
       minAmbient: 0
+      onFloor: 0
+      fogStart: 0
+      fogEnd: 0
   hasSavedDefault: 0
   baseSkybox: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
   lightRadius: 1

@@ -492,8 +492,9 @@ public class EnemyAttackRunner
         if (spell.projectile == null) return;
         if (cast.volley)
         {
-            var from = hand; var body = brain.transform;
-            FireballVolley.Cast(spell, Character, () => from != null ? from.position : body.position + Vector3.up * 1.8f, target, damage, cast.volleySettings);
+            var from = hand; var body = brain.transform; var last = body.position + Vector3.up * 1.8f;
+            // The caster can be gone before every ball is out (killed, or its floor unloaded): the last place it was.
+            FireballVolley.Cast(spell, Character, () => from != null ? last = from.position : body != null ? last = body.position + Vector3.up * 1.8f : last, target, damage, cast.volleySettings);
             return;
         }
         Vector3 aim = AimPoint(target);

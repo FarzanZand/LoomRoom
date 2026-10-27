@@ -33,7 +33,7 @@ public static class DungeonStressTest
         var level = UnityEditor.AssetDatabase.LoadAssetAtPath<TableLevelData>(levelPath);
         if (level == null) return "no level at " + levelPath;
         var report = new StringBuilder();
-        int fails = 0, built = 0, pockets = 0, pocketFails = 0;
+        int fails = 0, built = 0, pockets = 0, pocketFails = 0, noExit = 0;
         var pocketErrors = new System.Collections.Generic.List<string>();
         var previous = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
         var testScene = BeginTestScene();
@@ -51,6 +51,8 @@ public static class DungeonStressTest
                     catch (System.Exception e) { fails++; generator = null; report.AppendLine($"seed {seed} floor {floor}: {e.GetType().Name}: {e.Message}\n{e.StackTrace}"); }
                     if (generator != null)
                     {
+                        // Every floor has its way in and its stairs on (on a stage, hidden until the boss falls).
+                        if (generator.GetComponentsInChildren<DungeonExit>(true).Length < 2) { noExit++; report.AppendLine($"seed {seed} floor {floor}: no stairs on"); }
                         pocketErrors.Clear();
                         pocketFails += PortalArch.PrebuildAll(generator, unchecked(seed + floor * 104729), pocketErrors);
                         foreach (var error in pocketErrors) report.AppendLine($"seed {seed} floor {floor} pocket: {error}");
@@ -63,7 +65,7 @@ public static class DungeonStressTest
             }
         }
         finally { EndTestScene(testScene, previous); }
-        string summary = $"{level.name}: {fails} of {fails + built} floors failed, {pocketFails} of {pocketFails + pockets} portal pockets failed";
+        string summary = $"{level.name}: {fails} of {fails + built} floors failed, {noExit} without stairs, {pocketFails} of {pocketFails + pockets} portal pockets failed";
         System.IO.File.WriteAllText("Temp/stress.log", summary + "\n" + report);
         return summary;
 #else

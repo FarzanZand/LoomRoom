@@ -19,16 +19,19 @@ public class ArenaFight : MonoBehaviour
     readonly List<DungeonExit> exits = new();
     bool done;
 
-    bool started;
-    // Watched by the floor itself (DungeonGenerator calls this as it is built), so the fight counts whether or not its room
-    // is on the table yet: a board level keeps the rooms behind a closed door off the table until it opens, and a room
-    // switched off then would never start its own watch.
+    bool started, watching;
+    // Watched by the floor itself (DungeonGenerator calls this as it is built and again each time the floor is switched
+    // back on), so the fight counts whether or not its room is on the table yet: a board level keeps the rooms behind a
+    // closed door off the table until it opens, and a room switched off then would never start its own watch. Switching
+    // the floor off (a build slice, the map still sinking) stops the watch, so the floor starts it again.
     public void Watch(DungeonGenerator floor)
     {
-        if (started || !Application.isPlaying || floor == null) return;
-        started = true;
+        if (watching || done || !Application.isPlaying || floor == null) return;
+        started = watching = true;
         floor.StartCoroutine(Run(floor));
     }
+    // The floor was switched off: its coroutines, the watch among them, are gone.
+    public void WatchStopped() => watching = false;
 
     IEnumerator Start()
     {

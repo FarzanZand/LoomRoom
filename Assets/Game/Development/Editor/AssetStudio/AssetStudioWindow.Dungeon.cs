@@ -70,7 +70,7 @@ public partial class AssetStudioWindow
         const float playHeight = 214;
         GUILayout.BeginArea(new Rect(r.x + 10, r.y + 8, r.width - 20, r.height - playHeight - 12));
         // Which dungeon: Dungeon1 unless another is picked.
-        var dungeons = World.levels.Where(x => !x.tool && x.data.IsDungeon).OrderBy(x => x.act == 0 ? 99 : x.act).ThenBy(x => x.order).Select(x => x.data).ToList();
+        var dungeons = World.levels.Where(x => !x.tool && x.data != null && x.data.IsDungeon).OrderBy(x => x.act == 0 ? 99 : x.act).ThenBy(x => x.order).Select(x => x.data).ToList();
         int at = Mathf.Max(0, dungeons.IndexOf(d));
         int pick = EditorGUILayout.Popup(at, dungeons.Select(x => DungeonLabel(x)).ToArray());
         if (dungeons.Count > 0 && pick != at) { dungeonPath = AssetDatabase.GetAssetPath(dungeons[pick]); GoTo("overview", dungeons[pick]); }

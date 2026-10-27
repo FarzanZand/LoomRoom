@@ -704,9 +704,11 @@ public partial class CampaignManager : Singleton<CampaignManager>
             if (item == null || string.IsNullOrEmpty(item.saveId)) continue;
             int count = PM.GetFlag(GiftPrefix + item.saveId);
             if (count <= 0) continue;
-            PM.SetFlag(GiftPrefix + item.saveId, 0);
-            for (int i = 0; i < count; i++) InventoryManager.Instance.Pickup(item, player, preferHotbar: true, playSound: false, announcePickup: false);
-            given.Add(count > 1 ? $"{item.itemName} x{count}" : item.itemName);
+            int got = 0;
+            for (int i = 0; i < count; i++) if (InventoryManager.Instance.Pickup(item, player, preferHotbar: true, playSound: false, announcePickup: false)) got++;
+            // What didn't fit waits for the next run's pack.
+            PM.SetFlag(GiftPrefix + item.saveId, count - got);
+            if (got > 0) given.Add(got > 1 ? $"{item.itemName} x{got}" : item.itemName);
         }
         // Posted a frame later: the run's log is cleared right after it starts.
         if (given.Count > 0) StartCoroutine(PostLater("In your pack, as promised: " + string.Join(", ", given) + "."));

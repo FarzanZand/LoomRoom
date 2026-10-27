@@ -138,6 +138,7 @@ public class OneBodyRig : MonoBehaviour
     void OnDestroy()
     {
         foreach (var m in shadowOnly.Values) if (m != null) Destroy(m);
+        DestroyCuts();
     }
 
     // ── Every frame ──────────────────────────────────────────────────
@@ -250,8 +251,7 @@ public class OneBodyRig : MonoBehaviour
     public void RefreshArms()
     {
         bodySignature = BodySignature();
-        foreach (var c in cuts) if (c != null) Destroy(c);
-        cuts.Clear();
+        DestroyCuts();
         if (firstPersonArms == null) return;
         var copy = Names(firstPersonArms);
         foreach (var r in animator.GetComponentsInChildren<SkinnedMeshRenderer>(false))
@@ -273,6 +273,18 @@ public class OneBodyRig : MonoBehaviour
             cuts.Add(go);
         }
         RefreshBody();
+    }
+
+    // Each cut's mesh is its own copy (ArmsOf), not an asset: it goes with its renderer, or every recut leaks one.
+    void DestroyCuts()
+    {
+        foreach (var c in cuts)
+        {
+            if (c == null) continue;
+            if (c.TryGetComponent<SkinnedMeshRenderer>(out var r) && r.sharedMesh != null) Destroy(r.sharedMesh);
+            Destroy(c);
+        }
+        cuts.Clear();
     }
 
     readonly List<SkinnedMeshRenderer> skins = new();

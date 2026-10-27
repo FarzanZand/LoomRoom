@@ -123,6 +123,7 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
 
     // Debris kept for the floor: it settles, then freezes (saves physics time). The oldest go past the cap.
     static readonly System.Collections.Generic.Queue<GameObject> kept = new();
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetKept() => kept.Clear();
     const int MaxKeptDebris = 220;
     GameObject Stay(GameObject piece)
     {

@@ -37,6 +37,8 @@ public class Burning : MonoBehaviour
     void Update()
     {
         if (target == null || !target.IsAlive || ticksLeft <= 0) { PutOut(); return; }
+        // The world stands still behind a shop, a conversation or a cutscene (time runs on there): so does the fire.
+        if (GameManager.HasInstance && !GameManager.Instance.SimulationActive) { nextTick += Time.deltaTime; return; }
         if (Time.time < nextTick) return;
         nextTick += 1f;
         ticksLeft--;

@@ -429,6 +429,9 @@ public partial class ProgressionManager
     {
         foreach (var key in new List<string>(flags.Keys))
             if (key.StartsWith("meta.") || key == LedgerIntroFlag || key == LedgerSaidFlag || key == BlockingTaughtFlag || key == BashMountedFlag) SetFlag(key, 0);
+        // The lesson's quests and the sheet's first look too, or the lesson can't be played again.
+        foreach (var quest in new[] { SheetQuest, SpendQuest, TableQuest, TrophyQuest }) SetFlag(QuestPrefix + quest, 0);
+        SetFlag(CharacterSheetTable.OpenedFlag, 0);
         MetaChanged?.Invoke();
     }
     [TabGroup("Meta progression/Tabs", "Debug"), Button("Open the character sheet"), EnableIf("@UnityEngine.Application.isPlaying")]

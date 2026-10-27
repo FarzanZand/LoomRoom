@@ -196,7 +196,8 @@ public class DevPrompt : MonoBehaviour
         CloseMarkup();
         open = IsOpen = false;
         panel.SetActive(false);
-        Time.timeScale = timeScaleBefore;
+        // Only our own stop is undone: something that set the time scale meanwhile (the death's slow motion ending) keeps it.
+        if (Time.timeScale == 0f) Time.timeScale = timeScaleBefore;
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Menu);
     }
 

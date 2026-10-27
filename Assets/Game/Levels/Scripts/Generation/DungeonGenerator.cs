@@ -484,7 +484,7 @@ public partial class DungeonGenerator : MonoBehaviour
         ExitCell = exitStair != null ? CellOf(exitStair.transform.position) : Layout.Exit;
         // A room whose fight decides the run is watched from the floor (its room may be off the table for now; the watch
         // keeps gathering the room's enemies as they are put down).
-        foreach (var fight in GetComponentsInChildren<ArenaFight>(true)) fight.Watch(this);
+        foreach (var fight in GetComponentsInChildren<ArenaFight>(true)) { arenaFights.Add(fight); fight.Watch(this); }
         // Spawn after navigation exists. The first room is always safe. An authored map brings its own.
         if (Authored) SpawnAuthoredContent();
         else for (int i=1;i<Layout.rooms.Count;i++)
@@ -879,8 +879,18 @@ public partial class DungeonGenerator : MonoBehaviour
     public bool SpawnRoofOpen { get; private set; }
 
     // Holes go into the table under this floor's pits while it is on the table (TableCut).
-    void OnEnable() { if (tableHoles.Count > 0 && !slicing) TableCut.Set(this, tableHoles); }
-    void OnDisable() => TableCut.Remove(this);
+    void OnEnable()
+    {
+        if (tableHoles.Count > 0 && !slicing) TableCut.Set(this, tableHoles);
+        foreach (var fight in arenaFights) if (fight != null) fight.Watch(this);
+    }
+    void OnDisable()
+    {
+        TableCut.Remove(this);
+        foreach (var fight in arenaFights) if (fight != null) fight.WatchStopped();
+    }
+    // The arena fights this floor watches (ArenaFight.Watch runs on the floor, so it is started again when the floor is).
+    readonly System.Collections.Generic.List<ArenaFight> arenaFights = new();
 
     void OnDestroy()
     {

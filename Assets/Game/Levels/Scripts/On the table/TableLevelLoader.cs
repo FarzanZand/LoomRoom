@@ -366,7 +366,11 @@ public class TableLevelLoader : MonoBehaviour
         }
         if(Current==null || Current.kind==TableLevelKind.Town)SaveTownInventory();
         environment=candidate;Dungeon=candidateDungeon;
-        if(previousEnvironment!=null){previousEnvironment.SetActive(false);Destroy(previousEnvironment);}
+        if(previousEnvironment!=null){
+            previousEnvironment.SetActive(false);Destroy(previousEnvironment);
+            // Spells still in the air or about to erupt belong to the old floor: they never reach the new one.
+            FireballVolley.ClearAll();SpellProjectile.ClearAll();GroundAreaSpell.ClearAll();
+        }
         SetTown(level.kind==TableLevelKind.Town);
         Current=level;
         // Portal pockets are built with the floor from its seed (each portal keeps its own until the floor goes).

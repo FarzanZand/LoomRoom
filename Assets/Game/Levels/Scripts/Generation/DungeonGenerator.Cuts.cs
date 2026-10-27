@@ -72,7 +72,8 @@ public partial class DungeonGenerator
                 }
             }
             foreach (var c in cells) tableHoles.Add(new TableCut.Hole { area = CellRect(c) });
-            TableCut.Set(this, tableHoles);
+            // A sliced build cuts the table once it is done (the map may still be folding away over it).
+            if (!slicing) TableCut.Set(this, tableHoles);
             cut.Initialize(this, cells, floorY);
         }
     }

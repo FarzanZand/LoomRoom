@@ -464,11 +464,11 @@ public class ScreenManager : Singleton<ScreenManager>
         float alpha = FadeAlpha;
         foreach (var step in steps)
         {
-            if (step.x < 0f) { yield return new WaitForSecondsRealtime(step.y); continue; }
+            if (step.x < 0f) { yield return GameManager.WaitCutscene(step.y); continue; }
             float from = alpha, elapsed = 0f;
             while (elapsed < step.y)
             {
-                elapsed += Time.unscaledDeltaTime;
+                elapsed += GameManager.CutsceneDelta;
                 SetAlpha(Mathf.Lerp(from, step.x, Mathf.SmoothStep(0f, 1f, elapsed / step.y)));
                 yield return null;
             }
@@ -476,13 +476,14 @@ public class ScreenManager : Singleton<ScreenManager>
         }
     }
 
-    // Fades any CanvasGroup (an end card, a title over the black) to `to` in unscaled seconds, linearly.
+    // Fades any CanvasGroup (an end card, a title over the black) to `to` in unscaled seconds, linearly. Fades stop
+    // while the pause menu is open (GameManager.CutsceneDelta), as cutscenes do.
     // Run it on the caller: yield return ScreenManager.FadeGroup(card, 1f, 1f).
     public static IEnumerator FadeGroup(CanvasGroup group, float to, float seconds)
     {
         if (group == null) yield break;
         float from = group.alpha;
-        for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime)
+        for (float t = 0f; t < seconds; t += GameManager.CutsceneDelta)
         {
             if (group == null) yield break;
             group.alpha = Mathf.Lerp(from, to, t / seconds);
@@ -519,14 +520,14 @@ public class ScreenManager : Singleton<ScreenManager>
     IEnumerator FadeRoutine(float from, float to, float fadeDuration, float holdDuration)
     {
         SetAlpha(from);
-        if (holdDuration > 0f) yield return new WaitForSecondsRealtime(holdDuration);
+        if (holdDuration > 0f) yield return GameManager.WaitCutscene(holdDuration);
         yield return LerpAlpha(from, to, fadeDuration);
     }
 
     IEnumerator FadeInOutRoutine(float fadeInDuration, float fadedDuration, float fadeOutDuration)
     {
         yield return LerpAlpha(0f, 1f, fadeInDuration);
-        if (fadedDuration > 0f) yield return new WaitForSecondsRealtime(fadedDuration);
+        if (fadedDuration > 0f) yield return GameManager.WaitCutscene(fadedDuration);
         yield return LerpAlpha(1f, 0f, fadeOutDuration);
     }
 
@@ -536,7 +537,7 @@ public class ScreenManager : Singleton<ScreenManager>
         float elapsed = 0f;
         while (elapsed < duration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += GameManager.CutsceneDelta;
             SetAlpha(Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / duration)));
             yield return null;
         }

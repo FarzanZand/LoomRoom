@@ -771,7 +771,15 @@ public partial class DungeonGenerator
         }
     }
 
-    bool Blocked(Vector3 pos)=>Physics.CheckBox(pos+Vector3.up*.6f,new Vector3(.45f,.5f,.45f),Quaternion.identity,~0,QueryTriggerInteraction.Ignore);
+    // Characters (a player still standing where the last floor's stairs were, another peer) never block: the stall
+    // must land on the same cell on every machine.
+    bool Blocked(Vector3 pos)
+    {
+        int n=Physics.OverlapBoxNonAlloc(pos+Vector3.up*.6f,new Vector3(.45f,.5f,.45f),blockHits,Quaternion.identity,~0,QueryTriggerInteraction.Ignore);
+        for(int i=0;i<n;i++) if(blockHits[i]!=null && blockHits[i].GetComponentInParent<Character>()==null) return true;
+        return false;
+    }
+    static readonly Collider[] blockHits=new Collider[32];
     Merchant FindAnyMerchant()=>GetComponentInChildren<Merchant>(true);
     public Merchant Merchant=>FindAnyMerchant();
 

@@ -61,7 +61,7 @@ public class BossStageEncounter : MonoBehaviour
         if (Current == this) Current = null;
         if (RunManager.HasInstance) RunManager.Instance.Revived -= OnRevived;
         if (boss != null) boss.Died -= OnBossDied;
-        if (started && !finished) Cleanup(false);
+        if (started && !finished) Cleanup(false, floorGoing: true);
         // The floor is going (the next floor loading, or back to the room after a death): the painting's own again.
         if (painting != null) painting.Restore();
         DestroyRoomLights();
@@ -555,7 +555,9 @@ public class BossStageEncounter : MonoBehaviour
 
     Vector3 StageCentreOr(Vector3 at) => dungeon != null ? dungeon.StageCentre : at;
 
-    void Cleanup(bool won)
+    // floorGoing: the floor is being destroyed (left mid fight, or back to the room): the room's light is the loader's to
+    // put back, so the dungeon's mood is not blended in over it.
+    void Cleanup(bool won, bool floorGoing = false)
     {
         if (stageLights != null) stageLights.Calm();
         BossBlessing.Clear();
@@ -567,7 +569,7 @@ public class BossStageEncounter : MonoBehaviour
         if (seat != null) seat.Unfocus();
         ShutStair(false);
         DungeonMasterRemarks.Hold = false;
-        if (darkened && LightingManager.Instance != null && dungeon != null) LightingManager.Instance.BlendToMood(dungeon.LevelData.DungeonLighting(dungeon.FloorNumber), 2.5f);
+        if (darkened && !floorGoing && LightingManager.Instance != null && dungeon != null) LightingManager.Instance.BlendToMood(dungeon.LevelData.DungeonLighting(dungeon.FloorNumber), 2.5f);
         darkened = false;
         if (BossBarUI.HasInstance) BossBarUI.Instance.Hide();
         // A lost fight keeps listening: a revive picks it up again, and a boss that dies meanwhile still opens the way.
