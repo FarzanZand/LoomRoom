@@ -36,7 +36,8 @@ public class BoardReveal : MonoBehaviour
         regions = generated.BoardRegions;
         var settings = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
         if (settings != null) dust = settings.dustPrefab;
-        if ((tileTaps == null || tileTaps.Length == 0) && generated.LevelData.boardTileTaps != null) tileTaps = generated.LevelData.boardTileTaps;
+        var kit = generated.LevelData.BoardBiome(generated.FloorNumber);
+        if ((tileTaps == null || tileTaps.Length == 0) && kit != null && kit.boardTileTaps != null) tileTaps = kit.boardTileTaps;
         var layout = generated.Layout;
         int RegionOf(Vector2Int c) => layout.InBounds(c) && layout.floor[c.x, c.y] ? layout.RegionIds[c.x, c.y] : -1;
 
@@ -79,20 +80,23 @@ public class BoardReveal : MonoBehaviour
         foreach (var (door, a, b) in doors) door.gameObject.SetActive(shown.Contains(a) || shown.Contains(b));
     }
 
-    // A wide spot straight down over the middle of the board, reaching every corner of it.
+    // A wide spot over the middle of the board, reaching every corner of it: straight down, or leaning like a low moon
+    // (the biome's board light angle), always as far from the board's middle, so it is as bright there.
     void HangBoardLight()
     {
         var data = dungeon.LevelData;
         float half = Mathf.Max(data.width, data.depth) * data.cellSize * .5f;
         var go = new GameObject("Board light"); go.transform.SetParent(transform, false);
-        go.transform.position = transform.position + Vector3.up * boardLightHeight;
-        go.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        var rotation = data.BoardLightRotation(dungeon.FloorNumber);
+        go.transform.SetPositionAndRotation(transform.position - rotation * Vector3.forward * boardLightHeight, rotation);
+        // A leaning light meets the board at a slant: its cone opens wider to cover it.
+        float slant = Mathf.Max(.35f, Vector3.Dot(rotation * Vector3.forward, Vector3.down));
         var light = boardLight = go.AddComponent<Light>();
         light.type = LightType.Spot;
-        light.spotAngle = Mathf.Clamp(2f * Mathf.Atan(half * 1.15f / boardLightHeight) * Mathf.Rad2Deg, 30f, 150f);
+        light.spotAngle = Mathf.Clamp(2f * Mathf.Atan(half * 1.15f / slant / boardLightHeight) * Mathf.Rad2Deg, 30f, 150f);
         light.innerSpotAngle = light.spotAngle * .55f;
         light.range = boardLightHeight * 2.2f;
-        light.intensity = data.boardLightIntensity;
+        light.intensity = data.BoardLightIntensity(dungeon.FloorNumber);
         light.color = BoardLightColor;
         light.shadows = LightShadows.Soft;
         FirstPersonLighting.SetLayers(light, uint.MaxValue);
@@ -112,8 +116,9 @@ public class BoardReveal : MonoBehaviour
                 var biome = data.Biome(cachedFloor);
                 if (biome != null && biome.lightBoard) biomeLight = data.DungeonLighting(cachedFloor).light;   // loads a preset: once per floor
             }
-            if (!biomeLight.HasValue) return data.boardLightColor;
-            var c = biomeLight.Value * data.boardLightColor;
+            var own = data.BoardLightColor(dungeon.FloorNumber);
+            if (!biomeLight.HasValue) return own;
+            var c = biomeLight.Value * own;
             return c / Mathf.Max(.01f, Mathf.Max(c.r, Mathf.Max(c.g, c.b)));
         }
     }
@@ -133,7 +138,7 @@ public class BoardReveal : MonoBehaviour
     {
         if (boardLight == null || dungeon == null) return;
         boardLight.color = BoardLightColor;
-        boardLight.intensity = dungeon.LevelData.boardLightIntensity;
+        boardLight.intensity = dungeon.LevelData.BoardLightIntensity(dungeon.FloorNumber);
         if (worldLight == null)
         {
             // Searched for once a second until found, not every frame.

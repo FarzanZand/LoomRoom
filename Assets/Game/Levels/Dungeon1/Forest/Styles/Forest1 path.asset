@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48e1a08511ae4bb89e9a2ba01ad45eb5, type: 3}
+  m_Name: Forest1 path
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomStyle
+  bottomWall: {fileID: 2100000, guid: d355da8c0e05dd244af1fc9f48171f78, type: 2}
+  upperWall: {fileID: 2100000, guid: d355da8c0e05dd244af1fc9f48171f78, type: 2}
+  floor: {fileID: 2100000, guid: d00243ba221aaa94388612f483c114e8, type: 2}
+  ceiling: {fileID: 2100000, guid: 0f02ff089773ea545b9ef5239fe64975, type: 2}
+  hideTrims: 1
+  trim: {fileID: 2100000, guid: d355da8c0e05dd244af1fc9f48171f78, type: 2}
+  wood: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
+  metal: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
+  wallBaseWeight: 10
+  wallVariants:
+  - material: {fileID: 2100000, guid: e10ab74a8392a884d89c625dcfed061d, type: 2}
+    weight: 1.6
+    rows: 0
+  - material: {fileID: 2100000, guid: e820554fc1b5e6b45bf99fb7da63abac, type: 2}
+    weight: 1.6
+    rows: 0
+  - material: {fileID: 2100000, guid: 3a1259a2333a47d4383571caeff73f11, type: 2}
+    weight: 1.6
+    rows: 0
+  floorBaseWeight: 10
+  floorVariants: []
+  wallDecor: []
+  wallDecorPerTenFaces: 1
+  corridorDressing: {fileID: 0}
+  dressingSpacing: 3
+  stretchDressingToCeiling: 1

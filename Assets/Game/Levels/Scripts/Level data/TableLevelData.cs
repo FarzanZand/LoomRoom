@@ -425,6 +425,23 @@ public partial class TableLevelData : ScriptableObject
     // lists are read once, a stage biome's are added to them.
     public DungeonBiome StageBiome(DungeonBiome floorBiome) => floorBiome != null && floorBiome != baseBiome ? floorBiome : null;
 
+    // Where a floor's board pieces and board light come from: a board stage that has its own (DungeonBiome.ownBoardPieces),
+    // else the base biome (null without one; callers fall back to the defaults the properties above give).
+    public DungeonBiome BoardBiome(int floor)
+    {
+        var stage = StageBiome(Biome(floor));
+        return stage != null && stage.IsBoard && stage.ownBoardPieces ? stage : baseBiome;
+    }
+    public float BoardLightIntensity(int floor) { var b = BoardBiome(floor); return b != null ? b.boardLightIntensity : 2600f; }
+    public Color BoardLightColor(int floor) { var b = BoardBiome(floor); return b != null ? b.boardLightColor : new Color(1f, .86f, .68f); }
+    // The way the board light shines: straight down, or leaning by its biome's angle from its side.
+    public Quaternion BoardLightRotation(int floor)
+    {
+        var b = BoardBiome(floor);
+        float lean = b != null ? Mathf.Clamp(b.boardLightAngle, 0f, 70f) : 0f;
+        return Quaternion.Euler(0f, b != null ? b.boardLightFrom + 180f : 0f, 0f) * Quaternion.Euler(90f - lean, 0f, 0f);
+    }
+
     // The biomes a run of this level goes through, in order: the stages', or the base biome alone.
     public List<DungeonBiome> RunBiomes()
     {
@@ -465,6 +482,8 @@ public partial class TableLevelData : ScriptableObject
         var state = DungeonLightingPreset(floorNumber);
         var biome = Biome(floorNumber);
         state.darkness = biome != null && biome.litThroughout ? 0f : 1f;
+        state.onFloor = 1f;
+        if (biome != null && biome.litThroughout && biome.fog.y > 0f) { state.fogStart = biome.fog.x; state.fogEnd = biome.fog.y; }
         state.roomDark = RoomDarkness;
         state.roomShade = new Color(roomTint.r, roomTint.g, roomTint.b, 1f);
         state.minAmbient = minimumAmbient;

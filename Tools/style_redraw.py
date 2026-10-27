@@ -30,9 +30,9 @@ import tavern_style as ts  # noqa: E402  (board drawing for the timber frame)
 
 N, SCALE, JOINT = 384, 12, 8
 OLD = Path('Assets/Game/Levels/Shared')
-OLD_TEX = {'timber': 'Room styles/Materials/Timber lower.png', 'slate': 'Room styles/Materials/Slate upper.png',
-           'crypt': 'Materials/Crypt stone.png', 'flag': 'Room styles/Materials/Flagstone.png',
-           'vault': 'Room styles/Materials/Vault.png', 'sand': 'Room styles/Materials/Cut sandstone.png'}
+OLD_TEX = {'timber': 'Room styles/Crypt/Timber lower.png', 'slate': 'Room styles/Crypt/Slate upper.png',
+           'crypt': 'Materials/Crypt stone.png', 'flag': 'Room styles/Crypt/Flagstone.png',
+           'vault': 'Room styles/Crypt/Vault.png', 'sand': 'Room styles/Crypt/Cut sandstone.png'}
 
 
 def old(name):

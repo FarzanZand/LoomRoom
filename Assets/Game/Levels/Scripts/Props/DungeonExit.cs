@@ -53,8 +53,18 @@ public class DungeonExit : MonoBehaviour, IInteractable
     }
     void OnTriggerEnter(Collider other)
     {
-        if(entrance || Sealed || Loader==null || !Loader.HasNextFloor)return;
+        if(entrance || Sealed || Loader==null || !Loader.HasNextFloor || stepping)return;
         var player=other.GetComponentInParent<Player>();
+        if(player!=null && player.IsActive)StartCoroutine(StepIn(player));
+    }
+    // Down a frame later: building the next floor destroys this one at once, which Unity refuses inside a physics
+    // callback (walking onto a board's stairwell logged an error for every piece of the floor).
+    bool stepping;
+    System.Collections.IEnumerator StepIn(Player player)
+    {
+        stepping=true;
+        yield return null;
+        stepping=false;
         if(player!=null && player.IsActive)Interact(player);
     }
 }

@@ -46,15 +46,30 @@ public sealed partial class LightingManager
         // The dungeon's ambient never goes darker than this (brightest channel), past the light radius
         // and in dark rooms too (TableLevelData.minimumAmbient). 0 leaves it as the darkness makes it.
         public float minAmbient;
+        // 1 for every dungeon floor, lit throughout too: the room keeps its own light apart from the floor's (a lit
+        // floor's ambient is then the biome's, not the room's darkened look). 0 for the room.
+        public float onFloor;
+        // A floor's own distance fog in its fog colour (DungeonBiome.fogStart/fogEnd), metres from the eye; 0 = none.
+        public float fogStart, fogEnd;
 
         public static MoodState LerpEnvironment(MoodState a, MoodState b, float t) => new MoodState {
             darkness = Mathf.Lerp(a.darkness, b.darkness, t), roomDark = Mathf.Lerp(a.roomDark, b.roomDark, t),
+            onFloor = Mathf.Lerp(a.onFloor, b.onFloor, t),
+            fogStart = b.fogEnd > 0 && a.fogEnd <= 0 ? b.fogStart : a.fogEnd > 0 && b.fogEnd <= 0 ? a.fogStart : Mathf.Lerp(a.fogStart, b.fogStart, t),
+            fogEnd = LerpFog(a.fogEnd, b.fogEnd, t),
             minAmbient = Mathf.Lerp(a.minAmbient, b.minAmbient, t),
             roomShade = Color.Lerp(a.roomShade.a > 0 ? a.roomShade : Color.white, b.roomShade.a > 0 ? b.roomShade : Color.white, t),
             sky = Color.Lerp(a.sky, b.sky, t), exposure = Mathf.Lerp(a.exposure, b.exposure, t),
             light = Color.Lerp(a.light, b.light, t), intensity = Mathf.Lerp(a.intensity, b.intensity, t),
             top = Color.Lerp(a.top, b.top, t), horizon = Color.Lerp(a.horizon, b.horizon, t),
             ground = Color.Lerp(a.ground, b.ground, t), fog = Color.Lerp(a.fog, b.fog, t) };
+        // No fog (0) blends as fog so far off it is nothing, so a floor's fog closes in instead of jumping.
+        static float LerpFog(float a, float b, float t)
+        {
+            if (a <= 0f && b <= 0f) return 0f;
+            float e = Mathf.Lerp(a > 0f ? a : 2000f, b > 0f ? b : 2000f, t);
+            return e >= 1999f ? 0f : e;
+        }
     }
 
     struct LightGroups
@@ -295,7 +310,9 @@ public sealed partial class LightingManager
         if (baseSkybox != null && moodSkybox == null)
             moodSkybox = new Material(baseSkybox) { name = "Lighting Manager sky preview", hideFlags = HideFlags.HideAndDontSave };
         float dark = dungeonDarkness ? Mathf.Clamp01(displayedMood.darkness) : 0f;
-        HoldRoom(dark);
+        // The room is held apart on every floor, dark or lit throughout.
+        float apart = dungeonDarkness ? Mathf.Max(dark, Mathf.Clamp01(displayedMood.onFloor)) : 0f;
+        HoldRoom(apart);
         ApplyRoomDark();
         if (moodSkybox != null)
         {
@@ -328,7 +345,7 @@ public sealed partial class LightingManager
             top *= scale; horizon *= scale; ground *= scale;
         }
         // The user's ambient controls: the room's outside darkness, the dungeon's in it.
-        float boost = Mathf.Lerp(roomAmbient, dungeonAmbient, dark);
+        float boost = Mathf.Lerp(roomAmbient, dungeonAmbient, apart);
         top *= boost; horizon *= boost; ground *= boost;
         // The level's minimum: never pitch black, whatever the preset and the darkness.
         float least = displayedMood.minAmbient * dark;
@@ -349,6 +366,14 @@ public sealed partial class LightingManager
             RenderSettings.fogStartDistance = darknessFogStart;
             RenderSettings.fogEndDistance = Mathf.Lerp(darknessFogEnd * 20f, Mathf.Max(darknessFogStart + .1f, darknessFogEnd), dark);
             RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor, darknessFogColor, dark);
+        }
+        else if (apart > .001f && displayedMood.fogEnd > 0f)
+        {
+            // A lit floor's own fog (a forest's blue depth), fading in as the floor's look does.
+            if (!sceneFogSaved) { sceneFogSaved = true; sceneFogOn = RenderSettings.fog; sceneFogMode = RenderSettings.fogMode; sceneFogStart = RenderSettings.fogStartDistance; sceneFogEnd = RenderSettings.fogEndDistance; }
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogStartDistance = displayedMood.fogStart;
+            RenderSettings.fogEndDistance = Mathf.Max(displayedMood.fogStart + .1f, displayedMood.fogEnd);
         }
         else RestoreSceneFog();
     }

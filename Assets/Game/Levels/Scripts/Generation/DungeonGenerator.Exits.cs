@@ -39,19 +39,24 @@ public partial class DungeonGenerator
             if(Layout.InBounds(cell+d) && Layout.floor[cell.x+d.x,cell.y+d.y]){ root.rotation=Quaternion.LookRotation(new Vector3(-d.x,0,-d.y)); break; }
         int region=Layout.RegionIds[cell.x,cell.y];
         var stone=FloorMaterial(region,cell.x,cell.y);
-        var walls=stone;
+        // A look of its own builds its housing of its walls (the forest's earth), not its floor (leaves up the sides).
+        var walls=OwnLook ? WallMaterial(region,0) : stone;
+        // A look of its own (the forest) builds it of its own style, its texture laid per tile at the floor's density.
+        var trim=OwnLook ? DungeonRoomStyle.Resolve(RegionStyles[region]!=null ? RegionStyles[region].trim : null,data.trimMaterial) : data.trimMaterial;
         var block=new MaterialPropertyBlock();
         GameObject Part(string name,Vector3 local,Vector3 size,Material material,float shade=1,Transform parent=null)
         {
-            var g=Box(name,root.TransformPoint(local),size,material,parent!=null ? parent : root); g.transform.rotation=root.rotation;
+            var g=OwnLook && material!=data.metalMaterial ? ArchitectureBox(name,root.TransformPoint(local),size,material,parent!=null ? parent : root)
+                : Box(name,root.TransformPoint(local),size,material,parent!=null ? parent : root);
+            g.transform.rotation=root.rotation;
             if(shade<1){ var r=g.GetComponent<Renderer>(); r.GetPropertyBlock(block); var c=Color.white*shade; c.a=1; block.SetColor("_BaseColor",c); block.SetColor("_Color",c); r.SetPropertyBlock(block); }
             return g;
         }
         // Local +z points into the stairwell; the opening faces -z.
         const float width=1.1f, height=2.4f, wall=.28f, back=.95f;
         // Two steps up to the landing at the mouth.
-        Part("Step",new Vector3(0,.06f,-.75f),new Vector3(width+.3f,.12f,.3f),data.trimMaterial);
-        Part("Landing",new Vector3(0,.12f,-.42f),new Vector3(width+.3f,.24f,.4f),data.trimMaterial);
+        Part("Step",new Vector3(0,.06f,-.75f),new Vector3(width+.3f,.12f,.3f),trim);
+        Part("Landing",new Vector3(0,.12f,-.42f),new Vector3(width+.3f,.24f,.4f),trim);
         // Inside: steps going down, darker the deeper they go, ending in black.
         for(int i=0;i<4;i++)
         {
@@ -67,7 +72,7 @@ public partial class DungeonGenerator
             Part("Side wall inner",new Vector3(x*(width*.5f-.01f),height*.5f,.45f),new Vector3(.02f,height,1f),walls,.08f);
         }
         Part("Back wall",new Vector3(0,height*.5f,back+wall*.5f),new Vector3(width+wall*2,height,wall),walls);
-        Part("Lintel",new Vector3(0,height+.1f,-.25f),new Vector3(width+wall*2+.12f,.22f,.3f),data.trimMaterial);
+        Part("Lintel",new Vector3(0,height+.1f,-.25f),new Vector3(width+wall*2+.12f,.22f,.3f),trim);
         Part("Roof",new Vector3(0,height+.06f,.4f),new Vector3(width+wall*2+.06f,.14f,1.35f),walls);
         // Portcullis while a guardian lives.
         var gate=new GameObject("Portcullis"); gate.transform.SetParent(root,false);
@@ -84,11 +89,19 @@ public partial class DungeonGenerator
         float height=Layout.InBounds(cell) && Layout.floor[cell.x,cell.y] ? HeightAt(cell.x,cell.y) : data.architectureTileSize;
         var p=root.position;
         var wood=data.woodMaterial;
+        // A look of its own frames the hatch in its style's trim (the level's is the old 32 px sandstone).
+        int region=Layout.InBounds(cell) && Layout.floor[cell.x,cell.y] ? Layout.RegionIds[cell.x,cell.y] : -1;
+        var frame=OwnLook && region>=0 ? DungeonRoomStyle.Resolve(RegionStyles[region]!=null ? RegionStyles[region].trim : null,data.trimMaterial) : data.trimMaterial;
         foreach(float x in new[]{-.28f,.28f}) Box("Rail",p+new Vector3(x,height*.5f,0),new Vector3(.08f,height,.08f),wood,root);
         for(float y=.3f;y<height-.1f;y+=.36f) Box("Rung",p+new Vector3(0,y,0),new Vector3(.52f,.05f,.06f),wood,root);
         // Hatch: a dark square framed in wood, just under the ceiling.
         Box("Hatch",p+Vector3.up*(height-.05f),new Vector3(1.1f,.06f,1.1f),wood,root);
         foreach(var d in new[]{Vector3.right,Vector3.left,Vector3.forward,Vector3.back})
-            Box("Hatch frame",p+d*.6f+Vector3.up*(height-.07f),d.x!=0 ? new Vector3(.12f,.14f,1.32f) : new Vector3(1.32f,.14f,.12f),data.trimMaterial,root);
+        {
+            var size=d.x!=0 ? new Vector3(.12f,.14f,1.32f) : new Vector3(1.32f,.14f,.12f);
+            // The style's trim laid per tile like the walls (stretched over a plain box it came out 1,100 texels a metre).
+            if(OwnLook)ArchitectureBox("Hatch frame",p+d*.6f+Vector3.up*(height-.07f),size,frame,root);
+            else Box("Hatch frame",p+d*.6f+Vector3.up*(height-.07f),size,frame,root);
+        }
     }
 }

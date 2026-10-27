@@ -20,14 +20,14 @@ public static class TavernDress
     const string PropDir = "Assets/Game/Levels/Shared/Props/Tavern";
     const string PixelDir = PropDir + "/Pixel";
     const string StyleDir = "Assets/Game/Levels/Shared/Room styles/Tavern";
-    const string StylePath = "Assets/Game/Levels/Shared/Room styles/Tavern.asset";
+    const string StylePath = "Assets/Game/Levels/Shared/Room styles/Tavern/Tavern.asset";
     const float Texels = 128f;
 
     // ── The style ──
 
     public static string Style()
     {
-        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Cellar1.asset");
+        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Cellar/Cellar1/Cellar1.asset");
         Material Mat(string name, Material like, float tiling)
         {
             string tex = $"{StyleDir}/{name}.png", path = $"{StyleDir}/{name}.mat";

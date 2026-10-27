@@ -100,7 +100,7 @@ Flat props (swords, knives, maces, shields, planks, signs) are painted straight 
 - Texture importer: `npotScale = None` (Unity otherwise snaps every texture to a power of two and undoes the exact
   size). `BuildPainted` bakes, measures (`PixelRestyle.TexelsPerUnit`), and re-bakes until within 5% of 128.
 - Reference: `Docs/Images/Pixel texture style/Weapons and shields 150.png` (all items at one world scale, same pixels; made at the old 150).
-- Surfaces (walls, floors, ceilings): one texel per painted pixel at 128 per metre. Meshy paints about 200 pixels across with "Detailed pixel art at 320 by 320 pixel resolution" (100 without it); sample one texel per painted pixel and set the material's tiling to `tile x 128 / width` (UVs repeat once per 3 m architecture tile). The Cellar1 style (`Levels/Shared/Room styles/HighRes Materials`) is built this way.
+- Surfaces (walls, floors, ceilings): one texel per painted pixel at 128 per metre. Meshy paints about 200 pixels across with "Detailed pixel art at 320 by 320 pixel resolution" (100 without it); sample one texel per painted pixel and set the material's tiling to `tile x 128 / width` (UVs repeat once per 3 m architecture tile). The Cellar1 style (`Levels/Shared/Room styles/Cellar`) is built this way.
 - Meshy creature textures: resample so the model lands at 128 per metre (measure with `PixelRestyle.TexelsPerUnit`).
 - Check it: render items and creatures side by side **at the same world scale** (not each zoomed to fit) and compare the
   pixel squares. Dungeon walls and floors stay 10.7; the apartment room 1.8.
@@ -297,7 +297,7 @@ looks wrong, too.
 
 ## Tiling surfaces (walls, floors, ceilings): check before showing
 
-Lessons from the Cellar1 room styles (`Levels/Shared/Room styles/HighRes Materials`, 2026-10-12). Lay the textures out as
+Lessons from the Cellar1 room styles (`Levels/Shared/Room styles/Cellar`, 2026-10-12). Lay the textures out as
 they will repeat (a strip of 6-8 wall tiles with the variants in place, the floor 3x3) at full size and look for:
 
 - **Distinct features in the base repeat.** Anything that catches the eye (a mould or soot blotch, a stain, a mark, a

@@ -22,10 +22,10 @@ Every wall tile and floor cell draws its material from the style's own material 
 
 ## Cellar4, Cellar5, Cellar6
 
-Three more Church-family styles, made without painting by `Tools/style_recolour.py`: each surface (bottom wall, upper wall, floor, ceiling, trim) is taken from one of the Cellar styles and recoloured texel by texel with a gradient map, so every brick, crack and patch of dirt stays where it was drawn; moss and mould keep their own colour, a faint texture (plaster) keeps its faintness, and a checker floor maps each tile colour to its own ramp. The surface's variants (cracked, cross, moss, soot, flaking, grave, broken) get the same recolour. Materials are copies of the source surface's materials (`HighRes Materials/<Style>`), the style asset copies the wall source's settings.
+Three more Church-family styles, made without painting by `Tools/style_recolour.py`: each surface (bottom wall, upper wall, floor, ceiling, trim) is taken from one of the Cellar styles and recoloured texel by texel with a gradient map, so every brick, crack and patch of dirt stays where it was drawn; moss and mould keep their own colour, a faint texture (plaster) keeps its faintness, and a checker floor maps each tile colour to its own ramp. The surface's variants (cracked, cross, moss, soot, flaking, grave, broken) get the same recolour. Materials are copies of the source surface's materials (`Levels/Shared/Room styles/Cellar/<Style>`), the style asset copies the wall source's settings.
 
 - **Cellar4** (mossy cellar): Cellar1's brick in green-grey, Cellar2's plaster grey-green, Cellar1's flagstones brown, Cellar2's timber ceiling, Cellar1's trim dark green.
 - **Cellar5** (red brick chapel): Cellar3's brick red, its plaster dim ochre, Cellar2's checker bone and black, Cellar1's vault grey stone, Cellar2's trim red-brown.
 - **Cellar6** (pale crypt): Cellar1's brick pale limestone, Cellar1's upper brick violet-grey, Cellar3's checker pale and dark green, Cellar2's timber ash grey, Cellar3's trim bone.
 
-To change one, edit its ramps in `STYLES` at the top of the script, run `python Tools/style_recolour.py <out dir>` and copy the textures over the ones in `HighRes Materials/<Style>`.
+To change one, edit its ramps in `STYLES` at the top of the script, run `python Tools/style_recolour.py <out dir>` and copy the textures over the ones in `Levels/Shared/Room styles/Cellar/<Style>`.

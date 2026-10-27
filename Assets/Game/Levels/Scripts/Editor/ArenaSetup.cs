@@ -111,7 +111,7 @@ public static partial class ArenaSetup
     static DungeonRoomStyle Style()
     {
         string dir = Dir + "/Styles";
-        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Cellar1.asset");
+        var church = AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Cellar/Cellar1/Cellar1.asset");
         Material Mat(string name, Material like, string texture, Vector2 tiling)
         {
             string tex = $"{dir}/{texture}.png", path = $"{dir}/{name}.mat";

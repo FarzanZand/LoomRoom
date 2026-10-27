@@ -4,7 +4,8 @@ using UnityEngine.AI;
 // Room templates and their sockets, breakables, features, enemies, the guardian and the merchant.
 public partial class DungeonGenerator
 {
-    DungeonWeightedPrefab[] Destructibles => Shared(data.destructibles, b => b.destructibles);
+    // A stage with a look of its own breaks only its own things (no cellar barrels in a forest).
+    DungeonWeightedPrefab[] Destructibles => OwnLook ? StageBiome.destructibles ?? new DungeonWeightedPrefab[0] : Shared(data.destructibles, b => b.destructibles);
     DungeonFeature[] Features => Shared(data.features, b => b.features);
     static bool IsFloorBreakable(GameObject prefab) { var d=prefab.GetComponent<DungeonDestructible>(); return d==null || d.placement==DestructiblePlacement.Floor; }
     static DungeonRoomRoles Mask(RoomRole role) => (DungeonRoomRoles)(1<<(int)role);
@@ -212,7 +213,14 @@ public partial class DungeonGenerator
     // height so it still hangs from the ceiling, and a moonlit room's patch of night sky stays above the ceiling.
     void HangFromCeiling(GameObject instance,DungeonRoomTemplate template,int index)
     {
-        if(template==null || Board)return;
+        if(template==null)return;
+        // Under an open sky (a board, or wild ground with no roof) nothing hangs and no patch of sky is needed.
+        if(Board || WildSettings is { roofed: false })
+        {
+            foreach(var t in instance.GetComponentsInChildren<Transform>(true))
+                if(t!=null && (t.name.StartsWith("Hanging chain") || t.name=="Night sky"))DestroyImmediate(t.gameObject);
+            return;
+        }
         float tile=Mathf.Max(.01f,data.architectureTileSize), extra=(Mathf.Max(1,template.heightTiles)-1)*tile, ceiling=instance.transform.position.y+Mathf.Max(1,template.heightTiles)*tile;
         Transform sky=null;
         foreach(var t in instance.GetComponentsInChildren<Transform>(true))
@@ -309,8 +317,12 @@ public partial class DungeonGenerator
         foreach(var piece in instance.GetComponentsInChildren<DungeonKitPiece>(true))
             if(piece!=null)piece.Choose(data.kitModels,HeightAt(centre.x,centre.y));
         foreach(var block in instance.GetComponentsInChildren<DungeonKitBlock>(true))
+        {
+            // A board has no ceiling: what hangs from one (the tavern's beams, a pillar's capital) isn't there.
+            if(block!=null && block.fromCeiling && (Board || WildSettings is { roofed: false })){DestroyImmediate(block.gameObject);continue;}
             // On a boss stage the floor is the stage's top.
             if(block!=null)block.Build(RegionStyles!=null && index<RegionStyles.Length ? RegionStyles[index] : null,data,HeightAt(centre.x,centre.y),Cell(centre).y+(index==StageRoom && Stage!=null ? Stage.height : 0f));
+        }
         var rewards=profiles[index]!=null ? profiles[index].rewards : null;
         StockPlacedLoot(instance,rewards);
         // A chest set down by hand with its own trap stays trapped (while the floor allows traps); others may be trapped.
@@ -370,6 +382,8 @@ public partial class DungeonGenerator
                 taken.Add(CellOf(new Vector3(b.max.x-.05f,0,b.max.z-.05f)));
             }
             foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))if(socket!=null)taken.Add(CellOf(socket.transform.position));
+            // A spike plate's cell too (a fountain was set down over the treasure vault's grates).
+            foreach(var plate in instance.GetComponentsInChildren<DungeonSpikeTrap>(true))if(plate!=null)taken.Add(CellOf(plate.transform.position));
             taken.UnionWith(cutCells);
             // A walkway between two holes (a ravine's bridge) and the cells at its ends stay clear: one tree on it cuts
             // the room in two.

@@ -1,18 +1,19 @@
-// Brings Tools/style_redraw.py's textures into the project (run the script with the folder below first): for each style a
-// folder under Levels/Shared/Room styles with its PNGs (imported like the Tavern style's: point filter, no power-of-two
+// Brings Tools/style_redraw.py's textures into the project (run the script with the folder below first): the Ruins styles,
+// two to a folder under Levels/Shared/Room styles/Ruins (Ruins<N> stone and Ruins<N> timber, named "<style> <surface>.png") (imported like the Tavern style's: point filter, no power-of-two
 // scaling, uncompressed), a material per PNG (a copy of Tavern wall.mat, tiling 1) and the style asset, a copy of the old
 // style it redraws with every material swapped for the new one. Safe to run again: it overwrites what it made.
 if (UnityEngine.Application.isPlaying) return "stop Play first";
 const string Root = "Assets/Game/Levels/Shared/Room styles";
+const string Ruins = Root + "/Ruins";
 var log = new System.Text.StringBuilder();
 UnityEditor.AssetDatabase.Refresh();
 var template = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(Root + "/Tavern/Tavern wall.mat");
 var styles = new (string name, string old, string unused)[] {
-  ("Timber and Stone 2", "Timber and Stone", null), ("Timber and Stone 2 Pine", "Timber and Stone", null), ("Timber and Stone 2 Black oak", "Timber and Stone", null),
-  ("Dungeon1 stone 2", "Dungeon1 default style", null), ("Dungeon1 stone 2 Limestone", "Dungeon1 default style", null), ("Dungeon1 stone 2 Basalt", "Dungeon1 default style", null) };
+  ("Ruins1 timber", "Timber and Stone", null), ("Ruins2 timber", "Timber and Stone", null), ("Ruins3 timber", "Timber and Stone", null),
+  ("Ruins1 stone", "Crypt/Dungeon1 default style", null), ("Ruins2 stone", "Crypt/Dungeon1 default style", null), ("Ruins3 stone", "Crypt/Dungeon1 default style", null) };
 UnityEngine.Material Mat(string dir, string surface, string style)
 {
-  string png = $"{dir}/{surface}.png";
+  string png = $"{dir}/{style} {surface}.png";
   var ti = (UnityEditor.TextureImporter)UnityEditor.AssetImporter.GetAtPath(png);
   ti.filterMode = UnityEngine.FilterMode.Point; ti.npotScale = UnityEditor.TextureImporterNPOTScale.None; ti.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
   ti.mipmapEnabled = true; ti.wrapMode = UnityEngine.TextureWrapMode.Repeat; ti.maxTextureSize = 2048; ti.SaveAndReimport();
@@ -26,7 +27,7 @@ UnityEngine.Material Mat(string dir, string surface, string style)
 }
 foreach (var (name, old, _) in styles)
 {
-  string dir = $"{Root}/{name}";
+  string dir = $"{Ruins}/{name.Split(' ')[0]}";
   if (!UnityEditor.AssetDatabase.IsValidFolder(dir)) { log.Append($"{name}: folder missing\n"); continue; }
   var oldStyle = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>($"{Root}/{old}.asset");
   var style = UnityEngine.Object.Instantiate(oldStyle);
@@ -45,7 +46,7 @@ foreach (var (name, old, _) in styles)
     style.wallVariants = new DungeonSurfaceVariant[] { new DungeonSurfaceVariant { material = wb, weight = 6, rows = DungeonVariantRows.Any } };
     style.floorVariants = new DungeonSurfaceVariant[] { new DungeonSurfaceVariant { material = fb, weight = 6, rows = DungeonVariantRows.Any } };
   }
-  string sp = $"{Root}/{name}.asset";
+  string sp = $"{dir}/{name}.asset";
   var existing = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>(sp);
   if (existing != null) { UnityEditor.EditorUtility.CopySerialized(style, existing); existing.name = name; UnityEditor.EditorUtility.SetDirty(existing); UnityEngine.Object.DestroyImmediate(style); }
   else UnityEditor.AssetDatabase.CreateAsset(style, sp);

@@ -56,10 +56,23 @@ public partial class DungeonGenerator : MonoBehaviour
     // A list every level shares (Table level defaults), then the base biome's, then the stage biome's.
     T[] Shared<T>(T[] everyLevel, System.Func<DungeonBiome, T[]> list)
     {
-        var levelBase = data != null ? data.baseBiome : null;
         var stage = StageBiome;
+        // A stage with a look of its own leaves the base biome's lists out (DungeonBiome.ownLook).
+        var levelBase = data != null && !OwnLook ? data.baseBiome : null;
         return Both(Both(everyLevel, levelBase != null ? list(levelBase) : null), stage != null ? list(stage) : null);
     }
+    bool OwnLook => StageBiome is { ownLook: true };
+    bool NoDoors => Biome is { noDoors: true };
+    // The style everything without one falls back to: the level's default, or an own-look stage's first room style.
+    DungeonRoomStyle DefaultStyle
+    {
+        get
+        {
+            if (OwnLook) foreach (var s in StageBiome.roomStyles) if (s != null && s.style != null) return s.style;
+            return data.defaultStyle;
+        }
+    }
+    Material WoodMaterial => DefaultStyle != null ? DefaultStyle.wood : null;
     // The biome's loot answers for every source (enemy, chest, barrel); the source passed to its
     // rolls picks which of its rules applies.
     LootSource FloorLoot=>Biome!=null ? Biome.loot : null;
@@ -156,8 +169,8 @@ public partial class DungeonGenerator : MonoBehaviour
             GrowLayout(level, seed); // chooses the merchant's room too, before the room shapes
         }
         doorways = authoredDoors != null ? (level.doorPrefab != null ? authoredDoors : new())
-            : level.doorPrefab != null && level.doorPercent > 0 ? Layout.SelectDoorways(level.doorPercent) : new();
-        AddStartingRoomDoor();
+            : level.doorPrefab != null && level.doorPercent > 0 && !NoDoors ? Layout.SelectDoorways(level.doorPercent) : new();
+        if (!NoDoors) AddStartingRoomDoor();
         AddWayInDoors();
         BuildProgress = .04f;
         if (SliceDue) { Pause(); yield return null; Resume(); }
@@ -270,14 +283,17 @@ public partial class DungeonGenerator : MonoBehaviour
         RegionStyles = new DungeonRoomStyle[Layout.RegionCount];
         var styleRandom = new System.Random(unchecked(seed + 15485863));
         var stageBiome = StageBiome;
-        var roomStyles = Both(level.roomStyles, stageBiome != null ? stageBiome.roomStyles : null); var corridorStyles = Both(level.corridorStyles, stageBiome != null ? stageBiome.corridorStyles : null);
+        var roomStyles = Both(OwnLook ? null : level.roomStyles, stageBiome != null ? stageBiome.roomStyles : null);
+        var corridorStyles = Both(OwnLook ? null : level.corridorStyles, stageBiome != null ? stageBiome.corridorStyles : null);
+        if (OwnLook && (corridorStyles == null || corridorStyles.Length == 0)) corridorStyles = roomStyles;
         for (int i = 0; i < RegionStyles.Length; i++)
             RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? roomStyles : corridorStyles, styleRandom);
         for (int i=0;i<profiles.Length;i++)
             if (profiles[i] != null && profiles[i].styleOverride != null) RegionStyles[i] = profiles[i].styleOverride;
-        for (int i=0;i<profiles.Length;i++) { var t = TemplateOf(i); if (t != null && t.style != null) RegionStyles[i] = t.style; }
+        // A hand-built room's own style, except on a stage with a look of its own (a tavern in the woods is in the woods).
+        for (int i=0;i<profiles.Length;i++) { var t = TemplateOf(i); if (t != null && t.style != null && !OwnLook) RegionStyles[i] = t.style; }
         if (level.corridorsCopyConnectedRoomStyle) CopyConnectedRoomStyles(seed);
-        for (int i = 0; i < RegionStyles.Length; i++) if (RegionStyles[i] == null) RegionStyles[i] = level.defaultStyle;
+        for (int i = 0; i < RegionStyles.Length; i++) if (RegionStyles[i] == null) RegionStyles[i] = DefaultStyle;
         var openRoofs = Layout.SelectOpenRegions(level.hideRoof ? level.hideRoofPercent : 0, 173);
         var openEdges = Layout.SelectOpenRegions(level.hideEdges ? level.hideEdgesPercent : 0, 419);
         // A room template can open its own ceiling (the starting room's way in), with its own frame.
@@ -334,13 +350,30 @@ public partial class DungeonGenerator : MonoBehaviour
             var ceilingMaterial = DungeonRoomStyle.Resolve(style != null ? style.ceiling : null, level.ceilingMaterial);
             // The boss stage stands open: no ceiling, no walls (DungeonGenerator.Stage).
             if (IsStageCell(x, z)) continue;
-            if (!RoofOpen(new Vector2Int(x, z))) ArchitectureBox("Ceiling", roofCenter, roofSize, ceilingMaterial, ceiling);
+            // Wild ground stands in for the outer walls (DungeonGenerator.Wilds), and there is a ceiling only when roofed.
+            var wildWalls = WildSettings;
+            if (wildWalls != null)
+            {
+                // Roofed: a ceiling, broken open where a room is moonlit (a ruin's fallen roof).
+                if (wildWalls.roofed && !RoofOpen(new Vector2Int(x, z))) ArchitectureBox("Ceiling", roofCenter, roofSize, ceilingMaterial, ceiling);
+                else if (wildWalls.roofed) Skylight(new Vector2Int(x, z), roofCenter, roofSize, frames[room], ceilingMaterial,
+                    DungeonRoomStyle.Resolve(style != null ? style.trim : null, level.trimMaterial), RoofOpen);
+                // The banks' faces lie where the walls' would: torches and wall decor hang on them as on walls.
+                foreach (var dir in dirs)
+                    if (!Open(new Vector2Int(x + dir.x, z + dir.y))) wallFaces.Add((new Vector2Int(x, z), dir, room));
+                // Open to the sky there is no ceiling to close; under a roof the masonry over a lower neighbour (a tall
+                // hall's wall above a passage's ceiling) is still built below.
+                if (!wildWalls.roofed) continue;
+            }
+            else if (!RoofOpen(new Vector2Int(x, z))) ArchitectureBox("Ceiling", roofCenter, roofSize, ceilingMaterial, ceiling);
             else Skylight(new Vector2Int(x, z), roofCenter, roofSize, frames[room], ceilingMaterial,
                 DungeonRoomStyle.Resolve(style != null ? style.trim : null, level.trimMaterial), RoofOpen);
             foreach (var dir in dirs)
             {
                 int nx = x+dir.x, nz = z+dir.y;
                 bool neighbor = nx>=0 && nz>=0 && nx<level.width && nz<level.depth && Layout.floor[nx,nz];
+                // Wild ground: the banks are the outer walls.
+                if (wildWalls != null && !neighbor) continue;
                 float bottom = neighbor ? HeightAt(nx,nz) : 0;
                 if (bottom >= height) continue;
                 var cell = new Vector2Int(x,z);
@@ -378,6 +411,7 @@ public partial class DungeonGenerator : MonoBehaviour
         }
         ChooseTemplates();
         ChooseRoomEvents();
+        if (Board) CutPonds();
         CutExitShaft();
         BuildProgress = .24f;
         if (SliceDue) { Pause(); yield return null; Resume(); }
@@ -393,10 +427,17 @@ public partial class DungeonGenerator : MonoBehaviour
         StockDeadEnds();
         BuildProgress = .64f;
         if (SliceDue) { Pause(); yield return null; Resume(); }
-        if (Board) { BuildBoardMounds(); BuildBoardRim(); }
+        if (Board) { BuildBoardMounds(); BuildBoardRim(); BuildWilds(); }
+        else BuildWilds();   // a walled floor's wild ground, when its biome has it, in place of the walls
         // Board tiles stay separate: they are laid out one by one as rooms are revealed.
         var batching=gameObject.AddComponent<DungeonStaticGeometry>();
         if (!Board) batching.Combine(geometry,data.cellSize*8);
+        if (wildsRoot != null) batching.Combine(wildsRoot.Find("Banks"),data.cellSize*8);
+        // The wild ground's growth (thousands of trees, ferns, roots and vines) merged per material as the walls are, each
+        // piece keeping its shadow casting; and a board whose rooms are all on the table from the start, its tiles and
+        // mounds per room (a board dealt in room by room needs its rooms apart; they are merged within each room).
+        if (wildsRoot != null) batching.Combine(wildsRoot.Find("Growth"),data.cellSize*8,true);
+        if (Board && data.RevealWholeFloor(FloorNumber)) foreach (var region in boardRegions) batching.Combine(region,data.cellSize*8,true);
         batching.Combine(ceiling,data.cellSize*8);
         // Ceilings also answer to the player's ceiling light (see FirstPersonLighting).
         foreach(var r in ceiling.GetComponentsInChildren<Renderer>(true)) r.renderingLayerMask |= FirstPersonLighting.CeilingLayer;
@@ -668,7 +709,8 @@ public partial class DungeonGenerator : MonoBehaviour
         // The entrance and exit rooms are kept clear, except their rims when the level asks (trees round a glade).
         bool rim=data.furnishEntranceRims && (index==0 || Roles[index]==RoomRole.Exit);
         bool Rim(Vector2Int p){if(Layout.Walkways.Contains(p))return false;foreach(var d in DungeonLayout.Neighbours)if(!Layout.InRoom(index,p+d))return true;return false;}
-        foreach(var p in Layout.RoomCells(index))if(!Layout.Reserved.Contains(p) || rim && Rim(p))available.Add(p);
+        // Never in a hole (a pond: a fountain was set down in the water).
+        foreach(var p in Layout.RoomCells(index))if((!Layout.Reserved.Contains(p) || rim && Rim(p)) && !cutCells.Contains(p))available.Add(p);
         for(int i=available.Count-1;i>0;i--){int j=random.Next(i+1);(available[i],available[j])=(available[j],available[i]);}
         PlaceShrine(index,available);
         int cursor=0;
@@ -787,6 +829,8 @@ public partial class DungeonGenerator : MonoBehaviour
         {
             var breakable=DungeonWeightedPrefab.Choose(Destructibles,extraRandom,IsFloorBreakable);
             if(breakable!=null){SpawnDestructible(breakable,pos,Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewardOverride,random.Next());return null;}
+            // A look of its own with no breakables (the forest) has none: no stand-in barrel of plain boxes.
+            if(OwnLook)return null;
         }
         var chestPrefab=chest ? DungeonWeightedPrefab.Choose(data.chestTiers,extraRandom) ?? data.chestPrefab : null;
         bool authoredChest=chest && chestPrefab!=null;

@@ -87,7 +87,7 @@ public partial class DungeonGenerator
     // crosses. It belongs to the room's region, so it is dealt in with the room.
     void BoardPit(HashSet<Vector2Int> cells)
     {
-        var material = data.boardPitMaterial != null ? data.boardPitMaterial : data.boardEdgeMaterial;
+        var material = KitPit != null ? KitPit : KitEdge;
         foreach (var c in cells)
         {
             int region = Layout.RegionIds[c.x, c.y];
