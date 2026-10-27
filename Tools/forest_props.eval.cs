@@ -297,6 +297,9 @@ try
 }
 catch (System.Exception e) { sb.Append("ERR " + e + "\n"); }
 UnityEditor.AssetDatabase.SaveAssets();
+// Everything written here imported before it is used (some props once showed missing meshes and materials until their
+// folders were reimported by hand).
+UnityEditor.AssetDatabase.ImportAsset("Assets/Game/Levels/Dungeon1/Forest/Props", UnityEditor.ImportAssetOptions.ImportRecursive | UnityEditor.ImportAssetOptions.ForceUpdate);
 System.IO.Directory.CreateDirectory("Temp/Forest");
 System.IO.File.WriteAllText("Temp/Forest/props.txt", sb.ToString());
 return "ok";

@@ -218,6 +218,8 @@ public partial class DungeonGenerator
                 {
                     foot[n.x, n.y] = Mathf.Max(foot[n.x, n.y], foot[c.x, c.y]);
                     reach[n.x, n.y] = Mathf.Max(reach[n.x, n.y], reach[c.x, c.y]);
+                    // Beside the tavern and a passage at once: the tavern's wall wins.
+                    if (!Board && MerchantRoom >= 0 && owner[c.x, c.y] == MerchantRoom) owner[n.x, n.y] = MerchantRoom;
                     continue;
                 }
                 dist[n.x, n.y] = dist[c.x, c.y] + 1;
@@ -335,7 +337,8 @@ public partial class DungeonGenerator
                 var along = new Vector3(dir.y, 0f, dir.x);
                 var edge = Cell(cell) + outward * (size * .5f) + Vector3.up * FloorTop;
                 // Nothing in a pond, and nothing on a way in or out of the floor.
-                if (cutCells.Contains(cell) || plates.Contains(cell)) continue;
+                // Nor in a walled floor's tavern: its banks are its walls, kept bare.
+                if (cutCells.Contains(cell) || plates.Contains(cell) || !Board && MerchantRoom >= 0 && Layout.RoomAt(cell) == MerchantRoom) continue;
                 if (wilds.foot != null && wilds.foot.Length > 0 && rng.NextDouble() < wilds.footChance)
                 {
                     var prefab = DungeonWeightedPrefab.Choose(wilds.foot, rng);

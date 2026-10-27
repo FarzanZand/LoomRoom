@@ -129,7 +129,7 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   if (level.baseBiome != null && level.baseBiome.destructibles != null) breakables.AddRange(level.baseBiome.destructibles);
   if (crypt.destructibles != null) breakables.AddRange(crypt.destructibles);
   biome.destructibles = breakables.ToArray();
-  biome.merchantChance = 0;
+  biome.merchantChance = 1;   // a tavern on every floor, in its own plaster (its wild walls take its style)
   biome.guardian = new DungeonMilestone { enabled = false };
   biome.overrideDungeonSettings = true;
   var features = DungeonBiome.Clone(crypt.overrideDungeonSettings && crypt.roomFeatures != null ? crypt.roomFeatures : level.roomFeatures ?? new DungeonRoomFeatures());
@@ -181,6 +181,7 @@ foreach (var b in made) stages.Add(new TableLevelData.BiomeStage { biome = b, fl
 level.stages = stages.ToArray();
 UnityEditor.EditorUtility.SetDirty(level);
 UnityEditor.AssetDatabase.SaveAssets();
+UnityEditor.AssetDatabase.ImportAsset("Assets/Game/Levels/Dungeon1/Ruins/Props", UnityEditor.ImportAssetOptions.ImportRecursive | UnityEditor.ImportAssetOptions.ForceUpdate);   // what it wrote, imported
 sb.Append($"run: {level.RunSummary}\n");
 } catch (System.Exception e) { sb.Append("ERR " + e); }
 System.IO.File.WriteAllText("Temp/Forest/ruins.txt", sb.ToString());

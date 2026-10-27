@@ -235,7 +235,7 @@ DungeonBiome Make(string name, string display, string entry, DungeonRoomStyle ro
   biome.roomCount = 12; biome.roomSizeScale = 1.6f; biome.noDoors = true;
   // Clearings, never boxes: blobs, trimmed corners, and rings round an island of rock or a tree.
   biome.roomShapes = new[] { new DungeonShapeChoice { kind = DungeonShapeKind.Cave, weight = 4 }, new DungeonShapeChoice { kind = DungeonShapeKind.CutCorners, weight = 1.5f }, new DungeonShapeChoice { kind = DungeonShapeKind.Ring, weight = 1.2f }, new DungeonShapeChoice { kind = DungeonShapeKind.PillarHall, weight = .5f } };
-  biome.merchantChance = 0;   // the tavern is a walled room: none in the woods for now
+  biome.merchantChance = 1;   // a tavern on every floor: in the woods an open-air inn in a clearing (a board has no walls or roof)
   biome.guardian = new DungeonMilestone { enabled = false };
   biome.lightingPrefabs = new DungeonWallLight[0];
   biome.props = new UnityEngine.GameObject[0];
@@ -329,6 +329,7 @@ foreach (var b in made) stages.Insert(at++, new TableLevelData.BiomeStage { biom
 level.stages = stages.ToArray();
 UnityEditor.EditorUtility.SetDirty(level);
 UnityEditor.AssetDatabase.SaveAssets();
+UnityEditor.AssetDatabase.ImportAsset("Assets/Game/Levels/Dungeon1/Forest/Props", UnityEditor.ImportAssetOptions.ImportRecursive | UnityEditor.ImportAssetOptions.ForceUpdate);   // what it wrote, imported
 sb.Append($"run: {level.RunSummary}\n");
 } catch (System.Exception e) { sb.Append("ERR " + e); }
 System.IO.File.WriteAllText("Temp/Forest/setup.txt", sb.ToString());

@@ -290,8 +290,13 @@ public partial class DungeonGenerator : MonoBehaviour
             RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? roomStyles : corridorStyles, styleRandom);
         for (int i=0;i<profiles.Length;i++)
             if (profiles[i] != null && profiles[i].styleOverride != null) RegionStyles[i] = profiles[i].styleOverride;
-        // A hand-built room's own style, except on a stage with a look of its own (a tavern in the woods is in the woods).
-        for (int i=0;i<profiles.Length;i++) { var t = TemplateOf(i); if (t != null && t.style != null && !OwnLook) RegionStyles[i] = t.style; }
+        // A hand-built room's own style, except on a stage with a look of its own (a tavern in the woods is in the woods);
+        // there the tavern still keeps its own on a walled floor, so the ruins' wild walls beside it are its plaster.
+        for (int i=0;i<profiles.Length;i++)
+        {
+            var t = TemplateOf(i);
+            if (t != null && t.style != null && (!OwnLook || !Board && data.shopRoom != null && t.gameObject == data.shopRoom)) RegionStyles[i] = t.style;
+        }
         if (level.corridorsCopyConnectedRoomStyle) CopyConnectedRoomStyles(seed);
         for (int i = 0; i < RegionStyles.Length; i++) if (RegionStyles[i] == null) RegionStyles[i] = DefaultStyle;
         var openRoofs = Layout.SelectOpenRegions(level.hideRoof ? level.hideRoofPercent : 0, 173);
