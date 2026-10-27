@@ -29,7 +29,7 @@ public class AdventureSave : MonoBehaviour
         public string id, classId, className, killer;
         public int floor, level;
         public int[] skills;
-        [Tooltip("A starting memorial: a figure from before the player remembers, with no details.")]
+        [Tooltip("A blank record older saves started with (the retired memorial table's figures): class only, no details.")]
         public bool forgotten;
     }
     // JsonUtility fills a new Data (and Checkpoint) from its field initialisers before reading, so a field
@@ -214,19 +214,9 @@ public class AdventureSave : MonoBehaviour
             loading = false; ProgressionManager.Instance.FlagChanged += FlagChanged;
         }
         if (RunManager.HasInstance) { RunManager.Instance.RunEnded += Ended; RunManager.Instance.Revived += Revived; }
-        if (!existed) SeedStartingMemorials();
         if (named || ProgressionManager.HasInstance && ProgressionManager.Instance.IntroSkipped) Write();
     }
 
-    // A new save starts with the rules' blank figures on the memorial table.
-    void SeedStartingMemorials()
-    {
-        var starting = progress != null && progress.rules != null ? progress.rules.startingMemorials : null;
-        if (starting == null || starting.Length == 0) return;
-        foreach (var c in starting)
-            if (c != null) Saved.memorials.Add(new Memorial { id = Guid.NewGuid().ToString("N"), classId = c.id, className = c.displayName, forgotten = true });
-        Write();
-    }
     void OnDestroy()
     {
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= FlagChanged;

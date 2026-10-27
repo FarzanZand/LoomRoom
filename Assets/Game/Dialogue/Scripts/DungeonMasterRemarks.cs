@@ -5,7 +5,7 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 
 // When the Dungeon Master speaks. Listens to the game (waking, sitting down, runs starting and ending,
-// the looping door, a forgotten figure, idling, the ending) and says the lines typed here. During a run
+// the looping door, idling, the ending) and says the lines typed here. During a run
 // it says the level's own Dialogue entries (TableLevelData: trigger, chance, lines). The introduction is a
 // Dialogue Database conversation started by talking to the DM (DungeonMasterSeat). Sits on the Dialogue Manager.
 public class DungeonMasterRemarks : MonoBehaviour
@@ -17,7 +17,6 @@ public class DungeonMasterRemarks : MonoBehaviour
     [TabGroup(Tabs, "Room"), Tooltip("Walking about for a while without sitting down.")] public List<DungeonMaster.Line> idle = new();
     [TabGroup(Tabs, "Room"), Tooltip("The first time the door loops back into the room.")] public List<DungeonMaster.Line> door = new();
     [TabGroup(Tabs, "Room"), Tooltip("When the door has looped a few times in one session.")] public List<DungeonMaster.Line> doorAgain = new();
-    [TabGroup(Tabs, "Room"), Tooltip("The first look at a blank figure on the memorial table.")] public List<DungeonMaster.Line> forgottenFigure = new();
     [TabGroup(Tabs, "Room"), Min(0), Tooltip("Seconds after waking before the greeting.")] public float greetingDelay = 1.5f;
     [TabGroup(Tabs, "Room"), Min(5), Tooltip("Seconds of walking about without sitting down before the nudge.")] public float idleSeconds = 75f;
     [TabGroup(Tabs, "Room"), Min(2), Tooltip("Loops of the door in one session before its second remark.")] public int doorLoopAgainAt = 4;
@@ -45,7 +44,7 @@ public class DungeonMasterRemarks : MonoBehaviour
     [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds between two run remarks.")] public float remarkGap = 25f;
     [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds after arriving in the dungeon before a remark.")] public float runRemarkDelay = 1.5f;
 
-    public const string SatFlag = "story.sat", OfferedPrefix = "story.offered.", LoopedFlag = "story.loopedDoor", ForgottenSeenFlag = "story.forgottenSeen";
+    public const string SatFlag = "story.sat", OfferedPrefix = "story.offered.", LoopedFlag = "story.loopedDoor";
     const string DeepestFlag = "adventure.deepestFloor";
 
     AdventureSave save;
@@ -71,7 +70,6 @@ public class DungeonMasterRemarks : MonoBehaviour
         if (RunManager.HasInstance) { RunManager.Instance.RunStarted += OnRunStarted; RunManager.Instance.RunEnded += OnRunEnded; }
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged += OnFlag;
         RoomLoopPortal.Crossed += OnLooped;
-        AdventureMemorial.Inspected += OnInspected;
         tablePlayer = player;
         Character.AnyDied += OnAnyDied;
         if (tablePlayer != null) { tablePlayer.HitLanded += OnHitLanded; tablePlayer.Damaged += OnPlayerDamaged; }
@@ -88,7 +86,6 @@ public class DungeonMasterRemarks : MonoBehaviour
         if (RunManager.HasInstance) { RunManager.Instance.RunStarted -= OnRunStarted; RunManager.Instance.RunEnded -= OnRunEnded; }
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= OnFlag;
         RoomLoopPortal.Crossed -= OnLooped;
-        AdventureMemorial.Inspected -= OnInspected;
         Character.AnyDied -= OnAnyDied;
         if (tablePlayer != null) { tablePlayer.HitLanded -= OnHitLanded; tablePlayer.Damaged -= OnPlayerDamaged; }
         if (progress != null) progress.Changed -= OnProgress;
@@ -159,13 +156,6 @@ public class DungeonMasterRemarks : MonoBehaviour
         loops++;
         if (!Flag(LoopedFlag)) { SetFlag(LoopedFlag); Say(door); }
         else if (loops == doorLoopAgainAt) Say(doorAgain);
-    }
-
-    void OnInspected(AdventureSave.Memorial record)
-    {
-        if (record == null || !record.forgotten || Flag(ForgottenSeenFlag)) return;
-        SetFlag(ForgottenSeenFlag);
-        Say(forgottenFigure);
     }
 
     void OnEndingFinished() { won = true; died = false; }
