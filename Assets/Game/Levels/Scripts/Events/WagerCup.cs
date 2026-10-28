@@ -14,7 +14,7 @@ public class WagerCup : MonoBehaviour, IInteractable
     public Vector3 RestLocal(Transform self) { if (!hasRest) { rest = self.localPosition; hasRest = true; } return rest; }
     public void SetRest(Vector3 local) { rest = local; hasRest = true; }
 
-    public string Prompt => wager == null ? "" : wager.Picking ? "Pick this bowl" : wager.CanCall ? "Call him a cheat" : "";
+    public string Prompt => wager == null ? "" : wager.Picking ? "Pick this cup" : wager.CanCall ? "Call him a cheat" : "";
     public bool CanInteract(Character who) => who is Player && wager != null && (wager.Picking || wager.CanCall);
     public void Interact(Character who)
     {

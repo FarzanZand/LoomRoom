@@ -1,5 +1,5 @@
 """The Great bell's pull rope, in metres, Unity axes (y up), the pivot at its top (y 0) and LENGTH down: a three-strand
-hemp rope (a twisted 10-sided tube whose radius follows three spiral ridges), a woollen sally to grip (red and cream
+hemp rope (a twisted 10-sided tube whose radius follows three spiral ridges), a woollen sally to grip (russet and hemp
 bands round a fatter wrap) part way up from its end, and a whipped tail with a knot at the bottom.
 Materials: Hemp, Wool red, Wool cream.
 blender -b -P bell_rope.py -- out.fbx [length]"""
@@ -17,7 +17,7 @@ def U(x, y, z):   # Unity -> Blender, as Tools/dm_die.py measured
 def mat(name, rgb):
     m = bpy.data.materials.new(name); m.diffuse_color = (*rgb, 1); return m
 
-HEMP, RED, CREAM = mat('Hemp', (.52, .42, .28)), mat('Wool red', (.46, .13, .10)), mat('Wool cream', (.74, .67, .54))
+HEMP, RED, CREAM = mat('Hemp', (.52, .42, .28)), mat('Wool red', (.33, .22, .15)), mat('Wool cream', (.47, .38, .26))
 mats = [HEMP, RED, CREAM]
 
 SIDES, R = 10, .018

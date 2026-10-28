@@ -135,7 +135,7 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: Greedy. I like it.
+  - text: You want more, then.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -149,7 +149,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   cashOutLine:
-    text: Taking the money. Sensible.
+    text: Stopping now is the sensible thing.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

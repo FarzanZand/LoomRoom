@@ -22,16 +22,16 @@ public class DungeonMasterMeddling : MonoBehaviour
     public static DungeonMaster.Line[] tooEasyLines =
     {
         new() { text = "Too easy. Let me fix that." },
-        new() { text = "You're making this look simple. Here." },
-        new() { text = "Hold on. That wasn't fair on them." },
+        new() { text = "You're making this look simple." },
+        new() { text = "That wasn't fair on them." },
     };
     public static DungeonMaster.Line[] afterAddLines =
     {
         new() { text = "Better." },
-        new() { text = "There. Now it's a fight." },
+        new() { text = "Now it's a fight." },
     };
     public static DungeonMaster.Line stealLine = new() { text = "Actually, I'll take that." };
-    public static DungeonMaster.Line coinLine = new() { text = "Here. For the walk." };
+    public static DungeonMaster.Line coinLine = new() { text = "A coin for the walk." };
 
     DungeonGenerator dungeon;
     DungeonRoomFeatures features;

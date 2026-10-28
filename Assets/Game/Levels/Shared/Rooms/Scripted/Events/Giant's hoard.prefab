@@ -503,14 +503,20 @@ MonoBehaviour:
   snore: {fileID: 0}
   hearing: 1.7
   riseSeconds: 1.8
+  doorNoise: 1.5
   dropRarity: 3
   enterLine:
-    text: Shh. It's sleeping. Crouch.
+    text: It's asleep. Crouch.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   wokeLine:
     text: Should have crouched.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  struckLine:
+    text: You hit it. It's awake now.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -520,7 +526,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   killedLine:
-    text: The bigger they are.
+    text: That was a lot of giant.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

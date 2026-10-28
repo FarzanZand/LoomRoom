@@ -24,11 +24,11 @@ public class DiceEvent : MonoBehaviour
     public DungeonMaster.Line rollLine = new() { text = "Let's see what the dice say." };
     public DungeonMaster.Line[] faceLines =
     {
-        new() { text = "One. Oh dear." },
-        new() { text = "Two. I have just the thing." },
-        new() { text = "Three. Nothing. How dull." },
-        new() { text = "Four. Have a rest." },
-        new() { text = "Five. Not bad." },
+        new() { text = "A one. Oh dear." },
+        new() { text = "A two gets you a friend of mine." },
+        new() { text = "Three does nothing at all." },
+        new() { text = "Four puts you back on your feet." },
+        new() { text = "Five, not bad." },
         new() { text = "Six! Lucky you." },
     };
 

@@ -22,11 +22,11 @@ public class SleepingGiantEvent : MonoBehaviour
     [Tooltip("What it leaves when it dies, besides its own drops: gear rolled at this rarity and the biggest spoils.")]
     public ItemRarity dropRarity = ItemRarity.Unique;
     [Header("Lines")]
-    public DungeonMaster.Line enterLine = new() { text = "Shh. It's sleeping. Crouch." };
+    public DungeonMaster.Line enterLine = new() { text = "It's asleep. Crouch." };
     [Tooltip("Said when a step woke it.")] public DungeonMaster.Line wokeLine = new() { text = "Should have crouched." };
-    [Tooltip("Said when a blow woke it.")] public DungeonMaster.Line struckLine = new() { text = "Bold. It's awake now." };
+    [Tooltip("Said when a blow woke it.")] public DungeonMaster.Line struckLine = new() { text = "You hit it. It's awake now." };
     public DungeonMaster.Line quietLine = new() { text = "Not a sound. I'm impressed." };
-    public DungeonMaster.Line killedLine = new() { text = "The bigger they are." };
+    public DungeonMaster.Line killedLine = new() { text = "That was a lot of giant." };
 
     ScriptedEventRoom room;
     Character giant;

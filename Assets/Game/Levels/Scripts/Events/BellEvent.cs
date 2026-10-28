@@ -22,11 +22,11 @@ public class BellEvent : MonoBehaviour
     {
         new() { text = "You rang?" },
         new() { text = "Again? Fine." },
-        new() { text = "Greedy. I like it." },
+        new() { text = "You want more, then." },
         new() { text = "This is the last one. I mean it." },
     };
     public DungeonMaster.Line clearedLine = new() { text = "The chest looks better already." };
-    public DungeonMaster.Line cashOutLine = new() { text = "Taking the money. Sensible." };
+    public DungeonMaster.Line cashOutLine = new() { text = "Stopping now is the sensible thing." };
     public DungeonMaster.Line doneLine = new() { text = "That's all the bell has." };
 
     ScriptedEventRoom room;

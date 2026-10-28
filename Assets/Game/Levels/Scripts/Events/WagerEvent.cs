@@ -43,8 +43,8 @@ public class WagerEvent : MonoBehaviour
     public DungeonMaster.Line cheatHint = new() { text = "He doesn't like losing." };
     public DungeonMaster.Line cheatReveal = new() { text = "None of them? Funny, that." };
     public DungeonMaster.Line calledLine = new() { text = "You called it. Now deal with his friends." };
-    public DungeonMaster.Line soreLine = new() { text = "Sore loser. He played fair." };
-    public DungeonMaster.Line potLine = new() { text = "His pot. You earned it." };
+    public DungeonMaster.Line soreLine = new() { text = "He played fair, you know." };
+    public DungeonMaster.Line potLine = new() { text = "His pot is yours." };
     public DungeonMaster.Line poorLine = new() { text = "You can't cover the bet." };
     public DungeonMaster.Line doneLine = new() { text = "He's done for tonight." };
 

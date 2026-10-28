@@ -349,7 +349,7 @@ public static class EventRoomsSetup
             ev.toll = Load<AudioClip>("Assets/Game/Audio/Clips/Events/Bell toll.wav");
         });
 
-    // The wager: a small candlelit 7 x 5 room, a table in the middle with the dealer sitting behind it, three bowls and a
+    // The wager: a small candlelit 7 x 5 room, a table in the middle with the dealer sitting behind it, three cups and a
     // coin on it.
     static GameObject Wager(GameObject sharp) => Room("Card table", "wager",
         "A skeleton runs a shell game. Bet gold, find the coin. He cheats once you win twice; call him out with a blow.",
@@ -369,7 +369,7 @@ public static class EventRoomsSetup
             var cups = new Transform[3];
             for (int i = 0; i < 3; i++)
             {
-                var bowl = Put(root, $"{Shared}/Tavern/Broth bowl.prefab", Vector3.zero, 0f, "Bowl " + (i + 1));
+                var bowl = Put(root, $"{Shared}/Tavern/Mug.prefab", Vector3.zero, 0f, "Bowl " + (i + 1));   // upside-down mugs (a bowl turned over read as a bun)
                 if (bowl == null) continue;
                 bowl.transform.localRotation = Quaternion.Euler(180f, 0f, 0f);
                 var bb = Bounds(bowl);

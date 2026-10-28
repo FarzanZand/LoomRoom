@@ -30,11 +30,11 @@ public class DuelEvent : MonoBehaviour
     [Range(1, 4)] public int maxTier = 2;
     public ItemRarity rarity = ItemRarity.Unique;
     [Header("Lines")]
-    public DungeonMaster.Line challengeLine = new() { text = "A duel. One on one. Face him." };
+    public DungeonMaster.Line challengeLine = new() { text = "He wants a duel. Face him." };
     public DungeonMaster.Line earlyLine = new() { text = "He hadn't even finished his salute." };
     public DungeonMaster.Line friendsLine = new() { text = "His friends saw that too." };
-    public DungeonMaster.Line fairLine = new() { text = "Fair and square. He'd want you to have this." };
-    public DungeonMaster.Line foulWinLine = new() { text = "You won. That's not how the songs will tell it." };
+    public DungeonMaster.Line fairLine = new() { text = "He lost fair. It's yours." };
+    public DungeonMaster.Line foulWinLine = new() { text = "You won. Not the way he'd have liked." };
 
     enum Phase { Waiting, Saluting, Duel, Broken, Over }
     Phase phase;

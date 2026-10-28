@@ -202,23 +202,23 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   faceLines:
-  - text: One. Oh dear.
+  - text: A one. Oh dear.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: Two. I have just the thing.
+  - text: A two gets you a friend of mine.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: Three. Nothing. How dull.
+  - text: Three does nothing at all.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: Four. Have a rest.
+  - text: Four puts you back on your feet.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: Five. Not bad.
+  - text: Five, not bad.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
