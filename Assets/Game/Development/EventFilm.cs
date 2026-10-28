@@ -332,7 +332,10 @@ public class EventFilm : MonoBehaviour
             float d = (edge - P.transform.position).sqrMagnitude;
             if (d < nearest) { nearest = d; door = edge; outward = dir; }
         }
-        yield return WalkTo(door - outward * .6f, .5f, false, 16f, .4f);
+        yield return WalkTo(door - outward * 1.2f, .5f, false, 16f, .4f);
+        // A closed door in the way: open it as a player would.
+        foreach (var d in room.Dungeon.GetComponentsInChildren<DungeonDoor>())
+            if (!d.IsOpen && Vector3.Distance(d.transform.position, door) < 2.5f) { yield return Look(d.transform.position + Vector3.up * 1.2f, .5f); d.Interact(P); yield return Wait(1.2f); break; }
         yield return WalkTo(door + outward * 3.5f, .5f, false, 8f, .4f);
         Note("outside " + !room.PlayerInside + ", asleep " + Asleep(room));
         Crouch(false);
@@ -474,6 +477,9 @@ public class EventFilm : MonoBehaviour
         for (float t = 0; DungeonMasterReach.Busy && t < 40f; t += Time.deltaTime) yield return null;
         yield return Wait(1f);
         // A chest set down on open floor in front of the player (turned toward the room's open middle first).
+        // (He takes the nearest closed chest: any other one close by goes first, so it is this one, in view.)
+        foreach (var c in floor.GetComponentsInChildren<DungeonContainer>())
+            if (c.chest && !c.IsOpen && Vector3.Distance(c.transform.position, P.transform.position) < 9f) Destroy(c.gameObject);
         var open = OpenFloor(floor, 3.2f);
         yield return Look(open + Vector3.up * .3f, .8f);
         var set = floor.SpawnChest(0, open, Quaternion.LookRotation(Flat(P.transform.position - open)), 7);

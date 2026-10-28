@@ -224,16 +224,30 @@ public class DiceEvent : MonoBehaviour
     }
 
     // Floor in the room beside the die, across the player's view of it (so what he brings is set down where it is seen,
-    // not into the player's face).
+    // not into the player's face), on the side where his hand's way in from where he stands passes clear of the player
+    // (on the other side it swept past their eyes).
     Vector3 Beside(Player player, Vector3 spot, float distance)
     {
         var across = Vector3.Cross(Vector3.up, Flat(player.transform.position - spot));
+        Vector3? best = null; float bestClear = -1f;
         foreach (float turn in new[] { 0f, 180f, 35f, -35f, 145f, -145f })
         {
             var p = spot + Quaternion.Euler(0f, turn, 0f) * across * distance;
-            if (UnityEngine.AI.NavMesh.SamplePosition(p, out var hit, 1f, UnityEngine.AI.NavMesh.AllAreas) && room.Inside(hit.position)) return hit.position;
+            if (!UnityEngine.AI.NavMesh.SamplePosition(p, out var hit, 1f, UnityEngine.AI.NavMesh.AllAreas) || !room.Inside(hit.position)) continue;
+            float clear = ClearOfPath(player.transform.position, DungeonMasterReach.StandFor(hit.position), hit.position);
+            if (clear >= 2.5f) return hit.position;
+            if (clear > bestClear) { bestClear = clear; best = hit.position; }
         }
-        return Near(player, spot, distance);
+        return best ?? Near(player, spot, distance);
+    }
+
+    // How far the player stands (on the floor's plane) from his hand's line between where he stands and the spot.
+    static float ClearOfPath(Vector3 player, Vector3 from, Vector3 to)
+    {
+        var a = new Vector2(from.x, from.z); var b = new Vector2(to.x, to.z); var p = new Vector2(player.x, player.z);
+        var ab = b - a;
+        float t = ab.sqrMagnitude > .0001f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude) : 0f;
+        return Vector2.Distance(p, a + ab * t);
     }
 
     // Floor in the room between the die and the player, a little off the die.
