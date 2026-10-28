@@ -32,6 +32,7 @@ public class SleepingGiantEvent : MonoBehaviour
     Character giant;
     EnemyBrain brain;
     bool laid, entered, woke, praised, took, struck;
+    int goldAtEntry = -1;
     float nextScan;
     readonly List<WorldItem> loot = new();
 
@@ -49,13 +50,20 @@ public class SleepingGiantEvent : MonoBehaviour
         if (!laid && ScriptedEventRoom.TablePlayer != null) Lay();
         var player = ScriptedEventRoom.TablePlayer;
         bool inside = room.PlayerInside;
-        if (inside && !entered) { entered = true; if (brain.Asleep) ScriptedEventRoom.Say(enterLine); }
+        if (inside && !entered)
+        {
+            entered = true;
+            if (brain.Asleep) ScriptedEventRoom.Say(enterLine);
+            goldAtEntry = player != null && player.Wallet != null ? player.Wallet.Gold : -1;
+        }
         if (!woke && giant.IsAlive && !brain.Asleep && brain.State != EnemyState.Dead)
         {
             woke = true;
             ScriptedEventRoom.Say(struck ? struckLine : wokeLine);
         }
         if (!took) foreach (var item in loot) if (item == null) { took = true; break; }
+        // Its gold counts too (picked up as it is walked over).
+        if (!took && inside && goldAtEntry >= 0 && player != null && player.Wallet != null && player.Wallet.Gold > goldAtEntry) took = true;
         // Out of the room with something of the hoard, and it never stirred.
         if (entered && took && !woke && !praised && player != null && !inside && room.DepthOf(player.transform.position) > 1.5f)
         {

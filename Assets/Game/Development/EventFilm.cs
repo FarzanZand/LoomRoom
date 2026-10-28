@@ -473,6 +473,7 @@ public class EventFilm : MonoBehaviour
         yield return Wait(1f);
         var said = m.Now("add");
         Note(said);
+        if (!said.StartsWith("He adds")) yield break;
         yield return Look(DungeonMasterReach.StandFor(P.transform.position + P.transform.forward * 4f) + Vector3.up * 28f, 1.5f);
         var floorRoom = floor.RoomOf(P.transform.position);
         Character added = null;

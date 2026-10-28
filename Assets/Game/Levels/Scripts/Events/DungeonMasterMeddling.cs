@@ -104,8 +104,9 @@ public class DungeonMasterMeddling : MonoBehaviour
         var forward = player.transform.forward; forward.y = 0f; forward.Normalize();
         int room = dungeon.RoomOf(from);
         if (!NavMesh.SamplePosition(from, out var standing, 1.5f, NavMesh.AllAreas)) return null;
-        foreach (float d in new[] { 4f, 3f, 5f, 2.5f })
-            foreach (float turn in new[] { 0f, 35f, -35f, 70f, -70f })
+        // In front first; facing a wall, beside or behind them.
+        foreach (float turn in new[] { 0f, 35f, -35f, 70f, -70f, 110f, -110f, 150f, -150f, 180f })
+            foreach (float d in new[] { 4f, 3f, 5f, 2.5f, 2f })
             {
                 var p = from + Quaternion.Euler(0f, turn, 0f) * forward * d;
                 if (!NavMesh.SamplePosition(p, out var hit, 1f, NavMesh.AllAreas) || dungeon.RoomOf(hit.position) != room) continue;
