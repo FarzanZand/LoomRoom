@@ -27,6 +27,10 @@ public class TavernHearth : MonoBehaviour, IInteractable
     public ParticleSystem[] flames = new ParticleSystem[0];
     [Range(0, 1), Tooltip("How bright the lights stay afterwards.")]
     public float embers = .3f;
+    [Range(0, 1), Tooltip("How big the flames stay afterwards.")]
+    public float flameSize = .45f;
+    [Tooltip("Seconds the flames take to sink to that size.")]
+    public float flameShrinkSeconds = 1.5f;
     public AudioClip restClip;
 
     bool used, sitting;
@@ -116,8 +120,24 @@ public class TavernHearth : MonoBehaviour, IInteractable
             if (l.TryGetComponent<TorchFlicker>(out var flicker)) flicker.scale *= embers;
             else l.intensity *= embers;
         }
+        // The flames scale with their transform (hierarchy scaling, 3D start sizes), so they shrink by their scale: the
+        // start size alone left the fire as big as ever.
         foreach (var f in flames)
-            if (f != null) { var main = f.main; main.startSizeMultiplier *= .5f; var emission = f.emission; emission.rateOverTimeMultiplier *= .4f; }
+            if (f != null) { var emission = f.emission; emission.rateOverTimeMultiplier *= .4f; }
+        StartCoroutine(ShrinkFlames());
+    }
+
+    IEnumerator ShrinkFlames()
+    {
+        var from = new Vector3[flames.Length];
+        for (int i = 0; i < flames.Length; i++) if (flames[i] != null) from[i] = flames[i].transform.localScale;
+        for (float t = 0f; t < flameShrinkSeconds; t += Time.deltaTime)
+        {
+            float k = Mathf.Lerp(1f, flameSize, Mathf.SmoothStep(0f, 1f, t / flameShrinkSeconds));
+            for (int i = 0; i < flames.Length; i++) if (flames[i] != null) flames[i].transform.localScale = from[i] * k;
+            yield return null;
+        }
+        for (int i = 0; i < flames.Length; i++) if (flames[i] != null) flames[i].transform.localScale = from[i] * flameSize;
     }
 
     // Stands the player up and gives control back; also run if the tavern goes while they sit.

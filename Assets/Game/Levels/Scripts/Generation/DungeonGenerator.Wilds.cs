@@ -105,6 +105,29 @@ public partial class DungeonGenerator
     // The room's tiles there go; the hole goes down into the table (TableCut), lined with the bank's earth, a bed of the
     // pit card at the bottom and water standing a little under the tiles' top. It is filed under the room, so it is dealt
     // in with it, and a DungeonFloorCut keeps the player out and lets enemies knocked into it drown.
+    // How far a prefab reaches from its pivot across the ground, whichever way it is turned (its bounds from SizeOf).
+    static float Reach(Bounds b) => Mathf.Max(Mathf.Max(-b.min.x, b.max.x), Mathf.Max(-b.min.z, b.max.z));
+
+    // Whether a formation reaching `radius` from `at` crosses into a floor cell on the far side of the bank face at
+    // `edge` (facing `outward`, into the bank).
+    bool ReachesBehind(Vector3 at, float radius, Vector3 edge, Vector3 outward)
+    {
+        float half = data.cellSize * .5f;
+        var centre = CellOf(at);
+        int span = Mathf.CeilToInt((radius + half) / data.cellSize) + 1;
+        for (int dx = -span; dx <= span; dx++) for (int dz = -span; dz <= span; dz++)
+        {
+            var c = new Vector2Int(centre.x + dx, centre.y + dz);
+            if (!Layout.InBounds(c) || !Layout.floor[c.x, c.y]) continue;
+            var p = Cell(c);
+            if (Vector3.Dot(p - edge, outward) < half) continue;   // this side of the face (the formation's own floor)
+            // The nearest point of the cell's square to the formation's middle.
+            var near = new Vector2(Mathf.Clamp(at.x, p.x - half, p.x + half), Mathf.Clamp(at.z, p.z - half, p.z + half));
+            if ((near - new Vector2(at.x, at.z)).sqrMagnitude < radius * radius) return true;
+        }
+        return false;
+    }
+
     void Pond(int room, HashSet<Vector2Int> cells, BoardWilds wilds, System.Random rng)
     {
         var parent = new GameObject("Pond").transform;
@@ -362,7 +385,10 @@ public partial class DungeonGenerator
                         var at = edge - outward * .12f + along * (float)(rng.NextDouble() - .5) * size * .8f;
                         // Facing out of the bank, turned a little either way.
                         var yaw = Quaternion.LookRotation(-outward) * Quaternion.Euler(0f, (float)(rng.NextDouble() - .5) * 70f, 0f);
-                        Instantiate(prefab, at, yaw, growth);
+                        // A wide root mound by a thin bank came out through it into the next room (the tavern's wall).
+                        var fb = SizeOf(prefab);
+                        if (!ReachesBehind(at, Reach(fb), edge, outward))
+                            Instantiate(prefab, at, yaw, growth);
                     }
                 }
                 int bx = n.x + depth, bz = n.y + depth;
@@ -378,7 +404,11 @@ public partial class DungeonGenerator
                         // Its back half buried in the bank: the face of it stands Face Stand Out over the floor.
                         at += outward * (b.extents.x * .5f + b.extents.z * .5f - wilds.faceStandOut);
                         at.y -= .2f;
-                        Instantiate(prefab, at, Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f), growth);
+                        // Turned any way it reaches its widest extent all round: where that crosses a floor behind the
+                        // bank (a thin bank between a passage and the tavern), it came out through the far side.
+                        var yaw = Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f);
+                        if (!ReachesBehind(at, Reach(b), edge, outward))
+                            Instantiate(prefab, at, yaw, growth);
                     }
                 }
                 // On the bank's top at its edge, hanging over the face.
