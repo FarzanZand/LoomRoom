@@ -39,6 +39,7 @@ public class DiceEvent : MonoBehaviour
 
     ScriptedEventRoom room;
     bool rolled;
+    Vector3? seenAt;
     public int Result { get; private set; }
 
     void Start() => room = GetComponent<ScriptedEventRoom>();
@@ -47,7 +48,11 @@ public class DiceEvent : MonoBehaviour
     {
         if (rolled || room == null || !room.Find()) return;
         var player = ScriptedEventRoom.TablePlayer;
-        if (player == null || !player.IsAlive || !room.Inside(player.transform.position) || room.DepthOf(player.transform.position) < triggerDepth) return;
+        if (player == null || !player.IsAlive || !room.Inside(player.transform.position)) { seenAt = null; return; }
+        // The first place the player is seen inside, then a metre's walk in from it and well inside.
+        if (seenAt == null) seenAt = player.transform.position;
+        var walked = player.transform.position - seenAt.Value; walked.y = 0f;
+        if (walked.magnitude < 1f || room.DepthOf(player.transform.position) < triggerDepth) return;
         if (DungeonMasterReach.Busy) return;
         rolled = true;
         StartCoroutine(Roll(player));
@@ -68,12 +73,12 @@ public class DiceEvent : MonoBehaviour
         Coroutine tumble = null;
         // Over the room if he can reach it; else from as far as he can reach, he tosses it in. It falls (or flies) the
         // moment he lets go.
-        var over = DungeonMasterReach.Reachable(spot);
-        yield return DungeonMasterReach.DropOver(die.transform, over, raiseSeconds, () =>
+        bool reach = DungeonMasterReach.CanReach(spot);
+        yield return DungeonMasterReach.DropOver(die.transform, spot, raiseSeconds, () =>
         {
             released = true;
             tumble = StartCoroutine(Tumble(die.transform, spot, Result, rng, Toss(die.transform.position, spot)));
-        });
+        }, reach);
         StartCoroutine(DungeonMasterReach.Leave());
         if (!released) yield break;
         yield return tumble;
@@ -165,7 +170,7 @@ public class DiceEvent : MonoBehaviour
             case 1: yield return Ambush(player, rng); break;
             case 2:
             {
-                var at = Near(player, spot, 3.5f);
+                var at = Beside(player, spot, 2.4f);
                 var prefab = toughEnemy != null ? toughEnemy : room.Dungeon.PickEnemy(room.Room, rng);
                 var enemy = prefab != null ? room.Dungeon.SpawnAmbusher(prefab, at, Quaternion.LookRotation(Flat(player.transform.position - at))) : null;
                 if (enemy != null) { yield return DungeonMasterReach.Put(enemy, at); yield return DungeonMasterReach.Leave(); }
@@ -179,7 +184,7 @@ public class DiceEvent : MonoBehaviour
             case 5:
             case 6:
             {
-                var at = Near(player, spot, 2.5f);
+                var at = Beside(player, spot, 1.9f);
                 var chest = room.Dungeon.SpawnChest(Result == 5 ? 1 : 2, at, Quaternion.LookRotation(Flat(player.transform.position - at)), rng.Next(), false);
                 if (chest == null) break;
                 if (Result == 6) { var prize = ScriptedEventRoom.Gear(ItemRarity.Unique, rng, maxTier); if (prize != null) chest.guaranteedItems.Add(prize); }
@@ -216,6 +221,19 @@ public class DiceEvent : MonoBehaviour
             yield return new WaitForSeconds(1f);
         }
         room.OpenGates();
+    }
+
+    // Floor in the room beside the die, across the player's view of it (so what he brings is set down where it is seen,
+    // not into the player's face).
+    Vector3 Beside(Player player, Vector3 spot, float distance)
+    {
+        var across = Vector3.Cross(Vector3.up, Flat(player.transform.position - spot));
+        foreach (float turn in new[] { 0f, 180f, 35f, -35f, 145f, -145f })
+        {
+            var p = spot + Quaternion.Euler(0f, turn, 0f) * across * distance;
+            if (UnityEngine.AI.NavMesh.SamplePosition(p, out var hit, 1f, UnityEngine.AI.NavMesh.AllAreas) && room.Inside(hit.position)) return hit.position;
+        }
+        return Near(player, spot, distance);
     }
 
     // Floor in the room between the die and the player, a little off the die.

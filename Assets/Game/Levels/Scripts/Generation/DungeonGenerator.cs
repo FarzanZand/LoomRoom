@@ -817,6 +817,8 @@ public partial class DungeonGenerator : MonoBehaviour
         foreach(var chest in GetComponentsInChildren<DungeonContainer>(true))
         {
             if(chest==null || !chest.chest)continue;
+            // An event room's chest is the event's (a run opened in the bell room), never the starting chest.
+            if(chest.GetComponentInParent<ScriptedEventRoom>()!=null)continue;
             // A level with Starting Chest off (the Arena) has no chest in its first room, whatever built it.
             // A chest can stand on a cell no room owns (an edge or a doorway cell), so "in it" means room 0's cells or next to them.
             if(!data.startingChest && !data.pocket && Layout!=null && NearRoom(CellOf(chest.transform.position),0,2)){DestroyImmediate(chest.gameObject);continue;}

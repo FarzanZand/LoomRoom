@@ -425,6 +425,8 @@ public class DevConsole : MonoBehaviour
         copy.name = level.name;
         copy.startingRoom = template;
         copy.fixedSeed = 0;
+        // An event room opens the run as itself: no starting chest in the middle of the event.
+        if (template.GetComponent<ScriptedEventRoom>() != null) copy.startingChest = false;
         if (stage > 0) copy.stages = copy.stages.Skip(stage).ToArray();
         Print($"Loading {found[0].name} in {level.displayName}{(stage > 0 && copy.stages[0].biome != null ? $" ({copy.stages[0].biome.name})" : "")}.");
         Close();

@@ -255,9 +255,18 @@ public class WagerEvent : MonoBehaviour
 
     // ── A fight ──────────────────────────────────────────────────────
 
+    // Once he has cheated, the bowls can be used to call him out (WagerCup): the same as a blow, without reaching him.
+    public bool CanCall => cheated && phase == Phase.Idle && dealer != null && dealer.IsAlive;
+    public void CallOut(Player player) { if (CanCall) Confront(player); }
+
     void OnHit(DamageInfo info)
     {
         if (phase is Phase.Fight or Phase.Over || info.Source is not Player player) return;
+        Confront(player);
+    }
+
+    void Confront(Player player)
+    {
         StopAllCoroutines();
         phase = Phase.Fight;
         bool called = cheated;
@@ -265,15 +274,29 @@ public class WagerEvent : MonoBehaviour
         Sit(false);
         if (dealer.TryGetComponent<UnityEngine.AI.NavMeshAgent>(out var agent))
         {
-            // Off his chair and onto the floor beside the table.
-            var at = dealer.transform.position;
-            if (UnityEngine.AI.NavMesh.SamplePosition(at, out var hit, 2.5f, UnityEngine.AI.NavMesh.AllAreas)) at = hit.position;
+            // Off his chair and onto the floor beside the table (never onto the table top, which is walkable too).
+            var at = FloorBesideTable();
+            dealer.transform.position = at;
             agent.enabled = true; agent.Warp(at);
         }
         ScriptedEventRoom.Free(brain);
         brain.Provoke(player.transform.position);
         StartCoroutine(Friends(player));
         if (!called) potGold = 0;
+    }
+
+    // The floor at the end of the table on his side: beside his chair, left or right, at the floor's height.
+    Vector3 FloorBesideTable()
+    {
+        var from = seat != null ? seat : transform;
+        float floorY = room.Ready ? room.Dungeon.RoomCentre(room.Room).y : from.position.y;
+        foreach (float side in new[] { 1.5f, -1.5f, 2.2f, -2.2f })
+            foreach (float back in new[] { .2f, .7f, -.3f })
+            {
+                var p = from.position + from.right * side - from.forward * back;
+                if (UnityEngine.AI.NavMesh.SamplePosition(p, out var hit, .8f, UnityEngine.AI.NavMesh.AllAreas) && Mathf.Abs(hit.position.y - floorY) < .25f) return hit.position;
+            }
+        return from.position;
     }
 
     // Out of the walls: puffs at the room's wall-side floor, away from the player.

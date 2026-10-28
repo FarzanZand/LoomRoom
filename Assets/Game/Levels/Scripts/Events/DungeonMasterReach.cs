@@ -109,6 +109,26 @@ public static class DungeonMasterReach
         return new Vector3(p.x, spot.y, p.z);
     }
 
+    // As far toward the spot as he reaches from where he stands now (a toss goes the rest of the way).
+    public static Vector3 ReachableFromHere(Vector3 spot)
+    {
+        var hand = Hand;
+        if (hand == null) return spot;
+        var from = hand.transform.position;
+        var flat = spot - from; flat.y = 0f;
+        var p = from + flat.normalized * Mathf.Min(flat.magnitude, hand.Reach * .85f);
+        return new Vector3(p.x, spot.y, p.z);
+    }
+
+    // He turns where he stands to face the spot, and leans in (no walk).
+    static IEnumerator TurnTo(Vector3 spot)
+    {
+        var seat = Seat; var hand = Hand;
+        if (hand != null) { hand.Watch(spot, true); if (seat != null) seat.Focus(hand.transform.position, spot); }
+        standingAt = Side.Own; lastSpot = spot;
+        yield return new WaitForSeconds(.5f);
+    }
+
     public static bool CanReach(Vector3 spot)
     {
         var hand = Hand;
@@ -230,7 +250,7 @@ public static class DungeonMasterReach
             yield return Approach(spot);
             if (hand != null && figure != null)
             {
-                yield return hand.Place(figure.transform, spot, seconds, TableTop(figure.GetComponentInParent<DungeonGenerator>()), () => Landed(spot));
+                yield return Carrying(hand, hand.Place(figure.transform, spot, seconds, TableTop(figure.GetComponentInParent<DungeonGenerator>()), () => Landed(spot)));
                 landed = hand.LastPlacedAt;
             }
             else if (figure != null) { figure.transform.position = spot; Landed(spot); }
@@ -259,7 +279,7 @@ public static class DungeonMasterReach
         else
         {
             yield return Approach(spot);
-            if (hand != null && thing != null) yield return hand.Place(thing, spot, seconds, TableTop(thing.GetComponentInParent<DungeonGenerator>()), () => Landed(spot));
+            if (hand != null && thing != null) yield return Carrying(hand, hand.Place(thing, spot, seconds, TableTop(thing.GetComponentInParent<DungeonGenerator>()), () => Landed(spot)));
         }
         if (thing != null)
         {
@@ -281,11 +301,14 @@ public static class DungeonMasterReach
     }
 
     // He brings a thing up over a spot and lets go of it high above (released: the caller moves it from there).
-    public static IEnumerator DropOver(Transform thing, Vector3 over, float seconds, System.Action released)
+    // walk false: he stays where he stands, turns to the spot and brings it up as far toward it as he reaches (a toss
+    // follows; for a spot out of his reach, no walk round the table first).
+    public static IEnumerator DropOver(Transform thing, Vector3 over, float seconds, System.Action released, bool walk = true)
     {
         Reaching = true;
         thing.position = over + Vector3.down * 50f;
-        yield return Approach(over);
+        if (walk) yield return Approach(over);
+        else { var target = over; over = ReachableFromHere(target); yield return TurnTo(target); }
         var hand = Hand;
         if (hand != null) yield return hand.Drop(thing, over, seconds, released);
         else { thing.position = over + Vector3.up * 30f; released?.Invoke(); }
@@ -296,8 +319,8 @@ public static class DungeonMasterReach
     const float Gravity = 30f;
     static IEnumerator TossIn(Transform thing, Vector3 spot)
     {
-        var over = Reachable(spot);
-        yield return Approach(over);
+        var over = ReachableFromHere(spot);
+        yield return TurnTo(spot);
         var hand = Hand;
         var look = spot - over; look.y = 0f;
         var upright = Quaternion.LookRotation(look.sqrMagnitude > .01f ? look : Vector3.forward);
@@ -329,6 +352,16 @@ public static class DungeonMasterReach
         thing.SetPositionAndRotation(spot, upright);
         Landed(spot);
         if (drop != null) while (drop.MoveNext()) yield return drop.Current;
+    }
+
+    // What he carries into a lit room is lit gently (the boss stage's carry light is for a room gone dark).
+    const float CarryLight = 8f;
+    static IEnumerator Carrying(DungeonMasterHand hand, IEnumerator move)
+    {
+        float light = hand.carryLight;
+        hand.carryLight = Mathf.Min(light, CarryLight);
+        try { yield return move; }
+        finally { if (hand != null) hand.carryLight = light; }
     }
 
     static void Landed(Vector3 spot)

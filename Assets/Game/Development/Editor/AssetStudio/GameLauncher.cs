@@ -186,6 +186,7 @@ public static class GameLauncher
         copy.name = level.name;
         copy.startingRoom = template;
         copy.fixedSeed = 0;
+        if (template.GetComponent<ScriptedEventRoom>() != null) copy.startingChest = false;
         if (stage > 0 && copy.stages != null) copy.stages = copy.stages.Skip(stage).ToArray();
         loader.Load(copy, skipReveal: true);
         return $"Loading a run in {template.name} ({level.name}).";

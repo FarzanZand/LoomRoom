@@ -332,6 +332,10 @@ public static class EventRoomsSetup
                 }
                 Interactable(pull, new Vector3(0f, -length + 1.3f, 0f), new Vector3(.45f, 2.6f, .45f));
                 pull.AddComponent<BellRope>();
+                // A thin solid body, so the player brushes past it instead of standing inside it.
+                var body = new GameObject("Rope body");
+                body.transform.SetParent(pull.transform, false);
+                var cap = body.AddComponent<CapsuleCollider>(); cap.radius = .08f; cap.height = length; cap.center = new Vector3(0f, -length * .5f, 0f);
             }
             var chest = Put(root, $"{Shared}/Chests/Supply chest.prefab", new Vector3(0f, 0f, 4.6f), 180f);
             Put(root, $"{Shared}/Furnishing/Candle cluster.prefab", new Vector3(-1.7f, 0f, 5.1f));
@@ -435,7 +439,8 @@ public static class EventRoomsSetup
             var sky = moon != null ? moon.transform.Find("Night sky") : null;
             if (sky != null) sky.gameObject.SetActive(false);
             var landing = Marker(root, "Landing", new Vector3(0f, 0f, .5f));
-            e.entrance = Marker(root, "Entrance", new Vector3(0f, 0f, -5f));
+            // At the door, so a test run walks in and sets the roll off (deeper in, it rolled before anyone was looking).
+            e.entrance = Marker(root, "Entrance", new Vector3(0f, 0f, -6.2f));
             WallLight(root, new Vector3(-6f, 0f, -4f), 270f); WallLight(root, new Vector3(-6f, 0f, 4f), 270f);
             var ev = root.gameObject.AddComponent<DiceEvent>();
             ev.diePrefab = die; ev.landing = landing;
