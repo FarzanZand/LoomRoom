@@ -13,7 +13,7 @@ public struct CoopPlayerState : INetworkSerializable, System.IEquatable<CoopPlay
     public bool ready;          // picked a figure and waits for the run
     public bool inRun;          // part of the run on the table now
     public bool blocking, crouching;
-    public bool seated;         // in a chair at the table (the intro)
+    public bool seated;         // in a chair: at the table in the intro, or resting by a tavern hearth
     public bool charging;       // winding up or holding a swing (the release comes as SwingRpc)
     public bool airborne;       // off the ground (a jump, a fall)
     public bool inLobby;        // joined, waiting on the co-op screen for the host's Begin (not in the room yet)

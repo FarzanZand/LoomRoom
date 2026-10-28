@@ -106,7 +106,7 @@ public class CoopPlayer : NetworkBehaviour
         s.ghost = manager.Ghost;
         s.mustTrain = ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns;
         s.crouching = active != null && active.Motor != null && active.Motor.IsCrouching;
-        s.seated = s.place == CoopPlace.Room && IntroController.Seated;
+        s.seated = s.place == CoopPlace.Room ? IntroController.Seated : table != null && TavernHearth.Resting == table;
         bool onTable = s.place == CoopPlace.Table && table != null;
         var bash = onTable ? table.GetComponent<ShieldBash>() : null;
         s.blocking = onTable && table.Combat != null && table.Combat.IsGuarding;

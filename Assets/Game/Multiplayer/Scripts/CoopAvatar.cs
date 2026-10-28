@@ -40,6 +40,17 @@ public class CoopAvatar : MonoBehaviour
     float targetPitch;
     Vector3 lastSolid;
     float solidAfter;
+    // Sitting by a tavern hearth: the one body has no seated pose of its own (its clips are generic), so a hidden copy
+    // of the class's humanoid body plays the Coop Body controller's Sit and Stand and the one body takes its pose bone
+    // by bone (the same Synty skeleton), until the stand up has played.
+    GameObject poseBody;
+    Animator poseAnimator;
+    (Transform from, Transform to)[] poseBones;
+    bool poseSeated;
+    float seatedUntil = -1f;
+    // How long a teammate getting up from a hearth chair keeps the seated pose, so the stand up plays (as long as the
+    // hearth's own move out of the chair).
+    const float StandUpSeconds = .8f;
     Light carried;
 
     static readonly int MoveX = Animator.StringToHash("MoveX"), MoveZ = Animator.StringToHash("MoveZ"), Speed = Animator.StringToHash("Speed"),
@@ -112,6 +123,9 @@ public class CoopAvatar : MonoBehaviour
         if (animator == null) return;
         if (builtOneBody)
         {
+            if (s.seated) seatedUntil = Time.time + StandUpSeconds;
+            if (Time.time < seatedUntil) PoseSeated(s.seated);
+            else if (poseBody != null) EndSeatedPose();
             if (rig != null) rig.remotePitch = Mathf.LerpAngle(rig.remotePitch, targetPitch, 1f - Mathf.Exp(-12f * Time.deltaTime));
             UpdateHeld(s.right.ToString(), s.left.ToString());
             UpdateLight(s);
@@ -147,7 +161,7 @@ public class CoopAvatar : MonoBehaviour
         animator.SetBool(Block, onTable && s.blocking);
         animator.SetFloat(HurtSpeed, 1.3f);
 
-        // In a chair (the intro): the seated pose, and up again after.
+        // In a chair (the intro, a tavern hearth): the seated pose, and up again after.
         if (s.seated != shownSeated && animator != null)
         {
             shownSeated = s.seated;
@@ -212,6 +226,7 @@ public class CoopAvatar : MonoBehaviour
         // Leaving the table dead, or getting up as a ghost: the body stays where it fell, for the floor.
         if (model != null && builtPlace == CoopPlace.Table && shownDead && (s.place == CoopPlace.Room || ghost)) LeaveCorpse();
         else if (model != null) Destroy(model);
+        EndSeatedPose();
         model = null; animator = null; rightVisual = leftVisual = usedVisual = null; heldRight = heldLeft = null; shownDead = false; shownSeated = false;
         rig = null; rigRight = rigLeft = rigSpell = null; builtOneBody = false;
         System.Array.Clear(shownStates, 0, shownStates.Length);
@@ -288,6 +303,48 @@ public class CoopAvatar : MonoBehaviour
         if (animator != null) { animator.enabled = true; animator.applyRootMotion = false; animator.cullingMode = AnimatorCullingMode.AlwaysAnimate; }
         builtOneBody = true;
         lastPosition = transform.position;
+    }
+
+    void PoseSeated(bool seated)
+    {
+        if (poseBody == null)
+        {
+            var manager = MultiplayerManager.Instance;
+            var prefab = manager.TableBody(builtClass);
+            if (prefab == null || manager.bodyController == null || animator == null) return;
+            poseBody = Instantiate(prefab, transform, false);
+            poseBody.name = "Seated pose";
+            poseBody.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            foreach (var r in poseBody.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+            foreach (var c in poseBody.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+            poseAnimator = poseBody.GetComponentInChildren<Animator>();
+            var hips = poseAnimator != null && poseAnimator.isHuman ? poseAnimator.GetBoneTransform(HumanBodyBones.Hips) : null;
+            if (hips == null) { Destroy(poseBody); poseBody = null; return; }
+            poseAnimator.runtimeAnimatorController = manager.bodyController;
+            poseAnimator.applyRootMotion = false;
+            poseAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            var own = new System.Collections.Generic.Dictionary<string, Transform>();
+            foreach (var t in animator.GetComponentsInChildren<Transform>(true)) own[t.name] = t;
+            var pairs = new System.Collections.Generic.List<(Transform, Transform)>();
+            foreach (var t in (hips.parent != null ? hips.parent : hips).GetComponentsInChildren<Transform>(true))
+                if (own.TryGetValue(t.name, out var to)) pairs.Add((t, to));
+            poseBones = pairs.ToArray();
+            poseSeated = false;
+            // The one body's own animator and rig would pose it again every frame.
+            animator.enabled = false;
+            if (rig != null) rig.enabled = false;
+        }
+        if (seated != poseSeated) { poseSeated = seated; poseAnimator.SetTrigger(seated ? "Sit" : "Stand"); }
+        foreach (var (from, to) in poseBones) if (from != null && to != null) to.SetLocalPositionAndRotation(from.localPosition, from.localRotation);
+    }
+
+    void EndSeatedPose()
+    {
+        if (poseBody == null) return;
+        Destroy(poseBody);
+        poseBody = null; poseAnimator = null; poseBones = null;
+        if (animator != null) animator.enabled = true;
+        if (rig != null) rig.enabled = true;
     }
 
     // The owner's arm states and parameters (CoopPlayer.SendArms): parameters set as they are there, and a layer

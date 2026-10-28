@@ -35,6 +35,9 @@ public class TavernHearth : MonoBehaviour, IInteractable
 
     bool used, sitting;
     Player sitter;
+    // The player sitting in a chair by a hearth right now (from sitting down until they get up), for what the others
+    // see of them in co-op.
+    public static Player Resting { get; private set; }
     Collider[] seatColliders = new Collider[0];
     public bool Used => used;
 
@@ -51,7 +54,7 @@ public class TavernHearth : MonoBehaviour, IInteractable
 
     IEnumerator Rest(Player player)
     {
-        sitter = player; sitting = true;
+        sitter = player; sitting = true; Resting = player;
         if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Cutscene); GameManager.Instance.KeepHud(true); }
         var fire = transform.position + Vector3.up * .5f;
         var standAt = player.transform.position;
@@ -78,6 +81,7 @@ public class TavernHearth : MonoBehaviour, IInteractable
         MessageLog.Post(restedMessage.Replace("{Amount}", Mathf.RoundToInt(given).ToString()), MessageKind.Info);
         BurnLow();
 
+        Resting = null;
         yield return Move(player, sitAt, standAt, seatedEyeHeight, 1f, fire);
         Release();
     }
@@ -145,6 +149,7 @@ public class TavernHearth : MonoBehaviour, IInteractable
     {
         if (!sitting) return;
         sitting = false;
+        if (Resting == sitter) Resting = null;
         foreach (var c in seatColliders) if (c != null) c.enabled = true;
         if (sitter != null && sitter.Look != null) sitter.Look.HeightOverride = null;
         if (GameManager.HasInstance) { GameManager.Instance.KeepHud(false); GameManager.Instance.Pop(GameState.Cutscene); }
