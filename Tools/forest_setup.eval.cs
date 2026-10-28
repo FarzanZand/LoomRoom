@@ -53,7 +53,8 @@ DungeonSurfaceVariant[] Variants(float weight, params string[] names)
   foreach (var n in names) v.Add(new DungeonSurfaceVariant { material = Ground(n, 3f), weight = weight, rows = DungeonVariantRows.Any });
   return v.ToArray();
 }
-var bankVariants = Variants(1.6f, "Earth bank roots", "Earth bank stony", "Earth bank mossy");
+// Moss half as often as the others: it should be found now and then, not on every stretch of bank (the user, 2026-10-28).
+var bankVariants = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Concat(Variants(1.6f, "Earth bank roots", "Earth bank stony"), Variants(.6f, "Earth bank mossy")));
 var water = Load<UnityEngine.Material>("Assets/Synty/PolygonNatureBiomes/PNB_Enchanted_Forest/Materials/Water_Enchanted.mat");
 
 var level = Load<TableLevelData>("Assets/Game/Levels/Dungeon1/Dungeon1.asset");

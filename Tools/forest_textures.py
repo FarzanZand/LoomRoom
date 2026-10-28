@@ -163,11 +163,12 @@ def periodic_noise(shape, seed, waves=6, low=2, high=7):
     return (n - n.min()) / (n.max() - n.min())
 
 
-def patches(base, over, seed, cover=.3, edge=.06):
-    """`over` laid on `base` in soft-edged blobs covering about `cover` of the tile, ragged at the texel."""
+def patches(base, over, seed, cover=.3, edge=.06, low=2, high=7):
+    """`over` laid on `base` in soft-edged blobs covering about `cover` of the tile, ragged at the texel (blob size from
+    the noise's waves across the tile, low to high)."""
     h, w = base.shape[:2]
     over = np.asarray(Image.fromarray((over * 255).astype("uint8")).resize((w, h), Image.BOX)).astype(float) / 255
-    n = periodic_noise((h, w), seed) + (np.random.default_rng(seed + 1).random((h, w)) - .5) * .08
+    n = periodic_noise((h, w), seed, 6, low, high) + (np.random.default_rng(seed + 1).random((h, w)) - .5) * .08
     t = np.quantile(n, 1 - cover)
     k = np.clip((n - t) / edge, 0, 1)[..., None]
     return base * (1 - k) + over * k
@@ -238,7 +239,14 @@ def variants():
     put(patches(fall, mossF * 1.05, 16, .22), fall, "Forest floor fall.png", "Forest floor fall mossy.png", True, 35)
     put(lines(earth, 21, 27, [.13, .09, .07], (1, 3), (60, 200)), earth, "Earth bank.png", "Earth bank roots.png", False, 36, 10, .1)
     put(stones(earth, 22, 73, (2.5, 6)), earth, "Earth bank.png", "Earth bank stony.png", False, 37, 10, .1)
-    put(patches(earth, mossE * .95, 23, .22, .05), earth, "Earth bank.png", "Earth bank mossy.png", False, 38, 10, .1)
+    # Moss on the banks is discreet (the user, 2026-10-28: bright green blobs read as notes stuck on the wall): small tufts
+    # over a fifteenth of the tile, each the earth's own drawn texels tinted to a dull olive and a little darker (laid on
+    # after the redraw, which would fold so little green back into the browns).
+    drawn_earth = np.asarray(Image.open(OUT + "Earth bank.png").convert("RGB")).astype(float) / 255
+    n = periodic_noise(earth.shape[:2], 23, 6, 5, 11) + (np.random.default_rng(24).random(earth.shape[:2]) - .5) * .08
+    tufts = (n > np.quantile(n, 1 - .07))[..., None]
+    mossy = np.where(tufts, np.clip(drawn_earth * np.array([.8, 1.0, .62]), 0, 1), drawn_earth)
+    save(on_cell(mossy, drawn_earth, False, 38), "Earth bank mossy.png", lift=1)
 
 if __name__ == "__main__":
     import os
