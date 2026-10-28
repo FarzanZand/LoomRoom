@@ -96,16 +96,21 @@ public class DungeonMasterMeddling : MonoBehaviour
         StartCoroutine(AddOne(at, spot.Value));
     }
 
-    // Floor a few metres in front of the player, in their room, clear of them.
+    // Floor a few metres in front of the player, in their room, clear of them: the floor they stand on, walkable straight
+    // from them (never the top of a prop, where an archer he put down shot from out of reach).
     Vector3? SpotBefore(Player player)
     {
+        var from = player.transform.position;
         var forward = player.transform.forward; forward.y = 0f; forward.Normalize();
-        int room = dungeon.RoomOf(player.transform.position);
+        int room = dungeon.RoomOf(from);
+        if (!NavMesh.SamplePosition(from, out var standing, 1.5f, NavMesh.AllAreas)) return null;
         foreach (float d in new[] { 4f, 3f, 5f, 2.5f })
             foreach (float turn in new[] { 0f, 35f, -35f, 70f, -70f })
             {
-                var p = player.transform.position + Quaternion.Euler(0f, turn, 0f) * forward * d;
-                if (NavMesh.SamplePosition(p, out var hit, 1f, NavMesh.AllAreas) && dungeon.RoomOf(hit.position) == room) return hit.position;
+                var p = from + Quaternion.Euler(0f, turn, 0f) * forward * d;
+                if (!NavMesh.SamplePosition(p, out var hit, 1f, NavMesh.AllAreas) || dungeon.RoomOf(hit.position) != room) continue;
+                if (Mathf.Abs(hit.position.y - standing.position.y) > .3f || NavMesh.Raycast(standing.position, hit.position, out _, NavMesh.AllAreas)) continue;
+                return hit.position;
             }
         return null;
     }

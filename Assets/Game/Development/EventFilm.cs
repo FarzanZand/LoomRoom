@@ -123,9 +123,13 @@ public class EventFilm : MonoBehaviour
     {
         CombatTestBot.Run($"fight {seconds} {range} .8");
         yield return null;
-        for (float t = 0; t < seconds + 1f && CombatTestBot.Running; t += Time.deltaTime)
+        float retry = 0f;
+        for (float t = 0; t < seconds + 1f; t += Time.deltaTime)
         {
             if (over != null && over()) break;
+            // The bot stops when no enemy is in reach; with no end to wait for that is the end, otherwise it fights
+            // the next to come (a second wave).
+            if (!CombatTestBot.Running && t >= retry) { if (over == null) break; retry = t + .5f; CombatTestBot.Run($"fight {seconds - t} {range} .8"); }
             yield return null;
         }
         if (CombatTestBot.Running) CombatTestBot.Run("wait 0");
@@ -422,7 +426,15 @@ public class EventFilm : MonoBehaviour
         }
         // The ambush shuts the gates and calls its first wave a moment after the die lands.
         if (d.Result == 1) for (float t = 0; room.EnemiesInside().Count == 0 && t < 6f; t += Time.deltaTime) yield return null;
-        if (d.Result == 1 || d.Result == 2) yield return Fight(50f, 12f, () => room.EnemiesInside().Count == 0 && !room.GatesShut);
+        // (Clear for a few seconds: the ambush's second wave comes a moment after the first falls.)
+        float clearSince = -1f;
+        bool Cleared()
+        {
+            if (room.EnemiesInside().Count > 0 || room.GatesShut) { clearSince = -1f; return false; }
+            if (clearSince < 0f) clearSince = Time.time;
+            return Time.time - clearSince > 3f;
+        }
+        if (d.Result == 1 || d.Result == 2) yield return Fight(80f, 12f, Cleared);
         else
         {
             var brought = Brought(room, die);

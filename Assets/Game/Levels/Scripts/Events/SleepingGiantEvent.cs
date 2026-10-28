@@ -17,6 +17,8 @@ public class SleepingGiantEvent : MonoBehaviour
     [Tooltip("Its snore (empty: the level's).")] public AudioClip snore;
     [Range(0f, 3f), Tooltip("Share of a sound's reach it hears in its sleep (a sleeping pack's is .5): 1.7 hears a walking step from about 5 m and a running one from across the room; a crouching step is never heard.")] public float hearing = 1.7f;
     [Min(.2f), Tooltip("Seconds it takes to get up.")] public float riseSeconds = 1.8f;
+    [Min(0f), Tooltip("How far the room's own doors carry when opened (a dungeon door's is 7: the giant heard the way in open from across the room).")]
+    public float doorNoise = 1.5f;
     [Tooltip("What it leaves when it dies, besides its own drops: gear rolled at this rarity and the biggest spoils.")]
     public ItemRarity dropRarity = ItemRarity.Unique;
     [Header("Lines")]
@@ -78,6 +80,11 @@ public class SleepingGiantEvent : MonoBehaviour
         ScriptedEventRoom.Free(brain);
         EnemySleep.SleepPack(new List<Character> { giant }, giant.transform.position.y, snore != null ? snore : room.Dungeon.LevelData.sleepAudio);
         if (giant.TryGetComponent<EnemySleep>(out var sleep)) { sleep.hearing = hearing; sleep.riseSeconds = riseSeconds; }
+        // Its own doors open quietly: getting in is not what wakes it.
+        var ways = room.Dungeon.WaysOut(room.Room);
+        foreach (var door in room.Dungeon.GetComponentsInChildren<DungeonDoor>(true))
+            foreach (var (edge, _) in ways)
+                if (Vector3.Distance(door.transform.position, edge) < 2.5f) { door.openNoise = Mathf.Min(door.openNoise, doorNoise); break; }
         giant.Died += OnDied;
         giant.Damaged += OnStruck;
     }
