@@ -33,9 +33,16 @@ public class DevConsole : MonoBehaviour
     [SerializeField, Tooltip("Every room template prefab, for loadtemplate in development builds (the Editor finds them itself). Filled by Tools > LoomRoom > Dev > Build Dev Console (and DevConsoleBuilder.RefreshTemplates from an eval).")]
     GameObject[] templates = new GameObject[0];
 
-    static readonly string[] Commands = { "god", "ghost", "revive", "die", "loadtemplate", "help", "clear" };
-    const string TemplateCommand = "loadtemplate";
+    static readonly string[] Commands = { "god", "ghost", "revive", "die", "loadtemplate", "event", "meddle", "learnspells", "help", "clear" };
+    const string TemplateCommand = "loadtemplate", EventCommand = "event";
     List<(string name, GameObject prefab)> roomTemplates;
+
+    // The scripted event rooms by their event name (ScriptedEventRoom.eventName), and the Dungeon Master's cheating.
+    public const string CheatsEvent = "cheats";
+    IEnumerable<(string name, GameObject prefab)> EventRooms =>
+        RoomTemplates.Where(t => t.prefab.TryGetComponent<ScriptedEventRoom>(out var e) && !string.IsNullOrWhiteSpace(e.eventName))
+            .Select(t => (t.prefab.GetComponent<ScriptedEventRoom>().eventName.Trim().ToLowerInvariant(), t.prefab));
+    IEnumerable<string> EventNames => EventRooms.Select(e => e.name).Append(CheatsEvent).Distinct().OrderBy(n => n);
 
     readonly List<string> history = new();
     bool open;
@@ -96,6 +103,8 @@ public class DevConsole : MonoBehaviour
     {
         Split(text, out var command, out var arg, out forArg);
         if (!forArg) return Commands.Where(c => c.StartsWith(command.ToLowerInvariant())).ToList();
+        if (command.ToLowerInvariant() == EventCommand) return EventNames.Where(n => n.StartsWith(arg, System.StringComparison.OrdinalIgnoreCase)).ToList();
+        if (command.ToLowerInvariant() == "meddle") return new[] { "add", "steal" }.Where(n => n.StartsWith(arg, System.StringComparison.OrdinalIgnoreCase)).ToList();
         if (command.ToLowerInvariant() != TemplateCommand) return new List<string>();
         return RoomTemplates.Select(t => t.name).Where(n => n.StartsWith(arg, System.StringComparison.OrdinalIgnoreCase)).ToList();
     }
@@ -128,7 +137,7 @@ public class DevConsole : MonoBehaviour
             shared = shared.Substring(0, n);
         }
         if (shared.Length < (forArg ? arg : command).Length) return;
-        input.text = forArg ? command + " " + shared : shared + (matches.Count == 1 && shared == TemplateCommand ? " " : "");
+        input.text = forArg ? command + " " + shared : shared + (matches.Count == 1 && (shared == TemplateCommand || shared == EventCommand || shared == "meddle") ? " " : "");
         input.MoveTextEnd(false);
         input.ActivateInputField();
     }
@@ -232,7 +241,16 @@ public class DevConsole : MonoBehaviour
                 Print("revive: back on your feet after dying");
                 Print("die: the table player dies at once (god mode goes off)");
                 Print("loadtemplate <name>: a new run opening in that room template (Tab completes the name)");
+                Print("event [name] [face]: a new run starting at the way into a scripted event room; event alone lists them; event dice 6 lands the die on 6; event cheats: a run where the Dungeon Master meddles at the first chance");
+                Print("meddle add|steal: the Dungeon Master adds an enemy in front of you or takes the nearest chest, now");
+                Print("learnspells: a tome of every spell into the table player's pack");
                 Print("clear: empty this window");
+                break;
+            case EventCommand:
+                RunEvent(arg, parts.Length > 2 ? parts[2] : null);
+                break;
+            case "meddle":
+                Meddle(arg);
                 break;
             case "god":
                 DevGodMode.Set(Switch(arg, DevGodMode.On));
@@ -250,6 +268,9 @@ public class DevConsole : MonoBehaviour
             case TemplateCommand:
                 Split(line, out _, out var name, out _);
                 LoadTemplate(name.Trim());
+                break;
+            case "learnspells":
+                LearnSpells();
                 break;
             case "clear":
                 history.Clear();
@@ -279,6 +300,22 @@ public class DevConsole : MonoBehaviour
     static bool Switch(string arg, bool current) => arg == "on" ? true : arg == "off" ? false : !current;
 
     static Player Active => PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+
+    // A tome of every spell in the catalog the table player doesn't carry yet, into the hotbar while it has room, then the bag.
+    void LearnSpells()
+    {
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if (player == null || !InventoryManager.HasInstance) { Print("No table player."); return; }
+        int given = 0;
+        foreach (var item in InventoryManager.Instance.itemCatalog)
+        {
+            if (item == null || item.spell == null) continue;
+            if (player.Hotbar.TotalCount(item) > 0 || player.Bag.TotalCount(item) > 0) continue;
+            if (InventoryManager.Instance.Pickup(item, player, 1, true, false, false)) given++;
+            else Print($"No room for {item.DisplayName}.");
+        }
+        Print(given > 0 ? $"{given} spell tomes given. Put one in your left hand from the hotbar." : "You have every spell tome already.");
+    }
 
     void Ghost(string arg)
     {
@@ -314,6 +351,59 @@ public class DevConsole : MonoBehaviour
                 return spot.position;
         }
         return ghostFrom;
+    }
+
+    // event: lists the events; event <name>: a run opening at the way into that event's room (its ScriptedEventRoom
+    // entrance); event dice <1-6>: the die lands on that face; event cheats: a run where he meddles at the first chance.
+    void RunEvent(string name, string extra)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            foreach (var (n, prefab) in EventRooms.OrderBy(e => e.name))
+                Print($"{n}: {prefab.GetComponent<ScriptedEventRoom>().summary}");
+            Print($"{CheatsEvent}: the Dungeon Master meddles (an enemy after an easy fight, a chest taken)");
+            return;
+        }
+        if (name == CheatsEvent)
+        {
+            var loader = FindAnyObjectByType<TableLevelLoader>();
+            if (loader == null) { Print("No table here (the Room scene has it)."); return; }
+            if (loader.Busy) { Print("A floor is being built. Try again in a moment."); return; }
+            // A level whose floors have the event rooms (Dungeon1), from its first floor; else the Dungeon button's pick.
+            var events = EventRooms.Select(e => e.prefab).ToList();
+            bool HasEvents(TableLevelData l) => l != null && l.IsDungeon && l.HasStages && l.stages.Any(st => st?.biome != null && st.biome.roomTemplates != null && st.biome.roomTemplates.Any(c => c != null && events.Contains(c.template)));
+            var level = loader.Catalog != null && loader.Catalog.levels != null ? loader.Catalog.levels.FirstOrDefault(HasEvents) : null;
+            if (level == null) level = DebugDungeonSession.SelectedDungeon != null ? DebugDungeonSession.SelectedDungeon : DebugDungeonSession.DebugDungeons.FirstOrDefault(l => l != null && l.IsDungeon);
+            if (level == null) { Print("No dungeon level to play."); return; }
+            DungeonMasterMeddling.Forced = true;
+            var copy = Instantiate(level);
+            copy.name = level.name; copy.fixedSeed = 0;
+            Print($"Loading {level.displayName}: win the first fight quickly and he adds an enemy; walk up to a chest and he takes it. meddle add|steal does it at once.");
+            Close();
+            loader.Load(copy, skipReveal: true);
+            return;
+        }
+        var found = EventRooms.Where(e => e.name.StartsWith(name)).ToList();
+        if (found.Count == 0) { Print($"No event called {name}. Type event for the list."); return; }
+        if (found.Count > 1 && !found.Any(e => e.name == name)) { Print($"{found.Count} events start with {name}: " + string.Join(", ", found.Select(e => e.name))); return; }
+        var pick = found.FirstOrDefault(e => e.name == name);
+        if (pick.prefab == null) pick = found[0];
+        if (pick.name == "dice" && int.TryParse(extra, out int face) && face >= 1 && face <= 6) { DiceEvent.ForcedNext = face; Print($"The die will land on {face}."); }
+        var entry = RoomTemplates.FirstOrDefault(t => t.prefab == pick.prefab);
+        LoadTemplate(entry.name ?? pick.prefab.name);
+    }
+
+    void Meddle(string what)
+    {
+        if (what != "add" && what != "steal") { Print("meddle add|steal"); return; }
+        var loader = FindAnyObjectByType<TableLevelLoader>();
+        var dungeon = loader != null ? loader.Dungeon : null;
+        if (dungeon == null || PlayerManager.Instance.ActiveKind != PlayerKind.Table) { Print("Only on a dungeon floor."); return; }
+        var meddling = dungeon.GetComponent<DungeonMasterMeddling>();
+        if (meddling == null) meddling = dungeon.gameObject.AddComponent<DungeonMasterMeddling>();
+        var said = meddling.Now(what);
+        Print(said);
+        if (said.StartsWith("He ")) Close();
     }
 
     void LoadTemplate(string name)

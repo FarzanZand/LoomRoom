@@ -229,6 +229,31 @@ MonoBehaviour:
     rooms: 30
     fromFloor: 1
     maxPerFloor: 1
+  - template: {fileID: 6686315703612218489, guid: 758a66b51add85c4ea93b7fdca3f3f41, type: 3}
+    weight: 0.3
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 966100709934783422, guid: 4ae576ded6c357a4c9b3eb1447585c4f, type: 3}
+    weight: 0.3
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 7980889877482842696, guid: ca465e8799ff0984a91b2806ee68c6b1, type: 3}
+    weight: 0.3
+    rooms: 30
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 5284644785788056984, guid: 0ceb627643dd99a4d95c2002a458466a, type: 3}
+    weight: 0.3
+    rooms: 6
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 7099053262673744381, guid: e320d67a5f4f95741bb43d7aaf1b1316, type: 3}
+    weight: 0.3
+    rooms: 10
+    fromFloor: 1
+    maxPerFloor: 1
   templateChance: 1
   roomCount: 0
   roomSizeScale: 1
@@ -247,6 +272,11 @@ MonoBehaviour:
     sleepingPacks: 0
     sleepChance: 0.1
     maxSleepingPacks: 3
+    meddling: 1
+    meddleChance: 0.5
+    tooEasySeconds: 14
+    tooEasyHealth: 0.1
+    stealChance: 0.05
     pits: 1
     playerFallsInPits: 0
     pitFallDamage: 0.25

@@ -196,6 +196,93 @@ public class DungeonMasterHand : MonoBehaviour
         Busy = false;
     }
 
+    // Takes something off the table (the meddling's stolen chest, DungeonMasterMeddling): his hand comes over it from
+    // above, pinches it by its top, lifts it up past his face and back down below the table's edge, where taken is called
+    // (the caller removes it). tableTop: the world height of the table, below which his hand is hidden.
+    public IEnumerator Take(Transform thing, float seconds, float tableTop, System.Action taken)
+    {
+        Busy = true;
+        var hand = RightHand;
+        float height = FigureHeight(thing);
+        var spot = thing.position;
+        Arc(spot, out var outward, out var shoulderAt, out var reach, out var shown);
+        rightRotation = Quaternion.LookRotation(Vector3.down, outward);
+        lookTarget = spot; lookGoal = 1f; rightGoal = 1f;
+        Vector3 Wrist(Vector3 p) => hand != null ? p + (hand.position - Pinch()) : p;
+        var from = hand != null ? hand.position : shoulderAt;
+        var high = spot + Vector3.up * (carryHeight + height * grip);
+        var grab = spot + Vector3.up * (height * grip);
+        float down = seconds * .5f, up = seconds * .5f;
+        for (float t = 0; t < down; t += Time.deltaTime)
+        {
+            float u = Mathf.SmoothStep(0, 1, t / down), v = 1f - u;
+            leanGoal = Mathf.Lerp(reachLean * .3f, reachLean, u);
+            rightTarget = v * v * v * from + 3f * v * v * u * shown + 3f * v * u * u * Wrist(high) + u * u * u * Wrist(grab);
+            yield return null;
+        }
+        // He has it: it rises with his hand, up past his face and away below the table's edge.
+        hanging = thing; hangHeight = height; hangFacing = thing.rotation;
+        var start = rightTarget;
+        var gone = transform.position + Vector3.Cross(Vector3.up, outward) * reach * .4f + Vector3.up * (tableTop - transform.position.y - height * 3f);
+        for (float t = 0; t < up; t += Time.deltaTime)
+        {
+            float u = Mathf.SmoothStep(0, 1, t / up), v = 1f - u;
+            leanGoal = Mathf.Lerp(reachLean, 0f, u);
+            rightTarget = v * v * v * start + 3f * v * v * u * Wrist(high) + 3f * v * u * u * shown + u * u * u * Wrist(gone);
+            yield return null;
+        }
+        hanging = null;
+        rightGoal = 0f; leanGoal = 0f; lookGoal = 0f;
+        taken?.Invoke();
+        Busy = false;
+    }
+
+    // Brings something up from below the table's edge in his fingers (the dice room's die), out over a spot and up to
+    // high above it, and lets go there: the caller moves it from then on (released is called as he lets go).
+    public IEnumerator Drop(Transform thing, Vector3 over, float seconds, System.Action released)
+    {
+        Busy = true;
+        var hand = RightHand;
+        float height = FigureHeight(thing);
+        Arc(over, out var outward, out var shoulderAt, out _, out var shown);
+        rightRotation = Quaternion.LookRotation(Vector3.down, outward);
+        lookTarget = over; lookGoal = 1f; rightGoal = 1f;
+        Vector3 Wrist(Vector3 p) => hand != null ? p + (hand.position - Pinch()) : p;
+        var from = hand != null ? hand.position : shoulderAt;
+        hanging = thing; hangHeight = height; hangFacing = thing.rotation;
+        var high = over + Vector3.up * (carryHeight + height * grip);
+        for (float t = 0; t < seconds; t += Time.deltaTime)
+        {
+            float u = Mathf.SmoothStep(0, 1, t / seconds), v = 1f - u;
+            leanGoal = Mathf.Lerp(reachLean * .3f, reachLean * .8f, u);
+            rightTarget = v * v * from + 2f * v * u * shown + u * u * Wrist(high);
+            yield return null;
+        }
+        hanging = null;
+        released?.Invoke();
+        yield return new WaitForSeconds(.5f);
+        rightGoal = 0f; leanGoal = 0f;
+        yield return new WaitForSeconds(blend);
+        lookGoal = 0f;
+        Busy = false;
+    }
+
+    // Where a reach toward a spot goes: the direction out to it, his shoulder, his arm's length and the point beside his
+    // face where he shows what he holds.
+    void Arc(Vector3 spot, out Vector3 outward, out Vector3 shoulderAt, out float reach, out Vector3 shown)
+    {
+        var toSpot = spot - transform.position; toSpot.y = 0;
+        outward = toSpot.sqrMagnitude > .01f ? toSpot.normalized : transform.forward;
+        var shoulder = animator != null ? animator.GetBoneTransform(HumanBodyBones.RightUpperArm) : null;
+        shoulderAt = shoulder != null ? shoulder.position : transform.position + Vector3.up * 26f;
+        reach = ArmLength(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand);
+        var right = Vector3.Cross(Vector3.up, outward);
+        shown = shoulderAt + right * reach * .35f + outward * reach * .45f + Vector3.up * reach * raiseShown;
+    }
+
+    // How far (level, world units) from where he stands he can set something down: his arm's length plus his lean.
+    public float Reach => ArmLength(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand) * 1.6f;
+
     static float FigureHeight(Transform figure)
     {
         var bounds = new Bounds(figure.position, Vector3.zero);

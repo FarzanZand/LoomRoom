@@ -33,6 +33,18 @@ public class DungeonRoomFeatures
     public float sleepChance = .1f;
     [ShowIf(nameof(sleepingPacks)), Min(0), Indent, Tooltip("Most sleeping packs on one floor, rooms built for one included (0: no limit).")]
     public int maxSleepingPacks = 3;
+    [Range(0, 5), Tooltip("Most scripted event rooms (the duel, the bell, the wager, the sleeping giant, the dice: rooms with a ScriptedEventRoom) on one floor.")]
+    public int maxEventRooms = 1;
+    [ToggleLeft, Tooltip("The Dungeon Master meddles (DungeonMasterMeddling): a fight won too easily gets one more enemy, set down by his hand through the lifted ceiling, and now and then he takes a chest away before it is opened.")]
+    public bool meddling = true;
+    [ShowIf(nameof(meddling)), Range(0f, 1f), Indent, Tooltip("Chance he adds an enemy after a fight won too easily (at most once a floor).")]
+    public float meddleChance = .5f;
+    [ShowIf(nameof(meddling)), Min(1f), Indent, Tooltip("A fight is too easy when a room of two or more enemies is cleared within this many seconds of the first blow...")]
+    public float tooEasySeconds = 14f;
+    [ShowIf(nameof(meddling)), Range(0f, 1f), Indent, Tooltip("... while the player lost no more than this share of their most health.")]
+    public float tooEasyHealth = .1f;
+    [ShowIf(nameof(meddling)), Range(0f, 1f), Indent, Tooltip("Chance he takes a chest the player walks up to (at most once a run).")]
+    public float stealChance = .05f;
 
     [Title("Heights", HorizontalLine = false)]
     [ToggleLeft, Tooltip("Rooms with chasms and holes in the floor (bridges across them).")]

@@ -329,6 +329,7 @@ public partial class DungeonGenerator
             EnemySleep.SleepPack(pair.Value, Cell(centre).y + HeightAt(centre.x, centre.y) - .55f, data.sleepAudio);
         }
         for (int i = 0; i < roomEvents.Length; i++) if (roomEvents[i] == RoomEvent.Ambush) SetUpAmbush(i);
+        if (!data.pocket && (RoomFeatures.meddling || DungeonMasterMeddling.Forced)) gameObject.AddComponent<DungeonMasterMeddling>();
     }
 
     // A spawned enemy of a sleeping-pack room joins the pack.
