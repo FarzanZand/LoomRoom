@@ -68,6 +68,7 @@ public class WagerEvent : MonoBehaviour
     void Start()
     {
         room = GetComponent<ScriptedEventRoom>();
+        KeepOffTable();
         if (coin != null && coinRest != null) coin.SetPositionAndRotation(coinRest.position, coinRest.rotation);
     }
 
@@ -283,6 +284,21 @@ public class WagerEvent : MonoBehaviour
         brain.Provoke(player.transform.position);
         StartCoroutine(Friends(player));
         if (!called) potGold = 0;
+    }
+
+    // The table top is low enough to be in the floor's NavMesh: cut it out, so in a fight he and his friends go round it,
+    // never over it.
+    void KeepOffTable()
+    {
+        // The table's own box (WagerTable's collider stands over the whole table, floor to top).
+        var table = GetComponentInChildren<WagerTable>();
+        if (table == null || !table.TryGetComponent<BoxCollider>(out var box) || table.GetComponent<UnityEngine.AI.NavMeshObstacle>() != null) return;
+        var obstacle = table.gameObject.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+        obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
+        obstacle.center = box.center;
+        obstacle.size = box.size;
+        obstacle.carving = true;
+        obstacle.carveOnlyStationary = true;
     }
 
     // The floor at the end of the table on his side: beside his chair, left or right, at the floor's height.

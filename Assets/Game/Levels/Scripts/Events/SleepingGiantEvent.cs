@@ -21,14 +21,15 @@ public class SleepingGiantEvent : MonoBehaviour
     public ItemRarity dropRarity = ItemRarity.Unique;
     [Header("Lines")]
     public DungeonMaster.Line enterLine = new() { text = "Shh. It's sleeping. Crouch." };
-    public DungeonMaster.Line wokeLine = new() { text = "Should have crouched." };
+    [Tooltip("Said when a step woke it.")] public DungeonMaster.Line wokeLine = new() { text = "Should have crouched." };
+    [Tooltip("Said when a blow woke it.")] public DungeonMaster.Line struckLine = new() { text = "Bold. It's awake now." };
     public DungeonMaster.Line quietLine = new() { text = "Not a sound. I'm impressed." };
     public DungeonMaster.Line killedLine = new() { text = "The bigger they are." };
 
     ScriptedEventRoom room;
     Character giant;
     EnemyBrain brain;
-    bool laid, entered, woke, praised, took;
+    bool laid, entered, woke, praised, took, struck;
     float nextScan;
     readonly List<WorldItem> loot = new();
 
@@ -50,7 +51,7 @@ public class SleepingGiantEvent : MonoBehaviour
         if (!woke && giant.IsAlive && !brain.Asleep && brain.State != EnemyState.Dead)
         {
             woke = true;
-            ScriptedEventRoom.Say(wokeLine);
+            ScriptedEventRoom.Say(struck ? struckLine : wokeLine);
         }
         if (!took) foreach (var item in loot) if (item == null) { took = true; break; }
         // Out of the room with something of the hoard, and it never stirred.
@@ -78,9 +79,13 @@ public class SleepingGiantEvent : MonoBehaviour
         EnemySleep.SleepPack(new List<Character> { giant }, giant.transform.position.y, snore != null ? snore : room.Dungeon.LevelData.sleepAudio);
         if (giant.TryGetComponent<EnemySleep>(out var sleep)) { sleep.hearing = hearing; sleep.riseSeconds = riseSeconds; }
         giant.Died += OnDied;
+        giant.Damaged += OnStruck;
     }
 
-    void OnDestroy() { if (giant != null) giant.Died -= OnDied; }
+    // A blow landing in its sleep (it wakes on it).
+    void OnStruck(DamageInfo info) { if (!woke && brain != null && brain.Asleep) struck = true; }
+
+    void OnDestroy() { if (giant != null) { giant.Died -= OnDied; giant.Damaged -= OnStruck; } }
 
     void Lay()
     {
