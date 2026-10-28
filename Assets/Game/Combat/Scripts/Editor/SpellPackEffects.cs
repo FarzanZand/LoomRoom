@@ -8,7 +8,7 @@ using UnityEngine;
 // copied in unpacked under an "Art" child, without the pack's demo scripts and lights (SpellVisual keeps its own light),
 // its systems set to scale with the hierarchy so the Art's scale sizes it. Run again to rebuild the Art from the pack
 // (hand edits to the Art children are lost then; SpellVisual, lights and sounds on the prefabs are kept).
-public static class SpellPackEffects
+public static partial class SpellPackEffects
 {
     const string Pack = "Assets/Spells Pack/LWRP(URP)/Particles_LWRP/";
     const string Spells = "Assets/Game/Combat/Spells/";

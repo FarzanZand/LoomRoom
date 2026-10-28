@@ -31,7 +31,9 @@ public class Character : MonoBehaviour
     public static readonly System.Collections.Generic.HashSet<string> ProperNames = new();
     public bool   IsAlive     => Stats == null || Stats.IsAlive;
 
-    public Faction Faction => data != null ? data.faction : Faction.Neutral;
+    public Faction Faction => FactionOverride ?? (data != null ? data.faction : Faction.Neutral);
+    // This one character fights for another side than its data says (a skeleton the player raised).
+    public Faction? FactionOverride { get; set; }
     // Players only: attribute and skill rules (cached; hits look it up on the attacker).
     public AdventurerProgress Adventurer { get; private set; }
     // Has an EnemyBrain: enemies play their own hurt animation and may leave a corpse.

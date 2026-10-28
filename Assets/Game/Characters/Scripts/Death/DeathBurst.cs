@@ -84,6 +84,12 @@ public class DeathBurst : MonoBehaviour
         foreach (var c in GetComponents<Collider>()) if (!c.isTrigger) c.enabled = false;
         DeathPhysics.IgnorePlayers(pieces);
         StartCoroutine(DeathPhysics.Settle(pieces, settleSeconds));
+        // Kept for Raise the Fallen: each piece with the bone it came from (props have none).
+        var heap = new BoneHeap { body = name, parent = parent };
+        string prefix = name + " - ";
+        foreach (var rb in pieces)
+            if (rb != null) heap.pieces.Add(new BoneHeap.Piece { transform = rb.transform, bone = rb.name.StartsWith(prefix) ? rb.name.Substring(prefix.Length) : null });
+        BoneHeap.Add(heap);
     }
 
     // Each skinned bone is grouped under the nearest of these humanoid bones; unmapped bones go with the hips.

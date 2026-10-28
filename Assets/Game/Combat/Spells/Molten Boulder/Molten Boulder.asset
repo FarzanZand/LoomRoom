@@ -1,0 +1,126 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5d9f0b6401f5914fae2a37cd8cf619f, type: 3}
+  m_Name: Molten Boulder
+  m_EditorClassIdentifier: Assembly-CSharp::SpellDefinition
+  spell: 6
+  displayName: Molten Boulder
+  description: A lump of glowing rock, thrown in an arc. It bursts where it lands
+    and leaves the ground burning.
+  icon: {fileID: 21300000, guid: 8b3a24607a8a42347b64de5d5cf286d7, type: 3}
+  manaCost: 18
+  power: 26
+  castSeconds: 0.8
+  recoverySeconds: 0.45
+  castMoveSpeed: 0.6
+  projectile: {fileID: 6498514768978316980, guid: ea1c57259de2a2644acfd3fbc756d548, type: 3}
+  radius: 2.2
+  speed: 16
+  lifetime: 4
+  homing: 0
+  homingTurn: 540
+  gravity: 14
+  pierce: 0
+  stunSeconds: 0
+  chill: 0
+  chillSeconds: 3
+  chillEffect: {fileID: 0}
+  groundFire: {fileID: 8951747170204935971, guid: 9358c674fe323104a802008026bb412d, type: 3}
+  groundFireSeconds: 3
+  groundFireRadius: 1.8
+  groundFirePower: 0.2
+  effect: 0
+  veil:
+    seconds: 8
+    revealDistance: 1.1
+    ambush: 1
+    wisps: {fileID: 0}
+    endSound: {fileID: 0}
+    endVolume: 0.8
+  chain:
+    range: 16
+    aimCone: 14
+    jumps: 3
+    jumpRange: 7
+    falloff: 0.75
+    stunSeconds: 0.35
+    jumpDelay: 0.09
+    boltSeconds: 0.32
+    coreWidth: 0.07
+    glowWidth: 0.45
+    kink: 0.45
+    flicker: 0.04
+    coreMaterial: {fileID: 0}
+    glowMaterial: {fileID: 0}
+    color: {r: 0.55, g: 0.85, b: 1.6, a: 1}
+    lightIntensity: 6
+    hitEffect: {fileID: 0}
+    jumpSound: {fileID: 0}
+    jumpVolume: 0.8
+  sweep:
+    arc: 120
+    sweepSeconds: 0.55
+    length: 10
+    enemyHeight: 1.45
+    warnSeconds: 0.45
+    enemySweepSeconds: 0.85
+    enemyWidthScale: 1.6
+    coreWidth: 0.09
+    glowWidth: 0.5
+    coreMaterial: {fileID: 0}
+    glowMaterial: {fileID: 0}
+    color: {r: 1.4, g: 0.35, b: 1.5, a: 1}
+    lightIntensity: 5
+    tipEffect: {fileID: 0}
+    hitEffect: {fileID: 0}
+    sweepSound: {fileID: 0}
+    sweepVolume: 0.8
+  raise:
+    reach: 10
+    raiseAs: {fileID: 0}
+    gatherSeconds: 1.3
+    riseSeconds: 1.4
+    circle: {fileID: 0}
+    flash: {fileID: 0}
+    gatherSound: {fileID: 0}
+    gatherVolume: 0.9
+    summon:
+      lifetime: 30
+      maxAtOnce: 2
+      end: 0
+      followDistance: 3
+      leash: 18
+      creditSummoner: 1
+      noLoot: 1
+      aura: {fileID: 0}
+      endEffect: {fileID: 0}
+  groundArea: 0
+  areaRadius: 2
+  areaDelay: 1.2
+  showMarker: 1
+  areaMarker: {fileID: 0}
+  markerRadius: 2
+  areaRange: 14
+  heldVisual: {fileID: 5233650602891333819, guid: 71558168b16a2dc46871b163aa61b726, type: 3}
+  impact: {fileID: 8076800287552310254, guid: 211e486708163c947a317d58a238e0fa, type: 3}
+  animation: 1
+  chargeClipSeconds: 0.6
+  equipSound: {fileID: 8300000, guid: ecdb0127810c63e47b877aed9e1b44f0, type: 3}
+  equipVolume: 0.28
+  chargeSound: {fileID: 8300000, guid: d6361d5a30811a946aad6835c2d24cd3, type: 3}
+  chargeVolume: 0.45
+  releaseSound: {fileID: 8300000, guid: b0146bacf4a736241a6143e55c3934fd, type: 3}
+  releaseVolume: 0.65
+  flightSound: {fileID: 8300000, guid: 1e265126e51901d4285a02b09895d365, type: 3}
+  flightVolume: 0.55
+  impactSound: {fileID: 8300000, guid: 963e3d91d9cd8ff44820ed8d3ec6a547, type: 3}
+  impactVolume: 0.9

@@ -137,6 +137,8 @@ public class PlayerSpellcasting : MonoBehaviour
         if (player.Equipment != null && player.Equipment.IsUsingItem) return;   // eating or drinking
         if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { Refuse("Health is full"); return; }
         if (player.Stats.CurrentMana < Cost(spell)) { Refuse("Not enough mana"); return; }
+        var refusal = spell.effect != SpellEffect.Standard ? SpellEffects.Refusal(spell, player) : null;
+        if (refusal != null) { Refuse(refusal); return; }
 
         casting = true; castingSpell = spell; elapsed = 0; castTime = CastTime(spell);
         SetInt(typeParameter, spell.animation);
@@ -154,7 +156,11 @@ public class PlayerSpellcasting : MonoBehaviour
         recovery = spell.recoverySeconds;
         // Checked again at release: health may have filled or mana drained during the wind-up.
         if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { SetTrigger(cancelParameter); Refuse("Health is full"); return; }
+        var refusal = spell.effect != SpellEffect.Standard ? SpellEffects.Refusal(spell, player) : null;
+        if (refusal != null) { SetTrigger(cancelParameter); Refuse(refusal); return; }
         if (!player.Stats.TryUseMana(Cost(spell), 0f)) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
+        // Any spell but the veil itself gives a veiled player away.
+        if (spell.effect != SpellEffect.ShadowVeil) ShadowVeil.Break(player);
 
         SetTrigger(releaseParameter);
         if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.releaseSound, spell.releaseVolume);
@@ -169,6 +175,7 @@ public class PlayerSpellcasting : MonoBehaviour
             if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation);
             if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
         }
+        else if (spell.effect != SpellEffect.Standard) CastEffect(spell);
         else if (spell.groundArea) CastOnGround(spell);
         else if (spell.projectile != null) Launch(spell);
         Changed?.Invoke();
@@ -196,14 +203,29 @@ public class PlayerSpellcasting : MonoBehaviour
             aim = hit.point;
         if (Physics.Linecast(view.position, origin, out var blocked, spell.projectile.collisionMask, QueryTriggerInteraction.Ignore) && !blocked.transform.IsChildOf(player.transform))
             origin = view.position;
+        // A piercing spell flies along the crosshair line itself, a little below the eye: aimed from the hand at the
+        // first enemy it would veer off that line after it and miss the ones behind.
+        if (spell.pierce > 0) { origin = view.position + view.forward * .6f - view.up * .15f; aim = origin + view.forward * 60f; }
         var direction = aim - origin;
         if (direction.sqrMagnitude < .01f) direction = view.forward;
+        // Thrown spells arc: aimed up just enough to come down where the crosshair is.
+        if (spell.gravity > 0f) direction = SpellProjectile.ArcDirection(origin, aim, spell.speed, spell.gravity);
         var projectile = Instantiate(spell.projectile, origin, Quaternion.LookRotation(direction.normalized));
         if (spell.homing && hit.collider != null && hit.collider.GetComponentInParent<Character>() is { } aimed && aimed != player && aimed.IsAlive)
         { projectile.HomingTarget = aimed; projectile.HomingTurn = spell.homingTurn; }
         projectile.Launch(player, spell, Power(spell), progress);
 
         // The flame leaves the hand and relights once the throw has recovered.
+        if (held != null) { held.Stop(); held = null; }
+        relightAt = Time.time + spell.recoverySeconds + .1f;
+    }
+
+    // The spells that do their own thing (SpellEffects): aimed along the view, leaving from the hand.
+    void CastEffect(SpellDefinition spell)
+    {
+        var view = player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : transform;
+        var origin = castOrigin != null ? castOrigin.position : view.position;
+        SpellEffects.CastByPlayer(player, spell, Power(spell), view, origin, progress);
         if (held != null) { held.Stop(); held = null; }
         relightAt = Time.time + spell.recoverySeconds + .1f;
     }

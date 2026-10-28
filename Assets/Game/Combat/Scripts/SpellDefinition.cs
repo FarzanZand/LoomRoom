@@ -30,6 +30,29 @@ public class SpellDefinition : ScriptableObject
     public bool homing;
     [ShowIf("@IsProjectile && homing"), Min(10), Tooltip("Degrees a second it turns toward its target.")]
     public float homingTurn = 540f;
+    [ShowIf(nameof(IsProjectile)), Min(0), Tooltip("Pulls it down, in metres a second squared: a thrown rock flies in an arc, aimed so it still lands where the crosshair is. 0 flies straight.")]
+    public float gravity;
+    [ShowIf(nameof(IsProjectile)), Min(0), Tooltip("Characters it passes through, hurting each, before it bursts on the next one or on a wall.")]
+    public int pierce;
+    [ShowIf(nameof(IsProjectile)), Min(0), Tooltip("Every character it hurts stands stunned this long (its swing dropped).")]
+    public float stunSeconds;
+    [ShowIf(nameof(IsProjectile)), Range(0, .9f), Tooltip("Every character it hurts is slowed by this share (moves and swings slower) for Chill Seconds.")]
+    public float chill;
+    [ShowIf("@IsProjectile && chill > 0"), Min(0)] public float chillSeconds = 3f;
+    [ShowIf("@IsProjectile && chill > 0"), AssetsOnly, Tooltip("Frost that clings to a chilled character.")] public SpellVisual chillEffect;
+    [ShowIf(nameof(IsProjectile)), AssetsOnly, Tooltip("Left burning where it bursts: hurts every hostile standing in it.")]
+    public GroundFire groundFire;
+    [ShowIf("@IsProjectile && groundFire != null"), Min(.1f)] public float groundFireSeconds = 3f;
+    [ShowIf("@IsProjectile && groundFire != null"), Min(.1f)] public float groundFireRadius = 1.6f;
+    [ShowIf("@IsProjectile && groundFire != null"), Min(0), Tooltip("Damage a second, as a share of the spell's power.")] public float groundFirePower = .25f;
+
+    [Title("Effect")]
+    [Tooltip("Standard: a projectile, a ground area or a heal, by the settings here. The others do their own thing, set below.")]
+    public SpellEffect effect;
+    [ShowIf("@effect == SpellEffect.ShadowVeil"), InlineProperty, HideLabel] public ShadowVeilSettings veil = new();
+    [ShowIf("@effect == SpellEffect.ChainLightning"), InlineProperty, HideLabel] public ChainLightningSettings chain = new();
+    [ShowIf("@effect == SpellEffect.SweepingArc"), InlineProperty, HideLabel] public SweepingArcSettings sweep = new();
+    [ShowIf("@effect == SpellEffect.RaiseTheFallen"), InlineProperty, HideLabel] public RaiseSettings raise = new();
 
     [Title("Ground area")]
     [Tooltip("Lands on the ground at the target instead of flying: the spot is marked (Show Marker), then it erupts after Area Delay and hits everything hostile inside Area Radius. The eruption is the Impact effect.")]
@@ -65,7 +88,19 @@ public class SpellDefinition : ScriptableObject
     public AudioClip impactSound;
     [Range(0, 1)] public float impactVolume = 1f;
 
-    public bool IsProjectile => spell != LeftHandSpell.Heal && !groundArea;
-    public AdventureSkill Skill => spell == LeftHandSpell.Heal ? AdventureSkill.Thaumaturgy : AdventureSkill.Sorcery;
+    public bool IsProjectile => effect == SpellEffect.Standard && spell != LeftHandSpell.Heal && !groundArea;
+    public AdventureSkill Skill => spell == LeftHandSpell.Heal || effect == SpellEffect.RaiseTheFallen ? AdventureSkill.Thaumaturgy : AdventureSkill.Sorcery;
+
+    // The tome's rules line: cost and what the spell does.
+    public string RulesLine(float cost, float power) => effect switch
+    {
+        SpellEffect.ShadowVeil => $"{cost:0.#} mana, unseen for {veil.seconds:0.#} seconds",
+        SpellEffect.RaiseTheFallen => $"{cost:0.#} mana, raises a fallen skeleton for {raise.summon.lifetime:0} seconds",
+        SpellEffect.ChainLightning => $"{cost:0.#} mana, {power:0.#} damage, jumps to {chain.jumps} more",
+        _ => $"{cost:0.#} mana, {power:0.#} {(spell == LeftHandSpell.Heal ? "healing" : "damage")}",
+    };
 }
+
+// What a spell does when it leaves the hand. Serialized by integer: append only.
+public enum SpellEffect { Standard = 0, ShadowVeil = 1, ChainLightning = 2, SweepingArc = 3, RaiseTheFallen = 4 }
 

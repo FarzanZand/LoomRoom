@@ -35,11 +35,32 @@ public class Perception : MonoBehaviour
 
     Character ResolveTarget()
     {
-        if (!PlayerManager.HasInstance) return null;
-        var player = PlayerManager.Instance.Active;
-        if (player == null || !player.IsAlive || player.Ghost) return null;
-        if (self != null && !FactionRules.IsHostile(self.Faction, player.Faction)) return null;
-        return player;
+        // On the player's side (a skeleton they raised): the nearest living enemy it can sense.
+        if (self != null && self.Faction == Faction.Player) return NearestEnemy();
+        Character player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+        if (player == null || !player.IsAlive || ((Player)player).Ghost) player = null;
+        if (player != null && self != null && !FactionRules.IsHostile(self.Faction, player.Faction)) player = null;
+        // The player's summons are fought too: the nearer of them and the player.
+        if (Summon.All.Count == 0 || Profile == null) return player;
+        var summon = Summon.NearestHostile(self, transform.position, Profile.detectionRadius);
+        if (summon == null) return player;
+        if (player == null) return summon;
+        return (summon.transform.position - transform.position).sqrMagnitude < (player.transform.position - transform.position).sqrMagnitude ? summon : player;
+    }
+
+    Character NearestEnemy()
+    {
+        if (Profile == null) return null;
+        Character best = null;
+        float bestDistance = Profile.detectionRadius * Profile.detectionRadius;
+        foreach (var brain in EnemyBrain.Active)
+        {
+            if (brain == null || brain.Character == null || brain.Character == self || !brain.Character.IsAlive) continue;
+            if (!FactionRules.IsHostile(self.Faction, brain.Character.Faction)) continue;
+            float d = (brain.transform.position - transform.position).sqrMagnitude;
+            if (d < bestDistance) { best = brain.Character; bestDistance = d; }
+        }
+        return best;
     }
 
     public bool CanSee(Transform target, bool trackingTarget = false)
@@ -49,6 +70,8 @@ public class Perception : MonoBehaviour
         Vector3 origin   = transform.position + Vector3.up * Profile.eyeHeight;
         Vector3 toTarget = target.position + Vector3.up * 0.9f - origin;
         float   dist     = toTarget.magnitude;
+        // Shadow Veil: unseen beyond arm's reach, even by an enemy already hunting.
+        if (ShadowVeil.Hides(target, dist)) return false;
 
         float closeScale = 1, sightScale = 1;
         if (!trackingTarget && CombatManager.HasInstance) CombatManager.Instance.StealthScales(target, out closeScale, out sightScale);

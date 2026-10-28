@@ -136,6 +136,7 @@ public class EnemyVoice : MonoBehaviour
         Vector3 delta = head - camera.transform.position;
         if (Vector3.Dot(camera.transform.forward, delta) <= 0f) return false;
         var player = PlayerManager.Instance.Active;
-        return LineOfSight.Clear(camera.transform.position, head, ~0, transform, player != null ? player.ActivationRoot.transform : null);
+        // Only walls hide it: an enemy behind another one in plain light is not "in the dark".
+        return LineOfSight.Clear(camera.transform.position, head, ~0, transform, player != null ? player.ActivationRoot.transform : null, charactersBlock: false);
     }
 }
