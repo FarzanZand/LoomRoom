@@ -21,7 +21,7 @@ public class ProvokableNpc : MonoBehaviour
     public DungeonMaster.Line[] wrathLines =
     {
         new() { text = "I did warn you.", mumble = true },
-        new() { text = "Some people only learn the hard way.", mumble = true },
+        new() { text = "Now you've done it.", mumble = true },
     };
     [Tooltip("Posted to the message feed the first time. {Name} is its name with \"The\" in front.")]
     public string provokedMessage = "{Name} glares at you.";

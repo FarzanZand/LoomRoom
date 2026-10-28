@@ -432,7 +432,7 @@ MonoBehaviour:
     damageMultiplier: 1
     arena: {fileID: 0}
     title: Guardian
-    introMessage: Something guards the stairs down.
+    introMessage: '{boss} guards the stairs down.'
     introSting: {fileID: 0}
     stingVolume: 1
     bossMusic: {fileID: 0}

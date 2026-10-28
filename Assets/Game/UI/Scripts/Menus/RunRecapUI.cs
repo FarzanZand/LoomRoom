@@ -23,12 +23,12 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField, Min(0), Tooltip("Deaths in the save (RunManager.DeathsFlag) before Revive shows on the death screen in a release build.")]
     int reviveAfterDeaths = 3;
     [SerializeField, Tooltip("The Dungeon Master, on the death screen where Revive first shows.")]
-    DungeonMaster.Line reviveUnlockedLine = new() { text = "You can get up now. Use it to reach the boss. I'll mock you every time." };
+    DungeonMaster.Line reviveUnlockedLine = new() { text = "From now on you can get back up when you die." };
     [SerializeField, Tooltip("The Dungeon Master mocks a revive: one at random.")]
     DungeonMaster.Line[] reviveLines =
     {
-        new() { text = "Fine. I didn't see that." },
-        new() { text = "Dead people don't get up. You did. Cheater." },
+        new() { text = "I didn't see that." },
+        new() { text = "Dead people don't usually get up, you know." },
         new() { text = "Again? I'll pretend that didn't happen." },
         new() { text = "Back so soon? Try not dying this time." },
     };
@@ -66,12 +66,12 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField, Tooltip("After a win.")] DungeonMaster.Line[] victoryLines =
     {
         new() { text = "You won. I didn't think you would." },
-        new() { text = "A win. Spend it well." },
+        new() { text = "Go and spend it." },
     };
     [SerializeField, Tooltip("A death with a good haul.")] DungeonMaster.Line[] goodHaulLines =
     {
         new() { text = "Not a bad haul, for someone who died." },
-        new() { text = "You got a lot out. Not yourself, though." },
+        new() { text = "You got the loot out, at least." },
     };
     [SerializeField, Tooltip("A death with little to show.")] DungeonMaster.Line[] poorHaulLines =
     {
@@ -105,10 +105,10 @@ public class RunRecapUI : MonoBehaviour
         if (!open && GameManager.HasInstance) GameManager.Instance.Push(GameState.Menu);
         open = true;
         root.SetActive(true);
-        if (title != null) { title.text = s.victory ? "VICTORY" : "YOU DIED"; title.color = s.victory ? victoryColor : deathColor; }
+        if (title != null) { title.text = s.victory ? "VICTORY" : "DEAD"; title.color = s.victory ? victoryColor : deathColor; }
         if (cause != null)
             cause.text = (string.IsNullOrEmpty(s.adventurer) ? "" : $"<color=#A3A3A3>{s.adventurer}</color>\n") + (s.victory
-                ? $"You conquered {s.levelName}."
+                ? $"You beat {s.levelName}."
                 : $"Killed by {RunManager.KillerWithArticle(s.killer)} on floor {s.floor} of {s.levelName}.");
         bool tallied = s.tally.counted && tallyRoot != null;
         if (tallyRoot != null) tallyRoot.SetActive(tallied);
@@ -127,7 +127,7 @@ public class RunRecapUI : MonoBehaviour
                          $"Gold found  <b>{s.gold}</b>\n" +
                          $"Time  <b>{s.TimeText}</b>" +
                          (string.IsNullOrEmpty(s.skills) ? "" : $"\n\n<color=#8C8173>{s.skills}</color>");
-        if (seed != null) seed.text = $"Seed {s.seed}";
+        if (seed != null) { seed.text = $"Seed {s.seed}"; seed.gameObject.SetActive(Debug.isDebugBuild); }
         fade?.Kill();
         if (group != null)
         {

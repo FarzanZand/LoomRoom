@@ -40,7 +40,7 @@ public class DungeonGrave : MonoBehaviour, IInteractable
     IEnumerator Dig(Player player)
     {
         digging = true;
-        MessageLog.Post("You start digging...", MessageKind.Info);
+        MessageLog.Post("You dig.", MessageKind.Info);
         float end = Time.time + digSeconds;
         while (Time.time < end)
         {
@@ -59,7 +59,7 @@ public class DungeonGrave : MonoBehaviour, IInteractable
         {
             var prefab = occupants[rng.Next(occupants.Length)];
             var risen = DungeonFeatureUtility.SpawnEnemy(prefab, transform.position, transform.parent);
-            MessageLog.Post(risen != null ? $"{risen.TheNameCap} rises from the grave!" : "Something stirs below, then falls still.", MessageKind.Bad);
+            MessageLog.Post(risen != null ? $"{risen.TheNameCap} climbs out of the grave." : "Nothing comes out.", MessageKind.Bad);
             if (!lootEvenIfWoken) yield break;
         }
         var table = loot != null ? loot : fallbackLoot;

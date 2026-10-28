@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: Crystal Armor
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Crystal Armor
+  itemName: Crystal Armour
   saveId: 3714d07b11ffab84daa631fb9eec41ff
   weaponCategory: 0
   spell: {fileID: 0}

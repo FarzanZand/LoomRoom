@@ -16,7 +16,7 @@ public static partial class CampaignMapBuilder
     static readonly (string id, string name, CampaignEncounterKind kind, string level, int act, string text, string picked)[] Places =
     {
         ("start", "Home", CampaignEncounterKind.Home, null, 1, "Where every road starts.", null),
-        ("crypt", "The Crypt", CampaignEncounterKind.Level, "Assets/Game/Levels/Dungeon1/Dungeon1.asset", 1, "Three floors down, and something waiting at the bottom.", "The crypt. Mind the stairs."),
+        ("crypt", "The Crypt", CampaignEncounterKind.Level, "Assets/Game/Levels/Dungeon1/Dungeon1.asset", 1, "Nine floors deep. The Crypt Lord waits on the third.", "The crypt. Mind the stairs."),
         ("forest", "The Old Wood", CampaignEncounterKind.Level, "Assets/Game/Levels/Forest1/Forest1.asset", 1, "A board laid out among the trees.", "Into the wood, then."),
         ("mill", "The Mill", CampaignEncounterKind.Placeholder, null, 1, "The miller has been quiet lately.", null),
         ("camp", "Soldiers' Camp", CampaignEncounterKind.Placeholder, null, 2, "Tents by the road, and no one on watch.", null),

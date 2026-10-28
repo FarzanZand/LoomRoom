@@ -211,7 +211,7 @@ public class BossStageEncounter : MonoBehaviour
         if (boss == null || !boss.IsAlive) yield break;
 
         if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title);
-        if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.introMessage.Trim(), MessageKind.Warning);
+        if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss), MessageKind.Warning);
         if (fight != null) Say(fight.fightLine, true);
         if (stageLights != null) stageLights.Follow(boss.transform);
         if (brain != null) { brain.enabled = true; brain.Alert(); }
@@ -458,7 +458,7 @@ public class BossStageEncounter : MonoBehaviour
         lost = false;
         Comment(fight != null ? fight.victory : null, true);
         if (RunManager.HasInstance) RunManager.Instance.NoteBossSlain();
-        MessageLog.Post($"{boss.TheNameCap} falls! The way on is open.", MessageKind.Good);
+        MessageLog.Post($"{boss.TheNameCap} is dead. The way on is open.", MessageKind.Good);
         Finish(true);
     }
 

@@ -105,7 +105,7 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Comments"), Tooltip("Said as he starts a fireball volley.")]
     public List<DungeonMaster.Line> volleyWarned = new() { new() { text = "Catch." }, new() { text = "Mind the fire." } };
     [TabGroup(Tabs, "Comments")] public List<DungeonMaster.Line> bossHalf = new() { new() { text = "Half of him left." } };
-    [TabGroup(Tabs, "Comments")] public List<DungeonMaster.Line> bossLow = new() { new() { text = "He's nearly done. So are you." } };
+    [TabGroup(Tabs, "Comments")] public List<DungeonMaster.Line> bossLow = new() { new() { text = "He's nearly done." } };
     [TabGroup(Tabs, "Comments")] public List<DungeonMaster.Line> playerLow = new() { new() { text = "Careful now." }, new() { text = "You're bleeding a lot." } };
     [TabGroup(Tabs, "Comments")] public List<DungeonMaster.Line> victory = new() { new() { text = "Well played." } };
     [TabGroup(Tabs, "Comments")] public List<DungeonMaster.Line> defeat = new() { new() { text = "Again, then." } };

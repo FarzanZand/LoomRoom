@@ -77,6 +77,6 @@ MonoBehaviour:
   useClip: {fileID: 0}
   useClipVolume: 1
   useAudioKey: 
-  useMessage: The tonic burns going down, then warmth floods back into you.
+  useMessage: It burns going down.
   AnimationOnUse: 2
   eatDuration: 1.25

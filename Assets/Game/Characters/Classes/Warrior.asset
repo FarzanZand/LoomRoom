@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AdventurerClass
   id: fighter
   displayName: Warrior
-  description: Sword, shield and good armor. Tough, but bad at magic.
+  description: Sword, shield and good armour. Tough, but bad at magic.
   portrait: {fileID: 21300000, guid: c41c399af111a414d8ec9b3a6018e770, type: 3}
   sheetPortrait: {fileID: 21300000, guid: b757f95d7f3a10a4f86271d6683a4ad6, type: 3}
   sheetPortraitColour: {fileID: 21300000, guid: cbcb60a4fa24dd4418fe35fe0d5df6f5, type: 3}

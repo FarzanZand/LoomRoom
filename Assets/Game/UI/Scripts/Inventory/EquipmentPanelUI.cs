@@ -46,7 +46,7 @@ public class EquipmentPanelUI : MonoBehaviour
             {
                 float crit=Mathf.Min(CombatManager.HasInstance?CombatManager.Instance.critChanceCap:.6f,(CombatManager.HasInstance?CombatManager.Instance.critChance:.08f)+s.GetFinal(StatType.CriticalChance));
                 title="Damage";subtitle=DamageText(s);
-                body=$"Before the enemy's armor.\n\n<color={dim}>Critical chance</color><pos=60%><color={good}>{crit*100f:0.#}%</color>";
+                body=$"Before the enemy's armour.\n\n<color={dim}>Critical chance</color><pos=60%><color={good}>{crit*100f:0.#}%</color>";
                 return true;
             }
             case StatTooltipUI.Kind.Strength: return ExplainAttribute(MetaAttribute.Strength,out title,out subtitle,out body);
@@ -57,7 +57,7 @@ public class EquipmentPanelUI : MonoBehaviour
             {
                 float per=CombatManager.ArmorPerPoint,share=CombatManager.HasInstance?CombatManager.Instance.armorEffectiveness:.65f;
                 float armorNow=s.ArmorWithoutShield,block=s.BlockArmor;
-                title="Armor";subtitle=block>0?$"{armorNow:0.#}  (+{block:0.#} blocking)":$"{armorNow:0.#}";
+                title="Armour";subtitle=block>0?$"{armorNow:0.#}  (+{block:0.#} blocking)":$"{armorNow:0.#}";
                 body=$"<color={dim}>Per hit</color><pos=60%><color={good}>-{armorNow*per:0.#}</color>";
                 if(block>0)body+=$"\n<color={dim}>Per blocked hit</color><pos=60%><color={good}>-{(armorNow+block)*per:0.#}</color>";
                 body+=$"\n\n<color={dim}>{(1f-share)*100f:0}% of a hit always lands, unless blocked.</color>";
@@ -115,7 +115,7 @@ public class EquipmentPanelUI : MonoBehaviour
         if(mana!=null)mana.text=Line("MANA",$"<color={Status(UIManager.HasInstance?UIManager.Instance.mana:Color.blue)}>{Mathf.CeilToInt(s.CurrentMana)}</color><color={ItemData.DimColor}> / {s.MaxMana:0}</color>");
         if(damage!=null)damage.text=Line("DAMAGE",$"<color={ItemData.TextColor}>{DamageText(s)}</color>");
         // Shield armor counts only on a block: shown apart so the main number is what always applies.
-        if(armor!=null){float block=s.BlockArmor;armor.text=Line("ARMOR",$"<color={ItemData.TextColor}>{s.ArmorWithoutShield:0.#}</color>"+(block>0?$"<color={ItemData.DimColor}>   +{block:0.#} blocking</color>":""));}
+        if(armor!=null){float block=s.BlockArmor;armor.text=Line("ARMOUR",$"<color={ItemData.TextColor}>{s.ArmorWithoutShield:0.#}</color>"+(block>0?$"<color={ItemData.DimColor}>   +{block:0.#} blocking</color>":""));}
         if(identity!=null){var p=player.GetComponent<AdventurerProgress>();string cls=p!=null && p.selectedClass!=null?p.selectedClass.displayName:"Adventurer";identity.text=$"{cls.ToUpperInvariant()}\n<color={ItemData.DimColor}>LEVEL {(p!=null?p.Level:1)}</color>";}
         if(attributes!=null){var sb=new System.Text.StringBuilder();foreach(var (stat,label) in Attributes)sb.Append(label).Append("<pos=62%>").Append(s.GetFinal(stat).ToString("0")).Append('\n');attributes.text=sb.ToString();}
         if(gearBonuses!=null)gearBonuses.Refresh(player.Equipment);

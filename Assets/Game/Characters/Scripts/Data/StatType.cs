@@ -69,7 +69,7 @@ public class StatModifierEntry
     public float        value;
     public ModifierType type = ModifierType.Flat;
 
-    public static string Label(StatType stat)=>stat switch {StatType.Armor=>"Armor",StatType.AttackDamage=>"Damage",StatType.MaxHealth=>"Health",StatType.MaxMana=>"Mana",StatType.ManaRegen=>"Mana/sec",StatType.MaxStamina=>"Stamina",StatType.StaminaRegen=>"Stamina/sec",_=>stat.ToString()};
+    public static string Label(StatType stat)=>stat switch {StatType.Armor=>"Armour",StatType.AttackDamage=>"Damage",StatType.MaxHealth=>"Health",StatType.MaxMana=>"Mana",StatType.ManaRegen=>"Mana/sec",StatType.MaxStamina=>"Stamina",StatType.StaminaRegen=>"Stamina/sec",_=>stat.ToString()};
     public string Describe() => Describe(stat, type, value);
 
     // One stat in plain words: "+6% critical chance", "Kills heal 2", "+1 m light radius".
@@ -99,7 +99,7 @@ public class StatModifierEntry
                 case StatType.MaxHealth: return $"{sign}{value:0.#} health";
                 case StatType.MaxMana: return $"{sign}{value:0.#} mana";
                 case StatType.AttackDamage: return $"{sign}{value:0.#} damage";
-                case StatType.Armor: return $"{sign}{value:0.#} armor";
+                case StatType.Armor: return $"{sign}{value:0.#} armour";
                 case StatType.MaxStamina: return $"{sign}{value:0.#} stamina";
             }
         return type switch

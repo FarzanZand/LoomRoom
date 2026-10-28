@@ -105,7 +105,7 @@ public class DungeonAmbush : MonoBehaviour
         phase = Phase.Done;
         foreach (var g in gates) if (g != null) { Lower(g, false); Play(liftAudio, g.position, .7f); }
         dungeon.SpawnRewardChest(chestAt, chestFacing, chestSeed);
-        MessageLog.Post("The gates sink back into the floor. Something was left behind.", MessageKind.Good);
+        MessageLog.Post("The gates sink back into the floor. They left a chest.", MessageKind.Good);
     }
 
     // Each enemy of the wave at a spawn point on the far side of the room from the player, a moment apart.

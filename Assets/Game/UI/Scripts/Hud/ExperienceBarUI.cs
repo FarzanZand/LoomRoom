@@ -86,7 +86,7 @@ public class ExperienceBarUI : MonoBehaviour
         if (progress.Level != shownLevel || className != shownClass)
         {
             shownLevel = progress.Level; shownClass = className;
-            if (title != null) title.text = $"LVL {shownLevel}  {shownClass}";
+            if (title != null) title.text = $"Level {shownLevel}  {shownClass}";
         }
         // Rounded as the label shows them (the "0" format rounds half away from zero).
         int xp = (int)System.Math.Round(progress.Experience, System.MidpointRounding.AwayFromZero);

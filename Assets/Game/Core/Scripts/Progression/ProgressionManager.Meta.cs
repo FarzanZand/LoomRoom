@@ -93,11 +93,11 @@ public partial class ProgressionManager
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Trying to buy anything but Blocking before the first Blocking level.")]
     public DungeonMaster.Line lessonBlockingFirst = new() { text = "Blocking first. Trust me." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("When the first tally can't pay for Blocking's next level, the DM adds the rest.")]
-    public DungeonMaster.Line lessonTopUp = new() { text = "Here. Don't tell anyone." };
+    public DungeonMaster.Line lessonTopUp = new() { text = "Have a bit extra. Don't tell anyone." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Handing over one trophy.")]
-    public DungeonMaster.Line handOverOne = new() { text = "Here. Hang it on the wall." };
+    public DungeonMaster.Line handOverOne = new() { text = "This one goes on the wall." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Handing over several trophies at once.")]
-    public DungeonMaster.Line handOverMany = new() { text = "Here, all of them. On the wall they go." };
+    public DungeonMaster.Line handOverMany = new() { text = "All of these go on the wall." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("After Blocking's first trophy (Deflect) is mounted for the first time.")]
     public DungeonMaster.Line shieldBashMounted = new() { text = "Hold your shield up against arrows and fire now. They go back where they came from." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Min(0), Tooltip("Seconds after the room player is free before the lesson's first line.")] public float lessonDelay = 2.5f;

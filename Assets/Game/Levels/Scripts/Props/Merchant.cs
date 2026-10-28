@@ -185,7 +185,7 @@ public class Merchant : MonoBehaviour, IInteractable
         if (wallet == null || !wallet.CanAfford(ware.price)) { message = $"You cannot afford the {ware.item.itemName}."; return false; }
         if (!InventoryManager.HasInstance || !InventoryManager.Instance.Pickup(ware.item, player, 1, playSound: false))
         {
-            message = "Your pack is full.";
+            message = "Your bag is full.";
             return false;
         }
         wallet.TrySpend(ware.price);

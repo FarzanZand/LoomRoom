@@ -114,7 +114,7 @@ public class TooltipUI : Singleton<TooltipUI>
         bool wearing = gear != null && gear.IsEquipped(item);
         float worn = wearing ? value : equipped != null && equipped.TryMainStat(out _, out float w, out _) ? w : 0f;
         float scale = Mathf.Max(value, worn, item.IsWeapon || item.itemType == ItemType.Shield ? 16f : item.equipSlot == EquipmentSlot.Body ? 6f : 5f) * 1.1f;
-        Fill(mainBar, label == "Armor when blocking" ? "Block" : label, value / scale, worn / scale, text, value - worn);
+        Fill(mainBar, label == "Armour when blocking" ? "Block" : label, value / scale, worn / scale, text, value - worn);
 
         bool speed = item.IsWeapon && speedBar.root != null;
         if (speedBar.root != null) speedBar.root.SetActive(speed);

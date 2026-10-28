@@ -9,7 +9,7 @@ painting is brought down to one texel per painted pixel and recomposed by hand-w
     tabletop     one texture for the whole top (its UVs span it once): the painting's planks laid end to end along
                  the table's length
     rug          the painting cropped to the rug, fringe cut out with alpha
-    painting     the wall painting cropped to the frame's shape
+    painting     retired: drawn by rules in Tools/bedroom_painting.py
 
     python Tools/room_surfaces.py [out_dir]
 """
@@ -248,7 +248,12 @@ def rug(rng):
     print("Rug", W, "x", H)
 
 
-def painting(rng, aspect=110.4 / 48.3, width_units=110.4):
+def painting(*args, **kwargs):
+    """Retired: the wall painting is drawn by rules now (Tools/bedroom_painting.py); the Meshy crop is not used."""
+    print("painting: drawn by Tools/bedroom_painting.py, skipped"); return
+
+
+def _painting_meshy_crop(rng, aspect=110.4 / 48.3, width_units=110.4):
     p = GEN / "Wall_painting" / "Wall_painting.png"
     if not p.exists():
         print("no wall painting yet"); return

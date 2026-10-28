@@ -29,11 +29,11 @@ public class DungeonAltar : MonoBehaviour, IInteractable
     {
         var player = DungeonFeatureUtility.TablePlayer(who);
         if (player == null) return;
-        if (prayers <= 0) { MessageLog.Post("Your prayers go unanswered.", MessageKind.Info); return; }
+        if (prayers <= 0) { MessageLog.Post("Nothing happens.", MessageKind.Info); return; }
         var wallet = player.Wallet;
         if (wallet == null || !wallet.TrySpend(Offering))
         {
-            MessageLog.Post($"The altar demands an offering of {Offering} {Currency}.", MessageKind.Warning);
+            MessageLog.Post($"The altar wants {Offering} {Currency}.", MessageKind.Warning);
             return;
         }
         prayers--;

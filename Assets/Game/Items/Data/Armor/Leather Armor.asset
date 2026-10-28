@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: Leather Armor
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Leather Armor
+  itemName: Leather Armour
   saveId: a28df57d3014dee4c81499eaf4753671
   weaponCategory: 0
   spell: {fileID: 0}
