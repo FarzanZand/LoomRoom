@@ -243,6 +243,10 @@ looks wrong, too.
   triangle lost them), then rules per material: stone gets speckled grain, cracks and moss in upward hollows; bone
   thin cracks, drawn features widened (`--grow 1`) so sockets read; books keep each book's colour flat, edges and
   scuffs lighter, page fibres (`--covers` gives a stack's books their own colours by height when Synty gives them one).
+  Give stone its size in metres (`--extent x,y,z`, the model's bounds): without it grain and patches are laid in shares of
+  the model's box and stretch on a tall or long model (the 3 m kit pillar showed tall streaks, 2026-10-28). `--courses
+  <metres>` lays cut stone in courses (blocks one to two courses long, joints two texels wide and dark, grime from the
+  foot); the kit pillar uses `.375`, the ruins walls' course height.
   No wood grain on anything that isn't wood. `--material cloth` (sacks): folds and seams shaded, a coarse weave, dirt at
   the base; parts that aren't cloth (apples) keep their colour. A painted prop's faces turned away from the view it was
   painted from (normal more than ~37 degrees off) streak: rebuild just those texels with these rules, colour-matched to the
