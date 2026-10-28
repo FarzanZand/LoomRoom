@@ -10,7 +10,7 @@ UnityEditor.AssetDatabase.Refresh();
 var template = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(Root + "/Tavern/Tavern wall.mat");
 var styles = new (string name, string old, string unused)[] {
   ("Ruins1 timber", "Timber and Stone", null), ("Ruins2 timber", "Timber and Stone", null), ("Ruins3 timber", "Timber and Stone", null),
-  ("Ruins1 stone", "Crypt/Dungeon1 default style", null), ("Ruins2 stone", "Crypt/Dungeon1 default style", null), ("Ruins3 stone", "Crypt/Dungeon1 default style", null) };
+  ("Ruins1 stone", "_Archive/Crypt/Dungeon1 default style", null), ("Ruins2 stone", "_Archive/Crypt/Dungeon1 default style", null), ("Ruins3 stone", "_Archive/Crypt/Dungeon1 default style", null) };
 UnityEngine.Material Mat(string dir, string surface, string style)
 {
   string png = $"{dir}/{style} {surface}.png";
