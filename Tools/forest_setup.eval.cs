@@ -28,11 +28,15 @@ UnityEngine.Material Ground(string name, float metres)
   var mat = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(path);
   if (mat == null) { mat = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); UnityEditor.AssetDatabase.CreateAsset(mat, path); }
   mat.SetTexture("_BaseMap", tex); mat.SetColor("_BaseColor", UnityEngine.Color.white);
-  // The texture covers `metres`; UVs repeat every 3 m.
-  float repeat = 3f / metres; mat.SetTextureScale("_BaseMap", new UnityEngine.Vector2(repeat, repeat));
+  // The texture covers `metres` (a 2 m cell's ground, 256 texels, covers 2 m across whatever metres says); UVs repeat
+  // every 3 m. A texture repeating once per 2 m cell (the grounds with variants, Tools/forest_textures.py) is offset half a
+  // repeat so its edges fall on the cells' edges (odd metres), as the Cellar styles are: a variant fills its own cell.
+  float mx = tex.width == 256 ? 2f : metres, my = tex.height == 256 ? 2f : tex.height == 384 ? 3f : metres;
+  mat.SetTextureScale("_BaseMap", new UnityEngine.Vector2(3f / mx, 3f / my));
+  mat.SetTextureOffset("_BaseMap", new UnityEngine.Vector2(mx == 2f ? .5f : 0f, my == 2f ? .5f : 0f));
   mat.SetFloat("_Smoothness", 0f); mat.SetFloat("_SpecularHighlights", 0f); mat.EnableKeyword("_SPECULARHIGHLIGHTS_OFF"); mat.enableInstancing = true;
   UnityEditor.EditorUtility.SetDirty(mat);
-  sb.Append($"{name}: {tex.width} px over {metres} m = {tex.width / metres:F0} texels a metre\n");
+  sb.Append($"{name}: {tex.width} x {tex.height} px over {mx} x {my} m = {tex.width / mx:F0} texels a metre\n");
   return mat;
 }
 // Every texture repeats a whole number of times per 3 m tile (the cellar's 384 px a tile, 128 texels a metre), so the

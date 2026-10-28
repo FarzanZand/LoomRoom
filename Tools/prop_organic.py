@@ -121,6 +121,8 @@ def main():
     ap.add_argument('--grain', type=float, default=1, help='stone: how many speckles (1 = default; below 1 calmer, for cut stone)')
     ap.add_argument('--covers', default='', help='book: cover colours by height band, bottom to top, as r,g,b;r,g,b;... (a stack whose books Synty gives one colour)')
     ap.add_argument('--grow', type=int, default=0, help='texels to widen drawn dark features by (sockets, teeth)')
+    ap.add_argument('--extent', default='', help='the size of the model in metres as x,y,z: grain, dirt and courses are laid in metres (without it, in shares of its box, which stretches them on a tall or long model)')
+    ap.add_argument('--courses', type=float, default=0, help='stone: laid in courses this many metres high (blocks one to two courses long, joints a step darker); needs --extent')
     a = ap.parse_args()
     H, W = a.height, a.width
     g = np.fromfile(a.gbuffer, dtype=np.float32).reshape(H, W, 12)[::-1]
@@ -165,16 +167,53 @@ def main():
         if h(x, y, 11) < .025: step[y, x] += 1
 
     rng = np.random.default_rng(3)
+    # Place in metres when the model's size is given (a 3 m pillar 1 m wide took speckles and patches three times
+    # taller than wide), else in shares of the model's box as before.
+    ext = np.array([float(v) for v in a.extent.split(',')]) if a.extent else None
+    metres = pos * ext if ext is not None else None
+    if a.material == 'stone' and a.courses > 0 and metres is not None:
+        # Coursed stone: rows of blocks a course high, each block one to two courses long, joints offset course to
+        # course; each block a shade of its own, its joints (one texel) a step darker. Along a face is x on faces
+        # turned to z and z on faces turned to x; tops and bottoms keep their own colour.
+        ch = a.courses
+        course = np.floor(metres[..., 1] / ch).astype(int)
+        along = np.where(np.abs(nrm[..., 0]) > np.abs(nrm[..., 2]), metres[..., 2], metres[..., 0])
+        side = np.where(np.abs(nrm[..., 0]) > np.abs(nrm[..., 2]), np.sign(nrm[..., 0]) + 2, np.sign(nrm[..., 2]) + 5).astype(int)
+        texel = 1 / 128
+        texel_grime = np.random.default_rng(7).random((H, W))
+        for y, x in zip(*np.nonzero(cov & (np.abs(up) < .7))):
+            c = course[y, x]; f = side[y, x]
+            # Block lengths along this course, from a seed per course: 1 to 2 courses long.
+            u = along[y, x] + h(c, f, 31) * ch * 2
+            start, k = -ch * 4, 0
+            while True:
+                length = ch * (1 + h(c, f, k, 37))
+                if start + length > u: break
+                start += length; k += 1
+            tone = h(c, f, k, 41)
+            if tone < .3: step[y, x] -= 1
+            elif tone > .75: step[y, x] += 1
+            # Joints two texels wide and two shades down, as the dungeon's drawn walls outline their stones; the
+            # upper texel of a bed joint is a lit edge.
+            v = metres[y, x, 1] - c * ch
+            if u - start < 2 * texel or v < 2 * texel: step[y, x] -= 2
+            elif v < 3 * texel or u - start < 3 * texel: step[y, x] += 1
+            # Grime rising from the foot, ragged by block.
+            if metres[y, x, 1] < .45 + .3 * h(c, f, k, 43) and texel_grime[y, x] < .7: step[y, x] -= 1
     if a.material == 'stone':
+        # With the size in metres a speckle is one texel, picked per texel (cells of a texel's size on the model
+        # fell into a regular dotted grid where they met the texture's own grid).
+        # (h() over neighbouring texel numbers repeats in rows and columns, so a real random field.)
         cell = np.floor(pos * 140).astype(int)
+        texel_noise = np.random.default_rng(5).random((H, W))
         for y, x in zip(*np.nonzero(cov)):
-            r = h(cell[y, x, 0], cell[y, x, 1], cell[y, x, 2], 5)
+            r = texel_noise[y, x] if metres is not None else h(cell[y, x, 0], cell[y, x, 1], cell[y, x, 2], 5)
             if r < .16 * a.grain: step[y, x] -= 1
             elif r > 1 - .1 * a.grain: step[y, x] += 1
     if a.material == 'stone' and a.dirt > 0:
         # Dirt the way a pixel artist lays it: whole patches a shade darker or lighter (not per-texel noise), more of
         # them and darker low down, where damp and grime collect.
-        big = np.floor(pos * 9).astype(int)
+        big = np.floor(metres / .12).astype(int) if metres is not None else np.floor(pos * 9).astype(int)
         for y, x in zip(*np.nonzero(cov)):
             r = h(big[y, x, 0], big[y, x, 1], big[y, x, 2], 17)
             low = 1 - pos[y, x, 1]

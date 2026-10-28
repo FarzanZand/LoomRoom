@@ -74,8 +74,10 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
     // No cornice or footing: the wild walls have none, and one over a passage was the only trim left (a plain box).
     stone.hideTrims = true;
     timber.trim = stone.trim; timber.wood = stone.wood; timber.metal = stone.metal;
-    // Variants laid now and then among the base tiles (Tools/ruins_variety.py): the redraw's own second wall and
-    // floor, a mossy and a sooty wall, a mossy and a rust-stained floor. A copy of the wall's material each.
+    // Variants laid among the base tiles (Tools/ruins_variety.py): the stones coloured again (two copies, laid often so
+    // the 2 m repeat doesn't show), a mossy and a sooty wall (bottom tiles only: on a tile above, their foot sat on the
+    // plain tile below), a mossy and a rust-stained floor. Walls and floors repeat once per 2 m cell (tiling 1.5, offset
+    // .5 as the Cellar styles), so a variant fills its cell and fades out at its edges. A copy of the wall's material each.
     UnityEngine.Material Variant(string surface)
     {
       var png = $"{R}/{name}/{name} {surface}.png"; var mp = $"{R}/{name}/{name} {surface}.mat";
@@ -88,16 +90,24 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
       if (m == null) { m = new UnityEngine.Material(stone.bottomWall); UnityEditor.AssetDatabase.CreateAsset(m, mp); }
       var tex = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(png);
       m.SetTexture("_BaseMap", tex); if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", tex);
+      bool floor = surface.Contains("floor");
+      var scale = new UnityEngine.Vector2(1.5f, floor ? 1.5f : 1f); var offset = new UnityEngine.Vector2(.5f, floor ? .5f : 0f);
+      foreach (var prop in new[] { "_BaseMap", "_MainTex" })
+        if (m.HasProperty(prop)) { m.SetTextureScale(prop, scale); m.SetTextureOffset(prop, offset); }
       UnityEditor.EditorUtility.SetDirty(m); return m;
     }
-    DungeonSurfaceVariant V(string surface, float weight) => new DungeonSurfaceVariant { material = Variant(surface), weight = weight, rows = DungeonVariantRows.Any };
+    DungeonSurfaceVariant V(string surface, float weight, DungeonVariantRows rows = DungeonVariantRows.Any) => new DungeonSurfaceVariant { material = Variant(surface), weight = weight, rows = rows };
+    stone.bottomWall = Variant("stone wall"); stone.upperWall = stone.bottomWall; stone.floor = Variant("stone floor");
     stone.wallBaseWeight = 10; stone.floorBaseWeight = 10;
-    stone.wallVariants = new[] { V("stone wall b", 5), V("stone wall moss", 2.5f), V("stone wall soot", 1.5f) };
-    stone.floorVariants = new[] { V("stone floor b", 5), V("stone floor moss", 2f), V("stone floor ochre", 1.5f) };
+    stone.wallVariants = new[] { V("stone wall shift 1", 6), V("stone wall shift 2", 6), V("stone wall moss", 2.5f, DungeonVariantRows.BottomOnly), V("stone wall soot", 1.5f, DungeonVariantRows.BottomOnly) };
+    stone.floorVariants = new[] { V("stone floor shift 1", 6), V("stone floor shift 2", 6), V("stone floor moss", 2f), V("stone floor ochre", 1.5f) };
+    // The hall's floor and its variants (made here, picked up below).
+    foreach (var hallFloor in new[] { "stone floor b", "stone floor b shift 1", "stone floor b shift 2", "stone floor b moss", "stone floor b ochre" }) Variant(hallFloor);
     UnityEditor.EditorUtility.SetDirty(stone); UnityEditor.EditorUtility.SetDirty(timber);
   }
   // The second room style is a hall of the same stone (the timber style's wall repeated one cobble panel in a black frame
-  // every tile and looked bad, the user): its other wall and floor drawings as the base, more moss, the stone ceiling.
+  // every tile and looked bad, the user): the stone's wall (two wall drawings met along a wild wall in a hard line) with
+  // more moss, the other floor drawing (floors of two rooms only meet in a doorway), the stone ceiling.
   var hallPath = $"{R}/{name}/{name} hall.asset";
   var hall = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>(hallPath);
   if (hall == null && stone != null) { hall = UnityEngine.Object.Instantiate(stone); UnityEditor.AssetDatabase.CreateAsset(hall, hallPath); }
@@ -105,10 +115,10 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   {
     UnityEditor.EditorUtility.CopySerialized(stone, hall); hall.name = $"{name} hall";
     UnityEngine.Material M(string surface) => UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>($"{R}/{name}/{name} {surface}.mat");
-    hall.bottomWall = M("stone wall b"); hall.upperWall = hall.bottomWall; hall.floor = M("stone floor b");
-    DungeonSurfaceVariant H(string surface, float weight) => new DungeonSurfaceVariant { material = M(surface), weight = weight, rows = DungeonVariantRows.Any };
-    hall.wallVariants = new[] { H("stone wall", 4), H("stone wall moss", 4), H("stone wall soot", 1.5f) };
-    hall.floorVariants = new[] { H("stone floor", 4), H("stone floor moss", 3), H("stone floor ochre", 1.5f) };
+    hall.bottomWall = M("stone wall"); hall.upperWall = hall.bottomWall; hall.floor = M("stone floor b");
+    DungeonSurfaceVariant H(string surface, float weight, DungeonVariantRows rows = DungeonVariantRows.Any) => new DungeonSurfaceVariant { material = M(surface), weight = weight, rows = rows };
+    hall.wallVariants = new[] { H("stone wall shift 1", 6), H("stone wall shift 2", 6), H("stone wall moss", 4, DungeonVariantRows.BottomOnly), H("stone wall soot", 1.5f, DungeonVariantRows.BottomOnly) };
+    hall.floorVariants = new[] { H("stone floor b shift 1", 6), H("stone floor b shift 2", 6), H("stone floor b moss", 3), H("stone floor b ochre", 1.5f) };
     UnityEditor.EditorUtility.SetDirty(hall);
   }
   var path = $"Assets/Game/Levels/Dungeon1/Biomes/{name}.asset";

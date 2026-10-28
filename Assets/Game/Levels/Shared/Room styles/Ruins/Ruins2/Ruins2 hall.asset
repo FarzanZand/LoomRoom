@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 48e1a08511ae4bb89e9a2ba01ad45eb5, type: 3}
   m_Name: Ruins2 hall
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomStyle
-  bottomWall: {fileID: 2100000, guid: d36f65f5e88a0284aab6aadbb5093229, type: 2}
-  upperWall: {fileID: 2100000, guid: d36f65f5e88a0284aab6aadbb5093229, type: 2}
+  bottomWall: {fileID: 2100000, guid: 3370ff677c007194db1966a8fef405ec, type: 2}
+  upperWall: {fileID: 2100000, guid: 3370ff677c007194db1966a8fef405ec, type: 2}
   floor: {fileID: 2100000, guid: 4be2bdbf47d4e194db171a0b6fbe7f4f, type: 2}
   ceiling: {fileID: 2100000, guid: f508e477f9010fd41a0852dce4df385d, type: 2}
   hideTrims: 1
@@ -22,24 +22,30 @@ MonoBehaviour:
   metal: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
   wallBaseWeight: 10
   wallVariants:
-  - material: {fileID: 2100000, guid: 3370ff677c007194db1966a8fef405ec, type: 2}
-    weight: 4
+  - material: {fileID: 2100000, guid: 0aa9aef917db5e74d94f0c931c08ea15, type: 2}
+    weight: 6
+    rows: 0
+  - material: {fileID: 2100000, guid: fa489542743eb3c4b928940642bf9783, type: 2}
+    weight: 6
     rows: 0
   - material: {fileID: 2100000, guid: 9177b3a16d3ff134ba31afc960612621, type: 2}
     weight: 4
-    rows: 0
+    rows: 1
   - material: {fileID: 2100000, guid: dee2b38af61ebb74da81394dffd81316, type: 2}
     weight: 1.5
-    rows: 0
+    rows: 1
   floorBaseWeight: 10
   floorVariants:
-  - material: {fileID: 2100000, guid: 2fe9d0c865bd6b7439097620b872435e, type: 2}
-    weight: 4
+  - material: {fileID: 2100000, guid: eb16ee70825e7a34791fc8c58bd6dcb0, type: 2}
+    weight: 6
     rows: 0
-  - material: {fileID: 2100000, guid: b54f0d331da078941934f4ba40720165, type: 2}
+  - material: {fileID: 2100000, guid: c6b93330ed4a5384fab3dee60a8d3a9c, type: 2}
+    weight: 6
+    rows: 0
+  - material: {fileID: 2100000, guid: 09cde44a4d7328d41b8f5ed6bbe28d96, type: 2}
     weight: 3
     rows: 0
-  - material: {fileID: 2100000, guid: 18a54166b027f954988630aa990f5190, type: 2}
+  - material: {fileID: 2100000, guid: cfc03c23d2728f040933aef3609260ce, type: 2}
     weight: 1.5
     rows: 0
   wallDecor: []
