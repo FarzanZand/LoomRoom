@@ -121,7 +121,7 @@ public static class DungeonMasterReach
     }
 
     // He turns where he stands to face the spot, and leans in (no walk).
-    static IEnumerator TurnTo(Vector3 spot)
+    public static IEnumerator TurnTo(Vector3 spot)
     {
         var seat = Seat; var hand = Hand;
         if (hand != null) { hand.Watch(spot, true); if (seat != null) seat.Focus(hand.transform.position, spot); }
@@ -182,17 +182,18 @@ public static class DungeonMasterReach
     // He hurries along the table while he reaches (his boss-fight pace is a slow, looming walk).
     const float ReachWalkSpeed = 22f;
     static float walkSpeed = -1f;
-    static void Hurry(DungeonMasterSeat seat, bool on)
+    static void Hurry(DungeonMasterSeat seat, bool on, float speed = ReachWalkSpeed)
     {
         if (seat == null) return;
-        if (on) { if (walkSpeed < 0f) walkSpeed = seat.focusSpeed; seat.focusSpeed = Mathf.Max(walkSpeed, ReachWalkSpeed); }
+        if (on) { if (walkSpeed < 0f) walkSpeed = seat.focusSpeed; seat.focusSpeed = Mathf.Max(walkSpeed, speed); }
         else if (walkSpeed >= 0f) { seat.focusSpeed = walkSpeed; walkSpeed = -1f; }
     }
 
-    static IEnumerator Approach(Vector3 spot)
+    // speed: how fast he walks there (a flick hurries more than his other reaches).
+    public static IEnumerator Approach(Vector3 spot, float speed = ReachWalkSpeed)
     {
         var seat = Seat; var hand = Hand;
-        Hurry(seat, true);
+        Hurry(seat, true, speed);
         var side = SideFor(spot, out var at);
         if (hand != null) hand.Watch(spot, true);
         if (seat != null && side != Side.Own)
@@ -224,6 +225,9 @@ public static class DungeonMasterReach
         Hurry(seat, false);
         Reaching = false;
     }
+
+    // Marks his hands taken for a reach run by someone else (the Flick spell); Leave frees them.
+    public static void BeginReach() => Reaching = true;
 
     // He sets an enemy down on spot (spawned, its brain off until it lands) and it goes for the player at once.
     public static IEnumerator Put(Character figure, Vector3 spot, float seconds = 2f, bool alert = true)

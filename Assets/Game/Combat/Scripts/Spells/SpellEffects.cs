@@ -9,6 +9,7 @@ public static class SpellEffects
     {
         if (spell.effect == SpellEffect.RaiseTheFallen && BoneHeap.Nearest(player.transform.position, spell.raise.reach) == null)
             return "No bones close enough";
+        if (spell.effect == SpellEffect.Flick) return Flick.Refusal(player, spell);
         return null;
     }
 
@@ -24,10 +25,11 @@ public static class SpellEffects
                 var heap = BoneHeap.Nearest(player.transform.position, spell.raise.reach);
                 if (heap != null) RaiseTheFallen.Cast(player, spell, heap, progress);
                 break;
+            case SpellEffect.Flick: Flick.Cast(player, spell, power, progress); break;
         }
     }
 
-    // Whether an enemy can use it now: a raise needs bones near the caster, a veil isn't an enemy's.
+    // Whether an enemy can use it now: a raise needs bones near the caster, a veil or a flick isn't an enemy's.
     public static bool CanCast(SpellDefinition spell, Character caster)
     {
         if (spell == null) return false;
@@ -35,6 +37,7 @@ public static class SpellEffects
         {
             SpellEffect.RaiseTheFallen => BoneHeap.Nearest(caster.transform.position, spell.raise.reach) != null,
             SpellEffect.ShadowVeil => false,
+            SpellEffect.Flick => false,
             _ => true,
         };
     }

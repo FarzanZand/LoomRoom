@@ -11,6 +11,8 @@ using UnityEngine;
 // Commands (separated by ';'):
 //   place <name> <metres>   move the first living enemy whose name contains <name> in front of the player
 //   face                    turn the player toward that enemy (chest height); track [off] keeps facing it
+//   followflick <seconds>   keep the view on a Flick as a player would watch it: the die in the air, else the Dungeon
+//                           Master's hand while it reaches, else the enemy being flicked
 //   pitch <degrees>         set the camera pitch (positive looks up)
 //   attack                  tap attack       hold <s>   hold attack for s seconds
 //   block <s>               hold block       blockon / blockoff
@@ -80,6 +82,7 @@ public class CombatTestBot : MonoBehaviour
                 {
                     case "place": Place(parts.Length > 1 ? parts[1] : "", F(2, 1.6f)); break;
                     case "face": Face(); break;
+                    case "followflick": yield return FollowFlick(F(1, 6f)); break;
                     case "goto": GoTo(parts.Length > 1 ? parts[1] : "enemy", F(2, 3f)); break;
                     case "open": OpenChest(); break;
 #if UNITY_EDITOR
@@ -215,6 +218,42 @@ public class CombatTestBot : MonoBehaviour
 
     // A plain fighter: the nearest living enemy in reach is the target; the bot walks at it, keeps it in view, raises the
     // shield while an enemy close by is swinging, and swings whenever it can.
+    // The view eased onto what a Flick shows: the die while it flies, the Dungeon Master's flicking hand while it is
+    // out, otherwise the enemy (held, then flying). Turns at most Turn degrees a second.
+    IEnumerator FollowFlick(float seconds)
+    {
+        const float Turn = 140f;
+        var hand = DungeonMasterReach.Hand;
+        Character watched = null;
+        for (float t = 0; t < seconds; t += Time.deltaTime)
+        {
+            // The flick's own target once it is cast (the spell leaves the hand after its wind-up); kept after it ends.
+            if (Flick.Watched != null) watched = Flick.Watched;
+            Vector3? at = null;
+            var die = GameObject.Find("Flick die");
+            if (die != null) at = die.transform.position;
+            // His hand while it is in the room with the enemy; else the sky over the enemy on his side, where the die comes from.
+            if (!at.HasValue && hand != null && hand.Busy && hand.RightHand != null && watched != null)
+            {
+                var body = watched.transform.position + Vector3.up;
+                var toHand = hand.RightHand.position - body;
+                at = toHand.magnitude < 9f ? Vector3.Lerp(hand.RightHand.position, body, .35f) : body + Vector3.up * 1.2f;
+            }
+            if (!at.HasValue && watched != null) at = watched.transform.position + Vector3.up * 1.1f;
+            if (at.HasValue && player.Look != null)
+            {
+                var eye = player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform.position : player.transform.position + Vector3.up * 1.6f;
+                var d = at.Value - eye;
+                float yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+                float pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
+                player.Look.SetYaw(Mathf.MoveTowardsAngle(player.Look.YawTransform.eulerAngles.y, yaw, Turn * Time.deltaTime));
+                float current = player.Look.Pitch;
+                player.Look.SetPitch(Mathf.MoveTowards(current, Mathf.Clamp(pitch, -30f, 45f), Turn * .6f * Time.deltaTime));
+            }
+            yield return null;
+        }
+    }
+
     IEnumerator Fight(float seconds, float reach, float blockSkill)
     {
         var reacted = new System.Collections.Generic.Dictionary<EnemyBrain, bool>();

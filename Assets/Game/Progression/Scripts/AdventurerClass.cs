@@ -4,7 +4,7 @@ using UnityEngine;
 
 // Serialized by integer. Skills index AdventurerProgress.Ranks and AdventurerClass.skills.
 public enum AdventureSkill { Swords = 0, Maces = 1, Blocking = 2, Sorcery = 3, Thaumaturgy = 4, Athletics = 5, Trading = 6, Stealth = 7 }
-public enum LeftHandSpell { Shield = 0, Fireball = 1, Heal = 2, ShadowVeil = 3, ChainLightning = 4, SweepingArc = 5, MoltenBoulder = 6, HurledStone = 7, FrostLance = 8, RaiseTheFallen = 9 }
+public enum LeftHandSpell { Shield = 0, Fireball = 1, Heal = 2, ShadowVeil = 3, ChainLightning = 4, SweepingArc = 5, MoltenBoulder = 6, HurledStone = 7, FrostLance = 8, RaiseTheFallen = 9, Flick = 10 }
 
 public static class AdventureSkills
 {

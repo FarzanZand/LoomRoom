@@ -1,0 +1,465 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using Sirenix.OdinInspector;
+using UnityEngine;
+using UnityEngine.AI;
+
+[Serializable]
+public class FlickSettings
+{
+    [FoldoutGroup("Flick", Expanded = true), Min(1f), Tooltip("Furthest from the player the enemy may stand.")]
+    public float range = 16f;
+    [FoldoutGroup("Flick"), Range(1f, 30f), Tooltip("Degrees off the crosshair an enemy may stand and still be the one picked.")]
+    public float aimCone = 15f;
+    [FoldoutGroup("Flick"), Min(.2f), Tooltip("Seconds his hand takes to come in over the enemy once he stands at the table.")]
+    public float reachSeconds = 1.6f;
+    [FoldoutGroup("Flick"), Min(1f), Tooltip("How far his flicking fingertip reaches past the table's edge (level, world units). Further, he flicks the die instead.")]
+    public float fingerReach = 12f;
+    [FoldoutGroup("Flick"), Min(1f), Tooltip("How far his hand reaches back from the enemy along the flick (world units): he flicks it the way his hand has room behind it.")]
+    public float handLength = 5f;
+    [FoldoutGroup("Flick"), Min(0f), Tooltip("Open floor the enemy needs round it (metres to the nearest wall) for his hand to come down into the room; in a tight spot he flicks the die at it instead.")]
+    public float handRoom = 1.8f;
+    [FoldoutGroup("Flick"), Min(0f), Tooltip("How far from the table's edge he stands for it (world units; he stands further back to set figures down).")]
+    public float edgeGap = 1.5f;
+    [FoldoutGroup("Flick"), Min(0f), Tooltip("Seconds he holds his cocked finger before the snap.")]
+    public float windup = .35f;
+    [FoldoutGroup("Flick"), Range(0f, 90f), Tooltip("Degrees either side of straight away from him he may flick it: he picks the way with the most room to fly that isn't toward the player.")]
+    public float sideways = 70f;
+    [FoldoutGroup("Flick"), Min(0f), Tooltip("Furthest he walks along the table for a flick with his finger (world units). Further, he flicks the die from where he stands.")]
+    public float maxWalk = 40f;
+    [FoldoutGroup("Flick"), Min(1f), Tooltip("How fast he walks to the table's edge for it (world units a second).")]
+    public float walkSpeed = 45f;
+    [FoldoutGroup("Flick"), Min(1f), Tooltip("How fast the enemy leaves his finger (metres a second, level).")]
+    public float launchSpeed = 11f;
+    [FoldoutGroup("Flick"), Min(0f), Tooltip("Its speed upward as it leaves.")]
+    public float launchUp = 7f;
+    [FoldoutGroup("Flick"), Min(1f)] public float gravity = 25f;
+    [FoldoutGroup("Flick"), Tooltip("Degrees a second it tumbles in the air.")]
+    public float spin = 720f;
+    [FoldoutGroup("Flick"), Min(0f), Tooltip("Seconds it lies stunned where it lands, if it lives.")]
+    public float stunSeconds = 1.5f;
+    [FoldoutGroup("Flick"), Range(0f, 1f), Tooltip("Share of the spell's power dealt to every other enemy it is flicked into.")]
+    public float bowlShare = .5f;
+    [FoldoutGroup("Out of his reach"), AssetsOnly, Tooltip("Too far from the table's edge for his hand: he flicks this at it from the nearest point he reaches.")]
+    public GameObject die;
+    [FoldoutGroup("Out of his reach"), Min(.05f)] public float dieScale = 1.5f;
+    [FoldoutGroup("Out of his reach"), Min(1f), Tooltip("How far above the higher of his hand and the enemy the die's arc peaks: high enough to be seen coming over the walls.")]
+    public float dieArc = 7f;
+    [FoldoutGroup("Out of his reach"), Min(1f), Tooltip("Pull on the die in flight (lower: a slower, higher arc that is seen coming).")]
+    public float dieGravity = 16f;
+    [FoldoutGroup("Out of his reach"), Min(0f), Tooltip("Light the die carries, so it is seen crossing the dark.")]
+    public float dieLight = 12f;
+    [FoldoutGroup("Lines"), Tooltip("He says one as he comes.")]
+    public string[] lines = { "Hold still.", "Allow me.", "Let me get that for you." };
+    [FoldoutGroup("Look")] public AudioClip snapSound;
+    [FoldoutGroup("Look"), Range(0, 1)] public float snapVolume = 1f;
+    [FoldoutGroup("Look"), Tooltip("When it slams into a wall or the floor.")] public AudioClip slamSound;
+    [FoldoutGroup("Look"), Range(0, 1)] public float slamVolume = 1f;
+    [FoldoutGroup("Look"), AssetsOnly, Tooltip("Clings to the enemy he has picked, from the cast until his finger or die strikes it.")]
+    public SpellVisual mark;
+    [FoldoutGroup("Look"), Tooltip("Lights the enemy he has picked while he comes for it.")] public Color markColor = new(1f, .85f, .55f);
+    [FoldoutGroup("Look"), Min(0f)] public float markLight = 3f;
+}
+
+// Flick: the Dungeon Master does it for you. The enemy under the crosshair is held where it stands; he gets up, comes to
+// the nearest edge of the table, lifts the floor's lid, reaches in and flicks it across the room with his finger: it
+// tumbles through the air and slams into the wall or the floor (and anyone in its way). Too far from the table's edge for
+// his hand, he flicks a die at it from as close as he reaches instead. Run on its own object, one at a time.
+public class Flick : MonoBehaviour
+{
+    static Flick running;
+    public static bool Running => running != null;
+    // The enemy the running flick is for (a camera or test can follow it).
+    public static Character Watched => running != null ? running.target : null;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() { running = null; picked = null; }
+
+    Player caster;
+    SpellDefinition spell;
+    FlickSettings settings;
+    AdventurerProgress progress;
+    Character target;
+    float power;
+    bool flying;
+
+    static Transform View(Player player) => player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : player.transform;
+
+    // The enemy picked as the cast began: kept through the wind-up, so one that steps in close meanwhile is still the one.
+    static Character picked; static float pickedAt;
+
+    // The enemy under the crosshair, or the nearest one close to it, in sight and in range (the one picked as the cast
+    // began, while it lives and stays in range).
+    public static Character Target(Player player, FlickSettings s)
+    {
+        var view = View(player);
+        if (picked != null && picked.IsAlive && Time.time - pickedAt < 3f && Vector3.Distance(picked.transform.position, view.position) <= s.range + 2f) return picked;
+        Character best = null;
+        float bestScore = float.MaxValue;
+        foreach (var c in SpellEffects.HostilesNear(player, view.position, s.range))
+        {
+            if (c.GetComponent<Summon>() != null || BossStageEncounter.Current != null) continue;
+            var chest = SpellEffects.Chest(c);
+            // Off the crosshair by its nearest point between feet and head (aiming a little high or low still picks it).
+            var feet = c.transform.position + Vector3.up * .2f;
+            var head = feet + Vector3.up * Mathf.Max(.3f, (chest.y - feet.y) * 1.8f);
+            var onRay = view.position + view.forward * Mathf.Max(0f, Vector3.Dot(chest - view.position, view.forward));
+            var nearest = feet + Vector3.Project(onRay - feet, head - feet);
+            nearest.y = Mathf.Clamp(nearest.y, feet.y, head.y);
+            var to = nearest - view.position;
+            float angle = Vector3.Angle(view.forward, to);
+            if (angle > s.aimCone) continue;
+            if (!LineOfSight.Clear(view.position, chest, ~0, c.transform, player.transform, 0f, false)) continue;
+            float score = angle * 2f + to.magnitude * .2f;
+            if (score < bestScore) { best = c; bestScore = score; }
+        }
+        if (best != null) { picked = best; pickedAt = Time.time; }
+        return best;
+    }
+
+    public static string Refusal(Player player, SpellDefinition spell)
+    {
+        var floor = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
+        if (floor == null || DungeonMasterReach.Hand == null || DungeonMasterReach.Seat == null) return "He can't reach you here";
+        if (Running || DungeonMasterReach.Busy) return "He's busy";
+        if (Target(player, spell.flick) == null) return "Nothing to flick";
+        return null;
+    }
+
+    public static void Cast(Player player, SpellDefinition spell, float power, AdventurerProgress progress)
+    {
+        var target = Target(player, spell.flick);
+        picked = null;
+        if (target == null || Running) return;
+        var go = new GameObject(spell.name + " (flick)");
+        var flick = go.AddComponent<Flick>();
+        flick.caster = player; flick.spell = spell; flick.settings = spell.flick; flick.power = power; flick.progress = progress; flick.target = target;
+        running = flick;
+        flick.StartCoroutine(flick.Run());
+    }
+
+    void OnDestroy() { if (running == this) running = null; }
+
+    IEnumerator Run()
+    {
+        var floor = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
+        var hand = DungeonMasterReach.Hand;
+        var held = Hold(target);
+        if (settings.lines != null && settings.lines.Length > 0) DungeonMaster.Say(settings.lines[UnityEngine.Random.Range(0, settings.lines.Length)]);
+        DungeonMasterReach.BeginReach();
+        var spot = target.transform.position;
+        // Decided before he walks (where he will stand is worked out from his own side of the table): his finger reaches
+        // the enemy from the table's edge, and it stands in the open.
+        var standFor = DungeonMasterReach.StandFor(spot);
+        var reachOut = Flat(spot - standFor);
+        float fromEdge = Mathf.Max(0f, (DungeonMasterReach.Seat != null ? DungeonMasterReach.Seat.leanBack : 6f) - settings.edgeGap);
+        float level = new Vector2(spot.x - standFor.x, spot.z - standFor.z).magnitude - fromEdge;
+        bool near = level <= settings.fingerReach && Roomy(spot);
+        // A long walk round the table would keep the player waiting: he flicks the die from where he is instead.
+        if (near && hand != null && new Vector2(standFor.x - hand.transform.position.x, standFor.z - hand.transform.position.z).magnitude > settings.maxWalk) near = false;
+        var seat = DungeonMasterReach.Seat;
+        var agent = hand != null ? hand.GetComponent<NavMeshAgent>() : null;
+        bool agentWasOn = agent != null && agent.enabled;
+        var stoodAt = hand != null ? hand.transform.position : Vector3.zero;
+        if (near)
+        {
+            yield return DungeonMasterReach.Approach(spot, settings.walkSpeed);
+            // Right up against the table's edge for the flick: his finger has to reach the enemy itself. (His navigation
+            // agent keeps him on the bedroom's floor, which stops short of the table: it is off until he steps back.)
+            stoodAt = hand != null ? hand.transform.position : stoodAt;
+            if (seat != null && hand != null)
+            {
+                if (agentWasOn) agent.enabled = false;
+                var toward = Flat(spot - stoodAt);
+                seat.Focus(stoodAt + toward * Mathf.Max(0f, seat.leanBack - settings.edgeGap), spot);
+                for (float t = 0; !seat.Arrived && t < 2f; t += Time.deltaTime) yield return null;
+            }
+        }
+        // Out of his reach he stays where he is and turns to it.
+        else yield return DungeonMasterReach.TurnTo(spot);
+        yield return DungeonMasterReach.Lid(floor, true);
+        if (target != null && target.IsAlive && hand != null)
+        {
+            spot = target.transform.position;
+            if (near)
+            {
+                // Away from him (he stands on his side of it and flicks it on across the table), the way with the most room
+                // to fly, and never at the player: it flies across their view, not into their face.
+                var away = FlightDirection(target, Flat(spot - hand.transform.position));
+                var point = SpellEffects.Chest(target);
+                var body = target;
+                yield return hand.Flick(point, away, settings.reachSeconds, settings.windup, null, () => { Release(held); Snap(SpellEffects.Chest(body)); StartCoroutine(Fly(body, away, power, true)); },
+                    () => body != null ? SpellEffects.Chest(body) : point);
+            }
+            else
+            {
+                // In his fingers out in front of him toward it, over the table's edge: the die flies the rest of the way.
+                var over = hand.HoldPoint(spot);
+                var die = settings.die != null ? Instantiate(settings.die, over, Quaternion.identity) : null;
+                if (die != null)
+                {
+                    die.name = "Flick die (held)";
+                    if (settings.dieLight > 0f)
+                    {
+                        var glow = new GameObject("Die light").AddComponent<Light>();
+                        glow.transform.SetParent(die.transform, false);
+                        glow.type = LightType.Point; glow.range = 6f; glow.intensity = settings.dieLight; glow.color = settings.markColor; glow.shadows = LightShadows.None;
+                    }
+                    foreach (var c in die.GetComponentsInChildren<Collider>()) c.enabled = false;
+                    foreach (var r in die.GetComponentsInChildren<Rigidbody>()) r.isKinematic = true;
+                    die.transform.localScale *= settings.dieScale;
+                }
+                var toward = Flat(spot - over);
+                yield return hand.Flick(over, toward, settings.reachSeconds, settings.windup, die != null ? die.transform : null, () =>
+                {
+                    Snap(over);
+                    if (die != null) StartCoroutine(DieFly(die.transform, held));
+                    else { Release(held); StartCoroutine(Fly(target, toward, power, true)); }
+                });
+            }
+        }
+        else Release(held);
+        for (float t = 0; flying && t < 8f; t += Time.deltaTime) yield return null;
+        yield return new WaitForSeconds(.5f);
+        yield return DungeonMasterReach.Lid(floor, false);
+        // A step back from the edge, onto his own floor again, before he goes.
+        if (near && seat != null && hand != null)
+        {
+            seat.Focus(stoodAt, stoodAt + Flat(spot - stoodAt));
+            for (float t = 0; !seat.Arrived && t < 2f; t += Time.deltaTime) yield return null;
+        }
+        if (agent != null && agentWasOn) { agent.enabled = true; agent.Warp(agent.transform.position); }
+        yield return DungeonMasterReach.Leave();
+        Destroy(gameObject);
+    }
+
+    // Open floor round the spot, enough for his hand to come down into the room without going through its walls.
+    bool Roomy(Vector3 spot) => !NavMesh.FindClosestEdge(spot, out var edge, NavMesh.AllAreas) || edge.distance >= settings.handRoom;
+
+    // Of the directions within Sideways of straight away from him, the one with the longest clear flight at chest height
+    // (out to where it would land), turned off any that head at the player.
+    Vector3 FlightDirection(Character body, Vector3 away)
+    {
+        var chest = SpellEffects.Chest(body);
+        var toPlayer = Flat(caster.transform.position - body.transform.position);
+        float flight = settings.launchSpeed * (2f * settings.launchUp / settings.gravity + .3f);
+        Vector3 best = away; float bestScore = float.MinValue;
+        for (float a = -settings.sideways; a <= settings.sideways + .01f; a += 10f)
+        {
+            var dir = Quaternion.Euler(0f, a, 0f) * away;
+            float room = flight;
+            if (Physics.SphereCast(chest, .35f, dir, out var hit, flight, ~0, QueryTriggerInteraction.Ignore) && hit.collider.GetComponentInParent<Character>() == null) room = hit.distance;
+            // His hand lies behind the enemy, back along the flick: a wall there and his hand would come through it.
+            float handRoom = settings.handLength;
+            if (Physics.SphereCast(chest + Vector3.up * .5f, .5f, -dir, out var back, settings.handLength, ~0, QueryTriggerInteraction.Ignore) && back.collider.GetComponentInParent<Character>() == null) handRoom = back.distance;
+            float score = Mathf.Min(room, flight) - Mathf.Max(0f, Vector3.Dot(dir, toPlayer) - .3f) * flight * 2f - Mathf.Abs(a) * .01f
+                - (settings.handLength - handRoom) * 3f;
+            if (score > bestScore) { bestScore = score; best = dir; }
+        }
+        return best;
+    }
+
+    // ── Holding it while he comes ───────────────────────────────────
+
+    class Held { public Character who; public EnemyBrain brain; public Light mark; public SpellVisual effect; }
+
+    Held Hold(Character c)
+    {
+        var held = new Held { who = c, brain = c.GetComponent<EnemyBrain>() };
+        if (settings.mark != null) held.effect = Instantiate(settings.mark, c.transform.position + Vector3.up * .05f, Quaternion.identity, c.transform);
+        if (held.brain != null) { held.brain.enabled = false; held.brain.Motor?.Stop(); }
+        if (settings.markLight > 0f)
+        {
+            var go = new GameObject("Flick mark");
+            go.transform.SetParent(c.transform, false);
+            go.transform.localPosition = Vector3.up * 2.2f;
+            held.mark = go.AddComponent<Light>();
+            held.mark.type = LightType.Point; held.mark.range = 3.5f; held.mark.intensity = settings.markLight; held.mark.color = settings.markColor; held.mark.shadows = LightShadows.None;
+        }
+        return held;
+    }
+
+    static void Release(Held held)
+    {
+        if (held == null) return;
+        if (held.mark != null) { held.mark.transform.SetParent(null, true); held.mark.gameObject.AddComponent<LightFade>().seconds = .4f; }
+        if (held.effect != null) held.effect.Stop();
+        if (held.brain != null && held.who != null && held.who.IsAlive && !held.brain.enabled) { held.brain.enabled = true; held.brain.Motor?.Resume(); }
+    }
+
+    void Snap(Vector3 at)
+    {
+        if (settings.snapSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(settings.snapSound, at, settings.snapVolume);
+        DungeonMasterReach.Shake(.25f);
+    }
+
+    // ── The die (out of his reach) ──────────────────────────────────
+
+    IEnumerator DieFly(Transform die, Held held)
+    {
+        flying = true;
+        die.name = "Flick die";   // in the air (a watcher follows it from here)
+        var from = die.position;
+        var to = target != null ? SpellEffects.Chest(target) : from;
+        float g = settings.dieGravity;
+        float peak = Mathf.Max(from.y, to.y) + settings.dieArc;
+        float up = Mathf.Sqrt(2f * g * (peak - from.y)), t = up / g + Mathf.Sqrt(2f * (peak - to.y) / g);
+        var v = (to - from) / t; v.y = up;
+        var spinAxis = Vector3.Cross(Vector3.up, Flat(to - from));
+        for (float u = 0; u < t && die != null; u += Time.deltaTime)
+        {
+            // Steered level onto where the body is now (it may have been pushed since the throw), the arc kept.
+            float left = t - u;
+            if (target != null && left > Time.deltaTime)
+            {
+                var now = SpellEffects.Chest(target) - die.position;
+                v.x = now.x / left; v.z = now.z / left;
+            }
+            v.y -= g * Time.deltaTime;
+            die.position += v * Time.deltaTime;
+            die.rotation = Quaternion.AngleAxis(900f * Time.deltaTime, spinAxis) * die.rotation;
+            yield return null;
+        }
+        Release(held);
+        if (target != null && target.IsAlive) StartCoroutine(Fly(target, Flat(v), power, false));
+        if (die == null) { flying = false; yield break; }
+        // It bounces off and tumbles away, then is gone.
+        // Away from the player whatever way it came (back toward him it bounced into the player's face).
+        var away = Flat(die.position - caster.transform.position);
+        var bounce = away * new Vector2(v.x, v.z).magnitude * .3f; bounce.y = Mathf.Abs(v.y) * .3f + 3f;
+        for (float u = 0; u < 1.4f && die != null; u += Time.deltaTime)
+        {
+            bounce.y -= g * Time.deltaTime;
+            var step = bounce * Time.deltaTime;
+            if (Physics.Raycast(die.position, Vector3.down, out var hit, Mathf.Max(.05f, -step.y + .4f), ~0, QueryTriggerInteraction.Ignore) && bounce.y < 0f)
+            { bounce.y = -bounce.y * .35f; bounce.x *= .6f; bounce.z *= .6f; }
+            die.position += step;
+            die.rotation = Quaternion.AngleAxis(400f * Time.deltaTime, spinAxis) * die.rotation;
+            yield return null;
+        }
+        if (die != null)
+        {
+            var start = die.localScale;
+            for (float u = 0; u < .25f && die != null; u += Time.deltaTime) { die.localScale = start * (1f - u / .25f); yield return null; }
+            if (die != null) Destroy(die.gameObject);
+        }
+    }
+
+    // ── The flight ──────────────────────────────────────────────────
+
+    // It flies off its feet along direction, tumbling, until it meets the floor; the first wall or floor it hits does the
+    // damage. Anyone else in its way is bowled over. A body that lives through it lies stunned where it lands.
+    IEnumerator Fly(Character body, Vector3 direction, float damage, bool fromFinger)
+    {
+        if (body == null || !body.IsAlive) yield break;
+        flying = true;
+        var brain = body.GetComponent<EnemyBrain>();
+        var agent = body.GetComponent<NavMeshAgent>();
+        var motor = body.GetComponent<EnemyMotor>();
+        var colliders = body.GetComponentsInChildren<Collider>(true);
+        var bodies = body.GetComponentsInChildren<Rigidbody>(true);
+        var solid = new bool[colliders.Length]; var kinematic = new bool[bodies.Length];
+        if (brain != null) brain.enabled = false;
+        if (agent != null) agent.enabled = false;
+        if (motor != null) motor.enabled = false;
+        for (int i = 0; i < colliders.Length; i++) { solid[i] = colliders[i].enabled; colliders[i].enabled = false; }
+        for (int i = 0; i < bodies.Length; i++) { kinematic[i] = bodies[i].isKinematic; bodies[i].isKinematic = true; }
+        void Restore()
+        {
+            for (int i = 0; i < bodies.Length; i++) if (bodies[i] != null) bodies[i].isKinematic = kinematic[i];
+            for (int i = 0; i < colliders.Length; i++) if (colliders[i] != null) colliders[i].enabled = solid[i];
+            if (motor != null) motor.enabled = true;
+        }
+
+        var dir = Flat(direction);
+        float height = solid.Length > 0 && colliders[0] != null ? Mathf.Max(.4f, colliders[0].bounds.size.y) : 1.6f;
+        var v = dir * settings.launchSpeed + Vector3.up * settings.launchUp;
+        var p = body.transform.position;
+        var axis = Vector3.Cross(Vector3.up, dir);
+        var bowled = new HashSet<Character> { body };
+        bool struck = false, landed = false;
+        // The first wall or floor: the blow. Its colliders come back first, so a death throws or bursts it as usual.
+        bool Strike(Vector3 at)
+        {
+            if (struck) return false;
+            struck = true;
+            if (settings.slamSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(settings.slamSound, at, settings.slamVolume);
+            DungeonMasterReach.Shake(.3f);
+            bool lethal = body.Stats.CurrentHealth <= damage;
+            if (lethal) Restore();
+            SpellEffects.Strike(caster, body, damage, at, at - dir, spell.displayName);
+            progress?.Practise(spell.Skill, SkillAction.Cast);
+            return !body.IsAlive;
+        }
+        for (float t = 0; t < 4f && body != null && !landed; t += Time.deltaTime)
+        {
+            float dt = Time.deltaTime;
+            v.y -= settings.gravity * dt;
+            var step = v * dt;
+            var centre = p + Vector3.up * height * .5f;
+            float radius = Mathf.Min(.4f, height * .35f);
+            if (Solid(centre, radius, step, out var hit))
+            {
+                if (hit.normal.y > .55f && v.y <= 0f)
+                {
+                    p += step.normalized * Mathf.Max(0f, hit.distance - .02f);
+                    p.y = hit.point.y;
+                    landed = true;
+                    if (Strike(hit.point)) { flying = false; yield break; }
+                    break;
+                }
+                // A wall: it slams into it and slides down.
+                p += step.normalized * Mathf.Max(0f, hit.distance - .05f);
+                var level = new Vector3(v.x, 0f, v.z);
+                level = Vector3.Reflect(level, new Vector3(hit.normal.x, 0f, hit.normal.z).normalized) * .2f;
+                v = new Vector3(level.x, Mathf.Min(v.y, 0f), level.z);
+                if (Strike(hit.point)) { flying = false; yield break; }
+                body.transform.position = p;
+                yield return null;
+                continue;
+            }
+            p += step;
+            body.transform.SetPositionAndRotation(p, Quaternion.AngleAxis(settings.spin * dt, axis) * body.transform.rotation);
+            // Anyone it flies into is knocked down too.
+            foreach (var c in SpellEffects.HostilesNear(caster, p + Vector3.up * height * .5f, .9f))
+            {
+                if (!bowled.Add(c)) continue;
+                SpellEffects.Strike(caster, c, damage * settings.bowlShare, c.transform.position + Vector3.up, p, spell.displayName);
+                if (c.IsAlive && c.TryGetComponent<EnemyBrain>(out var b)) b.Stun(settings.stunSeconds);
+            }
+            yield return null;
+        }
+        if (body == null) { flying = false; yield break; }
+        if (!struck && Strike(p)) { flying = false; yield break; }
+        // It lived: on its feet again where it landed, facing back the way it came, and stunned a moment.
+        var face = -dir;
+        if (NavMesh.SamplePosition(p, out var onMesh, 3f, NavMesh.AllAreas)) p = onMesh.position;
+        body.transform.SetPositionAndRotation(p, Quaternion.LookRotation(face));
+        Restore();
+        if (agent != null) { agent.enabled = true; agent.Warp(p); if (agent.isOnNavMesh) { agent.ResetPath(); agent.velocity = Vector3.zero; } }
+        if (brain != null) { brain.enabled = true; brain.Motor?.Resume(); brain.Stun(settings.stunSeconds); }
+        flying = false;
+    }
+
+    // The world in the way of a step (characters and triggers left out: only walls, floors and props).
+    static readonly RaycastHit[] hits = new RaycastHit[16];
+    static bool Solid(Vector3 from, float radius, Vector3 step, out RaycastHit nearest)
+    {
+        nearest = default;
+        float distance = step.magnitude;
+        if (distance < 1e-5f) return false;
+        int n = Physics.SphereCastNonAlloc(from, radius, step / distance, hits, distance, ~0, QueryTriggerInteraction.Ignore);
+        bool any = false;
+        for (int i = 0; i < n; i++)
+        {
+            var h = hits[i];
+            if (h.distance <= 0f && h.point == Vector3.zero) continue;   // started inside it
+            if (h.collider.GetComponentInParent<Character>() != null || DeathPhysics.IsCorpse(h.collider)) continue;
+            if (h.collider.attachedRigidbody != null && !h.collider.attachedRigidbody.isKinematic) continue;
+            if (!any || h.distance < nearest.distance) { nearest = h; any = true; }
+        }
+        return any;
+    }
+
+    static Vector3 Flat(Vector3 v) { v.y = 0f; return v.sqrMagnitude > .0001f ? v.normalized : Vector3.forward; }
+}

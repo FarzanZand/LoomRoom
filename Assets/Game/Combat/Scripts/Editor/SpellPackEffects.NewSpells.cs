@@ -43,6 +43,10 @@ public static partial class SpellPackEffects
             new Art { prefab = "Frost Lance/Frost Lance Chill.prefab", effect = P + "Casting/Casting_Ice_LWRP.prefab", scale = .22f, charge = true, linger = .4f, maxScreen = .15f },
             // Raise the Fallen: a green rune in the palm; the rune circle and its rising wind under the bones; the flash as
             // they close; a faint circle under a skeleton the player raised.
+            // Flick: a warm glint of the Dungeon Master's attention in the palm.
+            new Art { prefab = "Flick/Flick Hand.prefab", effect = P + "Casting/Casting_Light_LWRP.prefab", scale = .05f, charge = true, linger = .3f },
+            // The enemy he has picked: a ring of golden light round its feet while he comes for it.
+            new Art { prefab = "Flick/Flick Mark.prefab", effect = "Prefabs/Auras/Aura_Light_LWRP.prefab", scale = .3f, charge = true, linger = .4f, maxScreen = .25f },
             new Art { prefab = "Raise the Fallen/Raise the Fallen Hand.prefab", effect = P + "Casting/Casting_Dark_3_LWRP.prefab", scale = .045f, charge = true, linger = .35f },
             new Art { prefab = "Raise the Fallen/Raise the Fallen Circle.prefab", effect = S + "Spell_Dark_9_LWRP.prefab", scale = .2f, charge = true, linger = .6f, maxScreen = .18f },
             new Art { prefab = "Raise the Fallen/Raise the Fallen Flash.prefab", effect = P + "Explosion/Explosion_Dark_3_LWRP.prefab", scale = .22f, once = true, life = .5f, maxScreen = .2f },

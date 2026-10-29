@@ -1,0 +1,160 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5d9f0b6401f5914fae2a37cd8cf619f, type: 3}
+  m_Name: Flick
+  m_EditorClassIdentifier: Assembly-CSharp::SpellDefinition
+  spell: 10
+  displayName: Flick
+  description: Ask the Dungeon Master for a hand. He reaches in and flicks the enemy
+    you aim at across the room.
+  icon: {fileID: 21300000, guid: 8b3a24607a8a42347b64de5d5cf286d7, type: 3}
+  manaCost: 30
+  power: 30
+  castSeconds: 0.6
+  recoverySeconds: 0.4
+  castMoveSpeed: 0.6
+  projectile: {fileID: 0}
+  radius: 1.5
+  speed: 16
+  lifetime: 6
+  homing: 0
+  homingTurn: 540
+  gravity: 0
+  pierce: 0
+  stunSeconds: 0
+  chill: 0
+  chillSeconds: 3
+  chillEffect: {fileID: 0}
+  groundFire: {fileID: 0}
+  groundFireSeconds: 3
+  groundFireRadius: 1.6
+  groundFirePower: 0.25
+  effect: 5
+  veil:
+    seconds: 8
+    revealDistance: 1.1
+    ambush: 1
+    wisps: {fileID: 0}
+    endSound: {fileID: 0}
+    endVolume: 0.8
+  chain:
+    range: 16
+    aimCone: 14
+    jumps: 3
+    jumpRange: 7
+    falloff: 0.75
+    stunSeconds: 0.35
+    jumpDelay: 0.09
+    boltSeconds: 0.32
+    coreWidth: 0.07
+    glowWidth: 0.45
+    kink: 0.45
+    flicker: 0.04
+    coreMaterial: {fileID: 0}
+    glowMaterial: {fileID: 0}
+    color: {r: 0.55, g: 0.85, b: 1.6, a: 1}
+    lightIntensity: 6
+    hitEffect: {fileID: 0}
+    jumpSound: {fileID: 0}
+    jumpVolume: 0.8
+  sweep:
+    arc: 120
+    sweepSeconds: 0.55
+    length: 10
+    enemyHeight: 1.45
+    warnSeconds: 0.45
+    enemySweepSeconds: 0.85
+    enemyWidthScale: 1.6
+    coreWidth: 0.09
+    glowWidth: 0.5
+    coreMaterial: {fileID: 0}
+    glowMaterial: {fileID: 0}
+    color: {r: 1.4, g: 0.35, b: 1.5, a: 1}
+    lightIntensity: 5
+    tipEffect: {fileID: 0}
+    hitEffect: {fileID: 0}
+    sweepSound: {fileID: 0}
+    sweepVolume: 0.8
+  raise:
+    reach: 10
+    raiseAs: {fileID: 0}
+    gatherSeconds: 1.3
+    riseSeconds: 1.4
+    circle: {fileID: 0}
+    flash: {fileID: 0}
+    gatherSound: {fileID: 0}
+    gatherVolume: 0.9
+    summon:
+      lifetime: 30
+      maxAtOnce: 2
+      end: 0
+      followDistance: 3
+      leash: 18
+      creditSummoner: 1
+      noLoot: 1
+      aura: {fileID: 0}
+      endEffect: {fileID: 0}
+  flick:
+    range: 16
+    aimCone: 15
+    reachSeconds: 1.6
+    fingerReach: 12
+    handLength: 5
+    handRoom: 1.8
+    edgeGap: 1.5
+    windup: 0.35
+    sideways: 70
+    maxWalk: 40
+    walkSpeed: 45
+    launchSpeed: 11
+    launchUp: 7
+    gravity: 25
+    spin: 720
+    stunSeconds: 1.5
+    bowlShare: 0.5
+    die: {fileID: 3320984819260717060, guid: ac8c5e05cf0151849b1a4c57412accfc, type: 3}
+    dieScale: 1.5
+    dieArc: 7
+    dieGravity: 16
+    dieLight: 12
+    lines:
+    - Hold still.
+    - Allow me.
+    - Let me get that for you.
+    snapSound: {fileID: 8300000, guid: 96e8d2b2f49c9c04da308b5163a7efb0, type: 3}
+    snapVolume: 1
+    slamSound: {fileID: 8300000, guid: 9cc7226bea19fd54d80cd80820cd7cda, type: 3}
+    slamVolume: 1
+    mark: {fileID: 5233650602891333819, guid: 51d2da57f7d6f3646b6563f734177b4b, type: 3}
+    markColor: {r: 1, g: 0.85, b: 0.55, a: 1}
+    markLight: 1.5
+  groundArea: 0
+  areaRadius: 2
+  areaDelay: 1.2
+  showMarker: 1
+  areaMarker: {fileID: 0}
+  markerRadius: 2
+  areaRange: 14
+  heldVisual: {fileID: 5233650602891333819, guid: ff4ff8f63fdeb224eb6470b515bd1738, type: 3}
+  impact: {fileID: 0}
+  animation: 1
+  chargeClipSeconds: 0.6
+  equipSound: {fileID: 8300000, guid: ecdb0127810c63e47b877aed9e1b44f0, type: 3}
+  equipVolume: 0.28
+  chargeSound: {fileID: 8300000, guid: f04d6a0e8cf30b24f95ef5e0e00803c9, type: 3}
+  chargeVolume: 0.45
+  releaseSound: {fileID: 0}
+  releaseVolume: 0.65
+  flightSound: {fileID: 0}
+  flightVolume: 0.55
+  impactSound: {fileID: 0}
+  impactVolume: 0.9

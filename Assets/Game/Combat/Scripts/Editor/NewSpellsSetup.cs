@@ -20,7 +20,7 @@ public static class NewSpellsSetup
         var heal = Load<SpellDefinition>(Spells + "Heal/Heal.asset");
 
         // Prefabs first (copies of the Fireball's, whose SpellVisual, light and projectile setup they keep); the art goes in after.
-        foreach (var name in new[] { "Shadow Veil", "Chain Lightning", "Sweeping Arc", "Molten Boulder", "Hurled Stone", "Frost Lance", "Raise the Fallen" })
+        foreach (var name in new[] { "Shadow Veil", "Chain Lightning", "Sweeping Arc", "Molten Boulder", "Hurled Stone", "Frost Lance", "Raise the Fallen", "Flick" })
         {
             Folder(Spells + name);
             Copy("Fireball/Fireball Hand.prefab", $"{name}/{name} Hand.prefab");
@@ -40,6 +40,7 @@ public static class NewSpellsSetup
         Copy("Fireball/Fireball Hand.prefab", "Raise the Fallen/Raise the Fallen Circle.prefab");
         Copy("Fireball/Fireball Impact.prefab", "Raise the Fallen/Raise the Fallen Flash.prefab");
         Copy("Fireball/Fireball Hand.prefab", "Raise the Fallen/Raise the Fallen Aura.prefab");
+        Copy("Fireball/Fireball Hand.prefab", "Flick/Flick Mark.prefab");
         SpellPackEffects.RebuildNewSpells();
 
         // Lights in each effect's colour.
@@ -62,6 +63,8 @@ public static class NewSpellsSetup
         Light("Raise the Fallen/Raise the Fallen Circle.prefab", new Color(.35f, 1f, .4f), 3f, 5f);
         Light("Raise the Fallen/Raise the Fallen Flash.prefab", new Color(.4f, 1f, .45f), 4f, 5f);
         Light("Raise the Fallen/Raise the Fallen Aura.prefab", new Color(.4f, 1f, .45f), .8f, 2f);
+        Light("Flick/Flick Hand.prefab", new Color(1f, .82f, .5f), 1.2f, 2.2f);
+        Light("Flick/Flick Mark.prefab", new Color(1f, .85f, .55f), 3f, 4f);
         // The hurled rock's material is full white: right by the eyes the player's key light burns it to a blank lump.
         var rock = Load<Material>(Spells + "_Pack/Materials/Rock_LWRP.mat");
         if (rock != null && rock.HasProperty("_BaseColor")) { rock.SetColor("_BaseColor", new Color(.58f, .55f, .5f, 1f)); EditorUtility.SetDirty(rock); }
@@ -157,8 +160,22 @@ public static class NewSpellsSetup
             s.chargeSound = Clip("Magic/Mgc_Water_Cast_03"); s.releaseSound = Clip("Magic/Mgc_Fire_Whoosh_04"); s.impactSound = null;
         });
 
+        var flick = Spell("Flick", fireball, retune, s =>
+        {
+            s.spell = LeftHandSpell.Flick; s.effect = SpellEffect.Flick;
+            s.description = "Ask the Dungeon Master for a hand. He reaches in and flicks the enemy you aim at across the room.";
+            s.manaCost = 30; s.power = 30; s.castSeconds = .6f; s.recoverySeconds = .4f;
+            var f = s.flick;
+            f.range = 16; f.aimCone = 15; f.reachSeconds = 1.6f; f.windup = .35f;
+            f.launchSpeed = 11; f.launchUp = 7; f.sideways = 70; f.walkSpeed = 45; f.gravity = 25; f.spin = 720; f.stunSeconds = 1.5f; f.bowlShare = .5f;
+            f.die = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Levels/Shared/Props/Events/DM die.prefab"); f.dieScale = 1.5f; f.dieArc = 7f; f.maxWalk = 40f; f.dieGravity = 16f; f.dieLight = 12f; f.handRoom = 1.8f; f.fingerReach = 12f; f.mark = Visual("Flick/Flick Mark.prefab"); f.markLight = 1.5f; f.handLength = 5f;
+            f.snapSound = Clip("Weapons/Wpn_Whoosh_02"); f.snapVolume = 1f;
+            f.slamSound = Clip("SoundFX/HammerHit"); f.slamVolume = 1f;
+            s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = null; s.flightSound = null;
+        });
+
         // Hand effects every spell shows in the palm.
-        foreach (var (spell, name) in new[] { (veil, "Shadow Veil"), (chain, "Chain Lightning"), (sweep, "Sweeping Arc"), (boulder, "Molten Boulder"), (stone, "Hurled Stone"), (lance, "Frost Lance"), (raise, "Raise the Fallen") })
+        foreach (var (spell, name) in new[] { (veil, "Shadow Veil"), (chain, "Chain Lightning"), (sweep, "Sweeping Arc"), (boulder, "Molten Boulder"), (stone, "Hurled Stone"), (lance, "Frost Lance"), (raise, "Raise the Fallen"), (flick, "Flick") })
         {
             spell.heldVisual = Visual($"{name}/{name} Hand.prefab");
             spell.impact = name switch

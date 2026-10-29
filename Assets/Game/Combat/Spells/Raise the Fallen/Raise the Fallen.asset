@@ -103,6 +103,40 @@ MonoBehaviour:
       noLoot: 1
       aura: {fileID: 5233650602891333819, guid: 7db2cda3bbf35ea46b106250acaf3f5d, type: 3}
       endEffect: {fileID: 0}
+  flick:
+    range: 16
+    aimCone: 10
+    reachSeconds: 1.6
+    fingerReach: 12
+    handLength: 5
+    handRoom: 1.8
+    edgeGap: 1.5
+    windup: 0.35
+    sideways: 70
+    maxWalk: 40
+    walkSpeed: 45
+    launchSpeed: 15
+    launchUp: 6
+    gravity: 25
+    spin: 720
+    stunSeconds: 1.5
+    bowlShare: 0.5
+    die: {fileID: 0}
+    dieScale: 1
+    dieArc: 7
+    dieGravity: 16
+    dieLight: 12
+    lines:
+    - Hold still.
+    - Allow me.
+    - Let me get that for you.
+    snapSound: {fileID: 0}
+    snapVolume: 1
+    slamSound: {fileID: 0}
+    slamVolume: 1
+    mark: {fileID: 0}
+    markColor: {r: 1, g: 0.85, b: 0.55, a: 1}
+    markLight: 3
   groundArea: 0
   areaRadius: 2
   areaDelay: 1.2
