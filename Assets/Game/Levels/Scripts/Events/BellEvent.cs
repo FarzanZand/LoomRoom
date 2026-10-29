@@ -4,7 +4,8 @@ using UnityEngine;
 // The bell (on the Bell room template's root, with a ScriptedEventRoom): a great bell hangs over the middle of the room
 // with its rope down to the floor, and a plain chest waits on a step at the back. Pull the rope and the bell tolls,
 // iron gates slam across the ways out and three waves come, one after another, out of the room's edge; clear them and the gates sink and the chest comes back a tier
-// better (wood, iron, gold, then gold with a Legendary in it). Ring again or open the chest: opening it ends the game,
+// better (wood, iron, gold, then gold with a Legendary in it). The chest stays shut while a ring's waves are coming
+// (DungeonContainer.HeldShut). Ring again or open the chest: opening it ends the game,
 // and the rope can't be pulled once the last ring is done.
 public class BellEvent : MonoBehaviour
 {
@@ -32,6 +33,9 @@ public class BellEvent : MonoBehaviour
         new() { text = "Another." },
         new() { text = "The last of them." },
     };
+    [Tooltip("The chest's prompt while a ring's waves are coming.")] public string chestShutPrompt = "Not while they're coming";
+    [Tooltip("Said when the player tries the chest while the waves are coming.")]
+    public DungeonMaster.Line chestShutLine = new() { text = "Finish what you rang for first." };
     public DungeonMaster.Line clearedLine = new() { text = "The chest looks better already." };
     public DungeonMaster.Line cashOutLine = new() { text = "Stopping now is the sensible thing." };
     public DungeonMaster.Line doneLine = new() { text = "That's all the bell has." };
@@ -62,7 +66,21 @@ public class BellEvent : MonoBehaviour
         Watch(chest);
     }
 
-    void Watch(DungeonContainer c) { if (c != null) c.Opened += OnChestOpened; }
+    void Watch(DungeonContainer c)
+    {
+        if (c == null) return;
+        c.Opened += OnChestOpened;
+        c.HeldShut = () => busy ? chestShutPrompt : null;
+        c.OpenRefused += OnChestRefused;
+    }
+
+    float nextRefusal;
+    void OnChestRefused(DungeonContainer c)
+    {
+        if (Time.time < nextRefusal) return;
+        nextRefusal = Time.time + 4f;
+        ScriptedEventRoom.Say(chestShutLine);
+    }
 
     void OnChestOpened(DungeonContainer c)
     {
@@ -139,7 +157,7 @@ public class BellEvent : MonoBehaviour
         var old = chest;
         var made = room.Dungeon.SpawnChest(level, at, facing, rng.Next());
         if (made == null) return;
-        old.Opened -= OnChestOpened;
+        old.Opened -= OnChestOpened; old.OpenRefused -= OnChestRefused; old.HeldShut = null;
         Destroy(old.gameObject);
         chest = made;
         int tiers = room.Dungeon.ChestTiers().Count;
