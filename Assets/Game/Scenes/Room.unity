@@ -321148,7 +321148,7 @@ MonoBehaviour:
   flickLean: 55
   flickLeanRange: {x: 9, y: 17}
   flickCurl: {x: 75, y: 95, z: 70}
-  flickLight: 10
+  flickLight: 3
   blessTilt: 18
   blessLight: 1.5
   holdOut: {x: 0.85, y: 0.25, z: 0.25}

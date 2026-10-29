@@ -19,6 +19,9 @@ public class HelpingHandSettings
     public HelpReach reach = HelpReach.Appear;
     [FoldoutGroup("His hand"), ShowIf("@reach == HelpReach.Appear"), Min(4f), Tooltip("How far in front of the player he appears (level, world units, along where they look).")]
     public float appearDistance = 17f;
+    [FoldoutGroup("His hand"), ShowIf("@reach == HelpReach.Appear"), Min(0f), Tooltip("He stands at least this far outside the roof that comes off (world units), so it can come back down while he is still there; he leaves only once it is back on and hides him. Out to Appear Farthest from the player.")]
+    public float clearOfRoof = 4f;
+    [FoldoutGroup("His hand"), ShowIf("@reach == HelpReach.Appear"), Min(4f)] public float appearFarthest = 24f;
     [FoldoutGroup("His hand"), Min(.2f), Tooltip("Seconds his hand takes to come in over the player once he stands at the table.")]
     public float reachSeconds = 1.4f;
     [FoldoutGroup("His hand"), Min(.2f), Tooltip("Seconds he holds his hand over the player, healing them all the while (the spell's power in all).")]
@@ -147,17 +150,48 @@ public class HelpingHand : MonoBehaviour
         // The roof only comes down once he stands up straight, and where he stood in the table he is back in his place
         // first: it lands on the room, never on him.
         for (float t = 0; hand != null && !hand.Upright && t < 3f; t += Time.deltaTime) yield return null;
-        if (appear) DungeonMasterReach.Vanish();
+        if (appear && !clearOfLid) DungeonMasterReach.Vanish();
         yield return DungeonMasterReach.Lid(floor, false, null, settings.lid);
+        if (appear && clearOfLid) DungeonMasterReach.Vanish();
         if (!appear) yield return DungeonMasterReach.StepBack(spot);
         yield return DungeonMasterReach.Leave();
         Destroy(gameObject);
     }
 
     // He appears in front of the player, along where they look, facing them.
+    // Outside the roof that comes off (true when he stands clear of it): it can come down with him still there.
+    bool clearOfLid;
+
     bool Appear()
     {
-        var at = caster.transform.position + ahead * settings.appearDistance;
+        // As near as Appear Distance, further out (to Appear Farthest) until he stands clear of the roof that comes off.
+        // Nothing of the floor may be inside his body (a tall room's walls rise past his head); with nowhere he fits he
+        // flicks a potion from his own place instead.
+        var floor = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
+        var me = caster.transform.position;
+        bool hasRoof = DungeonMasterReach.RoofArea(floor, new[] { me }, out var roof);
+        var room = roof;
+        if (hasRoof) roof.Expand(new Vector3(settings.clearOfRoof * 2f, 0f, settings.clearOfRoof * 2f));
+        Vector3 at = Vector3.zero; bool found = false; clearOfLid = false;
+        foreach (bool wantClear in new[] { true, false })
+        {
+            foreach (var turn in new[] { 0f, 25f, -25f, 50f, -50f })
+            {
+                var dir = Quaternion.Euler(0f, turn, 0f) * ahead;
+                for (float d = settings.appearDistance; d <= settings.appearFarthest; d += 1f)
+                {
+                    var p = me + dir * d;
+                    var level = p; if (hasRoof) level.y = roof.center.y;
+                    bool clear = hasRoof && !roof.Contains(level);
+                    if (wantClear && !clear) continue;
+                    if (hasRoof && !DungeonMasterReach.BodyClear(floor, p, me, 25f, room)) continue;
+                    at = p; clearOfLid = clear; found = true; break;
+                }
+                if (found) break;
+            }
+            if (found) break;
+        }
+        if (!found) return false;
         if (!DungeonMasterReach.Appear(at, caster.transform.position)) return false;
         DungeonMasterReach.Shake(.3f);
         return true;

@@ -352,6 +352,55 @@ public static class DungeonMasterReach
         return shape;
     }
 
+    // Whether he can stand in the table at standAt, leaning lean degrees toward spot, with no part of him inside the open
+    // room (room: the ground its roof covers, from the floor up to the roof; its walls with it): seen through its open
+    // roof, his body must stay outside its walls (a tall room's walls rise past his head: standing by one, his head went
+    // through it). Other rooms' walls round him don't matter: they are roofed, nothing of him in them is seen. Measured on
+    // him as he stands now: his height to the top of his head and his shoulders' width.
+    public static bool BodyClear(DungeonGenerator dungeon, Vector3 standAt, Vector3 spot, float lean, Bounds room)
+    {
+        var hand = Hand; var a = hand != null ? hand.GetComponent<Animator>() : null;
+        if (a == null || dungeon == null) return true;
+        var head = a.GetBoneTransform(HumanBodyBones.Head); var l = a.GetBoneTransform(HumanBodyBones.LeftUpperArm); var r = a.GetBoneTransform(HumanBodyBones.RightUpperArm);
+        if (head == null || l == null || r == null) return true;
+        var neck = a.GetBoneTransform(HumanBodyBones.Neck);
+        float top = head.position.y - hand.transform.position.y + (neck != null ? Vector3.Distance(head.position, neck.position) * 1.5f : 0f);
+        float radius = Vector3.Distance(l.position, r.position) * .6f;
+        float floor = TableTop(dungeon);
+        var box = room; box.SetMinMax(new Vector3(room.min.x, floor, room.min.z), new Vector3(room.max.x, room.max.y + .5f, room.max.z));
+        var toward = spot - standAt; toward.y = 0f; toward = toward.sqrMagnitude > .01f ? toward.normalized : Vector3.forward;
+        var feet = new Vector3(standAt.x, floor, standAt.z);
+        float rise = hand.transform.position.y + top - floor;
+        var crown = feet + Vector3.up * rise * Mathf.Cos(lean * Mathf.Deg2Rad) + toward * rise * Mathf.Sin(lean * Mathf.Deg2Rad);
+        for (float t = 0; t <= 1.0001f; t += .05f)
+        {
+            var p = Vector3.Lerp(feet, crown, t);
+            if ((box.ClosestPoint(p) - p).sqrMagnitude < radius * radius) return false;
+        }
+        return true;
+    }
+
+    // The ground the roof over these points covers (its pieces' bounds), before it is lifted: where he can stand clear of
+    // it, so it can come down while he is there.
+    public static bool RoofArea(DungeonGenerator dungeon, Vector3[] over, out Bounds area)
+    {
+        area = default;
+        var ceilings = dungeon != null ? dungeon.Ceilings : null;
+        var layout = dungeon != null ? dungeon.Layout : null;
+        if (ceilings == null || layout == null || layout.RegionIds == null || over == null) return false;
+        var regions = new System.Collections.Generic.HashSet<int>();
+        foreach (var p in over) { var c = dungeon.CellOf(p); if (layout.InBounds(c) && layout.floor[c.x, c.y]) regions.Add(layout.RegionIds[c.x, c.y]); }
+        bool found = false;
+        foreach (var r in ceilings.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            if (r.name == "Static chunk") continue;
+            var c = dungeon.CellOf(r.transform.position);
+            if (!layout.InBounds(c) || !regions.Contains(layout.RegionIds[c.x, c.y])) continue;
+            if (!found) { area = r.bounds; found = true; } else area.Encapsulate(r.bounds);
+        }
+        return found;
+    }
+
     static bool OpenRoomLid(DungeonGenerator dungeon, Vector3[] over)
     {
         CloseRoomLid();
@@ -512,14 +561,18 @@ public static class DungeonMasterReach
     // He is there at once beside the spot, wherever it is on the table (standing in it), facing it: his hand reaches it
     // from where he stands. Off his navigation agent until Vanish.
     static bool appeared;
-    public static bool Appear(Vector3 standAt, Vector3 spot)
+    // turnRight: degrees he turns away to his left from the spot, so it lies ahead and to his right (his right hand does
+    // the reaching and would otherwise cross his body).
+    public static bool Appear(Vector3 standAt, Vector3 spot, float turnRight = 0f)
     {
         var seat = Seat; var hand = Hand;
         if (seat == null || hand == null) return false;
         steppedAgent = hand.GetComponent<NavMeshAgent>();
         steppedAgentWasOn = steppedAgent != null && steppedAgent.enabled;
         if (steppedAgentWasOn) steppedAgent.enabled = false;
-        if (!seat.Teleport(standAt, spot)) { if (steppedAgentWasOn) steppedAgent.enabled = true; return false; }
+        var toward = spot - standAt; toward.y = 0f;
+        var face = standAt + Quaternion.Euler(0f, -turnRight, 0f) * toward;
+        if (!seat.Teleport(standAt, face)) { if (steppedAgentWasOn) steppedAgent.enabled = true; return false; }
         appeared = true; standingAt = Side.Own;
         hand.Watch(spot, true);
         return true;

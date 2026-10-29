@@ -137,7 +137,8 @@ public class DungeonMasterHand : MonoBehaviour
         {
             float forearm = ArmLength(HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, HumanBodyBones.RightHand);
             var level = flickAim; level.y = 0f; level = level.sqrMagnitude > 1e-4f ? level.normalized : transform.forward;
-            animator.SetIKHintPosition(AvatarIKHint.RightElbow, tipTarget + tipFix + Vector3.up * forearm * 1.5f - level * forearm * .4f);
+            // Up and out to his right of the hand, never toward his head.
+            animator.SetIKHintPosition(AvatarIKHint.RightElbow, tipTarget + tipFix + Vector3.up * forearm * 1.2f + transform.right * forearm * .9f - level * forearm * .3f);
         }
         animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, leftWeight);
         animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, leftWeight * .7f);
@@ -382,6 +383,8 @@ public class DungeonMasterHand : MonoBehaviour
     public float flickTilt = 60f;
     [Min(0), Tooltip("How far above the enemy his hand comes over the room before it drops straight down onto it (world units, above Carry Height), so his arm comes in over the walls.")]
     public float flickAbove = 6f;
+    [Range(0, 60), Tooltip("Most he leans over the table for a flick from above (more, and his head comes down over his own hand).")]
+    public float flickAboveLean = 15f;
     bool flickFromAbove;
     [Range(0, 45), Tooltip("Degrees his finger points up when he flicks something into an arc (a die).")]
     public float flickTossTilt = 20f;
@@ -392,7 +395,7 @@ public class DungeonMasterHand : MonoBehaviour
     [Tooltip("Degrees each joint of his index finger bends when it is cocked behind his thumb (base, middle, tip).")]
     public Vector3 flickCurl = new(75f, 95f, 70f);
     [Min(0), Tooltip("Light on his hand while he flicks (the dungeon is dark: unlit, his hand is a shape in the gloom).")]
-    public float flickLight = 10f;
+    public float flickLight = 3f;
 
     // How far his right index finger is cocked: 1 curled behind his thumb, 0 straight, below 0 snapped past straight.
     // NaN: not flicking (the hand goes by rightTarget and rightRotation as in his other moves).
@@ -425,7 +428,10 @@ public class DungeonMasterHand : MonoBehaviour
         // A finger flick: high over the spot (over the walls), then straight down onto it. A die is held out over the
         // table's edge as before.
         flickFromAbove = carried == null;
-        var high = flickFromAbove ? cocked + Vector3.up * (carryHeight + flickAbove) - level * finger * .3f
+        // From above, the hand comes over from his right side and from beyond the spot (away from his head), and drops
+        // from there, so the arm never passes his head on the way down.
+        var aside = AwayFromHead(cocked, finger);
+        var high = flickFromAbove ? cocked + Vector3.up * (carryHeight + flickAbove) + aside
                                   : cocked + Vector3.up * carryHeight * .25f - level * finger * 1.5f;
         void Follow()
         {
@@ -440,6 +446,8 @@ public class DungeonMasterHand : MonoBehaviour
         lookTarget = point; lookGoal = 1f; rightGoal = 1f; curl = .2f;
         var flat = point - transform.position; flat.y = 0f;
         float lean = Mathf.Lerp(reachLean * .5f, flickLean, Mathf.InverseLerp(flickLeanRange.x, flickLeanRange.y, flat.magnitude));
+        // From above he leans only a little: bent far over, his head came down over his own hand and the arm went through it.
+        if (flickFromAbove) lean = Mathf.Min(lean, flickAboveLean);
         openHand = false;
         HandLight(flickLight, new Color(1f, .85f, .65f), finger);
         // In over the spot, the finger cocking as it comes down. From above: up and over to high above it in the first
@@ -500,7 +508,7 @@ public class DungeonMasterHand : MonoBehaviour
         var after = tipTarget;
         float lean = leanGoal;
         bool above = flickFromAbove;
-        var high = above ? after + Vector3.up * (carryHeight + flickAbove) : after + Vector3.up * carryHeight - level * finger;
+        var high = above ? after + Vector3.up * (carryHeight + flickAbove) + AwayFromHead(after, finger) : after + Vector3.up * carryHeight - level * finger;
         for (float t = 0; t < Seconds; t += Time.deltaTime)
         {
             float n = t / Seconds, u = Mathf.SmoothStep(0, 1, n), v = 1f - u;
@@ -518,6 +526,15 @@ public class DungeonMasterHand : MonoBehaviour
         while (rightWeight > 0f) yield return null;
     }
     Vector3 restTip;   // where his fingertip rested before the reach, in his own space
+
+    // Level offset from a point out away from his head (and a little to his right): where his hand is held high over it.
+    Vector3 AwayFromHead(Vector3 point, float finger)
+    {
+        var head = animator != null ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        var away = point - (head != null ? head.position : transform.position); away.y = 0f;
+        away = away.sqrMagnitude > .01f ? away.normalized : transform.forward;
+        return away * finger * 1.5f + transform.right * finger * 1.2f;
+    }
 
     Light handLight; float handLightStrength;
     bool openHand;   // the hand flat and open (Bless), not a cocked finger
@@ -685,7 +702,16 @@ public class DungeonMasterHand : MonoBehaviour
     {
         if (handLight == null || Camera.main == null) return;
         var tip = FingerTip();
-        handLight.transform.position = tip + (Camera.main.transform.position - tip).normalized * FingerLength() * .8f + Vector3.up * FingerLength() * .3f;
+        // From above and to one side of the watcher's line, so the hand has a lit side and a shaded side (lit straight
+        // from the watcher it was a flat white shape, like a ghost's). It lights his forearm and sleeve too, out to the
+        // elbow: lit alone, the hand hung in the dark like a ghost's, its arm lost against the night.
+        var elbow = animator != null ? animator.GetBoneTransform(HumanBodyBones.RightLowerArm) : null;
+        var middle = elbow != null ? Vector3.Lerp(tip, elbow.position, .45f) : tip;
+        float span = elbow != null ? Vector3.Distance(tip, elbow.position) : FingerLength() * 2f;
+        var toWatcher = (Camera.main.transform.position - middle).normalized;
+        var side = Vector3.Cross(Vector3.up, toWatcher).normalized;
+        handLight.transform.position = middle + (toWatcher * .5f + side * .6f + Vector3.up * .7f).normalized * span * .7f;
+        handLight.range = span * 1.6f;
         handLight.intensity = Mathf.MoveTowards(handLight.intensity, handLightStrength * rightWeight, handLightStrength * 2f * Time.deltaTime);
     }
 

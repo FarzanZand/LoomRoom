@@ -23,6 +23,11 @@ public class FlickSettings
     public float appearDistance = 13f;
     [FoldoutGroup("Flick"), ShowIf("@reach == FlickReach.Appear"), Range(0f, 1f), Tooltip("How far ahead of the enemy (along the player's view) he stands, against beside it: ahead, he is seen; beside, it flies across the view.")]
     public float appearAhead = .75f;
+    [FoldoutGroup("Flick"), ShowIf("@reach == FlickReach.Appear"), Min(0f), Tooltip("He stands at least this far outside the roof that comes off (world units), so it can come back down while he is still there; he leaves only once it is back on and hides him. Out to Appear Farthest from the enemy.")]
+    public float clearOfRoof = 4f;
+    [FoldoutGroup("Flick"), ShowIf("@reach == FlickReach.Appear"), Min(4f)] public float appearFarthest = 20f;
+    [FoldoutGroup("Flick"), ShowIf("@reach == FlickReach.Appear"), Range(0f, 60f), Tooltip("Degrees he stands turned to the left of the enemy, so it is ahead and to his right and his right hand reaches it without crossing his body.")]
+    public float turnRight = 25f;
     [FoldoutGroup("Flick"), Min(1f), Tooltip("Furthest from the player the enemy may stand.")]
     public float range = 16f;
     [FoldoutGroup("Flick"), Range(1f, 30f), Tooltip("Degrees off the crosshair an enemy may stand and still be the one picked.")]
@@ -257,11 +262,12 @@ public class Flick : MonoBehaviour
         else Release(held);
         for (float t = 0; flying && t < 8f; t += Time.deltaTime) yield return null;
         yield return new WaitForSeconds(.5f);
-        // The roof only comes down once he stands up straight, and where he stood in the table he is back in his place
-        // first: it lands on the room, never on him.
+        // The roof only comes down once he stands up straight. Where he appeared clear of it he is still there as it lands
+        // and goes only once it hides him; inside its footprint he goes first, so it never lands on him.
         for (float t = 0; hand != null && !hand.Upright && t < 3f; t += Time.deltaTime) yield return null;
-        if (appear) DungeonMasterReach.Vanish();
+        if (appear && !clearOfLid) DungeonMasterReach.Vanish();
         yield return DungeonMasterReach.Lid(floor, false, null, settings.lid);
+        if (appear && clearOfLid) DungeonMasterReach.Vanish();
         if (!appear) yield return DungeonMasterReach.StepBack(spot);
         yield return DungeonMasterReach.Leave();
         Destroy(gameObject);
@@ -269,20 +275,55 @@ public class Flick : MonoBehaviour
 
     // He appears beside the enemy, on whichever side gives it the longer flight: a little ahead of it along the player's
     // view (so he is seen) and to one side (so it flies across the view, not at the player).
+    // Outside the roof that comes off (true when he stands clear of it): it can come down with him still there.
+    bool clearOfLid;
+
     bool AppearBy(Character body)
     {
         var view = Flat(View(caster).forward);
         var right = Vector3.Cross(Vector3.up, view);
         var spot = body.transform.position;
-        Vector3 best = Vector3.zero; float bestRoom = float.MinValue;
+        var floor = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
+        bool hasRoof = DungeonMasterReach.RoofArea(floor, new[] { caster.transform.position, spot }, out var roof);
+        var openRoom = roof;
+        if (hasRoof) roof.Expand(new Vector3(settings.clearOfRoof * 2f, 0f, settings.clearOfRoof * 2f));
+        float lean = DungeonMasterReach.Hand != null ? DungeonMasterReach.Hand.flickAboveLean + 5f : 20f;
+        // Each side, then a few turns further round, each out from Appear Distance to Appear Farthest: the first spot
+        // where nothing of the floor is inside his body (a tall room's walls rise past his head) and, if it can be, clear
+        // of the roof that comes off. The side where his right arm (the flicking one) is toward the player comes first,
+        // so it is seen reaching across the view; from the other side it reaches out behind his own body and head.
+        var sides = new System.Collections.Generic.List<(Vector3 from, float score)>();
         foreach (var side in new[] { 1f, -1f })
+            foreach (var turn in new[] { 0f, 30f, -30f, 60f, -60f })
+            {
+                var from = Quaternion.Euler(0f, turn, 0f) * (right * side + view * settings.appearAhead).normalized;
+                if (Vector3.Dot(from, -view) > .3f) continue;   // never behind the player
+                FlightDirection(body, -from, out float room);
+                if (Vector3.Dot(Vector3.Cross(Vector3.up, -from), -view) > 0f) room += 1000f;
+                sides.Add((from, room - Mathf.Abs(turn)));
+            }
+        sides.Sort((x, y) => y.score.CompareTo(x.score));
+        Vector3 at = Vector3.zero; bool found = false; clearOfLid = false;
+        foreach (bool wantClear in new[] { true, false })
         {
-            var from = (right * side + view * settings.appearAhead).normalized;
-            FlightDirection(body, -from, out float room);
-            if (room > bestRoom) { bestRoom = room; best = from; }
+            foreach (var (from, _) in sides)
+            {
+                for (float d = settings.appearDistance; d <= settings.appearFarthest; d += 1f)
+                {
+                    var p = spot + from * d;
+                    var level = p; if (hasRoof) level.y = roof.center.y;
+                    bool clear = hasRoof && !roof.Contains(level);
+                    if (wantClear && !clear) continue;
+                    if (hasRoof && !DungeonMasterReach.BodyClear(floor, p, spot, lean, openRoom)) continue;
+                    at = p; clearOfLid = clear; found = true; break;
+                }
+                if (found) break;
+            }
+            if (found) break;
         }
-        var at = spot + best * settings.appearDistance;
-        if (!DungeonMasterReach.Appear(at, spot)) return false;
+        // Nowhere he fits: he flicks the die at it from his own place instead.
+        if (!found) return false;
+        if (!DungeonMasterReach.Appear(at, spot, settings.turnRight)) return false;
         DungeonMasterReach.Shake(.3f);
         return true;
     }
