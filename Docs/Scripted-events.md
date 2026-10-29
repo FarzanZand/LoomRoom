@@ -8,7 +8,7 @@ meddling. Built on branch `events` (2026-10-28).
 - Dev console (the key left of 1): `event` lists them; `event <name>` starts a new run at the way into that room;
   `event dice 1`..`6` lands the die on that face; `event cheats` starts a run where he meddles at the first chance;
   `meddle add` / `meddle steal` makes him do it right where you are.
-- Asset Studio: pick the room (Rooms, `Shared/Rooms/Scripted/Events`) and press **Play this event** (the dice room
+- Asset Studio: pick the room (Rooms, `Shared/Rooms/Scripted`) and press **Play this event** (the dice room
   also has **Roll a 1** .. **Roll a 6**); any dungeon level has **Play with the DM cheating**.
 - A run opened in an event room starts at its `Entrance` marker (ScriptedEventRoom), not in the middle of the event.
 
@@ -25,7 +25,9 @@ meddling. Built on branch `events` (2026-10-28).
 
 ## Code
 
-- `Levels/Scripts/Events/`: `ScriptedEventRoom` (on every event room: name, entrance, and the floor helpers: room,
+- `Levels/Scripts/Events/`: `ScriptedEventRoom` (on every scripted room, the older Tavern, Merchant shop, Skeleton Party
+  room and Not a witch too, which keep their own scripts and have `countsAsEvent` off so they don't take the floor's Max
+  Event Rooms: name, entrance, and the floor helpers: room,
   player, gates, summons, chests, drops), one script per event (`DuelEvent`, `BellEvent` + `BellRope`, `WagerEvent` +
   `WagerTable` + `WagerCup`, `SleepingGiantEvent`, `DiceEvent`), `DungeonMasterMeddling`, and `DungeonMasterReach`
   (the DM reaching into any room: the lid, walking round the table to the nearest side, Put, PutThing, Take, DropOver,

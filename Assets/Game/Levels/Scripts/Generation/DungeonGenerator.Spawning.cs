@@ -55,7 +55,7 @@ public partial class DungeonGenerator
             if (chosen[i] != null && chosen[i].roomTemplate != null) used[chosen[i].roomTemplate] = 1;
         // Scripted event rooms (ScriptedEventRoom: the duel, the bell...) are kept special: at most Max Event Rooms a floor.
         var isEvent = new System.Collections.Generic.Dictionary<GameObject, bool>();
-        bool IsEvent(GameObject t) { if (!isEvent.TryGetValue(t, out bool e)) isEvent[t] = e = t.GetComponent<ScriptedEventRoom>() != null; return e; }
+        bool IsEvent(GameObject t) { if (!isEvent.TryGetValue(t, out bool e)) isEvent[t] = e = t.TryGetComponent<ScriptedEventRoom>(out var r) && r.countsAsEvent; return e; }
         int events = 0;
         // The room the floor opens in (a run opened in a template, the dev console's event) is on the floor too.
         if (UsesStartingRoom && data.startingRoom != null)

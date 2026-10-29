@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-// A hand-built room with an event of its own (the duel, the bell, the wager, the sleeping giant, the dice), on its room
-// template's root beside the event's script. It names the event for the dev console (event <name>) and Asset Studio
+// A hand-built room with an event of its own (the duel, the bell, the wager, the sleeping giant, the dice, and the older
+// ones: the tavern, the merchant shop, the Skeleton Party, Not a witch), on its room template's root beside the event's
+// script. It names the event for the dev console (event <name>) and Asset Studio
 // (Play this event), marks where the player starts when a run opens in it (Entrance), and gives the event script what
 // it needs from the floor: its room, the player, gates across its ways out, enemies out of a puff of dust and chests.
-// Templates live in Levels/Shared/Rooms/Scripted/Events and are dealt into the biomes' room pools like any other room.
+// Templates live in Levels/Shared/Rooms/Scripted. The newer events are dealt into the biomes' room pools like any other
+// room, at most the floor's Max Event Rooms; the older rooms come by their own rules (Counts As Event off).
 public class ScriptedEventRoom : MonoBehaviour
 {
     [Tooltip("The event's name for the dev console (event <name>) and Asset Studio. One word, lower case.")]
@@ -15,6 +17,8 @@ public class ScriptedEventRoom : MonoBehaviour
     [TextArea, Tooltip("What happens, for Asset Studio and the console's list.")] public string summary;
     [Tooltip("Where the player starts when a run opens in this room (event <name>), facing along its blue arrow. Empty: the room's middle.")]
     public Transform entrance;
+    [Tooltip("Counts toward the floor's Max Event Rooms (the duel, the bell...). Off for the rooms that come by their own rules: the tavern and the merchant shop (the floor's shop room), the Skeleton Party (behind the portal) and Not a witch (its own pool weight).")]
+    public bool countsAsEvent = true;
 
     public DungeonGenerator Dungeon { get; private set; }
     public int Room { get; private set; } = -1;

@@ -4,7 +4,7 @@ using UnityEngine;
 
 // Builds the scripted event rooms from an eval: EventRoomsSetup.Build() (EventRoomsSetup.Build(true) builds them again
 // from scratch, losing hand edits). Safe to run again: what exists is kept. Makes
-// - the rooms in Levels/Shared/Rooms/Scripted/Events: Duel bridge, Bell room, Card table, Giant's hoard, Dice room, each a
+// - the rooms in Levels/Shared/Rooms/Scripted: Duel bridge, Bell room, Card table, Giant's hoard, Dice room, each a
 //   room template with its ScriptedEventRoom and event script (Levels/Scripts/Events),
 // - their enemies in Characters/Enemies/Events (Duellist, Sleeping giant, Card sharp: variants with their own data),
 // - stand-ins for their props in Levels/Shared/Props/Events (DM die, Great bell) until the art replaces them,
@@ -12,7 +12,7 @@ using UnityEngine;
 // and deals the rooms into Dungeon1's walled biomes' room pools. Edit the prefabs by hand freely after.
 public static class EventRoomsSetup
 {
-    const string RoomDir = "Assets/Game/Levels/Shared/Rooms/Scripted/Events";
+    const string RoomDir = "Assets/Game/Levels/Shared/Rooms/Scripted";
     const string PropDir = "Assets/Game/Levels/Shared/Props/Events";
     const string EnemyDir = "Assets/Game/Characters/Enemies/Events";
     const string Shared = "Assets/Game/Levels/Shared/Props";

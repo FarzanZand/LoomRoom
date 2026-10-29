@@ -552,7 +552,7 @@ public class DevSpawner : MonoBehaviour
         return list.Where(r => r.p != null && r.Item2 != null).OrderBy(r => RoomGroupOrder(r.Item2)).ThenBy(r => r.p.name);
     }
 
-    static int RoomGroupOrder(string g) => g switch { "Scripted events" => 0, "Scripted rooms" => 1, "Bosses" => 2, _ => 3 };
+    static int RoomGroupOrder(string g) => g switch { "Scripted" => 0, "Bosses" => 1, _ => 2 };
 
 #if UNITY_EDITOR
     // Every enemy under Characters/Enemies but the bases and the archive.
@@ -571,15 +571,14 @@ public class DevSpawner : MonoBehaviour
         return i >= 0 && i + 2 < parts.Length ? parts[i + 1] : "Enemies";
     }
 
-    // Scripted events (rooms with a ScriptedEventRoom), Scripted rooms (the shop, tavern, party...), Bosses (a stage, the
-    // arena's pit, any biome guardian's arena), Hand-built (the shared rooms), or null for the intro's own rooms.
+    // Bosses (a stage, the arena's pit, any biome guardian's arena), Scripted (rooms with an event of their own: a
+    // ScriptedEventRoom, or anything in a Scripted folder), Hand-built (the shared rooms), or null for the intro's own rooms.
     public static string RoomGroup(GameObject prefab)
     {
         var path = UnityEditor.AssetDatabase.GetAssetPath(prefab);
         if (path.Contains("/IntroDungeon/")) return null;
-        if (prefab.GetComponent<ScriptedEventRoom>() != null) return "Scripted events";
         if (prefab.GetComponentInChildren<DungeonStage>(true) != null || prefab.GetComponent<ArenaFight>() != null || GuardianArenas().Contains(prefab)) return "Bosses";
-        if (path.Contains("/Scripted/")) return "Scripted rooms";
+        if (prefab.GetComponent<ScriptedEventRoom>() != null || path.Contains("/Scripted/")) return "Scripted";
         return "Hand-built";
     }
 
