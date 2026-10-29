@@ -321144,6 +321144,7 @@ MonoBehaviour:
   flipPalm: 1
   flickTilt: 60
   flickAbove: 6
+  flickAboveLean: 15
   flickTossTilt: 20
   flickLean: 55
   flickLeanRange: {x: 9, y: 17}
@@ -377653,6 +377654,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5b9f5f3f0e5c1c642939320cf3a3a55b, type: 2}
   - {fileID: 11400000, guid: 53f8ba85491f7e449a320f6aecceb4fa, type: 2}
   - {fileID: 11400000, guid: 8a3b5a4898dc4164a9797fd1e44f9c6b, type: 2}
+  - {fileID: 11400000, guid: ff3a6113be2f6a04a86c71e946faaf28, type: 2}
   - {fileID: 11400000, guid: a46193fbb7b897d41a940db0618d19e5, type: 2}
   - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
   - {fileID: 11400000, guid: ca1f6090c04a40741bb17c5cec698971, type: 2}
@@ -377686,6 +377688,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e4e9de3d3ed801b44bcef84d0ed5ccc8, type: 2}
   - {fileID: 11400000, guid: 3ccc03954110e164b8f3f33f0846ae33, type: 2}
   - {fileID: 11400000, guid: c94488e517e3d7d4f9bb0817226b113b, type: 2}
+  - {fileID: 11400000, guid: 0b6e3e8af8b9f7d4b8c9486117de94d5, type: 2}
   - {fileID: 11400000, guid: da021421336c4e044b8577430b9b244a, type: 2}
   - {fileID: 11400000, guid: a8ed3e954e4716c4fb913da5c61cd4df, type: 2}
   - {fileID: 11400000, guid: 9c7bf754f4464bf448c68e619455c04e, type: 2}
