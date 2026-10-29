@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: Steel Armor
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Steel Armor
+  itemName: Steel Armour
   saveId: a8ed3e954e4716c4fb913da5c61cd4df
   weaponCategory: 0
   spell: {fileID: 0}

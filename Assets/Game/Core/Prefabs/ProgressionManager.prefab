@@ -382,17 +382,17 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   lessonTopUp:
-    text: Here. Don't tell anyone.
+    text: Have a bit extra. Don't tell anyone.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   handOverOne:
-    text: Here. Hang it on the wall.
+    text: This one goes on the wall.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   handOverMany:
-    text: Here, all of them. On the wall they go.
+    text: All of these go on the wall.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

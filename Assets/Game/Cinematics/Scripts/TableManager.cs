@@ -24,11 +24,11 @@ public class TableManager : Singleton<TableManager>, IInteractable
     public Transform dmPlacement;
     [SerializeField] string prompt = "Play";
     [SerializeField, Tooltip("Said when the table is used during the win ending, while the door stands open.")]
-    DungeonMaster.Line endingLine = new() { text = "Not now. The door's open. Go and get some air." };
+    DungeonMaster.Line endingLine = new() { text = "The door's open. Go and get some air." };
     [SerializeField, Tooltip("Said when the table is used while the spend-spoils quest is open (Blocking first).")]
-    DungeonMaster.Line learnFirstLine = new() { text = "Not yet. Train Blocking at the sheet first." };
+    DungeonMaster.Line learnFirstLine = new() { text = "Train Blocking at the sheet first." };
     [SerializeField, Tooltip("Said instead while the lesson holds runs and the sheet has not been opened yet.")]
-    DungeonMaster.Line lookFirstLine = new() { text = "Not yet. Have a look at the sheet first." };
+    DungeonMaster.Line lookFirstLine = new() { text = "Have a look at the sheet first." };
 
     [Header("At the table")]
     [SerializeField, Min(.1f), Tooltip("Seconds for the view to turn to the Dungeon Master.")] float sitSeconds = 1.1f;

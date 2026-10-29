@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Hearty stew
   icon: {fileID: 21300000, guid: 0966f98d0f79ce34aa6499d63ae98b44, type: 3}
   effectText: +1 Strength, Dexterity, Constitution and Intelligence
-  flavour: Thick, brown and still bubbling.
+  flavour: Still bubbling.
   price: 30
   attributes: 1
   modifiers: []

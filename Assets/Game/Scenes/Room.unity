@@ -92092,17 +92092,17 @@ MonoBehaviour:
   dmPlacement: {fileID: 8272895588190165703}
   prompt: Play
   endingLine:
-    text: Not now. The door's open. Go and get some air.
+    text: The door's open. Go and get some air.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   learnFirstLine:
-    text: Not yet. Train Blocking at the sheet first.
+    text: Train Blocking at the sheet first.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   lookFirstLine:
-    text: Not yet. Have a look at the sheet first.
+    text: Have a look at the sheet first.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -197173,7 +197173,7 @@ MonoBehaviour:
   allowBarksDuringConversations: 0
   skipBarkIfNoValidEntries: 0
   cacheBarkLines: 0
-  conversation: Test Conversation
+  conversation: 
   conversationConversant: {fileID: 8272895588190165703}
   conversationActor: {fileID: 486678030300132004}
   startConversationEntryID: -1
@@ -207799,7 +207799,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Sword, shield and good armor. Tough, but bad at magic.
+  m_text: Sword, shield and good armour. Tough, but bad at magic.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
   m_sharedMaterial: {fileID: -7708394129502214064, guid: 006c03b167fff5944a988b2f84ca2e07, type: 2}
@@ -251896,16 +251896,16 @@ MonoBehaviour:
   reviveButton: {fileID: 734843210}
   reviveAfterDeaths: 3
   reviveUnlockedLine:
-    text: You can get up now. Use it to reach the boss. I will mock you every time.
+    text: From now on you can get back up when you die.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   reviveLines:
-  - text: Fine. I didn't see that.
+  - text: I didn't see that.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: Dead people don't get up. You did. Cheater.
+  - text: Dead people don't usually get up, you know.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -251966,7 +251966,7 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: A win. Spend it well.
+  - text: Go and spend it.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -251975,7 +251975,7 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: You got a lot out. Not yourself, though.
+  - text: You got the loot out, at least.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -374954,17 +374954,17 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   lessonTopUp:
-    text: Here. Don't tell anyone.
+    text: Have a bit extra. Don't tell anyone.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   handOverOne:
-    text: Here. Hang it on the wall.
+    text: This one goes on the wall.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   handOverMany:
-    text: Here, all of them. On the wall they go.
+    text: All of these go on the wall.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Herb broth
   icon: {fileID: 21300000, guid: f834f95a82d135e46b3712c2a1973ee2, type: 3}
   effectText: +25% mana regeneration
-  flavour: Green, bitter and good for you.
+  flavour: Bitter, but good for you.
   price: 30
   attributes: 0
   modifiers:

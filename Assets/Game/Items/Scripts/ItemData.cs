@@ -244,7 +244,7 @@ public partial class ItemData : ScriptableObject
     {
         StatType? main = MainStatType;
         value = main.HasValue ? FlatBonus(this, main.Value) : 0f;
-        label = main == StatType.AttackDamage ? "Damage" : itemType == ItemType.Shield ? "Armor when blocking" : "Armor";
+        label = main == StatType.AttackDamage ? "Damage" : itemType == ItemType.Shield ? "Armour when blocking" : "Armour";
         text = IsWeapon && damageSpread > 0 ? $"{Mathf.Max(1f, value - damageSpread):0}-{value + damageSpread:0}" : $"{value:0.#}";
         return main.HasValue && value > 0f;
     }
@@ -395,7 +395,7 @@ public partial class ItemData : ScriptableObject
         EquipmentSlot.RightHand => "Mainhand",
         EquipmentSlot.LeftHand => "Offhand",
         EquipmentSlot.Head => "Helm",
-        EquipmentSlot.Body => "Armor",
+        EquipmentSlot.Body => "Armour",
         EquipmentSlot.Legs => "Leggings",
         EquipmentSlot.Trinket1 or EquipmentSlot.Trinket2 => "Trinket",
         _ => slot.ToString(),

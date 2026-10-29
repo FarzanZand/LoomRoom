@@ -242,7 +242,7 @@ public partial class DungeonGenerator
                     foot[n.x, n.y] = Mathf.Max(foot[n.x, n.y], foot[c.x, c.y]);
                     reach[n.x, n.y] = Mathf.Max(reach[n.x, n.y], reach[c.x, c.y]);
                     // Beside the tavern and a passage at once: the passage's wall (the tavern has walls of its own).
-                    if (!Board && MerchantRoom >= 0 && owner[n.x, n.y] == MerchantRoom && owner[c.x, c.y] != MerchantRoom) owner[n.x, n.y] = owner[c.x, c.y];
+                    if (IndoorTavern(owner[n.x, n.y]) && !IndoorTavern(owner[c.x, c.y])) owner[n.x, n.y] = owner[c.x, c.y];
                     continue;
                 }
                 dist[n.x, n.y] = dist[c.x, c.y] + 1;
@@ -287,13 +287,28 @@ public partial class DungeonGenerator
             // hall two or three tiles high), or the room behind shows through the gap.
             if (wilds.roofed && !Board) heights[x, z] = Mathf.Max(heights[x, z], foot[x, z] + reach[x, z] + .4f);
         }
+        // On a board the tavern lies under a hill: the banks round it rise a step over its roof's hill (TavernHill), so
+        // its walls are buried and the hill sits a little sunk among them (never level with them: overlapping tops flicker).
+        const float TavernHill = .4f;   // earth over the tavern's ceiling
+        var tavernCells = new List<Vector2Int>();
+        if (Board && IndoorTavern(MerchantRoom)) tavernCells.AddRange(Layout.RoomCells(MerchantRoom));
+        float hillTop = 0f;
+        foreach (var c in tavernCells) hillTop = Mathf.Max(hillTop, TavernRoofTop(c) + TavernHill);
+        foreach (var c in tavernCells)
+            for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++)
+            {
+                int bx = c.x + dx + depth, bz = c.y + dz + depth;
+                if (bx < 0 || bz < 0 || bx >= W || bz >= D || dist[bx, bz] == 0 || dist[bx, bz] == int.MaxValue) continue;
+                heights[bx, bz] = Mathf.Max(heights[bx, bz], hillTop + .2f);
+            }
         Vector3 At(int gx, int gz) => transform.position + new Vector3((gx - depth - w * .5f) * size, 0f, (gz - depth - d * .5f) * size);
         // A walled floor's tavern has walls of its own (DungeonGenerator): a bank cell beside it stands back behind them,
         // or its face would lie in the plane of the tavern's plaster and flicker.
-        bool TavernAt(int bx, int bz) { int gx = bx - depth, gz = bz - depth; return !Board && MerchantRoom >= 0 && IsFloor(gx, gz) && Layout.RegionIds[gx, gz] == MerchantRoom; }
+        bool TavernAt(int bx, int bz) { int gx = bx - depth, gz = bz - depth; return IsFloor(gx, gz) && IndoorTavern(Layout.RegionIds[gx, gz]); }
         bool BesideTavern(int bx, int bz) => TavernAt(bx - 1, bz) || TavernAt(bx + 1, bz) || TavernAt(bx, bz - 1) || TavernAt(bx, bz + 1);
-        // 3 cm: just behind the plaster, so the wall's own outer side stays buried in the bank (set back past it, it showed).
-        const float BehindTavernWall = .03f;
+        // Walled: 3 cm, just behind the plaster, so the wall's own outer side stays buried in the bank (set back past it, it
+        // showed). Board: the wall's whole thickness, where the hill over the roof ends (TavernHill), so they meet edge to edge.
+        float BehindTavernWall = Board ? WallThickness : .03f;
         // Each bank cell: a body of earth from the table to its top, and a cap of its top's material. Runs of cells of one
         // height along x are one box (fewer pieces).
         for (int z = 0; z < D; z++)
@@ -316,13 +331,29 @@ public partial class DungeonGenerator
                     centre += new Vector3((l - r) * .5f, 0f, (b - f) * .5f);
                     extent = new Vector3(size - l - r, 0f, size - b - f);
                 }
-                // The cap sits on the body's top and rises only 1 cm over it: a thicker cap showed its top's leaves down its
-                // side, a dashed line along every bank's edge.
-                ArchitectureBox("Bank", centre + Vector3.up * (h * .5f), new Vector3(extent.x, h, extent.z), face, banks);
-                var cap = ArchitectureBox("Bank top", centre + Vector3.up * (h - .005f), new Vector3(extent.x, .03f, extent.z), top, banks);
-                DestroyImmediate(cap.GetComponent<Collider>());
+                Bank(centre, extent, 0f, h, face);
                 x += run;
             }
+        }
+        // The hill over the tavern's roof, out over its walls' tops (on the sides that are walls), a step under the banks
+        // round it.
+        foreach (var c in tavernCells)
+        {
+            var centre = Cell(c); centre.y = transform.position.y;
+            // Out by a wall's thickness on every side that is not the tavern: over a wall, or over a way in's lintel
+            // (MakeDoors carries it up to the ceiling's top).
+            float Out(Vector2Int d) => TavernAt(c.x + d.x + depth, c.y + d.y + depth) ? 0f : WallThickness;
+            float l = Out(Vector2Int.left), r = Out(Vector2Int.right), b = Out(Vector2Int.down), f = Out(Vector2Int.up);
+            centre += new Vector3((r - l) * .5f, 0f, (f - b) * .5f);
+            Bank(centre, new Vector3(size + l + r, 0f, size + b + f), TavernRoofTop(c), hillTop, SideAt(c.x + depth, c.y + depth));
+        }
+        // A bank from floor to height: its body, and a cap of its top's material laid on the body's top (never into it: the
+        // cap's sides in the body's side planes flickered as a green line along every bank's top).
+        void Bank(Vector3 centre, Vector3 extent, float from, float h, Material face)
+        {
+            ArchitectureBox("Bank", centre + Vector3.up * ((from + h) * .5f), new Vector3(extent.x, h - from, extent.z), face, banks);
+            var cap = ArchitectureBox("Bank top", centre + Vector3.up * (h + .005f), new Vector3(extent.x, .01f, extent.z), top, banks);
+            DestroyImmediate(cap.GetComponent<Collider>());
         }
         // No path goes over a bank.
         var modifier = banks.gameObject.AddComponent<NavMeshModifier>();
@@ -355,6 +386,23 @@ public partial class DungeonGenerator
             }
         }
 
+        // Undergrowth on the tavern's hill too, or it is a bare green square among the ferns seen from above.
+        // Its own random, so the rest of the wild ground comes out as it did.
+        var hillRandom = new System.Random(unchecked(seed0 * 17 + 40427));
+        if (wilds.undergrowth != null && wilds.undergrowth.Length > 0)
+            foreach (var c in tavernCells)
+            {
+                var centre = Cell(c); centre.y = transform.position.y + hillTop + .01f;
+                int pieces = Mathf.FloorToInt(wilds.undergrowthPerCell + (float)hillRandom.NextDouble());
+                for (int i = 0; i < pieces; i++)
+                {
+                    var prefab = DungeonWeightedPrefab.Choose(wilds.undergrowth, hillRandom);
+                    if (prefab == null) continue;
+                    var at = centre + new Vector3((float)(hillRandom.NextDouble() - .5) * size, 0f, (float)(hillRandom.NextDouble() - .5) * size);
+                    Instantiate(prefab, at, Quaternion.Euler(0f, (float)hillRandom.NextDouble() * 360f, 0f), growth);
+                }
+            }
+
         // Along every edge where a bank meets the floor: foot pieces on the floor's edge, and now and then a glow.
         var dirs = DungeonLayout.Neighbours;
         // Formations stand out over the floor: only along a clearing's edge, never in a path or on a way in or out.
@@ -375,8 +423,8 @@ public partial class DungeonGenerator
                 var along = new Vector3(dir.y, 0f, dir.x);
                 var edge = Cell(cell) + outward * (size * .5f) + Vector3.up * FloorTop;
                 // Nothing in a pond, and nothing on a way in or out of the floor.
-                // Nor in a walled floor's tavern: its banks are its walls, kept bare.
-                if (cutCells.Contains(cell) || plates.Contains(cell) || !Board && MerchantRoom >= 0 && Layout.RoomAt(cell) == MerchantRoom) continue;
+                // Nor in the tavern: it is indoors, its walls kept bare.
+                if (cutCells.Contains(cell) || plates.Contains(cell) || IndoorTavern(Layout.RegionIds[cell.x, cell.y])) continue;
                 if (wilds.foot != null && wilds.foot.Length > 0 && rng.NextDouble() < wilds.footChance)
                 {
                     var prefab = DungeonWeightedPrefab.Choose(wilds.foot, rng);
@@ -444,10 +492,14 @@ public partial class DungeonGenerator
                         hangTop -= .06f;
                         if (b.size.x <= size + .05f && b.size.y < hangTop - edge.y - .2f)
                         {
-                            // The card's depth (local z) lies across the face, just off it.
-                            var at = edge - outward * (.03f + b.extents.z + Mathf.Abs(b.center.z)) + along * slide * (size - b.size.x) - along * b.center.x;
+                            // The card's middle just off the face (its depth, local z, across it): the card's own offset from its
+                            // pivot turned with it, or a card drawn away from its pivot hung out in the air (and one drawn the
+                            // other way into the bank).
+                            var turn = Quaternion.LookRotation(-outward);
+                            var middle = edge - outward * (.03f + b.extents.z) + along * slide * (size - b.size.x);
+                            var at = middle - turn * new Vector3(b.center.x, 0f, b.center.z);
                             at.y = hangTop - b.max.y;
-                            Instantiate(prefab, at, Quaternion.LookRotation(-outward), growth);
+                            Instantiate(prefab, at, turn, growth);
                         }
                     }
                 }

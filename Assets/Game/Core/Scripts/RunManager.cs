@@ -147,7 +147,7 @@ public class RunManager : Singleton<RunManager>
         Settle(true);
         RunEnded?.Invoke(true);
         if (AudioManager.HasInstance && victorySting != null) AudioManager.Instance.PlaySFX2D(victorySting, victoryStingVolume);
-        MessageLog.Post($"You conquer {PlaceName(true)}!", MessageKind.Good);
+        MessageLog.Post($"You beat {PlaceName(true)}.", MessageKind.Good);
         ShowRecap(true);
     }
 

@@ -226,7 +226,7 @@ public class InventoryManager : Singleton<InventoryManager>
 
         if (!added)
         {
-            NotificationUI.Show("Inventory full");
+            NotificationUI.Show("Bag full");
             return false;
         }
 

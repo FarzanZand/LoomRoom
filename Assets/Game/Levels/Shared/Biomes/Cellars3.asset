@@ -295,7 +295,7 @@ MonoBehaviour:
     damageMultiplier: 1
     arena: {fileID: 6594370429574986636, guid: 09de06c42b9da9749a27d5e2a90f794f, type: 3}
     title: Lord of the Crypt
-    introMessage: Something rises from the throne.
+    introMessage: '{boss} gets up from his throne.'
     introSting: {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
     stingVolume: 1
     bossMusic: {fileID: 0}

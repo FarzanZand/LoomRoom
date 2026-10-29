@@ -136,7 +136,7 @@ public class PlayerSpellcasting : MonoBehaviour
         if (!GameManager.HasInstance || !GameManager.Instance.GameplayActive || player.Combat.IsAttacking) return;
         if (player.Equipment != null && player.Equipment.IsUsingItem) return;   // eating or drinking
         if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { Refuse("Health is full"); return; }
-        if (player.Stats.CurrentMana < Cost(spell)) { Refuse("Not enough mana"); return; }
+        if (!DevGodMode.On && player.Stats.CurrentMana < Cost(spell)) { Refuse("Not enough mana"); return; }
         var refusal = spell.effect != SpellEffect.Standard ? SpellEffects.Refusal(spell, player) : null;
         if (refusal != null) { Refuse(refusal); return; }
 
@@ -158,7 +158,8 @@ public class PlayerSpellcasting : MonoBehaviour
         if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { SetTrigger(cancelParameter); Refuse("Health is full"); return; }
         var refusal = spell.effect != SpellEffect.Standard ? SpellEffects.Refusal(spell, player) : null;
         if (refusal != null) { SetTrigger(cancelParameter); Refuse(refusal); return; }
-        if (!player.Stats.TryUseMana(Cost(spell), 0f)) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
+        // God mode casts anything for free, even a spell costing more than the whole mana bar.
+        if (!DevGodMode.On && !player.Stats.TryUseMana(Cost(spell), 0f)) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
         // Any spell but the veil itself gives a veiled player away.
         if (spell.effect != SpellEffect.ShadowVeil) ShadowVeil.Break(player);
 

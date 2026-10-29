@@ -286,7 +286,7 @@ public class ShopUI : Singleton<ShopUI>
     // The tavern's tabs: fill the wares again (back on the Wares tab), and a line in the feedback spot.
     public void RefreshWares() => Refresh();
     // The line at the foot while nothing is hovered: the wares' own, or a tavern tab's (null puts the wares' back).
-    const string WaresHelp = "Hover over an item to see it. Click a ware or drag it to your pack to buy it. Right click something in your pack or drag it to the wares to sell it.";
+    const string WaresHelp = "Hover over an item to see it. Click a ware or drag it to your bag to buy it. Right click something in your bag or drag it to the wares to sell it.";
     string help;
     public void SetHelp(string text) { help = text; ShowDetails(null); }
     public void Feedback(string message) => Say(message);

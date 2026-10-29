@@ -76,7 +76,7 @@ MonoBehaviour:
   outcomes:
   - label: Refreshing
     weight: 3
-    message: The water is cool and clean. You feel refreshed.
+    message: The water is clean. You feel better.
     kind: 3
     effects:
     - type: 0
@@ -98,7 +98,7 @@ MonoBehaviour:
     soundVolume: 0.9
   - label: Vigour
     weight: 1.5
-    message: Warmth spreads through your limbs. (+5 max health)
+    message: It does you good. (+5 max health)
     kind: 3
     effects:
     - type: 2
@@ -134,7 +134,7 @@ MonoBehaviour:
     soundVolume: 0.9
   - label: Clarity
     weight: 1
-    message: Your mind clears and your breath comes easy.
+    message: Your head clears.
     kind: 3
     effects:
     - type: 1
@@ -170,7 +170,7 @@ MonoBehaviour:
     soundVolume: 0.9
   - label: Foul water
     weight: 1.5
-    message: The water is foul! You retch.
+    message: The water is bad. You're sick.
     kind: 4
     effects:
     - type: 6
@@ -192,7 +192,7 @@ MonoBehaviour:
     soundVolume: 0.9
   - label: Weakness
     weight: 1
-    message: A chill settles in your bones. (-2 damage for a while)
+    message: It tastes wrong. You feel weak. (-2 damage for a while)
     kind: 4
     effects:
     - type: 2
@@ -214,7 +214,7 @@ MonoBehaviour:
     soundVolume: 0.9
   - label: Something stirs
     weight: 0.7
-    message: Something crawls out of the basin!
+    message: An urn crawler climbs out of the basin.
     kind: 4
     effects: []
     spawnEnemies:

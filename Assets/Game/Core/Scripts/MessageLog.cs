@@ -158,7 +158,7 @@ public class MessageLog : Singleton<MessageLog>
         else Add($"You take {Round(info.Amount)} damage.", MessageKind.Combat);
     }
 
-    void OnPlayerDied() => Add("You die...", MessageKind.Bad);
+    void OnPlayerDied() => Add("You die.", MessageKind.Bad);
 
     void OnAnyDied(Character c)
     {

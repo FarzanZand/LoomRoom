@@ -15,7 +15,7 @@ public class SkeletonParty : MonoBehaviour
     [Range(.5f, 2f), Tooltip("Each dancer's speed varies a little around this, so they aren't in lockstep.")]
     public float danceSpeed = 1f;
     public DungeonMaster.Line spoiledLine = new() { text = "You had to ruin it, didn't you." };
-    public DungeonMaster.Line chestLine = new() { text = "Greedy. Now they're all coming for you." };
+    public DungeonMaster.Line chestLine = new() { text = "You took their chest. Now they're all coming for you." };
     [Tooltip("Opening the chest or hitting a dancer: the party's music stops at once and this plays over the silence.")]
     public AudioClip chestMusicStop;
     [Range(0f, 1f)] public float chestMusicStopVolume = 1f;

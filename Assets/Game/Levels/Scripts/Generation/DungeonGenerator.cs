@@ -290,12 +290,12 @@ public partial class DungeonGenerator : MonoBehaviour
             RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? roomStyles : corridorStyles, styleRandom);
         for (int i=0;i<profiles.Length;i++)
             if (profiles[i] != null && profiles[i].styleOverride != null) RegionStyles[i] = profiles[i].styleOverride;
-        // A hand-built room's own style, except on a stage with a look of its own (a tavern in the woods is in the woods);
-        // there the tavern still keeps its own on a walled floor, so the ruins' wild walls beside it are its plaster.
+        // A hand-built room's own style, except on a stage with a look of its own; there the tavern still keeps its own, as it
+        // is always indoors (DungeonGenerator.BoardTavern).
         for (int i=0;i<profiles.Length;i++)
         {
             var t = TemplateOf(i);
-            if (t != null && t.style != null && (!OwnLook || !Board && data.shopRoom != null && t.gameObject == data.shopRoom)) RegionStyles[i] = t.style;
+            if (t != null && t.style != null && (!OwnLook || data.shopRoom != null && t.gameObject == data.shopRoom)) RegionStyles[i] = t.style;
         }
         if (level.corridorsCopyConnectedRoomStyle) CopyConnectedRoomStyles(seed);
         for (int i = 0; i < RegionStyles.Length; i++) if (RegionStyles[i] == null) RegionStyles[i] = DefaultStyle;
@@ -333,7 +333,7 @@ public partial class DungeonGenerator : MonoBehaviour
         for (int z = 0; z < level.depth; z++)
         {
             if (!Layout.floor[x,z]) continue;
-            if (Board) { BuildBoardCell(x, z); continue; }
+            if (Board) { BuildBoardCell(x, z); if (IndoorTavern(Layout.RegionIds[x, z])) BuildTavernShell(x, z); continue; }
             int room = Layout.RegionIds[x,z];
             var style = RegionStyles[room];
             float height = HeightAt(x,z);
@@ -663,6 +663,8 @@ public partial class DungeonGenerator : MonoBehaviour
             var n=p+dir;
             var pos=(Cell(p)+Cell(n))*.5f;
             if (Board) pos.y = Cell(p).y; // it stands at the room's edge, where the steps begin
+            // The tavern's way in on a board is a doorway in its walls (DungeonGenerator.BoardTavern), not an arch.
+            bool tavernDoor = Board && IndoorTavern(Layout.RegionIds[p.x,p.y]);
             var prefab=doorPrefabs.TryGetValue((p,dir),out var own) ? own : data.doorPrefab;
             if(prefab==null)continue;
             var door=Instantiate(prefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
@@ -676,6 +678,8 @@ public partial class DungeonGenerator : MonoBehaviour
                 var renderer = gate.lintel.GetComponent<Renderer>();
                 if (renderer != null) renderer.enabled = false;
                 float top = Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y));
+                // The tavern's walls stand on the tile's top and the hill over it starts on its ceiling's top.
+                if (tavernDoor) top = HeightAt(p.x,p.y) + TileThickness + .24f - CeilingWallOverlap;
                 float bottom = Mathf.Min(gate.openingHeight, top) - .025f;
                 // Bury the cap inside the ceiling so its top never shares the ceiling plane.
                 // Recess both vertical faces slightly to avoid coplanar overlap with upper
@@ -691,16 +695,18 @@ public partial class DungeonGenerator : MonoBehaviour
                     if (end <= y) continue;
                     float depth = WallThickness - lintelFaceInset * 2;
                     // On a board the lintel is the arch's beam: across both posts, and part of the door (none between post props).
-                    if (Board && BoardPostProps) continue;
-                    float spanWidth = Board ? data.cellSize + .68f : data.cellSize;
-                    if (Board) depth = WallThickness + .06f;
+                    bool arch = Board && !tavernDoor;
+                    if (arch && BoardPostProps) continue;
+                    float spanWidth = arch ? data.cellSize + .68f : data.cellSize;
+                    if (arch) depth = WallThickness + .06f;
                     var span = dir.x != 0 ? new Vector3(depth,end-y,spanWidth) : new Vector3(spanWidth,end-y,depth);
                     // In line with the room walls either side, which sit behind the edge on the corridor side.
-                    var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(Board ? 0 : WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
+                    var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(arch ? 0 : WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
                         WallMaterial(Layout.RegionIds[p.x,p.y],y), Board ? door.transform : transform);
                     DestroyImmediate(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
+                    if (tavernDoor) TavernLintelOutside(lintel, dir);
                 }
-                if (Board) BoardDoorFrame(gate, p, n, pos.y + top);
+                if (Board && !tavernDoor) BoardDoorFrame(gate, p, n, pos.y + top);
             }
             if (Board && gate != null) boardDoors.Add((gate, p, n));
         }

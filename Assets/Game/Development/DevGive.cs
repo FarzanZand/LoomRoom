@@ -31,10 +31,35 @@ public static class DevGive
         runs.RunStarted += Give;
     }
 
-    // The catalog's items (rolled copies are never in it); spells: only the tomes.
-    public static IEnumerable<ItemData> CatalogItems(bool spells) => InventoryManager.HasInstance && InventoryManager.Instance.itemCatalog != null
-        ? InventoryManager.Instance.itemCatalog.Where(i => i != null && !string.IsNullOrWhiteSpace(i.itemName) && (!spells || i.spell != null))
-        : Enumerable.Empty<ItemData>();
+    // The catalog's items (rolled copies are never in it); spells: only the tomes. In the editor the spells are every tome
+    // in Assets/Game (archive left out), not only the catalog's: a new spell can be tried before it is put in the loot and
+    // the shops (the catalog is what they draw from).
+    public static IEnumerable<ItemData> CatalogItems(bool spells)
+    {
+        var items = InventoryManager.HasInstance && InventoryManager.Instance.itemCatalog != null
+            ? InventoryManager.Instance.itemCatalog.Where(i => i != null && !string.IsNullOrWhiteSpace(i.itemName) && (!spells || i.spell != null))
+            : Enumerable.Empty<ItemData>();
+#if UNITY_EDITOR
+        if (spells) items = items.Concat(ProjectTomes()).Distinct();
+#endif
+        return items;
+    }
+
+#if UNITY_EDITOR
+    // Looked up again at most every few seconds (the console asks on every key).
+    static ItemData[] tomes;
+    static float tomesAt = -100f;
+    static IEnumerable<ItemData> ProjectTomes()
+    {
+        if (tomes != null && Time.realtimeSinceStartup - tomesAt < 3f) return tomes;
+        tomesAt = Time.realtimeSinceStartup;
+        tomes = UnityEditor.AssetDatabase.FindAssets("t:ItemData", new[] { "Assets/Game" })
+            .Select(g => UnityEditor.AssetDatabase.GUIDToAssetPath(g)).Where(p => !p.Contains("/_Archive/"))
+            .Select(p => UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(p))
+            .Where(i => i != null && i.spell != null && !string.IsNullOrWhiteSpace(i.itemName)).ToArray();
+        return tomes;
+    }
+#endif
 
     // A tome's name: its spell's name, else the tome's.
     public static string SpellName(ItemData tome) => tome.spell != null && !string.IsNullOrWhiteSpace(tome.spell.displayName) ? tome.spell.displayName : tome.itemName;

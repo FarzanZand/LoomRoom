@@ -136,10 +136,10 @@ public class TableLevelLoader : MonoBehaviour
     {
         Initialize();
         var save = player.GetComponent<AdventureSave>();
-        if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) { NotificationUI.Show("No compatible saved adventure"); return false; }
+        if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) { NotificationUI.Show("No saved run to continue"); return false; }
         var checkpoint = save.Saved.checkpoint;
         var level = Catalog != null ? Array.Find(Catalog.levels, x => x != null && x.name == checkpoint.level) : null;
-        if (level == null) { NotificationUI.Show("That saved adventure's table is gone"); return false; }
+        if (level == null) { NotificationUI.Show("That saved run's level is gone"); return false; }
         pendingResume = checkpoint;
         StartCoroutine(LoadRoutine(level));
         return true;
@@ -286,7 +286,7 @@ public class TableLevelLoader : MonoBehaviour
             // From the campaign map the old adventure menu is no way back: the player stays standing at the table, and
             // the map rises again on its own (CampaignManager).
             if(!completed && !descending && CampaignManager.Active) FailedFromMap();
-            else if(!completed) ShowSelection("Could not load that level");
+            else if(!completed) ShowSelection("That level couldn't be built");
             // The biome's Dungeon Master line, a moment after the player is actually standing in it.
             else if(entryLine!=null) DungeonMaster.Say(entryLine,null,entryLineDelay);
             entryLine=null;
@@ -295,7 +295,7 @@ public class TableLevelLoader : MonoBehaviour
     }
     void FailedFromMap()
     {
-        NotificationUI.Show("Could not load that level");
+        NotificationUI.Show("That level couldn't be built");
         if(PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind!=PlayerKind.Room) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
         if(TableManager.HasInstance) TableManager.Instance.StandRoomPlayer();
     }

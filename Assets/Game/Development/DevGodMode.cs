@@ -2,7 +2,8 @@ using UnityEngine;
 
 // F8 (Dev input map) or the dev console's "god" (Editor and development builds only): god mode. While it is on, both
 // players still take every hit (blocks, hurt screen, knockback, hit reactions) but lose no health, and are kept at full
-// stamina and mana every frame, so a fight can be watched or tested without dying.
+// stamina and mana every frame, so a fight can be watched or tested without dying. Spells cost nothing while it is on
+// (PlayerSpellcasting), so any spell can be cast, even one that costs more than the whole mana bar.
 public class DevGodMode : MonoBehaviour
 {
     public static bool On { get; private set; }

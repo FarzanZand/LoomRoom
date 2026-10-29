@@ -92,7 +92,7 @@ MonoBehaviour:
     pondGlow: {r: 0.35, g: 0.85, b: 1, a: 1}
     pondGlowStrength: 2.5
     pondEdge: []
-  entryMessage: Something still lives here.
+  entryMessage: The last of the ruins.
   roomStyles:
   - style: {fileID: 11400000, guid: 950d773e510998a4e84417231abeb2eb, type: 2}
     weight: 3
@@ -351,7 +351,7 @@ MonoBehaviour:
     damageMultiplier: 1
     arena: {fileID: 0}
     title: Guardian
-    introMessage: Something guards the stairs down.
+    introMessage: '{boss} guards the stairs down.'
     introSting: {fileID: 0}
     stingVolume: 1
     bossMusic: {fileID: 0}

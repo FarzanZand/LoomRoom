@@ -103,7 +103,7 @@ MonoBehaviour:
   merchantName: Tavern keeper
   greetings:
   - '"Sit down. Eat something."'
-  - '"Food, a fire, and things I''ve heard."'
+  - '"Warm yourself by the fire."'
   - '"Nothing comes through that door. Mostly."'
   staples:
   - {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
@@ -923,7 +923,7 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: Some people only learn the hard way.
+  - text: Now you've done it.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

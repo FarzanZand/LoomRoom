@@ -9,23 +9,23 @@ public class TavernRoom : MonoBehaviour
     [Tooltip("Said when a guardian waits further down this run. {Floors} is how many floors down.")]
     public DungeonMaster.Line[] bossAhead =
     {
-        new() { text = "Something big waits {Floors} down. Eat first.", inPerson = true, mumble = true },
-        new() { text = "Rest while you can. The bottom of this place bites back.", inPerson = true, mumble = true },
+        new() { text = "There's a boss {Floors} down. Eat first.", inPerson = true, mumble = true },
+        new() { text = "Rest here. It gets worse below.", inPerson = true, mumble = true },
     };
     [Tooltip("Said when the guardian is on the next floor.")]
     public DungeonMaster.Line[] bossNext =
     {
-        new() { text = "The next stairs go down to something that won't share the room.", inPerson = true, mumble = true },
+        new() { text = "The next stairs go down to a boss.", inPerson = true, mumble = true },
     };
     [Tooltip("Said when this floor has a portal.")]
     public DungeonMaster.Line[] portalHere =
     {
-        new() { text = "There's an arch on this floor that doesn't lead where arches lead.", inPerson = true, mumble = true },
+        new() { text = "There's a portal somewhere on this floor.", inPerson = true, mumble = true },
     };
     [Tooltip("Said otherwise.")]
     public DungeonMaster.Line[] plain =
     {
-        new() { text = "Sit. Nothing follows you in here.", inPerson = true, mumble = true },
+        new() { text = "Nothing follows you in here.", inPerson = true, mumble = true },
         new() { text = "Even I need a break from you sometimes.", inPerson = true, mumble = true },
         new() { text = "The stew is better than it looks.", inPerson = true, mumble = true },
     };

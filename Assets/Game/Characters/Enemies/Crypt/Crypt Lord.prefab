@@ -129,7 +129,7 @@ MonoBehaviour:
   characterName: Crypt Lord
   properName: 0
   faction: 2
-  description: Crowned in rust, enthroned on bones. It remembers being a king.
+  description: The crypt's last king, still on his throne.
   creatureKind: 0
   stats:
   - stat: 6

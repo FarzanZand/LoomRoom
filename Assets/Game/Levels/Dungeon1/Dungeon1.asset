@@ -211,7 +211,7 @@ MonoBehaviour:
     damageMultiplier: 1
     arena: {fileID: 0}
     title: Guardian
-    introMessage: Something guards the stairs down.
+    introMessage: '{boss} guards the stairs down.'
     introSting: {fileID: 0}
     stingVolume: 1
     bossMusic: {fileID: 0}
@@ -276,8 +276,8 @@ MonoBehaviour:
   m_Name: Dungeon1
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
   displayName: Dungeon
-  description: 'Three floors: cellars, catacombs, crypt. The Crypt Lord waits at
-    the bottom.'
+  description: 'Nine floors: cellars, catacombs, the crypt, three forests and three
+    ruins. The Crypt Lord waits on the third.'
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
   kind: 1
   stages:
