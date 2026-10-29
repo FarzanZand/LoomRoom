@@ -53,17 +53,29 @@ public partial class DungeonGenerator
         // template counts as used too. maxPerFloor can only lower that (0 or 1 both mean once).
         for (int i = 0; i < roles.Length && i < chosen.Length; i++)
             if (chosen[i] != null && chosen[i].roomTemplate != null) used[chosen[i].roomTemplate] = 1;
+        // Scripted event rooms (ScriptedEventRoom: the duel, the bell...) are kept special: at most Max Event Rooms a floor.
+        var isEvent = new System.Collections.Generic.Dictionary<GameObject, bool>();
+        bool IsEvent(GameObject t) { if (!isEvent.TryGetValue(t, out bool e)) isEvent[t] = e = t.TryGetComponent<ScriptedEventRoom>(out var r) && r.countsAsEvent; return e; }
+        int events = 0;
+        // The room the floor opens in (a run opened in a template, the dev console's event) is on the floor too.
+        if (UsesStartingRoom && data.startingRoom != null)
+        {
+            used[data.startingRoom] = 1;
+            if (IsEvent(data.startingRoom)) events++;
+        }
         for (int i = 0; i < roles.Length; i++)
         {
             double roll = rng.NextDouble();
             if ((i == 0 && UsesStartingRoom) || (chosen[i] != null && chosen[i].roomTemplate != null) || roll >= Biome.templateChance) continue;
             var role = Mask(roles[i]);
+            bool eventsLeft = events < features.maxEventRooms;
             var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor && Allowed(c.template)
-                && !used.ContainsKey(c.template)
+                && !used.ContainsKey(c.template) && (eventsLeft || !IsEvent(c.template))
                 ? c.weight / (1f + 2f * (used.TryGetValue(c.template, out var n) ? n : 0)) : 0, rng);
             if (pick == null) continue;
             pool[i] = pick.template;
             used[pick.template] = (used.TryGetValue(pick.template, out var k) ? k : 0) + 1;
+            if (IsEvent(pick.template)) events++;
         }
         return pool;
     }
@@ -334,6 +346,8 @@ public partial class DungeonGenerator
                 if(!RoomFeatures.trappedTreasure){foreach(var plate in own.traps)if(plate!=null)DestroyImmediate(plate.gameObject);own.traps.Clear();}
                 continue;
             }
+            // An event room's chests are the event's (the bell room swaps its chest for a better one): never trapped.
+            if(instance.GetComponent<ScriptedEventRoom>()!=null)continue;
             MaybeTrap(chest);
         }
         TakePlacedEnemies(instance,index);

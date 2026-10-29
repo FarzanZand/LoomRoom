@@ -186,6 +186,8 @@ public partial class ProgressionManager
     }
     public TrophyState Trophy(MetaTrack t, Milestone m) => t == null || m == null ? TrophyState.None : (TrophyState)Mathf.Clamp(GetFlag(TrophyKey(t, m)), 0, 3);
     void SetTrophy(MetaTrack t, Milestone m, TrophyState state) => SetFlag(TrophyKey(t, m), (int)state);
+    // The dev console's addroomitem: this trophy handed over, whatever its state, ready to hang on the wall.
+    public void CarryTrophy(MetaTrack t, Milestone m) { if (t == null || m == null) return; SetTrophy(t, m, TrophyState.Carried); MetaChanged?.Invoke(); }
     public bool Reached(MetaTrack t, Milestone m) => t != null && m != null && Value(t) >= m.value;
 
     public IEnumerable<(MetaTrack track, Milestone milestone)> AllMilestones()

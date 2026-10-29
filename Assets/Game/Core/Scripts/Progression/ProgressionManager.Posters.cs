@@ -45,6 +45,17 @@ public partial class ProgressionManager
         MetaChanged?.Invoke();
     }
 
+    // The dev console's addroomitem: the class unlocked and its poster carried home (taken down if it was up). False for a
+    // class whose poster is up from the start.
+    public bool CarryPoster(AdventurerClass c)
+    {
+        if (c == null || string.IsNullOrEmpty(c.unlockFlag)) return false;
+        SetFlag(c.unlockFlag);
+        SetFlag(PosterFlag(c), 0);
+        MetaChanged?.Invoke();
+        return true;
+    }
+
     // The quest is open while a poster is carried and done once none is (given again for the next one).
     void UpdatePosterQuest()
     {

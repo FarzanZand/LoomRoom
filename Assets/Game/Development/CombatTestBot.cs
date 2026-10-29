@@ -11,6 +11,8 @@ using UnityEngine;
 // Commands (separated by ';'):
 //   place <name> <metres>   move the first living enemy whose name contains <name> in front of the player
 //   face                    turn the player toward that enemy (chest height); track [off] keeps facing it
+//   followflick <seconds>   keep the view on a Flick (or Helping Hand) as a player would watch it: the die in the air, else the Dungeon
+//                           Master's hand while it reaches, else the enemy being flicked
 //   pitch <degrees>         set the camera pitch (positive looks up)
 //   attack                  tap attack       hold <s>   hold attack for s seconds
 //   block <s>               hold block       blockon / blockoff
@@ -23,6 +25,15 @@ using UnityEngine;
 //                           block when one swings close by, swing otherwise; logs kills, hits taken and health
 //   cm <field> <value>      set a CombatManager field
 //   freeze / unfreeze       the enemy's brain off/on      heal  full health for player and enemy
+//   spell <name>            a tome of that spell (words of its name) into the pack and into the left hand
+//   cast                    cast the spell in the left hand      crouch [off]  hold crouch
+//   spawn <name> <metres> <degrees>  a new enemy of that prefab name, that far ahead and that far to the right of the view
+//   kill [name]             the enemy (or the nearest of that name) dies at once      yaw <degrees>  turn the view by that much
+//   opener <spell words>    the enemy's next attack is its spell of that name      freezeall / unfreezeall  every enemy's brain off/on
+//   walk <seconds> <speed> <forward|back|left|right>  walk that way relative to the view
+//   approach <metres> [speed]  walk straight at the enemy, facing it, until that close (up to 4 s)
+//   pin [off]               the enemy can't walk (it still turns and attacks)
+//   behind <metres> [speed]  walk round the enemy to stand that far behind its back, facing it (up to 6 s)
 public class CombatTestBot : MonoBehaviour
 {
     public static string Report => log.ToString();
@@ -71,6 +82,7 @@ public class CombatTestBot : MonoBehaviour
                 {
                     case "place": Place(parts.Length > 1 ? parts[1] : "", F(2, 1.6f)); break;
                     case "face": Face(); break;
+                    case "followflick": yield return FollowFlick(F(1, 6f)); break;
                     case "goto": GoTo(parts.Length > 1 ? parts[1] : "enemy", F(2, 3f)); break;
                     case "open": OpenChest(); break;
 #if UNITY_EDITOR
@@ -100,6 +112,59 @@ public class CombatTestBot : MonoBehaviour
                     case "freeze": SetBrain(false); break;
                     case "unfreeze": SetBrain(true); break;
                     case "heal": Heal(player); Heal(enemy); break;
+                    case "spell": EquipSpell(string.Join(" ", parts, 1, parts.Length - 1)); break;
+                    case "cast": { var caster = player.GetComponent<PlayerSpellcasting>(); if (caster != null) caster.Cast(); Log("cast " + (caster != null && caster.Selected != null ? caster.Selected.name : "nothing")); break; }
+                    case "crouch": if (player.Motor != null) player.Motor.ForceCrouch = parts.Length < 2 || parts[1] != "off"; break;
+#if UNITY_EDITOR
+                    case "spawn": Spawn(parts.Length > 1 ? parts[1] : "Soldier", F(2, 4f), F(3, 0f)); break;
+#endif
+                    case "kill": Kill(parts.Length > 1 ? parts[1] : null); break;
+                    case "opener": Opener(string.Join(" ", parts, 1, parts.Length - 1)); break;
+                    // A brain switched off leaves its agent walking to the last place it was sent, so the motor is stopped too.
+                    case "freezeall": foreach (var b in EnemyBrain.Active.ToArray()) if (b != null) { b.enabled = false; b.Motor?.Stop(); } break;
+                    case "unfreezeall": foreach (var b in FindObjectsByType<EnemyBrain>()) if (b != null) { b.enabled = true; b.Motor?.Resume(); } break;
+                    // pin [off]: the enemy can't walk (it still turns, attacks and casts), so a caster can't back away.
+                    case "pin": { var m = enemy != null ? enemy.GetComponent<EnemyMotor>() : null; if (m != null) m.SpeedScale = parts.Length > 1 && parts[1] == "off" ? 1f : 0f; break; }
+                    case "approach":
+                        for (float t = 0, near = F(1, 1.4f), speed = F(2, 3f); enemy != null && t < 4f; t += Time.deltaTime)
+                        {
+                            var to = enemy.transform.position - player.transform.position; to.y = 0f;
+                            if (to.magnitude <= near) break;
+                            Face();
+                            player.Motor.Controller.Move(to.normalized * speed * Time.deltaTime + Vector3.down * .5f * Time.deltaTime);
+                            yield return null;
+                        }
+                        break;
+                    case "walk":
+                        for (float t = 0, limit = F(1, 1f), speed = F(2, 3f); t < limit; t += Time.deltaTime)
+                        {
+                            var yawT = player.Look != null ? player.Look.YawTransform : player.transform;
+                            string way = parts.Length > 3 ? parts[3] : "forward";
+                            var dir = way == "back" ? -yawT.forward : way == "left" ? -yawT.right : way == "right" ? yawT.right : yawT.forward;
+                            dir.y = 0f;
+                            player.Motor.Controller.Move(dir.normalized * speed * Time.deltaTime + Vector3.down * .5f * Time.deltaTime);
+                            yield return null;
+                        }
+                        break;
+                    // behind [metres] [speed]: walk round the enemy (past its right side) to stand that far behind its back, facing it.
+                    case "behind":
+                        for (float t = 0, back = F(1, 1.3f), speed = F(2, 3f); enemy != null && t < 6f; t += Time.deltaTime)
+                        {
+                            var e = enemy.transform;
+                            var target = e.position - e.forward * back;
+                            var toTarget = target - player.transform.position; toTarget.y = 0f;
+                            if (toTarget.magnitude < .2f) break;
+                            // Keep a body's width off the enemy: pass at its side rather than through it.
+                            var fromEnemy = player.transform.position - e.position; fromEnemy.y = 0f;
+                            var step = toTarget.normalized;
+                            if (fromEnemy.magnitude < 1.6f && Vector3.Dot(fromEnemy.normalized, e.forward) > -.5f) step = (step + fromEnemy.normalized * 1.2f).normalized;
+                            player.Motor.Controller.Move(step * speed * Time.deltaTime + Vector3.down * .5f * Time.deltaTime);
+                            Face();
+                            yield return null;
+                        }
+                        Face();
+                        break;
+                    case "yaw": if (player.Look != null) player.Look.SetYaw(player.Look.YawTransform.eulerAngles.y + F(1, 0f)); break;
                     case "cm": SetTuning(parts[1], parts[2]); break;
                     case "fight": yield return Fight(F(1, 40f), F(2, 14f), F(3, 1f)); break;
                     // strafe <seconds> [speed]: run sideways (to the right) as a player dodging would.
@@ -153,6 +218,45 @@ public class CombatTestBot : MonoBehaviour
 
     // A plain fighter: the nearest living enemy in reach is the target; the bot walks at it, keeps it in view, raises the
     // shield while an enemy close by is swinging, and swings whenever it can.
+    // The view eased onto what a Flick shows: the die while it flies, the Dungeon Master's flicking hand while it is
+    // out, otherwise the enemy (held, then flying). Turns at most Turn degrees a second.
+    IEnumerator FollowFlick(float seconds)
+    {
+        const float Turn = 140f;
+        var hand = DungeonMasterReach.Hand;
+        Character watched = null;
+        for (float t = 0; t < seconds; t += Time.deltaTime)
+        {
+            // The flick's own target once it is cast (the spell leaves the hand after its wind-up); kept after it ends.
+            if (Flick.Watched != null) watched = Flick.Watched;
+            Vector3? at = null;
+            var die = GameObject.Find("Flick die") ?? GameObject.Find("Helping hand potion");
+            if (die != null) at = die.transform.position;
+            // His hand while it is in the room with the enemy; else the sky over the enemy on his side, where the die comes from.
+            if (!at.HasValue && hand != null && hand.Busy && hand.RightHand != null && watched != null)
+            {
+                var body = watched.transform.position + Vector3.up;
+                var toHand = hand.RightHand.position - body;
+                at = toHand.magnitude < 9f ? Vector3.Lerp(hand.RightHand.position, body, .35f) : body + Vector3.up * 1.2f;
+            }
+            // Helping Hand: his hand over the player (no enemy to watch).
+            if (!at.HasValue && HelpingHand.Running && hand != null && hand.Busy && hand.RightHand != null)
+                at = Vector3.Lerp(hand.RightHand.position, player.transform.position + Vector3.up * 1.6f + player.transform.forward * 4f, .45f);
+            if (!at.HasValue && watched != null) at = watched.transform.position + Vector3.up * 1.1f;
+            if (at.HasValue && player.Look != null)
+            {
+                var eye = player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform.position : player.transform.position + Vector3.up * 1.6f;
+                var d = at.Value - eye;
+                float yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+                float pitch = Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
+                player.Look.SetYaw(Mathf.MoveTowardsAngle(player.Look.YawTransform.eulerAngles.y, yaw, Turn * Time.deltaTime));
+                float current = player.Look.Pitch;
+                player.Look.SetPitch(Mathf.MoveTowards(current, Mathf.Clamp(pitch, -30f, 45f), Turn * .6f * Time.deltaTime));
+            }
+            yield return null;
+        }
+    }
+
     IEnumerator Fight(float seconds, float reach, float blockSkill)
     {
         var reacted = new System.Collections.Generic.Dictionary<EnemyBrain, bool>();
@@ -279,6 +383,73 @@ public class CombatTestBot : MonoBehaviour
         }
         player.Look.SetYaw(yaw);
         player.Look.SetPitch(pitch);
+    }
+
+    // A tome of the spell whose name holds these words (from the catalog) into the pack, then into the left hand.
+    void EquipSpell(string words)
+    {
+        if (!InventoryManager.HasInstance) return;
+        ItemData tome = null;
+        foreach (var item in InventoryManager.Instance.itemCatalog)
+            if (item != null && item.spell != null && item.DisplayName.IndexOf(words, System.StringComparison.OrdinalIgnoreCase) >= 0) { tome = item; break; }
+        if (tome == null) { Log("no spell " + words); return; }
+        if (player.Hotbar.TotalCount(tome) == 0 && player.Bag.TotalCount(tome) == 0) InventoryManager.Instance.Pickup(tome, player, 1, true, false, false);
+        player.Equipment.Equip(tome, false);
+        Log("spell " + tome.DisplayName);
+    }
+
+#if UNITY_EDITOR
+    // Always a new one (place reuses a living enemy of that name), set where the view points, turned the given degrees right.
+    void Spawn(string name, float distance, float degrees)
+    {
+        foreach (var guid in UnityEditor.AssetDatabase.FindAssets($"t:Prefab {name}", new[] { "Assets/Game/Characters/Enemies" }))
+        {
+            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (prefab == null || prefab.GetComponent<EnemyBrain>() == null || path.Contains("_Archive")) continue;
+            Vector3 forward = player.Look != null ? player.Look.YawTransform.forward : player.transform.forward;
+            forward.y = 0f; forward = Quaternion.Euler(0f, degrees, 0f) * forward.normalized;
+            var at = player.transform.position + forward * distance;
+            if (UnityEngine.AI.NavMesh.SamplePosition(at, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) at = hit.position;
+            var loader = TableManager.Loader;
+            var go = Instantiate(prefab, at, Quaternion.LookRotation(-forward), loader != null && loader.Dungeon != null ? loader.Dungeon.transform : null);
+            if (enemy != null) { enemy.Damaged -= OnEnemyDamaged; enemy.Died -= OnEnemyDied; }
+            enemy = go.GetComponent<Character>();
+            Log($"spawned {go.name} at {distance:0.#} m, {degrees:0} degrees");
+            return;
+        }
+        Log("no enemy prefab " + name);
+    }
+#endif
+
+    // The enemy's next attack is its own spell whose name holds these words (EnemyBrain.OpenWith).
+    void Opener(string words)
+    {
+        var brain = enemy != null ? enemy.GetComponent<EnemyBrain>() : null;
+        if (brain == null || brain.Data == null || brain.Data.spells == null) { Log("no caster"); return; }
+        foreach (var spell in brain.Data.spells)
+            if (spell != null && spell.spell != null && spell.spell.name.IndexOf(words, System.StringComparison.OrdinalIgnoreCase) >= 0) { brain.OpenWith(spell); Log("opener " + spell.spell.name); return; }
+        Log("no spell " + words);
+    }
+
+    // Dies at once, as if the player struck it (a skeleton bursts into bones).
+    void Kill(string name)
+    {
+        Character victim = enemy;
+        if (!string.IsNullOrEmpty(name))
+        {
+            victim = null; float best = float.MaxValue;
+            foreach (var brain in EnemyBrain.Active)
+                if (brain != null && brain.Character.IsAlive && brain.name.IndexOf(name, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    float d = (brain.transform.position - player.transform.position).sqrMagnitude;
+                    if (d < best) { best = d; victim = brain.Character; }
+                }
+        }
+        if (victim == null || !victim.IsAlive) { Log("nothing to kill"); return; }
+        var dir = victim.transform.position - player.transform.position; dir.y = 0f;
+        victim.Stats.TakeDamage(new DamageInfo { Amount = victim.Stats.CurrentHealth + 1000f, Source = player, Quiet = true, HitPoint = victim.transform.position + Vector3.up, Direction = dir.normalized });
+        Log("killed " + victim.name);
     }
 
     void Face()

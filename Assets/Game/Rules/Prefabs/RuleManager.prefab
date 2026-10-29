@@ -47,5 +47,6 @@ MonoBehaviour:
   rules:
   - {fileID: 11400000, guid: 614a8b8107d3a33428d605ef0ee9c5f2, type: 2}
   - {fileID: 11400000, guid: 17805c2602883cb4891bc04d4f88ffe9, type: 2}
+  - {fileID: 11400000, guid: 6c4a8fd58be8b2949a19997cc278363a, type: 2}
   quoteGap: 45
   readScreen: {fileID: 0}

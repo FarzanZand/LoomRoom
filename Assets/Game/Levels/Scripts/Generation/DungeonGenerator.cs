@@ -470,6 +470,7 @@ public partial class DungeonGenerator : MonoBehaviour
             var delta=Cell(outside)-Cell(Layout.Start); delta.y=0;
             if(delta.sqrMagnitude<closest){closest=delta.sqrMagnitude;SpawnRotation=Quaternion.LookRotation(delta);}
         }
+        StartAtEventEntrance();
         ExitPoint = Cell(Layout.Exit);
         // The merchant can keep the last room (a painted layout's merchant tick): the way out then goes to the room's
         // free cell farthest from the stall, so the ladder never stands in the merchant's shop counter.
@@ -822,6 +823,8 @@ public partial class DungeonGenerator : MonoBehaviour
         foreach(var chest in GetComponentsInChildren<DungeonContainer>(true))
         {
             if(chest==null || !chest.chest)continue;
+            // An event room's chest is the event's (a run opened in the bell room), never the starting chest.
+            if(chest.GetComponentInParent<ScriptedEventRoom>()!=null)continue;
             // A level with Starting Chest off (the Arena) has no chest in its first room, whatever built it.
             // A chest can stand on a cell no room owns (an edge or a doorway cell), so "in it" means room 0's cells or next to them.
             if(!data.startingChest && !data.pocket && Layout!=null && NearRoom(CellOf(chest.transform.position),0,2)){DestroyImmediate(chest.gameObject);continue;}

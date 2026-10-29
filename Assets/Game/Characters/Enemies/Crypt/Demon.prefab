@@ -92,6 +92,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   portrait: {fileID: 0}
   characterName: Demon
+  properName: 0
   faction: 2
   description: 
   creatureKind: 1
@@ -189,9 +190,14 @@ MonoBehaviour:
     acceleration: 30
     preferredRangeFraction: 0.7
     circleTarget: 1
-    circleSpeedFraction: 0.22
-    circleSwitchInterval: {x: 0.9, y: 2}
+    circleSpeedFraction: 0.32
+    circleSwitchInterval: {x: 1.8, y: 3.5}
     spacingSpeedFraction: 0.8
+    spacingSway: 0.35
+    spacingSwayPeriod: {x: 2.2, y: 3.4}
+    stepBackAfterSwing: 0.5
+    stepBackSpeedFraction: 0.25
+    footworkPace: 1.1
     passiveAngularSpeed: 360
     chaseAngularSpeed: 720
     attackFaceSpeed: 900

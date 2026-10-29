@@ -625,7 +625,9 @@ public class CombatManager : Singleton<CombatManager>
         var brain = target.GetComponent<EnemyBrain>();
         if (backstabsEnabled && brain != null)
         {
-            bool behind = info.Direction.sqrMagnitude > .001f && Vector3.Dot(target.transform.forward, info.Direction) > backstabBehindDot;
+            // A blow struck from a Shadow Veil counts as from behind whatever the side, and ends the veil.
+            bool ambush = ShadowVeil.Ambush(info.Source);
+            bool behind = ambush || info.Direction.sqrMagnitude > .001f && Vector3.Dot(target.transform.forward, info.Direction) > backstabBehindDot;
             // A backstab is a blow from behind, whether the enemy knows the player is there or not, and never from the
             // front. A stage boss standing ready (Wary) can't be backstabbed.
             if (behind && !brain.Wary)

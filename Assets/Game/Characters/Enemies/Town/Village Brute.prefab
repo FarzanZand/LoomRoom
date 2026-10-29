@@ -135,8 +135,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   portrait: {fileID: 0}
   characterName: Village Brute
+  properName: 0
   faction: 2
   description: A skeleton that never stopped guarding the village it died in.
+  creatureKind: 0
   stats:
   - stat: 0
     baseValue: 100
@@ -169,6 +171,7 @@ MonoBehaviour:
     - {fileID: 8300000, guid: e4f8523e0f390ed418bb3319e678af6f, type: 3}
     - {fileID: 8300000, guid: 9170416de89bc7d4ea5d38d63c7e9cad, type: 3}
     - {fileID: 8300000, guid: a0ec7d8869f875249adb9124494699ac, type: 3}
+    painAudio: {fileID: 0}
     death:
     - {fileID: 8300000, guid: d7b847c2faea56048a132bffb57f95f9, type: 3}
     footsteps:
@@ -227,8 +230,13 @@ MonoBehaviour:
     preferredRangeFraction: 0.7
     circleTarget: 1
     circleSpeedFraction: 0.35
-    circleSwitchInterval: {x: 0.9, y: 2}
+    circleSwitchInterval: {x: 1.8, y: 3.5}
     spacingSpeedFraction: 0.8
+    spacingSway: 0.35
+    spacingSwayPeriod: {x: 2.2, y: 3.4}
+    stepBackAfterSwing: 0.5
+    stepBackSpeedFraction: 0.25
+    footworkPace: 1.1
     passiveAngularSpeed: 360
     chaseAngularSpeed: 720
     attackFaceSpeed: 900
@@ -277,4 +285,8 @@ MonoBehaviour:
       hitStopScale: 0.5
     pullAudio: {fileID: 0}
     fireAudio: {fileID: 0}
+  caster: 0
+  spells: []
+  closesIn: 0
+  spellGap: 4
   experience: 0

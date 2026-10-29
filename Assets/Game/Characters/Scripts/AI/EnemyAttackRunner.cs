@@ -163,7 +163,8 @@ public class EnemyAttackRunner
         // Cornered (backing off into a wall), a ranged attack is used however close the target is: there is nowhere
         // left to get its range from.
         float min = brain.Cornered && a != null && a.IsRanged ? 0f : a != null ? a.minRange : 0f;
-        return a != null && dist >= min && dist <= a.EffectiveMaxRange && i < cooldowns.Count && cooldowns[i] <= 0f;
+        return a != null && dist >= min && dist <= a.EffectiveMaxRange && i < cooldowns.Count && cooldowns[i] <= 0f
+            && (!a.IsSpell || a.spellCast.spell == null || a.spellCast.spell.effect == SpellEffect.Standard || SpellEffects.CanCast(a.spellCast.spell, Character));
     }
 
     void StartCooldown(EnemyAttack attack)
@@ -285,8 +286,9 @@ public class EnemyAttackRunner
             StartCooldown(current);
 
             float recovery = Mathf.Max(RecoveryTime, pendingStagger);
+            bool staggered = pendingStagger > RecoveryTime;
             Cancel();
-            brain.BeginRecovery(recovery);
+            if (staggered) brain.BeginRecovery(recovery); else brain.BeginSwingRecovery(recovery);
             brain.SetState(EnemyState.Chase);
         }
     }
@@ -483,6 +485,7 @@ public class EnemyAttackRunner
         Vector3 velocity = mover != null ? mover.velocity : Vector3.zero; velocity.y = 0f;
         if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.releaseSound, origin, spell.releaseVolume);
 
+        if (spell.effect != SpellEffect.Standard) { SpellEffects.CastByEnemy(Character, spell, damage, origin, target); return; }
         if (spell.groundArea)
         {
             Vector3 spot = target.transform.position + velocity * spell.areaDelay * cast.leadTarget;
@@ -500,7 +503,7 @@ public class EnemyAttackRunner
         Vector3 aim = AimPoint(target);
         float flight = Vector3.Distance(origin, aim) / Mathf.Max(1f, spell.speed);
         aim += velocity * flight * cast.leadTarget;
-        Vector3 dir = aim - origin;
+        Vector3 dir = spell.gravity > 0f ? SpellProjectile.ArcDirection(origin, aim, spell.speed, spell.gravity) : aim - origin;
         dir = Quaternion.AngleAxis(Random.Range(-cast.spread, cast.spread), Vector3.up)
             * Quaternion.AngleAxis(Random.Range(-cast.spread, cast.spread) * .5f, Vector3.Cross(Vector3.up, dir).normalized) * dir;
         var projectile = Object.Instantiate(spell.projectile, origin, Quaternion.LookRotation(dir));

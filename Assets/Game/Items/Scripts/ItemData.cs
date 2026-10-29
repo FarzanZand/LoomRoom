@@ -290,7 +290,7 @@ public partial class ItemData : ScriptableObject
         if (spell != null)
         {
             var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
-            lines.Add($"{(caster != null ? caster.Cost(spell) : spell.manaCost):0.#} mana, {(caster != null ? caster.Power(spell) : spell.power):0.#} {(spell.spell == LeftHandSpell.Heal ? "healing" : "damage")}");
+            lines.Add(spell.RulesLine(caster != null ? caster.Cost(spell) : spell.manaCost, caster != null ? caster.Power(spell) : spell.power));
         }
         Add(blocks, lines);
 

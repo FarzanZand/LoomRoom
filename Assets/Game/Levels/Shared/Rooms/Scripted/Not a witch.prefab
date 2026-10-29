@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7586001194616237607}
   - component: {fileID: 999801942344821723}
   - component: {fileID: 2104000824278406925}
+  - component: {fileID: 4215145761621552254}
   m_Layer: 0
   m_Name: Not a witch
   m_TagString: Untagged
@@ -118,6 +119,24 @@ MonoBehaviour:
   kind: 3
   dungeon: {fileID: 0}
   room: -1
+--- !u!114 &4215145761621552254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 273876934562634629}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b17f92738f1035446adfbf73d1eba8d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
+  eventName: witch
+  summary: 'She kneels weeping in the moonlight and ignores you; a blow from behind
+    is a backstab. The first hit wakes her for good: a fireball volley, then she
+    fights. She drops Legendary gear.'
+  entrance: {fileID: 0}
+  countsAsEvent: 0
 --- !u!1 &500983072971138914
 GameObject:
   m_ObjectHideFlags: 0

@@ -33,12 +33,14 @@ public class StealthIndicatorUI : MonoBehaviour
     {
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
         bool sneaking = player != null && player.kind == PlayerKind.Table && player.IsActive && player.IsAlive && player.Motor != null && player.Motor.IsCrouching;
+        // A Shadow Veil counts as sneaking unseen (the eye shows, shut), standing or not.
+        bool veiled = player != null && player.IsAlive && ShadowVeil.IsVeiled(player);
         bool seen = false;
         if (sneaking)
             foreach (var brain in EnemyBrain.Active)
                 if (brain != null && brain.Character != null && brain.Character.IsAlive && brain.Perception != null && brain.Perception.Target == player && brain.Perception.TargetVisible) { seen = true; break; }
         bool exploring = !(GameManager.HasInstance && GameManager.Instance.State != GameState.Explore);
-        bool hidden = sneaking && !seen && exploring;
+        bool hidden = (sneaking && !seen || veiled) && exploring;
         var screen = ScreenManager.HasInstance ? ScreenManager.Instance : null;
         float hiddenFade = screen != null ? screen.stealthFade : .5f;
         hiddenAmount = Mathf.MoveTowards(hiddenAmount, hidden ? 1f : 0f, Time.unscaledDeltaTime / hiddenFade);
@@ -46,8 +48,8 @@ public class StealthIndicatorUI : MonoBehaviour
         Apply();
 
         if (eye == null || visibility == null) return;
-        visibility.alpha = sneaking ? 1 : 0;
-        if (!sneaking) { transition?.Kill(); lastSeen = null; return; }
+        visibility.alpha = sneaking || veiled ? 1 : 0;
+        if (!sneaking && !veiled) { transition?.Kill(); lastSeen = null; return; }
         if (lastSeen == seen) return;
         transition?.Kill();
         eye.color = seen ? seenColor : hiddenColor;

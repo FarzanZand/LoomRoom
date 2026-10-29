@@ -7,7 +7,8 @@ public static class LineOfSight
 {
     static readonly RaycastHit[] hits = new RaycastHit[32];
 
-    public static bool Clear(Vector3 from, Vector3 to, int mask, Transform ignore, Transform ignoreToo = null, float radius = 0f)
+    // charactersBlock off: only the world blocks (a living character in the way is not cover from the eye).
+    public static bool Clear(Vector3 from, Vector3 to, int mask, Transform ignore, Transform ignoreToo = null, float radius = 0f, bool charactersBlock = true)
     {
         Vector3 delta = to - from;
         float distance = delta.magnitude;
@@ -23,6 +24,7 @@ public static class LineOfSight
             if ((ignore != null && t.IsChildOf(ignore)) || (ignoreToo != null && t.IsChildOf(ignoreToo))) continue;
             // Corpses never block: a dead body lying between two enemies doesn't hide the player.
             if (IsCorpse(hits[i].collider)) continue;
+            if (!charactersBlock && hits[i].collider.GetComponentInParent<Character>() != null) continue;
             return false;
         }
         return true;

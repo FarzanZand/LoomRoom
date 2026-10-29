@@ -22,6 +22,7 @@ public struct DamageInfo
     public bool      FromEffect;      // created by an item effect; never counts as a landed hit
     public bool      Critical;        // rolled by the hitbox; bigger number, longer hit stop
     public bool      Backstab;        // struck an unaware or turned-away enemy
+    public bool      Quiet;           // no damage number (a summon falling apart when its time is up)
 
     public static DamageInfo Simple(float amount, Character source = null)
         => new DamageInfo { Amount = amount, Source = source, Direction = Vector3.zero };

@@ -177,6 +177,7 @@ GameObject:
   - component: {fileID: 1461780032895171878}
   - component: {fileID: 7036300593033241004}
   - component: {fileID: 6540107159037687356}
+  - component: {fileID: 8249048365205223533}
   m_Layer: 0
   m_Name: Tavern
   m_TagString: Untagged
@@ -329,6 +330,23 @@ MonoBehaviour:
   kind: 2
   dungeon: {fileID: 0}
   room: -1
+--- !u!114 &8249048365205223533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 729654494956090050}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b17f92738f1035446adfbf73d1eba8d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
+  eventName: tavern
+  summary: The keeper sells wares, food that lasts the run and rumours. Rest once
+    at the hearth for a fifth of your health. Every walled floor has one.
+  entrance: {fileID: 0}
+  countsAsEvent: 0
 --- !u!1 &816503725287158885
 GameObject:
   m_ObjectHideFlags: 0
