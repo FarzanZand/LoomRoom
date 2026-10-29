@@ -257,9 +257,12 @@ public class Flick : MonoBehaviour
         else Release(held);
         for (float t = 0; flying && t < 8f; t += Time.deltaTime) yield return null;
         yield return new WaitForSeconds(.5f);
-        yield return DungeonMasterReach.Lid(floor, false, null, settings.lid);
+        // The roof only comes down once he stands up straight, and where he stood in the table he is back in his place
+        // first: it lands on the room, never on him.
+        for (float t = 0; hand != null && !hand.Upright && t < 3f; t += Time.deltaTime) yield return null;
         if (appear) DungeonMasterReach.Vanish();
-        else yield return DungeonMasterReach.StepBack(spot);
+        yield return DungeonMasterReach.Lid(floor, false, null, settings.lid);
+        if (!appear) yield return DungeonMasterReach.StepBack(spot);
         yield return DungeonMasterReach.Leave();
         Destroy(gameObject);
     }

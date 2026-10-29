@@ -40,6 +40,8 @@ public class DungeonMasterHand : MonoBehaviour
     Transform hanging; float hangHeight; Quaternion hangFacing;
 
     public bool Busy { get; private set; }
+    // Standing up straight with both hands back in his own pose (a lid can come down over the room without meeting him).
+    public bool Upright => lean < 1f && rightWeight <= 0f && leftWeight <= 0f;
     // Where the last figure he set down ended up (Place).
     public Vector3 LastPlacedAt { get; private set; }
     public Transform RightHand => animator != null ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
@@ -126,6 +128,16 @@ public class DungeonMasterHand : MonoBehaviour
             bool flick = !float.IsNaN(curl);
             animator.SetIKPosition(AvatarIKGoal.RightHand, flick ? tipTarget + tipFix : rightTarget);
             animator.SetIKRotation(AvatarIKGoal.RightHand, flick ? handFix * Quaternion.LookRotation(flickAim, Vector3.up) : rightRotation);
+        }
+        // A finger flick comes down from above: the elbow held up over the hand, so the forearm stands up out of the room
+        // through its open roof instead of reaching in sideways through its walls.
+        bool fromAbove = !float.IsNaN(curl) && flickFromAbove;
+        animator.SetIKHintPositionWeight(AvatarIKHint.RightElbow, fromAbove ? rightWeight : 0f);
+        if (fromAbove)
+        {
+            float forearm = ArmLength(HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, HumanBodyBones.RightHand);
+            var level = flickAim; level.y = 0f; level = level.sqrMagnitude > 1e-4f ? level.normalized : transform.forward;
+            animator.SetIKHintPosition(AvatarIKHint.RightElbow, tipTarget + tipFix + Vector3.up * forearm * 1.5f - level * forearm * .4f);
         }
         animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, leftWeight);
         animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, leftWeight * .7f);
@@ -356,7 +368,7 @@ public class DungeonMasterHand : MonoBehaviour
     }
 
     // Stopped half way (the fight ended): he lets go of whatever he holds and straightens up.
-    public void Release() { if (handLight != null) Destroy(handLight.gameObject); handLight = null; curl = float.NaN; openHand = false; flickCarried = null; hanging = null; if (carriedLight != null) Destroy(carriedLight.gameObject); carriedLight = null; rightGoal = leftGoal = lookGoal = leanGoal = 0f; Busy = false; }
+    public void Release() { if (handLight != null) Destroy(handLight.gameObject); handLight = null; curl = float.NaN; openHand = false; flickCarried = null; flickFromAbove = false; hanging = null; if (carriedLight != null) Destroy(carriedLight.gameObject); carriedLight = null; rightGoal = leftGoal = lookGoal = leanGoal = 0f; Busy = false; }
 
     public void StopAiming() { leftGoal = 0f; if (!Busy) { lookGoal = 0f; leanGoal = 0f; } }
 
@@ -366,8 +378,11 @@ public class DungeonMasterHand : MonoBehaviour
     // ── The flick (the Flick spell) ─────────────────────────────────
 
     [Header("Flick")]
-    [Range(0, 45), Tooltip("Degrees his flicking finger points down from level.")]
-    public float flickTilt = 12f;
+    [Range(0, 80), Tooltip("Degrees his flicking finger points down from level (steep: his hand hangs down into the room from above, fingers down, and the finger snaps out along the flick).")]
+    public float flickTilt = 60f;
+    [Min(0), Tooltip("How far above the enemy his hand comes over the room before it drops straight down onto it (world units, above Carry Height), so his arm comes in over the walls.")]
+    public float flickAbove = 6f;
+    bool flickFromAbove;
     [Range(0, 45), Tooltip("Degrees his finger points up when he flicks something into an arc (a die).")]
     public float flickTossTilt = 20f;
     [Range(0, 80), Tooltip("Degrees he leans over the table for a flick at the far end of his reach (the finger has to reach the enemy itself). Closer in he leans less, so his head stays up out of the room.")]
@@ -407,7 +422,11 @@ public class DungeonMasterHand : MonoBehaviour
         var touch = point - flickAim * (finger * .15f + carriedSize * .5f);
         var cocked = touch - flickAim * finger * .35f;
         Arc(point, out _, out _, out _, out var shown);
-        var high = cocked + Vector3.up * carryHeight * (carried != null ? .25f : .7f) - level * finger * 1.5f;
+        // A finger flick: high over the spot (over the walls), then straight down onto it. A die is held out over the
+        // table's edge as before.
+        flickFromAbove = carried == null;
+        var high = flickFromAbove ? cocked + Vector3.up * (carryHeight + flickAbove) - level * finger * .3f
+                                  : cocked + Vector3.up * carryHeight * .25f - level * finger * 1.5f;
         void Follow()
         {
             if (follow == null) return;
@@ -423,13 +442,20 @@ public class DungeonMasterHand : MonoBehaviour
         float lean = Mathf.Lerp(reachLean * .5f, flickLean, Mathf.InverseLerp(flickLeanRange.x, flickLeanRange.y, flat.magnitude));
         openHand = false;
         HandLight(flickLight, new Color(1f, .85f, .65f), finger);
-        // In over the spot, the finger cocking as it comes down.
+        // In over the spot, the finger cocking as it comes down. From above: up and over to high above it in the first
+        // part, then straight down (a curve through all four points would cut across the room's walls on the way).
         for (float t = 0; t < seconds; t += Time.deltaTime)
         {
             Follow();
-            float u = Mathf.SmoothStep(0, 1, t / seconds), v = 1f - u;
+            float n = t / seconds, u = Mathf.SmoothStep(0, 1, n), v = 1f - u;
             leanGoal = Mathf.Lerp(reachLean * .3f, lean, u);
-            tipTarget = v * v * v * from + 3f * v * v * u * shown + 3f * v * u * u * high + u * u * u * cocked;
+            if (flickFromAbove)
+            {
+                const float Over = .6f;
+                if (n < Over) { float a = Mathf.SmoothStep(0, 1, n / Over), b = 1f - a; tipTarget = b * b * from + 2f * b * a * shown + a * a * high; }
+                else tipTarget = Vector3.Lerp(high, cocked, Mathf.SmoothStep(0, 1, (n - Over) / (1f - Over)));
+            }
+            else tipTarget = v * v * v * from + 3f * v * v * u * shown + 3f * v * u * u * high + u * u * u * cocked;
             curl = Mathf.Lerp(.2f, 1f, Mathf.InverseLerp(.55f, .95f, t / seconds));
             yield return null;
         }
@@ -473,16 +499,21 @@ public class DungeonMasterHand : MonoBehaviour
         const float Seconds = 1.2f;
         var after = tipTarget;
         float lean = leanGoal;
-        var high = after + Vector3.up * carryHeight - level * finger;
+        bool above = flickFromAbove;
+        var high = above ? after + Vector3.up * (carryHeight + flickAbove) : after + Vector3.up * carryHeight - level * finger;
         for (float t = 0; t < Seconds; t += Time.deltaTime)
         {
-            float u = Mathf.SmoothStep(0, 1, t / Seconds), v = 1f - u;
+            float n = t / Seconds, u = Mathf.SmoothStep(0, 1, n), v = 1f - u;
             var rest = transform.TransformPoint(restTip);
-            tipTarget = v * v * after + 2f * v * u * high + u * u * rest;
+            // From above: straight up out of the room first, then back to his side.
+            const float Up = .4f;
+            if (above) tipTarget = n < Up ? Vector3.Lerp(after, high, Mathf.SmoothStep(0, 1, n / Up)) : Vector3.Lerp(high, rest, Mathf.SmoothStep(0, 1, (n - Up) / (1f - Up)));
+            else tipTarget = v * v * after + 2f * v * u * high + u * u * rest;
             step?.Invoke(u);
             leanGoal = lean * v;
             yield return null;
         }
+        flickFromAbove = false;
         rightGoal = 0f; leanGoal = 0f;
         while (rightWeight > 0f) yield return null;
     }

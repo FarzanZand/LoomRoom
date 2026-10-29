@@ -321142,7 +321142,8 @@ MonoBehaviour:
   palmOpen: 0.9
   palmFacesTarget: 1
   flipPalm: 1
-  flickTilt: 12
+  flickTilt: 60
+  flickAbove: 6
   flickTossTilt: 20
   flickLean: 55
   flickLeanRange: {x: 9, y: 17}
