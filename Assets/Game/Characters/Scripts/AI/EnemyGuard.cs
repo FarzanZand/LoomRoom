@@ -25,6 +25,9 @@ public class EnemyGuard : MonoBehaviour
     public float turnRate = 120f;
     [Tooltip("Metres a second below which it counts as standing (and its turning steps its feet).")]
     public float standingBelow = .2f;
+    [Tooltip("How far the chest (Aim Body) and the head (Aim Head) turn back toward the target while the moves play (look-at"
+        + " IK, 0-1; the clips stand side-on). Aim Clamp limits the turn (0 = free, 1 = none).")]
+    [Range(0f, 1f)] public float aimBody = .8f, aimHead = 1f, aimClamp = .3f;
 
     static readonly int AttackTag = AnimatorHelper.TagHash("Attack"), HurtTag = AnimatorHelper.TagHash("Hurt"),
         DeathTag = AnimatorHelper.TagHash("Death"), SleepTag = AnimatorHelper.TagHash("Sleep");
@@ -45,6 +48,26 @@ public class EnemyGuard : MonoBehaviour
         gestureLayer = anim.GetLayerIndex("FullBodyOverride");
         hasParams = Character.HasParameter(anim, "CombatX", AnimatorControllerParameterType.Float);
         lastYaw = transform.eulerAngles.y;
+        if (stanceLayer >= 0)
+        {
+            var aim = anim.GetComponent<EnemyGuardAim>();
+            if (aim == null) aim = anim.gameObject.AddComponent<EnemyGuardAim>();
+            aim.guard = this;
+        }
+    }
+
+    public int StanceLayer => stanceLayer;
+
+    // Called in the stance layer's IK pass (EnemyGuardAim): the chest and head turn toward the target, level (the point
+    // is at the enemy's own head height, so the body only turns, never bows).
+    public void Aim(Animator a)
+    {
+        var target = brain.Perception != null ? brain.Perception.Target : null;
+        var head = a.GetBoneTransform(HumanBodyBones.Head);
+        Vector3 to = target != null ? target.transform.position - transform.position : Vector3.zero; to.y = 0f;
+        if (stance <= 0f || head == null || to.sqrMagnitude < .01f) { a.SetLookAtWeight(0f); return; }
+        a.SetLookAtWeight(1f, aimBody, aimHead, 0f, aimClamp);
+        a.SetLookAtPosition(head.position + to.normalized * 5f);
     }
 
     void Update()
