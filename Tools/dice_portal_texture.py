@@ -1,49 +1,66 @@
 # python Tools/dice_portal_texture.py <out.png>
-# The Dice Portal's vortex: a strip of 8 frames (128 x 128 each) of a dark swirl turning into its middle inside a
-# crackling rim, in a few flat blues laid texel by texel (no smooth gradients), with alpha cut raggedly at the edge.
-# The arms turn a third of a circle over the 8 frames, so with three arms the strip loops.
+# The Dice Portal: a hole burned through the air, as the campaign map burns away: a ragged edge with a thin line of
+# embers, a charred rim flecked with ash outside it, and dim light inside, all in a dark blue tint. A strip
+# of 8 frames (128 x 128 each): the embers flicker and creep and the edge wavers a little. Drawn texel by texel in the
+# house style: a few muted tones laid in small clusters, dark at the crease, lit at the edge, no smooth gradients.
 import math, random, sys
 from PIL import Image
 
 FRAMES, SIZE = 8, 128
-# Deep to light: the hole, the dark of the swirl, its arms, the rim, the rim's sparks.
-PALETTE = [(8, 10, 26), (16, 24, 58), (26, 44, 96), (40, 74, 140), (70, 120, 190), (128, 182, 232), (214, 240, 255)]
+# Everything in a dark blue tint (the user's choice, 2026-10-29).
+# The light through the hole, deep to bright (muted navy).
+INSIDE = [(6, 8, 18), (10, 14, 30), (16, 23, 46), (24, 35, 66), (36, 52, 92)]
+# The burning line, cold: dim blue to white-hot.
+EMBER = [(28, 46, 120), (46, 84, 182), (82, 136, 230), (150, 196, 255), (220, 236, 255)]
+# The charred rim, blue-black to slate ash.
+CHAR = [(8, 10, 16), (15, 19, 30), (24, 30, 46), (38, 46, 66), (78, 88, 108)]
 
 def noise(x, y, seed):
-    r = random.Random(x * 73856093 ^ y * 19349663 ^ seed * 83492791)
-    return r.random()
+    return random.Random(x * 73856093 ^ y * 19349663 ^ seed * 83492791).random()
+
+def wave(a, seed, lobes):
+    # A ragged closed outline: a few sines round the circle with seeded phases.
+    r = random.Random(seed)
+    return sum(math.sin(a * k + r.random() * 6.283) * (r.random() * .5 + .5) / k for k in lobes)
 
 def frame(f):
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     px = img.load()
-    phase = f / FRAMES * (2 * math.pi / 3)
     c = (SIZE - 1) / 2
+    creep = f / FRAMES * 6.283
     for y in range(SIZE):
         for x in range(SIZE):
             dx, dy = (x - c) / c, (y - c) / c
             r = math.hypot(dx, dy)
             a = math.atan2(dy, dx)
-            # The ragged edge: the rim's outer line wavers texel to texel (fixed per texel, so it doesn't boil).
-            edge = .965 - noise(x // 3, y // 3, 7) * .035 - noise(x, y, 8) * .012
-            if r > edge:
-                continue
-            n = noise(x // 2, y // 2, f + 11)   # the grain that changes as it turns, in small clusters
-            g = noise(x // 2, y // 2, 3)        # fixed grain
-            if r > .84:
-                # The rim: light, broken by darker flecks; sparks now and then.
-                t = 4 + (1 if n > .35 else 0) + (1 if n > .9 else 0) - (1 if g < .15 else 0)
+            # Where the burn has eaten to: ragged, wavering a little as it burns (fixed per texel cluster).
+            edge = .68 + .09 * wave(a, 11, (2, 3, 5, 9)) + .02 * math.sin(a * 13 + creep) + (noise(x // 3, y // 3, 4) - .5) * .05
+            # How far the char reaches past it.
+            outer = edge + .17 + .05 * wave(a, 23, (4, 7, 11)) + (noise(x // 3, y // 3, 9) - .5) * .06
+            n = noise(x // 2, y // 2, f + 31)   # flicker, in small clusters
+            g = noise(x // 2, y // 2, 5)        # fixed grain
+            if r < edge - .045:
+                # Inside: dark, the room's warm light coming through in patches (clusters of a few tones, no smooth
+                # falloff), a darker crease along the burnt edge.
+                patch = noise(x // 5, y // 5, 17) * .6 + noise(x // 3, y // 3, 19) * .4
+                v = patch * 4.4 - 1.1 + (g - .5) * .9 + (n - .5) * .3 - r * .8
+                if r > edge - .12: v -= 1.4
+                col = INSIDE[int(max(0, min(4, v)))]
+            elif r < edge:
+                # The burning line: embers, hotter where the flicker says, now and then a dark gap.
+                v = n * 4.6 + g * .8 - .4
+                col = EMBER[int(max(0, min(4, v)))]
+                if n < .1: col = CHAR[1]
+            elif r < outer:
+                # The char: black at the embers, browner and ash-flecked further out, ragged at its edge.
+                t = (r - edge) / max(.02, outer - edge)
+                v = t * 2.6 + (g - .5) * 1.4
+                col = CHAR[int(max(0, min(3, v)))]
+                if g > .93: col = CHAR[4]                      # ash
+                if t < .25 and n > .9: col = EMBER[0]          # a glowing fleck just behind the line
             else:
-                # The swirl: three arms winding in (log spiral), lighter toward the rim, a dark hole in the middle.
-                arm = math.cos(3 * (a + 1.6 * math.log(max(r, .02))) - phase * 3)
-                v = .5 + .5 * arm
-                v = v * (.35 + .75 * r) + (n - .5) * .16
-                if r < .16 + g * .04:
-                    v *= .25
-                t = int(max(0, min(4, v * 5.2)))
-                # A dark line just inside the rim (the rim's crease).
-                if .79 < r <= .84:
-                    t = max(0, t - 2)
-            px[x, y] = PALETTE[t] + (255,)
+                continue
+            px[x, y] = col + (255,)
     return img
 
 out = Image.new("RGBA", (SIZE * FRAMES, SIZE), (0, 0, 0, 0))

@@ -252,7 +252,8 @@ public static class NewSpellsSetup
         Folder(Spells + name);
         Copy("Die Throw/Die Throw Hand.prefab", $"{name}/{name} Hand.prefab");
         Copy("Die Throw/Die Throw Mark.prefab", $"{name}/{name} Mark.prefab");
-        // The vortex: its frames (Tools/dice_portal_texture.py) point-filtered on the Portal Vortex shader.
+        // The portal: a hole burned through the air, its frames (Tools/dice_portal_texture.py) point-filtered on the Portal
+        // Vortex shader.
         string texturePath = $"{Spells}{name}/{name} vortex.png", materialPath = $"{Spells}{name}/{name} vortex.mat";
         if (AssetImporter.GetAtPath(texturePath) is TextureImporter vortexImporter)
         {
@@ -278,10 +279,11 @@ public static class NewSpellsSetup
             s.flick = JsonUtility.FromJson<FlickSettings>(JsonUtility.ToJson(dieThrow.flick));
             var f = s.flick;
             f.reach = FlickReach.Portal; f.mark = Visual($"{name}/{name} Mark.prefab");
+            f.dieScale = 1f;   // a third smaller than Die Throw's: it lands close in front of the player
             f.portalMaterial = vortex; f.portalFrames = 8; f.portalFps = 12f;
-            f.portalColor = new Color(.35f, .65f, 1f); f.portalRadius = .9f; f.portalDistance = 5.5f;
+            f.portalColor = new Color(.32f, .48f, 1f); f.portalRadius = .9f; f.portalDistance = 5.5f;
             f.portalOpenSeconds = .35f; f.portalHoldSeconds = .3f; f.portalCloseSeconds = .3f; f.portalDieSpeed = 20f; f.portalLight = 6f;
-            f.portalOpenSound = Clip("Magic/Mgc_Water_Cast_02"); f.portalShootSound = Clip("Weapons/Wpn_Whoosh_02"); f.portalCloseSound = Clip("Magic/Mgc_Electric_Cast_Stop_01"); f.portalVolume = .9f;
+            f.portalOpenSound = Clip("Magic/Mgc_Fire_Cast_Start_01"); f.portalShootSound = Clip("Weapons/Wpn_Whoosh_02"); f.portalCloseSound = Clip("Magic/Mgc_Fire_Cast_Stop_01"); f.portalVolume = .9f;
             f.lines = new[] { "Heads up.", "Let's see what you roll.", "From over here." };
             s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = null; s.flightSound = null;
         });

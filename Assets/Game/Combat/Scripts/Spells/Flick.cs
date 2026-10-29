@@ -73,13 +73,13 @@ public class FlickSettings
     [FoldoutGroup("Out of his reach"), Tooltip("One of these, at random, each time the die strikes or bounces.")] public AudioClip[] dieKnocks = new AudioClip[0];
     [FoldoutGroup("Out of his reach"), Tooltip("The die tumbling away after it strikes.")] public AudioClip dieRollSound;
     [FoldoutGroup("Out of his reach"), Range(0, 1)] public float dieVolume = 1f;
-    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Tooltip("The portal's look: a strip of vortex frames (Tools/dice_portal_texture.py) on the Portal Vortex shader, copied per portal and stepped through.")]
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Tooltip("The portal's look: a strip of frames of a hole burned through the air (Tools/dice_portal_texture.py) on the Portal Vortex shader, copied per portal and stepped through.")]
     public Material portalMaterial;
     [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(1), Tooltip("Frames side by side in the material's texture.")]
     public int portalFrames = 8;
     [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(1f), Tooltip("Frames a second.")]
     public float portalFps = 12f;
-    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal")] public Color portalColor = new(.35f, .65f, 1f, 1f);
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal")] public Color portalColor = new(.32f, .48f, 1f, 1f);
     [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(.2f), Tooltip("The portal's radius (metres).")]
     public float portalRadius = .8f;
     [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(1.5f), Tooltip("How far from the enemy it opens at most (metres); closer where the room is too small.")]
@@ -446,81 +446,71 @@ public class Flick : MonoBehaviour
         return at > 0f ? Flat(way - toPlayer * at * 1.2f) : way;
     }
 
-    // The die strikes the enemy (knocking it across the room), bounces off away from the player, tumbles and is gone.
+    // The die strikes the enemy (knocking it across the room), then falls as a real body: it springs back off the enemy,
+    // drops with gravity, bounces and rolls to rest on the floor (its box collider and a rigidbody, kept
+    // out of the players' and the living's way like a body's pieces), lies there a moment and is gone.
     IEnumerator DieStrike(Transform die, Held held, Vector3 v, float g, Vector3 spinAxis)
     {
         Release(held);
         if (die != null) { Hit(die.position); Knock(die.position); }
         if (target != null && target.IsAlive) StartCoroutine(Fly(target, KnockWay(v), power, false));
         if (die == null) { flying = false; yield break; }
+        foreach (var c in die.GetComponentsInChildren<Collider>(true)) { c.enabled = true; c.sharedMaterial = DieBounce; }
+        var body = die.GetComponent<Rigidbody>();
+        if (body == null) body = die.gameObject.AddComponent<Rigidbody>();
+        body.isKinematic = false;
+        body.mass = 8f;
+        body.angularDamping = .6f;
+        body.interpolation = RigidbodyInterpolation.Interpolate;
+        body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        DeathPhysics.IgnorePlayers(new List<Rigidbody> { body });
+        // It springs back off the enemy the way it came, turned off the player (back toward them it bounced into the
+        // player's face).
+        var back = -Flat(v);
+        var toPlayer = Flat(caster.transform.position - die.position);
+        float atPlayer = Vector3.Dot(back, toPlayer);
+        if (atPlayer > 0f) back = Flat(back - toPlayer * atPlayer * 1.3f);
+        body.linearVelocity = back * DieRebound + Vector3.up * 5.5f;
+        body.angularVelocity = spinAxis.normalized * 9f + UnityEngine.Random.insideUnitSphere * 4f;
+        // A knock each time it lands hard, the roll as it first meets the floor; it lies still a moment, then shrinks away.
         bool rolling = false;
-        // It bounces off and tumbles away, then is gone.
-        // Away from the player whatever way it came (back toward him it bounced into the player's face).
-        var away = Flat(die.position - caster.transform.position);
-        var bounce = away * new Vector2(v.x, v.z).magnitude * .3f; bounce.y = Mathf.Abs(v.y) * .3f + 3f;
-        // It bounces off the floor where its lowest corner meets it (a big die's middle is well above the floor).
-        var drawn = die.GetComponentInChildren<Renderer>();
-        for (float u = 0; u < 1.4f && die != null; u += Time.deltaTime)
+        float lastVy = body.linearVelocity.y, still = 0f;
+        for (float t = 0f; t < 4f && die != null; t += Time.deltaTime)
         {
-            bounce.y -= g * Time.deltaTime;
-            var step = bounce * Time.deltaTime;
-            float floorY = FloorUnder(die.position + new Vector3(step.x, 0f, step.z));
-            float bottom = drawn != null ? drawn.bounds.min.y : die.position.y - .3f;
-            if (bounce.y < 0f && bottom + step.y < floorY)
+            yield return new WaitForFixedUpdate();
+            if (die == null) break;
+            // Heavier than the world's pull (a die this big falling at plain gravity looks slow, and leans on edges).
+            body.AddForce(Physics.gravity * DieExtraGravity, ForceMode.Acceleration);
+            float vy = body.linearVelocity.y;
+            if (lastVy < -1.5f && vy > lastVy + 1.5f)
             {
-                step.y = floorY - bottom;
-                bounce.y = -bounce.y * .35f; bounce.x *= .6f; bounce.z *= .6f;
-                if (bounce.y > 1f) Knock(die.position);
-                else bounce.y = 0f;
+                Knock(die.position);
                 if (!rolling) { rolling = true; DieSound(settings.dieRollSound, die.position); }
             }
-            die.position += step;
-            if (rolling && bounce.y == 0f)
-            {
-                // On the floor: it slows, turning only as fast as it rolls, and settles flat on a face.
-                float slow = Mathf.Clamp01(1f - 5f * Time.deltaTime);
-                bounce.x *= slow; bounce.z *= slow;
-                float speed = new Vector2(bounce.x, bounce.z).magnitude;
-                die.rotation = Quaternion.AngleAxis(speed * 120f * Time.deltaTime, spinAxis) * die.rotation;
-                die.rotation = Quaternion.Slerp(die.rotation, FlatOnFace(die.rotation), 8f * Time.deltaTime);
-            }
-            else die.rotation = Quaternion.AngleAxis(400f * Time.deltaTime, spinAxis) * die.rotation;
-            yield return null;
+            lastVy = vy;
+            still = body.linearVelocity.sqrMagnitude < .02f && body.angularVelocity.sqrMagnitude < .05f ? still + Time.fixedDeltaTime : 0f;
+            if (still > .6f) break;
         }
         if (die != null)
         {
+            body.isKinematic = true;
             var start = die.localScale;
             for (float u = 0; u < .25f && die != null; u += Time.deltaTime) { die.localScale = start * (1f - u / .25f); yield return null; }
             if (die != null) Destroy(die.gameObject);
         }
     }
 
-    // The turn nearest to this one that lies flat on a face: its side most nearly up turned straight up.
-    static Quaternion FlatOnFace(Quaternion turn)
-    {
-        Vector3 best = Vector3.up; float most = float.MinValue;
-        foreach (var axis in new[] { Vector3.up, Vector3.down, Vector3.right, Vector3.left, Vector3.forward, Vector3.back })
-        {
-            var world = turn * axis;
-            if (world.y > most) { most = world.y; best = world; }
-        }
-        return Quaternion.FromToRotation(best, Vector3.up) * turn;
-    }
+    // How much more than the world's gravity pulls the die down after its strike, and how fast it springs back off the
+    // enemy (metres a second, level).
+    const float DieExtraGravity = 1.5f, DieRebound = 4f;
 
-    // The height of the floor under a point (from a little above it; bodies and triggers left out); far below when none.
-    static readonly RaycastHit[] floorHits = new RaycastHit[16];
-    static float FloorUnder(Vector3 at)
+    // The die's bounce off floors and walls: a little lively, gripping enough to roll rather than slide.
+    static PhysicsMaterial dieBounce;
+    static PhysicsMaterial DieBounce => dieBounce != null ? dieBounce : dieBounce = new PhysicsMaterial("Die bounce")
     {
-        int n = Physics.RaycastNonAlloc(at + Vector3.up * 1.5f, Vector3.down, floorHits, 12f, ~0, QueryTriggerInteraction.Ignore);
-        float best = float.MinValue;
-        for (int i = 0; i < n; i++)
-        {
-            var h = floorHits[i];
-            if (h.collider.GetComponentInParent<Character>() != null || DeathPhysics.IsCorpse(h.collider)) continue;
-            if (h.point.y > best && h.point.y <= at.y + .5f) best = h.point.y;
-        }
-        return best == float.MinValue ? at.y - 100f : best;
-    }
+        bounciness = .3f, dynamicFriction = .6f, staticFriction = .7f,
+        bounceCombine = PhysicsMaterialCombine.Maximum, frictionCombine = PhysicsMaterialCombine.Average,
+    };
 
     // ── The portal ──────────────────────────────────────────────────
 
@@ -683,8 +673,8 @@ public class Flick : MonoBehaviour
         return mesh;
     }
 
-    // While it lives: the vortex turns (its frames stepped through at their own rate, so its pixels stay whole), its light
-    // parts pulse, and the light follows the portal's size.
+    // While it lives: the burn's embers flicker (its frames stepped through at their own rate, so its pixels stay whole),
+    // its light parts pulse, and the light follows the portal's size.
     IEnumerator Swirl(Transform portal, Material vortex, Light glow)
     {
         int frames = Mathf.Max(1, settings.portalFrames);
