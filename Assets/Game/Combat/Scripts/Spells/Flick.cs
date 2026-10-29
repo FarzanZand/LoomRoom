@@ -11,6 +11,7 @@ public enum FlickReach
     WalkOrDie = 0,   // he walks to the table's edge and flicks it with his finger, or out of his reach flicks a die at it
     Appear = 1,      // he is there at once beside it, standing in the table, and flicks it with his finger wherever it is
     DieOnly = 2,     // he flicks a die at it from where he stands
+    Portal = 3,      // a portal opens in the room beside it and the die shoots out of it at it
 }
 
 [Serializable]
@@ -67,6 +68,30 @@ public class FlickSettings
     [FoldoutGroup("Out of his reach"), Tooltip("One of these, at random, each time the die strikes or bounces.")] public AudioClip[] dieKnocks = new AudioClip[0];
     [FoldoutGroup("Out of his reach"), Tooltip("The die tumbling away after it strikes.")] public AudioClip dieRollSound;
     [FoldoutGroup("Out of his reach"), Range(0, 1)] public float dieVolume = 1f;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Tooltip("The portal's look: a strip of vortex frames (Tools/dice_portal_texture.py) on the Portal Vortex shader, copied per portal and stepped through.")]
+    public Material portalMaterial;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(1), Tooltip("Frames side by side in the material's texture.")]
+    public int portalFrames = 8;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(1f), Tooltip("Frames a second.")]
+    public float portalFps = 12f;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal")] public Color portalColor = new(.35f, .65f, 1f, 1f);
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(.2f), Tooltip("The portal's radius (metres).")]
+    public float portalRadius = .8f;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(1.5f), Tooltip("How far from the enemy it opens at most (metres); closer where the room is too small.")]
+    public float portalDistance = 5.5f;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(.05f), Tooltip("Seconds it takes to open.")]
+    public float portalOpenSeconds = .35f;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(0f), Tooltip("Seconds it stands open before the die comes out.")]
+    public float portalHoldSeconds = .3f;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(.05f), Tooltip("Seconds it takes to close once the die is out.")]
+    public float portalCloseSeconds = .3f;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(4f), Tooltip("How fast the die shoots out of it (metres a second).")]
+    public float portalDieSpeed = 20f;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Min(0f)] public float portalLight = 6f;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal")] public AudioClip portalOpenSound;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Tooltip("The die shooting out.")] public AudioClip portalShootSound;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal")] public AudioClip portalCloseSound;
+    [FoldoutGroup("Portal"), ShowIf("@reach == FlickReach.Portal"), Range(0, 1)] public float portalVolume = .9f;
     [FoldoutGroup("Lines"), Tooltip("He says one as he comes.")]
     public string[] lines = { "Hold still.", "Allow me.", "Let me get that for you." };
     [FoldoutGroup("Look")] public AudioClip snapSound;
@@ -87,7 +112,8 @@ public class FlickSettings
 // Flick: the Dungeon Master does it for you. The enemy under the crosshair is held where it stands; he gets up, comes to
 // the nearest edge of the table, lifts the floor's lid, reaches in and flicks it across the room with his finger: it
 // tumbles through the air and slams into the wall or the floor (and anyone in its way). Too far from the table's edge for
-// his hand, he flicks a die at it from as close as he reaches instead. Run on its own object, one at a time.
+// his hand, he flicks a die at it from as close as he reaches instead; or (Portal) a portal opens in the room and the die
+// shoots out of it. Run on its own object, one at a time.
 public class Flick : MonoBehaviour
 {
     static Flick running;
@@ -104,6 +130,7 @@ public class Flick : MonoBehaviour
     Character target;
     float power;
     bool flying;
+    Transform looseDie;
 
     static Transform View(Player player) => player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : player.transform;
 
@@ -142,8 +169,9 @@ public class Flick : MonoBehaviour
     public static string Refusal(Player player, SpellDefinition spell)
     {
         var floor = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
-        if (floor == null || DungeonMasterReach.Hand == null || DungeonMasterReach.Seat == null) return "He can't reach you here";
-        if (Running || DungeonMasterReach.Busy) return "He's busy";
+        bool portal = spell.flick.reach == FlickReach.Portal;
+        if (floor == null || !portal && (DungeonMasterReach.Hand == null || DungeonMasterReach.Seat == null)) return "He can't reach you here";
+        if (Running || !portal && DungeonMasterReach.Busy) return "He's busy";
         if (Target(player, spell.flick) == null) return "Nothing to flick";
         return null;
     }
@@ -164,6 +192,7 @@ public class Flick : MonoBehaviour
 
     IEnumerator Run()
     {
+        if (settings.reach == FlickReach.Portal) { yield return RunPortal(); Destroy(gameObject); yield break; }
         var floor = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
         var hand = DungeonMasterReach.Hand;
         var held = Hold(target);
@@ -357,27 +386,59 @@ public class Flick : MonoBehaviour
             die.rotation = Quaternion.AngleAxis(900f * Time.deltaTime, spinAxis) * die.rotation;
             yield return null;
         }
+        yield return DieStrike(die, held, v, g, spinAxis);
+    }
+
+    // The way the die knocks the enemy: the way it was going, turned off the player when it heads at them (a portal's die
+    // can come from a little beyond the enemy).
+    Vector3 KnockWay(Vector3 v)
+    {
+        var way = Flat(v);
+        if (settings.reach != FlickReach.Portal || target == null) return way;
+        var toPlayer = Flat(caster.transform.position - target.transform.position);
+        float at = Vector3.Dot(way, toPlayer);
+        return at > 0f ? Flat(way - toPlayer * at * 1.2f) : way;
+    }
+
+    // The die strikes the enemy (knocking it across the room), bounces off away from the player, tumbles and is gone.
+    IEnumerator DieStrike(Transform die, Held held, Vector3 v, float g, Vector3 spinAxis)
+    {
         Release(held);
         if (die != null) { Hit(die.position); Knock(die.position); }
-        if (target != null && target.IsAlive) StartCoroutine(Fly(target, Flat(v), power, false));
+        if (target != null && target.IsAlive) StartCoroutine(Fly(target, KnockWay(v), power, false));
         if (die == null) { flying = false; yield break; }
         bool rolling = false;
         // It bounces off and tumbles away, then is gone.
         // Away from the player whatever way it came (back toward him it bounced into the player's face).
         var away = Flat(die.position - caster.transform.position);
         var bounce = away * new Vector2(v.x, v.z).magnitude * .3f; bounce.y = Mathf.Abs(v.y) * .3f + 3f;
+        // It bounces off the floor where its lowest corner meets it (a big die's middle is well above the floor).
+        var drawn = die.GetComponentInChildren<Renderer>();
         for (float u = 0; u < 1.4f && die != null; u += Time.deltaTime)
         {
             bounce.y -= g * Time.deltaTime;
             var step = bounce * Time.deltaTime;
-            if (Physics.Raycast(die.position, Vector3.down, out var hit, Mathf.Max(.05f, -step.y + .4f), ~0, QueryTriggerInteraction.Ignore) && bounce.y < 0f)
+            float floorY = FloorUnder(die.position + new Vector3(step.x, 0f, step.z));
+            float bottom = drawn != null ? drawn.bounds.min.y : die.position.y - .3f;
+            if (bounce.y < 0f && bottom + step.y < floorY)
             {
+                step.y = floorY - bottom;
                 bounce.y = -bounce.y * .35f; bounce.x *= .6f; bounce.z *= .6f;
-                Knock(die.position);
+                if (bounce.y > 1f) Knock(die.position);
+                else bounce.y = 0f;
                 if (!rolling) { rolling = true; DieSound(settings.dieRollSound, die.position); }
             }
             die.position += step;
-            die.rotation = Quaternion.AngleAxis(400f * Time.deltaTime, spinAxis) * die.rotation;
+            if (rolling && bounce.y == 0f)
+            {
+                // On the floor: it slows, turning only as fast as it rolls, and settles flat on a face.
+                float slow = Mathf.Clamp01(1f - 5f * Time.deltaTime);
+                bounce.x *= slow; bounce.z *= slow;
+                float speed = new Vector2(bounce.x, bounce.z).magnitude;
+                die.rotation = Quaternion.AngleAxis(speed * 120f * Time.deltaTime, spinAxis) * die.rotation;
+                die.rotation = Quaternion.Slerp(die.rotation, FlatOnFace(die.rotation), 8f * Time.deltaTime);
+            }
+            else die.rotation = Quaternion.AngleAxis(400f * Time.deltaTime, spinAxis) * die.rotation;
             yield return null;
         }
         if (die != null)
@@ -386,6 +447,220 @@ public class Flick : MonoBehaviour
             for (float u = 0; u < .25f && die != null; u += Time.deltaTime) { die.localScale = start * (1f - u / .25f); yield return null; }
             if (die != null) Destroy(die.gameObject);
         }
+    }
+
+    // The turn nearest to this one that lies flat on a face: its side most nearly up turned straight up.
+    static Quaternion FlatOnFace(Quaternion turn)
+    {
+        Vector3 best = Vector3.up; float most = float.MinValue;
+        foreach (var axis in new[] { Vector3.up, Vector3.down, Vector3.right, Vector3.left, Vector3.forward, Vector3.back })
+        {
+            var world = turn * axis;
+            if (world.y > most) { most = world.y; best = world; }
+        }
+        return Quaternion.FromToRotation(best, Vector3.up) * turn;
+    }
+
+    // The height of the floor under a point (from a little above it; bodies and triggers left out); far below when none.
+    static readonly RaycastHit[] floorHits = new RaycastHit[16];
+    static float FloorUnder(Vector3 at)
+    {
+        int n = Physics.RaycastNonAlloc(at + Vector3.up * 1.5f, Vector3.down, floorHits, 12f, ~0, QueryTriggerInteraction.Ignore);
+        float best = float.MinValue;
+        for (int i = 0; i < n; i++)
+        {
+            var h = floorHits[i];
+            if (h.collider.GetComponentInParent<Character>() != null || DeathPhysics.IsCorpse(h.collider)) continue;
+            if (h.point.y > best && h.point.y <= at.y + .5f) best = h.point.y;
+        }
+        return best == float.MinValue ? at.y - 100f : best;
+    }
+
+    // ── The portal ──────────────────────────────────────────────────
+
+    // A portal opens in the room beside the enemy, across the player's view; the die shoots out of it, strikes the enemy
+    // and knocks it across the room, and the portal closes behind it. The Dungeon Master never leaves his chair.
+    IEnumerator RunPortal()
+    {
+        var held = Hold(target);
+        if (settings.lines != null && settings.lines.Length > 0) DungeonMaster.Say(settings.lines[UnityEngine.Random.Range(0, settings.lines.Length)]);
+        PortalSpot(target, out var at, out var facing, out float radius);
+        var portal = MakePortal(at, facing, radius, out var vortex, out var glow);
+        PortalSound(settings.portalOpenSound, at);
+        StartCoroutine(Swirl(portal, vortex, glow));
+        // It opens from a point, a little past its size and back.
+        for (float t = 0; t < settings.portalOpenSeconds; t += Time.deltaTime)
+        {
+            float u = t / settings.portalOpenSeconds;
+            portal.localScale = Vector3.one * (u < .75f ? Mathf.SmoothStep(0f, 1.12f, u / .75f) : Mathf.Lerp(1.12f, 1f, (u - .75f) / .25f));
+            yield return null;
+        }
+        portal.localScale = Vector3.one;
+        for (float t = 0; t < settings.portalHoldSeconds; t += Time.deltaTime)
+        {
+            if (target != null && target.IsAlive) { facing = (SpellEffects.Chest(target) - at).normalized; portal.rotation = PortalTurn(at, facing); }
+            yield return null;
+        }
+        if (target != null && target.IsAlive && settings.die != null)
+        {
+            // Out of the portal's middle, small at first as if from far off, growing to its size as it leaves.
+            var die = Instantiate(settings.die, at, Quaternion.LookRotation(facing) * UnityEngine.Random.rotation).transform;
+            foreach (var c in die.GetComponentsInChildren<Collider>()) c.enabled = false;
+            foreach (var r in die.GetComponentsInChildren<Rigidbody>()) r.isKinematic = true;
+            if (settings.dieLight > 0f)
+            {
+                var light = new GameObject("Die light").AddComponent<Light>();
+                light.transform.SetParent(die, false);
+                light.type = LightType.Point; light.range = 6f; light.intensity = settings.dieLight; light.color = settings.markColor; light.shadows = LightShadows.None;
+            }
+            var size = die.localScale * settings.dieScale;
+            PortalSound(settings.portalShootSound, at);
+            DungeonMasterReach.Shake(.2f);
+            StartCoroutine(DieShoot(die, held, size));
+            yield return new WaitForSeconds(.25f);
+        }
+        else Release(held);
+        // It closes, folding back to a point.
+        PortalSound(settings.portalCloseSound, at);
+        float from = portal.localScale.x;
+        for (float t = 0; t < settings.portalCloseSeconds; t += Time.deltaTime)
+        {
+            portal.localScale = Vector3.one * from * (1f - Mathf.SmoothStep(0f, 1f, t / settings.portalCloseSeconds));
+            yield return null;
+        }
+        Destroy(portal.gameObject);
+        for (float t = 0; (flying || looseDie != null) && t < 8f; t += Time.deltaTime) yield return null;
+        if (looseDie != null) Destroy(looseDie.gameObject);
+    }
+
+    // Straight and fast out of the portal onto the enemy's chest (steered onto where it is now), a slight drop on the way.
+    IEnumerator DieShoot(Transform die, Held held, Vector3 size)
+    {
+        flying = true;
+        looseDie = die;
+        die.name = "Flick die";
+        var from = die.position;
+        var to = target != null ? SpellEffects.Chest(target) : from;
+        float t = Mathf.Max(.15f, Vector3.Distance(from, to) / settings.portalDieSpeed);
+        const float g = 10f;
+        var v = (to - from) / t; v.y += .5f * g * t;
+        var spinAxis = Vector3.Cross(Vector3.up, Flat(to - from));
+        for (float u = 0; u < t && die != null; u += Time.deltaTime)
+        {
+            float left = t - u;
+            if (target != null && left > Time.deltaTime)
+            {
+                var now = SpellEffects.Chest(target) - die.position;
+                v.x = now.x / left; v.z = now.z / left;
+            }
+            v.y -= g * Time.deltaTime;
+            die.position += v * Time.deltaTime;
+            die.localScale = size * Mathf.Lerp(.25f, 1f, Mathf.Clamp01(u / .12f));
+            die.rotation = Quaternion.AngleAxis(1100f * Time.deltaTime, spinAxis) * die.rotation;
+            yield return null;
+        }
+        if (die != null) die.localScale = size;
+        yield return DieStrike(die, held, v, settings.dieGravity, spinAxis);
+    }
+
+    // Where the portal opens: beside the enemy across the player's view (so the die flies across it, never at them), in
+    // open air between its chest and the ceiling, with a clear line to it, and seen from the player's eyes if it can be.
+    // Too tight for that, it opens over the enemy's head and the die drops onto it.
+    void PortalSpot(Character body, out Vector3 at, out Vector3 facing, out float radius)
+    {
+        var view = View(caster);
+        var chest = SpellEffects.Chest(body);
+        var feet = body.transform.position;
+        radius = settings.portalRadius;
+        float ceiling = Physics.Raycast(feet + Vector3.up * .3f, Vector3.up, out var roof, 20f, ~0, QueryTriggerInteraction.Ignore) ? roof.point.y : feet.y + 8f;
+        float height = Mathf.Max(chest.y, Mathf.Min(feet.y + 1.8f, ceiling - radius - .25f));
+        // Round the enemy from straight beside it (90 degrees off the way to the player) to a little beyond it, either side.
+        var toPlayer = Flat(view.position - feet);
+        float best = float.MinValue; at = Vector3.zero;
+        foreach (float off in new[] { 90f, 110f, 130f, 75f })
+        foreach (float side in new[] { 1f, -1f })
+        foreach (float share in new[] { .65f, .5f, .8f, .38f, 1f })
+        {
+            float distance = settings.portalDistance * share;
+            var p = new Vector3(feet.x, height, feet.z) + Quaternion.Euler(0f, off * side, 0f) * toPlayer * distance;
+            if (Physics.CheckSphere(p, radius, ~0, QueryTriggerInteraction.Ignore)) continue;
+            if (!Physics.Raycast(p, Vector3.down, 4f, ~0, QueryTriggerInteraction.Ignore)) continue;   // over a pit or outside the floor
+            if (!LineOfSight.Clear(p, chest, ~0, body.transform, null, .25f, false)) continue;
+            var toPortal = p - view.position;
+            float angle = Vector3.Angle(view.forward, toPortal);
+            bool seen = angle < 30f && LineOfSight.Clear(view.position, p, ~0, caster.transform, null, 0f, false);
+            // The left of the view is kept clear (the quest log, the minimap and the weapon are on the right).
+            bool left = Vector3.Dot(toPortal, view.right) < 0f;
+            float score = -Mathf.Abs(share - .65f) * 4f - (seen ? 0f : 20f) - angle * .08f - Mathf.Abs(off - 100f) * .01f + (left ? 1.5f : 0f);
+            if (score > best) { best = score; at = p; }
+        }
+        if (best == float.MinValue)
+        {
+            radius *= .7f;
+            at = new Vector3(feet.x, Mathf.Max(chest.y + 1f, Mathf.Min(feet.y + 3.5f, ceiling - .35f)), feet.z);
+        }
+        facing = (chest - at).normalized;
+    }
+
+    // Turned halfway between the way the die leaves and the player's eye: seen face on enough to read as a portal.
+    Quaternion PortalTurn(Vector3 at, Vector3 facing) => Quaternion.LookRotation(Vector3.Slerp(facing, (View(caster).position - at).normalized, .5f));
+
+    // The vortex on a square card (its texture cuts it round) and a light; scaled from its middle.
+    Transform MakePortal(Vector3 at, Vector3 facing, float radius, out Material vortex, out Light glow)
+    {
+        var root = new GameObject(spell.name + " portal").transform;
+        root.SetPositionAndRotation(at, PortalTurn(at, facing));
+        root.localScale = Vector3.zero;
+        vortex = settings.portalMaterial != null ? new Material(settings.portalMaterial) : null;
+        var card = new GameObject("Vortex");
+        card.transform.SetParent(root, false);
+        card.AddComponent<MeshFilter>().sharedMesh = Card(radius);
+        var r = card.AddComponent<MeshRenderer>();
+        r.sharedMaterial = vortex;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        r.receiveShadows = false;
+        glow = new GameObject("Portal light").AddComponent<Light>();
+        glow.transform.SetParent(root, false);
+        glow.transform.localPosition = Vector3.forward * .4f;
+        glow.type = LightType.Point; glow.range = 6f; glow.intensity = 0f; glow.color = settings.portalColor; glow.shadows = LightShadows.None;
+        return root;
+    }
+
+    // A square in the XY plane facing +Z, the radius from its middle to the middle of each side.
+    static Mesh Card(float radius)
+    {
+        var mesh = new Mesh { name = "Portal card" };
+        mesh.SetVertices(new List<Vector3> { new(-radius, -radius, 0f), new(radius, -radius, 0f), new(radius, radius, 0f), new(-radius, radius, 0f) });
+        mesh.SetUVs(0, new List<Vector2> { new(0f, 0f), new(1f, 0f), new(1f, 1f), new(0f, 1f) });
+        mesh.SetTriangles(new[] { 0, 2, 1, 0, 3, 2 }, 0);
+        mesh.RecalculateNormals(); mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    // While it lives: the vortex turns (its frames stepped through at their own rate, so its pixels stay whole), its light
+    // parts pulse, and the light follows the portal's size.
+    IEnumerator Swirl(Transform portal, Material vortex, Light glow)
+    {
+        int frames = Mathf.Max(1, settings.portalFrames);
+        if (vortex != null) vortex.SetTextureScale("_BaseMap", new Vector2(1f / frames, 1f));
+        for (float t = 0; portal != null; t += Time.deltaTime)
+        {
+            float pulse = .8f + .15f * Mathf.Sin(t * 9f) + .05f * Mathf.Sin(t * 23f);
+            if (vortex != null)
+            {
+                int frame = Mathf.FloorToInt(t * settings.portalFps) % frames;
+                vortex.SetTextureOffset("_BaseMap", new Vector2((float)frame / frames, 0f));
+                vortex.SetFloat("_Glow", 1.5f * pulse);
+            }
+            if (glow != null) glow.intensity = settings.portalLight * portal.localScale.x * pulse;
+            yield return null;
+        }
+        if (vortex != null) Destroy(vortex);
+    }
+
+    void PortalSound(AudioClip clip, Vector3 at)
+    {
+        if (clip != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(clip, at, settings.portalVolume);
     }
 
     // ── The flight ──────────────────────────────────────────────────

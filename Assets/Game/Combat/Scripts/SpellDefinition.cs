@@ -99,6 +99,7 @@ public class SpellDefinition : ScriptableObject
         SpellEffect.ShadowVeil => $"{cost:0.#} mana, unseen for {veil.seconds:0.#} seconds",
         SpellEffect.RaiseTheFallen => $"{cost:0.#} mana, raises a fallen skeleton for {raise.summon.lifetime:0} seconds",
         SpellEffect.ChainLightning => $"{cost:0.#} mana, {power:0.#} damage, jumps to {chain.jumps} more",
+        SpellEffect.Flick when flick.reach == FlickReach.Portal => $"{cost:0.#} mana, {power:0.#} damage, a die shoots out of a portal at it",
         SpellEffect.Flick when flick.reach == FlickReach.DieOnly => $"{cost:0.#} mana, {power:0.#} damage, the Dungeon Master flicks a die at it",
         SpellEffect.Flick => $"{cost:0.#} mana, {power:0.#} damage, the Dungeon Master flicks it across the room",
         SpellEffect.HelpingHand => $"{cost:0.#} mana, {power:0.#} healing from the Dungeon Master's hand",

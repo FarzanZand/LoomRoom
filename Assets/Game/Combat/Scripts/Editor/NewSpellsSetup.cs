@@ -241,6 +241,68 @@ public static class NewSpellsSetup
 
     // ── Spells and tomes ───────────────────────────────────────────────────────
 
+    // Dice Portal: Die Throw's die, but out of a portal that opens in the room beside the enemy (the Dungeon Master stays in
+    // his chair). Its spell, hand and mark effects and tome are copies of Die Throw's. Run from an eval:
+    // NewSpellsSetup.BuildDicePortal(). Safe to run again; its numbers are set again with retune.
+    public static void BuildDicePortal(bool retune = false)
+    {
+        const string name = "Dice Portal";
+        var dieThrow = Load<SpellDefinition>(Spells + "Die Throw/Die Throw.asset");
+        Folder(Spells + name);
+        Copy("Die Throw/Die Throw Hand.prefab", $"{name}/{name} Hand.prefab");
+        Copy("Die Throw/Die Throw Mark.prefab", $"{name}/{name} Mark.prefab");
+        // The vortex: its frames (Tools/dice_portal_texture.py) point-filtered on the Portal Vortex shader.
+        string texturePath = $"{Spells}{name}/{name} vortex.png", materialPath = $"{Spells}{name}/{name} vortex.mat";
+        if (AssetImporter.GetAtPath(texturePath) is TextureImporter vortexImporter)
+        {
+            vortexImporter.textureType = TextureImporterType.Default; vortexImporter.alphaIsTransparency = true;
+            vortexImporter.filterMode = FilterMode.Point; vortexImporter.mipmapEnabled = false; vortexImporter.npotScale = TextureImporterNPOTScale.None;
+            vortexImporter.textureCompression = TextureImporterCompression.Uncompressed; vortexImporter.wrapMode = TextureWrapMode.Clamp;
+            vortexImporter.SaveAndReimport();
+        }
+        var vortex = Load<Material>(materialPath);
+        if (vortex == null)
+        {
+            vortex = new Material(AssetDatabase.LoadAssetAtPath<Shader>($"{Spells}{name}/Portal Vortex.shader"));
+            AssetDatabase.CreateAsset(vortex, materialPath);
+        }
+        vortex.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath));
+        vortex.SetColor("_BaseColor", Color.white);
+        EditorUtility.SetDirty(vortex);
+        var spell = Spell(name, dieThrow, retune, s =>
+        {
+            s.spell = LeftHandSpell.DicePortal; s.effect = SpellEffect.Flick;
+            s.description = "Ask the Dungeon Master for a hand. A portal opens beside the enemy you aim at, and a die shoots out of it and knocks it across the room.";
+            s.manaCost = 24; s.power = 24; s.castSeconds = .6f; s.recoverySeconds = .4f;
+            s.flick = JsonUtility.FromJson<FlickSettings>(JsonUtility.ToJson(dieThrow.flick));
+            var f = s.flick;
+            f.reach = FlickReach.Portal; f.mark = Visual($"{name}/{name} Mark.prefab");
+            f.portalMaterial = vortex; f.portalFrames = 8; f.portalFps = 12f;
+            f.portalColor = new Color(.35f, .65f, 1f); f.portalRadius = .9f; f.portalDistance = 5.5f;
+            f.portalOpenSeconds = .35f; f.portalHoldSeconds = .3f; f.portalCloseSeconds = .3f; f.portalDieSpeed = 20f; f.portalLight = 6f;
+            f.portalOpenSound = Clip("Magic/Mgc_Water_Cast_02"); f.portalShootSound = Clip("Weapons/Wpn_Whoosh_02"); f.portalCloseSound = Clip("Magic/Mgc_Electric_Cast_Stop_01"); f.portalVolume = .9f;
+            f.lines = new[] { "Heads up.", "Let's see what you roll.", "From over here." };
+            s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = null; s.flightSound = null;
+        });
+        spell.heldVisual = Visual($"{name}/{name} Hand.prefab");
+        EditorUtility.SetDirty(spell);
+        // The tome: a copy of Die Throw's (its icon), with a save id of its own.
+        string tomePath = $"{Spells}{name}/{name} Tome.asset";
+        var tome = Load<ItemData>(tomePath);
+        if (tome == null)
+        {
+            AssetDatabase.CopyAsset(Spells + "Die Throw/Die Throw Tome.asset", tomePath);
+            tome = Load<ItemData>(tomePath);
+            tome.saveId = System.Guid.NewGuid().ToString("N");
+        }
+        tome.itemName = name + " Tome";
+        tome.spell = spell;
+        tome.description = "Hold it in your left hand to cast " + name + ". " + spell.description;
+        EditorUtility.SetDirty(tome);
+        AssetDatabase.SaveAssets();
+        Debug.Log($"[NewSpellsSetup] Dice Portal made; catalog {ItemDatabaseAuthoring.SyncCatalog()} items.");
+    }
+
     // The spell at Spells/<name>/<name>.asset: made from the template (its arm animation, timing and sounds) the first time.
     static SpellDefinition Spell(string name, SpellDefinition template, bool retune, System.Action<SpellDefinition> tune)
     {
