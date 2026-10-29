@@ -344433,6 +344433,8 @@ MonoBehaviour:
   leftHandEquippedParam: LeftHandEquipped
   blockHitTrigger: BlockHit
   blockStrainParam: BlockStrain
+  shieldAwayParam: ShieldAway
+  shieldAwayLinger: 1
   hurtTrigger: Hurt
   windupSpeedParam: WindupSpeed
   releaseSpeedParam: ReleaseSpeed
