@@ -356,7 +356,7 @@ public class DungeonMasterHand : MonoBehaviour
     }
 
     // Stopped half way (the fight ended): he lets go of whatever he holds and straightens up.
-    public void Release() { if (handLight != null) Destroy(handLight.gameObject); handLight = null; curl = float.NaN; flickCarried = null; hanging = null; if (carriedLight != null) Destroy(carriedLight.gameObject); carriedLight = null; rightGoal = leftGoal = lookGoal = leanGoal = 0f; Busy = false; }
+    public void Release() { if (handLight != null) Destroy(handLight.gameObject); handLight = null; curl = float.NaN; openHand = false; flickCarried = null; hanging = null; if (carriedLight != null) Destroy(carriedLight.gameObject); carriedLight = null; rightGoal = leftGoal = lookGoal = leanGoal = 0f; Busy = false; }
 
     public void StopAiming() { leftGoal = 0f; if (!Busy) { lookGoal = 0f; leanGoal = 0f; } }
 
@@ -417,14 +417,12 @@ public class DungeonMasterHand : MonoBehaviour
             point = now; touch += moved; cocked += moved; high += moved;
         }
         var from = FingerTip(); tipTarget = from; tipFix = RightHand != null ? RightHand.position - from : Vector3.zero; handFix = Quaternion.identity;
+        restTip = transform.InverseTransformPoint(from);
         lookTarget = point; lookGoal = 1f; rightGoal = 1f; curl = .2f;
         var flat = point - transform.position; flat.y = 0f;
         float lean = Mathf.Lerp(reachLean * .5f, flickLean, Mathf.InverseLerp(flickLeanRange.x, flickLeanRange.y, flat.magnitude));
-        if (flickLight > 0f)
-        {
-            var lightGo = new GameObject("Flick light");
-            handLight = lightGo.AddComponent<Light>(); handLight.type = LightType.Point; handLight.range = finger * 2.2f; handLight.intensity = 0f; handLight.color = new Color(1f, .85f, .65f); handLight.shadows = LightShadows.None;
-        }
+        openHand = false;
+        HandLight(flickLight, new Color(1f, .85f, .65f), finger);
         // In over the spot, the finger cocking as it comes down.
         for (float t = 0; t < seconds; t += Time.deltaTime)
         {
@@ -460,23 +458,102 @@ public class DungeonMasterHand : MonoBehaviour
         if (!hit) { flickCarried = null; struck?.Invoke(); }
         // Held out a moment, then up and away.
         yield return new WaitForSeconds(.3f);
-        var after = tipTarget;
-        for (float t = 0; t < .6f; t += Time.deltaTime)
-        {
-            float u = Mathf.SmoothStep(0, 1, t / .6f);
-            tipTarget = after + Vector3.up * carryHeight * u - level * finger * u;
-            curl = Mathf.Lerp(-.18f, .3f, u);
-            if (u > .5f) { rightGoal = 0f; leanGoal = 0f; }
-            yield return null;
-        }
-        rightGoal = 0f; leanGoal = 0f;
-        yield return new WaitForSeconds(blend);
+        yield return Withdraw(level, finger, u => curl = Mathf.Lerp(-.18f, .3f, u));
         curl = float.NaN; lookGoal = 0f;
         if (handLight != null) Destroy(handLight.gameObject);
         handLight = null;
         Busy = false;
     }
-    Light handLight;
+    // Up and away from where his hand is and back down to where it rested before he reached (restTip, his own pose's
+    // fingertip, kept relative to him), leaning back as it goes; only then is his arm handed back to his own pose, so
+    // nothing is left to jump (faded out part way, the hand swept from the air to the table in a few frames).
+    // step: told how far along it is (0 to 1).
+    IEnumerator Withdraw(Vector3 level, float finger, System.Action<float> step)
+    {
+        const float Seconds = 1.2f;
+        var after = tipTarget;
+        float lean = leanGoal;
+        var high = after + Vector3.up * carryHeight - level * finger;
+        for (float t = 0; t < Seconds; t += Time.deltaTime)
+        {
+            float u = Mathf.SmoothStep(0, 1, t / Seconds), v = 1f - u;
+            var rest = transform.TransformPoint(restTip);
+            tipTarget = v * v * after + 2f * v * u * high + u * u * rest;
+            step?.Invoke(u);
+            leanGoal = lean * v;
+            yield return null;
+        }
+        rightGoal = 0f; leanGoal = 0f;
+        while (rightWeight > 0f) yield return null;
+    }
+    Vector3 restTip;   // where his fingertip rested before the reach, in his own space
+
+    Light handLight; float handLightStrength;
+    bool openHand;   // the hand flat and open (Bless), not a cocked finger
+
+    void HandLight(float strength, Color color, float finger)
+    {
+        if (handLight != null) Destroy(handLight.gameObject);
+        handLight = null; handLightStrength = strength;
+        if (strength <= 0f) return;
+        var lightGo = new GameObject("DM hand light");
+        handLight = lightGo.AddComponent<Light>(); handLight.type = LightType.Point; handLight.range = finger * 2.2f; handLight.intensity = 0f; handLight.color = color; handLight.shadows = LightShadows.None;
+    }
+
+    // ── The open hand (the Helping Hand spell) ──────────────────────
+
+    [Header("Open hand")]
+    [Range(0, 60), Tooltip("Degrees his fingers point down from level while he holds his hand over the player.")]
+    public float blessTilt = 18f;
+    [Min(0), Tooltip("Light on his hand while he holds it over the player.")]
+    public float blessLight = 1.5f;
+
+    // He brings his hand in flat over point (the palm's middle there, palm down, fingers pointing along direction), holds
+    // it there for hold seconds (holding is called as it arrives) and takes it away. follow: where the point is now, asked
+    // every frame (the player may walk meanwhile).
+    // done: called as the hold ends and his hand starts away.
+    public IEnumerator Bless(Vector3 point, Vector3 direction, float seconds, float hold, Color glow, System.Action holding, System.Func<Vector3> follow = null, System.Action done = null)
+    {
+        Busy = true;
+        var level = direction; level.y = 0f; level = level.sqrMagnitude > .001f ? level.normalized : transform.forward;
+        flickAim = (level - Vector3.up * Mathf.Tan(blessTilt * Mathf.Deg2Rad)).normalized;
+        float finger = FingerLength();
+        flickCarried = null; openHand = true;
+        // The fingertip a finger's length on past the palm's middle.
+        Vector3 Tip(Vector3 palm) => palm + flickAim * finger * 1.1f;
+        Arc(point, out _, out _, out _, out var shown);
+        var from = FingerTip(); tipTarget = from; tipFix = RightHand != null ? RightHand.position - from : Vector3.zero; handFix = Quaternion.identity;
+        restTip = transform.InverseTransformPoint(from);
+        lookTarget = point; lookGoal = 1f; rightGoal = 1f; curl = 0f;
+        var flat = point - transform.position; flat.y = 0f;
+        float lean = Mathf.Lerp(reachLean * .5f, flickLean, Mathf.InverseLerp(flickLeanRange.x, flickLeanRange.y, flat.magnitude));
+        HandLight(blessLight, glow, finger);
+        var high = Tip(point) + Vector3.up * carryHeight * .5f - level * finger;
+        for (float t = 0; t < seconds; t += Time.deltaTime)
+        {
+            if (follow != null) { var now = follow(); high += now - point; point = now; }
+            float u = Mathf.SmoothStep(0, 1, t / seconds), v = 1f - u;
+            leanGoal = Mathf.Lerp(reachLean * .3f, lean, u);
+            tipTarget = v * v * v * from + 3f * v * v * u * shown + 3f * v * u * u * high + u * u * u * Tip(point);
+            lookTarget = point;
+            yield return null;
+        }
+        holding?.Invoke();
+        // Held over them, breathing a little.
+        for (float t = 0; t < hold; t += Time.deltaTime)
+        {
+            if (follow != null) point = follow();
+            tipTarget = Tip(point) + Vector3.up * Mathf.Sin(t * 2.4f) * finger * .06f;
+            lookTarget = point;
+            yield return null;
+        }
+        done?.Invoke();
+        yield return Withdraw(level, finger, null);
+        curl = float.NaN; openHand = false; lookGoal = 0f;
+        if (handLight != null) Destroy(handLight.gameObject);
+        handLight = null;
+        Busy = false;
+    }
 
     [Tooltip("Where he holds something out to flick it at a spot out of his reach: shares of his arm's length out toward it, to his right and above his shoulder.")]
     public Vector3 holdOut = new(.85f, .25f, .25f);
@@ -530,10 +607,15 @@ public class DungeonMasterHand : MonoBehaviour
             var want = Vector3.ProjectOnPlane(across, flickAim);
             if (side.sqrMagnitude > 1e-6f && want.sqrMagnitude > 1e-6f) fix = Quaternion.FromToRotation(side, want) * fix;
         }
-        handFix = Quaternion.Slerp(handFix, fix * handFix, .5f);
-        // The straight fingertip: from the knuckle along the hand's forward (the finger is bent below, after this).
+        // Learnt only while the IK has the hand fully: blending in or out, the hand falls short of its goal by the blend
+        // alone, and learning that would push the goal further and further off (the arm thrown about as it lets go).
         var straightTip = p1.position + forward * FingerLength();
-        tipFix = Vector3.ClampMagnitude(tipFix + (tipTarget - straightTip) * .5f, 30f);
+        if (rightWeight >= .97f)
+        {
+            handFix = Quaternion.Slerp(handFix, fix * handFix, .5f);
+            // The straight fingertip: from the knuckle along the hand's forward (the finger is bent below, after this).
+            tipFix = Vector3.ClampMagnitude(tipFix + (tipTarget - straightTip) * .5f, 30f);
+        }
         // The finger itself: each joint bent about his hand's across line (down toward the palm), the middle finger folded.
         // From his rest pose (straight, as the model was made; the animator has them curled), then bent.
         void Bend(Transform bone, float degrees)
@@ -543,6 +625,13 @@ public class DungeonMasterHand : MonoBehaviour
             bone.rotation = Quaternion.AngleAxis(degrees, across) * bone.rotation;
         }
         float c = curl;
+        if (openHand)
+        {
+            // Palm down, fingers straight and together (his rest pose): nothing bent, folded or held.
+            foreach (var bone in rightRest.Keys) bone.localRotation = rightRest[bone];
+            LightHand();
+            return;
+        }
         Bend(p1, flickCurl.x * c); Bend(p2, flickCurl.y * Mathf.Max(c, -.3f)); Bend(p3, flickCurl.z * Mathf.Max(c, -.3f));
         Bend(m1, 80f); Bend(Bone(HumanBodyBones.RightMiddleIntermediate), 95f); Bend(Bone(HumanBodyBones.RightMiddleDistal), 70f);
         // The thumb holds the cocked fingertip (lets go of it as the finger snaps out): its tip turned onto the bent finger.
@@ -557,13 +646,16 @@ public class DungeonMasterHand : MonoBehaviour
         }
         if (flickCarried != null)
             flickCarried.position = FingerTip() + flickAim * (carriedSize * .6f) - Vector3.up * carriedSize * .5f;
-        // His hand lit from the watcher's side, brighter as it comes down into the room.
-        if (handLight != null && Camera.main != null)
-        {
-            var tip = FingerTip();
-            handLight.transform.position = tip + (Camera.main.transform.position - tip).normalized * FingerLength() * .8f + Vector3.up * FingerLength() * .3f;
-            handLight.intensity = Mathf.MoveTowards(handLight.intensity, flickLight * rightWeight, flickLight * 2f * Time.deltaTime);
-        }
+        LightHand();
+    }
+
+    // His hand lit from the watcher's side, brighter as it comes down into the room.
+    void LightHand()
+    {
+        if (handLight == null || Camera.main == null) return;
+        var tip = FingerTip();
+        handLight.transform.position = tip + (Camera.main.transform.position - tip).normalized * FingerLength() * .8f + Vector3.up * FingerLength() * .3f;
+        handLight.intensity = Mathf.MoveTowards(handLight.intensity, handLightStrength * rightWeight, handLightStrength * 2f * Time.deltaTime);
     }
 
     float ArmLength(HumanBodyBones upper, HumanBodyBones lower, HumanBodyBones hand)

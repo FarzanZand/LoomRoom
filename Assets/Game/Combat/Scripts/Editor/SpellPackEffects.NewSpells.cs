@@ -47,6 +47,14 @@ public static partial class SpellPackEffects
             new Art { prefab = "Flick/Flick Hand.prefab", effect = P + "Casting/Casting_Light_LWRP.prefab", scale = .05f, charge = true, linger = .3f },
             // The enemy he has picked: a ring of golden light round its feet while he comes for it.
             new Art { prefab = "Flick/Flick Mark.prefab", effect = "Prefabs/Auras/Aura_Light_LWRP.prefab", scale = .3f, charge = true, linger = .4f, maxScreen = .25f },
+            // Die Throw: the same glint and mark.
+            new Art { prefab = "Die Throw/Die Throw Hand.prefab", effect = P + "Casting/Casting_Light_LWRP.prefab", scale = .05f, charge = true, linger = .3f },
+            new Art { prefab = "Die Throw/Die Throw Mark.prefab", effect = "Prefabs/Auras/Aura_Light_LWRP.prefab", scale = .3f, charge = true, linger = .4f, maxScreen = .25f },
+            // Helping Hand: a warm light in the palm; rays of light pouring down onto the player from his hand; the potion's
+            // burst at their feet.
+            new Art { prefab = "Helping Hand/Helping Hand Hand.prefab", effect = P + "Casting/Casting_Light_LWRP.prefab", scale = .05f, charge = true, linger = .3f },
+            new Art { prefab = "Helping Hand/Helping Hand Pour.prefab", effect = S + "Spell_Light_5_LWRP.prefab", scale = .35f, charge = true, linger = .6f, maxScreen = .3f },
+            new Art { prefab = "Helping Hand/Helping Hand Burst.prefab", effect = P + "Explosion/Explosion_Light_LWRP.prefab", scale = .25f, once = true, life = .6f, maxScreen = .2f },
             new Art { prefab = "Raise the Fallen/Raise the Fallen Hand.prefab", effect = P + "Casting/Casting_Dark_3_LWRP.prefab", scale = .045f, charge = true, linger = .35f },
             new Art { prefab = "Raise the Fallen/Raise the Fallen Circle.prefab", effect = S + "Spell_Dark_9_LWRP.prefab", scale = .2f, charge = true, linger = .6f, maxScreen = .18f },
             new Art { prefab = "Raise the Fallen/Raise the Fallen Flash.prefab", effect = P + "Explosion/Explosion_Dark_3_LWRP.prefab", scale = .22f, once = true, life = .5f, maxScreen = .2f },

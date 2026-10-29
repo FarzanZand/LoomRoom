@@ -5,10 +5,24 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.AI;
 
+// How he gets his hand to the enemy. Serialized by integer: append only.
+public enum FlickReach
+{
+    WalkOrDie = 0,   // he walks to the table's edge and flicks it with his finger, or out of his reach flicks a die at it
+    Appear = 1,      // he is there at once beside it, standing in the table, and flicks it with his finger wherever it is
+    DieOnly = 2,     // he flicks a die at it from where he stands
+}
+
 [Serializable]
 public class FlickSettings
 {
-    [FoldoutGroup("Flick", Expanded = true), Min(1f), Tooltip("Furthest from the player the enemy may stand.")]
+    [FoldoutGroup("Flick", Expanded = true), Tooltip("Walk Or Die: he walks to the table's edge for his finger, or flicks a die from where he is when it is out of reach. Appear: he is there at once beside the enemy, standing in the table, and flicks it with his finger anywhere. Die Only: always the die.")]
+    public FlickReach reach = FlickReach.WalkOrDie;
+    [FoldoutGroup("Flick"), ShowIf("@reach == FlickReach.Appear"), Min(4f), Tooltip("How far from the enemy he appears (level, world units): his finger reaches it from there.")]
+    public float appearDistance = 13f;
+    [FoldoutGroup("Flick"), ShowIf("@reach == FlickReach.Appear"), Range(0f, 1f), Tooltip("How far ahead of the enemy (along the player's view) he stands, against beside it: ahead, he is seen; beside, it flies across the view.")]
+    public float appearAhead = .75f;
+    [FoldoutGroup("Flick"), Min(1f), Tooltip("Furthest from the player the enemy may stand.")]
     public float range = 16f;
     [FoldoutGroup("Flick"), Range(1f, 30f), Tooltip("Degrees off the crosshair an enemy may stand and still be the one picked.")]
     public float aimCone = 15f;
@@ -150,30 +164,13 @@ public class Flick : MonoBehaviour
         var spot = target.transform.position;
         // Decided before he walks (where he will stand is worked out from his own side of the table): his finger reaches
         // the enemy from the table's edge, and it stands in the open.
-        var standFor = DungeonMasterReach.StandFor(spot);
-        var reachOut = Flat(spot - standFor);
-        float fromEdge = Mathf.Max(0f, (DungeonMasterReach.Seat != null ? DungeonMasterReach.Seat.leanBack : 6f) - settings.edgeGap);
-        float level = new Vector2(spot.x - standFor.x, spot.z - standFor.z).magnitude - fromEdge;
-        bool near = level <= settings.fingerReach && Roomy(spot);
-        // A long walk round the table would keep the player waiting: he flicks the die from where he is instead.
-        if (near && hand != null && new Vector2(standFor.x - hand.transform.position.x, standFor.z - hand.transform.position.z).magnitude > settings.maxWalk) near = false;
-        var seat = DungeonMasterReach.Seat;
-        var agent = hand != null ? hand.GetComponent<NavMeshAgent>() : null;
-        bool agentWasOn = agent != null && agent.enabled;
-        var stoodAt = hand != null ? hand.transform.position : Vector3.zero;
-        if (near)
+        bool appear = settings.reach == FlickReach.Appear && AppearBy(target);
+        bool near = appear || settings.reach == FlickReach.WalkOrDie && DungeonMasterReach.InHandReach(spot, settings.fingerReach, settings.edgeGap, settings.maxWalk) && Roomy(spot);
+        if (appear) yield return new WaitForSeconds(.35f);
+        else if (near)
         {
             yield return DungeonMasterReach.Approach(spot, settings.walkSpeed);
-            // Right up against the table's edge for the flick: his finger has to reach the enemy itself. (His navigation
-            // agent keeps him on the bedroom's floor, which stops short of the table: it is off until he steps back.)
-            stoodAt = hand != null ? hand.transform.position : stoodAt;
-            if (seat != null && hand != null)
-            {
-                if (agentWasOn) agent.enabled = false;
-                var toward = Flat(spot - stoodAt);
-                seat.Focus(stoodAt + toward * Mathf.Max(0f, seat.leanBack - settings.edgeGap), spot);
-                for (float t = 0; !seat.Arrived && t < 2f; t += Time.deltaTime) yield return null;
-            }
+            yield return DungeonMasterReach.StepIn(spot, settings.edgeGap);
         }
         // Out of his reach he stays where he is and turns to it.
         else yield return DungeonMasterReach.TurnTo(spot);
@@ -222,15 +219,30 @@ public class Flick : MonoBehaviour
         for (float t = 0; flying && t < 8f; t += Time.deltaTime) yield return null;
         yield return new WaitForSeconds(.5f);
         yield return DungeonMasterReach.Lid(floor, false);
-        // A step back from the edge, onto his own floor again, before he goes.
-        if (near && seat != null && hand != null)
-        {
-            seat.Focus(stoodAt, stoodAt + Flat(spot - stoodAt));
-            for (float t = 0; !seat.Arrived && t < 2f; t += Time.deltaTime) yield return null;
-        }
-        if (agent != null && agentWasOn) { agent.enabled = true; agent.Warp(agent.transform.position); }
+        if (appear) DungeonMasterReach.Vanish();
+        else yield return DungeonMasterReach.StepBack(spot);
         yield return DungeonMasterReach.Leave();
         Destroy(gameObject);
+    }
+
+    // He appears beside the enemy, on whichever side gives it the longer flight: a little ahead of it along the player's
+    // view (so he is seen) and to one side (so it flies across the view, not at the player).
+    bool AppearBy(Character body)
+    {
+        var view = Flat(View(caster).forward);
+        var right = Vector3.Cross(Vector3.up, view);
+        var spot = body.transform.position;
+        Vector3 best = Vector3.zero; float bestRoom = float.MinValue;
+        foreach (var side in new[] { 1f, -1f })
+        {
+            var from = (right * side + view * settings.appearAhead).normalized;
+            FlightDirection(body, -from, out float room);
+            if (room > bestRoom) { bestRoom = room; best = from; }
+        }
+        var at = spot + best * settings.appearDistance;
+        if (!DungeonMasterReach.Appear(at, spot)) return false;
+        DungeonMasterReach.Shake(.3f);
+        return true;
     }
 
     // Open floor round the spot, enough for his hand to come down into the room without going through its walls.
@@ -238,12 +250,13 @@ public class Flick : MonoBehaviour
 
     // Of the directions within Sideways of straight away from him, the one with the longest clear flight at chest height
     // (out to where it would land), turned off any that head at the player.
-    Vector3 FlightDirection(Character body, Vector3 away)
+    Vector3 FlightDirection(Character body, Vector3 away) => FlightDirection(body, away, out _);
+    Vector3 FlightDirection(Character body, Vector3 away, out float bestScore)
     {
         var chest = SpellEffects.Chest(body);
         var toPlayer = Flat(caster.transform.position - body.transform.position);
         float flight = settings.launchSpeed * (2f * settings.launchUp / settings.gravity + .3f);
-        Vector3 best = away; float bestScore = float.MinValue;
+        Vector3 best = away; bestScore = float.MinValue;
         for (float a = -settings.sideways; a <= settings.sideways + .01f; a += 10f)
         {
             var dir = Quaternion.Euler(0f, a, 0f) * away;

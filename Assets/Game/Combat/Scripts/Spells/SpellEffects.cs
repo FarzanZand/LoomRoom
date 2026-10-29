@@ -10,6 +10,7 @@ public static class SpellEffects
         if (spell.effect == SpellEffect.RaiseTheFallen && BoneHeap.Nearest(player.transform.position, spell.raise.reach) == null)
             return "No bones close enough";
         if (spell.effect == SpellEffect.Flick) return Flick.Refusal(player, spell);
+        if (spell.effect == SpellEffect.HelpingHand) return HelpingHand.Refusal(player, spell);
         return null;
     }
 
@@ -26,6 +27,7 @@ public static class SpellEffects
                 if (heap != null) RaiseTheFallen.Cast(player, spell, heap, progress);
                 break;
             case SpellEffect.Flick: Flick.Cast(player, spell, power, progress); break;
+            case SpellEffect.HelpingHand: HelpingHand.Cast(player, spell, power, progress); break;
         }
     }
 
@@ -38,6 +40,7 @@ public static class SpellEffects
             SpellEffect.RaiseTheFallen => BoneHeap.Nearest(caster.transform.position, spell.raise.reach) != null,
             SpellEffect.ShadowVeil => false,
             SpellEffect.Flick => false,
+            SpellEffect.HelpingHand => false,
             _ => true,
         };
     }

@@ -11,7 +11,7 @@ using UnityEngine;
 // Commands (separated by ';'):
 //   place <name> <metres>   move the first living enemy whose name contains <name> in front of the player
 //   face                    turn the player toward that enemy (chest height); track [off] keeps facing it
-//   followflick <seconds>   keep the view on a Flick as a player would watch it: the die in the air, else the Dungeon
+//   followflick <seconds>   keep the view on a Flick (or Helping Hand) as a player would watch it: the die in the air, else the Dungeon
 //                           Master's hand while it reaches, else the enemy being flicked
 //   pitch <degrees>         set the camera pitch (positive looks up)
 //   attack                  tap attack       hold <s>   hold attack for s seconds
@@ -230,7 +230,7 @@ public class CombatTestBot : MonoBehaviour
             // The flick's own target once it is cast (the spell leaves the hand after its wind-up); kept after it ends.
             if (Flick.Watched != null) watched = Flick.Watched;
             Vector3? at = null;
-            var die = GameObject.Find("Flick die");
+            var die = GameObject.Find("Flick die") ?? GameObject.Find("Helping hand potion");
             if (die != null) at = die.transform.position;
             // His hand while it is in the room with the enemy; else the sky over the enemy on his side, where the die comes from.
             if (!at.HasValue && hand != null && hand.Busy && hand.RightHand != null && watched != null)
@@ -239,6 +239,9 @@ public class CombatTestBot : MonoBehaviour
                 var toHand = hand.RightHand.position - body;
                 at = toHand.magnitude < 9f ? Vector3.Lerp(hand.RightHand.position, body, .35f) : body + Vector3.up * 1.2f;
             }
+            // Helping Hand: his hand over the player (no enemy to watch).
+            if (!at.HasValue && HelpingHand.Running && hand != null && hand.Busy && hand.RightHand != null)
+                at = Vector3.Lerp(hand.RightHand.position, player.transform.position + Vector3.up * 1.6f + player.transform.forward * 4f, .45f);
             if (!at.HasValue && watched != null) at = watched.transform.position + Vector3.up * 1.1f;
             if (at.HasValue && player.Look != null)
             {

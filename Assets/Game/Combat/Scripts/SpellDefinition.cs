@@ -54,6 +54,7 @@ public class SpellDefinition : ScriptableObject
     [ShowIf("@effect == SpellEffect.SweepingArc"), InlineProperty, HideLabel] public SweepingArcSettings sweep = new();
     [ShowIf("@effect == SpellEffect.RaiseTheFallen"), InlineProperty, HideLabel] public RaiseSettings raise = new();
     [ShowIf("@effect == SpellEffect.Flick"), InlineProperty, HideLabel] public FlickSettings flick = new();
+    [ShowIf("@effect == SpellEffect.HelpingHand"), InlineProperty, HideLabel] public HelpingHandSettings helpingHand = new();
 
     [Title("Ground area")]
     [Tooltip("Lands on the ground at the target instead of flying: the spot is marked (Show Marker), then it erupts after Area Delay and hits everything hostile inside Area Radius. The eruption is the Impact effect.")]
@@ -90,7 +91,7 @@ public class SpellDefinition : ScriptableObject
     [Range(0, 1)] public float impactVolume = 1f;
 
     public bool IsProjectile => effect == SpellEffect.Standard && spell != LeftHandSpell.Heal && !groundArea;
-    public AdventureSkill Skill => spell == LeftHandSpell.Heal || effect == SpellEffect.RaiseTheFallen ? AdventureSkill.Thaumaturgy : AdventureSkill.Sorcery;
+    public AdventureSkill Skill => spell == LeftHandSpell.Heal || effect == SpellEffect.RaiseTheFallen || effect == SpellEffect.HelpingHand ? AdventureSkill.Thaumaturgy : AdventureSkill.Sorcery;
 
     // The tome's rules line: cost and what the spell does.
     public string RulesLine(float cost, float power) => effect switch
@@ -98,11 +99,13 @@ public class SpellDefinition : ScriptableObject
         SpellEffect.ShadowVeil => $"{cost:0.#} mana, unseen for {veil.seconds:0.#} seconds",
         SpellEffect.RaiseTheFallen => $"{cost:0.#} mana, raises a fallen skeleton for {raise.summon.lifetime:0} seconds",
         SpellEffect.ChainLightning => $"{cost:0.#} mana, {power:0.#} damage, jumps to {chain.jumps} more",
+        SpellEffect.Flick when flick.reach == FlickReach.DieOnly => $"{cost:0.#} mana, {power:0.#} damage, the Dungeon Master flicks a die at it",
         SpellEffect.Flick => $"{cost:0.#} mana, {power:0.#} damage, the Dungeon Master flicks it across the room",
+        SpellEffect.HelpingHand => $"{cost:0.#} mana, {power:0.#} healing from the Dungeon Master's hand",
         _ => $"{cost:0.#} mana, {power:0.#} {(spell == LeftHandSpell.Heal ? "healing" : "damage")}",
     };
 }
 
 // What a spell does when it leaves the hand. Serialized by integer: append only.
-public enum SpellEffect { Standard = 0, ShadowVeil = 1, ChainLightning = 2, SweepingArc = 3, RaiseTheFallen = 4, Flick = 5 }
+public enum SpellEffect { Standard = 0, ShadowVeil = 1, ChainLightning = 2, SweepingArc = 3, RaiseTheFallen = 4, Flick = 5, HelpingHand = 6 }
 

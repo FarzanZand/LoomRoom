@@ -34,7 +34,7 @@ public static class DungeonMasterReach
         }
     }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetStatics() { reaching = false; reachFloor = null; standingAt = Side.Own; impulse = null; walkSpeed = -1f; }
+    static void ResetStatics() { reaching = false; reachFloor = null; standingAt = Side.Own; impulse = null; walkSpeed = -1f; steppedIn = false; steppedAgent = null; appeared = false; }
 
     public static float TableTop(DungeonGenerator dungeon) =>
         TableManager.HasInstance && TableManager.Instance.GetComponent<TableCut>() is { } cut && cut.Bounds.size != Vector3.zero ? cut.Bounds.max.y
@@ -228,6 +228,77 @@ public static class DungeonMasterReach
 
     // Marks his hands taken for a reach run by someone else (the Flick spell); Leave frees them.
     public static void BeginReach() => Reaching = true;
+
+    // Whether his hand reaches the spot from right up against the table's edge (reach: how far past the edge, level, world
+    // units; edgeGap: how far from the edge he stands then), with a walk along the table of at most maxWalk.
+    public static bool InHandReach(Vector3 spot, float reach, float edgeGap, float maxWalk)
+    {
+        var hand = Hand;
+        if (hand == null) return false;
+        var stand = StandFor(spot);
+        float fromEdge = Mathf.Max(0f, (Seat != null ? Seat.leanBack : 6f) - edgeGap);
+        float level = new Vector2(spot.x - stand.x, spot.z - stand.z).magnitude - fromEdge;
+        return level <= reach && new Vector2(stand.x - hand.transform.position.x, stand.z - hand.transform.position.z).magnitude <= maxWalk;
+    }
+
+    // Right up against the table's edge, edgeGap from it (he stands further back to set figures down): his hand has to
+    // reach into the room itself. His navigation agent keeps him on the bedroom's floor, which stops short of the table:
+    // it is off until StepBack.
+    static UnityEngine.AI.NavMeshAgent steppedAgent; static bool steppedAgentWasOn; static Vector3 steppedFrom; static bool steppedIn;
+    public static IEnumerator StepIn(Vector3 spot, float edgeGap)
+    {
+        var seat = Seat; var hand = Hand;
+        if (seat == null || hand == null) yield break;
+        steppedFrom = hand.transform.position;
+        steppedAgent = hand.GetComponent<NavMeshAgent>();
+        steppedAgentWasOn = steppedAgent != null && steppedAgent.enabled;
+        if (steppedAgentWasOn) steppedAgent.enabled = false;
+        steppedIn = true;
+        var toward = Flat(spot - steppedFrom);
+        seat.Focus(steppedFrom + toward * Mathf.Max(0f, seat.leanBack - edgeGap), spot);
+        for (float t = 0; !seat.Arrived && t < 2f; t += Time.deltaTime) yield return null;
+    }
+
+    // He is there at once beside the spot, wherever it is on the table (standing in it), facing it: his hand reaches it
+    // from where he stands. Off his navigation agent until Vanish.
+    static bool appeared;
+    public static bool Appear(Vector3 standAt, Vector3 spot)
+    {
+        var seat = Seat; var hand = Hand;
+        if (seat == null || hand == null) return false;
+        steppedAgent = hand.GetComponent<NavMeshAgent>();
+        steppedAgentWasOn = steppedAgent != null && steppedAgent.enabled;
+        if (steppedAgentWasOn) steppedAgent.enabled = false;
+        if (!seat.Teleport(standAt, spot)) { if (steppedAgentWasOn) steppedAgent.enabled = true; return false; }
+        appeared = true; standingAt = Side.Own;
+        hand.Watch(spot, true);
+        return true;
+    }
+
+    // Back at his place at once (after Appear).
+    public static void Vanish()
+    {
+        if (!appeared) return;
+        appeared = false;
+        if (Seat != null) Seat.TeleportHome();
+        if (steppedAgent != null && steppedAgentWasOn) { steppedAgent.enabled = true; steppedAgent.Warp(steppedAgent.transform.position); }
+        steppedAgent = null;
+    }
+
+    // A step back from the edge, onto his own floor again (after StepIn), before he goes.
+    public static IEnumerator StepBack(Vector3 spot)
+    {
+        if (!steppedIn) yield break;
+        steppedIn = false;
+        var seat = Seat;
+        if (seat != null)
+        {
+            seat.Focus(steppedFrom, steppedFrom + Flat(spot - steppedFrom));
+            for (float t = 0; !seat.Arrived && t < 2f; t += Time.deltaTime) yield return null;
+        }
+        if (steppedAgent != null && steppedAgentWasOn) { steppedAgent.enabled = true; steppedAgent.Warp(steppedAgent.transform.position); }
+        steppedAgent = null;
+    }
 
     // He sets an enemy down on spot (spawned, its brain off until it lands) and it goes for the player at once.
     public static IEnumerator Put(Character figure, Vector3 spot, float seconds = 2f, bool alert = true)

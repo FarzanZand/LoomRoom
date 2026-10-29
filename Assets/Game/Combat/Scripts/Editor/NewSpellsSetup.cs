@@ -20,7 +20,7 @@ public static class NewSpellsSetup
         var heal = Load<SpellDefinition>(Spells + "Heal/Heal.asset");
 
         // Prefabs first (copies of the Fireball's, whose SpellVisual, light and projectile setup they keep); the art goes in after.
-        foreach (var name in new[] { "Shadow Veil", "Chain Lightning", "Sweeping Arc", "Molten Boulder", "Hurled Stone", "Frost Lance", "Raise the Fallen", "Flick" })
+        foreach (var name in new[] { "Shadow Veil", "Chain Lightning", "Sweeping Arc", "Molten Boulder", "Hurled Stone", "Frost Lance", "Raise the Fallen", "Flick", "Die Throw", "Helping Hand" })
         {
             Folder(Spells + name);
             Copy("Fireball/Fireball Hand.prefab", $"{name}/{name} Hand.prefab");
@@ -41,6 +41,9 @@ public static class NewSpellsSetup
         Copy("Fireball/Fireball Impact.prefab", "Raise the Fallen/Raise the Fallen Flash.prefab");
         Copy("Fireball/Fireball Hand.prefab", "Raise the Fallen/Raise the Fallen Aura.prefab");
         Copy("Fireball/Fireball Hand.prefab", "Flick/Flick Mark.prefab");
+        Copy("Fireball/Fireball Hand.prefab", "Die Throw/Die Throw Mark.prefab");
+        Copy("Fireball/Fireball Hand.prefab", "Helping Hand/Helping Hand Pour.prefab");
+        Copy("Fireball/Fireball Impact.prefab", "Helping Hand/Helping Hand Burst.prefab");
         SpellPackEffects.RebuildNewSpells();
 
         // Lights in each effect's colour.
@@ -65,6 +68,11 @@ public static class NewSpellsSetup
         Light("Raise the Fallen/Raise the Fallen Aura.prefab", new Color(.4f, 1f, .45f), .8f, 2f);
         Light("Flick/Flick Hand.prefab", new Color(1f, .82f, .5f), 1.2f, 2.2f);
         Light("Flick/Flick Mark.prefab", new Color(1f, .85f, .55f), 3f, 4f);
+        Light("Die Throw/Die Throw Hand.prefab", new Color(1f, .82f, .5f), 1.2f, 2.2f);
+        Light("Die Throw/Die Throw Mark.prefab", new Color(1f, .85f, .55f), 3f, 4f);
+        Light("Helping Hand/Helping Hand Hand.prefab", new Color(1f, .9f, .6f), 1.2f, 2.2f);
+        Light("Helping Hand/Helping Hand Pour.prefab", new Color(1f, .9f, .6f), 4f, 5f);
+        Light("Helping Hand/Helping Hand Burst.prefab", new Color(1f, .9f, .6f), 5f, 5f);
         // The hurled rock's material is full white: right by the eyes the player's key light burns it to a blank lump.
         var rock = Load<Material>(Spells + "_Pack/Materials/Rock_LWRP.mat");
         if (rock != null && rock.HasProperty("_BaseColor")) { rock.SetColor("_BaseColor", new Color(.58f, .55f, .5f, 1f)); EditorUtility.SetDirty(rock); }
@@ -166,6 +174,7 @@ public static class NewSpellsSetup
             s.description = "Ask the Dungeon Master for a hand. He reaches in and flicks the enemy you aim at across the room.";
             s.manaCost = 30; s.power = 30; s.castSeconds = .6f; s.recoverySeconds = .4f;
             var f = s.flick;
+            f.reach = FlickReach.Appear; f.appearDistance = 13f; f.appearAhead = .75f;
             f.range = 16; f.aimCone = 15; f.reachSeconds = 1.6f; f.windup = .35f;
             f.launchSpeed = 11; f.launchUp = 7; f.sideways = 70; f.walkSpeed = 45; f.gravity = 25; f.spin = 720; f.stunSeconds = 1.5f; f.bowlShare = .5f;
             f.die = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Levels/Shared/Props/Events/DM die.prefab"); f.dieScale = 1.5f; f.dieArc = 7f; f.maxWalk = 40f; f.dieGravity = 16f; f.dieLight = 12f; f.handRoom = 1.8f; f.fingerReach = 12f; f.mark = Visual("Flick/Flick Mark.prefab"); f.markLight = 1.5f; f.handLength = 5f;
@@ -174,8 +183,37 @@ public static class NewSpellsSetup
             s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = null; s.flightSound = null;
         });
 
+        // Flick's die on its own: from where he stands, whatever the distance.
+        var die = Spell("Die Throw", fireball, retune, s =>
+        {
+            s.spell = LeftHandSpell.DieThrow; s.effect = SpellEffect.Flick;
+            s.description = "Ask the Dungeon Master for a hand. He flicks a die at the enemy you aim at from where he stands, and it knocks it across the room.";
+            s.manaCost = 24; s.power = 24; s.castSeconds = .6f; s.recoverySeconds = .4f;
+            s.flick = JsonUtility.FromJson<FlickSettings>(JsonUtility.ToJson(flick.flick));
+            s.flick.reach = FlickReach.DieOnly; s.flick.mark = Visual("Die Throw/Die Throw Mark.prefab");
+            s.flick.lines = new[] { "Catch.", "Let's see what you roll.", "Allow me." };
+            s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = null; s.flightSound = null;
+        });
+
+        var help = Spell("Helping Hand", heal, retune, s =>
+        {
+            s.spell = LeftHandSpell.HelpingHand; s.effect = SpellEffect.HelpingHand;
+            s.description = "Ask the Dungeon Master for a hand. He appears in front of you and holds it over you, and the light from it heals you.";
+            s.manaCost = 28; s.power = 40; s.castSeconds = .7f; s.recoverySeconds = .4f; s.castMoveSpeed = .7f;
+            var h = s.helpingHand;
+            h.reach = HelpReach.Appear; h.appearDistance = 17f;
+            h.reachSeconds = 1.4f; h.holdSeconds = 2.2f; h.handReach = 12f; h.handRoom = 1.5f; h.edgeGap = 1.5f; h.maxWalk = 40f; h.walkSpeed = 45f;
+            h.palmHeight = 7f; h.palmAhead = 4.5f; h.palmLight = 8f; h.palmGlow = Visual("Helping Hand/Helping Hand Hand.prefab"); h.palmGlowScale = 12f; h.beam = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Levels/Dungeon1/Forest/Props/Moonbeam warm.prefab"); h.beamSource = new Vector3(-1.2f, 11f, -.6f); h.beamLight = .35f;
+            h.pour = Visual("Helping Hand/Helping Hand Pour.prefab"); h.burst = Visual("Helping Hand/Helping Hand Burst.prefab");
+            h.potion = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Items/Prefabs/Consumables/Potion.prefab");
+            h.potionScale = 3f; h.potionArc = 6f; h.potionGravity = 16f; h.potionLight = 10f; h.landAhead = 1.2f; h.burstHealSeconds = 1f;
+            h.smashSound = Clip("Magic/Mgc_Ice_Hit_Short_01"); h.smashVolume = .8f;
+            h.color = new Color(1f, .9f, .6f);
+            s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = Clip("Magic/Mgc_Water_Impact_Short_01"); s.impactVolume = .7f; s.flightSound = null;
+        });
+
         // Hand effects every spell shows in the palm.
-        foreach (var (spell, name) in new[] { (veil, "Shadow Veil"), (chain, "Chain Lightning"), (sweep, "Sweeping Arc"), (boulder, "Molten Boulder"), (stone, "Hurled Stone"), (lance, "Frost Lance"), (raise, "Raise the Fallen"), (flick, "Flick") })
+        foreach (var (spell, name) in new[] { (veil, "Shadow Veil"), (chain, "Chain Lightning"), (sweep, "Sweeping Arc"), (boulder, "Molten Boulder"), (stone, "Hurled Stone"), (lance, "Frost Lance"), (raise, "Raise the Fallen"), (flick, "Flick"), (die, "Die Throw"), (help, "Helping Hand") })
         {
             spell.heldVisual = Visual($"{name}/{name} Hand.prefab");
             spell.impact = name switch

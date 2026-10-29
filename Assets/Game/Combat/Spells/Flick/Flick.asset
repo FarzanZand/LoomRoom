@@ -104,6 +104,9 @@ MonoBehaviour:
       aura: {fileID: 0}
       endEffect: {fileID: 0}
   flick:
+    reach: 1
+    appearDistance: 13
+    appearAhead: 0.75
     range: 16
     aimCone: 15
     reachSeconds: 1.6
@@ -137,6 +140,42 @@ MonoBehaviour:
     mark: {fileID: 5233650602891333819, guid: 51d2da57f7d6f3646b6563f734177b4b, type: 3}
     markColor: {r: 1, g: 0.85, b: 0.55, a: 1}
     markLight: 1.5
+  helpingHand:
+    reach: 1
+    appearDistance: 11
+    reachSeconds: 1.4
+    holdSeconds: 2.2
+    handReach: 12
+    handRoom: 1.5
+    edgeGap: 1.5
+    maxWalk: 40
+    walkSpeed: 45
+    palmHeight: 3.6
+    palmAhead: 2
+    pour: {fileID: 0}
+    beam: {fileID: 0}
+    beamSource: {x: -1.2, y: 11, z: -0.6}
+    beamWidth: 0.35
+    beamTint: {r: 0.36, g: 0.28, b: 0.12, a: 0.5}
+    beamLight: 0.35
+    palmGlow: {fileID: 0}
+    palmGlowScale: 12
+    palmLight: 30
+    potion: {fileID: 0}
+    potionScale: 3
+    potionArc: 6
+    potionGravity: 16
+    potionLight: 10
+    landAhead: 1.2
+    burstHealSeconds: 1
+    burst: {fileID: 0}
+    smashSound: {fileID: 0}
+    smashVolume: 1
+    lines:
+    - Here.
+    - Hold still.
+    - Try not to need that again.
+    color: {r: 1, g: 0.9, b: 0.6, a: 1}
   groundArea: 0
   areaRadius: 2
   areaDelay: 1.2
