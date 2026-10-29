@@ -8,9 +8,9 @@ Where things live in `Assets`, and the rules that keep it that way. Reorganised 
 - **Everything else in `Assets`** is bought or third-party and is never edited: `Synty` (models), `Spells Pack` (spell effects),
   `ThirdParty` (`Pixel Items` icons, `Sound Effects Library`, `Generic Fantasy UI` sounds, StarterAssets, the v-tools and others),
   `Plugins`, `ProPixelizer`. To change one of their assets, make a copy in `Assets/Game` (the Synty pixel copies are made this way).
-- **Synty packs are not imported whole** (since 2026-10-29). Every pack lives in the library project
-  `C:/Game projects/SyntyLibrary` (outside git), and only what the game uses is brought into `Assets/Synty`, at the same
-  paths and GUIDs, with `python Tools/synty_pull.py` (`unpack` a downloaded pack into the library, `find`, `pull`).
+- **Bought packs are not imported whole** (since 2026-10-29). Every pack lives in the library project
+  `C:/Game projects/AssetLibrary` (outside git), and only what the game uses is brought into LoomRoom, at the same
+  paths and GUIDs, with `python Tools/asset_library.py` (`unpack` a downloaded pack into the library, `find`, `pull`).
 
 ## Assets/Game: one folder per part of the game
 

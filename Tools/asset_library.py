@@ -1,15 +1,15 @@
-"""Brings Synty assets from the library project into LoomRoom, with everything they use.
+"""Brings bought assets from the library project into LoomRoom, with everything they use.
 
-Every bought Synty pack is imported into a separate Unity project outside git (C:/Game projects/SyntyLibrary), so the
-repository only holds what the game uses. This copies chosen assets across with their .meta files and at the same
+Every bought pack (Synty and any other) is kept in a separate Unity project outside git (C:/Game projects/AssetLibrary),
+so the repository only holds what the game uses. This copies chosen assets across with their .meta files and at the same
 paths, so GUIDs (and every reference between prefabs, meshes, materials, textures and shaders) stay as they are, and
 a later import of the whole pack merges cleanly instead of making duplicates.
 
-    python Tools/synty_pull.py find <words>            library assets whose path has all the words (prefabs first)
-    python Tools/synty_pull.py pull <asset|folder> ... [--dry-run] [--scripts]
+    python Tools/asset_library.py find <words>            library assets whose path has all the words (prefabs first)
+    python Tools/asset_library.py pull <asset|folder> ... [--dry-run] [--scripts]
                                                        copy the assets and what they depend on into LoomRoom
-    python Tools/synty_pull.py deps <asset|folder> ... the same as pull --dry-run
-    python Tools/synty_pull.py unpack <file.unitypackage> ...
+    python Tools/asset_library.py deps <asset|folder> ... the same as pull --dry-run
+    python Tools/asset_library.py unpack <file.unitypackage> ...
                                                        put a downloaded pack into the library (as Unity's import
                                                        would: same paths and GUIDs, newer files replace older ones);
                                                        Unity imports it the next time the library is opened
@@ -22,12 +22,12 @@ as a conflict and left alone. Scripts (.cs, .dll) are left out unless --scripts 
 game's one assembly), and listed so their components can be removed. GUIDs not in the library (packages, Unity's
 built-in assets) are left as they are. Unity picks the files up on its next refresh.
 
-Options: --library <path> (default C:/Game projects/SyntyLibrary, or SYNTY_LIBRARY), --project <path> (this repo)."""
+Options: --library <path> (default C:/Game projects/AssetLibrary, or ASSET_LIBRARY), --project <path> (this repo)."""
 import os, re, shutil, sys, tarfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.normpath(os.path.join(HERE, ".."))
-LIBRARY = os.environ.get("SYNTY_LIBRARY", r"C:\Game projects\SyntyLibrary")
+LIBRARY = os.environ.get("ASSET_LIBRARY", r"C:\Game projects\AssetLibrary")
 
 GUID_LINE = re.compile(rb"^guid:\s*([0-9a-f]{32})", re.M)
 # YAML ("guid: x"), and JSON in shader graphs, escaped or not ("guid":"x", \"guid\":\"x\")
@@ -35,7 +35,8 @@ GUID_REF = re.compile(rb'guid\\?"?\s*:\s*\\?"?([0-9a-f]{32})')
 BUILT_IN = {"0000000000000000e000000000000000", "0000000000000000f000000000000000", "0" * 32}
 SCRIPTS = {".cs", ".dll", ".asmdef", ".asmref"}
 NO_REFS = {".fbx", ".obj", ".blend", ".png", ".jpg", ".jpeg", ".tga", ".psd", ".tif", ".tiff", ".exr", ".hdr",
-           ".wav", ".mp3", ".ogg", ".aif", ".ttf", ".otf"}
+           ".wav", ".mp3", ".ogg", ".aif", ".ttf", ".otf", ".glb", ".blend1", ".dll", ".pdb", ".mdb", ".pdf", ".zip",
+           ".unitypackage", ".mp4", ".mov", ".bytes", ".data"}
 
 
 def index(root):
@@ -184,7 +185,7 @@ def pull(args, dry, scripts):
 def unpack(pkg):
     """A .unitypackage is a gzipped tar of <guid>/{asset, asset.meta, pathname}. Only those three are read, as plain
     bytes (nothing is extracted by tar itself), and only paths inside Assets/ are written."""
-    staging = os.path.join(LIBRARY, "Temp", "synty_unpack")
+    staging = os.path.join(LIBRARY, "Temp", "asset_unpack")
     shutil.rmtree(staging, ignore_errors=True)
     with tarfile.open(pkg, "r|gz") as tar:
         for member in tar:
