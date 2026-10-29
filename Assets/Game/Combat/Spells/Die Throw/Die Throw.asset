@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Die Throw
   description: Ask the Dungeon Master for a hand. He flicks a die at the enemy you
     aim at from where he stands, and it knocks it across the room.
-  icon: {fileID: 21300000, guid: 8b3a24607a8a42347b64de5d5cf286d7, type: 3}
+  icon: {fileID: 21300000, guid: 3be0d6f2553b93e44b4c7537b4d42002, type: 3}
   manaCost: 24
   power: 24
   castSeconds: 0.6

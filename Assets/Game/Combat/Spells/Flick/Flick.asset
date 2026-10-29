@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Flick
   description: Ask the Dungeon Master for a hand. He reaches in and flicks the enemy
     you aim at across the room.
-  icon: {fileID: 21300000, guid: 8b3a24607a8a42347b64de5d5cf286d7, type: 3}
+  icon: {fileID: 21300000, guid: b78fb30a53f287a4f8768f48643ded7f, type: 3}
   manaCost: 30
   power: 30
   castSeconds: 0.6
