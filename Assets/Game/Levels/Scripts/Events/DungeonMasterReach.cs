@@ -407,6 +407,8 @@ public static class DungeonMasterReach
     // downward direction. Force 1 moves the view about 15 cm at its first kick (measured; the impulse itself moves it about
     // 1.65 m per unit, ShakeScale brings that down).
     const float ShakeScale = .09f;
+    // Degrees the view rolls at the first swing of its wobble, per unit of force.
+    const float ViewDegrees = 2.2f;
     static Unity.Cinemachine.CinemachineImpulseSource impulse;
     public static void Shake(float force, float seconds = .6f)
     {
@@ -420,6 +422,8 @@ public static class DungeonMasterReach
         impulse.ImpulseDefinition.ImpulseDuration = Mathf.Max(.1f, seconds);
         var kick = new Vector3(Random.value < .5f ? -1f : 1f, -.7f, Random.Range(-.3f, .3f)).normalized;
         impulse.GenerateImpulseWithVelocity(kick * force * ShakeScale);
+        // The view wobbles too (rolls and pitches back and forth): moving the camera alone barely shows.
+        ViewShake.Add(force * ViewDegrees, seconds);
     }
 
     // ── His moves ────────────────────────────────────────────────────
