@@ -286,8 +286,9 @@ public class EnemyAttackRunner
             StartCooldown(current);
 
             float recovery = Mathf.Max(RecoveryTime, pendingStagger);
+            bool staggered = pendingStagger > RecoveryTime;
             Cancel();
-            brain.BeginRecovery(recovery);
+            if (staggered) brain.BeginRecovery(recovery); else brain.BeginSwingRecovery(recovery);
             brain.SetState(EnemyState.Chase);
         }
     }

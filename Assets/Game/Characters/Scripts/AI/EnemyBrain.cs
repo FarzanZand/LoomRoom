@@ -159,6 +159,8 @@ public class EnemyBrain : MonoBehaviour
     // Attacks
     EnemyAttackRunner attackRunner;
     float recoveryUntil, staggerImmuneUntil;
+    // Footwork: the step back after a swing, and this enemy's own rhythm of stepping in and back while it circles.
+    float stepBackUntil, swayPeriod = -1f, swayPhase;
     bool  simulationPaused;
     CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
     float ChaseSpeed => Profile.useChaseSpeed ? Profile.chaseSpeed : Motor.DefaultSpeed;
@@ -172,6 +174,13 @@ public class EnemyBrain : MonoBehaviour
 
     // Stand still (a flinch, a stagger, the pause after a swing); only ever extends.
     internal void BeginRecovery(float seconds) => recoveryUntil = Mathf.Max(recoveryUntil, Time.time + seconds);
+
+    // The pause after its own swing: the first part of it a step back (Profile.stepBackAfterSwing), then it stands.
+    internal void BeginSwingRecovery(float seconds)
+    {
+        BeginRecovery(seconds);
+        if (Profile.stepBackAfterSwing > 0f) stepBackUntil = Time.time + Mathf.Min(Profile.stepBackAfterSwing, seconds);
+    }
 
     // A shield bash: the swing in progress is dropped (it still counts as used) and the enemy stands stunned, then
     // can't be staggered again for CombatManager.enemyStaggerImmunity.
@@ -189,6 +198,7 @@ public class EnemyBrain : MonoBehaviour
 
     void Initialize()
     {
+        swayPhase = UnityEngine.Random.value;
         Character  = GetComponent<Character>();
         Motor      = GetComponent<EnemyMotor>();
         Perception = GetComponent<Perception>();
@@ -334,8 +344,14 @@ public class EnemyBrain : MonoBehaviour
         if (Time.time < recoveryUntil)
         {
             // Catch breath, but keep the eyes on the target so the next move is instant.
-            // A committed swing never tracks.
-            Motor.Stop();
+            // A committed swing never tracks. Just after its own swing it steps back first.
+            if (Time.time < stepBackUntil && Perception.Target != null && State != EnemyState.Attack)
+            {
+                Vector3 back = transform.position - Perception.Target.transform.position; back.y = 0f;
+                if (back.sqrMagnitude > .0001f) Motor.Strafe(back.normalized, ChaseSpeed * Profile.stepBackSpeedFraction);
+                else Motor.Stop();
+            }
+            else Motor.Stop();
             if (Perception.Target != null && State != EnemyState.Attack)
                 Motor.LookAt(Perception.Target.transform.position, Profile.attackFaceSpeed);
             UpdateAnimator();
@@ -593,6 +609,17 @@ public class EnemyBrain : MonoBehaviour
 
         float chaseSpeed = ChaseSpeed;
         float preferred  = PreferredDistance;
+        // Footwork: the held distance swells in and out on this enemy's own rhythm, so it steps in and back as it circles
+        // (never into the target's personal space, never out of its reach).
+        if (p.spacingSway > 0f)
+        {
+            if (swayPeriod < 0f) swayPeriod = UnityEngine.Random.Range(p.spacingSwayPeriod.x, Mathf.Max(p.spacingSwayPeriod.x, p.spacingSwayPeriod.y));
+            // Mostly outward: it steps back to a little past its distance and in only a little short of it.
+            float wave = Mathf.Sin((Time.time / Mathf.Max(.5f, swayPeriod) + swayPhase) * Mathf.PI * 2f);
+            float sway = p.spacingSway * (wave > 0f ? wave : wave * .3f);
+            float least = Tuning != null ? Tuning.personalSpace + .35f : .9f;
+            preferred = Mathf.Clamp(preferred + sway, least, Mathf.Max(least, MaxAttackRange - .1f));
+        }
         Vector3 toTarget = targetPos - transform.position; toTarget.y = 0f;
         if (toTarget.sqrMagnitude < 0.0001f) toTarget = transform.forward;
         toTarget.Normalize();

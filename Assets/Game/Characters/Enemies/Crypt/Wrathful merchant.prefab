@@ -594,9 +594,13 @@ MonoBehaviour:
     acceleration: 30
     preferredRangeFraction: 0.7
     circleTarget: 1
-    circleSpeedFraction: 0.22
+    circleSpeedFraction: 0.32
     circleSwitchInterval: {x: 0.9, y: 2}
     spacingSpeedFraction: 0.8
+    spacingSway: 0.35
+    spacingSwayPeriod: {x: 2.2, y: 3.4}
+    stepBackAfterSwing: 0.35
+    stepBackSpeedFraction: 0.45
     passiveAngularSpeed: 360
     chaseAngularSpeed: 720
     attackFaceSpeed: 900

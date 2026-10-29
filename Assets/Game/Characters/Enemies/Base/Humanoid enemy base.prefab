@@ -78,6 +78,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8171441150937039104}
+    - targetCorrespondingSourceObject: {fileID: 5222526666366303171, guid: f995d780264f1174092cc7345fc6832f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3612174219867129096}
   m_SourcePrefab: {fileID: 100100000, guid: f995d780264f1174092cc7345fc6832f, type: 3}
 --- !u!4 &5696880301978830409 stripped
 Transform:
@@ -180,6 +183,23 @@ MonoBehaviour:
   - Hood
   - Hat
   - Mask
+--- !u!114 &3612174219867129096
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8520137168989438645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fec71b06e1084148b74926e5e2701c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyGuard
+  engageDistance: 6
+  raiseSeconds: 0.3
+  dropSeconds: 0.1
+  stillSpeed: 0.3
+  movingSpeed: 1
 --- !u!1001 &7334206519696827011
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -453,6 +473,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   portrait: {fileID: 0}
   characterName: Humanoid enemy defaults
+  properName: 0
   faction: 2
   description: Defaults for new enemies made from this base. Each enemy gets its
     own copy.
@@ -491,6 +512,7 @@ MonoBehaviour:
     - {fileID: 8300000, guid: e4f8523e0f390ed418bb3319e678af6f, type: 3}
     - {fileID: 8300000, guid: 9170416de89bc7d4ea5d38d63c7e9cad, type: 3}
     - {fileID: 8300000, guid: a0ec7d8869f875249adb9124494699ac, type: 3}
+    painAudio: {fileID: 0}
     death:
     - {fileID: 8300000, guid: d7b847c2faea56048a132bffb57f95f9, type: 3}
     footsteps:
@@ -552,6 +574,10 @@ MonoBehaviour:
     circleSpeedFraction: 0.22
     circleSwitchInterval: {x: 0.9, y: 2}
     spacingSpeedFraction: 0.8
+    spacingSway: 0
+    spacingSwayPeriod: {x: 2.2, y: 3.4}
+    stepBackAfterSwing: 0
+    stepBackSpeedFraction: 0.45
     passiveAngularSpeed: 360
     chaseAngularSpeed: 720
     attackFaceSpeed: 900
