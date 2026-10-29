@@ -601,7 +601,7 @@ MonoBehaviour:
     spacingSwayPeriod: {x: 2.2, y: 3.4}
     stepBackAfterSwing: 0.5
     stepBackSpeedFraction: 0.25
-    footworkPace: 0.75
+    footworkPace: 1.1
     passiveAngularSpeed: 360
     chaseAngularSpeed: 720
     attackFaceSpeed: 900
