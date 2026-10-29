@@ -314,6 +314,15 @@ MonoBehaviour:
   - biome: {fileID: 11400000, guid: a120b1fb852141c43b0f64838c9e2b0a, type: 2}
     floors: 1
     boss: 0
+  - biome: {fileID: 11400000, guid: 0ec60215029f73349b3f3e0022f081f0, type: 2}
+    floors: 1
+    boss: 0
+  - biome: {fileID: 11400000, guid: 5c3c2fd95bbff7542a3462f9fbc3fb46, type: 2}
+    floors: 1
+    boss: 0
+  - biome: {fileID: 11400000, guid: 3e7956d2f7a9798459eb48f754cf6ec8, type: 2}
+    floors: 1
+    boss: 0
   floors: 1
   bossOnLastFloor: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}

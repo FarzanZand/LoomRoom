@@ -1,0 +1,508 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a1e253b86dec094b84a2f3baf28630b, type: 3}
+  m_Name: Realms3
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonBiome
+  displayName: The Pit
+  kind: 0
+  boardReveal: 0
+  ownBoardPieces: 0
+  ownLook: 1
+  wilds:
+    enabled: 0
+    roofed: 0
+    depth: 5
+    height: {x: 1.6, y: 3.6}
+    top: {fileID: 0}
+    side: {fileID: 0}
+    trees: []
+    treeChance: 0.45
+    treeScale: {x: 0.8, y: 1.25}
+    undergrowth: []
+    undergrowthPerCell: 1
+    foot: []
+    footChance: 0.45
+    edges: 1
+    faces: []
+    faceChance: 0.3
+    faceStandOut: 0.5
+    lip: []
+    lipChance: 0.6
+    glows: []
+    glowEvery: 9
+    hangings: []
+    hangChance: 0.25
+    pondChance: 0.35
+    pondSize: {x: 2, y: 3}
+    pondGlow: {r: 0.35, g: 0.85, b: 1, a: 1}
+    pondGlowStrength: 2.5
+    pondEdge: []
+  entryMessage: Down here it is warm. Too warm.
+  roomStyles:
+  - style: {fileID: 11400000, guid: 2bd66786f2d0ade449b98cfe95aeb464, type: 2}
+    weight: 1
+  corridorStyles:
+  - style: {fileID: 11400000, guid: 2bd66786f2d0ade449b98cfe95aeb464, type: 2}
+    weight: 1
+  roomShapes: []
+  props: []
+  propRules:
+  - prefab: {fileID: 7238989413955815121, guid: 9437b0a9014794245a03878a435274d3, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.48000002
+    perRoom: {x: 0, y: 2}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 8692088724586909576, guid: 17800527c5a30da47bcf016c853ad42d, type: 3}
+    placement: 2
+    footprint: {x: 2, y: 2}
+    perTenCells: 0.16000001
+    perRoom: {x: 0, y: 1}
+    chance: 0.5
+    rooms: 62
+  - prefab: {fileID: 3159980953234756663, guid: cd1418d1e196fd2499b0a8df4f4519fc, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.56
+    perRoom: {x: 0, y: 2}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 6177085382356212067, guid: 4d2aa2885ca386345b4627022cef9339, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.4
+    perRoom: {x: 0, y: 2}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 7544039357208925622, guid: 372e586c9f879f84ea601578b6a05cad, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.32000002
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 2731350814437843847, guid: 24307054d50545540a1774e0ab8bc85a, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.4
+    perRoom: {x: 0, y: 2}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 6233500260149376677, guid: e012617df1ade0941ba52984f20799f0, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.32000002
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 8828321102577236398, guid: dc4b15f576c086e42bfd0dffe726ef4c, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.32000002
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 7572028121991212564, guid: b3ef9fc1ec8355b4f8864780952bdec4, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.32000002
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 2983825282196769625, guid: edd16c1e82035fa4c857594a248476ee, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.4
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 5817197330497175038, guid: ef96a92f9bb030e47801e9ef776307ef, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.32000002
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 6399642263587042581, guid: 356b15536a1176f48b1e04df3106ac00, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.24000001
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 214830771048899697, guid: b9ca24cbe27b1474bb944d795c6391c5, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.24000001
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 6672183722891818413, guid: 5f9b64788ff926e4c9af17d6274b381c, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.192
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 4326777328083208975, guid: ea0e6f3ad9900574c9cdbcb480a8a90f, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.48000002
+    perRoom: {x: 0, y: 2}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 3700355396705179253, guid: 2fdae32ffc54fb04897fc804b85f3ece, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.32000002
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 3975209720858943786, guid: 9d0de146822ee4a41bdf42eab05f1b8c, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.32000002
+    perRoom: {x: 0, y: 1}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 4310088866068383741, guid: 710d4e7af764f354287d4a3169396800, type: 3}
+    placement: 1
+    footprint: {x: 2, y: 1}
+    perTenCells: 0.128
+    perRoom: {x: 0, y: 1}
+    chance: 0.6
+    rooms: 62
+  - prefab: {fileID: 2150097251633163370, guid: d720b4fa392b3df4d90fa5413dd4eae9, type: 3}
+    placement: 0
+    footprint: {x: 2, y: 1}
+    perTenCells: 0.192
+    perRoom: {x: 0, y: 2}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 2156701662508219686, guid: dcd5f9507b20a6b4d837f37f44394d4f, type: 3}
+    placement: 2
+    footprint: {x: 2, y: 2}
+    perTenCells: 0.16000001
+    perRoom: {x: 0, y: 1}
+    chance: 0.5
+    rooms: 62
+  - prefab: {fileID: 8989126029773219580, guid: 157275d02fe62c146b0ee037d01b050a, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 2}
+    perTenCells: 0.32000002
+    perRoom: {x: 1, y: 1}
+    chance: 1
+    rooms: 20
+  - prefab: {fileID: 1491949973390099219, guid: 93be40ac456fcf74ca1e9d1a9738d1d2, type: 3}
+    placement: 2
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.25
+    perRoom: {x: 1, y: 1}
+    chance: 0.7
+    rooms: 62
+  - prefab: {fileID: 2393678736020631476, guid: f949d987bf1d95842a0fd8bbf849ea47, type: 3}
+    placement: 2
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.25
+    perRoom: {x: 1, y: 1}
+    chance: 0.7
+    rooms: 62
+  - prefab: {fileID: 6633943553599156643, guid: bd7ff2a67b94326469917dbd07d6afe8, type: 3}
+    placement: 2
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.25
+    perRoom: {x: 1, y: 1}
+    chance: 0.45
+    rooms: 62
+  destructibles:
+  - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+    weight: 3
+  - prefab: {fileID: 3676609536429769752, guid: 74294ce93f890d0479859cebe2ea259e, type: 3}
+    weight: 2
+  - prefab: {fileID: 6976356556941518252, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
+    weight: 2
+  - prefab: {fileID: 4940602601245648603, guid: fb562eb337691f54c8a6648dcc1a3045, type: 3}
+    weight: 2
+  lighting: 100
+  litThroughout: 1
+  fog: {x: 5, y: 38}
+  lightBoard: 0
+  roomTemplates:
+  - template: {fileID: 4217182298497846190, guid: 3203dca7f2718fb438980165eab522be, type: 3}
+    weight: 0.8
+    rooms: 30
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 8951085660305356992, guid: 9c2825a95696a574f8f302711dc26a8e, type: 3}
+    weight: 1
+    rooms: 6
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 6676260040558798032, guid: 47e444dde38716e4a9f741151b6d8930, type: 3}
+    weight: 1.2
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 7553172351964380955, guid: 0bbcebe8d5a00f948a82fcdf30c93c85, type: 3}
+    weight: 0.9
+    rooms: 30
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 1256399746032716740, guid: 3a22cdc7b9f1ded47b0b131c2b38af07, type: 3}
+    weight: 0.8
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 8800103287198937241, guid: 9437424686d998440a9c4904f49cbb94, type: 3}
+    weight: 0.7
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 6464842126555326522, guid: 3d03b3f32b8eb584391f5b293bb615f3, type: 3}
+    weight: 1
+    rooms: 8
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 5272809252723637503, guid: 397195577c300cb46b5952a1c526f346, type: 3}
+    weight: 0.9
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 273876934562634629, guid: dbc080642f13a354e8633ec6c83b9348, type: 3}
+    weight: 2
+    rooms: 10
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 4319339982270622999, guid: 67fd8b4db9bb9254884b592221139e3c, type: 3}
+    weight: 1
+    rooms: 4
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 7053966936112705594, guid: 13c3daf777a731b479dcde341c170f4a, type: 3}
+    weight: 1.2
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 4178164443682444532, guid: c1c8132e93d826a4f9df72e8e9e26f57, type: 3}
+    weight: 1.1
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 2057444065302538188, guid: 403758f228dc0d140a73e63d36668155, type: 3}
+    weight: 1
+    rooms: 8
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 5825237856676315258, guid: e9b37f2fe5029064ca370749f5474abd, type: 3}
+    weight: 0.7
+    rooms: 18
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 7848270640983308561, guid: aa1adaf622271e04a8dd168d8ff2b243, type: 3}
+    weight: 0.6
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 2905052129233018909, guid: e2dd0276adf10484b99a8b5a7f935de4, type: 3}
+    weight: 0.8
+    rooms: 18
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 1496800822693357786, guid: 7ded13c34f709a942aebf739d5108c8d, type: 3}
+    weight: 1
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 5364221619945644165, guid: 9065c45717dbbb044a6b27fac512b262, type: 3}
+    weight: 0.8
+    rooms: 8
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 3605939719989848057, guid: 52390a6e4cd154544bd10739da734b58, type: 3}
+    weight: 1.1
+    rooms: 8
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 4832995058429868355, guid: a2cc2259ddc099a4198660c0568d93e3, type: 3}
+    weight: 0.6
+    rooms: 18
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 8229599610143074891, guid: 2cb3fb291989bac419dab225cc19ff23, type: 3}
+    weight: 1
+    rooms: 4
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 5235803978169060203, guid: 9b496b17a44030a44800e8f3fa4f5c55, type: 3}
+    weight: 1
+    rooms: 6
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 7553172351964380955, guid: fcbc162bfbf65db469e063d14079ed8b, type: 3}
+    weight: 2
+    rooms: 30
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 6686315703612218489, guid: 758a66b51add85c4ea93b7fdca3f3f41, type: 3}
+    weight: 0.3
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 966100709934783422, guid: 4ae576ded6c357a4c9b3eb1447585c4f, type: 3}
+    weight: 0.3
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 7980889877482842696, guid: ca465e8799ff0984a91b2806ee68c6b1, type: 3}
+    weight: 0.3
+    rooms: 30
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 5284644785788056984, guid: 0ceb627643dd99a4d95c2002a458466a, type: 3}
+    weight: 0.3
+    rooms: 6
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 7099053262673744381, guid: e320d67a5f4f95741bb43d7aaf1b1316, type: 3}
+    weight: 0.3
+    rooms: 10
+    fromFloor: 1
+    maxPerFloor: 1
+  templateChance: 0.3
+  roomCount: 0
+  roomSizeScale: 1
+  noDoors: 0
+  overrideDungeonSettings: 1
+  roomFeatures:
+    shrineBargains: 1
+    shrineChance: 0.35
+    shrinePrice: 0.35
+    ambushes: 1
+    ambushChance: 0.08
+    maxAmbushes: 1
+    trappedTreasure: 1
+    trapChance: 0.3
+    spikeDamage: 0.2
+    sleepingPacks: 0
+    sleepChance: 0.1
+    maxSleepingPacks: 3
+    maxEventRooms: 1
+    meddling: 1
+    meddleChance: 0.5
+    tooEasySeconds: 14
+    tooEasyHealth: 0.1
+    stealChance: 0.05
+    pits: 1
+    playerFallsInPits: 0
+    pitFallDamage: 0.25
+    sunkenFloors: 1
+    archerLedges: 1
+    darkRooms: 1
+    darkChance: 0.08
+    candlelitRooms: 1
+    moonlitRooms: 1
+    eerieRooms: 1
+    eerieChance: 0.06
+  lightRadius: 0
+  filmicLook: 0.55
+  shadowTint: {r: 0.55, g: 0.45, b: 0.62, a: 1}
+  lampTint: {r: 1.18, g: 0.78, b: 0.58, a: 1}
+  lightingSettings:
+    skyTint: {r: 0.15, g: 0.2, b: 0.24, a: 1}
+    skyExposure: 0.6
+    lightColor: {r: 1, g: 0.5, b: 0.3, a: 1}
+    lightIntensity: 0.3
+    ambientSky: {r: 0.36, g: 0.13, b: 0.1, a: 1}
+    ambientHorizon: {r: 0.26500002, g: 0.099999994, b: 0.09, a: 1}
+    ambientGround: {r: 0.17, g: 0.07, b: 0.08, a: 1}
+    fogColor: {r: 0.46, g: 0.14, b: 0.09, a: 1}
+  lightingPrefabs:
+  - prefab: {fileID: 3904118440429741045, guid: 91efdc5ce7c631c43a3188387ca652aa, type: 3}
+    weight: 1
+    overrideColor: 1
+    color: {r: 1, g: 0.32, b: 0.06, a: 1}
+  overrideTorchColor: 0
+  torchColor: {r: 1, g: 0.6, b: 0.3, a: 1}
+  torchBrightness: 1.45
+  enemies:
+  - enemy: {fileID: 5942540981535102104, guid: bb310c78cbf260b4ea8b43b6209046f0, type: 3}
+    weight: 2.2
+    fromFloor: 1
+  - enemy: {fileID: 8861403029388774667, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
+    weight: 1
+    fromFloor: 1
+  - enemy: {fileID: 2724247649922890657, guid: b03e36d4b979dd741b41ac05fbaf0256, type: 3}
+    weight: 1
+    fromFloor: 1
+  - enemy: {fileID: 2353413065697034251, guid: 2957dcdf1296dad4697144537323503c, type: 3}
+    weight: 0.8
+    fromFloor: 1
+  encounterChance: {x: 0.78, y: 0.85}
+  minEnemiesPerRoom: 2
+  maxEnemiesPerRoom: 3
+  features: []
+  loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
+  merchantChance: 1
+  guardian:
+    enabled: 0
+    boss: {fileID: 0}
+    healthMultiplier: 1
+    damageMultiplier: 1
+    arena: {fileID: 0}
+    title: Guardian
+    introMessage: '{boss} guards the stairs down.'
+    introSting: {fileID: 0}
+    stingVolume: 1
+    bossMusic: {fileID: 0}
+    bossMusicVolume: 1
+    sealExit: 1
+    bossLoot: {fileID: 0}
+    bonusGold: 60
+    rewardChest: 1
+    chestPrefab: {fileID: 0}
+    chestItems: []
+    arenaSizeScale: 1.5
+    fight: {fileID: 0}
+  ambience: {fileID: 0}
+  ambienceVolume: 0.35
+  ambientOneShots: []
+  oneShotInterval: {x: 60, y: 200}
+  oneShotVolume: 0.4
+  music: {fileID: 0}
+  musicVolume: 1
+  entryLineChance: 0.7
+  entryLines: []
+  isLevelBase: 0
+  defaultStyle: {fileID: 0}
+  corridorsCopyConnectedRoomStyle: 0
+  kitModels: 1
+  torchesPerRoom: {x: 2, y: 7}
+  litRoomChance: 0.75
+  corridorTorchChance: 0.3
+  darkRoomLight: {fileID: 0}
+  furnishEntranceRims: 0
+  destructiblesPerRoom: {x: 1, y: 3}
+  chestTiers: []
+  shopRoom: {fileID: 0}
+  boardEdgeMaterial: {fileID: 0}
+  boardGridMaterial: {fileID: 0}
+  boardPitMaterial: {fileID: 0}
+  boardPitWater: {fileID: 0}
+  boardVerticality: 1
+  boardTileTaps: []
+  boardDoorPosts: []
+  boardMoundProps: []
+  boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
+  boardLightIntensity: 2600
+  boardLightAngle: 0
+  boardLightFrom: 220

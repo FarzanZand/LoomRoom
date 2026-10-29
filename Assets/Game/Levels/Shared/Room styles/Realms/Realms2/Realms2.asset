@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48e1a08511ae4bb89e9a2ba01ad45eb5, type: 3}
+  m_Name: Realms2
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomStyle
+  bottomWall: {fileID: 2100000, guid: 7da786e9f8f7f3e4ca397f1c6e91284d, type: 2}
+  upperWall: {fileID: 2100000, guid: 7da786e9f8f7f3e4ca397f1c6e91284d, type: 2}
+  floor: {fileID: 2100000, guid: eb7f4e5a5f2c7c442925cc4d3f9cd00a, type: 2}
+  ceiling: {fileID: 2100000, guid: d5c16469bad834a4a8238b73a9caea9e, type: 2}
+  hideTrims: 0
+  trim: {fileID: 2100000, guid: 2fca4576d00e0d5449cb57ea7d1d087b, type: 2}
+  wood: {fileID: 2100000, guid: a46763726b9f8c34b93ec00a419bcd87, type: 2}
+  metal: {fileID: 2100000, guid: e156128ce6118974d91538a4adc84ba0, type: 2}
+  wallBaseWeight: 10
+  wallVariants:
+  - material: {fileID: 2100000, guid: c58c5393323c86a4f816c2c95b1a5baf, type: 2}
+    weight: 6
+    rows: 0
+  - material: {fileID: 2100000, guid: 89ff9a1ac32431f4a9e0b4280b5088d9, type: 2}
+    weight: 6
+    rows: 0
+  - material: {fileID: 2100000, guid: 2e07dd14ef8666744a31d612ca6f2755, type: 2}
+    weight: 2
+    rows: 1
+  - material: {fileID: 2100000, guid: df2596697c5087149b319090a9b09ed0, type: 2}
+    weight: 1.5
+    rows: 0
+  floorBaseWeight: 10
+  floorVariants:
+  - material: {fileID: 2100000, guid: 8bfaf276438054d4c85ec6c8c415ddff, type: 2}
+    weight: 6
+    rows: 0
+  - material: {fileID: 2100000, guid: ea91a182bcc5c054f9d72602182c52b7, type: 2}
+    weight: 6
+    rows: 0
+  - material: {fileID: 2100000, guid: ca2352b71049d6e4a8d821e8567a956f, type: 2}
+    weight: 2
+    rows: 0
+  - material: {fileID: 2100000, guid: 9a72a635a6619fb42bee34359c3e821a, type: 2}
+    weight: 1.5
+    rows: 0
+  wallDecor: []
+  wallDecorPerTenFaces: 1
+  corridorDressing: {fileID: 0}
+  dressingSpacing: 3
+  stretchDressingToCeiling: 1

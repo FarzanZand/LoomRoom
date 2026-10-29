@@ -1,0 +1,201 @@
+// The Realms biomes on Dungeon1's floors 10-12, made from the POLYGON Dungeon Realms demo scenes, safe to run again (it
+// overwrites the styles, the biomes' look and lists, and the three stages):
+//  - Realms1 The Deep Halls (Demo_Dungeon_01): dwarf sandstone halls, warm torchlight against a teal dark, braziers,
+//    banners, dead dwarves, gold and violet crystals.
+//  - Realms2 The Forge (Demo_Forge_01): soot-black basalt and iron plate, orange light everywhere, furnaces, anvils, cogs,
+//    carts and ore, embers in the cracks.
+//  - Realms3 The Pit (Demo_Hell_01): black volcanic rock veined with lava, red light and green witch-fire, skulls on spikes,
+//    spiked fences, obelisks and giant bones.
+// Walled dungeon floors under ceilings (the user: the format is dungeon), each in its own room style (Tools/realms_style.py,
+// 128 texels a metre, variants per 2 m cell), furnished with the pack's props as pixel copies (Tools/realms_props.eval.cs),
+// lit to the demo's colours, the tavern on every floor, no guardian. Enemies: Tools/realms_enemies.eval.cs fills the lists.
+// Writes Temp/Realms/setup.txt.
+if (UnityEngine.Application.isPlaying) return "playing";
+const string R = "Assets/Game/Levels/Shared/Room styles/Realms";
+const string P = "Assets/Game/Levels/Dungeon1/Realms/Props";
+var sb = new System.Text.StringBuilder();
+try {
+T Load<T>(string p) where T : UnityEngine.Object { var a = UnityEditor.AssetDatabase.LoadAssetAtPath<T>(p); if (a == null) sb.Append($"MISSING {p}\n"); return a; }
+UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
+var level = Load<TableLevelData>("Assets/Game/Levels/Dungeon1/Dungeon1.asset");
+var crypt = Load<DungeonBiome>("Assets/Game/Levels/Shared/Biomes/Cellars3.asset");
+var template = Load<DungeonRoomStyle>("Assets/Game/Levels/Shared/Room styles/Ruins/Ruins1/Ruins1 stone.asset");
+var torch = Load<UnityEngine.GameObject>("Assets/Game/Levels/Shared/Props/Furnishing/Wall torch.prefab");
+var made = new System.Collections.Generic.List<DungeonBiome>();
+
+UnityEngine.Material Mat(string name, string surface, bool cell)
+{
+  var png = $"{R}/{name}/{name} {surface}.png"; var mp = $"{R}/{name}/{name} {surface}.mat";
+  UnityEditor.AssetDatabase.ImportAsset(png, UnityEditor.ImportAssetOptions.ForceSynchronousImport);
+  var ti = (UnityEditor.TextureImporter)UnityEditor.AssetImporter.GetAtPath(png);
+  if (ti == null) { sb.Append($"MISSING {png}\n"); return null; }
+  ti.filterMode = UnityEngine.FilterMode.Point; ti.npotScale = UnityEditor.TextureImporterNPOTScale.None; ti.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
+  ti.mipmapEnabled = true; ti.wrapMode = UnityEngine.TextureWrapMode.Repeat; ti.SaveAndReimport();
+  var m = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(mp);
+  if (m == null) { m = new UnityEngine.Material(template.bottomWall); UnityEditor.AssetDatabase.CreateAsset(m, mp); }
+  var tex = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(png);
+  m.SetTexture("_BaseMap", tex); if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", tex);
+  bool floor = surface.Contains("floor");
+  // A texture with variants repeats once per 2 m cell (tiling 1.5, offset .5); ceiling and trim once per 3 m tile.
+  var scale = cell ? new UnityEngine.Vector2(1.5f, floor ? 1.5f : 1f) : UnityEngine.Vector2.one;
+  var offset = cell ? new UnityEngine.Vector2(.5f, floor ? .5f : 0f) : UnityEngine.Vector2.zero;
+  foreach (var prop in new[] { "_BaseMap", "_MainTex" }) if (m.HasProperty(prop)) { m.SetTextureScale(prop, scale); m.SetTextureOffset(prop, offset); }
+  UnityEditor.EditorUtility.SetDirty(m); return m;
+}
+
+DungeonRoomStyle Style(int n)
+{
+  string name = $"Realms{n}";
+  var path = $"{R}/{name}/{name}.asset";
+  var style = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonRoomStyle>(path);
+  if (style == null) { style = UnityEngine.Object.Instantiate(template); UnityEditor.AssetDatabase.CreateAsset(style, path); }
+  UnityEditor.EditorUtility.CopySerialized(template, style); style.name = name;
+  DungeonSurfaceVariant V(string s, float w, DungeonVariantRows rows = DungeonVariantRows.Any) => new DungeonSurfaceVariant { material = Mat(name, s, true), weight = w, rows = rows };
+  style.bottomWall = Mat(name, "wall", true); style.upperWall = style.bottomWall;
+  style.floor = Mat(name, "floor", true);
+  style.ceiling = Mat(name, "ceiling", false);
+  style.trim = Mat(name, "trim", false); style.hideTrims = false;
+  style.wallBaseWeight = 10; style.floorBaseWeight = 10;
+  var walls = new System.Collections.Generic.List<DungeonSurfaceVariant> { V("wall shift 1", 6), V("wall shift 2", 6), V("wall soot", 2f, DungeonVariantRows.BottomOnly) };
+  walls.Add(n == 1 ? V("wall rune", 1.2f) : V("wall ember", n == 3 ? 3f : 1.5f));
+  style.wallVariants = walls.ToArray();
+  var floors = new System.Collections.Generic.List<DungeonSurfaceVariant> { V("floor shift 1", 6), V("floor shift 2", 6), V("floor soot", 2f) };
+  if (n != 1) floors.Add(V("floor ember", n == 3 ? 3f : 1.5f));
+  style.floorVariants = floors.ToArray();
+  UnityEditor.EditorUtility.SetDirty(style);
+  return style;
+}
+
+// Life in the air (Tools/realms_life.eval.cs) and shared furnishing, by path.
+DungeonPropRule Any(string path, DungeonPropPlacement where, float perTen, int min, int max, float chance = 1f) =>
+  new DungeonPropRule { prefab = Load<UnityEngine.GameObject>(path), placement = where, footprint = UnityEngine.Vector2Int.one, perTenCells = perTen, perRoom = new UnityEngine.Vector2Int(min, max), chance = chance };
+DungeonPropRule Life(string n, float chance) => new DungeonPropRule { prefab = Load<UnityEngine.GameObject>($"{P}/Life/{n}.prefab"), placement = DungeonPropPlacement.Centre, footprint = UnityEngine.Vector2Int.one, perTenCells = .25f, perRoom = new UnityEngine.Vector2Int(1, 1), chance = chance, rooms = (DungeonRoomRoles)62 };
+DungeonPropRule Rule(string prop, DungeonPropPlacement where, float perTen, int min, int max, float chance = 1f, int fx = 1, int fz = 1, DungeonRoomRoles rooms = (DungeonRoomRoles)(-1))
+{
+  var g = Load<UnityEngine.GameObject>($"{P}/{prop}.prefab");
+  // Denser than the Crypt: the demo scenes are crowded with dressing.
+  var r = new DungeonPropRule { prefab = g, placement = where, footprint = new UnityEngine.Vector2Int(fx, fz), perTenCells = perTen * 1.6f, perRoom = new UnityEngine.Vector2Int(min, max), chance = chance };
+  if ((int)rooms != -1) r.rooms = rooms;
+  // Reserve every 2 m cell the prop's collider covers (a hoard wider than its one cell walled a doorway off).
+  var box = g != null ? g.GetComponent<UnityEngine.BoxCollider>() : null;
+  if (box != null) r.footprint = new UnityEngine.Vector2Int(UnityEngine.Mathf.Max(fx, UnityEngine.Mathf.CeilToInt(box.size.x / 2f - .05f)), UnityEngine.Mathf.Max(fz, UnityEngine.Mathf.CeilToInt(box.size.z / 2f - .05f)));
+  return r;
+}
+const DungeonPropPlacement W = DungeonPropPlacement.AgainstWall, C = DungeonPropPlacement.Corner, M = DungeonPropPlacement.Centre, A = DungeonPropPlacement.Anywhere;
+const DungeonRoomRoles Rich = DungeonRoomRoles.Treasure | DungeonRoomRoles.Storage;
+
+DungeonBiome Make(int n, string display, string entry, float templates, DungeonPropRule[] rules, UnityEngine.Color torchColour, DungeonLightingSettings light, UnityEngine.Color shadow, UnityEngine.Color lamp, float filmic, UnityEngine.Vector2 fog)
+{
+  string name = $"Realms{n}";
+  var style = Style(n);
+  var path = $"Assets/Game/Levels/Dungeon1/Biomes/{name}.asset";
+  var biome = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
+  if (biome == null) { biome = UnityEngine.ScriptableObject.CreateInstance<DungeonBiome>(); UnityEditor.AssetDatabase.CreateAsset(biome, path); }
+  var keepEnemies = biome.enemies != null && biome.enemies.Length > 0 && biome.enemies[0].enemy != null && UnityEditor.AssetDatabase.GetAssetPath(biome.enemies[0].enemy).Contains("/Enemies/Realms/") ? biome.enemies : null;
+  biome.CopyContentFrom(crypt);
+  if (keepEnemies != null) biome.enemies = keepEnemies;
+  biome.displayName = display; biome.entryMessage = entry; biome.entryLines = new DungeonMaster.Line[0];
+  biome.kind = DungeonFloorKind.Dungeon;
+  biome.ownLook = true; biome.ownBoardPieces = false;
+  biome.roomStyles = new[] { new DungeonStyleChoice { style = style, weight = 1 } };
+  biome.corridorStyles = new[] { new DungeonStyleChoice { style = style, weight = 1 } };
+  biome.roomShapes = DungeonBiome.CloneAll(crypt.roomShapes);
+  biome.propRules = rules;
+  // Fewer hand-built rooms than the Crypt, so more rooms are furnished with the pack's props (a hand-built room keeps its own).
+  biome.templateChance = templates;
+  var breakables = new System.Collections.Generic.List<DungeonWeightedPrefab>();
+  if (level.destructibles != null) breakables.AddRange(level.destructibles);
+  if (level.baseBiome != null && level.baseBiome.destructibles != null) breakables.AddRange(level.baseBiome.destructibles);
+  if (crypt.destructibles != null) breakables.AddRange(crypt.destructibles);
+  biome.destructibles = breakables.ToArray();
+  biome.merchantChance = 1;
+  biome.guardian = new DungeonMilestone { enabled = false };
+  biome.overrideDungeonSettings = true;
+  biome.roomFeatures = DungeonBiome.Clone(crypt.overrideDungeonSettings && crypt.roomFeatures != null ? crypt.roomFeatures : level.roomFeatures ?? new DungeonRoomFeatures());
+  biome.wilds = new BoardWilds { enabled = false };
+  biome.lighting = DungeonBiome.Lighting.Custom; biome.lightingSettings = light;
+  // The demo scenes' coloured dark (teal in the halls, red-orange haze in the forge, red in the pit) reaches every
+  // corner, fading into its fog colour with distance: lit throughout with a low ambient, so torches still make the pools.
+  biome.litThroughout = true; biome.fog = fog; biome.lightRadius = 0f;
+  biome.shadowTint = shadow; biome.lampTint = lamp; biome.filmicLook = filmic;
+  biome.lightingPrefabs = new[] { new DungeonWallLight { prefab = torch, weight = 1, overrideColor = true, color = torchColour } };
+  biome.overrideTorchColor = false; biome.torchBrightness = n == 1 ? .95f : 1.45f;
+  biome.torchesPerRoom = n == 1 ? biome.torchesPerRoom : new UnityEngine.Vector2Int(UnityEngine.Mathf.Max(2, biome.torchesPerRoom.x), UnityEngine.Mathf.Max(3, biome.torchesPerRoom.y + 1));
+  UnityEditor.EditorUtility.SetDirty(biome);
+  sb.Append($"{name}: style {style.name}, rules {rules.Length}, breakables {biome.destructibles.Length}, enemies {biome.enemies.Length}\n");
+  made.Add(biome);
+  return biome;
+}
+
+DungeonLightingSettings L(UnityEngine.Color sky, UnityEngine.Color ambient, UnityEngine.Color ground, UnityEngine.Color fog, UnityEngine.Color sun, float sunIntensity) => new DungeonLightingSettings
+{
+  skyTint = sky, skyExposure = .6f, lightColor = sun, lightIntensity = sunIntensity,
+  ambientSky = ambient, ambientHorizon = UnityEngine.Color.Lerp(ambient, ground, .5f), ambientGround = ground, fogColor = fog
+};
+
+// The Deep Halls: the dungeon demo's warm orange torches (1, .66, .38) against its teal fog (.10, .47, .47) and grey sky.
+Make(1, "The Deep Halls", "Dwarf halls. Nobody has swept in a while.", .45f, new[]
+{
+  Rule("Dwarf brazier", C, .35f, 0, 2),
+  Rule("Dwarf banner", W, .5f, 0, 3), Rule("Dwarf banner torn", W, .3f, 0, 2),
+  Rule("Dwarf pillar", C, .3f, 0, 2), Rule("Dwarf obelisk", W, .15f, 0, 1), Rule("Broken obelisk", A, .15f, 0, 1),
+  Rule("Realms barrel", W, .3f, 0, 2), Rule("Barrel stack", C, .2f, 0, 1, 1f, 2, 1), Rule("Crate stack", C, .2f, 0, 1),
+  Rule("Weapon rack", W, .2f, 0, 1), Rule("Weapon barrel", W, .2f, 0, 1),
+  Rule("Stone table", M, .12f, 0, 1, .6f, 1, 1, DungeonRoomRoles.Rest | DungeonRoomRoles.Storage | DungeonRoomRoles.Combat), Rule("Stone bench", W, .2f, 0, 2), Rule("Stone stool", A, .15f, 0, 2),
+  Rule("Stone shelf", W, .2f, 0, 1), Rule("Dwarf sarcophagus", W, .12f, 0, 1),
+  Rule("Dead dwarf", A, .2f, 0, 1), Rule("Dead dwarf 2", A, .15f, 0, 1),
+  Rule("Gold pile", A, .3f, 1, 2, 1f, 1, 1, Rich), Rule("Gold coins", A, .3f, 0, 2),
+  Rule("Crystal cluster", C, .2f, 0, 1, .7f), Rule("Crystal cluster 2", C, .15f, 0, 1, .6f),
+  Rule("Dwarf rug", M, .15f, 0, 1, .5f, 2, 1), Rule("Gold hoard", M, .2f, 1, 1, 1f, 1, 1, Rich), Rule("Gold hoard", C, .1f, 0, 1, .35f),
+  Any("Assets/Game/Levels/Shared/Props/Furnishing/Cobweb.prefab", C, .5f, 1, 3), Life("Dust motes", .9f), Rule("Rubble", A, .3f, 0, 2), Rule("Rubble 2", A, .2f, 0, 1), Rule("Fallen pillar", A, .1f, 0, 1, .6f, 2, 1),
+}, new UnityEngine.Color(1f, .66f, .38f),
+  L(new UnityEngine.Color(.21f, .23f, .26f), new UnityEngine.Color(.13f, .27f, .29f), new UnityEngine.Color(.07f, .13f, .14f), new UnityEngine.Color(.06f, .3f, .31f), new UnityEngine.Color(1f, .9f, .75f), .3f),
+  new UnityEngine.Color(.5f, .85f, .88f), new UnityEngine.Color(1.08f, .93f, .78f), .7f, new UnityEngine.Vector2(6f, 42f));
+
+// The Forge: the forge demo's orange light (1, .56, .10) everywhere, its flat brown-orange ambient (.35, .19, 0) and red-orange fog.
+Make(2, "The Forge", "The forges are still lit. Someone keeps them lit.", .3f, new[]
+{
+  Rule("Furnace", W, .25f, 0, 1), Rule("Smelting pot", C, .25f, 0, 1), Rule("Molten pit", M, .12f, 0, 1, .7f),
+  Rule("Anvil", A, .3f, 0, 2), Rule("Golem arm", A, .1f, 0, 1, .6f, 2, 1), Rule("Golem head", C, .1f, 0, 1, .6f),
+  Rule("Cog box", W, .2f, 0, 1), Rule("Cog pile", A, .25f, 0, 2), Rule("Cog pile 2", A, .2f, 0, 1), Rule("Big cog", W, .15f, 0, 1),
+  Rule("Ore crate", W, .25f, 0, 2), Rule("Ore crates", C, .2f, 0, 1),
+  Rule("Mine cart", A, .15f, 0, 1), Rule("Ore cart", A, .12f, 0, 1), Rule("Dwarf cannon", W, .08f, 0, 1, .5f),
+  Rule("Ore pile", A, .2f, 0, 1, 1f, 1, 1), Rule("Ore pile 2", A, .15f, 0, 1),
+  Rule("Smelter mould", M, .08f, 0, 1, .5f, 2, 1), Rule("Lava duct", C, .2f, 0, 2),
+  Rule("Forge hammer", A, .15f, 0, 1), Rule("Forge tongs", A, .15f, 0, 1),
+  Rule("Realms barrel", W, .25f, 0, 2), Rule("Crate stack", C, .2f, 0, 1), Rule("Weapon rack", W, .15f, 0, 1),
+  Rule("Gold pile", A, .25f, 1, 1, 1f, 1, 1, Rich), Rule("Gold hoard", M, .15f, 0, 1, .6f, 1, 1, Rich),
+  Life("Rising embers", .9f),
+}, new UnityEngine.Color(1f, .56f, .12f),
+  L(new UnityEngine.Color(.3f, .17f, .08f), new UnityEngine.Color(.3f, .15f, .04f), new UnityEngine.Color(.16f, .07f, .03f), new UnityEngine.Color(.5f, .15f, .09f), new UnityEngine.Color(1f, .62f, .3f), .35f),
+  new UnityEngine.Color(.9f, .62f, .48f), new UnityEngine.Color(1.14f, .86f, .62f), .6f, new UnityEngine.Vector2(4f, 32f));
+
+// The Pit: the hell demo's red light (1, .27, 0), its red fog (.57, .2, .15) and blue-tinted shadows, green witch-fire accents.
+Make(3, "The Pit", "Down here it is warm. Too warm.", .3f, new[]
+{
+  Rule("Hell brazier", C, .3f, 0, 2), Rule("Hell brazier wide", M, .1f, 0, 1, .5f),
+  Rule("Spiked fence", W, .35f, 0, 2), Rule("Spiked fence 2", W, .25f, 0, 2), Rule("Spiked post", W, .2f, 0, 1),
+  Rule("Skull spike", A, .25f, 0, 2), Rule("Skull spike 2", A, .2f, 0, 1), Rule("Skull spike 3", A, .2f, 0, 1),
+  Rule("Spike cluster", C, .2f, 0, 1), Rule("Black spike", C, .25f, 0, 1), Rule("Black spike 2", C, .2f, 0, 1),
+  Rule("Hell obelisk", C, .15f, 0, 1), Rule("Hell pillar", C, .15f, 0, 1), Rule("Hell symbol", W, .12f, 0, 1),
+  Rule("Black rock", A, .3f, 0, 2), Rule("Black crag", W, .2f, 0, 1), Rule("Horned skull", A, .2f, 0, 1),
+  Rule("Giant skull", C, .08f, 0, 1, .6f, 2, 1), Rule("Giant rib", W, .12f, 0, 2),
+  Rule("Hell circle", M, .1f, 0, 1, .5f, 2, 2),
+  Rule("Gold pile", A, .2f, 1, 1, 1f, 1, 1, Rich),
+  Life("Rising embers", .7f), Life("Falling ash", .7f), Life("Witch-fire", .45f),
+}, new UnityEngine.Color(1f, .32f, .06f),
+  L(new UnityEngine.Color(.15f, .2f, .24f), new UnityEngine.Color(.36f, .13f, .1f), new UnityEngine.Color(.17f, .07f, .08f), new UnityEngine.Color(.46f, .14f, .09f), new UnityEngine.Color(1f, .5f, .3f), .3f),
+  new UnityEngine.Color(.55f, .45f, .62f), new UnityEngine.Color(1.18f, .78f, .58f), .55f, new UnityEngine.Vector2(5f, 38f));
+
+// Dungeon1's floors 10, 11 and 12: one realm each, after the ruins.
+var stages = new System.Collections.Generic.List<TableLevelData.BiomeStage>(level.stages);
+stages.RemoveAll(s => s != null && made.Contains(s.biome));
+foreach (var b in made) stages.Add(new TableLevelData.BiomeStage { biome = b, floors = 1, boss = false });
+level.stages = stages.ToArray();
+UnityEditor.EditorUtility.SetDirty(level);
+UnityEditor.AssetDatabase.SaveAssets();
+sb.Append($"run: {level.RunSummary}\n");
+} catch (System.Exception e) { sb.Append("ERR " + e); }
+System.IO.Directory.CreateDirectory("Temp/Realms");
+System.IO.File.WriteAllText("Temp/Realms/setup.txt", sb.ToString());
+return "ok";
