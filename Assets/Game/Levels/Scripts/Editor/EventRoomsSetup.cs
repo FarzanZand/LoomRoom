@@ -429,21 +429,164 @@ public static class EventRoomsSetup
             ev.bed = bed; ev.hoard = spots.ToArray();
         }, light: DungeonRoomLight.Candlelit);
 
-    // The dice: a 7 x 7 room open to the sky in moonlight; the die lands in the middle.
+    // Only the dice room again (it keeps its GUID, so the biome pools still point at it): RebuildDice() from an eval.
+    public static string RebuildDice()
+    {
+        log = new System.Text.StringBuilder();
+        overwrite = true;
+        try { Dice(Die()); }
+        finally { overwrite = false; }
+        AssetDatabase.SaveAssets();
+        return log.ToString();
+    }
+
+    // The Dungeon Master's gaming board for the dice room: a 4.2 x 2.8 m board 4 cm thick lying on the floor, its top
+    // painted by Tools/dice_board.py (six squares, what each face brings), its sides the frame's oak. Children: the six
+    // squares' middles on its top (Square 1..6) and the light that comes up on the square the die lands on.
+    const float BoardW = 4.2f, BoardD = 2.8f, BoardT = .04f;
+    static GameObject DiceBoard()
+    {
+        string dir = $"{PropDir}/Dice board", path = $"{dir}/Dice board.prefab";
+        var made = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (made != null && !overwrite) return made;
+        Folder(dir);
+        // The texture, painted at 128 texels a metre, imported like the die's (point filtered, uncompressed).
+        string png = $"{dir}/Dice board.png";
+        var run = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("python", $"-I Tools/dice_board.py \"{png}\"") { UseShellExecute = false, CreateNoWindow = true });
+        run.WaitForExit();
+        AssetDatabase.ImportAsset(png, ImportAssetOptions.ForceUpdate);
+        var dieImporter = (TextureImporter)AssetImporter.GetAtPath($"{PropDir}/DM die/DM die.png");
+        var importer = (TextureImporter)AssetImporter.GetAtPath(png);
+        if (dieImporter != null && importer != null)
+        {
+            var settings = new TextureImporterSettings(); dieImporter.ReadTextureSettings(settings);
+            importer.SetTextureSettings(settings);
+            importer.textureCompression = dieImporter.textureCompression;
+            importer.SaveAndReimport();
+        }
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(png);
+        // The material: the die's, with the board's texture.
+        string matPath = $"{dir}/Dice board.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        if (mat == null)
+        {
+            mat = new Material(AssetDatabase.LoadAssetAtPath<Material>($"{PropDir}/DM die/DM die.mat"));
+            AssetDatabase.CreateAsset(mat, matPath);
+        }
+        mat.SetTexture("_BaseMap", tex); if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", tex);
+        EditorUtility.SetDirty(mat);
+        // The mesh: the top takes the whole picture (north edge at the picture's top); each side a strip of the frame's
+        // outer rim, as long as the side, so the oak's texels keep their size.
+        string meshPath = $"{dir}/Dice board.asset";
+        var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
+        if (mesh == null) { mesh = new Mesh { name = "Dice board" }; AssetDatabase.CreateAsset(mesh, meshPath); }
+        mesh.Clear();
+        float hx = BoardW / 2, hz = BoardD / 2, rim = BoardT / BoardD;   // the rim's height as a share of the picture
+        var v = new List<Vector3>(); var n = new List<Vector3>(); var uv = new List<Vector2>(); var tri = new List<int>();
+        void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 normal, Vector2 ua, Vector2 ub, Vector2 uc, Vector2 ud)
+        {
+            int i = v.Count;
+            v.AddRange(new[] { a, b, c, d }); n.AddRange(new[] { normal, normal, normal, normal }); uv.AddRange(new[] { ua, ub, uc, ud });
+            tri.AddRange(new[] { i, i + 1, i + 2, i, i + 2, i + 3 });
+        }
+        float y = BoardT, side = BoardD / BoardW;   // a short side covers this share of the picture's width
+        Quad(new Vector3(-hx, y, -hz), new Vector3(-hx, y, hz), new Vector3(hx, y, hz), new Vector3(hx, y, -hz), Vector3.up,
+            new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0));
+        Quad(new Vector3(-hx, 0, -hz), new Vector3(-hx, y, -hz), new Vector3(hx, y, -hz), new Vector3(hx, 0, -hz), Vector3.back,
+            new Vector2(0, 1 - rim), new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 1 - rim));
+        Quad(new Vector3(hx, 0, hz), new Vector3(hx, y, hz), new Vector3(-hx, y, hz), new Vector3(-hx, 0, hz), Vector3.forward,
+            new Vector2(0, 1 - rim), new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 1 - rim));
+        Quad(new Vector3(-hx, 0, hz), new Vector3(-hx, y, hz), new Vector3(-hx, y, -hz), new Vector3(-hx, 0, -hz), Vector3.left,
+            new Vector2(0, 1 - rim), new Vector2(0, 1), new Vector2(side, 1), new Vector2(side, 1 - rim));
+        Quad(new Vector3(hx, 0, -hz), new Vector3(hx, y, -hz), new Vector3(hx, y, hz), new Vector3(hx, 0, hz), Vector3.right,
+            new Vector2(0, 1 - rim), new Vector2(0, 1), new Vector2(side, 1), new Vector2(side, 1 - rim));
+        mesh.SetVertices(v); mesh.SetNormals(n); mesh.SetUVs(0, uv); mesh.SetTriangles(tri, 0);
+        mesh.RecalculateBounds(); mesh.RecalculateTangents();
+        EditorUtility.SetDirty(mesh);
+        PixelRestyle.MarkReadable(mesh);
+
+        var root = new GameObject("Dice board");
+        root.AddComponent<MeshFilter>().sharedMesh = mesh;
+        root.AddComponent<MeshRenderer>().sharedMaterial = mat;
+        var box = root.AddComponent<BoxCollider>(); box.center = new Vector3(0, BoardT / 2, 0); box.size = new Vector3(BoardW, BoardT, BoardD);
+        // The squares' middles, as Tools/dice_board.py lays them out (538 x 358 texels, a 16 texel frame, 3 texel inlay).
+        const float W = 538, H = 358, F = 16, I = 3;
+        float cw = (W - 2 * F - 2 * I) / 3, ch = (H - 2 * F - I) / 2;
+        for (int k = 1; k <= 6; k++)
+        {
+            int col = (k - 1) % 3, row = (k - 1) / 3;
+            float px = F + col * (cw + I) + cw / 2, py = F + row * (ch + I) + ch / 2;
+            Marker(root.transform, $"Square {k}", new Vector3(px / W * BoardW - hx, BoardT, hz - py / H * BoardD));
+        }
+        // The light over the square the die lands on: warm, soft, straight down (the event moves it and fades it in).
+        var lightGo = new GameObject("Square light");
+        lightGo.transform.SetParent(root.transform, false);
+        lightGo.transform.localPosition = new Vector3(0, 2.6f, 0); lightGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        var light = lightGo.AddComponent<Light>();
+        light.type = LightType.Spot; light.spotAngle = 48f; light.innerSpotAngle = 20f; light.range = 5f;
+        light.color = new Color(1f, .82f, .5f); light.intensity = 0f; light.shadows = LightShadows.None; light.enabled = false;
+        made = PrefabUtility.SaveAsPrefabAsset(root, path);
+        Object.DestroyImmediate(root);
+        log.Append("dice board; ");
+        return made;
+    }
+
+    // The dice: a 7 x 7 room open to the sky in moonlight, his gaming board on the floor under the opening and a gambler's
+    // table at its near edge: a skeleton slumped over its last bet, an empty chair, coins, a candle and the cup to shake.
     static GameObject Dice(GameObject die) => Room("Dice room", "dice",
-        "Walk in and the Dungeon Master rolls his die into the room: 1 ambush, 2 a tough enemy, 3 nothing, 4 a rest, 5 an iron chest, 6 a gold chest.",
+        "His gaming board lies under the opening, a dead gambler at the table beside it. Shake the cup and he rolls onto the board: 1 ambush, 2 a tough enemy, 3 nothing, 4 a rest, 5 an iron chest, 6 a gold chest.",
         Rows(7, 7, new Vector2Int(3, 0), new Vector2Int(6, 3)), 1, (root, e) =>
         {
-            // The moonlight's shaft and motes, but not its night-sky card: the opening must show the Dungeon Master above.
-            var moon = Put(root, $"{Shared}/Effects/Moonlight.prefab", Vector3.zero);
+            // The moonlight's shaft and motes on the board, but not its night-sky card: the opening must show the Dungeon
+            // Master above.
+            var moon = Put(root, $"{Shared}/Effects/Moonlight.prefab", new Vector3(0f, 0f, 1f));
             var sky = moon != null ? moon.transform.Find("Night sky") : null;
             if (sky != null) sky.gameObject.SetActive(false);
-            var landing = Marker(root, "Landing", new Vector3(0f, 0f, .5f));
-            // At the door, so a test run walks in and sets the roll off (deeper in, it rolled before anyone was looking).
+            var board = Put(root, DiceBoard(), new Vector3(0f, 0f, 1f));
+            var landing = Marker(root, "Landing", new Vector3(0f, BoardT, 1f));
+            // The gambler's table at the board's west side, clear of the way in: from the door the board is seen whole with
+            // the dead gambler beside it; standing at the table the player looks across it onto the board.
+            string dir = $"{PropDir}/Dice room";
+            Folder(dir);
+            var table = Put(root, $"{Shared}/Tavern/Small table.prefab", new Vector3(-3.3f, 0f, 1f));
+            float top = table != null ? Bounds(table).max.y : .89f;
+            Put(root, $"{Shared}/Tavern/Chair.prefab", new Vector3(-3.3f, 0f, 1.85f), 180f, "Dead gambler's chair");
+            var skeleton = Put(root, TavernDress.Prop("Assets/Synty/PolygonDungeon/Prefabs/Props/SM_Prop_Skeleton_Table_01.prefab", "Dead gambler", 1f, dir), new Vector3(-3.3f, 0f, 1.85f), 180f);
+            Put(root, $"{Shared}/Tavern/Chair.prefab", new Vector3(-3.45f, 0f, .05f), 20f, "Empty chair");
+            if (skeleton != null) foreach (var c in skeleton.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);
+            // On the table: what was left of his money by his hand, a candle, and the cup turned over.
+            var coins = Put(root, "Assets/Game/Items/Prefabs/Gold/Coin pile small.prefab", new Vector3(-3.4f, top + .01f, 1.3f), 35f, "Coins");
+            var candle = Put(root, $"{Shared}/Tavern/Table candle.prefab", new Vector3(-2.93f, top + .01f, 1.3f));
+            var cup = Put(root, TavernDress.Prop("Assets/Synty/PolygonFantasyKingdom/Prefabs/Items/SM_Item_Cup_01.prefab", "Dice cup", 1.4f, dir), new Vector3(-3.05f, top + .01f, .82f));
+            foreach (var go in new[] { coins, candle, cup }) if (go != null) foreach (var c in go.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);
+            if (cup != null)
+            {
+                // Turned over, its mouth on the table.
+                cup.transform.localRotation = Quaternion.Euler(180f, 20f, 0f);
+                cup.transform.position += Vector3.up * (top + .01f - Bounds(cup).min.y);
+                cup.name = "Dice cup";
+                Interactable(cup, cup.transform.InverseTransformPoint(Bounds(cup).center), new Vector3(.45f, .45f, .45f));
+                cup.AddComponent<DiceCup>();
+            }
+            Put(root, $"{Shared}/Furnishing/Bone pile.prefab", new Vector3(-4.6f, 0f, 2.8f), 40f);
+            // Three candles burnt down at each far corner of the board (the tavern's, at the room's 128 texels a metre).
+            foreach (var (cx, cz) in new[] { (-2.45f, 2.75f), (2.45f, 2.75f) })
+                foreach (var (dx, dz, turn) in new[] { (0f, 0f, 0f), (.16f, -.1f, 70f), (-.08f, .16f, 150f) })
+                {
+                    var c = Put(root, $"{Shared}/Tavern/Table candle.prefab", new Vector3(cx + dx * Mathf.Sign(cx), 0f, cz + dz), turn, "Board candle");
+                    if (c != null) foreach (var col in c.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(col);
+                }
             e.entrance = Marker(root, "Entrance", new Vector3(0f, 0f, -6.2f));
             WallLight(root, new Vector3(-6f, 0f, -4f), 270f); WallLight(root, new Vector3(-6f, 0f, 4f), 270f);
             var ev = root.gameObject.AddComponent<DiceEvent>();
             ev.diePrefab = die; ev.landing = landing;
+            if (board != null)
+            {
+                ev.squares = new Transform[6];
+                for (int k = 0; k < 6; k++) ev.squares[k] = board.transform.Find($"Square {k + 1}");
+                ev.squareLight = board.GetComponentInChildren<Light>(true);
+            }
+            ev.rattle = Load<AudioClip>("Assets/ThirdParty/Sound Effects Library/SoundFX/DiceRollFast.wav");
             ev.knocks = new[]
             {
                 Load<AudioClip>("Assets/Game/Cinematics/Intro/Tabletop/Dice knock 1.wav"),

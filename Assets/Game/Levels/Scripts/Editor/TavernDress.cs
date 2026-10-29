@@ -65,14 +65,17 @@ public static class TavernDress
 
     // A pixel copy of a Synty prefab at 128 texels a unit, as a prefab in the tavern's props folder (made once; delete
     // the prefab to bake it again). scale is baked in: the copy's root carries it, and the texture is sized for it.
-    public static GameObject Prop(string syntyPath, string name, float scale = 1f)
+    // A pixel copy of a Synty prefab at 128 texels a unit, in folder (default the tavern's props), its meshes and
+    // textures under folder/Pixel. Kept when it exists.
+    public static GameObject Prop(string syntyPath, string name, float scale = 1f, string folder = null)
     {
-        string path = $"{PropDir}/{name}.prefab";
+        string propDir = folder ?? PropDir, pixelDir = propDir + "/Pixel";
+        string path = $"{propDir}/{name}.prefab";
         var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
         if (existing != null) return existing;
         var synty = AssetDatabase.LoadAssetAtPath<GameObject>(syntyPath);
         if (synty == null) throw new System.Exception("No Synty prefab " + syntyPath);
-        Directory.CreateDirectory(PixelDir);
+        Directory.CreateDirectory(pixelDir);
         var copy = (GameObject)PrefabUtility.InstantiatePrefab(synty);
         PrefabUtility.UnpackPrefabInstance(copy, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
         copy.name = name;
@@ -86,7 +89,7 @@ public static class TavernDress
                 var mesh = filter.sharedMesh; var sourceMats = r.sharedMaterials;
                 float s = filter.transform.lossyScale.x;
                 string key = $"{mesh.name} x{s:0.00}";
-                string dir = $"{PixelDir}/{key}";
+                string dir = $"{pixelDir}/{key}";
                 var bakedMesh = AssetDatabase.LoadAssetAtPath<Mesh>($"{dir}/{key}.asset");
                 var bakedMat = AssetDatabase.LoadAssetAtPath<Material>($"{dir}/{key}.mat");
                 if (bakedMesh == null || bakedMat == null)

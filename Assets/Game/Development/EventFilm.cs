@@ -385,8 +385,10 @@ public class EventFilm : MonoBehaviour
         var sky = d.landing.position + Vector3.up * 7f;
         yield return Look(d.landing.position + Vector3.up * 1.5f, 1f);
         yield return Wait(.8f);
-        // A few steps in sets it off.
-        yield return WalkTo(d.landing.position, 3.2f, false, 4f, 1f);
+        // Up to the gambler's table and shake the cup.
+        var cup = d.GetComponentInChildren<DiceCup>();
+        yield return WalkTo(cup != null ? cup.transform.position : d.landing.position, cup != null ? .9f : 3.2f, false, 4f, 1f);
+        if (cup != null) { yield return Look(cup.transform.position, .5f); cup.Interact(P); yield return Wait(.8f); }
         yield return Look(sky, 1f);
         for (float t = 0; d.Result == 0 && t < 5f; t += Time.deltaTime) yield return null;
         // Follow the die down once it is in the room's air.
