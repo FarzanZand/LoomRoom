@@ -9,6 +9,8 @@ using UnityEngine.Playables;
 // pick the bowl with the coin (WagerCup) and the bet comes back doubled. Win twice and he starts cheating: the coin is
 // under none of them. Hit him once he has cheated and you called it: his friends come out of the walls, and when they
 // and he are down his pot is yours. Hit him when he played fair and his friends come all the same, with no pot.
+// He deals once a run: after the first bet, a wager table on a later floor of the same run won't take one.
+// The coin is hidden while a bowl covers it (it is wider than a bowl and showed round its rim).
 public class WagerEvent : MonoBehaviour
 {
     [Tooltip("Where the dealer sits (an Enemy socket of the template marks the same spot).")] public Transform seat;
@@ -47,6 +49,8 @@ public class WagerEvent : MonoBehaviour
     public DungeonMaster.Line potLine = new() { text = "His pot is yours." };
     public DungeonMaster.Line poorLine = new() { text = "You can't cover the bet." };
     public DungeonMaster.Line doneLine = new() { text = "He's done for tonight." };
+    [Tooltip("Said on walking in, instead of the welcome, when the player already played him this run.")]
+    public DungeonMaster.Line playedLine = new() { text = "He won't play you twice." };
 
     enum Phase { Idle, Dealing, Picking, Fight, Over }
     Phase phase;
@@ -59,10 +63,15 @@ public class WagerEvent : MonoBehaviour
     readonly List<Character> friendsUp = new();
     float nextScan;
 
+    // Once a run (a ProgressionManager flag, so a continued run keeps it; a new run clears it, NewRun).
+    const string PlayedFlag = "run.wager.played";
+    public static void NewRun() { if (ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(PlayedFlag, 0); }
+    static bool PlayedThisRun => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(PlayedFlag);
+
     public int Bet => bet + betPerFloor * (ScriptedEventRoom.Floor - 1);
-    public bool CanBet => phase == Phase.Idle && dealer != null && dealer.IsAlive && played < games;
+    public bool CanBet => phase == Phase.Idle && dealer != null && dealer.IsAlive && played < games && (played > 0 || !PlayedThisRun);
     public bool Picking => phase == Phase.Picking;
-    public string TablePrompt => phase != Phase.Idle || dealer == null || !dealer.IsAlive ? "" : played >= games ? "" : $"Bet {Bet} gold";
+    public string TablePrompt => CanBet ? $"Bet {Bet} gold" : "";
     public bool Cheating => cheating;
 
     void Start()
@@ -79,7 +88,7 @@ public class WagerEvent : MonoBehaviour
         if (dealer != null && !welcomed && room.PlayerInside && room.DepthOf(ScriptedEventRoom.TablePlayer.transform.position) > 1.5f)
         {
             welcomed = true;
-            ScriptedEventRoom.Say(welcomeLine);
+            ScriptedEventRoom.Say(PlayedThisRun ? playedLine : welcomeLine);
         }
         if (phase == Phase.Fight) WatchFight();
     }
@@ -124,6 +133,7 @@ public class WagerEvent : MonoBehaviour
         if (!CanBet || player == null || player.Wallet == null) return;
         if (!player.Wallet.TrySpend(Bet)) { ScriptedEventRoom.Say(poorLine); return; }
         lost += Bet;
+        if (ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(PlayedFlag, 1);
         ScriptedEventRoom.Play(coinSound, coin != null ? coin.position : transform.position, .8f);
         StartCoroutine(Deal(player));
     }
@@ -141,6 +151,7 @@ public class WagerEvent : MonoBehaviour
         yield return Lift(cups[1], true);
         if (coin != null) yield return Move(coin, Under(cups[1]), .3f);
         yield return Lift(cups[1], false);
+        ShowCoin(false);
         if (cheating)
         {
             // He palms it as the bowl comes down: the coin is under none of them.
@@ -172,8 +183,9 @@ public class WagerEvent : MonoBehaviour
     IEnumerator Reveal(int picked)
     {
         phase = Phase.Dealing;
-        yield return Lift(cups[picked], true);
         bool won = picked == coinCup;
+        if (won) ShowCoin(true);
+        yield return Lift(cups[picked], true);
         if (won)
         {
             wins++;
@@ -191,6 +203,7 @@ public class WagerEvent : MonoBehaviour
         else
         {
             ScriptedEventRoom.Say(loseLine);
+            ShowCoin(true);
             yield return Lift(cups[coinCup], true);
         }
         yield return new WaitForSeconds(1.3f);
@@ -199,12 +212,20 @@ public class WagerEvent : MonoBehaviour
         yield return new WaitForSeconds(.35f);
         // The coin back in front of the bowls.
         if (coin != null && coinRest != null) { coin.gameObject.SetActive(true); coin.SetPositionAndRotation(coinRest.position, coinRest.rotation); }
+        ShowCoin(true);
         if (phase == Phase.Fight) yield break;
         phase = Phase.Idle;
         if (played >= games) ScriptedEventRoom.Say(doneLine);
     }
 
     Vector3 Front() => coinRest != null ? coinRest.position + (ScriptedEventRoom.TablePlayer != null ? (ScriptedEventRoom.TablePlayer.transform.position - coinRest.position).normalized * .5f : Vector3.zero) : transform.position;
+
+    // The coin drawn or not, while it stays in play (Swap moves it under its bowl either way).
+    void ShowCoin(bool on)
+    {
+        if (coin == null) return;
+        foreach (var r in coin.GetComponentsInChildren<Renderer>(true)) r.enabled = on;
+    }
 
     // On the table under a bowl (the coin's height is its rest's).
     Vector3 Under(Transform cup) => new(cup.position.x, coinRest != null ? coinRest.position.y : cup.position.y, cup.position.z);

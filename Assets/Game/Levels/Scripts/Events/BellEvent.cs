@@ -3,7 +3,7 @@ using UnityEngine;
 
 // The bell (on the Bell room template's root, with a ScriptedEventRoom): a great bell hangs over the middle of the room
 // with its rope down to the floor, and a plain chest waits on a step at the back. Pull the rope and the bell tolls,
-// iron gates slam across the ways out and a wave comes; clear it and the gates sink and the chest comes back a tier
+// iron gates slam across the ways out and three waves come, one after another, out of the room's edge; clear them and the gates sink and the chest comes back a tier
 // better (wood, iron, gold, then gold with a Legendary in it). Ring again or open the chest: opening it ends the game,
 // and the rope can't be pulled once the last ring is done.
 public class BellEvent : MonoBehaviour
@@ -12,8 +12,9 @@ public class BellEvent : MonoBehaviour
     [Tooltip("The chest on the step (a chest placed in the template; stocked like any placed chest).")] public DungeonContainer chest;
     [Tooltip("The toll.")] public AudioClip toll;
     [Range(0f, 1f)] public float tollVolume = 1f;
-    [Tooltip("Enemies in each ring's wave, first ring first; the number of entries is how many times it can be rung.")]
+    [Tooltip("Enemies in each of a ring's waves, first ring first; the number of entries is how many times it can be rung.")]
     public int[] waves = { 2, 3, 4, 5 };
+    [Range(1, 5), Tooltip("Waves a ring brings, each once the last is down.")] public int wavesPerRing = 3;
     [Tooltip("The last ring's chest also holds a random piece of gear rolled Legendary.")]
     public bool legendaryLast = true;
     [Range(1, 4)] public int maxTier = 2;
@@ -79,28 +80,34 @@ public class BellEvent : MonoBehaviour
         if (ring < ringLines.Length) ScriptedEventRoom.Say(ringLines[ring]);
         room.ShutGates();
         yield return new WaitForSeconds(1.1f);
-        // The wave, out of puffs of dust at the far side of the room from the player.
         var rng = new System.Random(room.Dungeon.EventSeed(room.Room, 10 + ring));
-        var points = room.FreeFloor(rng, 2.5f);
-        var from = player != null ? player.transform.position : transform.position;
-        points.Sort((a, b) => (b - from).sqrMagnitude.CompareTo((a - from).sqrMagnitude));
-        int count = waves[ring];
-        int far = Mathf.Max(1, Mathf.Min(points.Count, Mathf.Max(count, (points.Count + 1) / 2)));
-        var wave = new System.Collections.Generic.List<Character>();
-        for (int i = 0; i < count; i++)
+        for (int w = 0; w < wavesPerRing; w++)
         {
-            var at = points.Count > 0 ? points[i % far] : transform.position;
-            var enemy = room.Summon(null, at, rng);
-            if (enemy != null) wave.Add(enemy);
-            yield return new WaitForSeconds(.35f);
-        }
-        // Until every one of them is down (a death waits for a revive; a run that ends stops it).
-        while (true)
-        {
-            wave.RemoveAll(c => c == null || !c.IsAlive);
-            if (wave.Count == 0) break;
-            if (!ScriptedEventRoom.RunGoing) yield break;
-            yield return new WaitForSeconds(.25f);
+            if (w > 0) yield return new WaitForSeconds(1f);
+            // Each wave out of puffs of dust along the room's edge, on the far side from where the player stands now
+            // (the whole room's floor when it has no edge cells clear of the ways in).
+            var points = room.EdgeFloor(rng, 2.5f);
+            if (points.Count == 0) points = room.FreeFloor(rng, 2.5f);
+            var from = player != null ? player.transform.position : transform.position;
+            points.Sort((a, b) => (b - from).sqrMagnitude.CompareTo((a - from).sqrMagnitude));
+            int count = waves[ring];
+            int far = Mathf.Max(1, Mathf.Min(points.Count, Mathf.Max(count, (points.Count + 1) / 2)));
+            var wave = new System.Collections.Generic.List<Character>();
+            for (int i = 0; i < count; i++)
+            {
+                var at = points.Count > 0 ? points[i % far] : transform.position;
+                var enemy = room.Summon(null, at, rng);
+                if (enemy != null) wave.Add(enemy);
+                yield return new WaitForSeconds(.35f);
+            }
+            // Until every one of them is down (a death waits for a revive; a run that ends stops it).
+            while (true)
+            {
+                wave.RemoveAll(c => c == null || !c.IsAlive);
+                if (wave.Count == 0) break;
+                if (!ScriptedEventRoom.RunGoing) yield break;
+                yield return new WaitForSeconds(.25f);
+            }
         }
         yield return new WaitForSeconds(.8f);
         room.OpenGates();

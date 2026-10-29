@@ -140,6 +140,21 @@ public class ScriptedEventRoom : MonoBehaviour
         return points;
     }
 
+    // FreeFloor's points on the room's outer cells only (those beside a wall), so what comes out of them comes from the
+    // room's edge.
+    public List<Vector3> EdgeFloor(System.Random rng, float clearance = 3f)
+    {
+        var edge = new List<Vector3>();
+        if (!Ready) return edge;
+        var cells = new HashSet<Vector2Int>(Dungeon.CellsOf(Room));
+        foreach (var p in FreeFloor(rng, clearance))
+        {
+            var c = Dungeon.CellOf(p);
+            if (!cells.Contains(c + Vector2Int.up) || !cells.Contains(c + Vector2Int.down) || !cells.Contains(c + Vector2Int.left) || !cells.Contains(c + Vector2Int.right)) edge.Add(p);
+        }
+        return edge;
+    }
+
     // An enemy out of a puff of dust, facing the player and after them at once. prefab empty: one the room's pack would
     // have (the biome's mix for this floor), scaled for the floor like every other.
     public Character Summon(GameObject prefab, Vector3 at, System.Random rng, bool alert = true)

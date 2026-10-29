@@ -281,16 +281,16 @@ public static class EventRoomsSetup
         go.AddComponent<InteractableTrigger>();
     }
 
-    // The duel: a 7 x 9 hall two tiles high, a chasm down each side, a bridge of three cells up the middle from the south
-    // door to the north one, the duellist in the middle facing the south.
+    // The duel: a 7 x 9 hall two tiles high, a chasm three cells wide down each side, a bridge one cell wide up the middle
+    // from the south door to the north one, the duellist in the middle facing the south.
     static GameObject Duel(GameObject duellist, HouseRule rule) => Room("Duel bridge", "duel",
         "A duellist waits on a bridge. Face him one on one; a foul brings his friends.",
         Rows(7, 9, new Vector2Int(3, 0), new Vector2Int(3, 8)), 2, (root, e) =>
         {
             foreach (var x in new[] { -5f, 5f })
             {
-                var cut = Marker(root, "Chasm", new Vector3(x, 0f, 0f)).gameObject.AddComponent<DungeonFloorCut>();
-                cut.kind = DungeonFloorCut.Kind.Pit; cut.cells = new Vector2Int(2, 7);
+                var cut = Marker(root, "Chasm", new Vector3(x * .8f, 0f, 0f)).gameObject.AddComponent<DungeonFloorCut>();
+                cut.kind = DungeonFloorCut.Kind.Pit; cut.cells = new Vector2Int(3, 7);
             }
             var post = Marker(root, "Duellist post", Vector3.zero, 180f);
             Put(root, duellist, Vector3.zero, 180f);
@@ -299,9 +299,8 @@ public static class EventRoomsSetup
             Put(root, $"{Shared}/Furnishing/Hanging chain.prefab", new Vector3(5.2f, 2.97f, -1.6f));
             Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(-2.4f, 0f, -7.2f));
             Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(2.4f, 0f, 7.2f));
-            // Fire either side of him, so he is seen from the way in.
-            Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(-2.3f, 0f, -1.4f));
-            Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(2.3f, 0f, -1.4f));
+            // Torches either side of him across the chasms, so he is seen from the way in (the bridge is too narrow for fire).
+            WallLight(root, new Vector3(-6f, 0f, -2f), 270f); WallLight(root, new Vector3(6f, 0f, -2f), 90f);
             WallLight(root, new Vector3(-6f, 0f, -8f), 270f); WallLight(root, new Vector3(6f, 0f, -8f), 90f);
             WallLight(root, new Vector3(-6f, 0f, 8f), 270f); WallLight(root, new Vector3(6f, 0f, 8f), 90f);
             var duel = root.gameObject.AddComponent<DuelEvent>();
@@ -428,6 +427,19 @@ public static class EventRoomsSetup
             var ev = root.gameObject.AddComponent<SleepingGiantEvent>();
             ev.bed = bed; ev.hoard = spots.ToArray();
         }, light: DungeonRoomLight.Candlelit);
+
+    // Only the duel room again (it keeps its GUID; the duellist is kept as it is): RebuildDuel() from an eval.
+    public static string RebuildDuel()
+    {
+        log = new System.Text.StringBuilder();
+        var duellist = Load<GameObject>($"{EnemyDir}/Duellist.prefab");
+        var rule = Rule3();
+        overwrite = true;
+        try { Duel(duellist, rule); }
+        finally { overwrite = false; }
+        AssetDatabase.SaveAssets();
+        return log.ToString();
+    }
 
     // Only the dice room again (it keeps its GUID, so the biome pools still point at it): RebuildDice() from an eval.
     public static string RebuildDice()

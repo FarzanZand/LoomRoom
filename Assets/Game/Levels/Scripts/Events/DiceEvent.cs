@@ -24,6 +24,8 @@ public class DiceEvent : MonoBehaviour
     [Tooltip("A knock for each bounce.")] public AudioClip[] knocks = new AudioClip[0];
     [Tooltip("Rolling to a stop.")] public AudioClip roll;
     [Tooltip("The tough enemy a 2 brings (empty: the room's own pick).")] public GameObject toughEnemy;
+    [Range(1, 4), Tooltip("How many tough enemies a 2 brings, set down one after another.")] public int toughCount = 2;
+    [Range(1, 4), Tooltip("Each of the ambush's waves (a 1) is this many times its usual size.")] public int ambushScale = 2;
     [Tooltip("The effect on the player when a 4 heals them.")] public GameObject healEffect;
     [Tooltip("Testing: the face it always lands on (0: the floor's seed picks).")] [Range(0, 6)] public int forceFace;
     [Range(1, 4)] public int maxTier = 2;
@@ -223,10 +225,18 @@ public class DiceEvent : MonoBehaviour
             case 1: yield return Ambush(player, rng); break;
             case 2:
             {
-                var at = Beside(player, spot, 2.4f);
                 var prefab = toughEnemy != null ? toughEnemy : room.Dungeon.PickEnemy(room.Room, rng);
-                var enemy = prefab != null ? room.Dungeon.SpawnAmbusher(prefab, at, Quaternion.LookRotation(Flat(player.transform.position - at))) : null;
-                if (enemy != null) { yield return DungeonMasterReach.Put(enemy, at); yield return DungeonMasterReach.Leave(); }
+                bool put = false;
+                for (int i = 0; i < toughCount && prefab != null; i++)
+                {
+                    // Each a little further round from the last, so they don't land on one spot.
+                    var at = Beside(player, spot, 2.4f + 1.3f * i);
+                    var enemy = room.Dungeon.SpawnAmbusher(prefab, at, Quaternion.LookRotation(Flat(player.transform.position - at)));
+                    if (enemy == null) continue;
+                    yield return DungeonMasterReach.Put(enemy, at);
+                    put = true;
+                }
+                if (put) yield return DungeonMasterReach.Leave();
                 break;
             }
             case 3: break;
@@ -255,12 +265,15 @@ public class DiceEvent : MonoBehaviour
         var points = room.FreeFloor(rng, 2.5f);
         var from = player.transform.position;
         points.Sort((a, b) => (b - from).sqrMagnitude.CompareTo((a - from).sqrMagnitude));
-        foreach (int count in new[] { 2 + (ScriptedEventRoom.Floor - 1) / 3, 2 })
+        foreach (int size in new[] { 2 + (ScriptedEventRoom.Floor - 1) / 3, 2 })
         {
+            int count = size * ambushScale;
+            // The far half of the room's free floor, or more of it when the wave needs more spots.
+            int spots = Mathf.Max(1, Mathf.Min(points.Count, Mathf.Max(count, points.Count / 2)));
             var wave = new List<Character>();
             for (int i = 0; i < count; i++)
             {
-                var e = room.Summon(null, points.Count > 0 ? points[i % Mathf.Max(1, points.Count / 2)] : transform.position, rng);
+                var e = room.Summon(null, points.Count > 0 ? points[i % spots] : transform.position, rng);
                 if (e != null) wave.Add(e);
                 yield return new WaitForSeconds(.35f);
             }
