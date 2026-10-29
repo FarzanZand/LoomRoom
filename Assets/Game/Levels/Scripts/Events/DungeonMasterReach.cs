@@ -402,15 +402,24 @@ public static class DungeonMasterReach
         roomLid = null;
     }
 
+    // The view shaken (the player camera's impulse listener): a hard jolt that rattles side to side and dies away over
+    // seconds (an Explosion impulse, not a single bump, so it reads as a wobble), its first kick a random sideways and
+    // downward direction. Force 1 moves the view about 15 cm at its first kick (measured; the impulse itself moves it about
+    // 1.65 m per unit, ShakeScale brings that down).
+    const float ShakeScale = .09f;
     static Unity.Cinemachine.CinemachineImpulseSource impulse;
-    public static void Shake(float force)
+    public static void Shake(float force, float seconds = .6f)
     {
         if (impulse == null)
         {
             var go = new GameObject("DM reach shake");
             impulse = go.AddComponent<Unity.Cinemachine.CinemachineImpulseSource>();
+            impulse.ImpulseDefinition.ImpulseType = Unity.Cinemachine.CinemachineImpulseDefinition.ImpulseTypes.Uniform;
+            impulse.ImpulseDefinition.ImpulseShape = Unity.Cinemachine.CinemachineImpulseDefinition.ImpulseShapes.Explosion;
         }
-        impulse.GenerateImpulseWithForce(force);
+        impulse.ImpulseDefinition.ImpulseDuration = Mathf.Max(.1f, seconds);
+        var kick = new Vector3(Random.value < .5f ? -1f : 1f, -.7f, Random.Range(-.3f, .3f)).normalized;
+        impulse.GenerateImpulseWithVelocity(kick * force * ShakeScale);
     }
 
     // ── His moves ────────────────────────────────────────────────────

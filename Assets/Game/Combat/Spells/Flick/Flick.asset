@@ -145,7 +145,8 @@ MonoBehaviour:
     hitVolume: 1
     slamSound: {fileID: 8300000, guid: 9cc7226bea19fd54d80cd80820cd7cda, type: 3}
     slamVolume: 1
-    hitShake: 0.6
+    hitShake: 1.2
+    slamShake: 1.5
     lid:
       open: {fileID: 8300000, guid: 45ea8ece760e8ad4aa11e7f1a1f6ef25, type: 3}
       rising: {fileID: 8300000, guid: 0d61428503c21a149bf6cfdabbdeeb7c, type: 3}

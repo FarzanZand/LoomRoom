@@ -181,7 +181,7 @@ public static class NewSpellsSetup
             f.snapSound = Clip("Weapons/Wpn_Whoosh_02"); f.snapVolume = 1f;
             f.slamSound = Clip("SoundFX/HammerHit"); f.slamVolume = 1f;
             f.hitSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/ThirdParty/Generic Fantasy UI/Fantasy_UI_Gen_Select_Heavy_01_mono.wav"); f.hitVolume = 1f;
-            f.hitShake = .6f;
+            f.hitShake = 1.2f; f.slamShake = 1.5f;
             f.lid = Lid();
             f.dieKnocks = new[] { 1, 2, 3 }.Select(i => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Game/Cinematics/Intro/Tabletop/Dice knock {i}.wav")).Where(c => c != null).ToArray();
             f.dieRollSound = Clip("SoundFX/DiceRollFast"); f.dieVolume = 1f;

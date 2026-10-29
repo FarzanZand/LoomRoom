@@ -100,7 +100,8 @@ public class FlickSettings
     [FoldoutGroup("Look"), Range(0, 1)] public float hitVolume = 1f;
     [FoldoutGroup("Look"), Tooltip("When it slams into a wall or the floor.")] public AudioClip slamSound;
     [FoldoutGroup("Look"), Range(0, 1)] public float slamVolume = 1f;
-    [FoldoutGroup("Look"), Min(0f), Tooltip("How hard the view shakes as his finger or the die strikes the enemy.")] public float hitShake = .6f;
+    [FoldoutGroup("Look"), Min(0f), Tooltip("How hard the view shakes as his finger or the die strikes the enemy.")] public float hitShake = 1.2f;
+    [FoldoutGroup("Look"), Min(0f), Tooltip("How hard the view shakes as the flicked enemy slams into a wall or the floor.")] public float slamShake = 1.5f;
     [FoldoutGroup("Look"), Tooltip("The roof over the player's room (and the enemy's) coming off and landing back on: sounds and dust.")]
     public LidEffects lid = new();
     [FoldoutGroup("Look"), AssetsOnly, Tooltip("Clings to the enemy he has picked, from the cast until his finger or die strikes it.")]
@@ -703,7 +704,7 @@ public class Flick : MonoBehaviour
             if (struck) return false;
             struck = true;
             if (settings.slamSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(settings.slamSound, at, settings.slamVolume);
-            DungeonMasterReach.Shake(.3f);
+            if (settings.slamShake > 0f) DungeonMasterReach.Shake(settings.slamShake, .75f);
             bool lethal = body.Stats.CurrentHealth <= damage;
             if (lethal) Restore();
             SpellEffects.Strike(caster, body, damage, at, at - dir, spell.displayName);
