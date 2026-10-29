@@ -27,6 +27,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField] string leftHandEquippedParam  = "LeftHandEquipped";
     [SerializeField] string blockHitTrigger        = "BlockHit";
     [SerializeField] string blockStrainParam       = "BlockStrain";
+    [SerializeField, Tooltip("Bool the LeftArm layer reads: the shield is lowered out of the way while the weapon arm attacks.")]
+    string shieldAwayParam = "ShieldAway";
+    [SerializeField, Min(0f), Tooltip("Seconds the shield stays down after an attack ends, so it doesn't come up between combo hits, only once the fighting pauses.")]
+    float shieldAwayLinger = 1f;
     [SerializeField] string hurtTrigger            = "Hurt";
     [SerializeField] string windupSpeedParam       = "WindupSpeed";
     [SerializeField] string releaseSpeedParam      = "ReleaseSpeed";
@@ -69,6 +73,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         }
     }
     bool IsReleasing => AnyLayerReleasing();
+    float shieldAwayUntil;
     // With CombatManager.attackFromBlock the shield is lowered for the whole swing and comes back up after it.
     static bool AttackFromBlock => CombatManager.HasInstance && CombatManager.Instance.attackFromBlock;
     static float BlockFromAttackAt => CombatManager.HasInstance ? CombatManager.Instance.blockFromAttackAt : .75f;
@@ -460,6 +465,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (blockPressed && BlockCancelsWindup && ShieldHeld && IsAttacking && !IsReleasing) CancelWindup();
         bool attackingNow = IsAttacking;
         if (!attackingNow) windingUp = false;
+        // The shield goes down for the whole attack (a combo hit queued counts, unless block is held: that press was
+        // a shield bash) and comes back after the last one.
+        if (attackingNow || Combo && comboQueuedUntil >= Time.time && !secondary) shieldAwayUntil = Time.time + shieldAwayLinger;
+        AnimatorHelper.SetBool(armsAnimator, shieldAwayParam, Time.time < shieldAwayUntil);
         // A queued press stays valid while a swing is in progress (it chains at the recovery's cancel point);
         // when idle it expires after the buffer window like any late press.
         if (!attackingNow && Time.time >= attackBufferedUntil) queuedPresses = 0;

@@ -167,6 +167,8 @@ public static class EnemyGuardSetup
         var layer = layers[stance];
         layer.avatarMask = null;
         layer.blendingMode = AnimatorLayerBlendingMode.Override;
+        // Its IK pass turns the chest and head toward the target (EnemyGuard.Aim): the clips stand side-on.
+        layer.iKPass = true;
         // Foot IK holds the feet where the clips plant them (a humanoid clip keeps the body's centre of mass, so a blend of
         // two stepping clips would slide them).
         foreach (var s in layer.stateMachine.states)
