@@ -8,6 +8,29 @@ using UnityEngine.AI;
 // player's pack or onto the floor, spell tomes, room key items and enemies. Each returns the line to show.
 public static class DevGive
 {
+    // Debug starts (the toolbar's Debug, Dungeon and Boss, a room or event opened from the console, the spawn window or
+    // Asset Studio) begin their run with this much gold. A run empties the wallet as it begins, so it is put in just after
+    // (RunManager.RunStarted), and taken off the run's gold found so the recap counts only what was picked up.
+    public const int DebugStartingGold = 100;
+    static bool goldPending;
+
+    public static void GoldAtNextRunStart()
+    {
+        if (goldPending || !RunManager.HasInstance) return;
+        goldPending = true;
+        var runs = RunManager.Instance;
+        void Give()
+        {
+            runs.RunStarted -= Give;
+            goldPending = false;
+            var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+            if (player == null || player.Wallet == null) return;
+            player.Wallet.Add(DebugStartingGold);
+            runs.RestoreTotals(runs.Kills, runs.BossesSlain, Mathf.Max(0, runs.GoldFound - DebugStartingGold), runs.Seconds, runs.HealthSlain);
+        }
+        runs.RunStarted += Give;
+    }
+
     // The catalog's items (rolled copies are never in it); spells: only the tomes.
     public static IEnumerable<ItemData> CatalogItems(bool spells) => InventoryManager.HasInstance && InventoryManager.Instance.itemCatalog != null
         ? InventoryManager.Instance.itemCatalog.Where(i => i != null && !string.IsNullOrWhiteSpace(i.itemName) && (!spells || i.spell != null))

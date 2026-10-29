@@ -188,6 +188,7 @@ public static class GameLauncher
         copy.fixedSeed = 0;
         if (template.GetComponent<ScriptedEventRoom>() != null) copy.startingChest = false;
         if (stage > 0 && copy.stages != null) copy.stages = copy.stages.Skip(stage).ToArray();
+        DevGive.GoldAtNextRunStart();
         loader.Load(copy, skipReveal: true);
         return $"Loading a run in {template.name} ({level.name}).";
     }
@@ -374,6 +375,7 @@ public static class GameLauncher
         }
         var first = stages.Count > 0 ? stages[0].biome : copy.baseBiome;
         Debug.Log($"[Asset Studio] Testing {(map != null ? map.name + " in " : "")}{level.name}{(first != null ? " from " + first.name : "")}{(boss ? ", boss floor" : "")}{(force.Length > 0 ? ", with " + ForcedName(force) : "")}.");
+        DevGive.GoldAtNextRunStart();
         loader.Load(copy, skipReveal: true);
     }
 

@@ -542,6 +542,7 @@ public class DevConsole : MonoBehaviour
         // An event room opens the run as itself: no starting chest in the middle of the event.
         if (template.GetComponent<ScriptedEventRoom>() != null) copy.startingChest = false;
         if (stage > 0) copy.stages = copy.stages.Skip(stage).ToArray();
+        DevGive.GoldAtNextRunStart();
         said = $"Loading {label} in {level.displayName}{(stage > 0 && copy.stages[0].biome != null ? $" ({copy.stages[0].biome.name})" : "")}.";
         loader.Load(copy, skipReveal: true);
         return true;
