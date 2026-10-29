@@ -4,7 +4,8 @@ using UnityEngine;
 // stance" layer (whole body, under the gestures) holds the Mixamo moves (ThirdPerson/Combat/Sword and shield) as one
 // blend: the shield-up block idle standing, walking in and back, strafing either way and running in, picked by CombatX
 // and CombatZ, the body's velocity in its own frame per metre of its height (so a big body takes longer strides). While
-// the enemy fights near its target the layer takes over the body; it drops for a hurt, a cast, a bow, sleep or death,
+// the enemy fights near its target at footwork pace the layer takes over the body (charging faster it runs as usual, Run
+// Fade); it drops for a hurt, a cast, a bow, sleep or death,
 // and a swing takes over from it across the swing's first frames (the swing starts from the block idle's pose).
 // Made by EnemyGuardSetup.Build() (Characters/Animations/Editor).
 [RequireComponent(typeof(EnemyBrain))]
@@ -25,6 +26,10 @@ public class EnemyGuard : MonoBehaviour
     public float turnRate = 120f;
     [Tooltip("Metres a second below which it counts as standing (and its turning steps its feet).")]
     public float standingBelow = .2f;
+    [Tooltip("Speeds (metres of height a second) over which the fighting moves give way to its own run: a charging enemy"
+        + " runs in as usual and takes up its guard as it slows near its target (the sword-and-shield run twists the hips"
+        + " side to side every stride while the head stays on the target, which reads as a wobble).")]
+    public Vector2 runFade = new(2f, 3.5f);
     [Tooltip("How far the chest (Aim Body) and the head (Aim Head) turn back toward the target while the moves play (look-at"
         + " IK, 0-1; the clips stand side-on). Aim Clamp limits the turn (0 = free, 1 = none).")]
     [Range(0f, 1f)] public float aimBody = .8f, aimHead = 1f, aimClamp = .3f;
@@ -80,10 +85,11 @@ public class EnemyGuard : MonoBehaviour
         bool busy = !alive || swing < 0f && Busy(0) || gestureLayer >= 0 && Busy(gestureLayer) || Bool("HoldingBow") || Bool("Kneel") || Bool("Asleep");
         float want = Engaged && !busy ? 1f : 0f;
 
+        Vector3 v = brain.Motor != null ? brain.Motor.Velocity : Vector3.zero; v.y = 0f;
+        float size = Mathf.Max(.3f, transform.lossyScale.y) * Mathf.Max(.3f, anim.humanScale);
+        want *= 1f - Mathf.InverseLerp(runFade.x, runFade.y, v.magnitude / size);
         if (hasParams)
         {
-            Vector3 v = brain.Motor != null ? brain.Motor.Velocity : Vector3.zero; v.y = 0f;
-            float size = Mathf.Max(.3f, transform.lossyScale.y) * Mathf.Max(.3f, anim.humanScale);
             Vector3 local = transform.InverseTransformDirection(v) / size;
             float dt = Mathf.Max(Time.deltaTime, 1e-4f), yaw = transform.eulerAngles.y;
             yawRate = Mathf.Lerp(yawRate, Mathf.DeltaAngle(lastYaw, yaw) / dt, Mathf.Clamp01(dt / .1f));
