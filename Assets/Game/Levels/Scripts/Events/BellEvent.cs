@@ -26,6 +26,12 @@ public class BellEvent : MonoBehaviour
         new() { text = "You want more, then." },
         new() { text = "This is the last one. I mean it." },
     };
+    [Tooltip("Said as each wave after a ring's first is tolled in.")]
+    public DungeonMaster.Line[] waveLines =
+    {
+        new() { text = "Another." },
+        new() { text = "The last of them." },
+    };
     public DungeonMaster.Line clearedLine = new() { text = "The chest looks better already." };
     public DungeonMaster.Line cashOutLine = new() { text = "Stopping now is the sensible thing." };
     public DungeonMaster.Line doneLine = new() { text = "That's all the bell has." };
@@ -83,7 +89,15 @@ public class BellEvent : MonoBehaviour
         var rng = new System.Random(room.Dungeon.EventSeed(room.Room, 10 + ring));
         for (int w = 0; w < wavesPerRing; w++)
         {
-            if (w > 0) yield return new WaitForSeconds(1f);
+            // Each wave after the first is tolled in: the bell swings again and says another is coming.
+            if (w > 0)
+            {
+                yield return new WaitForSeconds(.9f);
+                ScriptedEventRoom.Play(toll, bell != null ? bell.position : transform.position, tollVolume * .8f);
+                if (bell != null) StartCoroutine(Swing());
+                if (w - 1 < waveLines.Length) ScriptedEventRoom.Say(waveLines[w - 1]);
+                yield return new WaitForSeconds(.9f);
+            }
             // Each wave out of puffs of dust along the room's edge, on the far side from where the player stands now
             // (the whole room's floor when it has no edge cells clear of the ways in).
             var points = room.EdgeFloor(rng, 2.5f);

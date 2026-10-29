@@ -141,74 +141,109 @@ public class DiceEvent : MonoBehaviour
         squareLight.intensity = squareLightIntensity;
     }
 
-    // Falls from his fingers, bounces three times across the floor and comes to rest with face up, its half size above
-    // the floor.
     // The velocity that carries the die from where he lets go to the spot in a high arc (straight down when he lets go
     // over it).
     const float Gravity = 30f;
+    static float TossSeconds(float distance) => Mathf.Clamp(.35f + distance * .04f, .9f, 2.6f);
     static Vector3 Toss(Vector3 from, Vector3 to)
     {
         var flat = to - from; flat.y = 0f;
         if (flat.magnitude < 1.5f) return Vector3.zero;
-        float t = Mathf.Clamp(.35f + flat.magnitude * .04f, .9f, 2.6f);
+        float t = TossSeconds(flat.magnitude);
         var v = flat / t;
         v.y = (to.y - from.y + .5f * Gravity * t * t) / t;
         return v;
     }
 
+    // Falls from his fingers (or flies in from a toss), lands, bounces lower and shorter each time along the way it was
+    // going and tips over once onto its face, coming to rest on its own number's square. The path is planned backward
+    // from where it rests, so every landing is a real one and it never slides into place.
     IEnumerator Tumble(Transform die, Vector3 spot, int face, System.Random rng, Vector3 toss)
     {
-        var bounds = new Bounds(die.position, Vector3.zero);
-        foreach (var r in die.GetComponentsInChildren<Renderer>()) bounds.Encapsulate(r.bounds);
         float half = Mathf.Max(.1f, die.lossyScale.y * .5f * MeshSize(die));
         float floorY = spot.y + half;
-        var pos = die.position;
-        var heading = Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f) * Vector3.forward;
-        var velocity = toss.sqrMagnitude > .01f ? toss : heading * 1.6f;
-        var spin = Random.onUnitSphere * 720f;
-        float g = Gravity;
-        int bounces = 0;
+        var start = die.position;
         var restRotation = Quaternion.AngleAxis((float)rng.NextDouble() * 360f, Vector3.up) * Quaternion.FromToRotation(FaceAxes[face - 1], Vector3.up);
-        // The flight down and the bounces.
-        while (bounces < 4)
+        // Where it comes to rest: its own square a little off the middle on a board, else the spot.
+        var rest = spot;
+        if (squares != null && squares.Length >= 6) rest += new Vector3(((float)rng.NextDouble() - .5f) * .3f, 0f, ((float)rng.NextDouble() - .5f) * .3f);
+        rest.y = floorY;
+        // It travels across the floor the way it was thrown, else a way of its own.
+        var flatToss = new Vector3(toss.x, 0f, toss.z);
+        var heading = flatToss.sqrMagnitude > .01f ? flatToss.normalized : Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f) * Vector3.forward;
+        // A drop from over the room falls straight from rest; a toss keeps its arc from his hand (which may be below
+        // the room's floor, at the table's edge), only aimed at the first landing instead of the square (worked out
+        // below, once the landing is known).
+        float vy0 = 0f;
+        float drop = Mathf.Max(0f, start.y - floorY);
+        float fall = Mathf.Max(.05f, Mathf.Sqrt(2f * drop / Gravity));
+        if (flatToss.sqrMagnitude > .01f)
         {
-            velocity.y -= g * Time.deltaTime;
-            pos += velocity * Time.deltaTime;
+            var toSpot = spot - start; toSpot.y = 0f;
+            fall = TossSeconds(toSpot.magnitude);
+            vy0 = (floorY - start.y + .5f * Gravity * fall * fall) / fall;
+        }
+        float impact = Mathf.Abs(vy0 - Gravity * fall);
+        // The bounces: each keeps a share of the last one's height (the first a little more, but never much over a
+        // metre, however hard it came down), until it is too low to leave the floor; each hop is shorter, as it loses
+        // speed.
+        var hopUp = new List<float>(); var hopLength = new List<float>();
+        float up = Mathf.Min(impact * .38f, 8f), speed = Mathf.Clamp(flatToss.magnitude * .25f, 1.3f, 2.4f);
+        while (up >= 1.2f && hopUp.Count < 3)
+        {
+            hopUp.Add(up); hopLength.Add(speed * 2f * up / Gravity);
+            up *= .3f; speed *= .7f;
+        }
+        // The last of it: tipping over one edge onto its face, one die's width.
+        float tip = half * 2f;
+        float travel = tip; foreach (var l in hopLength) travel += l;
+        var land = rest - heading * travel;
+        var spin = Random.onUnitSphere * 720f;
+        // The flight down to its first landing.
+        var flight = land - start; flight.y = 0f;
+        var across = flight / fall;
+        for (float t = 0f; t < fall; t += Time.deltaTime)
+        {
+            die.position = start + across * t + Vector3.up * (vy0 * t - .5f * Gravity * t * t);
             die.Rotate(spin * Time.deltaTime, Space.World);
-            if (pos.y <= floorY && velocity.y < 0f)
-            {
-                pos.y = floorY;
-                bounces++;
-                float impact = -velocity.y;
-                velocity.y = impact * (bounces == 1 ? .38f : .3f);
-                // The first landing keeps little of a toss's sideways speed: it lands in the room, not past it.
-                float keep = bounces == 1 && toss.sqrMagnitude > .01f ? .12f : .75f;
-                velocity.x *= keep; velocity.z *= keep;
-                if (bounces == 1 && toss.sqrMagnitude > .01f) velocity += heading * 1.2f;
-                spin *= .55f;
-                if (knocks.Length > 0) ScriptedEventRoom.Play(knocks[(bounces - 1) % knocks.Length], pos, Mathf.Clamp01(.3f + impact * .04f));
-                if (bounces == 1) DungeonMasterReach.Shake(.25f);
-                // Low enough: it rolls the rest of the way to its face.
-                if (velocity.y < 1.2f) break;
-            }
-            die.position = pos;
             yield return null;
         }
-        if (roll != null) ScriptedEventRoom.Play(roll, pos, .6f);
-        // It rolls over onto its face, sliding to a stop.
-        var from = die.rotation; var start = pos;
-        var stop = pos + new Vector3(velocity.x, 0f, velocity.z) * .35f;
-        // On a board it rolls over onto its own number's square, a little off its middle.
-        if (squares != null && squares.Length >= 6)
-            stop = new Vector3(spot.x + ((float)rng.NextDouble() - .5f) * .3f, floorY, spot.z + ((float)rng.NextDouble() - .5f) * .3f);
-        for (float t = 0; t < .55f; t += Time.deltaTime)
+        var at = land;
+        die.position = at;
+        Knock(0, at, impact);
+        DungeonMasterReach.Shake(.25f);
+        // The hops, each from one landing to the next.
+        for (int k = 0; k < hopUp.Count; k++)
         {
-            float u = Mathf.SmoothStep(0, 1, t / .55f);
-            die.SetPositionAndRotation(Vector3.Lerp(start, stop, u) + Vector3.up * Mathf.Sin(u * Mathf.PI) * half * .25f, Quaternion.Slerp(from, restRotation, u));
+            spin *= .55f;
+            float time = 2f * hopUp[k] / Gravity;
+            var from = at; var to = at + heading * hopLength[k];
+            for (float t = 0f; t < time; t += Time.deltaTime)
+            {
+                die.position = Vector3.Lerp(from, to, t / time) + Vector3.up * (hopUp[k] * t - .5f * Gravity * t * t);
+                die.Rotate(spin * Time.deltaTime, Space.World);
+                yield return null;
+            }
+            at = to; die.position = at;
+            Knock(k + 1, at, hopUp[k]);
+        }
+        // It tips over onto its face (its middle rises as it goes over the edge) and is still.
+        if (roll != null) ScriptedEventRoom.Play(roll, at, .6f);
+        var turnFrom = die.rotation;
+        const float tipSeconds = .4f;
+        for (float t = 0f; t < tipSeconds; t += Time.deltaTime)
+        {
+            float u = Mathf.SmoothStep(0f, 1f, t / tipSeconds);
+            die.SetPositionAndRotation(Vector3.Lerp(at, rest, u) + Vector3.up * Mathf.Sin(u * Mathf.PI) * half * .41f, Quaternion.Slerp(turnFrom, restRotation, u));
             yield return null;
         }
-        die.SetPositionAndRotation(stop, restRotation);
-        if (knocks.Length > 0) ScriptedEventRoom.Play(knocks[0], stop, .35f);
+        die.SetPositionAndRotation(rest, restRotation);
+        if (knocks.Length > 0) ScriptedEventRoom.Play(knocks[0], rest, .35f);
+    }
+
+    void Knock(int bounce, Vector3 at, float speed)
+    {
+        if (knocks.Length > 0) ScriptedEventRoom.Play(knocks[bounce % knocks.Length], at, Mathf.Clamp01(.3f + speed * .04f));
     }
 
     // The die's own size along one axis (it is a cube): its mesh's bounds.
