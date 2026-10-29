@@ -7,6 +7,8 @@ public class ItemStack
 {
     public ItemData item;
     public int      count = 1;
+    // A scroll's charges spent (ItemData.charges): it goes with its last.
+    public int      used;
 
     public ItemStack(ItemData item, int count = 1)
     {

@@ -251,8 +251,20 @@ public class InventoryManager : Singleton<InventoryManager>
         var item = container?.ItemAt(index);
         if (item == null || !item.IsConsumable) return;
         var player = container.GetComponentInParent<Player>();
+        if (item.IsScroll) { ReadScroll(player, item, container, index); return; }
         if (player == null || player.Equipment == null) { item.Use(player); container.Consume(index); return; }
         player.Equipment.Consume(item, () => TakeAndUse(player, item, container, index));
+    }
+
+    // A scroll read: its spell goes off at once with no mana (PlayerSpellcasting.CastScroll), and only then is a charge
+    // spent; one that can't be cast now (nothing to aim at) keeps its charge.
+    static void ReadScroll(Player player, ItemData scroll, Inventory container, int index)
+    {
+        var caster = player != null ? player.GetComponent<PlayerSpellcasting>() : null;
+        if (caster == null || (player.Equipment != null && player.Equipment.IsUsingItem)) return;
+        if (!caster.CastScroll(scroll.scrollSpell)) return;
+        scroll.PlayUseSound();
+        container.UseCharge(index);
     }
 
     // When it takes effect: one is taken from where it was (or, moved meanwhile, from the hotbar or bag) and used.

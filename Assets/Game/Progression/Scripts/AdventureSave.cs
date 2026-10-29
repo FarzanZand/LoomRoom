@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class AdventureSave : MonoBehaviour
 {
-    [Serializable] public class Stack { public string item; public int count; }
+    [Serializable] public class Stack { public string item; public int count; public int used; }
     [Serializable] public class Blessing { public StatType stat; public ModifierType type; public float value, duration; }
     [Serializable] public class Checkpoint
     {
@@ -277,7 +277,7 @@ public class AdventureSave : MonoBehaviour
     Stack[] Capture(Inventory inventory)
     {
         var result = new Stack[inventory.SlotCount];
-        for (int i = 0; i < result.Length; i++) if (inventory.ItemAt(i) != null) result[i] = new Stack { item = inventory.ItemAt(i).saveId, count = inventory.CountAt(i) };
+        for (int i = 0; i < result.Length; i++) if (inventory.ItemAt(i) != null) result[i] = new Stack { item = inventory.ItemAt(i).saveId, count = inventory.CountAt(i), used = inventory.UsedAt(i) };
         return result;
     }
     public void CaptureFloor()
@@ -309,7 +309,7 @@ public class AdventureSave : MonoBehaviour
         // An item whose bag footprint grew since the save (tomes became 2x2) and no longer fits at its cell goes to the
         // first free spot afterwards, then the hotbar, then the floor, so nothing overlaps and nothing is lost.
         var homeless = new List<ItemStack>();
-        void Fill(Inventory inventory, Stack[] stacks) { for (int i = 0; i < stacks.Length && i < inventory.SlotCount; i++) if (stacks[i] != null && stacks[i].count > 0 && Item(stacks[i].item) is ItemData item) { if (!inventory.IsGrid || inventory.Fits(item, i)) inventory.Set(i, new ItemStack(item, stacks[i].count)); else homeless.Add(new ItemStack(item, stacks[i].count)); } }
+        void Fill(Inventory inventory, Stack[] stacks) { for (int i = 0; i < stacks.Length && i < inventory.SlotCount; i++) if (stacks[i] != null && stacks[i].count > 0 && Item(stacks[i].item) is ItemData item) { if (!inventory.IsGrid || inventory.Fits(item, i)) inventory.Set(i, new ItemStack(item, stacks[i].count) { used = stacks[i].used }); else homeless.Add(new ItemStack(item, stacks[i].count)); } }
         Fill(player.Bag, checkpoint.bag); Fill(player.Hotbar, checkpoint.hotbar);
         foreach (var stack in homeless)
             if (!player.Bag.TryAdd(stack.item, stack.count) && !player.Hotbar.TryAdd(stack.item, stack.count))

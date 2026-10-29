@@ -160,10 +160,28 @@ public class PlayerSpellcasting : MonoBehaviour
         if (refusal != null) { SetTrigger(cancelParameter); Refuse(refusal); return; }
         // God mode casts anything for free, even a spell costing more than the whole mana bar.
         if (!DevGodMode.On && !player.Stats.TryUseMana(Cost(spell), 0f)) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
+        SetTrigger(releaseParameter);
+        Unleash(spell);
+    }
+
+    // A scroll read from the hotbar or the bag: its spell goes off at once, with no wind-up and no mana, whatever the
+    // left hand holds. False (with the reason shown) when it can't be cast now, so the scroll keeps its charge.
+    public bool CastScroll(SpellDefinition spell)
+    {
+        if (spell == null || casting || !player.IsActive || !player.IsAlive) return false;
+        if (!GameManager.HasInstance || !GameManager.Instance.GameplayActive || player.Combat.IsAttacking) return false;
+        if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { Refuse("Health is full"); return false; }
+        var refusal = spell.effect != SpellEffect.Standard ? SpellEffects.Refusal(spell, player) : null;
+        if (refusal != null) { Refuse(refusal); return false; }
+        Unleash(spell);
+        return true;
+    }
+
+    // The spell taking effect, once it is paid for (or read from a scroll).
+    void Unleash(SpellDefinition spell)
+    {
         // Any spell but the veil itself gives a veiled player away.
         if (spell.effect != SpellEffect.ShadowVeil) ShadowVeil.Break(player);
-
-        SetTrigger(releaseParameter);
         if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.releaseSound, spell.releaseVolume);
         if (spell.spell == LeftHandSpell.Heal)
         {

@@ -93,6 +93,16 @@ public class SpellDefinition : ScriptableObject
     public bool IsProjectile => effect == SpellEffect.Standard && spell != LeftHandSpell.Heal && !groundArea;
     public AdventureSkill Skill => spell == LeftHandSpell.Heal || effect == SpellEffect.RaiseTheFallen || effect == SpellEffect.HelpingHand ? AdventureSkill.Thaumaturgy : AdventureSkill.Sorcery;
 
+    // A scroll's rules line: what the spell does, with no mana, and its charges.
+    public string ScrollLine(float power, int charges)
+    {
+        string does = RulesLine(0f, power);
+        const string free = "0 mana, ";
+        if (does.StartsWith(free)) does = does.Substring(free.Length);
+        else if (does.StartsWith("0 mana")) does = does.Substring(6).TrimStart(',', ' ');
+        return $"Casts {displayName} with no mana: {does}. {charges} {(charges == 1 ? "charge" : "charges")}.";
+    }
+
     // The tome's rules line: cost and what the spell does.
     public string RulesLine(float cost, float power) => effect switch
     {

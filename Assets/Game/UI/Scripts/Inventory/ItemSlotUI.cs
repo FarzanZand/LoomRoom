@@ -127,6 +127,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         var item  = Item;
         int count = Container != null && Anchor >= 0 ? Container.CountAt(Anchor) : 0;
+        // A scroll shows the charges it has left instead (when it has more than one).
+        if (Container != null && Anchor >= 0 && Container.ItemAt(Anchor) is { IsScroll: true }) count = Container.ChargesAt(Anchor);
         if (GridCell) count = 0;
 
         if (iconImage != null)

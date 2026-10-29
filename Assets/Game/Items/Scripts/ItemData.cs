@@ -171,6 +171,13 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Instant: used at once. Eat or Drink: taken in the right hand in place of the held weapon, the arm eats or drinks (Characters/Animations/FirstPersonPlayer/Consume), it takes effect near the end and the weapon comes back. Attacks and spells wait until it is done.")]
     public ItemUseAnimation AnimationOnUse = ItemUseAnimation.Instant;
 
+    [BoxGroup("Consumable"), ShowIf("IsConsumable")]
+    [Tooltip("Makes this consumable a scroll of this spell: used from the hotbar or the bag, the spell goes off at once with no mana and no wind-up, " +
+        "using one charge; the last charge used, the scroll is gone. A spell that can't be cast now (nothing to aim at, health full) uses none.")]
+    public SpellDefinition scrollSpell;
+    [BoxGroup("Consumable"), ShowIf("IsScroll"), Min(1), Tooltip("Times the scroll can be read before it is gone (spent charges are kept on its slot and saved).")]
+    public int charges = 1;
+
     [BoxGroup("Consumable"), ShowIf("UsesAnimation"), Min(.2f)]
     [Tooltip("Seconds the eating or drinking takes (the clip is played to fit).")]
     public float eatDuration = 1.3f;
@@ -184,6 +191,7 @@ public partial class ItemData : ScriptableObject
 
     public bool IsWeapon     => itemType == ItemType.Weapon;
     public bool IsConsumable => itemType == ItemType.Consumable;
+    public bool IsScroll => IsConsumable && scrollSpell != null;
     bool UsesAnimation => IsConsumable && AnimationOnUse != ItemUseAnimation.Instant;
     bool ShowsInHand => canBeEquipped || UsesAnimation;
     bool PickupUsesData => pickupAudioSource == ItemAudioSource.AudioData;
@@ -292,6 +300,11 @@ public partial class ItemData : ScriptableObject
             var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
             lines.Add(spell.RulesLine(caster != null ? caster.Cost(spell) : spell.manaCost, caster != null ? caster.Power(spell) : spell.power));
         }
+        if (IsScroll)
+        {
+            var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
+            lines.Add($"<color={EffectColor}>{scrollSpell.ScrollLine(caster != null ? caster.Power(scrollSpell) : scrollSpell.power, charges)}</color>");
+        }
         Add(blocks, lines);
 
         // Against the item it would replace (Equipment.SlotFor: a trinket goes to a free trinket slot first, so
@@ -346,7 +359,7 @@ public partial class ItemData : ScriptableObject
                 if (Named("knife")) return "Knife";
                 return weaponCategory == WeaponCategory.Mace ? "One-handed mace" : "One-handed sword";
             case ItemType.Shield: return "Shield";
-            case ItemType.Consumable: return Named("potion") || Named("tonic") || Named("elixir") ? "Potion" : AnimationOnUse == ItemUseAnimation.Eat ? "Food" : "Consumable";
+            case ItemType.Consumable: return IsScroll ? "Scroll" : Named("potion") || Named("tonic") || Named("elixir") ? "Potion" : AnimationOnUse == ItemUseAnimation.Eat ? "Food" : "Consumable";
             case ItemType.Key: return "Key";
             case ItemType.Spoils: return "Spoils";
             case ItemType.Tool: return "Tool";
@@ -372,6 +385,7 @@ public partial class ItemData : ScriptableObject
         string effect = null;
         if (effects != null)
             foreach (var e in effects) { effect = e?.Describe(); if (!string.IsNullOrWhiteSpace(effect)) break; }
+        if (IsScroll) return $"Scroll, {scrollSpell.displayName}";
         if (IsConsumable) return effect ?? "";
         string kind = spell != null ? "Spell tome"
             : itemType == ItemType.Weapon ? "Weapon"
