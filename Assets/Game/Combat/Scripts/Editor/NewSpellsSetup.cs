@@ -181,8 +181,8 @@ public static class NewSpellsSetup
             f.snapSound = Clip("Weapons/Wpn_Whoosh_02"); f.snapVolume = 1f;
             f.slamSound = Clip("SoundFX/HammerHit"); f.slamVolume = 1f;
             f.hitSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/ThirdParty/Generic Fantasy UI/Fantasy_UI_Gen_Select_Heavy_01_mono.wav"); f.hitVolume = 1f;
-            // The roof over the room coming off like a big chest's lid, and landing back on.
-            f.lidSound = Clip("Doors/Drs_Chest_Large_Open_02"); f.lidCloseSound = Clip("Doors/Drs_Chest_Large_Close_01"); f.lidVolume = .8f;
+            f.hitShake = .6f;
+            f.lid = Lid();
             f.dieKnocks = new[] { 1, 2, 3 }.Select(i => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Game/Cinematics/Intro/Tabletop/Dice knock {i}.wav")).Where(c => c != null).ToArray();
             f.dieRollSound = Clip("SoundFX/DiceRollFast"); f.dieVolume = 1f;
             s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = null; s.flightSound = null;
@@ -215,6 +215,7 @@ public static class NewSpellsSetup
             h.potion = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Items/Prefabs/Consumables/Potion.prefab");
             h.potionScale = 3f; h.potionArc = 6f; h.potionGravity = 16f; h.potionLight = 10f; h.landAhead = 1.2f; h.burstHealSeconds = 1f;
             h.smashSound = Clip("Magic/Mgc_Ice_Hit_Short_01"); h.smashVolume = .8f;
+            h.lid = Lid();
             h.color = new Color(1f, .9f, .6f);
             s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = Clip("Magic/Mgc_Water_Impact_Short_01"); s.impactVolume = .7f; s.flightSound = null;
         });
@@ -335,6 +336,14 @@ public static class NewSpellsSetup
     static GameObject LoadPrefab(string relative) => AssetDatabase.LoadAssetAtPath<GameObject>(Spells + relative);
     static SpellVisual Visual(string relative) => LoadPrefab(relative)?.GetComponent<SpellVisual>();
     static SpellProjectile Projectile(string relative) => LoadPrefab(relative)?.GetComponent<SpellProjectile>();
+
+    // The roof over the room coming off like a big chest's lid with grit falling as it breaks free, landing back on with a
+    // stone thud and dust.
+    static LidEffects Lid() => new()
+    {
+        open = Clip("Doors/Drs_Chest_Large_Open_02"), rising = Clip("Ambience/Amb_Dungeon_Cave_Crumble_01"),
+        close = Clip("Doors/Drs_Chest_Large_Close_01"), land = Clip("Ambience/Amb_Rock_Drop_Impact_01"), volume = .8f, dust = true,
+    };
 
     static AudioClip Clip(string name)
     {

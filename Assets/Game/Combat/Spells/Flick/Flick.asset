@@ -145,9 +145,14 @@ MonoBehaviour:
     hitVolume: 1
     slamSound: {fileID: 8300000, guid: 9cc7226bea19fd54d80cd80820cd7cda, type: 3}
     slamVolume: 1
-    lidSound: {fileID: 8300000, guid: 45ea8ece760e8ad4aa11e7f1a1f6ef25, type: 3}
-    lidCloseSound: {fileID: 8300000, guid: 93f26e197e539a747867caae70503611, type: 3}
-    lidVolume: 0.8
+    hitShake: 0.6
+    lid:
+      open: {fileID: 8300000, guid: 45ea8ece760e8ad4aa11e7f1a1f6ef25, type: 3}
+      rising: {fileID: 8300000, guid: 0d61428503c21a149bf6cfdabbdeeb7c, type: 3}
+      close: {fileID: 8300000, guid: 93f26e197e539a747867caae70503611, type: 3}
+      land: {fileID: 8300000, guid: 7b3df19198c8fe249a9e4e454c3c4444, type: 3}
+      volume: 0.8
+      dust: 1
     mark: {fileID: 5233650602891333819, guid: 51d2da57f7d6f3646b6563f734177b4b, type: 3}
     markColor: {r: 1, g: 0.85, b: 0.55, a: 1}
     markLight: 1.5
@@ -182,6 +187,13 @@ MonoBehaviour:
     burst: {fileID: 0}
     smashSound: {fileID: 0}
     smashVolume: 1
+    lid:
+      open: {fileID: 0}
+      rising: {fileID: 0}
+      close: {fileID: 0}
+      land: {fileID: 0}
+      volume: 0.8
+      dust: 1
     lines:
     - Here.
     - Hold still.
