@@ -17,6 +17,10 @@ using UnityEngine.InputSystem;
 //                   the run's starting room, the rest of the floor is generated around it as usual; no reveal). The
 //                   level is the one whose biomes or starting room use the template (its biome first), else the level
 //                   being played, else the Dungeon button's pick. It is a run like any other: it saves its checkpoint.
+//   additem <name> [count] [rarity]  an item from the catalog into the table player's pack (gear rolled to that rarity)
+//   addspell <name>|all  a spell's tome into the table player's pack
+//   addroomitem <name>|all  carry home any room key item (ProgressionManager.RoomKeyItems: trophies, class posters, the
+//                   puzzle's tile...), to use in the room
 //   help, clear
 // Tab completes the command or the template's name; the names that match what is typed are listed under the line.
 // While it is open the game is in the Menu state, so typing never moves the player or fires hotbar keys.
@@ -33,7 +37,7 @@ public class DevConsole : MonoBehaviour
     [SerializeField, Tooltip("Every room template prefab, for loadtemplate in development builds (the Editor finds them itself). Filled by Tools > LoomRoom > Dev > Build Dev Console (and DevConsoleBuilder.RefreshTemplates from an eval).")]
     GameObject[] templates = new GameObject[0];
 
-    static readonly string[] Commands = { "god", "ghost", "revive", "die", "loadtemplate", "event", "meddle", "learnspells", "help", "clear" };
+    static readonly string[] Commands = { "god", "ghost", "revive", "die", "loadtemplate", "event", "meddle", "learnspells", "additem", "addspell", "addroomitem", "help", "clear" };
     const string TemplateCommand = "loadtemplate", EventCommand = "event";
     List<(string name, GameObject prefab)> roomTemplates;
 
@@ -104,6 +108,9 @@ public class DevConsole : MonoBehaviour
         Split(text, out var command, out var arg, out forArg);
         if (!forArg) return Commands.Where(c => c.StartsWith(command.ToLowerInvariant())).ToList();
         if (command.ToLowerInvariant() == EventCommand) return EventNames.Where(n => n.StartsWith(arg, System.StringComparison.OrdinalIgnoreCase)).ToList();
+        if (command.ToLowerInvariant() == "additem") return DevGive.CatalogItems(false).Select(i => i.itemName).Where(n => n.StartsWith(arg, System.StringComparison.OrdinalIgnoreCase)).Distinct().OrderBy(n => n).ToList();
+        if (command.ToLowerInvariant() == "addspell") return SpellNames.Where(n => n.StartsWith(arg, System.StringComparison.OrdinalIgnoreCase)).ToList();
+        if (command.ToLowerInvariant() == "addroomitem") return RoomItems.Select(r => r.name).Where(n => n.StartsWith(arg, System.StringComparison.OrdinalIgnoreCase)).ToList();
         if (command.ToLowerInvariant() == "meddle") return new[] { "add", "steal" }.Where(n => n.StartsWith(arg, System.StringComparison.OrdinalIgnoreCase)).ToList();
         if (command.ToLowerInvariant() != TemplateCommand) return new List<string>();
         return RoomTemplates.Select(t => t.name).Where(n => n.StartsWith(arg, System.StringComparison.OrdinalIgnoreCase)).ToList();
@@ -137,7 +144,7 @@ public class DevConsole : MonoBehaviour
             shared = shared.Substring(0, n);
         }
         if (shared.Length < (forArg ? arg : command).Length) return;
-        input.text = forArg ? command + " " + shared : shared + (matches.Count == 1 && (shared == TemplateCommand || shared == EventCommand || shared == "meddle") ? " " : "");
+        input.text = forArg ? command + " " + shared : shared + (matches.Count == 1 && (shared == TemplateCommand || shared == EventCommand || shared == "meddle" || shared == "additem" || shared == "addspell" || shared == "addroomitem") ? " " : "");
         input.MoveTextEnd(false);
         input.ActivateInputField();
     }
@@ -244,6 +251,9 @@ public class DevConsole : MonoBehaviour
                 Print("event [name] [face]: a new run starting at the way into a scripted event room; event alone lists them; event dice 6 lands the die on 6; event cheats: a run where the Dungeon Master meddles at the first chance");
                 Print("meddle add|steal: the Dungeon Master adds an enemy in front of you or takes the nearest chest, now");
                 Print("learnspells: a tome of every spell into the table player's pack");
+                Print("additem <name> [count] [rarity]: an item into the table player's pack; gear can be uncommon, rare, unique or legendary (Tab completes the name)");
+                Print("addspell <name>|all: that spell's tome into the table player's pack (Tab completes the name)");
+                Print("addroomitem <name>|all: carry home a room key item (a trophy, a class poster, the puzzle tile...) to use in the room (Tab completes; addroomitem alone lists them)");
                 Print("clear: empty this window");
                 break;
             case EventCommand:
@@ -271,6 +281,18 @@ public class DevConsole : MonoBehaviour
                 break;
             case "learnspells":
                 LearnSpells();
+                break;
+            case "additem":
+                Split(line, out _, out var itemArgs, out _);
+                AddItem(itemArgs.Trim());
+                break;
+            case "addroomitem":
+                Split(line, out _, out var roomItem, out _);
+                AddRoomItem(roomItem.Trim());
+                break;
+            case "addspell":
+                Split(line, out _, out var spellName, out _);
+                AddSpell(spellName.Trim());
                 break;
             case "clear":
                 history.Clear();
@@ -304,8 +326,8 @@ public class DevConsole : MonoBehaviour
     // A tome of every spell in the catalog the table player doesn't carry yet, into the hotbar while it has room, then the bag.
     void LearnSpells()
     {
-        var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
-        if (player == null || !InventoryManager.HasInstance) { Print("No table player."); return; }
+        var player = TablePlayer;
+        if (player == null) return;
         int given = 0;
         foreach (var item in InventoryManager.Instance.itemCatalog)
         {
@@ -351,6 +373,91 @@ public class DevConsole : MonoBehaviour
                 return spot.position;
         }
         return ghostFrom;
+    }
+
+    static IEnumerable<string> SpellNames => DevGive.CatalogItems(true).Select(DevGive.SpellName).Append("all").Distinct().OrderBy(n => n);
+
+    // The one entry whose name is this (ignoring case), else the one that starts with it, else contains it; null with a
+    // message otherwise.
+    ItemData Find(IEnumerable<ItemData> items, System.Func<ItemData, string> nameOf, string name, string kind)
+    {
+        var list = items.ToList();
+        var found = list.Where(i => string.Equals(nameOf(i), name, System.StringComparison.OrdinalIgnoreCase)).ToList();
+        if (found.Count == 0) found = list.Where(i => nameOf(i).StartsWith(name, System.StringComparison.OrdinalIgnoreCase)).ToList();
+        if (found.Count == 0) found = list.Where(i => nameOf(i).IndexOf(name, System.StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+        if (found.Count == 1 || found.Count > 1 && found.All(i => nameOf(i) == nameOf(found[0]))) return found[0];
+        Print(found.Count == 0 ? $"No {kind} called {name}." : $"{found.Count} {kind}s match {name}: " + string.Join(", ", found.Select(nameOf).Distinct().Take(12)));
+        return null;
+    }
+
+    Player TablePlayer
+    {
+        get
+        {
+            var player = DevGive.TablePlayer(out var problem);
+            if (player == null) Print(problem);
+            return player;
+        }
+    }
+
+    // What addroomitem can carry home: every room key item (ProgressionManager.RoomKeyItems), and all of them at once.
+    List<(string name, System.Func<string> give)> RoomItems
+    {
+        get
+        {
+            var list = new List<(string, System.Func<string>)>();
+            if (!ProgressionManager.HasInstance) return list;
+            var keys = ProgressionManager.Instance.RoomKeyItems();
+            foreach (var k in keys)
+            {
+                var key = k;
+                list.Add((key.name, () => DevGive.RoomItem(key)));
+            }
+            if (keys.Count > 1)
+                list.Add(("all", () => { foreach (var k in keys) k.carry(); return $"{keys.Count} key items carried home."; }));
+            return list;
+        }
+    }
+
+    void AddRoomItem(string name)
+    {
+        var items = RoomItems;
+        if (name.Length == 0)
+        {
+            Print(items.Count == 0 ? "Nothing to carry home here." : string.Join(", ", items.Select(r => r.name)));
+            return;
+        }
+        var found = items.Where(r => string.Equals(r.name, name, System.StringComparison.OrdinalIgnoreCase)).ToList();
+        if (found.Count == 0) found = items.Where(r => r.name.StartsWith(name, System.StringComparison.OrdinalIgnoreCase)).ToList();
+        if (found.Count == 0) found = items.Where(r => r.name.IndexOf(name, System.StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+        if (found.Count == 0) { Print($"Nothing called {name}. addroomitem alone lists them."); return; }
+        if (found.Count > 1) { Print($"{found.Count} match {name}: " + string.Join(", ", found.Select(r => r.name))); return; }
+        Print(found[0].give());
+    }
+
+    // additem <name> [count] [rarity]: the count and rarity are read off the end, so names with spaces need no quotes.
+    void AddItem(string args)
+    {
+        if (args.Length == 0) { Print("additem <name> [count] [rarity]: Tab completes the name."); return; }
+        var words = args.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries).ToList();
+        int count = 1;
+        ItemRarity? rarity = null;
+        for (int n = 0; n < 2 && words.Count > 1; n++)
+        {
+            var last = words[words.Count - 1];
+            if (int.TryParse(last, out int c) && c > 0) { count = c; words.RemoveAt(words.Count - 1); }
+            else if (System.Enum.TryParse(last, true, out ItemRarity r) && !int.TryParse(last, out _) && r != ItemRarity.Relic && r != ItemRarity.Spoils) { rarity = r; words.RemoveAt(words.Count - 1); }
+        }
+        var item = Find(DevGive.CatalogItems(false), i => i.itemName, string.Join(" ", words), "item");
+        if (item != null) Print(DevGive.Item(item, count, rarity));
+    }
+
+    void AddSpell(string name)
+    {
+        if (name.Length == 0) { Print("addspell <name>|all: Tab completes the name."); return; }
+        if (name.Equals("all", System.StringComparison.OrdinalIgnoreCase)) { LearnSpells(); return; }
+        var tome = Find(DevGive.CatalogItems(true), DevGive.SpellName, name, "spell");
+        if (tome != null) Print(DevGive.Spell(tome));
     }
 
     // event: lists the events; event <name>: a run opening at the way into that event's room (its ScriptedEventRoom
@@ -413,12 +520,19 @@ public class DevConsole : MonoBehaviour
         var found = exact.Count > 0 ? exact : RoomTemplates.Where(t => t.name.StartsWith(name, System.StringComparison.OrdinalIgnoreCase)).ToList();
         if (found.Count == 0) { Print($"No room template called {name}."); return; }
         if (found.Count > 1) { Print($"{found.Count} templates start with {name}: " + string.Join(", ", found.Select(t => t.name))); return; }
-        var template = found[0].prefab;
+        if (StartRun(found[0].prefab, found[0].name, out var said)) { Print(said); if (open) Close(); }
+        else Print(said);
+    }
+
+    // A new run opening in this room template (loadtemplate, the spawn window's Rooms): false with why when it can't.
+    // The loader takes over at once; the caller closes its window.
+    public static bool StartRun(GameObject template, string label, out string said)
+    {
         var loader = FindAnyObjectByType<TableLevelLoader>();
-        if (loader == null) { Print("No table here (the Room scene has it)."); return; }
-        if (loader.Busy) { Print("A floor is being built. Try again in a moment."); return; }
+        if (loader == null) { said = "No table here (the Room scene has it)."; return false; }
+        if (loader.Busy) { said = "A floor is being built. Try again in a moment."; return false; }
         var level = LevelFor(template, loader, out int stage);
-        if (level == null) { Print("No dungeon level to build it in."); return; }
+        if (level == null) { said = "No dungeon level to build it in."; return false; }
         // A copy of the level that opens in this template, its run starting at the biome that uses it. The copy keeps
         // the level's name, so a saved checkpoint resumes the level itself.
         var copy = Instantiate(level);
@@ -428,9 +542,9 @@ public class DevConsole : MonoBehaviour
         // An event room opens the run as itself: no starting chest in the middle of the event.
         if (template.GetComponent<ScriptedEventRoom>() != null) copy.startingChest = false;
         if (stage > 0) copy.stages = copy.stages.Skip(stage).ToArray();
-        Print($"Loading {found[0].name} in {level.displayName}{(stage > 0 && copy.stages[0].biome != null ? $" ({copy.stages[0].biome.name})" : "")}.");
-        Close();
+        said = $"Loading {label} in {level.displayName}{(stage > 0 && copy.stages[0].biome != null ? $" ({copy.stages[0].biome.name})" : "")}.";
         loader.Load(copy, skipReveal: true);
+        return true;
     }
 
     // The level to build a template in: one whose starting room it is or whose biomes pick it (the level being played
