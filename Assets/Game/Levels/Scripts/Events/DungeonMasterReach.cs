@@ -168,16 +168,58 @@ public static class DungeonMasterReach
     // Only the roof over the rooms or corridors (layout regions) the points stand in comes off, the rest of the floor's
     // ceiling stays on (a spell for the player: the roof over them and the enemy). The merged ceiling chunks touching it
     // are swapped for the pieces they were made of while it is off, so it can come away on its own. With no region found
-    // it lifts the whole lid. sound: played as it starts up, and as it lands back.
+    // it lifts the whole lid. Going up it breaks free with a jolt, hangs a moment and heaves away, tipping toward him;
+    // coming down it drops and lands with a thud, a shake and dust blown out along its edges (fx: its sounds and dust).
     static Transform roomLid;
+    static Bounds lidArea;
     static readonly System.Collections.Generic.List<(Transform piece, Transform parent)> liftedPieces = new();
     static readonly System.Collections.Generic.List<Renderer> heldChunks = new(), shownPieces = new();
-    // The sound is timed to the lid: going up, it starts with the lid's first move (the silence at the clip's head
-    // skipped); coming down, it starts early enough that its loudest moment (the thud) is the landing.
-    public static IEnumerator Lid(DungeonGenerator dungeon, bool open, Vector3[] over, AudioClip sound = null, float volume = 1f, float seconds = .7f, float height = 4f)
+    public static IEnumerator Lid(DungeonGenerator dungeon, bool open, Vector3[] over, LidEffects fx, float seconds = .9f, float height = 4f)
     {
-        float lead = sound != null ? Shape(sound).peak - Shape(sound).onset : 0f;
-        if (open && !OpenRoomLid(dungeon, over)) { Play(sound, dungeon, volume); yield return Lid(dungeon, true, seconds, height); yield break; }
+        fx ??= new LidEffects();
+        AudioSource rising = open ? Play(fx.rising, dungeon, fx.volume) : null;
+        try
+        {
+            var inner = LidMove(dungeon, open, over, fx, seconds, height);
+            while (inner.MoveNext()) yield return inner.Current;
+        }
+        finally { FadeOut(rising, fx.rising, .4f); }
+    }
+
+    // A sound under the lid faded out over seconds (on AudioManager, the static class runs no coroutines), only while its
+    // pooled source still plays that clip.
+    static void FadeOut(AudioSource source, AudioClip clip, float seconds)
+    {
+        if (source == null || clip == null || !AudioManager.HasInstance) return;
+        AudioManager.Instance.StartCoroutine(Fade());
+        IEnumerator Fade()
+        {
+            float from = source.volume;
+            for (float t = 0; t < seconds && source != null && source.clip == clip && source.isPlaying; t += Time.deltaTime)
+            {
+                source.volume = from * (1f - t / seconds);
+                yield return null;
+            }
+            if (source != null && source.clip == clip) { source.Stop(); source.volume = from; }
+        }
+    }
+
+    // How high the lid is (0-1 of the way) and how far it has tipped (degrees) a share n of the way up: a jolt as it breaks
+    // free, a small sag while it hangs, then a heave that gathers speed.
+    const float Jolt = .1f, JoltEnd = .18f, HangEnd = .34f;
+    static float LiftAt(float n, out float tipDegrees)
+    {
+        if (n < JoltEnd) { float a = n / JoltEnd; tipDegrees = 1.5f * a; return Jolt * (1f - (1f - a) * (1f - a)); }
+        if (n < HangEnd) { float a = (n - JoltEnd) / (HangEnd - JoltEnd); tipDegrees = 1.5f + Mathf.Sin(a * Mathf.PI) * .4f; return Jolt - .02f * Mathf.Sin(a * Mathf.PI); }
+        float c = (n - HangEnd) / (1f - HangEnd);
+        tipDegrees = Mathf.Lerp(1.5f, 6f, c * c);
+        return Jolt + (1f - Jolt) * c * c * c;
+    }
+
+    static IEnumerator LidMove(DungeonGenerator dungeon, bool open, Vector3[] over, LidEffects fx, float seconds, float height)
+    {
+        float lead = fx.close != null ? Shape(fx.close).peak - Shape(fx.close).onset : 0f;
+        if (open && !OpenRoomLid(dungeon, over)) { Play(fx.open, dungeon, fx.volume); yield return Lid(dungeon, true, seconds, height); yield break; }
         if (!open && roomLid == null)
         {
             // The whole lid: stepped here so the thud can start before it lands.
@@ -185,45 +227,106 @@ public static class DungeonMasterReach
             bool sounded = false;
             for (float t = 0; whole.MoveNext(); t += Time.deltaTime)
             {
-                if (!sounded && t >= seconds - lead) { sounded = true; Play(sound, dungeon, volume); }
+                if (!sounded && t >= seconds - lead) { sounded = true; Play(fx.close, dungeon, fx.volume); }
                 yield return whole.Current;
             }
-            if (!sounded) Play(sound, dungeon, volume);
+            if (!sounded) Play(fx.close, dungeon, fx.volume);
+            Play(fx.land, dungeon, fx.volume);
             yield break;
         }
         var lid = roomLid;
         var up = Vector3.up * height;
-        var tip = Quaternion.Euler(0f, 0f, 4f);
-        if (open) Play(sound, dungeon, volume);
-        else { lid.gameObject.SetActive(true); lid.localPosition = lidRest + up; lid.localRotation = tip; }
-        var from = lid.localPosition; var fromRotation = lid.localRotation;
-        var to = open ? lidRest + up : lidRest; var toRotation = open ? tip : Quaternion.identity;
+        if (open) Play(fx.open, dungeon, fx.volume);
+        else { lid.gameObject.SetActive(true); lid.localPosition = lidRest + up; lid.localRotation = Quaternion.Euler(0f, 0f, 6f); }
+        var downFrom = lid.localRotation;
         bool thud = open;
         for (float t = 0; t < seconds && lid != null; t += Time.deltaTime)
         {
-            if (!thud && t >= seconds - lead) { thud = true; Play(sound, dungeon, volume); }
-            float u = open ? Mathf.SmoothStep(0, 1, t / seconds) : (t / seconds) * (t / seconds);
-            lid.localPosition = Vector3.Lerp(from, to, u);
-            lid.localRotation = Quaternion.Slerp(fromRotation, toRotation, u);
+            float n = t / seconds;
+            if (!thud && t >= seconds - lead) { thud = true; Play(fx.close, dungeon, fx.volume); }
+            if (open)
+            {
+                float h = LiftAt(n, out float tip);
+                lid.localPosition = lidRest + up * h;
+                lid.localRotation = Quaternion.Euler(0f, 0f, tip);
+            }
+            else
+            {
+                // It drops, gathering speed, and levels as it comes.
+                lid.localPosition = lidRest + up * (1f - n * n);
+                lid.localRotation = Quaternion.Slerp(downFrom, Quaternion.identity, n);
+            }
             yield return null;
         }
-        if (!thud) Play(sound, dungeon, volume);
+        if (!thud) Play(fx.close, dungeon, fx.volume);
         if (lid == null) { CloseRoomLid(); yield break; }
-        lid.localPosition = to; lid.localRotation = toRotation;
-        if (open) lid.gameObject.SetActive(false);
-        else { CloseRoomLid(); Shake(.45f); }
+        if (open) { lid.localPosition = lidRest + up; lid.gameObject.SetActive(false); yield break; }
+        lid.localPosition = lidRest; lid.localRotation = Quaternion.identity;
+        Play(fx.land, dungeon, fx.volume);
+        if (fx.dust) Smoke(lidArea);
+        CloseRoomLid();
+        Shake(.45f);
+    }
+
+    // Dust knocked out along the roof's edge as it lands, the way the table reveal's entrance throws it (its soft round
+    // dust material): puffs from the seam where roof met wall, pushed into the room and a little down, growing,
+    // spreading and thinning until they clear.
+    static void Smoke(Bounds area)
+    {
+        var look = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
+        if (look == null || look.entranceDustMaterial == null) return;
+        var go = new GameObject("Roof dust");
+        var puff = go.AddComponent<ParticleSystem>();
+        puff.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        float perimeter = 2f * (area.size.x + area.size.z);
+        int count = Mathf.Clamp(Mathf.RoundToInt(perimeter * 2.2f), 24, 160);
+        var main = puff.main;
+        main.loop = false; main.playOnAwake = false; main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.maxParticles = count + 10; main.gravityModifier = .04f;
+        var emission = puff.emission; emission.enabled = false;
+        var shape = puff.shape; shape.enabled = false;
+        var grow = puff.sizeOverLifetime; grow.enabled = true; grow.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, .6f, 1f, 1.8f));
+        var slow = puff.limitVelocityOverLifetime; slow.enabled = true; slow.limit = .8f; slow.dampen = .12f;
+        var fade = puff.colorOverLifetime; fade.enabled = true;
+        var g = new Gradient();
+        g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                  new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, .06f), new GradientAlphaKey(.6f, .45f), new GradientAlphaKey(0f, 1f) });
+        fade.color = g;
+        var renderer = go.GetComponent<ParticleSystemRenderer>();
+        renderer.sharedMaterial = look.entranceDustMaterial;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        puff.Play();
+        float y = area.min.y;
+        var p = new ParticleSystem.EmitParams();
+        for (int i = 0; i < count; i++)
+        {
+            // A point on the roof's edge, and into the room from there.
+            float side = Random.value, along = Random.value;
+            var at = side < .5f ? new Vector3(side < .25f ? area.min.x : area.max.x, y, Mathf.Lerp(area.min.z, area.max.z, along))
+                                : new Vector3(Mathf.Lerp(area.min.x, area.max.x, along), y, side < .75f ? area.min.z : area.max.z);
+            var inward = area.center - at; inward.y = 0f; inward = inward.normalized;
+            p.position = at + inward * Random.Range(.3f, .8f) - Vector3.up * Random.Range(.1f, .5f);
+            p.velocity = inward * Random.Range(.6f, 2.2f) - Vector3.up * Random.Range(.2f, 1f);
+            p.startSize = Random.Range(1f, 2.4f);
+            p.startLifetime = Random.Range(1.4f, 2.4f);
+            p.startColor = Color.Lerp(new Color(.82f, .78f, .72f, .9f), new Color(.66f, .62f, .56f, .75f), Random.value);
+            p.rotation = Random.Range(0f, 360f);
+            puff.Emit(p, 1);
+        }
+        Object.Destroy(go, 3.5f);
     }
     static Vector3 lidRest;
 
     // Played from its first loud moment (a door or lid clip opens on a stretch of silence).
-    static void Play(AudioClip sound, DungeonGenerator dungeon, float volume)
+    static AudioSource Play(AudioClip sound, DungeonGenerator dungeon, float volume)
     {
-        if (sound == null || !AudioManager.HasInstance) return;
+        if (sound == null || !AudioManager.HasInstance) return null;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         var at = player != null ? player.transform.position + Vector3.up * 3f : dungeon != null ? dungeon.transform.position : Vector3.zero;
         var source = AudioManager.Instance.PlaySFX(sound, at, volume);
         float onset = Shape(sound).onset;
         if (source != null && source.clip == sound && onset > 0f && onset < sound.length) source.time = onset;
+        return source;
     }
 
     // Where a clip's sound starts (first above a fifth of its loudest) and where it is loudest, in seconds; read once
@@ -283,6 +386,7 @@ public static class DungeonMasterReach
         roomLid.SetParent(ceilings, false);
         roomLid.position = new Vector3(area.center.x, area.max.y, area.center.z);
         lidRest = roomLid.localPosition;
+        lidArea = area;
         foreach (var r in pieces) { liftedPieces.Add((r.transform, r.transform.parent)); r.transform.SetParent(roomLid, true); }
         return true;
     }
@@ -588,4 +692,16 @@ public static class DungeonMasterReach
     }
 
     static Vector3 Flat(Vector3 v) { v.y = 0; return v.sqrMagnitude > .0001f ? v.normalized : Vector3.forward; }
+}
+
+// The roof's sounds and dust as the Dungeon Master lifts it off a room and puts it back (DungeonMasterReach.Lid).
+[System.Serializable]
+public class LidEffects
+{
+    [Tooltip("As it starts up (a big lid opening; played from its first sound, so it starts with the lid).")] public AudioClip open;
+    [Tooltip("Under it while it rises (grit and dust as it breaks free), faded out once it is off.")] public AudioClip rising;
+    [Tooltip("Coming down; started early so its loudest moment is the landing.")] public AudioClip close;
+    [Tooltip("The weight of it landing, on the landing frame.")] public AudioClip land;
+    [Range(0, 1)] public float volume = .8f;
+    [Tooltip("Dust blown out along its edges as it lands.")] public bool dust = true;
 }

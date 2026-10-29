@@ -71,6 +71,8 @@ public class HelpingHandSettings
     public SpellVisual burst;
     [FoldoutGroup("Out of his reach")] public AudioClip smashSound;
     [FoldoutGroup("Out of his reach"), Range(0, 1)] public float smashVolume = 1f;
+    [FoldoutGroup("Lid"), Tooltip("The roof over the player's room coming off and landing back on: sounds and dust.")]
+    public LidEffects lid = new();
     [FoldoutGroup("Lines"), Tooltip("He says one as he comes.")]
     public string[] lines = { "Here.", "Hold still.", "Try not to need that again." };
     [FoldoutGroup("Look")] public Color color = new(1f, .9f, .6f);
@@ -135,14 +137,14 @@ public class HelpingHand : MonoBehaviour
         }
         else yield return DungeonMasterReach.TurnTo(spot);
         // Only the roof over the player's room or corridor comes off.
-        yield return DungeonMasterReach.Lid(floor, true, new[] { caster.transform.position });
+        yield return DungeonMasterReach.Lid(floor, true, new[] { caster.transform.position }, settings.lid);
         if (caster != null && caster.IsAlive && hand != null)
         {
             if (near) yield return Hold(hand);
             else yield return Toss(hand);
         }
         yield return new WaitForSeconds(.4f);
-        yield return DungeonMasterReach.Lid(floor, false, null);
+        yield return DungeonMasterReach.Lid(floor, false, null, settings.lid);
         if (appear) DungeonMasterReach.Vanish();
         else yield return DungeonMasterReach.StepBack(spot);
         yield return DungeonMasterReach.Leave();

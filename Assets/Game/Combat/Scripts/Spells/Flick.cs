@@ -100,9 +100,9 @@ public class FlickSettings
     [FoldoutGroup("Look"), Range(0, 1)] public float hitVolume = 1f;
     [FoldoutGroup("Look"), Tooltip("When it slams into a wall or the floor.")] public AudioClip slamSound;
     [FoldoutGroup("Look"), Range(0, 1)] public float slamVolume = 1f;
-    [FoldoutGroup("Look"), Tooltip("The roof over the player's room coming off like a lid, and landing back on.")] public AudioClip lidSound;
-    [FoldoutGroup("Look")] public AudioClip lidCloseSound;
-    [FoldoutGroup("Look"), Range(0, 1)] public float lidVolume = .8f;
+    [FoldoutGroup("Look"), Min(0f), Tooltip("How hard the view shakes as his finger or the die strikes the enemy.")] public float hitShake = .6f;
+    [FoldoutGroup("Look"), Tooltip("The roof over the player's room (and the enemy's) coming off and landing back on: sounds and dust.")]
+    public LidEffects lid = new();
     [FoldoutGroup("Look"), AssetsOnly, Tooltip("Clings to the enemy he has picked, from the cast until his finger or die strikes it.")]
     public SpellVisual mark;
     [FoldoutGroup("Look"), Tooltip("Lights the enemy he has picked while he comes for it.")] public Color markColor = new(1f, .85f, .55f);
@@ -212,7 +212,7 @@ public class Flick : MonoBehaviour
         // Out of his reach he stays where he is and turns to it.
         else yield return DungeonMasterReach.TurnTo(spot);
         // Only the roof over the player and the enemy comes off.
-        yield return DungeonMasterReach.Lid(floor, true, new[] { caster.transform.position, target != null ? target.transform.position : caster.transform.position }, settings.lidSound, settings.lidVolume);
+        yield return DungeonMasterReach.Lid(floor, true, new[] { caster.transform.position, target != null ? target.transform.position : caster.transform.position }, settings.lid);
         if (target != null && target.IsAlive && hand != null)
         {
             spot = target.transform.position;
@@ -256,7 +256,7 @@ public class Flick : MonoBehaviour
         else Release(held);
         for (float t = 0; flying && t < 8f; t += Time.deltaTime) yield return null;
         yield return new WaitForSeconds(.5f);
-        yield return DungeonMasterReach.Lid(floor, false, null, settings.lidCloseSound, settings.lidVolume);
+        yield return DungeonMasterReach.Lid(floor, false, null, settings.lid);
         if (appear) DungeonMasterReach.Vanish();
         else yield return DungeonMasterReach.StepBack(spot);
         yield return DungeonMasterReach.Leave();
@@ -354,6 +354,7 @@ public class Flick : MonoBehaviour
     void Hit(Vector3 at)
     {
         if (settings.hitSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(settings.hitSound, at, settings.hitVolume);
+        if (settings.hitShake > 0f) DungeonMasterReach.Shake(settings.hitShake);
     }
 
     void Knock(Vector3 at)
