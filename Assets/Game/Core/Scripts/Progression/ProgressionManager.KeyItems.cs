@@ -9,6 +9,8 @@ public partial class ProgressionManager
     public struct RoomKeyItem
     {
         public string name;               // as the console lists it and the key items row names its slot
+        public string kind;               // Trophy, Puzzle piece, Poster: how the spawn window groups them
+        public string about;              // a line on what it is and where it goes
         public Sprite icon;
         public bool carried;              // carried home and not yet put up, hung or placed
         public System.Action carry;       // the console: carried home now, whatever its state (taken down again if it was up)
@@ -24,19 +26,21 @@ public partial class ProgressionManager
             list.Add(new RoomKeyItem
             {
                 name = $"{track.displayName} {milestone.value} trophy",
+                kind = "Trophy",
+                about = $"For reaching {milestone.value} in {track.displayName} ({milestone.Name}). Hangs on the trophy wall.",
                 icon = milestone.trophy != null ? milestone.trophy.icon : track.icon,
                 carried = Trophy(track, milestone) == TrophyState.Carried,
                 carry = () => CarryTrophy(track, milestone),
             });
         }
         if (missingTile != null)
-            list.Add(new RoomKeyItem { name = missingTile.itemName, icon = missingTile.icon, carried = TileState == 1, carry = () => CarryTile() });
+            list.Add(new RoomKeyItem { name = missingTile.itemName, kind = "Puzzle piece", about = "Goes in the class puzzle on the coffee table.", icon = missingTile.icon, carried = TileState == 1, carry = () => CarryTile() });
         if (classRules != null && classRules.classes != null)
             foreach (var c in classRules.classes)
             {
                 if (c == null || string.IsNullOrEmpty(c.unlockFlag)) continue;   // up from the start: never carried
                 var cls = c;
-                list.Add(new RoomKeyItem { name = $"{cls.displayName} poster", icon = cls.portrait, carried = PosterCarried(cls), carry = () => CarryPoster(cls) });
+                list.Add(new RoomKeyItem { name = $"{cls.displayName} poster", kind = "Poster", about = $"Unlocks the {cls.displayName} and goes up on the poster wall by the bed.", icon = cls.portrait, carried = PosterCarried(cls), carry = () => CarryPoster(cls) });
             }
         return list;
     }
