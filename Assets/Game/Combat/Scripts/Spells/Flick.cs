@@ -64,12 +64,20 @@ public class FlickSettings
     public float dieGravity = 16f;
     [FoldoutGroup("Out of his reach"), Min(0f), Tooltip("Light the die carries, so it is seen crossing the dark.")]
     public float dieLight = 12f;
+    [FoldoutGroup("Out of his reach"), Tooltip("One of these, at random, each time the die strikes or bounces.")] public AudioClip[] dieKnocks = new AudioClip[0];
+    [FoldoutGroup("Out of his reach"), Tooltip("The die tumbling away after it strikes.")] public AudioClip dieRollSound;
+    [FoldoutGroup("Out of his reach"), Range(0, 1)] public float dieVolume = 1f;
     [FoldoutGroup("Lines"), Tooltip("He says one as he comes.")]
     public string[] lines = { "Hold still.", "Allow me.", "Let me get that for you." };
     [FoldoutGroup("Look")] public AudioClip snapSound;
     [FoldoutGroup("Look"), Range(0, 1)] public float snapVolume = 1f;
+    [FoldoutGroup("Look"), Tooltip("The enemy struck, by his finger or the die.")] public AudioClip hitSound;
+    [FoldoutGroup("Look"), Range(0, 1)] public float hitVolume = 1f;
     [FoldoutGroup("Look"), Tooltip("When it slams into a wall or the floor.")] public AudioClip slamSound;
     [FoldoutGroup("Look"), Range(0, 1)] public float slamVolume = 1f;
+    [FoldoutGroup("Look"), Tooltip("The roof over the player's room coming off like a lid, and landing back on.")] public AudioClip lidSound;
+    [FoldoutGroup("Look")] public AudioClip lidCloseSound;
+    [FoldoutGroup("Look"), Range(0, 1)] public float lidVolume = .8f;
     [FoldoutGroup("Look"), AssetsOnly, Tooltip("Clings to the enemy he has picked, from the cast until his finger or die strikes it.")]
     public SpellVisual mark;
     [FoldoutGroup("Look"), Tooltip("Lights the enemy he has picked while he comes for it.")] public Color markColor = new(1f, .85f, .55f);
@@ -174,7 +182,8 @@ public class Flick : MonoBehaviour
         }
         // Out of his reach he stays where he is and turns to it.
         else yield return DungeonMasterReach.TurnTo(spot);
-        yield return DungeonMasterReach.Lid(floor, true);
+        // Only the roof over the player and the enemy comes off.
+        yield return DungeonMasterReach.Lid(floor, true, new[] { caster.transform.position, target != null ? target.transform.position : caster.transform.position }, settings.lidSound, settings.lidVolume);
         if (target != null && target.IsAlive && hand != null)
         {
             spot = target.transform.position;
@@ -185,7 +194,7 @@ public class Flick : MonoBehaviour
                 var away = FlightDirection(target, Flat(spot - hand.transform.position));
                 var point = SpellEffects.Chest(target);
                 var body = target;
-                yield return hand.Flick(point, away, settings.reachSeconds, settings.windup, null, () => { Release(held); Snap(SpellEffects.Chest(body)); StartCoroutine(Fly(body, away, power, true)); },
+                yield return hand.Flick(point, away, settings.reachSeconds, settings.windup, null, () => { Release(held); Snap(SpellEffects.Chest(body)); Hit(SpellEffects.Chest(body)); StartCoroutine(Fly(body, away, power, true)); },
                     () => body != null ? SpellEffects.Chest(body) : point);
             }
             else
@@ -218,7 +227,7 @@ public class Flick : MonoBehaviour
         else Release(held);
         for (float t = 0; flying && t < 8f; t += Time.deltaTime) yield return null;
         yield return new WaitForSeconds(.5f);
-        yield return DungeonMasterReach.Lid(floor, false);
+        yield return DungeonMasterReach.Lid(floor, false, null, settings.lidCloseSound, settings.lidVolume);
         if (appear) DungeonMasterReach.Vanish();
         else yield return DungeonMasterReach.StepBack(spot);
         yield return DungeonMasterReach.Leave();
@@ -308,6 +317,21 @@ public class Flick : MonoBehaviour
 
     // ── The die (out of his reach) ──────────────────────────────────
 
+    void DieSound(AudioClip clip, Vector3 at)
+    {
+        if (clip != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(clip, at, settings.dieVolume);
+    }
+
+    void Hit(Vector3 at)
+    {
+        if (settings.hitSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(settings.hitSound, at, settings.hitVolume);
+    }
+
+    void Knock(Vector3 at)
+    {
+        if (settings.dieKnocks != null && settings.dieKnocks.Length > 0) DieSound(settings.dieKnocks[UnityEngine.Random.Range(0, settings.dieKnocks.Length)], at);
+    }
+
     IEnumerator DieFly(Transform die, Held held)
     {
         flying = true;
@@ -334,8 +358,10 @@ public class Flick : MonoBehaviour
             yield return null;
         }
         Release(held);
+        if (die != null) { Hit(die.position); Knock(die.position); }
         if (target != null && target.IsAlive) StartCoroutine(Fly(target, Flat(v), power, false));
         if (die == null) { flying = false; yield break; }
+        bool rolling = false;
         // It bounces off and tumbles away, then is gone.
         // Away from the player whatever way it came (back toward him it bounced into the player's face).
         var away = Flat(die.position - caster.transform.position);
@@ -345,7 +371,11 @@ public class Flick : MonoBehaviour
             bounce.y -= g * Time.deltaTime;
             var step = bounce * Time.deltaTime;
             if (Physics.Raycast(die.position, Vector3.down, out var hit, Mathf.Max(.05f, -step.y + .4f), ~0, QueryTriggerInteraction.Ignore) && bounce.y < 0f)
-            { bounce.y = -bounce.y * .35f; bounce.x *= .6f; bounce.z *= .6f; }
+            {
+                bounce.y = -bounce.y * .35f; bounce.x *= .6f; bounce.z *= .6f;
+                Knock(die.position);
+                if (!rolling) { rolling = true; DieSound(settings.dieRollSound, die.position); }
+            }
             die.position += step;
             die.rotation = Quaternion.AngleAxis(400f * Time.deltaTime, spinAxis) * die.rotation;
             yield return null;

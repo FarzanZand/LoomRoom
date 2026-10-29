@@ -129,14 +129,25 @@ MonoBehaviour:
     dieArc: 7
     dieGravity: 16
     dieLight: 12
+    dieKnocks:
+    - {fileID: 8300000, guid: 86fb3724254ffa44f8bda6c38d457da9, type: 3}
+    - {fileID: 8300000, guid: 25f69a68ba5c53f4396af5a95dffe198, type: 3}
+    - {fileID: 8300000, guid: 6cce797ff44577a4485de32d4045286d, type: 3}
+    dieRollSound: {fileID: 8300000, guid: c5f2559aab1ce0e4d835b730f4a30190, type: 3}
+    dieVolume: 1
     lines:
     - Hold still.
     - Allow me.
     - Let me get that for you.
     snapSound: {fileID: 8300000, guid: 96e8d2b2f49c9c04da308b5163a7efb0, type: 3}
     snapVolume: 1
+    hitSound: {fileID: 8300000, guid: c59016c6c83fe4bf4b59ac36ef371944, type: 3}
+    hitVolume: 1
     slamSound: {fileID: 8300000, guid: 9cc7226bea19fd54d80cd80820cd7cda, type: 3}
     slamVolume: 1
+    lidSound: {fileID: 8300000, guid: 45ea8ece760e8ad4aa11e7f1a1f6ef25, type: 3}
+    lidCloseSound: {fileID: 8300000, guid: 93f26e197e539a747867caae70503611, type: 3}
+    lidVolume: 0.8
     mark: {fileID: 5233650602891333819, guid: 51d2da57f7d6f3646b6563f734177b4b, type: 3}
     markColor: {r: 1, g: 0.85, b: 0.55, a: 1}
     markLight: 1.5

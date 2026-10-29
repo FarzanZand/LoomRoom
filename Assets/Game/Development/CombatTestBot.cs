@@ -390,8 +390,9 @@ public class CombatTestBot : MonoBehaviour
     {
         if (!InventoryManager.HasInstance) return;
         ItemData tome = null;
-        foreach (var item in InventoryManager.Instance.itemCatalog)
-            if (item != null && item.spell != null && item.DisplayName.IndexOf(words, System.StringComparison.OrdinalIgnoreCase) >= 0) { tome = item; break; }
+        // Every tome the spawn window lists (in the editor the new ones not yet in the catalog too).
+        foreach (var item in DevGive.CatalogItems(true))
+            if (item.DisplayName.IndexOf(words, System.StringComparison.OrdinalIgnoreCase) >= 0) { tome = item; break; }
         if (tome == null) { Log("no spell " + words); return; }
         if (player.Hotbar.TotalCount(tome) == 0 && player.Bag.TotalCount(tome) == 0) InventoryManager.Instance.Pickup(tome, player, 1, true, false, false);
         player.Equipment.Equip(tome, false);

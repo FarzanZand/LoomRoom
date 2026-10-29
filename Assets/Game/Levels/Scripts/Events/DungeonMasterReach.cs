@@ -34,7 +34,7 @@ public static class DungeonMasterReach
         }
     }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetStatics() { reaching = false; reachFloor = null; standingAt = Side.Own; impulse = null; walkSpeed = -1f; steppedIn = false; steppedAgent = null; appeared = false; }
+    static void ResetStatics() { reaching = false; reachFloor = null; standingAt = Side.Own; impulse = null; walkSpeed = -1f; steppedIn = false; steppedAgent = null; appeared = false; roomLid = null; liftedPieces.Clear(); heldChunks.Clear(); shownPieces.Clear(); }
 
     public static float TableTop(DungeonGenerator dungeon) =>
         TableManager.HasInstance && TableManager.Instance.GetComponent<TableCut>() is { } cut && cut.Bounds.size != Vector3.zero ? cut.Bounds.max.y
@@ -163,6 +163,139 @@ public static class DungeonMasterReach
         lid.localPosition = to; lid.localRotation = toRotation;
         if (open) lid.gameObject.SetActive(false);
         else Shake(.45f);
+    }
+
+    // Only the roof over the rooms or corridors (layout regions) the points stand in comes off, the rest of the floor's
+    // ceiling stays on (a spell for the player: the roof over them and the enemy). The merged ceiling chunks touching it
+    // are swapped for the pieces they were made of while it is off, so it can come away on its own. With no region found
+    // it lifts the whole lid. sound: played as it starts up, and as it lands back.
+    static Transform roomLid;
+    static readonly System.Collections.Generic.List<(Transform piece, Transform parent)> liftedPieces = new();
+    static readonly System.Collections.Generic.List<Renderer> heldChunks = new(), shownPieces = new();
+    // The sound is timed to the lid: going up, it starts with the lid's first move (the silence at the clip's head
+    // skipped); coming down, it starts early enough that its loudest moment (the thud) is the landing.
+    public static IEnumerator Lid(DungeonGenerator dungeon, bool open, Vector3[] over, AudioClip sound = null, float volume = 1f, float seconds = .7f, float height = 4f)
+    {
+        float lead = sound != null ? Shape(sound).peak - Shape(sound).onset : 0f;
+        if (open && !OpenRoomLid(dungeon, over)) { Play(sound, dungeon, volume); yield return Lid(dungeon, true, seconds, height); yield break; }
+        if (!open && roomLid == null)
+        {
+            // The whole lid: stepped here so the thud can start before it lands.
+            var whole = Lid(dungeon, false, seconds, height);
+            bool sounded = false;
+            for (float t = 0; whole.MoveNext(); t += Time.deltaTime)
+            {
+                if (!sounded && t >= seconds - lead) { sounded = true; Play(sound, dungeon, volume); }
+                yield return whole.Current;
+            }
+            if (!sounded) Play(sound, dungeon, volume);
+            yield break;
+        }
+        var lid = roomLid;
+        var up = Vector3.up * height;
+        var tip = Quaternion.Euler(0f, 0f, 4f);
+        if (open) Play(sound, dungeon, volume);
+        else { lid.gameObject.SetActive(true); lid.localPosition = lidRest + up; lid.localRotation = tip; }
+        var from = lid.localPosition; var fromRotation = lid.localRotation;
+        var to = open ? lidRest + up : lidRest; var toRotation = open ? tip : Quaternion.identity;
+        bool thud = open;
+        for (float t = 0; t < seconds && lid != null; t += Time.deltaTime)
+        {
+            if (!thud && t >= seconds - lead) { thud = true; Play(sound, dungeon, volume); }
+            float u = open ? Mathf.SmoothStep(0, 1, t / seconds) : (t / seconds) * (t / seconds);
+            lid.localPosition = Vector3.Lerp(from, to, u);
+            lid.localRotation = Quaternion.Slerp(fromRotation, toRotation, u);
+            yield return null;
+        }
+        if (!thud) Play(sound, dungeon, volume);
+        if (lid == null) { CloseRoomLid(); yield break; }
+        lid.localPosition = to; lid.localRotation = toRotation;
+        if (open) lid.gameObject.SetActive(false);
+        else { CloseRoomLid(); Shake(.45f); }
+    }
+    static Vector3 lidRest;
+
+    // Played from its first loud moment (a door or lid clip opens on a stretch of silence).
+    static void Play(AudioClip sound, DungeonGenerator dungeon, float volume)
+    {
+        if (sound == null || !AudioManager.HasInstance) return;
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        var at = player != null ? player.transform.position + Vector3.up * 3f : dungeon != null ? dungeon.transform.position : Vector3.zero;
+        var source = AudioManager.Instance.PlaySFX(sound, at, volume);
+        float onset = Shape(sound).onset;
+        if (source != null && source.clip == sound && onset > 0f && onset < sound.length) source.time = onset;
+    }
+
+    // Where a clip's sound starts (first above a fifth of its loudest) and where it is loudest, in seconds; read once
+    // from its samples (0 for both when they can't be read).
+    static readonly System.Collections.Generic.Dictionary<AudioClip, (float onset, float peak)> shapes = new();
+    static (float onset, float peak) Shape(AudioClip clip)
+    {
+        if (clip == null) return (0f, 0f);
+        if (shapes.TryGetValue(clip, out var known)) return known;
+        var shape = (0f, 0f);
+        if (clip.loadState != AudioDataLoadState.Loaded) clip.LoadAudioData();
+        var data = new float[clip.samples * clip.channels];
+        if (clip.loadState == AudioDataLoadState.Loaded && data.Length > 0 && clip.GetData(data, 0))
+        {
+            int loudest = 0; float peak = 0f;
+            for (int i = 0; i < data.Length; i++) { float a = Mathf.Abs(data[i]); if (a > peak) { peak = a; loudest = i; } }
+            int first = 0;
+            while (first < data.Length && Mathf.Abs(data[first]) < peak * .2f) first++;
+            float rate = clip.frequency * (float)clip.channels;
+            shape = (first / rate, loudest / rate);
+        }
+        shapes[clip] = shape;
+        return shape;
+    }
+
+    static bool OpenRoomLid(DungeonGenerator dungeon, Vector3[] over)
+    {
+        CloseRoomLid();
+        var ceilings = dungeon != null ? dungeon.Ceilings : null;
+        var layout = dungeon != null ? dungeon.Layout : null;
+        if (ceilings == null || layout == null || layout.RegionIds == null || over == null) return false;
+        var regions = new System.Collections.Generic.HashSet<int>();
+        foreach (var p in over) { var c = dungeon.CellOf(p); if (layout.InBounds(c) && layout.floor[c.x, c.y]) regions.Add(layout.RegionIds[c.x, c.y]); }
+        if (regions.Count == 0) return false;
+        bool InRegion(Vector3 world) { var c = dungeon.CellOf(world); return layout.InBounds(c) && regions.Contains(layout.RegionIds[c.x, c.y]); }
+        var geometry = dungeon.GetComponent<DungeonStaticGeometry>();
+        var merged = geometry != null ? new System.Collections.Generic.HashSet<MeshRenderer>(geometry.MergedPieces) : new System.Collections.Generic.HashSet<MeshRenderer>();
+        // The region's own pieces: drawn ones, and ones merged away into a chunk.
+        var pieces = new System.Collections.Generic.List<Renderer>();
+        foreach (var r in ceilings.GetComponentsInChildren<MeshRenderer>(true))
+            if (r.name != "Static chunk" && (r.enabled || merged.Contains(r)) && InRegion(r.transform.position)) pieces.Add(r);
+        if (pieces.Count == 0) return false;
+        var area = pieces[0].bounds; foreach (var r in pieces) area.Encapsulate(r.bounds);
+        area.Expand(.2f);
+        // Every drawn chunk touching it is held off and the pieces it was made of drawn instead.
+        foreach (var chunk in ceilings.GetComponentsInChildren<MeshRenderer>())
+        {
+            if (chunk.name != "Static chunk" || !chunk.enabled || !chunk.bounds.Intersects(area)) continue;
+            chunk.enabled = false; heldChunks.Add(chunk);
+            var box = chunk.bounds; box.Expand(.05f);
+            foreach (var piece in merged)
+                if (piece != null && !piece.enabled && piece.sharedMaterial == chunk.sharedMaterial && box.Contains(piece.bounds.center)) { piece.enabled = true; shownPieces.Add(piece); }
+        }
+        foreach (var r in pieces) if (!r.enabled) { r.enabled = true; shownPieces.Add(r); }
+        // The lid turns about the middle of its own roof.
+        roomLid = new GameObject("Room lid").transform;
+        roomLid.SetParent(ceilings, false);
+        roomLid.position = new Vector3(area.center.x, area.max.y, area.center.z);
+        lidRest = roomLid.localPosition;
+        foreach (var r in pieces) { liftedPieces.Add((r.transform, r.transform.parent)); r.transform.SetParent(roomLid, true); }
+        return true;
+    }
+
+    // Everything back as it was: the pieces under their own parents (the lid is down where they were), drawn as before.
+    static void CloseRoomLid()
+    {
+        foreach (var (piece, parent) in liftedPieces) if (piece != null && parent != null) piece.SetParent(parent, true);
+        foreach (var r in shownPieces) if (r != null) r.enabled = false;
+        foreach (var r in heldChunks) if (r != null) r.enabled = true;
+        liftedPieces.Clear(); shownPieces.Clear(); heldChunks.Clear();
+        if (roomLid != null) Object.Destroy(roomLid.gameObject);
+        roomLid = null;
     }
 
     static Unity.Cinemachine.CinemachineImpulseSource impulse;

@@ -180,6 +180,11 @@ public static class NewSpellsSetup
             f.die = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Levels/Shared/Props/Events/DM die.prefab"); f.dieScale = 1.5f; f.dieArc = 7f; f.maxWalk = 40f; f.dieGravity = 16f; f.dieLight = 12f; f.handRoom = 1.8f; f.fingerReach = 12f; f.mark = Visual("Flick/Flick Mark.prefab"); f.markLight = 1.5f; f.handLength = 5f;
             f.snapSound = Clip("Weapons/Wpn_Whoosh_02"); f.snapVolume = 1f;
             f.slamSound = Clip("SoundFX/HammerHit"); f.slamVolume = 1f;
+            f.hitSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/ThirdParty/Generic Fantasy UI/Fantasy_UI_Gen_Select_Heavy_01_mono.wav"); f.hitVolume = 1f;
+            // The roof over the room coming off like a big chest's lid, and landing back on.
+            f.lidSound = Clip("Doors/Drs_Chest_Large_Open_02"); f.lidCloseSound = Clip("Doors/Drs_Chest_Large_Close_01"); f.lidVolume = .8f;
+            f.dieKnocks = new[] { 1, 2, 3 }.Select(i => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Game/Cinematics/Intro/Tabletop/Dice knock {i}.wav")).Where(c => c != null).ToArray();
+            f.dieRollSound = Clip("SoundFX/DiceRollFast"); f.dieVolume = 1f;
             s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = null; s.flightSound = null;
         });
 
@@ -191,6 +196,8 @@ public static class NewSpellsSetup
             s.manaCost = 24; s.power = 24; s.castSeconds = .6f; s.recoverySeconds = .4f;
             s.flick = JsonUtility.FromJson<FlickSettings>(JsonUtility.ToJson(flick.flick));
             s.flick.reach = FlickReach.DieOnly; s.flick.mark = Visual("Die Throw/Die Throw Mark.prefab");
+            // Thrown quickly: his hand comes in faster and the die flies low and hard (it took about five seconds to land).
+            s.flick.reachSeconds = .9f; s.flick.windup = .25f; s.flick.dieArc = 3.5f; s.flick.dieGravity = 40f;
             s.flick.lines = new[] { "Catch.", "Let's see what you roll.", "Allow me." };
             s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = null; s.flightSound = null;
         });

@@ -134,14 +134,15 @@ public class HelpingHand : MonoBehaviour
             yield return DungeonMasterReach.StepIn(spot, settings.edgeGap);
         }
         else yield return DungeonMasterReach.TurnTo(spot);
-        yield return DungeonMasterReach.Lid(floor, true);
+        // Only the roof over the player's room or corridor comes off.
+        yield return DungeonMasterReach.Lid(floor, true, new[] { caster.transform.position });
         if (caster != null && caster.IsAlive && hand != null)
         {
             if (near) yield return Hold(hand);
             else yield return Toss(hand);
         }
         yield return new WaitForSeconds(.4f);
-        yield return DungeonMasterReach.Lid(floor, false);
+        yield return DungeonMasterReach.Lid(floor, false, null);
         if (appear) DungeonMasterReach.Vanish();
         else yield return DungeonMasterReach.StepBack(spot);
         yield return DungeonMasterReach.Leave();
