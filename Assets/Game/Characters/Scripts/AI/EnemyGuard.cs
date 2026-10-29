@@ -16,12 +16,15 @@ public class EnemyGuard : MonoBehaviour
     [Tooltip("A swing takes the arms over from the guard across this share of its clip (its first frames hold the weapon low;"
         + " by then its own arms are rising into the windup), so the blade goes from the guard straight into the windup.")]
     [Range(0f, .5f)] public float swingHandover = .15f;
-    [Tooltip("Moving slower than this (metres a second) it stands in the full stance; faster than Moving Speed only the arms stay up.")]
-    public float stillSpeed = .3f;
-    public float movingSpeed = 1f;
-    [Tooltip("How much of the arms the guard holds while moving (1 = all): below 1 the walk's own arm swing and torso turn"
-        + " come through under the raised weapon, so it doesn't move like a figure on a pole.")]
+    [Tooltip("Moving slower than this (metres a second) it stands in the full stance; by Moving Speed the legs are the walk's"
+        + " own and only the arms keep the guard (the stance holds the legs too, so any of it left while walking skates them).")]
+    public float stillSpeed = .08f;
+    public float movingSpeed = .3f;
+    [Tooltip("How much of the arms the guard holds at a run (1 = all): below 1 the run's own arm swing comes through. At the"
+        + " footwork's walking pace the guard holds them all (at half, circling read as arms hanging at its sides).")]
     [Range(0f, 1f)] public float movingArms = .5f;
+    [Tooltip("Metres a second over which the arms go from the full guard (walking) to Moving Arms (running).")]
+    public Vector2 runSpeed = new(1.4f, 2.6f);
 
     static readonly int AttackTag = AnimatorHelper.TagHash("Attack"), HurtTag = AnimatorHelper.TagHash("Hurt"),
         DeathTag = AnimatorHelper.TagHash("Death"), SleepTag = AnimatorHelper.TagHash("Sleep");
@@ -29,7 +32,8 @@ public class EnemyGuard : MonoBehaviour
     EnemyBrain brain;
     Animator anim;
     int stanceLayer = -1, armsLayer = -1, gestureLayer = -1;
-    float stance, arms;
+    float stance, arms, stillSince;
+    [Tooltip("Seconds it must stand still before the whole-body stance comes back.")] public float settleSeconds = .25f;
 
     void Awake()
     {
@@ -51,7 +55,9 @@ public class EnemyGuard : MonoBehaviour
         bool busy = !alive || swing < 0f && Busy(0) || gestureLayer >= 0 && Busy(gestureLayer) || Bool("HoldingBow") || Bool("Kneel") || Bool("Asleep");
         float want = Engaged && !busy ? 1f : 0f;
         Vector3 v = brain.Motor != null ? brain.Motor.Velocity : Vector3.zero; v.y = 0f;
-        float still = 1f - Mathf.InverseLerp(stillSpeed, movingSpeed, v.magnitude);
+        // Still is judged by the legs too: their blend eases after the body stops, so it is still mid-step for a moment.
+        float legs = new Vector2(AnimatorHelper.GetFloat(anim, "MoveX"), AnimatorHelper.GetFloat(anim, "MoveZ")).magnitude;
+        float still = 1f - Mathf.InverseLerp(stillSpeed, movingSpeed, Mathf.Max(v.magnitude, legs));
         if (swing >= 0f)
         {
             float left = 1f - Mathf.Clamp01(swing / Mathf.Max(.01f, swingHandover));
@@ -62,8 +68,17 @@ public class EnemyGuard : MonoBehaviour
         {
             // Faster down than up: a flinch never plays under a half raised guard.
             float rate = want < arms ? 1f / Mathf.Max(.01f, dropSeconds) : 1f / Mathf.Max(.01f, raiseSeconds);
-            arms = Mathf.MoveTowards(arms, want * Mathf.Lerp(movingArms, 1f, still), rate * Time.deltaTime);
-            stance = Mathf.MoveTowards(stance, want * still, rate * Time.deltaTime);
+            // The stance pins its feet (foot IK): the moment the enemy moves it lets go of the legs at once (blended with
+            // a starting step, the pinned feet fought the stepping ones and the legs kicked up), and comes back only once
+            // it has stood still a moment.
+            if (still < 1f) stillSince = Time.time;
+            bool settled = still >= 1f && Time.time - stillSince > settleSeconds;
+            float stanceWant = want > 0f && settled ? 1f : 0f;
+            stance = stanceWant < stance ? Mathf.MoveTowards(stance, 0f, Time.deltaTime / .08f) : Mathf.MoveTowards(stance, stanceWant, rate * Time.deltaTime);
+            // The arms layer adds the guard on top of the walk; the standing stance already holds the guard, so the two
+            // share it (both at once would add the raise twice). At a run it eases toward Moving Arms.
+            float run = Mathf.Lerp(1f, movingArms, Mathf.InverseLerp(runSpeed.x, runSpeed.y, v.magnitude));
+            arms = Mathf.MoveTowards(arms, want * (1f - stance) * run, Time.deltaTime / .12f);
         }
         if (!alive) { arms = stance = 0f; }
         anim.SetLayerWeight(armsLayer, arms);

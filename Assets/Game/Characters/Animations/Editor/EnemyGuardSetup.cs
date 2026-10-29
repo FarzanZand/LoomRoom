@@ -20,6 +20,7 @@ public static class EnemyGuardSetup
     const string PosePath = Anim + "ThirdPerson/Combat/Combat Guard pose.anim";
     const string GuardPath = Anim + "ThirdPerson/Combat/Combat Guard.anim";
     const string MaskPath = Anim + "Anim masks/Guard arms.mask";
+    const string ArmsPath = Anim + "ThirdPerson/Combat/Combat Guard arms additive.anim";
     const string Base = "Assets/Game/Characters/Enemies/Base/Humanoid enemy base.prefab";
 
     // The stance: the relaxed idle's muscles moved toward Attack1's first frame (its crouch and spread feet) by Crouch for
@@ -39,16 +40,18 @@ public static class EnemyGuardSetup
     // foot IK, so the knees flex), a slow weight shift side to side with the hips, and the weapon and off hand bobbing
     // with it, never in step with each other.
     public static string Breath =
-        "Chest Front-Back=.05@4; UpperChest Front-Back=.035@4@.1; Spine Front-Back=.025@4@.2; Head Nod Down-Up=-.04@4@.15;" +
-        "Left Shoulder Down-Up=.05@4@.05; Right Shoulder Down-Up=.05@4@.05;" +
-        "RootT.y=.018@2@.1; RootT.x=.022@4@.35; Spine Left-Right=.04@4@.35; Chest Left-Right=-.03@4@.4;" +
-        "Spine Twist Left-Right=.05@4@.6; Chest Twist Left-Right=.03@4@.65; Head Turn Left-Right=.05@4@.85;" +
-        "Right Arm Down-Up=.05@2@.55; Right Arm Front-Back=.04@4@.2; Right Forearm Stretch=.05@2@.6; Right Hand Down-Up=.08@2@.7;" +
-        "Left Arm Down-Up=.045@2@.3; Left Arm Front-Back=.035@4@.75; Left Forearm Stretch=.04@2@.35; Left Hand Down-Up=.06@2@.45";
+        "Chest Front-Back=.09@4; UpperChest Front-Back=.06@4@.1; Spine Front-Back=.05@4@.2; Head Nod Down-Up=-.07@4@.15;" +
+        "Left Shoulder Down-Up=.09@4@.05; Right Shoulder Down-Up=.09@4@.05;" +
+        "RootT.y=.03@2@.1; RootT.x=.04@4@.35; Spine Left-Right=.08@4@.35; Chest Left-Right=-.06@4@.4;" +
+        "Spine Twist Left-Right=.1@4@.6; Chest Twist Left-Right=.07@4@.65; Head Turn Left-Right=.1@4@.85;" +
+        "Right Arm Down-Up=.1@2@.55; Right Arm Front-Back=.08@4@.2; Right Forearm Stretch=.1@2@.6; Right Hand Down-Up=.16@2@.7; Right Hand In-Out=.1@4@.3;" +
+        "Left Arm Down-Up=.09@2@.3; Left Arm Front-Back=.07@4@.75; Left Forearm Stretch=.08@2@.35; Left Hand Down-Up=.12@2@.45";
     public const float Seconds = 4f;
+    public static float SwingExit = .35f;
 
     // Footwork on the humanoid fighters' behaviour.
-    public static float CircleSpeed = .32f, Sway = .35f, StepBack = .35f, StepBackSpeed = .45f;
+    public static float CircleSpeed = .22f, Sway = .35f, StepBack = .5f, StepBackSpeed = .25f, Pace = .75f;
+    public static Vector2 SwitchEvery = new(1.8f, 3.5f);
 
     public static string Build()
     {
@@ -68,9 +71,20 @@ public static class EnemyGuardSetup
         WritePose();
         SwingFromGuard();
         MainMenuSetTools.MakeIdle(PosePath, GuardPath, Breath, Seconds, .2f);
+        // The arms layer adds the guard on top of whatever the legs and body are doing (walking, strafing): the same clip,
+        // measured against the relaxed idle's first frame, so only the difference (arms up, weapon forward) is added and
+        // the walk's own arm swing and torso turn still show through.
+        var arms = Object.Instantiate(AssetDatabase.LoadAssetAtPath<AnimationClip>(GuardPath));
+        arms.name = System.IO.Path.GetFileNameWithoutExtension(ArmsPath);
+        AnimationUtility.SetAdditiveReferencePose(arms, AssetDatabase.LoadAssetAtPath<AnimationClip>(Idle), 0f);
+        var had = AssetDatabase.LoadAssetAtPath<AnimationClip>(ArmsPath);
+        if (had == null) AssetDatabase.CreateAsset(arms, ArmsPath);
+        else { EditorUtility.CopySerialized(arms, had); had.name = arms.name; EditorUtility.SetDirty(had); Object.DestroyImmediate(arms); }
+        AssetDatabase.SaveAssets();
         // A running animator keeps a clip's old pose until it is imported again.
         AssetDatabase.ImportAsset(PosePath, ImportAssetOptions.ForceUpdate);
         AssetDatabase.ImportAsset(GuardPath, ImportAssetOptions.ForceUpdate);
+        AssetDatabase.ImportAsset(ArmsPath, ImportAssetOptions.ForceUpdate);
         return "clips";
     }
 
@@ -295,10 +309,17 @@ public static class EnemyGuardSetup
             }
             var l2 = layers.First(l => l.name == name);
             l2.avatarMask = m;
-            // Foot IK pins the feet where the clip stands them: a humanoid clip keeps the body's centre of mass, so a
-            // breathing spine would slide planted feet.
-            foreach (var s in l2.stateMachine.states) if (s.state.name == "Guard") { s.state.motion = guard; s.state.writeDefaultValues = true; s.state.iKOnFeet = true; }
+            l2.blendingMode = m == null ? AnimatorLayerBlendingMode.Override : AnimatorLayerBlendingMode.Additive;
+            // Foot IK pins the feet where the clip stands them (a humanoid clip keeps the body's centre of mass, so a
+            // breathing spine would slide planted feet). Only on the whole-body stance: on the arms layer, whose mask
+            // leaves the legs out, foot IK pulled the walking feet up toward a body it never placed (they hung 0.8 m up).
+            var motion = m == null ? guard : AssetDatabase.LoadAssetAtPath<AnimationClip>(ArmsPath);
+            foreach (var s in l2.stateMachine.states) if (s.state.name == "Guard") { s.state.motion = motion; s.state.writeDefaultValues = true; s.state.iKOnFeet = m == null; }
         }
+        // Out of a swing the body rises from its lunge over SwingExit seconds (0.1 snapped it upright in two frames).
+        foreach (var s in layers[0].stateMachine.states)
+            if (s.state.name == "Attack1")
+                foreach (var t in s.state.transitions) { t.duration = SwingExit; t.hasFixedDuration = true; made += "swing exit eased; "; }
         // The cast stands planted the same way: its spine bends through the cast and its feet slid with it (casters
         // shuffled while casting).
         foreach (var l in layers)
@@ -342,6 +363,8 @@ public static class EnemyGuardSetup
             var b = data.behaviourSettings;
             b.circleTarget = true;
             b.circleSpeedFraction = Mathf.Max(b.circleSpeedFraction, CircleSpeed);
+            b.circleSwitchInterval = SwitchEvery;
+            b.footworkPace = Pace;
             b.spacingSway = Sway;
             b.stepBackAfterSwing = StepBack;
             b.stepBackSpeedFraction = StepBackSpeed;

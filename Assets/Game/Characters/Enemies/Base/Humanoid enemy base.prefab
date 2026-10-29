@@ -198,8 +198,10 @@ MonoBehaviour:
   engageDistance: 6
   raiseSeconds: 0.3
   dropSeconds: 0.1
-  stillSpeed: 0.3
-  movingSpeed: 1
+  swingHandover: 0.15
+  stillSpeed: 0.08
+  movingSpeed: 0.3
+  movingArms: 0.5
 --- !u!1001 &7334206519696827011
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -578,6 +580,7 @@ MonoBehaviour:
     spacingSwayPeriod: {x: 2.2, y: 3.4}
     stepBackAfterSwing: 0
     stepBackSpeedFraction: 0.45
+    footworkPace: 0.75
     passiveAngularSpeed: 360
     chaseAngularSpeed: 720
     attackFaceSpeed: 900

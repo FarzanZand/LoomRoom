@@ -101,8 +101,13 @@ public class EnemyBehaviourSettings
     [Tooltip("Seconds it steps back right after a swing (it stands for the rest of the recovery). 0 = it stands.")]
     [Min(0f)] public float stepBackAfterSwing = 0f;
     [TabGroup(Tabs, "Spacing"), ShowIf("@stepBackAfterSwing > 0")]
-    [Tooltip("The step back's speed as a fraction of chase speed.")]
+    [Tooltip("The step back's speed as a fraction of chase speed (with footwork on, it walks at Footwork Pace instead).")]
     [Range(0f, 1f)] public float stepBackSpeedFraction = 0.45f;
+    [TabGroup(Tabs, "Spacing"), ShowIf("@spacingSway > 0 || stepBackAfterSwing > 0")]
+    [Tooltip("Footwork's walking pace (metres a second for a body of scale 1; a smaller body walks slower): the circling, the"
+        + " steps in and back and the step back after a swing all move at about this, the pace the strafe and walk clips are"
+        + " drawn for, so the legs walk instead of whirling.")]
+    [Min(.1f)] public float footworkPace = .75f;
 
     // ── Rotation ──────────────────────────────────────────────────────
     [TabGroup(Tabs, "Rotation")]
