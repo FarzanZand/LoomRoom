@@ -79,7 +79,7 @@ public partial class AssetStudioWindow
     }
 
     GUIStyle Wrapped => new(dim) { wordWrap = true };
-    GUIStyle Unit => new(dim) { fixedHeight = 18, alignment = TextAnchor.MiddleLeft };   // a word beside a number field
+    GUIStyle Unit => new(dim) { fixedHeight = 18, alignment = TextAnchor.MiddleLeft, wordWrap = false, clipping = TextClipping.Clip };   // a word beside a number field
 
     // The levels page's Balance tab.
     void BalanceTab(AssetStudioWorld.Level l)
@@ -243,7 +243,7 @@ public partial class AssetStudioWindow
 
     // Two bars a floor (damage, health) on one scale, the stages named over their floors, a line and the jump where a
     // stage brings a difficulty jump, the boss floors in red, and an elite's reach as a pale outline over each bar.
-    void DifficultyChart(AssetStudioWorld.Level l, List<FloorDifficulty> floors)
+    void DifficultyChart(AssetStudioWorld.Level l, List<FloorDifficulty> floors, bool withElites = true)
     {
         var bal = l.data.balance;
         var r = GUILayoutUtility.GetRect(pageWidth, 228, GUILayout.Width(pageWidth), GUILayout.Height(228));
@@ -255,7 +255,7 @@ public partial class AssetStudioWindow
         if (ev.type == EventType.MouseMove) HoverFloor(under >= 0 ? floors[under].floor : 0, 1);
         if (ev.type != EventType.Repaint) return;
         EditorGUI.DrawRect(r, ChartBack);
-        float top = Mathf.Max(1.2f, floors.Max(f => Mathf.Max(Mathf.Max(f.damage, f.health), Mathf.Max(EliteMultiplier(bal, f, true), EliteMultiplier(bal, f, false)))) * 1.08f);
+        float top = Mathf.Max(1.2f, floors.Max(f => Mathf.Max(Mathf.Max(f.damage, f.health), withElites ? Mathf.Max(EliteMultiplier(bal, f, true), EliteMultiplier(bal, f, false)) : 0f)) * 1.08f);
         float step = top > 8 ? 2f : top > 3 ? 1f : .5f;
         var small = new GUIStyle(dimLine) { fontSize = Mathf.Max(10, StudioSkin.Size - 3), alignment = TextAnchor.MiddleCenter, richText = true };
         for (float m = 0; m <= top; m += step)
@@ -304,8 +304,7 @@ public partial class AssetStudioWindow
                 EditorGUI.DrawRect(new Rect(left, y, 1, h), c);
                 EditorGUI.DrawRect(new Rect(left + bar - 1, y, 1, h), c);
             }
-            Ghost(EliteMultiplier(bal, f, true), cx - bar - 1);
-            Ghost(EliteMultiplier(bal, f, false), cx + 1);
+            if (withElites) { Ghost(EliteMultiplier(bal, f, true), cx - bar - 1); Ghost(EliteMultiplier(bal, f, false), cx + 1); }
             GUI.Label(new Rect(x, plot.yMax + 2, slot, 16), f.bossFloor ? (slot >= 46 ? $"<color=#e24b4a>{f.floor} boss</color>" : $"<color=#e24b4a>{f.floor}</color>") : f.floor.ToString(), small);
         }
         // the key, or what the floor under the mouse has
@@ -317,7 +316,7 @@ public partial class AssetStudioWindow
             string elite = ed > 0 ? $"   an elite up to <color=#f2e6c7>x{ed:0.0#} / x{eh:0.0#}</color>" : "";
             GUI.Label(foot, $"Floor {picked.floor} · {picked.stage.biome?.name} · counts as {picked.depth:0.#} floors down:  <color=#d8aa48>x{picked.damage:0.0#} damage</color>   <color=#d8665e>x{picked.health:0.0#} health</color>   +{picked.armour:0.#} armour{elite}", new GUIStyle(small) { alignment = TextAnchor.MiddleLeft });
         }
-        else GUI.Label(foot, "<color=#b8903d>■</color> damage   <color=#c04d45>■</color> health   <color=#f2e6c7>▭</color> as far as an elite goes (a Brutal one's damage, a Tough one's health)   hover a floor for its numbers", new GUIStyle(small) { alignment = TextAnchor.MiddleLeft });
+        else GUI.Label(foot, "<color=#b8903d>■</color> damage   <color=#c04d45>■</color> health   " + (withElites ? "<color=#f2e6c7>▭</color> as far as an elite goes (a Brutal one's damage, a Tough one's health)   " : "") + "hover a floor for its numbers", new GUIStyle(small) { alignment = TextAnchor.MiddleLeft });
     }
 
     // Each floor: its stage, the multipliers, a typical enemy there (the floor's enemies averaged by weight) and the

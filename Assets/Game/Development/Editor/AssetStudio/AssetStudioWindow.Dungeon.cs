@@ -22,7 +22,7 @@ public partial class AssetStudioWindow
     const string DishesFolder = "Assets/Game/Levels/Resources/Tavern dishes";
 
     [SerializeField] string dungeonPath;
-    [SerializeField] string dungeonPage = "overview";
+    [SerializeField] string dungeonPage = "timeline";
     Vector2 dungeonListScroll, dungeonPageScroll;
     bool showingDungeon => studioView == StudioView.Dungeon;
 
@@ -72,11 +72,12 @@ public partial class AssetStudioWindow
         var dungeons = World.levels.Where(x => !x.tool && x.data != null && x.data.IsDungeon).OrderBy(x => x.act == 0 ? 99 : x.act).ThenBy(x => x.order).Select(x => x.data).ToList();
         int at = Mathf.Max(0, dungeons.IndexOf(d));
         int pick = EditorGUILayout.Popup(at, dungeons.Select(x => DungeonLabel(x)).ToArray());
-        if (dungeons.Count > 0 && pick != at) { dungeonPath = AssetDatabase.GetAssetPath(dungeons[pick]); GoTo("overview", dungeons[pick]); }
+        if (dungeons.Count > 0 && pick != at) { dungeonPath = AssetDatabase.GetAssetPath(dungeons[pick]); GoTo("timeline", dungeons[pick]); }
         if (l == null) { GUILayout.Label("No dungeon to show.", dim); GUILayout.EndArea(); DrawPlayPanel(new Rect(r.x, r.yMax - playHeight, r.width, playHeight), null); return; }
         dungeonListScroll = GUILayout.BeginScrollView(dungeonListScroll);
         GUILayout.Space(4);
         GUILayout.Label("THE RUN", gold);
+        PageButton("timeline", "Floor 1 to the last", "every floor side by side, edited in place", d);
         PageButton("overview", "Overview", $"{d.FloorCount} floors · {(l.problems.Count == 0 ? "ready" : l.problems.Count + " to look at")}", d);
         PageButton("entering", "The way in", "the map, the build, the first room", d);
         var guardianStage = l.RunStages.LastOrDefault(st => st.boss && AssetStudioWorld.HasGuardian(st.biome));
@@ -204,6 +205,7 @@ public partial class AssetStudioWindow
                 case "events": RoomEventsPage(l); break;
                 case "loot": LootPage(l); break;
                 case "difficulty": DifficultyPage(l); break;
+                case "timeline": TimelinePage(l); break;
                 case "words": WordsPage(l); break;
                 case "sound": SoundPage(l); break;
                 default: OverviewPage(l); break;

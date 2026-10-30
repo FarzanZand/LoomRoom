@@ -12,8 +12,10 @@ using UnityEngine;
 // zoom, F to frame, auto-spin), audio with its waveform and Play/Stop/Loop, textures point-filtered at whole zooms;
 // right, the asset's own inspector, its ID and path, and "Ask Main": a request about this asset, saved to the same
 // outbox as the game's F9 prompt (DevReportStore) with a picture of the preview, for the Main session to pick up.
-// Above the categories: Dungeon (one dungeon the way a run goes), World (every act's places, events and levels, each
-// level's page with its run, rooms per floor and difficulty), Dialogue and Substats.
+// Above the categories: Dungeon (one dungeon the way a run goes, its first page the run as a timeline), World (every
+// act's places, events and levels, each level's page with its run, rooms per floor and difficulty), Biomes (every biome,
+// each tuned on its own page), Unlockables (everything a player unlocks, by type and in the order they come), Stats
+// (attributes, skills and what each class starts with), Dialogue and Substats.
 // Browsing never changes an asset; edits are made in the inspector shown, exactly as in Unity's own.
 public partial class AssetStudioWindow : EditorWindow
 {
@@ -44,7 +46,7 @@ public partial class AssetStudioWindow : EditorWindow
     static readonly string[] RoomSorts = { "By name", "By where they are", "By kind" };
     // Which view the window shows, one at a time: a category's list, or one of the views above the categories. Recent,
     // Requests and Everything are retired (their numbers kept for saved windows), and Levels is part of World now.
-    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue, Levels, Dungeon, Substats }
+    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue, Levels, Dungeon, Substats, Biomes, Unlockables, Stats }
     [SerializeField] StudioView view;
     // Leaving the Dialogue view writes back what was typed there.
     StudioView studioView { get => view; set { if (value != view) CommitDialogue(true); view = value; } }
@@ -448,7 +450,14 @@ public partial class AssetStudioWindow : EditorWindow
         DrawCategories(catRect);
         inspectorWanted = null;
         if (showingDialogue) DrawDialogue(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));
+        else if (showingStats) DrawStats(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));   // AssetStudioWindow.Stats
         else if (showingSubstats) DrawSubstats(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));   // AssetStudioWindow.Substats
+        // The Dungeon's run timeline takes the inspector's room too: its floors sit side by side.
+        else if (showingDungeon && dungeonPage == "timeline" && worldPane == WorldPane.Picked)
+        {
+            DrawList(listRect);
+            DrawDungeonPage(new Rect(previewRect.x, y, full.width - previewRect.x - Pad, h));
+        }
         else
         {
             DrawList(listRect);
@@ -495,7 +504,7 @@ public partial class AssetStudioWindow : EditorWindow
         if (only != inGameOnly) { inGameOnly = only; EditorPrefs.SetBool(InGameOnlyKey, only); Filter(); listScroll = Vector2.zero; }
         GUI.Label(new Rect(r.x + 8, r.yMax - 24, r.width - 16, 18), "<color=#6fd46a>✔</color> = used in the game", new GUIStyle(dim) { richText = true });
         r.height -= 50;
-        const int views = 4;   // the rows above the categories
+        const int views = 7;   // the rows above the categories
         var view = new Rect(0, 0, r.width - 16, (categories.Count + views) * 30 + 12);
         categoryScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 26, r.width, r.height - 26), categoryScroll, view);
         // Dungeon: one dungeon the way a run goes, made, tuned and played in one place (AssetStudioWindow.Dungeon).
@@ -504,10 +513,16 @@ public partial class AssetStudioWindow : EditorWindow
         // .Levels, .Rooms).
         int levelCount = World.levels.Count(x => !x.tool);
         if (GUI.Toggle(new Rect(4, 32, view.width - 4, 28), showingWorld, $"  World   <color=#a9a49a>{World.Acts} acts, {levelCount} levels</color>", showingWorld ? cellSelected : cell) && !showingWorld) OpenWorld();
+        // Biomes: every biome in the project, each tuned on its own page (AssetStudioWindow.Biomes).
+        if (GUI.Toggle(new Rect(4, 62, view.width - 4, 28), showingBiomes, $"  Biomes   <color=#a9a49a>{World.biomes.Count + World.levels.Count(x => !x.tool && !x.Staged && x.data.baseBiome != null && x.data.IsDungeon)}</color>", showingBiomes ? cellSelected : cell) && !showingBiomes) OpenBiomes();
+        // Unlockables: everything not there from the start, by type and in unlock order (AssetStudioWindow.Unlockables).
+        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingUnlockables, $"  Unlockables   <color=#a9a49a>{Unlockables().Count}</color>", showingUnlockables ? cellSelected : cell) && !showingUnlockables) OpenUnlockables();
+        // Stats: the attributes, skills and each class's starting points in one overview (AssetStudioWindow.Stats).
+        if (GUI.Toggle(new Rect(4, 122, view.width - 4, 28), showingStats, "  Stats   <color=#a9a49a>attributes, skills</color>", showingStats ? cellSelected : cell) && !showingStats) OpenStats();
         // Dialogue: every Dungeon Master line, by where it plays (AssetStudioWindow.Dialogue).
-        if (GUI.Toggle(new Rect(4, 62, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
+        if (GUI.Toggle(new Rect(4, 152, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
         // Substats: what rolled gear can get, by item type, edited in place (AssetStudioWindow.Substats).
-        if (GUI.Toggle(new Rect(4, 92, view.width - 4, 28), showingSubstats, $"  Substats   <color=#a9a49a>{SubstatCount} on gear</color>", showingSubstats ? cellSelected : cell) && !showingSubstats) OpenSubstats();
+        if (GUI.Toggle(new Rect(4, 182, view.width - 4, 28), showingSubstats, $"  Substats   <color=#a9a49a>{SubstatCount} on gear</color>", showingSubstats ? cellSelected : cell) && !showingSubstats) OpenSubstats();
         for (int i = 0, line = 0; i < categories.Count; i++)
         {
             var c = categories[i];
@@ -525,6 +540,8 @@ public partial class AssetStudioWindow : EditorWindow
     void DrawList(Rect r)
     {
         if (showingWorld) { DrawWorldTree(r); return; }
+        if (showingBiomes) { DrawBiomeList(r); return; }
+        if (showingUnlockables) { DrawUnlockList(r); return; }
         if (showingDungeon) { DrawDungeonList(r); return; }
         GUI.Box(r, GUIContent.none);
         GUI.SetNextControlName("search");
@@ -592,6 +609,8 @@ public partial class AssetStudioWindow : EditorWindow
         // A level, a stage or a shared biome picked in World: the level's page (AssetStudioWindow.Levels).
         if (showingWorld && WorldShowsLevelPage) { DrawLevelPage(r); return; }
         if (showingWorld && DrawWorldMiddle(ref r)) return;
+        if (showingBiomes) { DrawBiomePage(r); return; }
+        if (showingUnlockables) { DrawUnlockPage(r); return; }
         if (showingDungeon) { DrawDungeonPage(r); return; }
         GUI.Box(r, GUIContent.none);
         if (selected == null) { GUI.Label(new Rect(r.x + 16, r.y + 16, r.width - 32, 40), "Pick something on the left.", dim); return; }
@@ -614,7 +633,7 @@ public partial class AssetStudioWindow : EditorWindow
     {
         GUI.Box(r, GUIContent.none);
         // The World can show an asset the library doesn't list: just its inspector.
-        if (selected == null) { if ((showingWorld || showingDungeon) && inspected != null) inspectorWanted = new Rect(r.x + 4, r.y + 8, r.width - 8, r.height - 12); return; }
+        if (selected == null) { if ((showingWorld || showingDungeon || showingBiomes || showingUnlockables) && inspected != null) inspectorWanted = new Rect(r.x + 4, r.y + 8, r.width - 8, r.height - 12); return; }
         float y = r.y + 8;
         GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "DETAILS", gold); y += 18;
         if (!string.IsNullOrEmpty(selected.description)) { float dh = dim.CalcHeight(new GUIContent(selected.description), r.width - 16); GUI.Label(new Rect(r.x + 8, y, r.width - 16, dh), selected.description, dim); y += dh + 4; }
@@ -791,7 +810,7 @@ public partial class AssetStudioWindow : EditorWindow
     void HandleKeys()
     {
         var e = Event.current;
-        if (showingWorld || showingDialogue || showingDungeon || showingSubstats) return;   // the World's tree and the Dungeon's pages are clicked, not stepped through; Dialogue is typed in
+        if (showingWorld || showingDialogue || showingDungeon || showingSubstats || showingBiomes || showingUnlockables || showingStats) return;   // the World's tree and the Dungeon's pages are clicked, not stepped through; Dialogue is typed in
         if (!EditorGUIUtility.editingTextField && preview != null && preview.HandlePaintKey(e)) return;
         if (e.type != EventType.KeyDown || GUI.GetNameOfFocusedControl() == "search" && e.keyCode != KeyCode.DownArrow && e.keyCode != KeyCode.UpArrow) return;
         if (EditorGUIUtility.editingTextField && GUI.GetNameOfFocusedControl() != "search") return;
