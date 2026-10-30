@@ -115,7 +115,21 @@ try
   {
     var modelT = root.transform.Find("Model");
     var anim = modelT.GetComponent<UnityEngine.Animator>();
-    float oldHeight = 0; { var bb = new UnityEngine.Bounds(); bool any = false; foreach (var r in modelT.GetComponentsInChildren<UnityEngine.SkinnedMeshRenderer>()) { if (!r.gameObject.activeInHierarchy) continue; if (!any) { bb = r.bounds; any = true; } else bb.Encapsulate(r.bounds); } oldHeight = bb.size.y; }
+    // His old height from the posed vertices themselves (a skinned renderer's bounds are padded: they gave 2.72 m for a
+    // body about 1.9 m tall, and the first build came out 3.05 m).
+    float oldHeight = 0;
+    {
+      float lo = float.MaxValue, hi = float.MinValue;
+      foreach (var r in modelT.GetComponentsInChildren<UnityEngine.SkinnedMeshRenderer>())
+      {
+        if (!r.gameObject.activeInHierarchy || r.sharedMesh == null) continue;
+        var baked = new UnityEngine.Mesh(); r.BakeMesh(baked, true);
+        var m4 = UnityEngine.Matrix4x4.TRS(r.transform.position, r.transform.rotation, UnityEngine.Vector3.one);
+        foreach (var vv in baked.vertices) { float y = m4.MultiplyPoint3x4(vv).y; lo = UnityEngine.Mathf.Min(lo, y); hi = UnityEngine.Mathf.Max(hi, y); }
+        UnityEngine.Object.DestroyImmediate(baked);
+      }
+      oldHeight = hi > lo ? hi - lo : 0;
+    }
     // A later run finds the Sidekick body already in: the height it was given is kept (written beside the tool's output).
     var heightFile = $"{DIR}/height.txt";
     float Height = System.IO.File.Exists(heightFile) ? float.Parse(System.IO.File.ReadAllText(heightFile), System.Globalization.CultureInfo.InvariantCulture) : oldHeight * Bigger;
@@ -138,7 +152,7 @@ try
     // His size: Height crown to sole, set by the root's scale (the model inside stays at 1).
     root.transform.localScale = UnityEngine.Vector3.one;
     modelT.localScale = UnityEngine.Vector3.one;
-    body.updateWhenOffscreen = true; var raw = body.bounds.size.y;
+    float raw; { var baked = new UnityEngine.Mesh(); body.BakeMesh(baked, true); float lo = float.MaxValue, hi = float.MinValue; foreach (var vv in baked.vertices) { lo = UnityEngine.Mathf.Min(lo, vv.y); hi = UnityEngine.Mathf.Max(hi, vv.y); } raw = hi - lo; UnityEngine.Object.DestroyImmediate(baked); }
     float k2 = Height / UnityEngine.Mathf.Max(.1f, raw);
     root.transform.localScale = UnityEngine.Vector3.one * k2;
     sb.Append($"old body {oldHeight:F2} m; new body {raw:F2} m raw, root scale {k2:F3} -> {Height} m\n");
