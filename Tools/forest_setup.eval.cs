@@ -6,7 +6,7 @@
 //  - Glows (Props/Glow mushrooms <colour>): the glowing mushroom groups with a soft light under them.
 //  - The biomes (Levels/Dungeon1/Biomes/Forest1-3): a board, all rooms at once, its own board pieces and look, bigger and
 //    fewer rooms, no doors, wild banks with trees round them, ponds; the Catacombs' (Cellars2) enemies and loot.
-//  - Dungeon1: the three as stages 10-12 of one floor each, no boss (kept where they are when run again).
+//  - Dungeon1: not in its run since 2026-10-30 (the run ends after floor 9); a rerun leaves the stages alone unless they are there.
 // Writes Temp/Forest/setup.txt.
 if (UnityEngine.Application.isPlaying) return "playing";
 const string F = "Assets/Game/Levels/Dungeon1/Forest";
@@ -344,8 +344,9 @@ Make("Forest3", "The Moonlit Wood", "The moon is cold here.", clearing, moss, (1
 var stages = new System.Collections.Generic.List<TableLevelData.BiomeStage>(level.stages);
 int at = stages.FindIndex(s => s != null && made.Contains(s.biome));
 stages.RemoveAll(s => s != null && made.Contains(s.biome));
-if (at < 0) at = stages.Count;   // on a level without them: last, as in Dungeon1 (floors 10-12)
-foreach (var b in made) stages.Insert(at++, new TableLevelData.BiomeStage { biome = b, floors = 1, boss = b.name == "Forest3" });   // the guardian waits on floor 12
+// Only where they already stand: the user took the forests out of Dungeon1's run (2026-10-30, "skip those floors for now,
+// go back to the room after the 9th floor"), so a rerun keeps them out.
+if (at >= 0) foreach (var b in made) stages.Insert(at++, new TableLevelData.BiomeStage { biome = b, floors = 1, boss = b.name == "Forest3" });   // the guardian waits on their last floor
 level.stages = stages.ToArray();
 UnityEditor.EditorUtility.SetDirty(level);
 UnityEditor.AssetDatabase.SaveAssets();

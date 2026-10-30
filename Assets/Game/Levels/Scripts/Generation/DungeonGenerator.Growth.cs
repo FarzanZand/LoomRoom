@@ -520,7 +520,8 @@ public partial class DungeonGenerator
         // keep off them (a shelf stood inside a pilaster).
         if (rule.placement == DungeonPropPlacement.AgainstWall || rule.placement == DungeonPropPlacement.Corner)
         {
-            var renderers = placed.GetComponentsInChildren<Renderer>();
+            // Its body only: a brazier's flames or a candle rack's smoke reach far past it.
+            var renderers = System.Array.FindAll(placed.GetComponentsInChildren<Renderer>(), r => !(r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer));
             if (renderers.Length > 0)
             {
                 var bounds = renderers[0].bounds;

@@ -236,27 +236,36 @@ public partial class DungeonGenerator
         if (prefab == null) prefab = data.chestPrefab;
         if (prefab == null) return null;
         if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas)) pos = hit.position;
-        // Clear of the room's edge, toward its middle: a boss that fell by the wall left its chest in the wild ground's growth
-        // (a root through its front on a forest floor), and growth is merged at build, so it can't be moved aside.
+        // Clear of the room's edge: a boss that fell by the wall left its chest in the wild ground's growth (a root through its
+        // front on a forest floor), and growth is merged at build, so it can't be moved aside. The chest goes to the cell
+        // deepest inside the room (farthest from any cell that isn't the room's), never on the stairs out or in front of them,
+        // the nearest such cell to where the boss fell: in a small exit room with the stairs in its middle, a corner beside them.
         int room = RoomOf(pos);
         if (room >= 0)
         {
-            var middle = Cell(Layout.RoomCenter(room));
-            bool NearEdge(Vector3 p)
+            var cells = Layout.RoomCells(room);
+            int Depth(Vector2Int c)
             {
-                for (int k = 0; k < 8; k++)
-                    if (!Layout.InRoom(room, CellOf(p + Quaternion.Euler(0f, k * 45f, 0f) * Vector3.forward * 1.4f))) return true;
-                return false;
+                for (int r = 1; r <= 4; r++)
+                    for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++)
+                        if ((Mathf.Abs(dx) == r || Mathf.Abs(dz) == r) && !Layout.InRoom(room, c + new Vector2Int(dx, dz))) return r;
+                return 5;
             }
-            // ...but never onto the stairs out (the exit cell and the cells round it).
-            for (int k = 0; k < 16 && NearEdge(pos); k++)
+            Vector2Int best = CellOf(pos); int bestDepth = -1; float bestDistance = float.MaxValue;
+            foreach (var c in cells)
             {
-                var next = Vector3.MoveTowards(pos, new Vector3(middle.x, pos.y, middle.z), .5f);
-                var c = CellOf(next);
-                if (Mathf.Abs(c.x - ExitCell.x) <= 1 && Mathf.Abs(c.y - ExitCell.y) <= 1) break;
-                pos = next;
+                // Not on the stairs nor in front of any side of them (a corner beside them leaves every way on open).
+                if (Mathf.Abs(c.x - ExitCell.x) + Mathf.Abs(c.y - ExitCell.y) <= 1) continue;
+                int depth = Mathf.Min(Depth(c), 2);   // two cells in is deep enough: then the nearest wins
+                var at = Cell(c); at.y = pos.y;
+                float distance = (at - pos).sqrMagnitude;
+                if (depth > bestDepth || (depth == bestDepth && distance < bestDistance)) { best = c; bestDepth = depth; bestDistance = distance; }
             }
-            if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var inner, 1f, UnityEngine.AI.NavMesh.AllAreas)) pos = inner.position;
+            if (bestDepth >= 0)
+            {
+                var to = Cell(best);
+                if (UnityEngine.AI.NavMesh.SamplePosition(to, out var inner, 1f, UnityEngine.AI.NavMesh.AllAreas)) pos = inner.position;
+            }
         }
         var look = face - pos; look.y = 0;
         var go = Instantiate(prefab, pos, Quaternion.LookRotation(look.sqrMagnitude > .01f ? look : Vector3.forward), transform);

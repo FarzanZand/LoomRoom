@@ -36,7 +36,7 @@ public class AdventureSave : MonoBehaviour
     // missing from an older file keeps its default here (lootLevel 1, empty memorial and flag lists).
     [Serializable] public class Data
     {
-        public const int Current = 4;   // 2: skills raised by use (seven ranks, no partial training). 3: Stealth skill (eight ranks). 4: bag grid (items stored at their top-left cell)
+        public const int Current = 5;   // 2: skills raised by use (seven ranks, no partial training). 3: Stealth skill (eight ranks). 4: bag grid (items stored at their top-left cell). 5: realms (2026-10-30: the run's floors, event rooms and seeds changed; the user: drop those saves, fresh start)
         // 0 for a file written before versions existed (it then keeps no checkpoint); Write stamps Current.
         public int version;
         public Checkpoint checkpoint;

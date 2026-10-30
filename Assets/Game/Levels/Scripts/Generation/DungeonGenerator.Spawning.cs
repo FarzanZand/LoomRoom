@@ -140,7 +140,8 @@ public partial class DungeonGenerator
         int fewest = Mathf.Min(Mathf.Max(0, data.eventRoomsPerFloor.x), Mathf.Max(0, data.eventRoomsPerFloor.y));
         int events = 0;
         var used = new System.Collections.Generic.HashSet<GameObject>();
-        for (int i = 0; i < pooledTemplates.Length; i++) if (pooledTemplates[i] != null) { used.Add(pooledTemplates[i]); if (IsEvent(pooledTemplates[i])) events++; }
+        // What each room is really built from (a guardian's arena takes the exit room whatever the pool dealt it).
+        for (int i = 0; i < pooledTemplates.Length; i++) if (pooledTemplates[i] != null) { used.Add(pooledTemplates[i]); if (IsEvent(TemplatePrefab(i))) events++; }
         // A room profile's own template is on the floor too (an event never comes twice).
         for (int i = 0; i < profiles.Length; i++) if (profiles[i] != null && profiles[i].roomTemplate != null) used.Add(profiles[i].roomTemplate);
         if (UsesStartingRoom && data.startingRoom != null) { used.Add(data.startingRoom); if (IsEvent(data.startingRoom)) events++; }
