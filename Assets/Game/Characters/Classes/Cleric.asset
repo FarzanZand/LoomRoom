@@ -35,10 +35,13 @@ MonoBehaviour:
   supplies:
   - item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
     count: 1
+    used: 0
   - item: {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
     count: 2
+    used: 0
   - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
     count: 2
+    used: 0
   leftHand: 0
   strength: 0
   dexterity: -1

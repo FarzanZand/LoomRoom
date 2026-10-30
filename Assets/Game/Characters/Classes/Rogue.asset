@@ -25,7 +25,7 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  deskProp: {fileID: 0}
+  deskProp: {fileID: 7158882129125543917, guid: 551504985b5fbe842b7b47f64e635559, type: 3}
   equipment:
   - {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
   spells:
