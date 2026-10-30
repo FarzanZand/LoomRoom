@@ -72,11 +72,22 @@ try
       var bp = m.bindposes;
       for (int i = 0; i < smr.bones.Length; i++)
       {
-        var name = smr.bones[i] != null ? smr.bones[i].name : "";
+        // A part's own swinging bones (a cape's, a crest's: "*_dyn_*") ride on the nearest plain bone above them (the
+        // spine, the head), in its bind pose, so they move with it rigidly: the preset's rig has dynamic bones of the same
+        // names posed for its own hood, and on those the crest hung down over the face.
+        var bone = smr.bones[i]; var bpose = bp[i];
+        while (bone != null && (!bonesByName.ContainsKey(bone.name) || bone.name.Contains("_dyn"))) bone = bone.parent;
+        if (bone != null && bone != smr.bones[i])
+        {
+          int j = System.Array.IndexOf(smr.bones, bone);
+          bpose = j >= 0 ? bp[j] : bone.worldToLocalMatrix * smr.transform.localToWorldMatrix;
+          sb.Append($"  {smr.bones[i].name} rides on {bone.name}\n");
+        }
+        var name = bone != null ? bone.name : "";
         if (!index.TryGetValue(name, out int k))
         {
-          if (!bonesByName.TryGetValue(name, out var rig)) { sb.Append($"  no rig bone {name} for {System.IO.Path.GetFileName(p)}\n"); k = -1; }
-          else { k = boneList.Count; boneList.Add(rig); bindposes.Add(bp[i]); index[name] = k; }
+          if (!bonesByName.TryGetValue(name, out var rig)) { sb.Append($"  no rig bone for {smr.bones[i]?.name} in {System.IO.Path.GetFileName(p)}\n"); k = -1; }
+          else { k = boneList.Count; boneList.Add(rig); bindposes.Add(bpose); index[name] = k; }
         }
         map[i] = k;
       }

@@ -56,15 +56,17 @@ UnityEngine.Texture2D Muted(UnityEngine.Texture2D src, string outPath)
   return UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(outPath);
 }
 
-// file, shown name, body preset, palette preset, weapon, health/damage/armour multipliers on the Crypt Soldier's
+// file, shown name (by what each wears: the third preset is a green hood, the fourth a horned helm, the fifth an iron
+// helm with bone wings; renamed 2026-10-30, the old names didn't match), body preset, palette preset, weapon,
+// health/damage/armour multipliers on the Crypt Soldier's
 var specs = new (string file, string shown, int body, int palette, string weapon, float hp, float dmg, float armour)[]
 {
   ("Red Hood Skeleton", "red hood skeleton", 1, 1, "Iron Sword", 1f, 1f, 1f),
   ("Robed Skeleton", "robed skeleton", 2, 2, "Iron Mace", 1f, 1.05f, .8f),
-  ("Helmed Skeleton", "helmed skeleton", 3, 3, "Steel Sword", 1.1f, 1f, 1.4f),
-  ("Gourd Skeleton", "gourd skeleton", 4, 4, "Bronze Mace", .9f, 1f, 1f),
-  ("Grave Skeleton", "grave skeleton", 5, 5, "Iron Sword", 1.05f, 1.1f, 1.1f),
-  ("Ashen Skeleton", "ashen skeleton", 1, 5, "Steel Mace", 1.15f, 1.1f, 1.2f),
+  ("Green Hood Skeleton", "green hood skeleton", 3, 3, "Steel Sword", 1.1f, 1f, 1.4f),
+  ("Horned Skeleton", "horned skeleton", 4, 4, "Bronze Mace", .9f, 1f, 1f),
+  ("Helmed Skeleton", "helmed skeleton", 5, 5, "Iron Sword", 1.05f, 1.1f, 1.1f),
+  ("Blue Hood Skeleton", "blue hood skeleton", 1, 5, "Steel Mace", 1.15f, 1.1f, 1.2f),
 };
 foreach (var s in specs)
 {

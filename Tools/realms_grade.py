@@ -84,6 +84,19 @@ def molten(path, emission, ore=False):
         base_tones[0] = [38, 32, 30]   # sooty glass
     rgb = a[..., :3].copy()
     rgb[hot] = base_tones[level][hot] * (1 + (rng.random((h, w, 1))[hot] - .5) * .1)
+    # The cooled crust between the glowing lumps came out of the stone pass near black and flat (smooth black
+    # triangles): broken into slabs of three dark tones with lighter ash on their edges and thin red cracks between them.
+    crust = ~hot & (a[..., :3].mean(-1) < 28) & covered(a)
+    if not ore and crust.any():
+        slab = steps(field(h, w, 6, 21) * .7 + field(h, w, 3, 22) * .3, [0, 1, 1, 2, 2, 3]).astype(int)
+        tones = np.array([[24, 18, 16], [36, 27, 23], [50, 38, 32], [66, 52, 44]], float)
+        c = tones[slab] * (1 + (rng.random((h, w, 1)) - .5) * .12)
+        seam = (np.abs(field(h, w, 7, 23) - .5) < .022) | (np.abs(field(h, w, 4, 24) - .5) < .012)
+        c[seam] = [150, 44, 14]
+        rgb[crust] = c[crust]
+        if e is not None:
+            ergb0 = e[..., :3].copy(); ergb0[crust & seam] = [140, 34, 6]
+            e = np.concatenate([ergb0, e[..., 3:]], -1)
     save(path, rgb, a)
     if e is not None:
         ergb = e[..., :3].copy()

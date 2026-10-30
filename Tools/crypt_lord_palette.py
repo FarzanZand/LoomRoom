@@ -10,12 +10,12 @@ from PIL import Image
 SRC = "Assets/Synty/SidekickCharacters/Characters/FantasySkeletons/FantasySkeletons_01/Textures/T_FantasySkeletons_01ColorMap.png"
 LIB = "C:/Game projects/AssetLibrary/" + SRC
 SET = {
-    ((16, 16), (17, 16)): (62, 60, 66),         # armour plate: blackened iron
-    ((16, 18), (17, 18)): (122, 92, 44),        # plate edges and trim: dark old gold
-    ((10, 18), (11, 18)): (104, 28, 30),        # the crown's crest: crimson (gold read as blonde hair)
-    ((17, 17),): (196, 150, 64),                # the crown's brow gem and face guard: bright old gold
+    ((16, 16), (17, 16)): (56, 56, 58),         # armour plate: blackened iron
+    ((16, 18), (17, 18)): (98, 74, 40),         # plate edges and trim: dark old gold
+    ((10, 18), (11, 18)): (84, 24, 26),         # the crown's crest: crimson (gold read as blonde hair)
+    ((17, 17),): (150, 112, 52),                # the crown's brow gem and face guard: bright old gold
     ((20, 8),): (146, 108, 56),                 # clasps: bronze
-    ((14, 20), (15, 20)): (96, 26, 28),         # the cape: deep crimson
+    ((14, 20), (15, 20)): (78, 22, 24),         # the cape: deep crimson
     ((0, 18),): (74, 24, 24),                   # cloth under the plate: darker crimson
     ((0, 20), (1, 20), (1, 21), (0, 21)): (44, 39, 42),   # leather and wraps: soot
     ((18, 4), (19, 4), (18, 5), (19, 5)): (176, 164, 138), # bone: aged ivory
