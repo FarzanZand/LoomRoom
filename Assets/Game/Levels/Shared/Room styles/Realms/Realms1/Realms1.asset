@@ -45,8 +45,18 @@ MonoBehaviour:
   - material: {fileID: 2100000, guid: 9d31726847a86e74a9d7c0fabbd0eb88, type: 2}
     weight: 2
     rows: 0
-  wallDecor: []
-  wallDecorPerTenFaces: 1
+  wallDecor:
+  - prefab: {fileID: 690689277646526535, guid: 1739aa393130df040aa1e7e782c86a6d, type: 3}
+    weight: 3
+  - prefab: {fileID: 8972146686823189088, guid: 32191ec684750bd4c9df1f8867086fc8, type: 3}
+    weight: 2
+  - prefab: {fileID: 867984113923132032, guid: c92749c2c2b3d0f4090930fb9c36a9c2, type: 3}
+    weight: 2
+  - prefab: {fileID: 5775659569496779911, guid: 95da7d3c67f10c04ca904c879ab86041, type: 3}
+    weight: 1.2
+  - prefab: {fileID: 2249167585754958854, guid: a988958635b89274da31598dee8e60c7, type: 3}
+    weight: 0.8
+  wallDecorPerTenFaces: 6
   corridorDressing: {fileID: 0}
   dressingSpacing: 3
   stretchDressingToCeiling: 1

@@ -83,6 +83,10 @@ public class DungeonBiome : ScriptableObject
     public int roomCount;
     [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Range(.5f, 2.5f), Tooltip("Generated rooms this much wider and deeper than the level's Room Size (a forest's clearings).")]
     public float roomSizeScale = 1f;
+    [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Range(0f, 1f), Tooltip("Share of the big generated rooms (Tall Room Least Cells or more, no hand-built room, not the entrance or the merchant's) built two tiles high, as halls. Furnishing named \"Hanging ...\" (chandeliers, beams, chains) is raised with the ceiling, and wall decor named \"Full height ...\" (pilasters, banners) is stacked up to it.")]
+    public float tallRoomChance;
+    [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), ShowIf("@tallRoomChance > 0"), Min(4), Tooltip("Floor cells (2 m) a generated room needs to be built tall.")]
+    public int tallRoomLeastCells = 20;
     [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Tooltip("No doors between rooms on this biome's floors (the starting room's door too): a forest has none.")]
     public bool noDoors;
     [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Tooltip("Use the room features below on this biome's floors instead of the level's (its base biome's Room Features).")]

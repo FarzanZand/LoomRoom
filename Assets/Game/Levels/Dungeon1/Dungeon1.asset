@@ -154,6 +154,8 @@ MonoBehaviour:
   templateChance: 0.7
   roomCount: 0
   roomSizeScale: 1
+  tallRoomChance: 0
+  tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 0
   roomFeatures:
@@ -169,7 +171,6 @@ MonoBehaviour:
     sleepingPacks: 0
     sleepChance: 0.1
     maxSleepingPacks: 3
-    maxEventRooms: 1
     meddling: 1
     meddleChance: 0.5
     tooEasySeconds: 14
@@ -352,6 +353,7 @@ MonoBehaviour:
     tier4: 0
     upgradeChance: 0
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  eventRoomsPerFloor: {x: 2, y: 2}
   startingChest: 1
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   startingChestItems:

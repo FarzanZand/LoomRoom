@@ -2447,8 +2447,33 @@ MonoBehaviour:
       hitStopScale: 0.5
     pullAudio: {fileID: 0}
     fireAudio: {fileID: 0}
-  caster: 0
-  spells: []
-  closesIn: 0
+  caster: 1
+  spells:
+  - spell: {fileID: 11400000, guid: 09cafb216649d504bb5720e749d48439, type: 2}
+    weight: 1
+    handEffect: {fileID: 6658911669708422142, guid: 916fb89ef926e444ab27adab792c11fa, type: 3}
+    minRange: 2.5
+    maxRange: 10
+    cooldown: 7
+    animatorTrigger: CastSpell
+    releaseTime: 1.35
+    aimTrackSpeed: 0
+    maxHeightDifference: 4
+    damageMultiplier: 1
+    spread: 2
+    leadTarget: 0.3
+    volley: 0
+    volleySettings:
+      count: 3
+      spawnInterval: 0.5
+      rise: 1.2
+      spread: 1.3
+      riseSeconds: 0.35
+      holdSeconds: 0.25
+      launchInterval: 0.45
+      rampSeconds: 0.35
+      scale: 1.3
+      homing: 0
+  closesIn: 1
   spellGap: 4
   experience: 62

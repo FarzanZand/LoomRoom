@@ -268,9 +268,20 @@ public partial class DungeonGenerator : MonoBehaviour
     IEnumerator BuildArchitecture(TableLevelData level, int seed, int floorNumber, System.Diagnostics.Stopwatch watch)
     {
         StageRoom = FindStageRoom();
-        // Rooms are one tile high: only a template that asks for more is taller (for effect), never a generated room.
+        // Rooms are one tile high: a template that asks for more is taller (for effect), and a biome with Tall Room
+        // Chance builds a few of its big generated rooms two tiles high (halls), on their own stream.
         RoomHeightTiles = new int[Layout.rooms.Count];
         for (int i = 0; i < RoomHeightTiles.Length; i++) { var t = TemplateOf(i); RoomHeightTiles[i] = t != null ? Mathf.Max(1, t.heightTiles) : 1; }
+        if (!Authored && Biome != null && Biome.tallRoomChance > 0f)
+        {
+            var tall = new System.Random(unchecked(seed + 60013));
+            for (int i = 1; i < RoomHeightTiles.Length; i++)
+            {
+                double roll = tall.NextDouble();
+                if (TemplateOf(i) == null && i != StageRoom && i != MerchantRoom && Layout.RoomCells(i).Count >= Biome.tallRoomLeastCells && roll < Biome.tallRoomChance)
+                    RoomHeightTiles[i] = 2;
+            }
+        }
         if (Authored)
         {
             var authoredRooms = level.AuthoredRoomList;

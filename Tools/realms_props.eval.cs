@@ -127,6 +127,29 @@ var list = new (string name, string src, float height, UnityEngine.Color fire, b
   ("Black crag", "Environments/SM_Env_Hell_Rock_08", 2.5f, default, false),
   ("Giant skull", "Environments/SM_Env_Hell_Bone_Skull_01", 1.3f, default, false),
   ("Giant rib", "Environments/SM_Env_Bone_Rib_01", 2.8f, default, false),
+  // Architecture along the walls (wall decor of the Realms styles): "Full height ..." stands floor to ceiling and is
+  // stacked up a tall hall's wall; "Tall ..." stands one tile high and is never stacked (a stacked lava fall showed
+  // its ends as a dark band); "Wall ..." hangs at its own height. Each sinks into the wall behind it.
+  ("Full height pilaster", "Environments/SM_Env_Dwarf_Pillar_Half_01", 3f, default, false),
+  ("Full height pilaster carved", "Environments/SM_Env_Dwarf_Pillar_Half_03", 3f, default, false),
+  ("Full height banner", "Props/SM_Prop_Banner_04", 2.75f, default, false),
+  ("Full height alcove", "Environments/SM_Env_Dwarf_Wall_Alcove_Angular_01", 3f, default, false),
+  ("Tall lava fall", "Environments/SM_Env_Lava_Flow_01", 3f, new UnityEngine.Color(1f, .5f, .15f, 0), false),
+  ("Full height chains", "Environments/SM_Env_Hell_Chains_02", 2.9f, default, false),
+  ("Full height black rock", "Environments/SM_Env_Hell_Rock_05", 3f, default, false),
+  ("Wall shield crest", "Props/SM_Prop_Hanging_Weapon_01", .95f, default, false),
+  ("Wall grate", "Environments/SM_Env_Dwarf_Grate_Wall_01", 1.5f, new UnityEngine.Color(1f, .45f, .12f, 0), false),
+  // Hung from the ceiling (raised with a tall hall's ceiling): the top sinks a little into the ceiling.
+  ("Hanging chandelier", "Props/SM_Prop_Dwarf_Chandelier_05", 1.3f, new UnityEngine.Color(1f, .7f, .4f, 1), false),
+  ("Hanging cage lamp", "Props/SM_Prop_Dwarf_Chandelier_02", 1.5f, new UnityEngine.Color(1f, .55f, .2f, 1), false),
+  ("Hanging beam", "Environments/SM_Env_Dwarf_Beam_04", -6f, default, false),
+  ("Hanging girder", "Props/SM_Prop_Steel_Beam_01", -6f, default, false),
+  ("Hanging chains", "Environments/SM_Env_Hell_Chains_02", 2.1f, default, false),
+  ("Hanging chain ring", "Environments/SM_Env_Hell_Ring_Chains_01", -2.6f, default, false),
+  // More for the floors.
+  ("Dwarf throne", "Props/SM_Prop_Dwarf_Throne_01", 2.3f, default, false),
+  ("Dwarf totem", "Props/SM_Prop_Dwarf_Totem_01", 2.1f, default, false),
+  ("Lava channel", "Environments/SM_Env_Dwarf_Forge_Gutter_Straight_01", -3.8f, new UnityEngine.Color(1f, .45f, .12f, 0), true),
 };
 
 // The crystals are pure violet in the pack: pulled toward grey (the house style keeps a muted base), texel by texel.
@@ -162,11 +185,22 @@ foreach (var (pname, src, height, fire, flat) in list)
   float across = UnityEngine.Mathf.Max(bounds.size.x, bounds.size.z);
   float scale = height > 0f && bounds.size.y > .01f ? height / bounds.size.y : height < 0f && across > .01f ? -height / across : 1f;
   root.transform.localScale = UnityEngine.Vector3.one * scale;
+  // Wall pieces are pressed flat against the wall: no deeper than half a metre (a full pillar stood a metre out and
+  // pinched a corridor shut). The mesh itself is squashed before the restyle, so its texels stay square.
+  bool wallPiece = pname.StartsWith("Full height") || pname.StartsWith("Wall ") || pname.StartsWith("Tall ");
+  float depthScale = wallPiece && bounds.size.z * scale > .5f ? .5f / (bounds.size.z * scale) : 1f;
   int part = 0;
   foreach (var r in rends)
   {
     var mf = r.GetComponent<UnityEngine.MeshFilter>();
     if (mf == null || mf.sharedMesh == null) continue;
+    if (depthScale < 1f)
+    {
+      var sq = UnityEngine.Object.Instantiate(mf.sharedMesh); sq.name = mf.sharedMesh.name;
+      var v = sq.vertices; var tr = r.transform; float cz = bounds.center.z;
+      for (int i = 0; i < v.Length; i++) { var w = tr.TransformPoint(v[i]); w.z = cz + (w.z - cz) * depthScale; v[i] = tr.InverseTransformPoint(w); }
+      sq.vertices = v; sq.RecalculateNormals(); sq.RecalculateBounds(); mf.sharedMesh = sq;
+    }
     var mats = System.Array.ConvertAll(r.sharedMaterials, m => m != null ? Readable(m) : null);
     var (mesh, mat) = Restyle(mf.sharedMesh, mats, part == 0 ? pname : $"{pname} {part}", dir, scale * r.transform.lossyScale.x / UnityEngine.Mathf.Max(1e-4f, scale));
     part++;
@@ -182,8 +216,28 @@ foreach (var (pname, src, height, fire, flat) in list)
   var holder = new UnityEngine.GameObject(pname);
   root.transform.SetParent(holder.transform, true);
   root.name = "Model";
-  root.transform.position -= new UnityEngine.Vector3(b2.center.x, b2.min.y - (flat ? .012f : 0f), b2.center.z);
-  if (!flat)
+  bool wall = pname.StartsWith("Full height") || pname.StartsWith("Wall ") || pname.StartsWith("Tall "), hanging = pname.StartsWith("Hanging");
+  if (wall)
+  {
+    // Its back half sunk into the wall (the wall's face is the prefab's z 0, the room toward +z), centred along it;
+    // a "Wall ..." piece hangs with its middle 1.9 m up.
+    float sink = UnityEngine.Mathf.Min(b2.size.z * .5f, .35f) + .02f;
+    float lift = pname.StartsWith("Wall ") ? 1.9f - b2.size.y * .5f : 0f;
+    root.transform.position -= new UnityEngine.Vector3(b2.center.x, b2.min.y - lift, b2.min.z + sink);
+  }
+  else if (hanging) root.transform.position -= new UnityEngine.Vector3(b2.center.x, b2.max.y - 3.02f, b2.center.z);
+  else root.transform.position -= new UnityEngine.Vector3(b2.center.x, b2.min.y - (flat ? .012f : 0f), b2.center.z);
+  if (wall || hanging)
+  {
+    // Walked past, not into: only what stands out more than a hand from the wall keeps a box (low on the wall).
+    var stand = b2.size.z - (UnityEngine.Mathf.Min(b2.size.z * .5f, .35f) + .02f);
+    if (false)
+    {
+      var box = holder.AddComponent<UnityEngine.BoxCollider>();
+      box.center = new UnityEngine.Vector3(0, 1.5f, stand * .5f); box.size = new UnityEngine.Vector3(b2.size.x * .8f, 3f, stand);
+    }
+  }
+  else if (!flat)
   {
     var box = holder.AddComponent<UnityEngine.BoxCollider>();
     box.center = new UnityEngine.Vector3(0, b2.size.y * .5f, 0); box.size = new UnityEngine.Vector3(b2.size.x * .9f, b2.size.y, b2.size.z * .9f);
@@ -193,14 +247,14 @@ foreach (var (pname, src, height, fire, flat) in list)
     // Its own light as its child: lit fire props strong and flickering, glowing ones (crystals, ore, lava ducts) soft.
     bool burning = fire.a > .5f;
     var lg = new UnityEngine.GameObject("Light"); lg.transform.SetParent(holder.transform, false);
-    lg.transform.localPosition = new UnityEngine.Vector3(0, b2.size.y * (burning ? 1.1f : .6f), 0);
+    lg.transform.localPosition = hanging ? new UnityEngine.Vector3(0, 3.02f - b2.size.y * .55f, 0) : wall ? new UnityEngine.Vector3(0, (pname.StartsWith("Wall ") ? 1.9f : b2.size.y * .5f), .45f) : new UnityEngine.Vector3(0, b2.size.y * (burning ? 1.1f : .6f), 0);
     var light = lg.AddComponent<UnityEngine.Light>(); light.type = UnityEngine.LightType.Point;
     light.color = new UnityEngine.Color(fire.r, fire.g, fire.b); light.intensity = burning ? 2.4f : 1.1f; light.range = burning ? 7f : 4f;
     light.shadows = UnityEngine.LightShadows.None;
     if (burning)
     {
       if (flicker != null) lg.AddComponent(flicker);
-      if (flame != null)
+      if (flame != null && !hanging)
       {
         var f = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(flame);
         f.name = "Flame"; f.transform.SetParent(holder.transform, false);

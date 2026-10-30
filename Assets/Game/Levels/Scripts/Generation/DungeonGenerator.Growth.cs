@@ -73,6 +73,7 @@ public partial class DungeonGenerator
         }
         MerchantRoom = System.Array.IndexOf(placed, merchant);
         if (shopFootprint != null && MerchantRoom >= 0 && !ShopWhole(Layout, merchant, shopFootprint.FloorCount)) MerchantRoom = -1;
+        TopUpEventRooms(seed);
         // A shop room that did not fit the grid: the merchant sets up in a placed quiet room with no interior of its
         // own instead (no shop template there, its shape wasn't made for it), so every floor that rolls one has one.
         shopInPlainRoom = false;
@@ -412,6 +413,10 @@ public partial class DungeonGenerator
                 if (prefab == null) break;
                 var outward = new Vector3(dir.x, 0, dir.y);
                 Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f), Quaternion.LookRotation(-outward), geometry);
+                // A "Full height ..." piece (a pilaster, a long banner) is made for one tile: stacked up a taller room's wall.
+                if (prefab.name.StartsWith("Full height"))
+                    for (float up = data.architectureTileSize; up < HeightAt(cell.x, cell.y) - .5f; up += data.architectureTileSize)
+                        Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f) + Vector3.up * up, Quaternion.LookRotation(-outward), geometry);
                 count--;
             }
         }
@@ -506,6 +511,9 @@ public partial class DungeonGenerator
         if (!FindSpot(rule.placement, size, index, order, open, out var pos, out var rotation)) return false;
         var placed = Instantiate(rule.prefab, pos, rotation, geometry);
         BackToWall(placed, rule.placement, size);
+        // Hung from the ceiling (a prefab named "Hanging ..." is made for a one-tile room): up with a taller room's ceiling.
+        if (rule.prefab.name.StartsWith("Hanging") && RoomHeightTiles != null && index >= 0 && index < RoomHeightTiles.Length)
+            placed.transform.position += Vector3.up * (RoomHeightTiles[index] - 1) * data.architectureTileSize;
         // Furnishing groups may hold breakables (a barrel under candles, pots on a shelf): give them loot.
         if (placed.GetComponentInChildren<DungeonDestructible>(true) != null) SeedGroup(placed, unchecked(pos.GetHashCode() ^ seed0));
         return true;

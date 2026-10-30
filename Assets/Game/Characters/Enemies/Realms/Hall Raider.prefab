@@ -1995,14 +1995,14 @@ MonoBehaviour:
       damageMultiplier: 1
       knockbackForce: -1
       hitStopScale: 1
-  archer: 0
+  archer: 1
   archery:
-    bow: {fileID: 0}
-    arrow: {fileID: 0}
+    bow: {fileID: 1445000710448190, guid: 540a4181c60e5d24eb2e496a2cd4916c, type: 3}
+    arrow: {fileID: 1655644458219621667, guid: cb99cb8d5dde0f34d85943b8a304ec06, type: 3}
     animatorTrigger: BowShot
     minRange: 3
     maxRange: 14
-    cooldown: 2.2
+    cooldown: 2.6
     aimTrackSpeed: 300
     fallbackReleaseTime: 1.3
     maxHeightDifference: 4
@@ -2018,8 +2018,8 @@ MonoBehaviour:
       damageMultiplier: 1
       knockbackForce: 1.5
       hitStopScale: 0.5
-    pullAudio: {fileID: 0}
-    fireAudio: {fileID: 0}
+    pullAudio: {fileID: 11400000, guid: a60dc3a38e7f65445b693f41bc7bb9aa, type: 2}
+    fireAudio: {fileID: 11400000, guid: b2d13c6d451963a45a3fc56a58b53bba, type: 2}
   caster: 0
   spells: []
   closesIn: 0

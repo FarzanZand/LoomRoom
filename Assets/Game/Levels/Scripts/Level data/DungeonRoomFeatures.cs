@@ -33,8 +33,6 @@ public class DungeonRoomFeatures
     public float sleepChance = .1f;
     [ShowIf(nameof(sleepingPacks)), Min(0), Indent, Tooltip("Most sleeping packs on one floor, rooms built for one included (0: no limit).")]
     public int maxSleepingPacks = 3;
-    [Range(0, 5), Tooltip("Most scripted event rooms (the duel, the bell, the wager, the sleeping giant, the dice: rooms with a ScriptedEventRoom) on one floor.")]
-    public int maxEventRooms = 1;
     [ToggleLeft, Tooltip("The Dungeon Master meddles (DungeonMasterMeddling): a fight won too easily gets one more enemy, set down by his hand through the lifted ceiling, and now and then he takes a chest away before it is opened.")]
     public bool meddling = true;
     [ShowIf(nameof(meddling)), Range(0f, 1f), Indent, Tooltip("Chance he adds an enemy after a fight won too easily (at most once a floor).")]

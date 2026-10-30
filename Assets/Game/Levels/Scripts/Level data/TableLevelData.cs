@@ -113,6 +113,9 @@ public partial class TableLevelData : ScriptableObject
     public List<LootFloorTiers> gearByFloor = new();
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("Start", HorizontalLine = false), AssetsOnly, Tooltip("Room template prefab the player starts in on the first floor and on the first floor of each new biome. Give its footprint one door cell: the only way out, which the player faces from the centre. Empty uses an ordinary entrance room.")]
     public GameObject startingRoom;
+    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("Scripted events", HorizontalLine = false), MinMaxSlider(0, 5, true), LabelText("Event rooms per floor"),
+     Tooltip("Fewest and most scripted event rooms on each grown floor (the duel, the bell, the wager, the sleeping giant, the dice: rooms whose ScriptedEventRoom counts as an event). The tavern, the merchant's shop, the skeleton party and Not a witch don't count. They come from the floor's biome pool: a floor whose pool has fewer event rooms than the fewest gets all it has. The room a run opens in counts.")]
+    public Vector2Int eventRoomsPerFloor = new(2, 2);
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("The starting room keeps its chest. Off: the chest is taken out (the Arena starts with none).")]
     public bool startingChest = true;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), AssetsOnly, Tooltip("The starting room's chest always holds two things: one piece of gear rolled from the floor's loot, and this (a potion). Its chest is never trapped. Empty: an ordinary chest.")]

@@ -59,183 +59,183 @@ MonoBehaviour:
   - prefab: {fileID: 1356312969237809741, guid: f2907e4fabbf5a54598de9c3d289fb5f, type: 3}
     placement: 0
     footprint: {x: 1, y: 1}
-    perTenCells: 0.4
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.65
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 4102963747853453976, guid: 97bd50fc6c05ac54f83db7f1eb88fda9, type: 3}
     placement: 1
     footprint: {x: 1, y: 1}
-    perTenCells: 0.4
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.65
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 3629291096501709222, guid: d15f04e546bc0984780dcc93d032a647, type: 3}
     placement: 2
     footprint: {x: 1, y: 2}
-    perTenCells: 0.192
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.31199998
+    perRoom: {x: 0, y: 2}
     chance: 0.7
     rooms: 62
   - prefab: {fileID: 9195664275357027084, guid: e9ebe5f1e41c691459dfaa53e74452ee, type: 3}
     placement: 3
     footprint: {x: 1, y: 1}
-    perTenCells: 0.48000002
-    perRoom: {x: 0, y: 2}
+    perTenCells: 0.78000003
+    perRoom: {x: 0, y: 3}
     chance: 1
     rooms: 62
   - prefab: {fileID: 8793616357887634802, guid: 4223120981fb79943958a837a570a19a, type: 3}
     placement: 3
     footprint: {x: 2, y: 1}
-    perTenCells: 0.16000001
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.26
+    perRoom: {x: 0, y: 2}
     chance: 0.6
     rooms: 62
   - prefab: {fileID: 9200736429761371490, guid: 3bc804aee69a9b04ab81270f270f5a72, type: 3}
     placement: 1
     footprint: {x: 1, y: 1}
-    perTenCells: 0.16000001
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.26
+    perRoom: {x: 0, y: 2}
     chance: 0.6
     rooms: 62
   - prefab: {fileID: 5430676613505052876, guid: ad85b29af19b07e468111bb8e642844c, type: 3}
     placement: 0
     footprint: {x: 1, y: 1}
-    perTenCells: 0.32000002
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.52
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 3319060677480620984, guid: e885689a656ce334999c8659c6f24fe2, type: 3}
     placement: 3
     footprint: {x: 1, y: 1}
-    perTenCells: 0.4
-    perRoom: {x: 0, y: 2}
+    perTenCells: 0.65
+    perRoom: {x: 0, y: 3}
     chance: 1
     rooms: 62
   - prefab: {fileID: 3000901372256543474, guid: 1e11c8978121c25448f76c3bee010186, type: 3}
     placement: 3
     footprint: {x: 2, y: 1}
-    perTenCells: 0.32000002
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.52
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 7557986163590134080, guid: cf2e248ce8bac0e4fb0f6c8577d4545d, type: 3}
     placement: 0
     footprint: {x: 1, y: 1}
-    perTenCells: 0.24000001
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.39000002
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 3286187182416663453, guid: 2bb8c47562cd1e54b88db84fa835541f, type: 3}
     placement: 0
     footprint: {x: 1, y: 1}
-    perTenCells: 0.4
-    perRoom: {x: 0, y: 2}
+    perTenCells: 0.65
+    perRoom: {x: 0, y: 3}
     chance: 1
     rooms: 62
   - prefab: {fileID: 939388495634847169, guid: 030fd696fd202e64eb7b7ff0eac7303d, type: 3}
     placement: 1
     footprint: {x: 1, y: 1}
-    perTenCells: 0.32000002
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.52
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 360722616662978758, guid: 690dc0adc9f0fa847a209a0cc07db824, type: 3}
     placement: 3
     footprint: {x: 1, y: 1}
-    perTenCells: 0.24000001
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.39000002
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 4772946000874711296, guid: e781eb8ca602fcb4780d06872af3075c, type: 3}
     placement: 3
     footprint: {x: 1, y: 1}
-    perTenCells: 0.192
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.31199998
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 7276731372359274426, guid: 897c94dd86d0b1144989c7717ea824e7, type: 3}
     placement: 0
     footprint: {x: 1, y: 2}
-    perTenCells: 0.128
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.20799999
+    perRoom: {x: 0, y: 2}
     chance: 0.5
     rooms: 62
   - prefab: {fileID: 9183083065163680781, guid: b05d8cdbacb5a374f97013f484037ba8, type: 3}
     placement: 3
     footprint: {x: 1, y: 1}
-    perTenCells: 0.32000002
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.52
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 1250337368273190777, guid: 05f0a6a1eff5f5e4f931fb5198208d59, type: 3}
     placement: 3
     footprint: {x: 1, y: 1}
-    perTenCells: 0.24000001
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.39000002
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 8461062408819330444, guid: 55fc6390c9853b644b274a6e7971d2f3, type: 3}
     placement: 2
     footprint: {x: 2, y: 2}
-    perTenCells: 0.128
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.20799999
+    perRoom: {x: 0, y: 2}
     chance: 0.5
     rooms: 62
   - prefab: {fileID: 5976437480477336726, guid: b1287698f3209254da48abcafcf6fb13, type: 3}
     placement: 1
     footprint: {x: 1, y: 1}
-    perTenCells: 0.32000002
-    perRoom: {x: 0, y: 2}
+    perTenCells: 0.52
+    perRoom: {x: 0, y: 3}
     chance: 1
     rooms: 62
   - prefab: {fileID: 2885889770968108462, guid: 998696cb919e147459bcbf8f076129f7, type: 3}
     placement: 3
     footprint: {x: 1, y: 1}
-    perTenCells: 0.24000001
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.39000002
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 6605910396521986027, guid: 6fa9b2b8d68cade479a4bb23c41a406d, type: 3}
     placement: 3
     footprint: {x: 1, y: 1}
-    perTenCells: 0.24000001
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.39000002
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 2027854398591294355, guid: 97de0cfadec541641b9205664ffcc69e, type: 3}
     placement: 0
     footprint: {x: 1, y: 1}
-    perTenCells: 0.4
-    perRoom: {x: 0, y: 2}
+    perTenCells: 0.65
+    perRoom: {x: 0, y: 3}
     chance: 1
     rooms: 62
   - prefab: {fileID: 7460126237780276246, guid: b77f2dc9259af73409ee61a906d03969, type: 3}
     placement: 1
     footprint: {x: 1, y: 1}
-    perTenCells: 0.32000002
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.52
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 4930384532569828019, guid: d8b9c4b3d92a5514cbb7491009340c43, type: 3}
     placement: 0
     footprint: {x: 1, y: 1}
-    perTenCells: 0.24000001
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.39000002
+    perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
   - prefab: {fileID: 8989126029773219580, guid: 157275d02fe62c146b0ee037d01b050a, type: 3}
     placement: 3
     footprint: {x: 1, y: 2}
-    perTenCells: 0.4
-    perRoom: {x: 1, y: 1}
+    perTenCells: 0.65
+    perRoom: {x: 1, y: 2}
     chance: 1
     rooms: 20
   - prefab: {fileID: 5556916843319196164, guid: 92c3dcd62583d9943b28ed96d5597b53, type: 3}
     placement: 2
     footprint: {x: 3, y: 3}
-    perTenCells: 0.24000001
-    perRoom: {x: 0, y: 1}
+    perTenCells: 0.39000002
+    perRoom: {x: 0, y: 2}
     chance: 0.6
     rooms: 20
   - prefab: {fileID: 1491949973390099219, guid: 93be40ac456fcf74ca1e9d1a9738d1d2, type: 3}
@@ -244,6 +244,34 @@ MonoBehaviour:
     perTenCells: 0.25
     perRoom: {x: 1, y: 1}
     chance: 0.9
+    rooms: 62
+  - prefab: {fileID: 1148262324189101590, guid: 93b057eed96e80c4fbe3bac98773c6df, type: 3}
+    placement: 2
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.52
+    perRoom: {x: 1, y: 3}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 1917337724043775921, guid: d330acd4f462fff429fc25061df1c5be, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.78000003
+    perRoom: {x: 1, y: 4}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 6790301357437448799, guid: d2223eddf45ad724faceb1a563b227a0, type: 3}
+    placement: 2
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.26
+    perRoom: {x: 0, y: 2}
+    chance: 0.6
+    rooms: 62
+  - prefab: {fileID: 573691188898975335, guid: 73147a150fcfbfc48aad77a98988a318, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 2}
+    perTenCells: 0.39000002
+    perRoom: {x: 0, y: 2}
+    chance: 0.7
     rooms: 62
   destructibles:
   - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
@@ -399,9 +427,11 @@ MonoBehaviour:
     rooms: 10
     fromFloor: 1
     maxPerFloor: 1
-  templateChance: 0.3
+  templateChance: 0.12
   roomCount: 0
   roomSizeScale: 1
+  tallRoomChance: 0.22
+  tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 1
   roomFeatures:
@@ -417,7 +447,6 @@ MonoBehaviour:
     sleepingPacks: 0
     sleepChance: 0.1
     maxSleepingPacks: 3
-    maxEventRooms: 1
     meddling: 1
     meddleChance: 0.5
     tooEasySeconds: 14
@@ -507,7 +536,7 @@ MonoBehaviour:
   defaultStyle: {fileID: 0}
   corridorsCopyConnectedRoomStyle: 0
   kitModels: 1
-  torchesPerRoom: {x: 2, y: 7}
+  torchesPerRoom: {x: 2, y: 14}
   litRoomChance: 0.75
   corridorTorchChance: 0.3
   darkRoomLight: {fileID: 0}
