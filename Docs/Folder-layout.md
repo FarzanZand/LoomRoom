@@ -10,7 +10,8 @@ Where things live in `Assets`, and the rules that keep it that way. Reorganised 
   `Plugins`, `ProPixelizer`. To change one of their assets, make a copy in `Assets/Game` (the Synty pixel copies are made this way).
 - **Bought packs are not imported whole** (since 2026-10-29). Every pack lives in the library project
   `C:/Game projects/AssetLibrary` (outside git), and only what the game uses is brought into LoomRoom, at the same
-  paths and GUIDs, with `python Tools/asset_library.py` (`unpack` a downloaded pack into the library, `find`, `pull`).
+  paths and GUIDs, with `python Tools/asset_library.py` (`unpack` a downloaded pack into the library, `find`, `pull`, and `missing`
+  to find references to assets LoomRoom doesn't have).
 
 ## Assets/Game: one folder per part of the game
 
