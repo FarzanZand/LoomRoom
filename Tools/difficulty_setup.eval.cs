@@ -5,8 +5,15 @@
 if (UnityEngine.Application.isPlaying) return "playing";
 var sb = new System.Text.StringBuilder();
 var balance = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonBalance>("Assets/Game/Levels/Dungeon1/Dungeon balance.asset");
-balance.damageGrowthPerFloor = .182f;
-balance.healthGrowthPerFloor = .127f;
+// A difficulty jump as each new biome begins (the user: a bigger step after a boss): the Realms (floor 4, after the Crypt
+// Lord) 2 floors' worth, the Ruins (floor 7) 1. With them the run is 11 floors' worth deep at floor 9, so the per-floor
+// rates are lowered to keep floor 9 where it was (1.129^11 = 3.8 damage, 1.091^11 = 2.6 health): small steps inside a
+// biome, a clear jump into the next.
+balance.damageGrowthPerFloor = .129f;
+balance.healthGrowthPerFloor = .091f;
+var lvl = UnityEditor.AssetDatabase.LoadAssetAtPath<TableLevelData>("Assets/Game/Levels/Dungeon1/Dungeon1.asset");
+foreach (var st in lvl.stages) if (st != null && st.biome != null) st.extraFloors = st.biome.name == "Realms1" ? 2f : st.biome.name == "Ruins1" ? 1f : 0f;
+UnityEditor.EditorUtility.SetDirty(lvl);
 UnityEditor.EditorUtility.SetDirty(balance);
 sb.Append($"growth damage {balance.damageGrowthPerFloor} health {balance.healthGrowthPerFloor}\n");
 void Elite(string path, float chance)

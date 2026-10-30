@@ -65,7 +65,7 @@ public partial class TableLevelData : ScriptableObject
         public int floors = 3;
         [HorizontalGroup("Row", LabelWidth = 105), LabelText("Boss on last floor"), Tooltip("The biome's guardian (its Boss tab) waits on this stage's last floor. Off: no boss in this stage, whatever the biome has set up.")]
         public bool boss = true;
-        [HorizontalGroup("Row", LabelWidth = 72), LabelText("Extra floors"), Min(0), Tooltip("A bigger jump in difficulty as this stage begins (a new biome after a boss): from its first floor on, enemies grow as if they were this many floors deeper (the balance's damage, health and armour per floor). It adds up with earlier stages' steps. 0: the usual one floor's step.")]
+        [HorizontalGroup("Row", LabelWidth = 95), LabelText("Difficulty jump"), Min(0), Tooltip("A bigger jump in difficulty as this stage begins (a new biome after a boss), counted in floors' worth of growth: 2 makes the step into this stage three floors' worth instead of one, and every later floor keeps it (the balance's damage, health and armour per floor). It adds up with earlier stages' jumps. 0: the usual one floor's step.")]
         public float extraFloors;
     }
 
@@ -103,7 +103,7 @@ public partial class TableLevelData : ScriptableObject
             {
                 int end = start + count - 1;
                 bool fight = boss && biome.guardian != null && biome.guardian.enabled && biome.guardian.boss != null;
-                parts.Add((count == 1 ? $"Floor {start}" : $"Floors {start}-{end}") + $" {biome.name}" + (fight ? $" (boss on {end})" : "") + (step > 0f ? $" (+{step:0.#} floors harder)" : ""));
+                parts.Add((count == 1 ? $"Floor {start}" : $"Floors {start}-{end}") + $" {biome.name}" + (fight ? $" (boss on {end})" : "") + (step > 0f ? $" (difficulty jump +{step:0.#})" : ""));
                 start = end + 1;
             }
             if (!HasStages) { if (baseBiome != null) Add(baseBiome, Mathf.Max(1, floors), bossOnLastFloor); }
