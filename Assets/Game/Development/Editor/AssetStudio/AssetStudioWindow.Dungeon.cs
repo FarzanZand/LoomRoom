@@ -188,6 +188,7 @@ public partial class AssetStudioWindow
         var d = DungeonLevel;
         var l = d != null ? World.LevelOf(d) : null;
         ReadGameWide();
+        pageWidth = r.width - 28 - 18;   // less the scroll bar
         GUILayout.BeginArea(new Rect(r.x + 14, r.y + 12, r.width - 28, r.height - 24));
         dungeonPageScroll = GUILayout.BeginScrollView(dungeonPageScroll);
         try
@@ -538,13 +539,13 @@ public partial class AssetStudioWindow
     }
 
     // What this enemy has on that floor of this dungeon (DungeonBalance.Apply, the guardian's own multipliers and the
-    // game-wide ones). guardian: it is the boss.
-    EnemyNumbers NumbersAt(TableLevelData d, GameObject enemy, int floor, DungeonMilestone guardian)
+    // game-wide ones). guardian: it is the boss. deeper: floors more of growth (an elite's EliteFloors).
+    EnemyNumbers NumbersAt(TableLevelData d, GameObject enemy, int floor, DungeonMilestone guardian, float deeper = 0f)
     {
         var data = DataOf(enemy);
         float hp = Stat(data, StatType.MaxHealth), dmg = Stat(data, StatType.AttackDamage), arm = Stat(data, StatType.Armor);
         var bal = d != null ? d.balance : null;
-        float depth = DungeonBalance.Depth(floor, d != null ? d.ExtraFloors(floor) : 0f);
+        float depth = DungeonBalance.Depth(floor, (d != null ? d.ExtraFloors(floor) : 0f) + deeper);
         bool boss = guardian != null;
         if (bal != null)
         {
@@ -1079,6 +1080,13 @@ public partial class AssetStudioWindow
         int floors = Mathf.Max(1, d.FloorCount);
         var enemies = run.SelectMany(s => s.biome.enemies ?? Array.Empty<DungeonBiome.Spawn>()).Where(e => e != null && e.enemy != null).Select(e => e.enemy).Distinct().ToList();
 
+        var steps = RunDifficulty(l);
+        Section("HOW HARD THE RUN GETS");
+        GUILayout.Label(Summary(steps), new GUIStyle(StudioSkin.Label) { richText = true }, GUILayout.Width(pageWidth));
+        DifficultyChart(l, steps);
+        Section("STAGES");
+        StageSteps(l);
+
         Section("HEALTH AND DAMAGE ON EACH FLOOR");
         GUILayout.Label("Shown on the floors where it comes. hp · damage · armour.", dim);
         const float col = 170;
@@ -1111,16 +1119,10 @@ public partial class AssetStudioWindow
             GUILayout.EndHorizontal();
         }
 
-        Section("THE LEVEL'S BALANCE" + (d.balance != null ? "  ·  " + d.balance.name : ""));
-        Fields(d, "balance");
-        if (d.balance != null)
-        {
-            var users = World.levels.Where(x => !x.tool && x.data.balance == d.balance && x.data != d).ToList();
-            if (users.Count > 0) GUILayout.Label($"<color=#e0a85a>Also used by {string.Join(", ", users.Select(u => u.data.name))}.</color>", new GUIStyle(dim) { richText = true });
-            AllFields(d.balance);
-        }
-        Section("EVERY DUNGEON");
-        GUILayout.Label($"ProgressionManager > Balance multiplies every enemy on top: damage {wideDamage:0.##}x, health {wideHealth:0.##}x (the room's Systems object). Shown in the numbers above.", new GUIStyle(dim) { wordWrap = true });
+        Section("THE LEVEL'S BALANCE");
+        GrowthFields(d);
+        Section("FLOOR BY FLOOR");
+        FloorTable(l);
         if (GUILayout.Button("Show ProgressionManager", GUILayout.Width(240), GUILayout.Height(24)))
         {
             UnityEngine.Object pm = ProgressionManager.HasInstance ? ProgressionManager.Instance : AssetDatabase.LoadAssetAtPath<GameObject>(ProgressionManagerPath);

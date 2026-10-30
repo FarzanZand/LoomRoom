@@ -122,6 +122,7 @@ public partial class AssetStudioWindow
         // A New form (New level, New biome stage, New room) is drawn where the page is.
         if (worldPane != WorldPane.Picked) { DrawWorldMiddle(ref r); return; }
         GUI.Box(r, GUIContent.none);
+        pageWidth = r.width - 28 - 18;   // less the scroll bar
         GUILayout.BeginArea(new Rect(r.x + 14, r.y + 12, r.width - 28, r.height - 24));
         levelPageScroll = GUILayout.BeginScrollView(levelPageScroll);
         try
@@ -172,7 +173,7 @@ public partial class AssetStudioWindow
             case 0: RunTab(l); break;
             case 1: LayoutSection(d); break;
             case 2: LookTab(l); break;
-            case 3: BalanceTab(d); break;
+            case 3: BalanceTab(l); break;
             case 4: SoundTab(l); break;
             default: DialogueTab(d); break;
         }
@@ -185,7 +186,7 @@ public partial class AssetStudioWindow
         var d = l.data;
         GUILayout.BeginHorizontal();
         // The strip: one row per stage, top floor first.
-        GUILayout.BeginVertical(StudioSkin.Inset, GUILayout.Width(230));
+        GUILayout.BeginVertical(StudioSkin.Inset, GUILayout.Width(250));
         GUILayout.Label("The run", gold);
         GUILayout.Space(4);
         var run = l.RunStages;
@@ -197,6 +198,8 @@ public partial class AssetStudioWindow
             bool on = st.index == levelStage || (st.IsBase && !l.Staged);
             if (GUILayout.Button($"<color=#b8ae9c>{floors}</color>  {(st.biome != null ? st.biome.name : "<color=#e0a85a>no biome</color>")}{boss}", on ? cellSelected : cell, GUILayout.Height(30)))
             { levelStage = st.index; ShowAsset(st.biome != null ? (UnityEngine.Object)st.biome : d); }
+            if (d.IsDungeon) StageStepRow(d, st);
+            GUILayout.Space(2);
         }
         if (l.Staged && l.baseStage != null)
         {
@@ -564,19 +567,6 @@ public partial class AssetStudioWindow
         Fields(d, "roomLighting", "roomBrightness", "roomTint");
         if (d.IsBoard && d.baseBiome != null) { Section("BOARD LIGHT"); Fields(d.baseBiome, "boardLightColor", "boardLightIntensity"); }
         if (d.baseBiome != null) { Section("EVERY FLOOR"); StyleTiles(d.baseBiome, true); }
-    }
-
-    void BalanceTab(TableLevelData d)
-    {
-        Section("HOW HARD IT IS");
-        Fields(d, "balance");
-        if (d.balance != null)
-        {
-            GUILayout.Label($"{d.balance.name}, shared by every level that uses it:", dim);
-            AllFields(d.balance);
-        }
-        Section("GEAR BY FLOOR");
-        Fields(d, "gearByFloor", "startingChest");
     }
 
     void SoundTab(AssetStudioWorld.Level l)
