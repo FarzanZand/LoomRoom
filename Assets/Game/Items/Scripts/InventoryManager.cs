@@ -34,7 +34,7 @@ public class InventoryManager : Singleton<InventoryManager>
 
     [Header("Drops by source")]
     [Title("Enemy kill"), InlineProperty, HideLabel, Tooltip("What an enemy drops when killed, in every biome (a loot profile with Own Drop Chances on, like a boss's reward, uses its own).")]
-    public SourceDrops enemyDrops = new() { goldChance = .3f, goldMin = 1, goldMax = 4, gearChance = .3f, recoveryChance = .16f };
+    public SourceDrops enemyDrops = new() { goldChance = .3f, goldMin = 1, goldMax = 4, gearChance = .3f, recoveryChance = .107f };
     [Title("Breakable"), InlineProperty, HideLabel, Tooltip("What a barrel, crate, urn or other breakable drops, in every biome.")]
     public SourceDrops breakableDrops = new() { goldChance = .25f, goldMin = 1, goldMax = 2, gearChance = .05f, recoveryChance = .12f };
     [Title("Chest"), InlineProperty, HideLabel, Tooltip("What a chest, bookshelf, grave or loot on the floor gives, in every biome (iron and gold chests roll it again, DungeonContainer.extraRolls).")]
@@ -107,12 +107,12 @@ public class InventoryManager : Singleton<InventoryManager>
         return ItemRarity.Common;
     }
 
-    // A random piece of gear from the catalog (weapon, shield or armour, tier 1 to Max Tier, by loot weight) rolled at this
+    // A random piece of gear from the catalog (weapon, shield or armour, Min Tier to Max Tier, by loot weight) rolled at this
     // rarity for the floor: a given reward (the weeping witch's Legendary, the Skeleton Party's chest). Null without a catalog.
-    public static ItemData GivenGear(ItemRarity rarity, int maxTier, int floor, System.Random random)
+    public static ItemData GivenGear(ItemRarity rarity, int maxTier, int floor, System.Random random, int minTier = 1)
     {
         if (!HasInstance || Instance.itemCatalog == null) return null;
-        bool Fits(ItemData i) => i != null && i.tier > 0 && i.tier <= maxTier && i.rarity == ItemRarity.Common && i.IsGear && Instance.CanDropLoot(i);
+        bool Fits(ItemData i) => i != null && i.tier > 0 && i.tier >= minTier && i.tier <= maxTier && i.rarity == ItemRarity.Common && i.IsGear && Instance.CanDropLoot(i);
         float total = 0f;
         foreach (var i in Instance.itemCatalog) if (Fits(i)) total += Mathf.Max(.01f, i.lootWeight);
         if (total <= 0f) return null;

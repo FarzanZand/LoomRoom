@@ -61,7 +61,7 @@ MonoBehaviour:
     goldMin: 1
     goldMax: 4
     gearChance: 0.48
-    recoveryChance: 0.16
+    recoveryChance: 0.107
     rarityMultiplier: 1
   breakableDrops:
     goldChance: 0.25

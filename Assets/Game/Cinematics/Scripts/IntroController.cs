@@ -48,6 +48,8 @@ public partial class IntroController : Singleton<IntroController>
     public LightingManager lighting;
     [Min(0)] public float openingBlack = 2f;
     [Min(0)] public float openingFade = 3f;
+    [Range(.2f, 1f), Tooltip("Times the Dungeon Master's reading time between the opening's lines, before the practice board (1 = as every other line; the user found them slow, 2026-10-30).")]
+    public float openingReading = .6f;
 
     [Header("Opening")]
     [Tooltip("Said in the dark.")] public DungeonMaster.Line[] beforeLamp = new DungeonMaster.Line[0];
@@ -214,6 +216,7 @@ public partial class IntroController : Singleton<IntroController>
         yield return new WaitForSeconds(openingBlack);
         if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(openingFade);
         yield return new WaitForSeconds(openingFade);
+        if (DungeonMaster.HasInstance) DungeonMaster.Instance.ReadingScale = openingReading;
         yield return SayAll(beforeLamp);
         yield return LampOn();
         // The house rule comes in among the lines; the view turns to the figure while the last line is still up.
@@ -222,6 +225,7 @@ public partial class IntroController : Singleton<IntroController>
         if (openingRule != null && RuleManager.HasInstance) yield return SayAll(new[] { RuleManager.Instance.Give(openingRule) }, split < afterLamp.Length);
         yield return SayAll(System.Array.FindAll(afterLamp, l => System.Array.IndexOf(afterLamp, l) >= split), false);
         yield return new WaitForSeconds(.4f);
+        if (DungeonMaster.HasInstance) DungeonMaster.Instance.ReadingScale = 1f;
         PopDialogue();
         yield return WaitForTable();
         PlayPractice(true);

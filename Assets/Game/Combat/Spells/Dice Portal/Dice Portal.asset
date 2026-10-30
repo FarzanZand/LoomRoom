@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Ask the Dungeon Master for a hand. A portal opens beside the enemy
     you aim at, and a die shoots out of it and knocks it across the room.
   icon: {fileID: 21300000, guid: 8b3a24607a8a42347b64de5d5cf286d7, type: 3}
-  manaCost: 24
+  manaCost: 13
   power: 24
   castSeconds: 0.6
   recoverySeconds: 0.4

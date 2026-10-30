@@ -17,7 +17,7 @@ MonoBehaviour:
   description: A lump of glowing rock, thrown in an arc. It bursts where it lands
     and leaves the ground burning.
   icon: {fileID: 21300000, guid: 49542cd6b7727a94ca41cc85882bb81a, type: 3}
-  manaCost: 18
+  manaCost: 10
   power: 15
   castSeconds: 0.8
   recoverySeconds: 0.45

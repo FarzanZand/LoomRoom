@@ -51,6 +51,8 @@ public class AdventurerClass : ScriptableObject
     public float health = 30, mana = 20, stamina = 30;
 
     [Title("Skills"), InfoBox("Swords, Maces, Blocking, Sorcery, Thaumaturgy, Athletics, Trading")]
+    [Min(0), Tooltip("Most health and mana each character level past the first adds in a run (a little: 2 to 4).")]
+    public float healthPerLevel = 3, manaPerLevel = 3;
     public int[] skills = new int[AdventureSkills.Count];
 
     public bool Unlocked => string.IsNullOrEmpty(unlockFlag) || (ProgressionManager.HasInstance && ProgressionManager.Instance.GetFlag(unlockFlag) > 0);

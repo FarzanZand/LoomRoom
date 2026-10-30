@@ -243933,6 +243933,7 @@ MonoBehaviour:
   - text: There you are.
     voice: {fileID: 0}
     mumble: 1
+  openingReading: 0.6
     inPerson: 1
   - text: Hold still. I can't find the lamp.
     voice: {fileID: 0}
@@ -348443,6 +348444,7 @@ MonoBehaviour:
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
+  deflectCooldown: 10
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6971083243626983379}
@@ -381426,7 +381428,7 @@ MonoBehaviour:
     goldMin: 1
     goldMax: 4
     gearChance: 0.48
-    recoveryChance: 0.16
+    recoveryChance: 0.107
     rarityMultiplier: 1
   breakableDrops:
     goldChance: 0.25

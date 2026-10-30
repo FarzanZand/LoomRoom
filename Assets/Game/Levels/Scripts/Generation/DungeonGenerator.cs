@@ -754,6 +754,8 @@ public partial class DungeonGenerator : MonoBehaviour
                 if(at>=cursor)available.RemoveAt(at);
             }
         if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,rewards,FaceCenter(extra,index));
+        // Treasure that comes with the room's shape: a hoard in an inner chamber, a chest at a big hall's far end.
+        ShapeTreasure(index,available,cursor,rewards);
         var (rules,prefabs)=Furnishing(profile);
         if(rules!=null)
         {

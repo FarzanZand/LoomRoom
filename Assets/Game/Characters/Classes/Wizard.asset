@@ -49,3 +49,5 @@ MonoBehaviour:
   mana: 50
   stamina: 30
   skills: 000000000000000000000000140000000a0000000a0000000a000000
+  healthPerLevel: 2
+  manaPerLevel: 4

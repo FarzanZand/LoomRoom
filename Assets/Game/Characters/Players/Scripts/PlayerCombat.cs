@@ -136,7 +136,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     // Deflect (Blocking's first milestone): a raised shield facing a shot sends an arrow or a spell back the way it came.
     public bool Deflects(Vector3 travel)
     {
-        if (!IsGuarding || !ProgressionManager.HasInstance) return false;
+        if (!IsGuarding || !ProgressionManager.HasInstance || DeflectCooldownLeft > 0f) return false;
         var progress = GetComponent<AdventurerProgress>();
         if (!ProgressionManager.Instance.Unlocked(AdventureSkill.Blocking, 0, progress != null ? progress.Rank(AdventureSkill.Blocking) : 0)) return false;
         Vector3 facing = player.Look != null ? player.Look.YawTransform.forward : transform.forward;
@@ -547,6 +547,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         foreach (var ps in sparks.GetComponentsInChildren<ParticleSystem>())
         {
             var main = ps.main; main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+        deflectReadyAt = Time.time + deflectCooldown;
             // Finer pixels, more of them, each a slightly different shade of the spark's own colour.
             main.startSizeMultiplier *= deflectSparkSize;
             var c = main.startColor.mode == ParticleSystemGradientMode.TwoColors ? main.startColor.colorMax : main.startColor.color;
@@ -584,6 +585,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         Vector3 facing = player.Look != null ? player.Look.YawTransform.forward : transform.forward;
         return Vector3.Dot(facing, info.Direction.normalized) < threshold;
     }
+    [SerializeField, Min(0f), Tooltip("Seconds after a deflect before the shield can send another shot back (shown in the effect row over the health bar, BuffBarUI).")]
+    float deflectCooldown = 10f;
+    float deflectReadyAt = -100f;
+    public float DeflectCooldownLeft => Mathf.Max(0f, deflectReadyAt - Time.time);
 
     void OnDamaged(DamageInfo info)
     {

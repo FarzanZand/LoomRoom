@@ -9,7 +9,8 @@ using UnityEngine.Playables;
 // pick the bowl with the coin (WagerCup) and the bet comes back doubled. Win twice and he starts cheating: the coin is
 // under none of them. Hit him once he has cheated and you called it: his friends come out of the walls, and when they
 // and he are down his pot is yours. Hit him when he played fair and his friends come all the same, with no pot.
-// He deals once a run: after the first bet, a wager table on a later floor of the same run won't take one.
+// He deals once a run: after the first bet, a wager table on a later floor of the same run won't take one. Win once and
+// he stops dealing (Wins To Quit: no betting again and again for gold).
 // The coin is hidden while a bowl covers it (it is wider than a bowl and showed round its rim).
 public class WagerEvent : MonoBehaviour
 {
@@ -23,6 +24,7 @@ public class WagerEvent : MonoBehaviour
     [Min(0)] public int betPerFloor = 5;
     [Min(1), Tooltip("Games he plays before he has had enough.")] public int games = 6;
     [Min(1), Tooltip("Wins the player can have before he starts cheating.")] public int winsBeforeCheating = 2;
+    [Min(1), Tooltip("Wins after which he won't take another bet (the user: once you have won, no more betting).")] public int winsToQuit = 1;
     [Range(2, 20)] public int swaps = 6;
     [Range(0, 6), Tooltip("Extra swaps for each game won.")] public int swapsPerWin = 2;
     [Min(.1f)] public float swapSeconds = .45f;
@@ -69,7 +71,7 @@ public class WagerEvent : MonoBehaviour
     static bool PlayedThisRun => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(PlayedFlag);
 
     public int Bet => bet + betPerFloor * (ScriptedEventRoom.Floor - 1);
-    public bool CanBet => phase == Phase.Idle && dealer != null && dealer.IsAlive && played < games && (played > 0 || !PlayedThisRun);
+    public bool CanBet => phase == Phase.Idle && dealer != null && dealer.IsAlive && played < games && wins < winsToQuit && (played > 0 || !PlayedThisRun);
     public bool Picking => phase == Phase.Picking;
     public string TablePrompt => CanBet ? $"Bet {Bet} gold" : "";
     public bool Cheating => cheating;
@@ -215,7 +217,7 @@ public class WagerEvent : MonoBehaviour
         ShowCoin(true);
         if (phase == Phase.Fight) yield break;
         phase = Phase.Idle;
-        if (played >= games) ScriptedEventRoom.Say(doneLine);
+        if (played >= games || wins >= winsToQuit) ScriptedEventRoom.Say(doneLine);
     }
 
     Vector3 Front() => coinRest != null ? coinRest.position + (ScriptedEventRoom.TablePlayer != null ? (ScriptedEventRoom.TablePlayer.transform.position - coinRest.position).normalized * .5f : Vector3.zero) : transform.position;

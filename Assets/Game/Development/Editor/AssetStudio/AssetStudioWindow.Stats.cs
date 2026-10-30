@@ -169,7 +169,9 @@ public partial class AssetStudioWindow
         PoolRow("Health", c => c.health, (c, v) => c.health = v);
         PoolRow("Mana", c => c.mana, (c, v) => c.mana = v);
         PoolRow("Stamina", c => c.stamina, (c, v) => c.stamina = v);
-        GUILayout.Label("* unlocked in play. The run's totals also count the sheet's attributes and the rules below.", dim);
+        PoolRow("Health a level", c => c.healthPerLevel, (c, v) => c.healthPerLevel = v);
+        PoolRow("Mana a level", c => c.manaPerLevel, (c, v) => c.manaPerLevel = v);
+        GUILayout.Label("* unlocked in play. A level's health and mana are added from level 2 on. The run's totals also count the sheet's attributes and the rules below.", dim);
         GUILayout.EndVertical();
 
         // ── The sheet's prices ──

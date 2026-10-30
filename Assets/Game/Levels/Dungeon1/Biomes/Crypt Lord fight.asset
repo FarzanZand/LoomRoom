@@ -68,7 +68,7 @@ MonoBehaviour:
     when: 2
     seconds: 10
     startBeat: 64
-    beats: 69
+    beats: 138
     health: 0.5
     what: 0
     line:

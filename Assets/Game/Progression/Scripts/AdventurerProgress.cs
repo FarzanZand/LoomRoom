@@ -237,8 +237,10 @@ public class AdventurerProgress : MonoBehaviour
         stats.RemoveAllFromSource(source);
         void Add(StatType stat, float value, ModifierType kind = ModifierType.Flat) => stats.AddModifier(new StatModifier(stat, value, kind, source));
         // The class's own attribute points are in Score below, with the sheet's (AdventurerClass.strength and the rest).
-        Add(StatType.MaxHealth, selectedClass.health - stats.GetBase(StatType.MaxHealth) + 0);
-        Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + 0);
+        // The class's pools, and a little more of each every character level past the first.
+        int levels = InRun ? Mathf.Max(0, Level - 1) : 0;
+        Add(StatType.MaxHealth, selectedClass.health - stats.GetBase(StatType.MaxHealth) + selectedClass.healthPerLevel * levels);
+        Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + selectedClass.manaPerLevel * levels);
         // Legendary Athletics: a deeper well of stamina.
         Add(StatType.MaxStamina, selectedClass.stamina - stats.GetBase(StatType.MaxStamina) + (Legendary(AdventureSkill.Athletics) ? rules.legendaryStamina : 0));
         // Athletics: faster on your feet, and a little more stamina every rank.
@@ -308,7 +310,15 @@ public class AdventurerProgress : MonoBehaviour
             UnspentPoints++;
             if (AudioManager.HasInstance) AudioManager.Instance.PlayLevelUp();
             // The level-up panel (LeveledUp) says it; the feed doesn't say it again.
-            var gains = new System.Collections.Generic.List<string> { "+1 attribute point" };
+            var gains = new System.Collections.Generic.List<string>();
+            // The class's health and mana for the level: the most goes up and so does what you have.
+            if (selectedClass != null && player != null && player.Stats != null)
+            {
+                ApplyStats();
+                if (selectedClass.healthPerLevel > 0) { player.Stats.Heal(selectedClass.healthPerLevel); gains.Add($"+{selectedClass.healthPerLevel:0.#} health"); }
+                if (selectedClass.manaPerLevel > 0) { player.Stats.RestoreMana(selectedClass.manaPerLevel); gains.Add($"+{selectedClass.manaPerLevel:0.#} mana"); }
+            }
+            gains.Add("+1 attribute point");
             LeveledUp?.Invoke(Level, gains);
         }
         Changed?.Invoke();
@@ -339,6 +349,31 @@ public class AdventurerProgress : MonoBehaviour
         ApplyStats();
         if (AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
         return true;
+    }
+
+    // A point given into an attribute by something in the run (the blood altar), on top of the level's points: kept in the
+    // checkpoint with them. False outside a run.
+    public bool GrantPoint(MetaAttribute attribute)
+    {
+        int i = (int)attribute;
+        if (!InRun || i < 0 || i >= AttributePoints.Length) return false;
+        AttributePoints[i]++;
+        ApplyStats();
+        return true;
+    }
+
+    // Ranks given in a skill by something in the run (the blood altar), as if earned: kept in the checkpoint, up to 100.
+    // The ranks it actually gave (0 outside a run or at 100).
+    public int GrantRanks(AdventureSkill skill, int ranks)
+    {
+        int i = (int)skill;
+        if (!InRun || ranks <= 0 || i < 0 || i >= Ranks.Length) return 0;
+        int before = Ranks[i];
+        Ranks[i] = Mathf.Min(100, Ranks[i] + ranks);
+        if (Ranks[i] >= 100) SkillExperience[i] = 0;
+        for (int r = before + 1; r <= Ranks[i]; r++) SkillRaised?.Invoke(skill, r);
+        if (Ranks[i] > before) { ApplyStats(); Changed?.Invoke(); }
+        return Ranks[i] - before;
     }
 
     // A level gained in a run: the new level and what it gave, one line each ("+3 Health"), for LevelUpUI.
