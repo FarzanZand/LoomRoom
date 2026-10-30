@@ -73,7 +73,6 @@ public partial class DungeonGenerator
         }
         MerchantRoom = System.Array.IndexOf(placed, merchant);
         if (shopFootprint != null && MerchantRoom >= 0 && !ShopWhole(Layout, merchant, shopFootprint.FloorCount)) MerchantRoom = -1;
-        TopUpEventRooms(seed);
         // A shop room that did not fit the grid: the merchant sets up in a placed quiet room with no interior of its
         // own instead (no shop template there, its shape wasn't made for it), so every floor that rolls one has one.
         shopInPlainRoom = false;
@@ -91,6 +90,8 @@ public partial class DungeonGenerator
                 shopInPlainRoom = true;
             }
         }
+        // After the merchant has his room (a plain one when the shop didn't fit), so events never take the last quiet room.
+        TopUpEventRooms(seed);
     }
     bool shopInPlainRoom;
 
@@ -419,6 +420,8 @@ public partial class DungeonGenerator
                 if (prefab.name.StartsWith("Full height"))
                     for (float up = data.architectureTileSize; up < HeightAt(cell.x, cell.y) - .5f; up += data.architectureTileSize)
                         Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f) + Vector3.up * up, Quaternion.LookRotation(-outward), geometry);
+                // Taken: a torch or a wall prop placed after it would stand inside the piece (torches inside carved pilasters).
+                furnished.Add(cell);
                 count--;
             }
         }
@@ -513,6 +516,20 @@ public partial class DungeonGenerator
         if (!FindSpot(rule.placement, size, index, order, open, out var pos, out var rotation)) return false;
         var placed = Instantiate(rule.prefab, pos, rotation, geometry);
         BackToWall(placed, rule.placement, size);
+        // What stands against a wall takes the wall faces of the cells it covers: wall pieces and torches, placed after,
+        // keep off them (a shelf stood inside a pilaster).
+        if (rule.placement == DungeonPropPlacement.AgainstWall || rule.placement == DungeonPropPlacement.Corner)
+        {
+            var renderers = placed.GetComponentsInChildren<Renderer>();
+            if (renderers.Length > 0)
+            {
+                var bounds = renderers[0].bounds;
+                foreach (var r in renderers) bounds.Encapsulate(r.bounds);
+                Vector2Int a = CellOf(bounds.min + new Vector3(.05f, 0f, .05f)), b = CellOf(bounds.max - new Vector3(.05f, 0f, .05f));
+                for (int x = Mathf.Min(a.x, b.x); x <= Mathf.Max(a.x, b.x); x++)
+                    for (int z = Mathf.Min(a.y, b.y); z <= Mathf.Max(a.y, b.y); z++) furnished.Add(new Vector2Int(x, z));
+            }
+        }
         // Hung from the ceiling (a prefab named "Hanging ..." is made for a one-tile room): up with a taller room's ceiling.
         if (rule.prefab.name.StartsWith("Hanging") && RoomHeightTiles != null && index >= 0 && index < RoomHeightTiles.Length)
             placed.transform.position += Vector3.up * (RoomHeightTiles[index] - 1) * data.architectureTileSize;

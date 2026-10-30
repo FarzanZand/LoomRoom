@@ -42,8 +42,10 @@ meddling. Built on branch `events` (2026-10-28).
 
 - An event room's own enemy (`EventActor` on the Duellist, Card sharp, Sleeping giant) stands still from the moment it
   exists until its event lets it go; without it a player starting in the room was attacked before the event found it.
-- At most `DungeonRoomFeatures.maxEventRooms` (1) event rooms a floor; the room a run opens in counts. Over 36 Dungeon1
-  floors that gave an event room on about two floors in three.
+- Event rooms a floor are the level's `TableLevelData.eventRoomsPerFloor` (Run tab, least and most; Dungeon1 2 and 2, new
+  levels 0 and 1). Every event the pool deals counts, Not a witch and the Portal hall (its Skeleton Party) included; the
+  room a run opens in counts. A floor short of the least is topped up after growth into rooms its footprint fits at the
+  room's own rotation, no more than 1.3 times its floor, never the entrance, the exit or the merchant's room.
 - An event room's chests are never trapped (the bell room swaps its chest).
 - The bell pull, the bowls and the betting table are trigger colliders: a solid pull kept the player's blows off an
   enemy beside it.

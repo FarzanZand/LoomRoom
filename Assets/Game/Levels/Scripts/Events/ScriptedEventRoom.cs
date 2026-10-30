@@ -9,7 +9,8 @@ using UnityEngine.AI;
 // (Play this event), marks where the player starts when a run opens in it (Entrance), and gives the event script what
 // it needs from the floor: its room, the player, gates across its ways out, enemies out of a puff of dust and chests.
 // Templates live in Levels/Shared/Rooms/Scripted. The newer events are dealt into the biomes' room pools like any other
-// room, at most the floor's Max Event Rooms; the older rooms come by their own rules (Counts As Event off).
+// room; every one dealt from a pool counts toward the level's Event Rooms Per Floor (Not a witch too, and the Portal hall
+// for its Skeleton Party). The tavern and the merchant shop are the floor's shop room and never come from a pool.
 public class ScriptedEventRoom : MonoBehaviour
 {
     [Tooltip("The event's name for the dev console (event <name>) and Asset Studio. One word, lower case.")]
@@ -17,7 +18,7 @@ public class ScriptedEventRoom : MonoBehaviour
     [TextArea, Tooltip("What happens, for Asset Studio and the console's list.")] public string summary;
     [Tooltip("Where the player starts when a run opens in this room (event <name>), facing along its blue arrow. Empty: the room's middle.")]
     public Transform entrance;
-    [Tooltip("Counts toward the floor's Max Event Rooms (the duel, the bell...). Off for the rooms that come by their own rules: the tavern and the merchant shop (the floor's shop room), the Skeleton Party (behind the portal) and Not a witch (its own pool weight).")]
+    [Tooltip("Kept for old data: the generator counts every event room a pool deals toward the level's Event Rooms Per Floor, whatever this says (the user: two a floor, but not more).")]
     public bool countsAsEvent = true;
 
     public DungeonGenerator Dungeon { get; private set; }

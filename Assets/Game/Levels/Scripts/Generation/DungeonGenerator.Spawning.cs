@@ -10,12 +10,20 @@ public partial class DungeonGenerator
     static bool IsFloorBreakable(GameObject prefab) { var d=prefab.GetComponent<DungeonDestructible>(); return d==null || d.placement==DestructiblePlacement.Floor; }
     static DungeonRoomRoles Mask(RoomRole role) => (DungeonRoomRoles)(1<<(int)role);
 
-    // A room profile's own enemies replace the biome's spawns for that room.
+    // A room profile's own enemies replace the biome's spawns for that room. Every biome pick (packs, sockets, ambush and
+    // event waves) goes through here, so casters are counted here against the biome's caps per room and per floor (a Pit
+    // floor drew 19 Pit Demons of 42 enemies).
+    readonly System.Collections.Generic.Dictionary<int,int> castersInRoom = new();
+    int castersOnFloor;
     GameObject ChooseEnemy(int room, System.Random rng)
     {
         var own=profiles[room]!=null ? profiles[room].enemies : null;
         if(own!=null && own.Length>0) return own[rng.Next(own.Length)];
-        return Biome!=null ? Biome.ChooseEnemy(rng,FloorInBiome) : null;
+        if(Biome==null) return null;
+        castersInRoom.TryGetValue(room,out int inRoom);
+        var pick=Biome.ChooseEnemy(rng,FloorInBiome,inRoom,castersOnFloor);
+        if(DungeonBiome.IsCaster(pick)){castersInRoom[room]=inRoom+1;castersOnFloor++;}
+        return pick;
     }
 
     // The hand-built interior for a room: the starting room, the shop, a milestone arena or the profile's template.
@@ -79,7 +87,7 @@ public partial class DungeonGenerator
         // Too few events rolled: more of the pool's event rooms into rooms whose kind they suit, rooms without a
         // hand-built room of their own first, then in place of an ordinary hand-built one. Its own stream, so the rolls
         // above are unchanged whatever the setting.
-        var top = new System.Random(unchecked(seed + 271829));
+        var top = new System.Random(Scramble(unchecked(seed + 104659)));
         int fewest = Mathf.Min(Mathf.Max(0, data.eventRoomsPerFloor.x), mostEvents);
         for (int pass = 0; pass < 2 && events < fewest; pass++)
         {
@@ -87,6 +95,7 @@ public partial class DungeonGenerator
             for (int i = 0; i < roles.Length; i++)
             {
                 if ((i == 0 && UsesStartingRoom) || (i < chosen.Length && chosen[i] != null && chosen[i].roomTemplate != null)) continue;
+                if (roles[i] == RoomRole.Entrance || roles[i] == RoomRole.Exit) continue;
                 if (pass == 0 ? pool[i] == null : pool[i] != null && !IsEvent(pool[i])) slots.Add(i);
             }
             for (int k = slots.Count - 1; k > 0; k--) { int j = top.Next(k + 1); (slots[k], slots[j]) = (slots[j], slots[k]); }
@@ -95,7 +104,7 @@ public partial class DungeonGenerator
                 if (events >= fewest) break;
                 var role = Mask(roles[i]);
                 var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && IsEvent(c.template) && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor
-                    && Allowed(c.template) && !used.ContainsKey(c.template) ? Mathf.Max(.01f, c.weight) : 0, top);
+                    && Allowed(c.template) && !used.ContainsKey(c.template) ? Mathf.Max(0f, c.weight) : 0, top);
                 if (pick == null) continue;
                 if (pool[i] != null) used.Remove(pool[i]);
                 pool[i] = pick.template; used[pick.template] = 1; events++;
@@ -104,9 +113,20 @@ public partial class DungeonGenerator
         return pool;
     }
 
-    // A scripted event room (ScriptedEventRoom.countsAsEvent: the duel, the bell, the wager, the giant, the dice).
+    // A scripted event room dealt from a pool (ScriptedEventRoom: the duel, the bell, the wager, the giant, the dice, and
+    // Not a witch), or a room whose portal leads to one (the Portal hall to the Skeleton Party): the user's "2 (but not
+    // more)" a floor counts every event the player can walk into. The tavern and the merchant shop never come from a pool.
     readonly System.Collections.Generic.Dictionary<GameObject, bool> isEvent = new();
-    bool IsEvent(GameObject t) { if (t == null) return false; if (!isEvent.TryGetValue(t, out bool e)) isEvent[t] = e = t.TryGetComponent<ScriptedEventRoom>(out var r) && r.countsAsEvent; return e; }
+    bool IsEvent(GameObject t)
+    {
+        if (t == null) return false;
+        if (isEvent.TryGetValue(t, out bool e)) return e;
+        e = t.TryGetComponent<ScriptedEventRoom>(out _);
+        if (!e)
+            foreach (var portal in t.GetComponentsInChildren<PortalArch>(true))
+                if (portal.room != null && portal.room.TryGetComponent<ScriptedEventRoom>(out _)) { e = true; break; }
+        return isEvent[t] = e;
+    }
 
     // After growth: an event room whose footprint didn't fit (or whose request wasn't placed) is lost, so the floor is
     // topped up again to the level's fewest, into placed rooms it fits (enough floor, wide and deep enough either way
@@ -121,32 +141,36 @@ public partial class DungeonGenerator
         int events = 0;
         var used = new System.Collections.Generic.HashSet<GameObject>();
         for (int i = 0; i < pooledTemplates.Length; i++) if (pooledTemplates[i] != null) { used.Add(pooledTemplates[i]); if (IsEvent(pooledTemplates[i])) events++; }
+        // A room profile's own template is on the floor too (an event never comes twice).
+        for (int i = 0; i < profiles.Length; i++) if (profiles[i] != null && profiles[i].roomTemplate != null) used.Add(profiles[i].roomTemplate);
         if (UsesStartingRoom && data.startingRoom != null) { used.Add(data.startingRoom); if (IsEvent(data.startingRoom)) events++; }
         if (events >= fewest) return;
         data.BiomeAt(FloorNumber, out int floorInBiome, out _);
         var features = RoomFeatures;
-        var rng = new System.Random(unchecked(seed + 314159));
+        var rng = new System.Random(Scramble(unchecked(seed + 314159)));
         bool Fits(GameObject t, int room)
         {
             var tpl = t.GetComponent<DungeonRoomTemplate>();
             if (tpl == null || !features.AllowsAll(tpl.Requires())) return false;
             if (!tpl.HasFootprint) return true;
             var fp = tpl.Footprint(); var rect = Layout.rooms[room];
-            bool across = rect.width >= fp.width && rect.height >= fp.height, turned = rect.width >= fp.height && rect.height >= fp.width;
-            // Not in a room much bigger than it was made for either: a small event room centred in a big hall left the hall's
-            // doors behind its walls (a Card table in a 14 x 11 room, unreachable).
+            // Built at the room's own rotation (PlaceTemplate turns it by RoomRotation), so it must fit that way round.
+            bool turned = (Layout.RoomRotation(room) & 1) == 1;
+            int w = turned ? fp.height : fp.width, h = turned ? fp.width : fp.height;
+            // Not in a room much bigger than it was made for either: a small event room in a big hall is a table in a barn
+            // (the Card table in 35 cells), and its walls can stand between the hall's doors.
             int cells = Layout.RoomCells(room).Count;
-            return (across || turned) && cells >= fp.FloorCount * .9f && cells <= fp.FloorCount * 1.6f;
+            return rect.width >= w && rect.height >= h && cells >= fp.FloorCount * .9f && cells <= fp.FloorCount * 1.3f;
         }
         // Passes: rooms without a hand-built room, then in place of an ordinary one, then (still short) whatever the
-        // room's kind, never the entrance, the exit or the merchant's.
+        // room's kind; never the entrance, the exit (a guardian's arena or the stairs) or the merchant's.
         for (int pass = 0; pass < 3 && events < fewest; pass++)
         {
             var slots = new System.Collections.Generic.List<int>();
             for (int i = 0; i < pooledTemplates.Length; i++)
             {
                 if (i == 0 || i == MerchantRoom || (profiles[i] != null && profiles[i].roomTemplate != null)) continue;
-                if (pass == 2 && (Roles[i] == RoomRole.Entrance || Roles[i] == RoomRole.Exit)) continue;
+                if (Roles[i] == RoomRole.Entrance || Roles[i] == RoomRole.Exit) continue;
                 if (pass == 0 ? pooledTemplates[i] == null : !IsEvent(pooledTemplates[i])) slots.Add(i);
             }
             for (int k = slots.Count - 1; k > 0; k--) { int j = rng.Next(k + 1); (slots[k], slots[j]) = (slots[j], slots[k]); }
@@ -155,7 +179,7 @@ public partial class DungeonGenerator
                 if (events >= fewest) break;
                 var role = Mask(Roles[i]);
                 var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && IsEvent(c.template) && (pass == 2 || (c.rooms & role) != 0) && floorInBiome >= c.fromFloor
-                    && !used.Contains(c.template) && Fits(c.template, i) ? Mathf.Max(.01f, c.weight) : 0, rng);
+                    && !used.Contains(c.template) && Fits(c.template, i) ? Mathf.Max(0f, c.weight) : 0, rng);
                 if (pick == null) continue;
                 if (pooledTemplates[i] != null) used.Remove(pooledTemplates[i]);
                 pooledTemplates[i] = pick.template; used.Add(pick.template); events++;

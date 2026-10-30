@@ -154,7 +154,7 @@ public partial class DungeonGenerator : MonoBehaviour
         Biome = level.BiomeAt(floorNumber, out int floorInBiome, out int biomeFloors);
         FloorInBiome = floorInBiome; BiomeFloors = biomeFloors;
         Milestone = level.Milestone(floorNumber);
-        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); MerchantRoom = -1; shopInPlainRoom = false;
+        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); MerchantRoom = -1; shopInPlainRoom = false; castersInRoom.Clear(); castersOnFloor = 0;
         BeginDressing(seed);
         System.Collections.Generic.List<(Vector2Int, Vector2Int)> authoredDoors = null;
         if (level.layoutMode == DungeonLayoutMode.Authored)
@@ -274,7 +274,7 @@ public partial class DungeonGenerator : MonoBehaviour
         for (int i = 0; i < RoomHeightTiles.Length; i++) { var t = TemplateOf(i); RoomHeightTiles[i] = t != null ? Mathf.Max(1, t.heightTiles) : 1; }
         if (!Authored && Biome != null && Biome.tallRoomChance > 0f)
         {
-            var tall = new System.Random(unchecked(seed + 60013));
+            var tall = new System.Random(Scramble(unchecked(seed + 1299709)));
             for (int i = 1; i < RoomHeightTiles.Length; i++)
             {
                 double roll = tall.NextDouble();
