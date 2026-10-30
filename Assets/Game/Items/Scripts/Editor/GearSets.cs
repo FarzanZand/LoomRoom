@@ -48,18 +48,18 @@ public static class GearSets
         (3, "Steel", new[] { "GOBL_FIGT_01", "GOBL_FIGT_05", "GOBL_FIGT_05", "GOBL_FIGT_05", "GOBL_FIGT_05" }),
         // Swept silver elven plate with gold trim.
         (4, "Elven", new[] { "ELVN_WARR_05", "ELVN_WARR_05", "ELVN_WARR_03", "ELVN_WARR_01", "ELVN_WARR_05" }),
-        // A warlord's horned helm and spiked iron with red cloth.
-        (5, "Warlord", new[] { "VIKG_WARR_10", "GOBL_FIGT_01", "GOBL_FIGT_01", "GOBL_FIGT_02", "GOBL_FIGT_01" }),
+        // A warlord's horned, crested helm and spiked iron with red cloth.
+        (5, "Warlord", new[] { "GOBL_FIGT_02", "GOBL_FIGT_01", "GOBL_FIGT_01", "GOBL_FIGT_02", "GOBL_FIGT_01" }),
         // A green hood with gold trim and green elven plate.
-        (6, "Verdant", new[] { "FANT_SKTN_03", "ELVN_WARR_04", "ELVN_WARR_03", "ELVN_WARR_03", "ELVN_WARR_04" }),
+        (6, "Verdant", new[] { "FANT_SKTN_03", "ELVN_WARR_04", "ELVN_WARR_03", "ELVN_WARR_03", "ELVN_WARR_03" }),
         // A pale hood and dark navy plate swirled with teal.
         (7, "Shadow", new[] { "FANT_SORC_08", "FANT_SORC_02", "FANT_SORC_02", "FANT_SORC_02", "FANT_SORC_02" }),
         // A death knight's spiked crown and dark spiked plate.
         (8, "Grave", new[] { "FANT_SKTN_04", "FANT_SKTN_01", "FANT_SKTN_01", "GOBL_FIGT_01", "FANT_SKTN_05" }),
         // A closed iron helm and blackened plate.
-        (9, "Blackened", new[] { "VIKG_WARR_05", "FANT_SKTN_05", "VIKG_WARR_05", "VIKG_WARR_05", "VIKG_WARR_05" }),
+        (9, "Blackened", new[] { "VIKG_WARR_05", "VIKG_WARR_03", "VIKG_WARR_05", "VIKG_WARR_05", "VIKG_WARR_05" }),
         // Horned gold elven plate.
-        (10, "Gilded", new[] { "ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_02", "ELVN_WARR_01" }),
+        (10, "Gilded", new[] { "ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_01" }),
         // A gold-fanged skull helm and spiked purple and gold plate.
         (11, "Dread", new[] { "FANT_SKTN_02", "FANT_SKTN_02", "FANT_SKTN_02", "FANT_SKTN_02", "FANT_SKTN_02" }),
         // A tall gold-crested helm and blue scale plate with gold.
@@ -77,7 +77,13 @@ public static class GearSets
     // Boots: how far up the shin the set's legs are kept, a share of ankle to knee (0 = none: the foot part is already
     // a tall greave, and the trousers above it only showed as rags), and which sets are built from one boot and its
     // mirror, and from which side ("L" or "R": their two legs differ, and a pair of boots should match).
-    static readonly Dictionary<string, float> BootShin = new() { ["Iron"] = .5f, ["Grave"] = 0f, ["Gilded"] = 0f };
+    static readonly Dictionary<string, float> BootShin = new() { ["Iron"] = .5f, ["Grave"] = 0f };
+    // The parts a piece can't be made without (the others, such as shoulder pads and knee guards, only some sets have).
+    static readonly Dictionary<Slot, string[]> Required = new()
+    {
+        [Slot.Helm] = new[] { "22AHED" }, [Slot.Armor] = new[] { "10TORS" }, [Slot.Gloves] = new[] { "15HNDL", "16HNDR" },
+        [Slot.Boots] = new[] { "20FOTL", "21FOTR" }, [Slot.Leggings] = new[] { "17HIPS" },
+    };
     const float DefaultShin = .72f;
     static readonly Dictionary<string, string> MirroredBoots = new() { ["Steel"] = "R" };
 
@@ -122,9 +128,13 @@ public static class GearSets
 
     // A mesh asset baked again in this session keeps drawing its old shape until it is loaded again from disk (icons
     // came out with the old shape under the new texture), so each new one is unloaded and imported fresh.
+    // The mesh is also named after its file first (a mesh named otherwise logs "Main Object Name does not match
+    // filename" on every import).
     static void Reload(string meshPath)
     {
         var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
+        string file = Path.GetFileNameWithoutExtension(meshPath);
+        if (mesh != null && mesh.name != file) { mesh.name = file; EditorUtility.SetDirty(mesh); AssetDatabase.SaveAssetIfDirty(mesh); }
         if (mesh != null) Resources.UnloadAsset(mesh);
         AssetDatabase.ImportAsset(meshPath, ImportAssetOptions.ForceUpdate);
     }
@@ -197,7 +207,7 @@ public static class GearSets
         foreach (var code in codes)
         {
             var files = Directory.GetFiles(Parts, $"SK_{key}_{code}_*.fbx", SearchOption.AllDirectories);
-            if (files.Length == 0) { if (code == Codes[slot][0]) missing = code; continue; }
+            if (files.Length == 0) { if (Required[slot].Contains(code)) missing = missing == null ? code : $"{missing}, {code}"; continue; }
             var model = AssetDatabase.LoadAssetAtPath<GameObject>(files[0].Replace('\\', '/'));
             var instance = (GameObject)Object.Instantiate(model);
             instance.hideFlags = HideFlags.HideAndDontSave;
@@ -324,17 +334,19 @@ public static class GearSets
 
     // ── Shields ───────────────────────────────────────────────────────
 
-    // Tiers 1-4 keep their painted shields; 5 and 6 are Synty shields restyled at 128 texels a unit, as tall as the
-    // Crystal Shield, held where it is held; turn is the hand's turn about the shield's up axis so its painted face
+    // Tiers 1, 2 and 4 keep their painted shields; 3 (its painted one was a flat grey) and 5-12 are Synty shields
+    // restyled at 128 texels a unit, their larger side as long as the Crystal Shield is tall (a round shield matched by
+    // height came out far wider than the rest), held where it is held; turn is the hand's turn about the shield's up axis so its painted face
     // shows when raised (these packs model their shields facing the other way from Fantasy Kingdom's).
     static readonly (int tier, string name, string synty, float turn)[] Shields =
     {
+        (3, "Steel", "Assets/Synty/PolygonFantasyKingdom/Prefabs/Weapons/SM_Wep_Shield_04.prefab", -90),
         (5, "Warlord", "Assets/Synty/PolygonDungeon/Prefabs/Weapons/SM_Wep_Shield_Round_01.prefab", 90),
-        (6, "Verdant", "Assets/Synty/PolygonDarkFortress/Prefabs/Weapons/SM_Wep_Shield_02.prefab", 90),
+        (6, "Verdant", "Assets/Synty/PolygonDungeon/Prefabs/Weapons/SM_Wep_Shield_Chitin_01.prefab", 90),
         (7, "Shadow", "Assets/Synty/PolygonDarkFortress/Prefabs/Weapons/SM_Wep_Shield_01.prefab", 90),
         (8, "Grave", "Assets/Synty/PolygonDarkFantasy/Prefabs/Weapons/SM_Wep_Shield_01.prefab", 90),
         (9, "Blackened", "Assets/Synty/PolygonDungeonRealms/Prefabs/Weapons/SM_Wep_Shield_07.prefab", 90),
-        (10, "Gilded", "Assets/Synty/PolygonDungeon/Prefabs/Weapons/SM_Wep_Shield_Ornate_01.prefab", 90),
+        (10, "Gilded", "Assets/Synty/PolygonDungeonRealms/Prefabs/Weapons/SM_Wep_Shield_01.prefab", 90),
         (11, "Dread", "Assets/Synty/PolygonDungeon/Prefabs/Weapons/SM_Wep_Shield_Skull_01.prefab", 90),
         (12, "Royal", "Assets/Synty/PolygonDungeonRealms/Prefabs/Weapons/SM_Wep_Shield_05.prefab", 90),
     };
@@ -355,7 +367,8 @@ public static class GearSets
             string piece = $"{name} Shield", dir = $"{PixelRestyle.Root}/Shields/{filter.sharedMesh.name}";
             ItemDatabaseAuthoring.EnsureFolder(dir);
             string path = $"Assets/Game/Items/Prefabs/Shields/{piece}.prefab";
-            float scale = height / Mathf.Max(.01f, filter.sharedMesh.bounds.size.y * filter.transform.lossyScale.y), aim = Texels, measured = 0;
+            var srcSize = Vector3.Scale(filter.sharedMesh.bounds.size, filter.transform.lossyScale);
+            float scale = height / Mathf.Max(.01f, Mathf.Max(srcSize.x, srcSize.y)), aim = Texels, measured = 0;
             // The size goes into the mesh, not the prefab: a held item is set to its held scale, and the root's would be lost.
             var sized = Sized(filter.sharedMesh, scale);
             GameObject prefab = null;
@@ -548,6 +561,8 @@ public static class GearSets
         }
         item.itemName = piece; item.tier = tier; item.tag = $"{tierName} equipment"; item.value = WeaponPrice[tier - 1];
         foreach (var m in item.statModifiers) if (m.stat == StatType.AttackDamage) m.value = SwordDamage[tier - 1] + extraDamage;
+        // The Crystal weapons' own light (+1 m light radius) came along with the copy; it is theirs alone.
+        item.statModifiers = item.statModifiers.Where(m => m.stat != StatType.LightRadius).ToArray();
         item.worldPrefab = prefab; item.pickupVisualPrefab = null;
         item.heldPosition = Vector3.zero; item.heldRotation = Vector3.zero; item.heldScale = 1;
         item.iconSource ??= new ItemIconSource();

@@ -26,7 +26,7 @@ MonoBehaviour:
     turn: {x: 0, y: 0, z: 0}
     flip: 0
   tag: Verdant equipment
-  worldPrefab: {fileID: 259637290716652166, guid: 6d208fcbd956e334cb76d4b812ab2bd2, type: 3}
+  worldPrefab: {fileID: 3611737554186728048, guid: 6d208fcbd956e334cb76d4b812ab2bd2, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 2
   maxStackSize: 1

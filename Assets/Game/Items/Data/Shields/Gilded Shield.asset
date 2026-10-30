@@ -26,7 +26,7 @@ MonoBehaviour:
     turn: {x: 0, y: 0, z: 0}
     flip: 0
   tag: Gilded equipment
-  worldPrefab: {fileID: 916652019621581223, guid: d6e84776ae2728c4a89b31ddc22dd67a, type: 3}
+  worldPrefab: {fileID: 918135192040672723, guid: d6e84776ae2728c4a89b31ddc22dd67a, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 2
   maxStackSize: 1
