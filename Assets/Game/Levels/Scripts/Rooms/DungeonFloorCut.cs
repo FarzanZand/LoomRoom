@@ -87,15 +87,21 @@ public class DungeonFloorCut : MonoBehaviour
             // Held back, but somehow down there all the same (a dash, a knockback): out, without the fall's cost.
             else if (over && p.y < floorY - fallDrop && haveSafe) player.Warp(lastSafe + Vector3.up * .05f);
         }
-        // An enemy knocked back towards the edge goes down: its path keeps it about its own width from the drop, so the
-        // edge is looked for a little further on than its body reaches.
+        // An enemy hit towards the edge goes down: sliding from the blow, or held still by its own swing (the blow's way
+        // is kept either way, EnemyMotor.LastShove). Its path keeps it about its own width from the drop, so the edge is
+        // looked for a little further on than its body reaches. Bosses and elites are never shoved (EnemyMotor.Steadfast):
+        // the edge stays a wall to them.
+        float shoveWindow = CombatManager.HasInstance ? CombatManager.Instance.knockbackDuration : .25f;
         foreach (var brain in EnemyBrain.Active)
         {
-            if (brain == null || !brain.Character.IsAlive || brain.Motor == null || !brain.Motor.IsKnockedBack) continue;
-            if (brain.Motor.KnockbackVelocity.sqrMagnitude < 1f) continue;
-            var p = brain.transform.position + brain.Motor.KnockbackVelocity.normalized * EdgeReach;
+            if (brain == null || !brain.Character.IsAlive || brain.Motor == null || brain.Motor.Steadfast) continue;
+            Vector3 way;
+            if (brain.Motor.IsKnockedBack && brain.Motor.KnockbackVelocity.sqrMagnitude > .04f) way = brain.Motor.KnockbackVelocity.normalized;
+            else if (brain.Motor.RecentlyShoved(shoveWindow)) way = brain.Motor.LastShove;
+            else continue;
+            var p = brain.transform.position + way * EdgeReach;
             if (Mathf.Abs(brain.transform.position.y - floorY) > .8f || !Over(p)) continue;
-            Push(brain);
+            Push(brain, way);
         }
     }
 
@@ -109,9 +115,9 @@ public class DungeonFloorCut : MonoBehaviour
         MessageLog.Post("You fall into the pit and climb out, hurt.", MessageKind.Warning);
     }
 
-    void Push(EnemyBrain brain)
+    void Push(EnemyBrain brain, Vector3 dir)
     {
-        var dir = brain.Motor.KnockbackVelocity; dir.y = 0f;
+        dir.y = 0f;
         var info = new DamageInfo
         {
             Amount = brain.Character.Stats.MaxHealth * 10f, SourceName = "the pit", Magic = true,

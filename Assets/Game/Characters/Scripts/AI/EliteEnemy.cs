@@ -43,6 +43,8 @@ public class EliteEnemy : MonoBehaviour
                 case EliteTrait.Swift: stats.AddModifier(new StatModifier(StatType.AttackSpeed, SwiftAttackSpeed, ModifierType.PercentMultiply, elite)); break;
             }
         character.namePrefix = Word(trait);
+        // Not knocked around or into pits, like a boss: it reels harder instead (EnemyMotor.Steadfast).
+        if (character.TryGetComponent<EnemyMotor>(out var motor)) motor.Steadfast = true;
         elite.Outline(character, Glow(trait));
         return elite;
     }

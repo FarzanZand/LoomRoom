@@ -58,7 +58,9 @@ public class HitReactionController : MonoBehaviour
     void OnEnable()
     {
         if (character != null) { character.Damaged += OnDamaged; character.Died += Clear; }
+        steadfastMotor = GetComponentInParent<EnemyMotor>();
     }
+    EnemyMotor steadfastMotor;
     void OnDisable()
     {
         if (character != null) { character.Damaged -= OnDamaged; character.Died -= Clear; }
@@ -73,6 +75,8 @@ public class HitReactionController : MonoBehaviour
         var direction = impact ? Tuning.ImpactDirection(hit) : hit.Direction;
         // ... and as hard as the weapon type's Stagger Strength says (CombatManager.StaggerStrengthFor).
         float strength = (heavy ? Tuning.heavyRecoilMultiplier : 1f) * (impact ? Tuning.hitImpactStrength * Tuning.StaggerStrengthFor(hit.Weapon) : 1f);
+        // A boss or an elite isn't pushed (EnemyMotor.Steadfast): the blow goes into a harder reel instead.
+        if (impact && steadfastMotor != null && steadfastMotor.Steadfast) strength *= Tuning.steadfastRecoil;
         if (strength <= 0f) return;
         float duration = heavy ? Tuning.heavyRecoilDurationMultiplier : 1f;
         ReactToHit(hit.HitPoint, direction, strength, duration);

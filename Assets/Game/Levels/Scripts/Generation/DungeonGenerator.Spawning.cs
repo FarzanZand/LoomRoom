@@ -847,6 +847,8 @@ public partial class DungeonGenerator
            && enemy.GetComponent<EventActor>()==null && eliteRandom.NextDouble()<Biome.eliteChance)
             eliteFloors=Mathf.Max(0f,Biome.eliteFloors);
         if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber,boss,data.ExtraFloors(FloorNumber)+eliteFloors);
+        // A boss can't be knocked around (or into a pit): it reels harder instead (EnemyMotor.Steadfast). Elites too (EliteEnemy.Make).
+        if(boss && enemy.TryGetComponent<EnemyMotor>(out var bossMotor))bossMotor.Steadfast=true;
         if(eliteFloors>0f)
             EliteEnemy.Make(character,(EliteTrait)eliteRandom.Next(3),eliteFloors);
         var drop=lootRandom!=null ? enemy.GetComponent<DungeonLootDrop>() : null;

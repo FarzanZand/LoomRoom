@@ -483,6 +483,8 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact")]
     [Range(0f, 30f), Tooltip("Degrees the enemy's upper body leans away with the blow, whatever part was struck (times Hit Impact Strength).")]
     public float impactBodySway = 9f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Min(1), Tooltip("Bosses and elites aren't knocked back (or into pits): their hit recoil and lean are this many times as hard instead.")]
+    public float steadfastRecoil = 1.7f;
 
     // Which way a hit throws its victim: away from the attacker, turned toward the blade's travel (Impact From Swing).
     public Vector3 ImpactDirection(DamageInfo info)
