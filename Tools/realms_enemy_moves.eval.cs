@@ -24,8 +24,7 @@ void Edit(string name, System.Action<EnemyData> change)
   finally { UnityEditor.PrefabUtility.UnloadPrefabContents(root); }
 }
 // The Acolyte's spells found by name, so a reorder of its list can't swap the moves.
-EnemySpell Spell(string n) { foreach (var e in acolyte.spells) if (e != null && e.spell != null && e.spell.name == n) return e; sb.Append($"MISSING the Acolyte's {n}
-"); return null; }
+EnemySpell Spell(string n) { foreach (var e in acolyte.spells) if (e != null && e.spell != null && e.spell.name == n) return e; sb.Append($"MISSING the Acolyte's {n}\n"); return null; }
 var fireball = Spell("Fireball"); var fireCircle = Spell("Fire Circle");
 if (fireball != null) Edit("Pit Demon", d => { d.caster = true; d.spells = new System.Collections.Generic.List<EnemySpell> { Copy(fireball) }; d.closesIn = true; });
 if (fireCircle != null) Edit("Forge King", d => { d.caster = true; d.spells = new System.Collections.Generic.List<EnemySpell> { Copy(fireCircle) }; d.closesIn = true; });

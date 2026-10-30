@@ -288,12 +288,12 @@ public partial class AssetStudioWindow
     {
         string id = "new_substat";
         for (int k = 2; props.Any(p => p != null && p.id == id); k++) id = "new_substat_" + k;
-        var def = new ItemPropertyDef { id = id, enabled = true, stat = StatType.MaxHealth, statPerPoint = 1, slots = slot == GearSlots.None ? GearSlots.Weapon : slot, weight = 1, byFloor = new float[] { 1, 2, 3, 4 } };
+        var def = new ItemPropertyDef { id = id, enabled = false, stat = StatType.MaxHealth, statPerPoint = 1, slots = slot == GearSlots.None ? GearSlots.Weapon : slot, weight = 1, byFloor = new float[] { 1, 2, 3, 4 } };
         int at = substatPicked >= 0 && substatPicked < props.Count ? substatPicked + 1 : props.Count;
         SubstatEdit("New substat", () => props.Insert(at, def));
         substatPicked = at;
         substatHideOff = false; substatSearch = "";
-        Toast($"Made {id}: give it an id, a stat and its values on the right.");
+        Toast($"Made {id}, switched off: give it its id, stat and values on the right, then switch it on (ids are saved in items).");
     }
 
     void DrawSubstatDetail(Rect r, List<ItemPropertyDef> props)
