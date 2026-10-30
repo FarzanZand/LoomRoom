@@ -154,7 +154,7 @@ public partial class DungeonGenerator : MonoBehaviour
         Biome = level.BiomeAt(floorNumber, out int floorInBiome, out int biomeFloors);
         FloorInBiome = floorInBiome; BiomeFloors = biomeFloors;
         Milestone = level.Milestone(floorNumber);
-        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); MerchantRoom = -1; shopInPlainRoom = false; castersInRoom.Clear(); castersOnFloor = 0; eliteRandom = new System.Random(Scramble(unchecked(seed + 15485863)));
+        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); propBlocked.Clear(); MerchantRoom = -1; shopInPlainRoom = false; castersInRoom.Clear(); castersOnFloor = 0; eliteRandom = new System.Random(Scramble(unchecked(seed + 15485863)));
         BeginDressing(seed);
         System.Collections.Generic.List<(Vector2Int, Vector2Int)> authoredDoors = null;
         if (level.layoutMode == DungeonLayoutMode.Authored)
@@ -625,6 +625,9 @@ public partial class DungeonGenerator : MonoBehaviour
             }
         }
         var rng = new System.Random(unchecked(seed + 32452843));
+        // The tavern is indoors: a passage that took its plaster showed the inside of the inn from the dungeon (the user,
+        // twice), so passages copy any other room's style and only fall back to the default beside the tavern.
+        bool Tavern(int room) => room >= 0 && room < Layout.rooms.Count && data.shopRoom != null && TemplatePrefab(room) == data.shopRoom;
         for (int region = Layout.rooms.Count; region < links.Length; region++)
         {
             var queue = new System.Collections.Generic.Queue<int>();
@@ -639,7 +642,7 @@ public partial class DungeonGenerator : MonoBehaviour
                     foreach (int neighbor in links[queue.Dequeue()])
                     {
                         if (!seen.Add(neighbor)) continue;
-                        if (neighbor < Layout.rooms.Count) candidates.Add(neighbor);
+                        if (neighbor < Layout.rooms.Count) { if (!Tavern(neighbor)) candidates.Add(neighbor); }
                         else queue.Enqueue(neighbor);
                     }
             }
@@ -654,7 +657,7 @@ public partial class DungeonGenerator : MonoBehaviour
                 foreach (var d in DungeonLayout.Neighbours)
                 {
                     var n = new Vector2Int(x + d.x, z + d.y);
-                    if (!Layout.InBounds(n) || !Layout.floor[n.x,n.y]) continue;
+                    if (!Layout.InBounds(n) || !Layout.floor[n.x,n.y] || Tavern(Layout.RegionIds[n.x,n.y])) continue;
                     var style = RegionStyles[Layout.RegionIds[n.x,n.y]];
                     if (style != null) { RegionStyles[region] = style; break; }
                 }
@@ -720,7 +723,9 @@ public partial class DungeonGenerator : MonoBehaviour
                         WallMaterial(Layout.RegionIds[p.x,p.y],y), Board ? door.transform : transform);
                     DestroyImmediate(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
                     if (tavernDoor) TavernLintelOutside(lintel, dir);
+                    else if (!Board && own != null) WayInRevealOutside(lintel, dir, Layout.RegionIds[n.x,n.y], y);
                 }
+                if (!Board && own != null) WayInJambsOutside(pos, dir, Layout.RegionIds[n.x,n.y], bottom);
                 if (Board && !tavernDoor) BoardDoorFrame(gate, p, n, pos.y + top);
             }
             if (Board && gate != null) boardDoors.Add((gate, p, n));

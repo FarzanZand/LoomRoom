@@ -155,6 +155,7 @@ public partial class DungeonGenerator
         var prefab = TemplatePrefab(MerchantRoom);
         var template = prefab != null ? prefab.GetComponent<DungeonRoomTemplate>() : null;
         if (template == null || template.wayInDoor == null) return;
+        NarrowWaysInto(MerchantRoom);
         foreach (var cell in Layout.RoomCells(MerchantRoom))
             foreach (var dir in DungeonLayout.Neighbours)
             {
@@ -172,6 +173,94 @@ public partial class DungeonGenerator
                 doorways.Add((cell, dir));
                 doorPrefabs[(cell, dir)] = template.wayInDoor;
             }
+    }
+
+    // A passage two cells wide met the tavern with two doors side by side, and its plaster showed from the passage in the
+    // gap between them (the user, twice): each run of ways in along one of its walls is narrowed to one cell, the
+    // passage's cells in front of the others made rock, as long as the floor stays in one piece.
+    void NarrowWaysInto(int room)
+    {
+        foreach (var dir in DungeonLayout.Neighbours)
+        {
+            var side = new Vector2Int(dir.y, -dir.x);
+            var done = new HashSet<Vector2Int>();
+            foreach (var cell in Layout.RoomCells(room))
+            {
+                if (done.Contains(cell) || !Layout.IsOpening(room, cell, dir)) continue;
+                var start = cell;
+                while (Layout.InRoom(room, start - side) && Layout.IsOpening(room, start - side, dir)) start -= side;
+                var run = new List<Vector2Int>();
+                for (var c = start; Layout.InRoom(room, c) && Layout.IsOpening(room, c, dir); c += side) run.Add(c);
+                done.UnionWith(run);
+                if (run.Count < 2) continue;
+                var keep = run[(run.Count - 1) / 2];
+                foreach (var c in run)
+                {
+                    if (c == keep) continue;
+                    var outside = c + dir;
+                    Layout.floor[outside.x, outside.y] = false;
+                    if (!FloorInOnePiece()) { Layout.floor[outside.x, outside.y] = true; continue; }
+                    doorways.RemoveAll(d => d.roomCell == c && d.direction == dir);
+                }
+            }
+        }
+    }
+
+    // A way-in door stands on the room's edge and its doorway runs through the wall on the passage's side, so from the
+    // passage the whole reveal was the tavern's plaster (the user, twice): the lintel and both jambs take the passage's
+    // wall, the lintel keeping 2 cm of the room's own on its inner face. The jambs are lined 2 cm proud of the wall ends.
+    void WayInRevealOutside(GameObject lintel, Vector2Int dir, int passage, float rowBottom)
+    {
+        var outward = new Vector3(dir.x, 0f, dir.y);
+        var size = lintel.transform.localScale;
+        var centre = lintel.transform.position;
+        var parent = lintel.transform.parent;
+        var own = lintel.GetComponent<Renderer>().sharedMaterial;
+        float depth = dir.x != 0 ? size.x : size.z;
+        const float skin = .02f;
+        Vector3 Deep(float d) => dir.x != 0 ? new Vector3(d, size.y, size.z) : new Vector3(size.x, size.y, d);
+        DestroyImmediate(lintel);
+        var inner = ArchitectureBox("Styled door lintel", centre - outward * (depth * .5f - skin * .5f), Deep(skin), own, parent);
+        DestroyImmediate(inner.GetComponent<Collider>());
+        var outer = ArchitectureBox("Door lintel (passage)", centre + outward * (skin * .5f), Deep(depth - skin), WallMaterial(passage, rowBottom), parent);
+        DestroyImmediate(outer.GetComponent<Collider>());
+    }
+
+    void WayInJambsOutside(Vector3 pos, Vector2Int dir, int passage, float top)
+    {
+        var outward = new Vector3(dir.x, 0f, dir.y);
+        var along = new Vector3(dir.y, 0f, dir.x);
+        const float lining = .02f, foot = -.05f;
+        float depth = WallThickness - .015f, half = data.cellSize * .5f, tile = data.architectureTileSize;
+        for (int row = 0; row * tile < top; row++)
+        {
+            float y0 = Mathf.Max(foot, row * tile), y1 = Mathf.Min(top, (row + 1) * tile);
+            if (y1 <= y0) continue;
+            var size = dir.x != 0 ? new Vector3(depth, y1 - y0, lining) : new Vector3(lining, y1 - y0, depth);
+            foreach (int s in new[] { -1, 1 })
+            {
+                var at = pos + along * s * (half - lining * .5f) + outward * (.01f + depth * .5f) + Vector3.up * ((y0 + y1) * .5f);
+                var jamb = ArchitectureBox("Door jamb (passage)", at, size, WallMaterial(passage, row * tile), transform);
+                DestroyImmediate(jamb.GetComponent<Collider>());
+            }
+        }
+    }
+
+    bool FloorInOnePiece()
+    {
+        int w = Layout.floor.GetLength(0), h = Layout.floor.GetLength(1), total = 0;
+        Vector2Int? first = null;
+        for (int x = 0; x < w; x++) for (int z = 0; z < h; z++) if (Layout.floor[x, z]) { total++; first ??= new Vector2Int(x, z); }
+        if (first == null) return true;
+        var seen = new HashSet<Vector2Int> { first.Value };
+        var queue = new Queue<Vector2Int>();
+        queue.Enqueue(first.Value);
+        while (queue.Count > 0)
+        {
+            var c = queue.Dequeue();
+            foreach (var d in DungeonLayout.Neighbours) { var n = c + d; if (Open(n) && seen.Add(n)) queue.Enqueue(n); }
+        }
+        return seen.Count == total;
     }
 
     // prefab: the room's template (RequestedTemplate), whose footprint or minimum size wins.
@@ -516,6 +605,10 @@ public partial class DungeonGenerator
         if (!FindSpot(rule.placement, size, index, order, open, out var pos, out var rotation)) return false;
         var placed = Instantiate(rule.prefab, pos, rotation, geometry);
         BackToWall(placed, rule.placement, size);
+        // Only its spot was free: a big body (a golem's arm, an obelisk) reaches into the cells round it. One that would
+        // stand in a walkway or cut part of the room off from its ways in is taken away again (the user was shut in
+        // a Realms hall by an obelisk beside a fence).
+        if (!LeavesWayOpen(index, placed)) { DestroyImmediate(placed); return true; }
         // What stands against a wall takes the wall faces of the cells it covers: wall pieces and torches, placed after,
         // keep off them (a shelf stood inside a pilaster).
         if (rule.placement == DungeonPropPlacement.AgainstWall || rule.placement == DungeonPropPlacement.Corner)
@@ -531,11 +624,72 @@ public partial class DungeonGenerator
                     for (int z = Mathf.Min(a.y, b.y); z <= Mathf.Max(a.y, b.y); z++) furnished.Add(new Vector2Int(x, z));
             }
         }
-        // Hung from the ceiling (PropMount; made for a one-tile room): up with a taller room's ceiling.
-        if (PropMount.KindOf(rule.prefab) == PropMount.Kind.HangsFromCeiling && RoomHeightTiles != null && index >= 0 && index < RoomHeightTiles.Length)
-            placed.transform.position += Vector3.up * (RoomHeightTiles[index] - 1) * data.architectureTileSize;
+        // Hung from the ceiling (PropMount): its top 2 cm into the ceiling, whatever the room's height, so it hangs from
+        // it (a chain stopped short of it and hung in the air).
+        if (PropMount.KindOf(rule.prefab) == PropMount.Kind.HangsFromCeiling) HangFromCeilingOf(placed, CellOf(pos));
         // Furnishing groups may hold breakables (a barrel under candles, pots on a shelf): give them loot.
         if (placed.GetComponentInChildren<DungeonDestructible>(true) != null) SeedGroup(placed, unchecked(pos.GetHashCode() ^ seed0));
+        return true;
+    }
+
+    void HangFromCeilingOf(GameObject placed, Vector2Int cell)
+    {
+        if (!Layout.InBounds(cell) || !Open(cell)) return;
+        float top = float.MinValue;
+        foreach (var r in placed.GetComponentsInChildren<Renderer>())
+            if (r.enabled && !(r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer)) top = Mathf.Max(top, r.bounds.max.y);
+        if (top == float.MinValue) return;
+        placed.transform.position += Vector3.up * (Cell(cell).y + HeightAt(cell.x, cell.y) + .02f - top);
+    }
+
+    // Cells a placed prop blocks: under its solid colliders that stand higher than a step, a little in from their edges.
+    readonly HashSet<Vector2Int> propBlocked = new();
+    const float StepOver = .4f, BlockInset = .3f;
+
+    // Its blocked cells keep off the room's walkways and ways in, and every other free cell of the room can still be
+    // walked to from them; if so they are taken.
+    bool LeavesWayOpen(int index, GameObject placed)
+    {
+        var cells = new HashSet<Vector2Int>();
+        float floor = Cell(Layout.RoomCenter(index)).y;
+        foreach (var col in placed.GetComponentsInChildren<Collider>())
+        {
+            if (!col.enabled || col.isTrigger) continue;
+            var b = col.bounds;
+            if (b.max.y < floor + StepOver) continue;
+            Vector2Int a = CellOf(new Vector3(Mathf.Min(b.min.x + BlockInset, b.center.x), 0f, Mathf.Min(b.min.z + BlockInset, b.center.z)));
+            Vector2Int z = CellOf(new Vector3(Mathf.Max(b.max.x - BlockInset, b.center.x), 0f, Mathf.Max(b.max.z - BlockInset, b.center.z)));
+            for (int x = a.x; x <= z.x; x++) for (int y = a.y; y <= z.y; y++) cells.Add(new Vector2Int(x, y));
+        }
+        if (cells.Count == 0) return true;
+        var lanes = Lanes(index);
+        bool Free(Vector2Int c) => Layout.InRoom(index, c) && !propBlocked.Contains(c) && !cutCells.Contains(c);
+        foreach (var c in cells)
+        {
+            if (lanes.Contains(c)) return false;
+            // Nor in a part of the room only one cell wide: it is a hallway there, and it was cluttered shut.
+            if (!Free(c + Vector2Int.left) && !Free(c + Vector2Int.right) || !Free(c + Vector2Int.up) && !Free(c + Vector2Int.down)) return false;
+        }
+        var open = new HashSet<Vector2Int>();
+        var ways = new List<Vector2Int>();
+        foreach (var c in Layout.RoomCells(index))
+        {
+            if (cells.Contains(c) || propBlocked.Contains(c) || cutCells.Contains(c)) continue;
+            open.Add(c);
+            foreach (var d in DungeonLayout.Neighbours) if (Layout.IsOpening(index, c, d)) { ways.Add(c); break; }
+        }
+        if (open.Count == 0) return false;
+        var seen = new HashSet<Vector2Int>();
+        var queue = new Queue<Vector2Int>();
+        if (ways.Count == 0) ways.Add(System.Linq.Enumerable.First(open));
+        foreach (var w in ways) if (seen.Add(w)) queue.Enqueue(w);
+        while (queue.Count > 0)
+        {
+            var c = queue.Dequeue();
+            foreach (var d in DungeonLayout.Neighbours) { var n = c + d; if (open.Contains(n) && seen.Add(n)) queue.Enqueue(n); }
+        }
+        if (seen.Count < open.Count) return false;
+        propBlocked.UnionWith(cells);
         return true;
     }
 

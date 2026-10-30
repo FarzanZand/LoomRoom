@@ -162,7 +162,9 @@ Make(1, "The Deep Halls", "Dwarf halls. Nobody has swept in a while.", .12f, new
   Rule("Dwarf brazier", C, .35f, 0, 2),
   Rule("Dwarf banner", W, .5f, 0, 3), Rule("Dwarf banner torn", W, .3f, 0, 2),
   Rule("Dwarf pillar", C, .3f, 0, 2), Rule("Dwarf obelisk", W, .15f, 0, 1), Rule("Broken obelisk", A, .15f, 0, 1),
-  Rule("Realms barrel", W, .3f, 0, 2), Rule("Barrel stack", C, .2f, 0, 1, 1f, 2, 1), Rule("Crate stack", C, .2f, 0, 1),
+  // No barrels that don't break (the user, 2026-10-30: one that can't be broken beside ones that can is confusing): the
+  // shared breakable barrels stand in for them.
+  Rule("Crate stack", C, .2f, 0, 1),
   Rule("Weapon barrel", W, .25f, 0, 1),   // no weapon rack: the pack's is a stone bracket that read as a broken block, and weapons stood through it
   Rule("Stone table", M, .12f, 0, 1, .6f, 1, 1, DungeonRoomRoles.Rest | DungeonRoomRoles.Storage | DungeonRoomRoles.Combat), Rule("Stone bench", W, .2f, 0, 2), Rule("Stone stool", A, .15f, 0, 2),
   Rule("Stone shelf", W, .2f, 0, 1), Rule("Dwarf sarcophagus", W, .12f, 0, 1),
@@ -175,7 +177,7 @@ Make(1, "The Deep Halls", "Dwarf halls. Nobody has swept in a while.", .12f, new
   // Polish 2: the ceilings were bare; more beams and chandeliers overhead, as the demo halls have.
   Rule("Hanging beam", A, .3f, 1, 2), Rule("Hanging chandelier", A, .1f, 0, 1, .6f),
   // Iteration 6: the middle of a hall was bare floor; pillars, a brazier, a table or a totem stand in it, as in the dungeon demo's halls.
-  Rule("Dwarf pillar", M, .2f, 0, 2, .8f), Rule("Dwarf brazier", M, .15f, 0, 1, .8f), Rule("Stone table", M, .12f, 0, 1, .6f, 1, 1), Rule("Dwarf totem", M, .12f, 0, 1, .6f), Rule("Barrel stack", M, .1f, 0, 1, .5f, 2, 1),
+  Rule("Dwarf pillar", M, .2f, 0, 2, .8f), Rule("Dwarf brazier", M, .15f, 0, 1, .8f), Rule("Stone table", M, .12f, 0, 1, .6f, 1, 1), Rule("Dwarf totem", M, .12f, 0, 1, .6f),
 }, new UnityEngine.Color(1f, .66f, .38f),
   L(new UnityEngine.Color(.21f, .23f, .26f), new UnityEngine.Color(.13f, .27f, .29f), new UnityEngine.Color(.07f, .13f, .14f), new UnityEngine.Color(.06f, .3f, .31f), new UnityEngine.Color(1f, .9f, .75f), .3f),
   new UnityEngine.Color(.5f, .85f, .88f), new UnityEngine.Color(1.08f, .93f, .78f), .7f, new UnityEngine.Vector2(6f, 42f));
@@ -183,7 +185,7 @@ Make(1, "The Deep Halls", "Dwarf halls. Nobody has swept in a while.", .12f, new
 // The Forge: the forge demo's orange light (1, .56, .10) everywhere, its flat brown-orange ambient (.35, .19, 0) and red-orange fog.
 Make(2, "The Forge", "The forges are still lit. Someone keeps them lit.", .12f, new[]
 {
-  Rule("Furnace", W, .25f, 0, 1), Rule("Smelting pot", C, .25f, 0, 1), Rule("Molten pit", M, .12f, 0, 1, .7f),
+  Rule("Furnace", W, .25f, 0, 1), Rule("Smelting pot", C, .25f, 0, 1),   // no Molten pit: a bed of coals standing free on the floor looked wrong (the user)
   Rule("Anvil", A, .3f, 0, 2), Rule("Golem arm", A, .1f, 0, 1, .6f, 2, 1), Rule("Golem head", C, .1f, 0, 1, .6f),
   Rule("Cog box", W, .2f, 0, 1), Rule("Cog pile", A, .25f, 0, 2), Rule("Cog pile 2", A, .2f, 0, 1), Rule("Big cog", W, .15f, 0, 1),
   Rule("Ore crate", W, .25f, 0, 2), Rule("Ore crates", C, .2f, 0, 1),
@@ -191,7 +193,7 @@ Make(2, "The Forge", "The forges are still lit. Someone keeps them lit.", .12f, 
   Rule("Ore pile", A, .2f, 0, 1, 1f, 1, 1), Rule("Ore pile 2", A, .15f, 0, 1),
   Rule("Smelter mould", M, .08f, 0, 1, .5f, 2, 1), Rule("Lava duct", C, .2f, 0, 2),
   Rule("Forge hammer", A, .15f, 0, 1), Rule("Forge tongs", A, .15f, 0, 1),
-  Rule("Realms barrel", W, .25f, 0, 2), Rule("Crate stack", C, .2f, 0, 1), Rule("Weapon barrel", W, .15f, 0, 1),
+  Rule("Crate stack", C, .2f, 0, 1), Rule("Weapon barrel", W, .15f, 0, 1),
   Rule("Gold pile", A, .25f, 1, 1, 1f, 1, 1, Rich), Rule("Gold hoard", M, .15f, 0, 1, .6f, 1, 1, Rich),
   Life("Rising embers", .9f),
   Rule("Hanging cage lamp", M, .2f, 1, 2), Rule("Hanging girder", A, .3f, 1, 3), Rule("Hanging girder", A, .25f, 1, 2), Rule("Hanging chains", A, .2f, 0, 2), Rule("Hanging chain ring", M, .1f, 0, 1, .6f), Rule("Lava channel", A, .15f, 0, 1, .7f, 1, 2),

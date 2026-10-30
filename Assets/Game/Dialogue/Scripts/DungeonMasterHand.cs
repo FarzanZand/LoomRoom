@@ -450,20 +450,16 @@ public class DungeonMasterHand : MonoBehaviour
         if (flickFromAbove) lean = Mathf.Min(lean, flickAboveLean);
         openHand = false;
         HandLight(flickLight, new Color(1f, .85f, .65f), finger);
-        // In over the spot, the finger cocking as it comes down. From above: up and over to high above it in the first
-        // part, then straight down (a curve through all four points would cut across the room's walls on the way).
+        // In over the spot, the finger cocking as it comes down.
         for (float t = 0; t < seconds; t += Time.deltaTime)
         {
             Follow();
             float n = t / seconds, u = Mathf.SmoothStep(0, 1, n), v = 1f - u;
             leanGoal = Mathf.Lerp(reachLean * .3f, lean, u);
-            if (flickFromAbove)
-            {
-                const float Over = .6f;
-                if (n < Over) { float a = Mathf.SmoothStep(0, 1, n / Over), b = 1f - a; tipTarget = b * b * from + 2f * b * a * shown + a * a * high; }
-                else tipTarget = Vector3.Lerp(high, cocked, Mathf.SmoothStep(0, 1, (n - Over) / (1f - Over)));
-            }
-            else tipTarget = v * v * v * from + 3f * v * v * u * shown + 3f * v * u * u * high + u * u * u * cocked;
+            // From above: one unbroken arc, out past his face, over and down onto the spot, its last stretch coming
+            // straight down (it went up to a point high over the spot first, stopped there with the arm straight up, then
+            // came down: the user found it unnatural).
+            tipTarget = v * v * v * from + 3f * v * v * u * shown + 3f * v * u * u * high + u * u * u * cocked;
             curl = Mathf.Lerp(.2f, 1f, Mathf.InverseLerp(.55f, .95f, t / seconds));
             yield return null;
         }
@@ -513,10 +509,9 @@ public class DungeonMasterHand : MonoBehaviour
         {
             float n = t / Seconds, u = Mathf.SmoothStep(0, 1, n), v = 1f - u;
             var rest = transform.TransformPoint(restTip);
-            // From above: straight up out of the room first, then back to his side.
-            const float Up = .4f;
-            if (above) tipTarget = n < Up ? Vector3.Lerp(after, high, Mathf.SmoothStep(0, 1, n / Up)) : Vector3.Lerp(high, rest, Mathf.SmoothStep(0, 1, (n - Up) / (1f - Up)));
-            else tipTarget = v * v * after + 2f * v * u * high + u * u * rest;
+            // From above: up out of the room and back to his side on one curve (straight up to a point high over the room
+            // first stretched his arm up like the way in did).
+            tipTarget = v * v * after + 2f * v * u * high + u * u * rest;
             step?.Invoke(u);
             leanGoal = lean * v;
             yield return null;

@@ -101,20 +101,6 @@ MonoBehaviour:
     perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
-  - prefab: {fileID: 2027854398591294355, guid: 97de0cfadec541641b9205664ffcc69e, type: 3}
-    placement: 0
-    footprint: {x: 1, y: 1}
-    perTenCells: 0.78000003
-    perRoom: {x: 0, y: 3}
-    chance: 1
-    rooms: 62
-  - prefab: {fileID: 1026911890824978377, guid: 4ff829c7594e0cb478fa5b15a6011f56, type: 3}
-    placement: 1
-    footprint: {x: 2, y: 1}
-    perTenCells: 0.52
-    perRoom: {x: 0, y: 2}
-    chance: 1
-    rooms: 62
   - prefab: {fileID: 7460126237780276246, guid: b77f2dc9259af73409ee61a906d03969, type: 3}
     placement: 1
     footprint: {x: 1, y: 1}
@@ -331,13 +317,6 @@ MonoBehaviour:
     perTenCells: 0.31199998
     perRoom: {x: 0, y: 2}
     chance: 0.6
-    rooms: 62
-  - prefab: {fileID: 1026911890824978377, guid: 4ff829c7594e0cb478fa5b15a6011f56, type: 3}
-    placement: 2
-    footprint: {x: 2, y: 1}
-    perTenCells: 0.26
-    perRoom: {x: 0, y: 2}
-    chance: 0.5
     rooms: 62
   destructibles:
   - prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}

@@ -144,7 +144,7 @@ var list = new (string name, string src, float height, UnityEngine.Color fire, b
   ("Full height banner", "Props/SM_Prop_Banner_04", 2.75f, default, false),
   ("Full height alcove", "Environments/SM_Env_Dwarf_Wall_Alcove_Angular_01", 3f, default, false),
   ("Tall lava fall", "Environments/SM_Env_Lava_Flow_01", 3f, new UnityEngine.Color(1f, .5f, .15f, 0), false),
-  ("Full height chains", "Environments/SM_Env_Hell_Chains_02", 2.9f, default, false),
+  ("Full height chains", "Environments/SM_Env_Hell_Chains_02", 3.01f, default, false),   // into the ceiling: 2.9 hung free (F9 1ae8ceca)
   ("Full height black rock", "Environments/SM_Env_Hell_Rock_05", 3f, default, false),
   ("Wall shield crest", "Props/SM_Prop_Hanging_Weapon_01", .95f, default, false),
   ("Wall grate", "Environments/SM_Env_Dwarf_Grate_Wall_01", 1.5f, new UnityEngine.Color(1f, .45f, .12f, 0), false),
