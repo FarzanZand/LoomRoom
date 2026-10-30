@@ -21,13 +21,13 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: e8f01b29a807bd74fb78fa22cc290517, type: 3}
   iconSource:
     custom: 0
-    model: {fileID: 0}
+    model: {fileID: 1426479428886692583, guid: 6f23cf5b25a237845b95d574b8b50b8b, type: 3}
     outfit: 
     turn: {x: 0, y: 0, z: 0}
     flip: 0
   tag: Crystal equipment
   worldPrefab: {fileID: 1426479428886692583, guid: 6f23cf5b25a237845b95d574b8b50b8b, type: 3}
-  pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
+  pickupVisualPrefab: {fileID: 0}
   itemType: 6
   maxStackSize: 1
   gridSize: {x: 0, y: 0}
@@ -68,4 +68,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65

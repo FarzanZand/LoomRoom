@@ -27,7 +27,7 @@ public class DuelEvent : MonoBehaviour
     [Range(0, 3), Tooltip("One more friend every this many floors (0: never more).")]
     public int morePerFloors = 3;
     [Header("Reward (a fair win)")]
-    [Range(1, 4)] public int maxTier = 2;
+    [Range(1, 6)] public int maxTier = 2;
     public ItemRarity rarity = ItemRarity.Unique;
     [Header("Lines")]
     public DungeonMaster.Line challengeLine = new() { text = "He wants a duel. Face him." };

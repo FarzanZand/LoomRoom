@@ -21,13 +21,13 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 2c43025f2f4602c4a88845aa2594b69e, type: 3}
   iconSource:
     custom: 0
-    model: {fileID: 0}
+    model: {fileID: 6676149170803668718, guid: b5cbf0c0d5082554596a1d59d00608cf, type: 3}
     outfit: 
     turn: {x: 0, y: 0, z: 0}
     flip: 0
   tag: Iron equipment
-  worldPrefab: {fileID: 0}
-  pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
+  worldPrefab: {fileID: 6676149170803668718, guid: b5cbf0c0d5082554596a1d59d00608cf, type: 3}
+  pickupVisualPrefab: {fileID: 0}
   itemType: 6
   maxStackSize: 1
   gridSize: {x: 0, y: 0}
@@ -68,4 +68,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65

@@ -1004,11 +1004,11 @@ public partial class AssetStudioWindow
         if (d.gearByFloor != null)
             foreach (var row in d.gearByFloor.Where(x => x != null))
             {
-                float sum = Mathf.Max(.01f, row.tier1 + row.tier2 + row.tier3 + row.tier4);
+                float sum = Mathf.Max(.01f, row.tier1 + row.tier2 + row.tier3 + row.tier4 + row.tier5 + row.tier6);
                 var bar = GUILayoutUtility.GetRect(10, 18, GUILayout.ExpandWidth(true));
                 float x = bar.x + 90;
                 GUI.Label(new Rect(bar.x, bar.y, 90, 18), $"from floor {row.fromFloor}", dim);
-                var tiers = new[] { (row.tier1, new Color(.62f, .45f, .26f), "1"), (row.tier2, new Color(.55f, .57f, .6f), "2"), (row.tier3, new Color(.78f, .8f, .84f), "3"), (row.tier4, new Color(.45f, .75f, .9f), "4") };
+                var tiers = new[] { (row.tier1, new Color(.62f, .45f, .26f), "1"), (row.tier2, new Color(.55f, .57f, .6f), "2"), (row.tier3, new Color(.78f, .8f, .84f), "3"), (row.tier4, new Color(.45f, .75f, .9f), "4"), (row.tier5, new Color(.3f, .42f, .36f), "5"), (row.tier6, new Color(.9f, .72f, .3f), "6") };
                 foreach (var (share, colour, name) in tiers)
                 {
                     if (share <= 0) continue;
