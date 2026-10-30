@@ -230,7 +230,7 @@ if (at < 0 || at > stages.Count) at = stages.Count;
 for (int k = 0; k < made.Count; k++) stages.Insert(at + k, new TableLevelData.BiomeStage { biome = made[k], floors = 1, boss = false });
 level.stages = stages.ToArray();
 // Two scripted event rooms on every floor (the user, 2026-10-30), the tavern not counted.
-level.eventRoomsPerFloor = new UnityEngine.Vector2Int(2, 2);
+// The level's event rooms per floor are left to the level asset (they count for every floor, not only the realms').
 UnityEditor.EditorUtility.SetDirty(level);
 UnityEditor.AssetDatabase.SaveAssets();
 sb.Append($"run: {level.RunSummary}\n");

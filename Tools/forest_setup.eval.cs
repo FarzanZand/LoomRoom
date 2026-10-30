@@ -104,6 +104,20 @@ DungeonWeightedPrefab[] Picks(params (string name, float w)[] list)
 
 // The three forests share one recipe; each has its own look (Spec). What lives there and what it drops: the Catacombs'.
 var catacombs = Load<DungeonBiome>("Assets/Game/Levels/Shared/Biomes/Cellars2.asset");
+var cryptBiome = Load<DungeonBiome>("Assets/Game/Levels/Shared/Biomes/Cellars3.asset");
+// The forests are the run's last floors (10-12): enemies at least as strong as the ruins', 3 melee, 1 archer and 1 caster
+// as every late biome has, the Crypt's loot, and a guardian on the last one (the user, 2026-10-30).
+DungeonBiome.Spawn Foe(string path, float w) => new DungeonBiome.Spawn { enemy = Load<UnityEngine.GameObject>($"Assets/Game/Characters/Enemies/{path}.prefab"), weight = w, fromFloor = 1 };
+DungeonBiome.Spawn[] ForestEnemies() => new[] { Foe("Crypt/Crypt Warden", 2), Foe("Realms/Bone Brute", 1.5f), Foe("Crypt/Demon", 1), Foe("Realms/Hall Raider", 2), Foe("Crypt/Crypt Acolyte", 1.5f) };
+DungeonMilestone ForestGuardian() => new DungeonMilestone
+{
+  enabled = true, boss = Load<UnityEngine.GameObject>("Assets/Game/Characters/Enemies/Realms/Undead Knight.prefab"),
+  // a boss takes no per-floor health, so on floor 12 it needs its own: about four of the floor's knights
+  healthMultiplier = 9f, damageMultiplier = 1f, arena = null,
+  title = "Knight of the Moonlit Wood", introMessage = "{boss} steps out from the trees.",
+  introSting = cryptBiome.guardian.introSting, stingVolume = cryptBiome.guardian.stingVolume, bossMusicVolume = .8f,
+  sealExit = true, bossLoot = cryptBiome.guardian.bossLoot, bonusGold = 60, rewardChest = true,
+};
 var floorFall = Ground("Forest floor fall", 3f);
 var clearingFall = Style("Forest2", floorFall, Variants(2f, "Forest floor fall red", "Forest floor fall mossy"));
 DungeonPropRule Rule(string n, int placement, float per10, int max, float chance)
@@ -241,7 +255,8 @@ DungeonBiome Make(string name, string display, string entry, DungeonRoomStyle ro
   // Clearings, never boxes: blobs, trimmed corners, and rings round an island of rock or a tree.
   biome.roomShapes = new[] { new DungeonShapeChoice { kind = DungeonShapeKind.Cave, weight = 4 }, new DungeonShapeChoice { kind = DungeonShapeKind.CutCorners, weight = 1.5f }, new DungeonShapeChoice { kind = DungeonShapeKind.Ring, weight = 1.2f }, new DungeonShapeChoice { kind = DungeonShapeKind.PillarHall, weight = .5f } };
   biome.merchantChance = 1;   // a tavern on every floor: in the woods an open-air inn in a clearing (a board has no walls or roof)
-  biome.guardian = new DungeonMilestone { enabled = false };
+  biome.enemies = ForestEnemies(); biome.loot = cryptBiome.loot;
+  biome.guardian = name == "Forest3" ? ForestGuardian() : new DungeonMilestone { enabled = false };
   biome.lightingPrefabs = new DungeonWallLight[0];
   biome.props = new UnityEngine.GameObject[0];
   biome.destructibles = new DungeonWeightedPrefab[0];   // own look: no cellar barrels and crates
@@ -329,9 +344,8 @@ Make("Forest3", "The Moonlit Wood", "The moon is cold here.", clearing, moss, (1
 var stages = new System.Collections.Generic.List<TableLevelData.BiomeStage>(level.stages);
 int at = stages.FindIndex(s => s != null && made.Contains(s.biome));
 stages.RemoveAll(s => s != null && made.Contains(s.biome));
-if (at < 0) at = stages.FindIndex(s => s != null && s.biome != null && s.biome.name.StartsWith("Ruins"));
-if (at < 0) at = stages.Count;
-foreach (var b in made) stages.Insert(at++, new TableLevelData.BiomeStage { biome = b, floors = 1, boss = false });
+if (at < 0) at = stages.Count;   // on a level without them: last, as in Dungeon1 (floors 10-12)
+foreach (var b in made) stages.Insert(at++, new TableLevelData.BiomeStage { biome = b, floors = 1, boss = b.name == "Forest3" });   // the guardian waits on floor 12
 level.stages = stages.ToArray();
 UnityEditor.EditorUtility.SetDirty(level);
 UnityEditor.AssetDatabase.SaveAssets();

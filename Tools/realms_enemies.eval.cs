@@ -65,8 +65,8 @@ var specs = new (string file, string shown, string template, string body, string
 };
 
 var made = new System.Collections.Generic.Dictionary<string, UnityEngine.GameObject>();
-// Temp/Realms/only.txt, when there: rebuild only the enemies it names (one a line); the lists are set as usual.
-var only = System.IO.File.Exists("Temp/Realms/only.txt") ? new System.Collections.Generic.HashSet<string>(System.IO.File.ReadAllLines("Temp/Realms/only.txt")) : null;
+// Temp/Realms/only_enemies.txt, when there: rebuild only the enemies it names (one a line); the lists are set as usual.
+var only = System.IO.File.Exists("Temp/Realms/only_enemies.txt") ? new System.Collections.Generic.HashSet<string>(System.IO.File.ReadAllLines("Temp/Realms/only_enemies.txt")) : null;
 foreach (var s in specs)
 {
   if (only != null && !only.Contains(s.file)) { made[s.file] = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>($"{D}/{s.file}.prefab"); continue; }
@@ -129,7 +129,7 @@ foreach (var s in specs)
     if (loadout != null) { loadout.hasWeapon = true; loadout.weapon = Load<ItemData>($"Assets/Game/Items/Data/Weapons/{s.weapon}.asset"); }
     var data = root.GetComponent<Character>().data as EnemyData;
     var tdata = template.GetComponent<Character>().data as EnemyData;
-    data.characterName = s.shown;
+    data.characterName = s.file;   // shown as written, capitalised like the Crypt's ("Bone Brute")
     data.creatureKind = s.kind;
     data.gore ??= new GoreProfile();
     data.gore.kind = s.blood; data.gore.color = s.file.Contains("Demon") ? new UnityEngine.Color(.45f, .02f, .05f) : new UnityEngine.Color(.72f, .05f, .04f); data.gore.burstOnDeath = false;
@@ -166,7 +166,7 @@ void Set(string biome, params DungeonBiome.Spawn[] list)
 // Each realm: 3 melee, 1 archer, 1 caster (the user, 2026-10-30).
 Set("Realms1", S("Hall Skeleton", 2), S("Bone Brute", 1), S("Undead Knight", .8f), S("Hall Raider", 2), X("Assets/Game/Characters/Enemies/Crypt/Crypt Acolyte.prefab", 1));
 Set("Realms2", S("Forge Guard", 2), S("Forge Shieldmaiden", 1.5f), S("Forge Miner", 2), S("Hall Raider", 1), S("Forge King", .35f));
-Set("Realms3", S("Undead Knight", 1), S("Bone Brute", 1), S("Hall Skeleton", 1), S("Hall Raider", .8f), S("Pit Demon", 2.2f));
+Set("Realms3", S("Undead Knight", 1), S("Bone Brute", 1), S("Hall Skeleton", 1), S("Hall Raider", .8f), S("Pit Demon", 1f));   // 2.2 made a third of the Pit casters
 UnityEditor.AssetDatabase.SaveAssets();
 } catch (System.Exception e) { sb.Append("ERR " + e); }
 System.IO.Directory.CreateDirectory("Temp/Realms");

@@ -166,7 +166,7 @@ void Mute(UnityEngine.Material m, float k)
 }
 
 int made = 0;
-var only = System.IO.File.Exists("Temp/Realms/only.txt") ? new System.Collections.Generic.HashSet<string>(System.IO.File.ReadAllLines("Temp/Realms/only.txt")) : null;
+var only = System.IO.File.Exists("Temp/Realms/only_props.txt") ? new System.Collections.Generic.HashSet<string>(System.IO.File.ReadAllLines("Temp/Realms/only_props.txt")) : null;
 foreach (var (pname, src, height, fire, flat) in list)
 {
   if (only != null && !only.Contains(pname)) continue;

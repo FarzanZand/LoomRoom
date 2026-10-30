@@ -75,7 +75,7 @@ foreach (var s in specs)
     if (loadout != null) { loadout.hasWeapon = true; loadout.weapon = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>($"Assets/Game/Items/Data/Weapons/{s.weapon}.asset"); }
     var data = root.GetComponent<Character>().data as EnemyData;
     var tdata = template.GetComponent<Character>().data as EnemyData;
-    data.characterName = s.shown; data.creatureKind = CreatureKind.Skeleton;
+    data.characterName = s.file; data.creatureKind = CreatureKind.Skeleton;
     data.gore ??= new GoreProfile(); data.gore.kind = BloodKind.BoneDust; data.gore.burstOnDeath = false;
     void Scale(StatType type, float k)
     {

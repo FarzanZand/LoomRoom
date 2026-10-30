@@ -16,7 +16,8 @@ if (glow == null) sb.Append("MISSING glow\n");
 // Ash: plain square flakes (no texture: a pixel square), lit by the floor's lights.
 var ashMat = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>($"{D}/Ash.mat");
 if (ashMat == null) { ashMat = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Particles/Simple Lit")); UnityEditor.AssetDatabase.CreateAsset(ashMat, $"{D}/Ash.mat"); }
-ashMat.SetColor("_BaseColor", new UnityEngine.Color(.38f, .34f, .33f));   // dark flakes: lit near a torch, a white base showed as white squares UnityEditor.EditorUtility.SetDirty(ashMat);
+ashMat.SetColor("_BaseColor", new UnityEngine.Color(.38f, .34f, .33f));   // dark flakes: lit near a torch, a white base showed as white squares
+UnityEditor.EditorUtility.SetDirty(ashMat);
 
 UnityEngine.Gradient Fade(UnityEngine.Color a, UnityEngine.Color b, bool blink)
 {

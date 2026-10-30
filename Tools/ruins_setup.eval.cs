@@ -61,6 +61,38 @@ foreach (var vn in new[] { "02", "03", "04", "05", "06", "07", "Draped_02" })
 sb.Append($"vines {vines.Count}\n");
 var made = new System.Collections.Generic.List<DungeonBiome>();
 
+// The ruins' own dressing at the realms' density (the Crypt's rules were tombs and pews, and only along the walls, so a
+// ruin read as empty and flat): fallen stone, braziers and tables in the middle of rooms, chains and beams overhead,
+// cobwebs, candles and bones by the walls. Pieces from Levels/Shared/Props/Furnishing and the realms' stone props.
+const string Furn = "Assets/Game/Levels/Shared/Props/Furnishing", Stone = "Assets/Game/Levels/Dungeon1/Realms/Props";
+const DungeonPropPlacement W = DungeonPropPlacement.AgainstWall, C = DungeonPropPlacement.Corner, M = DungeonPropPlacement.Centre, A = DungeonPropPlacement.Anywhere;
+DungeonPropRule Rule(string path, DungeonPropPlacement where, float perTen, int min, int max, float chance = 1f, int fx = 1, int fz = 1)
+{
+  var g = Load<UnityEngine.GameObject>(path);
+  var rule = new DungeonPropRule { prefab = g, placement = where, footprint = new UnityEngine.Vector2Int(fx, fz), perTenCells = perTen * 2.6f, perRoom = new UnityEngine.Vector2Int(min, max + 1), chance = chance };
+  // every 2 m cell the prop's collider covers is reserved (a wide piece must not wall a doorway off)
+  var box = g != null ? g.GetComponent<UnityEngine.BoxCollider>() : null;
+  if (box != null) rule.footprint = new UnityEngine.Vector2Int(UnityEngine.Mathf.Max(fx, UnityEngine.Mathf.CeilToInt(box.size.x / 2f - .05f)), UnityEngine.Mathf.Max(fz, UnityEngine.Mathf.CeilToInt(box.size.z / 2f - .05f)));
+  return rule;
+}
+DungeonPropRule[] RuinsRules(int n) => System.Array.FindAll(new[]
+{
+  // in the middle of rooms
+  Rule($"{Stone}/Rubble.prefab", A, .3f, 0, 2), Rule($"{Stone}/Rubble 2.prefab", A, .2f, 0, 1),
+  Rule($"{Stone}/Fallen pillar.prefab", M, .12f, 0, 1, .7f, 2, 1), Rule($"{Stone}/Broken obelisk.prefab", M, .08f, 0, 1, .6f),
+  Rule($"{Furn}/Brazier.prefab", M, .12f, 0, 1, .8f), Rule($"{Stone}/Stone table.prefab", M, .07f, 0, 1, .5f),
+  Rule($"{Stone}/Black rock.prefab", M, n == 3 ? .12f : .05f, 0, 1, .6f),
+  // overhead
+  Rule($"{Furn}/Hanging chain.prefab", A, .25f, 1, 2), Rule($"{Stone}/Hanging chains.prefab", A, .12f, 0, 1, .7f),
+  Rule($"{Stone}/Hanging beam.prefab", A, .15f, 0, 2, .6f),
+  // by the walls and in the corners
+  Rule($"{Furn}/Cobweb.prefab", C, .5f, 1, 3), Rule($"{Furn}/Candle cluster.prefab", W, .3f, 0, 2),
+  Rule($"{Furn}/Bone pile.prefab", A, .2f, 0, 2), Rule($"{Furn}/Skull pile.prefab", C, .15f, 0, 1),
+  Rule($"{Furn}/Bone heap.prefab", W, .1f, 0, 1, .6f), Rule($"{Furn}/Gargoyle statue.prefab", W, .07f, 0, 1, .5f),
+  Rule($"{Furn}/Broken bookcase.prefab", W, .08f, 0, 1, .5f), Rule($"{Stone}/Stone bench.prefab", W, .08f, 0, 1, .5f),
+  Rule($"{Stone}/Barrel stack.prefab", C, .08f, 0, 1, .5f), Rule($"{Stone}/Crate stack.prefab", C, .08f, 0, 1, .5f),
+}, x => x.prefab != null);
+
 DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lighting, string glow, int glowEvery)
 {
   string name = $"Ruins{n}";
@@ -125,6 +157,9 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   var biome = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
   if (biome == null) { biome = UnityEngine.ScriptableObject.CreateInstance<DungeonBiome>(); UnityEditor.AssetDatabase.CreateAsset(biome, path); }
   biome.CopyContentFrom(crypt);
+  // No Rat nest in a ruin (the user, 2026-10-30), and big halls rare: the ruins' wild walls don't stack up a tall room.
+  biome.roomTemplates = System.Array.FindAll(biome.roomTemplates, t => t != null && t.template != null && t.template.name != "Rat nest");
+  biome.tallRoomChance = 0f;
   // The Crypt's enemies but 3 melee, 1 archer, 1 caster (the user, 2026-10-30): no rats, bats or urn crawlers.
   DungeonBiome.Spawn En(string n, float w) => new DungeonBiome.Spawn { enemy = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>($"Assets/Game/Characters/Enemies/Crypt/{n}.prefab"), weight = w, fromFloor = 1 };
   biome.enemies = new[] { En("Crypt Soldier", 3), En("Crypt Warden", 2), En("Demon", 1), En("Crypt Archer", 2), En("Crypt Acolyte", 2) };
@@ -135,7 +170,7 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   biome.roomStyles = new[] { new DungeonStyleChoice { style = stone, weight = 3 }, new DungeonStyleChoice { style = hall, weight = 2 } };
   biome.corridorStyles = new[] { new DungeonStyleChoice { style = stone, weight = 1 } };
   biome.roomShapes = DungeonBiome.CloneAll(crypt.roomShapes);
-  biome.propRules = DungeonBiome.CloneAll(crypt.propRules);
+  biome.propRules = RuinsRules(n);
   // The breakables every level shares and the level's own (an own look leaves the base out otherwise).
   var breakables = new System.Collections.Generic.List<DungeonWeightedPrefab>();
   if (level.destructibles != null) breakables.AddRange(level.destructibles);
