@@ -113,8 +113,18 @@ public static class DungeonPickup
             var d = under.position - p;
             if (new Vector2(d.x, d.z).magnitude < .6f && d.y > -2.5f && d.y < .6f) return;   // walkable floor right under it
         }
-        if (!NavMesh.SamplePosition(p, out var near, 8f, NavMesh.AllAreas)) return;
-        pickup.transform.position = near.position + Vector3.up * .35f;
+        // the nearest floor at about its own height, looked for in widening rings (the plain nearest point can be a roof)
+        for (float r = 1f; r <= 8f; r += 1f)
+            for (int k = 0; k < 8; k++)
+            {
+                float a = k * Mathf.PI / 4f;
+                var at = p + new Vector3(Mathf.Cos(a) * r, -1f, Mathf.Sin(a) * r);
+                if (!NavMesh.SamplePosition(at, out var near, 1.5f, NavMesh.AllAreas)) continue;
+                float dy = near.position.y - p.y;
+                if (dy < -2.5f || dy > .6f) continue;
+                pickup.transform.position = near.position + Vector3.up * .35f;
+                return;
+            }
     }
 
     // Kinematic loot doesn't fall, so place it resting on the floor below it. Only fixed geometry
@@ -129,7 +139,8 @@ public static class DungeonPickup
             pickup.transform.position += Vector3.up * (floorY + .02f - bounds.min.y);
             return;
         }
-        if (NavMesh.SamplePosition(bounds.center, out var floor, 3f, NavMesh.AllAreas))
+        // never up onto what is overhead (the nearest walkable point over a pit can be the ceiling's top)
+        if (NavMesh.SamplePosition(bounds.center, out var floor, 3f, NavMesh.AllAreas) && floor.position.y < bounds.max.y + .3f)
             pickup.transform.position += Vector3.up * (floor.position.y + .02f - bounds.min.y);
     }
 

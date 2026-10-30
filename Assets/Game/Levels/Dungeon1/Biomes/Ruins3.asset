@@ -18,6 +18,8 @@ MonoBehaviour:
   ownBoardPieces: 0
   ownLook: 1
   plainKit: 0
+  pitWater: {fileID: 2100000, guid: fcb5ceb356183534aa9071b2b73324d0, type: 2}
+  pitWaterBelow: 0.4
   wilds:
     enabled: 1
     roofed: 1
