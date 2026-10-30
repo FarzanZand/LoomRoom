@@ -79,4 +79,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: You eat the meat. Best not to ask what it was.
   AnimationOnUse: 1
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 1.4

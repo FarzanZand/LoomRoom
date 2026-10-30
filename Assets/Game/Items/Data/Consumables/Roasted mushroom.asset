@@ -79,4 +79,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 1
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 1.4
