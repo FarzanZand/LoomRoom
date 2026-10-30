@@ -31,8 +31,8 @@ MonoBehaviour:
   itemType: 6
   maxStackSize: 1
   gridSize: {x: 0, y: 0}
-  value: 550
-  tier: 5
+  value: 750
+  tier: 8
   lootWeight: 1
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
@@ -48,7 +48,7 @@ MonoBehaviour:
   equipOnPickup: 0
   statModifiers:
   - stat: 1
-    value: 20
+    value: 32
     type: 0
   weapon:
     useDefaultEffects: 1

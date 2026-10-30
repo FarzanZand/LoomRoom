@@ -1000,15 +1000,16 @@ public partial class AssetStudioWindow
         PageHeader("Loot", "What drops on these floors: the gear's tier by floor, each floor's loot, the chests, the boss's reward and the rules every dungeon shares.");
 
         Section("GEAR BY FLOOR");
-        GUILayout.Label("Which tier gear comes in, from each floor on (1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal).", dim);
+        GUILayout.Label("Which tier gear comes in, from each floor on (1 Bronze/Leather, 2 Iron, 3 Steel, 4 Elven/Crystal, 5 Warlord, 6 Verdant, 7 Shadow, 8 Grave, 9 Blackened, 10 Gilded, 11 Dread, 12 Royal).", dim);
         if (d.gearByFloor != null)
             foreach (var row in d.gearByFloor.Where(x => x != null))
             {
-                float sum = Mathf.Max(.01f, row.tier1 + row.tier2 + row.tier3 + row.tier4 + row.tier5 + row.tier6);
+                var shares = row.Shares; float sum = Mathf.Max(.01f, shares.Sum());
                 var bar = GUILayoutUtility.GetRect(10, 18, GUILayout.ExpandWidth(true));
                 float x = bar.x + 90;
                 GUI.Label(new Rect(bar.x, bar.y, 90, 18), $"from floor {row.fromFloor}", dim);
-                var tiers = new[] { (row.tier1, new Color(.62f, .45f, .26f), "1"), (row.tier2, new Color(.55f, .57f, .6f), "2"), (row.tier3, new Color(.78f, .8f, .84f), "3"), (row.tier4, new Color(.45f, .75f, .9f), "4"), (row.tier5, new Color(.3f, .42f, .36f), "5"), (row.tier6, new Color(.9f, .72f, .3f), "6") };
+                var colours = new[] { new Color(.62f, .45f, .26f), new Color(.55f, .57f, .6f), new Color(.78f, .8f, .84f), new Color(.45f, .75f, .9f), new Color(.62f, .3f, .24f), new Color(.36f, .62f, .3f), new Color(.52f, .38f, .72f), new Color(.3f, .42f, .36f), new Color(.32f, .32f, .4f), new Color(.9f, .72f, .3f), new Color(.95f, .45f, .15f), new Color(.92f, .9f, .82f) };
+                var tiers = shares.Select((share, i) => (share, colours[i], (i + 1).ToString()));
                 foreach (var (share, colour, name) in tiers)
                 {
                     if (share <= 0) continue;

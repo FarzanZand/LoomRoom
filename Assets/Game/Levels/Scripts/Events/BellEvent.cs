@@ -18,7 +18,7 @@ public class BellEvent : MonoBehaviour
     [Range(1, 5), Tooltip("Waves a ring brings, each once the last is down.")] public int wavesPerRing = 3;
     [Tooltip("The last ring's chest also holds a random piece of gear rolled Legendary.")]
     public bool legendaryLast = true;
-    [Range(1, 6)] public int maxTier = 2;
+    [Range(1, 12)] public int maxTier = 2;
     [Header("Lines")]
     public DungeonMaster.Line[] ringLines =
     {

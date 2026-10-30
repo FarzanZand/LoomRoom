@@ -28,7 +28,7 @@ public class DiceEvent : MonoBehaviour
     [Range(1, 4), Tooltip("Each of the ambush's waves (a 1) is this many times its usual size.")] public int ambushScale = 2;
     [Tooltip("The effect on the player when a 4 heals them.")] public GameObject healEffect;
     [Tooltip("Testing: the face it always lands on (0: the floor's seed picks).")] [Range(0, 6)] public int forceFace;
-    [Range(1, 6)] public int maxTier = 2;
+    [Range(1, 12)] public int maxTier = 2;
     [Header("Lines")]
     [Tooltip("Said once, as the player comes into the room.")]
     public DungeonMaster.Line enterLine = new() { text = "One roll. Shake the cup if you dare, and the board says what you get." };

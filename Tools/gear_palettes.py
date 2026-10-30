@@ -1,41 +1,52 @@
 # python Tools/gear_palettes.py <out dir>
-# The six armour tiers' colour palettes (Items/Scripts/Editor/GearSets.cs). Sidekick outfit parts all share one 32 x 32
-# palette layout (each texel a named colour: leather, metal, cloth ...), so one palette colours a whole tier whatever
-# pack its parts come from. Each tier's palette is a Sidekick preset's, with the bare skin texels painted over in the
-# tier's padding colour (the parts show skin at the neck, arms and between plates; worn gear shows the shirt or mail
-# under it instead), and Crystal's turned to ice blue.
-import colorsys, os, sys
+# The armour tiers' colour palettes (Items/Scripts/Editor/GearSets.cs). Sidekick outfit parts all share one 32 x 32
+# palette layout (each texel a named colour: leather, metal, cloth ...), and every Synty preset has its own palette.
+# Each piece keeps its preset's own colours: "<Tier> <Slot> palette.png" is the palette of the preset its parts come
+# from (a preset with no palette of its own, such as Viking Warrior 10, uses its pack's first, as Synty's tool does),
+# with only the bare skin texels painted over in the tier's padding colour (the parts show skin at the neck, arms and
+# between plates; worn gear shows the shirt or mail under it instead). "<Tier> palette.png" is the body armour's, the
+# builder's fallback. Keep TIERS in step with GearSets.Tiers.
+import os, sys
 from PIL import Image
 
 SK = "Assets/Synty/SidekickCharacters/Characters"
 # Texels the human, elf and goblin bodies are painted with (u, v from the bottom): skin and its shades.
 SKIN = [(0, 10), (0, 11), (2, 4), (2, 6), (4, 4), (4, 6)]
+PACKS = {"ELVN_WARR": ("ElvenWarriors", "ElvenWarriors_{:02d}"), "FANT_SKTN": ("FantasySkeletons", "FantasySkeletons_{:02d}"),
+         "FANT_SORC": ("FantasySorcerers", "FantasySorcerers_{:02d}"), "GOBL_FIGT": ("GoblinFighters", "GoblinFighter_{:02d}"),
+         "VIKG_WARR": ("VikingWarriors", "VikingWarrior_{:02d}")}
+SLOTS = ["Helm", "Armor", "Gloves", "Boots", "Leggings"]
 
 TIERS = [
-    # tier, source palette, padding colour, ice
-    ("Leather", "VikingWarriors/VikingWarrior_06/Textures/T_VikingWarrior_06ColorMap.png", (58, 44, 34), False),
-    ("Iron", "VikingWarriors/VikingWarrior_01/Textures/T_VikingWarrior_01ColorMap.png", (78, 80, 86), False),
-    ("Steel", "GoblinFighters/GoblinFighter_05/Textures/T_GoblinFighter_05ColorMap.png", (64, 66, 72), False),
-    ("Crystal", "ElvenWarriors/ElvenWarriors_05/Textures/T_ElvenWarriors_05ColorMap.png", (40, 58, 86), True),
-    ("Grave", "FantasySkeletons/FantasySkeletons_01/Textures/T_FantasySkeletons_01ColorMap.png", (28, 34, 30), False),
-    ("Gilded", "ElvenWarriors/ElvenWarriors_01/Textures/T_ElvenWarriors_01ColorMap.png", (30, 70, 80), False),
+    # tier, padding colour, the preset of each slot's parts (helm, body, gloves, boots, leggings)
+    ("Leather", (58, 44, 34), ["FANT_SKTN_01", "VIKG_WARR_06", "VIKG_WARR_06", "VIKG_WARR_06", "VIKG_WARR_06"]),
+    ("Iron", (78, 80, 86), ["VIKG_WARR_04", "VIKG_WARR_01", "VIKG_WARR_03", "VIKG_WARR_04", "VIKG_WARR_03"]),
+    ("Steel", (64, 66, 72), ["GOBL_FIGT_01", "GOBL_FIGT_05", "GOBL_FIGT_05", "GOBL_FIGT_05", "GOBL_FIGT_05"]),
+    ("Elven", (56, 58, 62), ["ELVN_WARR_05", "ELVN_WARR_05", "ELVN_WARR_03", "ELVN_WARR_01", "ELVN_WARR_05"]),
+    ("Warlord", (52, 40, 38), ["VIKG_WARR_10", "GOBL_FIGT_01", "GOBL_FIGT_01", "GOBL_FIGT_02", "GOBL_FIGT_01"]),
+    ("Verdant", (34, 56, 36), ["FANT_SKTN_03", "ELVN_WARR_04", "ELVN_WARR_03", "ELVN_WARR_03", "ELVN_WARR_04"]),
+    ("Shadow", (30, 34, 52), ["FANT_SORC_08", "FANT_SORC_02", "FANT_SORC_02", "FANT_SORC_02", "FANT_SORC_02"]),
+    ("Grave", (28, 34, 30), ["FANT_SKTN_04", "FANT_SKTN_01", "FANT_SKTN_01", "GOBL_FIGT_01", "FANT_SKTN_05"]),
+    ("Blackened", (24, 24, 28), ["VIKG_WARR_05", "FANT_SKTN_05", "FANT_SKTN_02", "FANT_SKTN_02", "VIKG_WARR_05"]),
+    ("Gilded", (30, 70, 80), ["ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_02", "ELVN_WARR_01"]),
+    ("Dread", (36, 26, 40), ["FANT_SKTN_02", "FANT_SKTN_02", "FANT_SKTN_02", "FANT_SKTN_02", "FANT_SKTN_02"]),
+    ("Royal", (40, 48, 80), ["ELVN_WARR_04", "ELVN_WARR_02", "ELVN_WARR_02", "ELVN_WARR_02", "ELVN_WARR_02"]),
 ]
 
-def ice(rgb):
-    # Every colour toward pale blue ice, keeping its lightness order: darks go deep blue, lights go near white-blue.
-    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
-    h, s, v = .53 + (1 - v) * .06, min(1, .55 - v * .35 + s * .15), v * .62 + .38
-    return tuple(int(round(c * 255)) for c in colorsys.hsv_to_rgb(h, max(.08, s), min(1, v)))
+def palette(preset):
+    folder, fmt = PACKS[preset[:9]]
+    for n in (int(preset[-2:]), 1):
+        path = os.path.join(SK, folder, fmt.format(n), "Textures", f"T_{fmt.format(n)}ColorMap.png")
+        if os.path.exists(path): return path
+    raise FileNotFoundError(preset)
 
 out = sys.argv[1]
 os.makedirs(out, exist_ok=True)
-for tier, src, pad, icy in TIERS:
-    im = Image.open(os.path.join(SK, src)).convert("RGB")
-    px = im.load()
-    for u, v in SKIN: px[u, 31 - v] = pad
-    if icy:
-        for y in range(32):
-            for x in range(32):
-                if px[x, y] != (255, 0, 255): px[x, y] = ice(px[x, y])
-    im.save(os.path.join(out, f"{tier} palette.png"))
+for tier, pad, presets in TIERS:
+    for slot, preset in zip(SLOTS, presets):
+        im = Image.open(palette(preset)).convert("RGB")
+        px = im.load()
+        for u, v in SKIN: px[u, 31 - v] = pad
+        im.save(os.path.join(out, f"{tier} {slot} palette.png"))
+        if slot == "Armor": im.save(os.path.join(out, f"{tier} palette.png"))
     print("wrote", tier)

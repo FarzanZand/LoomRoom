@@ -13,7 +13,7 @@ public class SleepingGiantEvent : MonoBehaviour
     [Min(0)] public int goldPerPile = 6;
     [Min(0)] public int goldPerFloor = 3;
     [Tooltip("The rarity the hoard's gear is rolled at.")] public ItemRarity gearRarity = ItemRarity.Rare;
-    [Range(1, 6)] public int maxTier = 2;
+    [Range(1, 12)] public int maxTier = 2;
     [Tooltip("Its snore (empty: the level's).")] public AudioClip snore;
     [Range(0f, 3f), Tooltip("Share of a sound's reach it hears in its sleep (a sleeping pack's is .5): 1.7 hears a walking step from about 5 m and a running one from across the room; a crouching step is never heard.")] public float hearing = 1.7f;
     [Min(.2f), Tooltip("Seconds it takes to get up.")] public float riseSeconds = 1.8f;

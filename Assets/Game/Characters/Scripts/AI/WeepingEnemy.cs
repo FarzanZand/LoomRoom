@@ -17,7 +17,7 @@ public class WeepingEnemy : MonoBehaviour
     public bool openWithVolley = true;
     [Header("Reward")]
     [Tooltip("The highest gear tier its Legendary drop is picked from (the demo's gear is tiers 1 and 2).")]
-    [Range(1, 6)] public int maxTier = 2;
+    [Range(1, 12)] public int maxTier = 2;
     [Tooltip("The spoils it always drops (empty: the meta progression's biggest kind).")] public ItemData spoils;
     [Min(1)] public int spoilsCount = 1;
 
