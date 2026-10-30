@@ -42,7 +42,7 @@ public partial class AssetStudioWindow : EditorWindow
     static readonly string[] RoomSorts = { "By name", "By where they are", "By kind" };
     readonly List<string> recent = new();  // last picked, newest first (the Recent list)
     // Which view the window shows, one at a time: a category's list, or one of the views above the categories.
-    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue, Levels, Dungeon }
+    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue, Levels, Dungeon, Substats }
     [SerializeField] StudioView view;
     // Leaving the Dialogue view writes back what was typed there.
     StudioView studioView { get => view; set { if (value != view) CommitDialogue(true); view = value; } }
@@ -450,6 +450,7 @@ public partial class AssetStudioWindow : EditorWindow
         DrawCategories(catRect);
         inspectorWanted = null;
         if (showingDialogue) DrawDialogue(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));
+        else if (showingSubstats) DrawSubstats(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));   // AssetStudioWindow.Substats
         else
         {
             DrawList(listRect);
@@ -497,7 +498,7 @@ public partial class AssetStudioWindow : EditorWindow
         if (only != inGameOnly) { inGameOnly = only; EditorPrefs.SetBool(InGameOnlyKey, only); Filter(); listScroll = Vector2.zero; }
         GUI.Label(new Rect(r.x + 8, r.yMax - 24, r.width - 16, 18), "<color=#6fd46a>✔</color> = used in the game", new GUIStyle(dim) { richText = true });
         r.height -= 50;
-        var view = new Rect(0, 0, r.width - 16, (categories.Count + 7) * 30 + 12);
+        var view = new Rect(0, 0, r.width - 16, (categories.Count + 8) * 30 + 12);
         categoryScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 26, r.width, r.height - 26), categoryScroll, view);
         // Dungeon: one dungeon the way a run goes, made, tuned and played in one place (AssetStudioWindow.Dungeon).
         if (GUI.Toggle(new Rect(4, 2, view.width - 4, 28), showingDungeon, "  Dungeon   <color=#a9a49a>the Crypt</color>", showingDungeon ? cellSelected : cell) && !showingDungeon) OpenDungeon();
@@ -515,11 +516,13 @@ public partial class AssetStudioWindow : EditorWindow
         if (GUI.Toggle(new Rect(4, 152, view.width - 4, 28), showingLevels, $"  Levels   <color=#a9a49a>{World.levels.Count(x => !x.tool)}</color>", showingLevels ? cellSelected : cell) && !showingLevels) OpenLevels();
         // Dialogue: every Dungeon Master line, by where it plays (AssetStudioWindow.Dialogue).
         if (GUI.Toggle(new Rect(4, 182, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
+        // Substats: what rolled gear can get, by item type, edited in place (AssetStudioWindow.Substats).
+        if (GUI.Toggle(new Rect(4, 212, view.width - 4, 28), showingSubstats, $"  Substats   <color=#a9a49a>{SubstatCount} on gear</color>", showingSubstats ? cellSelected : cell) && !showingSubstats) OpenSubstats();
         for (int i = 0, line = 0; i < categories.Count; i++)
         {
             var c = categories[i];
             if (c.hidden) continue;
-            var row = new Rect(4, 12 + (line++ + 7) * 30, view.width - 4, 28);
+            var row = new Rect(4, 12 + (line++ + 8) * 30, view.width - 4, 28);
             bool on = studioView == StudioView.Category && i == categoryIndex;
             if (GUI.Toggle(row, on, $"  {c.name}   <color=#a9a49a>{Count(c)}</color>", on ? cellSelected : cell) && !on)
             {
@@ -893,7 +896,7 @@ public partial class AssetStudioWindow : EditorWindow
     void HandleKeys()
     {
         var e = Event.current;
-        if (showingWorld || showingDialogue || showingDungeon) return;   // the World's tree and the Dungeon's pages are clicked, not stepped through; Dialogue is typed in
+        if (showingWorld || showingDialogue || showingDungeon || showingSubstats) return;   // the World's tree and the Dungeon's pages are clicked, not stepped through; Dialogue is typed in
         if (!EditorGUIUtility.editingTextField && preview != null && preview.HandlePaintKey(e)) return;
         if (e.type != EventType.KeyDown || GUI.GetNameOfFocusedControl() == "search" && e.keyCode != KeyCode.DownArrow && e.keyCode != KeyCode.UpArrow) return;
         if (EditorGUIUtility.editingTextField && GUI.GetNameOfFocusedControl() != "search") return;
