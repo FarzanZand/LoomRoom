@@ -31,6 +31,8 @@ public class DungeonBiome : ScriptableObject
     public bool ownBoardPieces;
     [TabGroup(Look), HideIf(nameof(isLevelBase)), Tooltip("Leave out the level's room and corridor styles, furnishing rules and props: this biome's floors use only its own (a forest stage in a dungeon of cellars). Its first room style stands in for the level's default style.")]
     public bool ownLook;
+    [TabGroup(Look), ShowIf("@ownLook && !isLevelBase"), Tooltip("Hand-built rooms on this biome's floors build their kit pieces (pillars, arches, rubble, railings) of plain blocks in the room's own stone instead of the kit's painted models (grey crypt stone that stands out in a look of its own).")]
+    public bool plainKit;
     [TabGroup(Look), InlineProperty, HideLabel, Title("Wild ground", "Raised banks of earth or rock round the rooms and paths, with growth on them. Board floors: they fill the table round the board. Walled floors: they stand in for the walls (Roofed keeps the ceilings, for a cave).", HorizontalLine = false)]
     public BoardWilds wilds = new();
     [TabGroup(Look), InfoBox("A level's base biome: what every floor of the level shares (its Level tab, room features and lists; a stage's biome adds its own lists). On a level without stages every floor is this biome.", VisibleIf = nameof(isLevelBase))]

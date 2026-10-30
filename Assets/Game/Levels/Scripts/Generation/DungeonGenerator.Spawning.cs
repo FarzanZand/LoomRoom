@@ -133,7 +133,10 @@ public partial class DungeonGenerator
             if (!tpl.HasFootprint) return true;
             var fp = tpl.Footprint(); var rect = Layout.rooms[room];
             bool across = rect.width >= fp.width && rect.height >= fp.height, turned = rect.width >= fp.height && rect.height >= fp.width;
-            return (across || turned) && Layout.RoomCells(room).Count >= fp.FloorCount * .9f;
+            // Not in a room much bigger than it was made for either: a small event room centred in a big hall left the hall's
+            // doors behind its walls (a Card table in a 14 x 11 room, unreachable).
+            int cells = Layout.RoomCells(room).Count;
+            return (across || turned) && cells >= fp.FloorCount * .9f && cells <= fp.FloorCount * 1.6f;
         }
         // Passes: rooms without a hand-built room, then in place of an ordinary one, then (still short) whatever the
         // room's kind, never the entrance, the exit or the merchant's.
@@ -407,7 +410,7 @@ public partial class DungeonGenerator
         // Kit blocks (pillars, platforms, steps, niches) become boxes of this room's own stone, before the NavMesh bake.
         var centre=Layout.RoomCenter(index);
         foreach(var piece in instance.GetComponentsInChildren<DungeonKitPiece>(true))
-            if(piece!=null)piece.Choose(data.kitModels,HeightAt(centre.x,centre.y));
+            if(piece!=null)piece.Choose(data.kitModels && !(OwnLook && StageBiome.plainKit),HeightAt(centre.x,centre.y));
         foreach(var block in instance.GetComponentsInChildren<DungeonKitBlock>(true))
         {
             // A board has no ceiling: what hangs from one (the tavern's beams, a pillar's capital) isn't there.

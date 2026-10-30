@@ -67,8 +67,10 @@ DungeonRoomStyle Style(int n)
   // stacked up a tall hall's wall).
   DungeonWeightedPrefab Dec(string n, float w) => new DungeonWeightedPrefab { prefab = Load<UnityEngine.GameObject>($"{P}/{n}.prefab"), weight = w };
   style.wallDecor = n == 1 ? new[] { Dec("Full height pilaster", 3), Dec("Full height pilaster carved", 2), Dec("Full height banner", 2), Dec("Wall shield crest", 1.2f), Dec("Full height alcove", .8f) }
-    : n == 2 ? new[] { Dec("Full height pilaster carved", 3), Dec("Tall lava fall", 1.4f), Dec("Wall grate", 1.2f), Dec("Full height chains", 1), Dec("Full height banner", .6f) }
-    : new[] { Dec("Full height black rock", 3), Dec("Tall lava fall", 1.6f), Dec("Full height chains", 1.8f) };
+    : n == 2 ? new[] { Dec("Full height pilaster carved", 3), Dec("Wall grate", 1.2f), Dec("Full height chains", 1), Dec("Full height banner", .6f) }
+    : new[] { Dec("Full height black rock", 3), Dec("Full height chains", 1.8f) };
+  // Polish 4: no lava falls on the walls: they are flat glowing cards that read as orange slabs and blew out the view up
+  // close. The lava is in the floor (channels, pits, the pots).
   style.wallDecorPerTenFaces = 6f;
   UnityEditor.EditorUtility.SetDirty(style);
   return style;
@@ -105,6 +107,11 @@ DungeonBiome Make(int n, string display, string entry, float templates, DungeonP
   biome.displayName = display; biome.entryMessage = entry; biome.entryLines = new DungeonMaster.Line[0];
   biome.kind = DungeonFloorKind.Dungeon;
   biome.ownLook = true; biome.ownBoardPieces = false;
+  // Polish 1: the Crypt's hand-built rooms built of the realm's own stone (their painted kit pillars were grey crypt stone),
+  // and the ones that are the Crypt itself (bone niches, coffins, pews, moonlight, the witch) left out of the pool.
+  biome.plainKit = true;
+  var cryptRooms = new System.Collections.Generic.HashSet<string> { "Crypt niches", "Ossuary", "Burial hall", "Chapel", "Bone chapel", "Not a witch", "Rat nest", "Moonlit fountain", "Shrine of Ashes" };
+  biome.roomTemplates = System.Array.FindAll(biome.roomTemplates, t => t != null && t.template != null && !cryptRooms.Contains(t.template.name));
   biome.roomStyles = new[] { new DungeonStyleChoice { style = style, weight = 1 } };
   biome.corridorStyles = new[] { new DungeonStyleChoice { style = style, weight = 1 } };
   biome.roomShapes = DungeonBiome.CloneAll(crypt.roomShapes);
@@ -122,6 +129,9 @@ DungeonBiome Make(int n, string display, string entry, float templates, DungeonP
   biome.guardian = new DungeonMilestone { enabled = false };
   biome.overrideDungeonSettings = true;
   biome.roomFeatures = DungeonBiome.Clone(crypt.overrideDungeonSettings && crypt.roomFeatures != null ? crypt.roomFeatures : level.roomFeatures ?? new DungeonRoomFeatures());
+  // Polish 3: deep under the ground there is no moonlight, and only the pit has witch-fire (a green room read as a fault in
+  // the halls and the forge); no dark rooms either, the realms are lit throughout.
+  biome.roomFeatures.moonlitRooms = false; biome.roomFeatures.darkRooms = false; biome.roomFeatures.eerieRooms = n == 3;
   biome.wilds = new BoardWilds { enabled = false };
   biome.lighting = DungeonBiome.Lighting.Custom; biome.lightingSettings = light;
   // The demo scenes' coloured dark (teal in the halls, red-orange haze in the forge, red in the pit) reaches every
@@ -129,7 +139,7 @@ DungeonBiome Make(int n, string display, string entry, float templates, DungeonP
   biome.litThroughout = true; biome.fog = fog; biome.lightRadius = 0f;
   biome.shadowTint = shadow; biome.lampTint = lamp; biome.filmicLook = filmic;
   biome.lightingPrefabs = new[] { new DungeonWallLight { prefab = torch, weight = 1, overrideColor = true, color = torchColour } };
-  biome.overrideTorchColor = false; biome.torchBrightness = n == 1 ? .95f : n == 2 ? 1.45f : 1.9f;
+  biome.overrideTorchColor = false; biome.torchBrightness = n == 1 ? 1.05f : n == 2 ? 1.6f : 2.3f;
   biome.torchesPerRoom = n == 1 ? biome.torchesPerRoom : new UnityEngine.Vector2Int(UnityEngine.Mathf.Max(2, biome.torchesPerRoom.x), UnityEngine.Mathf.Max(3, biome.torchesPerRoom.y + 1));
   UnityEditor.EditorUtility.SetDirty(biome);
   sb.Append($"{name}: style {style.name}, rules {rules.Length}, breakables {biome.destructibles.Length}, enemies {biome.enemies.Length}\n");
@@ -159,6 +169,8 @@ Make(1, "The Deep Halls", "Dwarf halls. Nobody has swept in a while.", .12f, new
   Rule("Dwarf rug", M, .15f, 0, 1, .5f, 2, 1), Rule("Gold hoard", M, .2f, 1, 1, 1f, 1, 1, Rich), Rule("Gold hoard", C, .1f, 0, 1, .35f),
   Any("Assets/Game/Levels/Shared/Props/Furnishing/Cobweb.prefab", C, .5f, 1, 3), Life("Dust motes", .9f),
   Rule("Hanging chandelier", M, .2f, 1, 2), Rule("Hanging beam", A, .3f, 1, 3), Rule("Dwarf throne", W, .06f, 0, 1, .6f, 1, 1, DungeonRoomRoles.Treasure | DungeonRoomRoles.Rest | DungeonRoomRoles.Combat), Rule("Dwarf totem", C, .15f, 0, 1), Rule("Rubble", A, .3f, 0, 2), Rule("Rubble 2", A, .2f, 0, 1), Rule("Fallen pillar", A, .1f, 0, 1, .6f, 2, 1),
+  // Polish 2: the ceilings were bare; more beams and chandeliers overhead, as the demo halls have.
+  Rule("Hanging beam", A, .3f, 1, 2), Rule("Hanging chandelier", A, .1f, 0, 1, .6f),
   // Iteration 6: the middle of a hall was bare floor; pillars, a brazier, a table or a totem stand in it, as in the dungeon demo's halls.
   Rule("Dwarf pillar", M, .2f, 0, 2, .8f), Rule("Dwarf brazier", M, .15f, 0, 1, .8f), Rule("Stone table", M, .12f, 0, 1, .6f, 1, 1), Rule("Dwarf totem", M, .12f, 0, 1, .6f), Rule("Barrel stack", M, .1f, 0, 1, .5f, 2, 1),
 }, new UnityEngine.Color(1f, .66f, .38f),
@@ -179,10 +191,10 @@ Make(2, "The Forge", "The forges are still lit. Someone keeps them lit.", .12f, 
   Rule("Realms barrel", W, .25f, 0, 2), Rule("Crate stack", C, .2f, 0, 1), Rule("Weapon rack", W, .15f, 0, 1),
   Rule("Gold pile", A, .25f, 1, 1, 1f, 1, 1, Rich), Rule("Gold hoard", M, .15f, 0, 1, .6f, 1, 1, Rich),
   Life("Rising embers", .9f),
-  Rule("Hanging cage lamp", M, .2f, 1, 2), Rule("Hanging girder", A, .3f, 1, 3), Rule("Hanging chain ring", M, .1f, 0, 1, .6f), Rule("Lava channel", A, .15f, 0, 1, .7f, 1, 2),
+  Rule("Hanging cage lamp", M, .2f, 1, 2), Rule("Hanging girder", A, .3f, 1, 3), Rule("Hanging girder", A, .25f, 1, 2), Rule("Hanging chains", A, .2f, 0, 2), Rule("Hanging chain ring", M, .1f, 0, 1, .6f), Rule("Lava channel", A, .15f, 0, 1, .7f, 1, 2),
 }, new UnityEngine.Color(1f, .56f, .12f),
-  L(new UnityEngine.Color(.3f, .17f, .08f), new UnityEngine.Color(.3f, .15f, .04f), new UnityEngine.Color(.16f, .07f, .03f), new UnityEngine.Color(.5f, .15f, .09f), new UnityEngine.Color(1f, .62f, .3f), .35f),
-  new UnityEngine.Color(.9f, .62f, .48f), new UnityEngine.Color(1.14f, .86f, .62f), .6f, new UnityEngine.Vector2(4f, 32f));
+  L(new UnityEngine.Color(.3f, .17f, .08f), new UnityEngine.Color(.38f, .2f, .07f), new UnityEngine.Color(.2f, .09f, .04f), new UnityEngine.Color(.5f, .15f, .09f), new UnityEngine.Color(1f, .62f, .3f), .35f),
+  new UnityEngine.Color(.9f, .62f, .48f), new UnityEngine.Color(1.14f, .86f, .62f), .6f, new UnityEngine.Vector2(6f, 42f));
 
 // The Pit: the hell demo's red light (1, .27, 0), its red fog (.57, .2, .15) and blue-tinted shadows, green witch-fire accents.
 Make(3, "The Pit", "Down here it is warm. Too warm.", .12f, new[]
@@ -201,16 +213,21 @@ Make(3, "The Pit", "Down here it is warm. Too warm.", .12f, new[]
   // The pit glows: lava in the floor, more fire, the green circles of the hell demo, bones and spikes everywhere.
   Rule("Lava channel", A, .25f, 0, 2, .9f, 1, 2), Rule("Hell brazier", W, .3f, 1, 2), Rule("Hell circle", M, .1f, 0, 1, .8f, 2, 2),
   Rule("Horned skull", A, .3f, 1, 2), Rule("Spike cluster", W, .2f, 0, 2), Rule("Rubble", A, .3f, 1, 2),
+  // Polish 2: the pit read as dark red emptiness; more fire and lava to see by, cage lamps overhead.
+  Rule("Hell brazier", C, .3f, 1, 2), Rule("Lava channel", M, .15f, 0, 1, .8f, 1, 2), Rule("Hanging cage lamp", A, .2f, 1, 2),
   // Iteration 4: the middle of a room was bare floor; black rock, spikes and pillars stand out in it, lit by more fire.
   Rule("Black spike", M, .2f, 0, 2, .8f), Rule("Hell pillar", M, .12f, 0, 1, .7f), Rule("Black rock", M, .2f, 0, 1, .8f), Rule("Hell brazier", M, .15f, 0, 1, .8f), Rule("Skull spike", M, .15f, 0, 1, .7f),
 }, new UnityEngine.Color(1f, .45f, .14f),
-  L(new UnityEngine.Color(.15f, .2f, .24f), new UnityEngine.Color(.48f, .18f, .13f), new UnityEngine.Color(.24f, .1f, .1f), new UnityEngine.Color(.46f, .14f, .09f), new UnityEngine.Color(1f, .5f, .3f), .3f),
-  new UnityEngine.Color(.55f, .45f, .62f), new UnityEngine.Color(1.18f, .78f, .58f), .55f, new UnityEngine.Vector2(5f, 38f));
+  L(new UnityEngine.Color(.15f, .2f, .24f), new UnityEngine.Color(.74f, .3f, .2f), new UnityEngine.Color(.38f, .16f, .13f), new UnityEngine.Color(.46f, .14f, .09f), new UnityEngine.Color(1f, .5f, .3f), .3f),
+  new UnityEngine.Color(.82f, .62f, .7f), new UnityEngine.Color(1.18f, .78f, .58f), .55f, new UnityEngine.Vector2(8f, 48f));
 
-// Dungeon1's floors 10, 11 and 12: one realm each, after the ruins.
+// Dungeon1's Realms floors: one realm each.
 var stages = new System.Collections.Generic.List<TableLevelData.BiomeStage>(level.stages);
+// Kept where they stand in the run (the user moved them to floors 4-6, 2026-10-30); a first run adds them at the end.
+int at = stages.FindIndex(s => s != null && made.Contains(s.biome));
 stages.RemoveAll(s => s != null && made.Contains(s.biome));
-foreach (var b in made) stages.Add(new TableLevelData.BiomeStage { biome = b, floors = 1, boss = false });
+if (at < 0 || at > stages.Count) at = stages.Count;
+for (int k = 0; k < made.Count; k++) stages.Insert(at + k, new TableLevelData.BiomeStage { biome = made[k], floors = 1, boss = false });
 level.stages = stages.ToArray();
 // Two scripted event rooms on every floor (the user, 2026-10-30), the tavern not counted.
 level.eventRoomsPerFloor = new UnityEngine.Vector2Int(2, 2);
