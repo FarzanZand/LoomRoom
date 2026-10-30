@@ -176,8 +176,10 @@ public partial class DungeonGenerator : MonoBehaviour
         if (SliceDue) { Pause(); yield return null; Resume(); }
         var architecture = BuildArchitecture(level, seed, floorNumber, watch);
         while (architecture.MoveNext()) yield return architecture.Current;
-        TrimShadows();
-        MergeNearbyLights();
+        var shadows = TrimShadows();
+        while (shadows.MoveNext()) yield return shadows.Current;
+        var lights = MergeNearbyLights();
+        while (lights.MoveNext()) yield return lights.Current;
         }
         finally
         {

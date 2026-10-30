@@ -57,23 +57,37 @@ public sealed partial class LightingManager
     [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
     [Tooltip("How far shadows are drawn while the table player is on a dungeon floor; the render pipeline's own distance (400) comes back in the room. A floor's rooms are a few dozen metres across, and the long distance drew every prop of the floor into the sun's four shadow cascades. 0 keeps the pipeline's distance.")]
     [Min(0)] public float dungeonShadowDistance = 60f;
-    float pipelineShadowDistance = -1f;
 
-    // The pipeline's shadow distance shortened on a floor and put back otherwise (and when the manager goes, so the
-    // asset is never left changed after Play).
+    // The pipeline's own shadow distance while the dungeon's is set on the shared pipeline asset (-1: not set). In the
+    // editor it is kept in the session, so a script reload in Play never takes the dungeon distance for the pipeline's
+    // own; ShadowDistanceGuard (editor) puts it back around asset saves and when Play ends, so the asset on disk keeps
+    // the pipeline's distance.
+#if UNITY_EDITOR
+    const string HeldShadowDistanceKey = "LoomRoom.PipelineShadowDistance";
+    public static float HeldPipelineShadowDistance { get => UnityEditor.SessionState.GetFloat(HeldShadowDistanceKey, -1f); private set => UnityEditor.SessionState.SetFloat(HeldShadowDistanceKey, value); }
+#else
+    public static float HeldPipelineShadowDistance { get; private set; } = -1f;
+#endif
+
+    // The pipeline's shadow distance shortened on a floor and put back otherwise (and when the manager goes).
     void ApplyShadowDistance(bool onFloor)
     {
         if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline is not UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urp) return;
         if (onFloor && dungeonShadowDistance > 0f)
         {
-            if (pipelineShadowDistance < 0f) pipelineShadowDistance = urp.shadowDistance;
+            if (HeldPipelineShadowDistance < 0f) HeldPipelineShadowDistance = urp.shadowDistance;
             if (urp.shadowDistance != dungeonShadowDistance) urp.shadowDistance = dungeonShadowDistance;
         }
-        else if (pipelineShadowDistance >= 0f)
-        {
-            urp.shadowDistance = pipelineShadowDistance;
-            pipelineShadowDistance = -1f;
-        }
+        else ReleaseShadowDistance();
+    }
+
+    // The pipeline's own shadow distance back on the asset, if the dungeon's is set.
+    public static void ReleaseShadowDistance()
+    {
+        float held = HeldPipelineShadowDistance;
+        if (held < 0f) return;
+        if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline is UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urp) urp.shadowDistance = held;
+        HeldPipelineShadowDistance = -1f;
     }
 
     // The floor's own lamps (and its portals' pockets', built beside it) keep their authored shadows only while they

@@ -70,7 +70,7 @@ public static class DungeonStressTest
                             if (pocket != null) { pockets++; Object.DestroyImmediate(pocket.gameObject); }
                     }
                     Object.DestroyImmediate(go);
-                    if (built % 10 == 0) FreeTestFloors();
+                    if ((built + fails) % 10 == 0) FreeTestFloors();   // every tenth floor tried, failed or not
                 }
             }
         }

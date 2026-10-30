@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -6,12 +7,14 @@ public partial class DungeonGenerator
     // Small props (lower than 40 cm and under 1.5 m across: candles, skulls, cogs, pebbles), pieces flat against a wall
     // (PropMount.castsNoShadow) and the upper copies of a stacked full-height piece cast no shadow: each is drawn again
     // into every shadow map for a shadow a few texels big. Characters and what they hold keep theirs. Sizes come from
-    // the meshes, since a floor built in slices is switched off and its renderers report no bounds.
-    void TrimShadows()
+    // the meshes, since a floor built in slices is switched off and its renderers report no bounds. A step of the build:
+    // it yields when the slice's time is up.
+    IEnumerator TrimShadows()
     {
         float tile = data.architectureTileSize;
         foreach (var filter in GetComponentsInChildren<MeshFilter>(true))
         {
+            if (SliceDue) { Pause(); yield return null; Resume(); }
             if (filter == null || filter.sharedMesh == null || !filter.TryGetComponent<MeshRenderer>(out var r)) continue;
             if (r.shadowCastingMode == ShadowCastingMode.Off || r.GetComponentInParent<Character>(true) != null) continue;
             var mount = r.GetComponentInParent<PropMount>(true);
