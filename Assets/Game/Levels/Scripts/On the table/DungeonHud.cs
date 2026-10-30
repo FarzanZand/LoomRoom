@@ -109,6 +109,15 @@ public class DungeonHud : MonoBehaviour
         map.Apply(false);
     }
 
+    // The whole floor on the minimap at once (the spawn window's Show map cheat).
+    public void RevealAll()
+    {
+        if(dungeon==null || dungeon.Layout==null || explored==null)return;
+        int w=explored.GetLength(0),h=explored.GetLength(1);
+        for(int x=0;x<w;x++)for(int y=0;y<h;y++)if(dungeon.Layout.floor[x,y])explored[x,y]=true;
+        next=0f;
+    }
+
     bool Frontier(int x,int y,int w,int h)
     {
         foreach(var d in DungeonLayout.Neighbours)

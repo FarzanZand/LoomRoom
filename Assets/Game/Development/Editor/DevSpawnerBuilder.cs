@@ -60,7 +60,7 @@ public static class DevSpawnerBuilder
         Place(left, Left, 96, LeftWidth, H - 96 - 30);
         var lv = left.GetComponent<VerticalLayoutGroup>();
         lv.spacing = 8; lv.childControlWidth = lv.childControlHeight = true; lv.childForceExpandWidth = true; lv.childForceExpandHeight = false;
-        var kinds = new[] { "Items", "Spells", "Room items", "Enemies", "Rooms" }.Select(n => CountedButton(n, left, n, 56, 28)).ToArray();
+        var kinds = new[] { "Items", "Spells", "Room items", "Enemies", "Rooms", "Cheats" }.Select(n => CountedButton(n, left, n, 56, 28)).ToArray();
         var gap = new GameObject("Gap", typeof(RectTransform), typeof(LayoutElement));
         gap.transform.SetParent(left, false);
         gap.GetComponent<LayoutElement>().preferredHeight = 14;

@@ -29,6 +29,9 @@ public static class ScrollSetup
         item.itemName = name;
         item.itemType = ItemType.Consumable;
         item.scrollSpell = definition;
+        // Readied in the left hand in place of the shield, as a spell tome is (InventoryManager.ReadScroll).
+        item.canBeEquipped = true;
+        item.equipSlot = EquipmentSlot.LeftHand;
         item.charges = Mathf.Max(1, charges);
         item.maxStackSize = 1;
         item.gridSize = Vector2Int.zero;

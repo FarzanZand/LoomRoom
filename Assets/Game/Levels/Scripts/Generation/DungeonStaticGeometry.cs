@@ -24,7 +24,7 @@ public class DungeonStaticGeometry : MonoBehaviour
             var renderer=filter.GetComponent<MeshRenderer>();
             if(renderer==null || !renderer.enabled || filter.name=="Static chunk" || filter.sharedMesh==null || !filter.sharedMesh.isReadable || filter.sharedMesh.subMeshCount!=1 || renderer.sharedMaterials.Length!=1 || renderer.sharedMaterial==null)continue;
             if(filter.GetComponentInParent<Animator>()!=null || filter.GetComponentInParent<Rigidbody>()!=null || filter.GetComponentInParent<DungeonContainer>()!=null
-               || filter.GetComponentInParent<DungeonDestructible>()!=null)continue;   // a merged breakable would stay drawn once broken
+               || filter.GetComponentInParent<DungeonDestructible>()!=null || filter.GetComponentInParent<KnockDownDecor>()!=null)continue;   // a merged breakable (or knock-down decor) would stay drawn once broken
             var p=root.InverseTransformPoint(filter.transform.position);
             var key=(renderer.sharedMaterial,Mathf.FloorToInt(p.x/chunkSize),Mathf.FloorToInt(p.z/chunkSize),
                 keepModes ? renderer.shadowCastingMode : ShadowCastingMode.On,keepModes ? renderer.renderingLayerMask : 0u);

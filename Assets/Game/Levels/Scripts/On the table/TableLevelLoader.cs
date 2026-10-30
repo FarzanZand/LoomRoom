@@ -147,8 +147,12 @@ public class TableLevelLoader : MonoBehaviour
     public void Descend()
     {
         if(Busy || !HasNextFloor || player==null || !player.IsAlive)return;
+        // Steps down the stairs (the UI Library's descendStairs key: the sound library's footsteps1), the stairs or the
+        // spawn window's Skip floor alike.
+        if(AudioManager.HasInstance && AudioManager.Instance.HasUI(DescendKey))AudioManager.Instance.PlayUI(DescendKey);
         StartCoroutine(LoadRoutine(Current,true));
     }
+    public const string DescendKey="descendStairs";
     IEnumerator LoadRoutine(TableLevelData level, bool descending=false, bool skipReveal=false)
     {
         Busy=true; menu.Hide();

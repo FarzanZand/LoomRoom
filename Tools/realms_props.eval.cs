@@ -6,7 +6,7 @@
 // the Fireball's held flame (Spells Pack pixel art) as their child, so moving the prop moves its light.
 // Floor props keep one box collider (walked round, and the floor's NavMesh is cut round them); flat ones (rugs, coins,
 // the hell circle) none, laid 1.2 cm above the floor so no face lies in the floor's plane. Stone, gold, molten metal and
-// crystal get a hand-made finish over the restyle (Finish below: Tools/prop_organic.py, Tools/realms_grade.py); the weapon
+// crystal get a hand-made finish over the restyle (Finish below: Tools/prop_stone_drawn.py, Tools/realms_grade.py); the weapon
 // barrel and the chandelier are dressed with weapons and candles (Dress).
 // Safe to run again: everything is rebuilt (Temp/Realms/only_props.txt, when there, names the ones to rebuild). Writes
 // Temp/Realms/props.txt. Run in edit mode.
@@ -18,6 +18,9 @@ var sb = new System.Text.StringBuilder();
 void Folder(string path) { var parts = path.Split('/'); var cur = parts[0]; for (int i = 1; i < parts.Length; i++) { var next = cur + "/" + parts[i]; if (!UnityEditor.AssetDatabase.IsValidFolder(next)) UnityEditor.AssetDatabase.CreateFolder(cur, parts[i]); cur = next; } }
 Folder(D); System.IO.Directory.CreateDirectory("Temp/Realms");
 var flame = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/Game/Combat/Spells/Fireball/Fireball Hand.prefab");
+// A held flame hums (the spell's loop) for the hand that holds it; on a prop that is a hum from every fire on the floor,
+// which the user called awful (2026-10-30): the props' flames are silent.
+void Quiet(UnityEngine.GameObject f) { foreach (var a in f.GetComponentsInChildren<UnityEngine.AudioSource>(true)) UnityEngine.Object.DestroyImmediate(a); }
 var flicker = System.Type.GetType("TorchFlicker, Assembly-CSharp");
 
 UnityEngine.Material Readable(UnityEngine.Material m)
@@ -161,16 +164,18 @@ var list = new (string name, string src, float height, UnityEngine.Color fire, b
 // The restyle's own shading is wood grain for warm stone (the sandstone came out in horizontal streaks) and soft blotches
 // for the rest (an airbrushed look the house style forbids), and the pack's gold, molten metal and crystal came out as flat
 // fills. These props get the house's hand-made finish instead, from the fresh restyle each time:
-//  - stone (Tools/prop_organic.py): Synty's colour per texel stepped into five shades, coursed blocks with dark joints,
-//    crease grime, lit edges, speckles and cracks, laid in metres. The Deep Halls' sandstone keeps a pink-grey of its own
-//    (the user: different from the walls' olive is fine), darker so it no longer glows against the walls; the forge's
-//    pieces are soot-dark basalt.
+//  - stone (Tools/prop_stone_drawn.py): drawn from the room style's own wall stone (its mortar filled in), laid in metres
+//    face by face at 128 texels a metre, in Synty's colour per part, creases darker and turned edges lighter. (The first
+//    finish, prop_organic.py's flat shades with square blocks and speckles, read as an AI look to the user.) The Deep
+//    Halls' sandstone keeps a pink-grey of its own, drawn from the Deep Halls' wall; the forge's pieces are soot-dark
+//    basalt drawn from the Forge's wall.
 //  - gold, molten, ore, crystal (Tools/realms_grade.py): hard-edged tone clusters, glints, crust and heat.
 (string mode, string args)[] Finish(string n)
 {
-  const string sand = "--sat .5 --bright .6 --grain .45 --cracks .5 --dirt .45";
-  const string basalt = "--sat .22 --bright .34 --grain .7 --cracks .7 --dirt .5";
-  const string course = " --courses .375";
+  const string styles = "Assets/Game/Levels/Shared/Room styles/Realms/";
+  const string sand = "--sat .5 --bright .6 --tile \"" + styles + "Realms1/Realms1 wall.png\"";
+  const string basalt = "--sat .22 --bright .34 --tile \"" + styles + "Realms2/Realms2 wall.png\"";
+  const string course = "";
   switch (n)
   {
     case "Dwarf pillar": case "Dwarf obelisk": case "Broken obelisk": case "Fallen pillar": case "Full height pilaster":
@@ -217,7 +222,7 @@ void Paint(string pname, string sourceMesh, UnityEngine.Mesh mesh, UnityEngine.M
       bool synty = PixelRestyle.SyntySource(sourceMesh, out _, out _);
       PixelRestyle.BakeGBuffer(meshPath, tex.width, tex.height, gb, synty ? "synty:" + sourceMesh : meshPath, synty ? null : texPath);
       var size = UnityEngine.Vector3.Scale(mesh.bounds.size, worldScale);
-      o = Run($"Tools/prop_organic.py \"{gb}\" {tex.width} {tex.height} \"{texPath}\" --material stone --extent {size.x:F3},{size.y:F3},{size.z:F3} {args}");
+      o = Run($"Tools/prop_stone_drawn.py \"{gb}\" {tex.width} {tex.height} \"{texPath}\" --extent {size.x:F3},{size.y:F3},{size.z:F3} {args}");
     }
     else o = Run($"Tools/realms_grade.py {mode} \"{texPath}\"" + (emiPath != null ? $" \"{emiPath}\"" : ""));
     sb.Append($"    {pname} {mode}: {o}\n");
@@ -288,6 +293,7 @@ void Dress(string pname, UnityEngine.GameObject holder, string dir)
       {
         var f = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(flame);
         f.name = $"Candle flame {k}"; f.transform.SetParent(holder.transform, false);
+        Quiet(f);
         f.transform.position = hit.point + UnityEngine.Vector3.up * .19f; f.transform.localScale = UnityEngine.Vector3.one * .14f;
       }
     }
@@ -434,10 +440,24 @@ foreach (var (pname, src, height, fire, flat) in list)
       if (flicker != null) lg.AddComponent(flicker);
       if (flame != null && !hanging)
       {
-        var f = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(flame);
-        f.name = "Flame"; f.transform.SetParent(holder.transform, false);
-        f.transform.localPosition = new UnityEngine.Vector3(0, b2.size.y * .92f, 0);
-        f.transform.localScale = UnityEngine.Vector3.one * UnityEngine.Mathf.Clamp(b2.size.x * .9f, .6f, 1.6f);
+        // A brazier's bowl is filled with fire: a cluster of flames over the coals, the middle one tallest, spread to
+        // about two thirds of the bowl (one held flame sat small at the back of it and the user found it puny).
+        // Anything else burning (a candle stand, a torch) keeps its one flame.
+        bool bowl = pname.Contains("brazier");
+        var spots = bowl
+          ? new[] { (0f, 0f, 1.5f), (.24f, .1f, 1.05f), (-.22f, .14f, 1.1f), (.08f, -.24f, 1f), (-.14f, -.2f, .95f), (.26f, -.12f, .85f) }
+          : new[] { (0f, 0f, 1f) };
+        float across = UnityEngine.Mathf.Min(b2.size.x, b2.size.z);
+        float baseScale = bowl ? UnityEngine.Mathf.Clamp(across * .55f, .5f, 1.2f) : UnityEngine.Mathf.Clamp(b2.size.x * .9f, .6f, 1.6f);
+        for (int k = 0; k < spots.Length; k++)
+        {
+          var (fx, fz, fs) = spots[k];
+          var f = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(flame);
+          f.name = spots.Length > 1 ? $"Flame {k}" : "Flame"; f.transform.SetParent(holder.transform, false);
+          Quiet(f);
+          f.transform.localPosition = new UnityEngine.Vector3(fx * across, b2.size.y * (bowl ? .86f : .92f), fz * across);
+          f.transform.localScale = UnityEngine.Vector3.one * baseScale * fs;
+        }
       }
     }
   }

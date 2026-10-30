@@ -256,10 +256,14 @@ public class InventoryManager : Singleton<InventoryManager>
         player.Equipment.Consume(item, () => TakeAndUse(player, item, container, index));
     }
 
-    // A scroll read: its spell goes off at once with no mana (PlayerSpellcasting.CastScroll), and only then is a charge
-    // spent; one that can't be cast now (nothing to aim at) keeps its charge.
+    // A scroll used: one that goes in the left hand (canBeEquipped, the left hand: every scroll ScrollSetup makes) is readied
+    // there in place of the shield, as a spell tome is, and cast like its spell with no mana, a charge a cast
+    // (PlayerSpellcasting). One that can't be held is read at once (PlayerSpellcasting.CastScroll), and only then is a
+    // charge spent; one that can't be cast now (nothing to aim at) keeps its charge.
     static void ReadScroll(Player player, ItemData scroll, Inventory container, int index)
     {
+        if (player != null && player.Equipment != null && player.Equipment.CanEquip(scroll) && scroll.equipSlot == EquipmentSlot.LeftHand)
+        { if (!player.Equipment.IsEquipped(scroll)) player.Equipment.Equip(scroll); return; }
         var caster = player != null ? player.GetComponent<PlayerSpellcasting>() : null;
         if (caster == null || (player.Equipment != null && player.Equipment.IsUsingItem)) return;
         if (!caster.CastScroll(scroll.scrollSpell)) return;
@@ -285,7 +289,9 @@ public class InventoryManager : Singleton<InventoryManager>
         var eq = player.Equipment;
         // While eating or drinking nothing else is taken in hand or used.
         if (eq != null && eq.IsUsingItem) return;
-        if (item.IsConsumable) { Use(container, index); return; }
+        // A scroll that goes in the left hand is taken in hand and put away like a spell tome (InventoryManager.ReadScroll).
+        bool heldScroll = item.IsScroll && eq != null && eq.CanEquip(item) && item.equipSlot == EquipmentSlot.LeftHand;
+        if (item.IsConsumable && !heldScroll) { Use(container, index); return; }
         if (eq == null || !eq.CanEquip(item)) return;
         // Only the copy in hand is put away; a spare copy of the held item (two Bronze Swords) does nothing.
         if (ItemSlotUI.HeldSlot(eq, container, index).HasValue) eq.Unequip(item);

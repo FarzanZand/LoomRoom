@@ -16,8 +16,8 @@ using UnityEngine.UI;
 // built by DevSpawnerBuilder.Build() (from an eval; edit the prefab freely after), its lists for builds by RefreshLists().
 public class DevSpawner : MonoBehaviour
 {
-    enum Kind { Items, Spells, RoomItems, Enemies, Rooms }
-    static readonly string[] KindNames = { "Items", "Spells", "Room items", "Enemies", "Rooms" };
+    enum Kind { Items, Spells, RoomItems, Enemies, Rooms, Cheats }
+    static readonly string[] KindNames = { "Items", "Spells", "Room items", "Enemies", "Rooms", "Cheats" };
 
     [Header("Window")]
     [SerializeField] GameObject panel;
@@ -26,7 +26,7 @@ public class DevSpawner : MonoBehaviour
     [SerializeField, Tooltip("The last thing done (or why not), under the grid.")] TMP_Text status;
 
     [Header("Left: kinds and groups")]
-    [SerializeField, Tooltip("Items, Spells, Room items, Enemies, Rooms; each with children Label and Count.")] Button[] kindButtons = new Button[5];
+    [SerializeField, Tooltip("Items, Spells, Room items, Enemies, Rooms, Cheats; each with children Label and Count.")] Button[] kindButtons = new Button[6];
     [SerializeField, Tooltip("Where the picked kind's groups go: one button each, cloned from the template.")] RectTransform groupList;
     [SerializeField, Tooltip("The groups' heading, hidden when a kind has none.")] GameObject groupTitle;
     [SerializeField, Tooltip("A group button (hidden), children Label and Count.")] Button groupTemplate;
@@ -76,7 +76,7 @@ public class DevSpawner : MonoBehaviour
     readonly List<(GameObject cell, Entry entry)> cells = new();
     readonly List<Button> groupButtons = new();
     Kind kind = Kind.Items;
-    readonly string[] group = { All, All, All, All, All };
+    readonly string[] group = { All, All, All, All, All, All };
     Entry picked;
     int count = 1, rarity;
     bool open, openedOnce;
@@ -470,6 +470,25 @@ public class DevSpawner : MonoBehaviour
                         blocked = () => !InRun ? "Only on a floor of a run: start one (Rooms) first." : null,
                     };
                 }
+                break;
+            case Kind.Cheats:
+                // Shortcuts through a run (the user's F9 request, 2026-10-30).
+                yield return new Entry
+                {
+                    key = "skipFloor", name = "Skip floor", kind = "Cheat",
+                    about = () => "Straight down to the next floor, as if the stairs had been taken: the floor's XP, a new floor built, the checkpoint saved. On the last floor there is nowhere further down.",
+                    primaryLabel = "Go to the next floor",
+                    primary = () => { var l = TableManager.Loader; if (l == null || !l.HasNextFloor) return "No floor further down."; int to = l.FloorNumber + 1; l.Descend(); Close(); return $"Down to floor {to}."; },
+                    blocked = () => { var l = TableManager.Loader; return !InRun || l == null ? "Only on a floor of a run." : l.Busy ? "A floor is being built. A moment." : !l.HasNextFloor ? "This is the last floor." : null; },
+                };
+                yield return new Entry
+                {
+                    key = "showMap", name = "Show map", kind = "Cheat",
+                    about = () => "The whole floor on the minimap at once: every room and passage, the tavern and the stairs.",
+                    primaryLabel = "Show the whole map",
+                    primary = () => { int n = 0; foreach (var hud in FindObjectsByType<DungeonHud>()) { hud.RevealAll(); n++; } return n == 0 ? "No map here." : "The whole floor is on the map."; },
+                    blocked = () => !InRun ? "Only on a floor of a run." : null,
+                };
                 break;
             case Kind.Rooms:
                 foreach (var (prefab, g) in Rooms())

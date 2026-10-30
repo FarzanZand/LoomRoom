@@ -41,8 +41,8 @@ MonoBehaviour:
   pickupClipVolume: 1
   pickupAudioKey: 
   directToHotbar: 1
-  canBeEquipped: 0
-  equipSlot: 0
+  canBeEquipped: 1
+  equipSlot: 1
   heldScale: 0.45
   heldPosition: {x: 0, y: -0.06, z: 0}
   heldRotation: {x: 0, y: 0, z: 0}

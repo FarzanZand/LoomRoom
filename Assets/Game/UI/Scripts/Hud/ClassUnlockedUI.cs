@@ -20,12 +20,33 @@ public class ClassUnlockedUI : MonoBehaviour
     static ClassUnlockedUI instance;
     Sequence show;
     Vector2 rest;
+    string classHeading, classLine;
+    // A place opened by a rumour waits for the shop screen it was bought on to close (GameState Explore).
+    (string name, Sprite picture)? pendingPlace;
 
     void Awake()
     {
         instance = this;
         if (group != null) group.alpha = 0f;
         if (card != null) rest = card.anchoredPosition;
+        classHeading = heading != null ? heading.text : "New class";
+        classLine = line != null ? line.text : "Pick it at the table.";
+    }
+
+    void Update()
+    {
+        if (pendingPlace == null || !GameManager.HasInstance || GameManager.Instance.State != GameState.Explore) return;
+        var place = pendingPlace.Value; pendingPlace = null;
+        Play(place.name, place.picture, PlaceHeading, PlaceLine);
+    }
+
+    public const string PlaceHeading = "New place", PlaceLine = "Now on the map in the room.";
+
+    // A place a rumour opened (CampaignManager.BuyRumour): the same card, "New place", its name and its level's card art.
+    public static void ShowPlace(CampaignEncounter place)
+    {
+        if (instance == null || place == null) return;
+        instance.pendingPlace = (place.displayName, place.level != null ? place.level.cardArt : null);
     }
 
     void OnDestroy()
@@ -39,13 +60,16 @@ public class ClassUnlockedUI : MonoBehaviour
     {
         if (instance == null) return;
         instance.Play(unlocked != null && !string.IsNullOrEmpty(unlocked.displayName) ? unlocked.displayName : fallbackName,
-            unlocked != null ? (ProgressionManager.HasInstance && ProgressionManager.Instance.SheetPortrait(unlocked) is Sprite s ? s : unlocked.sheetPortrait != null ? unlocked.sheetPortrait : unlocked.portrait) : null);
+            unlocked != null ? (ProgressionManager.HasInstance && ProgressionManager.Instance.SheetPortrait(unlocked) is Sprite s ? s : unlocked.sheetPortrait != null ? unlocked.sheetPortrait : unlocked.portrait) : null,
+            instance.classHeading, instance.classLine);
     }
 
-    void Play(string name, Sprite picture)
+    void Play(string name, Sprite picture, string headingText, string lineText)
     {
         if (group == null || card == null) return;
         if (className != null) className.text = name;
+        if (heading != null) heading.text = headingText;
+        if (line != null) line.text = lineText;
         if (portrait != null) { portrait.sprite = picture; portrait.enabled = picture != null; }
         show?.Kill();
         group.alpha = 0f;
