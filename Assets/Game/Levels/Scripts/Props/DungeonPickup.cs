@@ -98,8 +98,23 @@ public static class DungeonPickup
         var body = pickup.GetComponent<Rigidbody>();
         if (body != null) { body.isKinematic = true; body.useGravity = false; }
         LayFlat(pickup);
+        KeepInReach(pickup);
         SettleOnFloor(pickup);
         return pickup;
+    }
+
+    // Never dropped out of reach: loot let go where nobody can walk (a body knocked over a pit's edge, a drop over a
+    // chasm, whose bottoms are not walkable) moves to the nearest floor the player can walk on before it settles.
+    static void KeepInReach(WorldItem pickup)
+    {
+        var p = pickup.transform.position;
+        if (NavMesh.SamplePosition(p, out var under, 2.5f, NavMesh.AllAreas))
+        {
+            var d = under.position - p;
+            if (new Vector2(d.x, d.z).magnitude < .6f && d.y > -2.5f && d.y < .6f) return;   // walkable floor right under it
+        }
+        if (!NavMesh.SamplePosition(p, out var near, 8f, NavMesh.AllAreas)) return;
+        pickup.transform.position = near.position + Vector3.up * .35f;
     }
 
     // Kinematic loot doesn't fall, so place it resting on the floor below it. Only fixed geometry

@@ -101,10 +101,31 @@ public partial class DungeonGenerator
                     modifier.overrideArea = true; modifier.area = 1;
                 }
             }
+            if (cut.kind == DungeonFloorCut.Kind.Pit) PitWater(cells, floorY, depth, parent);
             foreach (var c in cells) tableHoles.Add(new TableCut.Hole { area = CellRect(c) });
             // A sliced build cuts the table once it is done (the map may still be folding away over it).
             if (!slicing) TableCut.Set(this, tableHoles);
             cut.Initialize(this, cells, floorY);
+        }
+    }
+
+    // The stage biome's pit water (DungeonBiome.pitWater): a sheet over each pit cell a little under the floor, no
+    // collider (the pit's edge still holds the player back, and what falls in goes down through it), no shadow.
+    void PitWater(HashSet<Vector2Int> cells, float floorY, float depth, Transform parent)
+    {
+        var biome = StageBiome;
+        if (biome == null || biome.pitWater == null) return;
+        float y = floorY - Mathf.Min(biome.pitWaterBelow, depth - .05f);
+        foreach (var c in cells)
+        {
+            var water = GameObject.CreatePrimitive(PrimitiveType.Quad); water.name = "Pit water";
+            DestroyImmediate(water.GetComponent<Collider>());
+            water.transform.SetParent(parent, false);
+            var centre = Cell(c);
+            water.transform.position = new Vector3(centre.x, y, centre.z);
+            water.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            water.transform.localScale = new Vector3(data.cellSize, data.cellSize, 1f);
+            var r = water.GetComponent<Renderer>(); r.sharedMaterial = biome.pitWater; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
     }
 

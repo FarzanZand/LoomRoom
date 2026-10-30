@@ -160,6 +160,8 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   // No Rat nest in a ruin (the user, 2026-10-30), and big halls rare: the ruins' wild walls don't stack up a tall room.
   biome.roomTemplates = System.Array.FindAll(biome.roomTemplates, t => t != null && t.template != null && t.template.name != "Rat nest");
   biome.tallRoomChance = 0f;
+  // Water standing in every pit (the user, 2026-10-30): the forest ponds' water, a little under the floor.
+  biome.pitWater = Load<UnityEngine.Material>("Assets/Synty/PolygonNatureBiomes/PNB_Enchanted_Forest/Materials/Water_Enchanted.mat"); biome.pitWaterBelow = .4f;
   // The Crypt's enemies but 3 melee, 1 archer, 1 caster (the user, 2026-10-30): no rats, bats or urn crawlers.
   DungeonBiome.Spawn En(string n, float w) => new DungeonBiome.Spawn { enemy = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>($"Assets/Game/Characters/Enemies/Crypt/{n}.prefab"), weight = w, fromFloor = 1 };
   biome.enemies = new[] { En("Crypt Soldier", 3), En("Crypt Warden", 2), En("Demon", 1), En("Crypt Archer", 2), En("Crypt Acolyte", 2) };

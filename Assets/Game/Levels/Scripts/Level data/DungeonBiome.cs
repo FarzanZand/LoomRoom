@@ -33,6 +33,10 @@ public class DungeonBiome : ScriptableObject
     public bool ownLook;
     [TabGroup(Look), ShowIf("@ownLook && !isLevelBase"), Tooltip("Hand-built rooms on this biome's floors build their kit pieces (pillars, arches, rubble, railings) of plain blocks in the room's own stone instead of the kit's painted models (grey crypt stone that stands out in a look of its own).")]
     public bool plainKit;
+    [TabGroup(Look), Tooltip("Walled floors: water standing in every pit of a hand-built room (a chasm, a broken floor), a little under the floor. Empty: dry pits. A board's pits take Board Pit Water.")]
+    public Material pitWater;
+    [TabGroup(Look), ShowIf("@pitWater != null"), Range(.1f, 1.5f), Tooltip("Metres from the floor down to the water (never below the pit's bottom).")]
+    public float pitWaterBelow = .4f;
     [TabGroup(Look), InlineProperty, HideLabel, Title("Wild ground", "Raised banks of earth or rock round the rooms and paths, with growth on them. Board floors: they fill the table round the board. Walled floors: they stand in for the walls (Roofed keeps the ceilings, for a cave).", HorizontalLine = false)]
     public BoardWilds wilds = new();
     [TabGroup(Look), InfoBox("A level's base biome: what every floor of the level shares (its Level tab, room features and lists; a stage's biome adds its own lists). On a level without stages every floor is this biome.", VisibleIf = nameof(isLevelBase))]
