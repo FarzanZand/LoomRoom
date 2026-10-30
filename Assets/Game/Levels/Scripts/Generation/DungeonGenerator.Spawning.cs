@@ -588,6 +588,7 @@ public partial class DungeonGenerator
             int count=extraRandom.Next(min,max+1);
             // A board has no walls or ceiling for corner pieces (cobwebs) to hang from.
             var corners=Board ? new System.Collections.Generic.List<Pose>() : Corners(index);
+            if(templates[index]!=null)Physics.SyncTransforms(); // its pieces were just built (UnderPiece)
             for(int i=0;i<count;i++)
             {
                 var prefab=DungeonWeightedPrefab.Choose(breakables,extraRandom);
@@ -600,6 +601,8 @@ public partial class DungeonGenerator
                     SpawnDestructible(prefab,corner.position,corner.rotation,null,extraRandom.Next());
                     continue;
                 }
+                // Not inside a hand-built room's own piece (a niche's ledge, a pillar's base): crates stood in them.
+                while(cursor<available.Count && UnderPiece(available[cursor]))cursor++;
                 if(cursor>=available.Count)continue;
                 SpawnDestructible(prefab,Cell(available[cursor++]),Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewards,extraRandom.Next());
             }
@@ -620,6 +623,19 @@ public partial class DungeonGenerator
             SpawnFeature(feature.prefab,pos,FaceCenter(pos,index));
         }
         return cursor;
+    }
+
+    // A kit block, kit piece or template piece of a hand-built room stands in this cell (within a crate's reach of its middle).
+    static readonly Collider[] pieceHits=new Collider[16];
+    bool UnderPiece(Vector2Int cell)
+    {
+        int n=Physics.OverlapBoxNonAlloc(Cell(cell)+Vector3.up*.5f,new Vector3(.6f,.4f,.6f),pieceHits,Quaternion.identity,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+        for(int i=0;i<n;i++)
+        {
+            var c=pieceHits[i];
+            if(c.GetComponentInParent<DungeonKitBlock>()!=null || c.GetComponentInParent<DungeonKitPiece>()!=null || c.GetComponentInParent<DungeonTemplatePiece>()!=null)return true;
+        }
+        return false;
     }
 
     DungeonFeature PickFeature(int index)
