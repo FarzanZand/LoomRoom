@@ -22,7 +22,7 @@ public class DungeonLootProfile : LootSource
     [Title("Gear")]
     [Tooltip("Gear tiers and the upgrade chance come from the level's Gear By Floor table (Run tab) when it has a row for the floor. Off: always this profile's own settings below (a boss's reward).")]
     public bool followFloorTiers = true;
-    [MinMaxSlider(1, 4, true), Tooltip("Gear tiers that drop here when the level has no gear-by-floor row (or Follow Floor Tiers is off). 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal. The low end is most common on the biome's first floor, the high end on its last.")]
+    [MinMaxSlider(1, 6, true), Tooltip("Gear tiers that drop here when the level has no gear-by-floor row (or Follow Floor Tiers is off). 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal, 5 Grave, 6 Gilded. The low end is most common on the biome's first floor, the high end on its last.")]
     public Vector2Int gearTiers = new(1, 1);
     [Range(0, 1), Tooltip("Chance a gear drop is one tier better than rolled: an early upgrade.")]
     public float upgradeChance = .1f;

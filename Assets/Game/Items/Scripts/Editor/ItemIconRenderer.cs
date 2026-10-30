@@ -200,6 +200,8 @@ public static partial class ItemIconRenderer
         bool tall = job.cells.x == 1 && job.cells.y >= 2;
         if (job.cut != Cut.None) { job.mode = Mode.Native; job.view = job.cut switch { Cut.Gloves => new Vector3(0, 180, 0), Cut.Boots => new Vector3(0, 215, 0), _ => new Vector3(0, 195, 0) }; }
         else if (worn && item.equipSlot == EquipmentSlot.Head) { job.mode = Mode.Native; job.view = new Vector3(8, 208, 0); }
+        // Worn gear with a model of its own (GearSets) stands as it is worn, facing +Z like the outfits.
+        else if (worn) { job.mode = Mode.Native; job.view = item.equipSlot switch { EquipmentSlot.Gloves => new Vector3(0, 180, 0), EquipmentSlot.Boots => new Vector3(16, 205, 0), _ => new Vector3(4, 195, 0) }; }
         else if (tall) { job.mode = Mode.Long; job.view = Vector3.zero; }
         else if (item.itemType == ItemType.Shield) { job.mode = Mode.Face; job.view = Vector3.zero; job.back = true; } // Synty shields face -Z
         else { job.mode = Mode.Auto; job.view = new Vector3(14, 22, 0); }

@@ -21,13 +21,13 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 3d7af2224f917d942ab97051b90a276a, type: 3}
   iconSource:
     custom: 0
-    model: {fileID: 0}
+    model: {fileID: 7768175806546506327, guid: 6bfb853d80a570c469055e00a8210015, type: 3}
     outfit: 
     turn: {x: 0, y: 0, z: 0}
     flip: 0
   tag: Leather equipment
   worldPrefab: {fileID: 7768175806546506327, guid: 6bfb853d80a570c469055e00a8210015, type: 3}
-  pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
+  pickupVisualPrefab: {fileID: 0}
   itemType: 6
   maxStackSize: 1
   gridSize: {x: 0, y: 0}
@@ -68,4 +68,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65
