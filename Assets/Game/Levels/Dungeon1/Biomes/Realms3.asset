@@ -456,7 +456,7 @@ MonoBehaviour:
   templateChance: 0.12
   roomCount: 0
   roomSizeScale: 1
-  tallRoomChance: 0.22
+  tallRoomChance: 0.07
   tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 1
@@ -497,10 +497,10 @@ MonoBehaviour:
     skyTint: {r: 0.15, g: 0.2, b: 0.24, a: 1}
     skyExposure: 0.6
     lightColor: {r: 1, g: 0.5, b: 0.3, a: 1}
-    lightIntensity: 0.3
-    ambientSky: {r: 0.74, g: 0.3, b: 0.2, a: 1}
-    ambientHorizon: {r: 0.56, g: 0.23, b: 0.16499999, a: 1}
-    ambientGround: {r: 0.38, g: 0.16, b: 0.13, a: 1}
+    lightIntensity: 0.5
+    ambientSky: {r: 0.999, g: 0.40500003, b: 0.27, a: 1}
+    ambientHorizon: {r: 0.75600004, g: 0.31050003, b: 0.22275001, a: 1}
+    ambientGround: {r: 0.513, g: 0.216, b: 0.17549999, a: 1}
     fogColor: {r: 0.46, g: 0.14, b: 0.09, a: 1}
   lightingPrefabs:
   - prefab: {fileID: 3904118440429741045, guid: 91efdc5ce7c631c43a3188387ca652aa, type: 3}
@@ -509,7 +509,7 @@ MonoBehaviour:
     color: {r: 1, g: 0.45, b: 0.14, a: 1}
   overrideTorchColor: 0
   torchColor: {r: 1, g: 0.6, b: 0.3, a: 1}
-  torchBrightness: 2.3
+  torchBrightness: 3
   enemies:
   - enemy: {fileID: 8861403029388774667, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
     weight: 1
@@ -567,7 +567,7 @@ MonoBehaviour:
   defaultStyle: {fileID: 0}
   corridorsCopyConnectedRoomStyle: 0
   kitModels: 1
-  torchesPerRoom: {x: 2, y: 19}
+  torchesPerRoom: {x: 3, y: 19}
   litRoomChance: 0.75
   corridorTorchChance: 0.3
   darkRoomLight: {fileID: 0}

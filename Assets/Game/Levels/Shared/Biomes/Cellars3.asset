@@ -283,7 +283,7 @@ MonoBehaviour:
   templateChance: 1
   roomCount: 0
   roomSizeScale: 1
-  tallRoomChance: 0.15
+  tallRoomChance: 0
   tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 0
@@ -365,6 +365,8 @@ MonoBehaviour:
   encounterChance: {x: 0.78, y: 0.85}
   minEnemiesPerRoom: 2
   maxEnemiesPerRoom: 3
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
   features: []
   loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
   merchantChance: 1

@@ -220,17 +220,24 @@ def variant(img, lab, pal, floor, seed, kind, share=.45):
             out[s] = out[s] * .55 + np.array(pal["soot"], np.float32) * .45
         elif kind == "ember":
             # A glowing seam across the stone: the forge's and the pit's lava showing through the cracks.
+            # Two or three seams on a big stone (one short seam on a floor slab read as nothing, 2026-10-30), each
+            # with soot burnt round it a texel out, so the glow sits in a dark scar.
             ys, xs = np.nonzero(m)
             if len(ys) < 500: continue
-            k = int(rng.integers(0, len(ys))); y, x = int(ys[k]), int(xs[k]); dy = rng.choice([-1, 0, 1])
-            for _ in range(int(rng.integers(20, 50))):
-                if not m[y % h, x % w]: break
-                out[y % h, x % w] = np.array(pal["accent"], np.float32) * 1.1
-                for oy, k2 in ((1, .6), (-1, .45), (2, .25)):
-                    yy, xx = (y + oy) % h, x % w
-                    if m[yy, xx]: out[yy, xx] = out[yy, xx] * (1 - k2) + np.array(pal["accent"], np.float32) * k2
-                if rng.random() < .4: dy = int(np.clip(dy + rng.choice([-1, 1]), -1, 1))
-                y += dy; x += 1
+            for _ in range(int(rng.integers(2, 4)) if len(ys) > 2500 else 1):
+                k = int(rng.integers(0, len(ys))); y, x = int(ys[k]), int(xs[k]); dy = rng.choice([-1, 0, 1])
+                step = 1 if rng.random() < .5 else -1
+                for _ in range(int(rng.integers(24, 56))):
+                    if not m[y % h, x % w]: break
+                    for oy in (-2, 2, 3):
+                        yy = (y + oy) % h
+                        if m[yy, x % w]: out[yy, x % w] = out[yy, x % w] * .6 + np.array(pal["soot"], np.float32) * .4
+                    out[y % h, x % w] = np.array(pal["accent"], np.float32) * 1.1
+                    for oy, k2 in ((1, .6), (-1, .45)):
+                        yy, xx = (y + oy) % h, x % w
+                        if m[yy, xx]: out[yy, xx] = out[yy, xx] * (1 - k2) + np.array(pal["accent"], np.float32) * k2
+                    if rng.random() < .4: dy = int(np.clip(dy + rng.choice([-1, 1]), -1, 1))
+                    y += dy; x += step
         elif kind == "rune":
             # A gold rune cut in the stone (the dwarf halls' gold symbols): a small angular glyph, lit edge below.
             ys, xs = np.nonzero(m)
@@ -274,7 +281,7 @@ def build(root, n):
     save(variant(floor, fl, pal, True, seed + 9, "shift"), P("floor shift 1"))
     save(variant(floor, fl, pal, True, seed + 10, "shift"), P("floor shift 2"))
     save(variant(floor, fl, pal, True, seed + 11, "soot", .5), P("floor soot"))
-    if n != 1: save(variant(floor, fl, pal, True, seed + 12, "ember", .4), P("floor ember"))
+    if n != 1: save(variant(floor, fl, pal, True, seed + 12, "ember", .8), P("floor ember"))
     # Ceiling: dark slabs; trim: one course of long dressed stones.
     # Ceiling: long irregular stones in staggered courses, dim edges (seen from below in torchlight, a strong lit edge read
     # as a tiled grid).

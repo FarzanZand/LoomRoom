@@ -41,7 +41,9 @@ UnityEngine.Material Readable(UnityEngine.Material m)
     if (outMesh == null) break;
     src.sharedMesh = outMesh; src.sharedMaterials = new[] { outMat };
     UnityEditor.AssetDatabase.ImportAsset(UnityEditor.AssetDatabase.GetAssetPath(outMat.GetTexture("_BaseMap")), UnityEditor.ImportAssetOptions.ForceUpdate);
-    measured = PixelRestyle.TexelsPerUnit(src);
+    // Measured on the skinned pose (BakeMesh), as the body stands in the game: the bind-pose mesh under the renderer's
+    // transform missed the rig's scale on some bodies, and four came out 10-20% fine (128 x their scale).
+    measured = PixelRestyle.TexelsPerUnit(src, outMat);
     if (measured <= 0f || UnityEngine.Mathf.Abs(measured / TPU - 1f) < .05f) break;
     aim *= TPU / measured;
   }
@@ -49,18 +51,32 @@ UnityEngine.Material Readable(UnityEngine.Material m)
   return (outMesh, outMat);
 }
 
+// A body's own finish after the restyle (Tools/realms_grade.py): the pack's skeletons have pinkish, flesh-toned bone,
+// turned aged ivory; the Bone Brute (the same body as the hall skeletons) old grey bone with soot so it reads apart; the
+// Pit Demon's hide stepped into hard-edged tones instead of one flat orange.
+void Grade(string file, UnityEngine.Material mat)
+{
+  string mode = file == "Hall Skeleton" || file == "Hall Raider" ? "bones" : file == "Bone Brute" ? "charred" : file == "Pit Demon" ? "skin" : null;
+  if (mode == null || mat == null) return;
+  var texPath = UnityEditor.AssetDatabase.GetAssetPath(mat.GetTexture("_BaseMap"));
+  var psi = new System.Diagnostics.ProcessStartInfo("python", $"Tools/realms_grade.py {mode} \"{texPath}\"") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true, WorkingDirectory = System.IO.Directory.GetCurrentDirectory() };
+  using (var p = System.Diagnostics.Process.Start(psi)) { var o = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd(); p.WaitForExit(); sb.Append($"  {file} {mode}: {o.Trim()}\n"); }
+  UnityEditor.AssetDatabase.ImportAsset(texPath, UnityEditor.ImportAssetOptions.ForceUpdate);
+}
+
 // name, shown name, our enemy it copies, the pack character, weapon, scale, health/damage/armour/xp multipliers on the template's,
-// gore, creature kind.
+// gore, creature kind. The dwarves stand at .9 (the king at 1): at 1.1 and 1.2 their heads were at 1.76-1.92 m, over the
+// 1.57 m of the hall skeletons beside them; now about 1.45 m, stout and short, the king a head taller than his guard.
 var specs = new (string file, string shown, string template, string body, string weapon, float scale, float hp, float dmg, float armour, float xp, BloodKind blood, CreatureKind kind)[]
 {
   ("Hall Skeleton", "hall skeleton", "Crypt/Crypt Soldier", "Chr_Skeleton_01", "Iron Sword", 1f, 1f, 1f, 1f, 1f, BloodKind.BoneDust, CreatureKind.Skeleton),
   ("Hall Raider", "hall raider", "Crypt/Crypt Soldier", "Chr_Skeleton_02", "Iron Mace", 1f, 1.1f, 1.05f, 1f, 1.1f, BloodKind.BoneDust, CreatureKind.Skeleton),
   ("Bone Brute", "bone brute", "Crypt/Crypt Warden", "Chr_Skeleton_03", "Steel Mace", 1.1f, 1f, 1f, 1f, 1f, BloodKind.BoneDust, CreatureKind.Skeleton),
   ("Undead Knight", "undead knight", "Crypt/Crypt Warden", "Chr_Undead_Knight_01", "Steel Sword", 1.08f, 1.25f, 1.1f, 1.4f, 1.3f, BloodKind.BoneDust, CreatureKind.Skeleton),
-  ("Forge Guard", "forge guard", "Crypt/Crypt Soldier", "Chr_BR_Dwarf_Soldier_Male_01", "Steel Mace", 1.1f, 1.3f, 1.05f, 1.6f, 1.2f, BloodKind.Blood, CreatureKind.Humanoid),
-  ("Forge Shieldmaiden", "forge shieldmaiden", "Crypt/Crypt Soldier", "Chr_BR_Dwarf_Soldier_Female_01", "Iron Sword", 1.1f, 1.15f, 1.1f, 1.4f, 1.2f, BloodKind.Blood, CreatureKind.Humanoid),
-  ("Forge Miner", "forge miner", "Crypt/Crypt Soldier", "Chr_BR_Dwarf_Miner_01", "Iron Mace", 1.1f, 1.1f, 1f, .8f, 1f, BloodKind.Blood, CreatureKind.Humanoid),
-  ("Forge King", "forge king", "Crypt/Crypt Warden", "Chr_BR_Dwarf_King_01", "Crystal Mace", 1.2f, 1.6f, 1.25f, 1.6f, 2.2f, BloodKind.Blood, CreatureKind.Humanoid),
+  ("Forge Guard", "forge guard", "Crypt/Crypt Soldier", "Chr_BR_Dwarf_Soldier_Male_01", "Steel Mace", 0.9f, 1.3f, 1.05f, 1.6f, 1.2f, BloodKind.Blood, CreatureKind.Humanoid),
+  ("Forge Shieldmaiden", "forge shieldmaiden", "Crypt/Crypt Soldier", "Chr_BR_Dwarf_Soldier_Female_01", "Iron Sword", 0.9f, 1.15f, 1.1f, 1.4f, 1.2f, BloodKind.Blood, CreatureKind.Humanoid),
+  ("Forge Miner", "forge miner", "Crypt/Crypt Soldier", "Chr_BR_Dwarf_Miner_01", "Iron Mace", 0.9f, 1.1f, 1f, .8f, 1f, BloodKind.Blood, CreatureKind.Humanoid),
+  ("Forge King", "forge king", "Crypt/Crypt Warden", "Chr_BR_Dwarf_King_01", "Crystal Mace", 1f, 1.6f, 1.25f, 1.6f, 2.2f, BloodKind.Blood, CreatureKind.Humanoid),
   ("Pit Demon", "pit demon", "Crypt/Demon", "Chr_BR_Demon_01", "Steel Sword", 1.2f, 1.3f, 1.15f, 1.1f, 1.4f, BloodKind.Blood, CreatureKind.Humanoid),
 };
 
@@ -101,6 +117,7 @@ foreach (var s in specs)
     {
       if (smr.sharedMesh == null) continue;
       var (mesh, mat) = Restyle(smr, n == 0 ? s.file : $"{s.file} {smr.name}", dir, s.scale);
+      if (n == 0) Grade(s.file, mat);
       n++;
       if (mesh == null) continue;
       smr.sharedMesh = mesh; smr.sharedMaterials = new[] { mat }; smr.updateWhenOffscreen = false;

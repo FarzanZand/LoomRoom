@@ -45,7 +45,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1669203865499278592, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.95
+      value: 0.7951306
       objectReference: {fileID: 0}
     - target: {fileID: 1669203865499278592, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
       propertyPath: m_LocalPosition.y
@@ -119,7 +119,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1669203865499278592, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.4
+      value: -0.33479187
       objectReference: {fileID: 0}
     - target: {fileID: 1669203865499278592, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
       propertyPath: m_LocalPosition.y
@@ -161,6 +161,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Clay pot
       objectReference: {fileID: 0}
+    - target: {fileID: 7322619892933669384, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f938107af653471459fbc0eeab67a49d, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -193,7 +197,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1669203865499278592, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.35
+      value: 0.29294285
       objectReference: {fileID: 0}
     - target: {fileID: 1669203865499278592, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
       propertyPath: m_LocalPosition.y
@@ -235,6 +239,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Clay pot
       objectReference: {fileID: 0}
+    - target: {fileID: 7322619892933669384, guid: f14d188be1af8924792fc862bb8c6f73, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 1ed87425924db1340bf654009378caac, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

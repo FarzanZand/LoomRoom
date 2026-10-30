@@ -49,7 +49,7 @@ MonoBehaviour:
     weight: 1.5
     rows: 0
   wallDecor:
-  - prefab: {fileID: 8972146686823189088, guid: 32191ec684750bd4c9df1f8867086fc8, type: 3}
+  - prefab: {fileID: 8237772683014952706, guid: 848439cb7348f68488825827b280cd6a, type: 3}
     weight: 3
   - prefab: {fileID: 4143569973382547531, guid: c087b67e5c12b4046be191a37427f333, type: 3}
     weight: 1.2

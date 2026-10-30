@@ -42,13 +42,33 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1539448029725831923}
     m_Modifications:
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.91774523
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.91774523
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.91774523
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.0011139114
+      objectReference: {fileID: 0}
     - target: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
       propertyPath: m_Name
       value: Breakable barrel
       objectReference: {fileID: 0}
     - target: {fileID: 7661158909039360480, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.45
+      value: -0.43352523
       objectReference: {fileID: 0}
     - target: {fileID: 7661158909039360480, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
       propertyPath: m_LocalPosition.y
@@ -104,6 +124,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1539448029725831923}
     m_Modifications:
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.019717
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.019717
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.019717
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.0004906897
+      objectReference: {fileID: 0}
     - target: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
       propertyPath: m_Name
       value: Breakable barrel
@@ -122,7 +162,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7661158909039360480, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.05
+      value: 0.048169475
       objectReference: {fileID: 0}
     - target: {fileID: 7661158909039360480, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
       propertyPath: m_LocalPosition.y
@@ -178,13 +218,33 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1539448029725831923}
     m_Modifications:
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9177452
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9177452
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9177452
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.0011139114
+      objectReference: {fileID: 0}
     - target: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
       propertyPath: m_Name
       value: Breakable barrel
       objectReference: {fileID: 0}
     - target: {fileID: 7661158909039360480, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.5
+      value: 0.48169473
       objectReference: {fileID: 0}
     - target: {fileID: 7661158909039360480, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
       propertyPath: m_LocalPosition.y

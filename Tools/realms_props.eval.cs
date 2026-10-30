@@ -5,8 +5,11 @@
 // the atlas's glow sheet (lava, molten metal, crystals) comes along as an emission map. Fire props get a warm light and
 // the Fireball's held flame (Spells Pack pixel art) as their child, so moving the prop moves its light.
 // Floor props keep one box collider (walked round, and the floor's NavMesh is cut round them); flat ones (rugs, coins,
-// the hell circle) none, laid 1.2 cm above the floor so no face lies in the floor's plane.
-// Safe to run again: everything is rebuilt. Writes Temp/Realms/props.txt. Run in edit mode.
+// the hell circle) none, laid 1.2 cm above the floor so no face lies in the floor's plane. Stone, gold, molten metal and
+// crystal get a hand-made finish over the restyle (Finish below: Tools/prop_organic.py, Tools/realms_grade.py); the weapon
+// barrel and the chandelier are dressed with weapons and candles (Dress).
+// Safe to run again: everything is rebuilt (Temp/Realms/only_props.txt, when there, names the ones to rebuild). Writes
+// Temp/Realms/props.txt. Run in edit mode.
 if (UnityEngine.Application.isPlaying) return "playing";
 const string D = "Assets/Game/Levels/Dungeon1/Realms/Props";
 const string SP = "Assets/Synty/PolygonDungeonRealms/Prefabs/";
@@ -132,6 +135,9 @@ var list = new (string name, string src, float height, UnityEngine.Color fire, b
   // its ends as a dark band); "Wall ..." hangs at its own height. Each sinks into the wall behind it.
   ("Full height pilaster", "Environments/SM_Env_Dwarf_Pillar_Half_01", 3f, default, false),
   ("Full height pilaster carved", "Environments/SM_Env_Dwarf_Pillar_Half_03", 3f, default, false),
+  // The forge's own: the same carved pilaster painted in its soot-dark basalt (the Deep Halls' sandstone one stood out
+  // pale and beige against the forge's black walls).
+  ("Full height pilaster basalt", "Environments/SM_Env_Dwarf_Pillar_Half_03", 3f, default, false),
   ("Full height banner", "Props/SM_Prop_Banner_04", 2.75f, default, false),
   ("Full height alcove", "Environments/SM_Env_Dwarf_Wall_Alcove_Angular_01", 3f, default, false),
   ("Tall lava fall", "Environments/SM_Env_Lava_Flow_01", 3f, new UnityEngine.Color(1f, .5f, .15f, 0), false),
@@ -152,17 +158,139 @@ var list = new (string name, string src, float height, UnityEngine.Color fire, b
   ("Lava channel", "Environments/SM_Env_Dwarf_Forge_Gutter_Straight_01", -3.8f, new UnityEngine.Color(1f, .45f, .12f, 0), true),
 };
 
-// The crystals are pure violet in the pack: pulled toward grey (the house style keeps a muted base), texel by texel.
-void Mute(UnityEngine.Material m, float k)
+// The restyle's own shading is wood grain for warm stone (the sandstone came out in horizontal streaks) and soft blotches
+// for the rest (an airbrushed look the house style forbids), and the pack's gold, molten metal and crystal came out as flat
+// fills. These props get the house's hand-made finish instead, from the fresh restyle each time:
+//  - stone (Tools/prop_organic.py): Synty's colour per texel stepped into five shades, coursed blocks with dark joints,
+//    crease grime, lit edges, speckles and cracks, laid in metres. The Deep Halls' sandstone keeps a pink-grey of its own
+//    (the user: different from the walls' olive is fine), darker so it no longer glows against the walls; the forge's
+//    pieces are soot-dark basalt.
+//  - gold, molten, ore, crystal (Tools/realms_grade.py): hard-edged tone clusters, glints, crust and heat.
+(string mode, string args)[] Finish(string n)
 {
-  var t = m.GetTexture("_BaseMap") as UnityEngine.Texture2D; if (t == null) return;
-  var path = UnityEditor.AssetDatabase.GetAssetPath(t);
-  var bytes = System.IO.File.ReadAllBytes(path); var tex = new UnityEngine.Texture2D(2, 2); UnityEngine.ImageConversion.LoadImage(tex, bytes);
-  var px = tex.GetPixels();
-  for (int i = 0; i < px.Length; i++) { var c = px[i]; float g = c.grayscale; px[i] = new UnityEngine.Color(UnityEngine.Mathf.Lerp(c.r, g, k), UnityEngine.Mathf.Lerp(c.g, g * 1.02f, k), UnityEngine.Mathf.Lerp(c.b, g * 1.1f, k), c.a) * .9f; px[i].a = c.a; }
-  tex.SetPixels(px); tex.Apply();
-  System.IO.File.WriteAllBytes(path, UnityEngine.ImageConversion.EncodeToPNG(tex));
-  UnityEditor.AssetDatabase.ImportAsset(path, UnityEditor.ImportAssetOptions.ForceUpdate);
+  const string sand = "--sat .5 --bright .6 --grain .45 --cracks .5 --dirt .45";
+  const string basalt = "--sat .22 --bright .34 --grain .7 --cracks .7 --dirt .5";
+  const string course = " --courses .375";
+  switch (n)
+  {
+    case "Dwarf pillar": case "Dwarf obelisk": case "Broken obelisk": case "Fallen pillar": case "Full height pilaster":
+    case "Full height pilaster carved": case "Full height alcove": case "Dwarf sarcophagus": case "Dwarf totem":
+      return new[] { ("stone", sand + course) };
+    case "Dwarf throne": case "Stone table": case "Stone bench": case "Stone stool": case "Stone shelf": case "Weapon rack":
+    case "Rubble": case "Rubble 2":
+      return new[] { ("stone", sand) };
+    case "Full height pilaster basalt": return new[] { ("stone", basalt + course) };
+    case "Cog box": case "Wall grate": case "Golem head": return new[] { ("stone", basalt) };
+    case "Lava duct": return new[] { ("stone", basalt + course), ("molten", "") };
+    case "Molten pit": case "Smelter mould": case "Lava channel": case "Furnace": return new[] { ("stone", basalt), ("molten", "") };
+    case "Smelting pot": case "Tall lava fall": return new[] { ("molten", "") };
+    case "Gold pile": case "Gold coins": case "Gold hoard": return new[] { ("gold", "") };
+    case "Ore crate": case "Ore crates": return new[] { ("ore", "") };
+    case "Crystal cluster": case "Crystal cluster 2": return new[] { ("crystal", "") };
+  }
+  return new (string, string)[0];
+}
+
+string Run(string args)
+{
+  var psi = new System.Diagnostics.ProcessStartInfo("python", args) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true, WorkingDirectory = System.IO.Directory.GetCurrentDirectory() };
+  using var p = System.Diagnostics.Process.Start(psi);
+  var o = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd(); p.WaitForExit();
+  return (p.ExitCode == 0 ? "" : "FAILED ") + o.Trim();
+}
+
+void Paint(string pname, string sourceMesh, UnityEngine.Mesh mesh, UnityEngine.Material mat, UnityEngine.Vector3 worldScale)
+{
+  var finish = Finish(pname); if (finish.Length == 0) return;
+  var tex = mat.GetTexture("_BaseMap") as UnityEngine.Texture2D; if (tex == null) return;
+  var texPath = UnityEditor.AssetDatabase.GetAssetPath(tex);
+  var emiTex = mat.IsKeywordEnabled("_EMISSION") ? mat.GetTexture("_EmissionMap") : null;
+  var emiPath = emiTex != null ? UnityEditor.AssetDatabase.GetAssetPath(emiTex) : null;
+  foreach (var (mode, args) in finish)
+  {
+    string o;
+    if (mode == "stone")
+    {
+      var meshPath = UnityEditor.AssetDatabase.GetAssetPath(mesh);
+      var gb = $"Temp/Realms/gb/{System.IO.Path.GetFileNameWithoutExtension(texPath)}.bin";
+      // Synty's own swatch per texel when the pack's prefab is found by the mesh's name, else the restyle's colours.
+      bool synty = PixelRestyle.SyntySource(sourceMesh, out _, out _);
+      PixelRestyle.BakeGBuffer(meshPath, tex.width, tex.height, gb, synty ? "synty:" + sourceMesh : meshPath, synty ? null : texPath);
+      var size = UnityEngine.Vector3.Scale(mesh.bounds.size, worldScale);
+      o = Run($"Tools/prop_organic.py \"{gb}\" {tex.width} {tex.height} \"{texPath}\" --material stone --extent {size.x:F3},{size.y:F3},{size.z:F3} {args}");
+    }
+    else o = Run($"Tools/realms_grade.py {mode} \"{texPath}\"" + (emiPath != null ? $" \"{emiPath}\"" : ""));
+    sb.Append($"    {pname} {mode}: {o}\n");
+  }
+  UnityEditor.AssetDatabase.ImportAsset(texPath, UnityEditor.ImportAssetOptions.ForceUpdate);
+  if (emiPath != null) UnityEditor.AssetDatabase.ImportAsset(emiPath, UnityEditor.ImportAssetOptions.ForceUpdate);
+}
+
+// The pack's weapon barrel came empty and its chandelier with a bare tray: the barrel gets the pack's own weapons standing
+// in it, the chandelier a candle on each corner, all restyled at 128 like the rest. (The weapon rack is left out of the
+// biomes: a stone bracket the weapons stood through.)
+UnityEngine.Bounds Shown(UnityEngine.GameObject g)
+{
+  var b = new UnityEngine.Bounds(); bool any = false;
+  foreach (var r in g.GetComponentsInChildren<UnityEngine.MeshRenderer>(true)) { if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds); }
+  return b;
+}
+// A part from the pack (or another Synty pack), its longest side `length` metres and stood up along y, then turned by
+// `tilt`, its foot (its lowest point) at `foot`.
+void AddPart(UnityEngine.GameObject holder, string prefabPath, string partName, string dir, float length, UnityEngine.Vector3 foot, UnityEngine.Quaternion tilt)
+{
+  var src = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>(prefabPath);
+  var smf = src != null ? src.GetComponentInChildren<UnityEngine.MeshFilter>() : null;
+  if (smf == null || smf.sharedMesh == null) { sb.Append($"MISSING part {prefabPath}\n"); return; }
+  var mb = smf.sharedMesh.bounds.size;
+  float scale = length / UnityEngine.Mathf.Max(mb.x, UnityEngine.Mathf.Max(mb.y, mb.z));
+  var mats = System.Array.ConvertAll(smf.GetComponent<UnityEngine.MeshRenderer>().sharedMaterials, m => m != null ? Readable(m) : null);
+  var (mesh, mat) = Restyle(smf.sharedMesh, mats, partName, dir, scale);
+  if (mesh == null) return;
+  PixelRestyle.MarkReadable(mesh);
+  var go = new UnityEngine.GameObject(partName); go.transform.SetParent(holder.transform, false);
+  go.AddComponent<UnityEngine.MeshFilter>().sharedMesh = mesh;
+  var r = go.AddComponent<UnityEngine.MeshRenderer>(); r.sharedMaterial = mat;
+  go.transform.localScale = UnityEngine.Vector3.one * scale;
+  var up = mb.x >= mb.y && mb.x >= mb.z ? UnityEngine.Quaternion.Euler(0, 0, 90) : mb.z >= mb.y ? UnityEngine.Quaternion.Euler(90, 0, 0) : UnityEngine.Quaternion.identity;
+  go.transform.localRotation = tilt * up;
+  var b = r.bounds;
+  go.transform.position += new UnityEngine.Vector3(foot.x - b.center.x, foot.y - b.min.y, foot.z - b.center.z);
+}
+void Dress(string pname, UnityEngine.GameObject holder, string dir)
+{
+  const string W = "Assets/Synty/PolygonDungeonRealms/Prefabs/Weapons/";
+  var b = Shown(holder);
+  UnityEngine.Quaternion Q(float x, float z) => UnityEngine.Quaternion.Euler(x, 0, z);
+  if (pname == "Weapon barrel")
+  {
+    // three standing in the barrel, splayed against its rim
+    var w = new[] { ("SM_Wep_Spear_03", 1.6f, -.1f, 0f, 9f), ("SM_Wep_Axe_Large_02", 1.15f, .1f, .04f, -10f), ("SM_Wep_Mace_Large_02", 1.05f, 0f, -.1f, 4f) };
+    foreach (var (n, len, dx, dz, lean) in w)
+      AddPart(holder, W + n + ".prefab", $"Barrel {n.Replace("SM_Wep_", "")}", dir, len, new UnityEngine.Vector3(b.center.x + dx, b.min.y + b.size.y * .3f, b.center.z + dz), Q(dz * 80f, lean));
+  }
+  else if (pname == "Hanging chandelier")
+  {
+    // a candle on each corner of the tray: found by casting down onto the chandelier from halfway down it
+    var cols = new System.Collections.Generic.List<UnityEngine.MeshCollider>();
+    foreach (var mf in holder.GetComponentsInChildren<UnityEngine.MeshFilter>()) cols.Add(mf.gameObject.AddComponent<UnityEngine.MeshCollider>());
+    UnityEngine.Physics.SyncTransforms();
+    int k = 0;
+    foreach (var (sx, sz) in new[] { (-1, -1), (1, -1), (-1, 1), (1, 1) })
+    {
+      var o = new UnityEngine.Vector3(b.center.x + sx * b.extents.x * .82f, b.min.y + b.size.y * .5f, b.center.z + sz * b.extents.z * .82f);
+      if (!UnityEngine.Physics.Raycast(o, UnityEngine.Vector3.down, out var hit, b.size.y)) continue;
+      AddPart(holder, "Assets/Synty/PolygonDarkFantasy/Prefabs/Props/SM_Prop_Candle_03.prefab", $"Candle {++k}", dir, .16f, hit.point + UnityEngine.Vector3.up * .002f, UnityEngine.Quaternion.identity);
+      if (flame != null)
+      {
+        var f = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(flame);
+        f.name = $"Candle flame {k}"; f.transform.SetParent(holder.transform, false);
+        f.transform.position = hit.point + UnityEngine.Vector3.up * .19f; f.transform.localScale = UnityEngine.Vector3.one * .14f;
+      }
+    }
+    foreach (var c in cols) UnityEngine.Object.DestroyImmediate(c);
+    sb.Append($"  Hanging chandelier: {k} candles\n");
+  }
 }
 
 int made = 0;
@@ -189,24 +317,28 @@ foreach (var (pname, src, height, fire, flat) in list)
   // pinched a corridor shut). The mesh itself is squashed before the restyle, so its texels stay square.
   bool wallPiece = pname.StartsWith("Full height") || pname.StartsWith("Wall ") || pname.StartsWith("Tall ");
   float depthScale = wallPiece && bounds.size.z * scale > .5f ? .5f / (bounds.size.z * scale) : 1f;
+  // ...and no wider than a 2 m wall cell (less a hand), so pieces on neighbouring cells never overlap in the wall's plane
+  // (the 3 m alcove lay over the pilaster beside it and flickered).
+  float widthScale = wallPiece && bounds.size.x * scale > 1.9f ? 1.9f / (bounds.size.x * scale) : 1f;
   int part = 0;
   foreach (var r in rends)
   {
     var mf = r.GetComponent<UnityEngine.MeshFilter>();
     if (mf == null || mf.sharedMesh == null) continue;
-    if (depthScale < 1f)
+    if (depthScale < 1f || widthScale < 1f)
     {
       var sq = UnityEngine.Object.Instantiate(mf.sharedMesh); sq.name = mf.sharedMesh.name;
-      var v = sq.vertices; var tr = r.transform; float cz = bounds.center.z;
-      for (int i = 0; i < v.Length; i++) { var w = tr.TransformPoint(v[i]); w.z = cz + (w.z - cz) * depthScale; v[i] = tr.InverseTransformPoint(w); }
+      var v = sq.vertices; var tr = r.transform; float cz = bounds.center.z, cx = bounds.center.x;
+      for (int i = 0; i < v.Length; i++) { var w = tr.TransformPoint(v[i]); w.z = cz + (w.z - cz) * depthScale; w.x = cx + (w.x - cx) * widthScale; v[i] = tr.InverseTransformPoint(w); }
       sq.vertices = v; sq.RecalculateNormals(); sq.RecalculateBounds(); mf.sharedMesh = sq;
     }
     var mats = System.Array.ConvertAll(r.sharedMaterials, m => m != null ? Readable(m) : null);
+    var sourceMesh = mf.sharedMesh.name;
     var (mesh, mat) = Restyle(mf.sharedMesh, mats, part == 0 ? pname : $"{pname} {part}", dir, scale * r.transform.lossyScale.x / UnityEngine.Mathf.Max(1e-4f, scale));
     part++;
     if (mesh == null) continue;
     PixelRestyle.MarkReadable(mesh);
-    if (pname.StartsWith("Crystal")) Mute(mat, .45f);
+    Paint(pname, sourceMesh, mesh, mat, r.transform.lossyScale);
     mf.sharedMesh = mesh; r.sharedMaterials = new[] { mat };
     r.shadowCastingMode = bounds.size.y * scale < .4f ? UnityEngine.Rendering.ShadowCastingMode.Off : UnityEngine.Rendering.ShadowCastingMode.On;
   }
@@ -217,12 +349,53 @@ foreach (var (pname, src, height, fire, flat) in list)
   root.transform.SetParent(holder.transform, true);
   root.name = "Model";
   bool wall = pname.StartsWith("Full height") || pname.StartsWith("Wall ") || pname.StartsWith("Tall "), hanging = pname.StartsWith("Hanging");
+  // How the generator sets it in a taller room (lifted with the ceiling, stacked up the wall), and whether it is flat
+  // enough on its wall to cast no shadow.
+  if (wall || hanging)
+  {
+    var mount = holder.AddComponent<PropMount>();
+    mount.kind = hanging ? PropMount.Kind.HangsFromCeiling : pname.StartsWith("Full height") ? PropMount.Kind.FullHeight : PropMount.Kind.Standing;
+    mount.castsNoShadow = pname == "Full height banner" || pname == "Full height chains" || pname.StartsWith("Wall ");
+  }
   if (wall)
   {
     // Its back half sunk into the wall (the wall's face is the prefab's z 0, the room toward +z), centred along it;
     // a "Wall ..." piece hangs with its middle 1.9 m up.
     float sink = UnityEngine.Mathf.Min(b2.size.z * .5f, .35f) + .02f;
     float lift = pname.StartsWith("Wall ") ? 1.9f - b2.size.y * .5f : 0f;
+    // No face of the piece that looks into the room may lie in the wall's plane: the generator sets the prefab's z 0 on the
+    // cell edge, which is the wall's face (the wall box reaches out from it), and the trims along its foot and top stand
+    // 4 cm proud of it. A face closer than 1.2 cm to either plane flickered against the wall (an alcove's recess, a
+    // pilaster's flat back band, a banner's cloth), so the piece is moved a few millimetres, the least that clears both,
+    // and something of it must still stand out of the wall.
+    var roomFacing = new System.Collections.Generic.List<float>();
+    foreach (var mfz in root.GetComponentsInChildren<UnityEngine.MeshFilter>(true))
+    {
+      if (mfz.sharedMesh == null) continue;
+      var vz = mfz.sharedMesh.vertices; var tz = mfz.sharedMesh.triangles; var mz = mfz.transform.localToWorldMatrix;
+      for (int i = 0; i < tz.Length; i += 3)
+      {
+        UnityEngine.Vector3 a = mz.MultiplyPoint3x4(vz[tz[i]]), bq = mz.MultiplyPoint3x4(vz[tz[i + 1]]), cq = mz.MultiplyPoint3x4(vz[tz[i + 2]]);
+        var nq = UnityEngine.Vector3.Cross(bq - a, cq - a);
+        if (nq.sqrMagnitude < 1e-12f || nq.normalized.z < .9f) continue;
+        roomFacing.Add((a.z + bq.z + cq.z) / 3f);
+      }
+    }
+    bool Clear(float s)
+    {
+      float front = -1f;
+      foreach (var z in roomFacing)
+      {
+        float at = z - (b2.min.z + s); front = UnityEngine.Mathf.Max(front, at);
+        if (UnityEngine.Mathf.Abs(at) < .012f || UnityEngine.Mathf.Abs(at - .04f) < .012f) return false;
+      }
+      return front > .012f;
+    }
+    float tried = sink;
+    for (int k = 1; k <= 60 && !Clear(tried); k++) tried = sink + (k % 2 == 1 ? 1 : -1) * ((k + 1) / 2) * .004f;
+    if (!Clear(tried)) { sb.Append($"  {pname}: no clear place found near {sink:F3}\n"); tried = sink; }
+    else if (tried != sink) sb.Append($"  {pname}: moved {sink - tried:F3} m off the wall's plane\n");
+    sink = tried;
     root.transform.position -= new UnityEngine.Vector3(b2.center.x, b2.min.y - lift, b2.min.z + sink);
   }
   else if (hanging) root.transform.position -= new UnityEngine.Vector3(b2.center.x, b2.max.y - 3.02f, b2.center.z);
@@ -263,6 +436,7 @@ foreach (var (pname, src, height, fire, flat) in list)
       }
     }
   }
+  Dress(pname, holder, dir);
   UnityEditor.PrefabUtility.SaveAsPrefabAsset(holder, $"{D}/{pname}.prefab");
   UnityEngine.Object.DestroyImmediate(holder);
   made++;

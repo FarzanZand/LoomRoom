@@ -120,13 +120,6 @@ MonoBehaviour:
     perRoom: {x: 0, y: 2}
     chance: 1
     rooms: 62
-  - prefab: {fileID: 4930384532569828019, guid: d8b9c4b3d92a5514cbb7491009340c43, type: 3}
-    placement: 0
-    footprint: {x: 1, y: 1}
-    perTenCells: 0.52
-    perRoom: {x: 0, y: 2}
-    chance: 1
-    rooms: 62
   - prefab: {fileID: 304064252659462856, guid: 213bcc128d2c7c14db5db41a762b94c4, type: 3}
     placement: 0
     footprint: {x: 1, y: 1}
@@ -456,7 +449,7 @@ MonoBehaviour:
   templateChance: 0.12
   roomCount: 0
   roomSizeScale: 1
-  tallRoomChance: 0.22
+  tallRoomChance: 0.07
   tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 1
@@ -529,6 +522,8 @@ MonoBehaviour:
   encounterChance: {x: 0.78, y: 0.85}
   minEnemiesPerRoom: 2
   maxEnemiesPerRoom: 3
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
   features: []
   loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
   merchantChance: 1

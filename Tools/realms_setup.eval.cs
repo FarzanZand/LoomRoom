@@ -67,7 +67,7 @@ DungeonRoomStyle Style(int n)
   // stacked up a tall hall's wall).
   DungeonWeightedPrefab Dec(string n, float w) => new DungeonWeightedPrefab { prefab = Load<UnityEngine.GameObject>($"{P}/{n}.prefab"), weight = w };
   style.wallDecor = n == 1 ? new[] { Dec("Full height pilaster", 3), Dec("Full height pilaster carved", 2), Dec("Full height banner", 2), Dec("Wall shield crest", 1.2f), Dec("Full height alcove", .8f) }
-    : n == 2 ? new[] { Dec("Full height pilaster carved", 3), Dec("Wall grate", 1.2f), Dec("Full height chains", 1), Dec("Full height banner", .6f) }
+    : n == 2 ? new[] { Dec("Full height pilaster basalt", 3), Dec("Wall grate", 1.2f), Dec("Full height chains", 1), Dec("Full height banner", .6f) }
     : new[] { Dec("Full height black rock", 3), Dec("Full height chains", 1.8f) };
   // Polish 4: no lava falls on the walls: they are flat glowing cards that read as orange slabs and blew out the view up
   // close. The lava is in the floor (channels, pits, the pots).
@@ -118,8 +118,9 @@ DungeonBiome Make(int n, string display, string entry, float templates, DungeonP
   biome.propRules = rules;
   // Fewer hand-built rooms than the Crypt, so more rooms are furnished with the pack's props (a hand-built room keeps its own).
   biome.templateChance = templates;
-  // A few big rooms built two tiles high as halls (the user: some tall, made epic), dressed to the ceiling.
-  biome.tallRoomChance = .22f; biome.tallRoomLeastCells = 20;
+  // A rare big room built two tiles high as a hall (the user: some tall, made epic; then, 2026-10-30, big halls rare, most
+  // rooms one tile high), dressed to the ceiling.
+  biome.tallRoomChance = .07f; biome.tallRoomLeastCells = 20;
   var breakables = new System.Collections.Generic.List<DungeonWeightedPrefab>();
   if (level.destructibles != null) breakables.AddRange(level.destructibles);
   if (level.baseBiome != null && level.baseBiome.destructibles != null) breakables.AddRange(level.baseBiome.destructibles);
@@ -139,8 +140,10 @@ DungeonBiome Make(int n, string display, string entry, float templates, DungeonP
   biome.litThroughout = true; biome.fog = fog; biome.lightRadius = 0f;
   biome.shadowTint = shadow; biome.lampTint = lamp; biome.filmicLook = filmic;
   biome.lightingPrefabs = new[] { new DungeonWallLight { prefab = torch, weight = 1, overrideColor = true, color = torchColour } };
-  biome.overrideTorchColor = false; biome.torchBrightness = n == 1 ? 1.05f : n == 2 ? 1.6f : 2.3f;
-  biome.torchesPerRoom = n == 1 ? biome.torchesPerRoom : new UnityEngine.Vector2Int(UnityEngine.Mathf.Max(2, biome.torchesPerRoom.x), UnityEngine.Mathf.Max(3, biome.torchesPerRoom.y + 1));
+  // The pit is lit hardest: its entrance room was close to black under the red fog (2026-10-30), so its torches are
+  // brighter and more of them, and its red ambient higher (its fog kept, the user likes it).
+  biome.overrideTorchColor = false; biome.torchBrightness = n == 1 ? 1.05f : n == 2 ? 1.6f : 3f;
+  biome.torchesPerRoom = n == 1 ? biome.torchesPerRoom : n == 2 ? new UnityEngine.Vector2Int(UnityEngine.Mathf.Max(2, biome.torchesPerRoom.x), UnityEngine.Mathf.Max(3, biome.torchesPerRoom.y + 1)) : new UnityEngine.Vector2Int(3, UnityEngine.Mathf.Max(5, biome.torchesPerRoom.y + 1));
   UnityEditor.EditorUtility.SetDirty(biome);
   sb.Append($"{name}: style {style.name}, rules {rules.Length}, breakables {biome.destructibles.Length}, enemies {biome.enemies.Length}\n");
   made.Add(biome);
@@ -160,7 +163,7 @@ Make(1, "The Deep Halls", "Dwarf halls. Nobody has swept in a while.", .12f, new
   Rule("Dwarf banner", W, .5f, 0, 3), Rule("Dwarf banner torn", W, .3f, 0, 2),
   Rule("Dwarf pillar", C, .3f, 0, 2), Rule("Dwarf obelisk", W, .15f, 0, 1), Rule("Broken obelisk", A, .15f, 0, 1),
   Rule("Realms barrel", W, .3f, 0, 2), Rule("Barrel stack", C, .2f, 0, 1, 1f, 2, 1), Rule("Crate stack", C, .2f, 0, 1),
-  Rule("Weapon rack", W, .2f, 0, 1), Rule("Weapon barrel", W, .2f, 0, 1),
+  Rule("Weapon barrel", W, .25f, 0, 1),   // no weapon rack: the pack's is a stone bracket that read as a broken block, and weapons stood through it
   Rule("Stone table", M, .12f, 0, 1, .6f, 1, 1, DungeonRoomRoles.Rest | DungeonRoomRoles.Storage | DungeonRoomRoles.Combat), Rule("Stone bench", W, .2f, 0, 2), Rule("Stone stool", A, .15f, 0, 2),
   Rule("Stone shelf", W, .2f, 0, 1), Rule("Dwarf sarcophagus", W, .12f, 0, 1),
   Rule("Dead dwarf", A, .2f, 0, 1), Rule("Dead dwarf 2", A, .15f, 0, 1),
@@ -188,7 +191,7 @@ Make(2, "The Forge", "The forges are still lit. Someone keeps them lit.", .12f, 
   Rule("Ore pile", A, .2f, 0, 1, 1f, 1, 1), Rule("Ore pile 2", A, .15f, 0, 1),
   Rule("Smelter mould", M, .08f, 0, 1, .5f, 2, 1), Rule("Lava duct", C, .2f, 0, 2),
   Rule("Forge hammer", A, .15f, 0, 1), Rule("Forge tongs", A, .15f, 0, 1),
-  Rule("Realms barrel", W, .25f, 0, 2), Rule("Crate stack", C, .2f, 0, 1), Rule("Weapon rack", W, .15f, 0, 1),
+  Rule("Realms barrel", W, .25f, 0, 2), Rule("Crate stack", C, .2f, 0, 1), Rule("Weapon barrel", W, .15f, 0, 1),
   Rule("Gold pile", A, .25f, 1, 1, 1f, 1, 1, Rich), Rule("Gold hoard", M, .15f, 0, 1, .6f, 1, 1, Rich),
   Life("Rising embers", .9f),
   Rule("Hanging cage lamp", M, .2f, 1, 2), Rule("Hanging girder", A, .3f, 1, 3), Rule("Hanging girder", A, .25f, 1, 2), Rule("Hanging chains", A, .2f, 0, 2), Rule("Hanging chain ring", M, .1f, 0, 1, .6f), Rule("Lava channel", A, .15f, 0, 1, .7f, 1, 2),
@@ -218,7 +221,7 @@ Make(3, "The Pit", "Down here it is warm. Too warm.", .12f, new[]
   // Iteration 4: the middle of a room was bare floor; black rock, spikes and pillars stand out in it, lit by more fire.
   Rule("Black spike", M, .2f, 0, 2, .8f), Rule("Hell pillar", M, .12f, 0, 1, .7f), Rule("Black rock", M, .2f, 0, 1, .8f), Rule("Hell brazier", M, .15f, 0, 1, .8f), Rule("Skull spike", M, .15f, 0, 1, .7f),
 }, new UnityEngine.Color(1f, .45f, .14f),
-  L(new UnityEngine.Color(.15f, .2f, .24f), new UnityEngine.Color(.74f, .3f, .2f), new UnityEngine.Color(.38f, .16f, .13f), new UnityEngine.Color(.46f, .14f, .09f), new UnityEngine.Color(1f, .5f, .3f), .3f),
+  L(new UnityEngine.Color(.15f, .2f, .24f), new UnityEngine.Color(1f, .405f, .27f), new UnityEngine.Color(.513f, .216f, .176f), new UnityEngine.Color(.46f, .14f, .09f), new UnityEngine.Color(1f, .5f, .3f), .5f),
   new UnityEngine.Color(.82f, .62f, .7f), new UnityEngine.Color(1.18f, .78f, .58f), .55f, new UnityEngine.Vector2(8f, 48f));
 
 // Dungeon1's Realms floors: one realm each.

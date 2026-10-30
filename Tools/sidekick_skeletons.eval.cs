@@ -3,13 +3,22 @@
 // body on its own rig and avatar, restyled in the pixel look at 128 texels a metre (PixelRestyle.Build reads the
 // character's 32 x 32 colour palette, the Sidekick shader's _ColorMap). Five are Synty's presets; the sixth is the first
 // preset's body in the fifth's palette (Sidekick characters share one palette layout, so any palette fits any body).
-// Safe to run again. Writes Temp/Realms/sidekick.txt. Run in edit mode.
+// Safe to run again. Writes Temp/Realms/sidekick.txt. Run in edit mode. The project keeps only the avatars of the
+// Sidekick sources (the enemies use them); the bodies, palettes and materials are pulled from the asset library
+// (Tools/asset_library.py) when missing.
 if (UnityEngine.Application.isPlaying) return "playing";
 const string D = "Assets/Game/Characters/Enemies/Sidekick";
 const string SK = "Assets/Synty/SidekickCharacters/Characters/FantasySkeletons/";
 const float TPU = 128f;
 var sb = new System.Text.StringBuilder();
 try {
+if (UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>($"{SK}FantasySkeletons_01/FantasySkeletons_01.prefab") == null)
+{
+  var pull = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("python", "Tools/asset_library.py pull \"Synty/SidekickCharacters/Characters/FantasySkeletons\"") { UseShellExecute = false, CreateNoWindow = true });
+  pull.WaitForExit();
+  UnityEditor.AssetDatabase.Refresh(UnityEditor.ImportAssetOptions.ForceSynchronousImport);
+  sb.Append("pulled the Sidekick sources from the asset library\n");
+}
 void Folder(string path) { var parts = path.Split('/'); var cur = parts[0]; for (int i = 1; i < parts.Length; i++) { var next = cur + "/" + parts[i]; if (!UnityEditor.AssetDatabase.IsValidFolder(next)) UnityEditor.AssetDatabase.CreateFolder(cur, parts[i]); cur = next; } }
 Folder(D);
 var template = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/Game/Characters/Enemies/Crypt/Crypt Soldier.prefab");
@@ -19,6 +28,32 @@ UnityEngine.Material Readable(UnityEngine.Texture palette)
   var m = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit"));
   m.SetTexture("_BaseMap", palette); m.SetColor("_BaseColor", UnityEngine.Color.white);
   return m;
+}
+
+// The presets' palettes are bright (a royal blue hood, violet robes, a grass-green hat) against the house style's muted
+// base, and the fifth's bones are a dark maroon. Each skeleton gets its own copy of its palette: every colour pulled 45%
+// toward grey and a little darker, and the bone cells (18-19, 4-5 from the bottom of the 32 x 32 layout) an aged ivory
+// when the preset paints them anything but pale bone.
+UnityEngine.Texture2D Muted(UnityEngine.Texture2D src, string outPath)
+{
+  var tex = new UnityEngine.Texture2D(2, 2); UnityEngine.ImageConversion.LoadImage(tex, System.IO.File.ReadAllBytes(UnityEditor.AssetDatabase.GetAssetPath(src)));
+  var px = tex.GetPixels(); int w = tex.width, h = tex.height;
+  for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)
+  {
+    var c = px[y * w + x];
+    UnityEngine.Color.RGBToHSV(c, out float hu, out float sa, out float va);
+    bool bone = w == 32 && (x == 18 || x == 19) && (y == 4 || y == 5);
+    if (bone && !(va > .5f && sa < .4f)) { hu = .1f; sa = .2f; va = .66f; }
+    else { sa *= .55f; va *= .94f; }
+    var o = UnityEngine.Color.HSVToRGB(hu, sa, va); o.a = c.a; px[y * w + x] = o;
+  }
+  tex.SetPixels(px); tex.Apply();
+  System.IO.File.WriteAllBytes(outPath, UnityEngine.ImageConversion.EncodeToPNG(tex));
+  UnityEditor.AssetDatabase.ImportAsset(outPath, UnityEditor.ImportAssetOptions.ForceSynchronousImport);
+  var ti = (UnityEditor.TextureImporter)UnityEditor.AssetImporter.GetAtPath(outPath);
+  ti.filterMode = UnityEngine.FilterMode.Point; ti.npotScale = UnityEditor.TextureImporterNPOTScale.None; ti.mipmapEnabled = false;
+  ti.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed; ti.isReadable = true; ti.SaveAndReimport();
+  return UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(outPath);
 }
 
 // file, shown name, body preset, palette preset, weapon, health/damage/armour multipliers on the Crypt Soldier's
@@ -52,15 +87,17 @@ foreach (var s in specs)
     UnityEngine.Object.DestroyImmediate(src);
     root.transform.localScale = UnityEngine.Vector3.one;
     var dir = $"Assets/Game/Art/Synty Pixel/Characters/{s.file}"; Folder(dir);
+    var muted = Muted(palette, $"{dir}/{s.file} palette.png");
     foreach (var smr in model.GetComponentsInChildren<UnityEngine.SkinnedMeshRenderer>(true))
     {
       if (smr.sharedMesh == null) continue;
-      var mats = new UnityEngine.Material[smr.sharedMaterials.Length]; for (int i = 0; i < mats.Length; i++) mats[i] = Readable(palette);
+      var mats = new UnityEngine.Material[smr.sharedMaterials.Length]; for (int i = 0; i < mats.Length; i++) mats[i] = Readable(muted);
       var srcMesh = smr.sharedMesh; float aim = TPU, measured = 0;
       for (int pass = 0; pass < 4; pass++)
       {
         UnityEditor.AssetDatabase.DeleteAsset($"{dir}/{s.file}.asset");
         var (mesh, mat) = PixelRestyle.Build(srcMesh, mats, "Characters", s.file, aim, dir);
+        if (mesh != null) { mesh.ClearBlendShapes(); UnityEditor.EditorUtility.SetDirty(mesh); }   // the face's 68 shapes go unused
         if (mesh == null) break;
         smr.sharedMesh = mesh; smr.sharedMaterials = new[] { mat };
         UnityEditor.AssetDatabase.ImportAsset(UnityEditor.AssetDatabase.GetAssetPath(mat.GetTexture("_BaseMap")), UnityEditor.ImportAssetOptions.ForceUpdate);

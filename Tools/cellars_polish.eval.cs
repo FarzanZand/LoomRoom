@@ -3,7 +3,7 @@
 // a few pieces along its walls under a bare ceiling. Each biome now adds its own furnishing on top of the level's: chains
 // and candles overhead, pieces standing in the middle of a room as well as along its walls, cobwebs and dust in the
 // corners, more of what its place is about (stores in the cellars, bones in the catacombs, tombs and candles in the crypt),
-// and the Crypt has a few big rooms built two tiles high. Hand-built rooms keep their own dressing. Safe to run again (it
+// and no room is built two tiles high. Hand-built rooms keep their own dressing. Safe to run again (it
 // sets each biome's own furnishing list and tall rooms, nothing else). Writes Temp/Realms/cellars.txt.
 if (UnityEngine.Application.isPlaying) return "playing";
 const string F = "Assets/Game/Levels/Shared/Props/Furnishing";
@@ -64,14 +64,15 @@ Set("Cellars2", With(Common(), new[]
   P("Brazier", C, .12f, 0, 1, .6f),
 }), 0f);
 
-// The Crypt: tombs and the rites kept for them. Coffins in the middle of halls, candle racks, statues, pews before a brazier,
-// and a few great halls two tiles high (chains hang from their higher ceilings).
+// The Crypt: tombs and the rites kept for them. Coffins in the middle of halls, candle racks, statues, pews before a brazier.
+// No tall halls (2026-10-30): the cellar styles have no wall pieces, so a tall room's upper band showed bare, and the user
+// wants most rooms one tile high.
 Set("Cellars3", With(Common(), new[]
 {
   P("Sarcophagus", M, .15f, 0, 1, .7f), P("Sarcophagus", W, .15f, 0, 1, .6f), P("Candle rack", W, .2f, 0, 2, .8f),
   P("Gargoyle statue", W, .12f, 0, 1, .6f), P("Brazier", M, .12f, 0, 1, .6f), P("Pew", M, .1f, 0, 2, .45f, DungeonRoomRoles.Rest | DungeonRoomRoles.Combat),
   P("Skull pile", W, .2f, 0, 2, .7f), P("Bone pile", A, .2f, 0, 1),
-}), .15f);
+}), 0f);
 
 UnityEditor.AssetDatabase.SaveAssets();
 } catch (System.Exception e) { sb.Append("ERR " + e); }

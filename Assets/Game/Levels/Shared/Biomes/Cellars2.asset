@@ -352,6 +352,8 @@ MonoBehaviour:
   encounterChance: {x: 0.75, y: 0.8}
   minEnemiesPerRoom: 2
   maxEnemiesPerRoom: 3
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
   features: []
   loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
   merchantChance: 1

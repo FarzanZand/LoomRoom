@@ -1,12 +1,14 @@
 """A class's poster for the bedroom's poster wall, at the bedroom's 6.4 texels a unit: the class portrait printed on
 aged paper with the class name under it, one texel per texel of the texture (point filtered in game).
 
-    python Tools/class_poster.py <portrait.jpg> <out.png> <width> <height> <NAME> <seed>
+    python Tools/class_poster.py <portrait.jpg> <out.png> <width> <height> <NAME> <seed> [cool]
     python Tools/class_poster.py --tape <out.png> <width> <height> <seed>
 
 The poster is graded like the house style asks: paper and print vary texel to texel, the ink never reaches pure black,
 colours are muted and warmed as old print, no folds (the user's choice), edges and
-corners are grimed and a few faint stains sit on it. --tape paints a strip of masking tape for its corners.
+corners are grimed and a few faint stains sit on it. --tape paints a strip of masking tape for its corners. cool (0-1)
+pulls a hot-coloured painting (the Rogue's orange dusk) toward the others' dusty greys and blues before it is printed, so it
+doesn't stand out on the wall.
 """
 import random
 import sys
@@ -46,9 +48,15 @@ def value_noise(w, h, cell, rng):
     return out
 
 
-def print_portrait(src, w, h):
+def print_portrait(src, w, h, cool=0.0):
     """The portrait cut to w x h from its middle, averaged down, then aged: muted, warmed, its blacks lifted to ink."""
     im = Image.open(src).convert("RGB")
+    if cool > 0:
+        # less red and saturation, a little more blue: a dusk-orange painting brought toward the others' cooler light
+        im = ImageEnhance.Color(im).enhance(1 - .35 * cool)
+        r, g, b = im.split()
+        r = r.point(lambda v: v * (1 - .14 * cool)); b = b.point(lambda v: min(255, v * (1 + .16 * cool)))
+        im = Image.merge("RGB", (r, g, b))
     sw, sh = im.size
     if sw / sh > w / h:
         cw = int(sh * w / h)
@@ -69,12 +77,12 @@ def print_portrait(src, w, h):
     return im
 
 
-def poster(src, out, w, h, name, seed):
+def poster(src, out, w, h, name, seed, cool=0.0):
     rng = random.Random(seed)
     img = Image.new("RGB", (w, h), PAPER)
     margin, band = 3, 15
     pw, ph = w - margin * 2, h - margin - band
-    img.paste(print_portrait(src, pw, ph), (margin, margin))
+    img.paste(print_portrait(src, pw, ph, cool), (margin, margin))
     # thin ink rule round the picture and the name under it
     d = ImageDraw.Draw(img)
     d.rectangle((margin - 1, margin - 1, margin + pw, margin + ph), outline=lerp(INK, PAPER, .35))
@@ -143,4 +151,4 @@ if __name__ == "__main__":
     if a[0] == "--tape":
         tape(a[1], int(a[2]), int(a[3]), int(a[4]))
     else:
-        poster(a[0], a[1], int(a[2]), int(a[3]), a[4], int(a[5]))
+        poster(a[0], a[1], int(a[2]), int(a[3]), a[4], int(a[5]), float(a[6]) if len(a) > 6 else 0.0)
