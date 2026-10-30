@@ -1,7 +1,8 @@
 // The ruins biomes on Dungeon1's floors 7-9 (Ruins1 grey stone and oak at dusk, Ruins2 limestone and pine in a pale light,
 // Ruins3 basalt and black oak at night), safe to run again (it overwrites the biomes' look and lists):
 //  - Walled dungeon floors under ceilings in the Ruins styles (Levels/Shared/Room styles/Ruins/RuinsN: RuinsN stone for
-//    most rooms and the passages, RuinsN timber now and then), lit as the Crypt is, with wild walls (DungeonBiome.wilds,
+//    most rooms and the passages, RuinsN hall now and then; the timber styles were deleted on 2026-10-30), lit as the
+//    Crypt is, with wild walls (DungeonBiome.wilds,
 //    roofed): the room's own masonry with stone pillars half sunk into it, vines hung on it, roots, moss and rubble at its foot,
 //    the floor's torches hung on it.
 //  - The Crypt's (Cellars3) enemies and loot, no guardian, no tavern (its room is built for walls and a ceiling).
@@ -97,15 +98,13 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
 {
   string name = $"Ruins{n}";
   var stone = Load<DungeonRoomStyle>($"{R}/{name}/{name} stone.asset");
-  var timber = Load<DungeonRoomStyle>($"{R}/{name}/{name} timber.asset");
   // Every surface a kit piece or door asks for comes from the Ruins textures (128 texels a metre), never the level's
-  // 32 px fallbacks: the stone's upper wall is its wall, the timber's trim the stone's, wood and metal the stone's.
-  if (stone != null && timber != null)
+  // 32 px fallbacks: the stone's upper wall is its wall.
+  if (stone != null)
   {
     stone.upperWall = stone.bottomWall;
     // No cornice or footing: the wild walls have none, and one over a passage was the only trim left (a plain box).
     stone.hideTrims = true;
-    timber.trim = stone.trim; timber.wood = stone.wood; timber.metal = stone.metal;
     // Variants laid among the base tiles (Tools/ruins_variety.py): the stones coloured again (two copies, laid often so
     // the 2 m repeat doesn't show), a mossy and a sooty wall (bottom tiles only: on a tile above, their foot sat on the
     // plain tile below), a mossy and a rust-stained floor. Walls and floors repeat once per 2 m cell (tiling 1.5, offset
@@ -135,7 +134,7 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
     stone.floorVariants = new[] { V("stone floor shift 1", 6), V("stone floor shift 2", 6), V("stone floor moss", 2f), V("stone floor ochre", 1.5f) };
     // The hall's floor and its variants (made here, picked up below).
     foreach (var hallFloor in new[] { "stone floor b", "stone floor b shift 1", "stone floor b shift 2", "stone floor b moss", "stone floor b ochre" }) Variant(hallFloor);
-    UnityEditor.EditorUtility.SetDirty(stone); UnityEditor.EditorUtility.SetDirty(timber);
+    UnityEditor.EditorUtility.SetDirty(stone);
   }
   // The second room style is a hall of the same stone (the timber style's wall repeated one cobble panel in a black frame
   // every tile and looked bad, the user): the stone's wall (two wall drawings met along a wild wall in a hard line) with
@@ -214,7 +213,7 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   w.pondChance = 0f; w.pondEdge = new DungeonWeightedPrefab[0];
   biome.wilds = w;
   UnityEditor.EditorUtility.SetDirty(biome);
-  sb.Append($"{name}: styles {stone?.name}/{timber?.name}, breakables {biome.destructibles.Length}, faces {w.faces.Length}, foot {w.foot.Length}\n");
+  sb.Append($"{name}: styles {stone?.name}/{hall?.name}, breakables {biome.destructibles.Length}, faces {w.faces.Length}, foot {w.foot.Length}\n");
   made.Add(biome);
   return biome;
 }
