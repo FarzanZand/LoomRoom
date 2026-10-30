@@ -21,22 +21,21 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Moon shaft
-  m_Shader: {fileID: 4800000, guid: 0406db5a14f94604a8c57ccfbc9f3b46, type: 3}
+  m_Shader: {fileID: 4800000, guid: 780c32fa5f7a06d44a998dfd2a328d5f, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _FADING_ON
-  - _SOFTPARTICLES_ON
-  - _SURFACE_TYPE_TRANSPARENT
+  m_ValidKeywords: []
   m_InvalidKeywords:
   - _ALPHABLEND_ON
+  - _FADING_ON
   - _FLIPBOOKBLENDING_OFF
+  - _SOFTPARTICLES_ON
+  - _SURFACE_TYPE_TRANSPARENT
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 1
-  m_CustomRenderQueue: 3000
-  stringTagMap:
-    RenderType: Transparent
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
   disabledShaderPasses:
   - GRABPASS
   - DepthOnly
@@ -89,6 +88,7 @@ Material:
     m_Floats:
     - _AlphaClip: 0
     - _AlphaToMask: 0
+    - _Bands: 0
     - _Blend: 2
     - _BlendOp: 0
     - _BumpScale: 1
@@ -108,9 +108,12 @@ Material:
     - _EmissionEnabled: 0
     - _FlipbookBlending: 0
     - _FlipbookMode: 0
+    - _FootFade: 0.9
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _Height: 6
+    - _Intensity: 1.25
     - _InvFade: 3
     - _LightingEnabled: 0
     - _Metallic: 0
@@ -118,18 +121,24 @@ Material:
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _QueueOffset: 0
+    - _RadiusBottom: 1.05
+    - _RadiusTop: 0.75
     - _SmoothnessTextureChannel: 0
+    - _SoftFade: 0.35
     - _SoftParticlesEnabled: 1
     - _SoftParticlesFarFadeDistance: 0.1
     - _SoftParticlesNearFadeDistance: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 5
     - _SrcBlendAlpha: 1
+    - _StreakSpeed: 0.12
+    - _Streaks: 0.12
     - _Surface: 1
+    - _TopFade: 0.2
     - _UVSec: 0
     - _ZWrite: 0
     m_Colors:
-    - _BaseColor: {r: 0.16, g: 0.21, b: 0.34, a: 0.5}
+    - _BaseColor: {r: 0.15999997, g: 0.20999995, b: 0.33999997, a: 1}
     - _BaseColorAddSubDiff: {r: 1, g: 0, b: 0, a: 0}
     - _CameraFadeParams: {r: 0, g: 5, b: 0, a: 0}
     - _Color: {r: 0.15999997, g: 0.20999995, b: 0.33999997, a: 0.5}
