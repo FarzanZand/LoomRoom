@@ -217,6 +217,9 @@ public static class EventRoomsSetup
         t.paintFootprint = true; t.width = rows[0].Length; t.height = rows.Length; t.rows = rows;
         t.heightTiles = heightTiles; t.openCeiling = openCeiling; t.skylightRadius = skylight;
         t.replaceGeneratedProps = true; t.replaceGeneratedEnemies = true; t.socketEnemiesOnly = true;
+        // The roomier events are dressed from the floor's biome around their own pieces (the Card table was one table in
+        // a bare room); the duel's bridge stays clear.
+        if (name != "Duel bridge") { t.replaceGeneratedProps = false; t.addFurnishing = true; }
         t.roomEvent = DungeonRoomEvent.None;
         if (light != DungeonRoomLight.Normal) root.AddComponent<DungeonRoomMood>().kind = light;
         var e = root.AddComponent<ScriptedEventRoom>();

@@ -506,6 +506,17 @@ public partial class DungeonGenerator
             foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))if(socket!=null)taken.Add(CellOf(socket.transform.position));
             // A spike plate's cell too (a fountain was set down over the treasure vault's grates).
             foreach(var plate in instance.GetComponentsInChildren<DungeonSpikeTrap>(true))if(plate!=null)taken.Add(CellOf(plate.transform.position));
+            // Under the room's own pieces with a body (a statue, the card table, the dice board, the bell): furnishing added
+            // round them keeps off. Anything room-sized (its floor, a light's reach) is not a piece.
+            if(template.addFurnishing)
+                foreach(var r in instance.GetComponentsInChildren<Renderer>(true))
+                {
+                    if(r==null || r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer)continue;
+                    var b=r.bounds;
+                    if(b.size.x>8f || b.size.z>8f)continue;
+                    var lo=CellOf(b.min+new Vector3(.05f,0f,.05f)); var hi=CellOf(b.max-new Vector3(.05f,0f,.05f));
+                    for(int x=Mathf.Min(lo.x,hi.x);x<=Mathf.Max(lo.x,hi.x);x++)for(int z=Mathf.Min(lo.y,hi.y);z<=Mathf.Max(lo.y,hi.y);z++)taken.Add(new Vector2Int(x,z));
+                }
             taken.UnionWith(cutCells);
             // A walkway between two holes (a ravine's bridge) and the cells at its ends stay clear: one tree on it cuts
             // the room in two.
@@ -608,6 +619,8 @@ public partial class DungeonGenerator
             }
         }
         if(Roles[index]==RoomRole.Entrance || (Roles[index]==RoomRole.Exit && Milestone!=null))return cursor;
+        // A scripted event room has its own thing going on: no shrine or fountain beside it.
+        if(templates[index]!=null && templates[index].GetComponent<ScriptedEventRoom>()!=null)return cursor;
         var feature=PickFeature(index);
         if(feature!=null && feature.placement!=DungeonPropPlacement.Anywhere)
         {

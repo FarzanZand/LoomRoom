@@ -313,8 +313,8 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 0
   wayInDoor: {fileID: 0}
-  replaceGeneratedProps: 1
-  addFurnishing: 0
+  replaceGeneratedProps: 0
+  addFurnishing: 1
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
   roomEvent: 1

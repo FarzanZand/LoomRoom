@@ -195,8 +195,8 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 3
   wayInDoor: {fileID: 0}
-  replaceGeneratedProps: 1
-  addFurnishing: 0
+  replaceGeneratedProps: 0
+  addFurnishing: 1
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
   roomEvent: 1
@@ -274,6 +274,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 6cce797ff44577a4485de32d4045286d, type: 3}
   roll: {fileID: 8300000, guid: c5f2559aab1ce0e4d835b730f4a30190, type: 3}
   toughEnemy: {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+  toughCount: 2
+  ambushScale: 2
   healEffect: {fileID: 278138404442018645, guid: 2215c46c3070b1b4bbf73445b78cd978, type: 3}
   forceFace: 0
   maxTier: 2

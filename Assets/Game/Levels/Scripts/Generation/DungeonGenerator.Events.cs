@@ -236,6 +236,28 @@ public partial class DungeonGenerator
         if (prefab == null) prefab = data.chestPrefab;
         if (prefab == null) return null;
         if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas)) pos = hit.position;
+        // Clear of the room's edge, toward its middle: a boss that fell by the wall left its chest in the wild ground's growth
+        // (a root through its front on a forest floor), and growth is merged at build, so it can't be moved aside.
+        int room = RoomOf(pos);
+        if (room >= 0)
+        {
+            var middle = Cell(Layout.RoomCenter(room));
+            bool NearEdge(Vector3 p)
+            {
+                for (int k = 0; k < 8; k++)
+                    if (!Layout.InRoom(room, CellOf(p + Quaternion.Euler(0f, k * 45f, 0f) * Vector3.forward * 1.4f))) return true;
+                return false;
+            }
+            // ...but never onto the stairs out (the exit cell and the cells round it).
+            for (int k = 0; k < 16 && NearEdge(pos); k++)
+            {
+                var next = Vector3.MoveTowards(pos, new Vector3(middle.x, pos.y, middle.z), .5f);
+                var c = CellOf(next);
+                if (Mathf.Abs(c.x - ExitCell.x) <= 1 && Mathf.Abs(c.y - ExitCell.y) <= 1) break;
+                pos = next;
+            }
+            if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var inner, 1f, UnityEngine.AI.NavMesh.AllAreas)) pos = inner.position;
+        }
         var look = face - pos; look.y = 0;
         var go = Instantiate(prefab, pos, Quaternion.LookRotation(look.sqrMagnitude > .01f ? look : Vector3.forward), transform);
         if (data.ambushSpawnPuff != null) PoolManager.SpawnOrInstantiate(data.ambushSpawnPuff, pos, Quaternion.identity, 3f);

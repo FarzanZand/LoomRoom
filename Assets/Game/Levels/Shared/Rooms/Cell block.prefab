@@ -131,7 +131,7 @@ MonoBehaviour:
   skylightRadius: 0
   wayInDoor: {fileID: 0}
   replaceGeneratedProps: 0
-  addFurnishing: 0
+  addFurnishing: 1
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
   roomEvent: 0

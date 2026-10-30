@@ -16,7 +16,9 @@ const DungeonRoomRoles NotEntrance = DungeonRoomRoles.Combat | DungeonRoomRoles.
 DungeonPropRule Rule(string path, DungeonPropPlacement where, float perTen, int min, int max, float chance = 1f, DungeonRoomRoles rooms = NotEntrance)
 {
   var g = Load(path);
-  var r = new DungeonPropRule { prefab = g, placement = where, footprint = UnityEngine.Vector2Int.one, perTenCells = perTen, perRoom = new UnityEngine.Vector2Int(min, max), chance = chance, rooms = rooms };
+  // Twice as dense as first set (Zelda, 2026-10-30: the cellars' rooms were still bare walls and wide empty floors), the
+  // Realms' lesson: a crowded room reads as lived in. perRoom's top grows with it.
+  var r = new DungeonPropRule { prefab = g, placement = where, footprint = UnityEngine.Vector2Int.one, perTenCells = perTen * 2f, perRoom = new UnityEngine.Vector2Int(min, max + 1), chance = chance, rooms = rooms };
   // Reserve every 2 m cell the prop's collider covers, so nothing wider than its cell walls a doorway off.
   var box = g != null ? g.GetComponentInChildren<UnityEngine.BoxCollider>() : null;
   if (box != null)
