@@ -46,6 +46,6 @@ MonoBehaviour:
   constitution: -1
   intelligence: 0
   health: 28
-  mana: 25
+  mana: 40
   stamina: 40
   skills: 0f000000000000000000000005000000000000000a0000000000000014000000

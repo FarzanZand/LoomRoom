@@ -209,6 +209,8 @@ MonoBehaviour:
   encounterChance: {x: 0.4, y: 0.6}
   minEnemiesPerRoom: 1
   maxEnemiesPerRoom: 2
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
   features: []
   loot: {fileID: 0}
   merchantChance: 1
@@ -324,7 +326,7 @@ MonoBehaviour:
     boss: 0
   - biome: {fileID: 11400000, guid: 9012b71dfd09a7446bc26272f589a7cb, type: 2}
     floors: 1
-    boss: 0
+    boss: 1
   floors: 1
   bossOnLastFloor: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}

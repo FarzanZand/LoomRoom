@@ -17,6 +17,7 @@ MonoBehaviour:
   boardReveal: 1
   ownBoardPieces: 1
   ownLook: 1
+  plainKit: 0
   wilds:
     enabled: 1
     roofed: 0
@@ -350,6 +351,8 @@ MonoBehaviour:
   templateChance: 0
   roomCount: 12
   roomSizeScale: 1.6
+  tallRoomChance: 0
+  tallRoomLeastCells: 20
   noDoors: 1
   overrideDungeonSettings: 1
   roomFeatures:
@@ -365,6 +368,11 @@ MonoBehaviour:
     sleepingPacks: 0
     sleepChance: 0.2
     maxSleepingPacks: 3
+    meddling: 1
+    meddleChance: 0.5
+    tooEasySeconds: 14
+    tooEasyHealth: 0.1
+    stealChance: 0.05
     pits: 1
     playerFallsInPits: 0
     pitFallDamage: 0.25
@@ -394,44 +402,43 @@ MonoBehaviour:
   torchColor: {r: 1, g: 0.6, b: 0.3, a: 1}
   torchBrightness: 1
   enemies:
-  - enemy: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
-    weight: 3
-    fromFloor: 1
-  - enemy: {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
+  - enemy: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
     weight: 2
     fromFloor: 1
-  - enemy: {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
+  - enemy: {fileID: 2724247649922890657, guid: b03e36d4b979dd741b41ac05fbaf0256, type: 3}
+    weight: 1.5
+    fromFloor: 1
+  - enemy: {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+    weight: 1
+    fromFloor: 1
+  - enemy: {fileID: 2353413065697034251, guid: 2957dcdf1296dad4697144537323503c, type: 3}
     weight: 2
-    fromFloor: 1
-  - enemy: {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
-    weight: 1
-    fromFloor: 1
-  - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
-    weight: 1
     fromFloor: 1
   - enemy: {fileID: 8694082213274042645, guid: 201900fae6c0585468bd8ec588f74292, type: 3}
-    weight: 1
+    weight: 1.5
     fromFloor: 1
   encounterChance: {x: 0.75, y: 0.8}
   minEnemiesPerRoom: 2
   maxEnemiesPerRoom: 3
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
   features: []
-  loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
+  loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
   merchantChance: 1
   guardian:
-    enabled: 0
-    boss: {fileID: 0}
-    healthMultiplier: 1
+    enabled: 1
+    boss: {fileID: 8861403029388774667, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
+    healthMultiplier: 9
     damageMultiplier: 1
     arena: {fileID: 0}
-    title: Guardian
-    introMessage: '{boss} guards the stairs down.'
-    introSting: {fileID: 0}
+    title: Knight of the Moonlit Wood
+    introMessage: '{boss} steps out from the trees.'
+    introSting: {fileID: 8300000, guid: 225d4a289bb4a974297ad86a4bfdfc68, type: 3}
     stingVolume: 1
     bossMusic: {fileID: 0}
-    bossMusicVolume: 1
+    bossMusicVolume: 0.8
     sealExit: 1
-    bossLoot: {fileID: 0}
+    bossLoot: {fileID: 11400000, guid: eb289ad8ef9ee0a4b8687b34b29e45f7, type: 2}
     bonusGold: 60
     rewardChest: 1
     chestPrefab: {fileID: 0}

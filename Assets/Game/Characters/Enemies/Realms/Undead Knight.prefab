@@ -1954,7 +1954,7 @@ MonoBehaviour:
   m_Name: Undead Knight
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   portrait: {fileID: 0}
-  characterName: undead knight
+  characterName: Undead Knight
   properName: 0
   faction: 2
   description: 

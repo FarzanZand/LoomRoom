@@ -18,7 +18,7 @@ MonoBehaviour:
     and leaves the ground burning.
   icon: {fileID: 21300000, guid: 49542cd6b7727a94ca41cc85882bb81a, type: 3}
   manaCost: 18
-  power: 26
+  power: 15
   castSeconds: 0.8
   recoverySeconds: 0.45
   castMoveSpeed: 0.6
@@ -107,6 +107,9 @@ MonoBehaviour:
     reach: 0
     appearDistance: 11
     appearAhead: 0.45
+    clearOfRoof: 4
+    appearFarthest: 20
+    turnRight: 25
     range: 16
     aimCone: 10
     reachSeconds: 1.6
@@ -132,6 +135,21 @@ MonoBehaviour:
     dieKnocks: []
     dieRollSound: {fileID: 0}
     dieVolume: 1
+    portalMaterial: {fileID: 0}
+    portalFrames: 8
+    portalFps: 12
+    portalColor: {r: 0.32, g: 0.48, b: 1, a: 1}
+    portalRadius: 0.8
+    portalDistance: 5.5
+    portalOpenSeconds: 0.35
+    portalHoldSeconds: 0.3
+    portalCloseSeconds: 0.3
+    portalDieSpeed: 20
+    portalLight: 6
+    portalOpenSound: {fileID: 0}
+    portalShootSound: {fileID: 0}
+    portalCloseSound: {fileID: 0}
+    portalVolume: 0.9
     lines:
     - Hold still.
     - Allow me.
@@ -143,6 +161,7 @@ MonoBehaviour:
     slamSound: {fileID: 0}
     slamVolume: 1
     hitShake: 0.6
+    slamShake: 1.5
     lid:
       open: {fileID: 0}
       rising: {fileID: 0}
@@ -156,6 +175,8 @@ MonoBehaviour:
   helpingHand:
     reach: 1
     appearDistance: 11
+    clearOfRoof: 4
+    appearFarthest: 24
     reachSeconds: 1.4
     holdSeconds: 2.2
     handReach: 12
