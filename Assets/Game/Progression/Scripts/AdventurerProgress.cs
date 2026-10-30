@@ -46,8 +46,9 @@ public class AdventurerProgress : MonoBehaviour
 
     // ── Reading skills ─────────────────────────────────────────────────────────
     public AdventureSkillData Definition(AdventureSkill skill) => rules != null && rules.skills != null ? Array.Find(rules.skills, x => x != null && x.skill == skill) : null;
-    // The rank with the gear's skill bonus (+3 Swords on gloves); gear stops at 99, only training reaches Legendary (100).
-    public int Rank(AdventureSkill skill) => Ranks[(int)skill] >= 100 ? 100 : Mathf.Min(99, Ranks[(int)skill] + GearRanks(skill));
+    // The rank with the gear's skill bonus (+3 Swords on gloves) and the room's (the dice on the table: +5 Trading); they
+    // stop at 99, only training reaches Legendary (100).
+    public int Rank(AdventureSkill skill) => Ranks[(int)skill] >= 100 ? 100 : Mathf.Min(99, Ranks[(int)skill] + GearRanks(skill) + RoomRanks(skill));
     public bool Legendary(AdventureSkill skill) => Rank(skill) >= 100;
     // The continuous bonus at the current rank (0.25 = +25%).
     public float Bonus(AdventureSkill skill) => Rank(skill) * .01f * (Definition(skill)?.bonusAt100 ?? 0);
@@ -55,6 +56,7 @@ public class AdventurerProgress : MonoBehaviour
     public float Extra(AdventureSkill skill) => Definition(skill)?.ExtraAt(Rank(skill)) ?? 0;
     // The skill's first milestone (Shield bash for Blocking, the 25 for the others): learned for this run.
     public bool FirstMilestone(AdventureSkill skill) => ProgressionManager.HasInstance && ProgressionManager.Instance.Unlocked(skill, 0, Rank(skill));
+    static int RoomRanks(AdventureSkill skill) => ProgressionManager.HasInstance ? ProgressionManager.Instance.RoomSkillBonus(skill) : 0;
     int GearRanks(AdventureSkill skill)
     {
         StatType? stat = skill switch { AdventureSkill.Swords => StatType.SwordsSkill, AdventureSkill.Maces => StatType.MacesSkill, AdventureSkill.Blocking => StatType.BlockingSkill, _ => null };

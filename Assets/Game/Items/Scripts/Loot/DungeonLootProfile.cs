@@ -65,7 +65,8 @@ public class DungeonLootProfile : LootSource
             if (random.NextDouble() < (row != null ? row.upgradeChance : upgradeChance)) tier++;
             // Spell tomes are part of the same roll, weighted like any other piece (they have no better versions,
             // so a tome can come up at its own tier or any above it).
-            var gear = Pick(random, i => IsGear(i) && i.tier == tier || IsTome(i) && i.tier <= tier)
+            var top = TopTiers();
+            var gear = Pick(random, i => IsGear(i) && FitsTier(i, tier, top) || IsTome(i) && i.tier <= tier)
                 ?? Pick(random, i => IsGear(i) && i.tier >= lowest && i.tier <= highest || IsTome(i) && i.tier <= highest);
             if (gear != null && IsTome(gear)) { drops.Add(new Drop(gear, 1)); gear = null; }
             if (gear != null) gear = RollRarity(gear, random, floor, InventoryManager.RaritySourceScale(source));
@@ -107,6 +108,21 @@ public class DungeonLootProfile : LootSource
     }
 
     static bool IsTome(ItemData i) => i.spell != null;
+
+    // A kind of gear whose best tier is below the rolled one (rings and amulets end at tier 4) still drops, at its best
+    // tier, so it doesn't vanish from the deeper floors.
+    static string Kind(ItemData i) => i.itemType == ItemType.Weapon ? $"weapon {i.weaponCategory}"
+        : i.itemType == ItemType.Equipment ? $"worn {(i.equipSlot == EquipmentSlot.Trinket2 ? EquipmentSlot.Trinket1 : i.equipSlot)}" : i.itemType.ToString();
+    static Dictionary<string, int> TopTiers()
+    {
+        var top = new Dictionary<string, int>();
+        if (!InventoryManager.HasInstance || InventoryManager.Instance.itemCatalog == null) return top;
+        foreach (var i in InventoryManager.Instance.itemCatalog)
+            if (i != null && i.tier > 0 && IsGear(i)) top[Kind(i)] = Mathf.Max(i.tier, top.TryGetValue(Kind(i), out int t) ? t : 0);
+        return top;
+    }
+    static bool FitsTier(ItemData i, int tier, Dictionary<string, int> top) =>
+        i.tier == tier || tier > i.tier && top.TryGetValue(Kind(i), out int best) && i.tier == best;
     static bool IsGear(ItemData i) => i.itemType == ItemType.Weapon || i.itemType == ItemType.Shield || i.itemType == ItemType.Equipment;
 
     // Weighted pick among catalog items with a tier (tier 0 never drops at random).

@@ -11,7 +11,7 @@ public class AdventurePuzzleButton : MonoBehaviour, IInteractable
     public Color litColour = new(.35f, 1f, .45f, 1f);
     public Color wrongColour = new(1f, .3f, .25f, 1f);
 
-    public string Prompt => puzzle.Solved ? $"{puzzle.unlockedClassName} unlocked" : puzzle.TileReady ? AdventureRoomPuzzle.PlacePrompt : "Press the " + puzzle.symbols[symbol];
+    public string Prompt => puzzle.Solved ? puzzle.SolvedText : puzzle.TileReady ? AdventureRoomPuzzle.PlacePrompt : "Press the " + puzzle.symbols[symbol];
     public bool CanInteract(Character who) => who is Player player && player.kind == PlayerKind.Room && puzzle.Revealed && !puzzle.Solved;
     public void Interact(Character who) { if (!CanInteract(who)) return; if (puzzle.TileReady) puzzle.Interact(who); else puzzle.Press(symbol); }
 

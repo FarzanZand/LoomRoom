@@ -1,9 +1,10 @@
 using TMPro;
 using UnityEngine;
 
-// A symbol puzzle in the room that unlocks a class. The clue is found in the dungeon (reaching
-// revealFloor for the first time); the puzzle appears in the room from then on. The room keeps
-// knowledge and class access, never dungeon money or equipment.
+// A symbol puzzle in the room. The clue is found in the dungeon (reaching revealFloor for the first time); the puzzle
+// appears in the room from then on. Solved, it gives a set of dice (givesDice, ProgressionManager.Dice: a key item that
+// goes on the big table's border for +5 Trading), or with givesDice off unlocks a class as it used to (the Arcanist is
+// now unlocked by the Arena, ArenaFight.unlocks).
 public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
 {
     [Header("Progress gate")]
@@ -16,6 +17,11 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
     public GameObject unlockEffect;
     [Min(.1f), Tooltip("The burst is made for the dungeon (1 unit to the metre); the room is ~22 units to the metre.")]
     public float unlockEffectScale = 20f;
+    [Tooltip("Solved, it gives the set of dice instead of unlocking a class; its own flag (puzzle.symbols) marks it solved.")]
+    public bool givesDice = true;
+    public DungeonMaster.Line diceLine = new() { text = "A set of dice was under the tiles. Put them on the table. They bring luck at the market." };
+    public const string DiceSolvedFlag = "puzzle.symbols";
+    string SolvedFlag => givesDice ? DiceSolvedFlag : unlockFlag;
     [Header("Authored presentation")]
     public GameObject puzzleContents;
     public TMP_Text inscription;
@@ -36,8 +42,9 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
     public bool Revealed => ProgressionManager.HasInstance && (ProgressionManager.Instance.GetFlag(progressFlag) >= revealFloor || ProgressionManager.Instance.TileState > 0);
     // The missing tile is in (or nothing is missing).
     bool Complete => missingSymbol < 0 || !ProgressionManager.HasInstance || ProgressionManager.Instance.missingTile == null || ProgressionManager.Instance.TileState == 2;
-    public bool Solved => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(unlockFlag);
-    public string Prompt => Solved ? $"{unlockedClassName} unlocked" : TileReady ? PlacePrompt : "Puzzle";
+    public bool Solved => ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(SolvedFlag);
+    public string SolvedText => givesDice ? "Solved" : $"{unlockedClassName} unlocked";
+    public string Prompt => Solved ? SolvedText : TileReady ? PlacePrompt : "Puzzle";
     // Carrying the tile home: anything on the memorial table (the symbols, the figures) puts it in.
     public bool TileReady => !Solved && ProgressionManager.HasInstance && ProgressionManager.Instance.TileState == 1;
     public const string PlacePrompt = "Put the tile in";
@@ -94,14 +101,14 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
             if (value >= revealFloor && lastProgress < revealFloor && !Solved) MessageLog.Post(clueFoundMessage, MessageKind.Lore);
             lastProgress = value;
         }
-        if (key == progressFlag || key == unlockFlag || key == ProgressionManager.TileFlag) Refresh();
+        if (key == progressFlag || key == SolvedFlag || key == ProgressionManager.TileFlag || key == ProgressionManager.DiceFlag) Refresh();
     }
 
     void Refresh()
     {
         if (puzzleContents != null) puzzleContents.SetActive(Revealed);
         if (missingButton != null) missingButton.SetActive(Complete);
-        if (inscription != null) inscription.text = Solved ? unlockedClassName.ToUpperInvariant() : Revealed ? $"{step} / {solution.Length}" : "";
+        if (inscription != null) inscription.text = Solved ? (givesDice ? "" : unlockedClassName.ToUpperInvariant()) : Revealed ? $"{step} / {solution.Length}" : "";
     }
 
     public bool CanInteract(Character who) => Revealed && who is Player player && player.kind == PlayerKind.Room;
@@ -117,7 +124,7 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
             MessageLog.Post(placedMessage, MessageKind.Good);
             return;
         }
-        string text = Solved ? $"{unlockedClassName} is unlocked." : Complete ? clue : clue + " " + missingMessage;
+        string text = Solved ? (givesDice ? "The puzzle is solved." : $"{unlockedClassName} is unlocked.") : Complete ? clue : clue + " " + missingMessage;
         NotificationUI.Show(text);
         MessageLog.Post(text, MessageKind.Lore);
     }
@@ -156,9 +163,16 @@ public class AdventureRoomPuzzle : MonoBehaviour, IInteractable
         if (pressed != null) pressed.Light(true);
         if (step < solution.Length) { NotificationUI.Show($"{symbols[symbol]}  {step} / {solution.Length}"); return; }
         foreach (var b in Buttons) b.Light(true);
-        ProgressionManager.Instance.SetFlag(unlockFlag);
-        ClassUnlockedUI.Show(unlockedClass, unlockedClassName);
+        ProgressionManager.Instance.SetFlag(SolvedFlag);
         Burst();
+        if (givesDice)
+        {
+            ProgressionManager.Instance.GiveDice();
+            MessageLog.Post("You found a set of dice under the tiles.", MessageKind.Good);
+            if (diceLine != null && !diceLine.IsEmpty) DungeonMaster.Say(diceLine);
+            return;
+        }
+        ClassUnlockedUI.Show(unlockedClass, unlockedClassName);
         MessageLog.Post($"{unlockedClassName} unlocked. You can pick it at the table.", MessageKind.Good);
     }
 
