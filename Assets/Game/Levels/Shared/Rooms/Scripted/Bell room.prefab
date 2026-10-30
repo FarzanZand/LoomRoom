@@ -107,6 +107,7 @@ MonoBehaviour:
   summary: 'Pull the rope: the gates shut and a wave comes. Clear it and the chest
     gets better. Open the chest to stop.'
   entrance: {fileID: 2491832813480546101}
+  countsAsEvent: 1
 --- !u!114 &3258820998786154157
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -124,6 +125,7 @@ MonoBehaviour:
   toll: {fileID: 8300000, guid: 4fa5f8f03690bb94cb58706d3f88e5ba, type: 3}
   tollVolume: 1
   waves: 02000000030000000400000005000000
+  wavesPerRing: 3
   legendaryLast: 1
   maxTier: 2
   ringLines:
@@ -140,6 +142,21 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   - text: This is the last one. I mean it.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  waveLines:
+  - text: Another.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: The last of them.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  chestShutPrompt: Not while they're coming
+  chestShutLine:
+    text: Finish what you rang for first.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

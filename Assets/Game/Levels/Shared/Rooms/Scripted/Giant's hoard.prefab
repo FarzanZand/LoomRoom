@@ -471,6 +471,7 @@ MonoBehaviour:
   summary: A giant sleeps on its hoard. Crouch and take what you can; a walking step
     close by wakes it.
   entrance: {fileID: 5922092410827267091}
+  countsAsEvent: 1
 --- !u!114 &3131393733419917980
 MonoBehaviour:
   m_ObjectHideFlags: 0

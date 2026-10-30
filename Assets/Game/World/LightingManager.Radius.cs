@@ -54,6 +54,28 @@ public sealed partial class LightingManager
     readonly System.Collections.Generic.List<Light> roomLights = new();
     bool roomShadowsOff;
 
+    [TabGroup("Tabs", "Dungeon"), PropertyOrder(10)]
+    [Tooltip("How far shadows are drawn while the table player is on a dungeon floor; the render pipeline's own distance (400) comes back in the room. A floor's rooms are a few dozen metres across, and the long distance drew every prop of the floor into the sun's four shadow cascades. 0 keeps the pipeline's distance.")]
+    [Min(0)] public float dungeonShadowDistance = 60f;
+    float pipelineShadowDistance = -1f;
+
+    // The pipeline's shadow distance shortened on a floor and put back otherwise (and when the manager goes, so the
+    // asset is never left changed after Play).
+    void ApplyShadowDistance(bool onFloor)
+    {
+        if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline is not UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urp) return;
+        if (onFloor && dungeonShadowDistance > 0f)
+        {
+            if (pipelineShadowDistance < 0f) pipelineShadowDistance = urp.shadowDistance;
+            if (urp.shadowDistance != dungeonShadowDistance) urp.shadowDistance = dungeonShadowDistance;
+        }
+        else if (pipelineShadowDistance >= 0f)
+        {
+            urp.shadowDistance = pipelineShadowDistance;
+            pipelineShadowDistance = -1f;
+        }
+    }
+
     // The floor's own lamps (and its portals' pockets', built beside it) keep their authored shadows only while they
     // are among the nearest few.
     void ApplyShadowBudget(Vector3 eye)
@@ -66,6 +88,7 @@ public sealed partial class LightingManager
         // Not while a floor loads or the way back flies into the room: the room is in view then.
         bool onFloor = dungeon != null && !loader.Busy && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
         ApplyRoomShadows(onFloor && roomShadowsOffInDungeon);
+        ApplyShadowDistance(onFloor);
         if (dungeon != lampsOf)
         {
             foreach (var pair in lampShadows) if (pair.Key != null) pair.Key.shadows = pair.Value;

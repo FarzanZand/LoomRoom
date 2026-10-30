@@ -34,7 +34,8 @@ void Make(string name, UnityEngine.Material mat, UnityEngine.Color c0, UnityEngi
 {
   var root = new UnityEngine.GameObject(name);
   var ps = root.AddComponent<UnityEngine.ParticleSystem>();
-  var main = ps.main; main.loop = true; main.playOnAwake = true; main.prewarm = true; main.simulationSpace = UnityEngine.ParticleSystemSimulationSpace.World;
+  // No prewarm: every room's systems would simulate a whole loop as the floor is built; they fill in during the reveal.
+  var main = ps.main; main.loop = true; main.playOnAwake = true; main.prewarm = false; main.simulationSpace = UnityEngine.ParticleSystemSimulationSpace.World;
   main.startLifetime = new UnityEngine.ParticleSystem.MinMaxCurve(life.x, life.y); main.startSpeed = 0f;
   main.startSize = new UnityEngine.ParticleSystem.MinMaxCurve(size.x, size.y); main.maxParticles = max; main.startColor = UnityEngine.Color.white;
   var em = ps.emission; em.rateOverTime = rate;

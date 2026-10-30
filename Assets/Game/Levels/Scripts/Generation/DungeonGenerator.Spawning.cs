@@ -330,6 +330,7 @@ public partial class DungeonGenerator
 
     // A taller room (Height Tiles over 1): what hangs from a one-tile ceiling (a hanging chain) is lifted by the extra
     // height so it still hangs from the ceiling, and a moonlit room's patch of night sky stays above the ceiling.
+    static bool Hangs(Transform t)=>t.TryGetComponent<PropMount>(out var mount) && mount.kind==PropMount.Kind.HangsFromCeiling;
     void HangFromCeiling(GameObject instance,DungeonRoomTemplate template,int index)
     {
         if(template==null)return;
@@ -337,14 +338,14 @@ public partial class DungeonGenerator
         if(Board || WildSettings is { roofed: false })
         {
             foreach(var t in instance.GetComponentsInChildren<Transform>(true))
-                if(t!=null && (t.name.StartsWith("Hanging chain") || t.name=="Night sky"))DestroyImmediate(t.gameObject);
+                if(t!=null && (Hangs(t) || t.name=="Night sky"))DestroyImmediate(t.gameObject);
             return;
         }
         float tile=Mathf.Max(.01f,data.architectureTileSize), extra=(Mathf.Max(1,template.heightTiles)-1)*tile, ceiling=instance.transform.position.y+Mathf.Max(1,template.heightTiles)*tile;
         Transform sky=null;
         foreach(var t in instance.GetComponentsInChildren<Transform>(true))
         {
-            if(extra>0f && t.name.StartsWith("Hanging chain"))t.position+=Vector3.up*extra;
+            if(extra>0f && Hangs(t))t.position+=Vector3.up*extra;
             else if(t.name=="Night sky")
             {
                 sky=t;

@@ -99,6 +99,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8483818562879899178}
+  - component: {fileID: 8694170392836732831}
   m_Layer: 0
   m_Name: Wall shield crest
   m_TagString: Untagged
@@ -122,3 +123,17 @@ Transform:
   - {fileID: 5190409995045987934}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8694170392836732831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5775659569496779911}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5703d814f4357d4caabe2b50c67fd2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PropMount
+  kind: 0
+  castsNoShadow: 1

@@ -260,6 +260,7 @@ public partial class DungeonGenerator
         mesh.RecalculateNormals(); mesh.RecalculateBounds();
         var go = new GameObject(name); go.transform.SetParent(root, false);
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        go.AddComponent<OwnedMesh>().mesh = mesh;   // freed with the floor
         go.AddComponent<MeshRenderer>().sharedMaterials = new[] { material, sides };
         go.AddComponent<MeshCollider>().sharedMesh = mesh;
         return go;

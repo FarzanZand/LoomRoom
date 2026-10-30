@@ -99,6 +99,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4909995650252502680}
+  - component: {fileID: 4113568595595420080}
   m_Layer: 0
   m_Name: Hanging chains
   m_TagString: Untagged
@@ -122,3 +123,17 @@ Transform:
   - {fileID: 1195142493913476344}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4113568595595420080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2348615354122203606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5703d814f4357d4caabe2b50c67fd2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PropMount
+  kind: 1
+  castsNoShadow: 0

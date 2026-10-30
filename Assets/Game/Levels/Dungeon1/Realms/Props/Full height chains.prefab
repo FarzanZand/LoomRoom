@@ -99,6 +99,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5729893795600632477}
+  - component: {fileID: 8246692324687957820}
   m_Layer: 0
   m_Name: Full height chains
   m_TagString: Untagged
@@ -122,3 +123,17 @@ Transform:
   - {fileID: 915408634690561316}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8246692324687957820
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9014621478713506956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5703d814f4357d4caabe2b50c67fd2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PropMount
+  kind: 2
+  castsNoShadow: 1
