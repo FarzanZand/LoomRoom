@@ -31,9 +31,20 @@ public class TavernRoom : MonoBehaviour
     };
     [Range(0, 1), Tooltip("Chance a hint is given when there is one (else a plain line).")]
     public float hintChance = .7f;
+    [Tooltip("Said the first time a tavern is walked into (once a save) while the keeper has a rumour to sell; the quest to buy one opens with it.")]
+    public DungeonMaster.Line rumourLine = new() { text = "The keeper sells rumours. Buy one and see what turns up on the map.", inPerson = true, mumble = true };
+    public const string RumourToldFlag = "story.rumourTold";
 
     public DungeonMaster.Line Pick(DungeonGenerator floor)
     {
+        // The first tavern of a save, with a rumour on sale: the quest to buy one, and his word on it.
+        var pm = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+        if (pm != null && ProgressionManager.MetaActive && !pm.HasFlag(RumourToldFlag) && CampaignManager.HasInstance && CampaignManager.Instance.Rumours().Count > 0)
+        {
+            pm.SetFlag(RumourToldFlag);
+            pm.GiveQuest(ProgressionManager.RumourQuest);
+            if (rumourLine != null && !rumourLine.IsEmpty) return rumourLine;
+        }
         if (floor != null && Random.value < hintChance)
         {
             var level = floor.LevelData;

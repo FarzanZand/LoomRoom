@@ -14,6 +14,8 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Stable save identifier; do not change after shipping.")] public string saveId;
     public WeaponCategory weaponCategory;
     [Tooltip("Makes this item a spell tome: held in the left hand, it casts this spell.")] public SpellDefinition spell;
+    [Tooltip("Picked up in a run: unlocks this class (its New class card; its poster comes home as a key item) and is used up. The duellist's drop (DuelEvent).")]
+    public AdventurerClass unlocksClass;
     [Tooltip("Gear drops Common and is rolled Uncommon, Rare or Unique by the loot (Legendary is only given) (ItemPropertyTable); set Relic on a hand-made item. " +
         "Spell tomes are Rare. Each rarity has its colour on its slot, loot beam and name (UIManager).")]
     public ItemRarity rarity;

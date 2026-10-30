@@ -12,6 +12,8 @@ public class ArenaFight : MonoBehaviour
     public DungeonMaster.Line wonLine = new() { text = "That's the fight. Take your bow.", inPerson = true };
     [Min(0), Tooltip("Seconds between the last enemy falling and the run ending (the body falls, the line is read).")]
     public float delay = 3.5f;
+    [Tooltip("Unlocked by the win the first time (its New class card shows as the line is said; its poster comes home). The Arcanist.")]
+    public AdventurerClass unlocks;
 
     DungeonGenerator dungeon;
     int room = -1;
@@ -83,6 +85,7 @@ public class ArenaFight : MonoBehaviour
     {
         if (!RunManager.HasInstance || !RunManager.Instance.Running || RunManager.Instance.Ended) yield break;   // looked at again later
         if (wonLine != null && !wonLine.IsEmpty) DungeonMaster.Say(wonLine);
+        if (unlocks != null && ProgressionManager.HasInstance) ProgressionManager.Instance.UnlockClass(unlocks);
         yield return new WaitForSeconds(delay);
         // Dead in the meantime: not won yet. A revive goes on with the run, and the win is checked again.
         if (!RunManager.Instance.Running || RunManager.Instance.Ended || TableManager.Loader == null) yield break;

@@ -38,6 +38,28 @@ public partial class ProgressionManager
         }
     }
 
+    // A class unlocked in play (the duellist's drop, the Arena's win): its flag, the New class card and a line in the log;
+    // its poster then comes home as a key item. False when it was unlocked already or is there from the start.
+    public bool UnlockClass(AdventurerClass c)
+    {
+        if (c == null || string.IsNullOrEmpty(c.unlockFlag) || c.Unlocked) return false;
+        SetFlag(c.unlockFlag);
+        string name = string.IsNullOrEmpty(c.displayName) ? c.name : c.displayName;
+        ClassUnlockedUI.Show(c, name);
+        MessageLog.Post($"{name} unlocked. You can pick it at the table.", MessageKind.Good);
+        MetaChanged?.Invoke();
+        return true;
+    }
+
+    // An item that unlocks a class (ItemData.unlocksClass) is used up as it is picked up.
+    void ClassItemPickedUp(ItemData item, Player player, int count)
+    {
+        if (item == null || item.unlocksClass == null || player == null) return;
+        foreach (var inv in new[] { player.Bag, player.Hotbar })
+            if (inv != null) for (int i = 0; i < inv.SlotCount; i++) if (inv.ItemAt(i) == item) { inv.RemoveAt(i); i = inv.SlotCount; }
+        UnlockClass(item.unlocksClass);
+    }
+
     public void PutUpPoster(AdventurerClass c)
     {
         if (!PosterCarried(c)) return;

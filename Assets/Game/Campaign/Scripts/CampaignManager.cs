@@ -128,7 +128,12 @@ public partial class CampaignManager : Singleton<CampaignManager>
     }
 
     // Bought: it rises onto the map as soon as the player is back in the room (PopPending).
-    public void BuyRumour(CampaignEncounter e) { if (e != null && PM != null) PM.SetFlag(RumourPrefix + e.id, 1); }
+    public void BuyRumour(CampaignEncounter e)
+    {
+        if (e == null || PM == null) return;
+        PM.SetFlag(RumourPrefix + e.id, 1);
+        PM.CompleteQuest(ProgressionManager.RumourQuest);
+    }
 
     public static bool Active => HasInstance && Instance.useCampaign && Instance.mapPrefab != null;
     public CampaignMap Map { get; private set; }

@@ -29,6 +29,8 @@ public class DuelEvent : MonoBehaviour
     [Header("Reward (a fair win)")]
     [Range(1, 12)] public int maxTier = 2;
     public ItemRarity rarity = ItemRarity.Unique;
+    [Tooltip("Dropped too on a fair win while its class (ItemData.unlocksClass) is still locked: picked up, it unlocks the class (the Rogue's poster).")]
+    public ItemData classUnlock;
     [Header("Lines")]
     public DungeonMaster.Line challengeLine = new() { text = "He wants a duel. Face him." };
     public DungeonMaster.Line earlyLine = new() { text = "He hadn't even finished his salute." };
@@ -167,5 +169,7 @@ public class DuelEvent : MonoBehaviour
         var at = duellist.transform.position + Vector3.up * .3f;
         room.DropAt(ScriptedEventRoom.Gear(rarity, rng, maxTier), at + duellist.transform.right * .6f);
         room.DropAt(ScriptedEventRoom.BestSpoils(), at - duellist.transform.right * .6f);
+        if (classUnlock != null && classUnlock.unlocksClass != null && !classUnlock.unlocksClass.Unlocked)
+            room.DropAt(classUnlock, at + duellist.transform.forward * .6f);
     }
 }
