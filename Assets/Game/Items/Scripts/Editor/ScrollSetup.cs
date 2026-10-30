@@ -1,9 +1,12 @@
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
 // Makes a spell scroll (ItemData.IsScroll: a consumable that casts its spell with no mana, one charge a reading): the
 // item in Items/Data/Consumables, a copy of the Mana Potion's pickup and use settings; its world model, a pixel copy of a
-// Synty scroll at the items' 128 texels a unit (PixelRestyle.Build), shared by every scroll; and its bag icon. Run from
+// Synty scroll at the items' 128 texels a unit (PixelRestyle.Build), shared by every scroll; and its icon, the spell's
+// icon with a small scroll badge in its bottom-left corner (Icon), so it reads as a scroll and not the tome. Run from
 // an eval: ScrollSetup.Make("Flick", 1), and ScrollSetup.StartingChest("Flick") puts it in Dungeon1's starting chest.
 // Safe to run again: the item keeps its save id and its numbers are set again.
 public static class ScrollSetup
@@ -12,6 +15,8 @@ public static class ScrollSetup
     const string Prefab = "Assets/Game/Items/Prefabs/Consumables/Scroll.prefab";
     const string Data = "Assets/Game/Items/Data/Consumables/";
     public static Vector3 IconTurn = new(0f, 0f, -45f);
+    const string Badge = "Assets/Game/Items/Icons/Scroll badge.png";
+    const string IconFolder = "Assets/Game/Items/Icons/Scrolls";
     const string Dungeon1 = "Assets/Game/Levels/Dungeon1/Dungeon1.asset";
 
     public static string Make(string spell, int charges, int value = 15)
@@ -44,17 +49,71 @@ public static class ScrollSetup
         item.useClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/ThirdParty/Sound Effects Library/Items/Itm_Book_Pageturn_01.wav");
         item.useClipVolume = .8f;
         item.description = "";
-        item.icon = null;
-        // Its icon: the scroll lying across its slot corner to corner (seen end on otherwise).
-        item.iconSource ??= new ItemIconSource();
-        item.iconSource.turn = IconTurn;
         item.worldPrefab = WorldModel();
         item.pickupVisualPrefab = null;
+        // Its icon: the spell's own icon with the scroll badge in the corner (custom, so the icon renderer leaves it).
+        var old = item.icon;
+        item.icon = Icon(definition, name);
+        item.iconSource ??= new ItemIconSource();
+        item.iconSource.custom = item.icon != null;
+        item.iconSource.turn = IconTurn;
         EditorUtility.SetDirty(item);
         AssetDatabase.SaveAssets();
-        string icon = ItemIconRenderer.Generate(item);
+        string icon = item.icon != null ? AssetDatabase.GetAssetPath(item.icon) : "rendered: " + (ItemIconRenderer.Generate(item) ?? "ok");
+        // The rendered scroll icon it had before, if nothing else uses it.
+        if (old != null && old != item.icon && AssetDatabase.GetAssetPath(old).StartsWith("Assets/Game/Items/Icons/Generated/") &&
+            !ItemDatabaseAuthoring.All().Any(i => i != item && i.icon == old))
+            AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(old));
         int catalog = ItemDatabaseAuthoring.SyncCatalog();
         return $"{name}: {item.charges} charge(s), icon {icon}, catalog {catalog} items";
+    }
+
+    // The spell's icon with the scroll badge (Tools/scroll_badge.py) laid over its bottom-left corner on the icon's own
+    // pixel grid (the hotbar's key number is top left, the charges bottom right). Written to Items/Icons/Scrolls.
+    static Sprite Icon(SpellDefinition spell, string name)
+    {
+        if (spell.icon == null) return null;
+        var source = Load(AssetDatabase.GetAssetPath(spell.icon.texture));
+        var badge = Load(Badge);
+        if (source == null || badge == null) return null;
+        var rect = spell.icon.textureRect;
+        int x0 = Mathf.RoundToInt(rect.x), y0 = Mathf.RoundToInt(rect.y), w = Mathf.RoundToInt(rect.width), h = Mathf.RoundToInt(rect.height);
+        int scale = Mathf.Max(1, Mathf.RoundToInt(w / 32f));   // the badge is drawn for 32 x 32 icons
+        var icon = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        icon.SetPixels(source.GetPixels(x0, y0, w, h));
+        for (int y = 0; y < badge.height; y++)
+            for (int x = 0; x < badge.width; x++)
+            {
+                var c = badge.GetPixel(x, y);
+                if (c.a <= 0f) continue;
+                for (int dy = 0; dy < scale; dy++)
+                    for (int dx = 0; dx < scale; dx++)
+                        if (x * scale + dx < w && y * scale + dy < h) icon.SetPixel(x * scale + dx, y * scale + dy, c);
+            }
+        ItemDatabaseAuthoring.EnsureFolder(IconFolder);
+        string path = $"{IconFolder}/{name}.png";
+        File.WriteAllBytes(path, icon.EncodeToPNG());
+        Object.DestroyImmediate(icon); Object.DestroyImmediate(source); Object.DestroyImmediate(badge);
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+        var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+        importer.textureType = TextureImporterType.Sprite;
+        importer.spriteImportMode = SpriteImportMode.Single;
+        importer.spritePixelsPerUnit = w;
+        importer.filterMode = FilterMode.Point;
+        importer.mipmapEnabled = false;
+        importer.alphaIsTransparency = true;
+        importer.wrapMode = TextureWrapMode.Clamp;
+        importer.textureCompression = TextureImporterCompression.Uncompressed;
+        importer.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    // A PNG's own pixels, whatever its import settings.
+    static Texture2D Load(string path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) return null;
+        var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+        return texture.LoadImage(File.ReadAllBytes(path)) ? texture : null;
     }
 
     // The scroll's world model: the Synty scroll's mesh as a pixel copy, under a plain root.

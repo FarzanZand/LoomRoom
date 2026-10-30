@@ -19,9 +19,9 @@ MonoBehaviour:
   unlocksClass: {fileID: 0}
   rarity: 6
   description: 
-  icon: {fileID: 21300000, guid: c1644ec4e5c4720438611b38e902732e, type: 3}
+  icon: {fileID: 21300000, guid: 9859d3a8467f7c14b919c179957e95e0, type: 3}
   iconSource:
-    custom: 0
+    custom: 1
     model: {fileID: 0}
     outfit: 
     turn: {x: 0, y: 0, z: -45}
