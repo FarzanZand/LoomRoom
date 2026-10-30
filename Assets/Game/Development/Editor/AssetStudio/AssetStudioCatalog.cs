@@ -52,7 +52,8 @@ public static class AssetStudioCatalog
         Cat("Spells", "Spell definitions (SpellDefinition) and what they launch.");
         Cat("Rooms", "Room templates: hand-built chunks, starting rooms, arenas and pockets.");
         Cat("Styles", "Room styles: the floor, wall, trim and ceiling materials a room is built in, shown as a corner of a room.");
-        Cat("Levels & biomes", "Table levels, their biomes, boss fights, map templates and the defaults every level shares.");
+        // Levels, biomes, maps and the defaults are browsed in World; their entries stay for its details and ID search.
+        Cat("Levels & biomes", "Table levels, their biomes, boss fights, map templates and the defaults every level shares.", hidden: true);
         Cat("Props", "Furniture, breakables, features and room props, dungeon and apartment.");
         Cat("VFX", "Particle effects: spells, gore, hits, torches.");
         Cat("Sounds", "Sound data (AudioData) and the clips they play.");

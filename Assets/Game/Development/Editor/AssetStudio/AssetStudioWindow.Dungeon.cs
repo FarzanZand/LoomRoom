@@ -24,7 +24,6 @@ public partial class AssetStudioWindow
     [SerializeField] string dungeonPath;
     [SerializeField] string dungeonPage = "overview";
     Vector2 dungeonListScroll, dungeonPageScroll;
-    string dungeonRoomSearch = "";
     bool showingDungeon => studioView == StudioView.Dungeon;
 
     // Each enemy prefab's data (inside its prefab), read once per World model.
@@ -845,102 +844,10 @@ public partial class AssetStudioWindow
 
     void RoomsPage(AssetStudioWorld.Level l)
     {
-        var d = l.data;
-        PageHeader("Rooms", "Every hand-built room this dungeon draws from, and which floors' pools it is in. Tick a floor to put a room in its pool; the number is how common it is there. Right-click a picture to open or play it.");
-        var run = l.RunStages.Where(s => s.biome != null).ToList();
-        // Search, a kind to show (every kind, or one) and the order.
-        GUILayout.BeginHorizontal();
-        dungeonRoomSearch = EditorGUILayout.TextField(dungeonRoomSearch, EditorStyles.toolbarSearchField, GUILayout.Width(150));
-        GUILayout.Space(6);
-        for (int k = -1; k < AssetStudioRoomKinds.Order.Length; k++)
-        {
-            var kind = k < 0 ? (DungeonRoomKind?)null : AssetStudioRoomKinds.Order[k];
-            bool on = dungeonRoomKind == (k < 0 ? -1 : (int)kind.Value);
-            var icon = kind.HasValue ? AssetStudioRoomKinds.Icon(kind.Value) : null;
-            var content = new GUIContent(" " + (kind.HasValue ? AssetStudioRoomKinds.Name(kind.Value) : "All"), icon, kind.HasValue ? AssetStudioRoomKinds.Tip(kind.Value) : "Rooms of every kind.");
-            if (GUILayout.Toggle(on, content, StudioSkin.Tab, GUILayout.Height(24), GUILayout.Width(kind.HasValue ? 86 : 44)) && !on) dungeonRoomKind = k < 0 ? -1 : (int)kind.Value;
-        }
-        GUILayout.FlexibleSpace();
-        dungeonRoomSort = EditorGUILayout.Popup(dungeonRoomSort, DungeonRoomSorts, GUILayout.Width(84));
-        GUILayout.EndHorizontal();
-        string s = dungeonRoomSearch.Trim().ToLowerInvariant();
-        bool Shown(GameObject r) => (s.Length == 0 || r.name.ToLowerInvariant().Contains(s)) && (dungeonRoomKind < 0 || (int)AssetStudioRoomKinds.Of(r) == dungeonRoomKind);
-        // The level's own rooms first, then the pools'.
-        var own = new List<(GameObject room, string role)>();
-        if (d.startingRoom != null) own.Add((d.startingRoom, "the first room"));
-        if (d.baseBiome != null && d.baseBiome.shopRoom != null) own.Add((d.baseBiome.shopRoom, "the tavern, every floor"));
-        foreach (var st in run) if (st.boss && AssetStudioWorld.HasGuardian(st.biome) && st.biome.guardian.arena != null) own.Add((st.biome.guardian.arena, $"the boss's, floor {st.lastFloor}"));
-        Section("ITS OWN ROOMS");
-        GUILayout.BeginHorizontal();
-        foreach (var (room, role) in own.Where(o => Shown(o.room)))
-        {
-            GUILayout.BeginVertical(GUILayout.Width(150));
-            RoomCell(room, 150, 104);
-            GUILayout.Label(role, new GUIStyle(dim) { alignment = TextAnchor.MiddleCenter });
-            GUILayout.EndVertical();
-            GUILayout.Space(6);
-        }
-        GUILayout.FlexibleSpace();
-        GUILayout.EndHorizontal();
-
-        var pooled = run.SelectMany(st => st.biome.roomTemplates ?? Array.Empty<DungeonBiome.RoomTemplateChoice>()).Where(c => c != null && c.template != null).Select(c => c.template).Distinct()
-            .Where(Shown).OrderBy(r => dungeonRoomSort == 1 ? AssetStudioRoomKinds.Rank(r) : 0).ThenBy(r => r.name, StringComparer.OrdinalIgnoreCase).ToList();
-        GUILayout.BeginHorizontal();
-        Section($"THE POOLS  ·  {pooled.Count} rooms");
-        GUILayout.FlexibleSpace();
-        int unsorted = World.rooms.Count(r => AssetStudioRoomKinds.Of(r) == DungeonRoomKind.Unsorted);
-        if (unsorted > 0 && GUILayout.Button(new GUIContent($"Sort the {unsorted} unsorted for me...", "Gives every room without a kind one, from what it holds: an event script makes it Scripted; a chest, spikes, a shrine or feature, a pit or a portal Active; the rest Visual. Rooms you sorted keep theirs."), GUILayout.Height(24)))
-            GuessRoomKinds();
-        GUILayout.EndHorizontal();
-        const float col = 110;
-        GUILayout.BeginHorizontal();
-        GUILayout.Label("", GUILayout.Width(96 + 300));
-        foreach (var st in run) GUILayout.Label($"{FloorsLabel(st)}\n<color=#b8ae9c>{st.biome.name}</color>", new GUIStyle(gold) { richText = true }, GUILayout.Width(col));
-        GUILayout.EndHorizontal();
-        foreach (var room in pooled)
-        {
-            GUILayout.BeginHorizontal(StudioSkin.Inset, GUILayout.MinHeight(70));
-            RoomCell(room, 90, 64);
-            GUILayout.BeginVertical(GUILayout.Width(300));
-            if (GUILayout.Button(room.name, cell, GUILayout.Height(20))) ShowAsset(room);
-            var choice = run.SelectMany(st => st.biome.roomTemplates ?? Array.Empty<DungeonBiome.RoomTemplateChoice>()).FirstOrDefault(c => c != null && c.template == room);
-            var tmpl = room.GetComponent<DungeonRoomTemplate>();
-            string what = tmpl != null && !string.IsNullOrWhiteSpace(tmpl.description) ? tmpl.description.Trim() : "<color=#e0a85a>No description yet.</color>";
-            GUILayout.Label(new GUIContent(what + "\n<color=#8f897e>" + RoomAbout(room, choice) + "</color>", tmpl != null ? tmpl.description : null), new GUIStyle(dim) { wordWrap = true, richText = true });
-            GUILayout.EndVertical();
-            foreach (var st in run)
-            {
-                var b = st.biome;
-                int i = Array.FindIndex(b.roomTemplates ?? Array.Empty<DungeonBiome.RoomTemplateChoice>(), c => c != null && c.template == room);
-                GUILayout.BeginHorizontal(GUILayout.Width(col));
-                bool inPool = GUILayout.Toggle(i >= 0, GUIContent.none, GUILayout.Width(18));
-                float weight = i >= 0 ? b.roomTemplates[i].weight : 1;
-                float typed = i >= 0 ? EditorGUILayout.DelayedFloatField(weight, GUILayout.Width(40)) : weight;
-                GUILayout.EndHorizontal();
-                if (inPool != (i >= 0))
-                {
-                    if (inPool) AssetStudioWorld.AddToPool(b, room); else AssetStudioWorld.RemoveFromPool(b, i);
-                    RefreshWorld(); GUIUtility.ExitGUI();
-                }
-                if (i >= 0 && !Mathf.Approximately(typed, weight)) { Undo.RecordObject(b, "Pool weight"); b.roomTemplates[i].weight = Mathf.Max(0, typed); EditorUtility.SetDirty(b); AssetDatabase.SaveAssetIfDirty(b); }
-            }
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-        }
-        GUILayout.Space(6);
-        if (GUILayout.Button("+ Add a room...", GUILayout.Width(220), GUILayout.Height(28)))
-        {
-            var menu = new GenericMenu();
-            foreach (var st in run) menu.AddItem(new GUIContent($"A new room/for {FloorsLabel(st)} ({st.biome.name})..."), false, () => { StartForm(WorldPane.NewRoom); formLevel = d; formBiome = st.biome; });
-            menu.AddSeparator("");
-            foreach (var room in World.rooms.Where(r => !pooled.Contains(r) && !own.Any(o => o.room == r)))
-                foreach (var st in run) menu.AddItem(new GUIContent($"An existing room/{room.name}/{FloorsLabel(st)} ({st.biome.name})"), false, () => { AssetStudioWorld.AddToPool(st.biome, room); RefreshWorld(); });
-            menu.ShowAsContext();
-        }
+        PageHeader("Rooms", "What each floor can be built from: pick a floor, then see its fixed rooms (the first room, the tavern, the boss's room, rooms behind a portal) and its pool, with how common each room is, the floor it first comes on and where else it is used. Right-click a picture to open or play it.");
+        FloorRooms(l);
     }
 
-    [SerializeField] int dungeonRoomKind = -1, dungeonRoomSort = 1;   // the Rooms page: the kind shown (-1 every kind) and the order
-    static readonly string[] DungeonRoomSorts = { "By name", "By kind" };
 
     // Every room without a kind gets the one its contents suggest (AssetStudioRoomKinds.Guess), after asking.
     void GuessRoomKinds()

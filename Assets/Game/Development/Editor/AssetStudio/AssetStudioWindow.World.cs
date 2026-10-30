@@ -4,11 +4,13 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-// Asset Studio's World view (AssetStudioWorld): the campaign and the levels as one tree, from acts and their places and
-// events down to each level's stages, their biomes and the rooms in each biome's pool. Levels are grouped by the act of
-// the place that plays them (board or walled is a tag on the row); a level without stages shows its base biome as its
-// one stage, a level with stages its base biome (level-wide settings) after them; biomes several levels run are under
-// Shared biomes. + New level opens the guided New level form (AssetStudioWindow.NewLevel.cs). Left of the preview, the tree with
+// Asset Studio's World view (AssetStudioWorld): the campaign and the levels as one tree (the user, 2026-10-30: Campaign,
+// Levels and Levels & biomes were three views of the same things). Each act holds its places, its events and the levels
+// its places play (board or walled is a tag on the row), each level its map and its stages (a level without stages shows
+// its base biome as its one stage, a level with stages its base biome, level-wide settings, after them); levels no place
+// plays are under Not on the map, test levels under Other, biomes several levels run under Shared biomes. A level, a
+// stage or a shared biome opens the level's page beside the tree (AssetStudioWindow.Levels: its run, the rooms each floor
+// can have, its look, balance, sound and lines); a place or an event its own pane. + New level opens the guided New level form (AssetStudioWindow.NewLevel.cs). Left of the preview, the tree with
 // a search and a Show filter; in the middle, what the picked thing is made of, with buttons to change it and New buttons
 // that make things already filed and linked; right, its inspector as everywhere else in the studio. Rooms can be dragged
 // from the tree (or the Project window) onto a biome to put them in its pool, enemy prefabs to have them live there, and
@@ -34,8 +36,7 @@ public partial class AssetStudioWindow
     }
 
     AssetStudioWorld.Model world;
-    static readonly bool levelsInTree = false;   // the levels have their own page now
-    readonly HashSet<string> worldOpen = new() { "campaign", "levels", "act1", "lgroup:Act 1" };
+    readonly HashSet<string> worldOpen = new() { "act1" };
     readonly List<WorldNode> worldRows = new();
     WorldNode worldPicked;
     WorldPane worldPane;
@@ -43,7 +44,7 @@ public partial class AssetStudioWindow
     int worldShow;    // 0 everything, 1 needs attention, 2 rooms nobody uses, 3 test levels too
     static readonly string[] WorldShowNames = { "Everything", "Needs attention", "Rooms nobody uses", "With test levels" };
     Vector2 worldScroll, worldPaneScroll;
-    const string WorldOpenKey = "LoomRoom.Studio.WorldOpen";
+    const string WorldOpenKey = "LoomRoom.Studio.WorldOpen.2";   // .2: the tree by acts (2026-10-30)
 
     // The New forms' fields.
     string formName = "";
@@ -68,9 +69,17 @@ public partial class AssetStudioWindow
         studioView = StudioView.World;
         var saved = EditorPrefs.GetString(WorldOpenKey, "");
         if (saved.Length > 0) { worldOpen.Clear(); foreach (var k in saved.Split('|')) if (k.Length > 0) worldOpen.Add(k); }
-        // Saved before levels were grouped by act: the first act's levels open, as they were before.
-        if (!worldOpen.Any(k => k.StartsWith("lgroup:"))) worldOpen.Add("lgroup:Act 1");
         GUI.FocusControl(null);
+    }
+
+    // The rows down to a level opened, so it shows in the tree when picked from elsewhere.
+    void OpenInTree(AssetStudioWorld.Level l)
+    {
+        if (l == null) return;
+        string group = l.act > 0 ? "act" + l.act : "lgroup:" + l.Group;
+        bool changed = worldOpen.Add(group);
+        if (changed) EditorPrefs.SetString(WorldOpenKey, string.Join("|", worldOpen));
+        worldRows.Clear();   // built again at the next layout
     }
 
     void ToggleOpen(string key)
@@ -116,73 +125,63 @@ public partial class AssetStudioWindow
             return;
         }
 
-        // The campaign: acts, their places and events.
-        Row(new WorldNode { key = "campaign", label = "CAMPAIGN", kind = WorldKind.Header, hasChildren = true });
-        if (Open("campaign"))
-        {
-            if (m.campaignProblems.Count > 0) Row(new WorldNode { key = "campaign-problems", label = m.campaignProblems[0], kind = WorldKind.Note, depth = 1, warn = true });
-            for (int act = 1; act <= m.Acts; act++)
-            {
-                var places = m.places.Where(p => p.act == act).ToList();
-                var events = m.events.Where(e => e.afterAct == act).ToList();
-                var placeWarn = places.Where(p => PlaceProblem(m, p) != null).ToList();
-                if (worldShow == 1 && placeWarn.Count == 0) continue;
-                Row(new WorldNode { key = "act" + act, label = "Act " + act, note = $"{places.Count} place{(places.Count == 1 ? "" : "s")}" + (events.Count > 0 ? $", {events.Count} event{(events.Count == 1 ? "" : "s")}" : ""), kind = WorldKind.Act, act = act, depth = 1, hasChildren = places.Count + events.Count > 0, warn = placeWarn.Count > 0 });
-                if (!Open("act" + act)) continue;
-                foreach (var p in places)
-                {
-                    string problem = PlaceProblem(m, p);
-                    if (worldShow == 1 && problem == null) continue;
-                    string note = p.kind == CampaignEncounterKind.Home ? "home" : p.kind == CampaignEncounterKind.Placeholder ? "not made yet" : p.level != null ? "plays " + p.level.name : "no level";
-                    if (p.Locked) note = "shut: " + ShutText(p) + " · " + note;
-                    Row(new WorldNode { key = "place:" + p.GetHashCode(), label = p.displayName, note = problem ?? note, warn = problem != null, kind = WorldKind.Place, asset = p, act = act, level = p.level, depth = 2 });
-                }
-                if (worldShow != 1) foreach (var e in events)
-                    Row(new WorldNode { key = "event:" + e.GetHashCode(), label = e.title, note = "event" + (m.listedEvents.Contains(e) ? "" : " · not in the campaign manager"), warn = !m.listedEvents.Contains(e), kind = WorldKind.Event, asset = e, act = act, depth = 2 });
-            }
-        }
-
-        // The levels, by the act of the place that plays them; under each its own rooms, its map, its run (stages, or
-        // its base biome) and, under stages, its base biome's level-wide settings. Biomes several levels run (or none)
-        // come after, under SHARED BIOMES.
-        // The levels have their own page (Levels in the sidebar); the tree keeps the campaign, maps and unused rooms.
-        if (!levelsInTree) goto afterLevels;
-        Row(new WorldNode { key = "levels", label = "LEVELS", kind = WorldKind.Header, hasChildren = true });
+        var groups = m.Groups(worldShow == 3);
         var defaults = AssetDatabase.LoadAssetAtPath<TableLevelDefaults>(AssetStudioWorld.DefaultsPath);
-        if (Open("levels") && worldShow != 1 && !searching)
-        {
-            Row(new WorldNode { key = "newlevel", label = "+ New level", note = "a one-floor encounter or a generated dungeon, step by step", kind = WorldKind.Action, depth = 1 });
-            Row(new WorldNode { key = "defaults", label = "Shared defaults", note = defaults != null ? "chests, merchant, breakables, features, wall lights, room events, HUD: every level" : "missing: " + AssetStudioWorld.DefaultsPath, warn = defaults == null, kind = WorldKind.Defaults, asset = defaults, depth = 1 });
-        }
-        if (Open("levels"))
-            foreach (var (group, levels) in m.Groups(worldShow == 3))
-            {
-                var inGroup = worldShow == 1 ? levels.Where(l => l.problems.Count > 0).ToList() : levels;
-                if (inGroup.Count == 0) continue;
-                string groupKey = "lgroup:" + group;
-                int warned = inGroup.Count(l => l.problems.Count > 0);
-                Row(new WorldNode { key = groupKey, label = group, note = $"{inGroup.Count} level{(inGroup.Count == 1 ? "" : "s")}" + (warned > 0 ? $" · {warned} to look at" : ""), warn = warned > 0, kind = WorldKind.Group, act = group.StartsWith("Act ") && int.TryParse(group.Substring(4), out int ga) ? ga : 0, depth = 1, hasChildren = true });
-                if (!Open(groupKey)) continue;
-                foreach (var l in inGroup) LevelRows(m, l, 2, Row, Open);
-            }
+        if (worldShow != 1 && !searching)
+            Row(new WorldNode { key = "defaults", label = "Shared defaults", note = defaults != null ? "what every level shares: chests, merchant, breakables, room events" : "missing: " + AssetStudioWorld.DefaultsPath, warn = defaults == null, kind = WorldKind.Defaults, asset = defaults });
+        if (m.campaignProblems.Count > 0) Row(new WorldNode { key = "campaign-problems", label = m.campaignProblems[0], kind = WorldKind.Note, warn = true });
 
-        if (Open("levels") && worldShow != 1)
+        // Each act: its places, its events, then the levels its places play (with their maps and stages).
+        int acts = Mathf.Max(m.Acts, groups.Where(g => g.group.StartsWith("Act ")).Select(g => int.TryParse(g.group.Substring(4), out int n) ? n : 0).DefaultIfEmpty(0).Max());
+        for (int act = 1; act <= acts; act++)
         {
-            var shared = m.SharedBiomes;
-            if (shared.Count > 0)
+            var places = m.places.Where(p => p.act == act).ToList();
+            var events = m.events.Where(e => e.afterAct == act).ToList();
+            var levels = groups.FirstOrDefault(g => g.group == "Act " + act).levels ?? new List<AssetStudioWorld.Level>();
+            var placeWarn = places.Where(p => PlaceProblem(m, p) != null).ToList();
+            int levelWarn = levels.Count(l => l.problems.Count > 0);
+            if (worldShow == 1 && placeWarn.Count == 0 && levelWarn == 0) continue;
+            string note = $"{places.Count} place{(places.Count == 1 ? "" : "s")}" + (events.Count > 0 ? $" · {events.Count} event{(events.Count == 1 ? "" : "s")}" : "") + $" · {levels.Count} level{(levels.Count == 1 ? "" : "s")}";
+            Row(new WorldNode { key = "act" + act, label = "ACT " + act, note = note, kind = WorldKind.Act, act = act, hasChildren = places.Count + events.Count + levels.Count > 0, warn = placeWarn.Count + levelWarn > 0 });
+            if (!Open("act" + act)) continue;
+            foreach (var p in places)
             {
-                Row(new WorldNode { key = "sharedbiomes", label = "Shared biomes", note = "run by several levels, or by none", kind = WorldKind.Group, depth = 1, hasChildren = true });
-                if (Open("sharedbiomes"))
-                    foreach (var b in shared)
-                    {
-                        var users = m.LevelsOf(b).Where(x => !x.tool).ToList();
-                        int pool = b.roomTemplates != null ? b.roomTemplates.Count(c => c != null && c.template != null) : 0;
-                        Row(new WorldNode { key = "biome:" + AssetDatabase.GetAssetPath(b), label = b.name, note = (users.Count == 0 ? "no level runs it" : "run by " + string.Join(", ", users.Select(u => u.data.name))) + $" · {pool} room{(pool == 1 ? "" : "s")}", kind = WorldKind.Stage, asset = b, biome = b, stage = -2, depth = 2 });
-                    }
+                string problem = PlaceProblem(m, p);
+                if (worldShow == 1 && problem == null) continue;
+                string what = p.kind == CampaignEncounterKind.Home ? "home" : p.kind == CampaignEncounterKind.Placeholder ? "not made yet" : p.level != null ? "plays " + p.level.name : "no level";
+                if (p.Locked) what = "shut: " + ShutText(p) + " · " + what;
+                Row(new WorldNode { key = "place:" + p.GetHashCode(), label = "◆ " + p.displayName, note = problem ?? what, warn = problem != null, kind = WorldKind.Place, asset = p, act = act, level = p.level, depth = 1 });
             }
+            if (worldShow != 1) foreach (var e in events)
+                Row(new WorldNode { key = "event:" + e.GetHashCode(), label = e.title, note = "event" + (m.listedEvents.Contains(e) ? "" : " · not in the campaign manager"), warn = !m.listedEvents.Contains(e), kind = WorldKind.Event, asset = e, act = act, depth = 1 });
+            foreach (var l in levels) if (worldShow != 1 || l.problems.Count > 0) LevelRows(m, l, 1, Row, Open);
         }
 
-        afterLevels:
+        // Levels no place plays, and the test levels.
+        foreach (var (group, levels) in groups.Where(g => !g.group.StartsWith("Act ")))
+        {
+            var inGroup = worldShow == 1 ? levels.Where(l => l.problems.Count > 0).ToList() : levels;
+            if (inGroup.Count == 0) continue;
+            string groupKey = "lgroup:" + group;
+            int warned = inGroup.Count(l => l.problems.Count > 0);
+            Row(new WorldNode { key = groupKey, label = group.ToUpperInvariant(), note = $"{inGroup.Count} level{(inGroup.Count == 1 ? "" : "s")}" + (warned > 0 ? $" · {warned} to look at" : ""), warn = warned > 0, kind = WorldKind.Group, hasChildren = true });
+            if (!Open(groupKey)) continue;
+            foreach (var l in inGroup) LevelRows(m, l, 1, Row, Open);
+        }
+
+        var shared = m.SharedBiomes;
+        if (shared.Count > 0 && worldShow != 1)
+        {
+            Row(new WorldNode { key = "sharedbiomes", label = "SHARED BIOMES", note = "run by several levels, or by none", kind = WorldKind.Group, hasChildren = true });
+            if (Open("sharedbiomes"))
+                foreach (var b in shared)
+                {
+                    var users = m.LevelsOf(b).Where(x => !x.tool).ToList();
+                    int pool = b.roomTemplates != null ? b.roomTemplates.Count(c => c != null && c.template != null) : 0;
+                    Row(new WorldNode { key = "biome:" + AssetDatabase.GetAssetPath(b), label = b.name, note = (users.Count == 0 ? "no level runs it" : "run by " + string.Join(", ", users.Select(u => u.data.name))) + $" · {pool} room{(pool == 1 ? "" : "s")}", kind = WorldKind.Stage, asset = b, biome = b, stage = -2, depth = 1 });
+                }
+        }
+
         if (worldShow == 0)
         {
             Row(new WorldNode { key = "maps", label = "MAPS", note = m.maps.Count.ToString(), kind = WorldKind.Header, hasChildren = m.maps.Count > 0 });
@@ -210,11 +209,9 @@ public partial class AssetStudioWindow
         string onMap = l.places.Count > 0 ? "on the map: " + string.Join(", ", l.places.Select(p => (severalActs ? $"Act {p.act} " : "") + p.displayName))
             : l.tool ? "test level" : !l.inCatalog ? "not in the level catalog" : "not on the map";
         string tag = d.kind == TableLevelKind.Town ? "town" : d.IsBoard ? "board" : "walled";
-        row(new WorldNode { key = "level:" + l.path, label = d.name, tag = tag, note = (d.IsDungeon ? $"{d.FloorCount} floor{(d.FloorCount == 1 ? "" : "s")} · " : "") + (l.problems.Count > 0 ? l.problems.Count + " to look at · " : "") + onMap, warn = l.problems.Count > 0, kind = WorldKind.Level, asset = d, level = d, act = l.act, depth = depth, hasChildren = true });
+        row(new WorldNode { key = "level:" + l.path, label = d.name, tag = tag, note = string.Join(" · ", new[] { d.IsDungeon ? $"{d.FloorCount} floor{(d.FloorCount == 1 ? "" : "s")}" : null, l.problems.Count > 0 ? l.problems.Count + " to look at" : null, l.act > 0 && !severalActs ? null : onMap }.Where(x => x != null)), warn = l.problems.Count > 0, kind = WorldKind.Level, asset = d, level = d, act = l.act, depth = depth, hasChildren = d.IsDungeon });
         if (!open("level:" + l.path)) return;
-        // The level's own rooms, and the map it plays with the rooms painted on it.
-        foreach (var (room, role) in OwnRooms(d))
-            row(RoomNode(m, room, depth + 1, d, null, role));
+        // The map it plays with the rooms painted on it (its rooms floor by floor are on its page's Rooms tab).
         if (d.mapTemplate != null)
         {
             var map = d.mapTemplate;
@@ -242,10 +239,7 @@ public partial class AssetStudioWindow
         string note = runs
             ? $"{pool} room{(pool == 1 ? "" : "s")}" + (st.boss && AssetStudioWorld.HasGuardian(b) ? " · boss" : "") + (!st.IsBase && b != null && m.LevelsOf(b).Count(x => !x.tool) > 1 ? " · shared biome" : "")
             : "level-wide: style, torches, chests, shop, room features";
-        row(new WorldNode { key = key, label = label, tag = st.IsBase ? "base" : null, note = note, warn = b == null, kind = WorldKind.Stage, asset = b, level = l.data, biome = b, stage = st.index, depth = depth, hasChildren = pool > 0 || arena, poolUsed = runs });
-        if (!runs || !open(key) || b == null) return;
-        if (b.roomTemplates != null) foreach (var c in b.roomTemplates) if (c != null && c.template != null) row(RoomNode(m, c.template, depth + 1, l.data, b, $"weight {c.weight:0.##}"));
-        if (arena) row(RoomNode(m, b.guardian.arena, depth + 1, l.data, b, "boss arena"));
+        row(new WorldNode { key = key, label = label, tag = st.IsBase ? "base" : null, note = note, warn = b == null, kind = WorldKind.Stage, asset = b, level = l.data, biome = b, stage = st.index, depth = depth, poolUsed = runs });
     }
 
     static IEnumerable<(GameObject room, string role)> OwnRooms(TableLevelData l)
@@ -342,7 +336,7 @@ public partial class AssetStudioWindow
             float x = row.x + 4 + n.depth * 14;
             if (n.hasChildren && GUI.Button(new Rect(x, row.y + 2, 16, 18), n.open ? "▾" : "▸", EditorStyles.label)) ToggleOpen(n.key);
             x += 16;
-            var labelStyle = n.kind == WorldKind.Header || n.kind == WorldKind.Action ? gold : n.kind == WorldKind.Group ? EditorStyles.boldLabel : EditorStyles.label;
+            var labelStyle = n.kind == WorldKind.Header || n.kind == WorldKind.Action || n.kind == WorldKind.Act || n.kind == WorldKind.Group ? gold : n.kind == WorldKind.Level ? EditorStyles.boldLabel : EditorStyles.label;
             string label = n.kind == WorldKind.Event ? "✉ " + n.label : n.label;
             // A tag (board, walled, base) sits at the row's right end; the note takes what is left.
             float right = row.xMax;
@@ -385,7 +379,7 @@ public partial class AssetStudioWindow
 
     GUIStyle tagStyle, noteStyle;
     GUIStyle TagStyle => tagStyle ??= new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter, padding = new RectOffset(0, 0, 0, 1) };
-    GUIStyle NoteStyle => noteStyle ??= new GUIStyle(dimLine ?? EditorStyles.miniLabel) { richText = true };
+    GUIStyle NoteStyle => noteStyle ??= new GUIStyle(dimLine ?? EditorStyles.miniLabel) { richText = true, clipping = TextClipping.Clip };
 
     static bool Accepts(WorldNode n, UnityEngine.Object[] objects)
     {
@@ -419,8 +413,12 @@ public partial class AssetStudioWindow
         worldPickedKey = n?.key;
         worldPane = WorldPane.Picked;
         worldPaneScroll = Vector2.zero;
-        if (n.hasChildren && n.kind != WorldKind.Header && n.kind != WorldKind.Group && !n.open) ToggleOpen(n.key);
-        else if (n.kind == WorldKind.Header || n.kind == WorldKind.Group) ToggleOpen(n.key);
+        if (n.kind == WorldKind.Header || n.kind == WorldKind.Group || n.kind == WorldKind.Act) ToggleOpen(n.key);
+        else if (n.hasChildren && !n.open) ToggleOpen(n.key);
+        if (n.kind == WorldKind.Level && n.level != null) PointLevelPage(n.level, -1);
+        else if (n.kind == WorldKind.Stage && n.level != null) { PointLevelPage(n.level, n.stage); levelTab = RunTabIndex; }
+        else if (n.kind == WorldKind.Stage && n.biome != null) { levelPath = null; levelDefaults = false; levelBiomePath = AssetDatabase.GetAssetPath(n.biome); levelPageScroll = Vector2.zero; }
+        else if (n.kind == WorldKind.Defaults) { levelPath = null; levelBiomePath = null; levelDefaults = true; levelPageScroll = Vector2.zero; }
         ShowAsset(n.asset);
     }
 
@@ -529,7 +527,7 @@ public partial class AssetStudioWindow
         var m = World;
         if (n == null)
         {
-            Title("World", "The campaign and the levels as one tree. Pick anything on the left; New... makes a level, a biome, a room, a place or an event already filed and linked.");
+            Title("World", "Every act's places, events and levels in one tree. Pick a level for its page: its run, the rooms each floor can have, its look, balance, sound and lines. New... makes a level, a biome, a room, a place or an event already filed and linked.");
             return;
         }
         switch (n.kind)
@@ -603,6 +601,17 @@ public partial class AssetStudioWindow
         Section("EVENTS");
         foreach (var e in m.events.Where(e => e.afterAct == act)) if (GUILayout.Button(e.title, cell)) PickAsset(e);
         if (Big("New event after Act " + act)) { StartForm(WorldPane.NewEvent); formAct = act; }
+        Section("LEVELS");
+        GUILayout.Label("What this act's places play (a level played in several acts is under the first).", dim);
+        var levels = m.Groups(false).FirstOrDefault(g => g.group == "Act " + act).levels;
+        if (levels != null)
+            foreach (var l in levels)
+            {
+                string kind = l.data.IsBoard ? "board" : l.data.IsDungeon ? "walled" : "town";
+                string floors = l.data.IsDungeon ? $" · {l.data.FloorCount} floor{(l.data.FloorCount == 1 ? "" : "s")}" : "";
+                if (GUILayout.Button($"{l.data.name}   <color=#a9a49a>{kind}{floors}</color>" + (l.problems.Count > 0 ? $"   <color=#e0a85a>{l.problems.Count} to look at</color>" : ""), cell)) PickLevel(l.data);
+            }
+        if (Big("New level in Act " + act)) { StartForm(WorldPane.NewLevel); formAct = act; }
     }
 
     void PlacePane(CampaignEncounter p)
@@ -1128,7 +1137,13 @@ public partial class AssetStudioWindow
     // A stage of a level's run, or its base biome (index -1).
     void PickStage(TableLevelData level, int index)
     {
-        if (level != null && World.LevelOf(level) != null) { OpenLevel(level, index); levelTab = 0; return; }
+        if (level != null && World.LevelOf(level) != null)
+        {
+            OpenLevel(level, index); levelTab = RunTabIndex;
+            var row = worldRows.FirstOrDefault(n => n.key == (index < 0 ? "base:" : "stage:") + World.LevelOf(level).path + (index < 0 ? "" : ":" + index));
+            if (row != null) { worldPicked = row; worldPickedKey = row.key; }
+            return;
+        }
         var l = World.LevelOf(level);
         var st = index < 0 ? l?.baseStage : l?.stages.FirstOrDefault(s => s.index == index);
         string key = index < 0 ? "base:" + l?.path : $"stage:{l?.path}:{index}";

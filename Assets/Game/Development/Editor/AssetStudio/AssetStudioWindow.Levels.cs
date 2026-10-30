@@ -4,8 +4,9 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-// Asset Studio's Levels page: every level in one list (by the act of the place that plays it), and one page per level
-// that reads like its run. A header with what it is and Play buttons; tabs Run, Map, Look, Balance, Sound and Dialogue.
+// Asset Studio's level page, shown in World (AssetStudioWindow.World) when a level, one of its stages or a shared biome is
+// picked in the tree: one page per level that reads like its run. A header with what it is and Play buttons; tabs Run,
+// Rooms (AssetStudioWindow.Rooms: what can come up on each floor), Map, Look, Balance, Sound and Dialogue.
 // Run shows the floors as a strip of stages (the biome each runs on, its boss) and, for the stage picked, what its
 // floors are made of: the enemies (weight drawn as a bar), the boss and loot, the hand-built rooms as pictures and the
 // room styles as tiled samples (AssetStudioStyles). Everything else is still in the inspector on the right, which shows
@@ -14,105 +15,58 @@ public partial class AssetStudioWindow
 {
     [SerializeField] string levelPath, levelBiomePath;
     [SerializeField] int levelStage = -1, levelTab;
-    [SerializeField] bool levelDefaults, levelTools;
-    Vector2 levelListScroll, levelPageScroll;
-    string levelSearch = "";
-    static readonly string[] LevelTabs = { "Run", "Map", "Look", "Balance", "Sound", "Dialogue" };
+    [SerializeField] bool levelDefaults;
+    Vector2 levelPageScroll;
+    static readonly string[] LevelTabs = { "Run", "Rooms", "Map", "Look", "Balance", "Sound", "Dialogue" };
+    const int RunTabIndex = 0, RoomsTabIndex = 1, BalanceTabIndex = 4;
     readonly Dictionary<DungeonRoomStyle, Texture2D> styleThumbs = new();
     [SerializeField] int roomTileSort;   // the pictures of a pool's rooms: as listed, by kind or by name
     static readonly string[] RoomTileSorts = { "As listed", "By kind", "By name" };
 
-    bool showingLevels => studioView == StudioView.Levels;
+    // World shows a level's page for a level, a stage or a shared biome picked in its tree, and for the shared defaults.
+    bool WorldShowsLevelPage => worldPane == WorldPane.Picked && worldPicked != null
+        && (worldPicked.kind == WorldKind.Level || worldPicked.kind == WorldKind.Stage || worldPicked.kind == WorldKind.Defaults);
 
     TableLevelData PickedLevel => string.IsNullOrEmpty(levelPath) ? null : AssetDatabase.LoadAssetAtPath<TableLevelData>(levelPath);
     DungeonBiome PickedBiome => string.IsNullOrEmpty(levelBiomePath) ? null : AssetDatabase.LoadAssetAtPath<DungeonBiome>(levelBiomePath);
 
-    void OpenLevels()
-    {
-        studioView = StudioView.Levels;
-        worldPane = WorldPane.Picked;
-        if (PickedLevel == null && PickedBiome == null && !levelDefaults)
-        {
-            var first = World.Groups(false).SelectMany(g => g.levels).FirstOrDefault();
-            if (first != null) OpenLevel(first.data, -1);
-        }
-        GUI.FocusControl(null);
-    }
-
-    // A level's page; stage: the index of the stage picked on its Run tab (-1: its first stage, or its base biome).
+    // A level's page in World, its row picked in the tree (its act opened); stage: the stage picked on its Run tab (-1: its
+    // first stage, or its base biome).
     void OpenLevel(TableLevelData level, int stage)
     {
         if (level == null) return;
-        studioView = StudioView.Levels;
-        worldPane = WorldPane.Picked;
-        levelPath = AssetDatabase.GetAssetPath(level);
-        levelBiomePath = null; levelDefaults = false;
         var l = World.LevelOf(level);
-        levelStage = stage >= 0 ? stage : l != null && l.Staged && l.stages.Count > 0 ? l.stages[0].index : -1;
-        levelPageScroll = Vector2.zero;
+        if (!showingWorld) OpenWorld();
+        OpenInTree(l);
+        string key = "level:" + (l != null ? l.path : AssetDatabase.GetAssetPath(level));
+        worldPicked = worldRows.FirstOrDefault(n => n.key == key) ?? new WorldNode { key = key, label = level.name, kind = WorldKind.Level, asset = level, level = level, act = l?.act ?? 0 };
+        worldPickedKey = key; worldPane = WorldPane.Picked;
+        PointLevelPage(level, stage);
         ShowAsset(level);
         Repaint();
+    }
+
+    // The level page's own fields, for a level picked in the tree.
+    void PointLevelPage(TableLevelData level, int stage)
+    {
+        var l = World.LevelOf(level);
+        levelPath = AssetDatabase.GetAssetPath(level);
+        levelBiomePath = null; levelDefaults = false;
+        levelStage = stage >= 0 ? stage : stage == -1 && l != null && l.Staged && l.stages.Count > 0 ? l.stages[0].index : -1;
+        levelPageScroll = Vector2.zero;
     }
 
     // A biome file several levels run (or none): its page on its own.
     void OpenSharedBiome(DungeonBiome b)
     {
-        studioView = StudioView.Levels;
-        worldPane = WorldPane.Picked;
+        if (!showingWorld) OpenWorld();
+        string key = "biome:" + AssetDatabase.GetAssetPath(b);
+        worldPicked = worldRows.FirstOrDefault(n => n.key == key) ?? new WorldNode { key = key, label = b.name, kind = WorldKind.Stage, asset = b, biome = b, stage = -2 };
+        worldPickedKey = key; worldPane = WorldPane.Picked;
         levelPath = null; levelDefaults = false;
         levelBiomePath = AssetDatabase.GetAssetPath(b);
         levelPageScroll = Vector2.zero;
         ShowAsset(b);
-    }
-
-    // ── The list ──
-
-    void DrawLevelList(Rect r)
-    {
-        GUI.Box(r, GUIContent.none);
-        GUILayout.BeginArea(new Rect(r.x + 10, r.y + 10, r.width - 20, r.height - 20));
-        if (GUILayout.Button("+ New level", GUILayout.Height(30))) { StartForm(WorldPane.NewLevel); }
-        GUILayout.Space(4);
-        levelSearch = EditorGUILayout.TextField(levelSearch, EditorStyles.toolbarSearchField);
-        string s = levelSearch.Trim().ToLowerInvariant();
-        levelListScroll = GUILayout.BeginScrollView(levelListScroll);
-        var m = World;
-        foreach (var (group, levels) in m.Groups(levelTools))
-        {
-            var shownLevels = levels.Where(l => s.Length == 0 || l.data.name.ToLowerInvariant().Contains(s) || l.places.Any(p => p.displayName.ToLowerInvariant().Contains(s))).ToList();
-            if (shownLevels.Count == 0) continue;
-            GUILayout.Space(8);
-            GUILayout.Label(group, gold);
-            foreach (var l in shownLevels)
-            {
-                bool on = !levelDefaults && PickedBiome == null && PickedLevel == l.data;
-                string where = l.places.Count > 0 ? string.Join(", ", l.places.Select(p => p.displayName)) : "not on the map";
-                string what = l.data.IsDungeon ? $"{l.data.FloorCount} floor{(l.data.FloorCount == 1 ? "" : "s")} · {(l.data.IsBoard ? "board" : "walled")}" : l.data.kind.ToString().ToLowerInvariant();
-                string warn = l.problems.Count > 0 ? "  <color=#e0a85a>!</color>" : "";
-                if (GUILayout.Button($"{l.data.name}{warn}\n<color=#b8ae9c>{where} · {what}</color>", on ? cellSelected : cell, GUILayout.Height(40))) OpenLevel(l.data, -1);
-            }
-        }
-        var shared = m.SharedBiomes;
-        if (shared.Count > 0 && s.Length == 0)
-        {
-            GUILayout.Space(8);
-            GUILayout.Label("Shared biomes", gold);
-            foreach (var b in shared)
-            {
-                var users = m.LevelsOf(b).Where(x => !x.tool).ToList();
-                bool on = PickedBiome == b;
-                if (GUILayout.Button($"{b.name}\n<color=#b8ae9c>{(users.Count == 0 ? "no level runs it" : "run by " + string.Join(", ", users.Select(u => u.data.name)))}</color>", on ? cellSelected : cell, GUILayout.Height(40))) OpenSharedBiome(b);
-            }
-        }
-        GUILayout.Space(8);
-        GUILayout.Label("Every level", gold);
-        var defaults = AssetDatabase.LoadAssetAtPath<TableLevelDefaults>(AssetStudioWorld.DefaultsPath);
-        if (GUILayout.Button("Shared defaults\n<color=#b8ae9c>chests, merchant, breakables, room events</color>", levelDefaults ? cellSelected : cell, GUILayout.Height(40)))
-        { levelDefaults = true; levelPath = null; levelBiomePath = null; worldPane = WorldPane.Picked; ShowAsset(defaults); }
-        GUILayout.EndScrollView();
-        bool tools = GUILayout.Toggle(levelTools, " Test and debug levels too");
-        if (tools != levelTools) levelTools = tools;
-        GUILayout.EndArea();
     }
 
     // ── The page ──
@@ -127,6 +81,8 @@ public partial class AssetStudioWindow
         levelPageScroll = GUILayout.BeginScrollView(levelPageScroll);
         try
         {
+            if (AssetStudioWorld.PrefabUndo.Last is string last && GUILayout.Button("Undo: " + last, EditorStyles.miniButton))
+            { Toast(AssetStudioWorld.PrefabUndo.UndoLast()); worldPicked = null; RefreshLibrary(); GUIUtility.ExitGUI(); }
             if (levelDefaults) DefaultsPane(AssetDatabase.LoadAssetAtPath<TableLevelDefaults>(AssetStudioWorld.DefaultsPath));
             else if (PickedBiome is DungeonBiome shared) { Title(shared.name, "A biome file: " + SharedLine(shared)); StageEditor(null, null, shared); }
             else if (World.LevelOf(PickedLevel) is AssetStudioWorld.Level l) LevelPage(l);
@@ -170,11 +126,12 @@ public partial class AssetStudioWindow
         GUILayout.Space(8);
         switch (levelTab)
         {
-            case 0: RunTab(l); break;
-            case 1: LayoutSection(d); break;
-            case 2: LookTab(l); break;
-            case 3: BalanceTab(l); break;
-            case 4: SoundTab(l); break;
+            case RunTabIndex: RunTab(l); break;
+            case RoomsTabIndex: FloorRooms(l); break;
+            case 2: LayoutSection(d); break;
+            case 3: LookTab(l); break;
+            case BalanceTabIndex: BalanceTab(l); break;
+            case 5: SoundTab(l); break;
             default: DialogueTab(d); break;
         }
     }
@@ -191,8 +148,11 @@ public partial class AssetStudioWindow
         GUILayout.Space(4);
         var run = l.RunStages;
         if (run.Count == 0) GUILayout.Label("<color=#e0a85a>No stages and no base biome: its floors have nothing to run on.</color>", dim);
+        string act = null;
         foreach (var st in run)
         {
+            // the dungeon act a stage belongs to, over its first stage (Dungeon1: the Cellars, the Realms, the Ruins)
+            if (l.Staged && DungeonAct(st.biome) != act) { act = DungeonAct(st.biome); GUILayout.Label(act.ToUpperInvariant(), new GUIStyle(gold) { fontSize = StudioSkin.Size - 2 }); }
             string floors = st.lastFloor > st.firstFloor ? $"F{st.firstFloor}-{st.lastFloor}" : $"F{st.firstFloor}";
             string boss = st.boss && AssetStudioWorld.HasGuardian(st.biome) ? "  <color=#e24b4a>boss</color>" : "";
             bool on = st.index == levelStage || (st.IsBase && !l.Staged);

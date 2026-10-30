@@ -204,6 +204,15 @@ public static class GameLauncher
         return $"Generating {level.name} floor 1.";
     }
 
+    // The toolbar's Dungeon button with this level picked, starting on this floor (the toolbar's Floor pick).
+    public static string PlayFloor(TableLevelData level, int floor)
+    {
+        if (level == null) return "No level.";
+        EditorPrefs.SetInt(DebugDungeonSession.StartFloorKey, Mathf.Max(1, floor));
+        string started = PlayLevel(level);
+        return started.StartsWith("Generating") ? $"Generating {level.name} floor {floor}." : started;
+    }
+
     // A run of this level opening at one of its stages (0 = the first), from the Debug arena; boss: that stage cut to
     // one floor, so its guardian waits on the first floor. A level without stages has one, its base biome (stage 0).
     // The level itself is not changed (the run plays a copy).

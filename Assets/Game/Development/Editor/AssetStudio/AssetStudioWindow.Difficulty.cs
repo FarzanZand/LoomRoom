@@ -6,7 +6,7 @@ using UnityEngine;
 
 // How hard a level's run gets, in one place (the user, 2026-10-30). The Levels page's Balance tab: a line saying how far
 // the run climbs, a chart of each floor's damage and health multiplier (the stages named over it, a stage that starts
-// deeper marked with its jump, boss floors in red, an elite's reach as a pale tick; hovering a floor reads it out), each
+// difficulty jump marked, boss floors in red, an elite's reach as a pale tick; hovering a floor reads it out), each
 // stage's jump and elites in one table, the balance's growth numbers, then the floors one by one (a typical enemy's and
 // an elite's numbers). Hovering a floor in the chart or the table lights it in both. Everything fits the page's width
 // (pageWidth). The Dungeon view's Difficulty page shares the growth numbers and the floor table; the Run tab's stage strip
@@ -61,6 +61,10 @@ public partial class AssetStudioWindow
         return list;
     }
 
+    // A run's dungeon act (the user's word, 2026-10-30): the stages in a row whose biomes share a name but its number
+    // (Dungeon1: Cellars1-3 the Cellars, Realms1-3 the Realms, Ruins1-3 the Ruins). A biome on its own is its own act.
+    static string DungeonAct(DungeonBiome b) => b == null ? "" : "The " + b.name.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ' ');
+
     static TableLevelData.BiomeStage StageOf(TableLevelData d, AssetStudioWorld.Stage st) =>
         st != null && !st.IsBase && d.stages != null && st.index < d.stages.Length ? d.stages[st.index] : null;
 
@@ -87,8 +91,8 @@ public partial class AssetStudioWindow
         GUILayout.Label(Summary(floors), new GUIStyle(StudioSkin.Label) { richText = true }, GUILayout.Width(pageWidth));
         GUILayout.Space(4);
         DifficultyChart(l, floors);
-        Section("STAGES");
-        GUILayout.Label("A stage can start deeper than the floor before it (a new biome after a boss): its enemies then grow as if that many floors further down, and the jump carries on through the run. Elites are each biome's.", Wrapped, GUILayout.Width(pageWidth));
+        Section("DUNGEON ACTS AND STAGES");
+        GUILayout.Label("A stage can bring a difficulty jump (a new biome after a boss): its enemies then grow as if that many floors further down, and the jump carries on through the run. Elites are each biome's.", Wrapped, GUILayout.Width(pageWidth));
         StageSteps(l);
         Section("GROWTH");
         GrowthFields(d);
@@ -124,13 +128,15 @@ public partial class AssetStudioWindow
         GUILayout.BeginVertical(StudioSkin.Inset, GUILayout.Width(pageWidth));
         GUILayout.BeginHorizontal();
         GUILayout.Label("Stage", gold, GUILayout.Width(170));
-        GUILayout.Label(new GUIContent("Starts deeper", "Extra floors: from this stage's first floor on, enemies grow as if this many floors deeper (added up with earlier stages'). 0: the usual one floor's step."), gold, GUILayout.Width(120));
+        GUILayout.Label(new GUIContent("Difficulty jump", "From this stage's first floor on, enemies grow as if this many floors deeper: a jump in difficulty, in floors' worth of growth (added up with earlier stages'). 0: the usual one floor's step."), gold, GUILayout.Width(120));
         GUILayout.Label(new GUIContent("Elites", "How often a generated enemy on the biome's floors is an elite."), gold, GUILayout.Width(80));
         GUILayout.Label(new GUIContent("Elites grow", "How many floors deeper an elite grows and rolls its loot."), gold, GUILayout.Width(110));
         GUILayout.EndHorizontal();
+        string lastAct = null;
         foreach (var st in run)
         {
             var b = st.biome;
+            if (!st.IsBase && DungeonAct(b) != lastAct) { lastAct = DungeonAct(b); GUILayout.Label(lastAct.ToUpperInvariant(), new GUIStyle(gold) { fontSize = StudioSkin.Size - 2 }); }
             GUILayout.BeginHorizontal(GUILayout.Height(24));
             string floors = st.IsBase && l.Staged ? "every floor" : st.lastFloor > st.firstFloor ? $"F{st.firstFloor}-{st.lastFloor}" : $"F{st.firstFloor}";
             if (GUILayout.Button($"<color=#b8ae9c>{floors}</color>  {(b != null ? b.name : "<color=#e0a85a>no biome</color>")}", cell, GUILayout.Width(170), GUILayout.Height(22)) && b != null) ShowAsset(b);
@@ -236,14 +242,14 @@ public partial class AssetStudioWindow
     }
 
     // Two bars a floor (damage, health) on one scale, the stages named over their floors, a line and the jump where a
-    // stage starts deeper, the boss floors in red, and an elite's reach as a pale outline over each bar.
+    // stage brings a difficulty jump, the boss floors in red, and an elite's reach as a pale outline over each bar.
     void DifficultyChart(AssetStudioWorld.Level l, List<FloorDifficulty> floors)
     {
         var bal = l.data.balance;
-        var r = GUILayoutUtility.GetRect(pageWidth, 210, GUILayout.Width(pageWidth), GUILayout.Height(210));
+        var r = GUILayoutUtility.GetRect(pageWidth, 228, GUILayout.Width(pageWidth), GUILayout.Height(228));
         var ev = Event.current;
         if (floors.Count == 0) return;
-        var plot = new Rect(r.x + 40, r.y + 26, r.width - 50, r.height - 62);
+        var plot = new Rect(r.x + 40, r.y + 46, r.width - 50, r.height - 82);
         float slot = plot.width / floors.Count, bar = Mathf.Clamp(slot * .3f, 4f, 20f);
         int under = r.Contains(ev.mousePosition) && ev.mousePosition.x >= plot.x ? Mathf.Clamp(Mathf.FloorToInt((ev.mousePosition.x - plot.x) / slot), 0, floors.Count - 1) : -1;
         if (ev.type == EventType.MouseMove) HoverFloor(under >= 0 ? floors[under].floor : 0, 1);
@@ -258,6 +264,19 @@ public partial class AssetStudioWindow
             EditorGUI.DrawRect(new Rect(plot.x, y, plot.width, 1), ChartLine);
             GUI.Label(new Rect(r.x + 2, y - 8, 34, 16), "x" + m.ToString("0.#"), new GUIStyle(small) { alignment = TextAnchor.MiddleRight });
         }
+        // the dungeon acts over the stages, each in its own band
+        int actIndex = -1;
+        for (int i = 0; i < floors.Count; i++)
+        {
+            string act = DungeonAct(floors[i].stage.biome);
+            if (i > 0 && act == DungeonAct(floors[i - 1].stage.biome)) continue;
+            actIndex++;
+            int span = 1; while (i + span < floors.Count && DungeonAct(floors[i + span].stage.biome) == act) span++;
+            float ax = plot.x + slot * i;
+            if ((actIndex & 1) == 1) EditorGUI.DrawRect(new Rect(ax, r.y + 2, slot * span, plot.yMax - r.y - 2), StageBand);
+            if (i > 0) EditorGUI.DrawRect(new Rect(ax, r.y + 2, 1, plot.yMax - r.y - 2), new Color(.6f, .57f, .5f));
+            GUI.Label(new Rect(ax + 4, r.y + 3, slot * span - 8, 16), act, new GUIStyle(gold) { fontSize = Mathf.Max(10, StudioSkin.Size - 2), clipping = TextClipping.Clip });
+        }
         for (int i = 0; i < floors.Count; i++)
         {
             var f = floors[i];
@@ -265,11 +284,11 @@ public partial class AssetStudioWindow
             int count = f.stage.lastFloor - f.stage.firstFloor + 1;
             if (f.firstOfStage)
             {
-                if ((l.RunStages.IndexOf(f.stage) & 1) == 1) EditorGUI.DrawRect(new Rect(x, r.y + 2, slot * count, plot.yMax - r.y - 2), StageBand);
-                if (i > 0) EditorGUI.DrawRect(new Rect(x, r.y + 2, f.step > 0 ? 2 : 1, plot.yMax - r.y - 2), f.step > 0 ? new Color(.88f, .66f, .35f, .8f) : new Color(.5f, .48f, .44f));
+                if (i > 0 && f.step > 0) EditorGUI.DrawRect(new Rect(x, r.y + 18, 2, plot.yMax - r.y - 18), new Color(.88f, .66f, .35f, .8f));
+                else if (i > 0) EditorGUI.DrawRect(new Rect(x, r.y + 18, 1, plot.yMax - r.y - 18), new Color(.4f, .39f, .37f));
                 string name = f.stage.biome != null ? f.stage.biome.name : "no biome";
-                GUI.Label(new Rect(x + 3, r.y + 3, slot * count - 6, 16), name, new GUIStyle(small) { alignment = TextAnchor.MiddleLeft, clipping = TextClipping.Clip });
-                if (f.step > 0) GUI.Label(new Rect(x + 3, r.y + 15, slot * count - 6, 14), $"<color=#e0a85a>+{f.step:0.#} deeper</color>", new GUIStyle(small) { alignment = TextAnchor.MiddleLeft });
+                GUI.Label(new Rect(x + 3, r.y + 19, slot * count - 6, 14), name, new GUIStyle(small) { alignment = TextAnchor.MiddleLeft, clipping = TextClipping.Clip });
+                if (f.step > 0) GUI.Label(new Rect(x + 3, r.y + 31, slot * count - 6, 14), $"<color=#e0a85a>jump +{f.step:0.#}</color>", new GUIStyle(small) { alignment = TextAnchor.MiddleLeft });
             }
             if (f.floor == hoverFloor) EditorGUI.DrawRect(new Rect(x + 1, plot.y, slot - 2, plot.height), RowHover);
             float cx = x + slot / 2f;
@@ -335,7 +354,7 @@ public partial class AssetStudioWindow
                 EditorGUI.DrawRect(rowRect, f.floor == hoverFloor ? RowHover : f.bossFloor ? RowBoss : (row & 1) == 0 ? RowEven : Color.clear);
             if (Event.current.type == EventType.MouseMove && rowRect.Contains(Event.current.mousePosition)) { HoverFloor(f.floor, 2); overRow = true; }
             GUILayout.Label(f.bossFloor ? $"{f.floor}  <color=#e24b4a>boss</color>" : f.floor.ToString(), line, GUILayout.Width(wFloor));
-            string stage = f.firstOfStage ? (b != null ? b.name : "<color=#e0a85a>no biome</color>") + (f.step > 0 ? $"  <color=#e0a85a>+{f.step:0.#} deeper</color>" : "") : $"<color=#5d5a55>{(b != null ? b.name : "")} {f.floorInStage}</color>";
+            string stage = f.firstOfStage ? (b != null ? b.name : "<color=#e0a85a>no biome</color>") + (f.step > 0 ? $"  <color=#e0a85a>jump +{f.step:0.#}</color>" : "") : $"<color=#5d5a55>{(b != null ? b.name : "")} {f.floorInStage}</color>";
             GUILayout.Label(stage, line, GUILayout.Width(wStage));
             if (wide) GUILayout.Label(f.depth.ToString("0.#"), line, GUILayout.Width(wDepth));
             GUILayout.Label($"<color=#d8aa48>x{f.damage:0.00}</color>", line, GUILayout.Width(wNum));
@@ -391,7 +410,7 @@ public partial class AssetStudioWindow
         if (stage != null)
         {
             float extra = Mathf.Max(0f, EditorGUILayout.DelayedFloatField(stage.extraFloors, GUILayout.Width(32)));
-            GUILayout.Label(new GUIContent(stage.extraFloors > 0 ? "<color=#e0a85a>deeper</color>" : "deeper", "Extra floors: from this stage's first floor on, enemies grow as if this many floors deeper (added up with earlier stages'). The Balance tab shows the run."), Unit, GUILayout.Width(54));
+            GUILayout.Label(new GUIContent(stage.extraFloors > 0 ? "<color=#e0a85a>jump</color>" : "jump", "Difficulty jump: from this stage's first floor on, enemies grow as if this many floors deeper, in floors' worth of growth (added up with earlier stages'). The Balance tab shows the run."), Unit, GUILayout.Width(54));
             if (!Mathf.Approximately(extra, stage.extraFloors)) { Undo.RecordObject(d, "Extra floors"); stage.extraFloors = extra; EditorUtility.SetDirty(d); AssetDatabase.SaveAssetIfDirty(d); }
         }
         if (st.biome != null)
