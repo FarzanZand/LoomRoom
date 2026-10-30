@@ -2275,6 +2275,11 @@ PrefabInstance:
       addedObject: {fileID: 339838574280175795}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+--- !u!1 &4692603677495717091 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  m_PrefabInstance: {fileID: 7697266819186482968}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6934737198590648347 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 787863708686368515, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
@@ -2364,6 +2369,7 @@ MonoBehaviour:
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8
+  prefab: {fileID: 4692603677495717091}
   behaviour: {fileID: 0}
   behaviourSettings:
     defaultState: 0

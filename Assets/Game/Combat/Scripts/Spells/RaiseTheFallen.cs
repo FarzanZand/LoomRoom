@@ -9,7 +9,7 @@ public class RaiseSettings
 {
     [FoldoutGroup("Raise the fallen", Expanded = true), Min(1f), Tooltip("Furthest from the caster a heap of bones may lie.")]
     public float reach = 10f;
-    [FoldoutGroup("Raise the fallen"), AssetsOnly, Tooltip("The skeleton that stands up out of the bones.")]
+    [FoldoutGroup("Raise the fallen"), AssetsOnly, Tooltip("The skeleton that stands up when the bones' own kind isn't known (a boss's bones). Otherwise it is the kind of skeleton the bones came from, never an elite: a fresh one at the floor's scaling.")]
     public GameObject raiseAs;
     [FoldoutGroup("Raise the fallen"), Min(.2f), Tooltip("Seconds the bones take to fly back together.")]
     public float gatherSeconds = 1.3f;
@@ -27,13 +27,14 @@ public class RaiseSettings
 
 // Raise the Fallen: the bones of a burst skeleton (a BoneHeap) fly back together over a rune circle into a body, which
 // gets up and fights for its caster as a summon (Summon): on the player's side for the player, on a necromancer's for
-// the enemies, collapsing into bones again when its time is up or its caster dies. The body is the spell's Raise As
-// prefab, set down where the bones lie.
+// the enemies, collapsing into bones again when its time is up or its caster dies. The body is the kind of skeleton the
+// bones came from (BoneHeap.kind, a fresh one of its prefab: an elite's bones stand up as a plain one of its kind, and
+// Summon.Spawn gives it the floor's scaling), or the spell's Raise As prefab for a boss's bones, set down where they lie.
 public class RaiseTheFallen : MonoBehaviour
 {
     public static void Cast(Character caster, SpellDefinition spell, BoneHeap heap, AdventurerProgress progress)
     {
-        if (heap == null || spell.raise.raiseAs == null) return;
+        if (heap == null || (spell.raise.raiseAs == null && (heap.kind == null || heap.kind.prefab == null))) return;
         heap.Claim();
         var go = new GameObject(spell.name + " (raising)");
         var raise = go.AddComponent<RaiseTheFallen>();
@@ -51,7 +52,8 @@ public class RaiseTheFallen : MonoBehaviour
 
         // The body is put down at once, hidden and lying still, so the bones have somewhere to fly to.
         var face = caster is Player ? caster.transform.forward : caster.transform.position - ground;
-        var summon = Summon.Spawn(s.raiseAs, ground, face, caster, s.summon, spell.name, heap.parent);
+        var kind = heap.kind != null && heap.kind.prefab != null ? heap.kind.prefab : s.raiseAs;
+        var summon = Summon.Spawn(kind, ground, face, caster, s.summon, spell.name, heap.parent);
         var body = summon != null ? summon.Body : null;
         if (body == null) { if (circle != null) circle.Stop(); Destroy(gameObject); yield break; }
         var brain = body.GetComponent<EnemyBrain>();
@@ -95,7 +97,8 @@ public class RaiseTheFallen : MonoBehaviour
         // Together: the bones become the body, which gets up.
         foreach (var m in moving) if (m.t != null) Destroy(m.t.gameObject);
         if (circle != null) circle.Stop();
-        if (body == null) { Destroy(gameObject); yield break; }
+        // Gone, or ended while the bones gathered (its caster died): it burst unseen and must stay hidden.
+        if (body == null || !body.IsAlive) { Destroy(gameObject); yield break; }
         foreach (var r in renderers) if (r != null) r.enabled = true;
         foreach (var c in colliders) if (c != null) c.enabled = true;
         if (s.flash != null) Instantiate(s.flash, ground + Vector3.up * .8f, Quaternion.identity);

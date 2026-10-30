@@ -85,7 +85,9 @@ public class DeathBurst : MonoBehaviour
         DeathPhysics.IgnorePlayers(pieces);
         StartCoroutine(DeathPhysics.Settle(pieces, settleSeconds));
         // Kept for Raise the Fallen: each piece with the bone it came from (props have none).
-        var heap = new BoneHeap { body = name, parent = parent };
+        // A boss (steadfast, and no elite) is never raised as itself, nor an event's own actor (it would stand still).
+        bool boss = TryGetComponent<EnemyMotor>(out var motor) && motor.Steadfast && !TryGetComponent<EliteEnemy>(out _) || TryGetComponent<EventActor>(out _);
+        var heap = new BoneHeap { body = name, parent = parent, kind = boss ? null : character.data as EnemyData };
         string prefix = name + " - ";
         foreach (var rb in pieces)
             if (rb != null) heap.pieces.Add(new BoneHeap.Piece { transform = rb.transform, bone = rb.name.StartsWith(prefix) ? rb.name.Substring(prefix.Length) : null });

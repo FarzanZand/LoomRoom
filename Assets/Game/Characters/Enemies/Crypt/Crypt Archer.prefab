@@ -187,6 +187,7 @@ MonoBehaviour:
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8
+  prefab: {fileID: 6526550647871116108}
   behaviour: {fileID: 0}
   behaviourSettings:
     defaultState: 0

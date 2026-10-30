@@ -10,6 +10,8 @@ public class BoneHeap
 
     public readonly List<Piece> pieces = new();
     public string body;
+    // The kind of skeleton the bones came from (its EnemyData knows its prefab), unless it was a boss.
+    public EnemyData kind;
     public Transform parent;
 
     static readonly List<BoneHeap> all = new();

@@ -199,9 +199,14 @@ MonoBehaviour:
   raiseSeconds: 0.3
   dropSeconds: 0.1
   swingHandover: 0.15
-  stillSpeed: 0.08
-  movingSpeed: 0.3
-  movingArms: 0.5
+  blendDamping: 0.15
+  turnStep: 0.6
+  turnRate: 120
+  standingBelow: 0.2
+  runFade: {x: 2, y: 3.5}
+  aimBody: 0.8
+  aimHead: 1
+  aimClamp: 0.3
 --- !u!1001 &7334206519696827011
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -545,6 +550,7 @@ MonoBehaviour:
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8
+  prefab: {fileID: 8520137168989438645}
   behaviour: {fileID: 0}
   behaviourSettings:
     defaultState: 1
