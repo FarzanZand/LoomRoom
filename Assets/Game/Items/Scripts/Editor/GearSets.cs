@@ -52,6 +52,11 @@ public static class GearSets
     // Prices and armour by tier (pieces; body armour adds its own), continuing tiers 1-4.
     static readonly int[] PiecePrice = { 15, 40, 90, 225, 550, 1300 }, BodyPrice = { 35, 90, 210, 525, 1250, 3000 };
     static readonly int[] BodyHealth = { 5, 8, 10, 12, 14, 16 };
+    // Boots: how far up the shin the set's legs are kept, a share of ankle to knee (0 = none: the foot part is already
+    // a tall greave, and the trousers above it only showed as rags), and which sets are built from one boot and its
+    // mirror, and from which side ("L" or "R": their two legs differ, and a pair of boots should match).
+    static readonly Dictionary<string, float> BootShin = new() { ["Leather"] = .72f, ["Iron"] = .5f, ["Steel"] = .72f, ["Crystal"] = .72f, ["Grave"] = 0f, ["Gilded"] = 0f };
+    static readonly Dictionary<string, string> MirroredBoots = new() { ["Steel"] = "R" };
 
     public static string Build(string only = null, string slotOnly = null)
     {
@@ -110,7 +115,7 @@ public static class GearSets
 
     static GameObject BuildPiece(string piece, string tierName, string key, Slot slot, Texture2D palette, System.Text.StringBuilder log)
     {
-        var mesh = Bake(key, slot, out string missing);
+        var mesh = Bake(key, slot, tierName, out string missing);
         if (mesh == null) { log.Append($"{piece}: no parts for {key} ({missing})\n"); return null; }
         mesh.name = piece;
         string dir = $"{Art}/{tierName}"; ItemDatabaseAuthoring.EnsureFolder(dir);
@@ -153,11 +158,15 @@ public static class GearSets
 
     // The slot's parts of one set, baked in bind pose, laid out and joined into one mesh centred on the origin
     // (characters face +Z).
-    static Mesh Bake(string key, Slot slot, out string missing)
+    static Mesh Bake(string key, Slot slot, string tierName, out string missing)
     {
         missing = null;
         var combine = new List<CombineInstance>();
-        var codes = slot == Slot.Boots ? Codes[slot].Concat(Shins) : Codes[slot];
+        float shin = slot == Slot.Boots && BootShin.TryGetValue(tierName, out float share) ? share : 0f;
+        string kept = slot == Slot.Boots && MirroredBoots.TryGetValue(tierName, out string mirrorSide) ? mirrorSide : null;
+        bool mirrored = kept != null;
+        var codes = shin > 0f ? Codes[slot].Concat(Shins) : Codes[slot];
+        if (mirrored) codes = codes.Where(c => c.EndsWith(kept));
         foreach (var code in codes)
         {
             var files = Directory.GetFiles(Parts, $"SK_{key}_{code}_*.fbx", SearchOption.AllDirectories);
@@ -174,7 +183,7 @@ public static class GearSets
                     var baked = new Mesh(); skin.BakeMesh(baked, true);
                     var matrix = place * Matrix4x4.TRS(skin.transform.position, skin.transform.rotation, Vector3.one);
                     string side = code.EndsWith("L") ? "_l" : "_r";
-                    if (slot == Slot.Boots && Shins.Contains(code)) KeepShin(baked, matrix, instance.transform, side);
+                    if (Shins.Contains(code)) KeepShin(baked, matrix, instance.transform, side, shin);
                     for (int sub = 0; sub < baked.subMeshCount; sub++) combine.Add(new CombineInstance { mesh = baked, subMeshIndex = sub, transform = matrix });
                 }
             }
@@ -184,7 +193,33 @@ public static class GearSets
         var mesh = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
         mesh.CombineMeshes(combine.ToArray(), true, true);
         foreach (var m in combine.Select(c => c.mesh).Distinct()) Object.DestroyImmediate(m);
+        if (mirrored) Mirror(mesh);
         return Compact(mesh);
+    }
+
+    // Adds the mesh's mirror image across the character's middle (x = 0): one boot makes the other.
+    static void Mirror(Mesh mesh)
+    {
+        var v = mesh.vertices; var n = mesh.normals; var uv = new List<Vector2>(); mesh.GetUVs(0, uv);
+        int count = v.Length;
+        var pv = new List<Vector3>(v); var pn = new List<Vector3>(n); var puv = new List<Vector2>(uv);
+        for (int i = 0; i < count; i++)
+        {
+            pv.Add(new Vector3(-v[i].x, v[i].y, v[i].z));
+            pn.Add(n.Length > i ? new Vector3(-n[i].x, n[i].y, n[i].z) : Vector3.up);
+            puv.Add(uv.Count > i ? uv[i] : Vector2.zero);
+        }
+        var subs = new List<int[]>();
+        for (int s = 0; s < mesh.subMeshCount; s++)
+        {
+            var t = mesh.GetTriangles(s); var both = new int[t.Length * 2];
+            System.Array.Copy(t, both, t.Length);
+            // A mirror turns faces inside out, so each copied triangle is wound the other way.
+            for (int i = 0; i < t.Length; i += 3) { both[t.Length + i] = t[i] + count; both[t.Length + i + 1] = t[i + 2] + count; both[t.Length + i + 2] = t[i + 1] + count; }
+            subs.Add(both);
+        }
+        mesh.SetVertices(pv); mesh.SetNormals(pn); mesh.SetUVs(0, puv);
+        for (int s = 0; s < subs.Count; s++) mesh.SetTriangles(subs[s], s);
     }
 
     // Only the vertices a triangle uses (Sidekick parts carry loose ones that would throw the bounds off), centred on
@@ -220,14 +255,14 @@ public static class GearSets
         return result;
     }
 
-    // Boots are the feet and the set's own legs from a little below the knee down (the foot parts alone are shoes; the
-    // legs carry on down inside them, as on a character).
+    // Boots are the feet and the set's own legs from below the knee down (the foot parts alone are shoes; the legs carry
+    // on down inside them, as on a character), up to share of the way from ankle to knee (BootShin).
     static readonly string[] Shins = { "18LEGL", "19LEGR" };
-    static void KeepShin(Mesh baked, Matrix4x4 matrix, Transform rig, string side)
+    static void KeepShin(Mesh baked, Matrix4x4 matrix, Transform rig, string side, float share)
     {
         var knee = Find(rig, "calf" + side); var ankle = Find(rig, "foot" + side);
         if (knee == null || ankle == null) return;
-        float top = ankle.position.y + (knee.position.y - ankle.position.y) * .72f;
+        float top = ankle.position.y + (knee.position.y - ankle.position.y) * share;
         var v = baked.vertices;
         for (int s = 0; s < baked.subMeshCount; s++)
         {

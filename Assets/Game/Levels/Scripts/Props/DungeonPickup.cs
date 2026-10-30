@@ -67,12 +67,14 @@ public static class DungeonPickup
 
     // Kinematic loot never falls, so it is put down as it would land: anything taller than it is wide (a sword, a
     // mace, a shield on its rim) lies on its side, and every item gets a random heading. A pair of gloves (modelled
-    // fingers up, side by side) lies on its back rather than reaching up out of the floor.
+    // fingers up, side by side) lies on its back rather than reaching up out of the floor, and a pair of boots stands
+    // on its soles, however tall.
     static void LayFlat(WorldItem pickup)
     {
         var t = pickup.transform;
         float yaw = Random.Range(0f, 360f);
         t.rotation = Quaternion.Euler(0f, yaw, 0f);
+        if (pickup.Item != null && pickup.Item.equipSlot == EquipmentSlot.Boots) return;
         if (!DungeonFeatureUtility.RendererBounds(pickup.GetComponentsInChildren<Renderer>(), out var upright)) return;
         bool gloves = pickup.Item != null && pickup.Item.equipSlot == EquipmentSlot.Gloves;
         if (gloves || upright.size.y > Mathf.Max(upright.size.x, upright.size.z) * 1.15f)
