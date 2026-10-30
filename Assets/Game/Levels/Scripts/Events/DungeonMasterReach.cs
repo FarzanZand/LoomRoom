@@ -380,6 +380,33 @@ public static class DungeonMasterReach
         return true;
     }
 
+    // With no roof over the spot (an open-sky room, a board, the boss stage) all of him is seen: no part of him may stand in
+    // the floor's own walls, banks or pieces (a capsule from above the floor tiles to his crown, leaning toward the spot).
+    // A board's invisible rims and the stage's edges only keep walkers in: they don't count. Measured on him as BodyClear is.
+    public static bool BodyClearOpen(DungeonGenerator dungeon, Vector3 standAt, Vector3 spot, float lean)
+    {
+        var hand = Hand; var a = hand != null ? hand.GetComponent<Animator>() : null;
+        if (a == null || dungeon == null) return true;
+        var head = a.GetBoneTransform(HumanBodyBones.Head); var l = a.GetBoneTransform(HumanBodyBones.LeftUpperArm); var r = a.GetBoneTransform(HumanBodyBones.RightUpperArm);
+        if (head == null || l == null || r == null) return true;
+        var neck = a.GetBoneTransform(HumanBodyBones.Neck);
+        float top = head.position.y - hand.transform.position.y + (neck != null ? Vector3.Distance(head.position, neck.position) * 1.5f : 0f);
+        float radius = Vector3.Distance(l.position, r.position) * .6f;
+        float floor = TableTop(dungeon);
+        var toward = spot - standAt; toward.y = 0f; toward = toward.sqrMagnitude > .01f ? toward.normalized : Vector3.forward;
+        var feet = new Vector3(standAt.x, floor, standAt.z);
+        float rise = hand.transform.position.y + top - floor;
+        var crown = feet + Vector3.up * rise * Mathf.Cos(lean * Mathf.Deg2Rad) + toward * rise * Mathf.Sin(lean * Mathf.Deg2Rad);
+        var low = feet + Vector3.up * (radius + .45f);
+        foreach (var c in Physics.OverlapCapsule(low, crown, radius, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (!c.transform.IsChildOf(dungeon.transform)) continue;
+            if (c.GetComponentInParent<Character>() != null || c.GetComponentInParent<InvisibleWall>() != null) continue;
+            return false;
+        }
+        return true;
+    }
+
     // The ground the roof over these points covers (its pieces' bounds), before it is lifted: where he can stand clear of
     // it, so it can come down while he is there.
     public static bool RoofArea(DungeonGenerator dungeon, Vector3[] over, out Bounds area)
@@ -572,10 +599,26 @@ public static class DungeonMasterReach
         if (steppedAgentWasOn) steppedAgent.enabled = false;
         var toward = spot - standAt; toward.y = 0f;
         var face = standAt + Quaternion.Euler(0f, -turnRight, 0f) * toward;
-        if (!seat.Teleport(standAt, face)) { if (steppedAgentWasOn) steppedAgent.enabled = true; return false; }
+        // He comes into the scene faded out and fades in where he stands (the user: fade in and out, not pop).
+        DungeonMasterFade.Begin(TableManager.Instance.DM);
+        DungeonMasterFade.Set(0f);
+        if (!seat.Teleport(standAt, face)) { DungeonMasterFade.End(); if (steppedAgentWasOn) steppedAgent.enabled = true; return false; }
         appeared = true; standingAt = Side.Own;
         hand.Watch(spot, true);
+        hand.StartCoroutine(DungeonMasterFade.To(1f, AppearFade, true));
         return true;
+    }
+
+    // Seconds he takes to fade in where he appears, and out before he goes (Appear, FadeAway).
+    public const float AppearFade = .45f;
+
+    // He fades out where he stands, then is back at his place (after Appear); Vanish at once if he never faded in.
+    public static IEnumerator FadeAway()
+    {
+        if (!appeared) yield break;
+        if (DungeonMasterFade.Active) yield return DungeonMasterFade.To(0f, AppearFade, false);
+        Vanish();
+        DungeonMasterFade.End();
     }
 
     // Back at his place at once (after Appear).
@@ -583,6 +626,7 @@ public static class DungeonMasterReach
     {
         if (!appeared) return;
         appeared = false;
+        DungeonMasterFade.End();
         if (Seat != null) Seat.TeleportHome();
         if (steppedAgent != null && steppedAgentWasOn) { steppedAgent.enabled = true; steppedAgent.Warp(steppedAgent.transform.position); }
         steppedAgent = null;
@@ -770,4 +814,75 @@ public class LidEffects
     [Tooltip("The weight of it landing, on the landing frame.")] public AudioClip land;
     [Range(0, 1)] public float volume = .8f;
     [Tooltip("Dust blown out along its edges as it lands.")] public bool dust = true;
+}
+
+// The Dungeon Master faded in and out where he appears in a floor (DungeonMasterReach.Appear, FadeAway): while it runs his
+// materials are see-through copies (URP Lit set transparent, no depth written) whose alpha is stepped; his glowing eyes are hidden until he is nearly there. Put back as he was when it ends.
+static class DungeonMasterFade
+{
+    static readonly System.Collections.Generic.Dictionary<Renderer, Material[]> originals = new();
+    static readonly System.Collections.Generic.List<Material> copies = new();
+    static readonly System.Collections.Generic.List<Renderer> hidden = new();
+    static float alpha = 1f;
+    public static bool Active => originals.Count > 0;
+
+    public static void Begin(GameObject who)
+    {
+        End();
+        if (who == null) return;
+        foreach (var r in who.GetComponentsInChildren<Renderer>())
+        {
+            if (r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer || !r.enabled) continue;
+            var shared = r.sharedMaterials;
+            bool lit = false;
+            foreach (var m in shared) if (m != null && m.shader.name == "Universal Render Pipeline/Lit") lit = true;
+            if (!lit) { r.enabled = false; hidden.Add(r); continue; }   // the eyes: hidden while he is see-through
+            originals[r] = shared;
+            var faded = new Material[shared.Length];
+            for (int i = 0; i < shared.Length; i++)
+            {
+                var m = shared[i];
+                if (m == null || m.shader.name != "Universal Render Pipeline/Lit") { faded[i] = m; continue; }
+                var c = new Material(m) { name = m.name + " (fade)" };
+                c.SetFloat("_Surface", 1f); c.SetFloat("_Blend", 0f);
+                c.SetOverrideTag("RenderType", "Transparent");
+                c.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha); c.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                c.SetFloat("_ZWrite", 0f);   // depth written by a see-through body showed the screen's depth effects through him (a flat cyan shape)
+                c.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                c.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                copies.Add(c); faded[i] = c;
+            }
+            r.sharedMaterials = faded;
+        }
+    }
+
+    public static void Set(float a)
+    {
+        alpha = Mathf.Clamp01(a);
+        foreach (var c in copies)
+        {
+            if (c == null || !c.HasProperty("_BaseColor")) continue;
+            var col = c.GetColor("_BaseColor"); col.a = alpha; c.SetColor("_BaseColor", col);
+        }
+        bool eyes = alpha > .85f;
+        foreach (var r in hidden) if (r != null) r.enabled = eyes;
+    }
+
+    // Steps alpha to target over seconds; done (back to his own materials) when he is fully there.
+    public static IEnumerator To(float target, float seconds, bool endWhenThere)
+    {
+        if (!Active) yield break;
+        float from = alpha;
+        for (float t = 0f; t < seconds; t += Time.deltaTime) { Set(Mathf.Lerp(from, target, Mathf.SmoothStep(0f, 1f, t / seconds))); yield return null; }
+        Set(target);
+        if (endWhenThere && target >= 1f) End();
+    }
+
+    public static void End()
+    {
+        foreach (var pair in originals) if (pair.Key != null) pair.Key.sharedMaterials = pair.Value;
+        foreach (var r in hidden) if (r != null) r.enabled = true;
+        foreach (var c in copies) if (c != null) Object.Destroy(c);
+        originals.Clear(); copies.Clear(); hidden.Clear(); alpha = 1f;
+    }
 }

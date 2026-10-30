@@ -132,7 +132,7 @@ public class HelpingHand : MonoBehaviour
         var spot = caster.transform.position;
         bool appear = settings.reach == HelpReach.Appear && Appear();
         bool near = appear || settings.reach == HelpReach.WalkOrPotion && DungeonMasterReach.InHandReach(spot, settings.handReach, settings.edgeGap, settings.maxWalk) && Roomy(spot);
-        if (appear) yield return new WaitForSeconds(.35f);
+        if (appear) yield return new WaitForSeconds(DungeonMasterReach.AppearFade);   // he fades in where he stands
         else if (near)
         {
             yield return DungeonMasterReach.Approach(spot, settings.walkSpeed);
@@ -150,9 +150,9 @@ public class HelpingHand : MonoBehaviour
         // The roof only comes down once he stands up straight, and where he stood in the table he is back in his place
         // first: it lands on the room, never on him.
         for (float t = 0; hand != null && !hand.Upright && t < 3f; t += Time.deltaTime) yield return null;
-        if (appear && !clearOfLid) DungeonMasterReach.Vanish();
+        if (appear && !clearOfLid) yield return DungeonMasterReach.FadeAway();
         yield return DungeonMasterReach.Lid(floor, false, null, settings.lid);
-        if (appear && clearOfLid) DungeonMasterReach.Vanish();
+        if (appear && clearOfLid) yield return DungeonMasterReach.FadeAway();
         if (!appear) yield return DungeonMasterReach.StepBack(spot);
         yield return DungeonMasterReach.Leave();
         Destroy(gameObject);
@@ -184,7 +184,7 @@ public class HelpingHand : MonoBehaviour
                     var level = p; if (hasRoof) level.y = roof.center.y;
                     bool clear = hasRoof && !roof.Contains(level);
                     if (wantClear && !clear) continue;
-                    if (hasRoof && !DungeonMasterReach.BodyClear(floor, p, me, 25f, room)) continue;
+                    if (hasRoof ? !DungeonMasterReach.BodyClear(floor, p, me, 25f, room) : !DungeonMasterReach.BodyClearOpen(floor, p, me, 25f)) continue;
                     at = p; clearOfLid = clear; found = true; break;
                 }
                 if (found) break;
@@ -193,7 +193,6 @@ public class HelpingHand : MonoBehaviour
         }
         if (!found) return false;
         if (!DungeonMasterReach.Appear(at, caster.transform.position)) return false;
-        DungeonMasterReach.Shake(.3f);
         return true;
     }
 

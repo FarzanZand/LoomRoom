@@ -25,6 +25,8 @@ public class FlickSettings
     public float appearAhead = .75f;
     [FoldoutGroup("Flick"), ShowIf("@reach == FlickReach.Appear"), Min(0f), Tooltip("He stands at least this far outside the roof that comes off (world units), so it can come back down while he is still there; he leaves only once it is back on and hides him. Out to Appear Farthest from the enemy.")]
     public float clearOfRoof = 4f;
+    [FoldoutGroup("Flick"), ShowIf("@reach == FlickReach.Appear"), Min(0f), Tooltip("With no roof over the spot (an open-sky room, a board, the boss stage) he stands at least this far from the player (level, world units), so his body doesn't fill their view.")]
+    public float openSkyFromPlayer = 18f;
     [FoldoutGroup("Flick"), ShowIf("@reach == FlickReach.Appear"), Min(4f)] public float appearFarthest = 20f;
     [FoldoutGroup("Flick"), ShowIf("@reach == FlickReach.Appear"), Range(0f, 60f), Tooltip("Degrees he stands turned to the left of the enemy, so it is ahead and to his right and his right hand reaches it without crossing his body.")]
     public float turnRight = 25f;
@@ -153,7 +155,8 @@ public class Flick : MonoBehaviour
         float bestScore = float.MaxValue;
         foreach (var c in SpellEffects.HostilesNear(player, view.position, s.range))
         {
-            if (c.GetComponent<Summon>() != null || BossStageEncounter.Current != null) continue;
+            // A boss fight's own enemies and the boss itself can be flicked too (by the player's avatar: RunFromRoom).
+            if (c.GetComponent<Summon>() != null) continue;
             var chest = SpellEffects.Chest(c);
             // Off the crosshair by its nearest point between feet and head (aiming a little high or low still picks it).
             var feet = c.transform.position + Vector3.up * .2f;
@@ -176,6 +179,13 @@ public class Flick : MonoBehaviour
     {
         var floor = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
         bool portal = spell.flick.reach == FlickReach.Portal;
+        // In a boss fight he is at the table already, busy with it: the player's own avatar in the room flicks instead.
+        if (floor != null && !portal && BossStageEncounter.Current != null)
+        {
+            if (RoomBody() == null) return "You can't reach it";
+            if (Running) return "Not yet";
+            return Target(player, spell.flick) == null ? "Nothing to flick" : null;
+        }
         if (floor == null || !portal && (DungeonMasterReach.Hand == null || DungeonMasterReach.Seat == null)) return "He can't reach you here";
         if (Running || !portal && DungeonMasterReach.Busy) return "He's busy";
         if (Target(player, spell.flick) == null) return "Nothing to flick";
@@ -199,6 +209,7 @@ public class Flick : MonoBehaviour
     IEnumerator Run()
     {
         if (settings.reach == FlickReach.Portal) { yield return RunPortal(); Destroy(gameObject); yield break; }
+        if (BossStageEncounter.Current != null) { yield return RunFromRoom(); Destroy(gameObject); yield break; }
         var floor = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
         var hand = DungeonMasterReach.Hand;
         var held = Hold(target);
@@ -209,7 +220,7 @@ public class Flick : MonoBehaviour
         // the enemy from the table's edge, and it stands in the open.
         bool appear = settings.reach == FlickReach.Appear && AppearBy(target);
         bool near = appear || settings.reach == FlickReach.WalkOrDie && DungeonMasterReach.InHandReach(spot, settings.fingerReach, settings.edgeGap, settings.maxWalk) && Roomy(spot);
-        if (appear) yield return new WaitForSeconds(.35f);
+        if (appear) yield return new WaitForSeconds(DungeonMasterReach.AppearFade);   // he fades in where he stands
         else if (near)
         {
             yield return DungeonMasterReach.Approach(spot, settings.walkSpeed);
@@ -236,20 +247,7 @@ public class Flick : MonoBehaviour
             {
                 // In his fingers out in front of him toward it, over the table's edge: the die flies the rest of the way.
                 var over = hand.HoldPoint(spot);
-                var die = settings.die != null ? Instantiate(settings.die, over, Quaternion.identity) : null;
-                if (die != null)
-                {
-                    die.name = "Flick die (held)";
-                    if (settings.dieLight > 0f)
-                    {
-                        var glow = new GameObject("Die light").AddComponent<Light>();
-                        glow.transform.SetParent(die.transform, false);
-                        glow.type = LightType.Point; glow.range = 6f; glow.intensity = settings.dieLight; glow.color = settings.markColor; glow.shadows = LightShadows.None;
-                    }
-                    foreach (var c in die.GetComponentsInChildren<Collider>()) c.enabled = false;
-                    foreach (var r in die.GetComponentsInChildren<Rigidbody>()) r.isKinematic = true;
-                    die.transform.localScale *= settings.dieScale;
-                }
+                var die = MakeDie(over);
                 var toward = Flat(spot - over);
                 yield return hand.Flick(over, toward, settings.reachSeconds, settings.windup, die != null ? die.transform : null, () =>
                 {
@@ -265,12 +263,113 @@ public class Flick : MonoBehaviour
         // The roof only comes down once he stands up straight. Where he appeared clear of it he is still there as it lands
         // and goes only once it hides him; inside its footprint he goes first, so it never lands on him.
         for (float t = 0; hand != null && !hand.Upright && t < 3f; t += Time.deltaTime) yield return null;
-        if (appear && !clearOfLid) DungeonMasterReach.Vanish();
+        if (appear && !clearOfLid) yield return DungeonMasterReach.FadeAway();
         yield return DungeonMasterReach.Lid(floor, false, null, settings.lid);
-        if (appear && clearOfLid) DungeonMasterReach.Vanish();
+        if (appear && clearOfLid) yield return DungeonMasterReach.FadeAway();
         if (!appear) yield return DungeonMasterReach.StepBack(spot);
         yield return DungeonMasterReach.Leave();
         Destroy(gameObject);
+    }
+
+    // ── The player's own avatar in the room (a boss fight: the Dungeon Master is at the table already) ──────────
+
+    // The room player's body (its humanoid animator), switched off with the room player while a run is played.
+    static Animator RoomBody()
+    {
+        var room = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Room) : null;
+        if (room == null) return null;
+        // Its body sits beside its controller under the room player's root (Players/RoomPlayer/BodyVisuals).
+        var root = room.transform.parent != null ? room.transform.parent : room.transform;
+        foreach (var a in root.GetComponentsInChildren<Animator>(true)) if (a.isHuman && a.gameObject.activeSelf) return a;
+        return null;
+    }
+
+    // From the player's own side of the table: a stand-in of their room avatar fades in at the table's edge across from
+    // the Dungeon Master (the room player is switched off while a run is played), holds the die out over the edge, flicks
+    // it across onto the enemy and fades out again. No lid and no walk: the boss stage is open and he is busy with it.
+    IEnumerator RunFromRoom()
+    {
+        var body = RoomBody();
+        var floor = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
+        var dm = TableManager.HasInstance ? TableManager.Instance.DM : null;
+        if (body == null || floor == null || dm == null || target == null) yield break;
+        // Across the table from him, as far from the board's middle as he is.
+        var middle = floor.transform.position; var him = dm.transform.position;
+        var away = Flat(middle - him); if (away.sqrMagnitude < .01f) away = Vector3.forward;
+        var span = him - middle; span.y = 0f; float reach = span.magnitude;   // (Flat normalizes)
+        var room = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
+        // The avatar itself when it stands at the table (where the player left it to play): it flicks from there.
+        var fromMiddle = body.transform.position - middle; fromMiddle.y = 0f;
+        if (body.isActiveAndEnabled && fromMiddle.magnitude <= reach * 1.15f && Vector3.Dot(fromMiddle, away) > 0f)
+        {
+            var own = body.TryGetComponent<DungeonMasterHand>(out var h) ? h : body.gameObject.AddComponent<DungeonMasterHand>();
+            yield return FlickFrom(own);
+            yield break;
+        }
+        var standAt = middle + away * reach; standAt.y = room != null ? room.transform.position.y : him.y;
+        // A copy made inside a switched-off holder, so none of the avatar's own scripts wake; only its animator and renderers stay.
+        var holder = new GameObject("Avatar stand-in holder"); holder.SetActive(false);
+        var standIn = Instantiate(body.gameObject, holder.transform);
+        standIn.name = "Room avatar (flick)";
+        // At once, while still switched off (a deferred Destroy would let them wake as it is switched on); twice, for any
+        // that another one required.
+        for (int pass = 0; pass < 2; pass++)
+            foreach (var c in standIn.GetComponentsInChildren<MonoBehaviour>(true)) if (c != null) DestroyImmediate(c);
+        foreach (var c in standIn.GetComponentsInChildren<Collider>(true)) DestroyImmediate(c);
+        standIn.transform.SetParent(null, false);
+        standIn.transform.localScale = body.transform.lossyScale;
+        standIn.transform.SetPositionAndRotation(standAt, Quaternion.LookRotation(-away));
+        Destroy(holder);
+        var hand = standIn.AddComponent<DungeonMasterHand>();
+        // The avatar itself stood elsewhere in the room: it isn't there twice while the stand-in flicks.
+        var shown = new List<Renderer>();
+        foreach (var r in body.GetComponentsInChildren<Renderer>()) if (r.enabled) { r.enabled = false; shown.Add(r); }
+        DungeonMasterFade.Begin(standIn); DungeonMasterFade.Set(0f);
+        yield return DungeonMasterFade.To(1f, DungeonMasterReach.AppearFade, true);
+        yield return FlickFrom(hand);
+        DungeonMasterFade.Begin(standIn);
+        yield return DungeonMasterFade.To(0f, DungeonMasterReach.AppearFade, false);
+        DungeonMasterFade.End();
+        Destroy(standIn);
+        foreach (var r in shown) if (r != null) r.enabled = true;
+    }
+
+    // The die held out over the table's edge in this hand, flicked across onto the enemy.
+    IEnumerator FlickFrom(DungeonMasterHand hand)
+    {
+        if (target == null) yield break;
+        var held = Hold(target);
+        var spot = target.transform.position;
+        var over = hand.HoldPoint(spot);
+        var die = MakeDie(over);
+        var toward = Flat(spot - over);
+        yield return hand.Flick(over, toward, settings.reachSeconds, settings.windup, die != null ? die.transform : null, () =>
+        {
+            Snap(over);
+            if (die != null) StartCoroutine(DieFly(die.transform, held));
+            else { Release(held); if (target != null) StartCoroutine(Fly(target, toward, power, true)); }
+        });
+        for (float t = 0; flying && t < 8f; t += Time.deltaTime) yield return null;
+        hand.Release();
+        yield return new WaitForSeconds(.3f);
+    }
+
+    // The die held in the fingers before it is flicked: no collisions or physics until it flies, its own small light.
+    GameObject MakeDie(Vector3 over)
+    {
+        var die = settings.die != null ? Instantiate(settings.die, over, Quaternion.identity) : null;
+        if (die == null) return null;
+        die.name = "Flick die (held)";
+        if (settings.dieLight > 0f)
+        {
+            var glow = new GameObject("Die light").AddComponent<Light>();
+            glow.transform.SetParent(die.transform, false);
+            glow.type = LightType.Point; glow.range = 6f; glow.intensity = settings.dieLight; glow.color = settings.markColor; glow.shadows = LightShadows.None;
+        }
+        foreach (var c in die.GetComponentsInChildren<Collider>()) c.enabled = false;
+        foreach (var r in die.GetComponentsInChildren<Rigidbody>()) r.isKinematic = true;
+        die.transform.localScale *= settings.dieScale;
+        return die;
     }
 
     // He appears beside the enemy, on whichever side gives it the longer flight: a little ahead of it along the player's
@@ -303,6 +402,12 @@ public class Flick : MonoBehaviour
                 sides.Add((from, room - Mathf.Abs(turn)));
             }
         sides.Sort((x, y) => y.score.CompareTo(x.score));
+        // Under open sky nothing hides his body (under a roof he stands outside the room and only his hand is seen): he
+        // stands ahead of the player, beyond the enemy, and reaches back to it, seen in front as on the boss stage, not
+        // filling the side of their view.
+        if (!hasRoof)
+            foreach (var turn in new[] { 45f, -45f, 25f, -25f, 0f })
+                sides.Insert(0, (Quaternion.Euler(0f, turn, 0f) * view, 0f));
         Vector3 at = Vector3.zero; bool found = false; clearOfLid = false;
         foreach (bool wantClear in new[] { true, false })
         {
@@ -312,10 +417,12 @@ public class Flick : MonoBehaviour
                 {
                     var p = spot + from * d;
                     var level = p; if (hasRoof) level.y = roof.center.y;
-                    bool clear = hasRoof && !roof.Contains(level);
+                    // Clear: outside the roof that comes off, or with no roof, far enough from the player to stay out of their face.
+                    bool clear = hasRoof ? !roof.Contains(level) : Flat(p - caster.transform.position).magnitude >= settings.openSkyFromPlayer;
                     if (wantClear && !clear) continue;
-                    if (hasRoof && !DungeonMasterReach.BodyClear(floor, p, spot, lean, openRoom)) continue;
-                    at = p; clearOfLid = clear; found = true; break;
+                    // Under a roof only its open room's walls matter; under open sky every piece of the floor round him does.
+                    if (hasRoof ? !DungeonMasterReach.BodyClear(floor, p, spot, lean, openRoom) : !DungeonMasterReach.BodyClearOpen(floor, p, spot, lean)) continue;
+                    at = p; clearOfLid = hasRoof && clear; found = true; break;
                 }
                 if (found) break;
             }
@@ -324,7 +431,6 @@ public class Flick : MonoBehaviour
         // Nowhere he fits: he flicks the die at it from his own place instead.
         if (!found) return false;
         if (!DungeonMasterReach.Appear(at, spot, settings.turnRight)) return false;
-        DungeonMasterReach.Shake(.3f);
         return true;
     }
 
@@ -706,6 +812,13 @@ public class Flick : MonoBehaviour
     IEnumerator Fly(Character body, Vector3 direction, float damage, bool fromFinger)
     {
         if (body == null || !body.IsAlive) yield break;
+        // A boss or an elite can't be sent flying (EnemyMotor.Steadfast): the blow lands where it stands, and it reels.
+        if (body.TryGetComponent<EnemyMotor>(out var steady) && steady.Steadfast)
+        {
+            var at = SpellEffects.Chest(body);
+            SpellEffects.Strike(caster, body, damage, at, at - Flat(direction), spell.displayName);
+            yield break;
+        }
         flying = true;
         var brain = body.GetComponent<EnemyBrain>();
         var agent = body.GetComponent<NavMeshAgent>();
