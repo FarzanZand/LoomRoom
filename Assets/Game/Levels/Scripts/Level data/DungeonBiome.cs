@@ -146,6 +146,10 @@ public class DungeonBiome : ScriptableObject
     public Vector2 encounterChance = new(.4f, .6f);
     [TabGroup(Life), Range(1, 6), Tooltip("Fewest enemies in a room that has any (packs: 2 or more).")] public int minEnemiesPerRoom = 1;
     [TabGroup(Life), Range(1, 6)] public int maxEnemiesPerRoom = 2;
+    [TabGroup(Life), Min(0), Tooltip("Most casters (enemies with Caster on) in one room; past it the room's other enemies are picked from the rest. 0 = no cap.")]
+    public int maxCastersPerRoom = 1;
+    [TabGroup(Life), Min(0), Tooltip("Most casters on one floor (packs, sockets and waves together). 0 = no cap.")]
+    public int maxCastersPerFloor = 6;
     [TabGroup(Life), Tooltip("Added to the features every level shares (Table level defaults); a stage's also to the base biome's. Min Floor counts from the biome's first floor (for the shared features too).")]
     public DungeonFeature[] features = new DungeonFeature[0];
 
@@ -244,6 +248,19 @@ public class DungeonBiome : ScriptableObject
         var pick = WeightedPick.Choose(enemies, s => s != null && s.enemy != null && s.fromFloor <= floorInBiome ? s.weight : 0, random, singleTotal: true);
         return pick != null ? pick.enemy : null;
     }
+
+    // The same pick, with casters left out once the room or the floor has its share (Max Casters Per Room, Per Floor).
+    // It draws one number either way, so a floor's seed stream stays in step; a biome with nothing but casters keeps them.
+    public GameObject ChooseEnemy(System.Random random, int floorInBiome, int castersInRoom, int castersOnFloor)
+    {
+        bool capped = maxCastersPerRoom > 0 && castersInRoom >= maxCastersPerRoom || maxCastersPerFloor > 0 && castersOnFloor >= maxCastersPerFloor;
+        bool Fits(Spawn s) => s != null && s.enemy != null && s.fromFloor <= floorInBiome && s.weight > 0;
+        if (!capped || enemies == null || !System.Array.Exists(enemies, s => Fits(s) && !IsCaster(s.enemy))) return ChooseEnemy(random, floorInBiome);
+        var pick = WeightedPick.Choose(enemies, s => Fits(s) && !IsCaster(s.enemy) ? s.weight : 0, random, singleTotal: true);
+        return pick != null ? pick.enemy : null;
+    }
+
+    public static bool IsCaster(GameObject enemy) => enemy != null && enemy.TryGetComponent<Character>(out var c) && c.data is EnemyData d && d.caster;
 
 #if UNITY_EDITOR
     // The base biome's own fields (Level tab, room features) and the lists it holds for its level: a copy of another
