@@ -470,6 +470,8 @@ MonoBehaviour:
   maxEnemiesPerRoom: 3
   maxCastersPerRoom: 1
   maxCastersPerFloor: 6
+  eliteChance: 0.1
+  eliteFloors: 3
   features: []
   loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
   merchantChance: 1

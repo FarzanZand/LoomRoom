@@ -23,7 +23,9 @@ public class Character : MonoBehaviour
     public Animator           Animator  => animator;
     public IKnockbackReceiver Knockback { get; private set; }
 
-    public string DisplayName => data != null && !string.IsNullOrEmpty(data.characterName) ? data.characterName : name;
+    // A word in front of the name for this one character (an elite's "Brutal", EliteEnemy). Empty: none.
+    [System.NonSerialized] public string namePrefix;
+    public string DisplayName => (string.IsNullOrEmpty(namePrefix) ? "" : namePrefix + " ") + (data != null && !string.IsNullOrEmpty(data.characterName) ? data.characterName : name);
     // The name as a sentence uses it: "the Crypt Rat", or a proper name as it is (CharacterData.properName).
     public string TheName => data != null && data.properName ? DisplayName : "the " + DisplayName;
     public string TheNameCap => data != null && data.properName ? DisplayName : "The " + DisplayName;

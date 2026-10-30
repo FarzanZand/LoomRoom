@@ -154,6 +154,10 @@ public class DungeonBiome : ScriptableObject
     public int maxCastersPerRoom = 1;
     [TabGroup(Life), Min(0), Tooltip("Most casters on one floor (packs, sockets and waves together). 0 = no cap.")]
     public int maxCastersPerFloor = 6;
+    [TabGroup(Life), Range(0f, .5f), Tooltip("Chance a generated enemy (packs, sockets, waves; never a boss, an event's own actor or a named one) comes out as an elite: grown Elite Floors deeper, with one trait (Tough, Brutal or Swift), its name saying so, a glow in the trait's colour, twice the experience and loot rolled as if the floor were that much deeper (EliteEnemy).")]
+    public float eliteChance;
+    [TabGroup(Life), ShowIf("@eliteChance > 0"), Min(0), Tooltip("How many floors deeper an elite grows and rolls its loot.")]
+    public float eliteFloors = 3f;
     [TabGroup(Life), Tooltip("Added to the features every level shares (Table level defaults); a stage's also to the base biome's. Min Floor counts from the biome's first floor (for the shared features too).")]
     public DungeonFeature[] features = new DungeonFeature[0];
 

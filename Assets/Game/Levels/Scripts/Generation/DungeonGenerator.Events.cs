@@ -251,21 +251,28 @@ public partial class DungeonGenerator
                         if ((Mathf.Abs(dx) == r || Mathf.Abs(dz) == r) && !Layout.InRoom(room, c + new Vector2Int(dx, dz))) return r;
                 return 5;
             }
-            Vector2Int best = CellOf(pos); int bestDepth = -1; float bestDistance = float.MaxValue;
+            // Every cell off the stairs, deepest first, then nearest; the first that is walkable floor wins (cells beside a
+            // stage's stair cut or under a pillar are not, and a failed one left the chest at the edge).
+            var ranked = new List<(Vector2Int cell, int depth, float distance)>();
             foreach (var c in cells)
             {
                 // Not on the stairs nor in front of any side of them (a corner beside them leaves every way on open).
                 if (Mathf.Abs(c.x - ExitCell.x) + Mathf.Abs(c.y - ExitCell.y) <= 1) continue;
-                int depth = Mathf.Min(Depth(c), 2);   // two cells in is deep enough: then the nearest wins
                 var at = Cell(c); at.y = pos.y;
-                float distance = (at - pos).sqrMagnitude;
-                if (depth > bestDepth || (depth == bestDepth && distance < bestDistance)) { best = c; bestDepth = depth; bestDistance = distance; }
+                ranked.Add((c, Mathf.Min(Depth(c), 2), (at - pos).sqrMagnitude));   // two cells in is deep enough
             }
-            if (bestDepth >= 0)
+            ranked.Sort((a, b) => a.depth != b.depth ? b.depth.CompareTo(a.depth) : a.distance.CompareTo(b.distance));
+            foreach (var (c, _, _) in ranked)
             {
-                var to = Cell(best);
-                if (UnityEngine.AI.NavMesh.SamplePosition(to, out var inner, 1f, UnityEngine.AI.NavMesh.AllAreas)) pos = inner.position;
+                // Probed at the height the boss fell at (the room's floor: a raised room or a stage's top is above Cell's y).
+                var centre = Cell(c); centre.y = pos.y;
+                if (!UnityEngine.AI.NavMesh.SamplePosition(centre, out var inner, 1.2f, UnityEngine.AI.NavMesh.AllAreas)) continue;
+                var off = inner.position - centre; off.y = 0f;
+                if (off.magnitude > .5f) continue;
+                pos = inner.position;
+                break;
             }
+            // No cell walkable: the boss's own spot, as sampled above, so there is always a chest.
         }
         var look = face - pos; look.y = 0;
         var go = Instantiate(prefab, pos, Quaternion.LookRotation(look.sqrMagnitude > .01f ? look : Vector3.forward), transform);

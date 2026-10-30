@@ -288,7 +288,7 @@ public partial class AssetStudioWindow
             $"{enemyKinds} kinds of enemy across the floors" + (guardian != null ? $", and {guardian.biome.guardian.boss.name} on floor {guardian.lastFloor}." : "."),
             $"{roomCount} hand-built rooms to draw from; the rest are generated.",
             $"Starts in {(d.startingRoom != null ? d.startingRoom.name : "a generated room")}{(d.startingChest ? ", with a chest" + (d.startingChestConsumable != null ? " and " + d.startingChestConsumable.DisplayName : "") : "")}.",
-            $"Balance: {(d.balance != null ? d.balance.name : "none")}" + (d.balance != null ? $": enemies {d.balance.damageMultiplier:0.##}x damage and {d.balance.healthMultiplier:0.##}x health, then +{d.balance.damageGrowthPerFloor * 100:0}% damage and +{d.balance.healthGrowthPerFloor * 100:0}% health a floor." : "."),
+            $"Balance: {(d.balance != null ? d.balance.name : "none")}" + (d.balance != null ? $": enemies {d.balance.damageMultiplier:0.##}x damage and {d.balance.healthMultiplier:0.##}x health, then x{1 + d.balance.damageGrowthPerFloor:0.##} damage and x{1 + d.balance.healthGrowthPerFloor:0.##} health a floor, compounded." : "."),
             $"Music: {(d.backgroundMusic != null ? d.backgroundMusic.name : "none")}.",
         };
         foreach (var s in lines2) GUILayout.Label("•  " + s, new GUIStyle(dim) { wordWrap = true });
@@ -544,12 +544,12 @@ public partial class AssetStudioWindow
         var data = DataOf(enemy);
         float hp = Stat(data, StatType.MaxHealth), dmg = Stat(data, StatType.AttackDamage), arm = Stat(data, StatType.Armor);
         var bal = d != null ? d.balance : null;
-        int depth = Mathf.Max(0, floor - 1);
+        float depth = DungeonBalance.Depth(floor, d != null ? d.ExtraFloors(floor) : 0f);
         bool boss = guardian != null;
         if (bal != null)
         {
-            dmg *= (boss && bal.separateBossDamage ? bal.bossDamageMultiplier : bal.damageMultiplier) * (1 + bal.damageGrowthPerFloor * depth);
-            hp *= boss ? bal.bossHealthMultiplier : bal.healthMultiplier * (1 + bal.healthGrowthPerFloor * depth);
+            dmg *= (boss && bal.separateBossDamage ? bal.bossDamageMultiplier : bal.damageMultiplier) * DungeonBalance.Grown(bal.damageGrowthPerFloor, depth);
+            hp *= boss ? bal.bossHealthMultiplier : bal.healthMultiplier * DungeonBalance.Grown(bal.healthGrowthPerFloor, depth);
             arm += bal.armorPerFloor * depth;
         }
         if (boss) { hp *= guardian.healthMultiplier; dmg *= guardian.damageMultiplier; }

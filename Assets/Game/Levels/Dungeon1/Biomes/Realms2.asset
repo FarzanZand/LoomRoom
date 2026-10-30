@@ -18,6 +18,8 @@ MonoBehaviour:
   ownBoardPieces: 0
   ownLook: 1
   plainKit: 1
+  pitWater: {fileID: 0}
+  pitWaterBelow: 0.4
   wilds:
     enabled: 0
     roofed: 0
@@ -475,6 +477,8 @@ MonoBehaviour:
   maxEnemiesPerRoom: 3
   maxCastersPerRoom: 1
   maxCastersPerFloor: 6
+  eliteChance: 0.08
+  eliteFloors: 3
   features: []
   loot: {fileID: 11400000, guid: 6efc342faeb7b43498b4c0e01a447add, type: 2}
   merchantChance: 1

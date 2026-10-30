@@ -357,6 +357,7 @@ public class RunManager : Singleton<RunManager>
         var data = c.GetComponent<EnemyBrain>().Data;
         float xp = data != null && data.experience > 0 ? data.experience
                  : progress.rules.xpPerEnemy * Mathf.Clamp(c.Stats != null ? c.Stats.MaxHealth / 20f : 1f, .5f, 6f);
+        if (c.TryGetComponent<EliteEnemy>(out _)) xp *= EliteEnemy.Experience;   // an elite is worth twice
         progress.GainExperience(xp * (1 + (Floor - 1) * .12f));
     }
 }

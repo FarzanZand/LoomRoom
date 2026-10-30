@@ -836,12 +836,22 @@ public partial class DungeonGenerator
         return SetUpEnemy(go,new System.Random(Scramble(unchecked(PlacedSeed(t.position)^seed0*31))),rewards);
     }
 
+    // Elites are rolled on their own stream, so turning them on or off moves no other roll on the floor.
+    System.Random eliteRandom;
     Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null,bool boss=false)
     {
         var character=enemy.GetComponent<Character>();
-        if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber,boss);
+        // Now and then an elite (DungeonBiome.eliteChance): never the boss, an event's own actor or a named one.
+        float eliteFloors=0f;
+        if(!boss && character!=null && Biome!=null && Biome.eliteChance>0f && eliteRandom!=null && character.data is EnemyData { properName: false }
+           && enemy.GetComponent<EventActor>()==null && eliteRandom.NextDouble()<Biome.eliteChance)
+            eliteFloors=Mathf.Max(0f,Biome.eliteFloors);
+        if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber,boss,data.ExtraFloors(FloorNumber)+eliteFloors);
+        if(eliteFloors>0f)
+            EliteEnemy.Make(character,(EliteTrait)eliteRandom.Next(3),eliteFloors);
         var drop=lootRandom!=null ? enemy.GetComponent<DungeonLootDrop>() : null;
-        if(drop!=null){if(!drop.overrideLevelTable)drop.table=First(rewards,FloorLoot);drop.seed=lootRandom.Next();drop.floorNumber=FloorNumber;}
+        // Its loot rolls at the depth it grew to: an elite drops as if the floor were deeper.
+        if(drop!=null){if(!drop.overrideLevelTable)drop.table=First(rewards,FloorLoot);drop.seed=lootRandom.Next();drop.floorNumber=FloorNumber+Mathf.RoundToInt(eliteFloors);}
         return character;
     }
 

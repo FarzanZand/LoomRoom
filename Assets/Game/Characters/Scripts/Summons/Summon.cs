@@ -67,7 +67,7 @@ public class Summon : MonoBehaviour
         var body = go.GetComponent<Character>();
         if (body == null) { Destroy(go); return null; }
         var generator = parent != null ? parent.GetComponentInParent<DungeonGenerator>() : null;
-        if (generator != null && generator.LevelData != null && generator.LevelData.balance != null) generator.LevelData.balance.Apply(body, generator.FloorNumber);
+        if (generator != null && generator.LevelData != null && generator.LevelData.balance != null) generator.LevelData.balance.Apply(body, generator.FloorNumber, false, generator.LevelData.ExtraFloors(generator.FloorNumber));
         return Bind(body, summoner, settings, kind);
     }
 
