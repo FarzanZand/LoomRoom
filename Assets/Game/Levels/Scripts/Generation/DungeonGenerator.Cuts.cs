@@ -15,6 +15,33 @@ public partial class DungeonGenerator
     readonly List<TableCut.Hole> tableHoles = new();
     public List<TableCut.Hole> TableHoles => tableHoles;
 
+    // True when every way into the room can still be walked to from the others with the hole (and the room's earlier cuts)
+    // taken out of its floor, and no way in opens straight into the hole.
+    bool KeepsWaysJoined(int room, HashSet<Vector2Int> hole)
+    {
+        var open = new HashSet<Vector2Int>();
+        var ways = new List<Vector2Int>();
+        foreach (var c in Layout.RoomCells(room))
+        {
+            bool way = false;
+            foreach (var d in DungeonLayout.Neighbours) if (Layout.IsOpening(room, c, d)) { way = true; break; }
+            if (hole.Contains(c) || cutCells.Contains(c)) { if (way) return false; continue; }
+            open.Add(c);
+            if (way) ways.Add(c);
+        }
+        if (ways.Count < 2) return true;
+        var seen = new HashSet<Vector2Int> { ways[0] };
+        var queue = new Queue<Vector2Int>();
+        queue.Enqueue(ways[0]);
+        while (queue.Count > 0)
+        {
+            var c = queue.Dequeue();
+            foreach (var d in DungeonLayout.Neighbours) { var n = c + d; if (open.Contains(n) && seen.Add(n)) queue.Enqueue(n); }
+        }
+        foreach (var c in ways) if (!seen.Contains(c)) return false;
+        return true;
+    }
+
     void BuildCuts(GameObject instance, int index)
     {
         foreach (var cut in instance.GetComponentsInChildren<DungeonFloorCut>(true))
@@ -26,6 +53,9 @@ public partial class DungeonGenerator
             var cells = new HashSet<Vector2Int>();
             foreach (var p in cut.CellCentres(data.cellSize)) { var c = CellOf(p); if (Layout.InRoom(index, c)) cells.Add(c); }
             if (cells.Count == 0) { DestroyImmediate(cut.gameObject); continue; }
+            // A pit that would cut the room's ways in off from each other (a passage coming in beyond it) is left out: the
+            // floor past it could not be reached (a tavern's only passage led into a broken floor's far side).
+            if (cut.kind == DungeonFloorCut.Kind.Pit && !KeepsWaysJoined(index, cells)) { DestroyImmediate(cut.gameObject); continue; }
             cutCells.UnionWith(cells);
             float floorY = Cell(Layout.RoomCenter(index)).y;
             if (Board)

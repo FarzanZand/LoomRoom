@@ -166,6 +166,8 @@ public partial class DungeonGenerator
                     var n = d.roomCell + d.direction;
                     return Layout.InBounds(n) && Layout.RegionIds[n.x, n.y] == passage && !Layout.InRoom(0, d.roomCell) && !Layout.InRoom(MerchantRoom, d.roomCell);
                 });
+                // A door the doorway already has goes too: two leaves stood in one doorway.
+                doorways.RemoveAll(d => d.roomCell == cell && d.direction == dir);
                 doorways.Add((cell, dir));
                 doorPrefabs[(cell, dir)] = template.wayInDoor;
             }
