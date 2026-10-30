@@ -153,6 +153,8 @@ foreach (var s in specs)
 }
 
 DungeonBiome.Spawn S(string f, float w, int from = 1) => new DungeonBiome.Spawn { enemy = made.TryGetValue(f, out var g) ? g : null, weight = w, fromFloor = from };
+// An enemy from outside the Realms (the Deep Halls' caster is the Crypt Acolyte).
+DungeonBiome.Spawn X(string path, float w) => new DungeonBiome.Spawn { enemy = Load<UnityEngine.GameObject>(path), weight = w, fromFloor = 1 };
 void Set(string biome, params DungeonBiome.Spawn[] list)
 {
   var b = Load<DungeonBiome>($"Assets/Game/Levels/Dungeon1/Biomes/{biome}.asset"); if (b == null) return;
@@ -161,9 +163,10 @@ void Set(string biome, params DungeonBiome.Spawn[] list)
   UnityEditor.EditorUtility.SetDirty(b);
   sb.Append($"{biome}: {b.enemies.Length} enemies\n");
 }
-Set("Realms1", S("Hall Skeleton", 2), S("Hall Raider", 2), S("Bone Brute", 1), S("Undead Knight", .8f));
-Set("Realms2", S("Forge Guard", 2), S("Forge Shieldmaiden", 1.5f), S("Forge Miner", 2), S("Forge King", .35f));
-Set("Realms3", S("Pit Demon", 2.2f), S("Undead Knight", 1), S("Bone Brute", 1), S("Hall Raider", .8f));
+// Each realm: 3 melee, 1 archer, 1 caster (the user, 2026-10-30).
+Set("Realms1", S("Hall Skeleton", 2), S("Bone Brute", 1), S("Undead Knight", .8f), S("Hall Raider", 2), X("Assets/Game/Characters/Enemies/Crypt/Crypt Acolyte.prefab", 1));
+Set("Realms2", S("Forge Guard", 2), S("Forge Shieldmaiden", 1.5f), S("Forge Miner", 2), S("Hall Raider", 1), S("Forge King", .35f));
+Set("Realms3", S("Undead Knight", 1), S("Bone Brute", 1), S("Hall Skeleton", 1), S("Hall Raider", .8f), S("Pit Demon", 2.2f));
 UnityEditor.AssetDatabase.SaveAssets();
 } catch (System.Exception e) { sb.Append("ERR " + e); }
 System.IO.Directory.CreateDirectory("Temp/Realms");

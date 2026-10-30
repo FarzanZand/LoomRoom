@@ -17,6 +17,7 @@ MonoBehaviour:
   boardReveal: 0
   ownBoardPieces: 0
   ownLook: 1
+  plainKit: 0
   wilds:
     enabled: 1
     roofed: 1
@@ -261,6 +262,8 @@ MonoBehaviour:
   templateChance: 1
   roomCount: 0
   roomSizeScale: 1
+  tallRoomChance: 0
+  tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 1
   roomFeatures:
@@ -320,23 +323,14 @@ MonoBehaviour:
   - enemy: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}
     weight: 2
     fromFloor: 1
+  - enemy: {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
+    weight: 1
+    fromFloor: 1
   - enemy: {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
     weight: 2
     fromFloor: 1
-  - enemy: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
-    weight: 1
-    fromFloor: 1
-  - enemy: {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
-    weight: 1
-    fromFloor: 1
-  - enemy: {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
-    weight: 1
-    fromFloor: 1
   - enemy: {fileID: 8694082213274042645, guid: 201900fae6c0585468bd8ec588f74292, type: 3}
     weight: 2
-    fromFloor: 1
-  - enemy: {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
-    weight: 1
     fromFloor: 1
   encounterChance: {x: 0.78, y: 0.85}
   minEnemiesPerRoom: 2

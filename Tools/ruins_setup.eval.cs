@@ -5,7 +5,7 @@
 //    roofed): the room's own masonry with stone pillars half sunk into it, vines hung on it, roots, moss and rubble at its foot,
 //    the floor's torches hung on it.
 //  - The Crypt's (Cellars3) enemies and loot, no guardian, no tavern (its room is built for walls and a ceiling).
-//  - Dungeon1: the three as stages after the forests, one floor each, no boss.
+//  - Dungeon1: the three as stages 7-9, one floor each, no boss (kept where they are when run again).
 // The props are the forest's (Tools/forest_props.eval.cs). Writes Temp/Forest/ruins.txt.
 if (UnityEngine.Application.isPlaying) return "playing";
 const string F = "Assets/Game/Levels/Dungeon1/Forest";
@@ -125,6 +125,9 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   var biome = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
   if (biome == null) { biome = UnityEngine.ScriptableObject.CreateInstance<DungeonBiome>(); UnityEditor.AssetDatabase.CreateAsset(biome, path); }
   biome.CopyContentFrom(crypt);
+  // The Crypt's enemies but 3 melee, 1 archer, 1 caster (the user, 2026-10-30): no rats, bats or urn crawlers.
+  DungeonBiome.Spawn En(string n, float w) => new DungeonBiome.Spawn { enemy = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>($"Assets/Game/Characters/Enemies/Crypt/{n}.prefab"), weight = w, fromFloor = 1 };
+  biome.enemies = new[] { En("Crypt Soldier", 3), En("Crypt Warden", 2), En("Demon", 1), En("Crypt Archer", 2), En("Crypt Acolyte", 2) };
   biome.displayName = display; biome.entryMessage = entry; biome.entryLines = new DungeonMaster.Line[0];
   biome.kind = DungeonFloorKind.Dungeon;
   // Its own look: the Ruins styles everywhere (a hand-built room's own style too), no cellar starting room.
@@ -184,10 +187,13 @@ Make(1, "The Ruins", "Old walls, older than the crypt.", DungeonBiome.Lighting.A
 Make(2, "The White Ruins", "Pale stone, half buried.", DungeonBiome.Lighting.MoonlitStone, null, 12);
 Make(3, "The Black Ruins", "Something still lives here.", DungeonBiome.Lighting.Standard, "cyan", 14);
 
-// Dungeon1's floors 7, 8 and 9: one ruin each, after the forests.
+// Dungeon1's floors 7, 8 and 9: one ruin each, after the realms. Run again, they go back where they are; on a level
+// without them, at the end.
 var stages = new System.Collections.Generic.List<TableLevelData.BiomeStage>(level.stages);
+int at = stages.FindIndex(s => s != null && made.Contains(s.biome));
 stages.RemoveAll(s => s != null && made.Contains(s.biome));
-foreach (var b in made) stages.Add(new TableLevelData.BiomeStage { biome = b, floors = 1, boss = false });
+if (at < 0) at = stages.Count;
+foreach (var b in made) stages.Insert(at++, new TableLevelData.BiomeStage { biome = b, floors = 1, boss = false });
 level.stages = stages.ToArray();
 UnityEditor.EditorUtility.SetDirty(level);
 UnityEditor.AssetDatabase.SaveAssets();

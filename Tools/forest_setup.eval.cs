@@ -6,7 +6,7 @@
 //  - Glows (Props/Glow mushrooms <colour>): the glowing mushroom groups with a soft light under them.
 //  - The biomes (Levels/Dungeon1/Biomes/Forest1-3): a board, all rooms at once, its own board pieces and look, bigger and
 //    fewer rooms, no doors, wild banks with trees round them, ponds; the Catacombs' (Cellars2) enemies and loot.
-//  - Dungeon1: the three as stages 4-6 of one floor each, no boss.
+//  - Dungeon1: the three as stages 10-12 of one floor each, no boss (kept where they are when run again).
 // Writes Temp/Forest/setup.txt.
 if (UnityEngine.Application.isPlaying) return "playing";
 const string F = "Assets/Game/Levels/Dungeon1/Forest";
@@ -324,11 +324,12 @@ Make("Forest3", "The Moonlit Wood", "The moon is cold here.", clearing, moss, (1
   C(.5f, .62f, 1f), C(1.04f, .96f, .9f), C(.17f, .27f, .5f), new UnityEngine.Vector2(12f, 70f), 4,
   40f, 200f, C(.3f, .75f, 1f), 4f, Rule("Fireflies blue", 2, .2f, 1, .9f), Pool("Moonbeam blue", 2, .85f), Pool("Lit lantern stand", 0, .35f));
 
-// Dungeon1's floors 4, 5 and 6: one forest each, after the Crypt.
+// Dungeon1's floors 10, 11 and 12 (the user's order since 2026-10-30): one forest each. Run again, they go back where
+// they are; on a level without them, before the ruins (Tools/ruins_setup.eval.cs) when they are there.
 var stages = new System.Collections.Generic.List<TableLevelData.BiomeStage>(level.stages);
+int at = stages.FindIndex(s => s != null && made.Contains(s.biome));
 stages.RemoveAll(s => s != null && made.Contains(s.biome));
-// Right after the Crypt: before the ruins (Tools/ruins_setup.eval.cs) when they are there.
-int at = stages.FindIndex(s => s != null && s.biome != null && s.biome.name.StartsWith("Ruins"));
+if (at < 0) at = stages.FindIndex(s => s != null && s.biome != null && s.biome.name.StartsWith("Ruins"));
 if (at < 0) at = stages.Count;
 foreach (var b in made) stages.Insert(at++, new TableLevelData.BiomeStage { biome = b, floors = 1, boss = false });
 level.stages = stages.ToArray();
