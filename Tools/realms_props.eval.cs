@@ -279,7 +279,10 @@ void Dress(string pname, UnityEngine.GameObject holder, string dir)
     foreach (var (sx, sz) in new[] { (-1, -1), (1, -1), (-1, 1), (1, 1) })
     {
       var o = new UnityEngine.Vector3(b.center.x + sx * b.extents.x * .82f, b.min.y + b.size.y * .5f, b.center.z + sz * b.extents.z * .82f);
-      if (!UnityEngine.Physics.Raycast(o, UnityEngine.Vector3.down, out var hit, b.size.y)) continue;
+      // only the chandelier's own colliders (a plain Physics.Raycast could land on whatever stands in the open scene)
+      UnityEngine.RaycastHit hit = default; bool found = false; float best = float.MaxValue;
+      foreach (var col in cols) if (col.Raycast(new UnityEngine.Ray(o, UnityEngine.Vector3.down), out var h, b.size.y) && h.distance < best) { best = h.distance; hit = h; found = true; }
+      if (!found) continue;
       AddPart(holder, "Assets/Synty/PolygonDarkFantasy/Prefabs/Props/SM_Prop_Candle_03.prefab", $"Candle {++k}", dir, .16f, hit.point + UnityEngine.Vector3.up * .002f, UnityEngine.Quaternion.identity);
       if (flame != null)
       {

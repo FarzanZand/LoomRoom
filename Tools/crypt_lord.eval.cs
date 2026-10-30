@@ -171,6 +171,8 @@ try
       aim *= TPU / measured;
     }
     body.updateWhenOffscreen = false;
+    // A failed restyle leaves the joined mesh and an unsaved material on the body: nothing is saved then.
+    if (body.sharedMesh == joined || measured <= 0f || !UnityEditor.AssetDatabase.Contains(body.sharedMaterial)) throw new System.Exception("the restyle failed; the prefab was not saved");
     sb.Append($"restyled: {measured:F1} texels a metre\n");
     var data = root.GetComponent<Character>().data as EnemyData;
     if (data != null) { data.creatureKind = CreatureKind.Skeleton; data.gore ??= new GoreProfile(); data.gore.kind = BloodKind.BoneDust; UnityEditor.EditorUtility.SetDirty(data); }

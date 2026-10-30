@@ -71,17 +71,22 @@ foreach (var guid in UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { fo
         sb.Append($"  {System.IO.Path.GetFileNameWithoutExtension(path)}/{r.name}: {d:F0} -> scaled x{k:F2}\n");
       }
     }
-    // A heap reaching its cell's edge: drawn 2 cm in from it on each side, so its side lies off a wall beside it.
+    // A heap reaching its cell's edge sideways (x): drawn in until it stays 3 cm inside it, so a side never lies in the
+    // plane of a wall beside it (a corner heap's side wall). Its back (z) needs nothing: the generator slides every
+    // against-wall and corner piece back to 3 cm off the wall behind it (DungeonGenerator.BackToWall), and its front faces
+    // the room. Scaling the pieces' places converges in a few steps (the pieces themselves keep their size).
     if (folder.EndsWith("Groups"))
     {
-      var b = new UnityEngine.Bounds(root.transform.position, UnityEngine.Vector3.zero);
-      foreach (var r in root.GetComponentsInChildren<UnityEngine.Renderer>()) b.Encapsulate(r.bounds);
-      float reach = UnityEngine.Mathf.Max(UnityEngine.Mathf.Abs(b.min.x - root.transform.position.x), UnityEngine.Mathf.Abs(b.max.x - root.transform.position.x));
-      if (reach > .97f)
+      for (int step = 0; step < 6; step++)
       {
-        float k = .97f / reach;
+        var b = new UnityEngine.Bounds(root.transform.position, UnityEngine.Vector3.zero);
+        foreach (var r in root.GetComponentsInChildren<UnityEngine.Renderer>()) b.Encapsulate(r.bounds);
+        var o = root.transform.position;
+        float rx = UnityEngine.Mathf.Max(UnityEngine.Mathf.Abs(b.min.x - o.x), UnityEngine.Mathf.Abs(b.max.x - o.x));
+        if (rx <= .97f) { if (step > 0) sb.Append($"  {System.IO.Path.GetFileNameWithoutExtension(path)}: drawn in to {rx:F3} m to the side\n"); break; }
+        float k = .96f / rx;
         foreach (UnityEngine.Transform c in root.transform) c.localPosition = new UnityEngine.Vector3(c.localPosition.x * k, c.localPosition.y, c.localPosition.z);
-        changed = true; sb.Append($"  {System.IO.Path.GetFileNameWithoutExtension(path)}: reached {reach:F3} m to the side, drawn in\n");
+        changed = true;
       }
     }
     if (changed) UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, path);
