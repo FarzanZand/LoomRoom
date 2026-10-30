@@ -91,8 +91,8 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Price in gold at a merchant. Selling pays CurrencyManager's sell fraction of this. Zero uses the manager's fallback price.")]
     [Min(0)] public int value;
 
-    [Tooltip("Random loot tier: 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal. 0 = never dropped at random (quest items, keys, uniques placed by hand). Biome loot profiles pick gear by tier.")]
-    [Range(0, 4)] public int tier;
+    [Tooltip("Random loot tier: 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Elven/Crystal, 5 Warlord, 6 Verdant, 7 Shadow, 8 Grave, 9 Blackened, 10 Gilded, 11 Dread, 12 Royal. 0 = never dropped at random (quest items, keys, uniques placed by hand). Biome loot profiles pick gear by tier.")]
+    [Range(0, 12)] public int tier;
     [Tooltip("How often this item is picked among others of its tier and kind.")]
     [Min(0)] public float lootWeight = 1;
 

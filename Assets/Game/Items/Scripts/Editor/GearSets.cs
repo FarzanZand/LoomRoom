@@ -57,7 +57,7 @@ public static class GearSets
         // A death knight's spiked crown and dark spiked plate.
         (8, "Grave", new[] { "FANT_SKTN_04", "FANT_SKTN_01", "FANT_SKTN_01", "GOBL_FIGT_01", "FANT_SKTN_05" }),
         // A closed iron helm and blackened plate.
-        (9, "Blackened", new[] { "VIKG_WARR_05", "FANT_SKTN_05", "FANT_SKTN_02", "FANT_SKTN_02", "VIKG_WARR_05" }),
+        (9, "Blackened", new[] { "VIKG_WARR_05", "FANT_SKTN_05", "VIKG_WARR_05", "VIKG_WARR_05", "VIKG_WARR_05" }),
         // Horned gold elven plate.
         (10, "Gilded", new[] { "ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_02", "ELVN_WARR_01" }),
         // A gold-fanged skull helm and spiked purple and gold plate.
@@ -210,7 +210,7 @@ public static class GearSets
                     var baked = new Mesh(); skin.BakeMesh(baked, true);
                     var matrix = place * Matrix4x4.TRS(skin.transform.position, skin.transform.rotation, Vector3.one);
                     string side = code.EndsWith("L") ? "_l" : "_r";
-                    if (Shins.Contains(code)) KeepShin(baked, matrix, instance.transform, side, shin);
+                    if (slot == Slot.Boots && Shins.Contains(code)) KeepShin(baked, matrix, instance.transform, side, shin);
                     for (int sub = 0; sub < baked.subMeshCount; sub++) combine.Add(new CombineInstance { mesh = baked, subMeshIndex = sub, transform = matrix });
                 }
             }
@@ -533,6 +533,9 @@ public static class GearSets
         }
         Object.DestroyImmediate(placed);
         if (prefab == null) { log.Append($"{piece}: restyle failed\n"); return; }
+        // A blade that glows at full strength washes itself and its icon out to white: its glow is held lower.
+        var glow = prefab.GetComponent<MeshRenderer>().sharedMaterial;
+        if (glow != null && glow.IsKeywordEnabled("_EMISSION")) { glow.SetColor("_EmissionColor", Color.white * .45f); EditorUtility.SetDirty(glow); }
         Reload($"{dir}/{piece}.asset");
         string dataPath = $"{WeaponData}/{piece}.asset";
         var item = AssetDatabase.LoadAssetAtPath<ItemData>(dataPath);

@@ -27,7 +27,7 @@ TIERS = [
     ("Verdant", (34, 56, 36), ["FANT_SKTN_03", "ELVN_WARR_04", "ELVN_WARR_03", "ELVN_WARR_03", "ELVN_WARR_04"]),
     ("Shadow", (30, 34, 52), ["FANT_SORC_08", "FANT_SORC_02", "FANT_SORC_02", "FANT_SORC_02", "FANT_SORC_02"]),
     ("Grave", (28, 34, 30), ["FANT_SKTN_04", "FANT_SKTN_01", "FANT_SKTN_01", "GOBL_FIGT_01", "FANT_SKTN_05"]),
-    ("Blackened", (24, 24, 28), ["VIKG_WARR_05", "FANT_SKTN_05", "FANT_SKTN_02", "FANT_SKTN_02", "VIKG_WARR_05"]),
+    ("Blackened", (24, 24, 28), ["VIKG_WARR_05", "FANT_SKTN_05", "VIKG_WARR_05", "VIKG_WARR_05", "VIKG_WARR_05"]),
     ("Gilded", (30, 70, 80), ["ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_01", "ELVN_WARR_02", "ELVN_WARR_01"]),
     ("Dread", (36, 26, 40), ["FANT_SKTN_02", "FANT_SKTN_02", "FANT_SKTN_02", "FANT_SKTN_02", "FANT_SKTN_02"]),
     ("Royal", (40, 48, 80), ["ELVN_WARR_04", "ELVN_WARR_02", "ELVN_WARR_02", "ELVN_WARR_02", "ELVN_WARR_02"]),
