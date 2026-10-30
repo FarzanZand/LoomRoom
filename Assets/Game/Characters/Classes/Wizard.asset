@@ -18,6 +18,7 @@ MonoBehaviour:
   portrait: {fileID: 21300000, guid: e6ee88d68ebc4d64eaa831abd8ab994f, type: 3}
   sheetPortrait: {fileID: 21300000, guid: 9c6ad9da4d2c92b488ef94a9a0511a33, type: 3}
   sheetPortraitColour: {fileID: 21300000, guid: 559ae5ff8e8faf3409ff9d47178a7452, type: 3}
+  face: {fileID: 21300000, guid: 268e8962b77a3ac449a34090fa4f80ae, type: 3}
   miniature: {fileID: 7150585330265139970, guid: 5de9132990a12fe4c95693101094544e, type: 3}
   unlockFlag: 
   posterLine:
@@ -48,6 +49,6 @@ MonoBehaviour:
   health: 20
   mana: 50
   stamina: 30
-  skills: 000000000000000000000000140000000a0000000a0000000a000000
   healthPerLevel: 2
   manaPerLevel: 4
+  skills: 000000000000000000000000140000000a0000000a0000000a000000

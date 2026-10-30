@@ -107185,6 +107185,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AdventureClassSelectionUI
   portrait: {fileID: 1267663793}
+  useFace: 1
   className: {fileID: 1669862417}
   description: {fileID: 1666371417}
   resources: {fileID: 1470997447}
@@ -115573,6 +115574,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AdventureClassSelectionUI
   portrait: {fileID: 347853284}
   className: {fileID: 419765156}
+  useFace: 1
   description: {fileID: 279575271}
   resources: {fileID: 1723071892}
   attributes: {fileID: 0}
@@ -162440,6 +162442,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AdventureClassSelectionUI
   portrait: {fileID: 789484520}
   className: {fileID: 2126846479}
+  useFace: 0
   description: {fileID: 1332417804}
   resources: {fileID: 415846548}
   attributes: {fileID: 721257612}
@@ -375308,7 +375311,7 @@ MonoBehaviour:
   uncommon: {r: 0.09, g: 0.42, b: 0.29, a: 1}
   rare: {r: 0.12, g: 0.3, b: 0.64, a: 1}
   unique: {r: 0.52, g: 0.34, b: 0.06, a: 1}
-  legendary: {r: 0.75, g: 0.08, b: 0.06, a: 1}
+  legendary: {r: 0.58, g: 0.18, b: 0.15, a: 1}
   relic: {r: 0.58, g: 0.17, b: 0.06, a: 1}
   spoils: {r: 0.58, g: 0.22, b: 0.86, a: 1}
 --- !u!114 &5441364035704603308

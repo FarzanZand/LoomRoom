@@ -9,6 +9,8 @@ using UnityEngine.UI;
 public class AdventureClassSelectionUI : MonoBehaviour
 {
     public Image portrait;
+    [Tooltip("Show the class's face (AdventurerClass.face, a close square crop) instead of its whole portrait: for a square portrait box, like the class card at the table.")]
+    public bool useFace;
     public TMP_Text className, description, resources;
     [Tooltip("Optional: the class's own points in the four attributes (+1, -2), added to the sheet's scores once the run starts; raised in Raised Color, lowered in Lowered Color.")]
     public TMP_Text attributes;
@@ -85,7 +87,8 @@ public class AdventureClassSelectionUI : MonoBehaviour
         var c = progress.selectedClass;
         var classes = progress.rules.classes;
 
-        portrait.sprite = c.portrait; portrait.enabled = c.portrait != null;
+        var picture = useFace && c.face != null ? c.face : c.portrait;
+        portrait.sprite = picture; portrait.enabled = picture != null;
         className.text = c.displayName;
         description.text = c.description;
         // What the run starts with: the class's numbers plus its kit and the character sheet (AdventurerProgress.StartingPools).

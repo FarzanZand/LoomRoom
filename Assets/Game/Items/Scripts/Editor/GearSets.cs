@@ -313,8 +313,12 @@ public static class GearSets
         }
     }
 
-    // Where a part goes. Gloves: each hand and forearm turned fingers up about the wrist, leaning out a little, the two
-    // side by side; everything else as it stands.
+    // Where a part goes. Gloves: laid out as a pair is shown on a shop's sign (the user's reference, 2026-10-30): each hand
+    // and forearm turned fingers down about the wrist with the back of the hand to the front (+Z, what the icon and a viewer
+    // see), both tilted so the fingers point down and to the viewer's left, the left glove on the viewer's left a little
+    // lower and in front, overlapping the right one (they stand GloveDepth apart front to back, so they never cut into each
+    // other); everything else as it stands.
+    const float GloveTilt = 20, GloveApart = .065f, GloveDrop = .04f, GloveDepth = .06f;
     static Matrix4x4 Layout(Slot slot, string code, Transform rig)
     {
         if (slot != Slot.Gloves) return Matrix4x4.identity;
@@ -322,8 +326,8 @@ public static class GearSets
         string side = left ? "_l" : "_r";
         var wrist = Find(rig, "hand" + side); var elbow = Find(rig, "lowerarm" + side);
         if (wrist == null || elbow == null) return Matrix4x4.identity;
-        var turn = Quaternion.Euler(0, 0, left ? -12 : 12) * Quaternion.FromToRotation(wrist.position - elbow.position, Vector3.up);
-        var offset = new Vector3(left ? -.11f : .11f, 0, 0);
+        var turn = Quaternion.Euler(0, 0, 180 + GloveTilt) * Quaternion.Euler(0, left ? -90 : 90, 0) * Quaternion.FromToRotation(wrist.position - elbow.position, Vector3.up);
+        var offset = left ? new Vector3(GloveApart, -GloveDrop, GloveDepth) : new Vector3(-GloveApart, GloveDrop, -GloveDepth);
         return Matrix4x4.Translate(offset) * Matrix4x4.Rotate(turn) * Matrix4x4.Translate(-wrist.position);
     }
     static Transform Find(Transform root, string name)

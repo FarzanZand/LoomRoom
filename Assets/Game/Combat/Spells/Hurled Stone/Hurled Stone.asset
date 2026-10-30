@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Hurled Stone
   description: A stone torn from the ground and thrown. Cheap, and it knocks what
     it hits off balance.
-  icon: {fileID: 21300000, guid: 8b3a24607a8a42347b64de5d5cf286d7, type: 3}
+  icon: {fileID: 21300000, guid: 99b99f65337d5414287cc9e05986b989, type: 3}
   manaCost: 8
   power: 12
   castSeconds: 0.45

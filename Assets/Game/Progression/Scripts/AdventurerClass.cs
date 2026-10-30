@@ -31,6 +31,8 @@ public class AdventurerClass : ScriptableObject
     public Sprite sheetPortrait;
     [PreviewField(64), Tooltip("The same picture in colour, used instead when ProgressionManager > Meta progression > Sheet > Colour Sheet Portraits is on (Tools/sheet_portraits.py makes both).")]
     public Sprite sheetPortraitColour;
+    [PreviewField(64), Tooltip("A close head-and-shoulders square of the portrait, for the class card's square box at the table (the whole painting showed small in it). Tools/class_faces.py makes it.")]
+    public Sprite face;
     [Tooltip("Model shown as a miniature on the memorial table in the room.")]
     [AssetsOnly] public GameObject miniature;
     [Tooltip("Empty = available from the start. Otherwise the progression flag that unlocks it.")]
@@ -49,10 +51,10 @@ public class AdventurerClass : ScriptableObject
     [Title("Attributes"), InfoBox("Added to the character sheet's scores in a run of this class. Each point above the base gives what its track says (ProgressionManager > Meta progression > Tracks): Strength damage, Dexterity critical chance, Constitution health and stamina, Intelligence mana and spell power.")]
     public int strength, dexterity, constitution, intelligence;
     public float health = 30, mana = 20, stamina = 30;
-
-    [Title("Skills"), InfoBox("Swords, Maces, Blocking, Sorcery, Thaumaturgy, Athletics, Trading")]
     [Min(0), Tooltip("Most health and mana each character level past the first adds in a run (a little: 2 to 4).")]
     public float healthPerLevel = 3, manaPerLevel = 3;
+
+    [Title("Skills"), InfoBox("Swords, Maces, Blocking, Sorcery, Thaumaturgy, Athletics, Trading")]
     public int[] skills = new int[AdventureSkills.Count];
 
     public bool Unlocked => string.IsNullOrEmpty(unlockFlag) || (ProgressionManager.HasInstance && ProgressionManager.Instance.GetFlag(unlockFlag) > 0);

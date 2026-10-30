@@ -18,6 +18,7 @@ MonoBehaviour:
   portrait: {fileID: 21300000, guid: 598e457b5eef2d141864deec0bfc5842, type: 3}
   sheetPortrait: {fileID: 21300000, guid: a3b1d3ef779e96548aec6c82267c9907, type: 3}
   sheetPortraitColour: {fileID: 21300000, guid: 91e842b5d9149c54eb026f0fa306e321, type: 3}
+  face: {fileID: 21300000, guid: f0ea1e66902858746b42aba17e0ccbae, type: 3}
   miniature: {fileID: 5899440338459577506, guid: 442a0ca452f074346bca234eea4306fc, type: 3}
   unlockFlag: class.rogue
   posterLine:
@@ -48,6 +49,6 @@ MonoBehaviour:
   health: 28
   mana: 40
   stamina: 40
-  skills: 0f000000000000000000000005000000000000000a0000000000000014000000
   healthPerLevel: 3
   manaPerLevel: 2
+  skills: 0f000000000000000000000005000000000000000a0000000000000014000000

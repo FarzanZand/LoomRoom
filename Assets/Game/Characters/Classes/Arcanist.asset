@@ -18,6 +18,7 @@ MonoBehaviour:
   portrait: {fileID: 21300000, guid: 3091beaa89a5dfb42b8ed1e347aa791a, type: 3}
   sheetPortrait: {fileID: 21300000, guid: 3836c034e2e8e81438b6082ddf2eeb92, type: 3}
   sheetPortraitColour: {fileID: 21300000, guid: b3956530060c98643b051ed4b3a11ef3, type: 3}
+  face: {fileID: 21300000, guid: 13e36eb57324f3545a739a35f522ecb4, type: 3}
   miniature: {fileID: 4805614000556487136, guid: 5c624b2e55c5cf7469acc41b4e524e81, type: 3}
   unlockFlag: class.spellblade
   posterLine:
@@ -48,6 +49,6 @@ MonoBehaviour:
   health: 25
   mana: 48
   stamina: 30
-  skills: 0f000000000000000000000014000000000000000a0000000500000000000000
   healthPerLevel: 3
   manaPerLevel: 3
+  skills: 0f000000000000000000000014000000000000000a0000000500000000000000
