@@ -88,9 +88,11 @@ public class EliteEnemy : MonoBehaviour
 
     void OnDamaged(DamageInfo info) { if (stats != null && stats.CurrentHealth <= 0f) RemoveOutline(); }
 
+    // Switched off at once, not only destroyed: Destroy waits for the frame's end, and DeathBurst splits every enabled
+    // skinned mesh in that frame's LateUpdate, which turned the shells into flat-coloured bone pieces on the floor.
     void RemoveOutline()
     {
-        foreach (var s in shells) if (s != null) Destroy(s);
+        foreach (var s in shells) if (s != null) { s.SetActive(false); Destroy(s); }
         shells.Clear();
     }
 
