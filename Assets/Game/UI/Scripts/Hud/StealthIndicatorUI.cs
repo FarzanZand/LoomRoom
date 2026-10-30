@@ -3,9 +3,9 @@ using UnityEngine;
 
 // Sneaking (the table player crouched): an eye on the HUD, open and orange while an enemy sees them, shut while none
 // does. Crouched, the ghost's look in grey comes over the view (look, Stealth look: Ghost look with its tints made
-// neutral grey) at no more than half strength: a little of it while crouched, the half while hidden (seen by no one),
-// where what they hear is also muffled (a low-pass filter on the audio listener); it eases back as they are seen or
-// stand up. The look's settings are on ScreenManager (Stealth look).
+// neutral grey) at no more than half strength: a little of it while crouched, the half while hidden (seen by no one);
+// it eases back as they are seen or stand up. Sound is left as it is (the low-pass muffle was removed on 2026-10-30,
+// the user's call). The look's settings are on ScreenManager (Stealth look).
 public class StealthIndicatorUI : MonoBehaviour
 {
     [SerializeField] CanvasGroup visibility;
@@ -15,10 +15,7 @@ public class StealthIndicatorUI : MonoBehaviour
     Tween transition;
     bool? lastSeen;
     float hiddenAmount, crouchAmount;
-    AudioLowPassFilter muffle;
     UnityEngine.Rendering.Volume volume;
-
-    const float OpenCutoff = 22000f;
 
     void OnEnable() { if (visibility != null) visibility.alpha = 0; lastSeen = null; }
     void OnDisable()
@@ -64,7 +61,6 @@ public class StealthIndicatorUI : MonoBehaviour
         var screen = ScreenManager.HasInstance ? ScreenManager.Instance : null;
         var look = screen != null ? screen.stealthLook : null;
         float hiddenLook = screen != null ? screen.stealthHiddenLook : 0f, crouchedLook = screen != null ? screen.stealthCrouchedLook : 0f;
-        float muffledCutoff = screen != null ? screen.stealthMuffledCutoff : OpenCutoff;
         float k = hiddenAmount * hiddenAmount * (3f - 2f * hiddenAmount);
         float c = crouchAmount * crouchAmount * (3f - 2f * crouchAmount);
         // The look: a little while crouched, more while hidden; steady, no pulsing.
@@ -81,17 +77,5 @@ public class StealthIndicatorUI : MonoBehaviour
             volume.weight = weight;
             volume.enabled = weight > 0f;
         }
-        // The filter lives on the listener (the camera the player hears through); added the first time it is needed.
-        if (muffle == null)
-        {
-            if (k <= 0f) return;
-            var listener = FindAnyObjectByType<AudioListener>();
-            if (listener == null) return;
-            muffle = listener.GetComponent<AudioLowPassFilter>();
-            if (muffle == null) { muffle = listener.gameObject.AddComponent<AudioLowPassFilter>(); muffle.lowpassResonanceQ = 1f; }
-        }
-        // Eased in the log of the frequency, so the muffling sounds even all the way.
-        muffle.cutoffFrequency = Mathf.Exp(Mathf.Lerp(Mathf.Log(OpenCutoff), Mathf.Log(muffledCutoff), k));
-        muffle.enabled = k > 0f;
     }
 }

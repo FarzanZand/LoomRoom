@@ -258,10 +258,11 @@ public class EnemyAttackRunner
         float sinceStart = Time.time - attackStartedAt;
         if (current.IsRanged)
         {
-            if (fallbackHitPending) Motor.LookAt(target.transform.position, current.IsBowShot ? current.bowShot.aimTrackSpeed : current.spellCast.aimTrackSpeed);
+            if (fallbackHitPending && Perception.TargetVisible) Motor.LookAt(target.transform.position, current.IsBowShot ? current.bowShot.aimTrackSpeed : current.spellCast.aimTrackSpeed);
             else CommitDirection();
         }
-        else if (!directionCommitted && sinceStart < CommitTime && brain.Profile.windupTrackSpeed > 0f)
+        // Only a target it can see is tracked (a veiled player who slips aside is swung past).
+        else if (!directionCommitted && sinceStart < CommitTime && brain.Profile.windupTrackSpeed > 0f && Perception.TargetVisible)
         {
             Motor.LookAt(target.transform.position, brain.Profile.windupTrackSpeed);
         }

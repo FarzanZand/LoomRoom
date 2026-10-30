@@ -413,6 +413,8 @@ foreach (var (pname, src, height, fire, flat) in list)
       box.center = new UnityEngine.Vector3(0, 1.5f, stand * .5f); box.size = new UnityEngine.Vector3(b2.size.x * .8f, 3f, stand);
     }
   }
+  // A dead body is walked over like a little hill, not blocked (the user, 2026-10-30): a low mound over its footprint.
+  else if (pname.StartsWith("Dead ")) BodyMound.Apply(holder, UnityEngine.Vector3.zero, new UnityEngine.Vector2(b2.size.x * .9f, b2.size.z * .9f));
   else if (!flat)
   {
     var box = holder.AddComponent<UnityEngine.BoxCollider>();

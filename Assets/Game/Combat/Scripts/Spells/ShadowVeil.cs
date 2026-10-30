@@ -19,8 +19,9 @@ public class ShadowVeilSettings
     [Range(0, 1)] public float endVolume = .8f;
 }
 
-// Shadow Veil on a player: for a while no enemy sees them beyond arm's reach, even one already hunting them (it goes to
-// where it last saw them and searches). The view takes the hidden look and sound is muffled, as when sneaking unseen.
+// Shadow Veil on a player: for a while no enemy sees them unless they stand within arm's reach in front of it, even one
+// already hunting them (it goes to where it last saw them and searches, and no longer turns to follow them, so they can
+// get behind it); their steps lead no one to them. The view takes the hidden look, as when sneaking unseen.
 // The first blow struck from the veil is a backstab from any side and ends it; casting another spell ends it too.
 // Added to the player at the cast; removes itself when the veil is over.
 public class ShadowVeil : MonoBehaviour
@@ -77,6 +78,12 @@ public class ShadowVeil : MonoBehaviour
     public static bool IsVeiled(Character c)
     {
         foreach (var v in active) if (v != null && v.player == c) return true;
+        return false;
+    }
+    public static bool IsVeiled(Transform t)
+    {
+        if (active.Count == 0 || t == null) return false;
+        foreach (var v in active) if (v != null && v.player != null && v.player.transform == t) return true;
         return false;
     }
 

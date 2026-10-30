@@ -29,8 +29,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField] string blockStrainParam       = "BlockStrain";
     [SerializeField, Tooltip("Bool the LeftArm layer reads: the shield is lowered out of the way while the weapon arm attacks.")]
     string shieldAwayParam = "ShieldAway";
-    [SerializeField, Min(0f), Tooltip("Seconds the shield stays down after an attack ends, so it doesn't come up between combo hits, only once the fighting pauses.")]
-    float shieldAwayLinger = 1f;
+    [SerializeField, Min(0f), Tooltip("Seconds the shield stays down once the swing hands back to idle with nothing queued. Kept tiny: it only bridges the frame between two chained combo hits (the shield's way up can't be interrupted, so one stray frame would raise it).")]
+    float shieldBackGrace = .05f;
     [SerializeField] string hurtTrigger            = "Hurt";
     [SerializeField] string windupSpeedParam       = "WindupSpeed";
     [SerializeField] string releaseSpeedParam      = "ReleaseSpeed";
@@ -106,6 +106,19 @@ public class PlayerCombat : MonoBehaviour, IBlocker
                 most = Mathf.Max(most, Mathf.Clamp01(info.normalizedTime));
         }
         return progressSeen = most;
+    }
+    // True while an attack state is blending out into a state that is no attack (the swing's hand-back to idle).
+    bool HandingBack()
+    {
+        if (!AnimatorHelper.Ready(armsAnimator)) return false;
+        for (int layer = 0; layer < armsAnimator.layerCount; layer++)
+        {
+            if (!armsAnimator.IsInTransition(layer)) continue;
+            var now = armsAnimator.GetCurrentAnimatorStateInfo(layer);
+            var next = armsAnimator.GetNextAnimatorStateInfo(layer);
+            if (IsAttackState(now) && !IsAttackState(next)) return true;
+        }
+        return false;
     }
     bool cancelling;   // a cancelled windup blending out: already harmless, the shield may rise
     [SerializeField] string attackCancelParam = "AttackCancel";
@@ -466,8 +479,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         bool attackingNow = IsAttacking;
         if (!attackingNow) windingUp = false;
         // The shield goes down for the whole attack (a combo hit queued counts, unless block is held: that press was
-        // a shield bash) and comes back after the last one.
-        if (attackingNow || Combo && comboQueuedUntil >= Time.time && !secondary) shieldAwayUntil = Time.time + shieldAwayLinger;
+        // a shield bash) and comes back the moment the last one hands back to idle (the user, 2026-10-30: it waited a
+        // second). The swing's own hand-back timing is the controller's and is left alone.
+        bool comboQueued = Combo && comboQueuedUntil >= Time.time && !secondary;
+        if (attackingNow && !HandingBack() || comboQueued) shieldAwayUntil = Time.time + shieldBackGrace;
         AnimatorHelper.SetBool(armsAnimator, shieldAwayParam, Time.time < shieldAwayUntil);
         // A queued press stays valid while a swing is in progress (it chains at the recovery's cancel point);
         // when idle it expires after the buffer window like any late press.

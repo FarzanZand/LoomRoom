@@ -347,7 +347,8 @@ public class EnemyBrain : MonoBehaviour
         {
             // Catch breath, but keep the eyes on the target so the next move is instant.
             // A committed swing never tracks. Just after its own swing it steps back first.
-            if (Time.time < stepBackUntil && Perception.Target != null && State != EnemyState.Attack)
+            // Only from a target it can see: a veiled player must not be followed by its step back or its eyes.
+            if (Time.time < stepBackUntil && Perception.Target != null && Perception.TargetVisible && State != EnemyState.Attack)
             {
                 Vector3 back = transform.position - Perception.Target.transform.position; back.y = 0f;
                 float pace = Profile.spacingSway > 0f ? FootworkPace : ChaseSpeed * Profile.stepBackSpeedFraction;
@@ -359,14 +360,14 @@ public class EnemyBrain : MonoBehaviour
                 else Motor.Stop();
             }
             else Motor.Stop();
-            if (Perception.Target != null && State != EnemyState.Attack)
+            if (Perception.Target != null && Perception.TargetVisible && State != EnemyState.Attack)
                 Motor.LookAt(Perception.Target.transform.position, Profile.attackFaceSpeed);
             UpdateAnimator();
             return;
         }
 
         // Personal space: an enemy that is not swinging never stands inside its target; it steps back out.
-        if (State == EnemyState.Chase && !IsSwinging && Perception.Target != null && Tuning != null)
+        if (State == EnemyState.Chase && !IsSwinging && Perception.Target != null && Perception.TargetVisible && Tuning != null)
         {
             Vector3 away = transform.position - Perception.Target.transform.position; away.y = 0f;
             if (away.magnitude < Tuning.personalSpace && away.sqrMagnitude > .0001f)
@@ -547,10 +548,13 @@ public class EnemyBrain : MonoBehaviour
 
         if (!Perception.TargetVisible)
         {
-            // Lost sight: run to the last known spot, search a bit, then give up.
+            // Lost sight: run to the last known spot, search a bit, then give up. A veiled target has vanished on the
+            // spot (that spot is where it still stands): the enemy stops where it is and looks round instead, so the
+            // player can slip behind it (the user, 2026-10-30).
             Motor.ClearLookTarget();
             loseSightTimer -= Time.deltaTime;
-            Motor.MoveTo(Perception.LastKnownTargetPosition);
+            if (ShadowVeil.IsVeiled(target)) Motor.Stop();
+            else Motor.MoveTo(Perception.LastKnownTargetPosition);
             if (loseSightTimer <= 0f)
             {
                 if (giveUpTimer < 0f) giveUpTimer = p.maxSearchTime;

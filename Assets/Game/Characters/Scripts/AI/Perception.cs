@@ -70,8 +70,11 @@ public class Perception : MonoBehaviour
         Vector3 origin   = transform.position + Vector3.up * Profile.eyeHeight;
         Vector3 toTarget = target.position + Vector3.up * 0.9f - origin;
         float   dist     = toTarget.magnitude;
-        // Shadow Veil: unseen beyond arm's reach, even by an enemy already hunting.
-        if (ShadowVeil.Hides(target, dist)) return false;
+        // Shadow Veil: unseen, even by an enemy already hunting, unless the target stands within arm's reach in front of
+        // its eyes (close awareness and an enemy's tracking don't count: the player must be able to creep round behind).
+        if (ShadowVeil.IsVeiled(target))
+            return !ShadowVeil.Hides(target, dist) && Vector3.Angle(transform.forward, toTarget) <= Profile.fieldOfView * 0.5f &&
+                LineOfSight.Clear(origin, origin + toTarget, Profile.obstacleMask, transform, target);
 
         float closeScale = 1, sightScale = 1;
         if (!trackingTarget && CombatManager.HasInstance) CombatManager.Instance.StealthScales(target, out closeScale, out sightScale);
@@ -88,6 +91,8 @@ public class Perception : MonoBehaviour
         // Damage uses NotifyAttackedFrom separately; this toggle only controls sounds.
         if (Profile == null || !Profile.investigateNoise) return;
         if (source != null && self != null && !FactionRules.IsHostile(self.Faction, source.Faction)) return;
+        // A veiled player makes no sound worth following (their steps would lead the enemy straight to them).
+        if (source != null && ShadowVeil.IsVeiled(source)) return;
         float reach = radius + Profile.hearingRadius;
         float distance = (position - transform.position).sqrMagnitude;
         if (distance > reach * reach) return;

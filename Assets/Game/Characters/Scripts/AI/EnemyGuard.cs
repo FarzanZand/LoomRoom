@@ -67,7 +67,8 @@ public class EnemyGuard : MonoBehaviour
     // is at the enemy's own head height, so the body only turns, never bows).
     public void Aim(Animator a)
     {
-        var target = brain.Perception != null ? brain.Perception.Target : null;
+        // Only a target it can see: the chest and head never follow a veiled player round.
+        var target = brain.Perception != null && brain.Perception.TargetVisible ? brain.Perception.Target : null;
         var head = a.GetBoneTransform(HumanBodyBones.Head);
         Vector3 to = target != null ? target.transform.position - transform.position : Vector3.zero; to.y = 0f;
         if (stance <= 0f || head == null || to.sqrMagnitude < .01f) { a.SetLookAtWeight(0f); return; }
