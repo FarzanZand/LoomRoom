@@ -95,6 +95,7 @@ var spots = new System.Collections.Generic.Dictionary<string, (float x, float z,
 {
   ["Warrior"] = (-465.5f, 438.5f, -10f), ["Cleric"] = (-463f, 447.5f, 8f),
   ["Wizard"] = (-466f, 455.5f, -6f), ["Arcanist"] = (-460.5f, 460f, 14f),
+  ["Rogue"] = (-459.5f, 443f, -4f),
 };
 foreach (var e in wall.posters)
 {

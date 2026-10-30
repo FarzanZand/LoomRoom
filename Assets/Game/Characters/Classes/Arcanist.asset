@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AdventurerClass
   id: spellblade
   displayName: Arcanist
-  description: Sword and a Fireball Tome. Quick, but fragile.
+  description: Sword and a Dice Portal Tome. Quick, but fragile.
   portrait: {fileID: 21300000, guid: 3091beaa89a5dfb42b8ed1e347aa791a, type: 3}
   sheetPortrait: {fileID: 21300000, guid: 3836c034e2e8e81438b6082ddf2eeb92, type: 3}
   sheetPortraitColour: {fileID: 21300000, guid: b3956530060c98643b051ed4b3a11ef3, type: 3}
@@ -29,15 +29,18 @@ MonoBehaviour:
   equipment:
   - {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
   spells:
-  - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
+  - {fileID: 11400000, guid: ff3a6113be2f6a04a86c71e946faaf28, type: 2}
   supplies:
   - item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
     count: 1
+    used: 0
   - item: {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
     count: 2
+    used: 0
   - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
     count: 2
-  leftHand: 1
+    used: 0
+  leftHand: 13
   strength: -1
   dexterity: 1
   constitution: -1

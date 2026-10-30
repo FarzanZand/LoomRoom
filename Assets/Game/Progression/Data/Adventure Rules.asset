@@ -17,10 +17,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f877338915d156f43a23123fd35c9fd5, type: 2}
   - {fileID: 11400000, guid: 6badc009586d2324e822e70d3affa468, type: 2}
   - {fileID: 11400000, guid: 54e98d70248c6cf468492e81ae98d0d0, type: 2}
-  startingMemorials:
-  - {fileID: 11400000, guid: 720138e1d8556ba48b73655c9111a72d, type: 2}
-  - {fileID: 11400000, guid: 720138e1d8556ba48b73655c9111a72d, type: 2}
-  - {fileID: 11400000, guid: 6badc009586d2324e822e70d3affa468, type: 2}
+  - {fileID: 11400000, guid: 44669be9e4d991d49a58e4866c2edc8a, type: 2}
   skills:
   - {fileID: 11400000, guid: e05bb62fa821f9840870144c8d7992e8, type: 2}
   - {fileID: 11400000, guid: 0d8b0b9fe553bf440b6486f87e4cf11b, type: 2}
@@ -44,7 +41,3 @@ MonoBehaviour:
   intelligenceMana: 0
   intelligenceSpell: 0.035
   dexteritySpeed: 0.01
-  perceptionRangePerPoint: 0.04
-  perceptionRangeCap: 0.5
-  charismaDiscountPerPoint: 0.02
-  charismaDiscountCap: 0.3

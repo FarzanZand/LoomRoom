@@ -129,6 +129,7 @@ var placed = new System.Collections.Generic.Dictionary<string, (float x, float y
 {
   ["Warrior"] = (-15f, 4f, -2.5f, 0, 0), ["Cleric"] = (.5f, -6.5f, 3f, 2, 1),
   ["Wizard"] = (9f, 10.5f, -1.5f, 1, 2), ["Arcanist"] = (15.5f, -9f, 2f, 1, 3),
+  ["Rogue"] = (25f, 4f, -2f, 0, 1),
 };
 float right = 0; foreach (var e in wall.posters) if (e.poster != null) right = UnityEngine.Mathf.Max(right, e.poster.transform.localPosition.x);
 for (int ci = 0; ci < classes.Count; ci++)

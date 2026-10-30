@@ -3,8 +3,9 @@
 graphite on the sheet's paper, the look the sheet uses) and <Class> colour.png (the painting as it is; picked with
 ProgressionManager > Meta progression > Sheet > Colour Sheet Portraits). The sheet's round mask cuts them to a circle.
 
-    python Tools/sheet_portraits.py
+    python Tools/sheet_portraits.py [<class> ...]     (all of them without names)
 """
+import sys
 import numpy as np
 from PIL import Image, ImageFilter, ImageOps
 
@@ -16,6 +17,7 @@ CROPS = {
     "Cleric": ("DwarfWarrior", 800, 880, 1200),
     "Wizard": ("WomanMage", 760, 760, 1000),
     "Arcanist": ("HalfOrcAssassin", 780, 600, 960),
+    "Rogue": ("WomanDuellist", 700, 520, 900),
 }
 PAPER = (236, 222, 186)   # the sheet's paper
 INK = (62, 54, 48)        # graphite
@@ -47,7 +49,7 @@ def pencil(im):
 
 
 if __name__ == "__main__":
-    for name in CROPS:
+    for name in sys.argv[1:] or CROPS:
         im = crop(name)
         im.save(OUT + f"{name} colour.png")
         pencil(im).save(OUT + f"{name} pencil.png")
