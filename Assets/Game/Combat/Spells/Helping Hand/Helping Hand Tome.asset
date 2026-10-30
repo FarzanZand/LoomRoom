@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: b418492cd3f844dfba1db222c1b1d50a
   weaponCategory: 0
   spell: {fileID: 11400000, guid: 3c71fd52845ece14eb5626b1ae673223, type: 2}
+  unlocksClass: {fileID: 0}
   rarity: 6
   description: Hold it in your left hand to cast Helping Hand. Ask the Dungeon Master
     for a hand. He appears in front of you and holds it over you, and the light from

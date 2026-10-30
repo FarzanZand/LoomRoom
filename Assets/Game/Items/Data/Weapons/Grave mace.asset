@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: ca1254f5ad9dfb44eab2336cc7ad3302
   weaponCategory: 1
   spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
   rarity: 0
   description: Heavy and slow.
   icon: {fileID: 21300000, guid: 4ffe1ea518222744aa47f292f4e917e2, type: 3}

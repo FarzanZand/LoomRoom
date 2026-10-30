@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 77eacf97507244b096ad3ddd5c75f3dd
   weaponCategory: 0
   spell: {fileID: 11400000, guid: 0bdecc792dcdd88489cc3ce7651a1a04, type: 2}
+  unlocksClass: {fileID: 0}
   rarity: 6
   description: Hold it in your left hand to cast Hurled Stone. A stone torn from
     the ground and thrown. Cheap, and it knocks what it hits off balance.
@@ -66,4 +67,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65

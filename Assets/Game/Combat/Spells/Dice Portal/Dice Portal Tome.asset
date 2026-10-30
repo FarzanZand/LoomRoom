@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: ead43052cf5e4574bf1b99de38ebc82f
   weaponCategory: 0
   spell: {fileID: 11400000, guid: 69da24cad680baf43a693ad1c531cb85, type: 2}
+  unlocksClass: {fileID: 0}
   rarity: 6
   description: Hold it in your left hand to cast Dice Portal. Ask the Dungeon Master
     for a hand. A portal opens beside the enemy you aim at, and a die shoots out

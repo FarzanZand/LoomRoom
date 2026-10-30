@@ -19,7 +19,7 @@ MonoBehaviour:
   sheetPortrait: {fileID: 21300000, guid: a3b1d3ef779e96548aec6c82267c9907, type: 3}
   sheetPortraitColour: {fileID: 21300000, guid: 91e842b5d9149c54eb026f0fa306e321, type: 3}
   miniature: {fileID: 5899440338459577506, guid: 442a0ca452f074346bca234eea4306fc, type: 3}
-  unlockFlag: 
+  unlockFlag: class.rogue
   posterLine:
     text: The Rogue. Quick hands. Keep an eye on your purse.
     voice: {fileID: 0}

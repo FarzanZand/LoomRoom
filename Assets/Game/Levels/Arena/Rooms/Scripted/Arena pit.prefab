@@ -667,6 +667,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 1
   delay: 3.5
+  unlocks: {fileID: 11400000, guid: 54e98d70248c6cf468492e81ae98d0d0, type: 2}
 --- !u!1 &3033825767245881892
 GameObject:
   m_ObjectHideFlags: 0

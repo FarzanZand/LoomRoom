@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 8b2c16b37ccf4af7ac63fb9fe6bb805e
   weaponCategory: 0
   spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
   rarity: 0
   description: 
   icon: {fileID: 21300000, guid: ad3829c37c76fd44b8c435f60d460511, type: 3}

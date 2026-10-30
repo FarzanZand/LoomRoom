@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 6f8e932225164bdc9c18244acf0c5313
   weaponCategory: 0
   spell: {fileID: 11400000, guid: 632c7de4999c5744085e30aba9849cab, type: 2}
+  unlocksClass: {fileID: 0}
   rarity: 6
   description: Hold it in your left hand to cast Molten Boulder. A lump of glowing
     rock, thrown in an arc. It bursts where it lands and leaves the ground burning.
@@ -66,4 +67,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65

@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: spoils_greater
   weaponCategory: 0
   spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
   rarity: 5
   description: A lump of gold ore. Worth 5 at the tally.
   icon: {fileID: 21300000, guid: c136d6606effe4f4384302ac52f5e67a, type: 3}

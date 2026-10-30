@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 4a4394d85c661094685472112848380d
   weaponCategory: 0
   spell: {fileID: 11400000, guid: 97ab782aa2e5c9545b64aafe17d3c498, type: 2}
+  unlocksClass: {fileID: 0}
   rarity: 6
   description: Hold it in your left hand to throw fireballs.
   icon: {fileID: 21300000, guid: 6b595f68b189ce74a97b1f993129f9b4, type: 3}

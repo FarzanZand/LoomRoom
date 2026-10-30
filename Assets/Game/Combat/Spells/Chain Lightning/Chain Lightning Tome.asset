@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 2872899f7bc042a8bbaae0e7c871bdc0
   weaponCategory: 0
   spell: {fileID: 11400000, guid: d854b336a7163864bba5af61b6cab1cb, type: 2}
+  unlocksClass: {fileID: 0}
   rarity: 6
   description: Hold it in your left hand to cast Chain Lightning. A bolt that leaps
     from the enemy you aim at to the ones near it, weaker with every jump.
@@ -66,4 +67,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65

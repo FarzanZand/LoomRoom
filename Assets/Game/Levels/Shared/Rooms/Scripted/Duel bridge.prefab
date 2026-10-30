@@ -480,6 +480,7 @@ MonoBehaviour:
   morePerFloors: 3
   maxTier: 2
   rarity: 3
+  classUnlock: {fileID: 11400000, guid: f0b967a860a918b439a2ea04e4253b85, type: 2}
   challengeLine:
     text: He wants a duel. Face him.
     voice: {fileID: 0}

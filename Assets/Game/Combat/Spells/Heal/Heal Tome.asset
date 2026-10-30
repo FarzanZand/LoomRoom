@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: efb210faa4ae384408891531f33ee657
   weaponCategory: 0
   spell: {fileID: 11400000, guid: b8ae3872aac7c474a82ca91162f9a632, type: 2}
+  unlocksClass: {fileID: 0}
   rarity: 6
   description: Hold it in your left hand to heal yourself.
   icon: {fileID: 21300000, guid: 4491ac96366b2bd48bbff098e61c0a0c, type: 3}

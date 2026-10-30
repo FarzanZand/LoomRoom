@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 9cfced067e51448d991c54e517038caf
   weaponCategory: 0
   spell: {fileID: 11400000, guid: 0eb555352d08db04c9132bc69c17471d, type: 2}
+  unlocksClass: {fileID: 0}
   rarity: 6
   description: Hold it in your left hand to cast Sweeping Arc. A beam that swings
     across everything in front of you.
@@ -66,4 +67,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65
