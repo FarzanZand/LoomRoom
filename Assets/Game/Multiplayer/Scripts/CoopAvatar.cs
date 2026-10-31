@@ -392,8 +392,10 @@ public class CoopAvatar : MonoBehaviour
             if (left != heldLeft)
             {
                 heldLeft = left; HoldOn(ref leftVisual, left, rigLeft);
-                // A spell in the left hand: its held flame on the body's spell origin, as the owner's first person shows it.
-                var spell = Coop.Item(left)?.spell;
+                // A spell in the left hand (a tome's, or a readied scroll's): its held flame on the body's spell origin, as the
+                // owner's first person shows it.
+                var item = Coop.Item(left);
+                var spell = item == null ? null : item.spell != null ? item.spell : item.IsScroll ? item.scrollSpell : null;
                 if (leftVisual == null && spell != null && spell.heldVisual != null && (rigSpell != null || rigLeft != null))
                 {
                     leftVisual = Instantiate(spell.heldVisual, rigSpell != null ? rigSpell : rigLeft).gameObject;
