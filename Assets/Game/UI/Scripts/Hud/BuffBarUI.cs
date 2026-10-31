@@ -73,8 +73,8 @@ public class BuffBarUI : MonoBehaviour
                 title = stats.FoodSource != null ? stats.FoodSource.itemName : "Food", subtitle = "Healing over time" });
         // The tavern's dishes: the whole run.
         if (PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table && RunManager.HasInstance && RunManager.Instance.Running)
-            foreach (var dish in TavernDish.EatenThisRun())
-                shown.Add(new Shown { icon = dish.icon != null ? dish.icon : foodIcon, seconds = -1, title = dish.displayName, subtitle = "Lasts until this run ends", body = dish.effectText });
+            foreach (var dish in TavernDish.All)   // not EatenThisRun: its iterator made garbage every frame
+                if (dish != null && dish.Eaten) shown.Add(new Shown { icon = dish.icon != null ? dish.icon : foodIcon, seconds = -1, title = dish.displayName, subtitle = "Lasts until this run ends", body = dish.effectText });
         // Deflect recharging after it sent a shot back.
         var combat = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table ? PlayerManager.Instance.Active.Combat : null;
         if (combat != null && combat.DeflectCooldownLeft > 0f)

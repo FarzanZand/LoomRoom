@@ -31,8 +31,11 @@ public class TavernDish : ScriptableObject
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => all = null;
 
     static ProgressionManager PM => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
-    public bool Eaten => PM != null && !string.IsNullOrEmpty(id) && PM.HasFlag(FlagPrefix + id);
-    public void MarkEaten() { if (PM != null && !string.IsNullOrEmpty(id)) PM.SetFlag(FlagPrefix + id, 1); }
+    // The flag's name, made once (the buff bar asks every frame).
+    string flagKey, flagKeyFor;
+    string FlagKey { get { if (flagKeyFor != id) { flagKeyFor = id; flagKey = FlagPrefix + id; } return flagKey; } }
+    public bool Eaten => PM != null && !string.IsNullOrEmpty(id) && PM.HasFlag(FlagKey);
+    public void MarkEaten() { if (PM != null && !string.IsNullOrEmpty(id)) PM.SetFlag(FlagKey, 1); }
 
     // The dishes eaten this run.
     public static IEnumerable<TavernDish> EatenThisRun()

@@ -34,7 +34,7 @@ public partial class ProgressionManager
             });
         }
         if (missingTile != null)
-            list.Add(new RoomKeyItem { name = missingTile.itemName, kind = "Puzzle piece", about = "Goes in the class puzzle on the coffee table.", icon = missingTile.icon, carried = TileState == 1, carry = () => CarryTile() });
+            list.Add(new RoomKeyItem { name = missingTile.itemName, kind = "Puzzle piece", about = "Goes in the symbol puzzle on the coffee table.", icon = missingTile.icon, carried = TileState == 1, carry = () => CarryTile() });
         if (classRules != null && classRules.classes != null)
             foreach (var c in classRules.classes)
             {

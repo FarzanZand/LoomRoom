@@ -26,7 +26,7 @@ MonoBehaviour:
   deathsToOpen: 0
   deathsIn: {fileID: 11400000, guid: ffada713b3f1ff943955248d41bd14a9, type: 2}
   openedLine:
-    text: Two deaths in the Crypt. Try the arena instead. At least there is a crowd.
+    text: The Arena. You paid to hear about it. Now go and earn it.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1

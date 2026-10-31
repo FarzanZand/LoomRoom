@@ -13,6 +13,8 @@ public class RebindRowUI : MonoBehaviour
     [SerializeField] TMP_Text binding;
     [SerializeField] Button button;
 
+    public Button Button => button;
+
     void Awake() => button?.onClick.AddListener(Rebind);
 
     public void Refresh()
