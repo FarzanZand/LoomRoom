@@ -7,9 +7,10 @@ using UnityEngine.UI;
 
 // A dialogue box at the foot of the screen with the speaker's head and shoulders idling at its left, their name on a
 // plate above it and the line typed out with a soft blip a letter (an alternative to the Dialogue System's
-// conversations, for scenes such as a boss stepping up: BossFight > Dialogue). A click, Space, Enter or a pad's South
+// conversations, for the boss and the dungeon's people: BossFight > Intro). The Dungeon Master never speaks in it:
+// his lines among them go to his own feed as always. A click, Space, Enter or a pad's South
 // finishes the typing, then moves on; a line with answers shows them as buttons (keys and pad move between them).
-// Authored on the HUD canvas by PortraitDialogueSetup.Build(); code only fills it.
+// Its look is the Boss dialogue prefab (Dialogue/UI, under the Dialogue Manager); code only fills it.
 public class PortraitDialogueUI : MonoBehaviour
 {
     public static PortraitDialogueUI Current { get; private set; }
@@ -28,15 +29,14 @@ public class PortraitDialogueUI : MonoBehaviour
     [Range(0, 1)] public float blipVolume = .35f;
     [Min(1), Tooltip("A blip every this many letters.")] public int blipEvery = 2;
     [Range(0, .3f)] public float blipPitchVariance = .06f;
-    [Tooltip("The blips' pitch for the boss (a deep voice is lower), the Dungeon Master and anyone else.")]
-    public float bossPitch = .8f, dungeonMasterPitch = .65f, otherPitch = 1f;
+    [Tooltip("The blips' pitch for the boss (a deep voice is lower) and anyone else.")]
+    public float bossPitch = .8f, otherPitch = 1f;
     [Min(0)] public float fadeSeconds = .18f;
     [Header("Portrait")]
     [Tooltip("Pixels across the speaker's portrait (drawn point-filtered, so fewer is chunkier).")] public int portraitResolution = 256;
     [Tooltip("Degrees the speaker is turned from facing the camera.")] public float portraitTurn = 22f;
     [Tooltip("How much body shows below the head, in head-to-chest lengths (more: a smaller figure).")] public float portraitBodyBelow = 1.9f;
     [Tooltip("Room above the head, in head-to-chest lengths (horns and helmets get their own room on top).")] public float portraitRoomAbove = .55f;
-    public string dungeonMasterName = "Dungeon Master";
 
     PortraitStage stage;
     readonly List<Button> choiceButtons = new();
@@ -58,44 +58,61 @@ public class PortraitDialogueUI : MonoBehaviour
         stage ??= new GameObject("Portrait stage").AddComponent<PortraitStage>();
         stage.resolution = portraitResolution; stage.turn = portraitTurn; stage.bodyBelow = portraitBodyBelow; stage.roomAbove = portraitRoomAbove;
         if (portrait != null) portrait.texture = null;
-        bool first = true;
+        shown = false; this.firstShown = firstShown;
         for (int i = 0; i < lines.Count; i++)
         {
             var line = lines[i];
             if (line == null) continue;
-            yield return Box(line.speaker, line.name, line.model, line.text, boss, bossName, first, firstShown);
-            first = false;
-            if (line.choices == null || line.choices.Count == 0) { yield return WaitForNext(); continue; }
+            bool asks = line.choices != null && line.choices.Count > 0;
+            yield return Line(line.speaker, line.name, line.model, line.text, boss, bossName, !asks);
+            if (!asks) continue;
             yield return Choose(line.choices);
             var choice = picked >= 0 && picked < line.choices.Count ? line.choices[picked] : null;
             if (choice?.reply == null) continue;
             foreach (var reply in choice.reply)
-            {
-                if (reply == null) continue;
-                yield return Box(reply.speaker, reply.name, reply.model, reply.text, boss, bossName, false, null);
-                yield return WaitForNext();
-            }
+                if (reply != null) yield return Line(reply.speaker, reply.name, reply.model, reply.text, boss, bossName, true);
         }
-        yield return Fade(0f);
+        if (shown) yield return Fade(0f);
         Hide(false);
         stage.Clear();
         Open = false;
     }
 
-    IEnumerator Box(PortraitSpeaker speaker, string name, GameObject model, string text, Character boss, string bossName, bool first, Action firstShown)
+    bool shown;
+    Action firstShown;
+
+    // One line: the Dungeon Master's in his own feed as always (the box steps aside while he
+    // speaks), anyone else's in the box. Wait: hold until it is read and pressed on (a line with answers doesn't).
+    IEnumerator Line(PortraitSpeaker speaker, string name, GameObject model, string text, Character boss, string bossName, bool wait)
     {
-        var source = speaker == PortraitSpeaker.Boss ? (boss != null ? boss.gameObject : null)
-            : speaker == PortraitSpeaker.DungeonMaster ? DungeonMasterModel() : model;
+        if (speaker == PortraitSpeaker.DungeonMaster)
+        {
+            if (shown) { yield return Fade(0f); shown = false; }
+            Fire();
+            DungeonMaster.Say(new DungeonMaster.Line { text = text, mumble = true, inPerson = true });
+            yield return null;
+            while (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking) yield return null;
+            yield break;
+        }
+        yield return Box(speaker, name, model, text, boss, bossName);
+        if (wait) yield return WaitForNext();
+    }
+
+    void Fire() { firstShown?.Invoke(); firstShown = null; }
+
+    IEnumerator Box(PortraitSpeaker speaker, string name, GameObject model, string text, Character boss, string bossName)
+    {
+        var source = speaker == PortraitSpeaker.Boss ? (boss != null ? boss.gameObject : null) : model;
         stage.Show(source);
         if (portrait != null) { portrait.texture = stage.Texture; portrait.enabled = source != null; }
         if (nameText != null) nameText.text = (!string.IsNullOrWhiteSpace(name) ? name
             : speaker == PortraitSpeaker.Boss ? (!string.IsNullOrWhiteSpace(bossName) ? bossName : boss != null ? boss.TheNameCap : "")
-            : speaker == PortraitSpeaker.DungeonMaster ? dungeonMasterName : model != null ? model.name : "").ToUpperInvariant();
+            : model != null ? model.name : "").ToUpperInvariant();
         if (arrow != null) arrow.enabled = false;
         body.text = text ?? "";
         body.maxVisibleCharacters = 0;
-        if (first) { yield return Fade(1f); firstShown?.Invoke(); }
-        float pitch = speaker == PortraitSpeaker.Boss ? bossPitch : speaker == PortraitSpeaker.DungeonMaster ? dungeonMasterPitch : otherPitch;
+        if (!shown) { yield return Fade(1f); shown = true; Fire(); }
+        float pitch = speaker == PortraitSpeaker.Boss ? bossPitch : otherPitch;
         yield return Type(pitch);
         if (arrow != null) arrow.enabled = true;
     }
@@ -195,13 +212,6 @@ public class PortraitDialogueUI : MonoBehaviour
     }
     // Space, Enter or a pad's South (a click lands on a button instead).
     bool KeyPressed() => InputManager.HasInstance && InputManager.Instance.SkipLinePressed && !InputManager.Instance.PointerClicked;
-
-    // The Dungeon Master's model: the seated one in the room.
-    static GameObject DungeonMasterModel()
-    {
-        var hand = FindAnyObjectByType<DungeonMasterHand>();
-        return hand != null ? hand.gameObject : null;
-    }
 
     IEnumerator Fade(float to)
     {

@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// Who speaks in a portrait dialogue box (PortraitDialogueUI): the boss of the fight it belongs to, the Dungeon Master,
-// or any other model. Serialized by number: append only.
+// Who speaks in a portrait dialogue (PortraitDialogueUI): the boss of the fight it belongs to, any other model (a
+// dungeon NPC), or the Dungeon Master, whose lines go to his own feed as always, never into the box. Serialized by
+// number: append only.
 public enum PortraitSpeaker { Boss = 0, DungeonMaster = 1, Other = 2 }
 
 // One box of a portrait dialogue: the speaker's upper body idles at its left, their name on a plate above it, the text

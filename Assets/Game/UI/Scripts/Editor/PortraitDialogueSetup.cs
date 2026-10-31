@@ -143,76 +143,83 @@ public static class PortraitDialogueSetup
         return $"the portrait dialogue box ({blips} blips)";
     }
 
-    // The versus screen: dark, a blue band from the left with the player's class painting, a red one from the right
-    // with the boss's live portrait, a white split between them and a big gold VS.
+    // The cinematic versus screen: black bars top and bottom over a darkened screen; at the left the player's class
+    // painting melting into a blue glow, at the right the boss's live portrait in a red glow; a thin gold line across
+    // the middle with the VS medallion on it; names letter-spaced in the bottom bar under each side.
     static string BuildVersus(RectTransform parent)
     {
-        var bandSprite = ImportSprite(Sprites + "Versus band.png", 0);
-        var big = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/LilitaOne SDF.asset");
-        var bigOutline = OutlineMaterial(big, "Assets/Game/UI/Fonts/LilitaOne Outline.mat");
-        var body = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
-        var bodyMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator-Bold Outline.mat");
+        var glowSprite = ImportSprite(Sprites + "Soft glow.png", 0, smooth: true);
+        var medalSprite = ImportSprite(Sprites + "Medallion.png", 0, smooth: true);
+        var bebas = BebasAsset();
+        var small = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
+        var soft = SoftEdgeMaterial();
 
         var root = new GameObject("Versus screen", typeof(RectTransform), typeof(CanvasGroup), typeof(VersusScreenUI));
         root.layer = parent.gameObject.layer;
         var rect = (RectTransform)root.transform;
         rect.SetParent(parent, false);
-        rect.SetAsLastSibling();
         Stretch(rect, 0f, 0f, 0f, 0f);
         var group = root.GetComponent<CanvasGroup>(); group.alpha = 0f; group.blocksRaycasts = false;
 
         var shake = new GameObject("Shake", typeof(RectTransform)).GetComponent<RectTransform>();
         shake.gameObject.layer = root.layer; shake.SetParent(rect, false); Stretch(shake, 0f, 0f, 0f, 0f);
-        var dim = Picture("Dim", shake, null, Color.black, Vector2.zero, Vector2.zero); Stretch(dim, -60f, -60f, -60f, -60f);
+        var dim = Picture("Dim", shake, null, new Color(0f, 0f, 0f, 0f), Vector2.zero, Vector2.zero); Stretch(dim, -60f, -60f, -60f, -60f);
 
-        RectTransform Band(string name, bool left, Color colour, out Graphic portrait, out TextMeshProUGUI who, out TextMeshProUGUI what)
+        RectTransform Bar(string name, bool top)
         {
-            var band = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
-            band.gameObject.layer = root.layer; band.SetParent(shake, false);
-            band.anchorMin = band.anchorMax = new Vector2(.5f, .5f); band.sizeDelta = new Vector2(1500f, 900f);
-            band.anchoredPosition = new Vector2(left ? -470f : 470f, 0f);
-            band.localRotation = Quaternion.Euler(0f, 0f, -7f);
-            var back = Picture("Back", band, bandSprite, colour, new Vector2(1500f, 900f), Vector2.zero);
-            back.anchorMin = back.anchorMax = back.pivot = new Vector2(.5f, .5f); back.anchoredPosition = Vector2.zero;
-            if (!left) back.localScale = new Vector3(-1f, 1f, 1f);
-            var edge = Picture("Edge", band, null, new Color(1f, 1f, 1f, .85f), new Vector2(8f, 900f), Vector2.zero);
-            edge.anchorMin = edge.anchorMax = edge.pivot = new Vector2(.5f, .5f); edge.anchoredPosition = new Vector2(left ? 470f : -470f, 0f);
-            var art = left ? (Graphic)new GameObject("Portrait", typeof(RectTransform), typeof(Image)).GetComponent<Image>()
-                           : new GameObject("Portrait", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
-            art.gameObject.layer = root.layer; art.raycastTarget = false;
-            var artRect = art.rectTransform; artRect.SetParent(band, false);
-            artRect.anchorMin = artRect.anchorMax = artRect.pivot = new Vector2(.5f, .5f);
-            artRect.sizeDelta = left ? new Vector2(450f, 600f) : new Vector2(820f, 820f);
-            artRect.anchoredPosition = new Vector2(left ? 40f : -40f, left ? 40f : 100f);
-            artRect.localRotation = Quaternion.Euler(0f, 0f, 7f);   // upright on screen
-            if (art is Image image) image.preserveAspect = true;
-            portrait = art;
-            who = Text("Name", band, big, 74f, Color.white, null, left ? "YOU" : "EDGAR THE DISCO KING");
-            who.rectTransform.anchorMin = who.rectTransform.anchorMax = who.rectTransform.pivot = new Vector2(.5f, .5f);
-            who.rectTransform.sizeDelta = new Vector2(900f, 90f);
-            who.rectTransform.anchoredPosition = new Vector2(left ? 40f : -40f, -290f);
-            who.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 7f);
-            who.fontSharedMaterial = bigOutline;
-            what = Text("Title", band, body, 34f, new Color(1f, .9f, .7f), bodyMaterial, left ? "Level 1 Warrior" : "Guardian of the Crypt");
-            what.rectTransform.anchorMin = what.rectTransform.anchorMax = what.rectTransform.pivot = new Vector2(.5f, .5f);
-            what.rectTransform.sizeDelta = new Vector2(900f, 44f);
-            what.rectTransform.anchoredPosition = new Vector2(left ? 40f : -40f, -350f);
-            what.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 7f);
-            return band;
+            var bar = Picture(name, shake, null, Color.black, Vector2.zero, Vector2.zero);
+            bar.anchorMin = new Vector2(0f, top ? 1f : 0f); bar.anchorMax = new Vector2(1f, top ? 1f : 0f);
+            bar.pivot = new Vector2(.5f, top ? 1f : 0f); bar.sizeDelta = new Vector2(120f, 165f); bar.anchoredPosition = Vector2.zero;
+            return bar;
         }
+        RectTransform Side(string name, bool left, Color glowColour, out Graphic art, out RectTransform label, out TextMeshProUGUI who, out TextMeshProUGUI what)
+        {
+            var side = new GameObject(name, typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
+            side.gameObject.layer = root.layer; side.SetParent(shake, false);
+            side.anchorMin = side.anchorMax = side.pivot = new Vector2(.5f, .5f); side.sizeDelta = new Vector2(700f, 1080f);
+            side.anchoredPosition = new Vector2(left ? -500f : 520f, 0f);
+            var glow = Picture("Glow", side, glowSprite, glowColour, new Vector2(left ? 1100f : 1180f, 1000f), Vector2.zero);
+            glow.anchorMin = glow.anchorMax = glow.pivot = new Vector2(.5f, .5f); glow.anchoredPosition = new Vector2(0f, 20f);
+            if (left)
+            {
+                var image = new GameObject("Portrait", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                image.preserveAspect = true; image.material = soft; art = image;
+            }
+            else art = new GameObject("Portrait", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
+            art.gameObject.layer = root.layer; art.raycastTarget = false;
+            var artRect = art.rectTransform; artRect.SetParent(side, false);
+            artRect.anchorMin = artRect.anchorMax = artRect.pivot = new Vector2(.5f, .5f);
+            artRect.sizeDelta = left ? new Vector2(470f, 560f) : new Vector2(700f, 700f);
+            // The boss's render ends in a hard edge at its foot: that edge sits behind the bottom bar.
+            artRect.anchoredPosition = new Vector2(0f, left ? 20f : -40f);
+            // The name and title are their own layer, drawn over the bars (VersusScreenUI moves it with the side).
+            label = new GameObject(name + " label", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
+            label.gameObject.layer = root.layer; label.SetParent(shake, false);
+            label.anchorMin = label.anchorMax = label.pivot = new Vector2(.5f, .5f); label.sizeDelta = side.sizeDelta;
+            label.anchoredPosition = side.anchoredPosition;
+            who = Text("Name", label, bebas, 76f, Color.white, null, left ? "YOU" : "EDGAR THE DISCO KING");
+            who.rectTransform.anchorMin = who.rectTransform.anchorMax = who.rectTransform.pivot = new Vector2(.5f, .5f);
+            // Fitted to the side's width (a long name gets smaller, never runs off the screen).
+            who.rectTransform.sizeDelta = new Vector2(780f, 90f); who.rectTransform.anchoredPosition = new Vector2(0f, -432f);
+            who.characterSpacing = 24f; who.enableAutoSizing = true; who.fontSizeMin = 36f; who.fontSizeMax = 76f;
+            what = Text("Title", label, small, 40f, new Color(.88f, .86f, .82f), null, left ? "Level 1 Warrior" : "Lord of the Crypt");
+            what.rectTransform.anchorMin = what.rectTransform.anchorMax = what.rectTransform.pivot = new Vector2(.5f, .5f);
+            what.rectTransform.sizeDelta = new Vector2(1000f, 44f); what.rectTransform.anchoredPosition = new Vector2(0f, -490f);
+            return side;
+        }
+        var leftSide = Side("Player side", true, new Color(.25f, .45f, 1f, .5f), out var playerArt, out var leftLabel, out var playerName, out var playerTitle);
+        var rightSide = Side("Boss side", false, new Color(.95f, .15f, .15f, .52f), out var bossArt, out var rightLabel, out var bossName, out var bossTitle);
+        // In drawing order: the sides (glow, portrait), the bars over them, the names over the bars.
+        var topBar = Bar("Top bar", true);
+        var bottomBar = Bar("Bottom bar", false);
+        leftLabel.SetAsLastSibling(); rightLabel.SetAsLastSibling();
 
-        var leftBand = Band("Player band", true, new Color(.14f, .3f, .75f, .96f), out var playerArt, out var playerName, out var playerTitle);
-        var rightBand = Band("Boss band", false, new Color(.72f, .1f, .08f, .96f), out var bossArt, out var bossName, out var bossTitle);
-        var divider = Picture("Split", shake, null, Color.white, new Vector2(10f, 1500f), Vector2.zero);
-        divider.anchorMin = divider.anchorMax = divider.pivot = new Vector2(.5f, .5f); divider.anchoredPosition = Vector2.zero;
-        divider.localRotation = Quaternion.Euler(0f, 0f, -7f);
-
-        var vs = Text("VS", shake, big, 300f, new Color(1f, .84f, .3f), null, "VS");
-        vs.rectTransform.anchorMin = vs.rectTransform.anchorMax = vs.rectTransform.pivot = new Vector2(.5f, .5f);
-        vs.rectTransform.sizeDelta = new Vector2(700f, 340f); vs.rectTransform.anchoredPosition = new Vector2(0f, 30f);
-        vs.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -7f);
-        vs.fontSharedMaterial = bigOutline;
-        vs.characterSpacing = -6f;
+        var line = Picture("Gold line", shake, null, Gold, new Vector2(1560f, 3f), Vector2.zero);
+        line.anchorMin = line.anchorMax = line.pivot = new Vector2(.5f, .5f); line.anchoredPosition = Vector2.zero;
+        var medal = Picture("Medallion", shake, medalSprite, Color.white, new Vector2(184f, 184f), Vector2.zero);
+        medal.anchorMin = medal.anchorMax = medal.pivot = new Vector2(.5f, .5f); medal.anchoredPosition = Vector2.zero;
+        var vs = Text("VS", medal, bebas, 112f, Gold, null, "VS");
+        Stretch(vs.rectTransform, 0f, 0f, 0f, -6f);
         var flash = Picture("Flash", rect, null, new Color(1f, 1f, 1f, 0f), Vector2.zero, Vector2.zero); Stretch(flash, 0f, 0f, 0f, 0f);
 
         var so = new SerializedObject(root.GetComponent<VersusScreenUI>());
@@ -220,10 +227,14 @@ public static class PortraitDialogueSetup
         so.FindProperty("dim").objectReferenceValue = dim.GetComponent<Image>();
         so.FindProperty("flash").objectReferenceValue = flash.GetComponent<Image>();
         so.FindProperty("shake").objectReferenceValue = shake;
-        so.FindProperty("leftBand").objectReferenceValue = leftBand;
-        so.FindProperty("rightBand").objectReferenceValue = rightBand;
-        so.FindProperty("versus").objectReferenceValue = vs.rectTransform;
-        so.FindProperty("divider").objectReferenceValue = divider;
+        so.FindProperty("topBar").objectReferenceValue = topBar;
+        so.FindProperty("bottomBar").objectReferenceValue = bottomBar;
+        so.FindProperty("leftSide").objectReferenceValue = leftSide;
+        so.FindProperty("rightSide").objectReferenceValue = rightSide;
+        so.FindProperty("leftLabel").objectReferenceValue = leftLabel;
+        so.FindProperty("rightLabel").objectReferenceValue = rightLabel;
+        so.FindProperty("line").objectReferenceValue = line;
+        so.FindProperty("medallion").objectReferenceValue = medal;
         so.FindProperty("playerPortrait").objectReferenceValue = playerArt;
         so.FindProperty("bossPortrait").objectReferenceValue = bossArt;
         so.FindProperty("playerName").objectReferenceValue = playerName;
@@ -232,6 +243,34 @@ public static class PortraitDialogueSetup
         so.FindProperty("bossTitle").objectReferenceValue = bossTitle;
         so.ApplyModifiedPropertiesWithoutUndo();
         return "the versus screen";
+    }
+
+    // Bebas Neue as a TextMesh Pro font (dynamic: its glyphs are filled in as text uses them).
+    static TMP_FontAsset BebasAsset()
+    {
+        const string path = "Assets/Game/UI/Fonts/BebasNeue SDF.asset";
+        var asset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(path);
+        if (asset != null) return asset;
+        var font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Game/UI/Fonts/BebasNeue-Regular.ttf");
+        asset = TMP_FontAsset.CreateFontAsset(font, 90, 9, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic);
+        asset.name = "BebasNeue SDF";
+        AssetDatabase.CreateAsset(asset, path);
+        asset.material.name = "BebasNeue SDF Material";
+        AssetDatabase.AddObjectToAsset(asset.material, asset);
+        asset.atlasTextures[0].name = "BebasNeue SDF Atlas";
+        AssetDatabase.AddObjectToAsset(asset.atlasTextures[0], asset);
+        AssetDatabase.SaveAssets();
+        return asset;
+    }
+
+    static Material SoftEdgeMaterial()
+    {
+        const string path = "Assets/Game/UI/Shaders/UI Soft Edge.mat";
+        var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (material != null) return material;
+        material = new Material(Shader.Find("LoomRoom/UI Soft Edge"));
+        AssetDatabase.CreateAsset(material, path);
+        return material;
     }
 
     // The test dialogue for the Crypt Lord fight: the boss as Edgar the disco king, who asks on his third box whether
@@ -288,13 +327,13 @@ public static class PortraitDialogueSetup
         return material;
     }
 
-    static Sprite ImportSprite(string path, int border)
+    static Sprite ImportSprite(string path, int border, bool smooth = false)
     {
         var importer = (TextureImporter)AssetImporter.GetAtPath(path);
         if (importer == null) return null;
         importer.textureType = TextureImporterType.Sprite;
         importer.spriteImportMode = SpriteImportMode.Single;
-        importer.filterMode = FilterMode.Point;
+        importer.filterMode = smooth ? FilterMode.Bilinear : FilterMode.Point;
         importer.textureCompression = TextureImporterCompression.Uncompressed;
         importer.mipmapEnabled = false;
         importer.spritePixelsPerUnit = 100f;

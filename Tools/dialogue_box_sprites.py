@@ -3,8 +3,11 @@
                       inset a few pixels, the gold brighter along the top (lit from above), a texel of grain.
   Versus band.png   - 64 x 64: white, fully opaque at its inner edge and fading out raggedly toward the outer edge,
                       tinted per side by the screen.
+  Soft glow.png     - 128 x 128: white, opaque in the middle and fading smoothly to nothing at the rim (the glows behind
+                      each side of the cinematic versus screen, tinted there; drawn smooth).
+  Medallion.png     - 256 x 256: a black disc in a gold ring with a thin inner line (the VS medallion; drawn smooth).
 Usage: python Tools/dialogue_box_sprites.py <out dir>"""
-import os, random, sys
+import math, os, random, sys
 from PIL import Image
 
 def box(path):
@@ -43,7 +46,29 @@ def band(path):
             img.putpixel((x, y), (255, 255, 255, a))
     img.save(path)
 
+def soft_glow(path):
+    s = 128
+    img = Image.new("RGBA", (s, s))
+    for y in range(s):
+        for x in range(s):
+            r = ((x - s / 2 + .5) ** 2 + (y - s / 2 + .5) ** 2) ** .5 / (s / 2)
+            a = math.exp(-(r * 2.4) ** 2) * max(0.0, 1 - r) ** .5   # a gaussian, reaching nothing at the rim
+            img.putpixel((x, y), (255, 255, 255, int(255 * a)))
+    img.save(path)
+
+def medallion(path):
+    big = 1024
+    from PIL import ImageDraw
+    img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    gold, dark = (232, 196, 110, 255), (8, 6, 6, 245)
+    d.ellipse((8, 8, big - 8, big - 8), fill=gold)
+    d.ellipse((44, 44, big - 44, big - 44), fill=dark)
+    d.ellipse((80, 80, big - 80, big - 80), outline=(232, 196, 110, 170), width=10)
+    img.resize((256, 256), Image.LANCZOS).save(path)
+
 if __name__ == "__main__":
     out = sys.argv[1]; os.makedirs(out, exist_ok=True)
     box(os.path.join(out, "Dialogue box.png")); band(os.path.join(out, "Versus band.png"))
-    print("wrote Dialogue box.png and Versus band.png to", out)
+    soft_glow(os.path.join(out, "Soft glow.png")); medallion(os.path.join(out, "Medallion.png"))
+    print("wrote Dialogue box.png, Versus band.png, Soft glow.png and Medallion.png to", out)
