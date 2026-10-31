@@ -114,3 +114,7 @@ Tools/__pycache__/
 # Developer prompt outbox (local requests to the Main session)
 /DevReports/
 /ArtRevisions/
+
+# Unity crash recovery scenes and the empty Temp folder some tools make
+/[Aa]ssets/_Recovery*
+/[Aa]ssets/Temp*
