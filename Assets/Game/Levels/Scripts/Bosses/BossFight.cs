@@ -28,6 +28,38 @@ public class BossFight : ScriptableObject
     public float reachDelay = 1.2f;
     [TabGroup(Tabs, "Opening"), Min(.2f), Tooltip("Seconds the DM takes to bring the boss up from under the table, show it and set it down.")]
     public float placeSeconds = 4.6f;
+    // ── Intro ─────────────────────────────────────────────────────────
+    // With dialogue or the versus screen on, the fight opens with an intro, in this order: the floor's music fades as
+    // the player steps onto the stage; the DM sets the boss down and it stands idle; the spotlight snaps on over it; the
+    // dialogue; the versus screen; then the battle begins with the fight's music. Without either, the fight opens as
+    // before (the music at once, his opening and fight lines in the feed).
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds the floor's music takes to fade out as the player steps onto the stage.")]
+    public float enterMusicFade = 2f;
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds after the boss is set down before the spotlight comes on.")]
+    public float spotlightDelay = 1f;
+    [TabGroup(Tabs, "Intro"), AssetsOnly, Tooltip("The spotlight set over the boss (a prefab: lights, a shaft, dust), from the moment it comes on until the battle begins. Empty: none.")]
+    public GameObject spotlight;
+    [TabGroup(Tabs, "Intro"), Tooltip("Played as the spotlight comes on.")]
+    public AudioClip spotlightSound;
+    [TabGroup(Tabs, "Intro"), Range(0, 1)] public float spotlightVolume = 1f;
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds its lights take to go out as the battle begins.")]
+    public float spotlightFadeOut = .8f;
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds after the spotlight before the dialogue starts.")]
+    public float dialogueDelay = 2f;
+    [TabGroup(Tabs, "Intro"), Tooltip("Dialogue boxes (PortraitDialogueUI: each speaker's head and shoulders idling beside a box, typed out) in place of his opening and fight lines in the feed.")]
+    public bool introDialogue;
+    [TabGroup(Tabs, "Intro"), ShowIf(nameof(introDialogue)), Tooltip("The boss's name on its boxes, the versus screen and the boss bar. Empty: the boss's own name.")]
+    public string bossName;
+    [TabGroup(Tabs, "Intro"), ShowIf(nameof(introDialogue)), ListDrawerSettings(ShowFoldout = true)]
+    public List<PortraitLine> introLines = new();
+    public bool HasIntroDialogue => introDialogue && introLines != null && introLines.Count > 0;
+    [TabGroup(Tabs, "Intro"), Tooltip("After the dialogue, a you-versus-the-boss screen (VersusScreenUI): the player's band slams in from the left, then the boss's from the right, and VS crashes down between them.")]
+    public bool versusScreen;
+    [TabGroup(Tabs, "Intro"), ShowIf(nameof(versusScreen)), InlineProperty, HideLabel]
+    public VersusSettings versus = new();
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds the fight's music takes to come in as the battle begins.")]
+    public float fightMusicFade = .25f;
+
     // ── Room ──────────────────────────────────────────────────────────
     [TabGroup(Tabs, "Room"), Tooltip("The picture in the painting on the wall behind the Dungeon Master (RoomPainting) for this fight. It is changed while the boss floor loads and put back when the floor is left (after a death, on the way back to the room), so it is never seen changing. Empty: the painting's own.")]
     [PreviewField(70)] public Texture2D painting;
@@ -71,6 +103,9 @@ public class BossFight : ScriptableObject
     public bool beamKneel = true;
     [TabGroup(Tabs, "Beam"), ShowIf(nameof(beamKneel)), Min(0), Tooltip("Seconds the boss gets to go back and kneel before the DM starts to charge (he starts sooner if it is already kneeling).")]
     public float beamKneelLead = 2.5f;
+    [TabGroup(Tabs, "Beam"), ShowIf(nameof(beamKneel)), Tooltip("Danced instead of kneeling: once back at its spot the boss turns to the player and plays this clip, looped, until the beam is over. Empty: it kneels to the DM.")]
+    public AnimationClip beamDance;
+    [TabGroup(Tabs, "Beam"), ShowIf("@beamKneel && beamDance != null"), Min(.1f)] public float beamDanceSpeed = 1f;
     [TabGroup(Tabs, "Beam"), ColorUsage(false, true)] public Color beamColor = new(2f, 1.35f, .55f, 1f);
     [TabGroup(Tabs, "Beam")] public AudioClip beamChargeSound, beamLoopSound, beamBlockedSound;
     [TabGroup(Tabs, "Beam"), Range(0, 1)] public float beamVolume = .9f;

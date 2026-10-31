@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a12eead55650357439207b4be50e015f, type: 3}
   m_Name: Crypt Lord fight
   m_EditorClassIdentifier: Assembly-CSharp::BossFight
-  music: {fileID: 8300000, guid: ad8b2ddb027ec3847aaf00ce543f4e92, type: 3}
+  music: {fileID: 8300000, guid: cc7e5712c4b45bd4eb5e07bbc6a4f6a7, type: 3}
   musicVolume: 0.8
   bpm: 152
   firstBeat: 0.07
@@ -24,6 +24,70 @@ MonoBehaviour:
     inPerson: 0
   reachDelay: 1.2
   placeSeconds: 4.6
+  enterMusicFade: 2
+  spotlightDelay: 1
+  spotlight: {fileID: 4696081989565957123, guid: 90d4468408f2f8d43b3b95cb31a55381, type: 3}
+  spotlightSound: {fileID: 8300000, guid: 9c5d7e2087eeea2458921db9e4e822db, type: 3}
+  spotlightVolume: 1
+  spotlightFadeOut: 0.8
+  dialogueDelay: 2
+  introDialogue: 1
+  bossName: Edgar the disco king
+  introLines:
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: Well, well. Someone found my dance floor.
+    choices: []
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: Nobody has come down those stairs in a hundred years. The music got lonely.
+    choices: []
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: So tell me. Do you want to party?
+    choices:
+    - label: Yes
+      reply:
+      - speaker: 0
+        name: 
+        model: {fileID: 0}
+        text: Finally, someone with taste! Try to keep up.
+    - label: No
+      reply:
+      - speaker: 0
+        name: 
+        model: {fileID: 0}
+        text: Nobody says no to the disco king. You're dancing anyway!
+  - speaker: 1
+    name: 
+    model: {fileID: 0}
+    text: You heard the king. Dance.
+    choices: []
+  versusScreen: 1
+  versus:
+    leftIn: 0.22
+    rightDelay: 0.45
+    rightIn: 0.22
+    slamDelay: 0.2
+    hold: 1.5
+    throwOut: 0.22
+    shake: 24
+    bandWhoosh:
+    - {fileID: 8300000, guid: 66c075aeb2dcb4076bdbf11d1776836d, type: 3}
+    bandLand:
+    - {fileID: 8300000, guid: b0c75b87ffdc44a388c2aead54014fad, type: 3}
+    - {fileID: 8300000, guid: b11279cfa37cf42cb98c67f0a74d2082, type: 3}
+    slam:
+    - {fileID: 8300000, guid: b29876153e4b14d4299b75e4f7ef690a, type: 3}
+    - {fileID: 8300000, guid: 762052cce11fab84aaefb239c9c6c910, type: 3}
+    - {fileID: 8300000, guid: dc200c391309841c39b4f134cc7bd26a, type: 3}
+    throwOff:
+    - {fileID: 8300000, guid: d1610b49de30b46439425f9d649e854f, type: 3}
+    volume: 0.9
+  fightMusicFade: 0.25
   painting: {fileID: 0}
   changeRoomLighting: 1
   roomLighting: 2
@@ -50,6 +114,8 @@ MonoBehaviour:
   beamGiveWay: 0
   beamKneel: 1
   beamKneelLead: 2.5
+  beamDance: {fileID: -203655887218126122, guid: d9671b08a827250449b49748b35c6150, type: 3}
+  beamDanceSpeed: 1
   beamColor: {r: 2, g: 0.95, b: 0.3, a: 1}
   beamChargeSound: {fileID: 8300000, guid: be0f71459df354c49a2d754371c38f37, type: 3}
   beamLoopSound: {fileID: 8300000, guid: ca3d6a0a1b57b514d87f9fe9efa06ecb, type: 3}

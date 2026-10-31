@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 
 // A boss fight on the stage in front of the Dungeon Master (DungeonStage, run by the milestone's BossFight). Added by the
 // generator. The stage stands empty until the player walks to its middle; then the music starts, the stair is shut,
@@ -25,6 +27,8 @@ public class BossStageEncounter : MonoBehaviour
     readonly HashSet<BossEvent> done = new();
     readonly Dictionary<BossEvent, float> nextBeat = new();
     float fightStart = -1f, musicStart = -1f, lastComment = -100f;
+    // The boss's beam dance (BossFight.beamDance), played straight on its animator while it lasts.
+    PlayableGraph danceGraph;
     bool started, finished, halfSaid, lowSaid, playerLowSaid, darkened, phaseTwo;
     // The player fell in the fight: it is put away, but a revive picks it up again (OnRevived).
     bool lost;
@@ -58,6 +62,7 @@ public class BossStageEncounter : MonoBehaviour
 
     void OnDestroy()
     {
+        StopDance();
         if (Current == this) Current = null;
         if (RunManager.HasInstance) RunManager.Instance.Revived -= OnRevived;
         if (boss != null) boss.Died -= OnBossDied;
@@ -180,7 +185,13 @@ public class BossStageEncounter : MonoBehaviour
         BossBlessing.Grant(false);
         FindDungeonMaster();
         ShutStair(true);
-        if (fight != null && fight.music != null && AudioManager.HasInstance)
+        // With an intro (BossFight > Intro: a spotlight, dialogue, the versus screen) the floor's music fades out now
+        // and the fight's starts as the battle begins; without one the fight's music starts now.
+        bool talk = fight != null && fight.HasIntroDialogue && PortraitDialogueUI.Current != null;
+        bool versus = fight != null && fight.versusScreen && VersusScreenUI.Current != null;
+        bool intro = talk || versus;
+        if (intro && AudioManager.HasInstance) AudioManager.Instance.StopMusic(fight.enterMusicFade);
+        if (!intro && fight != null && fight.music != null && AudioManager.HasInstance)
         {
             AudioManager.Instance.CrossfadeMusic(fight.music, true, fight.musicFade, fight.musicVolume);
             musicStart = Time.time;
@@ -189,7 +200,7 @@ public class BossStageEncounter : MonoBehaviour
         // The room takes the fight's look (Dark: the stage and his eyes are all that is lit), and its own lights come up.
         DarkenRoom();
         LightRoom();
-        if (fight != null) Say(fight.openingLine, true);
+        if (fight != null && !intro) Say(fight.openingLine, true);
         var spot = BossSpot();
         if (seat != null) seat.Focus(StandFor(spot), spot);
         if (hand != null) hand.Watch(spot, true);
@@ -207,16 +218,72 @@ public class BossStageEncounter : MonoBehaviour
         if (boss != null) bossHome = boss.transform.position;
         // Said once the boss is down and the room is dark, where it can be read.
         BossBlessing.Announce();
-        yield return new WaitForSeconds(fight != null ? fight.wakeDelay : 1f);
-        if (boss == null || !boss.IsAlive) yield break;
+        if (intro)
+        {
+            yield return Intro(player, talk, versus);
+            if (boss == null || !boss.IsAlive) yield break;
+        }
+        else
+        {
+            yield return new WaitForSeconds(fight != null ? fight.wakeDelay : 1f);
+            if (boss == null || !boss.IsAlive) yield break;
+        }
 
-        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title);
+        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.bossName : null);
         if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss), MessageKind.Warning);
-        if (fight != null) Say(fight.fightLine, true);
+        if (fight != null && !intro) Say(fight.fightLine, true);
         if (stageLights != null) stageLights.Follow(boss.transform);
         if (brain != null) { brain.enabled = true; brain.Alert(); }
         if (hand != null) hand.Watch(player.transform.position, false);
         fightStart = Time.time;
+    }
+
+    // The intro (BossFight > Intro), the boss set down and idle in the quiet: a moment, the spotlight snaps on over it
+    // with its sound, a moment more, the dialogue, the versus screen, and the battle begins with the fight's music. The
+    // player stands still and looks at the boss throughout.
+    IEnumerator Intro(Player player, bool talk, bool versus)
+    {
+        if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Dialogue);
+        GameObject spotlight = null;
+        try
+        {
+            if (player != null && player.Look != null && boss != null) StartCoroutine(CameraEase.LookAt(player.Look, boss.transform.position + Vector3.up * 1.5f, .6f));
+            yield return new WaitForSeconds(fight.spotlightDelay);
+            if (boss == null || !boss.IsAlive) yield break;
+            if (fight.spotlight != null)
+            {
+                spotlight = Instantiate(fight.spotlight, boss.transform.position, Quaternion.identity, dungeon.transform);
+                spotlight.name = "Boss spotlight";
+            }
+            if (fight.spotlightSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(fight.spotlightSound, fight.spotlightVolume);
+            yield return new WaitForSeconds(fight.dialogueDelay);
+            if (talk) yield return PortraitDialogueUI.Current.Play(fight.introLines, boss, fight.bossName);
+            if (boss == null || !boss.IsAlive) yield break;
+            if (versus) yield return VersusScreenUI.Current.Play(player, boss, !string.IsNullOrWhiteSpace(fight.bossName) ? fight.bossName : boss.TheNameCap, milestone.title, fight.versus);
+            if (fight.music != null && AudioManager.HasInstance)
+            {
+                AudioManager.Instance.CrossfadeMusic(fight.music, true, fight.fightMusicFade, fight.musicVolume);
+                musicStart = Time.time;
+            }
+        }
+        finally
+        {
+            if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+            if (spotlight != null) StartCoroutine(Dim(spotlight, fight.spotlightFadeOut));
+        }
+    }
+
+    // The spotlight goes out as the battle begins: its lights fade, then it is gone.
+    IEnumerator Dim(GameObject spotlight, float seconds)
+    {
+        var lights = spotlight.GetComponentsInChildren<Light>();
+        var from = System.Array.ConvertAll(lights, l => l.intensity);
+        for (float t = 0f; t < seconds && spotlight != null; t += Time.deltaTime)
+        {
+            for (int i = 0; i < lights.Length; i++) if (lights[i] != null) lights[i].intensity = from[i] * (1f - t / seconds);
+            yield return null;
+        }
+        if (spotlight != null) Destroy(spotlight);
     }
 
     // The DM carries an enemy down onto the stage and lets go: its brain and agent wait in his hand.
@@ -378,7 +445,7 @@ public class BossStageEncounter : MonoBehaviour
         if (boss == null || brain == null) return false;
         var anim = boss.Animator;
         bool hasKneel = anim != null && Character.HasParameter(anim, "Kneel", AnimatorControllerParameterType.Bool);
-        if (!on || !boss.IsAlive) { if (hasKneel) anim.SetBool("Kneel", false); brain.Motor.ResetSpeed(); return false; }
+        if (!on || !boss.IsAlive) { if (hasKneel) anim.SetBool("Kneel", false); StopDance(); brain.Motor.ResetSpeed(); return false; }
         var toHome = bossHome - boss.transform.position; toHome.y = 0;
         // Close enough is home: the player or the stage's pillars can stand in the way of the exact spot.
         if (toHome.magnitude > 1.8f || toHome.magnitude > .5f && !brain.Motor.ReachedDestination(.6f))
@@ -390,14 +457,41 @@ public class BossStageEncounter : MonoBehaviour
         }
         brain.Motor.Stop();
         var dm = TableManager.HasInstance && TableManager.Instance.DM != null ? TableManager.Instance.DM.transform.position : boss.transform.position + boss.transform.forward;
+        // A dancing boss shows off to the player instead of kneeling to the DM.
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+        var look = fight.beamDance != null && player != null ? player.transform.position : dm;
         // Turned here, every frame, so nothing else steering the boss (a hit, a spell's aim) turns it back.
-        brain.Motor.LookAt(dm, 300f);
-        brain.Motor.Face(dm, 300f);
-        if (hasKneel && brain.Motor.IsFacing(dm, 12f)) anim.SetBool("Kneel", true);
+        brain.Motor.LookAt(look, 300f);
+        brain.Motor.Face(look, 300f);
+        if (!brain.Motor.IsFacing(look, 12f)) return true;
+        if (fight.beamDance != null) StartDance(anim);
+        else if (hasKneel) anim.SetBool("Kneel", true);
         return true;
     }
 
-    bool Kneeling => boss != null && boss.Animator != null && Character.HasParameter(boss.Animator, "Kneel", AnimatorControllerParameterType.Bool) && boss.Animator.GetBool("Kneel");
+    // The dance has the intro's spotlight back on over it (with its sound) for as long as it lasts.
+    GameObject danceSpot;
+
+    void StartDance(Animator anim)
+    {
+        if (danceGraph.IsValid() || anim == null) return;
+        var clip = AnimationPlayableUtilities.PlayClip(anim, fight.beamDance, out danceGraph);
+        clip.SetSpeed(fight.beamDanceSpeed);
+        if (fight.spotlight != null && danceSpot == null)
+        {
+            danceSpot = Instantiate(fight.spotlight, boss.transform.position, Quaternion.identity, dungeon.transform);
+            danceSpot.name = "Boss spotlight (dance)";
+        }
+        if (fight.spotlight != null && fight.spotlightSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(fight.spotlightSound, fight.spotlightVolume);
+    }
+
+    void StopDance()
+    {
+        if (danceGraph.IsValid()) danceGraph.Destroy();
+        if (danceSpot != null) { if (isActiveAndEnabled) StartCoroutine(Dim(danceSpot, fight.spotlightFadeOut)); else Destroy(danceSpot); danceSpot = null; }
+    }
+
+    bool Kneeling => danceGraph.IsValid() || boss != null && boss.Animator != null && Character.HasParameter(boss.Animator, "Kneel", AnimatorControllerParameterType.Bool) && boss.Animator.GetBool("Kneel");
 
     // The boss during the beam: back to a few metres from the player, facing them, no attacks (a swing already under
     // way finishes first: EnemyBrain only asks while it isn't swinging).
@@ -453,6 +547,7 @@ public class BossStageEncounter : MonoBehaviour
 
     void OnBossDied()
     {
+        StopDance();
         // Also after the player fell (lost): a boss that dies then still opens the way on.
         if (finished && !lost) return;
         lost = false;
@@ -518,7 +613,7 @@ public class BossStageEncounter : MonoBehaviour
         CatchUpClocks();
         DarkenRoom();
         LightRoom();
-        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title);
+        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.bossName : null);
         if (stageLights != null) { stageLights.Follow(boss.transform); if (phaseTwo) stageLights.PhaseTwo(); }
         if (seat != null) seat.Focus(StandFor(bossHome), bossHome);
         // A beam cut short by the death can leave the boss kneeling or keeping away.

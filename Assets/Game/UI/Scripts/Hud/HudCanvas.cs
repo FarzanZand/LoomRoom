@@ -9,7 +9,8 @@ public class HudCanvas : MonoBehaviour
     HotbarUI hotbar;
     PlayerVitalsUI vitals;
     CanvasGroup hotbarGroup, vitalsGroup;
-    public static bool BehindMenu => GameManager.HasInstance && GameManager.Instance.State == GameState.Menu || PauseMenuUI.OverCutscene;
+    public static bool BehindMenu => GameManager.HasInstance && GameManager.Instance.State == GameState.Menu || PauseMenuUI.OverCutscene
+        || PortraitDialogueUI.Covers || VersusScreenUI.Covers;
 
     void Awake()
     {

@@ -25,12 +25,13 @@ public class BossBarUI : Singleton<BossBarUI>
         if (group != null) group.alpha = 0f;
     }
 
-    public void Show(Character character, string title)
+    // Name: what the bar calls it instead of its own name (a boss fight's dialogue name, BossFight.bossName).
+    public void Show(Character character, string title, string name = null)
     {
         Unbind();
         boss = character;
         if (boss != null) boss.Damaged += OnDamaged;
-        if (bossName != null) bossName.text = boss != null ? boss.DisplayName.ToUpperInvariant() : "";
+        if (bossName != null) bossName.text = !string.IsNullOrWhiteSpace(name) ? name.ToUpperInvariant() : boss != null ? boss.DisplayName.ToUpperInvariant() : "";
         if (subtitle != null) subtitle.text = title ?? "";
         shown = 1f;
         Apply(1f);
