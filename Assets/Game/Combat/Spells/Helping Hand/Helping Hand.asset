@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Helping Hand
   description: Ask the Dungeon Master for a hand. He appears in front of you and
     holds it over you, and the light from it heals you.
-  icon: {fileID: 21300000, guid: 3ff4d37375fe3c54c9dda24f0f2070ce, type: 3}
+  icon: {fileID: 21300000, guid: 3a7ad9b0884bff747bf04e9442614bac, type: 3}
   manaCost: 28
   power: 40
   castSeconds: 0.7
@@ -107,6 +107,10 @@ MonoBehaviour:
     reach: 0
     appearDistance: 11
     appearAhead: 0.45
+    clearOfRoof: 4
+    openSkyFromPlayer: 18
+    appearFarthest: 20
+    turnRight: 25
     range: 16
     aimCone: 15
     reachSeconds: 1.6
@@ -132,6 +136,21 @@ MonoBehaviour:
     dieKnocks: []
     dieRollSound: {fileID: 0}
     dieVolume: 1
+    portalMaterial: {fileID: 0}
+    portalFrames: 8
+    portalFps: 12
+    portalColor: {r: 0.32, g: 0.48, b: 1, a: 1}
+    portalRadius: 0.8
+    portalDistance: 5.5
+    portalOpenSeconds: 0.35
+    portalHoldSeconds: 0.3
+    portalCloseSeconds: 0.3
+    portalDieSpeed: 20
+    portalLight: 6
+    portalOpenSound: {fileID: 0}
+    portalShootSound: {fileID: 0}
+    portalCloseSound: {fileID: 0}
+    portalVolume: 0.9
     lines:
     - Hold still.
     - Allow me.
@@ -143,6 +162,7 @@ MonoBehaviour:
     slamSound: {fileID: 0}
     slamVolume: 1
     hitShake: 0.6
+    slamShake: 1.5
     lid:
       open: {fileID: 0}
       rising: {fileID: 0}
@@ -156,6 +176,8 @@ MonoBehaviour:
   helpingHand:
     reach: 1
     appearDistance: 17
+    clearOfRoof: 4
+    appearFarthest: 24
     reachSeconds: 1.4
     holdSeconds: 2.2
     handReach: 12

@@ -20,9 +20,10 @@ SPELLS = os.path.join(ASSETS, "Game", "Combat", "Spells")
 PLAIN = os.path.join(HERE, "tome_plain.png")
 REFERENCE = os.path.join(SPELLS, "Raise the Fallen", "Raise the Fallen Tome icon.png")
 SCALE = 3
-# Cover colours of the six tomes whose covers were made here first (the others keep the colour their icon has).
+# Cover colours set here (the others keep the colour their icon has).
 COVERS = {"Fireball": (102, 42, 40), "Heal": (50, 84, 82), "Flick": (112, 94, 58), "Helping Hand": (114, 80, 50),
-          "Die Throw": (56, 54, 62), "Dice Portal": (50, 54, 96)}
+          "Die Throw": (56, 54, 62), "Dice Portal": (50, 54, 96),
+          "Frost Lance": (40, 58, 82)}   # darker than its first cover, so the pale ice shard stands out
 
 
 def lum(a):
