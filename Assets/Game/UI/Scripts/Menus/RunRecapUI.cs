@@ -232,14 +232,15 @@ public class RunRecapUI : MonoBehaviour
 
     // The Dungeon Master's word on the run, said in his own feed over the recap: a win, a good haul or a poor one. After
     // the lesson's top-up the help line says what he added instead (he explains it himself once back in the room).
-    // Co-op: under the tally, how the spoils were shared and everyone's kills (unless the lesson's top-up has the line).
+    // Co-op: under the tally, how the spoils were shared and everyone's kills (under the lesson's top-up when it has the line).
     void PartyLine(RunSummary s)
     {
-        if (helpLine == null || s.tally.toppedUp > 0 || !Coop.Running || MultiplayerManager.Instance.Players.Count < 2) return;
+        if (helpLine == null || !Coop.Running || MultiplayerManager.Instance.Players.Count < 2) return;
         var party = new System.Collections.Generic.List<string>();
         foreach (var p in MultiplayerManager.Instance.Players)
             if (p != null) party.Add($"{p.DisplayName} {(p.IsOwner ? (RunManager.HasInstance ? RunManager.Instance.Kills : 0) : p.Current.kills)}");
-        helpLine.text = (s.tally.sharedWith > 1 ? $"Shared between {s.tally.sharedWith}.   " : "") + "Kills: " + string.Join(",  ", party);
+        string line = (s.tally.sharedWith > 1 ? $"Shared between {s.tally.sharedWith}.   " : "") + "Kills: " + string.Join(",  ", party);
+        helpLine.text = s.tally.toppedUp > 0 ? $"+{s.tally.toppedUp} from the Dungeon Master\n{line}" : line;
         var group = Group(helpLine.gameObject);
         group.alpha = 0f;
         group.DOFade(1f, rowFade * 2f).SetUpdate(true).SetLink(helpLine.gameObject);
