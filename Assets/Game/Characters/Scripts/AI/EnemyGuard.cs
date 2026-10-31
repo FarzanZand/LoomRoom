@@ -36,13 +36,23 @@ public class EnemyGuard : MonoBehaviour
 
     static readonly int AttackTag = AnimatorHelper.TagHash("Attack"), HurtTag = AnimatorHelper.TagHash("Hurt"),
         DeathTag = AnimatorHelper.TagHash("Death"), SleepTag = AnimatorHelper.TagHash("Sleep");
-    static readonly int CombatX = Animator.StringToHash("CombatX"), CombatZ = Animator.StringToHash("CombatZ");
+    static readonly int CombatX = Animator.StringToHash("CombatX"), CombatZ = Animator.StringToHash("CombatZ"),
+        GuardPace = Animator.StringToHash("GuardPace");
+
+    // The moving clips' own speeds, metres a second per metre of the body's height (measured; their places in the blend,
+    // EnemyGuardSetup): a walk in, a walk back, a strafe right and left, a run.
+    public const float StrideForward = 1.549f, StrideBack = 1.177f, StrideRight = 1.291f, StrideLeft = 1.142f, RunForward = 4.232f;
+
+    [Tooltip("Stride matching: moving slower than a clip's own speed it still takes whole strides, played that much slower "
+        + "(GuardPace), so the planted foot stays put; a blend of a walk and the standing pose slid the feet. Below this share "
+        + "of a stride's speed it eases back toward the standing pose.")]
+    [Range(.05f, 1f)] public float strideMatchBelow = .3f;
 
     EnemyBrain brain;
     Animator anim;
     int stanceLayer = -1, gestureLayer = -1;
     float stance, lastYaw, yawRate;
-    bool hasParams;
+    bool hasParams, hasPace;
 
     void Awake()
     {
@@ -52,6 +62,7 @@ public class EnemyGuard : MonoBehaviour
         stanceLayer = anim.GetLayerIndex("Guard stance");
         gestureLayer = anim.GetLayerIndex("FullBodyOverride");
         hasParams = Character.HasParameter(anim, "CombatX", AnimatorControllerParameterType.Float);
+        hasPace = Character.HasParameter(anim, "GuardPace", AnimatorControllerParameterType.Float);
         lastYaw = transform.eulerAngles.y;
         if (stanceLayer >= 0)
         {
@@ -96,8 +107,11 @@ public class EnemyGuard : MonoBehaviour
             yawRate = Mathf.Lerp(yawRate, Mathf.DeltaAngle(lastYaw, yaw) / dt, Mathf.Clamp01(dt / .1f));
             lastYaw = yaw;
             if (v.magnitude < standingBelow) local.x += Mathf.Clamp(yawRate / Mathf.Max(1f, turnRate), -1f, 1f) * turnStep;
-            anim.SetFloat(CombatX, local.x, blendDamping, Time.deltaTime);
-            anim.SetFloat(CombatZ, local.z, blendDamping, Time.deltaTime);
+            var move = new Vector2(local.x, local.z);
+            float pace = hasPace ? StrideMatch(ref move) : 1f;
+            anim.SetFloat(CombatX, move.x, blendDamping, Time.deltaTime);
+            anim.SetFloat(CombatZ, move.y, blendDamping, Time.deltaTime);
+            if (hasPace) anim.SetFloat(GuardPace, pace, blendDamping, Time.deltaTime);
         }
 
         if (swing >= 0f) stance = Mathf.Min(stance, 1f - Mathf.Clamp01(swing / Mathf.Max(.01f, swingHandover)));
@@ -108,6 +122,25 @@ public class EnemyGuard : MonoBehaviour
             stance = Mathf.MoveTowards(stance, want, rate * Time.deltaTime);
         }
         anim.SetLayerWeight(stanceLayer, stance);
+    }
+
+    // Slower than a clip's own speed the blend takes the whole stride in that direction and returns how much slower to play
+    // it: the clips' places make an ellipse (StrideForward and StrideBack along z, StrideRight and StrideLeft along x).
+    // Faster than that it blends on toward the run as before.
+    float StrideMatch(ref Vector2 move)
+    {
+        float speed = move.magnitude;
+        if (speed < 1e-4f) return 1f;
+        var dir = move / speed;
+        float rx = dir.x >= 0f ? StrideRight : StrideLeft, rz = dir.y >= 0f ? StrideForward : StrideBack;
+        float stride = 1f / Mathf.Sqrt(dir.x * dir.x / (rx * rx) + dir.y * dir.y / (rz * rz));
+        if (speed >= stride) return 1f;
+        float share = speed / stride, low = strideMatchBelow;
+        if (share >= low) { move = dir * stride; return share; }
+        // Barely moving: from the standing pose toward a whole stride played at the lowest pace.
+        float t = share / low;
+        move = dir * stride * t;
+        return Mathf.Lerp(1f, low, t);
     }
 
     // Fighting: in range of its target, or chasing it from close by; never asleep, entranced (the dancers, Not a witch

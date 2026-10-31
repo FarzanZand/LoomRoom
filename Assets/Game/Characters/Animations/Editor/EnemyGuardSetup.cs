@@ -29,11 +29,11 @@ public static class EnemyGuardSetup
     // clip divided by its length, Animator.humanScale and the model's scale), the blend's position for it.
     static readonly (string clip, Vector2 at)[] Speeds =
     {
-        ("sword and shield walk", new Vector2(0f, 1.549f)),
-        ("sword and shield walk (2)", new Vector2(0f, -1.177f)),
-        ("sword and shield strafe", new Vector2(1.291f, 0f)),
-        ("sword and shield strafe (2)", new Vector2(-1.142f, 0f)),
-        ("sword and shield run", new Vector2(0f, 4.232f)),
+        ("sword and shield walk", new Vector2(0f, EnemyGuard.StrideForward)),
+        ("sword and shield walk (2)", new Vector2(0f, -EnemyGuard.StrideBack)),
+        ("sword and shield strafe", new Vector2(EnemyGuard.StrideRight, 0f)),
+        ("sword and shield strafe (2)", new Vector2(-EnemyGuard.StrideLeft, 0f)),
+        ("sword and shield run", new Vector2(0f, EnemyGuard.RunForward)),
     };
 
     public static float SwingExit = .35f;
@@ -171,8 +171,15 @@ public static class EnemyGuardSetup
         layer.iKPass = true;
         // Foot IK holds the feet where the clips plant them (a humanoid clip keeps the body's centre of mass, so a blend of
         // two stepping clips would slide them).
+        // GuardPace plays the moves slower when the body moves slower than a whole stride (EnemyGuard.StrideMatch).
+        if (!controller.parameters.Any(p => p.name == "GuardPace"))
+            controller.AddParameter(new AnimatorControllerParameter { name = "GuardPace", type = AnimatorControllerParameterType.Float, defaultFloat = 1f });
         foreach (var s in layer.stateMachine.states)
-            if (s.state.name == "Guard") { s.state.motion = tree; s.state.writeDefaultValues = true; s.state.iKOnFeet = true; }
+            if (s.state.name == "Guard")
+            {
+                s.state.motion = tree; s.state.writeDefaultValues = true; s.state.iKOnFeet = true;
+                s.state.speedParameter = "GuardPace"; s.state.speedParameterActive = true;
+            }
         layers[stance] = layer;
 
         // The old arms-only layer (a hand-made guard laid over the walk) is replaced by the moves.

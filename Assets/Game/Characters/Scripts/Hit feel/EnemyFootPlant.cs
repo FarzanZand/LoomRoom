@@ -1,44 +1,52 @@
 using UnityEngine;
 
-// While a hit slides a humanoid enemy (EnemyMotor.IsKnockedBack), its feet stay where they stood instead of skating
-// along with the body: foot IK holds each foot on the spot (and turned the way) the animation had it when the slide
-// began. When the slide ends, or the body has slid more than CombatManager.footPlantReach from its feet, they step back
-// under the body one after the other, the one with furthest to go first: each held spot travels to where the animation
-// has the foot now (a guard raised meanwhile can have widened the stance) in about footPlantRelease, never faster than
-// StepSpeed, lifting a little on the way, and the IK lets go once it is there, so the animation takes over with nothing
-// left to jump. The IK weight stays at 1 throughout: Unity blends a part weight by turning the joints, which swings the
-// foot through the floor on its way.
-// Where the animation has a foot is read in the first IK pass of each frame, before anything is set: in a later layer's
-// pass Unity returns the goal set in the earlier one. On the Animator object (Unity calls OnAnimatorIK there, in every
-// layer with an IK pass); EnemyBrain adds it to humanoids at start.
+// Foot locking for humanoid enemies, so feet step instead of skating. While something would slide them (a hit's
+// knockback slide, EnemyMotor.IsKnockedBack; the guard fading in or out while the enemy stands, EnemyGuard's "Guard
+// stance" layer; the enemy's own swing, played on the spot, whose lunge dragged the back foot across the floor) each
+// foot is held where it stood the frame before. A held foot the animation pulls further than a short reach away takes a
+// real step there (eased in and out, lifted a little, never below the spot it was held on) and is held again; one foot
+// steps at a time. When nothing holds them any more each foot steps to where the animation has it, the one with
+// furthest to go first and the other once it has nearly landed, and the IK lets go.
+// The IK weight stays at 1 while a foot is held or stepping (Unity blends a part weight by turning the joints, which
+// swings the foot through the floor) and the held spot itself travels. Where the animation has a foot is read in the
+// first IK pass of each frame, before anything is set: in a later layer's pass Unity returns the goal set in the earlier
+// one. On the Animator object (Unity calls OnAnimatorIK there, in every layer with an IK pass); EnemyBrain adds it to
+// humanoids at start. Tuning on CombatManager > Hits > Impact (plantFeetInKnockback, footPlantReach, footPlantRelease).
 [RequireComponent(typeof(Animator))]
 public class EnemyFootPlant : MonoBehaviour
 {
-    // Seconds the second foot waits after the first starts its step back.
-    const float SecondStep = .1f;
-    // Metres a second a stepping foot never goes past (a walking step's swing), and how high it lifts.
+    // How far along the first stepping foot must be before the other lifts (both in the air read as a hop).
+    const float FirstLanding = .85f;
+    // Metres a second a stepping foot never goes past through the middle of its step, and how high it lifts.
     const float StepSpeed = 2.5f, StepLift = .06f;
-    // Seconds the IK takes to let go once a foot has arrived.
+    // Seconds the IK takes to let go once a foot is home.
     const float LetGo = .06f;
+    // Metres a second the body may walk for the guard's fade to be held (walking, its own steps carry the change).
+    const float SettleBelow = .3f;
+    // Metres a held foot may lag behind the animation during a swing or the guard's fade before it steps.
+    const float SwingReach = .22f;
 
-    Animator anim;
-    EnemyMotor motor;
-    Character character;
-    Transform hips;
-    bool planted, needPlant, wasSliding, released, leftFirst;
-    float releasedAt;
-    int readFrame = -1;
-    Vector3 hipsAtPlant;
-    readonly Foot left = new Foot { goal = AvatarIKGoal.LeftFoot }, right = new Foot { goal = AvatarIKGoal.RightFoot };
+    enum State { Free, Held, Stepping, Letting }
 
     class Foot
     {
         public AvatarIKGoal goal;
-        public Vector3 at, wants, before;    // the held spot; where the animation has the foot this frame, and had it last frame
+        public State state;
+        public Vector3 at, wants, before, from;   // held spot; animation's spot this frame and last; where a step began
         public Quaternion turn, wantsTurn, turnBefore;
-        public float weight, stepLength, lift;
-        public bool stepping;
+        public float weight, done, length, lift, groundY;
+        public bool home;                        // this step ends the lock: let go on landing
     }
+
+    Animator anim;
+    EnemyMotor motor;
+    EnemyBrain brain;
+    Character character;
+    Transform hips;
+    int guardLayer = -1, readFrame = -1;
+    float lastGuard;
+    bool locked, plantPending;
+    readonly Foot left = new Foot { goal = AvatarIKGoal.LeftFoot }, right = new Foot { goal = AvatarIKGoal.RightFoot };
 
     static CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
 
@@ -46,71 +54,120 @@ public class EnemyFootPlant : MonoBehaviour
     {
         anim = GetComponent<Animator>();
         motor = GetComponentInParent<EnemyMotor>();
+        brain = GetComponentInParent<EnemyBrain>();
         character = GetComponentInParent<Character>();
         if (anim != null && anim.isHuman) hips = anim.GetBoneTransform(HumanBodyBones.Hips);
+        if (anim != null && anim.runtimeAnimatorController != null) guardLayer = anim.GetLayerIndex("Guard stance");
     }
 
     void Update()
     {
         if (hips == null) return;
         var tuning = Tuning;
-        bool sliding = motor != null && motor.IsKnockedBack && tuning != null && tuning.plantFeetInKnockback
-            && (character == null || character.IsAlive);
-        // A new slide plants the feet where the animation has them (a second hit during the step back too).
-        if (sliding && !wasSliding)
-        {
-            needPlant = planted = true; released = false;
-            left.weight = right.weight = 1f; left.stepping = right.stepping = false; left.lift = right.lift = 0f;
-            hipsAtPlant = hips.position;
-        }
-        wasSliding = sliding;
-        if (!planted || needPlant) return;
-        // The step back starts when the slide ends, or once the body has slid too far for the legs to reach.
-        float slid = Flat(hips.position - hipsAtPlant).magnitude;
-        if (!released && (!sliding || slid > (tuning != null ? tuning.footPlantReach : .4f)))
-        {
-            released = true; releasedAt = Time.time;
-            leftFirst = (left.wants - left.at).sqrMagnitude >= (right.wants - right.at).sqrMagnitude;
-        }
-        if (!released) return;
+        bool alive = character == null || character.IsAlive;
+        bool on = tuning != null && tuning.plantFeetInKnockback && alive;
+        // What holds the feet this frame.
+        bool sliding = motor != null && motor.IsKnockedBack;
+        float guard = guardLayer >= 0 ? anim.GetLayerWeight(guardLayer) : 0f;
+        bool guardFading = guardLayer >= 0 && Mathf.Abs(guard - lastGuard) > 1e-4f;
+        lastGuard = guard;
+        bool still = motor == null || Flat(motor.LegVelocity).magnitude < SettleBelow;
+        bool swinging = brain != null && brain.IsSwinging;
+        bool hold = on && (sliding || swinging || guardFading && still);
+        float reach = sliding ? (tuning != null ? tuning.footPlantReach : .4f) : SwingReach;
         float release = tuning != null ? tuning.footPlantRelease : .2f;
-        float since = Time.time - releasedAt;
-        if (since >= (leftFirst ? 0f : SecondStep)) Step(left, release);
-        if (since >= (leftFirst ? SecondStep : 0f)) Step(right, release);
-        if (left.weight <= 0f && right.weight <= 0f) planted = false;
+
+        if (hold && !locked)
+        {
+            // The lock starts: free feet are held where they stood the frame before (that frame's pose had nothing of
+            // the blow, the fade or the swing yet); a foot still stepping or held keeps where it is.
+            locked = true; plantPending = true;
+        }
+        else if (!hold && locked)
+        {
+            // The lock ends: every held foot goes home, the furthest first.
+            locked = false;
+            var first = Gap(left) >= Gap(right) ? left : right;
+            GoHome(first, false); GoHome(first == left ? right : left, true);
+        }
+        if (!alive) { Free(left); Free(right); return; }
+        if (plantPending) return;   // planted in the next IK pass
+
+        // A held foot left too far behind steps after the body (one foot at a time).
+        if (locked)
+        {
+            var lagging = Gap(left) >= Gap(right) ? left : right;
+            var other = lagging == left ? right : left;
+            if (lagging.state == State.Held && Gap(lagging) > reach && other.state != State.Stepping) BeginStep(lagging, false);
+        }
+        Advance(left, right, release);
+        Advance(right, left, release);
     }
 
-    // The held spot travels to where the animation has the foot, lifting on the way, and the IK lets go there.
-    void Step(Foot foot, float release)
+    float Gap(Foot foot) => foot.state == State.Free ? 0f : Flat(foot.wants - foot.at).magnitude;
+
+    // Sends a foot home; second: it waits for the other to have nearly landed (done < 0 marks the wait).
+    void GoHome(Foot foot, bool second)
     {
-        if (foot.weight <= 0f) return;
-        if (!foot.stepping) { foot.stepping = true; foot.stepLength = Vector3.Distance(foot.at, foot.wants); }
-        float remaining = Vector3.Distance(foot.at, foot.wants);
-        if (remaining > .01f)
-        {
-            float speed = Mathf.Clamp(foot.stepLength / Mathf.Max(.05f, release), .5f, StepSpeed);
-            foot.at = Vector3.MoveTowards(foot.at, foot.wants, speed * Time.deltaTime);
-            float done = foot.stepLength > .01f ? Mathf.Clamp01(1f - Vector3.Distance(foot.at, foot.wants) / foot.stepLength) : 1f;
-            foot.lift = Mathf.Sin(done * Mathf.PI) * Mathf.Min(StepLift, foot.stepLength * .5f);
-            foot.turn = Quaternion.Slerp(foot.turn, foot.wantsTurn, done);
-        }
-        else { foot.at = foot.wants; foot.turn = foot.wantsTurn; foot.lift = 0f; foot.weight = Mathf.MoveTowards(foot.weight, 0f, Time.deltaTime / LetGo); }
+        if (foot.state == State.Held) { BeginStep(foot, true); if (second) foot.done = -1f; }
+        else if (foot.state == State.Stepping) foot.home = true;
     }
+
+    void BeginStep(Foot foot, bool home)
+    {
+        foot.state = State.Stepping; foot.home = home; foot.done = 0f;
+        foot.from = foot.at; foot.length = Vector3.Distance(foot.at, foot.wants);
+    }
+
+    void Advance(Foot foot, Foot other, float release)
+    {
+        switch (foot.state)
+        {
+            case State.Stepping:
+                if (foot.done < 0f)
+                {
+                    if (other.state == State.Stepping && other.done >= 0f && other.done < FirstLanding) return;
+                    BeginStep(foot, true);
+                }
+                if (foot.length <= .01f) { Land(foot); return; }
+                // Eased in and out, so the foot leaves and lands without sliding; StepSpeed at most through the middle
+                // (the eased curve's peak is 1.5 times its average).
+                float speed = Mathf.Clamp(foot.length / Mathf.Max(.05f, release), .5f, StepSpeed / 1.5f);
+                foot.done = Mathf.Min(1f, foot.done + speed * Time.deltaTime / foot.length);
+                var target = foot.wants; target.y = Mathf.Max(target.y, foot.groundY);
+                foot.at = Vector3.Lerp(foot.from, target, Mathf.SmoothStep(0f, 1f, foot.done));
+                foot.lift = Mathf.Sin(foot.done * Mathf.PI) * Mathf.Min(StepLift, foot.length * .5f);
+                foot.turn = Quaternion.Slerp(foot.turn, foot.wantsTurn, foot.done);
+                if (foot.done >= 1f) Land(foot);
+                break;
+            case State.Letting:
+                foot.weight = Mathf.MoveTowards(foot.weight, 0f, Time.deltaTime / LetGo);
+                if (foot.weight <= 0f) Free(foot);
+                break;
+        }
+    }
+
+    void Land(Foot foot)
+    {
+        foot.lift = 0f;
+        if (foot.home) { foot.at = foot.wants; foot.turn = foot.wantsTurn; foot.state = State.Letting; }
+        else foot.state = State.Held;
+    }
+
+    static void Free(Foot foot) { foot.state = State.Free; foot.weight = 0f; foot.lift = 0f; foot.home = false; }
 
     void OnAnimatorIK(int layer)
     {
         if (hips == null) return;
         // The first pass of the frame: where the animation has the feet, before anything is set (read every frame, so a
-        // slide plants them where they stood the frame before the blow: the blow's own frame already starts its stagger
-        // or raises the guard).
+        // lock can plant them where they stood the frame before).
         if (readFrame != Time.frameCount)
         {
             bool fresh = readFrame == Time.frameCount - 1;
             readFrame = Time.frameCount;
             Read(left); Read(right);
-            if (needPlant) { Plant(left, fresh); Plant(right, fresh); needPlant = false; }
+            if (plantPending) { Plant(left, fresh); Plant(right, fresh); plantPending = false; }
         }
-        if (!planted) return;
         Hold(left);
         Hold(right);
     }
@@ -123,12 +180,20 @@ public class EnemyFootPlant : MonoBehaviour
 
     void Plant(Foot foot, bool fresh)
     {
-        foot.at = fresh ? foot.before : foot.wants;
-        foot.turn = fresh ? foot.turnBefore : foot.wantsTurn;
+        if (foot.state == State.Held || foot.state == State.Stepping && !foot.home) return;
+        if (foot.state == State.Free)
+        {
+            foot.at = fresh ? foot.before : foot.wants;
+            foot.turn = fresh ? foot.turnBefore : foot.wantsTurn;
+            foot.groundY = foot.at.y;
+        }
+        else foot.at += Vector3.up * foot.lift;   // caught mid-step home or letting go: held where it is
+        foot.state = State.Held; foot.weight = 1f; foot.lift = 0f; foot.home = false;
     }
 
     void Hold(Foot foot)
     {
+        if (foot.state == State.Free) return;
         anim.SetIKPosition(foot.goal, foot.at + Vector3.up * foot.lift); anim.SetIKPositionWeight(foot.goal, foot.weight);
         anim.SetIKRotation(foot.goal, foot.turn); anim.SetIKRotationWeight(foot.goal, foot.weight);
     }
