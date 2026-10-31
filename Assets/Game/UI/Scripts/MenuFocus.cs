@@ -62,6 +62,53 @@ public static class MenuFocus
         }
     }
 
+    // Each control's neighbours are the nearest of the group in each direction on screen (within 60 degrees, else 85), so
+    // keys and a pad move about a screen of rows and cells and never leave it for buttons elsewhere. Controls that can't
+    // be used are left out (none can be reached).
+    public static void LinkNearest(IList<Selectable> group)
+    {
+        for (int i = 0; i < group.Count; i++)
+        {
+            var s = group[i];
+            if (s == null) continue;
+            var nav = s.navigation;
+            nav.mode = Navigation.Mode.Explicit;
+            bool live = s.gameObject.activeInHierarchy && s.IsInteractable();
+            nav.selectOnUp = live ? Nearest(group, s, Vector2.up) : null;
+            nav.selectOnDown = live ? Nearest(group, s, Vector2.down) : null;
+            nav.selectOnLeft = live && !(s is Slider) ? Nearest(group, s, Vector2.left) : null;
+            nav.selectOnRight = live && !(s is Slider) ? Nearest(group, s, Vector2.right) : null;
+            s.navigation = nav;
+        }
+    }
+
+    // Straight ahead first; with nothing there, anything on that side (Leave, low and far right of the last ware).
+    static Selectable Nearest(IList<Selectable> group, Selectable from, Vector2 way) => Nearest(group, from, way, 60f) ?? Nearest(group, from, way, 85f);
+
+    static Selectable Nearest(IList<Selectable> group, Selectable from, Vector2 way, float cone)
+    {
+        Vector2 here = Centre(from);
+        Selectable best = null; float bestScore = float.MaxValue;
+        for (int i = 0; i < group.Count; i++)
+        {
+            var s = group[i];
+            if (s == null || s == from || !s.gameObject.activeInHierarchy || !s.IsInteractable()) continue;
+            var to = Centre(s) - here;
+            float along = Vector2.Dot(to, way);
+            if (along <= 1f || Vector2.Angle(to, way) > cone) continue;
+            float score = along + (to - way * along).magnitude * 2f;   // straight on before off to the side
+            if (score < bestScore) { bestScore = score; best = s; }
+        }
+        return best;
+    }
+
+    static readonly Vector3[] corners = new Vector3[4];
+    static Vector2 Centre(Selectable s)
+    {
+        ((RectTransform)s.transform).GetWorldCorners(corners);
+        return (corners[0] + corners[2]) * .5f;
+    }
+
     // A selection inside a scrolled list is scrolled into view.
     public static void Follow(ScrollRect list, GameObject selected)
     {
