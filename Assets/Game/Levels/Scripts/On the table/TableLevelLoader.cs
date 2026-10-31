@@ -190,8 +190,9 @@ public class TableLevelLoader : MonoBehaviour
                 LootSource.FloorGear = floor => level.GearAt(floor);
                 LootSource.GenerationLevel = resume != null ? Mathf.Max(1, resume.lootLevel) : descending ? player.GetComponent<AdventurerProgress>().Level : 1;
                 generationLevel = LootSource.GenerationLevel.Value;
-                // With the reveal (from the room) the floor is built over several frames while the campaign map folds away.
-                preparing = PrepareRoutine(level, useReveal, useReveal);
+                // With the reveal (from the room) the floor is built over several frames while the campaign map folds away;
+                // going down the stairs it is too, behind the black, so the game and its music never stall for the build.
+                preparing = PrepareRoutine(level, useReveal, useReveal || descending);
             }
             catch(Exception e) { failure=e; }
             while(failure==null) {
@@ -331,6 +332,9 @@ public class TableLevelLoader : MonoBehaviour
                 SetTown(false);
             }
             int seed=unchecked(runSeed+(FloorNumber-1)*104729);
+            // Built over frames while the player is still on the table (going down the stairs), they would fall through
+            // where the old floor was: they are held still until they are set down on the new one.
+            if(sliced && !deferPlayerSwitch) HoldStill(true);
             // A layout can fail validation (a room cut off by props). Try the next derived seed
             // rather than failing the floor; the sequence is fixed, so runs stay reproducible.
             for(int attempt=0; failure==null; attempt++) {
@@ -361,6 +365,7 @@ public class TableLevelLoader : MonoBehaviour
                 failure=error;
             }
             if(failure!=null) {
+                HoldStill(false);
                 if(candidate!=null){candidate.SetActive(false);Destroy(candidate);}
                 if(previousEnvironment!=null)previousEnvironment.SetActive(true);
                 SetTown(previousTown);
@@ -391,8 +396,19 @@ public class TableLevelLoader : MonoBehaviour
         player.Died-=OnDied;player.Died+=OnDied;
         var controller=player.GetComponent<CharacterController>();
         controller.enabled=false;player.transform.SetPositionAndRotation(spawn,rotation);controller.enabled=true;
+        HoldStill(false);
         player.SetSpawnPoint(spawn,rotation);if(player.Look!=null)player.Look.SetYaw(rotation.eulerAngles.y);player.SynchronizePresentation();
         Physics.SyncTransforms();
+    }
+    // The table player's walking and falling stop while a floor is built under them over several frames.
+    bool heldStill;
+    void HoldStill(bool hold)
+    {
+        if(hold==heldStill || player==null) return;
+        heldStill=hold;
+        if(player.Motor!=null) player.Motor.enabled=!hold;
+        var controller=player.GetComponent<CharacterController>();
+        if(controller!=null) controller.enabled=!hold;
     }
     void SetTown(bool active)
     {
