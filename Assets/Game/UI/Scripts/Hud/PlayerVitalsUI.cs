@@ -36,6 +36,8 @@ public class PlayerVitalsUI : MonoBehaviour
     CharacterStats bound;
     float healthShownLast = 1f;
     float healthShown = 1f, staminaShown = 1f, manaShown = 1f, trailShown = 1f, trailWaitUntil;
+    // The numbers last written, so a label is only set again when it changes (TextMeshPro rebuilds its mesh on every set).
+    readonly int[] written = { -1, -1, -1, -1, -1, -1 };
 
     void OnEnable()
     {
@@ -68,6 +70,7 @@ public class PlayerVitalsUI : MonoBehaviour
     {
         if (bound != null) bound.StaminaUseDenied -= StaminaDenied;
         bound = player != null ? player.Stats : null;
+        for (int i = 0; i < written.Length; i++) written[i] = -1;   // a new player: write the labels again
         if (bound != null) bound.StaminaUseDenied += StaminaDenied;
         nextStaminaWarning = 0;
         if (manaRoot != null) manaRoot.SetActive(bound != null && bound.HasStat(StatType.MaxMana));
@@ -92,15 +95,24 @@ public class PlayerVitalsUI : MonoBehaviour
         if (h < healthShownLast - .0001f) trailWaitUntil = Time.unscaledTime + trailDelay;
         healthShownLast = h;
         UIBar.Set(healthTrail, trailShown);
-        if (healthValue != null) healthValue.SetText("{0}/{1}", Mathf.CeilToInt(bound.CurrentHealth), Mathf.CeilToInt(bound.MaxHealth));
+        Write(healthValue, 0, bound.CurrentHealth, bound.MaxHealth);
 
         float m = bound.MaxMana > 0f ? bound.CurrentMana / bound.MaxMana : 0f;
         manaShown = Mathf.Lerp(manaShown, m, t);
         UIBar.Set(manaFill, manaShown);
-        if (manaValue != null) manaValue.SetText("{0}/{1}", Mathf.CeilToInt(bound.CurrentMana), Mathf.CeilToInt(bound.MaxMana));
+        Write(manaValue, 2, bound.CurrentMana, bound.MaxMana);
         float s = bound.MaxStamina > 0 ? bound.CurrentStamina / bound.MaxStamina : 0;
         staminaShown = Mathf.Lerp(staminaShown, s, t);
         UIBar.Set(staminaBarFill, staminaShown);
-        if (staminaBarValue != null) staminaBarValue.SetText("{0}/{1}", Mathf.CeilToInt(bound.CurrentStamina), Mathf.CeilToInt(bound.MaxStamina));
+        Write(staminaBarValue, 4, bound.CurrentStamina, bound.MaxStamina);
+    }
+
+    void Write(TMPro.TMP_Text label, int at, float current, float max)
+    {
+        if (label == null) return;
+        int c = Mathf.CeilToInt(current), m = Mathf.CeilToInt(max);
+        if (written[at] == c && written[at + 1] == m) return;
+        written[at] = c; written[at + 1] = m;
+        label.SetText("{0}/{1}", c, m);
     }
 }

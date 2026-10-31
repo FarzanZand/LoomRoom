@@ -70,7 +70,7 @@ public class OneBodyRig : MonoBehaviour
     // Per arm: upper arm, forearm, hand; and what the animator and this rig last wrote there.
     Transform[][] arms;
     Quaternion[][] armWritten, armAnimated;
-    string heldSignature, bodySignature;
+    int? heldSignature, bodySignature;   // hashes, not strings: they are checked every frame
     bool ownerView;
 
     void Awake()
@@ -189,8 +189,8 @@ public class OneBodyRig : MonoBehaviour
         float chestPitch = Mathf.Clamp(pitch, -chestLimit, chestLimit), chestTurn = Mathf.Clamp(turn, -chestLimit, chestLimit);
         float restPitch = pitch - chestPitch, restTurn = turn - chestTurn;
         Turn(spine, chestPitch, chestTurn, roll);
-        if (neck != null) Turn(new[] { neck }, restPitch * neckShare, restTurn * neckShare, 0f);
-        if (head != null) Turn(new[] { head }, restPitch * (1f - neckShare), restTurn * (1f - neckShare), 0f);
+        if (neck != null) Turn(neck, restPitch * neckShare, restTurn * neckShare);
+        if (head != null) Turn(head, restPitch * (1f - neckShare), restTurn * (1f - neckShare));
     }
 
     // From outside, a hand held up in front of the eyes is carried lower and closer, as someone would really hold it:
@@ -244,6 +244,11 @@ public class OneBodyRig : MonoBehaviour
                    Quaternion.AngleAxis(roll / n, transform.forward);
         foreach (var b in bones) b.rotation = step * b.rotation;
     }
+    void Turn(Transform bone, float pitch, float turn)
+    {
+        if (pitch == 0f && turn == 0f) return;
+        bone.rotation = Quaternion.AngleAxis(turn, transform.up) * Quaternion.AngleAxis(pitch, transform.right) * bone.rotation;
+    }
 
     // ── The first-person arms: a cut of the body ─────────────────────
 
@@ -289,12 +294,12 @@ public class OneBodyRig : MonoBehaviour
 
     readonly List<SkinnedMeshRenderer> skins = new();
 
-    string BodySignature()
+    int BodySignature()
     {
         animator.GetComponentsInChildren(false, skins);
-        var sb = new System.Text.StringBuilder();
-        foreach (var r in skins) if (r.enabled && r.sharedMesh != null) sb.Append(r.sharedMesh.GetHashCode()).Append('|');
-        return sb.ToString();
+        int h = 17;
+        foreach (var r in skins) if (r.enabled && r.sharedMesh != null) h = unchecked(h * 31 + r.sharedMesh.GetHashCode());
+        return h;
     }
 
     // The triangles of a skinned mesh that belong to the arms and hands (more than half their weight on arm bones).
@@ -336,16 +341,16 @@ public class OneBodyRig : MonoBehaviour
 
     // ── Held items: the body holds copies ────────────────────────────
 
-    string HeldSignature()
+    int HeldSignature() => unchecked(Held(Held(17, armsRight) * 31 + 7, armsLeft));
+    static int Held(int h, Transform socket)
     {
-        var sb = new System.Text.StringBuilder();
-        foreach (var socket in new[] { armsRight, armsLeft })
+        if (socket == null) return h;
+        for (int i = 0; i < socket.childCount; i++)
         {
-            if (socket == null) continue;
-            foreach (Transform child in socket) sb.Append(child.GetHashCode()).Append(child.gameObject.activeSelf ? '+' : '-').Append('|');
-            sb.Append('/');
+            var child = socket.GetChild(i);
+            h = unchecked((h * 31 + child.GetHashCode()) * 31 + (child.gameObject.activeSelf ? 1 : 2));
         }
-        return sb.ToString();
+        return h;
     }
 
     void MirrorHeld()

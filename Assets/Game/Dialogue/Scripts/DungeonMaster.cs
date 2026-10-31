@@ -347,7 +347,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
         float now = Time.unscaledTime;
         // Paused: the lines on screen keep their age, so none fades behind the menu.
         if (Paused) for (int i = 0; i < lines.Count; i++) { var l = lines[i]; l.shown += Time.unscaledDeltaTime; lines[i] = l; }
-        if (lines.RemoveAll(l => now - l.shown > l.typing + hold + fadeOut) > 0) dirty = true;
+        // A plain loop: RemoveAll's lambda caught now and made garbage every frame.
+        for (int i = lines.Count - 1; i >= 0; i--) if (now - lines[i].shown > lines[i].typing + hold + fadeOut) { lines.RemoveAt(i); dirty = true; }
         // Full-screen menus (the run recap shares this canvas) are not written over unless one asks for it (OverMenus),
         // and a conversation has its own subtitles and choices in the same spot.
         if ((GameManager.HasInstance && !overMenus && (GameManager.Instance.State == GameState.Menu || GameManager.Instance.State == GameState.Paused))
