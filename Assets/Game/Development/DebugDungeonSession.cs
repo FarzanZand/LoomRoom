@@ -95,7 +95,9 @@ public class DebugDungeonSession : MonoBehaviour
         }
     }
 
-    // Boss: once the floor is built, the player stands on the stage, on the side away from the Dungeon Master, facing him.
+    // Boss: once the floor is built, the player stands just off the stage, on the side away from the Dungeon Master,
+    // facing him: the fight starts once most of the stage's top is reached (BossStageEncounter), so walking onto it
+    // plays the opening from its start.
     static IEnumerator OntoStage(TableLevelLoader loader, Player player)
     {
         for (float t = 0; t < 10f && (loader.Busy || loader.Dungeon == null); t += Time.deltaTime) yield return null;
@@ -104,8 +106,14 @@ public class DebugDungeonSession : MonoBehaviour
         var centre = dungeon.StageCentre;
         var toDm = (TableManager.HasInstance && TableManager.Instance.DM != null ? TableManager.Instance.DM.transform.position : centre + Vector3.right) - centre; toDm.y = 0;
         toDm = toDm.sqrMagnitude > .01f ? toDm.normalized : Vector3.right;
-        var at = centre - toDm * dungeon.LevelData.cellSize * 2.5f;
-        if (UnityEngine.AI.NavMesh.SamplePosition(at, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas)) at = hit.position;
+        float half = dungeon.LevelData.cellSize * 2.5f;
+        if (dungeon.StageRoom >= 0 && dungeon.StageRoom < dungeon.Layout.rooms.Count)
+        {
+            var room = dungeon.Layout.rooms[dungeon.StageRoom];
+            half = Mathf.Max(room.width, room.height) * dungeon.LevelData.cellSize * .5f;
+        }
+        var at = centre - toDm * (half + dungeon.LevelData.cellSize * 1.5f);
+        if (UnityEngine.AI.NavMesh.SamplePosition(at, out var hit, 4f, UnityEngine.AI.NavMesh.AllAreas)) at = hit.position;
         player.Warp(at, Quaternion.LookRotation(toDm));
         if (player.Look != null) { player.Look.SetYaw(Quaternion.LookRotation(toDm).eulerAngles.y); player.Look.SetPitch(8f); }
     }

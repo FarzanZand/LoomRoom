@@ -47,7 +47,7 @@ public partial class AssetStudioWindow : EditorWindow
     static readonly string[] RoomSorts = { "By name", "By where they are", "By kind" };
     // Which view the window shows, one at a time: a category's list, or one of the views above the categories. Recent,
     // Requests and Everything are retired (their numbers kept for saved windows), and Levels is part of World now.
-    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue, Levels, Dungeon, Substats, Biomes, Unlockables, Stats, Quests }
+    enum StudioView { Category, Recent, Requests, Everything, World, Dialogue, Levels, Dungeon, Substats, Biomes, Unlockables, Stats, Quests, Bosses }
     [SerializeField] StudioView view;
     // Leaving the Dialogue view writes back what was typed there.
     StudioView studioView { get => view; set { if (value != view) CommitDialogue(true); view = value; } }
@@ -451,6 +451,7 @@ public partial class AssetStudioWindow : EditorWindow
         DrawCategories(catRect);
         inspectorWanted = null;
         if (showingDialogue) DrawDialogue(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));
+        else if (showingBosses) DrawBosses(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));   // AssetStudioWindow.Bosses
         else if (showingQuests) DrawQuests(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));   // AssetStudioWindow.Quests
         else if (showingStats) DrawStats(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));   // AssetStudioWindow.Stats
         else if (showingSubstats) DrawSubstats(new Rect(listRect.x, y, full.width - listRect.x - Pad, h));   // AssetStudioWindow.Substats
@@ -506,7 +507,7 @@ public partial class AssetStudioWindow : EditorWindow
         if (only != inGameOnly) { inGameOnly = only; EditorPrefs.SetBool(InGameOnlyKey, only); Filter(); listScroll = Vector2.zero; }
         GUI.Label(new Rect(r.x + 8, r.yMax - 24, r.width - 16, 18), "<color=#6fd46a>✔</color> = used in the game", new GUIStyle(dim) { richText = true });
         r.height -= 50;
-        const int views = 8;   // the rows above the categories
+        const int views = 9;   // the rows above the categories
         var view = new Rect(0, 0, r.width - 16, (categories.Count + views) * 30 + 12);
         categoryScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 26, r.width, r.height - 26), categoryScroll, view);
         // Dungeon: one dungeon the way a run goes, made, tuned and played in one place (AssetStudioWindow.Dungeon).
@@ -527,6 +528,8 @@ public partial class AssetStudioWindow : EditorWindow
         if (GUI.Toggle(new Rect(4, 182, view.width - 4, 28), showingDialogue, $"  Dialogue   <color=#a9a49a>{(dialogue != null ? dialogue.Count + " lines" : "DM lines")}</color>", showingDialogue ? cellSelected : cell) && !showingDialogue) OpenDialogue();
         // Substats: what rolled gear can get, by item type, edited in place (AssetStudioWindow.Substats).
         if (GUI.Toggle(new Rect(4, 212, view.width - 4, 28), showingSubstats, $"  Substats   <color=#a9a49a>{SubstatCount} on gear</color>", showingSubstats ? cellSelected : cell) && !showingSubstats) OpenSubstats();
+        // Bosses: every guardian, its fight, guardian settings and data on one page (AssetStudioWindow.Bosses).
+        if (GUI.Toggle(new Rect(4, 242, view.width - 4, 28), showingBosses, $"  Bosses   <color=#a9a49a>{BossBiomes().Count}</color>", showingBosses ? cellSelected : cell) && !showingBosses) OpenBosses();
         for (int i = 0, line = 0; i < categories.Count; i++)
         {
             var c = categories[i];
@@ -814,7 +817,7 @@ public partial class AssetStudioWindow : EditorWindow
     void HandleKeys()
     {
         var e = Event.current;
-        if (showingWorld || showingDialogue || showingDungeon || showingSubstats || showingBiomes || showingUnlockables || showingStats || showingQuests) return;   // the World's tree and the Dungeon's pages are clicked, not stepped through; Dialogue is typed in
+        if (showingWorld || showingDialogue || showingDungeon || showingSubstats || showingBiomes || showingUnlockables || showingStats || showingQuests || showingBosses) return;   // the World's tree and the Dungeon's pages are clicked, not stepped through; Dialogue is typed in
         if (!EditorGUIUtility.editingTextField && preview != null && preview.HandlePaintKey(e)) return;
         if (e.type != EventType.KeyDown || GUI.GetNameOfFocusedControl() == "search" && e.keyCode != KeyCode.DownArrow && e.keyCode != KeyCode.UpArrow) return;
         if (EditorGUIUtility.editingTextField && GUI.GetNameOfFocusedControl() != "search") return;

@@ -27,8 +27,10 @@ MonoBehaviour:
   enterMusicFade: 2
   spotlightDelay: 1
   spotlight: {fileID: 4696081989565957123, guid: 90d4468408f2f8d43b3b95cb31a55381, type: 3}
-  spotlightSound: {fileID: 8300000, guid: 9c5d7e2087eeea2458921db9e4e822db, type: 3}
-  spotlightVolume: 1
+  landSound: {fileID: 8300000, guid: 9a3fd2df109b8fa41ae4066d8a348e3f, type: 3}
+  landVolume: 1
+  spotlightSound: {fileID: 8300000, guid: e79220549b839dc49b5bb8047e6eba18, type: 3}
+  spotlightVolume: 0.9
   spotlightFadeOut: 0.8
   dialogueDelay: 2
   introDialogue: 1
@@ -66,15 +68,26 @@ MonoBehaviour:
     model: {fileID: 0}
     text: You heard the king. Dance.
     choices: []
-  versusScreen: 1
+  introCard: 1
+  title:
+    lettersPerSecond: 11
+    subtitleFade: 0.4
+    hold: 1.4
+    fadeOut: 0.5
+    letterSound:
+    - {fileID: 8300000, guid: b0c75b87ffdc44a388c2aead54014fad, type: 3}
+    - {fileID: 8300000, guid: cf9a672a95bdc4181bad47a5e6e03ecf, type: 3}
+    letterVolume: 0.8
+    letterPitch: 0.7
+    letterPitchVariance: 0.05
   versus:
-    leftIn: 0.22
-    rightDelay: 0.45
-    rightIn: 0.22
-    slamDelay: 0.2
-    hold: 1.5
-    throwOut: 0.22
-    shake: 24
+    leftIn: 0.26
+    rightDelay: 0.5
+    rightIn: 0.26
+    slamDelay: 0.22
+    hold: 1.6
+    throwOut: 0.3
+    shake: 18
     bandWhoosh:
     - {fileID: 8300000, guid: 66c075aeb2dcb4076bdbf11d1776836d, type: 3}
     bandLand:
@@ -98,8 +111,6 @@ MonoBehaviour:
   paintingLight: 0
   paintingLightColor: {r: 1, g: 0.9, b: 0.75, a: 1}
   wakeDelay: 1.1
-  landSound: {fileID: 8300000, guid: 6df976f37fe297c4d8da67f40cb3eaf6, type: 3}
-  landVolume: 1
   fightLine:
     text: Begin.
     voice: {fileID: 0}

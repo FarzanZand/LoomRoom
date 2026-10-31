@@ -185,11 +185,13 @@ public class BossStageEncounter : MonoBehaviour
         BossBlessing.Grant(false);
         FindDungeonMaster();
         ShutStair(true);
-        // With an intro (BossFight > Intro: a spotlight, dialogue, the versus screen) the floor's music fades out now
-        // and the fight's starts as the battle begins; without one the fight's music starts now.
+        // With an intro (BossFight > Intro: a spotlight, dialogue, the boss's name) the floor's music fades out now and
+        // the fight's starts with the name; without one the fight's music starts now.
         bool talk = fight != null && fight.HasIntroDialogue && PortraitDialogueUI.Current != null;
-        bool versus = fight != null && fight.versusScreen && VersusScreenUI.Current != null;
-        bool intro = talk || versus;
+        var card = fight == null ? BossIntroCard.None
+            : fight.introCard == BossIntroCard.BossTitle && BossTitleUI.Current != null ? BossIntroCard.BossTitle
+            : fight.introCard == BossIntroCard.Versus && VersusScreenUI.Current != null ? BossIntroCard.Versus : BossIntroCard.None;
+        bool intro = talk || card != BossIntroCard.None;
         if (intro && AudioManager.HasInstance) AudioManager.Instance.StopMusic(fight.enterMusicFade);
         if (!intro && fight != null && fight.music != null && AudioManager.HasInstance)
         {
@@ -220,7 +222,7 @@ public class BossStageEncounter : MonoBehaviour
         BossBlessing.Announce();
         if (intro)
         {
-            yield return Intro(player, talk, versus);
+            yield return Intro(player, talk, card);
             if (boss == null || !boss.IsAlive) yield break;
         }
         else
@@ -239,9 +241,10 @@ public class BossStageEncounter : MonoBehaviour
     }
 
     // The intro (BossFight > Intro), the boss set down and idle in the quiet: a moment, the spotlight snaps on over it
-    // with its sound, a moment more, the dialogue, the versus screen, and the battle begins with the fight's music. The
-    // player stands still and looks at the boss throughout.
-    IEnumerator Intro(Player player, bool talk, bool versus)
+    // with its sound, a moment more, the dialogue, then the card (the boss's name typed out as the fight's music starts,
+    // or the versus screen, the music starting as it clears), and the battle begins. The player stands still and looks
+    // at the boss throughout.
+    IEnumerator Intro(Player player, bool talk, BossIntroCard card)
     {
         if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Dialogue);
         GameObject spotlight = null;
@@ -259,11 +262,12 @@ public class BossStageEncounter : MonoBehaviour
             yield return new WaitForSeconds(fight.dialogueDelay);
             if (talk) yield return PortraitDialogueUI.Current.Play(fight.introLines, boss, fight.bossName);
             if (boss == null || !boss.IsAlive) yield break;
-            if (versus) yield return VersusScreenUI.Current.Play(player, boss, !string.IsNullOrWhiteSpace(fight.bossName) ? fight.bossName : boss.TheNameCap, milestone.title, fight.versus);
-            if (fight.music != null && AudioManager.HasInstance)
+            string shownName = !string.IsNullOrWhiteSpace(fight.bossName) ? fight.bossName : boss.TheNameCap;
+            if (card == BossIntroCard.BossTitle) yield return BossTitleUI.Current.Play(shownName, milestone.title, fight.title, StartFightMusic);
+            else
             {
-                AudioManager.Instance.CrossfadeMusic(fight.music, true, fight.fightMusicFade, fight.musicVolume);
-                musicStart = Time.time;
+                if (card == BossIntroCard.Versus) yield return VersusScreenUI.Current.Play(player, boss, shownName, milestone.title, fight.versus);
+                StartFightMusic();
             }
         }
         finally
@@ -271,6 +275,13 @@ public class BossStageEncounter : MonoBehaviour
             if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
             if (spotlight != null) StartCoroutine(Dim(spotlight, fight.spotlightFadeOut));
         }
+    }
+
+    void StartFightMusic()
+    {
+        if (fight.music == null || !AudioManager.HasInstance) return;
+        AudioManager.Instance.CrossfadeMusic(fight.music, true, fight.fightMusicFade, fight.musicVolume);
+        musicStart = Time.time;
     }
 
     // The spotlight goes out as the battle begins: its lights fade, then it is gone.

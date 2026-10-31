@@ -5,7 +5,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Builds the boss dialogue prefab (Assets/Game/Dialogue/UI/Boss dialogue.prefab): its own canvas holding the portrait
-// dialogue box (PortraitDialogueUI) and the versus screen (VersusScreenUI), placed as a child of the Dialogue Manager
+// dialogue box (PortraitDialogueUI), the boss title (BossTitleUI) and the versus screen (VersusScreenUI; the fight's
+// Intro Card picks which plays), placed as a child of the Dialogue Manager
 // in the open scene. Build it once, then edit the prefab by hand (looks, sizes, typing, sounds, timing); running
 // Build() again makes it anew and loses those edits. The box: a wide warm dark box with a thin gold line at the foot of the screen, the speaker's head and
 // shoulders standing large over its left end, their name in gold capitals above it, the line typed out in cream, a
@@ -36,13 +37,13 @@ public static class PortraitDialogueSetup
         var scaler = holder.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f); scaler.matchWidthOrHeight = .5f;
-        string box = BuildBox((RectTransform)holder.transform), versus = BuildVersus((RectTransform)holder.transform);
+        string box = BuildBox((RectTransform)holder.transform), title = BuildTitle((RectTransform)holder.transform), versus = BuildVersus((RectTransform)holder.transform);
 
         System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
         PrefabUtility.SaveAsPrefabAssetAndConnect(holder, PrefabPath, InteractionMode.AutomatedAction);
         Undo.RegisterCreatedObjectUndo(holder, "Build boss dialogue");
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(holder.scene);
-        return $"{box}; {versus}; saved {PrefabPath} under the Dialogue Manager";
+        return $"{box}; {title}; {versus}; saved {PrefabPath} under the Dialogue Manager";
     }
 
     static string BuildBox(RectTransform parent)
@@ -143,6 +144,38 @@ public static class PortraitDialogueSetup
         return $"the portrait dialogue box ({blips} blips)";
     }
 
+    // The boss title: the name in large PixelOperator-Bold with a dark outline (the font the game uses everywhere),
+    // centred in the upper half of the screen, the boss's title in gold beneath it. Sizes are whole multiples of the
+    // font's 16 px so its pixels stay square.
+    static string BuildTitle(RectTransform parent)
+    {
+        var bold = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
+        var outline = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator-Bold Outline.mat");
+
+        var root = new GameObject("Boss title", typeof(RectTransform), typeof(CanvasGroup), typeof(BossTitleUI));
+        root.layer = parent.gameObject.layer;
+        var rect = (RectTransform)root.transform;
+        rect.SetParent(parent, false);
+        Stretch(rect, 0f, 0f, 0f, 0f);
+        var group = root.GetComponent<CanvasGroup>(); group.alpha = 0f; group.blocksRaycasts = false;
+
+        var name = Text("Name", rect, bold, 112f, Color.white, outline, "EDGAR THE DISCO KING");
+        name.rectTransform.anchorMin = name.rectTransform.anchorMax = name.rectTransform.pivot = new Vector2(.5f, .5f);
+        name.rectTransform.sizeDelta = new Vector2(1800f, 180f); name.rectTransform.anchoredPosition = new Vector2(0f, 250f);
+        name.characterSpacing = 4f; name.enableAutoSizing = true; name.fontSizeMin = 48f; name.fontSizeMax = 112f;
+        var title = Text("Title", rect, bold, 48f, Gold, outline, "Lord of the Crypt");
+        title.rectTransform.anchorMin = title.rectTransform.anchorMax = title.rectTransform.pivot = new Vector2(.5f, .5f);
+        title.rectTransform.sizeDelta = new Vector2(1200f, 60f); title.rectTransform.anchoredPosition = new Vector2(0f, 160f);
+        title.characterSpacing = 2f;
+
+        var so = new SerializedObject(root.GetComponent<BossTitleUI>());
+        so.FindProperty("group").objectReferenceValue = group;
+        so.FindProperty("nameText").objectReferenceValue = name;
+        so.FindProperty("subtitle").objectReferenceValue = title;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return "the boss title";
+    }
+
     // The cinematic versus screen: black bars top and bottom over a darkened screen; at the left the player's class
     // painting melting into a blue glow, at the right the boss's live portrait in a red glow; a thin gold line across
     // the middle with the VS medallion on it; names letter-spaced in the bottom bar under each side.
@@ -150,7 +183,8 @@ public static class PortraitDialogueSetup
     {
         var glowSprite = ImportSprite(Sprites + "Soft glow.png", 0, smooth: true);
         var medalSprite = ImportSprite(Sprites + "Medallion.png", 0, smooth: true);
-        var bebas = BebasAsset();
+        var bold = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
+        var outline = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator-Bold Outline.mat");
         var small = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
         var soft = SoftEdgeMaterial();
 
@@ -197,11 +231,11 @@ public static class PortraitDialogueSetup
             label.gameObject.layer = root.layer; label.SetParent(shake, false);
             label.anchorMin = label.anchorMax = label.pivot = new Vector2(.5f, .5f); label.sizeDelta = side.sizeDelta;
             label.anchoredPosition = side.anchoredPosition;
-            who = Text("Name", label, bebas, 76f, Color.white, null, left ? "YOU" : "EDGAR THE DISCO KING");
+            who = Text("Name", label, bold, 64f, Color.white, outline, left ? "YOU" : "EDGAR THE DISCO KING");
             who.rectTransform.anchorMin = who.rectTransform.anchorMax = who.rectTransform.pivot = new Vector2(.5f, .5f);
             // Fitted to the side's width (a long name gets smaller, never runs off the screen).
             who.rectTransform.sizeDelta = new Vector2(780f, 90f); who.rectTransform.anchoredPosition = new Vector2(0f, -432f);
-            who.characterSpacing = 24f; who.enableAutoSizing = true; who.fontSizeMin = 36f; who.fontSizeMax = 76f;
+            who.characterSpacing = 4f; who.enableAutoSizing = true; who.fontSizeMin = 32f; who.fontSizeMax = 64f;
             what = Text("Title", label, small, 40f, new Color(.88f, .86f, .82f), null, left ? "Level 1 Warrior" : "Lord of the Crypt");
             what.rectTransform.anchorMin = what.rectTransform.anchorMax = what.rectTransform.pivot = new Vector2(.5f, .5f);
             what.rectTransform.sizeDelta = new Vector2(1000f, 44f); what.rectTransform.anchoredPosition = new Vector2(0f, -490f);
@@ -218,7 +252,7 @@ public static class PortraitDialogueSetup
         line.anchorMin = line.anchorMax = line.pivot = new Vector2(.5f, .5f); line.anchoredPosition = Vector2.zero;
         var medal = Picture("Medallion", shake, medalSprite, Color.white, new Vector2(184f, 184f), Vector2.zero);
         medal.anchorMin = medal.anchorMax = medal.pivot = new Vector2(.5f, .5f); medal.anchoredPosition = Vector2.zero;
-        var vs = Text("VS", medal, bebas, 112f, Gold, null, "VS");
+        var vs = Text("VS", medal, bold, 96f, Gold, outline, "VS");
         Stretch(vs.rectTransform, 0f, 0f, 0f, -6f);
         var flash = Picture("Flash", rect, null, new Color(1f, 1f, 1f, 0f), Vector2.zero, Vector2.zero); Stretch(flash, 0f, 0f, 0f, 0f);
 
@@ -245,24 +279,6 @@ public static class PortraitDialogueSetup
         return "the versus screen";
     }
 
-    // Bebas Neue as a TextMesh Pro font (dynamic: its glyphs are filled in as text uses them).
-    static TMP_FontAsset BebasAsset()
-    {
-        const string path = "Assets/Game/UI/Fonts/BebasNeue SDF.asset";
-        var asset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(path);
-        if (asset != null) return asset;
-        var font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Game/UI/Fonts/BebasNeue-Regular.ttf");
-        asset = TMP_FontAsset.CreateFontAsset(font, 90, 9, UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic);
-        asset.name = "BebasNeue SDF";
-        AssetDatabase.CreateAsset(asset, path);
-        asset.material.name = "BebasNeue SDF Material";
-        AssetDatabase.AddObjectToAsset(asset.material, asset);
-        asset.atlasTextures[0].name = "BebasNeue SDF Atlas";
-        AssetDatabase.AddObjectToAsset(asset.atlasTextures[0], asset);
-        AssetDatabase.SaveAssets();
-        return asset;
-    }
-
     static Material SoftEdgeMaterial()
     {
         const string path = "Assets/Game/UI/Shaders/UI Soft Edge.mat";
@@ -281,13 +297,18 @@ public static class PortraitDialogueSetup
         if (fight == null) return "no Crypt Lord fight asset";
         Undo.RecordObject(fight, "Intro dialogue");
         fight.introDialogue = true;
-        fight.versusScreen = true;
+        fight.introCard = BossIntroCard.BossTitle;
         // The intro around it: the theatre spotlight (the forest's warm moonbeam: a spot, a shaft and dust from high
-        // above) with its switch-on clunk, and the versus screen's whooshes, thuds and crash.
+        // above) with its switch-on clunk (Tools/boss_intro_sounds.py, as is the boss's landing), a heavy thud for each letter of the boss's name, and the versus screen's
+        // whooshes, thuds and slam for when the card is switched to it.
         fight.enterMusicFade = 2f; fight.spotlightDelay = 1f; fight.dialogueDelay = 2f; fight.spotlightFadeOut = .8f; fight.fightMusicFade = .25f;
         fight.spotlight = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Levels/Dungeon1/Forest/Props/Moonbeam warm.prefab");
-        fight.spotlightSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Audio/Clips/Dialogue/Spotlight on.wav");
+        fight.spotlightSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Audio/Clips/Dialogue/Spotlight clunk.wav");
+        fight.landSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Audio/Clips/Dialogue/Boss landing.wav");
+        fight.spotlightVolume = .9f; fight.landVolume = 1f;
         const string Ui = "Assets/ThirdParty/Generic Fantasy UI/", Magic = "Assets/ThirdParty/Sound Effects Library/Magic/";
+        fight.title ??= new BossTitleSettings();
+        fight.title.letterSound = Load(Ui + "Fantasy_UI_Gen_Discard_Thud_01_mono.wav", Ui + "Fantasy_UI_Gen_Discard_Thud_02_mono.wav");
         fight.versus ??= new VersusSettings();
         fight.versus.bandWhoosh = Load(Ui + "Fantasy_UI_Gen_Inventory_Whoosh_01_stereo.wav");
         fight.versus.bandLand = Load(Ui + "Fantasy_UI_Gen_Discard_Thud_01_mono.wav", Ui + "Fantasy_UI_Gen_Notification_Impact_02_mono.wav");
@@ -311,7 +332,7 @@ public static class PortraitDialogueSetup
         };
         EditorUtility.SetDirty(fight);
         AssetDatabase.SaveAssetIfDirty(fight);
-        return $"Crypt Lord fight: {fight.introLines.Count} lines, boss name {fight.bossName}, versus screen on";
+        return $"Crypt Lord fight: {fight.introLines.Count} lines, boss name {fight.bossName}, intro card {fight.introCard}";
     }
 
     // A dark outline on the big Lilita One words, as a material asset (a prefab cannot keep a text's own material copy).

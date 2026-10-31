@@ -6,6 +6,10 @@ using UnityEngine.Serialization;
 // The script of a boss fight on the stage in front of the Dungeon Master (DungeonMilestone.fight, run by
 // BossStageEncounter): the music and its beat, how the DM sets the boss down, his energy beam, events on a
 // timeline (seconds, beats or the boss's health) and what he says while it lasts. One asset per fight.
+// What plays just before the battle begins, after the intro's dialogue (BossFight > Intro). Serialized by number:
+// append only.
+public enum BossIntroCard { None = 0, BossTitle = 1, Versus = 2 }
+
 [CreateAssetMenu(menuName = "LoomRoom/Boss Fight")]
 public class BossFight : ScriptableObject
 {
@@ -29,16 +33,21 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Opening"), Min(.2f), Tooltip("Seconds the DM takes to bring the boss up from under the table, show it and set it down.")]
     public float placeSeconds = 4.6f;
     // ── Intro ─────────────────────────────────────────────────────────
-    // With dialogue or the versus screen on, the fight opens with an intro, in this order: the floor's music fades as
-    // the player steps onto the stage; the DM sets the boss down and it stands idle; the spotlight snaps on over it; the
-    // dialogue; the versus screen; then the battle begins with the fight's music. Without either, the fight opens as
-    // before (the music at once, his opening and fight lines in the feed).
+    // With dialogue or a card on, the fight opens with an intro, in this order: the floor's music fades as the player
+    // steps onto the stage; the DM sets the boss down and it stands idle; the spotlight snaps on over it; the dialogue;
+    // the card (the boss's name typed out, or the versus screen); then the battle begins with the fight's music.
+    // Without either, the fight opens as before (the music at once, his opening and fight lines in the feed).
     [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds the floor's music takes to fade out as the player steps onto the stage.")]
     public float enterMusicFade = 2f;
     [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds after the boss is set down before the spotlight comes on.")]
     public float spotlightDelay = 1f;
     [TabGroup(Tabs, "Intro"), AssetsOnly, Tooltip("The spotlight set over the boss (a prefab: lights, a shaft, dust), from the moment it comes on until the battle begins. Empty: none.")]
     public GameObject spotlight;
+    // The intro's two sounds side by side (made by Tools/boss_intro_sounds.py: Boss landing, Spotlight clunk, each with
+    // a B take in Audio/Clips/Dialogue to swap in).
+    [TabGroup(Tabs, "Intro"), Tooltip("Played the moment the boss's feet touch the stage as the DM sets it down (with or without an intro).")]
+    public AudioClip landSound;
+    [TabGroup(Tabs, "Intro"), Range(0, 1)] public float landVolume = 1f;
     [TabGroup(Tabs, "Intro"), Tooltip("Played as the spotlight comes on.")]
     public AudioClip spotlightSound;
     [TabGroup(Tabs, "Intro"), Range(0, 1)] public float spotlightVolume = 1f;
@@ -48,16 +57,18 @@ public class BossFight : ScriptableObject
     public float dialogueDelay = 2f;
     [TabGroup(Tabs, "Intro"), Tooltip("Dialogue boxes (PortraitDialogueUI: each speaker's head and shoulders idling beside a box, typed out) in place of his opening and fight lines in the feed.")]
     public bool introDialogue;
-    [TabGroup(Tabs, "Intro"), ShowIf(nameof(introDialogue)), Tooltip("The boss's name on its boxes, the versus screen and the boss bar. Empty: the boss's own name.")]
+    [TabGroup(Tabs, "Intro"), ShowIf(nameof(introDialogue)), Tooltip("The boss's name on its boxes, its title and the boss bar. Empty: the boss's own name.")]
     public string bossName;
     [TabGroup(Tabs, "Intro"), ShowIf(nameof(introDialogue)), ListDrawerSettings(ShowFoldout = true)]
     public List<PortraitLine> introLines = new();
     public bool HasIntroDialogue => introDialogue && introLines != null && introLines.Count > 0;
-    [TabGroup(Tabs, "Intro"), Tooltip("After the dialogue, a you-versus-the-boss screen (VersusScreenUI): the player's band slams in from the left, then the boss's from the right, and VS crashes down between them.")]
-    public bool versusScreen;
-    [TabGroup(Tabs, "Intro"), ShowIf(nameof(versusScreen)), InlineProperty, HideLabel]
+    [TabGroup(Tabs, "Intro"), Tooltip("Just before the battle, after the dialogue. Boss Title: the boss's name typed out large in the upper half of the screen (BossTitleUI), its title fading in beneath, the fight's music starting with the first letter. Versus: the cinematic you-versus-the-boss screen (VersusScreenUI), the music starting as it clears. None: straight into the battle.")]
+    public BossIntroCard introCard = BossIntroCard.None;
+    [TabGroup(Tabs, "Intro"), ShowIf("@introCard == BossIntroCard.BossTitle"), InlineProperty, HideLabel]
+    public BossTitleSettings title = new();
+    [TabGroup(Tabs, "Intro"), ShowIf("@introCard == BossIntroCard.Versus"), InlineProperty, HideLabel]
     public VersusSettings versus = new();
-    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds the fight's music takes to come in as the battle begins.")]
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds the fight's music takes to come in.")]
     public float fightMusicFade = .25f;
 
     // ── Room ──────────────────────────────────────────────────────────
@@ -78,9 +89,6 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Room"), ShowIf("@paintingLight > 0")] public Color paintingLightColor = new(1f, .9f, .75f);
     [TabGroup(Tabs, "Opening"), Min(0), Tooltip("Seconds the boss stands still after it is set down, before it attacks.")]
     public float wakeDelay = 1.1f;
-    [TabGroup(Tabs, "Opening"), Tooltip("Sound when the boss touches the stage.")]
-    public AudioClip landSound;
-    [TabGroup(Tabs, "Opening"), Range(0, 1)] public float landVolume = 1f;
     [TabGroup(Tabs, "Opening"), Tooltip("Said when the boss is down and the fight begins.")]
     public DungeonMaster.Line fightLine = new() { text = "Begin." };
 
