@@ -61,6 +61,9 @@ public partial class AudioManager : Singleton<AudioManager>
     private int sfxPoolSize = 48;
     [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool"), Sirenix.OdinInspector.LabelText("UI Pool Size")]
     [SerializeField, Min(2)]  private int uiPoolSize  = 8;
+    [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool"), Sirenix.OdinInspector.LabelText("UI Pool Most")]
+    [SerializeField, Min(2), Tooltip("A full UI pool grows up to this many sources instead of cutting one: menu and screen sounds are layered on purpose (a versus screen's whoosh under its stingers, letter clicks and voice blips), and a cut one is heard.")]
+    private int uiPoolMost = 20;
     [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool")]
     [SerializeField, Min(1), Tooltip("Copies of one clip that can play at once (five footsteps or whooshes in a frame would fill the pool).")]
     private int maxSameClip = 3;
@@ -280,6 +283,16 @@ public partial class AudioManager : Singleton<AudioManager>
             pool.Add(MakeSource(go, groupName + i, group, spatialBlend));
     }
 
+    // The UI pool grows when full (up to uiPoolMost): its sounds are 2D and short, and a cut one is always heard.
+    AudioSource GrowUiPool()
+    {
+        if (uiPool.Count >= uiPoolMost || uiPool.Count == 0) return null;
+        var parent = uiPool[0].transform.parent.gameObject;
+        var src = MakeSource(parent, "UI" + uiPool.Count, uiGroup, 0f);
+        uiPool.Add(src);
+        return src;
+    }
+
     AudioSource MakeSource(GameObject parent, string label, AudioMixerGroup group, float spatialBlend)
     {
         var go = new GameObject(label);
@@ -304,6 +317,8 @@ public partial class AudioManager : Singleton<AudioManager>
     {
         foreach (var s in pool)
             if (!s.isPlaying && !held.Contains(s)) return ResetAttenuation(s);
+
+        if (pool == uiPool && GrowUiPool() is { } grown) return grown;
 
         // All busy: cut the one heard least (quiet or far away, distant footsteps first), so hits and kills play out.
         var listener = Listener();

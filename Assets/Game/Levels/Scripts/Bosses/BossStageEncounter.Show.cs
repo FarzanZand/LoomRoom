@@ -183,6 +183,20 @@ public partial class BossStageEncounter
         backup.Clear();
     }
 
+    // A soft follow on the boss's chest: the view is drawn to it (faster the further off it is), so the player can
+    // still look about but the pose stays in frame.
+    static IEnumerator FollowDefeat(PlayerLook look, Transform body, float seconds)
+    {
+        for (float t = 0f; t < seconds && body != null && look != null; t += Time.deltaTime)
+        {
+            CameraEase.YawPitchTo(look, body.position + Vector3.up * 1.2f, out float yaw, out float pitch);
+            float k = 1f - Mathf.Exp(-Time.deltaTime * Mathf.Lerp(2f, 7f, Mathf.Clamp01(t / .5f)));
+            look.SetYaw(Mathf.LerpAngle(look.YawTransform.eulerAngles.y, yaw, k));
+            look.SetPitch(Mathf.Lerp(look.Pitch, pitch, k));
+            yield return null;
+        }
+    }
+
     // The boss's last moment: a spin round to face the player, the pose held, then the burst (DeathBurst, waiting the
     // same time) in a shower of the fight's burst effect.
     IEnumerator DefeatScene()
@@ -209,6 +223,8 @@ public partial class BossStageEncounter
             if (fight.spotlightSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(fight.spotlightSound, fight.spotlightVolume * .8f);
         }
         float start = Quaternion.LookRotation(face).eulerAngles.y;
+        // The view eases onto it and keeps it framed until it bursts, wherever the player was looking at the kill.
+        if (player != null && player.Look != null) StartCoroutine(FollowDefeat(player.Look, body, fight.defeatSpinSeconds + fight.defeatHold + .3f));
         for (float t = 0f; t < fight.defeatSpinSeconds; t += Time.deltaTime)
         {
             float u = Mathf.SmoothStep(0f, 1f, t / fight.defeatSpinSeconds);
