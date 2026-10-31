@@ -86,7 +86,7 @@ public class EnemyGuard : MonoBehaviour
         bool busy = !alive || swing < 0f && Busy(0) || gestureLayer >= 0 && Busy(gestureLayer) || Bool("HoldingBow") || Bool("Kneel") || Bool("Asleep");
         float want = Engaged && !busy ? 1f : 0f;
 
-        Vector3 v = brain.Motor != null ? brain.Motor.Velocity : Vector3.zero; v.y = 0f;
+        Vector3 v = brain.Motor != null ? brain.Motor.LegVelocity : Vector3.zero; v.y = 0f;
         float size = Mathf.Max(.3f, transform.lossyScale.y) * Mathf.Max(.3f, anim.humanScale);
         want *= 1f - Mathf.InverseLerp(runFade.x, runFade.y, v.magnitude / size);
         if (hasParams)

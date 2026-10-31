@@ -485,6 +485,19 @@ public class CombatManager : Singleton<CombatManager>
     public float impactBodySway = 9f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Min(1), Tooltip("Bosses and elites aren't knocked back (or into pits): their hit recoil and lean are this many times as hard instead.")]
     public float steadfastRecoil = 1.7f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Tooltip("Off: a light hit on a humanoid enemy only jolts its upper body (its legs and guard keep going) and the full-body stagger is kept for heavy hits, criticals, backstabs and maces (FullStagger). On: every hit plays the stagger, as before.")]
+    public bool fullStaggerOnLightHits = false;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Range(1f, 3f), Tooltip("A light hit that plays no stagger jolts the upper body this many times as hard (bone recoil and lean).")]
+    public float lightHitJolt = 1.5f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Tooltip("While a hit slides a humanoid enemy, its feet stay where they stood (foot IK, EnemyFootPlant) instead of skating with it, and step back under the body once the slide ends.")]
+    public bool plantFeetInKnockback = true;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Min(.05f), Tooltip("Metres a planted foot may lag behind where the animation puts it before it lets go (a long slide doesn't stretch the legs).")]
+    public float footPlantReach = .4f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Min(.01f), Tooltip("Seconds the feet take to step back under the body after a slide.")]
+    public float footPlantRelease = .2f;
+
+    // Whether a blow plays a humanoid enemy's full-body stagger (Hurt states) or only jolts its upper body.
+    public bool FullStagger(DamageInfo hit) => fullStaggerOnLightHits || hit.Heavy || hit.Critical || hit.Backstab || IsMace(hit.Weapon);
 
     // Which way a hit throws its victim: away from the attacker, turned toward the blade's travel (Impact From Swing).
     public Vector3 ImpactDirection(DamageInfo info)

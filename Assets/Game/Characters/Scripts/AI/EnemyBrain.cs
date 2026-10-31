@@ -209,6 +209,9 @@ public class EnemyBrain : MonoBehaviour
         Perception.Profile = Profile;
         if (attackRelay == null) attackRelay = GetComponentInChildren<WeaponAnimationRelay>(true);
         spawnPosition = transform.position;
+        // A humanoid's feet stay put while a hit slides it (EnemyFootPlant, on the Animator object for its IK pass).
+        var body = GetComponentInChildren<Animator>();
+        if (body != null && body.isHuman && body.GetComponent<EnemyFootPlant>() == null) body.gameObject.AddComponent<EnemyFootPlant>();
 
         handlers = new Dictionary<EnemyState, Action>
         {
@@ -413,9 +416,14 @@ public class EnemyBrain : MonoBehaviour
         if (!IsSwinging && !info.Blocked && info.Amount > 0f && Character.data != null && (Tuning == null || Tuning.StaggerStrengthFor(info.Weapon) > 0f))
         {
             // Which stagger plays (HumanoidController: Hurt, Hurt Left, Hurt Right, Hurt Heavy): the way the blow throws
-            // the body, or the heavy one.
-            AnimatorHelper.SetInteger(Character.Animator, "HurtDir", HurtDirection(info));
-            Character.TriggerAnimation(Character.data.hurtTrigger);
+            // the body, or the heavy one. A light hit on a humanoid plays none: its upper body jolts (HitReactionController)
+            // while its legs and guard keep going (CombatManager.FullStagger).
+            var anim = Character.Animator;
+            if (anim == null || !anim.isHuman || Tuning == null || Tuning.FullStagger(info))
+            {
+                AnimatorHelper.SetInteger(anim, "HurtDir", HurtDirection(info));
+                Character.TriggerAnimation(Character.data.hurtTrigger);
+            }
             if (!info.Heavy && Tuning != null) BeginRecovery(Tuning.lightFlinchDuration * Tuning.StaggerStrengthFor(info.Weapon));
         }
 

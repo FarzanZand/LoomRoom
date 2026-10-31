@@ -42,13 +42,12 @@ public class HitReactionController : MonoBehaviour
             if (model != null && model != animator.transform && model.GetComponent<Character>() == null) { bones.Add(model); sway = model; }
             return;
         }
-        // Exclude hips/root, fingers and helper transforms so recoil cannot propel or twist the actor.
+        // Exclude hips/root, fingers and helper transforms so recoil cannot propel or twist the actor, and the legs: they
+        // are the animation's (a bent knee read as a stumble step that never landed); a blow low down jolts the spine.
         foreach (var id in new[]{HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest,
             HumanBodyBones.Neck, HumanBodyBones.Head, HumanBodyBones.LeftShoulder, HumanBodyBones.RightShoulder,
             HumanBodyBones.LeftUpperArm, HumanBodyBones.RightUpperArm, HumanBodyBones.LeftLowerArm,
-            HumanBodyBones.RightLowerArm, HumanBodyBones.LeftHand, HumanBodyBones.RightHand,
-            HumanBodyBones.LeftUpperLeg, HumanBodyBones.RightUpperLeg, HumanBodyBones.LeftLowerLeg,
-            HumanBodyBones.RightLowerLeg, HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot})
+            HumanBodyBones.RightLowerArm, HumanBodyBones.LeftHand, HumanBodyBones.RightHand})
         {
             var bone = animator.GetBoneTransform(id);
             if (bone != null) bones.Add(bone);
@@ -77,6 +76,8 @@ public class HitReactionController : MonoBehaviour
         float strength = (heavy ? Tuning.heavyRecoilMultiplier : 1f) * (impact ? Tuning.hitImpactStrength * Tuning.StaggerStrengthFor(hit.Weapon) : 1f);
         // A boss or an elite isn't pushed (EnemyMotor.Steadfast): the blow goes into a harder reel instead.
         if (impact && steadfastMotor != null && steadfastMotor.Steadfast) strength *= Tuning.steadfastRecoil;
+        // A light hit on a humanoid plays no stagger clip (CombatManager.FullStagger): the jolt carries it alone.
+        if (impact && animator != null && animator.isHuman && !Tuning.FullStagger(hit)) strength *= Tuning.lightHitJolt;
         if (strength <= 0f) return;
         float duration = heavy ? Tuning.heavyRecoilDurationMultiplier : 1f;
         ReactToHit(hit.HitPoint, direction, strength, duration);

@@ -199,7 +199,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     public void UpdateLocomotionAnimator(Animator anim, bool locomoting, float damping)
     {
         if (anim == null || anim.runtimeAnimatorController == null) return;
-        Vector3 v = Velocity; v.y = 0f;
+        Vector3 v = LegVelocity; v.y = 0f;
         float speed = v.magnitude;
         if (locomoting) anim.SetFloat("Speed", speed, damping, Time.deltaTime);
         else            anim.SetFloat("Speed", 0f);
@@ -286,6 +286,9 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     // Sliding from a hit right now (a pit edge reads it to tip the enemy over).
     public bool IsKnockedBack => knockbackTimer > 0f;
     public Vector3 KnockbackVelocity => knockbackVelocity;
+    // What its legs walk at: its velocity without the slide a hit gives it (with the slide in, a pushed enemy's legs
+    // stepped backwards at the push's speed, a moonwalk).
+    public Vector3 LegVelocity => knockbackTimer > 0f ? Velocity - knockbackVelocity : Velocity;
 
     // A knockback is only a push: the agent keeps its path and the brain keeps deciding (and attacking)
     // while the enemy slides, so a hit jolts it without stopping it.
