@@ -67,6 +67,7 @@ public partial class BossStageEncounter : MonoBehaviour
         if (RunManager.HasInstance) RunManager.Instance.Revived -= OnRevived;
         if (boss != null) boss.Died -= OnBossDied;
         if (started && !finished) Cleanup(false, floorGoing: true);
+        else if (introPushed) EndIntro();
         // The floor is going (the next floor loading, or back to the room after a death): the painting's own again.
         if (painting != null) painting.Restore();
         DestroyRoomLights();
@@ -248,7 +249,7 @@ public partial class BossStageEncounter : MonoBehaviour
     // at the boss throughout.
     IEnumerator Intro(Player player, bool talk, BossIntroCard card)
     {
-        if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Dialogue);
+        if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); introPushed = true; }
         GameObject spotlight = null;
         try
         {
@@ -274,9 +275,23 @@ public partial class BossStageEncounter : MonoBehaviour
         }
         finally
         {
-            if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+            EndIntro();
             if (spotlight != null) StartCoroutine(Dim(spotlight, fight.spotlightFadeOut));
         }
+    }
+
+    // The intro's Dialogue state, popped once by whoever ends it: the intro itself, or a fight cancelled in the middle of
+    // it (Leave level, a death). Unity never runs the finally of a coroutine stopped by StopAllCoroutines or by its
+    // object going, so a cancelled intro left the state pushed and the HUD hidden for good; its screens are put away too.
+    bool introPushed;
+
+    void EndIntro()
+    {
+        if (introPushed && GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+        introPushed = false;
+        if (PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Open && !PortraitDialogueUI.Current.Barking) PortraitDialogueUI.Current.Abort();
+        if (BossTitleUI.Current != null) BossTitleUI.Current.Abort();
+        if (VersusScreenUI.Current != null) VersusScreenUI.Current.Abort();
     }
 
     void StartFightMusic()
@@ -687,6 +702,7 @@ public partial class BossStageEncounter : MonoBehaviour
         ShowEnd(won);
         BossBlessing.Clear();
         StopAllCoroutines(); beamRun = null;
+        if (introPushed) EndIntro();
         if (beam != null) beam.Stop();
         foreach (var v in volleys) if (v != null) v.Stop();
         if (hand != null) hand.Release();

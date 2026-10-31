@@ -51,6 +51,17 @@ public class PortraitDialogueUI : MonoBehaviour
     void Awake() { Current = this; Hide(true); }
     void OnDestroy() { if (Current == this) Current = null; }
 
+    // Put away at once (the fight whose lines these were was cancelled: the caller's coroutine stopped mid-line). A bark
+    // runs on this box's own coroutine, so it is stopped here too.
+    public void Abort()
+    {
+        StopAllCoroutines();
+        barks.Clear();
+        Hide(true);
+        if (stage != null) stage.Clear();
+        Open = false; Barking = false;
+    }
+
     // Plays the lines. The boss is the fight's boss (its look and, unless a line names someone, its name); firstShown
     // runs as the first box appears. Push the Dialogue state around it (BossStageEncounter does).
     public IEnumerator Play(IReadOnlyList<PortraitLine> lines, Character boss, string bossName, Action firstShown = null)

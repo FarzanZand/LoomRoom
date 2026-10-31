@@ -33,6 +33,7 @@ public class LevelUpUI : MonoBehaviour
     public static bool Showing => current != null && current.show != null && current.show.IsActive();
     // A level-up waits until this time (Time.time): a boss's last pose is not covered by it (BossStageEncounter).
     public static float HoldUntil;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ClearHold() => HoldUntil = 0f;
     // Called by the skill popup when it is about to show its next one: a waiting level-up goes first.
     public static bool PlayWaiting()
     {

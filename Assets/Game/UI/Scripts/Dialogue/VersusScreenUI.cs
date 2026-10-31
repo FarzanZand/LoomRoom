@@ -74,6 +74,15 @@ public class VersusScreenUI : MonoBehaviour
 
     void OnDestroy() { if (Current == this) Current = null; if (stage != null) Destroy(stage.gameObject); }
 
+    // Put away at once (the fight it opened was cancelled: its coroutine stopped mid-screen and would have left it up).
+    public void Abort()
+    {
+        if (!playing && group.alpha <= 0f) return;
+        playing = false;
+        group.alpha = 0f; group.blocksRaycasts = false;
+        if (stage != null) stage.Clear();
+    }
+
     public IEnumerator Play(Player player, Character boss, string name, string title, VersusSettings s)
     {
         s ??= new VersusSettings();

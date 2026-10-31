@@ -37,6 +37,9 @@ public class BossTitleUI : MonoBehaviour
     void Awake() { Current = this; group.alpha = 0f; group.blocksRaycasts = false; }
     void OnDestroy() { if (Current == this) Current = null; }
 
+    // Put away at once (the fight it opened was cancelled mid-title).
+    public void Abort() { playing = false; group.alpha = 0f; group.blocksRaycasts = false; }
+
     // Started runs as the first letter is typed (BossStageEncounter starts the fight's music there).
     public IEnumerator Play(string name, string title, BossTitleSettings s, Action started = null)
     {
