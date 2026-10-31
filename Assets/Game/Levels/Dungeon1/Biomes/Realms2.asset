@@ -495,8 +495,16 @@ MonoBehaviour:
   oneShotVolume: 0.4
   music: {fileID: 0}
   musicVolume: 1
-  entryLineChance: 0.7
-  entryLines: []
+  entryLineChance: 1
+  entryLines:
+  - text: The forge. Mind the heat.
+    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
+    mumble: 0
+    inPerson: 0
+  - text: Someone still keeps these fires lit.
+    voice: {fileID: 11400000, guid: 045015f9783e17b41a1ed39ab26c3999, type: 2}
+    mumble: 0
+    inPerson: 0
   isLevelBase: 0
   defaultStyle: {fileID: 0}
   corridorsCopyConnectedRoomStyle: 0

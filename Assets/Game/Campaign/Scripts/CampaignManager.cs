@@ -50,7 +50,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
     [TabGroup("Rules"), Min(1), Tooltip("The last act made: acts after it stay under their cloth whatever a save says (1 while only act 1 is played; their land is held by the empty markers \"Act N land\" on the map).")]
     public int lastAct = 1;
     [TabGroup("Rules"), Tooltip("Said back at the map once the final place is beaten.")]
-    public DungeonMaster.Line wonLine = new() { text = "That's every place on the map. You beat them all.", inPerson = true };
+    public DungeonMaster.Line wonLine = new() { text = "You beat the Crypt. That's the whole game, for now.", inPerson = true };
 
     [TabGroup("Events"), Tooltip("Text events, each shown once the first time the map is seen after its act opens.")]
     public CampaignEvent[] events = Array.Empty<CampaignEvent>();
