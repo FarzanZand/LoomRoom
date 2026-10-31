@@ -184,7 +184,9 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     // ── Pointer ───────────────────────────────────────────────────────
 
-    public void OnPointerEnter(PointerEventData e) { if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item); }
+    public void OnPointerEnter(PointerEventData e) { if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item, null, ThisCopyEquipped); }
+    // Only the hotbar copy in hand is equipped here (worn items leave the bag, so a copy in it is a spare).
+    bool ThisCopyEquipped => Owner != null && HeldSlot(Owner.Equipment, Container, Anchor).HasValue;
     public void OnPointerExit(PointerEventData e)  { if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
 
     // A pad or the arrow keys: selecting a cell tints it and shows its tooltip beside it, Submit acts like a right click.
@@ -194,7 +196,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         if (e is PointerEventData) return;
         selected = true; Refresh();
-        if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item, (RectTransform)transform);
+        if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item, (RectTransform)transform, ThisCopyEquipped);
     }
     public void OnDeselect(BaseEventData e)
     {
@@ -208,7 +210,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (Item.IsConsumable) ActivateItem();
         else if (!ToggleEquip()) { ShowContextMenu(); return; }
         // What the cell holds now (used up, put on, taken off).
-        if (TooltipUI.HasInstance) { if (Item != null) TooltipUI.Instance.Show(Item, (RectTransform)transform); else TooltipUI.Instance.Hide(); }
+        if (TooltipUI.HasInstance) { if (Item != null) TooltipUI.Instance.Show(Item, (RectTransform)transform, ThisCopyEquipped); else TooltipUI.Instance.Hide(); }
     }
 
     public void OnPointerClick(PointerEventData e)
@@ -327,7 +329,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
                 if (!Unchanged() || !InventoryManager.HasInstance) return;
                 // The copy in hand stays in hand (put it away first); spare copies drop freely.
                 if (HeldSlot(eq, container, index).HasValue && container.CountAt(index) <= 1) { Refuse(PutAwayFirst); return; }
-                if (InventoryManager.Instance.DropFromPlayer(item, owner) == null) return;
+                if (InventoryManager.Instance.DropFromPlayer(item, owner, container.UsedAt(index)) == null) return;
                 container.Consume(index);
             }));
         }
@@ -381,7 +383,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (HeldSlot(eq, container, drag.SourceIndex).HasValue) { Refuse(PutAwayFirst); return; }
         int count = container.CountAt(drag.SourceIndex);
         for (int i = 0; i < count; i++)
-            if (InventoryManager.Instance.DropFromPlayer(item, owner) != null) container.Consume(drag.SourceIndex);
+            if (InventoryManager.Instance.DropFromPlayer(item, owner, container.UsedAt(drag.SourceIndex)) != null) container.Consume(drag.SourceIndex);
     }
 
     // Number keys don't work while the inventory is open, so the doll is the way.

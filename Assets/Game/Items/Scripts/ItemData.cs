@@ -263,7 +263,8 @@ public partial class ItemData : ScriptableObject
     public float SwingSpeed => FlatBonus(this, StatType.AttackSpeed);
 
     // withMain false: the main number and the compare lines are left out (the tooltip shows them as bars).
-    public string BuildTooltip(bool withMain = true, bool withPrice = true)
+    // markEquipped: say "Equipped" (null: whenever any copy of it is worn or in hand).
+    public string BuildTooltip(bool withMain = true, bool withPrice = true, bool? markEquipped = null)
     {
         var blocks = new System.Collections.Generic.List<string>();
         var lines = new System.Collections.Generic.List<string>();
@@ -330,7 +331,7 @@ public partial class ItemData : ScriptableObject
                 : $"<color={DimColor}>Against your {equipped.itemName}:</color>\n" + string.Join("\n", changes));
             Add(blocks, lines);
         }
-        else if (gear != null && gear.IsEquipped(this)) { lines.Add($"<color={DimColor}>Equipped</color>"); Add(blocks, lines); }
+        else if (markEquipped ?? (gear != null && gear.IsEquipped(this))) { lines.Add($"<color={DimColor}>Equipped</color>"); Add(blocks, lines); }
 
         if (!string.IsNullOrWhiteSpace(description)) { lines.Add($"<color={FlavourColor}><i>{description.Trim()}</i></color>"); Add(blocks, lines); }
         if (withPrice && value > 0 && itemType != ItemType.Key && itemType != ItemType.Spoils) { lines.Add($"<color={DimColor}>Worth {value} gold</color>"); Add(blocks, lines); }

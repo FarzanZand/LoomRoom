@@ -48,7 +48,7 @@ public class ShopRowUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     public void OnPointerEnter(PointerEventData eventData) { hover?.Invoke(item); ShowTooltip(null); }
     public void OnPointerExit(PointerEventData eventData) => HideTooltip();
     public void OnDeselect(BaseEventData eventData) => HideTooltip();
-    void ShowTooltip(RectTransform at) { if (item != null && TooltipUI.HasInstance && !dragging) TooltipUI.Instance.Show(item, at); }
+    void ShowTooltip(RectTransform at) { if (item != null && TooltipUI.HasInstance && !dragging) TooltipUI.Instance.Show(item, at, false); }   // a ware is never the copy worn
     static void HideTooltip() { if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
     public void OnSelect(BaseEventData eventData) { hover?.Invoke(item); if (eventData is not PointerEventData) ShowTooltip((RectTransform)transform); }
 

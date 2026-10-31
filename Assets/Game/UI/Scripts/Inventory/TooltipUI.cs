@@ -71,17 +71,21 @@ public class TooltipUI : Singleton<TooltipUI>
     public void Show(ItemData item) => Show(item, null);
 
     // at: the control a pad or the arrow keys picked (a bag cell): the tooltip sits beside it instead of at the mouse.
-    public void Show(ItemData item, RectTransform at)
+    // thisCopyEquipped: whether this very copy is the one worn or in hand (null: any copy of it is, as the doll's slots show);
+    // a spare copy in the bag or a merchant's ware of the same item is not.
+    public void Show(ItemData item, RectTransform at, bool? thisCopyEquipped = null)
     {
         if (panel == null || item == null) return;
         bool bars = mainBar.root != null && item.TryMainStat(out _, out _, out _);
         anchor = at;
-        ShowLines(Title(item), Kind(item), item.BuildTooltip(!bars, footer == null));
-        ShowHeader(item);
         var gear = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
-        ShowFooter(footer, footerNote, footerPrice, item, gear != null && gear.IsEquipped(item) ? "Equipped" : "");
+        bool worn = thisCopyEquipped ?? (gear != null && gear.IsEquipped(item));
+        // With a footer, "Equipped" is said there once, not in the lines as well.
+        ShowLines(Title(item), Kind(item), item.BuildTooltip(!bars, footer == null, footer == null && worn));
+        ShowHeader(item);
+        ShowFooter(footer, footerNote, footerPrice, item, worn ? "Equipped" : "");
         if (compareBars != null) compareBars.SetActive(bars);
-        if (bars) ShowBars(item);
+        if (bars) ShowBars(item, worn);
         LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         FollowMouse();
         var equipped = item.Replaces();
@@ -106,7 +110,8 @@ public class TooltipUI : Singleton<TooltipUI>
     }
 
     // The main number against what the player wears in that slot, and a weapon's swing speed against the held one's.
-    void ShowBars(ItemData item)
+    // thisCopy: this very copy is the one worn or in hand (a spare of the held item compares against it, grey to grey).
+    void ShowBars(ItemData item, bool thisCopy)
     {
         item.TryMainStat(out string label, out float value, out string text);
         var equipped = item.Replaces();
@@ -127,7 +132,7 @@ public class TooltipUI : Singleton<TooltipUI>
         if (compareNote != null)
         {
             compareNote.gameObject.SetActive(true);
-            compareNote.text = wearing ? "Equipped" : equipped != null ? $"Grey: your {equipped.itemName}" : "Nothing worn there";
+            compareNote.text = thisCopy ? "Equipped" : wearing ? $"Grey: your {item.itemName}" : equipped != null ? $"Grey: your {equipped.itemName}" : "Nothing worn there";
         }
     }
 
