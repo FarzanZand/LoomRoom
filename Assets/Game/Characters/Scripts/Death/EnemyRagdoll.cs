@@ -204,6 +204,8 @@ public class EnemyRagdoll : MonoBehaviour
             }
         }
         Destroy(baked);
+        // Its walking colliders give way to the box (EnemyBrain does it too, whichever of them hears the death first).
+        foreach (var c in GetComponents<Collider>()) c.enabled = false;
         var box = gameObject.AddComponent<BoxCollider>();
         box.center = bounds.center;
         box.size = bounds.size * .9f;

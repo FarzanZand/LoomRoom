@@ -456,7 +456,11 @@ public class EnemyBrain : MonoBehaviour
         SetState(EnemyState.Dead);
         SetHoldingBow(false);
         if (Motor.Agent != null) Motor.Agent.enabled = false;
-        foreach (var col in GetComponents<Collider>()) col.enabled = false;
+        // Its walking colliders go, but not the body the ragdoll may already have made of it: this runs after the ragdoll's
+        // own death once the brain was switched off and on again (a flick's hold, the Dungeon Master setting it down), and
+        // a rat whose box went with them fell through the floor.
+        if (!(TryGetComponent<EnemyRagdoll>(out var ragdoll) && ragdoll.IsRagdolled))
+            foreach (var col in GetComponents<Collider>()) col.enabled = false;
         // Bodies stay for the floor: they stop listening at once, and stop moving once a knockback has played out.
         if (Perception != null) Perception.enabled = false;
         Invoke(nameof(StillBody), 1f);
