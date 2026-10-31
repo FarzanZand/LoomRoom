@@ -142,7 +142,7 @@ public static partial class PixelRestyle
         }
         sheet.Apply();
         File.WriteAllBytes($"{PaintFolder}/{name} sheet.png", sheet.EncodeToPNG());
-        RenderTexture.active = null; Object.DestroyImmediate(rt); Object.DestroyImmediate(cell); Object.DestroyImmediate(sheet); Object.DestroyImmediate(root);
+        RenderTexture.active = null; cam.targetTexture = null; Object.DestroyImmediate(rt); Object.DestroyImmediate(cell); Object.DestroyImmediate(sheet); Object.DestroyImmediate(root);
         return $"{name}: {parts.Count} parts, sheet rendered";
     }
 
@@ -384,7 +384,7 @@ public static partial class PixelRestyle
         sheet.Apply();
         Directory.CreateDirectory(Path.GetDirectoryName(outFile));
         File.WriteAllBytes(outFile, sheet.EncodeToPNG());
-        RenderTexture.active = null; Object.DestroyImmediate(rt); Object.DestroyImmediate(px); Object.DestroyImmediate(sheet); Object.DestroyImmediate(root);
+        RenderTexture.active = null; cam.targetTexture = null; Object.DestroyImmediate(rt); Object.DestroyImmediate(px); Object.DestroyImmediate(sheet); Object.DestroyImmediate(root);
         ShaderUtil.allowAsyncCompilation = asyncShaders;
         return outFile;
     }
@@ -421,7 +421,7 @@ public static partial class PixelRestyle
         sheet.Apply();
         Directory.CreateDirectory(Path.GetDirectoryName(outFile));
         File.WriteAllBytes(outFile, sheet.EncodeToPNG());
-        RenderTexture.active = null; Object.DestroyImmediate(rt); Object.DestroyImmediate(px); Object.DestroyImmediate(sheet); Object.DestroyImmediate(root);
+        RenderTexture.active = null; cam.targetTexture = null; Object.DestroyImmediate(rt); Object.DestroyImmediate(px); Object.DestroyImmediate(sheet); Object.DestroyImmediate(root);
         ShaderUtil.allowAsyncCompilation = asyncShaders;
         return outFile;
     }
