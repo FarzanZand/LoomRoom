@@ -65,6 +65,23 @@ public partial class TableLevelData : ScriptableObject
         public int floors = 3;
         [HorizontalGroup("Row", LabelWidth = 105), LabelText("Boss on last floor"), Tooltip("The biome's guardian (its Boss tab) waits on this stage's last floor. Off: no boss in this stage, whatever the biome has set up.")]
         public bool boss = true;
+        [HorizontalGroup("Row", LabelWidth = 95), LabelText("Difficulty jump"), Min(0), Tooltip("A bigger jump in difficulty as this stage begins (a new biome after a boss), counted in floors' worth of growth: 2 makes the step into this stage three floors' worth instead of one, and every later floor keeps it (the balance's damage, health and armour per floor). It adds up with earlier stages' jumps. 0: the usual one floor's step.")]
+        public float extraFloors;
+    }
+
+    // The difficulty steps reached by this floor: every stage's Extra Floors from the stage it starts in down to this one
+    // (DungeonBalance.Apply adds them to the floor's depth).
+    public float ExtraFloors(int floor)
+    {
+        if (!HasStages) return 0f;
+        float extra = 0f; int start = 1;
+        foreach (var stage in stages)
+        {
+            if (stage == null || stage.biome == null) continue;
+            if (floor >= start) extra += Mathf.Max(0f, stage.extraFloors);
+            start += Mathf.Max(1, stage.floors);
+        }
+        return extra;
     }
     [TabGroup(Tabs, Run), ShowIf(D), Title("Biomes", "In order from the top floor down. Each biome lasts its number of floors and its guardian waits on its last floor. Empty: every floor is the base biome (a one-floor level needs no biome of its own).", HorizontalLine = false)]
     [ListDrawerSettings(ShowFoldout = true)]
@@ -81,15 +98,16 @@ public partial class TableLevelData : ScriptableObject
             if (!IsDungeon) return "";
             var parts = new List<string>();
             int start = 1;
+            float step = 0f;
             void Add(DungeonBiome biome, int count, bool boss)
             {
                 int end = start + count - 1;
                 bool fight = boss && biome.guardian != null && biome.guardian.enabled && biome.guardian.boss != null;
-                parts.Add((count == 1 ? $"Floor {start}" : $"Floors {start}-{end}") + $" {biome.name}" + (fight ? $" (boss on {end})" : ""));
+                parts.Add((count == 1 ? $"Floor {start}" : $"Floors {start}-{end}") + $" {biome.name}" + (fight ? $" (boss on {end})" : "") + (step > 0f ? $" (difficulty jump +{step:0.#})" : ""));
                 start = end + 1;
             }
             if (!HasStages) { if (baseBiome != null) Add(baseBiome, Mathf.Max(1, floors), bossOnLastFloor); }
-            else foreach (var stage in stages) if (stage != null && stage.biome != null) Add(stage.biome, Mathf.Max(1, stage.floors), stage.boss);
+            else foreach (var stage in stages) if (stage != null && stage.biome != null) { step = stage.extraFloors; Add(stage.biome, Mathf.Max(1, stage.floors), stage.boss); }
             return string.Join(", ", parts);
         }
     }
@@ -113,6 +131,9 @@ public partial class TableLevelData : ScriptableObject
     public List<LootFloorTiers> gearByFloor = new();
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("Start", HorizontalLine = false), AssetsOnly, Tooltip("Room template prefab the player starts in on the first floor and on the first floor of each new biome. Give its footprint one door cell: the only way out, which the player faces from the centre. Empty uses an ordinary entrance room.")]
     public GameObject startingRoom;
+    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("Scripted events", HorizontalLine = false), MinMaxSlider(0, 5, true), LabelText("Event rooms per floor"),
+     Tooltip("Fewest and most scripted event rooms on each grown floor: every event the player can walk into (the duel, the bell, the wager, the sleeping giant, the dice, Not a witch, and the Portal hall, whose portal leads to the Skeleton Party). The tavern doesn't count. They come from the floor's biome pool: a floor whose pool has fewer event rooms than the fewest gets all it has (a forest's board pool has none). The room a run opens in counts.")]
+    public Vector2Int eventRoomsPerFloor = new(0, 1);
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("The starting room keeps its chest. Off: the chest is taken out (the Arena starts with none).")]
     public bool startingChest = true;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), AssetsOnly, Tooltip("The starting room's chest always holds two things: one piece of gear rolled from the floor's loot, and this (a potion). Its chest is never trapped. Empty: an ordinary chest.")]

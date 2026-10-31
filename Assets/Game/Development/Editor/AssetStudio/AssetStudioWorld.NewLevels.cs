@@ -297,12 +297,6 @@ public static partial class AssetStudioWorld
 
     static void SetTier(LootFloorTiers row, int tier, float weight)
     {
-        switch (tier)
-        {
-            case 1: row.tier1 = weight; break;
-            case 2: row.tier2 = weight; break;
-            case 3: row.tier3 = weight; break;
-            case 4: row.tier4 = weight; break;
-        }
+        row.SetShare(tier, weight);
     }
 }

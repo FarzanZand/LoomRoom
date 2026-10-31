@@ -31,6 +31,12 @@ public class DungeonBiome : ScriptableObject
     public bool ownBoardPieces;
     [TabGroup(Look), HideIf(nameof(isLevelBase)), Tooltip("Leave out the level's room and corridor styles, furnishing rules and props: this biome's floors use only its own (a forest stage in a dungeon of cellars). Its first room style stands in for the level's default style.")]
     public bool ownLook;
+    [TabGroup(Look), ShowIf("@ownLook && !isLevelBase"), Tooltip("Hand-built rooms on this biome's floors build their kit pieces (pillars, arches, rubble, railings) of plain blocks in the room's own stone instead of the kit's painted models (grey crypt stone that stands out in a look of its own).")]
+    public bool plainKit;
+    [TabGroup(Look), Tooltip("Walled floors: water standing in every pit of a hand-built room (a chasm, a broken floor), a little under the floor. Empty: dry pits. A board's pits take Board Pit Water.")]
+    public Material pitWater;
+    [TabGroup(Look), ShowIf("@pitWater != null"), Range(.1f, 1.5f), Tooltip("Metres from the floor down to the water (never below the pit's bottom).")]
+    public float pitWaterBelow = .4f;
     [TabGroup(Look), InlineProperty, HideLabel, Title("Wild ground", "Raised banks of earth or rock round the rooms and paths, with growth on them. Board floors: they fill the table round the board. Walled floors: they stand in for the walls (Roofed keeps the ceilings, for a cave).", HorizontalLine = false)]
     public BoardWilds wilds = new();
     [TabGroup(Look), InfoBox("A level's base biome: what every floor of the level shares (its Level tab, room features and lists; a stage's biome adds its own lists). On a level without stages every floor is this biome.", VisibleIf = nameof(isLevelBase))]
@@ -83,6 +89,10 @@ public class DungeonBiome : ScriptableObject
     public int roomCount;
     [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Range(.5f, 2.5f), Tooltip("Generated rooms this much wider and deeper than the level's Room Size (a forest's clearings).")]
     public float roomSizeScale = 1f;
+    [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Range(0f, 1f), Tooltip("Share of the big generated rooms (Tall Room Least Cells or more, no hand-built room, not the entrance or the merchant's) built two tiles high, as halls. Furnishing named \"Hanging ...\" (chandeliers, beams, chains) is raised with the ceiling, and wall decor named \"Full height ...\" (pilasters, banners) is stacked up to it.")]
+    public float tallRoomChance;
+    [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), ShowIf("@tallRoomChance > 0"), Min(4), Tooltip("Floor cells (2 m) a generated room needs to be built tall.")]
+    public int tallRoomLeastCells = 20;
     [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Tooltip("No doors between rooms on this biome's floors (the starting room's door too): a forest has none.")]
     public bool noDoors;
     [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Tooltip("Use the room features below on this biome's floors instead of the level's (its base biome's Room Features).")]
@@ -140,6 +150,14 @@ public class DungeonBiome : ScriptableObject
     public Vector2 encounterChance = new(.4f, .6f);
     [TabGroup(Life), Range(1, 6), Tooltip("Fewest enemies in a room that has any (packs: 2 or more).")] public int minEnemiesPerRoom = 1;
     [TabGroup(Life), Range(1, 6)] public int maxEnemiesPerRoom = 2;
+    [TabGroup(Life), Min(0), Tooltip("Most casters (enemies with Caster on) in one room; past it the room's other enemies are picked from the rest. 0 = no cap.")]
+    public int maxCastersPerRoom = 1;
+    [TabGroup(Life), Min(0), Tooltip("Most casters on one floor (packs, sockets and waves together). 0 = no cap.")]
+    public int maxCastersPerFloor = 6;
+    [TabGroup(Life), Range(0f, .5f), Tooltip("Chance a generated enemy (packs, sockets, waves; never a boss, an event's own actor or a named one) comes out as an elite: grown Elite Floors deeper, with one trait (Tough, Brutal or Swift), its name saying so, a glow in the trait's colour, twice the experience and loot rolled as if the floor were that much deeper (EliteEnemy).")]
+    public float eliteChance;
+    [TabGroup(Life), ShowIf("@eliteChance > 0"), Min(0), Tooltip("How many floors deeper an elite grows and rolls its loot.")]
+    public float eliteFloors = 3f;
     [TabGroup(Life), Tooltip("Added to the features every level shares (Table level defaults); a stage's also to the base biome's. Min Floor counts from the biome's first floor (for the shared features too).")]
     public DungeonFeature[] features = new DungeonFeature[0];
 
@@ -238,6 +256,19 @@ public class DungeonBiome : ScriptableObject
         var pick = WeightedPick.Choose(enemies, s => s != null && s.enemy != null && s.fromFloor <= floorInBiome ? s.weight : 0, random, singleTotal: true);
         return pick != null ? pick.enemy : null;
     }
+
+    // The same pick, with casters left out once the room or the floor has its share (Max Casters Per Room, Per Floor).
+    // It draws one number either way, so a floor's seed stream stays in step; a biome with nothing but casters keeps them.
+    public GameObject ChooseEnemy(System.Random random, int floorInBiome, int castersInRoom, int castersOnFloor)
+    {
+        bool capped = maxCastersPerRoom > 0 && castersInRoom >= maxCastersPerRoom || maxCastersPerFloor > 0 && castersOnFloor >= maxCastersPerFloor;
+        bool Fits(Spawn s) => s != null && s.enemy != null && s.fromFloor <= floorInBiome && s.weight > 0;
+        if (!capped || enemies == null || !System.Array.Exists(enemies, s => Fits(s) && !IsCaster(s.enemy))) return ChooseEnemy(random, floorInBiome);
+        var pick = WeightedPick.Choose(enemies, s => Fits(s) && !IsCaster(s.enemy) ? s.weight : 0, random, singleTotal: true);
+        return pick != null ? pick.enemy : null;
+    }
+
+    public static bool IsCaster(GameObject enemy) => enemy != null && enemy.TryGetComponent<Character>(out var c) && c.data is EnemyData d && d.caster;
 
 #if UNITY_EDITOR
     // The base biome's own fields (Level tab, room features) and the lists it holds for its level: a copy of another

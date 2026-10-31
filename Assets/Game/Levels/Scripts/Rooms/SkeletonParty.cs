@@ -7,7 +7,9 @@ using UnityEngine.Playables;
 // The Skeleton Party room (on its template's root, with RoomMusic for the party's track): every enemy in the room
 // dances (danceClip, played straight on its animator) and ignores the player, until someone hits one of them (the whole
 // party turns on the player at once) or opens the chest in the middle (they stop, stand turned to the player for
-// Chest Stare seconds, then attack; a hit cuts the stare short). The Dungeon Master has a word for each moment.
+// Chest Stare seconds, then attack; a hit cuts the stare short). Opening the chest also slams iron gates across the
+// room's ways out (ScriptedEventRoom's, the ambush's gates), which sink again once every dancer is dead. The Dungeon
+// Master has a word for each moment.
 public class SkeletonParty : MonoBehaviour
 {
     [Tooltip("The dance (any humanoid or rig clip the dancers can play). Empty: they stand where they are.")]
@@ -15,7 +17,7 @@ public class SkeletonParty : MonoBehaviour
     [Range(.5f, 2f), Tooltip("Each dancer's speed varies a little around this, so they aren't in lockstep.")]
     public float danceSpeed = 1f;
     public DungeonMaster.Line spoiledLine = new() { text = "You had to ruin it, didn't you." };
-    public DungeonMaster.Line chestLine = new() { text = "Greedy. Now they're all coming for you." };
+    public DungeonMaster.Line chestLine = new() { text = "You took their chest. Now they're all coming for you." };
     [Tooltip("Opening the chest or hitting a dancer: the party's music stops at once and this plays over the silence.")]
     public AudioClip chestMusicStop;
     [Range(0f, 1f)] public float chestMusicStopVolume = 1f;
@@ -29,6 +31,8 @@ public class SkeletonParty : MonoBehaviour
     public int prizeMaxTier = 2;
     [Min(0), Tooltip("Gold in the chest with the Legendary.")] public int prizeGold = 80;
     [Min(1), Tooltip("How many piles that gold comes out in.")] public int prizeGoldPiles = 10;
+    [Tooltip("Opening the chest shuts the room's ways out with iron gates until every dancer is dead.")]
+    public bool gateOnChest = true;
 
     DungeonGenerator dungeon;
     int room = -1;
@@ -126,7 +130,8 @@ public class SkeletonParty : MonoBehaviour
 
     void Update()
     {
-        if (room < 0 || dungeon == null || spoiled) return;
+        if (room < 0 || dungeon == null) return;
+        if (spoiled) { LiftGatesWhenCleared(); return; }
         // Once the first search is over and everyone found has joined, there is nothing left to gather.
         bool gathering = Time.time < scanUntil || waiting.Count > 0 || waitingChests.Count > 0;
         if (gathering && Time.time >= nextGather) { nextGather = Time.time + .5f; Gather(); }
@@ -170,7 +175,23 @@ public class SkeletonParty : MonoBehaviour
         foreach (var d in dancers) if (d != null && d.Character.IsAlive) anyone = true;
         if (!anyone) return;
         if (line != null && !string.IsNullOrEmpty(line.text)) DungeonMaster.Say(line);
+        if (chest && gateOnChest && TryGetComponent<ScriptedEventRoom>(out var eventRoom) && eventRoom.Find())
+        {
+            eventRoom.ShutGates();
+            if (eventRoom.GatesShut) { gated = eventRoom; MessageLog.Post("Iron gates slam shut across the way out.", MessageKind.Warning); }
+        }
         if (chest && chestStare > 0f) StartCoroutine(StareThenAttack(chestStare)); else ProvokeAll();
+    }
+
+    // The gates the chest shut sink back once no dancer is left standing.
+    ScriptedEventRoom gated;
+    void LiftGatesWhenCleared()
+    {
+        if (gated == null || !gated.GatesShut) return;
+        foreach (var d in dancers) if (d != null && d.Character.IsAlive) return;
+        gated.OpenGates();
+        gated = null;
+        MessageLog.Post("The gates sink back into the floor.", MessageKind.Good);
     }
 
     IEnumerator StareThenAttack(float seconds)

@@ -18,6 +18,7 @@ MonoBehaviour:
   portrait: {fileID: 21300000, guid: f7de42acf6ca0cd4f941d83d70d75703, type: 3}
   sheetPortrait: {fileID: 21300000, guid: a6309da93e05fac4f93b91d68de20239, type: 3}
   sheetPortraitColour: {fileID: 21300000, guid: 79a58f9b20846b54d8a2302ef6482832, type: 3}
+  face: {fileID: 21300000, guid: d6fee52883eeabb4ba54a2dca1d82588, type: 3}
   miniature: {fileID: 9058385677225207783, guid: 631d397a04272644e86d53db57b46ad0, type: 3}
   unlockFlag: 
   coopBody: {fileID: 8098569556554502697, guid: b283a808e5101b248af3c30aa32237f8, type: 3}
@@ -36,10 +37,13 @@ MonoBehaviour:
   supplies:
   - item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
     count: 1
+    used: 0
   - item: {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
     count: 2
+    used: 0
   - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
     count: 2
+    used: 0
   leftHand: 0
   strength: 0
   dexterity: -1
@@ -48,4 +52,6 @@ MonoBehaviour:
   health: 30
   mana: 30
   stamina: 30
+  healthPerLevel: 3
+  manaPerLevel: 3
   skills: 000000000f0000000a00000000000000140000000000000005000000

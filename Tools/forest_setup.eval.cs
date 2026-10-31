@@ -6,7 +6,7 @@
 //  - Glows (Props/Glow mushrooms <colour>): the glowing mushroom groups with a soft light under them.
 //  - The biomes (Levels/Dungeon1/Biomes/Forest1-3): a board, all rooms at once, its own board pieces and look, bigger and
 //    fewer rooms, no doors, wild banks with trees round them, ponds; the Catacombs' (Cellars2) enemies and loot.
-//  - Dungeon1: the three as stages 4-6 of one floor each, no boss.
+//  - Dungeon1: not in its run since 2026-10-30 (the run ends after floor 9); a rerun leaves the stages alone unless they are there.
 // Writes Temp/Forest/setup.txt.
 if (UnityEngine.Application.isPlaying) return "playing";
 const string F = "Assets/Game/Levels/Dungeon1/Forest";
@@ -53,7 +53,8 @@ DungeonSurfaceVariant[] Variants(float weight, params string[] names)
   foreach (var n in names) v.Add(new DungeonSurfaceVariant { material = Ground(n, 3f), weight = weight, rows = DungeonVariantRows.Any });
   return v.ToArray();
 }
-var bankVariants = Variants(1.6f, "Earth bank roots", "Earth bank stony", "Earth bank mossy");
+// Moss half as often as the others: it should be found now and then, not on every stretch of bank (the user, 2026-10-28).
+var bankVariants = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Concat(Variants(1.6f, "Earth bank roots", "Earth bank stony"), Variants(.6f, "Earth bank mossy")));
 var water = Load<UnityEngine.Material>("Assets/Synty/PolygonNatureBiomes/PNB_Enchanted_Forest/Materials/Water_Enchanted.mat");
 
 var level = Load<TableLevelData>("Assets/Game/Levels/Dungeon1/Dungeon1.asset");
@@ -103,6 +104,20 @@ DungeonWeightedPrefab[] Picks(params (string name, float w)[] list)
 
 // The three forests share one recipe; each has its own look (Spec). What lives there and what it drops: the Catacombs'.
 var catacombs = Load<DungeonBiome>("Assets/Game/Levels/Shared/Biomes/Cellars2.asset");
+var cryptBiome = Load<DungeonBiome>("Assets/Game/Levels/Shared/Biomes/Cellars3.asset");
+// The forests are the run's last floors (10-12): enemies at least as strong as the ruins', 3 melee, 1 archer and 1 caster
+// as every late biome has, the Crypt's loot, and a guardian on the last one (the user, 2026-10-30).
+DungeonBiome.Spawn Foe(string path, float w) => new DungeonBiome.Spawn { enemy = Load<UnityEngine.GameObject>($"Assets/Game/Characters/Enemies/{path}.prefab"), weight = w, fromFloor = 1 };
+DungeonBiome.Spawn[] ForestEnemies() => new[] { Foe("Crypt/Crypt Warden", 2), Foe("Realms/Bone Brute", 1.5f), Foe("Crypt/Demon", 1), Foe("Realms/Hall Raider", 2), Foe("Crypt/Crypt Acolyte", 1.5f) };
+DungeonMilestone ForestGuardian() => new DungeonMilestone
+{
+  enabled = true, boss = Load<UnityEngine.GameObject>("Assets/Game/Characters/Enemies/Realms/Undead Knight.prefab"),
+  // a boss takes no per-floor health, so on floor 12 it needs its own: about four of the floor's knights
+  healthMultiplier = 9f, damageMultiplier = 1f, arena = null,
+  title = "Knight of the Moonlit Wood", introMessage = "{boss} steps out from the trees.",
+  introSting = cryptBiome.guardian.introSting, stingVolume = cryptBiome.guardian.stingVolume, bossMusicVolume = .8f,
+  sealExit = true, bossLoot = cryptBiome.guardian.bossLoot, bonusGold = 60, rewardChest = true,
+};
 var floorFall = Ground("Forest floor fall", 3f);
 var clearingFall = Style("Forest2", floorFall, Variants(2f, "Forest floor fall red", "Forest floor fall mossy"));
 DungeonPropRule Rule(string n, int placement, float per10, int max, float chance)
@@ -240,7 +255,8 @@ DungeonBiome Make(string name, string display, string entry, DungeonRoomStyle ro
   // Clearings, never boxes: blobs, trimmed corners, and rings round an island of rock or a tree.
   biome.roomShapes = new[] { new DungeonShapeChoice { kind = DungeonShapeKind.Cave, weight = 4 }, new DungeonShapeChoice { kind = DungeonShapeKind.CutCorners, weight = 1.5f }, new DungeonShapeChoice { kind = DungeonShapeKind.Ring, weight = 1.2f }, new DungeonShapeChoice { kind = DungeonShapeKind.PillarHall, weight = .5f } };
   biome.merchantChance = 1;   // a tavern on every floor: in the woods an open-air inn in a clearing (a board has no walls or roof)
-  biome.guardian = new DungeonMilestone { enabled = false };
+  biome.enemies = ForestEnemies(); biome.loot = cryptBiome.loot;
+  biome.guardian = name == "Forest3" ? ForestGuardian() : new DungeonMilestone { enabled = false };
   biome.lightingPrefabs = new DungeonWallLight[0];
   biome.props = new UnityEngine.GameObject[0];
   biome.destructibles = new DungeonWeightedPrefab[0];   // own look: no cellar barrels and crates
@@ -323,13 +339,14 @@ Make("Forest3", "The Moonlit Wood", "The moon is cold here.", clearing, moss, (1
   C(.5f, .62f, 1f), C(1.04f, .96f, .9f), C(.17f, .27f, .5f), new UnityEngine.Vector2(12f, 70f), 4,
   40f, 200f, C(.3f, .75f, 1f), 4f, Rule("Fireflies blue", 2, .2f, 1, .9f), Pool("Moonbeam blue", 2, .85f), Pool("Lit lantern stand", 0, .35f));
 
-// Dungeon1's floors 4, 5 and 6: one forest each, after the Crypt.
+// Dungeon1's floors 10, 11 and 12 (the user's order since 2026-10-30): one forest each. Run again, they go back where
+// they are; on a level without them, before the ruins (Tools/ruins_setup.eval.cs) when they are there.
 var stages = new System.Collections.Generic.List<TableLevelData.BiomeStage>(level.stages);
+int at = stages.FindIndex(s => s != null && made.Contains(s.biome));
 stages.RemoveAll(s => s != null && made.Contains(s.biome));
-// Right after the Crypt: before the ruins (Tools/ruins_setup.eval.cs) when they are there.
-int at = stages.FindIndex(s => s != null && s.biome != null && s.biome.name.StartsWith("Ruins"));
-if (at < 0) at = stages.Count;
-foreach (var b in made) stages.Insert(at++, new TableLevelData.BiomeStage { biome = b, floors = 1, boss = false });
+// Only where they already stand: the user took the forests out of Dungeon1's run (2026-10-30, "skip those floors for now,
+// go back to the room after the 9th floor"), so a rerun keeps them out.
+if (at >= 0) foreach (var b in made) stages.Insert(at++, new TableLevelData.BiomeStage { biome = b, floors = 1, boss = b.name == "Forest3" });   // the guardian waits on their last floor
 level.stages = stages.ToArray();
 UnityEditor.EditorUtility.SetDirty(level);
 UnityEditor.AssetDatabase.SaveAssets();

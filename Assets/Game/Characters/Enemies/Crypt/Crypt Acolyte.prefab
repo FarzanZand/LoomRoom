@@ -69,6 +69,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+--- !u!1 &8694082213274042645 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8520137168989438645, guid: 1cd703e2a524c574c828a347fe0a519a, type: 3}
+  m_PrefabInstance: {fileID: 1052169030607700896}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &-56021147051738502
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -151,6 +156,7 @@ MonoBehaviour:
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8
+  prefab: {fileID: 8694082213274042645}
   behaviour: {fileID: 0}
   behaviourSettings:
     defaultState: 1
@@ -182,6 +188,11 @@ MonoBehaviour:
     circleSpeedFraction: 0.22
     circleSwitchInterval: {x: 0.9, y: 2}
     spacingSpeedFraction: 0.8
+    spacingSway: 0
+    spacingSwayPeriod: {x: 2.2, y: 3.4}
+    stepBackAfterSwing: 0
+    stepBackSpeedFraction: 0.45
+    footworkPace: 0.75
     passiveAngularSpeed: 360
     chaseAngularSpeed: 720
     attackFaceSpeed: 900

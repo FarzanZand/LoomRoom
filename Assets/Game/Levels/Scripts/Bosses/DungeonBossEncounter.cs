@@ -79,8 +79,8 @@ public class DungeonBossEncounter : MonoBehaviour
             if (milestone.bossMusic != null) AudioManager.Instance.CrossfadeMusic(milestone.bossMusic, true, 1.2f, milestone.bossMusicVolume);
         }
         if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title);
-        if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.introMessage.Trim(), MessageKind.Warning);
-        MessageLog.Post($"{boss.TheNameCap} awakens!", MessageKind.Bad);
+        if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss), MessageKind.Warning);
+        MessageLog.Post($"{boss.TheNameCap} gets up.", MessageKind.Bad);
         if (NotificationUI.HasInstance) NotificationUI.Show(boss.DisplayName.ToUpperInvariant());
         if (brain != null) brain.Alert();
         BossBlessing.Grant();
@@ -103,7 +103,7 @@ public class DungeonBossEncounter : MonoBehaviour
         if (BossBarUI.HasInstance) BossBarUI.Instance.Hide();
         if (exit != null) exit.Sealed = false;
         if (RunManager.HasInstance) RunManager.Instance.NoteBossSlain();
-        MessageLog.Post($"{boss.TheNameCap} falls! The way down is open.", MessageKind.Good);
+        MessageLog.Post($"{boss.TheNameCap} is dead. The way down is open.", MessageKind.Good);
         if (dungeon != null) StartCoroutine(BossChest(boss.transform.position));
         if (AudioManager.HasInstance && dungeon != null)
         {

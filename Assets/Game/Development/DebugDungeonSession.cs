@@ -67,6 +67,9 @@ public class DebugDungeonSession : MonoBehaviour
         if (level == null) { Debug.LogError("Add the levels the Dungeon button should play to WorldManager's Debug Dungeons."); yield break; }
         var player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         if (settings != null && settings.startingClass != null) player.GetComponent<AdventurerProgress>().selectedClass = settings.startingClass;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        DevGive.GoldAtNextRunStart();
+#endif
         loader.Load(level, false, CurrentMode == Mode.Dungeon ? StartFloor : 1);
         if (CurrentMode == Mode.Boss) yield return OntoStage(loader, player);
         if (CurrentMode == Mode.Arena) yield return GiveStartingItems(loader, player);

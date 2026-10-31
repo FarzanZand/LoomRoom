@@ -17,6 +17,9 @@ MonoBehaviour:
   boardReveal: 0
   ownBoardPieces: 0
   ownLook: 0
+  plainKit: 0
+  pitWater: {fileID: 0}
+  pitWaterBelow: 0.4
   wilds:
     enabled: 0
     roofed: 0
@@ -55,7 +58,77 @@ MonoBehaviour:
   corridorStyles: []
   roomShapes: []
   props: []
-  propRules: []
+  propRules:
+  - prefab: {fileID: 3059358923932519234, guid: 02b8ded7480c3d84c9092174bb1da78d, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.6
+    perRoom: {x: 1, y: 4}
+    chance: 0.9
+    rooms: 62
+  - prefab: {fileID: 4940602601245648603, guid: fb562eb337691f54c8a6648dcc1a3045, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.8
+    perRoom: {x: 1, y: 4}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 5099884599044513661, guid: b7dccdf3230cc864ca8e9d419ee1c207, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.5
+    perRoom: {x: 0, y: 3}
+    chance: 0.8
+    rooms: 62
+  - prefab: {fileID: 1959414917942157218, guid: c93658cd478343941bd8c6555d8a6a61, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.7
+    perRoom: {x: 1, y: 4}
+    chance: 0.9
+    rooms: 62
+  - prefab: {fileID: 7876819902557966450, guid: 0f1c9129ac0b5794d9e7f9e886679e98, type: 3}
+    placement: 3
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.6
+    perRoom: {x: 0, y: 3}
+    chance: 1
+    rooms: 62
+  - prefab: {fileID: 4680903443510535991, guid: bfc82bfcac228d748a8f45cfd76b72c2, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.4
+    perRoom: {x: 0, y: 2}
+    chance: 0.8
+    rooms: 62
+  - prefab: {fileID: 721800389451757550, guid: 0eb4a96c04160884eaa03ca5f309c705, type: 3}
+    placement: 0
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.3
+    perRoom: {x: 0, y: 2}
+    chance: 0.7
+    rooms: 62
+  - prefab: {fileID: 6242610433729128088, guid: 79dd1720432fa5b4ea7d963c667f1138, type: 3}
+    placement: 2
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.2
+    perRoom: {x: 0, y: 2}
+    chance: 0.55
+    rooms: 62
+  - prefab: {fileID: 1959414917942157218, guid: c93658cd478343941bd8c6555d8a6a61, type: 3}
+    placement: 2
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.24
+    perRoom: {x: 0, y: 2}
+    chance: 0.5
+    rooms: 62
+  - prefab: {fileID: 4693130425851065715, guid: 21821b8a402cc394887d00028526a263, type: 3}
+    placement: 1
+    footprint: {x: 1, y: 1}
+    perTenCells: 0.24
+    perRoom: {x: 0, y: 2}
+    chance: 0.6
+    rooms: 62
   destructibles: []
   lighting: 1
   litThroughout: 0
@@ -177,9 +250,36 @@ MonoBehaviour:
     rooms: 30
     fromFloor: 1
     maxPerFloor: 1
+  - template: {fileID: 6686315703612218489, guid: 758a66b51add85c4ea93b7fdca3f3f41, type: 3}
+    weight: 0.3
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 966100709934783422, guid: 4ae576ded6c357a4c9b3eb1447585c4f, type: 3}
+    weight: 0.3
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 7980889877482842696, guid: ca465e8799ff0984a91b2806ee68c6b1, type: 3}
+    weight: 0.3
+    rooms: 30
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 5284644785788056984, guid: 0ceb627643dd99a4d95c2002a458466a, type: 3}
+    weight: 0.3
+    rooms: 6
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 7099053262673744381, guid: e320d67a5f4f95741bb43d7aaf1b1316, type: 3}
+    weight: 0.3
+    rooms: 10
+    fromFloor: 1
+    maxPerFloor: 1
   templateChance: 1
   roomCount: 0
   roomSizeScale: 1
+  tallRoomChance: 0
+  tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 0
   roomFeatures:
@@ -195,6 +295,11 @@ MonoBehaviour:
     sleepingPacks: 0
     sleepChance: 0.2
     maxSleepingPacks: 3
+    meddling: 1
+    meddleChance: 0.5
+    tooEasySeconds: 14
+    tooEasyHealth: 0.1
+    stealChance: 0.05
     pits: 1
     playerFallsInPits: 0
     pitFallDamage: 0.25
@@ -249,6 +354,10 @@ MonoBehaviour:
   encounterChance: {x: 0.75, y: 0.8}
   minEnemiesPerRoom: 2
   maxEnemiesPerRoom: 3
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
+  eliteChance: 0.06
+  eliteFloors: 3
   features: []
   loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
   merchantChance: 1

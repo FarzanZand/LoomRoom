@@ -50,6 +50,8 @@ public partial class DungeonMasterBeam : MonoBehaviour
     [Min(0), Tooltip("Light on the player's shield and arms where the beam lands.")] public float endLight = 3f;
     [Min(0)] public float endLightRange = 1.6f;
     [Min(0), Tooltip("Shake each damage tick while it is held off, and while it burns.")] public float blockedShake = .12f, hitShake = .35f;
+    [Min(.1f), Tooltip("While a raised shield holds the beam off, its block sound repeats this often (the fight's Beam Blocked Sound, or the game's block sound when that is empty).")]
+    public float blockSoundInterval = .35f;
 
     public bool Firing { get; private set; }
     // What the last frame of the beam saw (tests read it).
@@ -146,6 +148,14 @@ public partial class DungeonMasterBeam : MonoBehaviour
         return l;
     }
 
+    // One ring of the shield holding the beam off: the fight's own sound, else the game's block sound, at the shield.
+    static void ShieldSound(BossFight fight, Vector3 at)
+    {
+        if (!AudioManager.HasInstance) return;
+        if (fight != null && fight.beamBlockedSound != null) { AudioManager.Instance.PlaySFX2D(fight.beamBlockedSound, fight.beamVolume, .06f); return; }
+        if (CombatManager.HasInstance && CombatManager.Instance.blockAudio != null) AudioManager.Instance.PlaySFXData(CombatManager.Instance.blockAudio, at);
+    }
+
     // Warns, pours for the fight's beam time, then stops. result: true when the player held it off throughout.
     public IEnumerator Fire(Player target, BossFight fight, System.Action<bool> result)
     {
@@ -190,7 +200,7 @@ public partial class DungeonMasterBeam : MonoBehaviour
         if (fight.beamLoopSound != null) { sound.clip = fight.beamLoopSound; sound.volume = fight.beamVolume; sound.Play(); }
         sparks.Play(); spray.Play();
         flare.gameObject.SetActive(true); shieldLight.enabled = true;
-        float tick = 0, impact = impactInterval;
+        float tick = 0, impact = impactInterval, blockSound = 0f;
         bool lastCovered = false, lastBlocking = false; var lastEnd = Vector3.zero;
         // One tick's worth (the seconds since the last): nothing behind cover, stamina on a held shield, a burn otherwise.
         void Pay()
@@ -224,6 +234,10 @@ public partial class DungeonMasterBeam : MonoBehaviour
             shieldLight.transform.position = end - (view != null ? view.transform.forward : Vector3.forward) * .1f;
             shieldLight.intensity = endLight * swell;
             tick += Time.deltaTime; impact += Time.deltaTime;
+            // The shield rings with every moment it holds the beam off (a pillar taking it is silent).
+            blockSound -= Time.deltaTime;
+            if (blocking && !covered && blockSound <= 0f) { blockSound = blockSoundInterval; ShieldSound(fight, end); }
+            else if (!blocking || covered) blockSound = 0f;
             if (impact >= impactInterval && impactEffect != null)
             {
                 impact = 0;

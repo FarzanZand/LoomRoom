@@ -22,9 +22,8 @@ public partial class AssetStudioWindow
     const string DishesFolder = "Assets/Game/Levels/Resources/Tavern dishes";
 
     [SerializeField] string dungeonPath;
-    [SerializeField] string dungeonPage = "overview";
+    [SerializeField] string dungeonPage = "timeline";
     Vector2 dungeonListScroll, dungeonPageScroll;
-    string dungeonRoomSearch = "";
     bool showingDungeon => studioView == StudioView.Dungeon;
 
     // Each enemy prefab's data (inside its prefab), read once per World model.
@@ -73,11 +72,12 @@ public partial class AssetStudioWindow
         var dungeons = World.levels.Where(x => !x.tool && x.data != null && x.data.IsDungeon).OrderBy(x => x.act == 0 ? 99 : x.act).ThenBy(x => x.order).Select(x => x.data).ToList();
         int at = Mathf.Max(0, dungeons.IndexOf(d));
         int pick = EditorGUILayout.Popup(at, dungeons.Select(x => DungeonLabel(x)).ToArray());
-        if (dungeons.Count > 0 && pick != at) { dungeonPath = AssetDatabase.GetAssetPath(dungeons[pick]); GoTo("overview", dungeons[pick]); }
+        if (dungeons.Count > 0 && pick != at) { dungeonPath = AssetDatabase.GetAssetPath(dungeons[pick]); GoTo("timeline", dungeons[pick]); }
         if (l == null) { GUILayout.Label("No dungeon to show.", dim); GUILayout.EndArea(); DrawPlayPanel(new Rect(r.x, r.yMax - playHeight, r.width, playHeight), null); return; }
         dungeonListScroll = GUILayout.BeginScrollView(dungeonListScroll);
         GUILayout.Space(4);
         GUILayout.Label("THE RUN", gold);
+        PageButton("timeline", "Floor 1 to the last", "every floor side by side, edited in place", d);
         PageButton("overview", "Overview", $"{d.FloorCount} floors · {(l.problems.Count == 0 ? "ready" : l.problems.Count + " to look at")}", d);
         PageButton("entering", "The way in", "the map, the build, the first room", d);
         var guardianStage = l.RunStages.LastOrDefault(st => st.boss && AssetStudioWorld.HasGuardian(st.biome));
@@ -188,6 +188,7 @@ public partial class AssetStudioWindow
         var d = DungeonLevel;
         var l = d != null ? World.LevelOf(d) : null;
         ReadGameWide();
+        pageWidth = r.width - 28 - 18;   // less the scroll bar
         GUILayout.BeginArea(new Rect(r.x + 14, r.y + 12, r.width - 28, r.height - 24));
         dungeonPageScroll = GUILayout.BeginScrollView(dungeonPageScroll);
         try
@@ -204,6 +205,7 @@ public partial class AssetStudioWindow
                 case "events": RoomEventsPage(l); break;
                 case "loot": LootPage(l); break;
                 case "difficulty": DifficultyPage(l); break;
+                case "timeline": TimelinePage(l); break;
                 case "words": WordsPage(l); break;
                 case "sound": SoundPage(l); break;
                 default: OverviewPage(l); break;
@@ -288,7 +290,7 @@ public partial class AssetStudioWindow
             $"{enemyKinds} kinds of enemy across the floors" + (guardian != null ? $", and {guardian.biome.guardian.boss.name} on floor {guardian.lastFloor}." : "."),
             $"{roomCount} hand-built rooms to draw from; the rest are generated.",
             $"Starts in {(d.startingRoom != null ? d.startingRoom.name : "a generated room")}{(d.startingChest ? ", with a chest" + (d.startingChestConsumable != null ? " and " + d.startingChestConsumable.DisplayName : "") : "")}.",
-            $"Balance: {(d.balance != null ? d.balance.name : "none")}" + (d.balance != null ? $": enemies {d.balance.damageMultiplier:0.##}x damage and {d.balance.healthMultiplier:0.##}x health, then +{d.balance.damageGrowthPerFloor * 100:0}% damage and +{d.balance.healthGrowthPerFloor * 100:0}% health a floor." : "."),
+            $"Balance: {(d.balance != null ? d.balance.name : "none")}" + (d.balance != null ? $": enemies {d.balance.damageMultiplier:0.##}x damage and {d.balance.healthMultiplier:0.##}x health, then x{1 + d.balance.damageGrowthPerFloor:0.##} damage and x{1 + d.balance.healthGrowthPerFloor:0.##} health a floor, compounded." : "."),
             $"Music: {(d.backgroundMusic != null ? d.backgroundMusic.name : "none")}.",
         };
         foreach (var s in lines2) GUILayout.Label("•  " + s, new GUIStyle(dim) { wordWrap = true });
@@ -538,18 +540,18 @@ public partial class AssetStudioWindow
     }
 
     // What this enemy has on that floor of this dungeon (DungeonBalance.Apply, the guardian's own multipliers and the
-    // game-wide ones). guardian: it is the boss.
-    EnemyNumbers NumbersAt(TableLevelData d, GameObject enemy, int floor, DungeonMilestone guardian)
+    // game-wide ones). guardian: it is the boss. deeper: floors more of growth (an elite's EliteFloors).
+    EnemyNumbers NumbersAt(TableLevelData d, GameObject enemy, int floor, DungeonMilestone guardian, float deeper = 0f)
     {
         var data = DataOf(enemy);
         float hp = Stat(data, StatType.MaxHealth), dmg = Stat(data, StatType.AttackDamage), arm = Stat(data, StatType.Armor);
         var bal = d != null ? d.balance : null;
-        int depth = Mathf.Max(0, floor - 1);
+        float depth = DungeonBalance.Depth(floor, (d != null ? d.ExtraFloors(floor) : 0f) + deeper);
         bool boss = guardian != null;
         if (bal != null)
         {
-            dmg *= (boss && bal.separateBossDamage ? bal.bossDamageMultiplier : bal.damageMultiplier) * (1 + bal.damageGrowthPerFloor * depth);
-            hp *= boss ? bal.bossHealthMultiplier : bal.healthMultiplier * (1 + bal.healthGrowthPerFloor * depth);
+            dmg *= (boss && bal.separateBossDamage ? bal.bossDamageMultiplier : bal.damageMultiplier) * DungeonBalance.Grown(bal.damageGrowthPerFloor, depth);
+            hp *= boss ? bal.bossHealthMultiplier : bal.healthMultiplier * DungeonBalance.Grown(bal.healthGrowthPerFloor, depth);
             arm += bal.armorPerFloor * depth;
         }
         if (boss) { hp *= guardian.healthMultiplier; dmg *= guardian.damageMultiplier; }
@@ -844,102 +846,10 @@ public partial class AssetStudioWindow
 
     void RoomsPage(AssetStudioWorld.Level l)
     {
-        var d = l.data;
-        PageHeader("Rooms", "Every hand-built room this dungeon draws from, and which floors' pools it is in. Tick a floor to put a room in its pool; the number is how common it is there. Right-click a picture to open or play it.");
-        var run = l.RunStages.Where(s => s.biome != null).ToList();
-        // Search, a kind to show (every kind, or one) and the order.
-        GUILayout.BeginHorizontal();
-        dungeonRoomSearch = EditorGUILayout.TextField(dungeonRoomSearch, EditorStyles.toolbarSearchField, GUILayout.Width(150));
-        GUILayout.Space(6);
-        for (int k = -1; k < AssetStudioRoomKinds.Order.Length; k++)
-        {
-            var kind = k < 0 ? (DungeonRoomKind?)null : AssetStudioRoomKinds.Order[k];
-            bool on = dungeonRoomKind == (k < 0 ? -1 : (int)kind.Value);
-            var icon = kind.HasValue ? AssetStudioRoomKinds.Icon(kind.Value) : null;
-            var content = new GUIContent(" " + (kind.HasValue ? AssetStudioRoomKinds.Name(kind.Value) : "All"), icon, kind.HasValue ? AssetStudioRoomKinds.Tip(kind.Value) : "Rooms of every kind.");
-            if (GUILayout.Toggle(on, content, StudioSkin.Tab, GUILayout.Height(24), GUILayout.Width(kind.HasValue ? 86 : 44)) && !on) dungeonRoomKind = k < 0 ? -1 : (int)kind.Value;
-        }
-        GUILayout.FlexibleSpace();
-        dungeonRoomSort = EditorGUILayout.Popup(dungeonRoomSort, DungeonRoomSorts, GUILayout.Width(84));
-        GUILayout.EndHorizontal();
-        string s = dungeonRoomSearch.Trim().ToLowerInvariant();
-        bool Shown(GameObject r) => (s.Length == 0 || r.name.ToLowerInvariant().Contains(s)) && (dungeonRoomKind < 0 || (int)AssetStudioRoomKinds.Of(r) == dungeonRoomKind);
-        // The level's own rooms first, then the pools'.
-        var own = new List<(GameObject room, string role)>();
-        if (d.startingRoom != null) own.Add((d.startingRoom, "the first room"));
-        if (d.baseBiome != null && d.baseBiome.shopRoom != null) own.Add((d.baseBiome.shopRoom, "the tavern, every floor"));
-        foreach (var st in run) if (st.boss && AssetStudioWorld.HasGuardian(st.biome) && st.biome.guardian.arena != null) own.Add((st.biome.guardian.arena, $"the boss's, floor {st.lastFloor}"));
-        Section("ITS OWN ROOMS");
-        GUILayout.BeginHorizontal();
-        foreach (var (room, role) in own.Where(o => Shown(o.room)))
-        {
-            GUILayout.BeginVertical(GUILayout.Width(150));
-            RoomCell(room, 150, 104);
-            GUILayout.Label(role, new GUIStyle(dim) { alignment = TextAnchor.MiddleCenter });
-            GUILayout.EndVertical();
-            GUILayout.Space(6);
-        }
-        GUILayout.FlexibleSpace();
-        GUILayout.EndHorizontal();
-
-        var pooled = run.SelectMany(st => st.biome.roomTemplates ?? Array.Empty<DungeonBiome.RoomTemplateChoice>()).Where(c => c != null && c.template != null).Select(c => c.template).Distinct()
-            .Where(Shown).OrderBy(r => dungeonRoomSort == 1 ? AssetStudioRoomKinds.Rank(r) : 0).ThenBy(r => r.name, StringComparer.OrdinalIgnoreCase).ToList();
-        GUILayout.BeginHorizontal();
-        Section($"THE POOLS  ·  {pooled.Count} rooms");
-        GUILayout.FlexibleSpace();
-        int unsorted = World.rooms.Count(r => AssetStudioRoomKinds.Of(r) == DungeonRoomKind.Unsorted);
-        if (unsorted > 0 && GUILayout.Button(new GUIContent($"Sort the {unsorted} unsorted for me...", "Gives every room without a kind one, from what it holds: an event script makes it Scripted; a chest, spikes, a shrine or feature, a pit or a portal Active; the rest Visual. Rooms you sorted keep theirs."), GUILayout.Height(24)))
-            GuessRoomKinds();
-        GUILayout.EndHorizontal();
-        const float col = 110;
-        GUILayout.BeginHorizontal();
-        GUILayout.Label("", GUILayout.Width(96 + 300));
-        foreach (var st in run) GUILayout.Label($"{FloorsLabel(st)}\n<color=#b8ae9c>{st.biome.name}</color>", new GUIStyle(gold) { richText = true }, GUILayout.Width(col));
-        GUILayout.EndHorizontal();
-        foreach (var room in pooled)
-        {
-            GUILayout.BeginHorizontal(StudioSkin.Inset, GUILayout.MinHeight(70));
-            RoomCell(room, 90, 64);
-            GUILayout.BeginVertical(GUILayout.Width(300));
-            if (GUILayout.Button(room.name, cell, GUILayout.Height(20))) ShowAsset(room);
-            var choice = run.SelectMany(st => st.biome.roomTemplates ?? Array.Empty<DungeonBiome.RoomTemplateChoice>()).FirstOrDefault(c => c != null && c.template == room);
-            var tmpl = room.GetComponent<DungeonRoomTemplate>();
-            string what = tmpl != null && !string.IsNullOrWhiteSpace(tmpl.description) ? tmpl.description.Trim() : "<color=#e0a85a>No description yet.</color>";
-            GUILayout.Label(new GUIContent(what + "\n<color=#8f897e>" + RoomAbout(room, choice) + "</color>", tmpl != null ? tmpl.description : null), new GUIStyle(dim) { wordWrap = true, richText = true });
-            GUILayout.EndVertical();
-            foreach (var st in run)
-            {
-                var b = st.biome;
-                int i = Array.FindIndex(b.roomTemplates ?? Array.Empty<DungeonBiome.RoomTemplateChoice>(), c => c != null && c.template == room);
-                GUILayout.BeginHorizontal(GUILayout.Width(col));
-                bool inPool = GUILayout.Toggle(i >= 0, GUIContent.none, GUILayout.Width(18));
-                float weight = i >= 0 ? b.roomTemplates[i].weight : 1;
-                float typed = i >= 0 ? EditorGUILayout.DelayedFloatField(weight, GUILayout.Width(40)) : weight;
-                GUILayout.EndHorizontal();
-                if (inPool != (i >= 0))
-                {
-                    if (inPool) AssetStudioWorld.AddToPool(b, room); else AssetStudioWorld.RemoveFromPool(b, i);
-                    RefreshWorld(); GUIUtility.ExitGUI();
-                }
-                if (i >= 0 && !Mathf.Approximately(typed, weight)) { Undo.RecordObject(b, "Pool weight"); b.roomTemplates[i].weight = Mathf.Max(0, typed); EditorUtility.SetDirty(b); AssetDatabase.SaveAssetIfDirty(b); }
-            }
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-        }
-        GUILayout.Space(6);
-        if (GUILayout.Button("+ Add a room...", GUILayout.Width(220), GUILayout.Height(28)))
-        {
-            var menu = new GenericMenu();
-            foreach (var st in run) menu.AddItem(new GUIContent($"A new room/for {FloorsLabel(st)} ({st.biome.name})..."), false, () => { StartForm(WorldPane.NewRoom); formLevel = d; formBiome = st.biome; });
-            menu.AddSeparator("");
-            foreach (var room in World.rooms.Where(r => !pooled.Contains(r) && !own.Any(o => o.room == r)))
-                foreach (var st in run) menu.AddItem(new GUIContent($"An existing room/{room.name}/{FloorsLabel(st)} ({st.biome.name})"), false, () => { AssetStudioWorld.AddToPool(st.biome, room); RefreshWorld(); });
-            menu.ShowAsContext();
-        }
+        PageHeader("Rooms", "What each floor can be built from: pick a floor, then see its fixed rooms (the first room, the tavern, the boss's room, rooms behind a portal) and its pool, with how common each room is, the floor it first comes on and where else it is used. Right-click a picture to open or play it.");
+        FloorRooms(l);
     }
 
-    [SerializeField] int dungeonRoomKind = -1, dungeonRoomSort = 1;   // the Rooms page: the kind shown (-1 every kind) and the order
-    static readonly string[] DungeonRoomSorts = { "By name", "By kind" };
 
     // Every room without a kind gets the one its contents suggest (AssetStudioRoomKinds.Guess), after asking.
     void GuessRoomKinds()
@@ -1000,15 +910,16 @@ public partial class AssetStudioWindow
         PageHeader("Loot", "What drops on these floors: the gear's tier by floor, each floor's loot, the chests, the boss's reward and the rules every dungeon shares.");
 
         Section("GEAR BY FLOOR");
-        GUILayout.Label("Which tier gear comes in, from each floor on (1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal).", dim);
+        GUILayout.Label("Which tier gear comes in, from each floor on (1 Bronze/Leather, 2 Iron, 3 Steel, 4 Elven/Crystal, 5 Warlord, 6 Verdant, 7 Shadow, 8 Grave, 9 Blackened, 10 Gilded, 11 Dread, 12 Royal).", dim);
         if (d.gearByFloor != null)
             foreach (var row in d.gearByFloor.Where(x => x != null))
             {
-                float sum = Mathf.Max(.01f, row.tier1 + row.tier2 + row.tier3 + row.tier4);
+                var shares = row.Shares; float sum = Mathf.Max(.01f, shares.Sum());
                 var bar = GUILayoutUtility.GetRect(10, 18, GUILayout.ExpandWidth(true));
                 float x = bar.x + 90;
                 GUI.Label(new Rect(bar.x, bar.y, 90, 18), $"from floor {row.fromFloor}", dim);
-                var tiers = new[] { (row.tier1, new Color(.62f, .45f, .26f), "1"), (row.tier2, new Color(.55f, .57f, .6f), "2"), (row.tier3, new Color(.78f, .8f, .84f), "3"), (row.tier4, new Color(.45f, .75f, .9f), "4") };
+                var colours = new[] { new Color(.62f, .45f, .26f), new Color(.55f, .57f, .6f), new Color(.78f, .8f, .84f), new Color(.45f, .75f, .9f), new Color(.62f, .3f, .24f), new Color(.36f, .62f, .3f), new Color(.52f, .38f, .72f), new Color(.3f, .42f, .36f), new Color(.32f, .32f, .4f), new Color(.9f, .72f, .3f), new Color(.95f, .45f, .15f), new Color(.92f, .9f, .82f) };
+                var tiers = shares.Select((share, i) => (share, colours[i], (i + 1).ToString()));
                 foreach (var (share, colour, name) in tiers)
                 {
                     if (share <= 0) continue;
@@ -1078,6 +989,13 @@ public partial class AssetStudioWindow
         int floors = Mathf.Max(1, d.FloorCount);
         var enemies = run.SelectMany(s => s.biome.enemies ?? Array.Empty<DungeonBiome.Spawn>()).Where(e => e != null && e.enemy != null).Select(e => e.enemy).Distinct().ToList();
 
+        var steps = RunDifficulty(l);
+        Section("HOW HARD THE RUN GETS");
+        GUILayout.Label(Summary(steps), new GUIStyle(StudioSkin.Label) { richText = true }, GUILayout.Width(pageWidth));
+        DifficultyChart(l, steps);
+        Section("STAGES");
+        StageSteps(l);
+
         Section("HEALTH AND DAMAGE ON EACH FLOOR");
         GUILayout.Label("Shown on the floors where it comes. hp · damage · armour.", dim);
         const float col = 170;
@@ -1110,16 +1028,10 @@ public partial class AssetStudioWindow
             GUILayout.EndHorizontal();
         }
 
-        Section("THE LEVEL'S BALANCE" + (d.balance != null ? "  ·  " + d.balance.name : ""));
-        Fields(d, "balance");
-        if (d.balance != null)
-        {
-            var users = World.levels.Where(x => !x.tool && x.data.balance == d.balance && x.data != d).ToList();
-            if (users.Count > 0) GUILayout.Label($"<color=#e0a85a>Also used by {string.Join(", ", users.Select(u => u.data.name))}.</color>", new GUIStyle(dim) { richText = true });
-            AllFields(d.balance);
-        }
-        Section("EVERY DUNGEON");
-        GUILayout.Label($"ProgressionManager > Balance multiplies every enemy on top: damage {wideDamage:0.##}x, health {wideHealth:0.##}x (the room's Systems object). Shown in the numbers above.", new GUIStyle(dim) { wordWrap = true });
+        Section("THE LEVEL'S BALANCE");
+        GrowthFields(d);
+        Section("FLOOR BY FLOOR");
+        FloorTable(l);
         if (GUILayout.Button("Show ProgressionManager", GUILayout.Width(240), GUILayout.Height(24)))
         {
             UnityEngine.Object pm = ProgressionManager.HasInstance ? ProgressionManager.Instance : AssetDatabase.LoadAssetAtPath<GameObject>(ProgressionManagerPath);

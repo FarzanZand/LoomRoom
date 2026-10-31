@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
+  m_Name: Gilded Helm
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemName: Gilded Helm
+  saveId: fc563ed0645b4bf9af82248c89567df3
+  weaponCategory: 0
+  spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
+  rarity: 0
+  description: 
+  icon: {fileID: 21300000, guid: 53d71f5409ba188479851d9102e06c3d, type: 3}
+  iconSource:
+    custom: 0
+    model: {fileID: 7353227837053188159, guid: 13ff2e78d92816842a5b8529404b2d81, type: 3}
+    outfit: 
+    turn: {x: 0, y: 0, z: 0}
+    flip: 0
+  tag: Gilded equipment
+  worldPrefab: {fileID: 7353227837053188159, guid: 13ff2e78d92816842a5b8529404b2d81, type: 3}
+  pickupVisualPrefab: {fileID: 0}
+  itemType: 6
+  maxStackSize: 1
+  gridSize: {x: 0, y: 0}
+  value: 1350
+  tier: 10
+  lootWeight: 1
+  pickupAudioSource: 0
+  pickupAudio: {fileID: 0}
+  pickupClip: {fileID: 0}
+  pickupClipVolume: 1
+  pickupAudioKey: 
+  directToHotbar: 0
+  canBeEquipped: 1
+  equipSlot: 2
+  heldScale: 1
+  heldPosition: {x: 0, y: 0, z: 0}
+  heldRotation: {x: 0, y: 0, z: 0}
+  equipOnPickup: 0
+  statModifiers:
+  - stat: 1
+    value: 40
+    type: 0
+  weapon:
+    useDefaultEffects: 1
+    hitAudio: {fileID: 0}
+    swingAudio: {fileID: 0}
+    heavySwingAudio: {fileID: 0}
+    hitParticle: {fileID: 0}
+    damageMultiplier: 1
+    knockbackForce: -1
+    hitStopScale: 1
+  damageSpread: 0
+  effects: []
+  useAudioSource: 0
+  useAudio: {fileID: 0}
+  useClip: {fileID: 0}
+  useClipVolume: 1
+  useAudioKey: 
+  useMessage: 
+  AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
+  eatDuration: 0.65

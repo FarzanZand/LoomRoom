@@ -4,7 +4,7 @@ using UnityEngine;
 
 // Serialized by integer. Skills index AdventurerProgress.Ranks and AdventurerClass.skills.
 public enum AdventureSkill { Swords = 0, Maces = 1, Blocking = 2, Sorcery = 3, Thaumaturgy = 4, Athletics = 5, Trading = 6, Stealth = 7 }
-public enum LeftHandSpell { Shield = 0, Fireball = 1, Heal = 2 }
+public enum LeftHandSpell { Shield = 0, Fireball = 1, Heal = 2, ShadowVeil = 3, ChainLightning = 4, SweepingArc = 5, MoltenBoulder = 6, HurledStone = 7, FrostLance = 8, RaiseTheFallen = 9, Flick = 10, HelpingHand = 11, DieThrow = 12, DicePortal = 13 }
 
 public static class AdventureSkills
 {
@@ -31,6 +31,8 @@ public class AdventurerClass : ScriptableObject
     public Sprite sheetPortrait;
     [PreviewField(64), Tooltip("The same picture in colour, used instead when ProgressionManager > Meta progression > Sheet > Colour Sheet Portraits is on (Tools/sheet_portraits.py makes both).")]
     public Sprite sheetPortraitColour;
+    [PreviewField(64), Tooltip("A close head-and-shoulders square of the portrait, for the class card's square box at the table (the whole painting showed small in it). Tools/class_faces.py makes it.")]
+    public Sprite face;
     [Tooltip("Model shown as a miniature on the memorial table in the room.")]
     [AssetsOnly] public GameObject miniature;
     [Tooltip("Empty = available from the start. Otherwise the progression flag that unlocks it.")]
@@ -51,6 +53,8 @@ public class AdventurerClass : ScriptableObject
     [Title("Attributes"), InfoBox("Added to the character sheet's scores in a run of this class. Each point above the base gives what its track says (ProgressionManager > Meta progression > Tracks): Strength damage, Dexterity critical chance, Constitution health and stamina, Intelligence mana and spell power.")]
     public int strength, dexterity, constitution, intelligence;
     public float health = 30, mana = 20, stamina = 30;
+    [Min(0), Tooltip("Most health and mana each character level past the first adds in a run (a little: 2 to 4).")]
+    public float healthPerLevel = 3, manaPerLevel = 3;
 
     [Title("Skills"), InfoBox("Swords, Maces, Blocking, Sorcery, Thaumaturgy, Athletics, Trading")]
     public int[] skills = new int[AdventureSkills.Count];

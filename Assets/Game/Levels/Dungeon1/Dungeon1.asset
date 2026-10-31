@@ -17,6 +17,9 @@ MonoBehaviour:
   boardReveal: 0
   ownBoardPieces: 0
   ownLook: 0
+  plainKit: 0
+  pitWater: {fileID: 0}
+  pitWaterBelow: 0.4
   wilds:
     enabled: 0
     roofed: 0
@@ -154,6 +157,8 @@ MonoBehaviour:
   templateChance: 0.7
   roomCount: 0
   roomSizeScale: 1
+  tallRoomChance: 0
+  tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 0
   roomFeatures:
@@ -169,6 +174,11 @@ MonoBehaviour:
     sleepingPacks: 0
     sleepChance: 0.1
     maxSleepingPacks: 3
+    meddling: 1
+    meddleChance: 0.5
+    tooEasySeconds: 14
+    tooEasyHealth: 0.1
+    stealChance: 0.05
     pits: 1
     playerFallsInPits: 0
     pitFallDamage: 0.25
@@ -201,6 +211,10 @@ MonoBehaviour:
   encounterChance: {x: 0.4, y: 0.6}
   minEnemiesPerRoom: 1
   maxEnemiesPerRoom: 2
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
+  eliteChance: 0
+  eliteFloors: 3
   features: []
   loot: {fileID: 0}
   merchantChance: 1
@@ -211,7 +225,7 @@ MonoBehaviour:
     damageMultiplier: 1
     arena: {fileID: 0}
     title: Guardian
-    introMessage: Something guards the stairs down.
+    introMessage: '{boss} guards the stairs down.'
     introSting: {fileID: 0}
     stingVolume: 1
     bossMusic: {fileID: 0}
@@ -276,38 +290,47 @@ MonoBehaviour:
   m_Name: Dungeon1
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
   displayName: Dungeon
-  description: 'Three floors: cellars, catacombs, crypt. The Crypt Lord waits at
-    the bottom.'
+  description: 'Nine floors: cellars, catacombs, the crypt, three deep realms and
+    three ruins. The Crypt Lord waits on the third.'
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
   kind: 1
   stages:
   - biome: {fileID: 11400000, guid: 6b190885359363a4ba347cab4be462eb, type: 2}
     floors: 1
     boss: 0
+    extraFloors: 0
   - biome: {fileID: 11400000, guid: 5ee85df962efbc140ad726eaefcfd87b, type: 2}
     floors: 1
     boss: 0
+    extraFloors: 0
   - biome: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
     floors: 1
     boss: 1
-  - biome: {fileID: 11400000, guid: 28c75b4027f67c949a2c00a2f20e71a2, type: 2}
+    extraFloors: 0
+  - biome: {fileID: 11400000, guid: 0ec60215029f73349b3f3e0022f081f0, type: 2}
     floors: 1
     boss: 0
-  - biome: {fileID: 11400000, guid: cf945130f3c1cce4fbde0f1312d3d3e4, type: 2}
+    extraFloors: 1
+  - biome: {fileID: 11400000, guid: 5c3c2fd95bbff7542a3462f9fbc3fb46, type: 2}
     floors: 1
     boss: 0
-  - biome: {fileID: 11400000, guid: 9012b71dfd09a7446bc26272f589a7cb, type: 2}
+    extraFloors: 0
+  - biome: {fileID: 11400000, guid: 3e7956d2f7a9798459eb48f754cf6ec8, type: 2}
     floors: 1
     boss: 0
+    extraFloors: 0
   - biome: {fileID: 11400000, guid: 982d8b3f7a28bf0498b32a7265370690, type: 2}
     floors: 1
     boss: 0
+    extraFloors: 1
   - biome: {fileID: 11400000, guid: 29d73894662dc204ebe0b50f8ce9acab, type: 2}
     floors: 1
     boss: 0
+    extraFloors: 0
   - biome: {fileID: 11400000, guid: a120b1fb852141c43b0f64838c9e2b0a, type: 2}
     floors: 1
     boss: 0
+    extraFloors: 0
   floors: 1
   bossOnLastFloor: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
@@ -317,30 +340,134 @@ MonoBehaviour:
     tier2: 0
     tier3: 0
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   - fromFloor: 2
-    tier1: 50
-    tier2: 50
+    tier1: 40
+    tier2: 60
     tier3: 0
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   - fromFloor: 3
-    tier1: 25
-    tier2: 75
-    tier3: 0
+    tier1: 0
+    tier2: 60
+    tier3: 40
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   - fromFloor: 4
     tier1: 0
-    tier2: 100
+    tier2: 0
+    tier3: 60
+    tier4: 40
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
+    upgradeChance: 0
+  - fromFloor: 5
+    tier1: 0
+    tier2: 0
+    tier3: 0
+    tier4: 60
+    tier5: 40
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
+    upgradeChance: 0
+  - fromFloor: 6
+    tier1: 0
+    tier2: 0
     tier3: 0
     tier4: 0
+    tier5: 60
+    tier6: 40
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
+    upgradeChance: 0
+  - fromFloor: 7
+    tier1: 0
+    tier2: 0
+    tier3: 0
+    tier4: 0
+    tier5: 0
+    tier6: 60
+    tier7: 40
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
+    upgradeChance: 0
+  - fromFloor: 8
+    tier1: 0
+    tier2: 0
+    tier3: 0
+    tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 60
+    tier8: 40
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
+    upgradeChance: 0
+  - fromFloor: 9
+    tier1: 0
+    tier2: 0
+    tier3: 0
+    tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 100
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  eventRoomsPerFloor: {x: 2, y: 2}
   startingChest: 1
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   startingChestItems:
   - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
+  - {fileID: 11400000, guid: 0b6e3e8af8b9f7d4b8c9486117de94d5, type: 2}
   fixedSeed: 0
   pocket: 0
   nextFloorMessage: You descend to floor {0}.

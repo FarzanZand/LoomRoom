@@ -129,7 +129,12 @@ var placed = new System.Collections.Generic.Dictionary<string, (float x, float y
 {
   ["Warrior"] = (-15f, 4f, -2.5f, 0, 0), ["Cleric"] = (.5f, -6.5f, 3f, 2, 1),
   ["Wizard"] = (9f, 10.5f, -1.5f, 1, 2), ["Arcanist"] = (15.5f, -9f, 2f, 1, 3),
+  // 2026-10-30: clear of the Arcanist's spot (it goes up when that class is unlocked and their corners overlapped)
+  ["Rogue"] = (28.5f, 8.5f, -2f, 0, 1),
 };
+// a class's own poster size (an index into sizes) and how far its painting is cooled to sit with the others (class_poster.py)
+var sizeOf = new System.Collections.Generic.Dictionary<string, int> { ["Rogue"] = 1 };
+var coolOf = new System.Collections.Generic.Dictionary<string, float> { ["Rogue"] = 1f };
 float right = 0; foreach (var e in wall.posters) if (e.poster != null) right = UnityEngine.Mathf.Max(right, e.poster.transform.localPosition.x);
 for (int ci = 0; ci < classes.Count; ci++)
 {
@@ -141,9 +146,9 @@ for (int ci = 0; ci < classes.Count; ci++)
   if (!System.IO.File.Exists(png))
   {
     if (cls.portrait == null) { sb.Append($"{cls.name}: no portrait, no poster\n"); continue; }
-    var (pw, ph) = sizes[ci % sizes.Length];
+    var (pw, ph) = sizes[sizeOf.TryGetValue(cls.name, out var si) ? si : ci % sizes.Length];
     var psi = new System.Diagnostics.ProcessStartInfo("python",
-      $"Tools/class_poster.py \"{UnityEditor.AssetDatabase.GetAssetPath(cls.portrait)}\" \"{png}\" {pw} {ph} \"{name.ToUpperInvariant()}\" {11 + ci}")
+      $"Tools/class_poster.py \"{UnityEditor.AssetDatabase.GetAssetPath(cls.portrait)}\" \"{png}\" {pw} {ph} \"{name.ToUpperInvariant()}\" {11 + ci} {(coolOf.TryGetValue(cls.name, out var cool) ? cool : 0f).ToString(System.Globalization.CultureInfo.InvariantCulture)}")
       { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true };
     using (var proc = System.Diagnostics.Process.Start(psi)) { var err = proc.StandardError.ReadToEnd(); proc.WaitForExit(); if (proc.ExitCode != 0) { sb.Append($"{cls.name}: painting failed {err}\n"); continue; } }
     UnityEditor.AssetDatabase.ImportAsset(png);

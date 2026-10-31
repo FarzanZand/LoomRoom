@@ -52,7 +52,7 @@ public class TavernTabsUI : MonoBehaviour
         if (wares.button != null) wares.button.onClick.AddListener(() => Show(Page.Wares));
         if (food.button != null) food.button.onClick.AddListener(() => Show(Page.Food));
         if (rumours.button != null) rumours.button.onClick.AddListener(() => Show(Page.Rumours));
-        Hover(food, "Food", "Lasts until this run ends", "Each dish can be eaten once a run. What it gives holds on every floor until the run is over.");
+        Hover(food, "Food", "Once a run", "What a dish gives lasts until the run ends.");
         Hover(rumours, "Rumours", "Places you haven't found", "Pay for a rumour to hear where it is. The place joins your campaign map.");
         Hover(wares, "Wares", "Buy and sell", "Supplies and gear for this run. Right click your own things to sell them.");
     }
@@ -95,8 +95,8 @@ public class TavernTabsUI : MonoBehaviour
         if (p == Page.Wares && ShopUI.HasInstance) ShopUI.Instance.RefreshWares();
         if (ShopUI.HasInstance) ShopUI.Instance.SetHelp(p switch
         {
-            Page.Food => "Hover over a dish to see what it does. Each can be eaten once a run, and it lasts until the run ends.",
-            Page.Rumours => "Hover over a rumour. Listen pays for it, and the place it tells of joins your campaign map.",
+            Page.Food => "Hover over a dish to see what it does.",
+            Page.Rumours => "Hover over a rumour to see what it costs.",
             _ => null,
         });
         Refresh();
@@ -152,7 +152,7 @@ public class TavernTabsUI : MonoBehaviour
             if (c.icon != null) { c.icon.sprite = dish.icon; c.icon.enabled = dish.icon != null; }
             c.name.text = dish.displayName;
             c.info.text = dish.effectText; c.info.color = good;
-            c.note.text = eaten ? "Eaten · it lasts until this run ends" : dish.flavour;
+            c.note.text = eaten ? "Eaten" : dish.flavour;
             c.note.color = eaten ? gold : dim;
             c.price.gameObject.SetActive(!eaten); if (c.coin != null) c.coin.SetActive(!eaten);
             c.price.text = dish.price.ToString(); c.price.color = Coins >= dish.price ? text : tooDear;

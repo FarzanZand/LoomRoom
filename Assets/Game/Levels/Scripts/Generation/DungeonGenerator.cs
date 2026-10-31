@@ -156,7 +156,7 @@ public partial class DungeonGenerator : MonoBehaviour
         Biome = level.BiomeAt(floorNumber, out int floorInBiome, out int biomeFloors);
         FloorInBiome = floorInBiome; BiomeFloors = biomeFloors;
         Milestone = level.Milestone(floorNumber);
-        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); MerchantRoom = -1; shopInPlainRoom = false;
+        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); propBlocked.Clear(); bodies.Clear(); MerchantRoom = -1; shopInPlainRoom = false; castersInRoom.Clear(); castersOnFloor = 0; eliteRandom = new System.Random(Scramble(unchecked(seed + 15485863)));
         BeginDressing(seed);
         System.Collections.Generic.List<(Vector2Int, Vector2Int)> authoredDoors = null;
         if (level.layoutMode == DungeonLayoutMode.Authored)
@@ -178,6 +178,10 @@ public partial class DungeonGenerator : MonoBehaviour
         if (SliceDue) { Pause(); yield return null; Resume(); }
         var architecture = BuildArchitecture(level, seed, floorNumber, watch);
         while (architecture.MoveNext()) yield return architecture.Current;
+        var shadows = TrimShadows();
+        while (shadows.MoveNext()) yield return shadows.Current;
+        var lights = MergeNearbyLights();
+        while (lights.MoveNext()) yield return lights.Current;
         }
         finally
         {
@@ -270,9 +274,20 @@ public partial class DungeonGenerator : MonoBehaviour
     IEnumerator BuildArchitecture(TableLevelData level, int seed, int floorNumber, System.Diagnostics.Stopwatch watch)
     {
         StageRoom = FindStageRoom();
-        // Rooms are one tile high: only a template that asks for more is taller (for effect), never a generated room.
+        // Rooms are one tile high: a template that asks for more is taller (for effect), and a biome with Tall Room
+        // Chance builds a few of its big generated rooms two tiles high (halls), on their own stream.
         RoomHeightTiles = new int[Layout.rooms.Count];
         for (int i = 0; i < RoomHeightTiles.Length; i++) { var t = TemplateOf(i); RoomHeightTiles[i] = t != null ? Mathf.Max(1, t.heightTiles) : 1; }
+        if (!Authored && Biome != null && Biome.tallRoomChance > 0f)
+        {
+            var tall = new System.Random(Scramble(unchecked(seed + 1299709)));
+            for (int i = 1; i < RoomHeightTiles.Length; i++)
+            {
+                double roll = tall.NextDouble();
+                if (TemplateOf(i) == null && i != StageRoom && i != MerchantRoom && Layout.RoomCells(i).Count >= Biome.tallRoomLeastCells && roll < Biome.tallRoomChance)
+                    RoomHeightTiles[i] = 2;
+            }
+        }
         if (Authored)
         {
             var authoredRooms = level.AuthoredRoomList;
@@ -292,12 +307,12 @@ public partial class DungeonGenerator : MonoBehaviour
             RegionStyles[i] = DungeonRoomStyle.Choose(i < Layout.rooms.Count ? roomStyles : corridorStyles, styleRandom);
         for (int i=0;i<profiles.Length;i++)
             if (profiles[i] != null && profiles[i].styleOverride != null) RegionStyles[i] = profiles[i].styleOverride;
-        // A hand-built room's own style, except on a stage with a look of its own (a tavern in the woods is in the woods);
-        // there the tavern still keeps its own on a walled floor, so the ruins' wild walls beside it are its plaster.
+        // A hand-built room's own style, except on a stage with a look of its own; there the tavern still keeps its own, as it
+        // is always indoors (DungeonGenerator.BoardTavern).
         for (int i=0;i<profiles.Length;i++)
         {
             var t = TemplateOf(i);
-            if (t != null && t.style != null && (!OwnLook || !Board && data.shopRoom != null && t.gameObject == data.shopRoom)) RegionStyles[i] = t.style;
+            if (t != null && t.style != null && (!OwnLook || data.shopRoom != null && t.gameObject == data.shopRoom)) RegionStyles[i] = t.style;
         }
         if (level.corridorsCopyConnectedRoomStyle) CopyConnectedRoomStyles(seed);
         for (int i = 0; i < RegionStyles.Length; i++) if (RegionStyles[i] == null) RegionStyles[i] = DefaultStyle;
@@ -335,7 +350,7 @@ public partial class DungeonGenerator : MonoBehaviour
         for (int z = 0; z < level.depth; z++)
         {
             if (!Layout.floor[x,z]) continue;
-            if (Board) { BuildBoardCell(x, z); continue; }
+            if (Board) { BuildBoardCell(x, z); if (IndoorTavern(Layout.RegionIds[x, z])) BuildTavernShell(x, z); continue; }
             int room = Layout.RegionIds[x,z];
             var style = RegionStyles[room];
             float height = HeightAt(x,z);
@@ -472,6 +487,7 @@ public partial class DungeonGenerator : MonoBehaviour
             var delta=Cell(outside)-Cell(Layout.Start); delta.y=0;
             if(delta.sqrMagnitude<closest){closest=delta.sqrMagnitude;SpawnRotation=Quaternion.LookRotation(delta);}
         }
+        StartAtEventEntrance();
         ExitPoint = Cell(Layout.Exit);
         // The merchant can keep the last room (a painted layout's merchant tick): the way out then goes to the room's
         // free cell farthest from the stall, so the ladder never stands in the merchant's shop counter.
@@ -613,6 +629,9 @@ public partial class DungeonGenerator : MonoBehaviour
             }
         }
         var rng = new System.Random(unchecked(seed + 32452843));
+        // The tavern is indoors: a passage that took its plaster showed the inside of the inn from the dungeon (the user,
+        // twice), so passages copy any other room's style and only fall back to the default beside the tavern.
+        bool Tavern(int room) => room >= 0 && room < Layout.rooms.Count && data.shopRoom != null && TemplatePrefab(room) == data.shopRoom;
         for (int region = Layout.rooms.Count; region < links.Length; region++)
         {
             var queue = new System.Collections.Generic.Queue<int>();
@@ -627,7 +646,7 @@ public partial class DungeonGenerator : MonoBehaviour
                     foreach (int neighbor in links[queue.Dequeue()])
                     {
                         if (!seen.Add(neighbor)) continue;
-                        if (neighbor < Layout.rooms.Count) candidates.Add(neighbor);
+                        if (neighbor < Layout.rooms.Count) { if (!Tavern(neighbor)) candidates.Add(neighbor); }
                         else queue.Enqueue(neighbor);
                     }
             }
@@ -642,7 +661,7 @@ public partial class DungeonGenerator : MonoBehaviour
                 foreach (var d in DungeonLayout.Neighbours)
                 {
                     var n = new Vector2Int(x + d.x, z + d.y);
-                    if (!Layout.InBounds(n) || !Layout.floor[n.x,n.y]) continue;
+                    if (!Layout.InBounds(n) || !Layout.floor[n.x,n.y] || Tavern(Layout.RegionIds[n.x,n.y])) continue;
                     var style = RegionStyles[Layout.RegionIds[n.x,n.y]];
                     if (style != null) { RegionStyles[region] = style; break; }
                 }
@@ -666,6 +685,8 @@ public partial class DungeonGenerator : MonoBehaviour
             var n=p+dir;
             var pos=(Cell(p)+Cell(n))*.5f;
             if (Board) pos.y = Cell(p).y; // it stands at the room's edge, where the steps begin
+            // The tavern's way in on a board is a doorway in its walls (DungeonGenerator.BoardTavern), not an arch.
+            bool tavernDoor = Board && IndoorTavern(Layout.RegionIds[p.x,p.y]);
             var prefab=doorPrefabs.TryGetValue((p,dir),out var own) ? own : data.doorPrefab;
             if(prefab==null)continue;
             var door=Instantiate(prefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
@@ -679,6 +700,8 @@ public partial class DungeonGenerator : MonoBehaviour
                 var renderer = gate.lintel.GetComponent<Renderer>();
                 if (renderer != null) renderer.enabled = false;
                 float top = Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y));
+                // The tavern's walls stand on the tile's top and the hill over it starts on its ceiling's top.
+                if (tavernDoor) top = HeightAt(p.x,p.y) + TileThickness + .24f - CeilingWallOverlap;
                 float bottom = Mathf.Min(gate.openingHeight, top) - .025f;
                 // Bury the cap inside the ceiling so its top never shares the ceiling plane.
                 // Recess both vertical faces slightly to avoid coplanar overlap with upper
@@ -694,16 +717,20 @@ public partial class DungeonGenerator : MonoBehaviour
                     if (end <= y) continue;
                     float depth = WallThickness - lintelFaceInset * 2;
                     // On a board the lintel is the arch's beam: across both posts, and part of the door (none between post props).
-                    if (Board && BoardPostProps) continue;
-                    float spanWidth = Board ? data.cellSize + .68f : data.cellSize;
-                    if (Board) depth = WallThickness + .06f;
+                    bool arch = Board && !tavernDoor;
+                    if (arch && BoardPostProps) continue;
+                    float spanWidth = arch ? data.cellSize + .68f : data.cellSize;
+                    if (arch) depth = WallThickness + .06f;
                     var span = dir.x != 0 ? new Vector3(depth,end-y,spanWidth) : new Vector3(spanWidth,end-y,depth);
                     // In line with the room walls either side, which sit behind the edge on the corridor side.
-                    var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(Board ? 0 : WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
+                    var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(arch ? 0 : WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,
                         WallMaterial(Layout.RegionIds[p.x,p.y],y), Board ? door.transform : transform);
                     DestroyImmediate(lintel.GetComponent<Collider>()); // Original fitted lintel retains collision.
+                    if (tavernDoor) TavernLintelOutside(lintel, dir);
+                    else if (!Board && own != null) WayInRevealOutside(lintel, dir, Layout.RegionIds[n.x,n.y], y);
                 }
-                if (Board) BoardDoorFrame(gate, p, n, pos.y + top);
+                if (!Board && own != null) WayInJambsOutside(pos, dir, Layout.RegionIds[n.x,n.y], bottom);
+                if (Board && !tavernDoor) BoardDoorFrame(gate, p, n, pos.y + top);
             }
             if (Board && gate != null) boardDoors.Add((gate, p, n));
         }
@@ -736,6 +763,8 @@ public partial class DungeonGenerator : MonoBehaviour
                 if(at>=cursor)available.RemoveAt(at);
             }
         if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,rewards,FaceCenter(extra,index));
+        // Treasure that comes with the room's shape: a hoard in an inner chamber, a chest at a big hall's far end.
+        ShapeTreasure(index,available,cursor,rewards);
         var (rules,prefabs)=Furnishing(profile);
         if(rules!=null)
         {
@@ -820,6 +849,8 @@ public partial class DungeonGenerator : MonoBehaviour
         foreach(var chest in GetComponentsInChildren<DungeonContainer>(true))
         {
             if(chest==null || !chest.chest)continue;
+            // An event room's chest is the event's (a run opened in the bell room), never the starting chest.
+            if(chest.GetComponentInParent<ScriptedEventRoom>()!=null)continue;
             // A level with Starting Chest off (the Arena) has no chest in its first room, whatever built it.
             // A chest can stand on a cell no room owns (an edge or a doorway cell), so "in it" means room 0's cells or next to them.
             if(!data.startingChest && !data.pocket && Layout!=null && NearRoom(CellOf(chest.transform.position),0,2)){DestroyImmediate(chest.gameObject);continue;}
@@ -879,6 +910,7 @@ public partial class DungeonGenerator : MonoBehaviour
             var col=go.AddComponent<BoxCollider>(); col.center=Vector3.up*.5f; col.size=new Vector3(1.4f,1,.9f);
             go.AddComponent<InteractableTrigger>();
         }
+        AddBody(go);
         return container;
     }
 

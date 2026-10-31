@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e1245925be5b504991286fe52736323, type: 3}
+  m_Name: Rogue
+  m_EditorClassIdentifier: Assembly-CSharp::AdventurerClass
+  id: rogue
+  displayName: Rogue
+  description: Sword and a Shadow Veil Tome. Best from behind.
+  portrait: {fileID: 21300000, guid: 598e457b5eef2d141864deec0bfc5842, type: 3}
+  sheetPortrait: {fileID: 21300000, guid: a3b1d3ef779e96548aec6c82267c9907, type: 3}
+  sheetPortraitColour: {fileID: 21300000, guid: 91e842b5d9149c54eb026f0fa306e321, type: 3}
+  face: {fileID: 21300000, guid: f0ea1e66902858746b42aba17e0ccbae, type: 3}
+  miniature: {fileID: 5899440338459577506, guid: 442a0ca452f074346bca234eea4306fc, type: 3}
+  unlockFlag: class.rogue
+  posterLine:
+    text: The Rogue. Quick hands. Keep an eye on your purse.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  deskProp: {fileID: 7158882129125543917, guid: 551504985b5fbe842b7b47f64e635559, type: 3}
+  equipment:
+  - {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
+  spells:
+  - {fileID: 11400000, guid: da021421336c4e044b8577430b9b244a, type: 2}
+  supplies:
+  - item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
+    count: 1
+    used: 0
+  - item: {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
+    count: 2
+    used: 0
+  - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
+    count: 2
+    used: 0
+  leftHand: 3
+  strength: -1
+  dexterity: 2
+  constitution: -1
+  intelligence: 0
+  health: 28
+  mana: 40
+  stamina: 40
+  healthPerLevel: 3
+  manaPerLevel: 2
+  skills: 0f000000000000000000000005000000000000000a0000000000000014000000

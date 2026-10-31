@@ -21,7 +21,11 @@ public class PlayerSpellcasting : MonoBehaviour
     public AudioData fizzleSound;
 
     public LeftHandSpell Equipped { get; private set; }
-    public SpellDefinition Selected => player != null ? player.Equipment.Get(EquipmentSlot.LeftHand)?.spell : null;
+    // The left hand's spell: a spell tome's, or a scroll's readied there (cast with no mana, a charge a cast).
+    public SpellDefinition Selected => LeftItem is ItemData item ? item.spell != null ? item.spell : item.IsScroll ? item.scrollSpell : null : null;
+    ItemData LeftItem => player != null && player.Equipment != null ? player.Equipment.Get(EquipmentSlot.LeftHand) : null;
+    bool ScrollInHand => LeftItem is { IsScroll: true };
+    ItemData castingScroll;   // the scroll whose spell is winding up (its charge is spent when it goes off)
     public bool Casting => casting;
     public bool Busy => casting || recovery > 0 || switching > 0;
     // 0..1 through the current wind-up, for the HUD.
@@ -136,9 +140,12 @@ public class PlayerSpellcasting : MonoBehaviour
         if (!GameManager.HasInstance || !GameManager.Instance.GameplayActive || player.Combat.IsAttacking) return;
         if (player.Equipment != null && player.Equipment.IsUsingItem) return;   // eating or drinking
         if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { Refuse("Health is full"); return; }
-        if (player.Stats.CurrentMana < Cost(spell)) { Refuse("Not enough mana"); return; }
+        if (!DevGodMode.On && !ScrollInHand && player.Stats.CurrentMana < Cost(spell)) { Refuse("Not enough mana"); return; }
+        var refusal = spell.effect != SpellEffect.Standard ? SpellEffects.Refusal(spell, player) : null;
+        if (refusal != null) { Refuse(refusal); return; }
 
         casting = true; castingSpell = spell; elapsed = 0; castTime = CastTime(spell);
+        castingScroll = ScrollInHand ? LeftItem : null;
         SetInt(typeParameter, spell.animation);
         SetFloat(speedParameter, spell.chargeClipSeconds / castTime);
         SetTrigger(castParameter);
@@ -154,9 +161,51 @@ public class PlayerSpellcasting : MonoBehaviour
         recovery = spell.recoverySeconds;
         // Checked again at release: health may have filled or mana drained during the wind-up.
         if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { SetTrigger(cancelParameter); Refuse("Health is full"); return; }
-        if (!player.Stats.TryUseMana(Cost(spell), 0f)) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
-
+        var refusal = spell.effect != SpellEffect.Standard ? SpellEffects.Refusal(spell, player) : null;
+        if (refusal != null) { SetTrigger(cancelParameter); Refuse(refusal); return; }
+        // God mode casts anything for free, even a spell costing more than the whole mana bar; a scroll costs no mana.
+        var scroll = castingScroll; castingScroll = null;
+        if (!DevGodMode.On && scroll == null && !player.Stats.TryUseMana(Cost(spell), 0f)) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
         SetTrigger(releaseParameter);
+        Unleash(spell);
+        if (scroll != null) SpendScroll(scroll);
+    }
+
+    // A readied scroll cast: one of its charges is spent; with the last it is gone and the shield is taken in hand again.
+    void SpendScroll(ItemData scroll)
+    {
+        var eq = player.Equipment;
+        int at = eq != null ? eq.HeldIndex(EquipmentSlot.LeftHand) : -1;
+        if (at < 0 || player.Hotbar.ItemAt(at) != scroll) at = player.Hotbar.IndexOf(scroll);
+        if (at < 0) return;
+        scroll.PlayUseSound();
+        bool last = player.Hotbar.ChargesAt(at) <= 1;
+        player.Hotbar.UseCharge(at);
+        if (!last) return;
+        if (eq.Get(EquipmentSlot.LeftHand) == scroll) eq.Unequip(EquipmentSlot.LeftHand);
+        foreach (var inventory in new[] { player.Hotbar, player.Bag })
+            for (int i = 0; i < inventory.SlotCount; i++)
+                if (inventory.ItemAt(i) is ItemData item && item.itemType == ItemType.Shield) { eq.Equip(item, false); return; }
+    }
+
+    // A scroll read from the hotbar or the bag: its spell goes off at once, with no wind-up and no mana, whatever the
+    // left hand holds. False (with the reason shown) when it can't be cast now, so the scroll keeps its charge.
+    public bool CastScroll(SpellDefinition spell)
+    {
+        if (spell == null || casting || !player.IsActive || !player.IsAlive) return false;
+        if (!GameManager.HasInstance || !GameManager.Instance.GameplayActive || player.Combat.IsAttacking) return false;
+        if (spell.spell == LeftHandSpell.Heal && player.Stats.CurrentHealth >= player.Stats.MaxHealth) { Refuse("Health is full"); return false; }
+        var refusal = spell.effect != SpellEffect.Standard ? SpellEffects.Refusal(spell, player) : null;
+        if (refusal != null) { Refuse(refusal); return false; }
+        Unleash(spell);
+        return true;
+    }
+
+    // The spell taking effect, once it is paid for (or read from a scroll).
+    void Unleash(SpellDefinition spell)
+    {
+        // Any spell but the veil itself gives a veiled player away.
+        if (spell.effect != SpellEffect.ShadowVeil) ShadowVeil.Break(player);
         if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.releaseSound, spell.releaseVolume);
         if (spell.spell == LeftHandSpell.Heal)
         {
@@ -169,6 +218,7 @@ public class PlayerSpellcasting : MonoBehaviour
             if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation);
             if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
         }
+        else if (spell.effect != SpellEffect.Standard) CastEffect(spell);
         else if (spell.groundArea) CastOnGround(spell);
         else if (spell.projectile != null) Launch(spell);
         Changed?.Invoke();
@@ -196,14 +246,29 @@ public class PlayerSpellcasting : MonoBehaviour
             aim = hit.point;
         if (Physics.Linecast(view.position, origin, out var blocked, spell.projectile.collisionMask, QueryTriggerInteraction.Ignore) && !blocked.transform.IsChildOf(player.transform))
             origin = view.position;
+        // A piercing spell flies along the crosshair line itself, a little below the eye: aimed from the hand at the
+        // first enemy it would veer off that line after it and miss the ones behind.
+        if (spell.pierce > 0) { origin = view.position + view.forward * .6f - view.up * .15f; aim = origin + view.forward * 60f; }
         var direction = aim - origin;
         if (direction.sqrMagnitude < .01f) direction = view.forward;
+        // Thrown spells arc: aimed up just enough to come down where the crosshair is.
+        if (spell.gravity > 0f) direction = SpellProjectile.ArcDirection(origin, aim, spell.speed, spell.gravity);
         var projectile = Instantiate(spell.projectile, origin, Quaternion.LookRotation(direction.normalized));
         if (spell.homing && hit.collider != null && hit.collider.GetComponentInParent<Character>() is { } aimed && aimed != player && aimed.IsAlive)
         { projectile.HomingTarget = aimed; projectile.HomingTurn = spell.homingTurn; }
         projectile.Launch(player, spell, Power(spell), progress);
 
         // The flame leaves the hand and relights once the throw has recovered.
+        if (held != null) { held.Stop(); held = null; }
+        relightAt = Time.time + spell.recoverySeconds + .1f;
+    }
+
+    // The spells that do their own thing (SpellEffects): aimed along the view, leaving from the hand.
+    void CastEffect(SpellDefinition spell)
+    {
+        var view = player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : transform;
+        var origin = castOrigin != null ? castOrigin.position : view.position;
+        SpellEffects.CastByPlayer(player, spell, Power(spell), view, origin, progress);
         if (held != null) { held.Stop(); held = null; }
         relightAt = Time.time + spell.recoverySeconds + .1f;
     }
@@ -225,6 +290,7 @@ public class PlayerSpellcasting : MonoBehaviour
     void Cancel(bool animate)
     {
         if (!casting) return;
+        castingScroll = null;
         EndCharge();
         if (animate) SetTrigger(cancelParameter);
         Changed?.Invoke();

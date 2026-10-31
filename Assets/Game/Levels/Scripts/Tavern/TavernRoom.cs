@@ -9,31 +9,42 @@ public class TavernRoom : MonoBehaviour
     [Tooltip("Said when a guardian waits further down this run. {Floors} is how many floors down.")]
     public DungeonMaster.Line[] bossAhead =
     {
-        new() { text = "Something big waits {Floors} down. Eat first.", inPerson = true, mumble = true },
-        new() { text = "Rest while you can. The bottom of this place bites back.", inPerson = true, mumble = true },
+        new() { text = "There's a boss {Floors} down. Eat first.", inPerson = true, mumble = true },
+        new() { text = "Rest here. It gets worse below.", inPerson = true, mumble = true },
     };
     [Tooltip("Said when the guardian is on the next floor.")]
     public DungeonMaster.Line[] bossNext =
     {
-        new() { text = "The next stairs go down to something that won't share the room.", inPerson = true, mumble = true },
+        new() { text = "The next stairs go down to a boss.", inPerson = true, mumble = true },
     };
     [Tooltip("Said when this floor has a portal.")]
     public DungeonMaster.Line[] portalHere =
     {
-        new() { text = "There's an arch on this floor that doesn't lead where arches lead.", inPerson = true, mumble = true },
+        new() { text = "There's a portal somewhere on this floor.", inPerson = true, mumble = true },
     };
     [Tooltip("Said otherwise.")]
     public DungeonMaster.Line[] plain =
     {
-        new() { text = "Sit. Nothing follows you in here.", inPerson = true, mumble = true },
+        new() { text = "Nothing follows you in here.", inPerson = true, mumble = true },
         new() { text = "Even I need a break from you sometimes.", inPerson = true, mumble = true },
         new() { text = "The stew is better than it looks.", inPerson = true, mumble = true },
     };
     [Range(0, 1), Tooltip("Chance a hint is given when there is one (else a plain line).")]
     public float hintChance = .7f;
+    [Tooltip("Said the first time a tavern is walked into (once a save) while the keeper has a rumour to sell; the quest to buy one opens with it.")]
+    public DungeonMaster.Line rumourLine = new() { text = "The keeper sells rumours. Buy one and see what turns up on the map.", inPerson = true, mumble = true };
+    public const string RumourToldFlag = "story.rumourTold";
 
     public DungeonMaster.Line Pick(DungeonGenerator floor)
     {
+        // The first tavern of a save, with a rumour on sale: the quest to buy one, and his word on it.
+        var pm = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+        if (pm != null && ProgressionManager.MetaActive && !pm.HasFlag(RumourToldFlag) && CampaignManager.HasInstance && CampaignManager.Instance.Rumours().Count > 0)
+        {
+            pm.SetFlag(RumourToldFlag);
+            pm.GiveQuest(ProgressionManager.RumourQuest);
+            if (rumourLine != null && !rumourLine.IsEmpty) return rumourLine;
+        }
         if (floor != null && Random.value < hintChance)
         {
             var level = floor.LevelData;

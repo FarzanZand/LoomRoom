@@ -12,16 +12,19 @@ public class SwingCameraMotion : CinemachineExtension
     {
         if (stage != CinemachineCore.Stage.Finalize) return;
         if (player == null) player = GetComponentInParent<Player>();
+        // A wobble from a blow on the world (ViewShake) shows whatever else is going on.
+        var wobble = player != null && player.IsActive ? ViewShake.Rotation : Vector3.zero;
         var tuning = CombatManager.HasInstance ? CombatManager.Instance : null;
         if (deltaTime < 0f || tuning == null || !tuning.swingCameraMotionEnabled ||
             player == null || !player.IsActive || player.Combat == null ||
             (GameManager.HasInstance && !GameManager.Instance.GameplayActive))
         {
             rotation = Vector3.zero;
+            if (wobble != Vector3.zero) state.OrientationCorrection *= Quaternion.Euler(wobble);
             return;
         }
         rotation = Vector3.Lerp(rotation, player.Combat.SwingCameraRotation(tuning),
             1f - Mathf.Exp(-Mathf.Max(1f, tuning.swingCameraBlendSpeed) * deltaTime));
-        state.OrientationCorrection *= Quaternion.Euler(rotation + player.Combat.CameraKick);
+        state.OrientationCorrection *= Quaternion.Euler(rotation + player.Combat.CameraKick + wobble);
     }
 }

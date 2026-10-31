@@ -16,7 +16,12 @@ public class AttributeCellUI : MonoBehaviour
 
     void Awake() { if (plus != null) plus.onClick.AddListener(Spend); }
 
-    void Spend() { if (progress != null) progress.SpendPoint(attribute); }
+    // A point put in: a button click (the UI Library's buttonClick key, the sound library's ButtonClick).
+    void Spend()
+    {
+        if (progress != null && progress.SpendPoint(attribute) && AudioManager.HasInstance) AudioManager.Instance.PlayUI(ClickKey);
+    }
+    public const string ClickKey = "buttonClick";
 
     public void Refresh(AdventurerProgress owner)
     {

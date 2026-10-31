@@ -127,6 +127,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         var item  = Item;
         int count = Container != null && Anchor >= 0 ? Container.CountAt(Anchor) : 0;
+        // A scroll shows the charges it has left instead (when it has more than one).
+        if (Container != null && Anchor >= 0 && Container.ItemAt(Anchor) is { IsScroll: true }) count = Container.ChargesAt(Anchor);
         if (GridCell) count = 0;
 
         if (iconImage != null)
@@ -234,7 +236,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (fromHotbar && HeldSlot(owner.Equipment, Container, Anchor) is EquipmentSlot heldHand) { owner.Equipment.TryUnequip(heldHand); return; }
         if (!to.Accepts(item)) { Refuse(fromHotbar ? null : "That doesn't go on the hotbar"); return; }
         int spot = to.IsGrid ? to.FindSpot(item) : to.FirstEmpty();
-        if (spot < 0 || !Inventory.Move(Container, Anchor, to, spot)) { Refuse(fromHotbar ? "Inventory full" : "The hotbar is full"); return; }
+        if (spot < 0 || !Inventory.Move(Container, Anchor, to, spot)) { Refuse(fromHotbar ? "Bag full" : "The hotbar is full"); return; }
         var s = UIFeedbackSettings.Shared; s?.Play(s.equipKey);
     }
 
@@ -297,7 +299,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
         if (container.role == InventoryRole.Bag && owner.Hotbar != null && owner.Hotbar.Accepts(item))
         {
-            options.Add(("Add to Hotbar", () =>
+            options.Add(("Add to hotbar", () =>
             {
                 if (!Unchanged()) return;
                 int empty = owner.Hotbar.FirstEmpty();
@@ -307,11 +309,11 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         }
         else if (container.role == InventoryRole.Hotbar && owner.Bag != null && !HeldSlot(eq, container, index).HasValue)
         {
-            options.Add(("Move to Bag", () =>
+            options.Add(("Move to bag", () =>
             {
                 if (!Unchanged()) return;
                 int empty = owner.Bag.FindSpot(item);
-                if (empty < 0) { NotificationUI.Show("Inventory full"); return; }
+                if (empty < 0) { NotificationUI.Show("Bag full"); return; }
                 Inventory.Move(container, index, owner.Bag, empty);
             }));
         }

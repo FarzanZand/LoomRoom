@@ -53,8 +53,8 @@ public static class TavernSetup
     static TavernDish[] Dishes(System.Text.StringBuilder log)
     {
         Folder(DishDir);
-        var stew = Dish("Hearty stew", "stew", 30, "+1 Strength, Dexterity, Constitution and Intelligence", "Thick, brown and still bubbling.", 1, null, "Assets/Game/Items/Icons/Generated/Cooked meat.png");
-        var broth = Dish("Herb broth", "broth", 30, "+25% mana regeneration", "Green, bitter and good for you.", 0,
+        var stew = Dish("Hearty stew", "stew", 30, "+1 Strength, Dexterity, Constitution and Intelligence", "Still bubbling.", 1, null, "Assets/Game/Items/Icons/Generated/Cooked meat.png");
+        var broth = Dish("Herb broth", "broth", 30, "+25% mana regeneration", "Bitter, but good for you.", 0,
             new StatModifierEntry { stat = StatType.ManaRegen, value = .25f, type = ModifierType.PercentAdd }, "Assets/Game/Items/Icons/Generated/Mana Potion.png");
         log.Append("dishes; ");
         return new[] { stew, broth };
@@ -290,13 +290,13 @@ public static class TavernSetup
             {
                 merchant.merchantName = "Tavern keeper";
                 merchant.musicKey = "";   // the tavern's own music plays (RoomMusic)
-                merchant.greetings = new[] { "\"Sit down. Eat something.\"", "\"Food, a fire, and things I've heard.\"", "\"Nothing comes through that door. Mostly.\"" };
+                merchant.greetings = new[] { "\"Sit down. Eat something.\"", "\"Warm yourself by the fire.\"", "\"Nothing comes through that door. Mostly.\"" };
             }
             var provokable = root.GetComponentInChildren<ProvokableNpc>(true);
             if (provokable != null)
             {
                 provokable.hitsToTurn = 3;
-                provokable.wrathLines = new[] { new DungeonMaster.Line { text = "I did warn you.", mumble = true }, new DungeonMaster.Line { text = "Some people only learn the hard way.", mumble = true } };
+                provokable.wrathLines = new[] { new DungeonMaster.Line { text = "I did warn you.", mumble = true }, new DungeonMaster.Line { text = "Now you've done it.", mumble = true } };
             }
             PrefabUtility.SaveAsPrefabAsset(root, path);
             log.Append("keeper; ");
@@ -338,7 +338,7 @@ public static class TavernSetup
             .Select(g => AssetDatabase.LoadAssetAtPath<CampaignEncounter>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault(e => e != null && e.id == "arena");
         if (arena == null) { log.Append("NO arena place; "); return; }
         arena.rumoured = true;
-        if (string.IsNullOrEmpty(arena.rumour)) arena.rumour = "Some who wander off past the Crypt come back with sand in their boots. Some come back with a crowd still cheering in their ears.";
+        if (string.IsNullOrEmpty(arena.rumour)) arena.rumour = "People who go past the Crypt come back with sand in their boots.";
         if (string.IsNullOrEmpty(arena.rumourTold)) arena.rumourTold = "There's a pit not far from the Crypt where they fight for a crowd. A champion waits in it. Nobody has thrown him out yet.";
         if (arena.openedLine == null || arena.openedLine.IsEmpty) arena.openedLine = new DungeonMaster.Line { text = "The Arena. You paid to hear about it. Now go and earn it.", inPerson = true, mumble = true };
         EditorUtility.SetDirty(arena);

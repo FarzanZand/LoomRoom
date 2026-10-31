@@ -18,6 +18,7 @@ public partial class AssetStudioWindow
         {
             case TableLevelData level when level.IsDungeon:
                 Add("Play this level", "Generate floor 1 of this level and play it.", () => GameLauncher.PlayLevel(level));
+                Add("Play with the DM cheating", "A run where the Dungeon Master meddles at the first chance: win a fight quickly and he sets one more enemy down; walk up to a chest and he takes it (the dev console's event cheats).", () => GameLauncher.PlayEvent(DevConsole.CheatsEvent));
                 // No stages: one run on its base biome, and its boss when the base biome has a guardian on the last floor.
                 if (!level.HasStages)
                 {
@@ -86,6 +87,12 @@ public partial class AssetStudioWindow
                         NewCharacterWindow.Open(enemy, go, made => { if (made != null && this != null && categories != null) ShowInLibrary(AssetDatabase.GetAssetPath(made), $"Made {made.name}. Edit it on its Character component."); });
                         return "Name the new " + (enemy ? "enemy" : "NPC") + " in the window that opened.";
                     });
+                }
+                if (go.GetComponent<ScriptedEventRoom>() is ScriptedEventRoom ev && !string.IsNullOrWhiteSpace(ev.eventName))
+                {
+                    Add("Play this event", $"A new run starting at the way into this room ({ev.summary}). The dev console's event {ev.eventName}.", () => GameLauncher.PlayEvent(ev.eventName));
+                    if (go.GetComponent<DiceEvent>() != null)
+                        for (int face = 1; face <= 6; face++) { int f = face; Add($"Roll a {f}", $"The dice room with the die landing on {f}.", () => GameLauncher.PlayEvent(ev.eventName, f)); }
                 }
                 if (go.GetComponent<DungeonRoomTemplate>() != null)
                 {

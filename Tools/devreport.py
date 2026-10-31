@@ -7,6 +7,10 @@ Asset Studio). The game only reads what this writes:
     python Tools/devreport.py triage <id> <status> <owner> [note]
                                                        triage.json: status working|done|failed, who has it, a short note
     python Tools/devreport.py list                     every report with its status
+    python Tools/devreport.py wait                     blocks until there are new reports and Play has stopped since the
+                                                       newest (DevReports/.play-stopped, written by DevReportPlayStop in
+                                                       the editor), then lists them and ends: Main runs it in the
+                                                       background so stopping Play wakes it
 
 Writes are atomic (temporary file, then replace). Report folders are never changed otherwise."""
 import json, os, sys, datetime, re
@@ -95,8 +99,33 @@ def main(argv):
             write(os.path.join(d, "receipt.json"), {"report_id": argv[2], "received_at": now(), "session": "Main"})
         write(os.path.join(d, "triage.json"), {"report_id": argv[2], "status": argv[3], "owner": argv[4] if len(argv) > 4 else "Main",
                                                 "note": argv[5] if len(argv) > 5 else "", "task": "", "updated_at": now()})
+    elif cmd == "wait":
+        wait()
     else:
         sys.exit(__doc__)
+
+
+def stopped_at():
+    p = os.path.join(ROOT, ".play-stopped")
+    return os.path.getmtime(p) if os.path.isfile(p) else 0.0
+
+
+def wait(poll=3.0):
+    # Ends once Play stops (the marker is written again) while some request is still untriaged, or at once when an Asset
+    # Studio request comes in (made outside Play, so no stop will follow it).
+    import time
+    start = stopped_at()
+    seen = {r["report_id"] for r in reports()}
+    while True:
+        time.sleep(poll)
+        rs = reports()
+        open_ = [r for r in rs if status(r) in ("new", "received")]
+        fresh_studio = [r for r in rs if r["report_id"] not in seen and r.get("context") != "game"]
+        if (stopped_at() > start and open_) or fresh_studio:
+            print("play stopped" if stopped_at() > start else "studio request")
+            for r in open_:
+                print(f"{status(r):9} {one_line(r)}")
+            return
 
 
 if __name__ == "__main__":

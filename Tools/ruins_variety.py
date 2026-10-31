@@ -283,7 +283,7 @@ PER_CELL = {"stone wall": False, "stone floor": True, "stone floor b": True}
 def main():
     for n in (1, 2, 3):
         d = f"{ROOT}/Ruins{n}"
-        for surface in ("stone wall", "stone wall b", "stone floor", "stone floor b", "stone ceiling", "timber upper", "timber upper b"):
+        for surface in ("stone wall", "stone wall b", "stone floor", "stone floor b", "stone ceiling"):   # the timber styles are deleted (2026-10-30)
             p = f"{d}/Ruins{n} {surface}.png"
             img = base_of(p)
             if (n, surface) in REPALETTE:

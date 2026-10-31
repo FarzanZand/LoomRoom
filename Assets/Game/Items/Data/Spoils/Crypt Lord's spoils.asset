@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: spoils_crypt_lord
   weaponCategory: 0
   spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
   rarity: 5
   description: 'What the Crypt Lord left behind: his skull, his bones, his hoard.
     Worth 25 at the tally.'
@@ -66,4 +67,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 1.3

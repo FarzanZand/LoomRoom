@@ -151,7 +151,7 @@ public class RunManager : Singleton<RunManager>
         Settle(true);
         RunEnded?.Invoke(true);
         if (AudioManager.HasInstance && victorySting != null) AudioManager.Instance.PlaySFX2D(victorySting, victoryStingVolume);
-        MessageLog.Post($"You conquer {PlaceName(true)}!", MessageKind.Good);
+        MessageLog.Post($"You beat {PlaceName(true)}.", MessageKind.Good);
         ShowRecap(true);
     }
 
@@ -349,7 +349,10 @@ public class RunManager : Singleton<RunManager>
     void OnAnyDied(Character c)
     {
         if (!Running || Ended || c == null || c is Player || c.GetComponent<EnemyBrain>() == null) return;
-        if (player == null || c.LastDamage.Source != player) return; // only the player's kills count and give XP
+        // Only the player's kills count and give XP; their summons' kills are theirs (Summon.Commander).
+        if (player == null || Summon.Commander(c.LastDamage.Source) != player) return;
+        // A summoned body is no kill: a necromancer would raise it again and again.
+        if (c.GetComponent<Summon>() != null) return;
         Kills++;
         if (c.Stats != null) HealthSlain += Mathf.RoundToInt(c.Stats.MaxHealth);
         GainKillExperience(c, 1f);
@@ -373,6 +376,7 @@ public class RunManager : Singleton<RunManager>
         var data = c.GetComponent<EnemyBrain>().Data;
         float xp = data != null && data.experience > 0 ? data.experience
                  : progress.rules.xpPerEnemy * Mathf.Clamp(c.Stats != null ? c.Stats.MaxHealth / 20f : 1f, .5f, 6f);
+        if (c.TryGetComponent<EliteEnemy>(out _)) xp *= EliteEnemy.Experience;   // an elite is worth twice
         progress.GainExperience(xp * share * (1 + (Floor - 1) * .12f));
     }
 }

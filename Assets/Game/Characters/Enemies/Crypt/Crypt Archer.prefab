@@ -117,6 +117,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   portrait: {fileID: 0}
   characterName: Crypt Archer
+  properName: 0
   faction: 2
   description: 
   creatureKind: 0
@@ -186,6 +187,7 @@ MonoBehaviour:
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8
+  prefab: {fileID: 6526550647871116108}
   behaviour: {fileID: 0}
   behaviourSettings:
     defaultState: 0
@@ -214,9 +216,14 @@ MonoBehaviour:
     acceleration: 30
     preferredRangeFraction: 0.6
     circleTarget: 1
-    circleSpeedFraction: 0.3
-    circleSwitchInterval: {x: 0.9, y: 2}
+    circleSpeedFraction: 0.32
+    circleSwitchInterval: {x: 1.8, y: 3.5}
     spacingSpeedFraction: 0.8
+    spacingSway: 0.35
+    spacingSwayPeriod: {x: 2.2, y: 3.4}
+    stepBackAfterSwing: 0.5
+    stepBackSpeedFraction: 0.25
+    footworkPace: 1.1
     passiveAngularSpeed: 360
     chaseAngularSpeed: 720
     attackFaceSpeed: 900

@@ -23,7 +23,9 @@ public class Character : MonoBehaviour
     public Animator           Animator  => animator;
     public IKnockbackReceiver Knockback { get; private set; }
 
-    public string DisplayName => data != null && !string.IsNullOrEmpty(data.characterName) ? data.characterName : name;
+    // A word in front of the name for this one character (an elite's "Brutal", EliteEnemy). Empty: none.
+    [System.NonSerialized] public string namePrefix;
+    public string DisplayName => (string.IsNullOrEmpty(namePrefix) ? "" : namePrefix + " ") + (data != null && !string.IsNullOrEmpty(data.characterName) ? data.characterName : name);
     // The name as a sentence uses it: "the Crypt Rat", or a proper name as it is (CharacterData.properName).
     public string TheName => data != null && data.properName ? DisplayName : "the " + DisplayName;
     public string TheNameCap => data != null && data.properName ? DisplayName : "The " + DisplayName;
@@ -31,7 +33,9 @@ public class Character : MonoBehaviour
     public static readonly System.Collections.Generic.HashSet<string> ProperNames = new();
     public bool   IsAlive     => Stats == null || Stats.IsAlive;
 
-    public Faction Faction => data != null ? data.faction : Faction.Neutral;
+    public Faction Faction => FactionOverride ?? (data != null ? data.faction : Faction.Neutral);
+    // This one character fights for another side than its data says (a skeleton the player raised).
+    public Faction? FactionOverride { get; set; }
     // Players only: attribute and skill rules (cached; hits look it up on the attacker).
     public AdventurerProgress Adventurer { get; private set; }
     // Has an EnemyBrain: enemies play their own hurt animation and may leave a corpse.

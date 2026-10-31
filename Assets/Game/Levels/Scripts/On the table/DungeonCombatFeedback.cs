@@ -80,6 +80,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     static bool Mine(DamageInfo info)=>!Coop.Running || info.Source is Player p && p.kind==PlayerKind.Table;
     void EnemyDamaged(EnemyView view,DamageInfo info)
     {
+        if(info.Quiet)return;
         view.until=Time.time+3.5f;view.lossUntil=Time.time+.35f;
         if(!Mine(info))return;
         bool special=!info.Blocked && (info.Critical || info.Backstab);
@@ -147,7 +148,7 @@ public class DungeonCombatFeedback : MonoBehaviour
         {
             float best=0;
             foreach(var e in enemies)if(e.character!=null && e.character.IsAlive && e.until>Time.time && e.until>best){best=e.until;topEnemy=e;}
-            if(topEnemy==null)foreach(var e in enemies)if(e.character!=null && e.character.IsAlive && Aimed(camera,e.character)){topEnemy=e;break;}
+            if(topEnemy==null)foreach(var e in enemies)if(e.character!=null && e.character.IsAlive && e.character.isActiveAndEnabled && Aimed(camera,e.character)){topEnemy=e;break;}   // a switched-off enemy (a room not dealt yet) is not under the crosshair
         }
         foreach(var e in enemies)
         {

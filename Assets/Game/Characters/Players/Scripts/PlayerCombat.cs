@@ -27,6 +27,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField] string leftHandEquippedParam  = "LeftHandEquipped";
     [SerializeField] string blockHitTrigger        = "BlockHit";
     [SerializeField] string blockStrainParam       = "BlockStrain";
+    [SerializeField, Tooltip("Bool the LeftArm layer reads: the shield is lowered out of the way while the weapon arm attacks.")]
+    string shieldAwayParam = "ShieldAway";
+    [SerializeField, Min(0f), Tooltip("Seconds the shield stays down once the swing hands back to idle with nothing queued. Kept tiny: it only bridges the frame between two chained combo hits (the shield's way up can't be interrupted, so one stray frame would raise it).")]
+    float shieldBackGrace = .05f;
     [SerializeField] string hurtTrigger            = "Hurt";
     [SerializeField] string windupSpeedParam       = "WindupSpeed";
     [SerializeField] string releaseSpeedParam      = "ReleaseSpeed";
@@ -73,6 +77,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     public int ReleaseShown =>
         AnimatorHelper.AnyLayerHasTag(armsAnimator, heavyReleaseHash) ? 3 : AnimatorHelper.AnyLayerHasTag(armsAnimator, alternateReleaseHash) ? 2
         : AnimatorHelper.AnyLayerHasTag(armsAnimator, releaseHash) ? 1 : 0;
+    float shieldAwayUntil;
     // With CombatManager.attackFromBlock the shield is lowered for the whole swing and comes back up after it.
     static bool AttackFromBlock => CombatManager.HasInstance && CombatManager.Instance.attackFromBlock;
     static float BlockFromAttackAt => CombatManager.HasInstance ? CombatManager.Instance.blockFromAttackAt : .75f;
@@ -106,6 +111,19 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         }
         return progressSeen = most;
     }
+    // True while an attack state is blending out into a state that is no attack (the swing's hand-back to idle).
+    bool HandingBack()
+    {
+        if (!AnimatorHelper.Ready(armsAnimator)) return false;
+        for (int layer = 0; layer < armsAnimator.layerCount; layer++)
+        {
+            if (!armsAnimator.IsInTransition(layer)) continue;
+            var now = armsAnimator.GetCurrentAnimatorStateInfo(layer);
+            var next = armsAnimator.GetNextAnimatorStateInfo(layer);
+            if (IsAttackState(now) && !IsAttackState(next)) return true;
+        }
+        return false;
+    }
     bool cancelling;   // a cancelled windup blending out: already harmless, the shield may rise
     [SerializeField] string attackCancelParam = "AttackCancel";
 
@@ -135,7 +153,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     // Deflect (Blocking's first milestone): a raised shield facing a shot sends an arrow or a spell back the way it came.
     public bool Deflects(Vector3 travel)
     {
-        if (!IsGuarding || !ProgressionManager.HasInstance) return false;
+        if (!IsGuarding || !ProgressionManager.HasInstance || DeflectCooldownLeft > 0f) return false;
         var progress = GetComponent<AdventurerProgress>();
         if (!ProgressionManager.Instance.Unlocked(AdventureSkill.Blocking, 0, progress != null ? progress.Rank(AdventureSkill.Blocking) : 0)) return false;
         Vector3 facing = player.Look != null ? player.Look.YawTransform.forward : transform.forward;
@@ -464,6 +482,12 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (blockPressed && BlockCancelsWindup && ShieldHeld && IsAttacking && !IsReleasing) CancelWindup();
         bool attackingNow = IsAttacking;
         if (!attackingNow) windingUp = false;
+        // The shield goes down for the whole attack (a combo hit queued counts, unless block is held: that press was
+        // a shield bash) and comes back the moment the last one hands back to idle (the user, 2026-10-30: it waited a
+        // second). The swing's own hand-back timing is the controller's and is left alone.
+        bool comboQueued = Combo && comboQueuedUntil >= Time.time && !secondary;
+        if (attackingNow && !HandingBack() || comboQueued) shieldAwayUntil = Time.time + shieldBackGrace;
+        AnimatorHelper.SetBool(armsAnimator, shieldAwayParam, Time.time < shieldAwayUntil);
         // A queued press stays valid while a swing is in progress (it chains at the recovery's cancel point);
         // when idle it expires after the buffer window like any late press.
         if (!attackingNow && Time.time >= attackBufferedUntil) queuedPresses = 0;
@@ -527,6 +551,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     // A shot sent back off the raised shield (Deflect): the blocked hit's jolt, sound and sparks where it bounced.
     public void PlayDeflect(Vector3 point)
     {
+        deflectReadyAt = Time.time + deflectCooldown;
         ShieldJolt();
         if (!CombatManager.HasInstance) return;
         var cm = CombatManager.Instance;
@@ -564,6 +589,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField, Min(1f), Tooltip("Deflect sparks: how many more of them than a blocked hit's.")] float deflectSparkCount = 3f;
     [SerializeField, Min(.1f), Tooltip("Deflect sparks: metres in front of the eyes they burst (in front of the raised shield).")] float deflectSparkDistance = .26f;
     [SerializeField, Min(.1f), Tooltip("Deflect sparks: how much bigger than a blocked hit's.")] float deflectSparkScale = 1.2f;
+    [SerializeField, Min(0f), Tooltip("Seconds after a deflect before the shield can send another shot back (shown in the effect row over the health bar, BuffBarUI).")]
+    float deflectCooldown = 10f;
+    float deflectReadyAt = -100f;
+    public float DeflectCooldownLeft => Mathf.Max(0f, deflectReadyAt - Time.time);
 
     // The raised shield held against something that keeps pushing (the Dungeon Master's beam): the arms shake in the
     // BlockStrain state until it is switched off.

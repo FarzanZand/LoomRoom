@@ -97,6 +97,32 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
         if (animator.HasState(0, Animator.StringToHash(state))) animator.CrossFadeInFixedTime(state, leanBlend, 0);
     }
 
+    // He is there at once, leaning in already (the Flick spell's Appear): no walk, wherever it is, the table or not.
+    // False while he sits.
+    public bool Teleport(Vector3 standAt, Vector3 face)
+    {
+        if (!standing || body == null) return false;
+        var at = new Vector3(standAt.x, seatPosition.y, standAt.z);
+        var look = face - at; look.y = 0;
+        body.SetPositionAndRotation(at, look.sqrMagnitude > .01f ? Quaternion.LookRotation(look) : body.rotation);
+        focusAt = at; faceAt = face; returning = false;
+        if (animator != null && animator.isActiveAndEnabled && animator.HasState(0, Animator.StringToHash(leanState)))
+            animator.CrossFadeInFixedTime(leanState, .1f, 0);
+        return true;
+    }
+
+    // Back at his place at once (after Teleport).
+    public void TeleportHome()
+    {
+        focusAt = null; faceAt = null; returning = false;
+        if (!standing || body == null) return;
+        var standAt = seatPosition + standOffset;
+        var home = new Vector3(standAt.x, seatPosition.y, standAt.z);
+        var to = TableManager.HasInstance ? TableManager.Instance.transform.position - home : body.forward; to.y = 0;
+        body.SetPositionAndRotation(home, to.sqrMagnitude > .01f ? Quaternion.LookRotation(to) : body.rotation);
+        if (animator != null && animator.isActiveAndEnabled) animator.CrossFadeInFixedTime(standingState, .1f, 0);
+    }
+
     public void Unfocus()
     {
         if (focusAt.HasValue)

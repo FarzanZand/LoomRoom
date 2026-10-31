@@ -36,7 +36,6 @@ MonoBehaviour:
     mumble: 1
     inPerson: 1
   rumoured: 1
-  rumour: Some who wander off past the Crypt come back with sand in their boots.
-    Some come back with a crowd still cheering in their ears.
+  rumour: People who go past the Crypt come back with sand in their boots.
   rumourTold: There's a pit not far from the Crypt where they fight for a crowd.
     A champion waits in it. Nobody has thrown him out yet.

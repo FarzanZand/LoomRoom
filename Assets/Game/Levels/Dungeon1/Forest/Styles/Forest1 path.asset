@@ -29,7 +29,7 @@ MonoBehaviour:
     weight: 1.6
     rows: 0
   - material: {fileID: 2100000, guid: 3a1259a2333a47d4383571caeff73f11, type: 2}
-    weight: 1.6
+    weight: 0.6
     rows: 0
   floorBaseWeight: 10
   floorVariants: []

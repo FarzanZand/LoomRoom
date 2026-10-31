@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 5eeb4a0424f6f2f42a1fe5f9fa6177b2
   weaponCategory: 0
   spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
   rarity: 0
   description: 
   icon: {fileID: 21300000, guid: 448920081a3b7c14bb518548a2ce522d, type: 3}
@@ -74,4 +75,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65

@@ -9723,8 +9723,8 @@ Transform:
   m_GameObject: {fileID: 2653718705440836483}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.18, y: 1.05, z: 0.027}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -0.18, y: 0.86269706, z: 0.026999995}
+  m_LocalScale: {x: 0.8382227, y: 0.8382227, z: 0.8382227}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5358710548451773937}
@@ -9814,8 +9814,8 @@ Transform:
   m_GameObject: {fileID: 3449165011495380641}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.18, y: 1.05, z: -0.0432}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0.18, y: 0.8433945, z: -0.0432}
+  m_LocalScale: {x: 0.8322901, y: 0.8322901, z: 0.8322901}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5412165513551090909}
@@ -9936,7 +9936,7 @@ Transform:
   m_GameObject: {fileID: 6656343265678663048}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.4, z: 0}
+  m_LocalPosition: {x: 0, y: 1.2047263, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10015,6 +10015,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 3139616142755381057}
     m_Modifications:
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.91774523
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.91774523
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.91774523
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2951781977053021543, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.0011139114
+      objectReference: {fileID: 0}
     - target: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
       propertyPath: m_Name
       value: Breakable barrel

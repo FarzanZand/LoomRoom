@@ -244,6 +244,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3042046645911235925, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
   m_PrefabInstance: {fileID: 2949842233270358728}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &225923992619737395 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  m_PrefabInstance: {fileID: 2949842233270358728}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &334817501334884918 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3191490140188967166, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
@@ -578,6 +583,7 @@ MonoBehaviour:
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8
+  prefab: {fileID: 225923992619737395}
   behaviour: {fileID: 0}
   behaviourSettings:
     defaultState: 0
@@ -606,9 +612,14 @@ MonoBehaviour:
     acceleration: 30
     preferredRangeFraction: 0.7
     circleTarget: 1
-    circleSpeedFraction: 0.22
-    circleSwitchInterval: {x: 0.9, y: 2}
+    circleSpeedFraction: 0.32
+    circleSwitchInterval: {x: 1.8, y: 3.5}
     spacingSpeedFraction: 0.8
+    spacingSway: 0.35
+    spacingSwayPeriod: {x: 2.2, y: 3.4}
+    stepBackAfterSwing: 0.5
+    stepBackSpeedFraction: 0.25
+    footworkPace: 1.1
     passiveAngularSpeed: 360
     chaseAngularSpeed: 720
     attackFaceSpeed: 900

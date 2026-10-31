@@ -286,6 +286,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   portrait: {fileID: 0}
   characterName: Cave Bat
+  properName: 0
   faction: 2
   description: A bat with a wingspan like a man's arms. It hunts by sound in the
     dark.
@@ -323,6 +324,7 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 1fb51b981956d7543a9899449b265042, type: 3}
     - {fileID: 8300000, guid: b716211feea6460478ec3add51400d9d, type: 3}
     - {fileID: 8300000, guid: dfb30afbfd26c0e4694cf5c9501ca820, type: 3}
+    painAudio: {fileID: 0}
     death:
     - {fileID: 8300000, guid: b3a7ef36f35dc8e4ca2899d1cedaf6d6, type: 3}
     - {fileID: 8300000, guid: 52c7918ab56e47e41bbf76c5587a9eb7, type: 3}
@@ -355,6 +357,7 @@ MonoBehaviour:
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8
+  prefab: {fileID: 3616844111263754080}
   behaviour: {fileID: 0}
   behaviourSettings:
     defaultState: 0
@@ -386,6 +389,11 @@ MonoBehaviour:
     circleSpeedFraction: 0.22
     circleSwitchInterval: {x: 0.9, y: 2}
     spacingSpeedFraction: 0.8
+    spacingSway: 0
+    spacingSwayPeriod: {x: 2.2, y: 3.4}
+    stepBackAfterSwing: 0
+    stepBackSpeedFraction: 0.45
+    footworkPace: 0.75
     passiveAngularSpeed: 360
     chaseAngularSpeed: 720
     attackFaceSpeed: 900

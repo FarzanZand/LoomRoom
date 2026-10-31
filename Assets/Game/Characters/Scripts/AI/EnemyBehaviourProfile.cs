@@ -91,6 +91,23 @@ public class EnemyBehaviourSettings
     [TabGroup(Tabs, "Spacing")]
     [Tooltip("Speed fraction used to step in or back off to the preferred range.")]
     [Range(0f, 1f)] public float spacingSpeedFraction = 0.8f;
+    [TabGroup(Tabs, "Spacing")]
+    [Tooltip("Footwork: metres the held distance swells in and out while the attack recharges, so the enemy steps in and back as it circles. 0 = a fixed distance.")]
+    [Range(0f, 1f)] public float spacingSway = 0f;
+    [TabGroup(Tabs, "Spacing"), ShowIf("@spacingSway > 0")]
+    [Tooltip("Seconds for one step in and back (min / max; each enemy picks its own, so a pack doesn't move in step).")]
+    public Vector2 spacingSwayPeriod = new Vector2(2.2f, 3.4f);
+    [TabGroup(Tabs, "Spacing")]
+    [Tooltip("Seconds it steps back right after a swing (it stands for the rest of the recovery). 0 = it stands.")]
+    [Min(0f)] public float stepBackAfterSwing = 0f;
+    [TabGroup(Tabs, "Spacing"), ShowIf("@stepBackAfterSwing > 0")]
+    [Tooltip("The step back's speed as a fraction of chase speed (with footwork on, it walks at Footwork Pace instead).")]
+    [Range(0f, 1f)] public float stepBackSpeedFraction = 0.45f;
+    [TabGroup(Tabs, "Spacing"), ShowIf("@spacingSway > 0 || stepBackAfterSwing > 0")]
+    [Tooltip("Footwork's walking pace (metres a second for a body of scale 1; a smaller body walks slower): the circling, the"
+        + " steps in and back and the step back after a swing all move at about this, the pace the strafe and walk clips are"
+        + " drawn for, so the legs walk instead of whirling.")]
+    [Min(.1f)] public float footworkPace = .75f;
 
     // ── Rotation ──────────────────────────────────────────────────────
     [TabGroup(Tabs, "Rotation")]

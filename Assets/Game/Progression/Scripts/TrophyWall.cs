@@ -21,6 +21,8 @@ public class TrophyWall : MonoBehaviour, IInteractable
 
     public List<Mount> mounts = new();
     [Tooltip("The faint outline an empty mount shows (a transparent unlit material).")] public Material outlineMaterial;
+    [Tooltip("Empty mounts show a faint outline of the trophy to come. Off (the user, 2026-10-30): an empty mount is just the board.")]
+    public bool emptyOutlines;
     [Min(.1f), Tooltip("A trophy's longest side, in room units (the room is ~22 units to the metre).")] public float trophySize = 7f;
     [Tooltip("Long trophies (swords, maces, knives) hang at this angle.")] public float longTilt = 45f;
     [Tooltip("How far in front of the mount's face (its backing) a trophy's back rests.")] public float restGap = .3f;
@@ -108,7 +110,7 @@ public class TrophyWall : MonoBehaviour, IInteractable
                 : MultiplayerManager.HasInstance && MultiplayerManager.Instance.ShowsHostTrophies ? (ProgressionManager.TrophyState)MultiplayerManager.Instance.HostTrophy(meta.TrophyKey(track, milestone))
                 : meta.Trophy(track, milestone);
             bool hung = state == ProgressionManager.TrophyState.Mounted;
-            if (item == null || item.worldPrefab == null) { if (mount.model != null) Destroy(mount.model); mount.model = null; continue; }
+            if (item == null || item.worldPrefab == null || !hung && !emptyOutlines) { if (mount.model != null) Destroy(mount.model); mount.model = null; mount.shownItem = null; continue; }
             if (mount.model != null && mount.shownItem == item && mount.showingOutline == !hung) continue;
             if (mount.model != null) Destroy(mount.model);
             mount.model = Build(item, mount.anchor, !hung);

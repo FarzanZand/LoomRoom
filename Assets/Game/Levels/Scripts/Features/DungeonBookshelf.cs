@@ -6,14 +6,14 @@ public class DungeonBookshelf : MonoBehaviour, IInteractable
     [TextArea(1, 3)]
     public string[] lore =
     {
-        "A ledger of the people buried here. Some names are crossed out.",
-        "A note: \"Do not wake the lord below.\"",
+        "A ledger of the people buried here.",
+        "A note asking for the rent.",
         "A child's reading book, swollen with damp.",
-        "Accounts of the sewer works. Most pages are water-stained.",
-        "A miner's journal. The last entry stops halfway through a line.",
+        "Accounts of the sewer works.",
+        "A miner's journal, mostly about his feet.",
         "A prayer to the Weaver for the dead.",
         "A cookbook. Most of the recipes are for stew.",
-        "A map of these halls. Half the rooms are missing from it.",
+        "An old map of these halls. It's wrong.",
     };
     [Range(0, 1)] public float findChance = .35f;
     [Tooltip("Rolled as a Chest reward on a find. Empty uses the floor's chest table.")]
@@ -45,7 +45,7 @@ public class DungeonBookshelf : MonoBehaviour, IInteractable
         }
         var (items, gold) = DungeonLootDrop.Roll(table, rng, floorNumber, DungeonLootSource.Chest);
         if (items.Count == 0 && gold <= 0) { MessageLog.Post("You find nothing else of use.", MessageKind.Info); return; }
-        MessageLog.Post("Something was tucked behind the books.", MessageKind.Loot);
+        MessageLog.Post("You find something behind the books.", MessageKind.Loot);
         DungeonLootDrop.Spill(items, gold, transform.position + transform.forward * .9f, transform.parent);
     }
 }

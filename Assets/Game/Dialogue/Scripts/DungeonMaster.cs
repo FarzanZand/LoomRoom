@@ -66,6 +66,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Min(0), Tooltip("Each line stays this long, plus the time per word, once it is typed out, before the next queued line takes its place (and at least as long as its voice).")]
     float readBase = 1.2f;
     [SerializeField, Min(0)] float readPerWord = .3f;
+    // Times the reading time of every line said while it is set (the intro's opening sets it shorter, IntroController.openingReading); 1 = as above.
+    public float ReadingScale { get; set; } = 1f;
 
     // Lines waiting their turn, oldest first: a new line never cuts off the one being said. clip: a recorded voice
     // given with the line (Say(text, clip)).
@@ -205,7 +207,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
             while (Cutscene || Paused) yield return null;
             float speaking = Speak(line, clip, out float typing);
             // The next line waits until this one has been heard, typed out and read.
-            float pause = Mathf.Max(speaking + .6f, typing + Reading(line.text));
+            float pause = Mathf.Max(speaking + .6f, typing + Reading(line.text) * ReadingScale);
             // In a conversation scene (Dialogue state: the intro, the character sheet) a click, Space, Enter or
             // gamepad South moves on to the next line.
             // The pause menu holds the line (and its voice) where it is: whoever waits on it waits too.

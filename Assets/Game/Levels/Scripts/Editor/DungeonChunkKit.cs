@@ -210,6 +210,10 @@ public static class DungeonChunkKit
 
     // ── Chunks ──────────────────────────────────────────────────────
 
+    // Chunks that also take the biome's furnishing (DungeonRoomTemplate.addFurnishing; Tools/room_furnishing.eval.cs sets
+    // the same on the built prefabs).
+    public static readonly HashSet<string> Furnished = new() { "Statue hall", "Gate hall", "Pillared hall", "Ruined chamber", "Collapsed stair", "Guard post", "Cell block", "Raised altar", "Gallery hall", "Treasure vault", "Spike hall" };
+
     class Chunk
     {
         public string name; public int w, h, heightTiles; public Vector2Int centre; public List<Vector2Int> doors = new();
@@ -260,6 +264,9 @@ public static class DungeonChunkKit
         }
         t.paintFootprint = true; t.width = c.w; t.height = c.h; t.rows = rows; t.allowRotation = true;
         t.heightTiles = c.heightTiles; t.replaceGeneratedProps = false; t.replaceGeneratedEnemies = true;   // the pack is the hand-placed Enemy sockets
+        // The plainer chunks are furnished from the biome's prop rules around their own pieces as well (a Statue hall was three
+        // statues on a bare floor); the themed ones (bone niches, tombs, pews, the fountain) keep only their own dressing.
+        t.addFurnishing = Furnished.Contains(c.name);
         t.replaceGeneratedTorches = c.noTorches || c.mood == DungeonRoomLight.Dark;
         t.roomEvent = c.roomEvent;
         t.openCeiling = c.openCeiling; t.skylightRadius = c.skylightRadius; t.ceilingFrame = .3f;

@@ -59,12 +59,24 @@ public class SpellProjectile : MonoBehaviour
     SpellVisual visual;
     float power, age;
     bool done;
+    // Thrown spells (Spell.gravity): the flight's speed and direction, pulled down every frame.
+    Vector3 velocity;
+    // Piercing spells (Spell.pierce): who it already passed through, and how many more it may.
+    readonly HashSet<Character> passed = new();
+    int piercesLeft;
+    Transform art;
+    Vector3 spinAxis;
 
     // source: whoever cast it (the player, or an enemy caster). skills: the player's progress, null for enemies.
     public void Launch(Character source, SpellDefinition definition, float damage, AdventurerProgress skills)
     {
         owner = source; spell = definition; power = damage; progress = skills;
         visual = GetComponent<SpellVisual>();
+        velocity = transform.forward * spell.speed;
+        piercesLeft = spell.pierce;
+        // A thrown rock tumbles as it flies.
+        art = spell.gravity > 0f ? transform.Find("Art") : null;
+        spinAxis = Random.onUnitSphere;
         if (visual.loop != null && spell.flightSound != null && AudioManager.HasInstance)
         {
             AudioManager.Instance.PlaySFXLoop(visual.loop, spell.flightSound, spell.flightVolume);
@@ -86,6 +98,13 @@ public class SpellProjectile : MonoBehaviour
         }
         float ramp = RampSeconds > 0f ? Mathf.Clamp(age / RampSeconds, .05f, 1f) : 1f;
         float distance = spell.speed * ramp * ramp * Time.deltaTime;
+        if (spell.gravity > 0f)
+        {
+            velocity += Vector3.down * spell.gravity * Time.deltaTime;
+            if (velocity.sqrMagnitude > .01f) transform.rotation = Quaternion.LookRotation(velocity);
+            distance = velocity.magnitude * Time.deltaTime;
+            if (art != null) art.Rotate(spinAxis, 400f * Time.deltaTime, Space.World);
+        }
         var hits = Physics.SphereCastAll(transform.position, collisionRadius, transform.forward, distance, collisionMask, QueryTriggerInteraction.Ignore);
         System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
         foreach (var hit in hits)
@@ -96,6 +115,9 @@ public class SpellProjectile : MonoBehaviour
             if (InvisibleWall.Is(hit.collider) || startedIn.Contains(hit.collider)) continue;
             // Dead bodies are flown past, as arrows do: a corpse in the way doesn't set the spell off.
             if (DeathPhysics.IsCorpse(hit.collider)) continue;
+            // Loose debris (a helmet knocked off, bones, splinters) is flown through too: the spell bursts on what stands.
+            if (hit.collider.attachedRigidbody != null && !hit.collider.attachedRigidbody.isKinematic
+                && hit.collider.GetComponentInParent<Character>() == null && hit.collider.GetComponentInParent<IDamageable>() == null) continue;
             // A sphere cast that starts overlapping reports a zero point; use the cast origin.
             var point = hit.distance <= 0 ? transform.position : hit.point;
             // Deflect: off a raised shield, back at its caster (or straight back), now the defender's spell.
@@ -105,6 +127,19 @@ public class SpellProjectile : MonoBehaviour
             var struck = hit.collider.GetComponentInParent<Character>();
             if (struck != null && struck != owner && CoopWorld.StandInDeflects(struck, transform.forward)) { Deflect(struck, point); return; }
             if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform)) DungeonMasterRemarks.SpellHit(owner);
+            // Piercing: through the character, hurting it, on to the next.
+            var struckCharacter = hit.collider.GetComponentInParent<Character>();
+            if (struckCharacter != null && passed.Contains(struckCharacter)) continue;
+            if (struckCharacter != null && piercesLeft > 0 && struckCharacter.IsAlive && (owner == null || FactionRules.IsHostile(owner.Faction, struckCharacter.Faction)))
+            {
+                passed.Add(struckCharacter);
+                piercesLeft--;
+                if (SpellEffects.Strike(owner, struckCharacter, power, point, transform.position - transform.forward, SourceName)) progress?.Practise(spell.Skill, SkillAction.Cast);
+                OnHit(struckCharacter);
+                if (spell.impact != null) Instantiate(spell.impact, point, Quaternion.LookRotation(-transform.forward));
+                if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.impactSound, point, spell.impactVolume * .7f);
+                continue;
+            }
             var normal = hit.distance <= 0 ? -transform.forward : hit.normal;
             Explode(point, normal);
             return;
@@ -117,6 +152,8 @@ public class SpellProjectile : MonoBehaviour
         var caster = owner;
         var aim = caster != null && caster.IsAlive ? caster.transform.position + Vector3.up * 1.2f - point : -transform.forward;
         owner = defender; progress = null; age = 0f; RampSeconds = 0f;
+        velocity = aim.normalized * spell.speed;
+        passed.Clear(); piercesLeft = spell.pierce;
         // The deflecting player's own: a teammate's stand-in trains nothing here (their own copy did it there).
         var player = defender as Player;
         if (player != null && ProgressionManager.HasInstance) ProgressionManager.Instance.Deflected();
@@ -134,7 +171,9 @@ public class SpellProjectile : MonoBehaviour
         // Burning (Sorcery 25): a Fireball sets what it hits alight, a fifth of the hit each second for 3 seconds.
         System.Action<Character> burn = spell.spell == LeftHandSpell.Fireball && progress != null && progress.InRun && progress.FirstMilestone(AdventureSkill.Sorcery)
             ? t => Burning.Ignite(t, owner, power * .2f, 3f, spell.heldVisual != null ? spell.heldVisual.gameObject : null) : null;
-        bool struck = Blast(owner, centre, spell.radius, power, collisionMask, Only, SourceName, burn);
+        System.Action<Character> onHit = t => { burn?.Invoke(t); OnHit(t); };
+        bool struck = Blast(owner, centre, spell.radius, power, collisionMask, Only, SourceName, onHit);
+        if (spell.groundFire != null) GroundFire.Spawn(spell.groundFire, centre, owner, spell.groundFireSeconds, spell.groundFireRadius, power * spell.groundFirePower, SourceName ?? spell.displayName);
         // One practice roll per cast that hurt an enemy, however many it caught.
         if (struck) progress?.Practise(spell.Skill, SkillAction.Cast);
         if (spell.impact != null)
@@ -199,6 +238,28 @@ public class SpellProjectile : MonoBehaviour
     }
 
     public void Fizzle() { done = true; Burst(); }
+
+    // What the spell does to every character it hurts besides the damage: a stun, a chill.
+    void OnHit(Character target)
+    {
+        if (target == null || !target.IsAlive) return;
+        if (spell.stunSeconds > 0f && target.TryGetComponent<EnemyBrain>(out var brain)) brain.Stun(spell.stunSeconds);
+        if (spell.chill > 0f) Chill.Apply(target, spell.chill, spell.chillSeconds, spell.chillEffect);
+    }
+
+    // The direction to throw at a speed so a fall of gravity lands it on the target: the low arc, or 45 degrees up when
+    // the target is out of reach. No gravity: straight at it.
+    public static Vector3 ArcDirection(Vector3 from, Vector3 to, float speed, float gravity)
+    {
+        var d = to - from;
+        if (gravity <= 0f) return d.normalized;
+        var flat = new Vector3(d.x, 0f, d.z);
+        float x = flat.magnitude, y = d.y, v2 = speed * speed;
+        if (x < .01f) return d.normalized;
+        float root = v2 * v2 - gravity * (gravity * x * x + 2f * y * v2);
+        float angle = root >= 0f ? Mathf.Atan((v2 - Mathf.Sqrt(root)) / (gravity * x)) : 45f * Mathf.Deg2Rad;
+        return (flat / x * Mathf.Cos(angle) + Vector3.up * Mathf.Sin(angle)).normalized;
+    }
 
     static bool Blocked(Vector3 from, Vector3 to, Transform target, LayerMask mask) =>
         Physics.Linecast(from, to, out var cover, mask, QueryTriggerInteraction.Ignore) && !cover.transform.IsChildOf(target);

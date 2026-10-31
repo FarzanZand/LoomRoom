@@ -236,6 +236,44 @@ public partial class DungeonGenerator
         if (prefab == null) prefab = data.chestPrefab;
         if (prefab == null) return null;
         if (UnityEngine.AI.NavMesh.SamplePosition(pos, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas)) pos = hit.position;
+        // Clear of the room's edge: a boss that fell by the wall left its chest in the wild ground's growth (a root through its
+        // front on a forest floor), and growth is merged at build, so it can't be moved aside. The chest goes to the cell
+        // deepest inside the room (farthest from any cell that isn't the room's), never on the stairs out or in front of them,
+        // the nearest such cell to where the boss fell: in a small exit room with the stairs in its middle, a corner beside them.
+        int room = RoomOf(pos);
+        if (room >= 0)
+        {
+            var cells = Layout.RoomCells(room);
+            int Depth(Vector2Int c)
+            {
+                for (int r = 1; r <= 4; r++)
+                    for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++)
+                        if ((Mathf.Abs(dx) == r || Mathf.Abs(dz) == r) && !Layout.InRoom(room, c + new Vector2Int(dx, dz))) return r;
+                return 5;
+            }
+            // Every cell off the stairs, deepest first, then nearest; the first that is walkable floor wins (cells beside a
+            // stage's stair cut or under a pillar are not, and a failed one left the chest at the edge).
+            var ranked = new List<(Vector2Int cell, int depth, float distance)>();
+            foreach (var c in cells)
+            {
+                // Not on the stairs nor in front of any side of them (a corner beside them leaves every way on open).
+                if (Mathf.Abs(c.x - ExitCell.x) + Mathf.Abs(c.y - ExitCell.y) <= 1) continue;
+                var at = Cell(c); at.y = pos.y;
+                ranked.Add((c, Mathf.Min(Depth(c), 2), (at - pos).sqrMagnitude));   // two cells in is deep enough
+            }
+            ranked.Sort((a, b) => a.depth != b.depth ? b.depth.CompareTo(a.depth) : a.distance.CompareTo(b.distance));
+            foreach (var (c, _, _) in ranked)
+            {
+                // Probed at the height the boss fell at (the room's floor: a raised room or a stage's top is above Cell's y).
+                var centre = Cell(c); centre.y = pos.y;
+                if (!UnityEngine.AI.NavMesh.SamplePosition(centre, out var inner, 1.2f, UnityEngine.AI.NavMesh.AllAreas)) continue;
+                var off = inner.position - centre; off.y = 0f;
+                if (off.magnitude > .5f) continue;
+                pos = inner.position;
+                break;
+            }
+            // No cell walkable: the boss's own spot, as sampled above, so there is always a chest.
+        }
         var look = face - pos; look.y = 0;
         var go = Instantiate(prefab, pos, Quaternion.LookRotation(look.sqrMagnitude > .01f ? look : Vector3.forward), transform);
         if (data.ambushSpawnPuff != null) PoolManager.SpawnOrInstantiate(data.ambushSpawnPuff, pos, Quaternion.identity, 3f);
@@ -329,6 +367,7 @@ public partial class DungeonGenerator
             EnemySleep.SleepPack(pair.Value, Cell(centre).y + HeightAt(centre.x, centre.y) - .55f, data.sleepAudio);
         }
         for (int i = 0; i < roomEvents.Length; i++) if (roomEvents[i] == RoomEvent.Ambush) SetUpAmbush(i);
+        if (!data.pocket && (RoomFeatures.meddling || DungeonMasterMeddling.Forced)) gameObject.AddComponent<DungeonMasterMeddling>();
     }
 
     // A spawned enemy of a sleeping-pack room joins the pack.

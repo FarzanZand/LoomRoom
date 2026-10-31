@@ -54,6 +54,8 @@ MonoBehaviour:
   burnSound: {fileID: 8300000, guid: c0950232261258942b4b9b9d11ef8ef9, type: 3}
   burnLoop: {fileID: 8300000, guid: 1e265126e51901d4285a02b09895d365, type: 3}
   burnVolume: 0.5
+  startGlowColour: {r: 1, g: 0.78, b: 0.38, a: 1}
+  startGlowWidth: 0.1
   useCampaign: 1
   mapPrefab: {fileID: 5509045572063656809, guid: 545f2a3eb3c487f42babbd2c3f5025a0, type: 3}
   mapSpot: {fileID: 0}
@@ -82,14 +84,14 @@ MonoBehaviour:
   playEndingOnWin: 0
   placeholderText: Placeholder encounter
   grewLine:
-    text: The map grows. New roads, new trouble.
+    text: There's more map now.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   finalPlace: {fileID: 11400000, guid: ffada713b3f1ff943955248d41bd14a9, type: 2}
   lastAct: 1
   wonLine:
-    text: That was the last of it. The whole realm, start to end. Well played.
+    text: That's every place on the map. You beat them all.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1

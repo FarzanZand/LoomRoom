@@ -12,22 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: Leather Armor
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Leather Armor
+  itemName: Leather Armour
   saveId: a28df57d3014dee4c81499eaf4753671
   weaponCategory: 0
   spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
   rarity: 0
   description: 
   icon: {fileID: 21300000, guid: edecb2c0673f979478ea4d46fcf58b84, type: 3}
   iconSource:
     custom: 0
-    model: {fileID: 0}
+    model: {fileID: 4867549256258055842, guid: 131d6d5c9bafc6847b7d01363df02ce1, type: 3}
     outfit: 
     turn: {x: 0, y: 0, z: 0}
     flip: 0
   tag: Leather equipment
   worldPrefab: {fileID: 4867549256258055842, guid: 131d6d5c9bafc6847b7d01363df02ce1, type: 3}
-  pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
+  pickupVisualPrefab: {fileID: 0}
   itemType: 6
   maxStackSize: 1
   gridSize: {x: 0, y: 0}
@@ -48,7 +49,7 @@ MonoBehaviour:
   equipOnPickup: 0
   statModifiers:
   - stat: 1
-    value: 8
+    value: 6
     type: 0
   - stat: 0
     value: 5
@@ -71,4 +72,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65

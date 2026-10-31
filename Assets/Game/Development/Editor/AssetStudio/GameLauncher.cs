@@ -149,6 +149,21 @@ public static class GameLauncher
         return $"Starting the Debug arena with {enemy.name}.";
     }
 
+    // A scripted event (the dev console's event command): a run starting at the way into its room, from the Debug arena
+    // unless the table player is already playing. face: the dice room's die lands on it (1-6; 0 the floor's roll).
+    // "cheats": a run where the Dungeon Master meddles at the first chance.
+    public static string PlayEvent(string eventName, int face = 0)
+    {
+        if (string.IsNullOrWhiteSpace(eventName)) return "No event.";
+        var line = "event " + eventName.Trim().ToLowerInvariant() + (face > 0 ? " " + face : "");
+        var loader = TableManager.HasInstance ? TableManager.Loader : null;
+        if (GameReady && loader != null && !loader.Busy && TablePlayer != null && TablePlayer.isActiveAndEnabled)
+            return DevConsole.RunCommand(line) ? $"Loading the {eventName} event." : "The dev console isn't there.";
+        Pend("console|" + line);
+        if (!TableRunning && !Launch(DebugDungeonToolbar.StartDebug)) return failure;
+        return $"Starting the {eventName} event.";
+    }
+
     // A run opening in this room template, from the Debug arena unless the table player is already playing. Found by its
     // GUID (two folders can hold rooms of the same name), built in a level that uses it (the dev console's loadtemplate).
     public static string PlayRoom(GameObject template)
@@ -171,7 +186,9 @@ public static class GameLauncher
         copy.name = level.name;
         copy.startingRoom = template;
         copy.fixedSeed = 0;
+        if (template.GetComponent<ScriptedEventRoom>() != null) copy.startingChest = false;
         if (stage > 0 && copy.stages != null) copy.stages = copy.stages.Skip(stage).ToArray();
+        DevGive.GoldAtNextRunStart();
         loader.Load(copy, skipReveal: true);
         return $"Loading a run in {template.name} ({level.name}).";
     }
@@ -185,6 +202,15 @@ public static class GameLauncher
         MainToolbar.Refresh("LoomRoom/Debug");
         if (!DebugDungeonToolbar.StartDungeon()) return Busy;
         return $"Generating {level.name} floor 1.";
+    }
+
+    // The toolbar's Dungeon button with this level picked, starting on this floor (the toolbar's Floor pick).
+    public static string PlayFloor(TableLevelData level, int floor)
+    {
+        if (level == null) return "No level.";
+        EditorPrefs.SetInt(DebugDungeonSession.StartFloorKey, Mathf.Max(1, floor));
+        string started = PlayLevel(level);
+        return started.StartsWith("Generating") ? $"Generating {level.name} floor {floor}." : started;
     }
 
     // A run of this level opening at one of its stages (0 = the first), from the Debug arena; boss: that stage cut to
@@ -358,6 +384,7 @@ public static class GameLauncher
         }
         var first = stages.Count > 0 ? stages[0].biome : copy.baseBiome;
         Debug.Log($"[Asset Studio] Testing {(map != null ? map.name + " in " : "")}{level.name}{(first != null ? " from " + first.name : "")}{(boss ? ", boss floor" : "")}{(force.Length > 0 ? ", with " + ForcedName(force) : "")}.");
+        DevGive.GoldAtNextRunStart();
         loader.Load(copy, skipReveal: true);
     }
 

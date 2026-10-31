@@ -12,22 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
   m_Name: Steel Armor
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Steel Armor
+  itemName: Steel Armour
   saveId: a8ed3e954e4716c4fb913da5c61cd4df
   weaponCategory: 0
   spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
   rarity: 0
   description: 
   icon: {fileID: 21300000, guid: c908bf9a574a01d4a98defe7acc2f1e2, type: 3}
   iconSource:
     custom: 0
-    model: {fileID: 0}
+    model: {fileID: 6065920991889454364, guid: 48a79e9370bb7a84ca8b69397c78d007, type: 3}
     outfit: 
     turn: {x: 0, y: 0, z: 0}
     flip: 0
   tag: Steel equipment
   worldPrefab: {fileID: 6065920991889454364, guid: 48a79e9370bb7a84ca8b69397c78d007, type: 3}
-  pickupVisualPrefab: {fileID: 1652155914255142640, guid: c5e09e724e0f45640b732eefc20c1005, type: 3}
+  pickupVisualPrefab: {fileID: 0}
   itemType: 6
   maxStackSize: 1
   gridSize: {x: 0, y: 0}
@@ -71,4 +72,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65

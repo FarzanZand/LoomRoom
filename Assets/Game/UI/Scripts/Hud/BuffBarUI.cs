@@ -4,8 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Effects on the active player, shown as icons above the health bar with the time left: food regen (the food's icon),
-// timed stat modifiers (the item's icon, one per source) and the tavern's dishes eaten this run (TavernDish: "run" for
-// a timer, as they last it). Hovering one says what it is (HoverText).
+// timed stat modifiers (the item's icon, one per source), the tavern's dishes eaten this run (TavernDish: "run" for
+// a timer, as they last it) and Deflect recharging (its ability's icon, PlayerCombat.DeflectCooldownLeft). Hovering one says what it is (HoverText).
 // The slots are authored in the scene; unused ones are hidden.
 public class BuffBarUI : MonoBehaviour
 {
@@ -75,6 +75,15 @@ public class BuffBarUI : MonoBehaviour
         if (PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table && RunManager.HasInstance && RunManager.Instance.Running)
             foreach (var dish in TavernDish.EatenThisRun())
                 shown.Add(new Shown { icon = dish.icon != null ? dish.icon : foodIcon, seconds = -1, title = dish.displayName, subtitle = "Lasts until this run ends", body = dish.effectText });
+        // Deflect recharging after it sent a shot back.
+        var combat = PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table ? PlayerManager.Instance.Active.Combat : null;
+        if (combat != null && combat.DeflectCooldownLeft > 0f)
+        {
+            var track = ProgressionManager.HasInstance ? ProgressionManager.Instance.Track(AdventureSkill.Blocking) : null;
+            var ability = track != null && track.milestones.Count > 0 && track.milestones[0] != null ? track.milestones[0].ability : null;
+            shown.Add(new Shown { icon = ability != null && ability.icon != null ? ability.icon : fallbackIcon, seconds = combat.DeflectCooldownLeft, harmful = true,
+                title = ability != null ? ability.displayName : "Deflect", subtitle = "Recharging", body = "Your shield can't send a shot back until this runs out." });
+        }
         foreach (var m in stats.Modifiers)
         {
             if (m == null || m.IsPermanent || m.IsExpired) continue;

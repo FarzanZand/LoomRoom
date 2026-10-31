@@ -92,7 +92,7 @@ public class DungeonAmbush : MonoBehaviour
         phase = Phase.Done;
         if (!opened) foreach (var g in gates) if (g != null) { Lower(g, false); Play(liftAudio, g.position, .7f); }
         CoopWorld.AddContainer(dungeon.SpawnRewardChest(chestAt, chestFacing, chestSeed));
-        MessageLog.Post("The gates sink back into the floor. Something was left behind.", MessageKind.Good);
+        MessageLog.Post("The gates sink back into the floor. They left a chest.", MessageKind.Good);
     }
 
     void Play(AudioClip clip, Vector3 at, float volume = .9f) { if (clip != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(clip, at, volume, .04f); }

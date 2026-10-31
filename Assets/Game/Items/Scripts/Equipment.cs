@@ -199,7 +199,7 @@ public class Equipment : MonoBehaviour
         if (item == null) return false;
         if (!IsHand(slot) && Character is Player owner && !(owner.Bag != null && owner.Bag.HasRoomFor(item)) && !(owner.Hotbar != null && owner.Hotbar.HasRoomFor(item)))
         {
-            NotificationUI.Show("Make room in your inventory first");
+            NotificationUI.Show("Make room in your bag first");
             return false;
         }
         // A hand item goes from its hotbar slot into the bag; with no room there it stays on the hotbar. One held without

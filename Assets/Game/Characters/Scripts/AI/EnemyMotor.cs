@@ -108,7 +108,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         Destination = destination;
         HasDestination = true;
         if (!NavigationReady) return;
-        Agent.speed = movementSpeed;
+        Agent.speed = movementSpeed * SpeedScale;
         Agent.isStopped = false;
         // Compared flat: the agent's destination is the point snapped onto the navmesh.
         if ((Agent.hasPath || Agent.pathPending) && Perception.HorizontalDist(Agent.destination, destination) < RepathDistance) return;
@@ -123,7 +123,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         worldDirection.y = 0f;
         if (worldDirection.sqrMagnitude < 0.0001f || speed <= 0f) { Stop(); return; }
         Vector3 destination = transform.position + worldDirection.normalized * Mathf.Max(0.6f, speed * 0.35f);
-        Agent.speed = speed;
+        Agent.speed = speed * SpeedScale;
         Agent.stoppingDistance = 0f;
         Agent.autoBraking = false;
         Agent.isStopped = false;
@@ -215,7 +215,9 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         anim.SetBool("FreeFall", !IsGrounded && Velocity.y < -1f);
     }
 
-    public void SetSpeed(float speed)              { movementSpeed = speed; if (Agent != null) Agent.speed = speed; }
+    public void SetSpeed(float speed)              { movementSpeed = speed; if (Agent != null) Agent.speed = speed * SpeedScale; }
+    // Slowed (a Chill): every speed it moves at is scaled by this.
+    public float SpeedScale { get; set; } = 1f;
     public void ResetSpeed()                       { SetSpeed(DefaultSpeed); }
     public void SetAngularSpeed(float speed)       { moveTurnSpeed = speed; }
     public void SetAcceleration(float accel)       { if (Agent != null) Agent.acceleration = accel; }
@@ -273,6 +275,14 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
 
     // Set by the brain while swinging: the player's hits never push an attacking enemy around.
     public bool SuppressKnockback { get; set; }
+    // Bosses and elites (set where they are made: DungeonGenerator.SetUpEnemy, EliteEnemy.Make): never pushed, so a pit's
+    // edge is a wall to them like any other; they reel harder instead (HitReactionController, CombatManager.steadfastRecoil).
+    public bool Steadfast { get; set; }
+    // The last blow that would have pushed it (its direction, when), kept even while a swing holds it still: a pit's edge
+    // reads it, so a blow toward the drop tips a swinging enemy over too.
+    public Vector3 LastShove { get; private set; }
+    public float LastShoveTime { get; private set; } = -99f;
+    public bool RecentlyShoved(float within) => Time.time - LastShoveTime <= within && LastShove.sqrMagnitude > .0001f;
     // Sliding from a hit right now (a pit edge reads it to tip the enemy over).
     public bool IsKnockedBack => knockbackTimer > 0f;
     public Vector3 KnockbackVelocity => knockbackVelocity;
@@ -281,7 +291,9 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     // while the enemy slides, so a hit jolts it without stopping it.
     public void ApplyKnockback(Vector3 direction, float force)
     {
-        if (SuppressKnockback || (CombatManager.HasInstance && !CombatManager.Instance.enemiesKnockedBack)) return;
+        if (Steadfast || (CombatManager.HasInstance && !CombatManager.Instance.enemiesKnockedBack)) return;
+        if (force > .001f && new Vector3(direction.x, 0f, direction.z).sqrMagnitude > .0001f) { LastShove = new Vector3(direction.x, 0f, direction.z).normalized; LastShoveTime = Time.time; }
+        if (SuppressKnockback) return;
         if (CombatManager.HasInstance) force *= CombatManager.Instance.enemyKnockbackScale;
         if (Agent == null || !Agent.isOnNavMesh) return;
         direction.y = 0f;

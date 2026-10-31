@@ -10,12 +10,20 @@ public partial class DungeonGenerator
     static bool IsFloorBreakable(GameObject prefab) { var d=prefab.GetComponent<DungeonDestructible>(); return d==null || d.placement==DestructiblePlacement.Floor; }
     static DungeonRoomRoles Mask(RoomRole role) => (DungeonRoomRoles)(1<<(int)role);
 
-    // A room profile's own enemies replace the biome's spawns for that room.
+    // A room profile's own enemies replace the biome's spawns for that room. Every biome pick (packs, sockets, ambush and
+    // event waves) goes through here, so casters are counted here against the biome's caps per room and per floor (a Pit
+    // floor drew 19 Pit Demons of 42 enemies).
+    readonly System.Collections.Generic.Dictionary<int,int> castersInRoom = new();
+    int castersOnFloor;
     GameObject ChooseEnemy(int room, System.Random rng)
     {
         var own=profiles[room]!=null ? profiles[room].enemies : null;
         if(own!=null && own.Length>0) return own[rng.Next(own.Length)];
-        return Biome!=null ? Biome.ChooseEnemy(rng,FloorInBiome) : null;
+        if(Biome==null) return null;
+        castersInRoom.TryGetValue(room,out int inRoom);
+        var pick=Biome.ChooseEnemy(rng,FloorInBiome,inRoom,castersOnFloor);
+        if(DungeonBiome.IsCaster(pick)){castersInRoom[room]=inRoom+1;castersOnFloor++;}
+        return pick;
     }
 
     // The hand-built interior for a room: the starting room, the shop, a milestone arena or the profile's template.
@@ -53,19 +61,131 @@ public partial class DungeonGenerator
         // template counts as used too. maxPerFloor can only lower that (0 or 1 both mean once).
         for (int i = 0; i < roles.Length && i < chosen.Length; i++)
             if (chosen[i] != null && chosen[i].roomTemplate != null) used[chosen[i].roomTemplate] = 1;
+        // Scripted event rooms (ScriptedEventRoom: the duel, the bell...): the level's Event Rooms Per Floor, at most its
+        // most here, and topped up to its fewest below.
+        int events = 0, mostEvents = Mathf.Max(0, data.eventRoomsPerFloor.y);
+        // The room the floor opens in (a run opened in a template, the dev console's event) is on the floor too.
+        if (UsesStartingRoom && data.startingRoom != null)
+        {
+            used[data.startingRoom] = 1;
+            if (IsEvent(data.startingRoom)) events++;
+        }
         for (int i = 0; i < roles.Length; i++)
         {
             double roll = rng.NextDouble();
             if ((i == 0 && UsesStartingRoom) || (chosen[i] != null && chosen[i].roomTemplate != null) || roll >= Biome.templateChance) continue;
             var role = Mask(roles[i]);
+            bool eventsLeft = events < mostEvents;
             var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor && Allowed(c.template)
-                && !used.ContainsKey(c.template)
+                && !used.ContainsKey(c.template) && (eventsLeft || !IsEvent(c.template))
                 ? c.weight / (1f + 2f * (used.TryGetValue(c.template, out var n) ? n : 0)) : 0, rng);
             if (pick == null) continue;
             pool[i] = pick.template;
             used[pick.template] = (used.TryGetValue(pick.template, out var k) ? k : 0) + 1;
+            if (IsEvent(pick.template)) events++;
+        }
+        // Too few events rolled: more of the pool's event rooms into rooms whose kind they suit, rooms without a
+        // hand-built room of their own first, then in place of an ordinary hand-built one. Its own stream, so the rolls
+        // above are unchanged whatever the setting.
+        var top = new System.Random(Scramble(unchecked(seed + 104659)));
+        int fewest = Mathf.Min(Mathf.Max(0, data.eventRoomsPerFloor.x), mostEvents);
+        for (int pass = 0; pass < 2 && events < fewest; pass++)
+        {
+            var slots = new System.Collections.Generic.List<int>();
+            for (int i = 0; i < roles.Length; i++)
+            {
+                if ((i == 0 && UsesStartingRoom) || (i < chosen.Length && chosen[i] != null && chosen[i].roomTemplate != null)) continue;
+                if (roles[i] == RoomRole.Entrance || roles[i] == RoomRole.Exit) continue;
+                if (pass == 0 ? pool[i] == null : pool[i] != null && !IsEvent(pool[i])) slots.Add(i);
+            }
+            for (int k = slots.Count - 1; k > 0; k--) { int j = top.Next(k + 1); (slots[k], slots[j]) = (slots[j], slots[k]); }
+            foreach (int i in slots)
+            {
+                if (events >= fewest) break;
+                var role = Mask(roles[i]);
+                var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && IsEvent(c.template) && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor
+                    && Allowed(c.template) && !used.ContainsKey(c.template) ? Mathf.Max(0f, c.weight) : 0, top);
+                if (pick == null) continue;
+                if (pool[i] != null) used.Remove(pool[i]);
+                pool[i] = pick.template; used[pick.template] = 1; events++;
+            }
         }
         return pool;
+    }
+
+    // A scripted event room dealt from a pool (ScriptedEventRoom: the duel, the bell, the wager, the giant, the dice, and
+    // Not a witch), or a room whose portal leads to one (the Portal hall to the Skeleton Party): the user's "2 (but not
+    // more)" a floor counts every event the player can walk into. The tavern and the merchant shop never come from a pool.
+    readonly System.Collections.Generic.Dictionary<GameObject, bool> isEvent = new();
+    bool IsEvent(GameObject t)
+    {
+        if (t == null) return false;
+        if (isEvent.TryGetValue(t, out bool e)) return e;
+        e = t.TryGetComponent<ScriptedEventRoom>(out _);
+        if (!e)
+            foreach (var portal in t.GetComponentsInChildren<PortalArch>(true))
+                if (portal.room != null && portal.room.TryGetComponent<ScriptedEventRoom>(out _)) { e = true; break; }
+        return isEvent[t] = e;
+    }
+
+    // After growth: an event room whose footprint didn't fit (or whose request wasn't placed) is lost, so the floor is
+    // topped up again to the level's fewest, into placed rooms it fits (enough floor, wide and deep enough either way
+    // round), never the entrance, the merchant's room or a room profile's own template.
+    void TopUpEventRooms(int seed)
+    {
+        var choices = Biome != null ? Biome.roomTemplates : null;
+        if (Authored || choices == null || choices.Length == 0 || pooledTemplates == null) return;
+        // The merchant's room is built from the shop (the tavern), whatever the pool gave it: an event there is lost.
+        if (MerchantRoom >= 0 && MerchantRoom < pooledTemplates.Length && data.shopRoom != null) pooledTemplates[MerchantRoom] = null;
+        int fewest = Mathf.Min(Mathf.Max(0, data.eventRoomsPerFloor.x), Mathf.Max(0, data.eventRoomsPerFloor.y));
+        int events = 0;
+        var used = new System.Collections.Generic.HashSet<GameObject>();
+        // What each room is really built from (a guardian's arena takes the exit room whatever the pool dealt it).
+        for (int i = 0; i < pooledTemplates.Length; i++) if (pooledTemplates[i] != null) { used.Add(pooledTemplates[i]); if (IsEvent(TemplatePrefab(i))) events++; }
+        // A room profile's own template is on the floor too (an event never comes twice).
+        for (int i = 0; i < profiles.Length; i++) if (profiles[i] != null && profiles[i].roomTemplate != null) used.Add(profiles[i].roomTemplate);
+        if (UsesStartingRoom && data.startingRoom != null) { used.Add(data.startingRoom); if (IsEvent(data.startingRoom)) events++; }
+        if (events >= fewest) return;
+        data.BiomeAt(FloorNumber, out int floorInBiome, out _);
+        var features = RoomFeatures;
+        var rng = new System.Random(Scramble(unchecked(seed + 314159)));
+        bool Fits(GameObject t, int room)
+        {
+            var tpl = t.GetComponent<DungeonRoomTemplate>();
+            if (tpl == null || !features.AllowsAll(tpl.Requires())) return false;
+            if (!tpl.HasFootprint) return true;
+            var fp = tpl.Footprint(); var rect = Layout.rooms[room];
+            // Built at the room's own rotation (PlaceTemplate turns it by RoomRotation), so it must fit that way round.
+            bool turned = (Layout.RoomRotation(room) & 1) == 1;
+            int w = turned ? fp.height : fp.width, h = turned ? fp.width : fp.height;
+            // Not in a room much bigger than it was made for either: a small event room in a big hall is a table in a barn
+            // (the Card table in 35 cells), and its walls can stand between the hall's doors.
+            int cells = Layout.RoomCells(room).Count;
+            return rect.width >= w && rect.height >= h && cells >= fp.FloorCount * .9f && cells <= fp.FloorCount * 1.3f;
+        }
+        // Passes: rooms without a hand-built room, then in place of an ordinary one, then (still short) whatever the
+        // room's kind; never the entrance, the exit (a guardian's arena or the stairs) or the merchant's.
+        for (int pass = 0; pass < 3 && events < fewest; pass++)
+        {
+            var slots = new System.Collections.Generic.List<int>();
+            for (int i = 0; i < pooledTemplates.Length; i++)
+            {
+                if (i == 0 || i == MerchantRoom || (profiles[i] != null && profiles[i].roomTemplate != null)) continue;
+                if (Roles[i] == RoomRole.Entrance || Roles[i] == RoomRole.Exit) continue;
+                if (pass == 0 ? pooledTemplates[i] == null : !IsEvent(pooledTemplates[i])) slots.Add(i);
+            }
+            for (int k = slots.Count - 1; k > 0; k--) { int j = rng.Next(k + 1); (slots[k], slots[j]) = (slots[j], slots[k]); }
+            foreach (int i in slots)
+            {
+                if (events >= fewest) break;
+                var role = Mask(Roles[i]);
+                var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && IsEvent(c.template) && (pass == 2 || (c.rooms & role) != 0) && floorInBiome >= c.fromFloor
+                    && !used.Contains(c.template) && Fits(c.template, i) ? Mathf.Max(0f, c.weight) : 0, rng);
+                if (pick == null) continue;
+                if (pooledTemplates[i] != null) used.Remove(pooledTemplates[i]);
+                pooledTemplates[i] = pick.template; used.Add(pick.template); events++;
+            }
+        }
     }
     DungeonRoomTemplate TemplateOf(int i) { var p=TemplatePrefab(i); return p!=null ? p.GetComponent<DungeonRoomTemplate>() : null; }
 
@@ -211,6 +331,7 @@ public partial class DungeonGenerator
 
     // A taller room (Height Tiles over 1): what hangs from a one-tile ceiling (a hanging chain) is lifted by the extra
     // height so it still hangs from the ceiling, and a moonlit room's patch of night sky stays above the ceiling.
+    static bool Hangs(Transform t)=>t.TryGetComponent<PropMount>(out var mount) && mount.kind==PropMount.Kind.HangsFromCeiling;
     void HangFromCeiling(GameObject instance,DungeonRoomTemplate template,int index)
     {
         if(template==null)return;
@@ -218,14 +339,14 @@ public partial class DungeonGenerator
         if(Board || WildSettings is { roofed: false })
         {
             foreach(var t in instance.GetComponentsInChildren<Transform>(true))
-                if(t!=null && (t.name.StartsWith("Hanging chain") || t.name=="Night sky"))DestroyImmediate(t.gameObject);
+                if(t!=null && (Hangs(t) || t.name=="Night sky"))DestroyImmediate(t.gameObject);
             return;
         }
         float tile=Mathf.Max(.01f,data.architectureTileSize), extra=(Mathf.Max(1,template.heightTiles)-1)*tile, ceiling=instance.transform.position.y+Mathf.Max(1,template.heightTiles)*tile;
         Transform sky=null;
         foreach(var t in instance.GetComponentsInChildren<Transform>(true))
         {
-            if(extra>0f && t.name.StartsWith("Hanging chain"))t.position+=Vector3.up*extra;
+            if(extra>0f && Hangs(t))t.position+=Vector3.up*extra;
             else if(t.name=="Night sky")
             {
                 sky=t;
@@ -315,7 +436,7 @@ public partial class DungeonGenerator
         // Kit blocks (pillars, platforms, steps, niches) become boxes of this room's own stone, before the NavMesh bake.
         var centre=Layout.RoomCenter(index);
         foreach(var piece in instance.GetComponentsInChildren<DungeonKitPiece>(true))
-            if(piece!=null)piece.Choose(data.kitModels,HeightAt(centre.x,centre.y));
+            if(piece!=null)piece.Choose(data.kitModels && !(OwnLook && StageBiome.plainKit),HeightAt(centre.x,centre.y));
         foreach(var block in instance.GetComponentsInChildren<DungeonKitBlock>(true))
         {
             // A board has no ceiling: what hangs from one (the tavern's beams, a pillar's capital) isn't there.
@@ -334,6 +455,8 @@ public partial class DungeonGenerator
                 if(!RoomFeatures.trappedTreasure){foreach(var plate in own.traps)if(plate!=null)DestroyImmediate(plate.gameObject);own.traps.Clear();}
                 continue;
             }
+            // An event room's chests are the event's (the bell room swaps its chest for a better one): never trapped.
+            if(instance.GetComponent<ScriptedEventRoom>()!=null)continue;
             MaybeTrap(chest);
         }
         TakePlacedEnemies(instance,index);
@@ -378,12 +501,26 @@ public partial class DungeonGenerator
             {
                 if(block==null || !block.solid || !block.TryGetComponent<BoxCollider>(out var box))continue;
                 var b=box.bounds;
+                // Also a body for furnishing to keep out of (its mesh is built later, so its renderer can't tell yet).
+                if(b.size.y>=.1f)bodies.Add(b);
                 for(float x=b.min.x+.05f;x<=b.max.x;x+=data.cellSize*.5f)for(float z=b.min.z+.05f;z<=b.max.z;z+=data.cellSize*.5f)taken.Add(CellOf(new Vector3(x,0,z)));
                 taken.Add(CellOf(new Vector3(b.max.x-.05f,0,b.max.z-.05f)));
             }
             foreach(var socket in instance.GetComponentsInChildren<DungeonSocket>(true))if(socket!=null)taken.Add(CellOf(socket.transform.position));
             // A spike plate's cell too (a fountain was set down over the treasure vault's grates).
             foreach(var plate in instance.GetComponentsInChildren<DungeonSpikeTrap>(true))if(plate!=null)taken.Add(CellOf(plate.transform.position));
+            // Under the room's own pieces with a body (a statue, the card table, the dice board, the bell): furnishing added
+            // round them keeps off. Anything room-sized (its floor, a light's reach) is not a piece.
+            if(template.addFurnishing)
+                foreach(var r in instance.GetComponentsInChildren<Renderer>(true))
+                {
+                    if(r==null || r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer)continue;
+                    var b=r.bounds;
+                    if(b.size.x>8f || b.size.z>8f)continue;
+                    if(b.size.y>=.1f)bodies.Add(b);
+                    var lo=CellOf(b.min+new Vector3(.05f,0f,.05f)); var hi=CellOf(b.max-new Vector3(.05f,0f,.05f));
+                    for(int x=Mathf.Min(lo.x,hi.x);x<=Mathf.Max(lo.x,hi.x);x++)for(int z=Mathf.Min(lo.y,hi.y);z<=Mathf.Max(lo.y,hi.y);z++)taken.Add(new Vector2Int(x,z));
+                }
             taken.UnionWith(cutCells);
             // A walkway between two holes (a ravine's bridge) and the cells at its ends stay clear: one tree on it cuts
             // the room in two.
@@ -466,6 +603,7 @@ public partial class DungeonGenerator
             int count=extraRandom.Next(min,max+1);
             // A board has no walls or ceiling for corner pieces (cobwebs) to hang from.
             var corners=Board ? new System.Collections.Generic.List<Pose>() : Corners(index);
+            if(templates[index]!=null)Physics.SyncTransforms(); // its pieces were just built (UnderPiece)
             for(int i=0;i<count;i++)
             {
                 var prefab=DungeonWeightedPrefab.Choose(breakables,extraRandom);
@@ -478,11 +616,15 @@ public partial class DungeonGenerator
                     SpawnDestructible(prefab,corner.position,corner.rotation,null,extraRandom.Next());
                     continue;
                 }
+                // Not inside a hand-built room's own piece (a niche's ledge, a pillar's base): crates stood in them.
+                while(cursor<available.Count && UnderPiece(available[cursor]))cursor++;
                 if(cursor>=available.Count)continue;
                 SpawnDestructible(prefab,Cell(available[cursor++]),Quaternion.Euler(0,extraRandom.Next(4)*90,0),rewards,extraRandom.Next());
             }
         }
         if(Roles[index]==RoomRole.Entrance || (Roles[index]==RoomRole.Exit && Milestone!=null))return cursor;
+        // A scripted event room has its own thing going on: no shrine or fountain beside it.
+        if(templates[index]!=null && templates[index].GetComponent<ScriptedEventRoom>()!=null)return cursor;
         var feature=PickFeature(index);
         if(feature!=null && feature.placement!=DungeonPropPlacement.Anywhere)
         {
@@ -498,6 +640,19 @@ public partial class DungeonGenerator
             SpawnFeature(feature.prefab,pos,FaceCenter(pos,index));
         }
         return cursor;
+    }
+
+    // A kit block, kit piece or template piece of a hand-built room stands in this cell (within a crate's reach of its middle).
+    static readonly Collider[] pieceHits=new Collider[16];
+    bool UnderPiece(Vector2Int cell)
+    {
+        int n=Physics.OverlapBoxNonAlloc(Cell(cell)+Vector3.up*.5f,new Vector3(.6f,.4f,.6f),pieceHits,Quaternion.identity,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+        for(int i=0;i<n;i++)
+        {
+            var c=pieceHits[i];
+            if(c.GetComponentInParent<DungeonKitBlock>()!=null || c.GetComponentInParent<DungeonKitPiece>()!=null || c.GetComponentInParent<DungeonTemplatePiece>()!=null)return true;
+        }
+        return false;
     }
 
     DungeonFeature PickFeature(int index)
@@ -545,6 +700,7 @@ public partial class DungeonGenerator
     DungeonDestructible SpawnDestructible(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewardOverride,int seed)
     {
         var go=Instantiate(prefab,pos,rotation,transform);
+        AddBody(go);
         var d=go.GetComponent<DungeonDestructible>();
         if(d==null){SeedGroup(go,seed,rewardOverride);return go.GetComponentInChildren<DungeonDestructible>();}
         d.loot=First(rewardOverride,FloorLoot);
@@ -684,15 +840,27 @@ public partial class DungeonGenerator
         return SetUpEnemy(go,new System.Random(Scramble(unchecked(PlacedSeed(t.position)^seed0*31))),rewards);
     }
 
+    // Elites are rolled on their own stream, so turning them on or off moves no other roll on the floor.
+    System.Random eliteRandom;
     Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null,bool boss=false)
     {
         var character=enemy.GetComponent<Character>();
-        if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber,boss);
+        // Now and then an elite (DungeonBiome.eliteChance): never the boss, an event's own actor or a named one.
+        float eliteFloors=0f;
+        if(!boss && character!=null && Biome!=null && Biome.eliteChance>0f && eliteRandom!=null && character.data is EnemyData { properName: false }
+           && enemy.GetComponent<EventActor>()==null && eliteRandom.NextDouble()<Biome.eliteChance)
+            eliteFloors=Mathf.Max(0f,Biome.eliteFloors);
+        if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber,boss,data.ExtraFloors(FloorNumber)+eliteFloors);
         // Co-op: tougher for a bigger party.
         if(character!=null && character.Stats!=null && Coop.PartySize>1)
             character.Stats.AddModifier(new StatModifier(StatType.MaxHealth,(Coop.PartySize-1)*MultiplayerManager.Instance.enemyHealthPerPlayer,ModifierType.PercentAdd,Coop.PartySource));
+        // A boss can't be knocked around (or into a pit): it reels harder instead (EnemyMotor.Steadfast). Elites too (EliteEnemy.Make).
+        if(boss && enemy.TryGetComponent<EnemyMotor>(out var bossMotor))bossMotor.Steadfast=true;
+        if(eliteFloors>0f)
+            EliteEnemy.Make(character,(EliteTrait)eliteRandom.Next(3),eliteFloors);
         var drop=lootRandom!=null ? enemy.GetComponent<DungeonLootDrop>() : null;
-        if(drop!=null){if(!drop.overrideLevelTable)drop.table=First(rewards,FloorLoot);drop.seed=lootRandom.Next();drop.floorNumber=FloorNumber;}
+        // Its loot rolls at the depth it grew to: an elite drops as if the floor were deeper.
+        if(drop!=null){if(!drop.overrideLevelTable)drop.table=First(rewards,FloorLoot);drop.seed=lootRandom.Next();drop.floorNumber=FloorNumber+Mathf.RoundToInt(eliteFloors);}
         return character;
     }
 

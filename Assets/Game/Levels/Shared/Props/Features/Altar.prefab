@@ -79,9 +79,9 @@ MonoBehaviour:
   prayClip: {fileID: 8300000, guid: 13cf5db06583a834e874b1dc6b75846b, type: 3}
   prayVolume: 0.9
   outcomes:
-  - label: Blessing of the blade
+  - label: Weapon
     weight: 2
-    message: Your weapon hums with a blessing. (+2 damage)
+    message: Your weapon hits harder. (+2 damage)
     kind: 3
     effects:
     - type: 2
@@ -101,9 +101,9 @@ MonoBehaviour:
     spawnEnemies: []
     sound: {fileID: 0}
     soundVolume: 0.9
-  - label: Blessing of the ward
+  - label: Armour
     weight: 2
-    message: A pale light settles over your armour. (+5 armour)
+    message: Your armour holds better. (+5 armour)
     kind: 3
     effects:
     - type: 2
@@ -123,9 +123,9 @@ MonoBehaviour:
     spawnEnemies: []
     sound: {fileID: 0}
     soundVolume: 0.9
-  - label: Blessing of life
+  - label: Health
     weight: 2
-    message: Your heart beats stronger. (+8 max health)
+    message: You feel tougher. (+8 max health)
     kind: 3
     effects:
     - type: 2
@@ -161,7 +161,7 @@ MonoBehaviour:
     soundVolume: 0.9
   - label: Silence
     weight: 1
-    message: The altar takes your gold. Nothing answers.
+    message: The altar takes your gold. Nothing happens.
     kind: 0
     effects: []
     spawnEnemies: []
@@ -169,7 +169,7 @@ MonoBehaviour:
     soundVolume: 0.9
   - label: Wrath
     weight: 0.5
-    message: The altar rejects your offering!
+    message: The altar takes your gold and burns you.
     kind: 4
     effects:
     - type: 6

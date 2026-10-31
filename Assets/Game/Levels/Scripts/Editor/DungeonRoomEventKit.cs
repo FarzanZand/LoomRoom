@@ -183,6 +183,7 @@ public static class DungeonRoomEventKit
         if (Skip(path, out var existing)) return existing;
         // Hangs down from its pivot (put it under the ceiling).
         var root = new GameObject("Hanging chain");
+        root.AddComponent<PropMount>().kind = PropMount.Kind.HangsFromCeiling;
         var copy = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>($"{Synty}/SM_Prop_Chain_02.prefab"), root.transform);
         copy.name = "SM_Prop_Chain_02"; copy.transform.localPosition = new Vector3(0f, -3.06f, 0f);
         foreach (var c in copy.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);

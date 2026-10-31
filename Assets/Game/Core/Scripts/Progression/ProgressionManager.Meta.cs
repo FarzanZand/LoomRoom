@@ -93,11 +93,11 @@ public partial class ProgressionManager
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Trying to buy anything but Blocking before the first Blocking level.")]
     public DungeonMaster.Line lessonBlockingFirst = new() { text = "Blocking first. Trust me." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("When the first tally can't pay for Blocking's next level, the DM adds the rest.")]
-    public DungeonMaster.Line lessonTopUp = new() { text = "Here. Don't tell anyone." };
+    public DungeonMaster.Line lessonTopUp = new() { text = "Have a bit extra. Don't tell anyone." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Handing over one trophy.")]
-    public DungeonMaster.Line handOverOne = new() { text = "Here. Hang it on the wall." };
+    public DungeonMaster.Line handOverOne = new() { text = "This one goes on the wall." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Handing over several trophies at once.")]
-    public DungeonMaster.Line handOverMany = new() { text = "Here, all of them. On the wall they go." };
+    public DungeonMaster.Line handOverMany = new() { text = "All of these go on the wall." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("After Blocking's first trophy (Deflect) is mounted for the first time.")]
     public DungeonMaster.Line shieldBashMounted = new() { text = "Hold your shield up against arrows and fire now. They go back where they came from." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Min(0), Tooltip("Seconds after the room player is free before the lesson's first line.")] public float lessonDelay = 2.5f;
@@ -186,6 +186,8 @@ public partial class ProgressionManager
     }
     public TrophyState Trophy(MetaTrack t, Milestone m) => t == null || m == null ? TrophyState.None : (TrophyState)Mathf.Clamp(GetFlag(TrophyKey(t, m)), 0, 3);
     void SetTrophy(MetaTrack t, Milestone m, TrophyState state) => SetFlag(TrophyKey(t, m), (int)state);
+    // The dev console's addroomitem: this trophy handed over, whatever its state, ready to hang on the wall.
+    public void CarryTrophy(MetaTrack t, Milestone m) { if (t == null || m == null) return; SetTrophy(t, m, TrophyState.Carried); MetaChanged?.Invoke(); }
     public bool Reached(MetaTrack t, Milestone m) => t != null && m != null && Value(t) >= m.value;
 
     public IEnumerable<(MetaTrack track, Milestone milestone)> AllMilestones()
@@ -408,6 +410,7 @@ public partial class ProgressionManager
         if (!lessonBankChecked) { lessonBankChecked = true; if (TopUpForLesson() > 0) MetaChanged?.Invoke(); }
         UpdateSheetQuest();
         UpdatePosterQuest();
+        UpdateDiceQuest();
         if (lessonRoutine != null) return;
         if (HasFlag(LedgerIntroFlag) && !HasFlag(LedgerSaidFlag) && RoomPlayerFree) lessonRoutine = StartCoroutine(SayLesson());
     }

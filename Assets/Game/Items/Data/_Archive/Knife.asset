@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 4c4a17a16a14b5a49bd9466ac8e9b724
   weaponCategory: 0
   spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
   rarity: 0
   description: Quick but weak.
   icon: {fileID: 21300000, guid: ebf0b89d586809f4ab6b1dd2367d4a69, type: 3}
@@ -71,4 +72,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 0.65

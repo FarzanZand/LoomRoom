@@ -19,13 +19,14 @@ public partial class ProgressionManager
     }
 
     public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", DeflectQuest = "deflect", SheetQuest = "checkSheet",
-        SpendQuest = "spendSpoils", TableQuest = "backToTable", TrophyQuest = "hangTrophies", InventoryQuest = "openInventory";
+        SpendQuest = "spendSpoils", TableQuest = "backToTable", TrophyQuest = "hangTrophies", InventoryQuest = "openInventory",
+        RumourQuest = "buyRumour";
     public const string InventoryOpenedFlag = "story.inventoryOpened";
     // Quests the log shows only while the table player is in a dungeon (the shield bash guide, the deflect).
-    public static bool DungeonOnly(string id) => id == ShieldBashQuest || id == DeflectQuest;
+    public static bool DungeonOnly(string id) => id == ShieldBashQuest || id == DeflectQuest || id == RumourQuest;
     // Quests done in the room (the sheet, the trophy wall, the table, the symbol puzzle): the log leaves them out while
     // the table player is in a dungeon, where they can't be done.
-    public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == TileQuest || id == PosterQuest;
+    public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == TileQuest || id == PosterQuest || id == DiceQuest;
 
     [FoldoutGroup("Quests"), ListDrawerSettings(ShowFoldout = true)]
     public List<Quest> quests = BuiltInQuests();
@@ -42,6 +43,8 @@ public partial class ProgressionManager
         new Quest { id = TrophyQuest, text = "Hang your trophies on the wall." },
         new Quest { id = TileQuest, text = "Put the missing tile in the symbol puzzle." },
         new Quest { id = PosterQuest, text = "Put up the new poster on the wall by the bed." },
+        new Quest { id = DiceQuest, text = "Put the dice on the border of the big table." },
+        new Quest { id = RumourQuest, text = "Buy a rumour from the tavern keeper." },
     };
 
     void EnsureBuiltInQuests()
@@ -127,6 +130,7 @@ public partial class ProgressionManager
     {
         EnsureBuiltInQuests();
         if (RunManager.HasInstance) RunManager.Instance.RunStarted += OfferQuestsForRun;
+        if (InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp += ClassItemPickedUp;
         if (PlayerManager.HasInstance)
         {
             PlayerManager.Instance.PlayerSwapped += WithdrawDungeonQuests;
@@ -138,6 +142,7 @@ public partial class ProgressionManager
     {
         base.OnDestroy();
         if (RunManager.HasInstance) RunManager.Instance.RunStarted -= OfferQuestsForRun;
+        if (InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp -= ClassItemPickedUp;
         if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped -= WithdrawDungeonQuests;
     }
 

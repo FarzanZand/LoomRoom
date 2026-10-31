@@ -16,7 +16,7 @@ public static class DungeonFeatureUtility
         if (generator != null && character != null)
         {
             var balance = generator.LevelData.balance;
-            if (balance != null) balance.Apply(character, generator.FloorNumber);
+            if (balance != null) balance.Apply(character, generator.FloorNumber, false, generator.LevelData.ExtraFloors(generator.FloorNumber));
             var drop = go.GetComponent<DungeonLootDrop>();
             if (drop != null && !drop.overrideLevelTable) { drop.table = generator.EnemyLootTable; drop.seed = UnityEngine.Random.Range(1, int.MaxValue); drop.floorNumber = generator.FloorNumber; }
         }

@@ -40,14 +40,24 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     public int rareRollFloors;
     bool opened;
     float health = 10;
-    public string Prompt => chest ? $"Open {chestName}" : "Break supply barrel";
+    // Something holding it shut for now (the bell room's chest while its waves come): the reason, shown as its prompt;
+    // null or empty and it opens as usual. Using it meanwhile raises OpenRefused, and blows don't break it open.
+    public System.Func<string> HeldShut;
+    public event System.Action<DungeonContainer> OpenRefused;
+    string ShutReason => HeldShut?.Invoke();
+    public string Prompt => !string.IsNullOrEmpty(ShutReason) ? ShutReason : chest ? $"Open {chestName}" : "Break supply barrel";
     // The table player only: the room player's reach (room-sized) covers the whole table, so a watcher in the room
     // would otherwise open chests down there.
     public bool CanInteract(Character who) => !opened && DungeonFeatureUtility.TablePlayer(who) != null;
-    public void Interact(Character who) { if (chest && CanInteract(who)) Open(); }
+    public void Interact(Character who)
+    {
+        if (!chest || !CanInteract(who)) return;
+        if (!string.IsNullOrEmpty(ShutReason)) { OpenRefused?.Invoke(this); return; }
+        Open();
+    }
     public void TakeDamage(DamageInfo info)
     {
-        if (opened || info.Amount <= 0) return;
+        if (opened || info.Amount <= 0 || !string.IsNullOrEmpty(ShutReason)) return;
         health -= info.Amount;
         if (health <= 0) Open();
     }

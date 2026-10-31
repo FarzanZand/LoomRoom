@@ -62,6 +62,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: 
   paintFootprint: 0
   footprint: {fileID: 0}
   allowRotation: 1
@@ -74,6 +76,7 @@ MonoBehaviour:
   openCeiling: 0
   ceilingFrame: 0.35
   skylightRadius: 0
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
@@ -224,6 +227,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f60b2f7db9a385e4987918093339c039, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
+  kind: 0
+  description: 
   paintFootprint: 0
   footprint: {fileID: 0}
   allowRotation: 0
@@ -249,6 +254,7 @@ MonoBehaviour:
   openCeiling: 0
   ceilingFrame: 0.35
   skylightRadius: 0
+  wayInDoor: {fileID: 0}
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
@@ -283,6 +289,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 1
   delay: 3.5
+  unlocks: {fileID: 11400000, guid: 54e98d70248c6cf468492e81ae98d0d0, type: 2}
 --- !u!1001 &1961152536423531071
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -483,6 +483,8 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact")]
     [Range(0f, 30f), Tooltip("Degrees the enemy's upper body leans away with the blow, whatever part was struck (times Hit Impact Strength).")]
     public float impactBodySway = 9f;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Min(1), Tooltip("Bosses and elites aren't knocked back (or into pits): their hit recoil and lean are this many times as hard instead.")]
+    public float steadfastRecoil = 1.7f;
 
     // Which way a hit throws its victim: away from the attacker, turned toward the blade's travel (Impact From Swing).
     public Vector3 ImpactDirection(DamageInfo info)
@@ -625,7 +627,9 @@ public class CombatManager : Singleton<CombatManager>
         var brain = target.GetComponent<EnemyBrain>();
         if (backstabsEnabled && brain != null)
         {
-            bool behind = info.Direction.sqrMagnitude > .001f && Vector3.Dot(target.transform.forward, info.Direction) > backstabBehindDot;
+            // A blow struck from a Shadow Veil counts as from behind whatever the side, and ends the veil.
+            bool ambush = ShadowVeil.Ambush(info.Source);
+            bool behind = ambush || info.Direction.sqrMagnitude > .001f && Vector3.Dot(target.transform.forward, info.Direction) > backstabBehindDot;
             // A backstab is a blow from behind, whether the enemy knows the player is there or not, and never from the
             // front. A stage boss standing ready (Wary) can't be backstabbed.
             if (behind && !brain.Wary)

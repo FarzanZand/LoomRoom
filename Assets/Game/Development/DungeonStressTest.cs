@@ -24,6 +24,15 @@ public static class DungeonStressTest
         if (!scene.IsValid()) return;
         if (previous.IsValid()) UnityEngine.SceneManagement.SceneManager.SetActiveScene(previous);
         UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
+        FreeTestFloors();
+    }
+
+    // Outside Play no OnDestroy runs, so the meshes a floor makes for itself (merged chunks, kit blocks, stair steps)
+    // outlive the floor destroyed in a test scene: each built floor left about 900, and later builds got slower. Frees
+    // them; call it every few floors in a long test and once at the end (EndTestScene does).
+    public static void FreeTestFloors()
+    {
+        if (!Application.isPlaying) UnityEditor.EditorUtility.UnloadUnusedAssetsImmediate();
     }
 #endif
 
@@ -61,6 +70,7 @@ public static class DungeonStressTest
                             if (pocket != null) { pockets++; Object.DestroyImmediate(pocket.gameObject); }
                     }
                     Object.DestroyImmediate(go);
+                    if ((built + fails) % 10 == 0) FreeTestFloors();   // every tenth floor tried, failed or not
                 }
             }
         }

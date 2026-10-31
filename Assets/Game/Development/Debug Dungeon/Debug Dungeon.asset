@@ -13,6 +13,39 @@ MonoBehaviour:
   m_Name: Debug Dungeon base
   m_EditorClassIdentifier: Assembly-CSharp::DungeonBiome
   displayName: The Cellars
+  kind: 0
+  boardReveal: 0
+  ownBoardPieces: 0
+  ownLook: 0
+  wilds:
+    enabled: 0
+    roofed: 0
+    depth: 5
+    height: {x: 1.6, y: 3.6}
+    top: {fileID: 0}
+    side: {fileID: 0}
+    trees: []
+    treeChance: 0.45
+    treeScale: {x: 0.8, y: 1.25}
+    undergrowth: []
+    undergrowthPerCell: 1
+    foot: []
+    footChance: 0.45
+    edges: 1
+    faces: []
+    faceChance: 0.3
+    faceStandOut: 0.5
+    lip: []
+    lipChance: 0.6
+    glows: []
+    glowEvery: 9
+    hangings: []
+    hangChance: 0.25
+    pondChance: 0.35
+    pondSize: {x: 2, y: 3}
+    pondGlow: {r: 0.35, g: 0.85, b: 1, a: 1}
+    pondGlowStrength: 2.5
+    pondEdge: []
   entryMessage: You climb down into the cellars.
   roomStyles:
   - style: {fileID: 11400000, guid: 45f2ff5c0d2776645bb1e6d731a0534e, type: 2}
@@ -91,9 +124,13 @@ MonoBehaviour:
   destructibles: []
   lighting: 8
   litThroughout: 1
+  fog: {x: 0, y: 0}
   lightBoard: 0
   roomTemplates: []
   templateChance: 0.7
+  roomCount: 0
+  roomSizeScale: 1
+  noDoors: 0
   overrideDungeonSettings: 0
   roomFeatures:
     shrineBargains: 1
@@ -166,7 +203,7 @@ MonoBehaviour:
     damageMultiplier: 1
     arena: {fileID: 0}
     title: Guardian
-    introMessage: Something guards the stairs down.
+    introMessage: '{boss} guards the stairs down.'
     introSting: {fileID: 0}
     stingVolume: 1
     bossMusic: {fileID: 0}
@@ -219,12 +256,15 @@ MonoBehaviour:
   boardEdgeMaterial: {fileID: 0}
   boardGridMaterial: {fileID: 0}
   boardPitMaterial: {fileID: 0}
+  boardPitWater: {fileID: 0}
   boardVerticality: 1
   boardTileTaps: []
   boardDoorPosts: []
   boardMoundProps: []
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
+  boardLightAngle: 0
+  boardLightFrom: 220
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

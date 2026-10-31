@@ -22,6 +22,7 @@ public class Merchant : MonoBehaviour, IInteractable
     [Min(1), Tooltip("How many of each consumable.")] public int stapleCount = 2;
     [Min(0), Tooltip("Different pieces of gear (weapons, shields, armor, trinkets, tomes) on offer. The shop screen shows six.")] public int gearCount = 6;
     [Tooltip("At least one spell tome among the gear.")] public bool alwaysTome = true;
+    [Tooltip("At least one weapon from this floor's drop table among the gear, Uncommon or better.")] public bool alwaysWeapon = true;
     [Tooltip("Rolled as Chest rewards for the stock. The generator sets this from the level when empty.")]
     public LootSource stockTable;
     [Range(.5f, 3f)] public float priceMultiplier = 1.2f;
@@ -140,6 +141,21 @@ public class Merchant : MonoBehaviour, IInteractable
                 gear.Add(tomes[rng.Next(tomes.Count)]);
             }
         }
+        // And a weapon of the floor's: when none came up, the table is rolled again for one, which takes the place of the
+        // last piece that isn't the tome. It is Uncommon or better (below).
+        ItemData weapon = gear.Find(i => i != null && i.itemType == ItemType.Weapon);
+        if (alwaysWeapon && weapon == null && stockTable != null)
+        {
+            for (int i = 0; i < 40 && weapon == null; i++)
+                foreach (var drop in stockTable.RollDrops(rng, floorNumber, DungeonLootSource.Chest))
+                    if (drop.item != null && drop.item.itemType == ItemType.Weapon && !gear.Contains(drop.item)) { weapon = drop.item; break; }
+            if (weapon != null)
+            {
+                int replace = gear.FindLastIndex(i => i != null && i.spell == null);
+                if (gear.Count >= gearCount && replace >= 0) gear.RemoveAt(replace);
+                gear.Add(weapon);
+            }
+        }
         // The merchant's gear rolls its own rarity, from the plain item, at InventoryManager's Merchant Rarity times the floor's chances.
         float boost = InventoryManager.HasInstance ? InventoryManager.Instance.merchantRarity : 1.3f;
         // Keen eye (Trading 25): Uncommon, Rare and Unique gear twice as often again.
@@ -147,7 +163,13 @@ public class Merchant : MonoBehaviour, IInteractable
         var trader = buyer != null ? buyer.GetComponent<AdventurerProgress>() : null;
         if (trader != null && trader.FirstMilestone(AdventureSkill.Trading)) boost *= 2f;
         foreach (var item in gear)
-            Add(item.IsGear ? DungeonLootProfile.RollRarity(item.BaseItem, rng, floorNumber, boost) : item, 1);
+        {
+            var offered = item.IsGear ? DungeonLootProfile.RollRarity(item.BaseItem, rng, floorNumber, boost) : item;
+            // The floor's weapon is never Common.
+            if (alwaysWeapon && item == weapon && offered.rarity == ItemRarity.Common && ItemPropertyTable.Current != null)
+                offered = item.BaseItem.Rolled(ItemRarity.Uncommon, ItemPropertyTable.Current.Roll(item.BaseItem, ItemRarity.Uncommon, Mathf.Max(1, floorNumber), rng));
+            Add(offered, 1);
+        }
     }
 
     void Add(ItemData item, int count)
@@ -185,7 +207,7 @@ public class Merchant : MonoBehaviour, IInteractable
         if (wallet == null || !wallet.CanAfford(ware.price)) { message = $"You cannot afford the {ware.item.itemName}."; return false; }
         if (!InventoryManager.HasInstance || !InventoryManager.Instance.Pickup(ware.item, player, 1, playSound: false))
         {
-            message = "Your pack is full.";
+            message = "Your bag is full.";
             return false;
         }
         wallet.TrySpend(ware.price);

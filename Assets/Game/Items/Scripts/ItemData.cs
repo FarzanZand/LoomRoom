@@ -14,6 +14,8 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Stable save identifier; do not change after shipping.")] public string saveId;
     public WeaponCategory weaponCategory;
     [Tooltip("Makes this item a spell tome: held in the left hand, it casts this spell.")] public SpellDefinition spell;
+    [Tooltip("Picked up in a run: unlocks this class (its New class card; its poster comes home as a key item) and is used up. The duellist's drop (DuelEvent).")]
+    public AdventurerClass unlocksClass;
     [Tooltip("Gear drops Common and is rolled Uncommon, Rare or Unique by the loot (Legendary is only given) (ItemPropertyTable); set Relic on a hand-made item. " +
         "Spell tomes are Rare. Each rarity has its colour on its slot, loot beam and name (UIManager).")]
     public ItemRarity rarity;
@@ -91,8 +93,8 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Price in gold at a merchant. Selling pays CurrencyManager's sell fraction of this. Zero uses the manager's fallback price.")]
     [Min(0)] public int value;
 
-    [Tooltip("Random loot tier: 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Crystal. 0 = never dropped at random (quest items, keys, uniques placed by hand). Biome loot profiles pick gear by tier.")]
-    [Range(0, 4)] public int tier;
+    [Tooltip("Random loot tier: 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Elven/Crystal, 5 Warlord, 6 Verdant, 7 Shadow, 8 Grave, 9 Blackened, 10 Gilded, 11 Dread, 12 Royal. 0 = never dropped at random (quest items, keys, uniques placed by hand). Biome loot profiles pick gear by tier.")]
+    [Range(0, 12)] public int tier;
     [Tooltip("How often this item is picked among others of its tier and kind.")]
     [Min(0)] public float lootWeight = 1;
 
@@ -171,6 +173,13 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Instant: used at once. Eat or Drink: taken in the right hand in place of the held weapon, the arm eats or drinks (Characters/Animations/FirstPersonPlayer/Consume), it takes effect near the end and the weapon comes back. Attacks and spells wait until it is done.")]
     public ItemUseAnimation AnimationOnUse = ItemUseAnimation.Instant;
 
+    [BoxGroup("Consumable"), ShowIf("IsConsumable")]
+    [Tooltip("Makes this consumable a scroll of this spell: used from the hotbar or the bag, the spell goes off at once with no mana and no wind-up, " +
+        "using one charge; the last charge used, the scroll is gone. A spell that can't be cast now (nothing to aim at, health full) uses none.")]
+    public SpellDefinition scrollSpell;
+    [BoxGroup("Consumable"), ShowIf("IsScroll"), Min(1), Tooltip("Times the scroll can be read before it is gone (spent charges are kept on its slot and saved).")]
+    public int charges = 1;
+
     [BoxGroup("Consumable"), ShowIf("UsesAnimation"), Min(.2f)]
     [Tooltip("Seconds the eating or drinking takes (the clip is played to fit).")]
     public float eatDuration = 1.3f;
@@ -184,6 +193,7 @@ public partial class ItemData : ScriptableObject
 
     public bool IsWeapon     => itemType == ItemType.Weapon;
     public bool IsConsumable => itemType == ItemType.Consumable;
+    public bool IsScroll => IsConsumable && scrollSpell != null;
     bool UsesAnimation => IsConsumable && AnimationOnUse != ItemUseAnimation.Instant;
     bool ShowsInHand => canBeEquipped || UsesAnimation;
     bool PickupUsesData => pickupAudioSource == ItemAudioSource.AudioData;
@@ -244,7 +254,7 @@ public partial class ItemData : ScriptableObject
     {
         StatType? main = MainStatType;
         value = main.HasValue ? FlatBonus(this, main.Value) : 0f;
-        label = main == StatType.AttackDamage ? "Damage" : itemType == ItemType.Shield ? "Armor when blocking" : "Armor";
+        label = main == StatType.AttackDamage ? "Damage" : itemType == ItemType.Shield ? "Armour when blocking" : "Armour";
         text = IsWeapon && damageSpread > 0 ? $"{Mathf.Max(1f, value - damageSpread):0}-{value + damageSpread:0}" : $"{value:0.#}";
         return main.HasValue && value > 0f;
     }
@@ -290,7 +300,12 @@ public partial class ItemData : ScriptableObject
         if (spell != null)
         {
             var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
-            lines.Add($"{(caster != null ? caster.Cost(spell) : spell.manaCost):0.#} mana, {(caster != null ? caster.Power(spell) : spell.power):0.#} {(spell.spell == LeftHandSpell.Heal ? "healing" : "damage")}");
+            lines.Add(spell.RulesLine(caster != null ? caster.Cost(spell) : spell.manaCost, caster != null ? caster.Power(spell) : spell.power));
+        }
+        if (IsScroll)
+        {
+            var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
+            lines.Add($"<color={EffectColor}>{scrollSpell.ScrollLine(caster != null ? caster.Power(scrollSpell) : scrollSpell.power, charges)}</color>");
         }
         Add(blocks, lines);
 
@@ -346,7 +361,7 @@ public partial class ItemData : ScriptableObject
                 if (Named("knife")) return "Knife";
                 return weaponCategory == WeaponCategory.Mace ? "One-handed mace" : "One-handed sword";
             case ItemType.Shield: return "Shield";
-            case ItemType.Consumable: return Named("potion") || Named("tonic") || Named("elixir") ? "Potion" : AnimationOnUse == ItemUseAnimation.Eat ? "Food" : "Consumable";
+            case ItemType.Consumable: return IsScroll ? "Scroll" : Named("potion") || Named("tonic") || Named("elixir") ? "Potion" : AnimationOnUse == ItemUseAnimation.Eat ? "Food" : "Consumable";
             case ItemType.Key: return "Key";
             case ItemType.Spoils: return "Spoils";
             case ItemType.Tool: return "Tool";
@@ -372,6 +387,7 @@ public partial class ItemData : ScriptableObject
         string effect = null;
         if (effects != null)
             foreach (var e in effects) { effect = e?.Describe(); if (!string.IsNullOrWhiteSpace(effect)) break; }
+        if (IsScroll) return $"Scroll, {scrollSpell.displayName}";
         if (IsConsumable) return effect ?? "";
         string kind = spell != null ? "Spell tome"
             : itemType == ItemType.Weapon ? "Weapon"
@@ -395,7 +411,7 @@ public partial class ItemData : ScriptableObject
         EquipmentSlot.RightHand => "Mainhand",
         EquipmentSlot.LeftHand => "Offhand",
         EquipmentSlot.Head => "Helm",
-        EquipmentSlot.Body => "Armor",
+        EquipmentSlot.Body => "Armour",
         EquipmentSlot.Legs => "Leggings",
         EquipmentSlot.Trinket1 or EquipmentSlot.Trinket2 => "Trinket",
         _ => slot.ToString(),

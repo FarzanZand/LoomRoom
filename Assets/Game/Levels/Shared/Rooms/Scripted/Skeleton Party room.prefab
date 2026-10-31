@@ -169,6 +169,7 @@ GameObject:
   - component: {fileID: 5871339890619786785}
   - component: {fileID: 8178713127600320815}
   - component: {fileID: 5133322518671636260}
+  - component: {fileID: 3597618481868803779}
   m_Layer: 0
   m_Name: Skeleton Party room
   m_TagString: Untagged
@@ -301,7 +302,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   chestLine:
-    text: Greedy. Now they're all coming for you.
+    text: You took their chest. Now they're all coming for you.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -313,6 +314,24 @@ MonoBehaviour:
   prizeMaxTier: 2
   prizeGold: 80
   prizeGoldPiles: 10
+--- !u!114 &3597618481868803779
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5364221619945644165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b17f92738f1035446adfbf73d1eba8d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
+  eventName: party
+  summary: Six skeletons dance round a chest and ignore you. Hit one or open the
+    chest and they all come for you. The chest holds a Legendary piece and 80 gold.
+    Reached through the Portal hall's portal.
+  entrance: {fileID: 0}
+  countsAsEvent: 0
 --- !u!1 &6676549144639257178
 GameObject:
   m_ObjectHideFlags: 0

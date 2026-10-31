@@ -68,7 +68,7 @@ MonoBehaviour:
     when: 2
     seconds: 10
     startBeat: 64
-    beats: 69
+    beats: 138
     health: 0.5
     what: 0
     line:
@@ -205,7 +205,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   bossLow:
-  - text: He's nearly done. So are you.
+  - text: He's nearly done.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

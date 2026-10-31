@@ -103,7 +103,7 @@ public class UIManager : Singleton<UIManager>
     [PropertyOrder(2), FormerlySerializedAs("masterwork"), Tooltip("Slot fill, loot beam and name of Unique gear (gold, the best rolled step).")] public Color unique = DefaultUnique;
     public static readonly Color DefaultUnique = new(.52f, .34f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Legendary gear (red, the highest step; never rolled, only given).")] public Color legendary = DefaultLegendary;
-    public static readonly Color DefaultLegendary = new(.75f, .08f, .06f);
+    public static readonly Color DefaultLegendary = new(.58f, .18f, .15f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Relics (hand-made items).")] public Color relic = DefaultRelic;
     public static readonly Color DefaultRelic = new(.58f, .17f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of spoils (the meta currency: monster parts and baubles).")] public Color spoils = DefaultSpoils;

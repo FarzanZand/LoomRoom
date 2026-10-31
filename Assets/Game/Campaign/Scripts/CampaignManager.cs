@@ -45,12 +45,12 @@ public partial class CampaignManager : Singleton<CampaignManager>
     [TabGroup("Rules"), Tooltip("Said when a placeholder place is clicked.")]
     public string placeholderText = "Placeholder encounter";
     [TabGroup("Rules"), Tooltip("Said when the map grows.")]
-    public DungeonMaster.Line grewLine = new() { text = "The map grows. New roads, new trouble.", inPerson = true };
+    public DungeonMaster.Line grewLine = new() { text = "There's more map now.", inPerson = true };
     [TabGroup("Rules"), Tooltip("Beating this place wins the campaign (flag campaign.won).")] public CampaignEncounter finalPlace;
     [TabGroup("Rules"), Min(1), Tooltip("The last act made: acts after it stay under their cloth whatever a save says (1 while only act 1 is played; their land is held by the empty markers \"Act N land\" on the map).")]
     public int lastAct = 1;
     [TabGroup("Rules"), Tooltip("Said back at the map once the final place is beaten.")]
-    public DungeonMaster.Line wonLine = new() { text = "That was the last of it. The whole realm, start to end. Well played.", inPerson = true };
+    public DungeonMaster.Line wonLine = new() { text = "That's every place on the map. You beat them all.", inPerson = true };
 
     [TabGroup("Events"), Tooltip("Text events, each shown once the first time the map is seen after its act opens.")]
     public CampaignEvent[] events = Array.Empty<CampaignEvent>();
@@ -128,7 +128,14 @@ public partial class CampaignManager : Singleton<CampaignManager>
     }
 
     // Bought: it rises onto the map as soon as the player is back in the room (PopPending).
-    public void BuyRumour(CampaignEncounter e) { if (e != null && PM != null) PM.SetFlag(RumourPrefix + e.id, 1); }
+    public void BuyRumour(CampaignEncounter e)
+    {
+        if (e == null || PM == null) return;
+        PM.SetFlag(RumourPrefix + e.id, 1);
+        PM.CompleteQuest(ProgressionManager.RumourQuest);
+        // Its card, as a class's when one is unlocked: shown once the shop screen closes.
+        ClassUnlockedUI.ShowPlace(e);
+    }
 
     public static bool Active => HasInstance && Instance.useCampaign && Instance.mapPrefab != null;
     public CampaignMap Map { get; private set; }
@@ -711,7 +718,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
             if (got > 0) given.Add(got > 1 ? $"{item.itemName} x{got}" : item.itemName);
         }
         // Posted a frame later: the run's log is cleared right after it starts.
-        if (given.Count > 0) StartCoroutine(PostLater("In your pack, as promised: " + string.Join(", ", given) + "."));
+        if (given.Count > 0) StartCoroutine(PostLater("In your bag, as promised: " + string.Join(", ", given) + "."));
     }
 
     static IEnumerator PostLater(string line)
@@ -735,7 +742,8 @@ public partial class CampaignManager : Singleton<CampaignManager>
         var cleared = new List<string>();
         foreach (var kv in PM.AllFlags)
             if (kv.Value != 0 && (kv.Key.StartsWith(DeathsPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(OpenedPrefix, StringComparison.Ordinal)
-                || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(RumourPrefix, StringComparison.Ordinal)))
+                || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(RumourPrefix, StringComparison.Ordinal)
+                || kv.Key.StartsWith(VisitedPrefix, StringComparison.Ordinal)))
                 cleared.Add(kv.Key);
         foreach (var key in cleared) PM.SetFlag(key, 0);
         deathCountedIn = null;
@@ -743,6 +751,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         wonLinePending = false;
         if (figure != null) { Destroy(figure); figure = null; figureCollider = null; }
         if (marker != null) Destroy(marker);
+        ClearNewPlaces();
         Map.dropPending = true;
         Map.gameObject.SetActive(false);
     }
@@ -947,6 +956,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
                             At = e;
                             PlaceFigure(e);
                             Current = e;
+                            MarkVisited(e);
                             StartCoroutine(CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false));
                             player.Look.HeightOverride = null;
                             if (Coop.Running)
@@ -1296,6 +1306,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         if (Map == null) return;
         SavedRun(out var place, out _, out _);
         UpdateMarker(place);
+        RefreshNewPlaces();
     }
 
     void UpdateMarker(CampaignEncounter place)

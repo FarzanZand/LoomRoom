@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9207224132416715528}
   - component: {fileID: 915765671713279664}
+  - component: {fileID: 2724029349612173007}
   m_Layer: 0
   m_Name: Merchant shop
   m_TagString: Untagged
@@ -95,6 +96,23 @@ MonoBehaviour:
   enterInPerson: 0
   previewLevel: {fileID: 11400000, guid: 42db8accb58492743bedbc91bbca4ba3, type: 2}
   previewCellSize: 2
+--- !u!114 &2724029349612173007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 729654494956090050}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b17f92738f1035446adfbf73d1eba8d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
+  eventName: shop
+  summary: 'The merchant''s stall: where he stands when a floor''s tavern doesn''t
+    fit.'
+  entrance: {fileID: 0}
+  countsAsEvent: 0
 --- !u!1 &1471501655186130260
 GameObject:
   m_ObjectHideFlags: 0

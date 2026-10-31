@@ -34,7 +34,7 @@ public class InventoryManager : Singleton<InventoryManager>
 
     [Header("Drops by source")]
     [Title("Enemy kill"), InlineProperty, HideLabel, Tooltip("What an enemy drops when killed, in every biome (a loot profile with Own Drop Chances on, like a boss's reward, uses its own).")]
-    public SourceDrops enemyDrops = new() { goldChance = .3f, goldMin = 1, goldMax = 4, gearChance = .3f, recoveryChance = .16f };
+    public SourceDrops enemyDrops = new() { goldChance = .3f, goldMin = 1, goldMax = 4, gearChance = .3f, recoveryChance = .107f };
     [Title("Breakable"), InlineProperty, HideLabel, Tooltip("What a barrel, crate, urn or other breakable drops, in every biome.")]
     public SourceDrops breakableDrops = new() { goldChance = .25f, goldMin = 1, goldMax = 2, gearChance = .05f, recoveryChance = .12f };
     [Title("Chest"), InlineProperty, HideLabel, Tooltip("What a chest, bookshelf, grave or loot on the floor gives, in every biome (iron and gold chests roll it again, DungeonContainer.extraRolls).")]
@@ -107,12 +107,12 @@ public class InventoryManager : Singleton<InventoryManager>
         return ItemRarity.Common;
     }
 
-    // A random piece of gear from the catalog (weapon, shield or armour, tier 1 to Max Tier, by loot weight) rolled at this
+    // A random piece of gear from the catalog (weapon, shield or armour, Min Tier to Max Tier, by loot weight) rolled at this
     // rarity for the floor: a given reward (the weeping witch's Legendary, the Skeleton Party's chest). Null without a catalog.
-    public static ItemData GivenGear(ItemRarity rarity, int maxTier, int floor, System.Random random)
+    public static ItemData GivenGear(ItemRarity rarity, int maxTier, int floor, System.Random random, int minTier = 1)
     {
         if (!HasInstance || Instance.itemCatalog == null) return null;
-        bool Fits(ItemData i) => i != null && i.tier > 0 && i.tier <= maxTier && i.rarity == ItemRarity.Common && i.IsGear && Instance.CanDropLoot(i);
+        bool Fits(ItemData i) => i != null && i.tier > 0 && i.tier >= minTier && i.tier <= maxTier && i.rarity == ItemRarity.Common && i.IsGear && Instance.CanDropLoot(i);
         float total = 0f;
         foreach (var i in Instance.itemCatalog) if (Fits(i)) total += Mathf.Max(.01f, i.lootWeight);
         if (total <= 0f) return null;
@@ -226,7 +226,7 @@ public class InventoryManager : Singleton<InventoryManager>
 
         if (!added)
         {
-            NotificationUI.Show("Inventory full");
+            NotificationUI.Show("Bag full");
             return false;
         }
 
@@ -251,8 +251,24 @@ public class InventoryManager : Singleton<InventoryManager>
         var item = container?.ItemAt(index);
         if (item == null || !item.IsConsumable) return;
         var player = container.GetComponentInParent<Player>();
+        if (item.IsScroll) { ReadScroll(player, item, container, index); return; }
         if (player == null || player.Equipment == null) { item.Use(player); container.Consume(index); return; }
         player.Equipment.Consume(item, () => TakeAndUse(player, item, container, index));
+    }
+
+    // A scroll used: one that goes in the left hand (canBeEquipped, the left hand: every scroll ScrollSetup makes) is readied
+    // there in place of the shield, as a spell tome is, and cast like its spell with no mana, a charge a cast
+    // (PlayerSpellcasting). One that can't be held is read at once (PlayerSpellcasting.CastScroll), and only then is a
+    // charge spent; one that can't be cast now (nothing to aim at) keeps its charge.
+    static void ReadScroll(Player player, ItemData scroll, Inventory container, int index)
+    {
+        if (player != null && player.Equipment != null && player.Equipment.CanEquip(scroll) && scroll.equipSlot == EquipmentSlot.LeftHand)
+        { if (!player.Equipment.IsEquipped(scroll)) player.Equipment.Equip(scroll); return; }
+        var caster = player != null ? player.GetComponent<PlayerSpellcasting>() : null;
+        if (caster == null || (player.Equipment != null && player.Equipment.IsUsingItem)) return;
+        if (!caster.CastScroll(scroll.scrollSpell)) return;
+        scroll.PlayUseSound();
+        container.UseCharge(index);
     }
 
     // When it takes effect: one is taken from where it was (or, moved meanwhile, from the hotbar or bag) and used.
@@ -273,7 +289,9 @@ public class InventoryManager : Singleton<InventoryManager>
         var eq = player.Equipment;
         // While eating or drinking nothing else is taken in hand or used.
         if (eq != null && eq.IsUsingItem) return;
-        if (item.IsConsumable) { Use(container, index); return; }
+        // A scroll that goes in the left hand is taken in hand and put away like a spell tome (InventoryManager.ReadScroll).
+        bool heldScroll = item.IsScroll && eq != null && eq.CanEquip(item) && item.equipSlot == EquipmentSlot.LeftHand;
+        if (item.IsConsumable && !heldScroll) { Use(container, index); return; }
         if (eq == null || !eq.CanEquip(item)) return;
         // Only the copy in hand is put away; a spare copy of the held item (two Bronze Swords) does nothing.
         if (ItemSlotUI.HeldSlot(eq, container, index).HasValue) eq.Unequip(item);

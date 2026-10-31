@@ -159,9 +159,13 @@ public class EnemyBrain : MonoBehaviour
     // Attacks
     EnemyAttackRunner attackRunner;
     float recoveryUntil, staggerImmuneUntil;
+    // Footwork: the step back after a swing, and this enemy's own rhythm of stepping in and back while it circles.
+    float stepBackUntil, swayPeriod = -1f, swayPhase;
     bool  simulationPaused;
     CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
     float ChaseSpeed => Profile.useChaseSpeed ? Profile.chaseSpeed : Motor.DefaultSpeed;
+    // Footwork walks at the walk clips' own pace, slower for a smaller body (its legs are shorter).
+    float FootworkPace => Profile.footworkPace * Mathf.Max(.3f, transform.lossyScale.y);
     public bool CanOpenHitbox => attackRunner != null && attackRunner.CanOpenHitbox;
     public bool IsSwinging    => attackRunner != null && attackRunner.IsSwinging;
     // When the current swing's blow lands (Time.time), or -1 while unknown or not swinging.
@@ -172,6 +176,13 @@ public class EnemyBrain : MonoBehaviour
 
     // Stand still (a flinch, a stagger, the pause after a swing); only ever extends.
     internal void BeginRecovery(float seconds) => recoveryUntil = Mathf.Max(recoveryUntil, Time.time + seconds);
+
+    // The pause after its own swing: the first part of it a step back (Profile.stepBackAfterSwing), then it stands.
+    internal void BeginSwingRecovery(float seconds)
+    {
+        BeginRecovery(seconds);
+        if (Profile.stepBackAfterSwing > 0f) stepBackUntil = Time.time + Mathf.Min(Profile.stepBackAfterSwing, seconds);
+    }
 
     // A shield bash: the swing in progress is dropped (it still counts as used) and the enemy stands stunned, then
     // can't be staggered again for CombatManager.enemyStaggerImmunity.
@@ -191,6 +202,7 @@ public class EnemyBrain : MonoBehaviour
 
     void Initialize()
     {
+        swayPhase = UnityEngine.Random.value;
         Character  = GetComponent<Character>();
         Motor      = GetComponent<EnemyMotor>();
         Perception = GetComponent<Perception>();
@@ -356,16 +368,28 @@ public class EnemyBrain : MonoBehaviour
         if (Time.time < recoveryUntil)
         {
             // Catch breath, but keep the eyes on the target so the next move is instant.
-            // A committed swing never tracks.
-            Motor.Stop();
-            if (Perception.Target != null && State != EnemyState.Attack)
+            // A committed swing never tracks. Just after its own swing it steps back first.
+            // Only from a target it can see: a veiled player must not be followed by its step back or its eyes.
+            if (Time.time < stepBackUntil && Perception.Target != null && Perception.TargetVisible && State != EnemyState.Attack)
+            {
+                Vector3 back = transform.position - Perception.Target.transform.position; back.y = 0f;
+                float pace = Profile.spacingSway > 0f ? FootworkPace : ChaseSpeed * Profile.stepBackSpeedFraction;
+                // With footwork it steps back diagonally, toward the side it circles to next: the leg blend then turns
+                // from the back-step into the side-step instead of swinging through a straight back-walk (a leg kicked up).
+                if (Profile.spacingSway > 0f && back.sqrMagnitude > .0001f)
+                    back = back.normalized * .6f + Vector3.Cross(Vector3.up, -back.normalized) * circleDir * .8f;
+                if (back.sqrMagnitude > .0001f) Motor.Strafe(back.normalized, pace);
+                else Motor.Stop();
+            }
+            else Motor.Stop();
+            if (Perception.Target != null && Perception.TargetVisible && State != EnemyState.Attack)
                 Motor.LookAt(Perception.Target.transform.position, Profile.attackFaceSpeed);
             UpdateAnimator();
             return;
         }
 
         // Personal space: an enemy that is not swinging never stands inside its target; it steps back out.
-        if (State == EnemyState.Chase && !IsSwinging && Perception.Target != null && Tuning != null)
+        if (State == EnemyState.Chase && !IsSwinging && Perception.Target != null && Perception.TargetVisible && Tuning != null)
         {
             Vector3 away = transform.position - Perception.Target.transform.position; away.y = 0f;
             if (away.magnitude < Tuning.personalSpace && away.sqrMagnitude > .0001f)
@@ -552,10 +576,13 @@ public class EnemyBrain : MonoBehaviour
 
         if (!Perception.TargetVisible)
         {
-            // Lost sight: run to the last known spot, search a bit, then give up.
+            // Lost sight: run to the last known spot, search a bit, then give up. A veiled target has vanished on the
+            // spot (that spot is where it still stands): the enemy stops where it is and looks round instead, so the
+            // player can slip behind it (the user, 2026-10-30).
             Motor.ClearLookTarget();
             loseSightTimer -= Time.deltaTime;
-            Motor.MoveTo(Perception.LastKnownTargetPosition);
+            if (ShadowVeil.IsVeiled(target)) Motor.Stop();
+            else Motor.MoveTo(Perception.LastKnownTargetPosition);
             if (loseSightTimer <= 0f)
             {
                 if (giveUpTimer < 0f) giveUpTimer = p.maxSearchTime;
@@ -621,9 +648,45 @@ public class EnemyBrain : MonoBehaviour
 
         float chaseSpeed = ChaseSpeed;
         float preferred  = PreferredDistance;
+        // Footwork: the held distance swells in and out on this enemy's own rhythm, so it steps in and back as it circles
+        // (never into the target's personal space, never out of its reach).
+        if (p.spacingSway > 0f)
+        {
+            if (swayPeriod < 0f) swayPeriod = UnityEngine.Random.Range(p.spacingSwayPeriod.x, Mathf.Max(p.spacingSwayPeriod.x, p.spacingSwayPeriod.y));
+            // Mostly outward: it steps back to a little past its distance and in only a little short of it.
+            float wave = Mathf.Sin((Time.time / Mathf.Max(.5f, swayPeriod) + swayPhase) * Mathf.PI * 2f);
+            float sway = p.spacingSway * (wave > 0f ? wave : wave * .3f);
+            float least = Tuning != null ? Tuning.personalSpace + .35f : .9f;
+            preferred = Mathf.Clamp(preferred + sway, least, Mathf.Max(least, MaxAttackRange - .1f));
+        }
         Vector3 toTarget = targetPos - transform.position; toTarget.y = 0f;
         if (toTarget.sqrMagnitude < 0.0001f) toTarget = transform.forward;
         toTarget.Normalize();
+
+        // Footwork: near its distance it walks, never darts: the circling and the step in or back are one movement at
+        // the walk's own pace (the legs whirled when it ran sideways and burst in and out between circling).
+        if (p.spacingSway > 0f && p.circleTarget && Mathf.Abs(dist - preferred) < .7f)
+        {
+            backStuckSince = -1f;
+            if (Time.time >= circleSwitchAt)
+            {
+                circleDir = UnityEngine.Random.value < 0.5f ? -1 : 1;
+                circleSwitchAt = Time.time + UnityEngine.Random.Range(p.circleSwitchInterval.x, p.circleSwitchInterval.y);
+            }
+            float pace = FootworkPace;
+            Vector3 around = Vector3.Cross(Vector3.up, toTarget) * circleDir * pace;
+            Vector3 inOut = toTarget * Mathf.Clamp((dist - preferred) * 1.6f, -.6f, .6f) * pace;
+            Vector3 step = around + inOut;
+            Motor.Strafe(step.normalized, Mathf.Min(step.magnitude, pace * 1.15f));
+            float went = new Vector3(Motor.Velocity.x, 0f, Motor.Velocity.z).magnitude;
+            if (went < pace * .25f)
+            {
+                if (circleStuckSince < 0f) circleStuckSince = Time.time;
+                else if (Time.time - circleStuckSince > .35f) { circleDir = -circleDir; circleStuckSince = -1f; }
+            }
+            else circleStuckSince = -1f;
+            return;
+        }
 
         if (dist > preferred + 0.2f)
         {
@@ -827,7 +890,8 @@ public class EnemyBrain : MonoBehaviour
         // The bow goes back to the side as soon as the arrow is away, while the release still plays: one blend, not the
         // release blending to the idle arms and then the bow hold blending in a moment later (the arm swung twice).
         SetHoldingBow(IsArcher && (State != EnemyState.Attack || attackRunner != null && attackRunner.ArrowLoosed));
-        Motor.UpdateLocomotionAnimator(anim, true, 0.08f);
+        // The leg blend eases (a quick one flipped the legs between clips at every change of step).
+        Motor.UpdateLocomotionAnimator(anim, true, 0.15f);
     }
 
     // Left-arm bow carry pose (HumanoidController, LeftArm layer), dropped for the draw and on death.

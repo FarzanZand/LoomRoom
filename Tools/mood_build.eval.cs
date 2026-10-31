@@ -84,13 +84,16 @@ var table = new UnityEngine.GameObject("Table").transform; table.SetParent(root,
 const float RimW = 6f, RimUp = 2.4f, RimDown = 4f, ApronH = 3.2f, LegW = 9f;
 // the raised frame round the map (its inner face on the tabletop's edge, so nothing on the table is covered)
 float rimY = ty + (RimUp - RimDown) * .5f, rimH = RimUp + RimDown;
-Box("Frame east", table, new UnityEngine.Vector3(C.x + hx + RimW * .5f, rimY, C.z), new UnityEngine.Vector3(RimW, rimH, 2 * hz + 2 * RimW), wood, true);
+// the Dungeon Master's side is thin (2026-10-30): he leans in from 6 units back and reaches over it, and a 6-wide rail cut through him
+const float RimE = 1.5f;
+Box("Frame east", table, new UnityEngine.Vector3(C.x + hx + RimE * .5f, rimY, C.z), new UnityEngine.Vector3(RimE, rimH, 2 * hz + 2 * RimW), wood, true);
 Box("Frame west", table, new UnityEngine.Vector3(C.x - hx - RimW * .5f, rimY, C.z), new UnityEngine.Vector3(RimW, rimH, 2 * hz + 2 * RimW), wood, true);
 Box("Frame north", table, new UnityEngine.Vector3(C.x, rimY, C.z + hz + RimW * .5f), new UnityEngine.Vector3(2 * hx, rimH, RimW), wood);
 Box("Frame south", table, new UnityEngine.Vector3(C.x, rimY, C.z - hz - RimW * .5f), new UnityEngine.Vector3(2 * hx, rimH, RimW), wood);
 // a thin moulding along the frame's top outer edge
 float capY = ty + RimUp + .4f;
-Box("Frame cap east", table, new UnityEngine.Vector3(C.x + hx + RimW * .5f, capY, C.z), new UnityEngine.Vector3(RimW + .8f, .8f, 2 * hz + 2 * RimW + .8f), wood, true);
+// 1 cm (0.22) taller and longer at each end than the north and south caps it crosses, so none of their faces share a plane
+Box("Frame cap east", table, new UnityEngine.Vector3(C.x + hx + RimE * .5f, capY + .11f, C.z), new UnityEngine.Vector3(RimE + .8f, 1.02f, 2 * hz + 2 * RimW + 1.24f), wood, true);
 Box("Frame cap west", table, new UnityEngine.Vector3(C.x - hx - RimW * .5f, capY, C.z), new UnityEngine.Vector3(RimW + .8f, .8f, 2 * hz + 2 * RimW + .8f), wood, true);
 Box("Frame cap north", table, new UnityEngine.Vector3(C.x, capY, C.z + hz + RimW * .5f), new UnityEngine.Vector3(2 * hx + .8f, .8f, RimW + .8f), wood);
 Box("Frame cap south", table, new UnityEngine.Vector3(C.x, capY, C.z - hz - RimW * .5f), new UnityEngine.Vector3(2 * hx + .8f, .8f, RimW + .8f), wood);
@@ -111,7 +114,7 @@ var candles = new UnityEngine.GameObject("Corner candles").transform; candles.Se
 var clusterPf = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/Game/Levels/Shared/Props/Furnishing/Candle cluster.prefab");
 foreach (var (sx, sz) in new[] { (-1f, -1f), (1f, -1f), (-1f, 1f), (1f, 1f) })
 {
-  var p = new UnityEngine.Vector3(C.x + sx * (hx + RimW * .5f), ty + RimUp + .8f, C.z + sz * (hz + RimW * .5f));
+  var p = new UnityEngine.Vector3(C.x + (sx > 0 ? hx - .5f : -(hx + RimW * .5f)), ty + RimUp + .8f, C.z + sz * (hz + RimW * .5f));   // on the thin east rail's corner joint
   var cl = (UnityEngine.GameObject)UnityEngine.Object.Instantiate(clusterPf, candles); cl.name = "Candles"; cl.transform.position = p; cl.transform.localScale = UnityEngine.Vector3.one * 20f;
   cl.transform.rotation = UnityEngine.Quaternion.Euler(0, sx * sz > 0 ? 30 : -60, 0);
   // cream pillars only (the cluster's red tapers in holders go), three of them stepped down in height

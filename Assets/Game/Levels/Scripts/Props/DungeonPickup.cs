@@ -66,14 +66,18 @@ public static class DungeonPickup
     }
 
     // Kinematic loot never falls, so it is put down as it would land: anything taller than it is wide (a sword, a
-    // mace, a shield on its rim) lies on its side, and every item gets a random heading.
+    // mace, a shield on its rim) lies on its side, and every item gets a random heading. A pair of gloves (modelled
+    // fingers up, side by side) lies on its back rather than reaching up out of the floor, and a pair of boots stands
+    // on its soles, however tall.
     static void LayFlat(WorldItem pickup)
     {
         var t = pickup.transform;
         float yaw = Random.Range(0f, 360f);
         t.rotation = Quaternion.Euler(0f, yaw, 0f);
+        if (pickup.Item != null && pickup.Item.equipSlot == EquipmentSlot.Boots) return;
         if (!DungeonFeatureUtility.RendererBounds(pickup.GetComponentsInChildren<Renderer>(), out var upright)) return;
-        if (upright.size.y > Mathf.Max(upright.size.x, upright.size.z) * 1.15f)
+        bool gloves = pickup.Item != null && pickup.Item.equipSlot == EquipmentSlot.Gloves;
+        if (gloves || upright.size.y > Mathf.Max(upright.size.x, upright.size.z) * 1.15f)
             t.rotation = Quaternion.Euler(0f, yaw, 0f) * Quaternion.Euler(90f, 0f, Random.Range(-20f, 20f));
     }
 
@@ -94,9 +98,34 @@ public static class DungeonPickup
         var body = pickup.GetComponent<Rigidbody>();
         if (body != null) { body.isKinematic = true; body.useGravity = false; }
         LayFlat(pickup);
+        KeepInReach(pickup);
         SettleOnFloor(pickup);
         CoopWorld.Spawned(pickup.gameObject);
         return pickup;
+    }
+
+    // Never dropped out of reach: loot let go where nobody can walk (a body knocked over a pit's edge, a drop over a
+    // chasm, whose bottoms are not walkable) moves to the nearest floor the player can walk on before it settles.
+    static void KeepInReach(WorldItem pickup)
+    {
+        var p = pickup.transform.position;
+        if (NavMesh.SamplePosition(p, out var under, 2.5f, NavMesh.AllAreas))
+        {
+            var d = under.position - p;
+            if (new Vector2(d.x, d.z).magnitude < .6f && d.y > -2.5f && d.y < .6f) return;   // walkable floor right under it
+        }
+        // the nearest floor at about its own height, looked for in widening rings (the plain nearest point can be a roof)
+        for (float r = 1f; r <= 8f; r += 1f)
+            for (int k = 0; k < 8; k++)
+            {
+                float a = k * Mathf.PI / 4f;
+                var at = p + new Vector3(Mathf.Cos(a) * r, -1f, Mathf.Sin(a) * r);
+                if (!NavMesh.SamplePosition(at, out var near, 1.5f, NavMesh.AllAreas)) continue;
+                float dy = near.position.y - p.y;
+                if (dy < -2.5f || dy > .6f) continue;
+                pickup.transform.position = near.position + Vector3.up * .35f;
+                return;
+            }
     }
 
     // Kinematic loot doesn't fall, so place it resting on the floor below it. Only fixed geometry
@@ -111,7 +140,8 @@ public static class DungeonPickup
             pickup.transform.position += Vector3.up * (floorY + .02f - bounds.min.y);
             return;
         }
-        if (NavMesh.SamplePosition(bounds.center, out var floor, 3f, NavMesh.AllAreas))
+        // never up onto what is overhead (the nearest walkable point over a pit can be the ceiling's top)
+        if (NavMesh.SamplePosition(bounds.center, out var floor, 3f, NavMesh.AllAreas) && floor.position.y < bounds.max.y + .3f)
             pickup.transform.position += Vector3.up * (floor.position.y + .02f - bounds.min.y);
     }
 

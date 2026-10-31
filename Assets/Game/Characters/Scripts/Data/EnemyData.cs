@@ -9,6 +9,19 @@ public class EnemyData : CharacterData
 {
     bool UsesInlineBehaviour => behaviour == null;
 
+    // The prefab this data lives in, so a fresh one of the same kind can be made at run time from a body (Raise the
+    // Fallen stands up the skeleton its bones came from). Set in the editor whenever the data is loaded or changed.
+    [HideInInspector] public GameObject prefab;
+#if UNITY_EDITOR
+    protected virtual void OnValidate()
+    {
+        var path = UnityEditor.AssetDatabase.GetAssetPath(this);
+        if (string.IsNullOrEmpty(path) || UnityEditor.AssetDatabase.IsMainAsset(this)) return;
+        var owner = UnityEditor.AssetDatabase.LoadMainAssetAtPath(path) as GameObject;
+        if (owner != null && owner.TryGetComponent<Character>(out var c) && c.data == this && prefab != owner) prefab = owner;
+    }
+#endif
+
     [TabGroup(InspectorTabs, "Behaviour", Order = 10)]
     [Tooltip("Optional shared tuning asset, for when several enemies should always behave alike. Empty uses the settings below, which belong to this enemy only.")]
     public EnemyBehaviourProfile behaviour;

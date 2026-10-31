@@ -45,6 +45,15 @@ public partial class ProgressionManager
         GiveQuest(TileQuest);
     }
 
+    // The dev console's addroomitem: the tile carried home (taken out of the puzzle if it was placed).
+    public bool CarryTile()
+    {
+        if (missingTile == null) return false;
+        SetFlag(TileFlag, 1);
+        GiveQuest(TileQuest);
+        return true;
+    }
+
     // Put into the puzzle.
     public void PlaceTile()
     {

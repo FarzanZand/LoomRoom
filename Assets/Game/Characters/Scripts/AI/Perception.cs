@@ -38,12 +38,38 @@ public class Perception : MonoBehaviour
 
     Character ResolveTarget()
     {
-        if (ChooseTarget != null) return ChooseTarget(self, Target);
-        if (!PlayerManager.HasInstance) return null;
-        var player = PlayerManager.Instance.Active;
-        if (player == null || !player.IsAlive || player.Ghost) return null;
-        if (self != null && !FactionRules.IsHostile(self.Faction, player.Faction)) return null;
-        return player;
+        // On the player's side (a skeleton they raised): the nearest living enemy it can sense.
+        if (self != null && self.Faction == Faction.Player) return NearestEnemy();
+        Character player;
+        // Co-op (CoopWorld): any player on the table.
+        if (ChooseTarget != null) player = ChooseTarget(self, Target);
+        else
+        {
+            player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+            if (player == null || !player.IsAlive || ((Player)player).Ghost) player = null;
+            if (player != null && self != null && !FactionRules.IsHostile(self.Faction, player.Faction)) player = null;
+        }
+        // The player's summons are fought too: the nearer of them and the player.
+        if (Summon.All.Count == 0 || Profile == null) return player;
+        var summon = Summon.NearestHostile(self, transform.position, Profile.detectionRadius);
+        if (summon == null) return player;
+        if (player == null) return summon;
+        return (summon.transform.position - transform.position).sqrMagnitude < (player.transform.position - transform.position).sqrMagnitude ? summon : player;
+    }
+
+    Character NearestEnemy()
+    {
+        if (Profile == null) return null;
+        Character best = null;
+        float bestDistance = Profile.detectionRadius * Profile.detectionRadius;
+        foreach (var brain in EnemyBrain.Active)
+        {
+            if (brain == null || brain.Character == null || brain.Character == self || !brain.Character.IsAlive) continue;
+            if (!FactionRules.IsHostile(self.Faction, brain.Character.Faction)) continue;
+            float d = (brain.transform.position - transform.position).sqrMagnitude;
+            if (d < bestDistance) { best = brain.Character; bestDistance = d; }
+        }
+        return best;
     }
 
     public bool CanSee(Transform target, bool trackingTarget = false)
@@ -53,6 +79,11 @@ public class Perception : MonoBehaviour
         Vector3 origin   = transform.position + Vector3.up * Profile.eyeHeight;
         Vector3 toTarget = target.position + Vector3.up * 0.9f - origin;
         float   dist     = toTarget.magnitude;
+        // Shadow Veil: unseen, even by an enemy already hunting, unless the target stands within arm's reach in front of
+        // its eyes (close awareness and an enemy's tracking don't count: the player must be able to creep round behind).
+        if (ShadowVeil.IsVeiled(target))
+            return !ShadowVeil.Hides(target, dist) && Vector3.Angle(transform.forward, toTarget) <= Profile.fieldOfView * 0.5f &&
+                LineOfSight.Clear(origin, origin + toTarget, Profile.obstacleMask, transform, target);
 
         float closeScale = 1, sightScale = 1;
         if (!trackingTarget && CombatManager.HasInstance) CombatManager.Instance.StealthScales(target, out closeScale, out sightScale);
@@ -69,6 +100,8 @@ public class Perception : MonoBehaviour
         // Damage uses NotifyAttackedFrom separately; this toggle only controls sounds.
         if (Profile == null || !Profile.investigateNoise) return;
         if (source != null && self != null && !FactionRules.IsHostile(self.Faction, source.Faction)) return;
+        // A veiled player makes no sound worth following (their steps would lead the enemy straight to them).
+        if (source != null && ShadowVeil.IsVeiled(source)) return;
         float reach = radius + Profile.hearingRadius;
         float distance = (position - transform.position).sqrMagnitude;
         if (distance > reach * reach) return;

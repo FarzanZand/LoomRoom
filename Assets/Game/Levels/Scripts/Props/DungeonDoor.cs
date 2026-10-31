@@ -31,6 +31,7 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
     [Min(.1f)] public float openingSpeed=4f;
     [Min(1)] public float health=25;
     public AudioClip openAudio;
+    [Min(0), Tooltip("How far the sound of it opening carries (a sleeper hears a share of it).")] public float openNoise=7f;
     Vector3 closedPosition;
     bool open;
     public bool IsOpen=>open;
@@ -92,7 +93,7 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
             // With the hinge on their left, turning the same way always takes the leaf away from them.
             swingTarget=closedRotation*Quaternion.Euler(0,-Mathf.Abs(swingDegrees),0);
         }
-        open=true;Opened?.Invoke(this);NoiseEvents.Report(transform.position,7);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position);}
+        open=true;Opened?.Invoke(this);NoiseEvents.Report(transform.position,openNoise);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position);}
     void Update(){
         if(!open)return;
         if(opening==Opening.Swing)

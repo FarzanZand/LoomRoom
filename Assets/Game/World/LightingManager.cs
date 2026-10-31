@@ -139,6 +139,7 @@ public sealed partial class LightingManager : MonoBehaviour
     void OnDisable()
     {
         if (Instance == this) Instance = null;
+        ApplyShadowDistance(false);
         DisableMoods();
         fading = false;
         if (sceneApplied)

@@ -26,6 +26,9 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
 
     // ── State ─────────────────────────────────────────────────────────
     public bool  IsCrouching { get; private set; }
+    // Held crouched as if the key were held (test drivers: CombatTestBot's crouch).
+    public bool  ForceCrouch { get; set; }
+    bool forcedCrouch;
     public bool  IsSprinting { get; private set; }
     public bool  IsMoving    { get; private set; }
     public bool  IsGrounded  => Controller != null && Controller.isGrounded;
@@ -172,12 +175,14 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         bool holdToSprint = settings == null || settings.holdToSprint;
         bool autoUnSprint = settings == null || settings.autoUnSprint;
         bool canCrouch    = player == null || player.PlayerData == null || player.PlayerData.canCrouch;
-        bool crouchHeld   = canCrouch && input != null && input.CrouchHeld;
+        bool crouchHeld   = canCrouch && (input != null && input.CrouchHeld || ForceCrouch);
         if (!canCrouch) { crouchToggleRequested = false; if (IsCrouching && CanUncrouch()) IsCrouching = false; }
         bool sprintHeld   = input != null && input.SprintHeld;
 
         // CROUCH
-        if (holdToCrouch)
+        // A test driver holding crouch works whether the player's setting is hold or toggle.
+        if (ForceCrouch != forcedCrouch) { forcedCrouch = ForceCrouch; if (ForceCrouch) IsCrouching = true; else if (CanUncrouch()) IsCrouching = false; }
+        else if (holdToCrouch)
         {
             if (crouchHeld) IsCrouching = true;
             else if (IsCrouching && CanUncrouch()) IsCrouching = false;

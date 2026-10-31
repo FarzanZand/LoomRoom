@@ -142,10 +142,10 @@ public class TableLevelLoader : MonoBehaviour
         Initialize();
         if (Coop.Running) { NotificationUI.Show("In co-op, sit down at the table to play"); return false; }
         var save = player.GetComponent<AdventureSave>();
-        if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) { NotificationUI.Show("No compatible saved adventure"); return false; }
+        if (Busy || save == null || !save.CanRestore(save.Saved.checkpoint)) { NotificationUI.Show("No saved run to continue"); return false; }
         var checkpoint = save.Saved.checkpoint;
         var level = Catalog != null ? Array.Find(Catalog.levels, x => x != null && x.name == checkpoint.level) : null;
-        if (level == null) { NotificationUI.Show("That saved adventure's table is gone"); return false; }
+        if (level == null) { NotificationUI.Show("That saved run's level is gone"); return false; }
         pendingResume = checkpoint;
         StartCoroutine(LoadRoutine(level));
         return true;
@@ -162,8 +162,12 @@ public class TableLevelLoader : MonoBehaviour
     public void Descend()
     {
         if(Busy || !HasNextFloor || player==null || !player.IsAlive)return;
+        // Steps down the stairs (the UI Library's descendStairs key: the sound library's footsteps1), the stairs or the
+        // spawn window's Skip floor alike.
+        if(AudioManager.HasInstance && AudioManager.Instance.HasUI(DescendKey))AudioManager.Instance.PlayUI(DescendKey);
         StartCoroutine(LoadRoutine(Current,true));
     }
+    public const string DescendKey="descendStairs";
     IEnumerator LoadRoutine(TableLevelData level, bool descending=false, bool skipReveal=false)
     {
         Busy=true; menu.Hide();
@@ -241,7 +245,7 @@ public class TableLevelLoader : MonoBehaviour
                 if(ProgressionManager.HasInstance) ProgressionManager.Instance.tableEntered=true;
                 if(level.IsDungeon && RunManager.HasInstance)
                 {
-                    if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); if(resume==null) { TavernDish.ForgetEaten(); player.GetComponent<AdventurerProgress>()?.ApplyStats(); } }
+                    if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); if(resume==null) { TavernDish.ForgetEaten(); DungeonMasterMeddling.NewRun(); WagerEvent.NewRun(); player.GetComponent<AdventurerProgress>()?.ApplyStats(); } }
                     // A continued run's checkpoint already holds this floor's experience (it was taken after the floor
                     // was reached): only the depth is set, with no floor experience and no "+XP" meter at level 1.
                     var resumedProgress = resume != null ? player.GetComponent<AdventurerProgress>() : null;
@@ -304,7 +308,7 @@ public class TableLevelLoader : MonoBehaviour
             // From the campaign map the old adventure menu is no way back: the player stays standing at the table, and
             // the map rises again on its own (CampaignManager).
             if(!completed && !descending && CampaignManager.Active) FailedFromMap();
-            else if(!completed) ShowSelection("Could not load that level");
+            else if(!completed) ShowSelection("That level couldn't be built");
             // The biome's Dungeon Master line, a moment after the player is actually standing in it.
             else if(entryLine!=null) DungeonMaster.Say(entryLine,null,entryLineDelay);
             entryLine=null;
@@ -313,7 +317,7 @@ public class TableLevelLoader : MonoBehaviour
     }
     void FailedFromMap()
     {
-        NotificationUI.Show("Could not load that level");
+        NotificationUI.Show("That level couldn't be built");
         if(PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind!=PlayerKind.Room) PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
         if(TableManager.HasInstance) TableManager.Instance.StandRoomPlayer();
     }

@@ -118,6 +118,9 @@ public class Inventory : MonoBehaviour
 
     public ItemData ItemAt(int index) => this[index]?.item;
     public int      CountAt(int index) => this[index]?.count ?? 0;
+    public int      UsedAt(int index) => this[index]?.used ?? 0;
+    // A scroll's charges left in a slot (0 when it holds no scroll).
+    public int ChargesAt(int index) => ItemAt(index) is { IsScroll: true } scroll ? Mathf.Max(0, scroll.charges - UsedAt(index)) : 0;
 
     // A free slot (a free cell in a grid).
     public int FirstEmpty()
@@ -219,6 +222,15 @@ public class Inventory : MonoBehaviour
         var s = this[index];
         if (s == null) return;
         if (--s.count <= 0) slots[index] = null;
+        Changed?.Invoke();
+    }
+
+    // One of a scroll's charges spent; the scroll is gone with its last (the next in a stack starts full).
+    public void UseCharge(int index)
+    {
+        var s = this[index];
+        if (s == null) return;
+        if (++s.used >= Mathf.Max(1, s.item.charges)) { s.used = 0; Consume(index); return; }
         Changed?.Invoke();
     }
 

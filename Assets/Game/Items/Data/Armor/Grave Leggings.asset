@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
+  m_Name: Grave Leggings
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemName: Grave Leggings
+  saveId: 60cba064f079483fac163c0a72f98a32
+  weaponCategory: 0
+  spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
+  rarity: 0
+  description: 
+  icon: {fileID: 21300000, guid: 4c61a3cfba7585f4bbb5406a85f6d57b, type: 3}
+  iconSource:
+    custom: 0
+    model: {fileID: 2357269975949745812, guid: 25e20ed6c36689644b1b7766269b0a13, type: 3}
+    outfit: 
+    turn: {x: 0, y: 0, z: 0}
+    flip: 0
+  tag: Grave equipment
+  worldPrefab: {fileID: 2357269975949745812, guid: 25e20ed6c36689644b1b7766269b0a13, type: 3}
+  pickupVisualPrefab: {fileID: 0}
+  itemType: 6
+  maxStackSize: 1
+  gridSize: {x: 0, y: 0}
+  value: 750
+  tier: 8
+  lootWeight: 1
+  pickupAudioSource: 0
+  pickupAudio: {fileID: 0}
+  pickupClip: {fileID: 0}
+  pickupClipVolume: 1
+  pickupAudioKey: 
+  directToHotbar: 0
+  canBeEquipped: 1
+  equipSlot: 8
+  heldScale: 1
+  heldPosition: {x: 0, y: 0, z: 0}
+  heldRotation: {x: 0, y: 0, z: 0}
+  equipOnPickup: 0
+  statModifiers:
+  - stat: 1
+    value: 32
+    type: 0
+  weapon:
+    useDefaultEffects: 1
+    hitAudio: {fileID: 0}
+    swingAudio: {fileID: 0}
+    heavySwingAudio: {fileID: 0}
+    hitParticle: {fileID: 0}
+    damageMultiplier: 1
+    knockbackForce: -1
+    hitStopScale: 1
+  damageSpread: 0
+  effects: []
+  useAudioSource: 0
+  useAudio: {fileID: 0}
+  useClip: {fileID: 0}
+  useClipVolume: 1
+  useAudioKey: 
+  useMessage: 
+  AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
+  eatDuration: 0.65

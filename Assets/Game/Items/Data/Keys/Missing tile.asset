@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: key.missingTile
   weaponCategory: 0
   spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
   rarity: 5
   description: Key item. A stone tile with a symbol on it. It belongs in the puzzle
     in the room.
@@ -66,4 +67,6 @@ MonoBehaviour:
   useAudioKey: 
   useMessage: 
   AnimationOnUse: 0
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 1.3

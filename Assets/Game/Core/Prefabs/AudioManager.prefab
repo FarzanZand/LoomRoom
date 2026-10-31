@@ -138,9 +138,9 @@ MonoBehaviour:
     pitch: 1
   - key: levelUp
     source: 0
-    clip: {fileID: 8300000, guid: b11ec1361e37a524f91ffdad18092b02, type: 3}
+    clip: {fileID: 8300000, guid: 1c5c8ffbd4ae5e84d8acf04308f614c7, type: 3}
     data: {fileID: 0}
-    volume: 0.9
+    volume: 0.8
     pitch: 1
   - key: shopTrade
     source: 0
@@ -176,6 +176,18 @@ MonoBehaviour:
     source: 1
     clip: {fileID: 0}
     data: {fileID: 11400000, guid: 20cee5f253cb39b45be195b341b740ea, type: 2}
+    volume: 1
+    pitch: 1
+  - key: buttonClick
+    source: 0
+    clip: {fileID: 8300000, guid: c685f61d3b4e5194c8f9e220ea05312a, type: 3}
+    data: {fileID: 0}
+    volume: 0.7
+    pitch: 1
+  - key: descendStairs
+    source: 0
+    clip: {fileID: 8300000, guid: 8297ce0311ea10e48b86a77ea4af05d7, type: 3}
+    data: {fileID: 0}
     volume: 1
     pitch: 1
   mixer: {fileID: 24100000, guid: 171c2312a45918546ad66f788389635e, type: 2}

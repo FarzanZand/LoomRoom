@@ -16,6 +16,7 @@ MonoBehaviour:
   saveId: 0318d74d3f077054caa1e5e071c8bede
   weaponCategory: 0
   spell: {fileID: 0}
+  unlocksClass: {fileID: 0}
   rarity: 0
   description: 
   icon: {fileID: 21300000, guid: 2392e83595df8dc47815b974a207aea5, type: 3}
@@ -77,6 +78,8 @@ MonoBehaviour:
   useClip: {fileID: 0}
   useClipVolume: 1
   useAudioKey: 
-  useMessage: The tonic burns going down, then warmth floods back into you.
+  useMessage: It burns going down.
   AnimationOnUse: 2
+  scrollSpell: {fileID: 0}
+  charges: 1
   eatDuration: 1.25

@@ -21,7 +21,7 @@ public class DungeonFountain : MonoBehaviour, IInteractable
     {
         var player = DungeonFeatureUtility.TablePlayer(who);
         if (player == null) return;
-        if (sips <= 0) { MessageLog.Post("The basin is dry. Only grit remains.", MessageKind.Info); return; }
+        if (sips <= 0) { MessageLog.Post("The basin is dry.", MessageKind.Info); return; }
         sips--;
         if (AudioManager.HasInstance && drinkClip != null) AudioManager.Instance.PlaySFX(drinkClip, transform.position, drinkVolume, .05f);
         MessageLog.Post("You drink from the fountain.", MessageKind.Info);

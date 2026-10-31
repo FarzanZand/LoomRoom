@@ -1,11 +1,12 @@
 // The ruins biomes on Dungeon1's floors 7-9 (Ruins1 grey stone and oak at dusk, Ruins2 limestone and pine in a pale light,
 // Ruins3 basalt and black oak at night), safe to run again (it overwrites the biomes' look and lists):
 //  - Walled dungeon floors under ceilings in the Ruins styles (Levels/Shared/Room styles/Ruins/RuinsN: RuinsN stone for
-//    most rooms and the passages, RuinsN timber now and then), lit as the Crypt is, with wild walls (DungeonBiome.wilds,
+//    most rooms and the passages, RuinsN hall now and then; the timber styles were deleted on 2026-10-30), lit as the
+//    Crypt is, with wild walls (DungeonBiome.wilds,
 //    roofed): the room's own masonry with stone pillars half sunk into it, vines hung on it, roots, moss and rubble at its foot,
 //    the floor's torches hung on it.
 //  - The Crypt's (Cellars3) enemies and loot, no guardian, no tavern (its room is built for walls and a ceiling).
-//  - Dungeon1: the three as stages after the forests, one floor each, no boss.
+//  - Dungeon1: the three as stages 7-9, one floor each, no boss (kept where they are when run again).
 // The props are the forest's (Tools/forest_props.eval.cs). Writes Temp/Forest/ruins.txt.
 if (UnityEngine.Application.isPlaying) return "playing";
 const string F = "Assets/Game/Levels/Dungeon1/Forest";
@@ -61,19 +62,49 @@ foreach (var vn in new[] { "02", "03", "04", "05", "06", "07", "Draped_02" })
 sb.Append($"vines {vines.Count}\n");
 var made = new System.Collections.Generic.List<DungeonBiome>();
 
+// The ruins' own dressing at the realms' density (the Crypt's rules were tombs and pews, and only along the walls, so a
+// ruin read as empty and flat): fallen stone, braziers and tables in the middle of rooms, chains and beams overhead,
+// cobwebs, candles and bones by the walls. Pieces from Levels/Shared/Props/Furnishing and the realms' stone props.
+const string Furn = "Assets/Game/Levels/Shared/Props/Furnishing", Stone = "Assets/Game/Levels/Dungeon1/Realms/Props";
+const DungeonPropPlacement W = DungeonPropPlacement.AgainstWall, C = DungeonPropPlacement.Corner, M = DungeonPropPlacement.Centre, A = DungeonPropPlacement.Anywhere;
+DungeonPropRule Rule(string path, DungeonPropPlacement where, float perTen, int min, int max, float chance = 1f, int fx = 1, int fz = 1)
+{
+  var g = Load<UnityEngine.GameObject>(path);
+  var rule = new DungeonPropRule { prefab = g, placement = where, footprint = new UnityEngine.Vector2Int(fx, fz), perTenCells = perTen * 2.6f, perRoom = new UnityEngine.Vector2Int(min, max + 1), chance = chance };
+  // every 2 m cell the prop's collider covers is reserved (a wide piece must not wall a doorway off)
+  var box = g != null ? g.GetComponent<UnityEngine.BoxCollider>() : null;
+  if (box != null) rule.footprint = new UnityEngine.Vector2Int(UnityEngine.Mathf.Max(fx, UnityEngine.Mathf.CeilToInt(box.size.x / 2f - .05f)), UnityEngine.Mathf.Max(fz, UnityEngine.Mathf.CeilToInt(box.size.z / 2f - .05f)));
+  return rule;
+}
+DungeonPropRule[] RuinsRules(int n) => System.Array.FindAll(new[]
+{
+  // in the middle of rooms
+  Rule($"{Stone}/Rubble.prefab", A, .3f, 0, 2), Rule($"{Stone}/Rubble 2.prefab", A, .2f, 0, 1),
+  Rule($"{Stone}/Fallen pillar.prefab", M, .12f, 0, 1, .7f, 2, 1), Rule($"{Stone}/Broken obelisk.prefab", M, .08f, 0, 1, .6f),
+  Rule($"{Furn}/Brazier.prefab", M, .12f, 0, 1, .8f), Rule($"{Stone}/Stone table.prefab", M, .07f, 0, 1, .5f),
+  Rule($"{Stone}/Black rock.prefab", M, n == 3 ? .12f : .05f, 0, 1, .6f),
+  // overhead
+  Rule($"{Furn}/Hanging chain.prefab", A, .25f, 1, 2), Rule($"{Stone}/Hanging chains.prefab", A, .12f, 0, 1, .7f),
+  Rule($"{Stone}/Hanging beam.prefab", A, .15f, 0, 2, .6f),
+  // by the walls and in the corners
+  Rule($"{Furn}/Cobweb.prefab", C, .5f, 1, 3), Rule($"{Furn}/Candle cluster.prefab", W, .3f, 0, 2),
+  Rule($"{Furn}/Bone pile.prefab", A, .2f, 0, 2), Rule($"{Furn}/Skull pile.prefab", C, .15f, 0, 1),
+  Rule($"{Furn}/Bone heap.prefab", W, .1f, 0, 1, .6f), Rule($"{Furn}/Gargoyle statue.prefab", W, .07f, 0, 1, .5f),
+  Rule($"{Furn}/Broken bookcase.prefab", W, .08f, 0, 1, .5f), Rule($"{Stone}/Stone bench.prefab", W, .08f, 0, 1, .5f),
+  Rule($"{Stone}/Barrel stack.prefab", C, .08f, 0, 1, .5f), Rule($"{Stone}/Crate stack.prefab", C, .08f, 0, 1, .5f),
+}, x => x.prefab != null);
+
 DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lighting, string glow, int glowEvery)
 {
   string name = $"Ruins{n}";
   var stone = Load<DungeonRoomStyle>($"{R}/{name}/{name} stone.asset");
-  var timber = Load<DungeonRoomStyle>($"{R}/{name}/{name} timber.asset");
   // Every surface a kit piece or door asks for comes from the Ruins textures (128 texels a metre), never the level's
-  // 32 px fallbacks: the stone's upper wall is its wall, the timber's trim the stone's, wood and metal the stone's.
-  if (stone != null && timber != null)
+  // 32 px fallbacks: the stone's upper wall is its wall.
+  if (stone != null)
   {
     stone.upperWall = stone.bottomWall;
     // No cornice or footing: the wild walls have none, and one over a passage was the only trim left (a plain box).
     stone.hideTrims = true;
-    timber.trim = stone.trim; timber.wood = stone.wood; timber.metal = stone.metal;
     // Variants laid among the base tiles (Tools/ruins_variety.py): the stones coloured again (two copies, laid often so
     // the 2 m repeat doesn't show), a mossy and a sooty wall (bottom tiles only: on a tile above, their foot sat on the
     // plain tile below), a mossy and a rust-stained floor. Walls and floors repeat once per 2 m cell (tiling 1.5, offset
@@ -103,7 +134,7 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
     stone.floorVariants = new[] { V("stone floor shift 1", 6), V("stone floor shift 2", 6), V("stone floor moss", 2f), V("stone floor ochre", 1.5f) };
     // The hall's floor and its variants (made here, picked up below).
     foreach (var hallFloor in new[] { "stone floor b", "stone floor b shift 1", "stone floor b shift 2", "stone floor b moss", "stone floor b ochre" }) Variant(hallFloor);
-    UnityEditor.EditorUtility.SetDirty(stone); UnityEditor.EditorUtility.SetDirty(timber);
+    UnityEditor.EditorUtility.SetDirty(stone);
   }
   // The second room style is a hall of the same stone (the timber style's wall repeated one cobble panel in a black frame
   // every tile and looked bad, the user): the stone's wall (two wall drawings met along a wild wall in a hard line) with
@@ -125,6 +156,15 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   var biome = UnityEditor.AssetDatabase.LoadAssetAtPath<DungeonBiome>(path);
   if (biome == null) { biome = UnityEngine.ScriptableObject.CreateInstance<DungeonBiome>(); UnityEditor.AssetDatabase.CreateAsset(biome, path); }
   biome.CopyContentFrom(crypt);
+  // No Rat nest in a ruin (the user, 2026-10-30), and big halls rare: the ruins' wild walls don't stack up a tall room.
+  biome.roomTemplates = System.Array.FindAll(biome.roomTemplates, t => t != null && t.template != null && t.template.name != "Rat nest");
+  biome.tallRoomChance = 0f;
+  // Water standing in every pit (the user, 2026-10-30): the forest ponds' water, a little under the floor.
+  // Murky standing water drawn in the house style (Tools/pit_water.py), not the forest ponds' glossy teal sheet.
+  biome.pitWater = Load<UnityEngine.Material>("Assets/Game/Levels/Dungeon1/Ruins/Props/Pit water/Pit water.mat"); biome.pitWaterBelow = .4f;
+  // The Crypt's enemies but 3 melee, 1 archer, 1 caster (the user, 2026-10-30): no rats, bats or urn crawlers.
+  DungeonBiome.Spawn En(string n, float w) => new DungeonBiome.Spawn { enemy = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>($"Assets/Game/Characters/Enemies/Crypt/{n}.prefab"), weight = w, fromFloor = 1 };
+  biome.enemies = new[] { En("Crypt Soldier", 3), En("Crypt Warden", 2), En("Demon", 1), En("Crypt Archer", 2), En("Crypt Acolyte", 2) };
   biome.displayName = display; biome.entryMessage = entry; biome.entryLines = new DungeonMaster.Line[0];
   biome.kind = DungeonFloorKind.Dungeon;
   // Its own look: the Ruins styles everywhere (a hand-built room's own style too), no cellar starting room.
@@ -132,7 +172,7 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   biome.roomStyles = new[] { new DungeonStyleChoice { style = stone, weight = 3 }, new DungeonStyleChoice { style = hall, weight = 2 } };
   biome.corridorStyles = new[] { new DungeonStyleChoice { style = stone, weight = 1 } };
   biome.roomShapes = DungeonBiome.CloneAll(crypt.roomShapes);
-  biome.propRules = DungeonBiome.CloneAll(crypt.propRules);
+  biome.propRules = RuinsRules(n);
   // The breakables every level shares and the level's own (an own look leaves the base out otherwise).
   var breakables = new System.Collections.Generic.List<DungeonWeightedPrefab>();
   if (level.destructibles != null) breakables.AddRange(level.destructibles);
@@ -173,7 +213,7 @@ DungeonBiome Make(int n, string display, string entry, DungeonBiome.Lighting lig
   w.pondChance = 0f; w.pondEdge = new DungeonWeightedPrefab[0];
   biome.wilds = w;
   UnityEditor.EditorUtility.SetDirty(biome);
-  sb.Append($"{name}: styles {stone?.name}/{timber?.name}, breakables {biome.destructibles.Length}, faces {w.faces.Length}, foot {w.foot.Length}\n");
+  sb.Append($"{name}: styles {stone?.name}/{hall?.name}, breakables {biome.destructibles.Length}, faces {w.faces.Length}, foot {w.foot.Length}\n");
   made.Add(biome);
   return biome;
 }
@@ -184,10 +224,13 @@ Make(1, "The Ruins", "Old walls, older than the crypt.", DungeonBiome.Lighting.A
 Make(2, "The White Ruins", "Pale stone, half buried.", DungeonBiome.Lighting.MoonlitStone, null, 12);
 Make(3, "The Black Ruins", "Something still lives here.", DungeonBiome.Lighting.Standard, "cyan", 14);
 
-// Dungeon1's floors 7, 8 and 9: one ruin each, after the forests.
+// Dungeon1's floors 7, 8 and 9: one ruin each, after the realms. Run again, they go back where they are; on a level
+// without them, at the end.
 var stages = new System.Collections.Generic.List<TableLevelData.BiomeStage>(level.stages);
+int at = stages.FindIndex(s => s != null && made.Contains(s.biome));
 stages.RemoveAll(s => s != null && made.Contains(s.biome));
-foreach (var b in made) stages.Add(new TableLevelData.BiomeStage { biome = b, floors = 1, boss = false });
+if (at < 0) at = stages.Count;
+foreach (var b in made) stages.Insert(at++, new TableLevelData.BiomeStage { biome = b, floors = 1, boss = false });
 level.stages = stages.ToArray();
 UnityEditor.EditorUtility.SetDirty(level);
 UnityEditor.AssetDatabase.SaveAssets();
