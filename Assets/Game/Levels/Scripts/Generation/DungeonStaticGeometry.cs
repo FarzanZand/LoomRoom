@@ -16,7 +16,7 @@ public class DungeonStaticGeometry : MonoBehaviour
     public readonly List<MeshRenderer> BuildChunks=new(), MergedPieces=new();
     // keepModes: pieces are grouped by shadow casting and rendering layers too and the chunk keeps them (growth whose
     // small pieces cast no shadow); off, every chunk casts shadows except floor tiles.
-    public void Combine(Transform root,float chunkSize,bool keepModes=false)
+    public void Combine(Transform root,float chunkSize,bool keepModes=false,bool propsToo=false)
     {
         if(root==null)return;
         var groups=new Dictionary<(Material,int,int,ShadowCastingMode,uint),List<MeshFilter>>();
@@ -25,6 +25,7 @@ public class DungeonStaticGeometry : MonoBehaviour
             if(renderer==null || !renderer.enabled || filter.name=="Static chunk" || filter.sharedMesh==null || !filter.sharedMesh.isReadable || filter.sharedMesh.subMeshCount!=1 || renderer.sharedMaterials.Length!=1 || renderer.sharedMaterial==null)continue;
             if(filter.GetComponentInParent<Animator>()!=null || filter.GetComponentInParent<Rigidbody>()!=null || filter.GetComponentInParent<DungeonContainer>()!=null
                || filter.GetComponentInParent<DungeonDestructible>()!=null || filter.GetComponentInParent<KnockDownDecor>()!=null)continue;   // a merged breakable (or knock-down decor) would stay drawn once broken
+            if(propsToo && Changes(filter))continue;
             var p=root.InverseTransformPoint(filter.transform.position);
             var key=(renderer.sharedMaterial,Mathf.FloorToInt(p.x/chunkSize),Mathf.FloorToInt(p.z/chunkSize),
                 keepModes ? renderer.shadowCastingMode : ShadowCastingMode.On,keepModes ? renderer.renderingLayerMask : 0u);
@@ -44,6 +45,20 @@ public class DungeonStaticGeometry : MonoBehaviour
             foreach(var f in group.Value){var piece=f.GetComponent<MeshRenderer>();piece.enabled=false;MergedPieces.Add(piece);}
         }
     }
+    // propsToo (the late pass over the finished floor, DungeonGenerator.MergeProps): props that move, flicker, glow or
+    // are shown, hidden or used after the build stay apart: flames and anything lit by TorchFlicker or RoomGlow,
+    // particles and lines, doors and stairs, ambush gates and spike plates, portals, the merchant, anything that can be
+    // used or hit, and loose loot.
+    static bool Changes(MeshFilter filter) =>
+        filter.GetComponentInParent<TorchFlicker>()!=null || filter.GetComponentInParent<RoomGlow>()!=null
+        || filter.GetComponentInParent<ParticleSystem>()!=null || filter.GetComponentInParent<LineRenderer>()!=null
+        || filter.GetComponentInParent<DungeonDoor>()!=null || filter.GetComponentInParent<DungeonExit>()!=null
+        || filter.GetComponentInParent<DungeonAmbush>()!=null || filter.GetComponentInParent<DungeonSpikeTrap>()!=null
+        || filter.GetComponentInParent<DungeonFloorCut>()!=null || filter.GetComponentInParent<PortalArch>()!=null
+        || filter.GetComponentInParent<Merchant>()!=null || filter.GetComponentInParent<IInteractable>()!=null
+        || filter.GetComponentInParent<IDamageable>()!=null
+        || filter.GetComponentInParent<WorldItem>()!=null || filter.GetComponentInParent<DungeonGoldCache>()!=null;
+
     // The build's chunks under root merged again into squares of chunkSize (same material, shadow mode and rendering
     // layers); the small chunks are switched off and kept, like the pieces they were made of.
     public void Coarsen(Transform root,float chunkSize)

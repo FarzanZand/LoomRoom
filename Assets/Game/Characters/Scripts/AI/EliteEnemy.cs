@@ -83,7 +83,8 @@ public class EliteEnemy : MonoBehaviour
             skin.renderingLayerMask = body.renderingLayerMask; skin.updateWhenOffscreen = body.updateWhenOffscreen;
             shells.Add(shell);
         }
-        if (shells.Count == 0) Debug.LogWarning($"[EliteEnemy] {character.name}: no readable skinned body, so no elite glow.", character);
+        // Said in Play only: floors built outside Play (the stress test) have the humanoids' bodies still switched off.
+        if (shells.Count == 0 && Application.isPlaying) Debug.LogWarning($"[EliteEnemy] {character.name}: no skinned body switched on, so no elite glow.", character);
         stats = character.Stats;
         if (stats != null) stats.Damaged += OnDamaged;   // raised before Died, so the outline goes before the body breaks up
     }

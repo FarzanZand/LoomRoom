@@ -24577,7 +24577,7 @@ MonoBehaviour:
   stairCells: 3
   stepRise: 0.2
   edgeHeight: 3
-  sideMaterial: {fileID: 0}
+  sideMaterial: {fileID: 2100000, guid: 3370ff677c007194db1966a8fef405ec, type: 2}
   startRadius: 2
   bossSpot: {fileID: 0}
   exitSpot: {fileID: 0}

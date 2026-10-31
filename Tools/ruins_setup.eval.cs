@@ -55,6 +55,15 @@ foreach (var vn in new[] { "02", "03", "04", "05", "06", "07", "Draped_02" })
   root.name = $"Vine {vn.Replace("_", " ").ToLower()}";
   foreach (var r in root.GetComponentsInChildren<UnityEngine.MeshRenderer>()) { r.sharedMaterial = vineMat; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
   foreach (var c in root.GetComponentsInChildren<UnityEngine.Collider>()) UnityEngine.Object.DestroyImmediate(c);
+  // A readable copy of Synty's mesh next to the prefabs: the floor's merge skips unreadable meshes, and each vine was its own draw.
+  foreach (var mf in root.GetComponentsInChildren<UnityEngine.MeshFilter>())
+  {
+    var m = mf.sharedMesh; if (m == null || m.isReadable) continue;
+    string mp = $"{V}/{m.name} readable.asset"; var copy = Load<UnityEngine.Mesh>(mp);
+    if (copy == null) { copy = UnityEngine.Object.Instantiate(m); copy.name = m.name + " readable"; UnityEditor.AssetDatabase.CreateAsset(copy, mp); }
+    PixelRestyle.MarkReadable(copy);
+    mf.sharedMesh = copy;
+  }
   var saved = UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, $"{V}/{root.name}.prefab");
   UnityEngine.Object.DestroyImmediate(root);
   vines.Add(new DungeonWeightedPrefab { prefab = saved, weight = vn.StartsWith("Draped") ? .6f : 1f });

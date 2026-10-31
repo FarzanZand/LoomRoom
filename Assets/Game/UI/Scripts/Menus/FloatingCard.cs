@@ -56,10 +56,15 @@ public class FloatingCard : MonoBehaviour
         flip = 0f;
     }
 
+    // Hidden, its buttons are out of reach too: a switched-off canvas still left them for keys and a pad to land on.
     void SetVisible(bool on)
     {
         if (canvas != null) canvas.enabled = on;
+        if (group == null && !TryGetComponent(out group)) group = gameObject.AddComponent<CanvasGroup>();
+        group.interactable = on;
+        group.blocksRaycasts = on;
     }
+    CanvasGroup group;
 
     void LateUpdate()
     {

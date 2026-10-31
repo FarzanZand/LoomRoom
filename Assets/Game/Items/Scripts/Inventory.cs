@@ -234,6 +234,15 @@ public class Inventory : MonoBehaviour
         Changed?.Invoke();
     }
 
+    // A scroll's spent charges set again (a dropped one picked back up).
+    public void SetUsed(int index, int used)
+    {
+        var s = this[index];
+        if (s == null || s.item == null || !s.item.IsScroll) return;
+        s.used = Mathf.Clamp(used, 0, Mathf.Max(0, s.item.charges - 1));
+        Changed?.Invoke();
+    }
+
     public bool RemoveOne(ItemData item)
     {
         int i = IndexOf(item);

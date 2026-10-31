@@ -18,6 +18,8 @@ public class WorldItem : MonoBehaviour, IInteractable
 
     public ItemData Item  => itemData;
     public int      Count => count;
+    // A dropped scroll's charges already spent (ItemStack.used): it is picked up with them, never refilled.
+    public int      Used  { get; set; }
 
     public string Prompt => itemData != null ? $"Pick up {itemData.itemName}" : "Pick up";
     public bool CanInteract(Character who) =>
@@ -65,6 +67,7 @@ public class WorldItem : MonoBehaviour, IInteractable
         itemData = data;
         claimed = false;
         count    = Mathf.Max(1, amount);
+        Used     = 0;
         worldPrefabFromData = true;
         SpawnVisual();
     }
@@ -84,7 +87,7 @@ public class WorldItem : MonoBehaviour, IInteractable
     public void Interact(Character who)
     {
         if (!CanInteract(who) || !(who is Player player) || !InventoryManager.HasInstance) return;
-        if (InventoryManager.Instance.Pickup(itemData, player, count))
+        if (InventoryManager.Instance.Pickup(itemData, player, count, used: Used))
         {
             claimed = true;
             CoopWorld.PickedUp(this);

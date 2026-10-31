@@ -107,6 +107,15 @@ public class InventoryManager : Singleton<InventoryManager>
         return ItemRarity.Common;
     }
 
+    // A given reward of this floor's gear: the tiers the level's Gear by floor gives the floor (as its loot does), rolled at
+    // this rarity (an event room's prize, Not a witch's Legendary, the Skeleton Party's chest). A level with no table gives
+    // tiers 1 to Fallback Top.
+    public static ItemData FloorGear(ItemRarity rarity, int floor, System.Random random, int fallbackTop = 2)
+    {
+        var row = LootSource.FloorGear?.Invoke(Mathf.Max(1, floor));
+        return row != null ? GivenGear(rarity, row.HighestTier, floor, random, row.LowestTier) : GivenGear(rarity, fallbackTop, floor, random);
+    }
+
     // A random piece of gear from the catalog (weapon, shield or armour, Min Tier to Max Tier, by loot weight) rolled at this
     // rarity for the floor: a given reward (the weeping witch's Legendary, the Skeleton Party's chest). Null without a catalog.
     public static ItemData GivenGear(ItemRarity rarity, int maxTier, int floor, System.Random random, int minTier = 1)
@@ -212,7 +221,8 @@ public class InventoryManager : Singleton<InventoryManager>
 
     // ── Pickup ────────────────────────────────────────────────────────
 
-    public bool Pickup(ItemData item, Player player, int count = 1, bool preferHotbar = false, bool playSound = true, bool announcePickup = true)
+    // used: a scroll's charges already spent (a dropped one picked up again): put back on the stack it lands in.
+    public bool Pickup(ItemData item, Player player, int count = 1, bool preferHotbar = false, bool playSound = true, bool announcePickup = true, int used = 0)
     {
         if (item == null || player == null) return false;
 
@@ -229,6 +239,7 @@ public class InventoryManager : Singleton<InventoryManager>
             NotificationUI.Show("Bag full");
             return false;
         }
+        if (used > 0 && item.IsScroll) MarkUsed(player, item, used);
 
         if (playSound) item.PlayPickupSound(useSharedPickupSound ? pickupSoundKey : null, defaultPickupAudio);
 
@@ -334,7 +345,16 @@ public class InventoryManager : Singleton<InventoryManager>
 
     public WorldItem Spawn(ItemData item, Vector3 position) => Spawn(item, position, Quaternion.identity);
 
-    public WorldItem DropFromPlayer(ItemData item, Player player)
+    // A scroll picked up again with its spent charges: they go on a fresh copy of it (copies are alike, so any fresh one).
+    static void MarkUsed(Player player, ItemData item, int used)
+    {
+        foreach (var inventory in new[] { player.Hotbar, player.Bag })
+            for (int i = 0; inventory != null && i < inventory.SlotCount; i++)
+                if (inventory.ItemAt(i) == item && inventory.UsedAt(i) == 0) { inventory.SetUsed(i, used); return; }
+    }
+
+    // used: the dropped stack's spent scroll charges, kept on the floor item (WorldItem.Used).
+    public WorldItem DropFromPlayer(ItemData item, Player player, int used = 0)
     {
         if (item == null) return null;
         if (player == null) player = ActivePlayer;
@@ -343,6 +363,7 @@ public class InventoryManager : Singleton<InventoryManager>
         Vector3 forward = player.Look != null ? player.Look.YawTransform.forward : t.forward;
         var pos = t.position + forward * dropDistance + Vector3.up * dropHeight;
         var pickup = Spawn(item, pos);
+        if (pickup != null) pickup.Used = used;
         var level = TableManager.Loader;
         if (pickup != null && player.kind == PlayerKind.Table && level != null && level.Dungeon != null)
         {
