@@ -491,9 +491,9 @@ public class CombatManager : Singleton<CombatManager>
     public float lightHitJolt = 1.5f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Tooltip("While a hit slides a humanoid enemy, its feet stay where they stood (foot IK, EnemyFootPlant) instead of skating with it, and step back under the body once the slide ends.")]
     public bool plantFeetInKnockback = true;
-    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Min(.05f), Tooltip("Metres a planted foot may lag behind where the animation puts it before it lets go (a long slide doesn't stretch the legs).")]
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Min(.05f), Tooltip("Metres the body may slide from its planted feet before they step after it (a long slide doesn't stretch the legs).")]
     public float footPlantReach = .4f;
-    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Min(.01f), Tooltip("Seconds the feet take to step back under the body after a slide.")]
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Impact"), Min(.01f), Tooltip("Seconds a foot takes to step back under the body after a slide (longer when it has further to go than a step's swing covers in that time).")]
     public float footPlantRelease = .2f;
 
     // Whether a blow plays a humanoid enemy's full-body stagger (Hurt states) or only jolts its upper body.
