@@ -121,6 +121,10 @@ public enum CoopEventKind : byte
     Ping = 20,          // a player pointed at something (position = where, item = what it is called; CoopPing)
     NpcProvoked = 23,   // a provokable character was struck (id = it on the floor, amount = its hits so far; ProvokableNpc)
     PlayerSpell = 24,   // a player's spell, seen by the others (CoopSpells: item = the spell, id = the enemy aimed at + 1)
+    Noise = 25,         // a guest made a sound the host's enemies may hear (amount = its reach x 100)
+    EventUse = 27,      // a player used a scripted event room's piece (id = the room on the floor, amount = which use; ICoopEventRoom)
+    EventStep = 28,     // the host's event room moved on (id = the room, amount = the step, extra.x = a value, item = a seed)
+    Meddle = 26,        // the Dungeon Master meddles (DungeonMasterMeddling): amount 0 adds an enemy at position in room id, 1 takes chest id
 }
 
 // The owner's arm animation for a teammate's one body (CoopPlayer.SendArms, CoopAvatar.ApplyArms): each layer's state,

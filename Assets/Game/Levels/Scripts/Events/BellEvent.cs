@@ -7,7 +7,7 @@ using UnityEngine;
 // better (wood, iron, gold, then gold with a Legendary in it). The chest stays shut while a ring's waves are coming
 // (DungeonContainer.HeldShut). Ring again or open the chest: opening it ends the game,
 // and the rope can't be pulled once the last ring is done.
-public class BellEvent : MonoBehaviour
+public class BellEvent : MonoBehaviour, ICoopEventRoom
 {
     [Tooltip("The bell: swung about its local X when it tolls.")] public Transform bell;
     [Tooltip("The chest on the step (a chest placed in the template; stocked like any placed chest).")] public DungeonContainer chest;
@@ -89,13 +89,42 @@ public class BellEvent : MonoBehaviour
         if (rings > 0 && rings < waves.Length) ScriptedEventRoom.Say(cashOutLine);
     }
 
-    public void Ring(Player who)
+    public void Ring(Character who)
     {
         if (!CanRing || room == null || !room.Find()) return;
         StartCoroutine(Toll(who));
     }
 
-    IEnumerator Toll(Player player)
+    // Co-op: a teammate pulled the rope (their stand-in here).
+    public void Used(int what, Character who)
+    {
+        if (!CanRing) return;
+        var pull = GetComponentInChildren<BellRope>();
+        if (pull != null) pull.Dip();
+        Ring(who);
+    }
+
+    // Co-op guests: the host's bell moved on (1: another wave tolled in, value = the wave; 2: the ring's waves are over,
+    // value = the ring, seed = the chest's).
+    public void Step(int step, int value, int seed)
+    {
+        if (step == 1)
+        {
+            ScriptedEventRoom.Play(toll, bell != null ? bell.position : transform.position, tollVolume * .8f);
+            if (bell != null) StartCoroutine(Swing());
+            if (value - 1 >= 0 && value - 1 < waveLines.Length) ScriptedEventRoom.Say(waveLines[value - 1]);
+        }
+        else if (step == 2)
+        {
+            rings = Mathf.Max(rings, value + 1);
+            room.OpenGates();
+            Upgrade(value + 1, seed);
+            ScriptedEventRoom.Say(rings >= waves.Length ? doneLine : clearedLine);
+            busy = false;
+        }
+    }
+
+    IEnumerator Toll(Character player)
     {
         busy = true;
         int ring = rings++;
@@ -103,6 +132,8 @@ public class BellEvent : MonoBehaviour
         if (bell != null) StartCoroutine(Swing());
         if (ring < ringLines.Length) ScriptedEventRoom.Say(ringLines[ring]);
         room.ShutGates();
+        // Co-op guests: the host's waves come from there, and its steps carry the rest (Step).
+        if (Coop.IsGuest) yield break;
         yield return new WaitForSeconds(1.1f);
         var rng = new System.Random(room.Dungeon.EventSeed(room.Room, 10 + ring));
         for (int w = 0; w < wavesPerRing; w++)
@@ -114,6 +145,7 @@ public class BellEvent : MonoBehaviour
                 ScriptedEventRoom.Play(toll, bell != null ? bell.position : transform.position, tollVolume * .8f);
                 if (bell != null) StartCoroutine(Swing());
                 if (w - 1 < waveLines.Length) ScriptedEventRoom.Say(waveLines[w - 1]);
+                CoopWorld.EventStep(this, 1, w);
                 yield return new WaitForSeconds(.9f);
             }
             // Each wave out of puffs of dust along the room's edge, on the far side from where the player stands now
@@ -143,16 +175,19 @@ public class BellEvent : MonoBehaviour
         }
         yield return new WaitForSeconds(.8f);
         room.OpenGates();
-        Upgrade(ring + 1, rng);
+        int seed = rng.Next();
+        Upgrade(ring + 1, seed);
+        CoopWorld.EventStep(this, 2, ring, seed);
         ScriptedEventRoom.Say(rings >= waves.Length ? doneLine : clearedLine);
         busy = false;
     }
 
     // The chest comes back a tier better out of a puff of dust: rings 1 and 2 raise its tier, after that it is the best
     // tier with more in it.
-    void Upgrade(int level, System.Random rng)
+    void Upgrade(int level, int seed)
     {
         if (chest == null || chest.IsOpen) return;
+        var rng = new System.Random(seed);
         var at = chest.transform.position; var facing = chest.transform.rotation;
         var old = chest;
         var made = room.Dungeon.SpawnChest(level, at, facing, rng.Next());
@@ -160,6 +195,7 @@ public class BellEvent : MonoBehaviour
         old.Opened -= OnChestOpened; old.OpenRefused -= OnChestRefused; old.HeldShut = null;
         Destroy(old.gameObject);
         chest = made;
+        CoopWorld.AddContainer(made);
         int tiers = room.Dungeon.ChestTiers().Count;
         // Past the best tier each ring adds a roll (and the last ring a Legendary).
         made.extraRolls += Mathf.Max(0, level - (tiers - 1));

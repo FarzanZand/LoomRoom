@@ -17,8 +17,12 @@ public class BellRope : MonoBehaviour, IInteractable
     {
         if (!CanInteract(who)) return;
         StartCoroutine(Pull());
-        bell.Ring(who as Player);
+        bell.Ring(who);
+        CoopWorld.EventUsed(bell, 0);
     }
+
+    // Pulled by someone else (a co-op teammate).
+    public void Dip() => StartCoroutine(Pull());
 
     IEnumerator Pull()
     {

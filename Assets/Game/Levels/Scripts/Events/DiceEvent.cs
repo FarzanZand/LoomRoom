@@ -10,7 +10,7 @@ using UnityEngine;
 //   1 an ambush (gates and two waves)   2 he sets a tough enemy down     3 nothing
 //   4 a rest (health back to full)      5 he sets down an iron chest     6 he sets down a gold chest with gear rolled Unique
 // The die is his: it stays where it lands. The number is picked from the floor's seed, then the die is made to land on it.
-public class DiceEvent : MonoBehaviour
+public class DiceEvent : MonoBehaviour, ICoopEventRoom
 {
     [Tooltip("The Dungeon Master's die (a cube; its faces: +Y 1, +X 2, +Z 3, -Z 4, -X 5, -Y 6).")] public GameObject diePrefab;
     [Tooltip("Where it lands when the board has no squares (under the opening).")] public Transform landing;
@@ -62,7 +62,14 @@ public class DiceEvent : MonoBehaviour
     // The cup: once, while his hand is free.
     public bool CanRoll => !rolled && room != null && room.Find() && !DungeonMasterReach.Busy && ScriptedEventRoom.RunGoing;
 
-    public void Shake(Player player)
+    // Co-op: a teammate shook the cup (their stand-in here): the same roll here, from the same seed.
+    public void Used(int what, Character who) => Shake(who);
+
+    // Co-op guests: the host's ambush (a 1) is over (step 1): the gates lift.
+    bool ambushOver;
+    public void Step(int step, int value, int seed) { if (step == 1) ambushOver = true; }
+
+    public void Shake(Character player)
     {
         if (!CanRoll || player == null) return;
         rolled = true;
@@ -91,7 +98,7 @@ public class DiceEvent : MonoBehaviour
         return landing != null ? landing.position : transform.position;
     }
 
-    IEnumerator Roll(Player player)
+    IEnumerator Roll(Character player)
     {
         var rng = new System.Random(room.Dungeon.EventSeed(room.Room, 60));
         Result = ForcedNext > 0 ? ForcedNext : forceFace > 0 ? forceFace : 1 + rng.Next(6);
@@ -253,13 +260,20 @@ public class DiceEvent : MonoBehaviour
         return mf != null && mf.sharedMesh != null ? mf.sharedMesh.bounds.size.y * mf.transform.localScale.y : 1f;
     }
 
-    IEnumerator Outcome(Player player, Vector3 spot, System.Random rng)
+    IEnumerator Outcome(Character player, Vector3 spot, System.Random rng)
     {
         switch (Result)
         {
             case 1: yield return Ambush(player, rng); break;
             case 2:
             {
+                // Co-op guests: the host's hand brings them; he goes to where they land here.
+                if (Coop.IsGuest)
+                {
+                    for (int i = 0; i < toughCount; i++) { yield return DungeonMasterReach.Approach(Beside(player, spot, 2.4f + 1.3f * i)); yield return new WaitForSeconds(2f); }
+                    yield return DungeonMasterReach.Leave();
+                    break;
+                }
                 var prefab = toughEnemy != null ? toughEnemy : room.Dungeon.PickEnemy(room.Room, rng);
                 bool put = false;
                 for (int i = 0; i < toughCount && prefab != null; i++)
@@ -276,7 +290,8 @@ public class DiceEvent : MonoBehaviour
             }
             case 3: break;
             case 4:
-                if (player != null && player.Stats != null) player.Stats.Heal(player.Stats.MaxHealth);
+                // Only the one who rolled is healed (on their own machine: a teammate's stand-in here only shows it).
+                if (player is Player && player.Stats != null) player.Stats.Heal(player.Stats.MaxHealth);
                 if (healEffect != null && player != null) Destroy(Instantiate(healEffect, player.transform.position + player.transform.forward * .6f, Quaternion.identity), 4f);
                 break;
             case 5:
@@ -285,6 +300,7 @@ public class DiceEvent : MonoBehaviour
                 var at = Beside(player, spot, 1.9f);
                 var chest = room.Dungeon.SpawnChest(Result == 5 ? 1 : 2, at, Quaternion.LookRotation(Flat(player.transform.position - at)), rng.Next(), false);
                 if (chest == null) break;
+                CoopWorld.AddContainer(chest);
                 if (Result == 6) { var prize = ScriptedEventRoom.Gear(ItemRarity.Unique, rng, maxTier); if (prize != null) chest.guaranteedItems.Add(prize); }
                 yield return DungeonMasterReach.PutThing(chest.transform, at);
                 yield return DungeonMasterReach.Leave();
@@ -293,9 +309,16 @@ public class DiceEvent : MonoBehaviour
         }
     }
 
-    IEnumerator Ambush(Player player, System.Random rng)
+    IEnumerator Ambush(Character player, System.Random rng)
     {
         room.ShutGates();
+        // Co-op guests: the host's waves come from there; its word lifts the gates.
+        if (Coop.IsGuest)
+        {
+            while (!ambushOver && ScriptedEventRoom.RunGoing) yield return new WaitForSeconds(.25f);
+            room.OpenGates();
+            yield break;
+        }
         yield return new WaitForSeconds(.8f);
         var points = room.FreeFloor(rng, 2.5f);
         var from = player.transform.position;
@@ -322,12 +345,13 @@ public class DiceEvent : MonoBehaviour
             yield return new WaitForSeconds(1f);
         }
         room.OpenGates();
+        CoopWorld.EventStep(this, 1);
     }
 
     // Floor in the room beside the die, across the player's view of it (so what he brings is set down where it is seen,
     // not into the player's face), on the side where his hand's way in from where he stands passes clear of the player
     // (on the other side it swept past their eyes).
-    Vector3 Beside(Player player, Vector3 spot, float distance)
+    Vector3 Beside(Character player, Vector3 spot, float distance)
     {
         var across = Vector3.Cross(Vector3.up, Flat(player.transform.position - spot));
         Vector3? best = null; float bestClear = -1f;
@@ -352,7 +376,7 @@ public class DiceEvent : MonoBehaviour
     }
 
     // Floor in the room between the die and the player, a little off the die.
-    Vector3 Near(Player player, Vector3 spot, float distance)
+    Vector3 Near(Character player, Vector3 spot, float distance)
     {
         var toPlayer = Flat(player.transform.position - spot);
         foreach (float turn in new[] { 0f, 40f, -40f, 80f, -80f, 180f })

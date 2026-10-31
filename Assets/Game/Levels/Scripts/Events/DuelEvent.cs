@@ -9,7 +9,7 @@ using UnityEngine.Playables;
 // it fair, face to face, and he leaves his reward: a piece of gear rolled Unique and the biggest spoils. Strike him from
 // behind, with a spell or before the salute is over and the Dungeon Master stops the duel with a house rule (the first
 // time he gives it; after that he quotes it) and the duellist's friends come out at both ends of the bridge.
-public class DuelEvent : MonoBehaviour
+public class DuelEvent : MonoBehaviour, ICoopEventRoom
 {
     [Tooltip("Where the duellist waits (an Enemy socket of the template marks the same spot).")]
     public Transform post;
@@ -59,11 +59,28 @@ public class DuelEvent : MonoBehaviour
     {
         if (room == null || !room.Find()) return;
         if (duellist == null) { if (Time.time >= nextScan) { nextScan = Time.time + .5f; FindDuellist(); } return; }
-        if (phase != Phase.Waiting) return;
+        if (phase != Phase.Waiting || !duellist.IsAlive) return;
+        // Co-op: the host's duellist decides, for whichever player walks up first; the guests' copies follow (Step).
+        if (Coop.IsGuest) return;
+        if (Coop.Running) { foreach (var c in CoopWorld.Party()) if (Challenges(c)) { StartCoroutine(Salute(c)); return; } return; }
         var player = ScriptedEventRoom.TablePlayer;
-        if (player == null || !player.IsAlive || !duellist.IsAlive) return;
+        if (player != null && player.IsAlive && Challenges(player)) StartCoroutine(Salute(player));
+    }
+
+    bool Challenges(Character player)
+    {
         var d = player.transform.position - duellist.transform.position; d.y = 0f;
-        if (room.Inside(player.transform.position) && d.magnitude <= challengeDistance) StartCoroutine(Salute(player));
+        return room.Inside(player.transform.position) && d.magnitude <= challengeDistance;
+    }
+
+    // Co-op guests: the host's duel moved on (1: he salutes the player in slot value; 2: it was broken, value 1 = early).
+    public void Used(int what, Character who) { }
+    public void Step(int step, int value, int seed)
+    {
+        if (duellist == null) FindDuellist();
+        if (duellist == null) return;
+        if (step == 1 && phase == Phase.Waiting) { var who = CoopWorld.CharacterOf(value); if (who != null) StartCoroutine(Salute(who)); }
+        else if (step == 2 && phase is not (Phase.Broken or Phase.Over)) StartCoroutine(Break(CoopWorld.CharacterOf(value >> 1), (value & 1) != 0));
     }
 
     // The enemy standing nearest his post in the room. He waits there, facing the way the post faces.
@@ -91,9 +108,10 @@ public class DuelEvent : MonoBehaviour
         StopSalute();
     }
 
-    IEnumerator Salute(Player player)
+    IEnumerator Salute(Character player)
     {
         phase = Phase.Saluting;
+        CoopWorld.EventStep(this, 1, CoopWorld.SlotOf(player));
         ScriptedEventRoom.Say(challengeLine);
         // He turns to face the player, then raises his blade.
         var to = player.transform.position - duellist.transform.position; to.y = 0f;
@@ -122,19 +140,21 @@ public class DuelEvent : MonoBehaviour
 
     void OnHit(DamageInfo info)
     {
-        if (info.Source == null || info.Source is not Player) return;
+        // A player's blow (co-op: any player's, judged on the host).
+        if (info.Source == null || Coop.IsGuest || !(info.Source is Player || CoopWorld.SlotOf(info.Source) != Coop.NoSlot)) return;
         if (phase == Phase.Duel && !Foul(info, false)) return;
         if (phase is Phase.Broken or Phase.Over) return;
         bool early = phase is Phase.Waiting or Phase.Saluting;
         if (!Foul(info, early)) return;
-        StartCoroutine(Break(info.Source as Player, early));
+        StartCoroutine(Break(info.Source, early));
     }
 
-    IEnumerator Break(Player player, bool early)
+    IEnumerator Break(Character player, bool early)
     {
         phase = Phase.Broken;
         StopSalute();
-        if (brain != null) { ScriptedEventRoom.Free(brain); brain.Provoke(player.transform.position); }
+        CoopWorld.EventStep(this, 2, (Mathf.Max(0, CoopWorld.SlotOf(player)) << 1) | (early ? 1 : 0));
+        if (brain != null && player != null) { ScriptedEventRoom.Free(brain); brain.Provoke(player.transform.position); }
         if (early) ScriptedEventRoom.Say(earlyLine);
         // The rule: given the first time (and said), quoted after that.
         if (RuleManager.HasInstance && rule != null)
@@ -143,6 +163,8 @@ public class DuelEvent : MonoBehaviour
             else ScriptedEventRoom.Say(RuleManager.Instance.Give(rule));
         }
         ScriptedEventRoom.Say(friendsLine);
+        // Co-op guests: his friends come from the host.
+        if (Coop.IsGuest) yield break;
         yield return new WaitForSeconds(.8f);
         // His friends at the bridge's ends, the far one first: out of a puff, between the player and the way back.
         var rng = new System.Random(room.Dungeon.EventSeed(room.Room, 1));

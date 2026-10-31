@@ -12,7 +12,7 @@ using UnityEngine.Playables;
 // He deals once a run: after the first bet, a wager table on a later floor of the same run won't take one. Win once and
 // he stops dealing (Wins To Quit: no betting again and again for gold).
 // The coin is hidden while a bowl covers it (it is wider than a bowl and showed round its rim).
-public class WagerEvent : MonoBehaviour
+public class WagerEvent : MonoBehaviour, ICoopEventRoom
 {
     [Tooltip("Where the dealer sits (an Enemy socket of the template marks the same spot).")] public Transform seat;
     [Tooltip("The three bowls, left to right as the player sees them.")] public Transform[] cups = new Transform[3];
@@ -281,19 +281,38 @@ public class WagerEvent : MonoBehaviour
 
     // Once he has cheated, the bowls can be used to call him out (WagerCup): the same as a blow, without reaching him.
     public bool CanCall => cheated && phase == Phase.Idle && dealer != null && dealer.IsAlive;
-    public void CallOut(Player player) { if (CanCall) Confront(player); }
+    public void CallOut(Player player)
+    {
+        if (!CanCall) return;
+        // Co-op: the dealer is the host's; it is called out there (and the fight comes back here, Step).
+        if (Coop.IsGuest) { CoopWorld.EventUsed(this, 1); return; }
+        Confront(player, true);
+    }
 
     void OnHit(DamageInfo info)
     {
-        if (phase is Phase.Fight or Phase.Over || info.Source is not Player player) return;
-        Confront(player);
+        // A player's blow (co-op: any player's, judged on the host).
+        if (phase is Phase.Fight or Phase.Over || info.Source == null || Coop.IsGuest || !(info.Source is Player || CoopWorld.SlotOf(info.Source) != Coop.NoSlot)) return;
+        Confront(info.Source, cheated);
     }
 
-    void Confront(Player player)
+    // Co-op: a guest called him out (on the host); the host's fight began (on a guest, value 1 = called out).
+    public void Used(int what, Character who) { if (what == 1 && Coop.IsHost && phase is not (Phase.Fight or Phase.Over) && dealer != null && dealer.IsAlive) Confront(who, true); }
+    public void Step(int step, int value, int seed)
+    {
+        if (step != 1 || phase is Phase.Fight or Phase.Over) return;
+        StopAllCoroutines();
+        phase = Phase.Fight;
+        ScriptedEventRoom.Say(value == 1 ? calledLine : soreLine);
+        Sit(false);
+        if (value != 1) potGold = 0;
+    }
+
+    void Confront(Character player, bool called)
     {
         StopAllCoroutines();
         phase = Phase.Fight;
-        bool called = cheated;
+        CoopWorld.EventStep(this, 1, called ? 1 : 0);
         ScriptedEventRoom.Say(called ? calledLine : soreLine);
         Sit(false);
         if (dealer.TryGetComponent<UnityEngine.AI.NavMeshAgent>(out var agent))
@@ -339,7 +358,7 @@ public class WagerEvent : MonoBehaviour
     }
 
     // Out of the walls: puffs at the room's wall-side floor, away from the player.
-    IEnumerator Friends(Player player)
+    IEnumerator Friends(Character player)
     {
         var rng = new System.Random(room.Dungeon.EventSeed(room.Room, 40));
         var points = room.FreeFloor(rng, 1.5f);

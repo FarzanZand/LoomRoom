@@ -47,6 +47,17 @@ public static class CoopWorld
         Perception.ChooseTarget = ChooseTarget;
         Character.Spawned += OnCharacterSpawned;
         SkeletonParty.AnySpoiled += OnPartySpoiled;
+        NoiseEvents.Noise += OnNoise;
+    }
+
+    // A guest's own sounds (steps, blows, spells) for the host's enemies, which listen there: a sleeping giant or pack
+    // wakes, a guard turns to look. At most a few a second.
+    static float nextNoise;
+    static void OnNoise(Vector3 position, float radius, Character source)
+    {
+        if (Applying || !Coop.IsGuest || Floor == null || !(source is Player p) || p.kind != PlayerKind.Table || Time.time < nextNoise) return;
+        nextNoise = Time.time + .15f;
+        Send(new CoopEvent { kind = CoopEventKind.Noise, position = position, amount = Mathf.RoundToInt(radius * 100f) });
     }
 
     static void OnPartySpoiled(SkeletonParty party)
@@ -63,6 +74,7 @@ public static class CoopWorld
         Perception.ChooseTarget = null;
         Character.Spawned -= OnCharacterSpawned;
         SkeletonParty.AnySpoiled -= OnPartySpoiled;
+        NoiseEvents.Noise -= OnNoise;
         Clear();
     }
 
@@ -596,6 +608,45 @@ public static class CoopWorld
     }
 
     // A chest made mid-floor (an ambush's reward), made the same way on every machine: the next id.
+    // Host: the Dungeon Master meddled (DungeonMasterMeddling); the guests see him do it.
+    public static void Meddled(bool steal, int id, Vector3 spot)
+    {
+        if (!Coop.IsHost || Applying || Floor == null) return;
+        Send(new CoopEvent { kind = CoopEventKind.Meddle, amount = steal ? 1 : 0, id = id, position = spot });
+    }
+    public static int ContainerId(DungeonContainer chest) => containers.IndexOf(chest);
+
+    // ── Scripted event rooms ──────────────────────────────────────────
+
+    // The floor's event rooms in build order (the same on every machine).
+    static int EventRoomId(Component part)
+    {
+        var room = part != null ? part.GetComponentInParent<ScriptedEventRoom>() : null;
+        if (room == null || Floor == null) return -1;
+        return System.Array.IndexOf(Floor.GetComponentsInChildren<ScriptedEventRoom>(true), room);
+    }
+    static ICoopEventRoom EventRoom(int id)
+    {
+        var rooms = Floor != null ? Floor.GetComponentsInChildren<ScriptedEventRoom>(true) : null;
+        return rooms != null && id >= 0 && id < rooms.Length ? rooms[id].GetComponent<ICoopEventRoom>() : null;
+    }
+
+    // A player used a piece of an event room here (rang the bell, shook the cup): everyone else does it too.
+    public static void EventUsed(Component part, int what)
+    {
+        if (!Coop.Running || Applying) return;
+        int id = EventRoomId(part);
+        if (id >= 0) Send(new CoopEvent { kind = CoopEventKind.EventUse, id = id, amount = what });
+    }
+
+    // Host: its event room moved on (a wave came, the waves are over); the guests' copies follow.
+    public static void EventStep(Component part, int step, int value = 0, int seed = 0)
+    {
+        if (!Coop.IsHost || Applying) return;
+        int id = EventRoomId(part);
+        if (id >= 0) Send(new CoopEvent { kind = CoopEventKind.EventStep, id = id, amount = step, extra = new Vector3(value, 0f, 0f), item = seed.ToString() });
+    }
+
     public static void AddContainer(DungeonContainer chest)
     {
         if (!Coop.Running || chest == null || containers.Contains(chest)) return;
@@ -705,7 +756,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: return;
+            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: case CoopEventKind.Noise: case CoopEventKind.Meddle: return;
         }
         history.Add(e);
     }
@@ -892,6 +943,23 @@ public static class CoopWorld
             case CoopEventKind.PlayerSpell:
                 if (e.slot != Coop.LocalSlot) CoopSpells.Play(e);
                 break;
+            case CoopEventKind.Noise:
+                if (Coop.IsHost) NoiseEvents.Report(e.position, e.amount / 100f, CharacterOf(e.slot));
+                break;
+            case CoopEventKind.EventUse:
+                EventRoom(e.id)?.Used(e.amount, CharacterOf(e.slot));
+                break;
+            case CoopEventKind.EventStep:
+                if (Coop.IsGuest) EventRoom(e.id)?.Step(e.amount, Mathf.RoundToInt(e.extra.x), int.TryParse(e.item.ToString(), out var seed) ? seed : 0);
+                break;
+            case CoopEventKind.Meddle:
+            {
+                var meddling = Floor.GetComponent<DungeonMasterMeddling>();
+                if (meddling == null) break;
+                if (e.amount == 1) { if (e.id >= 0 && e.id < containers.Count && containers[e.id] != null) meddling.StealFromHost(containers[e.id]); }
+                else meddling.AddFromHost(e.id, e.position);
+                break;
+            }
             case CoopEventKind.EnemySpell:
             {
                 // The look only: no damage here (the host's spell hurts, and its blows reach players from there).

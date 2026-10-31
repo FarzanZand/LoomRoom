@@ -54,6 +54,8 @@ public class DungeonMasterMeddling : MonoBehaviour
     void Update()
     {
         if (dungeon == null || dungeon.Layout == null || busy || features == null) return;
+        // Co-op: the host's Dungeon Master decides (its enemies are the real ones); the guests see him do it.
+        if (Coop.IsGuest) return;
         var player = Player;
         if (player == null || !player.IsAlive || !Allowed) return;
         // Only the floor the player is on (a pocket beside it has its own).
@@ -116,17 +118,32 @@ public class DungeonMasterMeddling : MonoBehaviour
         return null;
     }
 
+    // Co-op guests: what the host's Dungeon Master did, done here for the look. The enemy is the host's and comes from
+    // there, carried in on its snapshots; the chest is this floor's copy of the host's.
+    public void AddFromHost(int room, Vector3 spot) { if (!busy && !DungeonMasterReach.Busy) StartCoroutine(AddOne(room, spot)); }
+    public void StealFromHost(DungeonContainer chest) { if (!busy && chest != null && !DungeonMasterReach.Busy) StartCoroutine(Steal(chest)); }
+
     IEnumerator AddOne(int room, Vector3 spot)
     {
         busy = true;
+        CoopWorld.Meddled(false, room, spot);
         yield return new WaitForSeconds(.9f);
         ScriptedEventRoom.Say(tooEasyLines[Random.Range(0, tooEasyLines.Length)]);
         yield return new WaitForSeconds(.6f);
         yield return DungeonMasterReach.Lid(dungeon, true);
-        var rng = new System.Random(dungeon.EventSeed(room, 90));
-        var prefab = dungeon.PickEnemy(room, rng);
-        var enemy = prefab != null ? dungeon.SpawnAmbusher(prefab, spot, Quaternion.LookRotation(Flat(Player != null ? Player.transform.position - spot : Vector3.forward))) : null;
-        if (enemy != null) yield return DungeonMasterReach.Put(enemy, spot);
+        if (Coop.IsGuest)
+        {
+            // He goes to it and sets down what the host's hand brings.
+            yield return DungeonMasterReach.Approach(spot);
+            yield return new WaitForSeconds(2f);
+        }
+        else
+        {
+            var rng = new System.Random(dungeon.EventSeed(room, 90));
+            var prefab = dungeon.PickEnemy(room, rng);
+            var enemy = prefab != null ? dungeon.SpawnAmbusher(prefab, spot, Quaternion.LookRotation(Flat(Player != null ? Player.transform.position - spot : Vector3.forward))) : null;
+            if (enemy != null) yield return DungeonMasterReach.Put(enemy, spot);
+        }
         yield return DungeonMasterReach.Lid(dungeon, false);
         yield return DungeonMasterReach.Leave();
         ScriptedEventRoom.Say(afterAddLines[Random.Range(0, afterAddLines.Length)]);
@@ -160,6 +177,7 @@ public class DungeonMasterMeddling : MonoBehaviour
     IEnumerator Steal(DungeonContainer chest)
     {
         busy = true;
+        CoopWorld.Meddled(true, CoopWorld.ContainerId(chest), chest.transform.position);
         ScriptedEventRoom.Say(stealLine);
         // Nobody opens it while his hand is on the way.
         foreach (var c in chest.GetComponentsInChildren<InteractableTrigger>()) c.enabled = false;

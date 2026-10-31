@@ -18,7 +18,8 @@ public class DiceCup : MonoBehaviour, IInteractable
     {
         if (!CanInteract(who)) return;
         StartCoroutine(Rattle());
-        dice.Shake(who as Player);
+        dice.Shake(who);
+        CoopWorld.EventUsed(dice, 0);
     }
 
     IEnumerator Rattle()

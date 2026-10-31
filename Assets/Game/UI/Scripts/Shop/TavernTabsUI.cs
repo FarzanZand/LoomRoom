@@ -116,7 +116,8 @@ public class TavernTabsUI : MonoBehaviour
         if (keeper != null && page != Page.Wares) foreach (var part in waresParts) if (part != null && part.activeSelf) part.SetActive(false);
     }
 
-    bool RumoursShown => keeper != null && (keeper.HasRumours || told.Count > 0);
+    // Co-op: a rumour puts a place on the campaign map, which is the host's; a guest's keeper keeps them to himself.
+    bool RumoursShown => keeper != null && !Coop.IsGuest && (keeper.HasRumours || told.Count > 0);
 
     void Refresh()
     {
