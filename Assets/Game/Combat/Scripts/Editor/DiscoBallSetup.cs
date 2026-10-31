@@ -109,10 +109,10 @@ public static class DiscoBallSetup
             // He closes in to melee, so a ball that needed 3 m was never thrown once he was there: the single ball from the
             // two metres his footwork steps back to after a swing (its 1.35 s wind-up is the player's opening; any closer
             // and it burst in the player's face, its glitter shown back at his hand over the boss bar). The volley at any
-            // distance and every 10 s: its balls rise over him and hang before they fly, so it is fair up close too, and
+            // distance and every 14.5 s: its balls rise over him and hang before they fly, so it is fair up close too, and
             // with a least range it was only ever thrown at the start of the fight, before he reached the player.
             foreach (var s in data.spells)
-                if (s != null && s.spell == spell) { s.minRange = s.volley ? 0f : 2f; if (s.volley) s.cooldown = 10f; }
+                if (s != null && s.spell == spell) { s.minRange = s.volley ? 0f : 2f; if (s.volley) s.cooldown = 14.5f; }
             EditorUtility.SetDirty(data);
         }
         PrefabUtility.SaveAsPrefabAsset(root, lordPath);
