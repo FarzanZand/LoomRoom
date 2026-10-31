@@ -287,6 +287,9 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     // Who this returns true for still takes every hit (blocks, hurt screen, knockback, hit reactions, sounds) but loses no
     // health, so can't die (god mode, DevGodMode). Null in normal play.
     public static System.Func<CharacterStats, bool> Invulnerable;
+    // Until this time (Time.time) hits take no health either, as with Invulnerable: the grace after a revive
+    // (RunManager.reviveGrace).
+    public float SparedUntil { get; set; }
 
     // The boss arena's blessing (BossBlessing): a successful block stops all of a hit's damage, spells included.
     public bool BlockBlessing { get; set; }
@@ -295,7 +298,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     {
         if (!IsAlive) return;
         if (NetworkIntercept != null && NetworkIntercept(this, info)) return;
-        bool spared = Invulnerable != null && Invulnerable(this);
+        bool spared = Invulnerable != null && Invulnerable(this) || Time.time < SparedUntil;
         info.Target = Character;
 
         bool blessed = BlockBlessing;

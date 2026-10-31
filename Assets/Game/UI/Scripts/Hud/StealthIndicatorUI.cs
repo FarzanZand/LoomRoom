@@ -47,7 +47,8 @@ public class StealthIndicatorUI : MonoBehaviour
         Apply();
 
         if (eye == null || visibility == null) return;
-        visibility.alpha = sneaking || veiled ? 1 : 0;
+        // Only while exploring: behind the shop, the bag or a recap the shut eye was a stray white line under the middle.
+        visibility.alpha = (sneaking || veiled) && exploring ? 1 : 0;
         if (!sneaking && !veiled) { transition?.Kill(); lastSeen = null; return; }
         if (lastSeen == seen) return;
         transition?.Kill();

@@ -195,14 +195,16 @@ public partial class DungeonGenerator : MonoBehaviour
     bool Authored => data.layoutMode == DungeonLayoutMode.Authored;
 
     // Last, once every piece is placed and the shadow and light passes are done: the props still standing alone under
-    // the architecture and the wild ground (candle racks, rubble, bone heaps, roots, floor tiles added late) merged per
-    // material, square and shadow mode like the walls, leaving out whatever moves, glows or is used after the build
-    // (DungeonStaticGeometry.Changes). A board deals its rooms in one by one, so it keeps its pieces apart.
+    // the architecture and the wild ground (rubble, bone heaps, roots, moss, pebbles, chains, pillars) merged per
+    // material and shadow mode, leaving out whatever moves, glows or is used after the build (DungeonStaticGeometry.
+    // Changes). In big squares (32 cells, as Coarsen merges the walls once in play): props of a kind are spread thin, so
+    // in the walls' 8-cell squares nearly each stood alone and nothing merged; measured on Dungeon1 seed 4242, floor 7
+    // 1,611 to 1,424 draws, floor 1 1,170 to 1,111. A board deals its rooms in one by one, so it keeps its pieces apart.
     void MergeProps()
     {
         if (Board || !TryGetComponent<DungeonStaticGeometry>(out var batching)) return;
-        batching.Combine(geometry, data.cellSize * 8, true, true);
-        if (wildsRoot != null) batching.Combine(wildsRoot, data.cellSize * 8, true, true);
+        batching.Combine(geometry, data.cellSize * 32, true, true);
+        if (wildsRoot != null) batching.Combine(wildsRoot, data.cellSize * 32, true, true);
     }
 
     // A cell of the merchant's room away from the stall (its Merchant socket, else the room's middle), off the walkways

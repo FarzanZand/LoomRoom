@@ -1,5 +1,5 @@
 # Run from a folder holding hunter_orig.png (the restyle before this pass, from git) and headmap.png/headmapx.png
-# (per-texel maps of the head written by an eval: height, normals, lateral position; see the review round 2 notes).
+# (per-texel maps of the head written by an eval: height, normals, lateral position).
 # The hunter body's head, repainted on its own texels (maps from headmap.cs: height, normals, lateral position):
 # a short dark crop over the crown, the sides down to the ears and the back to the nape (its edge texels filled so no
 # pale specks are left between triangles), the cloth face mask in a darker woven tone with folds, a seam under the eyes
@@ -25,20 +25,22 @@ def paint(mask,base,calm=1.0):
         k=1+(cl[y//2,x//2]*rng.uniform(.93,1.06)-1)*(calm if calm>0 else .35)
         out[y,x,:3]=np.clip(np.array(base)*k,0,255)
 # hair
-hair=head&((h>.78)|((h>.42)&(fw<-.3))|((h>.6)&(fw<.45)&(np.abs(nx)>.45)))&~eyes
+hair=head&((h>.71)|((h>.42)&(fw<-.3))|((h>.6)&(fw<.45)&(np.abs(nx)>.45)))&~eyes
 skinlike=(rgb[:,:,0]>140)&(rgb[:,:,0]>rgb[:,:,2]+15)
 for _ in range(2):   # fill the texels between triangles at the crop's edge
     grow=np.zeros_like(hair)
     grow[1:]|=hair[:-1]; grow[:-1]|=hair[1:]; grow[:,1:]|=hair[:,:-1]; grow[:,:-1]|=hair[:,1:]
-    hair|=grow&skinlike&~(head&(h<.78)&(fw>.3))
-paint(hair,(38,29,25))
+    hair|=grow&skinlike&~(head&(h<.71)&(fw>.3))
+paint(hair,(26,20,17))
 dark=hair&(rng.random(hair.shape)<.16); out[dark,:3]*=.7
 # face mask (cloth): below the eyes, the front and sides of the jaw
 mask=head&(h<eyeH-.015)&(fw>-.35)&~hair
-paint(mask,(134,120,104),.0)
+paint(mask,(72,64,56),.0)
 ys,xs=np.nonzero(mask)
 for y,x in zip(ys,xs):
     f=out[y,x,:3]
+    weave=1+.07*(((y+(x//3))%2)*2-1)+rng.normal(0,.035)   # threads: rows shifted every third texel, uneven
+    f*=weave
     band=(h[y,x]*14+np.sin(xf[y,x]*7)*.25)%1
     if band<.22: f*=.74
     elif band<.32: f*=1.08          # the lit top of each fold          # folds of the cloth
@@ -52,5 +54,13 @@ for dy in (-2,-1,0,1,2):
     for dx in (-2,-1,0,1,2): near|=np.roll(np.roll(eyes,dy,0),dx,1)
 sock=near&~eyes&head&~hair&~mask
 out[sock,:3]*=.78
+strip=head&~hair&~mask&~eyes&(h>=eyeH-.03)&(h<.72)&(fw>.2)
+out[strip,:3]*=.28                 # under the brows' overhang: the eyes read in a shadow, not a bright bar
+out[eyes,:3]=np.minimum(out[eyes,:3],18)
+# pale notches where the crop meets the mask at the sides: skin-like texels touching both take the hair
+touch=np.zeros_like(hair)
+for a,b in ((1,0),(-1,0),(0,1),(0,-1)): touch|=np.roll(np.roll(hair,a,0),b,1)
+gap=head&touch&~hair&~mask&~eyes&~strip&(np.abs(nx)>.35)&skinlike
+out[gap,:3]=np.array([30,23,20])
 Image.fromarray(out.astype(np.uint8)).save(T)
-print('hair',hair.sum(),'mask',mask.sum(),'socket',sock.sum())
+print('hair',hair.sum(),'mask',mask.sum(),'strip',strip.sum(),'gap',gap.sum())

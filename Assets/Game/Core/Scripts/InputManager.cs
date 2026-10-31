@@ -99,6 +99,15 @@ public class InputManager : Singleton<InputManager>
             return selected == null || !selected.activeInHierarchy;
         }
     }
+    // Nothing of this menu is selected: the selection is empty, hidden, or on something outside it (a recap's button
+    // left selected behind it), so the menu takes it.
+    public static bool NothingSelectedIn(Transform menu)
+    {
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        if (events == null) return false;
+        var selected = events.currentSelectedGameObject;
+        return selected == null || !selected.activeInHierarchy || menu != null && !selected.transform.IsChildOf(menu);
+    }
     // A text field has the keyboard (the letters typed are text, not keys for the game).
     static bool Typing
     {

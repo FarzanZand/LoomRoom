@@ -156,7 +156,7 @@ public static class NewSpellsSetup
         var raise = Spell("Raise the Fallen", heal, retune, s =>
         {
             s.spell = LeftHandSpell.RaiseTheFallen; s.effect = SpellEffect.RaiseTheFallen;
-            s.description = "Pull a fallen skeleton's bones back together. It fights for you for half a minute.";
+            s.description = "Pull a broken skeleton's bones back together. It fights for you for half a minute.";
             s.manaCost = 25; s.power = 0; s.castSeconds = 1f; s.recoverySeconds = .4f; s.castMoveSpeed = .6f;
             var r = s.raise;
             r.reach = 10; r.raiseAs = soldier; r.gatherSeconds = 1.3f; r.riseSeconds = 1.4f;
@@ -298,13 +298,16 @@ public static class NewSpellsSetup
             tome = Load<ItemData>(tomePath);
             tome.saveId = System.Guid.NewGuid().ToString("N");
         }
-        tome.itemName = name + " Tome";
+        tome.itemName = Shown(name) + " Tome";
         tome.spell = spell;
-        tome.description = "Hold it in your left hand to cast " + name + ". " + spell.description;
+        tome.description = "Hold it in your left hand to cast " + Shown(name) + ". " + spell.description;
         EditorUtility.SetDirty(tome);
         AssetDatabase.SaveAssets();
         Debug.Log($"[NewSpellsSetup] Dice Portal made; catalog {ItemDatabaseAuthoring.SyncCatalog()} items.");
     }
+
+    // The name the player sees where it differs from the folder's (the user renamed Raise the Fallen, 2026-10-31).
+    static string Shown(string name) => name == "Raise the Fallen" ? "Raise Skeletons" : name;
 
     // The spell at Spells/<name>/<name>.asset: made from the template (its arm animation, timing and sounds) the first time.
     static SpellDefinition Spell(string name, SpellDefinition template, bool retune, System.Action<SpellDefinition> tune)
@@ -319,7 +322,7 @@ public static class NewSpellsSetup
             spell.projectile = null; spell.groundArea = false; spell.homing = false;
             AssetDatabase.CreateAsset(spell, path);
         }
-        spell.displayName = name;
+        spell.displayName = Shown(name);
         if (made || retune) tune(spell);
         EditorUtility.SetDirty(spell);
         return spell;
@@ -336,9 +339,9 @@ public static class NewSpellsSetup
             tome = Load<ItemData>(path);
             tome.saveId = System.Guid.NewGuid().ToString("N");
         }
-        tome.itemName = name + " Tome";
+        tome.itemName = Shown(name) + " Tome";
         tome.spell = spell;
-        tome.description = "Hold it in your left hand to cast " + name + ". " + spell.description;
+        tome.description = "Hold it in your left hand to cast " + Shown(name) + ". " + spell.description;
         string iconPath = $"{Spells}{name}/{name} Tome icon.png";
         if (AssetImporter.GetAtPath(iconPath) is TextureImporter importer && (importer.textureType != TextureImporterType.Sprite || importer.filterMode != FilterMode.Point))
         {

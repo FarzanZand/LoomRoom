@@ -98,6 +98,9 @@ public class PickupFeedUI : MonoBehaviour
 
     void Update()
     {
+        // Behind the bag, the shop or any other menu the rows are hidden (they drew over the bag's grid).
+        bool show = !GameManager.HasInstance || GameManager.Instance.GameplayActive;
+        if (rows != null && rows.gameObject.activeSelf != show) rows.gameObject.SetActive(show);
         for (int i = live.Count - 1; i >= 0; i--)
         {
             var row = live[i];

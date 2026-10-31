@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Frost Lance
   description: A shard of ice that flies straight through up to three enemies and
     slows them.
-  icon: {fileID: 21300000, guid: 8b3a24607a8a42347b64de5d5cf286d7, type: 3}
+  icon: {fileID: 21300000, guid: b73f5069b4aae414eb3f29977a2c7bf4, type: 3}
   manaCost: 12
   power: 13
   castSeconds: 0.5
@@ -107,6 +107,10 @@ MonoBehaviour:
     reach: 0
     appearDistance: 11
     appearAhead: 0.45
+    clearOfRoof: 4
+    openSkyFromPlayer: 18
+    appearFarthest: 20
+    turnRight: 25
     range: 16
     aimCone: 10
     reachSeconds: 1.6
@@ -129,20 +133,51 @@ MonoBehaviour:
     dieArc: 7
     dieGravity: 16
     dieLight: 12
+    dieKnocks: []
+    dieRollSound: {fileID: 0}
+    dieVolume: 1
+    portalMaterial: {fileID: 0}
+    portalFrames: 8
+    portalFps: 12
+    portalColor: {r: 0.32, g: 0.48, b: 1, a: 1}
+    portalRadius: 0.8
+    portalDistance: 5.5
+    portalOpenSeconds: 0.35
+    portalHoldSeconds: 0.3
+    portalCloseSeconds: 0.3
+    portalDieSpeed: 20
+    portalLight: 6
+    portalOpenSound: {fileID: 0}
+    portalShootSound: {fileID: 0}
+    portalCloseSound: {fileID: 0}
+    portalVolume: 0.9
     lines:
     - Hold still.
     - Allow me.
     - Let me get that for you.
     snapSound: {fileID: 0}
     snapVolume: 1
+    hitSound: {fileID: 0}
+    hitVolume: 1
     slamSound: {fileID: 0}
     slamVolume: 1
+    hitShake: 1.2
+    slamShake: 1.5
+    lid:
+      open: {fileID: 0}
+      rising: {fileID: 0}
+      close: {fileID: 0}
+      land: {fileID: 0}
+      volume: 0.8
+      dust: 1
     mark: {fileID: 0}
     markColor: {r: 1, g: 0.85, b: 0.55, a: 1}
     markLight: 3
   helpingHand:
     reach: 1
     appearDistance: 11
+    clearOfRoof: 4
+    appearFarthest: 24
     reachSeconds: 1.4
     holdSeconds: 2.2
     handReach: 12
@@ -171,6 +206,13 @@ MonoBehaviour:
     burst: {fileID: 0}
     smashSound: {fileID: 0}
     smashVolume: 1
+    lid:
+      open: {fileID: 0}
+      rising: {fileID: 0}
+      close: {fileID: 0}
+      land: {fileID: 0}
+      volume: 0.8
+      dust: 1
     lines:
     - Here.
     - Hold still.

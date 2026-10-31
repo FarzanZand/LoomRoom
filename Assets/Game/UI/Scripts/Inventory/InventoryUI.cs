@@ -46,7 +46,7 @@ public class InventoryUI : MonoBehaviour
     void Update(){
         if(isOpen && PlayerManager.HasInstance && (PlayerManager.Instance.Active==null || !PlayerManager.Instance.Active.IsAlive))Close();
         // Nothing selected and a pad's d-pad or an arrow key pressed: select a cell.
-        if(isOpen && InputManager.MenuInputStarted && InputManager.NothingSelected && !ContextMenuOpen)SelectStart();
+        if(isOpen && InputManager.MenuInputStarted && InputManager.NothingSelectedIn(panel!=null?panel.transform:null) && !ContextMenuOpen)SelectStart();
     }
 
     // With a pad a bag cell is selected as the bag opens (the first holding an item, else the first), so Submit and the

@@ -16,6 +16,8 @@ public class RunManager : Singleton<RunManager>
     public float desaturateSeconds = 1.1f;
     public AudioClip deathSting;
     [Range(0, 1)] public float deathStingVolume = .9f;
+    [Min(0), Tooltip("Seconds after a revive in which hits take no health, so the fight still going on can't kill the player again at once.")]
+    public float reviveGrace = 3f;
     [Header("Victory")]
     public AudioClip victorySting;
     [Range(0, 1)] public float victoryStingVolume = .9f;
@@ -222,6 +224,7 @@ public class RunManager : Singleton<RunManager>
         if (player == null || player.IsAlive) return false;
         run = HasInstance && Instance.ReviveRun(out counted);
         player.Stats.Revive();
+        if (HasInstance) player.Stats.SparedUntil = Time.time + Instance.reviveGrace;
         var animator = player.Animator;
         if (animator != null && Character.HasParameter(animator, "Dead", AnimatorControllerParameterType.Bool)) animator.SetBool("Dead", false);
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
