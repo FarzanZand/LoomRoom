@@ -19,6 +19,11 @@ public static class ClipRecorder
     // Game music is muted while recording (on by default) so edits can lay their own track; sound effects stay.
     public static bool MuteMusic = true;
 
+    // Records in real time (frames repeated or dropped to hold the rate) instead of slowing the game to a constant rate.
+    // Sound always plays in real time, so at a constant rate it drifts behind the picture whenever the editor can't keep
+    // up (typing blips heard after their letters); turn this on for takes where sound must stay on the picture.
+    public static bool RealTime;
+
     static void SetMusicMuted(bool muted)
     {
         if (!AudioManager.HasInstance) return;
@@ -53,7 +58,7 @@ public static class ClipRecorder
         var settings = ScriptableObject.CreateInstance<RecorderControllerSettings>();
         settings.AddRecorderSettings(movie);
         settings.SetRecordModeToManual();
-        settings.FrameRatePlayback = FrameRatePlayback.Constant;
+        settings.FrameRatePlayback = RealTime ? FrameRatePlayback.Variable : FrameRatePlayback.Constant;
         settings.FrameRate = fps;
         settings.CapFrameRate = true;
 
