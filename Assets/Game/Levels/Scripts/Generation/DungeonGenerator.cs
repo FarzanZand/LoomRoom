@@ -180,6 +180,8 @@ public partial class DungeonGenerator : MonoBehaviour
         while (shadows.MoveNext()) yield return shadows.Current;
         var lights = MergeNearbyLights();
         while (lights.MoveNext()) yield return lights.Current;
+        if (SliceDue) { Pause(); yield return null; Resume(); }
+        MergeProps();
         }
         finally
         {
@@ -189,6 +191,17 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     bool Authored => data.layoutMode == DungeonLayoutMode.Authored;
+
+    // Last, once every piece is placed and the shadow and light passes are done: the props still standing alone under
+    // the architecture and the wild ground (candle racks, rubble, bone heaps, roots, floor tiles added late) merged per
+    // material, square and shadow mode like the walls, leaving out whatever moves, glows or is used after the build
+    // (DungeonStaticGeometry.Changes). A board deals its rooms in one by one, so it keeps its pieces apart.
+    void MergeProps()
+    {
+        if (Board || !TryGetComponent<DungeonStaticGeometry>(out var batching)) return;
+        batching.Combine(geometry, data.cellSize * 8, true, true);
+        if (wildsRoot != null) batching.Combine(wildsRoot, data.cellSize * 8, true, true);
+    }
 
     // A cell of the merchant's room away from the stall (its Merchant socket, else the room's middle), off the walkways
     // to the doors and not at the wall, the farthest such cell from the stall.
