@@ -16,7 +16,7 @@ public class WeepingEnemy : MonoBehaviour
     [Tooltip("Wakes with its fireball volley (the first volley in its spells) before anything else.")]
     public bool openWithVolley = true;
     [Header("Reward")]
-    [Tooltip("The highest gear tier its Legendary drop is picked from (the demo's gear is tiers 1 and 2).")]
+    [Tooltip("Its Legendary drop is of the floor's gear tiers (the level's Gear by floor); on a level with no table, tiers 1 to this.")]
     [Range(1, 12)] public int maxTier = 2;
     [Tooltip("The spoils it always drops (empty: the meta progression's biggest kind).")] public ItemData spoils;
     [Min(1)] public int spoilsCount = 1;
@@ -122,7 +122,7 @@ public class WeepingEnemy : MonoBehaviour
         var at = transform.position + Vector3.up * .3f;
         var floor = TableManager.Loader != null ? Mathf.Max(1, TableManager.Loader.FloorNumber) : 1;
         var random = new System.Random(System.Environment.TickCount ^ (int)(transform.position.x * 1000f));
-        var item = InventoryManager.GivenGear(ItemRarity.Legendary, maxTier, floor, random);
+        var item = InventoryManager.FloorGear(ItemRarity.Legendary, floor, random, maxTier);
         if (item != null) DungeonPickup.Spawn(item, at + transform.right * .6f, parent);
         var spoilsItem = spoils;
         if (spoilsItem == null && ProgressionManager.HasInstance && ProgressionManager.MetaActive)

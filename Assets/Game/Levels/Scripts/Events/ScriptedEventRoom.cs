@@ -191,7 +191,7 @@ public class ScriptedEventRoom : MonoBehaviour
     // ── Rewards ──────────────────────────────────────────────────────
 
     // Gear rolled at a rarity (the floor's tiers), thrown out at a spot.
-    public static ItemData Gear(ItemRarity rarity, System.Random rng, int maxTier = 2) => InventoryManager.GivenGear(rarity, maxTier, Floor, rng);
+    public static ItemData Gear(ItemRarity rarity, System.Random rng, int maxTier = 2) => InventoryManager.FloorGear(rarity, Floor, rng, maxTier);
 
     // The meta progression's biggest spoils (none in the intro's practice run).
     public static ItemData BestSpoils()

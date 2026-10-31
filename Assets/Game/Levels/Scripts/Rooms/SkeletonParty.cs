@@ -27,7 +27,7 @@ public class SkeletonParty : MonoBehaviour
     public float stareTurnSpeed = 360f;
     [Tooltip("The chest in the middle holds only a random piece of gear rolled Legendary and Prize Gold.")]
     public bool legendaryInChest = true;
-    [Range(1, 4), Tooltip("The highest gear tier the Legendary prize is picked from (the demo's gear is tiers 1 and 2).")]
+    [Range(1, 12), Tooltip("The Legendary prize is of the floor's gear tiers (the level's Gear by floor); on a level with no table, tiers 1 to this.")]
     public int prizeMaxTier = 2;
     [Min(0), Tooltip("Gold in the chest with the Legendary.")] public int prizeGold = 80;
     [Min(1), Tooltip("How many piles that gold comes out in.")] public int prizeGoldPiles = 10;
@@ -111,7 +111,7 @@ public class SkeletonParty : MonoBehaviour
                 chest.bonusGold = prizeGold; chest.goldPiles = prizeGoldPiles;
                 var floor = TableManager.Loader != null ? Mathf.Max(1, TableManager.Loader.FloorNumber) : 1;
                 // Seeded from where the chest stands, like every placed chest's loot, so co-op and a reload agree.
-                var prize = InventoryManager.GivenGear(ItemRarity.Legendary, prizeMaxTier, floor, new System.Random(unchecked(dungeon.PlacedSeed(chest.transform.position) * 31 + 524287)));
+                var prize = InventoryManager.FloorGear(ItemRarity.Legendary, floor, new System.Random(unchecked(dungeon.PlacedSeed(chest.transform.position) * 31 + 524287)), prizeMaxTier);
                 if (prize != null) chest.guaranteedItems.Add(prize);
             }
             // Its front (the lid's opening) toward the player, who comes in from where they are now: the portal's

@@ -27,7 +27,7 @@ public class DuelEvent : MonoBehaviour
     [Range(0, 3), Tooltip("One more friend every this many floors (0: never more).")]
     public int morePerFloors = 3;
     [Header("Reward (a fair win)")]
-    [Range(1, 12)] public int maxTier = 2;
+    [Tooltip("Highest gear tier of its prize on a level with no Gear by floor table; otherwise the prize is of the floor's tiers.")] [Range(1, 12)] public int maxTier = 2;
     public ItemRarity rarity = ItemRarity.Unique;
     [Tooltip("Dropped too on a fair win while its class (ItemData.unlocksClass) is still locked: picked up, it unlocks the class (the Rogue's poster).")]
     public ItemData classUnlock;
